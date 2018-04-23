@@ -2,6 +2,7 @@
 #include <platform/ip_address_test.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 struct unabto_test_system uts;
 
@@ -16,4 +17,9 @@ int main() {
     unabto_ip_address_test_is_v6();
 
     printf("%i errors, %i ok checks\n", uts.fail, uts.ok);
+    if (uts.fail > 0) {
+        exit(1);
+    } else {
+        exit(0);
+    }
 }
