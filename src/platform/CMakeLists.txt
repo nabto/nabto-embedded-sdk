@@ -1,0 +1,13 @@
+set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(src
+  ${src_dir}/ip_address.c
+  )
+
+set(test_src
+  ${src_dir}/ip_address_test.c
+  )
+
+add_library(unabto_platform STATIC "${src}")
+
+add_library(unabto_platform_test STATIC "${test_src}")
