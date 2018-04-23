@@ -1,5 +1,5 @@
 
-node(linux) {
+node('linux') {
 
     deleteDir()
 
