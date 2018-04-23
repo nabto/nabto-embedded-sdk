@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct unabto_test_system uts;
+struct nabto_test_system nts;
 
 void on_check_fail(const char* file, int line)
 {
@@ -12,12 +12,12 @@ void on_check_fail(const char* file, int line)
 }
 
 int main() {
-    uts.on_check_fail = on_check_fail;
-    unabto_ip_address_test_is_v4();
-    unabto_ip_address_test_is_v6();
+    nts.on_check_fail = on_check_fail;
+    nabto_ip_address_test_is_v4();
+    nabto_ip_address_test_is_v6();
 
-    printf("%i errors, %i ok checks\n", uts.fail, uts.ok);
-    if (uts.fail > 0) {
+    printf("%i errors, %i ok checks\n", nts.fail, nts.ok);
+    if (nts.fail > 0) {
         exit(1);
     } else {
         exit(0);

@@ -8,6 +8,6 @@ set(test_src
   ${src_dir}/ip_address_test.c
   )
 
-add_library(unabto_platform STATIC "${src}")
+add_library(nabto_platform STATIC "${src}")
 
-add_library(unabto_platform_test STATIC "${test_src}")
+add_library(nabto_platform_test STATIC "${test_src}")

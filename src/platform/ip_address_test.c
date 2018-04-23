@@ -2,16 +2,16 @@
 #include "unit_test.h"
 #include "ip_address_test.h"
 
-void unabto_ip_address_test_is_v4()
+void nabto_ip_address_test_is_v4()
 {
-    struct unabto_ip_address ip;
-    ip.type = UNABTO_IPV4;
-    UNABTO_TEST_CHECK(unabto_ip_is_v4(&ip));
+    struct nabto_ip_address ip;
+    ip.type = NABTO_IPV4;
+    NABTO_TEST_CHECK(nabto_ip_is_v4(&ip));
 }
 
-void unabto_ip_address_test_is_v6()
+void nabto_ip_address_test_is_v6()
 {
-    struct unabto_ip_address ip;
-    ip.type = UNABTO_IPV6;
-    UNABTO_TEST_CHECK(unabto_ip_is_v6(&ip));
+    struct nabto_ip_address ip;
+    ip.type = NABTO_IPV6;
+    NABTO_TEST_CHECK(nabto_ip_is_v6(&ip));
 }
