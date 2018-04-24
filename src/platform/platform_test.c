@@ -70,7 +70,7 @@ void nabto_platform_test_post_timed_event()
        
 }
 
-void platform_tests()
+void nabto_platform_tests()
 {
     nabto_platform_test_post_event();
     nabto_platform_test_post_timed_event();

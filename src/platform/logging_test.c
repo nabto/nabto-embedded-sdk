@@ -1,5 +1,5 @@
-#include "logging_test.h"
 #include "unit_test.h"
+#include "tests.h"
 #include <platform/logging.h>
 #include <string.h>
 
@@ -70,4 +70,9 @@ void nabto_logging_test() {
     reset_pnt();
     NABTO_LOG_TRACE(47, "%d:%c", 24, 'a');
     NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_TRACE, 47, "%d:%c", 24 , 'a'));
+}
+
+void nabto_logging_tests()
+{
+    nabto_logging_test();
 }
