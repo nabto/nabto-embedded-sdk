@@ -19,6 +19,11 @@ struct nabto_timestamp_module {
     bool (*less_or_equal)(nabto_timestamp* t1, nabto_timestamp* t2);
 
     /**
+     * Set  a timestamp to n milliseconds into the future.
+     */
+    void (*set_future_timestamp)(nabto_timestamp* ts, uint32_t milliseconds);
+    
+    /**
      * Return current timestamp.
      */
     void (*now)(nabto_timestamp* timestamp);

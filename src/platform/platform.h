@@ -90,4 +90,6 @@ bool nabto_platform_is_event_queue_empty(struct nabto_platform* pl);
 
 bool nabto_platform_has_timed_event(struct nabto_platform* pl);
 
+bool nabto_platform_has_ready_timed_event(struct nabto_platform* pl);
+
 #endif

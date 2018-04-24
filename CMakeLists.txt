@@ -10,6 +10,8 @@ include_directories(src)
 
 add_subdirectory(src/platform)
 
+add_definitions("-Wall")
+
 set(test_runner_src
   ${CMAKE_CURRENT_SOURCE_DIR}/test/runner/linux.c
   ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/logging/unix_logging.c

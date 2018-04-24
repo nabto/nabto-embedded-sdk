@@ -51,6 +51,19 @@ void nabto_platform_poll_one(struct nabto_platform* pl)
     event->cb(event->data);
 }
 
+void nabto_platform_poll_one_timed_event(struct nabto_platform* pl)
+{
+    if (pl->timedEvents.head == NULL) {
+        return;
+    }
+    
+    struct nabto_platform_timed_event* event = pl->timedEvents.head;
+    pl->timedEvents.head = event->next;
+
+    event->cb(NABTO_EC_OK, event->data);
+}
+
+
 bool nabto_platform_is_event_queue_empty(struct nabto_platform* pl)
 {
     return (pl->events.head == NULL);
@@ -62,7 +75,8 @@ void nabto_platform_post_timed_event(struct nabto_platform* pl, struct nabto_pla
     event->next = NULL;
     event->cb = cb;
     event->data = data;
-    
+    pl->ts.set_future_timestamp(&event->timestamp, milliseconds);
+
     if (pl->timedEvents.head == NULL) {
         pl->timedEvents.head = event;
     } else {
@@ -114,4 +128,16 @@ void nabto_platform_timed_event_insert(struct nabto_platform_timed_event* prev, 
 bool nabto_platform_has_timed_event(struct nabto_platform* pl)
 {
     return (pl->timedEvents.head != NULL);
+}
+
+bool nabto_platform_has_ready_timed_event(struct nabto_platform* pl)
+{
+    if (pl->timedEvents.head == NULL) {
+        return false;
+    }
+
+    if (pl->ts.passed_or_now(&pl->timedEvents.head->timestamp)) {
+        return true;
+    }
+    return false;
 }
