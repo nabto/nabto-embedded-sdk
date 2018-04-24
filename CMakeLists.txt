@@ -12,7 +12,7 @@ add_subdirectory(src/platform)
 
 set(test_runner_src
   ${CMAKE_CURRENT_SOURCE_DIR}/test/runner/linux.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/logging/nabto_unix_logging.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/logging/unix_logging.c
   )
 
 add_executable(unit_test "${test_runner_src}")
