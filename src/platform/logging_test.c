@@ -41,11 +41,12 @@ bool check_pnt(uint32_t s, uint32_t m, const char* fmt, uint32_t a1, char a2) {
 }
 
 void reset_pnt() {
+    int i;
     pnt.severity = 0;
     pnt.module = 0;
     pnt.arg1 = 0;
     pnt.arg2 = 0;
-    for (int i = 0; i<64; i++) {
+    for (i = 0; i<64; i++) {
         pnt.fmt[i] = 0;
     }
 }
