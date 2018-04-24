@@ -1,7 +1,5 @@
 #include <platform/unit_test.h>
-#include <platform/ip_address_test.h>
-#include <platform/platform_test.h>
-#include <platform/logging_test.h>
+#include <platform/tests.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,11 +13,7 @@ void on_check_fail(const char* file, int line)
 
 int main() {
     nts.on_check_fail = on_check_fail;
-    nabto_ip_address_test_is_v4();
-    nabto_ip_address_test_is_v6();
-    nabto_logging_test();
-    nabto_platform_test_post_event();
-    
+    nabto_platform_test_run_all();
 
     printf("%i errors, %i ok checks\n", nts.fail, nts.ok);
     if (nts.fail > 0) {

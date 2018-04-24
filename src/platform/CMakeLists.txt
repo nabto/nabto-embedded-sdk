@@ -10,6 +10,7 @@ set(test_src
   ${src_dir}/ip_address_test.c
   ${src_dir}/platform_test.c
   ${src_dir}/logging_test.c
+  ${src_dir}/tests.c
   )
 
 add_library(nabto_platform STATIC "${src}")
