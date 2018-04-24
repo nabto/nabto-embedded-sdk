@@ -1,7 +1,6 @@
 #include "ip_address.h"
 #include "unit_test.h"
 #include "tests.h"
-#include "ip_address_test.h"
 
 void nabto_ip_address_test_is_v4()
 {
