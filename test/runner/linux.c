@@ -1,7 +1,7 @@
 #include <platform/unit_test.h>
 #include <platform/ip_address_test.h>
-#include <platform/nabto_logging_test.h>
 #include <platform/platform_test.h>
+#include <platform/logging_test.h>
 
 #include <stdio.h>
 #include <stdlib.h>
