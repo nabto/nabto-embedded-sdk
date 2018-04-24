@@ -27,15 +27,20 @@ struct nabto_platform_event_queue {
     struct nabto_platform_event* tail;
 };
 
-
+/**
+ * The platform is the main entry point, it includes references and
+ * data for all relevant platform functions which can be called from
+ * the core.
+ */
     
 struct nabto_platform {
     // private:
     struct nabto_platform_event_queue events;
 };
 
-
-
+/**
+ * Initialize the platform structure.
+ */
 void nabto_platform_init(struct nabto_platform* pl);
 
 /**
@@ -48,6 +53,10 @@ void nabto_platform_post(struct nabto_platform* pl, struct nabto_platform_event*
  */
 void nabto_platform_poll_one(struct nabto_platform* pl);
 
+/**
+ * Return true iff there are no more events ready in the queue to be
+ * executed,
+ */
 bool nabto_platform_is_event_queue_empty(struct nabto_platform* pl);
 
 #endif
