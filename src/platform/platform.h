@@ -1,25 +1,15 @@
 #ifndef NABTO_PLATFORM_H
 #define NABTO_PLATFORM_H
-
-
-
-#include <platform/types.h>
-#include <platform/error_code.h>
-#include <platform/timestamp.h>
-#include <platform/event_queue.h>
-
-/**
- * The nabto platform is an object containing references to all the
- * different parts the system consists of.
- */
-
-
 /**
  * The platform is the main entry point, it includes references and
  * data for all relevant platform functions which can be called from
  * the core.
  */
-    
+
+#include <platform/timestamp.h>
+#include <platform/event_queue.h>
+
+
 struct nabto_platform {
     // Timestamp module
     struct nabto_timestamp_module ts;
