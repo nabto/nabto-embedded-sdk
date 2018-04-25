@@ -7,6 +7,7 @@
  */
 
 #include <platform/timestamp.h>
+#include <platform/udp.h>
 #include <platform/event_queue.h>
 
 
@@ -16,6 +17,9 @@ struct nabto_platform {
 
     // Event Queue module
     struct nabto_event_queue eq;
+
+    // UDP Socket Module
+    struct nabto_udp_module udp;
 };
 
 /**
