@@ -4,12 +4,14 @@ set(src
   ${src_dir}/ip_address.c
   ${src_dir}/platform.c
   ${src_dir}/logging.c
+  ${src_dir}/event_queue.c
   )
 
 set(test_src
   ${src_dir}/ip_address_test.c
   ${src_dir}/platform_test.c
   ${src_dir}/logging_test.c
+  ${src_dir}/event_queue_test.c
   ${src_dir}/tests.c
   )
 
