@@ -4,7 +4,8 @@
 #include <time.h>
 #include <sys/time.h>
 
-void unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args) {
+void unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
+{
     time_t sec;
     unsigned int ms;
     struct timeval tv;

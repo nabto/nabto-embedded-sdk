@@ -13,7 +13,8 @@ struct print {
 
 struct print pnt;
 
-void test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args) {
+void test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
+{
     pnt.severity = severity;
     pnt.module = module;
     strncpy(pnt.fmt, fmt, 64);
@@ -21,7 +22,8 @@ void test_log (uint32_t severity, uint32_t module, uint32_t line, const char* fi
     pnt.arg2 = (char)va_arg(args, uint32_t);
 }
 
-bool check_pnt(uint32_t s, uint32_t m, const char* fmt, uint32_t a1, char a2) {
+bool check_pnt(uint32_t s, uint32_t m, const char* fmt, uint32_t a1, char a2)
+{
     if (s != pnt.severity) {
         return false;
     }
@@ -40,7 +42,8 @@ bool check_pnt(uint32_t s, uint32_t m, const char* fmt, uint32_t a1, char a2) {
     return true;
 }
 
-void reset_pnt() {
+void reset_pnt()
+{
     int i;
     pnt.severity = 0;
     pnt.module = 0;
@@ -51,7 +54,8 @@ void reset_pnt() {
     }
 }
 
-void nabto_logging_test() {
+void nabto_logging_test()
+{
     reset_pnt();
     nabto_log.log=&test_log;
     NABTO_LOG_FATAL(42, "%d:%c", 19, 'f');
