@@ -23,6 +23,11 @@ struct nabto_udp_module {
     void (*async_create)(nabto_udp_socket_created_callback cb, void* data);
 
     /**
+     * Create a udp socket and bind it to a port.
+     */
+    void (*async_bind_port)(uint16_t port, nabto_udp_socket_created_callback cb, void* data);
+
+    /**
      * Send packet async. It's the responsibility of the caller to
      * keep the ep and buffer alive until the callback is invoked.
      */
