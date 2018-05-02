@@ -27,6 +27,12 @@ struct nabto_timestamp_module {
      * Return current timestamp.
      */
     void (*now)(nabto_timestamp* timestamp);
+
+    /**
+     * Return the difference between timestamps in milliseconds,
+     * returns 0 if ts2>ts1
+     */
+    uint32_t (*difference)(nabto_timestamp* ts1, nabto_timestamp* ts2);
 };
 
 #endif

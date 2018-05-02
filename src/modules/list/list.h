@@ -1,6 +1,14 @@
 #ifndef _NABTO_LIST_H_
 #define _NABTO_LIST_H_
 
+/*
+ * This file is based on the utlist.h file in unabto! check license
+ * of that, and make a decision wether to take the whole file from
+ * unabto, or make something our self.
+ * currently the event_queue platform module implements its own 
+ * list, consider using something from here.
+ */
+
 #include <assert.h>
 
 #define DL_APPEND(head,add)                                                                    \

@@ -148,4 +148,13 @@ bool nabto_event_queue_has_ready_timed_event(struct nabto_platform* pl)
     return false;
 }
 
-
+uint32_t nabto_event_queue_next_timed_event_occurance(struct nabto_platform* pl)
+{
+    nabto_timestamp now;
+    struct nabto_timed_event_list* ev = &pl->eq.timedEvents;
+    if (ev->head == NULL) {
+        return 0;
+    }
+    pl->ts.now(&now);
+    return pl->ts.difference(&ev->head->timestamp, &now);
+}

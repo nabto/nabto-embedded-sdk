@@ -14,9 +14,13 @@ add_definitions("-Wall")
 
 set(test_runner_src
   ${CMAKE_CURRENT_SOURCE_DIR}/test/runner/linux.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/logging/unix_logging.c
   )
+add_subdirectory(src/modules/logging)
+add_subdirectory(src/modules/communication_buffer)
+add_subdirectory(src/modules/udp/epoll)
+
+add_subdirectory(test/udp_epoll_tester)
 
 add_executable(unit_test "${test_runner_src}")
 
-target_link_libraries(unit_test nabto_platform_test nabto_platform)
+target_link_libraries(unit_test nabto_platform_test nabto_platform nabto_unix_logging)

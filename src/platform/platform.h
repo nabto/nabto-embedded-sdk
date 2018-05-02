@@ -9,7 +9,7 @@
 #include <platform/timestamp.h>
 #include <platform/udp.h>
 #include <platform/event_queue.h>
-
+#include <platform/communication_buffer.h>
 
 struct nabto_platform {
     // Timestamp module
@@ -20,6 +20,9 @@ struct nabto_platform {
 
     // UDP Socket Module
     struct nabto_udp_module udp;
+
+    // Communication buffer module
+    struct nabto_communication_buffer_module buf;
 };
 
 /**

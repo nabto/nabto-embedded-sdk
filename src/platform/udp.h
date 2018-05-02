@@ -5,14 +5,15 @@
 #include <platform/communication_buffer.h>
 #include <platform/ip_address.h>
 
-typedef struct nabto_udp_socket_ {
-} nabto_udp_socket;
+//typedef struct nabto_udp_socket_ {
+//}
+typedef struct nabto_udp_socket nabto_udp_socket;
 
 typedef void (*nabto_udp_socket_created_callback)(const nabto_error_code ec, nabto_udp_socket* socket, void* data);
 
 typedef void (*nabto_udp_packet_sent_callback)(const nabto_error_code ec, void* data);
 
-typedef void (*nabto_udp_packet_received_callback)(const nabto_error_code ec, struct nabto_udp_endpoint ep, nabto_communication_buffer* buffer, void* data);
+typedef void (*nabto_udp_packet_received_callback)(const nabto_error_code ec, struct nabto_udp_endpoint ep, nabto_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
 typedef void (*nabto_udp_socket_destroyed_callback)(const nabto_error_code ec, void* data);
 

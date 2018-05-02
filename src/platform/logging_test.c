@@ -75,6 +75,10 @@ void nabto_logging_test()
     reset_pnt();
     NABTO_LOG_TRACE(47, "%d:%c", 24, 'a');
     NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_TRACE, 47, "%d:%c", 24 , 'a'));
+    reset_pnt();
+    NABTO_LOG_INFO(48, "test with no variadic arguments");
+    NABTO_TEST_CHECK(pnt.severity == NABTO_LOG_SEVERITY_INFO);
+    NABTO_TEST_CHECK(pnt.module == 48);
 }
 
 void nabto_logging_tests()

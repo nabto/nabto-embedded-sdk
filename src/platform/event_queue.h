@@ -82,6 +82,11 @@ bool nabto_event_queue_has_timed_event(struct nabto_platform* pl);
 
 bool nabto_event_queue_has_ready_timed_event(struct nabto_platform* pl);
 
+/**
+ * Return the time in milliseconds until the next timed event is due,
+ * returns 0 if nabto_event_queue_has_timed_event returns false.
+ */
+uint32_t nabto_event_queue_next_timed_event_occurance(struct nabto_platform* pl);
 
 
 #endif
