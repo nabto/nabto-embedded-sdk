@@ -91,7 +91,7 @@ void nm_epoll_wait()
         if((events[i].events & EPOLLERR) ||
            (events[i].events & EPOLLHUP) ||
            (!(events[i].events & EPOLLIN))) {
-            NABTO_LOG_TRACE(NABTO_LOG_MODULE_UDP, "epoll event with socket error");
+            NABTO_LOG_TRACE(NABTO_LOG_MODULE_UDP, "epoll event with socket error %x", events[i].events);
             continue;
         }
         nabto_udp_socket* sock = (nabto_udp_socket*)events[i].data.ptr;
@@ -115,7 +115,13 @@ void nm_epoll_handle_event(nabto_udp_socket* sock) {
         memcpy(&ep.ip.v4.addr,&sa.sin_addr.s_addr, sizeof(ep.ip.v4.addr));
         ep.port = ntohs(sa.sin_port);
     }
-    sock->recv.cb(NABTO_EC_OK, ep, recv_buf, recvLength, sock->recv.data);
+    if (sock->recv.cb) {
+        nabto_udp_packet_received_callback cb = sock->recv.cb;
+        sock->recv.cb = NULL;
+        cb(NABTO_EC_OK, ep, recv_buf, recvLength, sock->recv.data);
+    } else {
+        NABTO_LOG_TRACE(NABTO_LOG_MODULE_UDP, "UDP data received, but no callback was registered");
+    }
 }
 
 void nm_epoll_event_create(void* data)
@@ -125,9 +131,9 @@ void nm_epoll_event_create(void* data)
     free(us->created.event);
     us->created.event = NULL;
 
-    us->sock = socket(AF_INET6, SOCK_DGRAM, 0);
+    us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (us->sock == -1) {
-        us->sock = socket(AF_INET, SOCK_DGRAM, 0);
+        us->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
         if (us->sock == -1) {
             nabto_error_code ec;
             NABTO_LOG_ERROR(NABTO_LOG_MODULE_UDP, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
@@ -154,7 +160,7 @@ void nm_epoll_event_create(void* data)
         }        
     }
     ev = (struct epoll_event*)malloc(sizeof(struct epoll_event));
-    ev->events = EPOLLIN | EPOLLOUT | EPOLLET;
+    ev->events = EPOLLIN | EPOLLET;
     ev->data.ptr = us;
     if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_ADD, us->sock, ev) == -1) {
         NABTO_LOG_FATAL(NABTO_LOG_MODULE_UDP,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
@@ -220,9 +226,9 @@ void nm_epoll_event_bind_port(void* data) {
     free(us->created.event);
     us->created.event = NULL;
 
-    us->sock = socket(AF_INET6, SOCK_DGRAM, 0);
+    us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (us->sock == -1) {
-        us->sock = socket(AF_INET, SOCK_DGRAM, 0);
+        us->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
         if (us->sock == -1) {
             nabto_error_code ec;
             NABTO_LOG_ERROR(NABTO_LOG_MODULE_UDP, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
