@@ -5,6 +5,27 @@ static void np_timed_event_bubble_up();
 static void np_timed_event_insert(struct np_timed_event* prev, struct np_timed_event* event);
 
 
+void np_event_queue_execute_one(struct np_platform* pl)
+{
+    if(!np_event_queue_is_event_queue_empty(pl)) {
+        np_event_queue_poll_one(pl);
+    } else if(np_event_queue_has_ready_timed_event(pl)) {
+        np_event_queue_poll_one_timed_event(pl);
+    }
+}
+
+bool np_event_queue_has_ready_event(struct np_platform* pl)
+{
+    return (!np_event_queue_is_event_queue_empty(pl) || np_event_queue_has_ready_timed_event(pl));
+}
+
+void np_event_queue_execute_all(struct np_platform* pl)
+{
+    while(np_event_queue_has_ready_event(pl)){
+        np_event_queue_execute_one(pl);
+    }
+}
+
 void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
 {
     event->next = NULL;

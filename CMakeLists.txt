@@ -16,6 +16,7 @@ set(test_runner_src
   ${CMAKE_CURRENT_SOURCE_DIR}/test/runner/linux.c
   )
 add_subdirectory(src/modules/logging)
+add_subdirectory(src/modules/timestamp)
 add_subdirectory(src/modules/communication_buffer)
 add_subdirectory(src/modules/udp/epoll)
 

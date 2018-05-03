@@ -66,6 +66,16 @@ void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
 void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data);
 
 /**
+ * execute a single event on the event queue, if empty execute ready event from timed event queue
+ */
+void np_event_queue_execute_one(struct np_platform* pl);
+
+/**
+ * execute all ready events on both event queues
+ */
+void np_event_queue_execute_all(struct np_platform* pl);
+
+/**
  * execute a single event on the event queue
  */
 void np_event_queue_poll_one(struct np_platform* pl);

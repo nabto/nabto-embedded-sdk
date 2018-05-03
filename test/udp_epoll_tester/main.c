@@ -3,6 +3,7 @@
 #include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <modules/logging/nm_unix_logging.h>
+#include <modules/timestamp/nm_unix_timestamp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -53,32 +54,6 @@ void destroyed(const np_error_code ec, void* data) {
     NABTO_LOG_INFO(0, "Destroyed, error code was: %i, and data: %i", ec, ctx->data);
 }
 
-np_timestamp time;
-bool ts_passed_or_now(np_timestamp* timestamp)
-{
-    return (time >= *timestamp);
-}
-
-void ts_now(np_timestamp* ts)
-{
-    *ts = time;
-}
-bool ts_less_or_equal(np_timestamp* t1, np_timestamp* t2)
-{
-    return (*t1 <= *t2);
-}
-
-void ts_set_future_timestamp(np_timestamp* ts, uint32_t milliseconds)
-{
-    *ts = time + milliseconds;
-}
-
-uint32_t ts_difference(np_timestamp* ts1, np_timestamp* ts2)
-{
-    return *ts1-*ts2;
-}
-
-
 int main() {
     ep.port = 12345;
     inet_pton(AF_INET6, "::1", ep.ip.v6.addr);
@@ -86,27 +61,16 @@ int main() {
     np_platform_init(&pl);
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
-    pl.ts.passed_or_now = &ts_passed_or_now;
-    pl.ts.less_or_equal = &ts_less_or_equal;
-    pl.ts.now = &ts_now;
-    pl.ts.set_future_timestamp = &ts_set_future_timestamp;
-    pl.ts.difference = &ts_difference;
+    nm_unix_ts_init(&pl);
  
     np_log.log = &nm_unix_log;
     struct test_context data;
     data.data = 42;
     pl.udp.async_create(created, &data);
 
-    time = 0;
     while (true) {
-        while (!np_event_queue_is_event_queue_empty(&pl)) {
-            np_event_queue_poll_one(&pl);
-        }
-        while (np_event_queue_has_ready_timed_event(&pl)) {
-            np_event_queue_poll_one_timed_event(&pl);
-        }
+        np_event_queue_execute_all(&pl);
         nm_epoll_wait();
-        time = time + 1000;
     }
 
 //    pl.udp.async_destroy(data.sock, destroyed, &data);
