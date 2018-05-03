@@ -1,7 +1,8 @@
-#ifndef _NABTO_LIST_H_
-#define _NABTO_LIST_H_
+#ifndef _NM_LIST_H_
+#define _NM_LIST_H_
 
 /*
+ * THIS FILE IS CURRENTLY UNUSED, RECONSIDER ITS IMPORTANCE BEFORE USING
  * This file is based on the utlist.h file in unabto! check license
  * of that, and make a decision wether to take the whole file from
  * unabto, or make something our self.
@@ -46,4 +47,4 @@ do {                                                                            
 #define DL_FOREACH(head,el)                                                                    \
     for(el=head;el;el=(el)->next)
 
-#endif // _NABTO_LIST_H_
+#endif // _NM_LIST_H_

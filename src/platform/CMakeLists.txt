@@ -1,20 +1,20 @@
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(src
-  ${src_dir}/ip_address.c
-  ${src_dir}/platform.c
-  ${src_dir}/logging.c
-  ${src_dir}/event_queue.c
+  ${src_dir}/np_ip_address.c
+  ${src_dir}/np_platform.c
+  ${src_dir}/np_logging.c
+  ${src_dir}/np_event_queue.c
   )
 
 set(test_src
-  ${src_dir}/ip_address_test.c
-  ${src_dir}/platform_test.c
-  ${src_dir}/logging_test.c
-  ${src_dir}/event_queue_test.c
-  ${src_dir}/tests.c
+  ${src_dir}/np_ip_address_test.c
+  ${src_dir}/np_platform_test.c
+  ${src_dir}/np_logging_test.c
+  ${src_dir}/np_event_queue_test.c
+  ${src_dir}/np_tests.c
   )
 
-add_library(nabto_platform STATIC "${src}")
+add_library(np_platform STATIC "${src}")
 
-add_library(nabto_platform_test STATIC "${test_src}")
+add_library(np_platform_test STATIC "${test_src}")

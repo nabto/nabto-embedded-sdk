@@ -1,17 +1,17 @@
-#include "event_queue.h"
-#include <platform/platform.h>
+#include "np_event_queue.h"
+#include <platform/np_platform.h>
 
-static void nabto_timed_event_bubble_up();
-static void nabto_timed_event_insert(struct nabto_timed_event* prev, struct nabto_timed_event* event);
+static void np_timed_event_bubble_up();
+static void np_timed_event_insert(struct np_timed_event* prev, struct np_timed_event* event);
 
 
-void nabto_event_queue_post(struct nabto_platform* pl, struct nabto_event* event, nabto_event_callback cb, void* data)
+void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
 {
     event->next = NULL;
     event->cb = cb;
     event->data = data;
 
-    struct nabto_event_list* ev = &pl->eq.events;
+    struct np_event_list* ev = &pl->eq.events;
     
     if (ev->head == NULL && ev->tail == NULL) {
         ev->head = event;
@@ -22,9 +22,9 @@ void nabto_event_queue_post(struct nabto_platform* pl, struct nabto_event* event
     }
 }
 
-void nabto_event_queue_poll_one(struct nabto_platform* pl)
+void np_event_queue_poll_one(struct np_platform* pl)
 {
-    struct nabto_event_list* ev = &pl->eq.events;
+    struct np_event_list* ev = &pl->eq.events;
     // No events
     if (ev->head == NULL) {
         return;
@@ -32,7 +32,7 @@ void nabto_event_queue_poll_one(struct nabto_platform* pl)
 
     // first remove the event from the queue such that a new event can
     // be enqueued in the handling of the event.
-    struct nabto_event* event;
+    struct np_event* event;
 
 
     
@@ -44,37 +44,37 @@ void nabto_event_queue_poll_one(struct nabto_platform* pl)
     } else {
         // more than one event
         event = ev->head;
-        struct nabto_event* next = ev->head->next;
+        struct np_event* next = ev->head->next;
         ev->head = next;
     }
 
     event->cb(event->data);
 }
 
-void nabto_event_queue_poll_one_timed_event(struct nabto_platform* pl)
+void np_event_queue_poll_one_timed_event(struct np_platform* pl)
 {
-    struct nabto_timed_event_list* ev = &pl->eq.timedEvents;
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
     if (ev->head == NULL) {
         return;
     }
     
-    struct nabto_timed_event* event = ev->head;
+    struct np_timed_event* event = ev->head;
     ev->head = event->next;
 
     event->cb(NABTO_EC_OK, event->data);
 }
 
 
-bool nabto_event_queue_is_event_queue_empty(struct nabto_platform* pl)
+bool np_event_queue_is_event_queue_empty(struct np_platform* pl)
 {
-    struct nabto_event_list* ev = &pl->eq.events;
+    struct np_event_list* ev = &pl->eq.events;
     return (ev->head == NULL);
 }
 
 
-void nabto_event_queue_post_timed_event(struct nabto_platform* pl, struct nabto_timed_event* event, uint32_t milliseconds, nabto_timed_event_callback cb, void* data)
+void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data)
 {
-    struct nabto_timed_event_list* ev = &pl->eq.timedEvents;
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
     event->next = NULL;
     event->cb = cb;
     event->data = data;
@@ -83,7 +83,7 @@ void nabto_event_queue_post_timed_event(struct nabto_platform* pl, struct nabto_
     if (ev->head == NULL) {
         ev->head = event;
     } else {
-        nabto_timed_event_bubble_up(pl, event);
+        np_timed_event_bubble_up(pl, event);
     }
 }
 
@@ -92,11 +92,11 @@ void nabto_event_queue_post_timed_event(struct nabto_platform* pl, struct nabto_
  * bubble up a timed event such that it has the right location in the
  * linked list.
  */
-void nabto_timed_event_bubble_up(struct nabto_platform* pl, struct nabto_timed_event* event)
+void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* event)
 {
-    struct nabto_timed_event_list* ev = &pl->eq.timedEvents;
-    struct nabto_timed_event* next;
-    struct nabto_timed_event* current;
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
+    struct np_timed_event* next;
+    struct np_timed_event* current;
     current = ev->head;
     next = current->next;
 
@@ -113,15 +113,15 @@ void nabto_timed_event_bubble_up(struct nabto_platform* pl, struct nabto_timed_e
 
     // if we end here, insert the event as the last event
     // insert the event after the event current points to.
-    nabto_timed_event_insert(current, event);
+    np_timed_event_insert(current, event);
 }
 
 /**
  * Insert a timed event in the queue where place is currently.
  */
-void nabto_timed_event_insert(struct nabto_timed_event* prev, struct nabto_timed_event* event)
+void np_timed_event_insert(struct np_timed_event* prev, struct np_timed_event* event)
 {
-    struct nabto_timed_event* currentNext = prev->next;
+    struct np_timed_event* currentNext = prev->next;
     prev->next = event;
     event->next = currentNext;
 }
@@ -129,15 +129,15 @@ void nabto_timed_event_insert(struct nabto_timed_event* prev, struct nabto_timed
 /**
  *
  */
-bool nabto_event_queue_has_timed_event(struct nabto_platform* pl)
+bool np_event_queue_has_timed_event(struct np_platform* pl)
 {
-    struct nabto_timed_event_list* ev = &pl->eq.timedEvents;
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
     return (ev->head != NULL);
 }
 
-bool nabto_event_queue_has_ready_timed_event(struct nabto_platform* pl)
+bool np_event_queue_has_ready_timed_event(struct np_platform* pl)
 {
-    struct nabto_timed_event_list* ev = &pl->eq.timedEvents;
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
     if (ev->head == NULL) {
         return false;
     }
@@ -148,10 +148,10 @@ bool nabto_event_queue_has_ready_timed_event(struct nabto_platform* pl)
     return false;
 }
 
-uint32_t nabto_event_queue_next_timed_event_occurance(struct nabto_platform* pl)
+uint32_t np_event_queue_next_timed_event_occurance(struct np_platform* pl)
 {
-    nabto_timestamp now;
-    struct nabto_timed_event_list* ev = &pl->eq.timedEvents;
+    np_timestamp now;
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
     if (ev->head == NULL) {
         return 0;
     }

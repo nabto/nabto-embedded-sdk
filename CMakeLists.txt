@@ -23,4 +23,4 @@ add_subdirectory(test/udp_epoll_tester)
 
 add_executable(unit_test "${test_runner_src}")
 
-target_link_libraries(unit_test nabto_platform_test nabto_platform nabto_unix_logging)
+target_link_libraries(unit_test np_platform_test np_platform nm_unix_logging)

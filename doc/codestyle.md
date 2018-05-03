@@ -2,8 +2,9 @@
 
 ## Namespaces
 
-The Nabto Embedded SDK is under the namespace `nabto_` for functions and
-types an `NABTO_` for constants and macros.
+The Nabto Embedded SDK is under the namespace `nm_`, `np_`, and `nc_` for functions, types, and files in `modules`, `platform`, and `core` respectively.
+
+`NABTO_` for constants and macros.
 
 
 ## Indentation

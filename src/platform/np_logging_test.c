@@ -1,6 +1,6 @@
-#include "unit_test.h"
-#include "tests.h"
-#include <platform/logging.h>
+#include "np_unit_test.h"
+#include "np_tests.h"
+#include <platform/np_logging.h>
 #include <string.h>
 
 struct print {
@@ -54,10 +54,10 @@ void reset_pnt()
     }
 }
 
-void nabto_logging_test()
+void np_logging_test()
 {
     reset_pnt();
-    nabto_log.log=&test_log;
+    np_log.log=&test_log;
     NABTO_LOG_FATAL(42, "%d:%c", 19, 'f');
     NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_FATAL, 42, "%d:%c", 19 , 'f'));
     reset_pnt();
@@ -81,7 +81,7 @@ void nabto_logging_test()
     NABTO_TEST_CHECK(pnt.module == 48);
 }
 
-void nabto_logging_tests()
+void np_logging_tests()
 {
-    nabto_logging_test();
+    np_logging_test();
 }

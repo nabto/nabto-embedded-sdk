@@ -4,6 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef uint64_t nabto_timestamp;
+typedef uint64_t np_timestamp;
 
 #endif

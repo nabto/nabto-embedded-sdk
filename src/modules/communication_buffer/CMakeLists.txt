@@ -5,4 +5,4 @@ set(unix_src
   )
 
 
-add_library( nabto_unix_communication_buffer STATIC ${unix_src})
+add_library( nm_unix_communication_buffer STATIC ${unix_src})
