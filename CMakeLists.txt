@@ -17,6 +17,7 @@ set(test_runner_src
   )
 add_subdirectory(src/modules/logging)
 add_subdirectory(src/modules/timestamp)
+add_subdirectory(src/modules/dns)
 add_subdirectory(src/modules/communication_buffer)
 add_subdirectory(src/modules/udp/epoll)
 add_subdirectory(3rdparty/mbedtls)

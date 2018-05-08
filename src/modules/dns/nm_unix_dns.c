@@ -1,0 +1,113 @@
+
+#include "nm_unix_dns.h"
+
+#include <platform/np_logging.h>
+#include <platform/np_error_code.h>
+
+#include <errno.h>
+#include <string.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <stdlib.h>
+
+struct nm_unix_dns_ctx {
+    struct np_event ev;
+    const char* host;
+    size_t recSize;
+    np_dns_resolve_callback cb;
+    np_error_code ec;
+    void* data;
+    bool resolver_is_running;
+    struct np_platform* pl;
+    struct np_ip_address ips[NP_DNS_RESOLVED_IPS_MAX];
+};
+
+void nm_unix_dns_check_resolved(void* data);
+
+void* resolver_thread(void* ctx) {
+    struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
+    
+    struct addrinfo hints, *infoptr;
+    hints.ai_family = AF_UNSPEC;
+    int res =  getaddrinfo(state->host, NULL, &hints, &infoptr);
+    if (res) {
+        NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Failed to get address info: (%i) '%s'", errno, strerror(errno));
+        state->ec = NABTO_EC_FAILED;
+        state->resolver_is_running = false;
+        return NULL;
+    }
+    struct addrinfo *p = infoptr;
+    int i = 0;
+    for (i = 0; i < NP_DNS_RESOLVED_IPS_MAX; i++) {
+        if (p == NULL) {
+            break;
+        }
+        if (p->ai_family == AF_INET) {
+            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "found IPv4 address");
+            state->ips[i].type = NABTO_IPV4;
+            struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
+            memcpy(state->ips[i].v4.addr, &addr->sin_addr, p->ai_addrlen);
+        } else if (p->ai_family == AF_INET6) {
+            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "found IPv6 address");
+            state->ips[i].type = NABTO_IPV6;
+            struct sockaddr_in6* addr = (struct sockaddr_in6*)p->ai_addr;
+            memcpy(state->ips[i].v6.addr, &addr->sin6_addr, p->ai_addrlen);
+        } else {
+            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Resolved hostname was neither IPv4 or IPv6");
+            state->ec = NABTO_EC_FAILED;
+            state->resolver_is_running = false;
+            return NULL;
+        }
+        p = p->ai_next;
+    }
+    state->recSize = i;
+    state->resolver_is_running = false;
+    return NULL;
+}
+
+void nm_unix_dns_init(struct np_platform* pl)
+{
+    pl->dns.async_resolve = &nm_unix_dns_resolve;
+}
+
+np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
+{
+    pthread_t thread;
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) !=0) {
+        return NABTO_EC_FAILED;
+    }
+    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0) {
+        pthread_attr_destroy(&attr);
+        return NABTO_EC_FAILED;
+    }
+    struct nm_unix_dns_ctx* ctx = (struct nm_unix_dns_ctx*)malloc(sizeof(struct nm_unix_dns_ctx));
+    if (!ctx) {
+        return NABTO_EC_FAILED;
+    }
+    ctx->data = data;
+    ctx->host = host;
+    ctx->cb = cb;
+    ctx->pl = pl;
+    ctx->resolver_is_running = true;
+
+    if (pthread_create(&thread, &attr, resolver_thread, ctx) != 0) {
+        pthread_attr_destroy(&attr);
+        return NABTO_EC_FAILED;
+    }
+    pthread_attr_destroy(&attr);
+    np_event_queue_post(pl, &ctx->ev, &nm_unix_dns_check_resolved, ctx);
+    return NABTO_EC_OK;
+}
+
+void nm_unix_dns_check_resolved(void* data)
+{
+    struct nm_unix_dns_ctx* ctx = (struct nm_unix_dns_ctx*)data;
+    if(ctx->resolver_is_running) {
+        np_event_queue_post(ctx->pl, &ctx->ev, &nm_unix_dns_check_resolved, data);
+        return;
+    } else {
+        ctx->cb(ctx->ec, ctx->ips, ctx->recSize, ctx->data);
+        free(ctx);
+    }
+}
