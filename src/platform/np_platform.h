@@ -10,6 +10,7 @@
 #include <platform/np_udp.h>
 #include <platform/np_event_queue.h>
 #include <platform/np_communication_buffer.h>
+#include <platform/np_dns.h>
 
 struct np_platform {
     // Timestamp module
@@ -18,11 +19,14 @@ struct np_platform {
     // Event Queue module
     struct np_event_queue eq;
 
-    // UDP Socket Module
+    // UDP Socket module
     struct np_udp_module udp;
 
     // Communication buffer module
     struct np_communication_buffer_module buf;
+
+    // DNS resolver module
+    struct np_dns_module dns;
 };
 
 /**
