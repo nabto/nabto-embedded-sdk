@@ -82,4 +82,22 @@ void np_trace_adapter(uint32_t severity, uint32_t module, uint32_t line, const c
 #  endif
 #endif
 
+#ifndef MAKE_IPV4_PRINTABLE
+#define MAKE_IPV4_PRINTABLE(ip) (ip[0]), (ip[1]), (ip[2]), (ip[3])
+#endif
+
+#ifndef MAKE_IPV6_PRINTABLE
+#define MAKE_IPV6_PRINTABLE(ip) (ip[0]), (ip[1]), (ip[2]), (ip[3]), (ip[4]), (ip[5]), (ip[6]), (ip[7]), (ip[8]), (ip[9]), (ip[10]), (ip[11]), (ip[12]), (ip[13]), (ip[14]), (ip[15])
+#endif
+
+#ifndef PRIip4
+#define PRIip4 "%u.%u.%u.%u"
+#endif
+
+#ifndef PRIip6
+#define PRIip6 "%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x"
+#endif
+
+
+
 #endif//_NP_LOGGING_H_
