@@ -9,6 +9,7 @@ include_directories(src/types/linux)
 include_directories(src)
 
 add_subdirectory(src/platform)
+add_subdirectory(src/core)
 
 add_definitions("-Wall")
 
@@ -20,6 +21,7 @@ add_subdirectory(src/modules/timestamp)
 add_subdirectory(src/modules/dns)
 add_subdirectory(src/modules/communication_buffer)
 add_subdirectory(src/modules/udp/epoll)
+add_subdirectory(src/modules/crypto)
 add_subdirectory(3rdparty/mbedtls)
 
 add_subdirectory(test/udp_epoll_tester)

@@ -11,6 +11,7 @@
 #include <platform/np_event_queue.h>
 #include <platform/np_communication_buffer.h>
 #include <platform/np_dns.h>
+#include <platform/np_crypto.h>
 
 struct np_platform {
     // Timestamp module
@@ -27,6 +28,9 @@ struct np_platform {
 
     // DNS resolver module
     struct np_dns_module dns;
+
+    // Crypto module
+    struct np_crypto_module cryp;
 };
 
 /**

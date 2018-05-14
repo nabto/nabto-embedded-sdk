@@ -43,7 +43,8 @@ void recv_callback(const np_error_code ec, struct np_udp_endpoint ep, np_communi
     pl.udp.async_recv_from(ctx->sock, &recv_callback, data);
 }
 
-void created(const np_error_code ec, np_udp_socket* socket, void* data){
+void created(const np_error_code ec, np_udp_socket* socket, void* data)
+{
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     ctx->sock = socket;
