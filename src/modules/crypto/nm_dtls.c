@@ -66,7 +66,7 @@ static void my_debug( void *ctx, int level,
 {
     ((void) level);
 
-    NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO,"%s", str );
+    NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO,"%s:%d %s", file, line,  str );
 }
 
 void nm_dtls_init(struct np_platform* pl)
@@ -85,6 +85,7 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
     const char *pers = "dtls_client";
     ctx->conn = conn;
     ctx->pl = pl;
+    ctx->state = CONNECTING;
     mbedtls_net_init( &ctx->server_fd );
     mbedtls_ssl_init( &ctx->ssl );
     mbedtls_ssl_config_init( &ctx->conf );
@@ -92,6 +93,7 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_pk_init( &ctx->pkey );
     mbedtls_entropy_init( &ctx->entropy );
+    mbedtls_debug_set_threshold( 4 );
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,
                                strlen( pers ) ) ) != 0 ) {
@@ -142,7 +144,7 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
     }
 
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
-                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, mbedtls_net_recv_timeout );
+                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
 
     mbedtls_ssl_set_timer_cb( &ctx->ssl, ctx, nm_dtls_mbedtls_timing_set_delay,
                                             nm_dtls_mbedtls_timing_get_delay );
@@ -280,7 +282,7 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
     unsigned char* buf = (unsigned char*) malloc(bufferSize);
     memcpy(buf, buffer, bufferSize);
     ctx->pl->conn.async_send_to(ctx->pl, ctx->conn, buf, bufferSize, &nm_dtls_connection_send_callback, buf);
-    return 0;
+    return bufferSize;
 }
 
 int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
@@ -288,7 +290,13 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
     np_crypto_context* ctx = (np_crypto_context*) data;
     buffer = ctx->recvBuffer;
     ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
-    return ctx->recvBufferSize;
+    if (ctx->recvBufferSize == 0) {
+        return MBEDTLS_ERR_SSL_WANT_READ;
+    } else {
+        int size = ctx->recvBufferSize;
+        ctx->recvBufferSize = 0;
+        return size;
+    }
 }
 
 void nm_dtls_timed_event_connect(const np_error_code ec, void* data) {
