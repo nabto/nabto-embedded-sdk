@@ -6,3 +6,5 @@ set(dtls_src
 
 
 add_library( nm_dtls STATIC ${dtls_src})
+
+target_link_libraries(nm_dtls mbedtls)

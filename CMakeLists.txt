@@ -25,6 +25,7 @@ add_subdirectory(src/modules/crypto)
 add_subdirectory(3rdparty/mbedtls)
 
 add_subdirectory(test/udp_epoll_tester)
+add_subdirectory(test/dtls_tester)
 
 add_executable(unit_test "${test_runner_src}")
 

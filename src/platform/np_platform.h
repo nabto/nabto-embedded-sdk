@@ -31,6 +31,9 @@ struct np_platform {
 
     // Crypto module
     struct np_crypto_module cryp;
+
+    // connection module
+    struct np_connection_module conn;
 };
 
 /**

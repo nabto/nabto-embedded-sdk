@@ -5,6 +5,7 @@
 // Module definitions
 #define NABTO_LOG_MODULE_UDP                    1
 #define NABTO_LOG_MODULE_DNS                    2
+#define NABTO_LOG_MODULE_CRYPTO                 3
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                 0x00000000ul
