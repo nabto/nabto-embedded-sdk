@@ -1,6 +1,8 @@
 
 node('linux') {
-
+    options {
+        buildDiscarder logRotator(artifactDaysToKeepStr: '30', artifactNumToKeepStr: '10', daysToKeepStr: '30', numToKeepStr: '10')
+    }
     deleteDir()
 
     try {
