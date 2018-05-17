@@ -49,7 +49,6 @@ struct np_crypto_context {
     uint8_t recvBuffer[4096];
     size_t recvBufferSize;
     enum sslState state;
-    bool timerActive;
     np_timestamp intermediateTp;
     np_timestamp finalTp;
 };
@@ -59,6 +58,9 @@ int nm_dtls_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferSize);
 void nm_dtls_mbedtls_timing_set_delay(void* ctx, uint32_t intermediateMilliseconds, uint32_t finalMilliseconds);
 int nm_dtls_mbedtls_timing_get_delay(void* ctx);
 void nm_dtls_event_connect(void* data);
+void nm_dtls_connection_received_callback(const np_error_code ec, struct np_connection* conn,
+                                          np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx);
 
 static void my_debug( void *ctx, int level,
                       const char *file, int line,
@@ -81,76 +83,19 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
                                     np_crypto_connect_callback cb, void* data)
 {
     np_crypto_context* ctx = (np_crypto_context*)malloc(sizeof(np_crypto_context));
-    int ret;
-    const char *pers = "dtls_client";
+    np_error_code ec;
     ctx->conn = conn;
+    ctx->recvBufferSize = 0;
     ctx->pl = pl;
     ctx->state = CONNECTING;
-    mbedtls_net_init( &ctx->server_fd );
-    mbedtls_ssl_init( &ctx->ssl );
-    mbedtls_ssl_config_init( &ctx->conf );
-    mbedtls_x509_crt_init( &ctx->cacert );
-    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
-    mbedtls_pk_init( &ctx->pkey );
-    mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_debug_set_threshold( 4 );
-    if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
-                               (const unsigned char *) pers,
-                               strlen( pers ) ) ) != 0 ) {
-        mbedtls_printf( " failed\n  ! mbedtls_ctr_drbg_seed returned %d\n", ret );
-        free(ctx);
-        return NABTO_EC_FAILED;
+    ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
+    ctx->connectCb = cb;
+    ctx->connectData = data;
+    ec = nm_dtls_setup_dtls_ctx(ctx);
+    if(ec == NABTO_EC_OK) {
+        np_event_queue_post(pl, &ctx->ev, &nm_dtls_event_connect, ctx);
     }
-
-    ret = mbedtls_x509_crt_parse( &ctx->cacert, (const unsigned char *) mbedtls_test_cas_pem,
-                          mbedtls_test_cas_pem_len );
-    if( ret < 0 )
-    {
-        mbedtls_printf( " failed\n  !  mbedtls_x509_crt_parse returned -0x%x\n\n", -ret );
-        free(ctx);
-        return NABTO_EC_FAILED;
-    }
-   
-    ret =  mbedtls_pk_parse_key( &ctx->pkey, (const unsigned char *) mbedtls_test_cli_key,
-                         mbedtls_test_cli_key_len, NULL, 0 );
-    if( ret != 0 )
-    {
-        printf( " failed\n  !  mbedtls_pk_parse_key returned %d\n\n", ret );
-    }
-    
-    if( ( ret = mbedtls_ssl_config_defaults( &ctx->conf,
-                   MBEDTLS_SSL_IS_CLIENT,
-                   MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-                   MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
-    {
-        mbedtls_printf( " failed\n  ! mbedtls_ssl_config_defaults returned %d\n\n", ret );
-        free(ctx);
-        return NABTO_EC_FAILED;
-    }
-    mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
-    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
-    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &ctx->conf ) ) != 0 )
-    {
-        mbedtls_printf( " failed\n  ! mbedtls_ssl_setup returned %d\n\n", ret );
-        free(ctx);
-        return NABTO_EC_FAILED;
-    }
-
-    if( ( ret = mbedtls_ssl_set_hostname( &ctx->ssl, SERVER_NAME ) ) != 0 )
-    {
-        mbedtls_printf( " failed\n  ! mbedtls_ssl_set_hostname returned %d\n\n", ret );
-        free(ctx);
-        return NABTO_EC_FAILED;
-    }
-
-    mbedtls_ssl_set_bio( &ctx->ssl, ctx,
-                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
-
-    mbedtls_ssl_set_timer_cb( &ctx->ssl, ctx, nm_dtls_mbedtls_timing_set_delay,
-                                            nm_dtls_mbedtls_timing_get_delay );
-
-    np_event_queue_post(pl, &ctx->ev, &nm_dtls_event_connect, ctx);
-    return NABTO_EC_OK;
+    return ec;
 }
 
 void nm_dtls_event_connect(void* data)
@@ -163,17 +108,21 @@ void nm_dtls_event_connect(void* data)
         if( ret == MBEDTLS_ERR_SSL_WANT_READ ||
             ret == MBEDTLS_ERR_SSL_WANT_WRITE ) {
             //Keep State CONNECTING
+            NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Keeping CONNECTING state");
         } else {
             if( ret != 0 )
             {
                 mbedtls_printf( " failed\n  ! mbedtls_ssl_handshake returned -0x%04x\n\n", -ret );
                 ctx->connectCb(NABTO_EC_FAILED, NULL, ctx->connectData);
+                np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+                ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
                 free(ctx);
                 return;
             }
+            NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "State changed to VERIFY");
             ctx->state = VERIFY;
         }
-        np_event_queue_post(ctx->pl, &ctx->ev, &nm_dtls_event_connect, ctx);
+//        np_event_queue_post(ctx->pl, &ctx->ev, &nm_dtls_event_connect, ctx);
         return;
     } else if (ctx->state == VERIFY) {
 
@@ -186,6 +135,8 @@ void nm_dtls_event_connect(void* data)
         
             mbedtls_printf( "%s\n", vrfy_buf );
             ctx->connectCb(NABTO_EC_FAILED, NULL, ctx->connectData);
+            np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+            ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
             free(ctx);
             return;
         }
@@ -262,10 +213,20 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_crypto_context* ctx
 void nm_dtls_connection_received_callback(const np_error_code ec, struct np_connection* conn,
                                           np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
+    if ( data == NULL) {
+        return;
+    }
+    NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "connection received callback");
     if (ec == NABTO_EC_OK) {
         np_crypto_context* ctx = (np_crypto_context*) data;
-        memcpy(ctx->recvBuffer, buffer, bufferSize);
+        memcpy(ctx->recvBuffer, ctx->pl->buf.start(buffer), bufferSize);
         ctx->recvBufferSize = bufferSize;
+//        uint8_t* tmp = ctx->pl->buf.start(buffer);
+        uint8_t* tmp = ctx->recvBuffer;
+        NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x", tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7], tmp[8], tmp[9]); 
+        if (ctx->state == CONNECTING || ctx->state == VERIFY) {
+            np_event_queue_post(ctx->pl, &ctx->ev, &nm_dtls_event_connect, ctx);
+        }
     } else {
 
     }
@@ -288,18 +249,22 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
 {
     np_crypto_context* ctx = (np_crypto_context*) data;
-    buffer = ctx->recvBuffer;
-    ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
     if (ctx->recvBufferSize == 0) {
+        NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "bufferSize = 0");
         return MBEDTLS_ERR_SSL_WANT_READ;
     } else {
-        int size = ctx->recvBufferSize;
+        NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "returning data");
+        ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
+        size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
+        memcpy(buffer, ctx->recvBuffer, maxCp);
+        NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "%i bytes", maxCp);
         ctx->recvBufferSize = 0;
-        return size;
+        return maxCp;
     }
 }
 
 void nm_dtls_timed_event_connect(const np_error_code ec, void* data) {
+    NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "received timed event");
     nm_dtls_event_connect(data);
 }
 
@@ -308,7 +273,7 @@ void nm_dtls_mbedtls_timing_set_delay(void* data, uint32_t intermediateMilliseco
     np_crypto_context* ctx = (np_crypto_context*) data;
     if (finalMilliseconds == 0) {
         // disable current timer
-        ctx->timerActive = false;
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
     } else {
         ctx->pl->ts.set_future_timestamp(&ctx->intermediateTp, intermediateMilliseconds);
         ctx->pl->ts.set_future_timestamp(&ctx->finalTp, finalMilliseconds);
@@ -330,4 +295,83 @@ int nm_dtls_mbedtls_timing_get_delay(void* data)
     } else {
         return -1;
     }
+}
+
+np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx)
+{
+    int ret;
+    const char *pers = "dtls_client";
+    mbedtls_ssl_init( &ctx->ssl );
+    mbedtls_ssl_config_init( &ctx->conf );
+    mbedtls_x509_crt_init( &ctx->cacert );
+    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
+//    mbedtls_pk_init( &ctx->pkey );
+    mbedtls_entropy_init( &ctx->entropy );
+    mbedtls_debug_set_threshold( 2 );
+    if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
+                               (const unsigned char *) pers,
+                               strlen( pers ) ) ) != 0 ) {
+        mbedtls_printf( " failed\n  ! mbedtls_ctr_drbg_seed returned %d\n", ret ); 
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+        ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
+        free(ctx);
+        return NABTO_EC_FAILED;
+    }
+
+    ret = mbedtls_x509_crt_parse( &ctx->cacert, (const unsigned char *) mbedtls_test_cas_pem,
+                          mbedtls_test_cas_pem_len );
+    if( ret < 0 )
+    {
+        mbedtls_printf( " failed\n  !  mbedtls_x509_crt_parse returned -0x%x\n\n", -ret );
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+        ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
+        free(ctx);
+        return NABTO_EC_FAILED;
+    }
+   
+    mbedtls_ssl_conf_ca_chain( &ctx->conf, &ctx->cacert, NULL );
+    /* ret =  mbedtls_pk_parse_key( &ctx->pkey, (const unsigned char *) mbedtls_test_cli_key, */
+    /*                      mbedtls_test_cli_key_len, NULL, 0 ); */
+    /* if( ret != 0 ) */
+    /* { */
+    /*     printf( " failed\n  !  mbedtls_pk_parse_key returned %d\n\n", ret ); */
+    /* } */
+    
+    if( ( ret = mbedtls_ssl_config_defaults( &ctx->conf,
+                   MBEDTLS_SSL_IS_CLIENT,
+                   MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+                   MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
+    {
+        mbedtls_printf( " failed\n  ! mbedtls_ssl_config_defaults returned %d\n\n", ret );
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+        ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
+        free(ctx);
+        return NABTO_EC_FAILED;
+    }
+    mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
+    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
+    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &ctx->conf ) ) != 0 )
+    {
+        mbedtls_printf( " failed\n  ! mbedtls_ssl_setup returned %d\n\n", ret );
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+        ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
+        free(ctx);
+        return NABTO_EC_FAILED;
+    }
+
+    if( ( ret = mbedtls_ssl_set_hostname( &ctx->ssl, SERVER_NAME ) ) != 0 )
+    {
+        mbedtls_printf( " failed\n  ! mbedtls_ssl_set_hostname returned %d\n\n", ret );
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+        ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
+        free(ctx);
+        return NABTO_EC_FAILED;
+    }
+
+    mbedtls_ssl_set_bio( &ctx->ssl, ctx,
+                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
+
+    mbedtls_ssl_set_timer_cb( &ctx->ssl, ctx, nm_dtls_mbedtls_timing_set_delay,
+                                            nm_dtls_mbedtls_timing_get_delay );
+    return NABTO_EC_OK;
 }

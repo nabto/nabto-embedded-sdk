@@ -36,6 +36,7 @@ struct np_connection_module {
     void (*async_create)(struct np_platform* pl, np_connection* conn, struct np_udp_endpoint* ep, np_connection_created_callback cb, void* data);
     void (*async_send_to)(struct np_platform* pl, np_connection* conn, uint8_t* buffer, uint16_t bufferSize, np_connection_sent_callback cb, void* data);
     void (*async_recv_from)(struct np_platform* pl, np_connection* conn, np_connection_received_callback cb, void* data);
+    np_error_code (*cancel_async_recv)(struct np_platform* pl, np_connection* conn);
     void (*async_destroy)(struct np_platform* pl, np_connection* conn, np_connection_destroyed_callback cb, void* data);
 };
 

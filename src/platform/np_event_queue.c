@@ -1,5 +1,6 @@
 #include "np_event_queue.h"
 #include <platform/np_platform.h>
+#include <platform/np_logging.h>
 
 static void np_timed_event_bubble_up();
 static void np_timed_event_insert(struct np_timed_event* prev, struct np_timed_event* event);
@@ -105,6 +106,30 @@ void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_eve
         ev->head = event;
     } else {
         np_timed_event_bubble_up(pl, event);
+    }
+}
+
+void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* event)
+{
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
+    if (ev->head == NULL) {
+        return;
+    }
+    if (ev->head == event) {
+        ev->head = ev->head->next;
+        return;
+    }
+    struct np_timed_event* current = ev->head;
+    struct np_timed_event* next = current->next;
+    NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Trying to cancel timed event");
+    while(next != NULL) {
+        if (next == event) {
+            NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Found and canceled timed event");
+            current->next = next->next;
+            return;
+        }
+        current = current->next;
+        next = current->next;
     }
 }
 

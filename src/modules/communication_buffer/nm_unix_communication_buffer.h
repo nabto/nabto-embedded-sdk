@@ -6,7 +6,7 @@
 #include <types/linux/nabto_types.h>
 
 #ifndef NABTO_COMMUNICATION_BUFFER_LENGTH
-#define NABTO_COMMUNICATION_BUFFER_LENGTH 1500
+#define NABTO_COMMUNICATION_BUFFER_LENGTH 11500
 #endif
 
 void nm_unix_comm_buf_init(struct np_platform* pl);
