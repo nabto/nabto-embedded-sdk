@@ -57,7 +57,7 @@ struct np_event_queue {
     struct np_timed_event_list timedEvents;
 };
 
-
+bool np_event_queue_has_ready_event(struct np_platform* pl);
 /**
  * Enqueue an event to the event queue.
  */

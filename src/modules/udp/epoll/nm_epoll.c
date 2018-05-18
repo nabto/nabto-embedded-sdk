@@ -14,20 +14,20 @@
 struct nm_epoll_created_ctx {
     np_udp_socket_created_callback cb;
     void* data;
-    struct np_event* event;
+    struct np_event event;
     uint16_t port;
 };
 
 struct nm_epoll_destroyed_ctx {
     np_udp_socket_destroyed_callback cb;
     void* data;
-    struct np_event* event;
+    struct np_event event;
 };
 
 struct nm_epoll_sent_ctx {
     np_udp_packet_sent_callback cb;
     void* data;
-    struct np_event* event;
+    struct np_event event;
     struct np_udp_endpoint* ep;
     uint8_t* buf;
     uint16_t bufSize;
@@ -36,7 +36,7 @@ struct nm_epoll_sent_ctx {
 struct nm_epoll_received_ctx {
     np_udp_packet_received_callback cb;
     void* data;
-    struct np_event* event;
+    struct np_event event;
 };
 
 struct np_udp_socket {
@@ -118,6 +118,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
     if (sock->recv.cb) {
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;
+        NABTO_LOG_INFO(NABTO_LOG_MODULE_UDP, "received data, invoking callback");
         cb(NABTO_EC_OK, ep, recv_buf, recvLength, sock->recv.data);
     } else {
         NABTO_LOG_TRACE(NABTO_LOG_MODULE_UDP, "UDP data received, but no callback was registered");
@@ -128,8 +129,6 @@ void nm_epoll_event_create(void* data)
 {
     np_udp_socket* us = (np_udp_socket*)data;
     struct epoll_event* ev;
-    free(us->created.event);
-    us->created.event = NULL;
 
     us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (us->sock == -1) {
@@ -175,15 +174,12 @@ void nm_epoll_event_create(void* data)
 
 void nm_epoll_async_create(np_udp_socket_created_callback cb, void* data)
 {
-    struct np_event* ne;
     np_udp_socket* sock;
 
     sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
-    ne = (struct np_event*)malloc(sizeof(struct np_event));
-    sock->created.event = ne; 
-    np_event_queue_post(pl, ne, &nm_epoll_event_create, sock);
+    np_event_queue_post(pl, &sock->created.event, &nm_epoll_event_create, sock);
 }
 
 
@@ -194,28 +190,15 @@ void nm_epoll_event_destroy(void* data)
         NABTO_LOG_ERROR(NABTO_LOG_MODULE_UDP,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
     close(sock->sock);
-    free(sock->des.event);
-    if(sock->created.event) {
-        free(sock->created.event);
-    }
-    if(sock->sent.event) {
-        free(sock->sent.event);
-    }
-    if(sock->recv.event) {
-        free(sock->recv.event);
-    }
     sock->des.cb(NABTO_EC_OK, sock->des.data);
     free(sock);
 }
 
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data)
 {
-    struct np_event* ne;
-    ne = (struct np_event*)malloc(sizeof(struct np_event));
     socket->des.cb = cb;
-    socket->des.event = ne;
     socket->des.data = data;
-    np_event_queue_post(pl, ne, nm_epoll_event_destroy, socket);
+    np_event_queue_post(pl, &socket->des.event, nm_epoll_event_destroy, socket);
 
 }
 
@@ -223,8 +206,6 @@ void nm_epoll_event_bind_port(void* data) {
     np_udp_socket* us = (np_udp_socket*)data;
     struct epoll_event* ev;
     struct sockaddr_in si_me;
-    free(us->created.event);
-    us->created.event = NULL;
 
     us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (us->sock == -1) {
@@ -282,21 +263,17 @@ void nm_epoll_event_bind_port(void* data) {
 }
 void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data)
 {
-    struct np_event* ne;
     np_udp_socket* sock;
     sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
     sock->created.port = port;
-    ne = (struct np_event*)malloc(sizeof(struct np_event));
-    sock->created.event = ne;
-    np_event_queue_post(pl, ne, nm_epoll_event_bind_port, sock);
+    np_event_queue_post(pl, &sock->created.event, nm_epoll_event_bind_port, sock);
 }
 
 void nm_epoll_event_send_to(void* data){
     np_udp_socket* sock = (np_udp_socket*)data;
     ssize_t res;
-    free(sock->sent.event);
     if (sock->sent.ep->ip.type == NABTO_IPV4) {
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
@@ -327,22 +304,16 @@ void nm_epoll_event_send_to(void* data){
 
 void nm_epoll_async_send_to(np_udp_socket* socket, struct np_udp_endpoint* ep, uint8_t* buffer, uint16_t bufferSize, np_udp_packet_sent_callback cb, void* data)
 {
-    struct np_event* ne;
-    ne = (struct np_event*)malloc(sizeof(struct np_event));
-    socket->sent.event = ne;
     socket->sent.ep = ep;
     socket->sent.buf = buffer;
     socket->sent.bufSize = bufferSize;
     socket->sent.cb = cb;
     socket->sent.data = data;
-    np_event_queue_post(pl, ne, nm_epoll_event_send_to, socket);
+    np_event_queue_post(pl, &socket->sent.event, nm_epoll_event_send_to, socket);
 }
 
 void nm_epoll_async_recv_from(np_udp_socket* socket, np_udp_packet_received_callback cb, void* data)
 {
-    struct np_event* ne;
-    ne = (struct np_event*)malloc(sizeof(struct np_event));
-    socket->recv.event = ne;
     socket->recv.cb = cb;
     socket->recv.data = data;
 //    np_event_queue_post(pl, ne, nm_epoll_event_recv_from, socket);

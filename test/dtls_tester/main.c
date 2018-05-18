@@ -25,10 +25,22 @@ uint16_t bufferSize = 12;
 struct np_udp_endpoint ep;
 struct np_timed_event ev;
 
+void sendCb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(0, "Received send callback with ec: %i", ec);
+}
+
+void mainRecvCb(const np_error_code ec, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));
+    exit(0);
+}
+
 void connected(const np_error_code ec, np_crypto_context* ctx, void* data)
 {
-//    struct test_context* text_ctx = (struct test_context*) data;
-    
+    NABTO_LOG_INFO(0, "CONNECTION ESTABLISHED!!");
+    pl.cryp.async_recv_from(&pl, ctx, &mainRecvCb, data);
+    pl.cryp.async_send_to(&pl, ctx, buffer, bufferSize, &sendCb, data);
 }
 
 void created(const np_error_code ec, void* data)
@@ -58,6 +70,7 @@ int main() {
     pl.conn.async_create(&pl, &data.conn, &ep, created, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
+        NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));
         nm_epoll_wait();
     }
 
