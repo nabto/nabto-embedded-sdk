@@ -33,22 +33,27 @@ void sendCb(const np_error_code ec, void* data)
 void mainRecvCb(const np_error_code ec, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));
-    exit(0);
+//    exit(0);
+}
+
+void echo(const np_error_code ec, void* data)
+{
+    np_crypto_context* ctx = (np_crypto_context*) data;
+    pl.cryp.async_send_to(&pl, ctx, buffer, bufferSize, &sendCb, data);
+    pl.cryp.async_recv_from(&pl, ctx, &mainRecvCb, data);
+    np_event_queue_post_timed_event(&pl, &ev, 1000, &echo, data);
 }
 
 void connected(const np_error_code ec, np_crypto_context* ctx, void* data)
 {
+    echo(ec, ctx);
     NABTO_LOG_INFO(0, "CONNECTION ESTABLISHED!!");
-    pl.cryp.async_recv_from(&pl, ctx, &mainRecvCb, data);
-    pl.cryp.async_send_to(&pl, ctx, buffer, bufferSize, &sendCb, data);
 }
 
 void created(const np_error_code ec, void* data)
 {
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-//    packet_sender(NABTO_EC_OK, ctx);
-//    ctx->connMod.async_recv_from(socket, &recv_callback, data);
     pl.cryp.async_connect(&pl, &ctx->conn, &connected, data);
 }
 
