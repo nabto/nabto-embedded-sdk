@@ -24,6 +24,17 @@ uint8_t buffer[] = "Hello world";
 uint16_t bufferSize = 12;
 struct np_udp_endpoint ep;
 struct np_timed_event ev;
+struct np_timed_event closeEv;
+
+void exitter(const np_error_code ec, void* data)
+{
+    exit(0);
+}
+
+void closeCb(const np_error_code ec, void* data)
+{
+    np_event_queue_post_timed_event(&pl, &closeEv, 1000, &exitter, NULL);
+}
 
 void sendCb(const np_error_code ec, void* data)
 {
@@ -32,8 +43,9 @@ void sendCb(const np_error_code ec, void* data)
 
 void mainRecvCb(const np_error_code ec, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
+    np_crypto_context* ctx = (np_crypto_context*) data;
     NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));
-//    exit(0);
+    pl.cryp.async_close(&pl, ctx, &closeCb, NULL);
 }
 
 void echo(const np_error_code ec, void* data)
