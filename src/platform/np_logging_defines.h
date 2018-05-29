@@ -3,11 +3,14 @@
 
 
 // Module definitions
-#define NABTO_LOG_MODULE_UDP                    1
-#define NABTO_LOG_MODULE_DNS                    2
-#define NABTO_LOG_MODULE_CRYPTO                 3
-#define NABTO_LOG_MODULE_EVENT_QUEUE            4
-#define NABTO_LOG_MODULE_CONNECTION             5
+#define NABTO_LOG_MODULE_NONE                   0x00000000ul
+#define NABTO_LOG_MODULE_ALL                    0xfffffffful
+#define NABTO_LOG_MODULE_UDP                    0x00000001ul
+#define NABTO_LOG_MODULE_DNS                    0x00000002ul
+#define NABTO_LOG_MODULE_CRYPTO                 0x00000004ul
+#define NABTO_LOG_MODULE_EVENT_QUEUE            0x00000008ul
+#define NABTO_LOG_MODULE_CONNECTION             0x00000010ul
+#define NABTO_LOG_MODULE_ATTACHER               0x00000020ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                 0x00000000ul

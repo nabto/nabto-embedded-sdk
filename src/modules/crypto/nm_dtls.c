@@ -79,8 +79,20 @@ static void my_debug( void *ctx, int level,
                       const char *str )
 {
     ((void) level);
-
-    NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO,"%s:%d %s", file, line,  str );
+    uint32_t severity;
+    switch (level) {
+        case 1:
+            severity = NABTO_LOG_SEVERITY_ERROR;
+            break;
+        case 2:
+            severity = NABTO_LOG_SEVERITY_INFO;
+            break;
+        default:
+            severity = NABTO_LOG_SEVERITY_TRACE;
+            break;
+    }
+    
+    NABTO_LOG_RAW(severity, NABTO_LOG_MODULE_CRYPTO, line, file, str );
 }
 
 /*
@@ -209,8 +221,7 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_crypto_context*
 
 void nm_dtls_event_close(void* data){
     np_crypto_context* ctx = (np_crypto_context*) data;
-    int ret;
-    ret = mbedtls_ssl_close_notify(&ctx->ssl);
+    mbedtls_ssl_close_notify(&ctx->ssl);
     mbedtls_x509_crt_free( &ctx->cacert );
     mbedtls_ssl_free( &ctx->ssl );
     mbedtls_ssl_config_free( &ctx->conf );
@@ -327,7 +338,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx)
     mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_debug_set_threshold( 1 );
+    mbedtls_debug_set_threshold( 0 );
     
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,

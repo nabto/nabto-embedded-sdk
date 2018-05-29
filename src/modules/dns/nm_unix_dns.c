@@ -28,10 +28,17 @@ void* resolver_thread(void* ctx) {
     struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
     
     struct addrinfo hints, *infoptr;
+    memset(&hints, 0, sizeof (struct addrinfo));
+    NABTO_LOG_TRACE(NABTO_LOG_MODULE_DNS, "Resolving host: %s", state->host);
+
     hints.ai_family = AF_UNSPEC;
     int res =  getaddrinfo(state->host, NULL, &hints, &infoptr);
-    if (res) {
-        NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Failed to get address info: (%i) '%s'", errno, strerror(errno));
+    if (res != 0) {
+        if (res == EAI_SYSTEM) {
+            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Failed to get address info: (%i) '%s'", errno, strerror(errno));
+        } else {
+            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Failed to get address info: (%i) '%s'", res, gai_strerror(res));
+        }
         state->ec = NABTO_EC_FAILED;
         state->resolver_is_running = false;
         return NULL;
@@ -43,12 +50,12 @@ void* resolver_thread(void* ctx) {
             break;
         }
         if (p->ai_family == AF_INET) {
-            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "found IPv4 address");
+            NABTO_LOG_TRACE(NABTO_LOG_MODULE_DNS, "found IPv4 address");
             state->ips[i].type = NABTO_IPV4;
             struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
             memcpy(state->ips[i].v4.addr, &addr->sin_addr, p->ai_addrlen);
         } else if (p->ai_family == AF_INET6) {
-            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "found IPv6 address");
+            NABTO_LOG_TRACE(NABTO_LOG_MODULE_DNS, "found IPv6 address");
             state->ips[i].type = NABTO_IPV6;
             struct sockaddr_in6* addr = (struct sockaddr_in6*)p->ai_addr;
             memcpy(state->ips[i].v6.addr, &addr->sin6_addr, p->ai_addrlen);
@@ -89,6 +96,7 @@ np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_
     ctx->host = host;
     ctx->cb = cb;
     ctx->pl = pl;
+    ctx->ec = NABTO_EC_OK;
     ctx->resolver_is_running = true;
 
     if (pthread_create(&thread, &attr, resolver_thread, ctx) != 0) {
