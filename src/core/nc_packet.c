@@ -39,7 +39,7 @@ uint8_t* init_packet_header(uint8_t* buf, enum application_data_type ad)
     return buf+5;
 }
 
-void insert_packet_extension(struct np_platform* pl, np_communication_buffer* buf, enum extension_type et, uint8_t* data, uint16_t dataLen)
+uint8_t* insert_packet_extension(struct np_platform* pl, np_communication_buffer* buf, enum extension_type et, uint8_t* data, uint16_t dataLen)
 {
     uint8_t* start = pl->buf.start(buf);
     uint16_t len = uint16_read(start+2);
@@ -53,4 +53,12 @@ void insert_packet_extension(struct np_platform* pl, np_communication_buffer* bu
     uint16_write(start+2, len);
     uint16_write(start+4, extLen);
     NABTO_LOG_TRACE(0, "len: %u, extLen: %u", len, extLen);
+    return ptr+dataLen;
+}
+
+uint8_t* writeUint16LengthData(uint8_t* buf, uint8_t* data, uint16_t size)
+{
+    uint16_write(buf, size);
+    memcpy(buf+2, data, size);
+    return buf+2+size;
 }

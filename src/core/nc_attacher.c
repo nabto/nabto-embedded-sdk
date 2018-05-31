@@ -20,22 +20,28 @@ struct attach_context {
     np_crypto_context* anDtls;
     np_communication_buffer* buffer;
     char dns[64]; // Hardcoded DNS length limit!!
+    uint8_t token[1024]; // TODO: How to store token ?
+    uint16_t tokenLen;
 };
 
 struct attach_context ctx;
 
 void dtls_an_send_cb(const np_error_code ec, void* data) {
-    NABTO_LOG_TRACE(ATT, "dtlsSendCb invoked");
+    NABTO_LOG_TRACE(ATT, "dtls_an_send_cb invoked");
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(ATT, "Failed to send attach device hello");
         // TODO: schedule this for later as to not spam, check why it failed, should the entire connection be reestablished?
 //        dtls_conn_cb(NABTO_EC_OK, ctx.adDtls, &ctx);
     }
 }
+
 void dtls_an_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
-    
+    NABTO_LOG_TRACE(ATT, "dtls_an_recv_cb invoked");
+    NABTO_LOG_BUF(ATT, ctx.pl->buf.start(buf), bufferSize);
+    ctx.cb(ec, ctx.cbData);
 }
+
 void dtls_an_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data)
 {
     if( ec != NABTO_EC_OK ) {
@@ -50,9 +56,9 @@ void dtls_an_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* d
     *(start+1) = ATTACH_DEVICE_HELLO;
     // TODO: only insert extensions which is supported
     insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
-    insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
-    // TODO: add the token 
-    
+    ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
+    ptr = writeUint16LengthData(ptr, ctx.token, ctx.tokenLen);
+    uint16_write_forward(start + 2, ptr-start-6);  
     len = uint16_read(start + 2);
     NABTO_LOG_BUF(ATT, start, len+6);
     ctx.pl->cryp.async_send_to(ctx.pl, ctx.anDtls, start, len+6, &dtls_an_send_cb, &ctx);
@@ -79,6 +85,10 @@ void an_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize
     memcpy(&ctx.anEp.ip, &rec[0], sizeof(struct np_ip_address));
     ctx.pl->conn.async_create(ctx.pl, &ctx.anConn, &ctx.anEp, &an_conn_created_cb, &ctx);
 }
+void dtls_closed_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(ATT, "dtls connection closed callback");
+}
 
 void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
@@ -100,8 +110,8 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
     NABTO_LOG_BUF(ATT, start, bufferSize);
     if (*(start+1) == ATTACH_DISPATCH_RESPONSE) {
         NABTO_LOG_TRACE(ATT, "ATTACH_DISPATCH_RESPONSE");
-        if (extensionLen < 4) {
-            NABTO_LOG_ERROR(ATT, "Received ATTACH_DISPATCH_RESPONSE without DNS extension");
+        if (extensionLen < 4 || packetLen <= extensionLen) {
+            NABTO_LOG_ERROR(ATT, "Received ATTACH_DISPATCH_RESPONSE either missing DNS extension or token");
             ctx.cb(NABTO_EC_FAILED, ctx.cbData);
             return;
         }
@@ -124,7 +134,10 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
             }
         }
         memcpy(ctx.dns, dns, dnsLen);
+        memcpy(ctx.token, token, tokenLen);
+        ctx.tokenLen = tokenLen;
         ctx.pl->dns.async_resolve(ctx.pl, ctx.dns, &an_dns_cb, &ctx);
+        ctx.pl->cryp.async_close(ctx.pl, ctx.adDtls, &dtls_closed_cb, &ctx);
         
     } else if (*(start+1) == ATTACH_DISPATCH_REDIRECT) {
         NABTO_LOG_TRACE(ATT, "ATTACH_DISPATCH_REDIRECT not currently implemented");
@@ -186,7 +199,9 @@ void dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, v
         ctx.cb(ec, ctx.cbData);
         return;
     }
+    // TODO: get attach_dispatcher_port from somewhere
     ctx.adEp.port = ATTACH_DISPATCHER_PORT;
+    // TODO: should there be a preference towards IPv4 or IPv6 instead of just taking rec[0]?
     memcpy(&ctx.adEp.ip, &rec[0], sizeof(struct np_ip_address));
     ctx.pl->conn.async_create(ctx.pl, &ctx.conn, &ctx.adEp, &conn_created_cb, &ctx);
 }
@@ -196,5 +211,6 @@ np_error_code async_attach(struct np_platform* pl, nc_attached_callback cb, void
     ctx.pl = pl;
     ctx.cb = cb;
     ctx.cbData = data;
+    // TODO: resolve a attach dispatcher host from somewhere
     return pl->dns.async_resolve(pl, "localhost", &dns_cb, &ctx);
 }
