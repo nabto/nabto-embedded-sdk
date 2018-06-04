@@ -22,9 +22,13 @@ struct test_context {
 struct np_platform pl;
 
 void attachedCb(const np_error_code ec, void* data) {
-    NABTO_LOG_INFO(0, "Received attached callback");
-
-    exit(0);
+    if (ec == NABTO_EC_OK) {
+        NABTO_LOG_INFO(0, "Received attached callback with NABTO_EC_OK");
+        exit(0);
+    } else {
+        NABTO_LOG_INFO(0, "Received attached callback with ERROR %u", ec);
+        exit(1);
+    }
 }
 
 

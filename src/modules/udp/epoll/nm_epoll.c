@@ -284,6 +284,8 @@ void nm_epoll_event_send_to(void* data){
     } else { // IPv6
         struct sockaddr_in6 srv_addr;
         srv_addr.sin6_family = AF_INET6;
+        srv_addr.sin6_flowinfo = 0;
+        srv_addr.sin6_scope_id = 0;
         srv_addr.sin6_port = htons (sock->sent.ep->port);
         memcpy((void*)&srv_addr.sin6_addr,sock->sent.ep->ip.v6.addr, sizeof(srv_addr.sin6_addr));
         res = sendto (sock->sock, sock->sent.buf, sock->sent.bufSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));

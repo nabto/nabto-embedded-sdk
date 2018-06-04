@@ -1,4 +1,4 @@
-
+#include "nabto_config.h"
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <modules/udp/epoll/nm_epoll.h>
@@ -50,6 +50,10 @@ void mainRecvCb(const np_error_code ec, np_communication_buffer* buffer, uint16_
 
 void echo(const np_error_code ec, void* data)
 {
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(0, "echo with FAILED status");
+        exit(1);
+    }
     np_crypto_context* ctx = (np_crypto_context*) data;
     pl.cryp.async_send_to(&pl, ctx, buffer, bufferSize, &sendCb, data);
     pl.cryp.async_recv_from(&pl, ctx, &mainRecvCb, data);
@@ -64,6 +68,10 @@ void connected(const np_error_code ec, np_crypto_context* ctx, void* data)
 
 void created(const np_error_code ec, void* data)
 {
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(0, "created callback with FAILED");
+        exit(1);
+    }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     pl.cryp.async_connect(&pl, &ctx->conn, &connected, data);

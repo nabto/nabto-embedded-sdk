@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 
+#define LOG NABTO_LOG_MODULE_DNS
+
 struct nm_unix_dns_ctx {
     struct np_event ev;
     const char* host;
@@ -29,15 +31,15 @@ void* resolver_thread(void* ctx) {
     
     struct addrinfo hints, *infoptr;
     memset(&hints, 0, sizeof (struct addrinfo));
-    NABTO_LOG_TRACE(NABTO_LOG_MODULE_DNS, "Resolving host: %s", state->host);
+    NABTO_LOG_TRACE(LOG, "Resolving host: %s", state->host);
 
     hints.ai_family = AF_UNSPEC;
     int res =  getaddrinfo(state->host, NULL, &hints, &infoptr);
     if (res != 0) {
         if (res == EAI_SYSTEM) {
-            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Failed to get address info: (%i) '%s'", errno, strerror(errno));
+            NABTO_LOG_ERROR(LOG, "Failed to get address info: (%i) '%s'", errno, strerror(errno));
         } else {
-            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Failed to get address info: (%i) '%s'", res, gai_strerror(res));
+            NABTO_LOG_ERROR(LOG, "Failed to get address info: (%i) '%s'", res, gai_strerror(res));
         }
         state->ec = NABTO_EC_FAILED;
         state->resolver_is_running = false;
@@ -45,29 +47,28 @@ void* resolver_thread(void* ctx) {
     }
     struct addrinfo *p = infoptr;
     int i = 0;
+    state->recSize = 0;
     for (i = 0; i < NP_DNS_RESOLVED_IPS_MAX; i++) {
         if (p == NULL) {
             break;
         }
         if (p->ai_family == AF_INET) {
-            NABTO_LOG_TRACE(NABTO_LOG_MODULE_DNS, "found IPv4 address");
+            NABTO_LOG_TRACE(LOG, "Found IPv4 address");
             state->ips[i].type = NABTO_IPV4;
+            state->recSize++;
             struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
-            memcpy(state->ips[i].v4.addr, &addr->sin_addr, p->ai_addrlen);
+            memcpy(state->ips[i].v4.addr, &addr->sin_addr, sizeof(addr->sin_addr));//p->ai_addrlen);
         } else if (p->ai_family == AF_INET6) {
-            NABTO_LOG_TRACE(NABTO_LOG_MODULE_DNS, "found IPv6 address");
+            NABTO_LOG_TRACE(LOG, "Found IPv6 address");
             state->ips[i].type = NABTO_IPV6;
+            state->recSize++;
             struct sockaddr_in6* addr = (struct sockaddr_in6*)p->ai_addr;
-            memcpy(state->ips[i].v6.addr, &addr->sin6_addr, p->ai_addrlen);
+            memcpy(state->ips[i].v6.addr, &addr->sin6_addr, sizeof(addr->sin6_addr));//p->ai_addrlen);
         } else {
-            NABTO_LOG_ERROR(NABTO_LOG_MODULE_DNS, "Resolved hostname was neither IPv4 or IPv6");
-            state->ec = NABTO_EC_FAILED;
-            state->resolver_is_running = false;
-            return NULL;
+            NABTO_LOG_ERROR(LOG, "Resolved hostname was neither IPv4 or IPv6");
         }
         p = p->ai_next;
     }
-    state->recSize = i;
     state->resolver_is_running = false;
     return NULL;
 }
@@ -81,15 +82,19 @@ np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_
 {
     pthread_t thread;
     pthread_attr_t attr;
+    struct nm_unix_dns_ctx* ctx;
     if (pthread_attr_init(&attr) !=0) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize pthread_attr");
         return NABTO_EC_FAILED;
     }
     if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0) {
+        NABTO_LOG_ERROR(LOG, "Failed to set detach state for pthread_attr");
         pthread_attr_destroy(&attr);
         return NABTO_EC_FAILED;
     }
-    struct nm_unix_dns_ctx* ctx = (struct nm_unix_dns_ctx*)malloc(sizeof(struct nm_unix_dns_ctx));
+    ctx = (struct nm_unix_dns_ctx*)malloc(sizeof(struct nm_unix_dns_ctx));
     if (!ctx) {
+        NABTO_LOG_ERROR(LOG, "Failed to allocate DNS context");
         return NABTO_EC_FAILED;
     }
     ctx->data = data;
@@ -100,6 +105,7 @@ np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_
     ctx->resolver_is_running = true;
 
     if (pthread_create(&thread, &attr, resolver_thread, ctx) != 0) {
+        NABTO_LOG_ERROR(LOG, "Failed to create pthread");
         pthread_attr_destroy(&attr);
         return NABTO_EC_FAILED;
     }

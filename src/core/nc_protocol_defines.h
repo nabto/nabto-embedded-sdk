@@ -1,3 +1,9 @@
+#ifndef _NC_PROTOCOL_DEFINES_H_
+#define _NC_PROTOCOL_DEFINES_H_
+
+#ifndef NABTO_PACKET_HEADER_SIZE
+#define NABTO_PACKET_HEADER_SIZE 6
+#endif
 
 enum application_data_type {
     ATTACH_DISPATCH = 1,
@@ -22,3 +28,5 @@ enum extension_type {
     UDP_IPV6_EP = 0x0003,
     SUPPORTED_VERSIONS = 0x0004
 };
+
+#endif // _NC_PROTOCOL_DEFINES_H_
