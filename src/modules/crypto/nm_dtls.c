@@ -230,6 +230,7 @@ void nm_dtls_event_close(void* data){
     np_crypto_close_callback cb = ctx->closeCb;
     void* cbData = ctx->closeData;
     free(ctx);
+    ctx = NULL;
     cb(NABTO_EC_OK, cbData);
 }
 
@@ -238,6 +239,7 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_crypto_context* ctx
 {
     ctx->closeCb = cb;
     ctx->closeData = data;
+    ctx->state = CLOSING;
     np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
     return NABTO_EC_OK;
 }
@@ -263,7 +265,14 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
 void nm_dtls_connection_send_callback(const np_error_code ec, void* data)
 {
     np_crypto_context* ctx = (np_crypto_context*) data;
+    if (data == NULL) {
+        return;
+    }
     ctx->sslSendBufferSize = 0;
+    if(ctx->state == CLOSING) {
+        return;
+    }
+    nm_dtls_event_do_one(data);
 }
 
 int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferSize)
@@ -338,7 +347,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx)
     mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_debug_set_threshold( 0 );
+    mbedtls_debug_set_threshold( 4 );
     
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,

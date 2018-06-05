@@ -13,7 +13,7 @@
 #define LOG NABTO_LOG_MODULE_DNS
 
 struct nm_unix_dns_ctx {
-    struct np_event ev;
+    struct np_timed_event ev;
     const char* host;
     size_t recSize;
     np_dns_resolve_callback cb;
@@ -24,7 +24,7 @@ struct nm_unix_dns_ctx {
     struct np_ip_address ips[NP_DNS_RESOLVED_IPS_MAX];
 };
 
-void nm_unix_dns_check_resolved(void* data);
+void nm_unix_dns_check_resolved(const np_error_code ec, void* data);
 
 void* resolver_thread(void* ctx) {
     struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
@@ -110,15 +110,15 @@ np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_
         return NABTO_EC_FAILED;
     }
     pthread_attr_destroy(&attr);
-    np_event_queue_post(pl, &ctx->ev, &nm_unix_dns_check_resolved, ctx);
+    np_event_queue_post_timed_event(pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, ctx);
     return NABTO_EC_OK;
 }
 
-void nm_unix_dns_check_resolved(void* data)
+void nm_unix_dns_check_resolved(const np_error_code ec, void* data)
 {
     struct nm_unix_dns_ctx* ctx = (struct nm_unix_dns_ctx*)data;
     if(ctx->resolver_is_running) {
-        np_event_queue_post(ctx->pl, &ctx->ev, &nm_unix_dns_check_resolved, data);
+        np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, data);
         return;
     } else {
         ctx->cb(ctx->ec, ctx->ips, ctx->recSize, ctx->data);
