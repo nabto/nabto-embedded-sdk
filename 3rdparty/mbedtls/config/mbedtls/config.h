@@ -44,7 +44,7 @@
 
 /* mbed TLS feature support */
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
-#define MBEDTLS_ECP_DP_SECP384R1_ENABLED
+//#define MBEDTLS_ECP_DP_SECP384R1_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
 #define MBEDTLS_SSL_PROTO_TLS1_2
 
@@ -60,13 +60,14 @@
 #define MBEDTLS_ECP_C
 #define MBEDTLS_ENTROPY_C
 #define MBEDTLS_GCM_C
+#define MBEDTLS_CCM_C
 #define MBEDTLS_MD_C
 #define MBEDTLS_NET_C
 #define MBEDTLS_OID_C
 #define MBEDTLS_PK_C
 #define MBEDTLS_PK_PARSE_C
 #define MBEDTLS_SHA256_C
-#define MBEDTLS_SHA512_C
+//#define MBEDTLS_SHA512_C
 #define MBEDTLS_SSL_CLI_C
 #define MBEDTLS_SSL_SRV_C
 #define MBEDTLS_SSL_COOKIE_C
@@ -88,7 +89,7 @@
 #define MBEDTLS_AES_ROM_TABLES
 
 /* Save RAM by adjusting to our exact needs */
-#define MBEDTLS_ECP_MAX_BITS   384
+#define MBEDTLS_ECP_MAX_BITS   256
 #define MBEDTLS_MPI_MAX_SIZE    48 // 384 bits is 48 bytes
 
 /* Save RAM at the expense of speed, see ecp.h */
@@ -107,8 +108,7 @@
 
 /* Save ROM and a few bytes of RAM by specifying our own ciphersuite list */
 #define MBEDTLS_SSL_CIPHERSUITES                        \
-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,    \
-    MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+  MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM
 
 /*
  * Save RAM at the expense of interoperability: do this only if you control

@@ -85,10 +85,7 @@ set(src_tls
     ${src_dir}/ssl_tls.c
 )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/config)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include)
-
 add_library(mbedtls "${src_tls}" "${src_x509}" "${src_crypto}")
 
-target_include_directories(mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include)
 target_include_directories(mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories(mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include)
