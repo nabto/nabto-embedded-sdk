@@ -1,4 +1,3 @@
-#include "nabto_config.h"
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <modules/udp/epoll/nm_epoll.h>
