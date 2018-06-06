@@ -11,6 +11,7 @@
 struct attach_context {
     struct np_platform* pl;
     nc_attached_callback cb;
+    np_udp_socket* sock;
     void* cbData;
     np_connection conn;
     np_connection anConn;
@@ -84,7 +85,7 @@ void an_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize
         return;
     }
     memcpy(&ctx.anEp.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx.pl->conn.async_create(ctx.pl, &ctx.anConn, &ctx.anEp, &an_conn_created_cb, &ctx);
+    ctx.pl->conn.async_create(ctx.pl, &ctx.anConn, ctx.sock, &ctx.anEp, &an_conn_created_cb, &ctx);
 }
 void dtls_closed_cb(const np_error_code ec, void* data)
 {
@@ -104,7 +105,7 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
 
     if (bufferSize < NABTO_PACKET_HEADER_SIZE || *start != ATTACH_DISPATCH) {
         NABTO_LOG_ERROR(LOG, "Received malformed attach response packet");
-        ctx.cb(NABTO_EC_FAILED, ctx.cbData);
+        ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
         return;
     }
     NABTO_LOG_TRACE(LOG, "dtlsRecvCb invoked with response:");
@@ -113,7 +114,7 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
         NABTO_LOG_TRACE(LOG, "ATTACH_DISPATCH_RESPONSE");
         if (extensionLen < 4 || packetLen <= extensionLen) {
             NABTO_LOG_ERROR(LOG, "Received ATTACH_DISPATCH_RESPONSE either missing DNS extension or token");
-            ctx.cb(NABTO_EC_FAILED, ctx.cbData);
+            ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
             return;
         }
         ptr = ptr + NABTO_PACKET_HEADER_SIZE; // skip header;
@@ -130,7 +131,7 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
             ptr = ptr + extLen + 4;
             if (ptr - start >= bufferSize) {
                 NABTO_LOG_ERROR(LOG, "Failed to find DNS extension in ATTACH_DISPATCH_RESPONSE");
-                ctx.cb(NABTO_EC_FAILED, ctx.cbData);
+                ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
                 return;
             }
         }
@@ -144,7 +145,7 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
         NABTO_LOG_TRACE(LOG, "ATTACH_DISPATCH_REDIRECT");
         if (extensionLen < 4) {
             NABTO_LOG_ERROR(LOG, "Received ATTACH_DISPATCH_REDIRECT missing DNS extension");
-            ctx.cb(NABTO_EC_FAILED, ctx.cbData);
+            ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
             return;
         }
         ptr = ptr + NABTO_PACKET_HEADER_SIZE; // skip header;
@@ -161,7 +162,7 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
             ptr = ptr + extLen + 4;
             if (ptr - start >= bufferSize) {
                 NABTO_LOG_ERROR(LOG, "Failed to find DNS extension in ATTACH_DISPATCH_RESPONSE");
-                ctx.cb(NABTO_EC_FAILED, ctx.cbData);
+                ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
                 return;
             }
         }
@@ -172,7 +173,7 @@ void dtls_ad_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint1
 
     } else {
         NABTO_LOG_ERROR(LOG, "Received ATTACH_DISPATCH packet with invalid content type");
-        ctx.cb(NABTO_EC_FAILED, ctx.cbData);
+        ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
         return;
     }
         
@@ -229,9 +230,18 @@ void dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, v
     }
     // TODO: get attach_dispatcher_port from somewhere
     ctx.adEp.port = ATTACH_DISPATCHER_PORT;
-    // TODO: should there be a preference towards IPv4 or IPv6 instead of just taking rec[0]?
+    // TODO: Pick a record which matches the supported protocol IPv4/IPv6 ?
+    for (int i = 0; i < recSize; i++) {
+    }
     memcpy(&ctx.adEp.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx.pl->conn.async_create(ctx.pl, &ctx.conn, &ctx.adEp, &conn_created_cb, &ctx);
+    ctx.pl->conn.async_create(ctx.pl, &ctx.conn, ctx.sock, &ctx.adEp, &conn_created_cb, &ctx);
+}
+
+void sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data)
+{
+    // TODO: resolve a attach dispatcher host from somewhere
+    ctx.sock = sock;
+    ctx.pl->dns.async_resolve(ctx.pl, ctx.dns, &dns_cb, &ctx);
 }
 
 np_error_code async_attach(struct np_platform* pl, nc_attached_callback cb, void* data)
@@ -240,6 +250,5 @@ np_error_code async_attach(struct np_platform* pl, nc_attached_callback cb, void
     ctx.cb = cb;
     ctx.cbData = data;
     memcpy(ctx.dns, "localhost", 10);
-    // TODO: resolve a attach dispatcher host from somewhere
-    return pl->dns.async_resolve(pl, ctx.dns, &dns_cb, &ctx);
+    pl->udp.async_create(&sock_created_cb, &ctx);
 }

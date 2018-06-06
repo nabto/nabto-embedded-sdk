@@ -187,7 +187,7 @@ void nm_dtls_event_send_to(void* data)
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) ctx->sendBuffer, ctx->sendBufferSize );
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // TODO packet too large
-        ctx->sendCb(NABTO_EC_FAILED, ctx->sendData);
+        ctx->sendCb(NABTO_EC_MALFORMED_PACKET, ctx->sendData);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         // TODO should not be possible.
         ctx->sendCb(NABTO_EC_FAILED, ctx->sendData);
@@ -347,7 +347,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx)
     mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_debug_set_threshold( 4 );
+    mbedtls_debug_set_threshold( 0 );
     
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,

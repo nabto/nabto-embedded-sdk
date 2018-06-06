@@ -17,6 +17,7 @@
 struct test_context {
     int data;
     struct np_connection conn;
+    np_udp_socket* sock;
 };
 struct np_platform pl;
 uint8_t buffer[] = "Hello world";
@@ -73,9 +74,15 @@ void created(const np_error_code ec, void* data)
     }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    pl.cryp.async_connect(&pl, &ctx->conn, &connected, data);
+    pl.cryp.async_connect(&pl, &ctx->conn, connected, data);
 }
 
+void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
+{
+    struct test_context* ctx = (struct test_context*)data;
+    ctx->sock = sock;
+    pl.conn.async_create(&pl, &ctx->conn, ctx->sock, &ep, created, data);
+}
 
 int main() {
     ep.port = 4433;
@@ -91,7 +98,7 @@ int main() {
     struct test_context data;
     data.data = 42;
     nc_connection_init(&pl);
-    pl.conn.async_create(&pl, &data.conn, &ep, created, &data);
+    pl.udp.async_create(sockCreatedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));

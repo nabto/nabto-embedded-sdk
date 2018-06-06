@@ -62,11 +62,21 @@ void nm_epoll_init(struct np_platform* pl_in) {
     pl->udp.async_bind_port = &nm_epoll_async_bind_port;
     pl->udp.async_send_to   = &nm_epoll_async_send_to;
     pl->udp.async_recv_from = &nm_epoll_async_recv_from;
+    pl->udp.get_protocol    = &nm_epoll_get_protocol;
     pl->udp.async_destroy   = &nm_epoll_async_destroy;
     nm_epoll_fd = epoll_create(42 /*unused*/);
     recv_buf = pl->buf.allocate();
     if (nm_epoll_fd == -1) {
         NABTO_LOG_FATAL(NABTO_LOG_MODULE_UDP, "Failed to create epoll socket: (%i) '%s'.", errno, strerror(errno));
+    }
+}
+
+enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket)
+{
+    if(socket->isIpv6) {
+        return NABTO_IPV6;
+    } else {
+        return NABTO_IPV4;
     }
 }
 

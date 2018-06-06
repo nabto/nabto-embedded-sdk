@@ -1,4 +1,5 @@
 #include "nc_connection.h"
+#include <platform/np_event_queue.h>
 #include <platform/np_logging.h>
 
 void nc_connection_init(struct np_platform* pl)
@@ -16,11 +17,12 @@ np_error_code nc_connection_cancel_async_recv(struct np_platform* pl, np_connect
     return NABTO_EC_OK;
 }
 
-void createdCb(const np_error_code ec, np_udp_socket* socket, void* data)
+//void createdCb(const np_error_code ec, np_udp_socket* socket, void* data)
+void createdCb(void* data)
 {
     np_connection* conn = (np_connection*)data;
-    conn->sock = socket;
-    conn->createCb(ec, conn->createData);
+//    conn->sock = socket;
+    conn->createCb(NABTO_EC_OK, conn->createData);
 }
 
 void sentCb(const np_error_code ec, void* data)
@@ -45,12 +47,15 @@ void destroyedCb(const np_error_code ec, void* data) {
     cb(ec, d);
 }
 
-void nc_connection_async_create(struct np_platform* pl, np_connection* conn, struct np_udp_endpoint* ep,  np_connection_created_callback cb, void* data)
+void nc_connection_async_create(struct np_platform* pl, np_connection* conn, np_udp_socket* sock, struct np_udp_endpoint* ep,  np_connection_created_callback cb, void* data)
 {
     conn->ep = *ep;
     conn->createCb = cb;
     conn->createData = data;
-    pl->udp.async_create(createdCb, conn);
+    conn->sock = sock;
+    // for now simply take the socket and schedule callback, later start connecting asyc
+    np_event_queue_post(pl, &conn->ev, createdCb, conn);
+//    pl->udp.async_create(createdCb, conn);
 }
 
 void nc_connection_async_send_to(struct np_platform* pl, np_connection* conn, uint8_t* buffer, uint16_t bufferSize, np_connection_sent_callback cb, void* data)

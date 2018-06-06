@@ -5,8 +5,6 @@
 #include <platform/np_communication_buffer.h>
 #include <platform/np_ip_address.h>
 
-//typedef struct np_udp_socket_ {
-//}
 typedef struct np_udp_socket np_udp_socket;
 
 typedef void (*np_udp_socket_created_callback)(const np_error_code ec, np_udp_socket* socket, void* data);
@@ -39,6 +37,11 @@ struct np_udp_module {
      */
     void (*async_recv_from)(np_udp_socket* socket, np_udp_packet_received_callback cb, void* data);
 
+    /**
+     * Get the IP protocol of the socket.
+     */
+    enum np_ip_address_type (*get_protocol)(np_udp_socket* socket);
+    
     /**
      * Destroy a socket. This will stop any outstanding send/receive operation.
      */
