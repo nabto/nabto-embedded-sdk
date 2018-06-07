@@ -19,7 +19,8 @@ enum attach_dispatch_content_type {
 
 enum attach_content_type {
     ATTACH_DEVICE_HELLO = 1,
-    ATTACH_SERVER_HELLO = 2
+    ATTACH_SERVER_HELLO = 2,
+    ATTACH_KEEP_ALIVE = 3
 };
 
 enum extension_type {

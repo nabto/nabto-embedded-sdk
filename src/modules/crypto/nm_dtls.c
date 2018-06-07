@@ -1,7 +1,6 @@
 #include "nm_dtls.h"
 #include <platform/np_logging.h>
 
-//#include <mbedtls/config.h>
 #include <mbedtls/debug.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/entropy.h>
@@ -33,8 +32,14 @@ struct np_crypto_context {
     void* connectData;
     np_crypto_send_to_callback sendCb;
     void* sendData;
-    np_crypto_received_callback recvCb;
-    void* recvData;
+    
+    np_crypto_received_callback recvAttachCb;
+    void* recvAttachData;
+    np_crypto_received_callback recvAttachDispatchCb;
+    void* recvAttachDispatchData;
+    np_crypto_received_callback recvRelayCb;
+    void* recvRelayData;
+    
     np_crypto_close_callback closeCb;
     void* closeData;
     uint8_t* sendBuffer;
@@ -114,16 +119,14 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
 {
     np_crypto_context* ctx = (np_crypto_context*)malloc(sizeof(np_crypto_context));
     np_error_code ec;
+    memset(ctx, 0, sizeof(np_crypto_context));
     ctx->conn = conn;
-    ctx->recvBufferSize = 0;
     ctx->pl = pl;
     ctx->state = CONNECTING;
     ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
     ctx->connectCb = cb;
     ctx->connectData = data;
-    ctx->sslSendBufferSize = 0;
     ctx->sslRecvBuf = pl->buf.allocate();
-    ctx->sslRecvBufSize = 0;
     ec = nm_dtls_setup_dtls_ctx(ctx);
     if(ec == NABTO_EC_OK) {
         np_event_queue_post(pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
@@ -167,7 +170,36 @@ void nm_dtls_event_do_one(void* data)
             NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Received data, invoking callback");
-            ctx->recvCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvData);
+            switch((enum application_data_type)ctx->pl->buf.start(ctx->sslRecvBuf)[0]) {
+                case ATTACH_DISPATCH:
+                    NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "Attach Dispatch packet");
+                    if(ctx->recvAttachDispatchCb) {
+                        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
+                        ctx->recvAttachDispatchCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvAttachDispatchData);
+                        ctx->recvAttachDispatchCb = NULL;
+                    }
+                    break;
+                case ATTACH:
+                    NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "Attach packet");
+                    if(ctx->recvAttachCb) {
+                        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
+                        ctx->recvAttachCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvAttachData);
+                        ctx->recvAttachCb = NULL;
+                    }
+                    break;
+                case RELAY:
+                    NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "Relay packet");
+                    if (ctx->recvRelayCb) {
+                        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
+                        ctx->recvRelayCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvRelayData);
+                        ctx->recvRelayCb = NULL;
+                    }
+                    break;
+                default:
+                    NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Received packet with unknown application data type");
+                    NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, ctx->pl->buf.start(ctx->sslRecvBuf), ret);
+                    break;
+            }
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
@@ -210,11 +242,26 @@ np_error_code nm_dtls_async_send_to(struct np_platform* pl, np_crypto_context* c
     return NABTO_EC_OK;
 }
 
-np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_crypto_context* ctx,
+np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_crypto_context* ctx, enum application_data_type type,
                                       np_crypto_received_callback cb, void* data)
 {
-    ctx->recvCb = cb;
-    ctx->recvData = data;
+    switch(type) {
+        case ATTACH:
+            ctx->recvAttachCb = cb;
+            ctx->recvAttachData = data;
+            break;
+        case ATTACH_DISPATCH:
+            ctx->recvAttachDispatchCb = cb;
+            ctx->recvAttachDispatchData = data;
+            break;
+        case RELAY:
+            ctx->recvRelayCb = cb;
+            ctx->recvRelayData = data;
+            break;
+        default:
+            NABTO_LOG_ERROR(NABTO_LOG_MODULE_CRYPTO, "Tried to register recv callback for unknown application data type");
+            return NABTO_EC_FAILED;
+    }
     np_event_queue_post(ctx->pl, &ctx->recvEv, &nm_dtls_event_do_one, ctx);
     return NABTO_EC_OK;
 }

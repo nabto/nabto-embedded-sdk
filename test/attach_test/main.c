@@ -24,7 +24,6 @@ struct np_platform pl;
 void attachedCb(const np_error_code ec, void* data) {
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(0, "Received attached callback with NABTO_EC_OK");
-        exit(0);
     } else {
         NABTO_LOG_INFO(0, "Received attached callback with ERROR %u", ec);
         exit(1);
@@ -45,7 +44,7 @@ int main() {
     np_log.log_buf = &nm_unix_log_buf;
     struct test_context data;
     data.data = 42;
-    async_attach(&pl, attachedCb, &data);
+    nc_attacher_async_attach(&pl, attachedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         nm_epoll_wait();

@@ -126,6 +126,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
         ep.port = ntohs(sa.sin_port);
     }
     if (sock->recv.cb) {
+        // TODO: make packet multiplexer and find the proper callback to use
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;
         NABTO_LOG_INFO(NABTO_LOG_MODULE_UDP, "received data, invoking callback");
@@ -326,6 +327,7 @@ void nm_epoll_async_send_to(np_udp_socket* socket, struct np_udp_endpoint* ep, u
 
 void nm_epoll_async_recv_from(np_udp_socket* socket, np_udp_packet_received_callback cb, void* data)
 {
+    // TODO: should register in a way that allows for multiplexing 
     socket->recv.cb = cb;
     socket->recv.data = data;
 //    np_event_queue_post(pl, ne, nm_epoll_event_recv_from, socket);

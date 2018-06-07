@@ -53,7 +53,7 @@ void nc_connection_async_create(struct np_platform* pl, np_connection* conn, np_
     conn->createCb = cb;
     conn->createData = data;
     conn->sock = sock;
-    // for now simply take the socket and schedule callback, later start connecting asyc
+    // TODO: for now simply take the socket and schedule callback, later start connecting asyc
     np_event_queue_post(pl, &conn->ev, createdCb, conn);
 //    pl->udp.async_create(createdCb, conn);
 }

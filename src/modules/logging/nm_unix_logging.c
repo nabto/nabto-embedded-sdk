@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <string.h>
 
+#define NM_UNIX_LOGGING_FILE_LENGTH 16
 
 void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, uint8_t* buf, size_t len){
     char str[64];
@@ -47,10 +48,10 @@ void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char*
         localtime_r(&sec, &tm);
 
         size_t fileLen = strlen(file);
-        char fileTmp[33];
-        if(fileLen > 32) {
+        char fileTmp[NM_UNIX_LOGGING_FILE_LENGTH+1];
+        if(fileLen > NM_UNIX_LOGGING_FILE_LENGTH) {
             strcpy(fileTmp, "...");
-            strcpy(fileTmp + 3, file + fileLen - 32);
+            strcpy(fileTmp + 3, file + fileLen - NM_UNIX_LOGGING_FILE_LENGTH);
         } else {
             strcpy(fileTmp, file);
         }

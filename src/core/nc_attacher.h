@@ -1,3 +1,5 @@
+#ifndef _NC_ATTACHER_H_
+#define _NC_ATTACHER_H_
 
 #include <platform/np_platform.h>
 
@@ -5,5 +7,11 @@
 
 typedef void (*nc_attached_callback)(const np_error_code ec, void* data);
 
-np_error_code async_attach(struct np_platform* pl, nc_attached_callback cb, void* data);
+// This should possibly use nc_attached_state instead of np_error_code
+typedef void (*nc_detached_callback)(const np_error_code ec, void* data);
 
+np_error_code nc_attacher_async_attach(struct np_platform* pl, nc_attached_callback cb, void* data);
+
+np_error_code nc_attacher_register_detatch_callback(nc_detached_callback cb, void* data);
+
+#endif //_NC_ATTACHER_H_
