@@ -35,24 +35,20 @@ uint8_t* init_packet_header(uint8_t* buf, enum application_data_type ad)
 {
     *buf = (uint8_t)ad;
     buf++;
-    memset(buf, 0, 5);
-    return buf+5;
+    memset(buf, 0, 3);
+    return buf+3;
 }
 
 uint8_t* insert_packet_extension(struct np_platform* pl, np_communication_buffer* buf, enum extension_type et, uint8_t* data, uint16_t dataLen)
 {
     uint8_t* start = pl->buf.start(buf);
-    uint16_t len = uint16_read(start+2);
-    uint16_t extLen = uint16_read(start+4);
-    uint8_t* ptr = start+6+len;
+    uint16_t extLen = uint16_read(start+2);
+    uint8_t* ptr = start+NABTO_PACKET_HEADER_SIZE+extLen;
     ptr = uint16_write_forward(ptr, et);
     ptr = uint16_write_forward(ptr, dataLen);
     memcpy(ptr, data, dataLen);
-    len = len + dataLen + 4;
     extLen = extLen + dataLen + 4;
-    uint16_write(start+2, len);
-    uint16_write(start+4, extLen);
-    NABTO_LOG_TRACE(0, "len: %u, extLen: %u", len, extLen);
+    uint16_write(start+2, extLen);
     return ptr+dataLen;
 }
 

@@ -39,6 +39,8 @@ struct np_crypto_context {
     void* recvAttachDispatchData;
     np_crypto_received_callback recvRelayCb;
     void* recvRelayData;
+    np_crypto_received_callback recvKeepAliveCb;
+    void* recvKeepAliveData;
     
     np_crypto_close_callback closeCb;
     void* closeData;
@@ -195,6 +197,14 @@ void nm_dtls_event_do_one(void* data)
                         ctx->recvRelayCb = NULL;
                     }
                     break;
+                case KEEP_ALIVE:
+                    NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "keep alive packet");
+                    if (ctx->recvKeepAliveCb) {
+                        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
+                        ctx->recvKeepAliveCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvKeepAliveData);
+                        ctx->recvKeepAliveCb = NULL;
+                    }
+                    break;
                 default:
                     NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Received packet with unknown application data type");
                     NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, ctx->pl->buf.start(ctx->sslRecvBuf), ret);
@@ -257,6 +267,10 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_crypto_context*
         case RELAY:
             ctx->recvRelayCb = cb;
             ctx->recvRelayData = data;
+            break;
+        case KEEP_ALIVE:
+            ctx->recvKeepAliveCb = cb;
+            ctx->recvKeepAliveData = data;
             break;
         default:
             NABTO_LOG_ERROR(NABTO_LOG_MODULE_CRYPTO, "Tried to register recv callback for unknown application data type");

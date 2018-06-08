@@ -16,7 +16,7 @@ struct nc_attach_context {
     void* detachData;
     np_udp_socket* sock;
     void* cbData;
-    np_connection conn;
+    np_connection adConn;
     np_connection anConn;
     struct np_udp_endpoint adEp;
     np_crypto_context* adDtls;
@@ -29,25 +29,49 @@ struct nc_attach_context {
 };
 
 struct nc_attach_context ctx;
-void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
-void nc_attacher_dtls_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
-void nc_attacher_dtls_an_send_cb(const np_error_code ec, void* data) {
-    NABTO_LOG_TRACE(LOG, "dtls_an_send_cb invoked");
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_TRACE(LOG, "Failed to send attach device hello");
-        ctx.cb(ec, ctx.cbData);
-        return;
-    }
-}
 
-np_error_code nc_attacher_register_detatch_callback(nc_detached_callback cb, void* data)
-{
-    ctx.detachCb = cb;
-    ctx.detachData = data;
-}
+/**
+ * Keep alive functions
+ */
+void nc_attacher_ka_cb(const np_error_code ec, void* data);
+void nc_attacher_ka_handle_event(const np_error_code ec, np_communication_buffer* buf,
+                                 uint16_t bufferSize, void* data);
 
-void nc_attacher_keep_alive_cb(const np_error_code ec, void* data)
+/**
+ * Attach node functions
+ */
+void nc_attacher_an_dtls_send_cb(const np_error_code ec, void* data);
+void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf,
+                                     uint16_t bufferSize, void* data);
+void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data);
+void nc_attacher_an_conn_created_cb(const np_error_code ec, void* data);
+void nc_attacher_an_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
+
+/**
+ * general packet dispatching
+ */
+void nc_attacher_dtls_recv_cb(const np_error_code ec, np_communication_buffer* buf,
+                              uint16_t bufferSize, void* data);
+
+/**
+ * Attach dispatcher functions
+ */
+void nc_attacher_ad_dtls_closed_cb(const np_error_code ec, void* data);
+void nc_attacher_ad_dtls_send_cb(const np_error_code ec, void* data);
+void nc_attacher_ad_handle_event(const np_error_code ec, np_communication_buffer* buf,
+                                 uint16_t bufferSize, void* data);
+void nc_attacher_ad_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data);
+void nc_attacher_ad_conn_created_cb(const np_error_code ec, void* data);
+void nc_attacher_ad_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
+
+/**
+ * create socket reused for both DTLS connections
+ */
+void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data);
+
+
+void nc_attacher_ka_cb(const np_error_code ec, void* data)
 {
     if(ctx.detachCb)
     {
@@ -55,89 +79,44 @@ void nc_attacher_keep_alive_cb(const np_error_code ec, void* data)
     }
 }
 
-void nc_attacher_handle_attach_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
+void nc_attacher_ka_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
-    NABTO_LOG_TRACE(LOG, "dtls_an_recv_cb invoked");
+    NABTO_LOG_TRACE(LOG, "KEEP_ALIVE packet received");
+    //nc_keep_alive_recv(ec, buf, bufferSize);
+}
+
+void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
+{
+    uint8_t type = ctx.pl->buf.start(buf)[1];
+    NABTO_LOG_TRACE(LOG, "ATTACH packet received");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
-    if (ctx.pl->buf.start(buf)[1] == ATTACH_SERVER_HELLO) {
+    if (type == ATTACH_SERVER_HELLO) {
         ctx.cb(ec, ctx.cbData);
-        if(ec == NABTO_EC_OK) {
-            nc_keep_alive_start(ctx.pl, ctx.anDtls, &nc_attacher_keep_alive_cb, &ctx);
-        }
-    } else if (ctx.pl->buf.start(buf)[1] == ATTACH_KEEP_ALIVE) {
-        nc_keep_alive_recv(ec, buf, bufferSize);
+    } else {
+        NABTO_LOG_ERROR(LOG, "unknown attach_content_type %u found ",type); 
     }
 }
 
-void nc_attacher_dtls_an_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data)
-{
-    if( ec != NABTO_EC_OK ) {
-        ctx.cb(ec, ctx.cbData);
-        return;
-    }
-    ctx.anDtls = crypCtx;
-    uint8_t* ptr = ctx.pl->buf.start(ctx.buffer);
-    uint8_t* start = ptr;
-    uint16_t len;
-    ptr = init_packet_header(ptr, ATTACH);
-    *(start+1) = ATTACH_DEVICE_HELLO;
-    // TODO: only insert extensions which are supported
-    insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
-    ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
-    ptr = writeUint16LengthData(ptr, ctx.token, ctx.tokenLen);
-    uint16_write_forward(start + 2, ptr-start-NABTO_PACKET_HEADER_SIZE);  
-    len = uint16_read(start + 2);
-    NABTO_LOG_BUF(LOG, start, len+NABTO_PACKET_HEADER_SIZE);
-    ctx.pl->cryp.async_send_to(ctx.pl, ctx.anDtls, start, len+NABTO_PACKET_HEADER_SIZE, &nc_attacher_dtls_an_send_cb, &ctx);
-    ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, ATTACH, &nc_attacher_dtls_recv_cb, &ctx);
-}
-
-void nc_attacher_an_conn_created_cb(const np_error_code ec, void* data)
-{
-    if( ec != NABTO_EC_OK ) {
-        ctx.cb(ec, ctx.cbData);
-        return;
-    }
-    ctx.pl->cryp.async_connect(ctx.pl, &ctx.anConn, &nc_attacher_dtls_an_conn_cb, &ctx);
-}
-
-void nc_attacher_an_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
-{
-    NABTO_LOG_INFO(LOG, "Attach node address resolved with status: %u", ec);
-    if (ec != NABTO_EC_OK || recSize == 0) {
-        NABTO_LOG_ERROR(LOG, "Failed to resolve attach node host");
-        ctx.cb(ec, ctx.cbData);
-        return;
-    }
-    memcpy(&ctx.anEp.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx.pl->conn.async_create(ctx.pl, &ctx.anConn, ctx.sock, &ctx.anEp, &nc_attacher_an_conn_created_cb, &ctx);
-}
-void nc_attacher_dtls_closed_cb(const np_error_code ec, void* data)
-{
-    NABTO_LOG_INFO(LOG, "dtls connection closed callback");
-}
-
-void nc_attacher_handle_ad_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
+void nc_attacher_ad_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     uint8_t* start = ctx.pl->buf.start(buf);
     uint8_t* ptr = start;
     uint8_t* dns;
     uint16_t dnsLen;
-    uint16_t extensionLen = uint16_read(start+4);
-    uint16_t packetLen = uint16_read(start+2);
+    uint16_t extensionLen = uint16_read(start+2);
     uint8_t* token = start + NABTO_PACKET_HEADER_SIZE + extensionLen + 2;
     uint16_t tokenLen = uint16_read(start + NABTO_PACKET_HEADER_SIZE + extensionLen);
 
     if (bufferSize < NABTO_PACKET_HEADER_SIZE || *start != ATTACH_DISPATCH) {
-        NABTO_LOG_ERROR(LOG, "Received malformed attach response packet");
+        NABTO_LOG_ERROR(LOG, "Received malformed ATTACH_DISPATCH response packet");
         ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
         return;
     }
-    NABTO_LOG_TRACE(LOG, "dtlsRecvCb invoked with response:");
+    NABTO_LOG_TRACE(LOG, "ATTACH_DISPATCH packet received");
     NABTO_LOG_BUF(LOG, start, bufferSize);
     if (*(start+1) == ATTACH_DISPATCH_RESPONSE) {
         NABTO_LOG_TRACE(LOG, "ATTACH_DISPATCH_RESPONSE");
-        if (extensionLen < 4 || packetLen <= extensionLen) {
+        if (extensionLen < 4 || bufferSize <= extensionLen + NABTO_PACKET_HEADER_SIZE) {
             NABTO_LOG_ERROR(LOG, "Received ATTACH_DISPATCH_RESPONSE either missing DNS extension or token");
             ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
             return;
@@ -161,10 +140,13 @@ void nc_attacher_handle_ad_event(const np_error_code ec, np_communication_buffer
             }
         }
         memcpy(ctx.dns, dns, dnsLen);
+        ctx.dns[dnsLen] = '\0';
         memcpy(ctx.token, token, tokenLen);
         ctx.tokenLen = tokenLen;
+        NABTO_LOG_TRACE(LOG, "dns: %s", ctx.dns);
+        NABTO_LOG_BUF(LOG, ctx.token, tokenLen);
         ctx.pl->dns.async_resolve(ctx.pl, ctx.dns, &nc_attacher_an_dns_cb, &ctx);
-        ctx.pl->cryp.async_close(ctx.pl, ctx.adDtls, &nc_attacher_dtls_closed_cb, &ctx);
+        ctx.pl->cryp.async_close(ctx.pl, ctx.adDtls, &nc_attacher_ad_dtls_closed_cb, &ctx);
         
     } else if (*(start+1) == ATTACH_DISPATCH_REDIRECT) {
         NABTO_LOG_TRACE(LOG, "ATTACH_DISPATCH_REDIRECT");
@@ -192,7 +174,7 @@ void nc_attacher_handle_ad_event(const np_error_code ec, np_communication_buffer
             }
         }
         memcpy(ctx.dns, dns, dnsLen);
-        ctx.pl->dns.async_resolve(ctx.pl, ctx.dns, &nc_attacher_dns_cb, &ctx);
+        ctx.pl->dns.async_resolve(ctx.pl, ctx.dns, &nc_attacher_ad_dns_cb, &ctx);
         
         return;
 
@@ -204,16 +186,49 @@ void nc_attacher_handle_ad_event(const np_error_code ec, np_communication_buffer
         
 }
 
-void nc_attacher_dtls_ad_send_cb(const np_error_code ec, void* data) {
-    NABTO_LOG_TRACE(LOG, "dtlsSendCb invoked");
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_TRACE(LOG, "Failed to send attach dispatcher request");
+void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data)
+{
+    if( ec != NABTO_EC_OK ) {
         ctx.cb(ec, ctx.cbData);
         return;
     }
+    ctx.anDtls = crypCtx;
+    uint8_t* ptr = ctx.pl->buf.start(ctx.buffer);
+    uint8_t* start = ptr;
+    ptr = init_packet_header(ptr, ATTACH);
+    *(start+1) = ATTACH_DEVICE_HELLO;
+    // TODO: only insert extensions which are supported
+    ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
+    ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
+    ptr = writeUint16LengthData(ptr, ctx.token, ctx.tokenLen);
+    NABTO_LOG_BUF(LOG, start, ptr - start);
+    ctx.pl->cryp.async_send_to(ctx.pl, ctx.anDtls, start, ptr - start, &nc_attacher_an_dtls_send_cb, &ctx);
+    ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, ATTACH, &nc_attacher_dtls_recv_cb, &ctx);
+    ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
 }
 
-void nc_attacher_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data)
+void nc_attacher_an_conn_created_cb(const np_error_code ec, void* data)
+{
+    if( ec != NABTO_EC_OK ) {
+        ctx.cb(ec, ctx.cbData);
+        return;
+    }
+    ctx.pl->cryp.async_connect(ctx.pl, &ctx.anConn, &nc_attacher_an_dtls_conn_cb, &ctx);
+}
+
+void nc_attacher_an_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
+{
+    NABTO_LOG_INFO(LOG, "Attach node address resolved with status: %u", ec);
+    if (ec != NABTO_EC_OK || recSize == 0) {
+        NABTO_LOG_ERROR(LOG, "Failed to resolve attach node host");
+        ctx.cb(ec, ctx.cbData);
+        return;
+    }
+    memcpy(&ctx.anEp.ip, &rec[0], sizeof(struct np_ip_address));
+    ctx.pl->conn.async_create(ctx.pl, &ctx.anConn, ctx.sock, &ctx.anEp, &nc_attacher_an_conn_created_cb, &ctx);
+}
+
+void nc_attacher_ad_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data)
 {
     uint8_t* ptr;
     uint8_t* start;
@@ -229,42 +244,23 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx
     ptr = init_packet_header(ptr, ATTACH_DISPATCH);
     *(start+1) = ATTACH_DISPATCH_REQUEST;
     // TODO: only insert extensions which is supported
-    insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
-    insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
-    len = uint16_read(start + 2);
-    NABTO_LOG_BUF(LOG, start, len+NABTO_PACKET_HEADER_SIZE);
-    ctx.pl->cryp.async_send_to(ctx.pl, ctx.adDtls, start, len+NABTO_PACKET_HEADER_SIZE, &nc_attacher_dtls_ad_send_cb, &ctx);
+    ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
+    ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
+    NABTO_LOG_BUF(LOG, start, ptr - start);
+    ctx.pl->cryp.async_send_to(ctx.pl, ctx.adDtls, start, ptr - start, &nc_attacher_ad_dtls_send_cb, &ctx);
     ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, ATTACH_DISPATCH, &nc_attacher_dtls_recv_cb, &ctx);
 }
 
-void nc_attacher_dtls_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
-{
-    uint8_t* start = ctx.pl->buf.start(buf);
-    switch ((enum application_data_type)start[0]) {
-        case ATTACH:
-            nc_attacher_handle_attach_event(ec, buf, bufferSize, data);
-            ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, ATTACH, &nc_attacher_dtls_recv_cb, &ctx);
-            return;
-        case ATTACH_DISPATCH:
-            nc_attacher_handle_ad_event(ec, buf, bufferSize, data);
-            ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, ATTACH_DISPATCH, &nc_attacher_dtls_recv_cb, &ctx);
-            return;
-        default:
-            NABTO_LOG_ERROR(LOG, "Attacher received a packet which was neither ATTACH or ATTACH_DISPATCH");
-            return;
-    }
-}
-
-void nc_attacher_conn_created_cb(const np_error_code ec, void* data)
+void nc_attacher_ad_conn_created_cb(const np_error_code ec, void* data)
 {
     if( ec != NABTO_EC_OK ) {
         ctx.cb(ec, ctx.cbData);
         return;
     }
-    ctx.pl->cryp.async_connect(ctx.pl, &ctx.conn, &nc_attacher_dtls_conn_cb, &ctx);
+    ctx.pl->cryp.async_connect(ctx.pl, &ctx.adConn, &nc_attacher_ad_dtls_conn_cb, &ctx);
 }
 
-void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
+void nc_attacher_ad_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
 {
     if (ec != NABTO_EC_OK || recSize == 0) {
         NABTO_LOG_ERROR(LOG, "Failed to resolve attach dispatcher host");
@@ -277,21 +273,82 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
     for (int i = 0; i < recSize; i++) {
     }
     memcpy(&ctx.adEp.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx.pl->conn.async_create(ctx.pl, &ctx.conn, ctx.sock, &ctx.adEp, &nc_attacher_conn_created_cb, &ctx);
+    ctx.pl->conn.async_create(ctx.pl, &ctx.adConn, ctx.sock, &ctx.adEp, &nc_attacher_ad_conn_created_cb, &ctx);
 }
 
 void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data)
 {
-    // TODO: resolve a attach dispatcher host from somewhere
     ctx.sock = sock;
-    ctx.pl->dns.async_resolve(ctx.pl, ctx.dns, &nc_attacher_dns_cb, &ctx);
+    ctx.pl->dns.async_resolve(ctx.pl, ctx.dns, &nc_attacher_ad_dns_cb, &ctx);
 }
 
+/**
+ * Dispatching function for incoming packets
+ */
+void nc_attacher_dtls_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
+{
+    uint8_t* start = ctx.pl->buf.start(buf);
+    switch ((enum application_data_type)start[0]) {
+        case ATTACH:
+            nc_attacher_an_handle_event(ec, buf, bufferSize, data);
+            ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, ATTACH, &nc_attacher_dtls_recv_cb, &ctx);
+            return;
+        case ATTACH_DISPATCH:
+            nc_attacher_ad_handle_event(ec, buf, bufferSize, data);
+            ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, ATTACH_DISPATCH, &nc_attacher_dtls_recv_cb, &ctx);
+            return;
+        case KEEP_ALIVE:
+            nc_attacher_ka_handle_event(ec, buf, bufferSize, data);
+            ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
+            return;
+        default:
+            NABTO_LOG_ERROR(LOG, "Attacher received a packet which was neither ATTACH or ATTACH_DISPATCH");
+            return;
+    }
+}
+
+/** 
+ * API functions
+ */
 np_error_code nc_attacher_async_attach(struct np_platform* pl, nc_attached_callback cb, void* data)
 {
     ctx.pl = pl;
     ctx.cb = cb;
     ctx.cbData = data;
+    // TODO: resolve a attach dispatcher host from somewhere
     memcpy(ctx.dns, "localhost", 10);
     pl->udp.async_create(&nc_attacher_sock_created_cb, &ctx);
 }
+
+np_error_code nc_attacher_register_detatch_callback(nc_detached_callback cb, void* data)
+{
+    ctx.detachCb = cb;
+    ctx.detachData = data;
+}
+
+/**
+ * Callback functions only used for error handling
+ */
+void nc_attacher_an_dtls_send_cb(const np_error_code ec, void* data) {
+    NABTO_LOG_TRACE(LOG, "an_dtls_send_cb invoked");
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_TRACE(LOG, "Failed to send attach device hello");
+        ctx.cb(ec, ctx.cbData);
+        return;
+    }
+}
+
+void nc_attacher_ad_dtls_closed_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(LOG, "dtls connection closed callback");
+}
+
+void nc_attacher_ad_dtls_send_cb(const np_error_code ec, void* data) {
+    NABTO_LOG_TRACE(LOG, "dtlsSendCb invoked");
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_TRACE(LOG, "Failed to send attach dispatcher request");
+        ctx.cb(ec, ctx.cbData);
+        return;
+    }
+}
+
