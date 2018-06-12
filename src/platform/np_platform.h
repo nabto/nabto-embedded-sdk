@@ -7,11 +7,13 @@
  */
 
 #include <platform/np_timestamp.h>
-#include <platform/np_udp.h>
 #include <platform/np_event_queue.h>
+#include <platform/np_udp.h>
 #include <platform/np_communication_buffer.h>
 #include <platform/np_dns.h>
 #include <platform/np_crypto.h>
+#include <platform/np_connection.h>
+#include <platform/np_client_connect.h>
 
 struct np_platform {
     // Timestamp module
@@ -34,6 +36,9 @@ struct np_platform {
 
     // connection module
     struct np_connection_module conn;
+
+    // client connect module
+    struct np_client_connect_module clientConn;
 };
 
 /**

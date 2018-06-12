@@ -1,9 +1,15 @@
-#ifndef _NC_PROTOCOL_DEFINES_H_
-#define _NC_PROTOCOL_DEFINES_H_
+#ifndef NC_PROTOCOL_DEFINES_H
+#define NC_PROTOCOL_DEFINES_H
 
 #ifndef NABTO_PACKET_HEADER_SIZE
 #define NABTO_PACKET_HEADER_SIZE 4
 #endif
+
+enum np_channel_type {
+    NABTO_CHANNEL_DTLS = 1,
+    NABTO_CHANNEL_STUN = 2,
+    NABTO_CHANNEL_APP = 3
+};
 
 enum application_data_type {
     ATTACH_DISPATCH = 1,

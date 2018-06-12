@@ -6,6 +6,7 @@
 #include <modules/timestamp/nm_unix_timestamp.h>
 #include <modules/crypto/nm_dtls.h>
 #include <platform/np_ip_address.h>
+#include <platform/np_connection.h>
 #include <core/nc_connection.h>
 
 #include <stdio.h>
@@ -18,6 +19,8 @@ struct test_context {
     int data;
     struct np_connection conn;
     np_udp_socket* sock;
+    struct np_connection_channel channel;
+    uint8_t id[16];
 };
 struct np_platform pl;
 uint8_t buffer[] = "Hello world";
@@ -66,7 +69,7 @@ void connected(const np_error_code ec, np_crypto_context* ctx, void* data)
     NABTO_LOG_INFO(0, "CONNECTION ESTABLISHED!!");
 }
 
-void created(const np_error_code ec, void* data)
+void created(const np_error_code ec, uint8_t channelId, void* data)
 {
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(0, "created callback with FAILED");
@@ -81,7 +84,11 @@ void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 {
     struct test_context* ctx = (struct test_context*)data;
     ctx->sock = sock;
-    pl.conn.async_create(&pl, &ctx->conn, ctx->sock, &ep, created, data);
+    ctx->channel.type = NABTO_CHANNEL_DTLS;
+    ctx->channel.sock = sock;
+    ctx->channel.ep = ep;
+    ctx->channel.channelId = 0;
+    pl.conn.async_create(&pl, &ctx->conn, &ctx->channel, NULL, created, data);
 }
 
 int main() {

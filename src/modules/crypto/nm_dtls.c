@@ -57,11 +57,12 @@ struct np_crypto_context {
     size_t recvBufferSize;
     np_communication_buffer* sslRecvBuf;
     size_t sslRecvBufSize;
-    uint8_t sslSendBuffer[4096];
+    np_communication_buffer* sslSendBuffer;
     size_t sslSendBufferSize;
     enum sslState state;
     np_timestamp intermediateTp;
     np_timestamp finalTp;
+    uint8_t currentChannelId;
 };
 
 // Function called by mbedtls when data should be sent to the network
@@ -76,7 +77,8 @@ int nm_dtls_mbedtls_timing_get_delay(void* ctx);
 void nm_dtls_event_do_one(void* data);
 // callback function called by the connection module when data is ready from the network
 void nm_dtls_connection_received_callback(const np_error_code ec, struct np_connection* conn,
-                                          np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+                                          uint8_t channelId,  np_communication_buffer* buffer,
+                                          uint16_t bufferSize, void* data);
 // setup function for the mbedtls context
 np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx);
 
@@ -129,6 +131,7 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
     ctx->connectCb = cb;
     ctx->connectData = data;
     ctx->sslRecvBuf = pl->buf.allocate();
+    ctx->sslSendBuffer = pl->buf.allocate();
     ec = nm_dtls_setup_dtls_ctx(ctx);
     if(ec == NABTO_EC_OK) {
         np_event_queue_post(pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
@@ -306,7 +309,8 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_crypto_context* ctx
 }
 
 void nm_dtls_connection_received_callback(const np_error_code ec, struct np_connection* conn,
-                                          np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+                                          uint8_t channelId, np_communication_buffer* buffer,
+                                          uint16_t bufferSize, void* data)
 {
     if ( data == NULL) {
         return;
@@ -314,12 +318,13 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
     NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "connection data received callback");
     if (ec == NABTO_EC_OK) {
         np_crypto_context* ctx = (np_crypto_context*) data;
+        ctx->currentChannelId = channelId;
         memcpy(ctx->recvBuffer, ctx->pl->buf.start(buffer), bufferSize);
         ctx->recvBufferSize = bufferSize;
         ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
         np_event_queue_post(ctx->pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
     } else {
-        // how to handle connection errors?
+        // TODO: how to handle connection errors?
     }
 }
 
@@ -340,9 +345,9 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 {
     np_crypto_context* ctx = (np_crypto_context*) data;
     if (ctx->sslSendBufferSize == 0) {
-        memcpy(ctx->sslSendBuffer, buffer, bufferSize);
+        memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
         ctx->sslSendBufferSize = bufferSize;
-        ctx->pl->conn.async_send_to(ctx->pl, ctx->conn, ctx->sslSendBuffer, bufferSize, &nm_dtls_connection_send_callback, ctx);
+        ctx->pl->conn.async_send_to(ctx->pl, ctx->conn, ctx->currentChannelId, ctx->sslSendBuffer, bufferSize, &nm_dtls_connection_send_callback, ctx);
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;

@@ -1,5 +1,5 @@
-#ifndef _NC_ATTACHER_H_
-#define _NC_ATTACHER_H_
+#ifndef NC_ATTACHER_H
+#define NC_ATTACHER_H
 
 #include <platform/np_platform.h>
 
@@ -14,4 +14,4 @@ np_error_code nc_attacher_async_attach(struct np_platform* pl, nc_attached_callb
 
 np_error_code nc_attacher_register_detatch_callback(nc_detached_callback cb, void* data);
 
-#endif //_NC_ATTACHER_H_
+#endif //NC_ATTACHER_H

@@ -18,7 +18,8 @@ struct test_context {
     int data;
 };
 struct np_platform pl;
-uint8_t buffer[] = "Hello world";
+char string[] = "Hello world";
+np_communication_buffer* buffer;
 uint16_t bufferSize = 12;
 struct np_udp_endpoint ep;
 struct np_timed_event ev;
@@ -40,7 +41,7 @@ void recv_callback(const np_error_code ec, struct np_udp_endpoint ep, np_communi
 {
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Received: %s, with error code: %i", pl.buf.start(buffer), ec);
-    pl.udp.async_recv_from(ctx->sock, &recv_callback, data);
+    pl.udp.async_recv_from(ctx->sock, NABTO_CHANNEL_DTLS, &recv_callback, data);
 }
 
 void created(const np_error_code ec, np_udp_socket* socket, void* data)
@@ -49,7 +50,7 @@ void created(const np_error_code ec, np_udp_socket* socket, void* data)
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     ctx->sock = socket;
     packet_sender(NABTO_EC_OK, ctx);
-    pl.udp.async_recv_from(socket, &recv_callback, data);
+    pl.udp.async_recv_from(socket, NABTO_CHANNEL_DTLS, &recv_callback, data);
 }
 
 void destroyed(const np_error_code ec, void* data) {
@@ -84,6 +85,8 @@ int main() {
     np_log.log = &nm_unix_log;
     struct test_context data;
     data.data = 42;
+    pl.buf.allocate(buffer);
+    memcpy(pl.buf.start(buffer), string, strlen(string));
     pl.udp.async_create(created, &data);
     pl.dns.async_resolve(&pl, "www.google.com", &dns_resolved, &data);
     while (true) {

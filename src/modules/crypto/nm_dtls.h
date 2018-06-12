@@ -1,5 +1,5 @@
-#ifndef _NM_DTLS_H_
-#define _NM_DTLS_H_
+#ifndef NM_DTLS_H
+#define NM_DTLS_H
 
 #include <platform/np_platform.h>
 #include <platform/np_crypto.h>
@@ -12,4 +12,4 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_crypto_context*
 np_error_code nm_dtls_async_close(struct np_platform* pl, np_crypto_context* ctx, np_crypto_close_callback cb, void* data);
 
 
-#endif // _NM_DTLS_H_
+#endif // NM_DTLS_H

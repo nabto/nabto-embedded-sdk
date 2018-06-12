@@ -27,11 +27,6 @@ struct np_ip_address {
     };
 };
 
-struct np_udp_endpoint {
-    struct np_ip_address ip;
-    uint16_t port;
-};
-
 bool np_ip_is_v4(struct np_ip_address* ip);
 
 bool np_ip_is_v6(struct np_ip_address* ip);

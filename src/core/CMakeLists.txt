@@ -5,6 +5,7 @@ set(src
   ${src_dir}/nc_attacher.c
   ${src_dir}/nc_packet.c
   ${src_dir}/nc_keep_alive.c
+  ${src_dir}/nc_client_connect.c
   )
 
 
