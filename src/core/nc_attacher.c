@@ -27,17 +27,12 @@ struct nc_attach_context {
     struct np_connection_id id;
     struct np_connection_channel anChannel;
     struct np_connection_channel adChannel;
+    struct keep_alive_context kactx;
 };
 
 struct nc_attach_context ctx;
 
-
-/**
- * Keep alive functions
- */
-void nc_attacher_ka_cb(const np_error_code ec, void* data);
-void nc_attacher_ka_handle_event(const np_error_code ec, np_communication_buffer* buf,
-                                 uint16_t bufferSize, void* data);
+// TODO: Handle error codes in all callback functions!!
 
 /**
  * Attach node functions
@@ -52,8 +47,8 @@ void nc_attacher_an_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
 /**
  * general packet dispatching
  */
-void nc_attacher_dtls_recv_cb(const np_error_code ec, np_communication_buffer* buf,
-                              uint16_t bufferSize, void* data);
+void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                              np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
 /**
  * Attach dispatcher functions
@@ -71,20 +66,6 @@ void nc_attacher_ad_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
  */
 void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data);
 
-
-void nc_attacher_ka_cb(const np_error_code ec, void* data)
-{
-    if(ctx.detachCb)
-    {
-        ctx.detachCb(ec, ctx.detachData);
-    }
-}
-
-void nc_attacher_ka_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
-{
-    NABTO_LOG_TRACE(LOG, "KEEP_ALIVE packet received");
-    //nc_keep_alive_recv(ec, buf, bufferSize);
-}
 
 void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
@@ -186,6 +167,10 @@ void nc_attacher_ad_handle_event(const np_error_code ec, np_communication_buffer
     }
         
 }
+void nc_attacher_ka_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(LOG,"Attacher received keep alive callback with error code: %u", ec);
+}
 
 void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data)
 {
@@ -205,7 +190,8 @@ void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_crypto_context* cryp
     NABTO_LOG_BUF(LOG, start, ptr - start);
     ctx.pl->cryp.async_send_to(ctx.pl, ctx.anDtls, start, ptr - start, &nc_attacher_an_dtls_send_cb, &ctx);
     ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, ATTACH, &nc_attacher_dtls_recv_cb, &ctx);
-    ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
+    nc_keep_alive_init(ctx.pl, &ctx.kactx, ctx.anDtls, &nc_attacher_ka_cb, &ctx);
+//    ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
 }
 
 void nc_attacher_an_conn_created_cb(const np_error_code ec, uint8_t channelId, void* data)
@@ -290,7 +276,8 @@ void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, vo
 /**
  * Dispatching function for incoming packets
  */
-void nc_attacher_dtls_recv_cb(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
+void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                              np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     uint8_t* start = ctx.pl->buf.start(buf);
     switch ((enum application_data_type)start[0]) {
@@ -301,10 +288,6 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, np_communication_buffer* b
         case ATTACH_DISPATCH:
             nc_attacher_ad_handle_event(ec, buf, bufferSize, data);
             ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, ATTACH_DISPATCH, &nc_attacher_dtls_recv_cb, &ctx);
-            return;
-        case KEEP_ALIVE:
-            nc_attacher_ka_handle_event(ec, buf, bufferSize, data);
-            ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
             return;
         default:
             NABTO_LOG_ERROR(LOG, "Attacher received a packet which was neither ATTACH or ATTACH_DISPATCH");

@@ -44,7 +44,7 @@ void sendCb(const np_error_code ec, void* data)
     NABTO_LOG_INFO(0, "Received send callback with ec: %i", ec);
 }
 
-void mainRecvCb(const np_error_code ec, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+void mainRecvCb(const np_error_code ec, uint8_t channelId, uint64_t sequence, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     np_crypto_context* ctx = (np_crypto_context*) data;
     NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));

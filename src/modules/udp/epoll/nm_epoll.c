@@ -334,7 +334,6 @@ void nm_epoll_event_send_to(void* data){
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (sock->sent.ep->port);
-//        srv_addr.sin_addr = sock->sent.ep->ip.v4.addr;
         memcpy((void*)&srv_addr.sin_addr,sock->sent.ep->ip.v4.addr, sizeof(srv_addr.sin_addr));
         res = sendto (sock->sock, pl->buf.start(sock->sent.buf), sock->sent.bufSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6

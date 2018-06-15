@@ -82,6 +82,29 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
 // setup function for the mbedtls context
 np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx);
 
+// cancel recv_from callbacks
+np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_crypto_context* ctx,
+                                       enum application_data_type type)
+{
+    switch (type) {
+        case ATTACH_DISPATCH:
+            ctx->recvAttachDispatchCb = NULL;
+            break;
+        case ATTACH:
+            ctx->recvAttachCb = NULL;
+            break;
+        case RELAY:
+            ctx->recvRelayCb = NULL;
+            break;
+        case KEEP_ALIVE:
+            ctx->recvKeepAliveCb = NULL;
+            break;
+        default:
+            return NABTO_EC_INVALID_PACKET_TYPE;
+    }
+    return NABTO_EC_OK;
+}
+
 // Printing function used by mbedtls for logging
 static void my_debug( void *ctx, int level,
                       const char *file, int line,
@@ -175,12 +198,13 @@ void nm_dtls_event_do_one(void* data)
             NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Received data, invoking callback");
+            uint64_t seq = *((uint64_t*)ctx->ssl.in_ctr);
             switch((enum application_data_type)ctx->pl->buf.start(ctx->sslRecvBuf)[0]) {
                 case ATTACH_DISPATCH:
                     NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "Attach Dispatch packet");
                     if(ctx->recvAttachDispatchCb) {
                         NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
-                        ctx->recvAttachDispatchCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvAttachDispatchData);
+                        ctx->recvAttachDispatchCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvAttachDispatchData);
                         ctx->recvAttachDispatchCb = NULL;
                     }
                     break;
@@ -188,7 +212,7 @@ void nm_dtls_event_do_one(void* data)
                     NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "Attach packet");
                     if(ctx->recvAttachCb) {
                         NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
-                        ctx->recvAttachCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvAttachData);
+                        ctx->recvAttachCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvAttachData);
                         ctx->recvAttachCb = NULL;
                     }
                     break;
@@ -196,7 +220,7 @@ void nm_dtls_event_do_one(void* data)
                     NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "Relay packet");
                     if (ctx->recvRelayCb) {
                         NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
-                        ctx->recvRelayCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvRelayData);
+                        ctx->recvRelayCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvRelayData);
                         ctx->recvRelayCb = NULL;
                     }
                     break;
@@ -204,7 +228,7 @@ void nm_dtls_event_do_one(void* data)
                     NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "keep alive packet");
                     if (ctx->recvKeepAliveCb) {
                         NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "found Callback function");
-                        ctx->recvKeepAliveCb(NABTO_EC_OK, ctx->sslRecvBuf, ret, ctx->recvKeepAliveData);
+                        ctx->recvKeepAliveCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvKeepAliveData);
                         ctx->recvKeepAliveCb = NULL;
                     }
                     break;
@@ -219,7 +243,7 @@ void nm_dtls_event_do_one(void* data)
             // OK
         } else {
             NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Received ERROR: %i", ret);
-            // TODO ERROR
+            // TODO: ERROR handlig
         }
         return;
     }
@@ -231,13 +255,13 @@ void nm_dtls_event_send_to(void* data)
     np_crypto_context* ctx = (np_crypto_context*) data;
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) ctx->sendBuffer, ctx->sendBufferSize );
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
-        // TODO packet too large
+        // TODO: packet too large
         ctx->sendCb(NABTO_EC_MALFORMED_PACKET, ctx->sendData);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
-        // TODO should not be possible.
+        // TODO: should not be possible.
         ctx->sendCb(NABTO_EC_FAILED, ctx->sendData);
     } else if (ret < 0) {
-        // TODO unknown error
+        // TODO: unknown error
         ctx->sendCb(NABTO_EC_FAILED, ctx->sendData);
     } else {
         ctx->sendCb(NABTO_EC_OK, ctx->sendData);

@@ -13,8 +13,8 @@ np_connection* nc_client_connect_get(struct np_platform* pl, uint8_t* id, uint8_
     return NULL;
 }
 
-np_error_code nc_client_connect_recv(struct np_udp_socket* sock, struct np_udp_endpoint ep,
-                                     np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+np_error_code nc_client_connect_recv(const np_error_code ec, struct np_udp_endpoint ep,
+                                     np_communication_buffer* buffer, uint16_t bufferSize)
 {
-    return NABTO_EC_OK;
+    return ec;
 }

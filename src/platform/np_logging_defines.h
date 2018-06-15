@@ -11,6 +11,7 @@
 #define NABTO_LOG_MODULE_EVENT_QUEUE            0x00000008ul
 #define NABTO_LOG_MODULE_CONNECTION             0x00000010ul
 #define NABTO_LOG_MODULE_ATTACHER               0x00000020ul
+#define NABTO_LOG_MODULE_KEEP_ALIVE             0x00000040ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                 0x00000000ul
