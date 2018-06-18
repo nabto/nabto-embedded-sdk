@@ -97,8 +97,8 @@ void nm_epoll_wait()
         nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
     }
     if (nfds < 0) {
-        NABTO_LOG_FATAL(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
-        exit(1);
+        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
+        //exit(1);
     }
     NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
     for (int i = 0; i < nfds; i++) {

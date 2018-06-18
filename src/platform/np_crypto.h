@@ -22,8 +22,8 @@ struct np_crypto_module {
 
     np_error_code (*async_connect)(struct np_platform* pl, np_connection* conn,
                                    np_crypto_connect_callback cb, void* data);
-    np_error_code (*async_send_to)(struct np_platform* pl, np_crypto_context* ctx, uint8_t* buffer,
-                                   uint16_t bufferSize, np_crypto_send_to_callback cb, void* data);
+    np_error_code (*async_send_to)(struct np_platform* pl, np_crypto_context* ctx, uint8_t channelId,
+                                   uint8_t* buffer, uint16_t bufferSize, np_crypto_send_to_callback cb, void* data);
     np_error_code (*async_recv_from)(struct np_platform* pl, np_crypto_context* ctx,
                                      enum application_data_type type, np_crypto_received_callback cb, void* data);
     np_error_code (*cancel_recv_from)(struct np_platform* pl, np_crypto_context* ctx,

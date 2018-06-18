@@ -3,6 +3,8 @@
 
 #include <platform/np_platform.h>
 
+#include <nabto_types.h>
+
 typedef void (*keep_alive_callback)(const np_error_code ec, void* data);
 
 struct keep_alive_context
@@ -11,12 +13,14 @@ struct keep_alive_context
     np_crypto_context* conn;
     keep_alive_callback cb;
     void* data;
-    struct np_timed_event ev;
+    struct np_timed_event kaEv;
     np_communication_buffer* buf;
+    uint16_t sequence;
     uint16_t bufSize;
     uint16_t kaInterval;
     uint8_t kaRetryInterval;
     uint8_t kaMaxRetries;
+    uint8_t currentRetry;
 };
 
 void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx,
@@ -26,5 +30,7 @@ void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
                         np_communication_buffer* buf, uint16_t bufferSize, void* data);
 np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct keep_alive_context* ctx,
                                         uint8_t channelId, keep_alive_callback cb, void* data);
+np_error_code nc_keep_alive_set_settings(struct np_platform* pl, struct keep_alive_context* ctx,
+                                         uint16_t kaInterval, uint8_t kaRetryInterval, uint8_t kaMaxRetries);
 
 #endif //NC_KEEP_ALIVE_H

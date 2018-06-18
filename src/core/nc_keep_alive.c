@@ -3,20 +3,78 @@
 #include <platform/np_logging.h>
 #include <core/nc_packet.h>
 
+#include <string.h>
+
 #define LOG NABTO_LOG_MODULE_KEEP_ALIVE
 
-/*void nc_keep_alive_send(const np_error_code ec, void* data);
-    
-void nc_keep_alive_sent_cb(const np_error_code ec, void* data)
+void nc_keep_alive_send_cb(const np_error_code ec, void* data);
+void nc_keep_alive_send_res_cb(const np_error_code ec, void* data);
+void nc_keep_alive_retrans_event(const np_error_code ec, void* data);
+
+void nc_keep_alive_send_req(struct keep_alive_context* ctx)
+{
+    uint8_t* ptr;
+    uint8_t* start = ctx->pl->buf.start(ctx->buf);
+    start[0] = (enum application_data_type)KEEP_ALIVE;
+    start[1] = (enum keep_alive_content_type)KEEP_ALIVE_REQUEST;
+    ptr = uint16_write_forward(start + 2, 0); // extension length
+    ptr = uint16_write_forward(start + 2, ctx->sequence);
+    ptr = ptr + 14; // fill the rest of the required 16 bytes opaque data
+    NABTO_LOG_TRACE(LOG, "keep alive request to send: ");
+    NABTO_LOG_BUF(LOG, start, ptr-start);
+    ctx->pl->cryp.async_send_to(ctx->pl, ctx->conn, 0xff, start, ptr - start, &nc_keep_alive_send_cb, ctx);
+;
+}
+
+void nc_keep_alive_send_res(struct keep_alive_context* ctx, uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize)
+{
+    uint8_t* ptr = ctx->pl->buf.start(buffer);
+    uint8_t* start = ctx->pl->buf.start(ctx->buf);
+    start[0] = (enum application_data_type)KEEP_ALIVE;
+    start[1] = (enum keep_alive_content_type)KEEP_ALIVE_RESPONSE;
+    uint16_write_forward(start + 2, 0); // extension length
+    if(bufferSize < NABTO_PACKET_HEADER_SIZE + 16) {
+        NABTO_LOG_ERROR(LOG, "Received keep alive request of insufficient size");
+        return;
+    }
+    memcpy(start + NABTO_PACKET_HEADER_SIZE, ptr + NABTO_PACKET_HEADER_SIZE, 16);
+    ctx->pl->cryp.async_send_to(ctx->pl, ctx->conn, channelId, start, ptr - start, &nc_keep_alive_send_res_cb, ctx);
+;
+}
+
+void nc_keep_alive_retrans_event(const np_error_code ec, void* data)
+{
+    struct keep_alive_context* ctx = (struct keep_alive_context*)data;
+    if(ctx->currentRetry >= ctx->kaMaxRetries) {
+        NABTO_LOG_ERROR(LOG, "Keep alive failed: Too many keep alive retransmissions");
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
+        ctx->pl->cryp.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
+        ctx->cb(NABTO_EC_FAILED, ctx->data);
+        return;
+    }
+    nc_keep_alive_send_req(ctx);
+    np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaRetryInterval*1000, &nc_keep_alive_retrans_event, ctx);
+    ctx->currentRetry++;
+}
+
+void nc_keep_alive_ka_event(const np_error_code ec, void* data)
+{
+    struct keep_alive_context* ctx = (struct keep_alive_context*)data;
+    nc_keep_alive_send_req(ctx);
+    np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaInterval*1000, &nc_keep_alive_ka_event, ctx);
+}
+
+void nc_keep_alive_send_cb(const np_error_code ec, void* data)
 {
     struct keep_alive_context* ctx = (struct keep_alive_context*)data;
     if(ec != NABTO_EC_OK) {
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
+        ctx->pl->cryp.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
         ctx->cb(ec, ctx->data);
         return;
     }
-    np_event_queue_post_timed_event(ctx.pl, &ctx.ev, NABTO_KEEP_ALIVE_DEVICE_INTERVAL, &nc_keep_alive_send, &ctx);
 }
-*/
+
 
 void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx, np_crypto_context* conn, keep_alive_callback cb, void* data)
 {
@@ -28,11 +86,27 @@ void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx, 
     ctx->kaInterval = 10;
     ctx->kaRetryInterval = 1;
     ctx->kaMaxRetries = 5;
+    ctx->currentRetry = 0;
+    ctx->sequence = 0;
     ctx->pl->cryp.async_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE, &nc_keep_alive_recv, ctx);
+    nc_keep_alive_send_req(ctx);
+    np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaRetryInterval, &nc_keep_alive_retrans_event, ctx);
 }
+
 void nc_keep_alive_stop(struct np_platform* pl,  struct keep_alive_context* ctx)
 {
+    ctx->pl->cryp.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
+}
 
+void nc_keep_alive_decode_res(struct keep_alive_context* ctx, np_communication_buffer* buf, uint16_t bufSize)
+{
+    // TODO: for now assuming response is from correct sequence number if not check probe ctx
+    // cancelling retry event
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
+    ctx->sequence++;
+    // scheduling next keep alive 
+    np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaInterval, &nc_keep_alive_ka_event, ctx);
 }
 
 void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
@@ -40,16 +114,37 @@ void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
 {
     
     struct keep_alive_context* ctx = (struct keep_alive_context*)data;
+    uint8_t* start = ctx->pl->buf.start(buf);
+    uint8_t* ptr = start;
     NABTO_LOG_TRACE(LOG, "Received keep alive packet");
     NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buf), bufferSize);
+    ctx->pl->cryp.async_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE, &nc_keep_alive_recv, ctx);
+    if ((enum application_data_type)start[0] == KEEP_ALIVE) {
+        if ((enum keep_alive_content_type)start[1] == KEEP_ALIVE_REQUEST) {
+            nc_keep_alive_send_res(ctx, channelId, buf, bufferSize);
+        } else if ((enum keep_alive_content_type)start[1] == KEEP_ALIVE_RESPONSE) {
+            nc_keep_alive_decode_res(ctx, buf, bufferSize);
+        } else {
+            NABTO_LOG_ERROR(LOG, "keep alive received invalid content type");
+        }
+    } else {
+        NABTO_LOG_ERROR(LOG, "keep alive received a not keep alive packet");
+    }
+    
     
 }
 
 np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct keep_alive_context* ctx,
                                         uint8_t channelId, keep_alive_callback cb, void* data)
 {
-    return NABTO_EC_OK;
+    return NABTO_EC_FAILED;
 }
+
+void nc_keep_alive_send_res_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(LOG, "ka response sent with error code: %u", ec);
+}
+
 /*
 void nc_keep_alive_send(const np_error_code ec, void* data)
 {

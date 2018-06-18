@@ -8,7 +8,7 @@
 
 #define NM_UNIX_LOGGING_FILE_LENGTH 16
 
-void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, uint8_t* buf, size_t len){
+void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len){
     char str[64];
     char* ptr;
     size_t chunks = len/16;
@@ -20,7 +20,7 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
         ret = sprintf(str, "%04lx: ", i*16);
         ptr = str + ret;
         for (n = 0; n < 16; n++) {
-            ret = sprintf(ptr, "%02u ", buf[i*16+n]);
+            ret = sprintf(ptr, "%02x ", buf[i*16+n]);
             ptr = ptr + ret;
         }
         nm_unix_log(severity, module, line, file, str, list);
@@ -28,7 +28,7 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
     ret = sprintf(str, "%04lx: ", chunks*16);
     ptr = str + ret;
     for (n = chunks*16; n < len; n++) {
-        ret = sprintf(ptr, "%02u ", buf[n]);
+        ret = sprintf(ptr, "%02x ", buf[n]);
         ptr = ptr + ret;
     }
     nm_unix_log(severity, module, line, file, str, list);

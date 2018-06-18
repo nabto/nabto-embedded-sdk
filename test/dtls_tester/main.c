@@ -58,7 +58,7 @@ void echo(const np_error_code ec, void* data)
         exit(1);
     }
     np_crypto_context* ctx = (np_crypto_context*) data;
-    pl.cryp.async_send_to(&pl, ctx, buffer, bufferSize, &sendCb, data);
+    pl.cryp.async_send_to(&pl, ctx, 0xff, buffer, bufferSize, &sendCb, data);
     pl.cryp.async_recv_from(&pl, ctx, ATTACH, &mainRecvCb, data);
     np_event_queue_post_timed_event(&pl, &ev, 1000, &echo, data);
 }

@@ -67,12 +67,18 @@ void nc_attacher_ad_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
 void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data);
 
 
+void nc_attacher_ka_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(LOG,"Attacher received keep alive callback with error code: %u", ec);
+}
+
 void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     uint8_t type = ctx.pl->buf.start(buf)[1];
     NABTO_LOG_TRACE(LOG, "ATTACH packet received");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     if (type == ATTACH_SERVER_HELLO) {
+        nc_keep_alive_init(ctx.pl, &ctx.kactx, ctx.anDtls, &nc_attacher_ka_cb, &ctx);
         ctx.cb(ec, ctx.cbData);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown attach_content_type %u found ",type); 
@@ -167,10 +173,6 @@ void nc_attacher_ad_handle_event(const np_error_code ec, np_communication_buffer
     }
         
 }
-void nc_attacher_ka_cb(const np_error_code ec, void* data)
-{
-    NABTO_LOG_INFO(LOG,"Attacher received keep alive callback with error code: %u", ec);
-}
 
 void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_crypto_context* crypCtx, void* data)
 {
@@ -188,9 +190,8 @@ void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_crypto_context* cryp
     ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
     ptr = writeUint16LengthData(ptr, ctx.token, ctx.tokenLen);
     NABTO_LOG_BUF(LOG, start, ptr - start);
-    ctx.pl->cryp.async_send_to(ctx.pl, ctx.anDtls, start, ptr - start, &nc_attacher_an_dtls_send_cb, &ctx);
+    ctx.pl->cryp.async_send_to(ctx.pl, ctx.anDtls, 0xff, start, ptr - start, &nc_attacher_an_dtls_send_cb, &ctx);
     ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, ATTACH, &nc_attacher_dtls_recv_cb, &ctx);
-    nc_keep_alive_init(ctx.pl, &ctx.kactx, ctx.anDtls, &nc_attacher_ka_cb, &ctx);
 //    ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
 }
 
@@ -236,7 +237,7 @@ void nc_attacher_ad_dtls_conn_cb(const np_error_code ec, np_crypto_context* cryp
     ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
     ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
     NABTO_LOG_BUF(LOG, start, ptr - start);
-    ctx.pl->cryp.async_send_to(ctx.pl, ctx.adDtls, start, ptr - start, &nc_attacher_ad_dtls_send_cb, &ctx);
+    ctx.pl->cryp.async_send_to(ctx.pl, ctx.adDtls, 0xff, start, ptr - start, &nc_attacher_ad_dtls_send_cb, &ctx);
     ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, ATTACH_DISPATCH, &nc_attacher_dtls_recv_cb, &ctx);
 }
 

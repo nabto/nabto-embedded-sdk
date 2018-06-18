@@ -32,6 +32,7 @@ struct np_crypto_context {
     void* connectData;
     np_crypto_send_to_callback sendCb;
     void* sendData;
+    uint8_t sendChannel;
     
     np_crypto_received_callback recvAttachCb;
     void* recvAttachData;
@@ -136,6 +137,7 @@ void nm_dtls_init(struct np_platform* pl)
     pl->cryp.async_send_to = &nm_dtls_async_send_to;
     pl->cryp.async_recv_from = &nm_dtls_async_recv_from;
     pl->cryp.async_close = &nm_dtls_async_close;
+    pl->cryp.cancel_recv_from = &nm_dtls_cancel_recv_from;
 }
 
 /*
@@ -268,13 +270,17 @@ void nm_dtls_event_send_to(void* data)
     }
 }
 
-np_error_code nm_dtls_async_send_to(struct np_platform* pl, np_crypto_context* ctx, uint8_t* buffer,
-                                    uint16_t bufferSize, np_crypto_send_to_callback cb, void* data)
+np_error_code nm_dtls_async_send_to(struct np_platform* pl, np_crypto_context* ctx, uint8_t channelId,
+                                    uint8_t* buffer, uint16_t bufferSize, np_crypto_send_to_callback cb, void* data)
 {
     ctx->sendCb = cb;
     ctx->sendData = data;
     ctx->sendBuffer = buffer;
     ctx->sendBufferSize = bufferSize;
+    // If channel id is 0xff send on whatever channel is currently active
+    if(channelId != 0xff) {
+        ctx->sendChannel = channelId;
+    }
     np_event_queue_post(ctx->pl, &ctx->sendEv, &nm_dtls_event_send_to, ctx);
     return NABTO_EC_OK;
 }
@@ -349,6 +355,7 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
         np_event_queue_post(ctx->pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
     } else {
         // TODO: how to handle connection errors?
+        NABTO_LOG_ERROR(NABTO_LOG_MODULE_CRYPTO, "np_connection returned error code: %u", ec);
     }
 }
 
@@ -370,8 +377,15 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
     np_crypto_context* ctx = (np_crypto_context*) data;
     if (ctx->sslSendBufferSize == 0) {
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
+        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "mbedtls wants write:");
+        NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, buffer, bufferSize);
         ctx->sslSendBufferSize = bufferSize;
-        ctx->pl->conn.async_send_to(ctx->pl, ctx->conn, ctx->currentChannelId, ctx->sslSendBuffer, bufferSize, &nm_dtls_connection_send_callback, ctx);
+        if(ctx->sendChannel != ctx->currentChannelId) {
+            ctx->pl->conn.async_send_to(ctx->pl, ctx->conn, ctx->sendChannel, ctx->sslSendBuffer, bufferSize, &nm_dtls_connection_send_callback, ctx);
+            ctx->sendChannel = ctx->currentChannelId;
+        } else {
+            ctx->pl->conn.async_send_to(ctx->pl, ctx->conn, ctx->currentChannelId, ctx->sslSendBuffer, bufferSize, &nm_dtls_connection_send_callback, ctx);
+        }
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;
@@ -385,10 +399,11 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
         NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "Empty buffer, returning WANT_READ");
         return MBEDTLS_ERR_SSL_WANT_READ;
     } else {
-        NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "returning data");
+        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "mbtls wants read %u bytes into buffersize: %u", ctx->recvBufferSize, bufferSize);
         size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
         memcpy(buffer, ctx->recvBuffer, maxCp);
-        NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "%i bytes", maxCp);
+        NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "returning %i bytes to mbedtls:", maxCp);
+        NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, buffer, maxCp);
         ctx->recvBufferSize = 0;
         return maxCp;
     }
@@ -437,7 +452,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx)
     mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_debug_set_threshold( 0 );
+    mbedtls_debug_set_threshold( 1 );
     
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,

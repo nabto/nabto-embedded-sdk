@@ -6,11 +6,11 @@
 #include <stdarg.h>
 
 void np_default_log(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
-void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, uint8_t* buf, size_t len);
+void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
 
 struct np_logging {
     void (*log)(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
-    void (*log_buf)(uint32_t severity, uint32_t module, uint32_t line, const char* file, uint8_t* buf, size_t len);
+    void (*log_buf)(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
 };
 
 extern struct np_logging np_log;
@@ -32,7 +32,7 @@ void np_debug_adapter(uint32_t severity, uint32_t module, uint32_t line, const c
 void np_trace_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_raw_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 #endif
-void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, uint8_t* buf, size_t len);
+void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
 
 #ifndef NABTO_LOG_SEVERITY_FILTER
 #define NABTO_LOG_SEVERITY_FILTER     NABTO_LOG_SEVERITY_LEVEL_TRACE

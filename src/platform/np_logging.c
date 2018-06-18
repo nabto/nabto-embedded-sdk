@@ -3,7 +3,7 @@
 void np_default_log(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
 }
-void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, uint8_t* buf, size_t len)
+void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len)
 {
 }
 struct np_logging np_log = { &np_default_log, &np_default_log_buf };
@@ -103,7 +103,7 @@ void np_raw_adapter(uint32_t severity, uint32_t module, uint32_t line, const cha
 }
 #endif
 
-void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, uint8_t* buf, size_t len)
+void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len)
 {
     np_log.log_buf(NABTO_LOG_SEVERITY_TRACE, module, line, file, buf, len);
 }
