@@ -78,6 +78,7 @@ void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer
     NABTO_LOG_TRACE(LOG, "ATTACH packet received");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     if (type == ATTACH_SERVER_HELLO) {
+        NABTO_LOG_INFO(LOG, "Device is now ATTACHED");
         nc_keep_alive_init(ctx.pl, &ctx.kactx, ctx.anDtls, &nc_attacher_ka_cb, &ctx);
         ctx.cb(ec, ctx.cbData);
     } else {

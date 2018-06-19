@@ -18,9 +18,9 @@ struct test_context {
     int data;
 };
 struct np_platform pl;
-char string[] = "Hello world";
+char string[] = "+Hello world";
 np_communication_buffer* buffer;
-uint16_t bufferSize = 12;
+uint16_t bufferSize = 13;
 struct np_udp_endpoint ep;
 struct np_timed_event ev;
 
@@ -73,7 +73,8 @@ void dns_resolved(const np_error_code ec, struct np_ip_address* rec, size_t recS
 }
 
 int main() {
-    ep.port = 12345;
+//    ep.port = 12345;
+    ep.port = 4242;
     inet_pton(AF_INET6, "::1", ep.ip.v6.addr);
     NABTO_LOG_INFO(0, "pl: %i", &pl);
     np_platform_init(&pl);
@@ -85,7 +86,7 @@ int main() {
     np_log.log = &nm_unix_log;
     struct test_context data;
     data.data = 42;
-    pl.buf.allocate(buffer);
+    buffer = pl.buf.allocate();
     memcpy(pl.buf.start(buffer), string, strlen(string));
     pl.udp.async_create(created, &data);
     pl.dns.async_resolve(&pl, "www.google.com", &dns_resolved, &data);

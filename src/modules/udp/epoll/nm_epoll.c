@@ -117,16 +117,17 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
     struct np_udp_endpoint ep;
     ssize_t recvLength;
     uint8_t* start;
+    start = pl->buf.start(recv_buf);
     if (sock->isIpv6) {
         struct sockaddr_in6 sa;
         socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, pl->buf.start(recv_buf),  pl->buf.size(recv_buf), 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, start,  pl->buf.size(recv_buf), 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep.ip.v6.addr,&sa.sin6_addr.s6_addr, sizeof(ep.ip.v6.addr));
         ep.port = ntohs(sa.sin6_port);
     } else {
         struct sockaddr_in sa;
         socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, pl->buf.start(recv_buf),  pl->buf.size(recv_buf), 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, start, pl->buf.size(recv_buf), 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep.ip.v4.addr,&sa.sin_addr.s_addr, sizeof(ep.ip.v4.addr));
         ep.port = ntohs(sa.sin_port);
     }
@@ -134,6 +135,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
         int status = errno;
         if (status == EAGAIN || EWOULDBLOCK) {
             // expected
+            return;
         } else {
             np_udp_packet_received_callback cb;
             NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_handle_event", strerror(status), (int) status);
@@ -152,8 +154,6 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
             return;
         }
     }
-
-    start = pl->buf.start(recv_buf);
     if((start[0] == 0) || (start[0] == 1)) {
         if (sock->recvStun.cb) {
             np_udp_packet_received_callback cb = sock->recvStun.cb;
@@ -178,7 +178,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
         NABTO_LOG_TRACE(LOG, "received APP data, invoking callback");
         pl->clientConn.recv(NABTO_EC_OK, ep, recv_buf, recvLength);
     }
-
+    nm_epoll_handle_event(sock);
 }
 
 void nm_epoll_event_create(void* data)

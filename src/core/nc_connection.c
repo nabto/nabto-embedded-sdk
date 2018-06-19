@@ -65,6 +65,8 @@ void recvCb(const np_error_code ec, struct np_udp_endpoint ep, np_communication_
         np_connection_received_callback cb = conn->recvCb;
         conn->recvCb = NULL;
         cb(ec, conn, channelId, buffer, bufferSize, conn->recvData);
+    } else {
+        NABTO_LOG_INFO(NABTO_LOG_MODULE_CONNECTION, "NO callback for data received from UDP");
     }
 }
 

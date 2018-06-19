@@ -352,7 +352,8 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
         memcpy(ctx->recvBuffer, ctx->pl->buf.start(buffer), bufferSize);
         ctx->recvBufferSize = bufferSize;
         ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
-        np_event_queue_post(ctx->pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
+        nm_dtls_event_do_one(ctx);
+//        np_event_queue_post(ctx->pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
     } else {
         // TODO: how to handle connection errors?
         NABTO_LOG_ERROR(NABTO_LOG_MODULE_CRYPTO, "np_connection returned error code: %u", ec);
