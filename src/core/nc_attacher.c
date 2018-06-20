@@ -74,13 +74,18 @@ void nc_attacher_ka_cb(const np_error_code ec, void* data)
 
 void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
-    uint8_t type = ctx.pl->buf.start(buf)[1];
+    uint8_t type;
+    if(ec != NABTO_EC_OK) {
+        ctx.cb(ec, ctx.cbData);
+        return;
+    }
+    type= ctx.pl->buf.start(buf)[1];
     NABTO_LOG_TRACE(LOG, "ATTACH packet received");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     if (type == ATTACH_SERVER_HELLO) {
         NABTO_LOG_INFO(LOG, "Device is now ATTACHED");
         nc_keep_alive_init(ctx.pl, &ctx.kactx, ctx.anDtls, &nc_attacher_ka_cb, &ctx);
-        ctx.cb(ec, ctx.cbData);
+        ctx.cb(NABTO_EC_OK, ctx.cbData);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown attach_content_type %u found ",type); 
     }
@@ -96,6 +101,10 @@ void nc_attacher_ad_handle_event(const np_error_code ec, np_communication_buffer
     uint8_t* token = start + NABTO_PACKET_HEADER_SIZE + extensionLen + 2;
     uint16_t tokenLen = uint16_read(start + NABTO_PACKET_HEADER_SIZE + extensionLen);
 
+    if (ec != NABTO_EC_OK) {
+        ctx.cb(ec, ctx.cbData);
+        return;
+    }
     if (bufferSize < NABTO_PACKET_HEADER_SIZE || *start != ATTACH_DISPATCH) {
         NABTO_LOG_ERROR(LOG, "Received malformed ATTACH_DISPATCH response packet");
         ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
@@ -237,6 +246,7 @@ void nc_attacher_ad_dtls_conn_cb(const np_error_code ec, np_crypto_context* cryp
     // TODO: only insert extensions which is supported
     ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
     ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
+    NABTO_LOG_TRACE(LOG, "Sending Attach Dispatch Request:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
     ctx.pl->cryp.async_send_to(ctx.pl, ctx.adDtls, 0xff, start, ptr - start, &nc_attacher_ad_dtls_send_cb, &ctx);
     ctx.pl->cryp.async_recv_from(ctx.pl, ctx.adDtls, ATTACH_DISPATCH, &nc_attacher_dtls_recv_cb, &ctx);

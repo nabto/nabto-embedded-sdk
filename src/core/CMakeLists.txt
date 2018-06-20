@@ -8,5 +8,11 @@ set(src
   ${src_dir}/nc_client_connect.c
   )
 
+set(test_src
+  ${src_dir}/nc_attacher_test.c
+  ${src_dir}/nc_tests.c
+  )
 
 add_library( nc_core STATIC "${src}")
+
+add_library( nc_core_test STATIC "${test_src}")

@@ -30,4 +30,4 @@ add_subdirectory(test/attach_test)
 
 add_executable(unit_test "${test_runner_src}")
 
-target_link_libraries(unit_test np_platform_test np_platform nm_unix_logging)
+target_link_libraries(unit_test np_platform_test nc_core_test np_platform nc_core nm_unix_logging)

@@ -378,8 +378,8 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
     np_crypto_context* ctx = (np_crypto_context*) data;
     if (ctx->sslSendBufferSize == 0) {
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
-        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "mbedtls wants write:");
-        NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, buffer, bufferSize);
+//        NABTO_LOG_TRACE(NABTO_LOG_MODULE_CRYPTO, "mbedtls wants write:");
+//        NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, buffer, bufferSize);
         ctx->sslSendBufferSize = bufferSize;
         if(ctx->sendChannel != ctx->currentChannelId) {
             ctx->pl->conn.async_send_to(ctx->pl, ctx->conn, ctx->sendChannel, ctx->sslSendBuffer, bufferSize, &nm_dtls_connection_send_callback, ctx);
@@ -404,7 +404,7 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
         size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
         memcpy(buffer, ctx->recvBuffer, maxCp);
         NABTO_LOG_INFO(NABTO_LOG_MODULE_CRYPTO, "returning %i bytes to mbedtls:", maxCp);
-        NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, buffer, maxCp);
+//        NABTO_LOG_BUF(NABTO_LOG_MODULE_CRYPTO, buffer, maxCp);
         ctx->recvBufferSize = 0;
         return maxCp;
     }
@@ -453,7 +453,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_crypto_context* ctx)
     mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_debug_set_threshold( 1 );
+    mbedtls_debug_set_threshold( 0 );
     
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,
