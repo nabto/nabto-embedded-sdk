@@ -104,10 +104,6 @@ void nc_connection_test_send_to_channel()
     pl.buf.free = &nc_connection_test_free;
     pl.buf.size = &nc_connection_test_size;
 
-    // REMOVE AFTER TEST FINALIZATION
-    #include <modules/logging/nm_unix_logging.h>
-    nm_unix_log_init();
-    
     chan.type = NABTO_CHANNEL_DTLS;
     chan.sock = sock;
     chan.channelId = 42;

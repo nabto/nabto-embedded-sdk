@@ -198,7 +198,7 @@ void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_crypto_context* cryp
     // TODO: only insert extensions which are supported
     ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV4_EP, NULL, 0);
     ptr = insert_packet_extension(ctx.pl, ctx.buffer, UDP_IPV6_EP, NULL, 0);
-    ptr = writeUint16LengthData(ptr, ctx.token, ctx.tokenLen);
+    ptr = write_uint16_length_data(ptr, ctx.token, ctx.tokenLen);
     NABTO_LOG_BUF(LOG, start, ptr - start);
     ctx.pl->cryp.async_send_to(ctx.pl, ctx.anDtls, 0xff, start, ptr - start, &nc_attacher_an_dtls_send_cb, &ctx);
     ctx.pl->cryp.async_recv_from(ctx.pl, ctx.anDtls, ATTACH, &nc_attacher_dtls_recv_cb, &ctx);

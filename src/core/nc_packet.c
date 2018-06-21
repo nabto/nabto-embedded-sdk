@@ -52,7 +52,7 @@ uint8_t* insert_packet_extension(struct np_platform* pl, np_communication_buffer
     return ptr+dataLen;
 }
 
-uint8_t* writeUint16LengthData(uint8_t* buf, uint8_t* data, uint16_t size)
+uint8_t* write_uint16_length_data(uint8_t* buf, uint8_t* data, uint16_t size)
 {
     uint16_write(buf, size);
     memcpy(buf+2, data, size);

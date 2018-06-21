@@ -11,6 +11,7 @@ set(src
 set(test_src
   ${src_dir}/nc_attacher_test.c
   ${src_dir}/nc_connection_test.c
+  ${src_dir}/nc_packet_test.c
   ${src_dir}/nc_tests.c
   )
 
