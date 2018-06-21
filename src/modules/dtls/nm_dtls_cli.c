@@ -1,4 +1,4 @@
-#include "nm_dtls.h"
+#include "nm_dtls_cli.h"
 #include <platform/np_logging.h>
 
 #include <mbedtls/debug.h>

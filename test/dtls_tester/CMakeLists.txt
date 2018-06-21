@@ -14,6 +14,6 @@ target_link_libraries(dtls_tester
   nm_epoll
   nm_unix_communication_buffer
   nm_unix_timestamp
-  nm_dtls
+  nm_dtls_cli
   nc_core
   )

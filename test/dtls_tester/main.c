@@ -4,7 +4,7 @@
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <modules/logging/nm_unix_logging.h>
 #include <modules/timestamp/nm_unix_timestamp.h>
-#include <modules/dtls/nm_dtls.h>
+#include <modules/dtls/nm_dtls_cli.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_connection.h>
 #include <core/nc_connection.h>

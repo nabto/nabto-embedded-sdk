@@ -1,5 +1,5 @@
-#ifndef NM_DTLS_H
-#define NM_DTLS_H
+#ifndef NM_DTLS_CLI_H
+#define NM_DTLS_CLi_H
 
 #include <platform/np_platform.h>
 #include <platform/np_dtls_cli.h>
@@ -18,4 +18,4 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
                                   np_dtls_cli_close_callback cb, void* data);
 
 
-#endif // NM_DTLS_H
+#endif // NM_DTLS_cli_H
