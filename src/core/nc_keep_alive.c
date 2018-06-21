@@ -22,7 +22,7 @@ void nc_keep_alive_send_req(struct keep_alive_context* ctx)
     ptr = ptr + 14; // fill the rest of the required 16 bytes opaque data
     NABTO_LOG_TRACE(LOG, "keep alive request to send: ");
     NABTO_LOG_BUF(LOG, start, ptr-start);
-    ctx->pl->cryp.async_send_to(ctx->pl, ctx->conn, 0xff, start, ptr - start, &nc_keep_alive_send_cb, ctx);
+    ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->conn, 0xff, start, ptr - start, &nc_keep_alive_send_cb, ctx);
 ;
 }
 
@@ -38,7 +38,7 @@ void nc_keep_alive_send_res(struct keep_alive_context* ctx, uint8_t channelId, n
         return;
     }
     memcpy(start + NABTO_PACKET_HEADER_SIZE, ptr + NABTO_PACKET_HEADER_SIZE, 16);
-    ctx->pl->cryp.async_send_to(ctx->pl, ctx->conn, channelId, start, ptr - start, &nc_keep_alive_send_res_cb, ctx);
+    ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->conn, channelId, start, ptr - start, &nc_keep_alive_send_res_cb, ctx);
 ;
 }
 
@@ -48,7 +48,7 @@ void nc_keep_alive_retrans_event(const np_error_code ec, void* data)
     if(ctx->currentRetry >= ctx->kaMaxRetries) {
         NABTO_LOG_ERROR(LOG, "Keep alive failed: Too many keep alive retransmissions");
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
-        ctx->pl->cryp.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
+        ctx->pl->dtlsC.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
         ctx->cb(NABTO_EC_FAILED, ctx->data);
         return;
     }
@@ -69,14 +69,14 @@ void nc_keep_alive_send_cb(const np_error_code ec, void* data)
     struct keep_alive_context* ctx = (struct keep_alive_context*)data;
     if(ec != NABTO_EC_OK) {
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
-        ctx->pl->cryp.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
+        ctx->pl->dtlsC.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
         ctx->cb(ec, ctx->data);
         return;
     }
 }
 
 
-void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx, np_crypto_context* conn, keep_alive_callback cb, void* data)
+void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx, np_dtls_cli_context* conn, keep_alive_callback cb, void* data)
 {
     ctx->pl = pl;
     ctx->conn = conn;
@@ -88,14 +88,14 @@ void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx, 
     ctx->kaMaxRetries = 5;
     ctx->currentRetry = 0;
     ctx->sequence = 0;
-    ctx->pl->cryp.async_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE, &nc_keep_alive_recv, ctx);
+    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     nc_keep_alive_send_req(ctx);
     np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaRetryInterval, &nc_keep_alive_retrans_event, ctx);
 }
 
 void nc_keep_alive_stop(struct np_platform* pl,  struct keep_alive_context* ctx)
 {
-    ctx->pl->cryp.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
+    ctx->pl->dtlsC.cancel_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE);
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
 }
 
@@ -118,7 +118,7 @@ void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
     uint8_t* ptr = start;
     NABTO_LOG_TRACE(LOG, "Received keep alive packet");
     NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buf), bufferSize);
-    ctx->pl->cryp.async_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE, &nc_keep_alive_recv, ctx);
+    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->conn, KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     if ((enum application_data_type)start[0] == KEEP_ALIVE) {
         if ((enum keep_alive_content_type)start[1] == KEEP_ALIVE_REQUEST) {
             nc_keep_alive_send_res(ctx, channelId, buf, bufferSize);
@@ -165,7 +165,7 @@ void nc_keep_alive_send(const np_error_code ec, void* data)
     ptr = uint16_write_forward(ptr, 0);
     ctx.bufSize = ptr - start;
     NABTO_LOG_BUF(NABTO_LOG_MODULE_ATTACHER, ctx.pl->buf.start(ctx.buf), ctx.bufSize);
-    ctx.pl->cryp.async_send_to(ctx.pl, ctx.conn, ctx.pl->buf.start(ctx.buf), ctx.bufSize, &nc_keep_alive_sent_cb, &ctx);
+    ctx.pl->dtlsC.async_send_to(ctx.pl, ctx.conn, ctx.pl->buf.start(ctx.buf), ctx.bufSize, &nc_keep_alive_sent_cb, &ctx);
 }
 
 */

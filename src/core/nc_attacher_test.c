@@ -19,7 +19,7 @@ struct np_ip_address rec[1];
 
 struct np_udp_socket* sock;
 
-np_crypto_context* crypCtx;
+np_dtls_cli_context* crypCtx;
 
 np_communication_buffer buf;
 bool callbackReceived = false;
@@ -41,9 +41,9 @@ void nc_attacher_test_free(np_communication_buffer* buffer) {free(buffer);}
 uint8_t* nc_attacher_test_start(np_communication_buffer* buffer) { return buffer->buf; }
 uint16_t nc_attacher_test_size(np_communication_buffer* buffer) { return 1500; }
 
-// crypto impl
-np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_crypto_context* ctx, uint8_t channelId,
-                                   uint8_t* buffer, uint16_t bufferSize, np_crypto_send_to_callback cb, void* data)
+// dtls cli impl
+np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t channelId,
+                                   uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_to_callback cb, void* data)
 {
     if(buffer[0] == ATTACH_DISPATCH) {
         if(buffer[1] == ATTACH_DISPATCH_REQUEST) {
@@ -73,8 +73,8 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_crypto_conte
     }
     return NABTO_EC_OK;
 }
-np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_crypto_context* ctx,
-                                     enum application_data_type type, np_crypto_received_callback cb, void* data)
+np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_context* ctx,
+                                     enum application_data_type type, np_dtls_cli_received_callback cb, void* data)
 {
     np_communication_buffer resp;
     uint8_t *ptr = resp.buf;
@@ -109,18 +109,18 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_crypto_conte
     return NABTO_EC_OK;
 }
 np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, np_connection* conn,
-                                   np_crypto_connect_callback cb, void* data)
+                                         np_dtls_cli_connect_callback cb, void* data)
 {
     cb(NABTO_EC_OK, crypCtx, data);
     return NABTO_EC_OK;
 }
-np_error_code nc_attacher_test_cryp_close(struct np_platform* pl, np_crypto_context* ctx,
-                                 np_crypto_close_callback cb, void* data)
+np_error_code nc_attacher_test_cryp_close(struct np_platform* pl, np_dtls_cli_context* ctx,
+                                          np_dtls_cli_close_callback cb, void* data)
 {
     cb(NABTO_EC_OK, data);
     return NABTO_EC_OK;
 }
-np_error_code nc_attacher_test_cryp_cancel(struct np_platform* pl, np_crypto_context* ctx,
+np_error_code nc_attacher_test_cryp_cancel(struct np_platform* pl, np_dtls_cli_context* ctx,
                                       enum application_data_type type)
 {
     return NABTO_EC_OK;
@@ -161,11 +161,11 @@ void nc_attacher_test_attach()
 {
     struct np_platform pl;
     np_platform_init(&pl);
-    pl.cryp.async_connect = &nc_attacher_test_cryp_conn;
-    pl.cryp.async_send_to = &nc_attacher_test_cryp_send;
-    pl.cryp.async_recv_from = &nc_attacher_test_cryp_recv;
-    pl.cryp.async_close = &nc_attacher_test_cryp_close;
-    pl.cryp.cancel_recv_from = &nc_attacher_test_cryp_cancel;
+    pl.dtlsC.async_connect = &nc_attacher_test_cryp_conn;
+    pl.dtlsC.async_send_to = &nc_attacher_test_cryp_send;
+    pl.dtlsC.async_recv_from = &nc_attacher_test_cryp_recv;
+    pl.dtlsC.async_close = &nc_attacher_test_cryp_close;
+    pl.dtlsC.cancel_recv_from = &nc_attacher_test_cryp_cancel;
 
     pl.buf.start = &nc_attacher_test_start;
     pl.buf.allocate = &nc_attacher_test_allocate;
@@ -180,7 +180,7 @@ void nc_attacher_test_attach()
 
     pl.ts.set_future_timestamp = &nc_attacher_test_ts_set;
 
-    np_crypto_context* crypCtx;
+    np_dtls_cli_context* crypCtx;
     callbackReceived = false;
     inet_pton(AF_INET6, "::1", rec[0].v6.addr);
     

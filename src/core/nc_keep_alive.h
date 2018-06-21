@@ -10,7 +10,7 @@ typedef void (*keep_alive_callback)(const np_error_code ec, void* data);
 struct keep_alive_context
 {
     struct np_platform* pl;
-    np_crypto_context* conn;
+    np_dtls_cli_context* conn;
     keep_alive_callback cb;
     void* data;
     struct np_timed_event kaEv;
@@ -24,7 +24,7 @@ struct keep_alive_context
 };
 
 void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx,
-                         np_crypto_context* conn, keep_alive_callback cb, void* data);
+                         np_dtls_cli_context* conn, keep_alive_callback cb, void* data);
 void nc_keep_alive_stop(struct np_platform* pl,  struct keep_alive_context* ctx);
 void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
                         np_communication_buffer* buf, uint16_t bufferSize, void* data);

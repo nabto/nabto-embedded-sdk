@@ -4,7 +4,7 @@
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <modules/logging/nm_unix_logging.h>
 #include <modules/timestamp/nm_unix_timestamp.h>
-#include <modules/crypto/nm_dtls.h>
+#include <modules/dtls/nm_dtls.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_connection.h>
 #include <core/nc_connection.h>
@@ -46,9 +46,9 @@ void sendCb(const np_error_code ec, void* data)
 
 void mainRecvCb(const np_error_code ec, uint8_t channelId, uint64_t sequence, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
-    np_crypto_context* ctx = (np_crypto_context*) data;
+    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));
-    pl.cryp.async_close(&pl, ctx, &closeCb, NULL);
+    pl.dtlsC.async_close(&pl, ctx, &closeCb, NULL);
 }
 
 void echo(const np_error_code ec, void* data)
@@ -57,13 +57,13 @@ void echo(const np_error_code ec, void* data)
         NABTO_LOG_ERROR(0, "echo with FAILED status");
         exit(1);
     }
-    np_crypto_context* ctx = (np_crypto_context*) data;
-    pl.cryp.async_send_to(&pl, ctx, 0xff, buffer, bufferSize, &sendCb, data);
-    pl.cryp.async_recv_from(&pl, ctx, ATTACH, &mainRecvCb, data);
+    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    pl.dtlsC.async_send_to(&pl, ctx, 0xff, buffer, bufferSize, &sendCb, data);
+    pl.dtlsC.async_recv_from(&pl, ctx, ATTACH, &mainRecvCb, data);
     np_event_queue_post_timed_event(&pl, &ev, 1000, &echo, data);
 }
 
-void connected(const np_error_code ec, np_crypto_context* ctx, void* data)
+void connected(const np_error_code ec, np_dtls_cli_context* ctx, void* data)
 {
     echo(ec, ctx);
     NABTO_LOG_INFO(0, "CONNECTION ESTABLISHED!!");
@@ -77,7 +77,7 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    pl.cryp.async_connect(&pl, &ctx->conn, connected, data);
+    pl.dtlsC.async_connect(&pl, &ctx->conn, connected, data);
 }
 
 void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)

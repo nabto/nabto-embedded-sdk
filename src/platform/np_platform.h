@@ -11,7 +11,7 @@
 #include <platform/np_udp.h>
 #include <platform/np_communication_buffer.h>
 #include <platform/np_dns.h>
-#include <platform/np_crypto.h>
+#include <platform/np_dtls_cli.h>
 #include <platform/np_connection.h>
 #include <platform/np_client_connect.h>
 
@@ -31,8 +31,8 @@ struct np_platform {
     // DNS resolver module
     struct np_dns_module dns;
 
-    // Crypto module
-    struct np_crypto_module cryp;
+    // DTLS client module
+    struct np_dtls_cli_module dtlsC;
 
     // connection module
     struct np_connection_module conn;
