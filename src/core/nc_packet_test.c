@@ -61,9 +61,8 @@ void nc_packet_test_insert_packet_ext()
     start = pl.buf.start(buf);
     init_packet_header(start, ATTACH);
     ptr = insert_packet_extension(&pl, buf, UDP_DNS_EP, data, 7);
-
     NABTO_TEST_CHECK(uint16_read(start+2) == 11);
-    NABTO_TEST_CHECK(uint16_read(start+4) == ATTACH);
+    NABTO_TEST_CHECK(uint16_read(start+4) == UDP_DNS_EP);
     NABTO_TEST_CHECK(uint16_read(start+6) == 7);
     NABTO_TEST_CHECK(*(start+8) == data[0]);
 }
