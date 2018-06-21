@@ -67,8 +67,6 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_crypto_conte
                 }
             }
         }
-#include <stdio.h>
-        printf("RECEIVED INVALID ATTACH_DISPATCH PACKET");
     } else {
         recvState = 0;
         cb(NABTO_EC_FAILED, data);

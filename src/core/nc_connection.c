@@ -124,7 +124,7 @@ np_error_code nc_connection_add_channel(struct np_platform* pl, np_connection* c
             }
             break;
         default:
-            NABTO_LOG_ERROR(LOG, "Tried to create connection of invalid type");
+            NABTO_LOG_ERROR(LOG, "Tried to create connection of invalid type: %u", channel->type);
             return NABTO_EC_FAILED;
     }
     return NABTO_EC_OK;
@@ -162,7 +162,7 @@ void nc_connection_async_send_to(struct np_platform* pl, np_connection* conn, ui
     if( conn->dtlsChan.channelId == channelId ) {
         pl->udp.async_send_to(conn->dtlsChan.sock, &conn->dtlsChan.ep, buffer, bufferSize, sentCb, conn);
     } else if ( conn->stunChan.channelId == channelId ) {
-        pl->udp.async_send_to(conn->stunChan.sock, &conn->dtlsChan.ep, buffer, bufferSize, sentCb, conn);
+        pl->udp.async_send_to(conn->stunChan.sock, &conn->stunChan.ep, buffer, bufferSize, sentCb, conn);
     } else {
         bool found = false;
         if (bufferSize > pl->buf.size(buffer)-16) {
