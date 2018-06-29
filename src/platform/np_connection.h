@@ -32,12 +32,10 @@ struct np_connection_channel {
     uint8_t channelId;
 };
 
-#define NABTO_CONNECTION_MAX_APP_CHANNELS 16
+#define NABTO_CONNECTION_MAX_CHANNELS 16
 
 struct np_connection {
-    struct np_connection_channel dtlsChan;
-    struct np_connection_channel stunChan;
-    struct np_connection_channel appChan[NABTO_CONNECTION_MAX_APP_CHANNELS]; // several application channels can exist
+    struct np_connection_channel channels[NABTO_CONNECTION_MAX_CHANNELS]; // several application channels can exist
     struct np_platform* pl;
     struct np_event ev;
     struct np_connection_id id;
@@ -61,6 +59,8 @@ struct np_connection_module {
                                  struct np_connection_channel* channel);
 
     np_error_code (*rem_channel)(struct np_platform* pl, np_connection* conn, uint8_t channelId);
+
+    struct np_connection_id* (*get_id)(struct np_platform* pl, np_connection* conn);
 
     void (*async_send_to)(struct np_platform* pl, np_connection* conn, uint8_t channelId,
                           np_communication_buffer* buffer, uint16_t bufferSize,

@@ -13,6 +13,7 @@
 #define NABTO_LOG_MODULE_ATTACHER               0x00000020ul
 #define NABTO_LOG_MODULE_KEEP_ALIVE             0x00000040ul
 #define NABTO_LOG_MODULE_DTLS_SRV               0x00000080ul
+#define NABTO_LOG_MODULE_CLIENT_CONNECT         0x00000100ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                 0x00000000ul

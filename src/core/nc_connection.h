@@ -16,6 +16,8 @@ np_error_code nc_connection_add_channel(struct np_platform* pl, np_connection* c
 
 np_error_code nc_connection_rem_channel(struct np_platform* pl, np_connection* conn, uint8_t channelId);
 
+struct np_connection_id* nc_connection_get_id(struct np_platform* pl, np_connection* conn);
+
 void nc_connection_async_send_to(struct np_platform* pl, np_connection* conn, uint8_t channelId,
                                  np_communication_buffer* buffer, uint16_t bufferSize,
                                  np_connection_sent_callback cb, void* data);

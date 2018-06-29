@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define NABTO_SSL_RECV_BUFFER_SIZE 4096
 #define SERVER_NAME "localhost"
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 enum sslState {
@@ -54,7 +55,7 @@ struct np_dtls_cli_context {
     mbedtls_x509_crt cacert;
     mbedtls_timing_delay_context timer;
     mbedtls_pk_context pkey;
-    uint8_t recvBuffer[4096];
+    uint8_t recvBuffer[NABTO_SSL_RECV_BUFFER_SIZE];
     size_t recvBufferSize;
     np_communication_buffer* sslRecvBuf;
     size_t sslRecvBufSize;
@@ -450,7 +451,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     const char *pers = "dtls_client";
     mbedtls_ssl_init( &ctx->ssl );
     mbedtls_ssl_config_init( &ctx->conf );
-    mbedtls_x509_crt_init( &ctx->cacert );
+//    mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
     mbedtls_debug_set_threshold( 0 );

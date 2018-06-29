@@ -12,6 +12,7 @@
 #include <platform/np_communication_buffer.h>
 #include <platform/np_dns.h>
 #include <platform/np_dtls_cli.h>
+#include <platform/np_dtls_srv.h>
 #include <platform/np_connection.h>
 #include <platform/np_client_connect.h>
 
@@ -33,6 +34,9 @@ struct np_platform {
 
     // DTLS client module
     struct np_dtls_cli_module dtlsC;
+
+    // DTLS server module
+    struct np_dtls_srv_module dtlsS;
 
     // connection module
     struct np_connection_module conn;

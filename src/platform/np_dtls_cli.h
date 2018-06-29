@@ -5,7 +5,8 @@
 
 #include <platform/np_error_code.h>
 #include <platform/np_connection.h>
-#include <platform/np_platform.h>
+
+struct np_platform;
 
 typedef struct np_dtls_cli_context np_dtls_cli_context;
 

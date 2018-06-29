@@ -18,4 +18,4 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
                                   np_dtls_cli_close_callback cb, void* data);
 
 
-#endif // NM_DTLS_cli_H
+#endif // NM_DTLS_CLI_H

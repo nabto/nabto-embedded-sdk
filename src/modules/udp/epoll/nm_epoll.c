@@ -149,7 +149,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
                 sock->recvDtls.cb = NULL;
                 cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recvDtls.data);
             }
-            pl->clientConn.recv(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0);
+            pl->clientConn.recv(pl, NABTO_EC_UDP_SOCKET_ERROR, NULL, ep, NULL, 0);
             
             return;
         }
@@ -176,7 +176,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
     }
     if(start[0] > 192) {
         NABTO_LOG_TRACE(LOG, "received APP data, invoking callback");
-        pl->clientConn.recv(NABTO_EC_OK, ep, recv_buf, recvLength);
+        pl->clientConn.recv(pl, NABTO_EC_OK, sock, ep, recv_buf, recvLength);
     }
     nm_epoll_handle_event(sock);
 }
@@ -261,7 +261,6 @@ void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callb
 void nm_epoll_event_bind_port(void* data) {
     np_udp_socket* us = (np_udp_socket*)data;
     struct epoll_event* ev;
-    struct sockaddr_in si_me;
 
     us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (us->sock == -1) {
@@ -291,10 +290,23 @@ void nm_epoll_event_bind_port(void* data) {
             return;
         }        
     }
-    si_me.sin_family = AF_INET6;
-    si_me.sin_port = htons(us->created.port);
-    si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(us->sock, (struct sockaddr*)&si_me, sizeof(si_me)) == -1) {
+    int i;
+    if(us->isIpv6) {
+        struct sockaddr_in6 si_me6;
+        si_me6.sin6_family = AF_INET6;
+        si_me6.sin6_port = htons(us->created.port);
+        si_me6.sin6_addr = in6addr_any;
+        i = bind(us->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
+        NABTO_LOG_INFO(LOG, "bind returned %i", i);
+    } else {
+        struct sockaddr_in si_me;
+        si_me.sin_family = AF_INET;
+        si_me.sin_port = htons(us->created.port);
+        si_me.sin_addr.s_addr = INADDR_ANY;
+        i = bind(us->sock, (struct sockaddr*)&si_me, sizeof(si_me));
+        NABTO_LOG_INFO(LOG, "bind returned %i", i);
+    }
+    if (i != 0) {
         np_error_code ec;
         NABTO_LOG_ERROR(LOG,"Unable to bind to port %i: (%i) '%s'.", us->created.port, errno, strerror(errno));
         ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
@@ -347,7 +359,8 @@ void nm_epoll_event_send_to(void* data){
     }
     if (res < 0) {
         int status = errno;
-        if (status == EAGAIN || EWOULDBLOCK) {
+        NABTO_LOG_TRACE(LOG, "UDP returned error status %i", status);
+        if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
         } else {
             NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", strerror(status), (int) status);

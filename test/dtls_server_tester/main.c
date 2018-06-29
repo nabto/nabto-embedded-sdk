@@ -4,7 +4,7 @@
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <modules/logging/nm_unix_logging.h>
 #include <modules/timestamp/nm_unix_timestamp.h>
-#include <modules/dtls/nm_dtls_cli.h>
+#include <modules/dtls/nm_dtls_srv.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_connection.h>
 #include <core/nc_connection.h>
@@ -21,54 +21,13 @@ struct test_context {
     struct np_connection conn;
     np_udp_socket* sock;
     struct np_connection_channel channel;
+    np_dtls_srv_connection* dtls;
     struct np_connection_id id;
 };
+
 struct np_platform pl;
-uint8_t buffer[] = "Hello world";
-uint16_t bufferSize = 12;
-struct np_udp_endpoint ep;
 struct np_timed_event ev;
 struct np_timed_event closeEv;
-
-void exitter(const np_error_code ec, void* data)
-{
-    exit(0);
-}
-
-void closeCb(const np_error_code ec, void* data)
-{
-    np_event_queue_post_timed_event(&pl, &closeEv, 1000, &exitter, NULL);
-}
-
-void sendCb(const np_error_code ec, void* data)
-{
-    NABTO_LOG_INFO(0, "Received send callback with ec: %i", ec);
-}
-
-void mainRecvCb(const np_error_code ec, uint8_t channelId, uint64_t sequence, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
-{
-    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
-    NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));
-    pl.dtlsC.async_close(&pl, ctx, &closeCb, NULL);
-}
-
-void echo(const np_error_code ec, void* data)
-{
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(0, "echo with FAILED status");
-        exit(1);
-    }
-    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
-    pl.dtlsC.async_send_to(&pl, ctx, 0xff, buffer, bufferSize, &sendCb, data);
-    pl.dtlsC.async_recv_from(&pl, ctx, ATTACH, &mainRecvCb, data);
-    np_event_queue_post_timed_event(&pl, &ev, 1000, &echo, data);
-}
-
-void connected(const np_error_code ec, np_dtls_cli_context* ctx, void* data)
-{
-    echo(ec, ctx);
-    NABTO_LOG_INFO(0, "CONNECTION ESTABLISHED!!");
-}
 
 void created(const np_error_code ec, uint8_t channelId, void* data)
 {
@@ -78,7 +37,10 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    pl.dtlsC.async_connect(&pl, &ctx->conn, connected, data);
+    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->conn, ctx->dtls);
+    if(ec2 != NABTO_EC_OK) {
+        exit(1);
+    }
 }
 
 void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
@@ -87,27 +49,26 @@ void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
     ctx->sock = sock;
     ctx->channel.type = NABTO_CHANNEL_DTLS;
     ctx->channel.sock = sock;
-    ctx->channel.ep = ep;
+    ctx->channel.ep.port = 0;
     ctx->channel.channelId = 0;
     pl.conn.async_create(&pl, &ctx->conn, &ctx->channel, &ctx->id, created, data);
 }
 
+
 int main() {
-    ep.port = 4433;
-    inet_pton(AF_INET6, "::1", ep.ip.v6.addr);
-    NABTO_LOG_INFO(0, "pl: %i", &pl);
     np_platform_init(&pl);
+    np_log.log = &nm_unix_log;
+    np_log.log_buf = &nm_unix_log_buf;
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
-    nm_dtls_init(&pl);
+    nm_dtls_srv_init(&pl);
     nm_unix_ts_init(&pl);
     nc_client_connect_init(&pl);
 
-    np_log.log = &nm_unix_log;
     struct test_context data;
     data.data = 42;
     nc_connection_init(&pl);
-    pl.udp.async_create(sockCreatedCb, &data);
+    pl.udp.async_bind_port(4433, sockCreatedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));
