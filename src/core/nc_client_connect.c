@@ -52,7 +52,7 @@ void nc_client_connect_conn_created(const np_error_code ec, uint8_t channelId, v
         cc->createdCb(ec, NULL, cc->createdCbData);
         return;
     }
-    ecl = cc->pl->dtlsS.create(cc->pl, &cc->conn, cc->dtls);
+    ecl = cc->pl->dtlsS.create(cc->pl, &cc->conn, &cc->dtls);
     cc->createdCb(ecl, cc->dtls, cc->createdCbData);
 }
 

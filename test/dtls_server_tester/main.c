@@ -29,6 +29,20 @@ struct np_platform pl;
 struct np_timed_event ev;
 struct np_timed_event closeEv;
 
+void closeCb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(0, "DTLS connection closed");
+    exit(0);
+}
+
+void recvedCb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+            np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    struct test_context* ctx = (struct test_context*) data;
+    NABTO_LOG_INFO(0, "RECEIVED CB");
+    pl.dtlsS.async_close(&pl, ctx->dtls, closeCb, data);
+}
+    
 void created(const np_error_code ec, uint8_t channelId, void* data)
 {
     if (ec != NABTO_EC_OK) {
@@ -37,7 +51,10 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->conn, ctx->dtls);
+    NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
+    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->conn, &ctx->dtls);
+    NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
+    pl.dtlsS.async_recv_from(&pl, ctx->dtls, recvedCb, ctx);
     if(ec2 != NABTO_EC_OK) {
         exit(1);
     }
