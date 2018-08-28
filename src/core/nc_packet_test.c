@@ -38,11 +38,9 @@ void nc_packet_test_uint16_read_write()
 void nc_packet_test_init_packet_header()
 {
     uint8_t buffer[10];
-    uint8_t* ptr = init_packet_header(buffer, ATTACH);
-    NABTO_TEST_CHECK(buffer[0] == ATTACH);
+    uint8_t* ptr = init_packet_header(buffer, AT_DEVICE_RELAY);
+    NABTO_TEST_CHECK(buffer[0] == AT_DEVICE_RELAY);
     NABTO_TEST_CHECK(buffer[1] == 0);
-    NABTO_TEST_CHECK(buffer[2] == 0);
-    NABTO_TEST_CHECK(buffer[3] == 0);
     NABTO_TEST_CHECK(ptr = buffer + NABTO_PACKET_HEADER_SIZE);
 }
 void nc_packet_test_insert_packet_ext()
@@ -59,12 +57,11 @@ void nc_packet_test_insert_packet_ext()
     pl.buf.free = &nc_packet_test_free;
     buf = pl.buf.allocate();
     start = pl.buf.start(buf);
-    init_packet_header(start, ATTACH);
-    ptr = insert_packet_extension(&pl, buf, UDP_DNS_EP, data, 7);
-    NABTO_TEST_CHECK(uint16_read(start+2) == 11);
-    NABTO_TEST_CHECK(uint16_read(start+4) == UDP_DNS_EP);
-    NABTO_TEST_CHECK(uint16_read(start+6) == 7);
-    NABTO_TEST_CHECK(*(start+8) == data[0]);
+    ptr = init_packet_header(start, AT_DEVICE_RELAY);
+    ptr = insert_packet_extension(&pl, ptr, EX_UDP_DNS_EP, data, 7);
+    NABTO_TEST_CHECK(uint16_read(start+2) == EX_UDP_DNS_EP);
+    NABTO_TEST_CHECK(uint16_read(start+4) == 7);
+    NABTO_TEST_CHECK(*(start+6) == data[0]);
 }
 void nc_packet_test_write_length_data()
 {

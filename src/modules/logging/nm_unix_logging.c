@@ -15,7 +15,7 @@ void nm_unix_log_init()
 }
 
 void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len){
-    char str[64];
+    char str[128];
     char* ptr;
     size_t chunks = len/16;
     size_t i, n;
@@ -29,6 +29,18 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
             ret = sprintf(ptr, "%02x ", buf[i*16+n]);
             ptr = ptr + ret;
         }
+        ret = sprintf(ptr, ": ");
+        ptr = ptr + ret;
+        
+        for (n = 0; n < 16; n++) {
+            if(buf[i*16+n] > 0x1F && buf[i*16+n] < 0x7F) {
+                ret = sprintf(ptr, "%c", (char)buf[i*16+n]);
+                ptr = ptr + ret;
+            } else {
+                ret = sprintf(ptr, ".");
+                ptr = ptr + ret;
+            }
+        }
         nm_unix_log(severity, module, line, file, str, list);
     }
     ret = sprintf(str, "%04lx: ", chunks*16);
@@ -36,6 +48,22 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
     for (n = chunks*16; n < len; n++) {
         ret = sprintf(ptr, "%02x ", buf[n]);
         ptr = ptr + ret;
+    }
+    for (; n < chunks*16+16; n++) {
+        ret = sprintf(ptr, "   ");
+        ptr = ptr + ret;
+    }
+    ret = sprintf(ptr, ": ");
+    ptr = ptr + ret;
+        
+    for (n = chunks*16; n < len; n++) {
+        if(buf[n] > 0x1F && buf[n] < 0x7F) {
+            ret = sprintf(ptr, "%c", (char)buf[n]);
+            ptr = ptr + ret;
+        } else {
+            ret = sprintf(ptr, ".");
+            ptr = ptr + ret;
+        }
     }
     nm_unix_log(severity, module, line, file, str, list);
 }

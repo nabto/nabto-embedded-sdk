@@ -11,6 +11,9 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+const char* appVer = "0.0.1";
+const char* appName = "Weather_app";
+
 struct np_communication_buffer {
     uint8_t buf[1500];
 };
@@ -27,6 +30,7 @@ bool validAdReqSend = false;
 bool validAnReqSend = false;
 bool crypAdRecvCalled = false;
 bool crypAnRecvCalled = false;
+uint32_t sessionId = 0x42424242;
 
 /* state to know which packet attacher is to receive next: 
  * 0 NONE, 
@@ -45,26 +49,27 @@ uint16_t nc_attacher_test_size(np_communication_buffer* buffer) { return 1500; }
 np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t channelId,
                                    uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_to_callback cb, void* data)
 {
-    if(buffer[0] == ATTACH_DISPATCH) {
-        if(buffer[1] == ATTACH_DISPATCH_REQUEST) {
-            uint16_t ext = (((uint16_t)buffer[4]) << 8) + buffer[5];
-            if (ext == UDP_IPV4_EP || ext == UDP_IPV6_EP) {
+    if(buffer[0] == AT_DEVICE_LB) {
+        if(buffer[1] == CT_DEVICE_LB_REQUEST) {
+            uint16_t ext = (((uint16_t)buffer[2]) << 8) + buffer[3];
+            // TODO: check all three extensions not just first
+            if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || EX_APPLICATION_VERSION) {
                 validAdReqSend = true;
                 recvState = 1;
                 cb(NABTO_EC_OK, data);
+                return NABTO_EC_OK;
             }
         }
-    } else if(buffer[0] == ATTACH) {
-        if(buffer[1] == ATTACH_DEVICE_HELLO) {
-            uint16_t ext = (((uint16_t)buffer[4]) << 8) + buffer[5];
-            if (ext == UDP_IPV4_EP || ext == UDP_IPV6_EP) {
-                uint16_t endOfExt = NABTO_PACKET_HEADER_SIZE+(((uint16_t)buffer[2]) << 8)+buffer[3]+2;
-                if(((((uint16_t)buffer[endOfExt]) << 8 ) + buffer[endOfExt+1] ) == 666) { // token
-                    validAnReqSend = true;
-                    recvState = 2;
-                    cb(NABTO_EC_OK, data);
-                    return NABTO_EC_OK;
-                }
+        
+    } else if(buffer[0] == AT_DEVICE_RELAY) {
+        if(buffer[1] == CT_DEVICE_RELAY_HELLO_REQUEST) {
+            // TODO: check all extentions not just first 
+            uint16_t ext = (((uint16_t)buffer[2]) << 8) + buffer[3];
+            if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || ext == EX_APPLICATION_VERSION || ext == EX_APPLICATION_VERSION || ext == EX_SESSION_ID || ext == EX_ATTACH_INDEX) {
+                validAnReqSend = true;
+                recvState = 2;
+                cb(NABTO_EC_OK, data);
+                return NABTO_EC_OK;
             }
         }
     } else {
@@ -77,26 +82,29 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
                                      enum application_data_type type, np_dtls_cli_received_callback cb, void* data)
 {
     np_communication_buffer resp;
-    uint8_t *ptr = resp.buf;
+    uint8_t *ptr = resp.buf+2;
     if (recvState == 1) {
-        resp.buf[0] = ATTACH_DISPATCH;
-        resp.buf[1] = ATTACH_DISPATCH_RESPONSE;
-        ptr = uint16_write_forward(ptr+2, 18); // extensions length
-        ptr = uint16_write_forward(ptr, UDP_DNS_EP); 
-        ptr = uint16_write_forward(ptr, 14); //extension data length
-        ptr = uint16_write_forward(ptr, 4242); // port
-        ptr = uint16_write_forward(ptr, 10); // string length
+        resp.buf[0] = AT_DEVICE_LB;
+        resp.buf[1] = CT_DEVICE_LB_RESPONSE;
+        ptr = uint16_write_forward(ptr, EX_DTLS_EP); 
+        ptr = uint16_write_forward(ptr, 31); //extension data length
+        ptr = uint16_write_forward(ptr, 0x4242); // port
+        *ptr = 3; ptr++; // az
+        memcpy(ptr, "1234567890123456", 16); // fp
+        ptr += 16;
+        ptr = uint16_write_forward(ptr, 10); // dns length
         memcpy(ptr, "localhost", 10); // host
         ptr += 10;
-        ptr = uint16_write_forward(ptr, 2); // token length
-        ptr = uint16_write_forward(ptr, 666); // random token data
+        ptr = uint16_write_forward(ptr, EX_SESSION_ID);
+        ptr = uint16_write_forward(ptr, 4); // extension data length
+        ptr = uint32_write_forward(ptr, sessionId); // session ID
         
         recvState = 0;
-        cb(NABTO_EC_OK, 0, 0, &resp, 26, data);
+        cb(NABTO_EC_OK, 0, 0, &resp, 45, data);
         crypAdRecvCalled = true;
     } else if (recvState == 2) {
-        resp.buf[0] = ATTACH;
-        resp.buf[1] = ATTACH_SERVER_HELLO;
+        resp.buf[0] = AT_DEVICE_RELAY;
+        resp.buf[1] = CT_DEVICE_RELAY_HELLO_RESPONSE;
         resp.buf[2] = 0;
         resp.buf[3] = 0;
         recvState = 0;
@@ -184,7 +192,7 @@ void nc_attacher_test_attach()
     callbackReceived = false;
     inet_pton(AF_INET6, "::1", rec[0].v6.addr);
     
-    nc_attacher_async_attach(&pl, &nc_attacher_test_callback, NULL);
+    nc_attacher_async_attach(&pl, appName, strlen(appName), appVer, strlen(appVer), &nc_attacher_test_callback, NULL);
     
     NABTO_TEST_CHECK(callbackReceived);
     NABTO_TEST_CHECK(crypAdRecvCalled);

@@ -4,7 +4,9 @@
 #include <platform/np_platform.h>
 #include <platform/np_dtls_cli.h>
 
-void nm_dtls_init(struct np_platform* pl);
+np_error_code nm_dtls_init(struct np_platform* pl,
+                  const unsigned char* publicKeyL, size_t publicKeySize,
+                  const unsigned char* privateKeyL, size_t privateKeySize);
 
 np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection* conn,
                                     np_dtls_cli_connect_callback cb, void* data);
