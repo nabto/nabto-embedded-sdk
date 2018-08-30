@@ -1,5 +1,6 @@
 #include "nm_dtls_cli.h"
 #include <platform/np_logging.h>
+#include <core/nc_version.h>
 
 #include <mbedtls/debug.h>
 #include <mbedtls/ssl.h>
@@ -69,6 +70,8 @@ struct np_dtls_cli_context {
 // Global public/private key used for everything initialized with module init
 mbedtls_x509_crt publicKey;
 mbedtls_pk_context privateKey;
+const char* alpnList[2];
+char protocol[] = NABTO_PROTOCOL_VERSION;
 
 // Function called by mbedtls when data should be sent to the network
 int nm_dtls_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
@@ -147,6 +150,9 @@ np_error_code nm_dtls_init(struct np_platform* pl,
     pl->dtlsC.async_close = &nm_dtls_async_close;
     pl->dtlsC.cancel_recv_from = &nm_dtls_cancel_recv_from;
 
+    alpnList[0] = protocol;
+    alpnList[1] = NULL;
+    
     mbedtls_x509_crt_init( &publicKey );
     mbedtls_pk_init( &privateKey );
     ret = mbedtls_x509_crt_parse( &publicKey, publicKeyL, publicKeySize+1);
@@ -208,6 +214,15 @@ void nm_dtls_event_do_one(void* data)
                 ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
                 free(ctx);
                 return;
+            }
+            if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
+                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiantion Failed");
+                ctx->connectCb(NABTO_EC_ALPN_FAILED, NULL, ctx->connectData);
+                np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+                ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
+                free(ctx);
+                return;
+                
             }
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             ctx->state = DATA;
@@ -500,7 +515,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
         free(ctx);
         return NABTO_EC_FAILED;
     }
-
+    mbedtls_ssl_conf_alpn_protocols(&ctx->conf, alpnList );
     mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
     ret = mbedtls_ssl_conf_own_cert(&ctx->conf, &publicKey, &privateKey);
     if (ret != 0) {
