@@ -37,7 +37,7 @@ uint32_t sessionId = 0x42424242;
  * 1 ATTACH_DISPATCH_RESPONSE,
  * 2 ATTACH_SERVER_HELLO
 */
-int recvState = 0; 
+int nc_attacher_test_recvState = 0; 
 
 // communication buffer impl
 np_communication_buffer* nc_attacher_test_allocate() { return (np_communication_buffer*)malloc(sizeof(struct np_communication_buffer)); }
@@ -55,7 +55,7 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_con
             // TODO: check all three extensions not just first
             if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || EX_APPLICATION_VERSION) {
                 validAdReqSend = true;
-                recvState = 1;
+                nc_attacher_test_recvState = 1;
                 cb(NABTO_EC_OK, data);
                 return NABTO_EC_OK;
             }
@@ -67,13 +67,13 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_con
             uint16_t ext = (((uint16_t)buffer[2]) << 8) + buffer[3];
             if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || ext == EX_APPLICATION_VERSION || ext == EX_APPLICATION_VERSION || ext == EX_SESSION_ID || ext == EX_ATTACH_INDEX) {
                 validAnReqSend = true;
-                recvState = 2;
+                nc_attacher_test_recvState = 2;
                 cb(NABTO_EC_OK, data);
                 return NABTO_EC_OK;
             }
         }
     } else {
-        recvState = 0;
+        nc_attacher_test_recvState = 0;
         cb(NABTO_EC_FAILED, data);
     }
     return NABTO_EC_OK;
@@ -83,7 +83,7 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
 {
     np_communication_buffer resp;
     uint8_t *ptr = resp.buf+2;
-    if (recvState == 1) {
+    if (nc_attacher_test_recvState == 1) {
         resp.buf[0] = AT_DEVICE_LB;
         resp.buf[1] = CT_DEVICE_LB_RESPONSE;
         ptr = uint16_write_forward(ptr, EX_DTLS_EP); 
@@ -99,20 +99,20 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
         ptr = uint16_write_forward(ptr, 4); // extension data length
         ptr = uint32_write_forward(ptr, sessionId); // session ID
         
-        recvState = 0;
+        nc_attacher_test_recvState = 0;
         cb(NABTO_EC_OK, 0, 0, &resp, 45, data);
         crypAdRecvCalled = true;
-    } else if (recvState == 2) {
+    } else if (nc_attacher_test_recvState == 2) {
         resp.buf[0] = AT_DEVICE_RELAY;
         resp.buf[1] = CT_DEVICE_RELAY_HELLO_RESPONSE;
         resp.buf[2] = 0;
         resp.buf[3] = 0;
-        recvState = 0;
+        nc_attacher_test_recvState = 0;
         cb(NABTO_EC_OK, 0, 0, &resp, 4, data);
         crypAnRecvCalled = true;
     } else {
         //cb(NABTO_EC_FAILED, 0, 0, NULL, 0, data);
-        recvState = 0;
+        nc_attacher_test_recvState = 0;
     }
     return NABTO_EC_OK;
 }
