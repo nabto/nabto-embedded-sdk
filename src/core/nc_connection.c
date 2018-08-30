@@ -160,6 +160,7 @@ void nc_connection_async_send_to(struct np_platform* pl, np_connection* conn, ui
                 memmove(start+16, start, bufferSize);
                 memcpy(start, conn->id.id, 15);
                 memcpy(start+15, &channelId, 1);
+                bufferSize = bufferSize + 16;
             }
             NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
             pl->udp.async_send_to(conn->channels[i].sock, &conn->channels[i].ep, buffer, bufferSize, sentCb, conn);
