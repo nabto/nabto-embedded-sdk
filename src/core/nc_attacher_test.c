@@ -13,6 +13,7 @@
 
 const char* appVer = "0.0.1";
 const char* appName = "Weather_app";
+const char* hostname = "localhost";
 
 struct np_communication_buffer {
     uint8_t buf[1500];
@@ -191,8 +192,18 @@ void nc_attacher_test_attach()
     np_dtls_cli_context* crypCtx;
     callbackReceived = false;
     inet_pton(AF_INET6, "::1", rec[0].v6.addr);
+
+    struct nc_attach_parameters attachParams;
+
+    attachParams.appName = appName;
+    attachParams.appNameLength = strlen(appName);
+    attachParams.appVersion = appVer;
+    attachParams.appVersionLength = strlen(appVer);
+    attachParams.hostname = hostname;
+    attachParams.hostnameLength = strlen(hostname);
+
     
-    nc_attacher_async_attach(&pl, appName, strlen(appName), appVer, strlen(appVer), &nc_attacher_test_callback, NULL);
+    nc_attacher_async_attach(&pl, &attachParams, &nc_attacher_test_callback, NULL);
     
     NABTO_TEST_CHECK(callbackReceived);
     NABTO_TEST_CHECK(crypAdRecvCalled);

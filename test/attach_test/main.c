@@ -20,6 +20,11 @@
 
 const char* appVer = "0.0.1";
 const char* appName = "Weather_app";
+//const char* hostname = "abc.devices.dev.nabto.net";
+const char* hostname = "localhost";
+
+struct nc_attach_parameters attachParams;
+
 const unsigned char devicePrivateKey[] =
 "-----BEGIN EC PARAMETERS-----\r\n"
 "BggqhkjOPQMBBw==\r\n"
@@ -70,9 +75,17 @@ int main() {
   
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;
+
+    attachParams.appName = appName;
+    attachParams.appNameLength = strlen(appName);
+    attachParams.appVersion = appVer;
+    attachParams.appVersionLength = strlen(appVer);
+    attachParams.hostname = hostname;
+    attachParams.hostnameLength = strlen(hostname);
+    
     struct test_context data;
     data.data = 42;
-    nc_attacher_async_attach(&pl, appName, strlen(appName), appVer, strlen(appVer), attachedCb, &data);
+    nc_attacher_async_attach(&pl, &attachParams, attachedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         nm_epoll_wait();

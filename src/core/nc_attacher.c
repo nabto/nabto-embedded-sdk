@@ -23,10 +23,7 @@ struct nc_attach_an_endpoint {
 
 struct nc_attach_context {
     struct np_platform* pl;
-    const char* appVersion;
-    const char* appName;
-    uint8_t appVersionLength;
-    uint8_t appNameLength;
+    const struct nc_attach_parameters* params;
     uint32_t sessionId;
     struct nc_attach_an_endpoint anEps[NABTO_MAX_AN_EPS];
     uint8_t activeAnEps;
@@ -243,13 +240,13 @@ void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
     memcpy(&extBuffer[1], NABTO_VERSION, strlen(NABTO_VERSION));
     ptr = insert_packet_extension(ctx.pl, ptr, EX_NABTO_VERSION, extBuffer, strlen(NABTO_VERSION)+1);
 
-    extBuffer[0] = ctx.appVersionLength;
-    memcpy(&extBuffer[1], ctx.appVersion, ctx.appVersionLength);
-    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_VERSION, extBuffer, ctx.appVersionLength+1);
+    extBuffer[0] = ctx.params->appVersionLength;
+    memcpy(&extBuffer[1], ctx.params->appVersion, ctx.params->appVersionLength);
+    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_VERSION, extBuffer, ctx.params->appVersionLength+1);
 
-    extBuffer[0] = ctx.appNameLength;
-    memcpy(&extBuffer[1], ctx.appName, ctx.appNameLength);
-    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_NAME, extBuffer, ctx.appNameLength+1);
+    extBuffer[0] = ctx.params->appNameLength;
+    memcpy(&extBuffer[1], ctx.params->appName, ctx.params->appNameLength);
+    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_NAME, extBuffer, ctx.params->appNameLength+1);
     
     NABTO_LOG_TRACE(LOG, "Sending CT_DEVICE_RELAY_HELLO_REQUEST:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
@@ -302,13 +299,13 @@ void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
     memcpy(&extBuffer[1], NABTO_VERSION, strlen(NABTO_VERSION));
     ptr = insert_packet_extension(ctx.pl, ptr, EX_NABTO_VERSION, extBuffer, strlen(NABTO_VERSION)+1);
 
-    extBuffer[0] = ctx.appVersionLength;
-    memcpy(&extBuffer[1], ctx.appVersion, ctx.appVersionLength);
-    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_VERSION, extBuffer, ctx.appVersionLength+1);
+    extBuffer[0] = ctx.params->appVersionLength;
+    memcpy(&extBuffer[1], ctx.params->appVersion, ctx.params->appVersionLength);
+    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_VERSION, extBuffer, ctx.params->appVersionLength+1);
 
-    extBuffer[0] = ctx.appNameLength;
-    memcpy(&extBuffer[1], ctx.appName, ctx.appNameLength);
-    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_NAME, extBuffer, ctx.appNameLength+1);
+    extBuffer[0] = ctx.params->appNameLength;
+    memcpy(&extBuffer[1], ctx.params->appName, ctx.params->appNameLength);
+    ptr = insert_packet_extension(ctx.pl, ptr, EX_APPLICATION_NAME, extBuffer, ctx.params->appNameLength+1);
     
     NABTO_LOG_TRACE(LOG, "Sending device lb Request:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
@@ -376,18 +373,14 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
 /** 
  * API functions
  */
-np_error_code nc_attacher_async_attach(struct np_platform* pl, const char* appName, uint8_t appNameLen, const char* appVer, uint8_t appVerLen, nc_attached_callback cb, void* data)
+np_error_code nc_attacher_async_attach(struct np_platform* pl, const struct nc_attach_parameters* params, nc_attached_callback cb, void* data)
 {
     ctx.pl = pl;
     ctx.cb = cb;
     ctx.cbData = data;
-    ctx.appName = appName;
-    ctx.appVersion = appVer;
-    ctx.appNameLength = appNameLen;
-    ctx.appVersionLength = appVerLen;
+    ctx.params = params;
     
-    // TODO: resolve a attach dispatcher host from somewhere
-    memcpy(ctx.dns, "localhost", 10);
+    memcpy(ctx.dns, ctx.params->hostname, ctx.params->hostnameLength);
     pl->udp.async_create(&nc_attacher_sock_created_cb, &ctx);
 }
 

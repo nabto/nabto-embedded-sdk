@@ -108,7 +108,6 @@ np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, np_dtls_s
 np_error_code nc_client_connect_test_cryp_create(struct np_platform* pll, np_connection* conn,
                                          np_dtls_srv_connection** ctx)
 {
-    NABTO_LOG_TRACE(0, "Test DTLS serv create");
     pl.clientConn.async_recv_from(conn, &nc_client_connect_test_recv_from_clientConn, &testCtx);
     //cb(NABTO_EC_OK, crypCtx, data);
     return NABTO_EC_OK;
@@ -149,18 +148,16 @@ void nc_client_connect_test_recv_from_clientConn(const np_error_code ec, struct 
                                                  np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     uint8_t* ptr = pl.buf.start(buffer);
-    NABTO_LOG_BUF(0, ptr, 25);
     NABTO_TEST_CHECK(*ptr == 240);
     NABTO_TEST_CHECK(memcmp(ptr+1, "12345678912345\0TEST_DATA" , 24) == 0);
     testRecvFromCalled = true;
 }
-#include <modules/logging/nm_unix_logging.h>
+
 void nc_client_connect_test_connect()
 {
     struct np_udp_endpoint ep;
     np_communication_buffer* buf;
     uint8_t* ptr;
-    nm_unix_log_init(&pl);
     id.id[0] = 240;
     memcpy(id.id+1, "12345678912345\0",14);
     np_platform_init(&pl);
@@ -188,7 +185,6 @@ void nc_client_connect_test_connect()
     ptr += 16;
     memcpy(ptr, "TEST_DATA", 10);
     ptr += 10;
-    NABTO_LOG_BUF(0, pl.buf.start(buf), 25);
     pl.clientConn.recv(&pl, NABTO_EC_OK, sock, ep, buf, 26);
     
     NABTO_TEST_CHECK(testRecvFromCalled);
