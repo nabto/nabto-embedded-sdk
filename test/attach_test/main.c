@@ -9,6 +9,7 @@
 #include <platform/np_ip_address.h>
 #include <core/nc_connection.h>
 #include <core/nc_attacher.h>
+#include <core/nc_client_connect.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,6 +64,7 @@ int main() {
     nm_unix_ts_init(&pl);
     nm_unix_dns_init(&pl);
     nc_connection_init(&pl);
+    nc_client_connect_init(&pl);
   
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;
