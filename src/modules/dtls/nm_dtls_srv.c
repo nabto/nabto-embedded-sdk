@@ -20,7 +20,7 @@
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 #define DEBUG_LEVEL 4
 
-const char test_priv_key[] =
+/*const char test_priv_key[] =
 "-----BEGIN EC PARAMETERS-----\r\n"
 "BggqhkjOPQMBBw==\r\n"
 "-----END EC PARAMETERS-----\r\n"
@@ -44,7 +44,7 @@ const char test_pub_key_crt[] =
 "oh2pYe+WgV6I+bV8LIiexQlgXZjh/ZEjds1TCuHAGQIgAsQ6zTkvEMy/1d6cU4FB\r\n"
 "HB2dRWSdQGN3E4gle5w5/dg=\r\n"
 "-----END CERTIFICATE-----\r\n";
-
+*/
 
 enum sslState {
     CONNECTING,
@@ -97,7 +97,8 @@ struct nm_dtls_srv_context {
 };
 
 struct nm_dtls_srv_context server;
-np_error_code nm_dtls_srv_init_config();
+np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t publicKeySize,
+                                      const unsigned char* privateKeyL, size_t privateKeySize);
 static void nm_dtls_srv_tls_logger( void *ctx, int level, const char *file, int line, const char *str );
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data);
 void nm_dtls_srv_do_one(void* data);
@@ -116,7 +117,9 @@ void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct np_
                                               uint16_t bufferSize, void* data);
 
 
-np_error_code nm_dtls_srv_init(struct np_platform* pl)
+np_error_code nm_dtls_srv_init(struct np_platform* pl,
+                               const unsigned char* publicKeyL, size_t publicKeySize,
+                               const unsigned char* privateKeyL, size_t privateKeySize)
 {
     pl->dtlsS.create = &nm_dtls_srv_create;
     pl->dtlsS.async_send_to = &nm_dtls_srv_async_send_to;
@@ -124,7 +127,7 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl)
     pl->dtlsS.cancel_recv_from = &nm_dtls_srv_cancel_recv_from;
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
     server.pl = pl;
-    return nm_dtls_srv_init_config();
+    return nm_dtls_srv_init_config(publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
 np_error_code nm_dtls_srv_create(struct np_platform* pl, np_connection* conn, np_dtls_srv_connection** dtls)
@@ -320,7 +323,8 @@ void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct np_
     }
 }
 
-np_error_code nm_dtls_srv_init_config()
+np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t publicKeySize,
+                                      const unsigned char* privateKeyL, size_t privateKeySize)
 {
     const char *pers = "dtls_server";
     int ret;
@@ -359,15 +363,15 @@ np_error_code nm_dtls_srv_init_config()
 
 //    mbedtls_ssl_conf_dtls_cookies( &server.conf, mbedtls_ssl_cookie_write, mbedtls_ssl_cookie_check,
 //                                   &server.cookie_ctx );
-    ret = mbedtls_x509_crt_parse( &server.publicKey, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt)+1);
+    ret = mbedtls_x509_crt_parse( &server.publicKey, (const unsigned char*)publicKeyL, publicKeySize+1);
     if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG, "mbedtls_x509_crt_parse returned %d ", ret);
         return NABTO_EC_FAILED;
     }
 
-    NABTO_LOG_TRACE(LOG, "parsing privateKey: %s", test_priv_key);
-    ret =  mbedtls_pk_parse_key( &server.privateKey, (const unsigned char*)test_priv_key, strlen(test_priv_key)+1, NULL, 0 );
+    NABTO_LOG_TRACE(LOG, "parsing privateKey: %s", privateKeyL);
+    ret =  mbedtls_pk_parse_key( &server.privateKey, (const unsigned char*)privateKeyL, privateKeySize+1, NULL, 0 );
     if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG,"mbedtls_pk_parse_key returned %d", ret);

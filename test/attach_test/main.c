@@ -5,6 +5,7 @@
 #include <modules/logging/nm_unix_logging.h>
 #include <modules/timestamp/nm_unix_timestamp.h>
 #include <modules/dtls/nm_dtls_cli.h>
+#include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/nm_unix_dns.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_connection.h>
@@ -61,6 +62,7 @@ int main() {
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
     nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+    nm_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     nm_unix_ts_init(&pl);
     nm_unix_dns_init(&pl);
     nc_connection_init(&pl);

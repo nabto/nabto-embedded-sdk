@@ -4,7 +4,9 @@
 #include <platform/np_platform.h>
 #include <platform/np_dtls_srv.h>
 
-np_error_code nm_dtls_srv_init(struct np_platform* pl);
+np_error_code nm_dtls_srv_init(struct np_platform* pl,
+                  const unsigned char* publicKeyL, size_t publicKeySize,
+                  const unsigned char* privateKeyL, size_t privateKeySize);
 
 np_error_code nm_dtls_srv_create(struct np_platform* pl, np_connection* conn, np_dtls_srv_connection** dtls);
 np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, np_dtls_srv_connection* ctx, uint8_t channelId,

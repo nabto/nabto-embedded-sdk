@@ -16,6 +16,31 @@
 #include <errno.h>
 #include <string.h>
 
+const char test_priv_key[] =
+"-----BEGIN EC PARAMETERS-----\r\n"
+"BggqhkjOPQMBBw==\r\n"
+"-----END EC PARAMETERS-----\r\n"
+"-----BEGIN EC PRIVATE KEY-----\r\n"
+"MHcCAQEEIPwHCOmh7kIAFfGHK7C5QqJvY/MvXVJv2IGHayFZBDfMoAoGCCqGSM49\r\n"
+"AwEHoUQDQgAE3STG13/95B6UFDiwjoVzKCj3rAIaEZIy9nelN8yyZEc654vepzk3\r\n"
+"jL1pjCx4mgM/5xCqxFI0ctHZehFkmZrInQ==\r\n"
+"-----END EC PRIVATE KEY-----\r\n";
+
+const char test_pub_key_crt[] =
+"-----BEGIN CERTIFICATE-----\r\n"
+"MIIB7TCCAZSgAwIBAgIJAK9g+0WW5dPhMAoGCCqGSM49BAMCMFIxCzAJBgNVBAYT\r\n"
+"AkRLMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBXaWRn\r\n"
+"aXRzIFB0eSBMdGQxCzAJBgNVBAMMAk1NMB4XDTE4MDUwNDA4MzQwMVoXDTIwMDUw\r\n"
+"MzA4MzQwMVowUjELMAkGA1UEBhMCREsxEzARBgNVBAgMClNvbWUtU3RhdGUxITAf\r\n"
+"BgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDELMAkGA1UEAwwCTU0wWTAT\r\n"
+"BgcqhkjOPQIBBggqhkjOPQMBBwNCAATdJMbXf/3kHpQUOLCOhXMoKPesAhoRkjL2\r\n"
+"d6U3zLJkRzrni96nOTeMvWmMLHiaAz/nEKrEUjRy0dl6EWSZmsido1MwUTAdBgNV\r\n"
+"HQ4EFgQUCx61qb7QZCunFl16Lr9Yszx07OgwHwYDVR0jBBgwFoAUCx61qb7QZCun\r\n"
+"Fl16Lr9Yszx07OgwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBEAiB9\r\n"
+"oh2pYe+WgV6I+bV8LIiexQlgXZjh/ZEjds1TCuHAGQIgAsQ6zTkvEMy/1d6cU4FB\r\n"
+"HB2dRWSdQGN3E4gle5w5/dg=\r\n"
+"-----END CERTIFICATE-----\r\n";
+
 struct test_context {
     int data;
     struct np_connection conn;
@@ -78,7 +103,7 @@ int main() {
     np_log.log_buf = &nm_unix_log_buf;
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
-    nm_dtls_srv_init(&pl);
+    nm_dtls_srv_init(&pl, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
     nm_unix_ts_init(&pl);
     nc_client_connect_init(&pl);
 
