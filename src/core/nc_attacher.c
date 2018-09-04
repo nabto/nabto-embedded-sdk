@@ -90,8 +90,25 @@ void nc_attacher_ka_cb(const np_error_code ec, void* data)
 void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     uint8_t type;
+    uint8_t fp[16];
+    np_error_code fpEc;
     if(ec != NABTO_EC_OK) {
         ctx.cb(ec, ctx.cbData);
+        return;
+    }
+    fpEc = ctx.pl->dtlsC.get_fingerprint(ctx.pl, ctx.anDtls, fp);
+    if (fpEc != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "get_fingerprint failed");
+        NABTO_LOG_BUF(LOG, fp, 16);
+        NABTO_LOG_BUF(LOG, ctx.anEps[0].fp, 16);
+        ctx.cb(fpEc, ctx.cbData);
+        return;
+    }
+    if(memcmp(fp, ctx.anEps[0].fp, 16) != 0) {
+        NABTO_LOG_ERROR(LOG, "Device relay connected with invalid fingerprint");
+        NABTO_LOG_BUF(LOG, fp, 16);
+        NABTO_LOG_BUF(LOG, ctx.anEps[0].fp, 16);
+        ctx.cb(NABTO_EC_INVALID_PEER_FINGERPRINT, ctx.cbData);
         return;
     }
     type= ctx.pl->buf.start(buf)[1];

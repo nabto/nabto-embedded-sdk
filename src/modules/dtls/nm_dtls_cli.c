@@ -1,4 +1,5 @@
 #include "nm_dtls_cli.h"
+#include "nm_dtls_util.h"
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
 
@@ -154,6 +155,7 @@ np_error_code nm_dtls_init(struct np_platform* pl,
     pl->dtlsC.async_recv_from = &nm_dtls_async_recv_from;
     pl->dtlsC.async_close = &nm_dtls_async_close;
     pl->dtlsC.cancel_recv_from = &nm_dtls_cancel_recv_from;
+    pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
 
 //    nm_dtls_cli_alpnList[0] = nm_dtls_cli_protocol;
 //    nm_dtls_cli_alpnList[1] = NULL;
@@ -172,6 +174,19 @@ np_error_code nm_dtls_init(struct np_platform* pl,
     }
     return NABTO_EC_OK;
 }
+
+/**
+ * get peers fingerprint for given DTLS client context
+ */
+np_error_code nm_dtls_get_fingerprint(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp)
+{
+    const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&ctx->ssl);
+    if (!crt) {
+        return NABTO_EC_FAILED;
+    }
+    return nm_dtls_util_fp_from_crt(crt, fp);
+}
+
 
 /*
  * asyncroniously start a dtls connection
@@ -220,7 +235,7 @@ void nm_dtls_event_do_one(void* data)
                 free(ctx);
                 return;
             }
-/*            if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
+            if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
                 NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiantion Failed %u",mbedtls_ssl_get_alpn_protocol(&ctx->ssl) );
                 ctx->connectCb(NABTO_EC_ALPN_FAILED, NULL, ctx->connectData);
                 np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
@@ -228,7 +243,7 @@ void nm_dtls_event_do_one(void* data)
                 free(ctx);
                 return;
                 
-                }*/
+            }
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             ctx->state = DATA;
             ctx->connectCb(NABTO_EC_OK, ctx, ctx->connectData);

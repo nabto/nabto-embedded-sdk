@@ -196,6 +196,14 @@ void nm_dtls_srv_do_one(void* data)
             NABTO_LOG_TRACE(LOG, "Keeping CONNECTING state");
         } else if (ret == 0) {
             NABTO_LOG_INFO(LOG, "State changed to DATA");
+            if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
+                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiantion Failed %u",mbedtls_ssl_get_alpn_protocol(&ctx->ssl) );
+                np_event_queue_cancel_timed_event(server.pl, &ctx->tEv);
+                server.pl->conn.cancel_async_recv(server.pl, ctx->conn);
+                free(ctx);
+                return;
+            }
+                
             ctx->state = DATA;
         } else {
             NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );

@@ -19,5 +19,6 @@ np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_dtls_cli_conte
 np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* ctx,
                                   np_dtls_cli_close_callback cb, void* data);
 
+np_error_code nm_dtls_get_fingerprint(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp);
 
 #endif // NM_DTLS_CLI_H

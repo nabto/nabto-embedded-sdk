@@ -20,7 +20,7 @@
 
 const char* appVer = "0.0.1";
 const char* appName = "Weather_app";
-//const char* hostname = "abc.devices.dev.nabto.net";
+//const char* hostname = "a.devices.dev.nabto.net";
 const char* hostname = "localhost";
 
 struct nc_attach_parameters attachParams;

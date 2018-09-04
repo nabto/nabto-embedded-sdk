@@ -31,6 +31,7 @@ struct np_dtls_cli_module {
                                       enum application_data_type type);
     np_error_code (*async_close)(struct np_platform* pl, np_dtls_cli_context* ctx,
                                  np_dtls_cli_close_callback cb, void* data);
+    np_error_code (*get_fingerprint)(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp);
 };
 
 #endif // NP_DTLS_CLI_H
