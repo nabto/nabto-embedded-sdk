@@ -1,4 +1,5 @@
 #include "nm_dtls_srv.h"
+#include "nm_dtls_util.h"
 
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
@@ -23,32 +24,6 @@
 
 const char* nm_dtls_srv_alpnList[2];
 char nm_dtls_srv_protocol[] = NABTO_PROTOCOL_VERSION;
-
-/*const char test_priv_key[] =
-"-----BEGIN EC PARAMETERS-----\r\n"
-"BggqhkjOPQMBBw==\r\n"
-"-----END EC PARAMETERS-----\r\n"
-"-----BEGIN EC PRIVATE KEY-----\r\n"
-"MHcCAQEEIPwHCOmh7kIAFfGHK7C5QqJvY/MvXVJv2IGHayFZBDfMoAoGCCqGSM49\r\n"
-"AwEHoUQDQgAE3STG13/95B6UFDiwjoVzKCj3rAIaEZIy9nelN8yyZEc654vepzk3\r\n"
-"jL1pjCx4mgM/5xCqxFI0ctHZehFkmZrInQ==\r\n"
-"-----END EC PRIVATE KEY-----\r\n";
-
-const char test_pub_key_crt[] =
-"-----BEGIN CERTIFICATE-----\r\n"
-"MIIB7TCCAZSgAwIBAgIJAK9g+0WW5dPhMAoGCCqGSM49BAMCMFIxCzAJBgNVBAYT\r\n"
-"AkRLMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBXaWRn\r\n"
-"aXRzIFB0eSBMdGQxCzAJBgNVBAMMAk1NMB4XDTE4MDUwNDA4MzQwMVoXDTIwMDUw\r\n"
-"MzA4MzQwMVowUjELMAkGA1UEBhMCREsxEzARBgNVBAgMClNvbWUtU3RhdGUxITAf\r\n"
-"BgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDELMAkGA1UEAwwCTU0wWTAT\r\n"
-"BgcqhkjOPQIBBggqhkjOPQMBBwNCAATdJMbXf/3kHpQUOLCOhXMoKPesAhoRkjL2\r\n"
-"d6U3zLJkRzrni96nOTeMvWmMLHiaAz/nEKrEUjRy0dl6EWSZmsido1MwUTAdBgNV\r\n"
-"HQ4EFgQUCx61qb7QZCunFl16Lr9Yszx07OgwHwYDVR0jBBgwFoAUCx61qb7QZCun\r\n"
-"Fl16Lr9Yszx07OgwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBEAiB9\r\n"
-"oh2pYe+WgV6I+bV8LIiexQlgXZjh/ZEjds1TCuHAGQIgAsQ6zTkvEMy/1d6cU4FB\r\n"
-"HB2dRWSdQGN3E4gle5w5/dg=\r\n"
-"-----END CERTIFICATE-----\r\n";
-*/
 
 enum sslState {
     CONNECTING,
@@ -135,6 +110,18 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
     nm_dtls_srv_alpnList[1] = NULL;
     
     return nm_dtls_srv_init_config(publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+}
+
+/**
+ * get peers fingerprint for given DTLS client context
+ */
+np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, np_dtls_srv_connection* ctx, uint8_t* fp)
+{
+    const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&ctx->ssl);
+    if (!crt) {
+        return NABTO_EC_FAILED;
+    }
+    return nm_dtls_util_fp_from_crt(crt, fp);
 }
 
 np_error_code nm_dtls_srv_create(struct np_platform* pl, np_connection* conn, np_dtls_srv_connection** dtls)

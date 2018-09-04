@@ -7,6 +7,7 @@ set(dtls_cli_src
 
 set(dtls_srv_src
   ${src_dir}/nm_dtls_srv.c
+  ${src_dir}/nm_dtls_util.c
   )
 
 set(dtls_test_src

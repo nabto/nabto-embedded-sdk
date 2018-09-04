@@ -19,4 +19,6 @@ np_error_code nm_dtls_srv_cancel_recv_from(struct np_platform* pl, np_dtls_srv_c
 np_error_code nm_dtls_srv_async_close(struct np_platform* pl, np_dtls_srv_connection* ctx,
                                       np_dtls_srv_close_callback cb, void* data);
 
+np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, np_dtls_srv_connection* ctx, uint8_t* fp);
+
 #endif // NM_DTLS_SRV_H
