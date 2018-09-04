@@ -1,6 +1,7 @@
 #include "nm_dtls_srv.h"
 
 #include <platform/np_logging.h>
+#include <core/nc_version.h>
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
@@ -19,6 +20,9 @@
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 #define DEBUG_LEVEL 4
+
+const char* nm_dtls_srv_alpnList[2];
+char nm_dtls_srv_protocol[] = NABTO_PROTOCOL_VERSION;
 
 /*const char test_priv_key[] =
 "-----BEGIN EC PARAMETERS-----\r\n"
@@ -127,6 +131,9 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.cancel_recv_from = &nm_dtls_srv_cancel_recv_from;
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
     server.pl = pl;
+    nm_dtls_srv_alpnList[0] = nm_dtls_srv_protocol;
+    nm_dtls_srv_alpnList[1] = NULL;
+    
     return nm_dtls_srv_init_config(publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
@@ -344,6 +351,9 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_config_defaults returned %i", ret);
         return NABTO_EC_FAILED;
     }
+
+    mbedtls_ssl_conf_alpn_protocols(&server.conf, nm_dtls_srv_alpnList );
+
     if( ( ret = mbedtls_ctr_drbg_seed( &server.ctr_drbg, mbedtls_entropy_func, &server.entropy,
                                        (const unsigned char *) pers,
                                        strlen( pers ) ) ) != 0 )

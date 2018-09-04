@@ -33,6 +33,12 @@ struct nc_client_connect_context {
 
 struct nc_client_connect_context ctx;
 
+void nc_client_connect_handle_app_packet(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                                         np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    
+}
+
 np_error_code nc_client_connect_init(struct np_platform* pl)
 {
     pl->clientConn.async_create = &nc_client_connect_async_create;
@@ -69,6 +75,7 @@ void nc_client_connect_conn_created(const np_error_code ec, uint8_t channelId, v
         cc->recvCb(NABTO_EC_OK, cc->recvEp, cc->buf, cc->bufSize, cc->recvCbData);
     }
     ctx.pl->buf.free(cc->buf);
+    ctx.pl->dtlsS.async_recv_from(ctx.pl, cc->dtls, &nc_client_connect_handle_app_packet, cc);
 }
 
 void nc_client_connect_connection_closed(const np_error_code ec, void* data)
