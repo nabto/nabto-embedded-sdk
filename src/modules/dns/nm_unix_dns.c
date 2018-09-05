@@ -31,6 +31,9 @@ void* resolver_thread(void* ctx) {
     
     struct addrinfo hints, *infoptr;
     memset(&hints, 0, sizeof (struct addrinfo));
+
+    hints.ai_socktype = SOCK_DGRAM;
+    
     NABTO_LOG_TRACE(LOG, "Resolving host: %s", state->host);
 
     hints.ai_family = AF_UNSPEC;
