@@ -33,26 +33,42 @@ struct nc_client_connect_context {
 
     // TODO: FINGERPRINT FOR CLIENT VERIFICATION
     // Should not be done like this
-    //uint8_t* fp;
+    uint8_t* fp;
 
 };
 
 struct nc_client_connect_context ctx;
 
+void nc_client_connect_dtlsS_closed_cb(const np_error_code ec, void* data) {
+    struct nc_client_connection* cc =  (struct nc_client_connection*)data;
+    cc->active = false;
+}
+
 void nc_client_connect_handle_app_packet(const np_error_code ec, uint8_t channelId, uint64_t sequence,
                                          np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_client_connection* cc =  (struct nc_client_connection*)data;
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_WARN(LOG, "DTLS server returned error code: %u", ec);
+        cc->active = false;
+        return;
+    }
     if(!cc->verified) {
-/*        if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
-            NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiantion Failed %u",mbedtls_ssl_get_alpn_protocol(&ctx->ssl) );
-            np_event_queue_cancel_timed_event(server.pl, &ctx->tEv);
-            server.pl->conn.cancel_async_recv(server.pl, ctx->conn);
-            free(ctx);
+        if (ctx.pl->dtlsS.get_alpn_protocol(cc->dtls) == NULL) {
+            NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
+            ctx.pl->dtlsS.async_close(ctx.pl, cc->dtls, &nc_client_connect_dtlsS_closed_cb, cc);
             return;
-            }*/
+        }
         uint8_t fp[16];
         ctx.pl->dtlsS.get_fingerprint(ctx.pl, cc->dtls, fp);
+        NABTO_LOG_TRACE(LOG, "Retreived FP: ");
+        NABTO_LOG_BUF(LOG, fp, 16);
+        if (memcmp(fp, ctx.fp, 16) == 0) {
+            NABTO_LOG_ERROR(LOG, "Client connect fingerprint verification failed");
+            ctx.pl->dtlsS.async_close(ctx.pl, cc->dtls, &nc_client_connect_dtlsS_closed_cb, cc);
+            return;
+        }
+        cc->verified = true;
     }
     NABTO_LOG_TRACE(LOG, "Received packet from DTLS server:");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buffer), bufferSize);
@@ -67,7 +83,7 @@ np_error_code nc_client_connect_init(struct np_platform* pl, uint8_t* fp)
     pl->clientConn.async_recv_from = &nc_client_connect_async_recv_from;
     memset(&ctx, 0, sizeof(struct nc_client_connect_context));
     ctx.pl = pl;
-//    ctx.fp = fp;
+    ctx.fp = fp;
     return NABTO_EC_OK;
 }
 
@@ -162,7 +178,6 @@ np_error_code nc_client_connect_recv(struct np_platform* pl, const np_error_code
         // TODO: Handle socket errors
         return NABTO_EC_OK;
     }
-    NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint64_t*)ctx.pl->dtlsS.create, (uint64_t*)ctx.pl->dtlsS.async_send_to, (uint64_t*)ctx.pl->dtlsS.get_fingerprint, (uint64_t*)ctx.pl->dtlsS.async_recv_from, (uint64_t*)ctx.pl->dtlsS.cancel_recv_from, (uint64_t*)ctx.pl->dtlsS.async_close);
     id = pl->buf.start(buffer);
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         if (ctx.connections[i].active && memcmp(id, pl->conn.get_id(pl, &ctx.connections[i].conn)->id, 16) == 0) {
@@ -183,7 +198,6 @@ np_error_code nc_client_connect_recv(struct np_platform* pl, const np_error_code
             chan.type = NABTO_CHANNEL_APP;
             chan.sock = sock;
             chan.ep = ep;
-            //memcpy(&chan.ep, &ep, sizeof(struct np_udp_endpoint));
             chan.channelId = pl->buf.start(buffer)[15];
             memcpy(id.id, pl->buf.start(buffer), 16);
             ctx.connections[i].createdWithData = true;

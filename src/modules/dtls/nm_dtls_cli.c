@@ -97,6 +97,12 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
 // setup function for the mbedtls context
 np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx);
 
+
+// Get the result of the application layer protocol negotiation
+const char*  nm_dtls_get_alpn_protocol(np_dtls_cli_context* ctx) {
+    return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
+}
+
 // cancel recv_from callbacks
 np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_dtls_cli_context* ctx,
                                        enum application_data_type type)
@@ -157,6 +163,7 @@ np_error_code nm_dtls_init(struct np_platform* pl,
     pl->dtlsC.async_close = &nm_dtls_async_close;
     pl->dtlsC.cancel_recv_from = &nm_dtls_cancel_recv_from;
     pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
+    pl->dtlsC.get_alpn_protocol = &nm_dtls_get_alpn_protocol;
 
 //    nm_dtls_cli_alpnList[0] = nm_dtls_cli_protocol;
 //    nm_dtls_cli_alpnList[1] = NULL;
@@ -236,15 +243,6 @@ void nm_dtls_event_do_one(void* data)
                 ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
                 free(ctx);
                 return;
-            }
-            if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
-                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiantion Failed %u",mbedtls_ssl_get_alpn_protocol(&ctx->ssl) );
-                ctx->connectCb(NABTO_EC_ALPN_FAILED, NULL, ctx->connectData);
-                np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
-                ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
-                free(ctx);
-                return;
-                
             }
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             ctx->state = DATA;

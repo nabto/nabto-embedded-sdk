@@ -95,6 +95,11 @@ void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct np_
                                               uint8_t channelId,  np_communication_buffer* buffer,
                                               uint16_t bufferSize, void* data);
 
+// Get the result of the application layer protocol negotiation
+const char*  nm_dtls_srv_get_alpn_protocol(np_dtls_srv_connection* ctx) {
+    return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
+}
+
 
 np_error_code nm_dtls_srv_init(struct np_platform* pl,
                                const unsigned char* publicKeyL, size_t publicKeySize,
@@ -106,6 +111,7 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.cancel_recv_from = &nm_dtls_srv_cancel_recv_from;
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
     pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;
+    pl->dtlsS.get_alpn_protocol = &nm_dtls_srv_get_alpn_protocol;
     server.pl = pl;
     nm_dtls_srv_alpnList[0] = nm_dtls_srv_protocol;
     nm_dtls_srv_alpnList[1] = NULL;
@@ -218,6 +224,9 @@ void nm_dtls_srv_do_one(void* data)
             // TODO: error handling
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
             ctx->state = CLOSING;
+            if(ctx->recvCb != NULL) {
+                ctx->recvCb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->recvCbData);
+            }
         }
     }
 

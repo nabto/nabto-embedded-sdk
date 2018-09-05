@@ -52,6 +52,7 @@ struct nc_attach_context ctx;
 /**
  * Attach node functions
  */
+void nc_attacher_an_dtls_closed_cb(const np_error_code ec, void* data);
 void nc_attacher_an_dtls_send_cb(const np_error_code ec, void* data);
 void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf,
                                      uint16_t bufferSize, void* data);
@@ -246,6 +247,13 @@ void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
         ctx.cb(ec, ctx.cbData);
         return;
     }
+    if( ctx.pl->dtlsC.get_alpn_protocol(crypCtx) == NULL ) {
+        NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Device Relay connection");
+        ctx.pl->dtlsC.async_close(ctx.pl, crypCtx, &nc_attacher_an_dtls_closed_cb, &ctx);
+        ctx.cb(NABTO_EC_ALPN_FAILED, ctx.cbData);
+        return;
+    }
+    
     ctx.anDtls = crypCtx;
     ptr = init_packet_header(ptr, AT_DEVICE_RELAY);
     *(start+1) = CT_DEVICE_RELAY_HELLO_REQUEST;
@@ -306,6 +314,13 @@ void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
         ctx.cb(ec, ctx.cbData);
         return;
     }
+    if( ctx.pl->dtlsC.get_alpn_protocol(crypCtx) == NULL ) {
+        NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Device Load Balancer connection");
+        ctx.pl->dtlsC.async_close(ctx.pl, crypCtx, &nc_attacher_lb_dtls_closed_cb, &ctx);
+        ctx.cb(NABTO_EC_ALPN_FAILED, ctx.cbData);
+        return;
+    }
+    
     ctx.adDtls = crypCtx;
     ctx.buffer = ctx.pl->buf.allocate();
     ptr = ctx.pl->buf.start(ctx.buffer);
@@ -422,7 +437,12 @@ void nc_attacher_an_dtls_send_cb(const np_error_code ec, void* data) {
 
 void nc_attacher_lb_dtls_closed_cb(const np_error_code ec, void* data)
 {
-    NABTO_LOG_INFO(LOG, "dtls connection closed callback");
+    NABTO_LOG_INFO(LOG, "lb dtls connection closed callback");
+}
+
+void nc_attacher_an_dtls_closed_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(LOG, "an dtls connection closed callback");
 }
 
 void nc_attacher_lb_dtls_send_cb(const np_error_code ec, void* data) {

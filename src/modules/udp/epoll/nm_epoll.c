@@ -178,8 +178,8 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
     }
     if(start[0] > 192) {
         NABTO_LOG_TRACE(LOG, "received APP data, invoking callback");
-        NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint64_t*)pl->dtlsS.create, (uint64_t*)pl->dtlsS.async_send_to, (uint64_t*)pl->dtlsS.get_fingerprint, (uint64_t*)pl->dtlsS.async_recv_from, (uint64_t*)pl->dtlsS.cancel_recv_from, (uint64_t*)pl->dtlsS.async_close);
-        NABTO_LOG_BUF(0, pl->buf.start(recv_buf), recvLength);
+//        NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint64_t*)pl->dtlsS.create, (uint64_t*)pl->dtlsS.async_send_to, (uint64_t*)pl->dtlsS.get_fingerprint, (uint64_t*)pl->dtlsS.async_recv_from, (uint64_t*)pl->dtlsS.cancel_recv_from, (uint64_t*)pl->dtlsS.async_close);
+//        NABTO_LOG_BUF(0, pl->buf.start(recv_buf), recvLength);
         pl->clientConn.recv(pl, NABTO_EC_OK, sock, ep, recv_buf, recvLength);
     }
     nm_epoll_handle_event(sock);

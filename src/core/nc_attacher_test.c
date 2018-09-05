@@ -32,13 +32,14 @@ bool validAnReqSend = false;
 bool crypAdRecvCalled = false;
 bool crypAnRecvCalled = false;
 uint32_t sessionId = 0x42424242;
+const char alpn[] = "n5";
 
 /* state to know which packet attacher is to receive next: 
  * 0 NONE, 
  * 1 ATTACH_DISPATCH_RESPONSE,
  * 2 ATTACH_SERVER_HELLO
 */
-int nc_attacher_test_recvState = 0; 
+int nc_attacher_test_recvState = 0;
 
 // communication buffer impl
 np_communication_buffer* nc_attacher_test_allocate() { return (np_communication_buffer*)malloc(sizeof(struct np_communication_buffer)); }
@@ -141,6 +142,11 @@ np_error_code nc_attacher_test_cryp_get_fingerprint(struct np_platform* pl, np_d
     return NABTO_EC_OK;
 }
 
+const char* nc_attacher_test_cryp_get_alpn_protocol(np_dtls_cli_context* ctx)
+{
+    return alpn;
+}
+
 // dns impl
 np_error_code nc_attacher_test_dns(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
 {
@@ -182,6 +188,7 @@ void nc_attacher_test_attach()
     pl.dtlsC.async_close = &nc_attacher_test_cryp_close;
     pl.dtlsC.cancel_recv_from = &nc_attacher_test_cryp_cancel;
     pl.dtlsC.get_fingerprint = & nc_attacher_test_cryp_get_fingerprint;
+    pl.dtlsC.get_alpn_protocol = & nc_attacher_test_cryp_get_alpn_protocol;
     
     pl.buf.start = &nc_attacher_test_start;
     pl.buf.allocate = &nc_attacher_test_allocate;

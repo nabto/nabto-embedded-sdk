@@ -30,6 +30,8 @@ struct np_dtls_srv_module {
     np_error_code (*async_close)(struct np_platform* pl, np_dtls_srv_connection* ctx,
                                  np_dtls_srv_close_callback cb, void* data);
     np_error_code (*get_fingerprint)(struct np_platform* pl, np_dtls_srv_connection* ctx, uint8_t* fp);
+
+    const char* (*get_alpn_protocol)(np_dtls_srv_connection* ctx);
 };
 
 #endif // NP_DTLS_SRV_H
