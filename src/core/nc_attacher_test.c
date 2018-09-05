@@ -135,6 +135,12 @@ np_error_code nc_attacher_test_cryp_cancel(struct np_platform* pl, np_dtls_cli_c
     return NABTO_EC_OK;
 }
 
+np_error_code nc_attacher_test_cryp_get_fingerprint(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp)
+{
+    memcpy(fp, "1234567890123456", 16); // fp
+    return NABTO_EC_OK;
+}
+
 // dns impl
 np_error_code nc_attacher_test_dns(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
 {
@@ -175,7 +181,8 @@ void nc_attacher_test_attach()
     pl.dtlsC.async_recv_from = &nc_attacher_test_cryp_recv;
     pl.dtlsC.async_close = &nc_attacher_test_cryp_close;
     pl.dtlsC.cancel_recv_from = &nc_attacher_test_cryp_cancel;
-
+    pl.dtlsC.get_fingerprint = & nc_attacher_test_cryp_get_fingerprint;
+    
     pl.buf.start = &nc_attacher_test_start;
     pl.buf.allocate = &nc_attacher_test_allocate;
     pl.buf.free = &nc_attacher_test_free;

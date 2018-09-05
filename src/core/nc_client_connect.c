@@ -28,12 +28,13 @@ struct nc_client_connection {
 };
 
 struct nc_client_connect_context {
-    // TODO: FINGERPRINT FOR CLIENT VERIFICATION
-    // Should not be done like this
-    uint8_t* fp;
-
     struct np_platform* pl;
     struct nc_client_connection connections[NABTO_MAX_CLIENT_CONNECTIONS];
+
+    // TODO: FINGERPRINT FOR CLIENT VERIFICATION
+    // Should not be done like this
+    //uint8_t* fp;
+
 };
 
 struct nc_client_connect_context ctx;
@@ -43,6 +44,13 @@ void nc_client_connect_handle_app_packet(const np_error_code ec, uint8_t channel
 {
     struct nc_client_connection* cc =  (struct nc_client_connection*)data;
     if(!cc->verified) {
+/*        if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
+            NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiantion Failed %u",mbedtls_ssl_get_alpn_protocol(&ctx->ssl) );
+            np_event_queue_cancel_timed_event(server.pl, &ctx->tEv);
+            server.pl->conn.cancel_async_recv(server.pl, ctx->conn);
+            free(ctx);
+            return;
+            }*/
         uint8_t fp[16];
         ctx.pl->dtlsS.get_fingerprint(ctx.pl, cc->dtls, fp);
     }
@@ -59,7 +67,7 @@ np_error_code nc_client_connect_init(struct np_platform* pl, uint8_t* fp)
     pl->clientConn.async_recv_from = &nc_client_connect_async_recv_from;
     memset(&ctx, 0, sizeof(struct nc_client_connect_context));
     ctx.pl = pl;
-    ctx.fp = fp;
+//    ctx.fp = fp;
     return NABTO_EC_OK;
 }
 
