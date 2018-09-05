@@ -4,7 +4,8 @@
 #include <platform/np_platform.h>
 #include <platform/np_client_connect.h>
 
-np_error_code nc_client_connect_init(struct np_platform* pl);
+// TODO: do not take client fingerprint like this
+np_error_code nc_client_connect_init(struct np_platform* pl, uint8_t* fp);
 
 np_error_code nc_client_connect_async_create(struct np_platform* pl, struct np_connection_id* id,
                                              struct np_udp_socket* sock, struct np_udp_endpoint* ep,

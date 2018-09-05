@@ -200,6 +200,7 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
         ctx.sessionId = sessionId;
         ctx.anChannel.ep.port = ctx.anEps[0].port;
         ctx.pl->dns.async_resolve(ctx.pl, ctx.anEps[0].dns, &nc_attacher_an_dns_cb, &ctx);
+        ctx.pl->dtlsC.cancel_recv_from(ctx.pl, ctx.adDtls, AT_DEVICE_LB);
         ctx.pl->dtlsC.async_close(ctx.pl, ctx.adDtls, &nc_attacher_lb_dtls_closed_cb, &ctx);
         
     } else if (*(start+1) == CT_DEVICE_LB_REDIRECT) {
@@ -374,12 +375,12 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     switch ((enum application_data_type)start[0]) {
         case AT_DEVICE_RELAY:
-            nc_attacher_an_handle_event(ec, buf, bufferSize, data);
             ctx.pl->dtlsC.async_recv_from(ctx.pl, ctx.anDtls, AT_DEVICE_RELAY, &nc_attacher_dtls_recv_cb, &ctx);
+            nc_attacher_an_handle_event(ec, buf, bufferSize, data);
             return;
         case AT_DEVICE_LB:
-            nc_attacher_lb_handle_event(ec, buf, bufferSize, data);
             ctx.pl->dtlsC.async_recv_from(ctx.pl, ctx.adDtls, AT_DEVICE_LB, &nc_attacher_dtls_recv_cb, &ctx);
+            nc_attacher_lb_handle_event(ec, buf, bufferSize, data);
             return;
         default:
             NABTO_LOG_ERROR(LOG, "Attacher received a packet which was neither AT_DEVICE_RELAY or AT_DEVICE_LB");

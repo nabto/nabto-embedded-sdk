@@ -134,6 +134,31 @@ void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_e
 }
 
 
+void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* event)
+{
+    struct np_event_list* ev = &pl->eq.events;
+    if (ev->head == NULL) {
+        return;
+    }
+    if (ev->head == event) {
+        ev->head = ev->head->next;
+        return;
+    }
+    struct np_event* current = ev->head;
+    struct np_event* next = current->next;
+    NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Trying to cancel event");
+    while(next != NULL) {
+        if (next == event) {
+            NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Found and canceled timed event");
+            current->next = next->next;
+            return;
+        }
+        current = current->next;
+        next = current->next;
+    }
+}
+
+
 /**
  * bubble up a timed event such that it has the right location in the
  * linked list.

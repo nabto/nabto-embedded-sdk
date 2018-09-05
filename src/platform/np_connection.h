@@ -70,6 +70,7 @@ struct np_connection_module {
                             np_connection_received_callback cb, void* data);
 
     np_error_code (*cancel_async_recv)(struct np_platform* pl, np_connection* conn);
+    np_error_code (*cancel_async_send)(struct np_platform* pl, np_connection* conn);
 
     void (*async_destroy)(struct np_platform* pl, np_connection* conn,
                           np_connection_destroyed_callback cb, void* data);

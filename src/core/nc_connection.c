@@ -15,6 +15,7 @@ void nc_connection_init(struct np_platform* pl)
     pl->conn.async_recv_from = &nc_connection_async_recv_from;
     pl->conn.async_destroy = &nc_connection_async_destroy;
     pl->conn.cancel_async_recv = &nc_connection_cancel_async_recv;
+    pl->conn.cancel_async_send = &nc_connection_cancel_async_send;
     pl->conn.get_id = &nc_connection_get_id;
 }
 
@@ -26,6 +27,12 @@ struct np_connection_id* nc_connection_get_id(struct np_platform* pl, np_connect
 np_error_code nc_connection_cancel_async_recv(struct np_platform* pl, np_connection* conn)
 {
     conn->recvCb = NULL;
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_connection_cancel_async_send(struct np_platform* pl, np_connection* conn)
+{
+    conn->sentCb = NULL;
     return NABTO_EC_OK;
 }
 
@@ -44,13 +51,23 @@ void createdCb(void* data)
 void sentFailed(void* data)
 {
     np_connection* conn = (np_connection*)data;
-    conn->sentCb(conn->ec, conn->sentData);
+    if (conn->sentCb == NULL) {
+        return;
+    }
+    np_connection_sent_callback cb = conn->sentCb;
+    conn->sentCb = NULL;
+    cb(conn->ec, conn->sentData);
 }
 
 void sentCb(const np_error_code ec, void* data)
 {
     np_connection* conn = (np_connection*)data;
-    conn->sentCb(ec, conn->sentData);
+    if (conn->sentCb == NULL) {
+        return;
+    }
+    np_connection_sent_callback cb = conn->sentCb;
+    conn->sentCb = NULL;
+    cb(ec, conn->sentData);
 }
 
 void recvCb(const np_error_code ec, struct np_udp_endpoint ep, np_communication_buffer* buffer, uint16_t bufferSize, void* data)

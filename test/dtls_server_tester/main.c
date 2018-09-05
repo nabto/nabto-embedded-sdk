@@ -98,6 +98,9 @@ void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 
 
 int main() {
+    uint8_t fp[16];
+    memset(fp, 0, 16);
+
     np_platform_init(&pl);
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;
@@ -105,7 +108,7 @@ int main() {
     nm_epoll_init(&pl);
     nm_dtls_srv_init(&pl, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
     nm_unix_ts_init(&pl);
-    nc_client_connect_init(&pl);
+    nc_client_connect_init(&pl, fp);
 
     struct test_context data;
     data.data = 42;

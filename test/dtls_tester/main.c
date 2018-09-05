@@ -115,6 +115,9 @@ void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 }
 
 int main() {
+    uint8_t fp[16];
+    memset(fp, 0, 16);
+   
     ep.port = 4433;
     inet_pton(AF_INET6, "::1", ep.ip.v6.addr);
     NABTO_LOG_INFO(0, "pl: %i", &pl);
@@ -123,7 +126,7 @@ int main() {
     nm_epoll_init(&pl);
     nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     nm_unix_ts_init(&pl);
-    nc_client_connect_init(&pl);
+    nc_client_connect_init(&pl, fp);
 
     np_log.log = &nm_unix_log;
     struct test_context data;

@@ -17,7 +17,7 @@
 #define NABTO_SSL_RECV_BUFFER_SIZE 4096
 #define SERVER_NAME "localhost"
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
-#define DEBUG_LEVEL 4
+#define DEBUG_LEVEL 0
 
 enum sslState {
     CONNECTING,
@@ -38,6 +38,7 @@ struct np_dtls_cli_context {
     np_dtls_cli_send_to_callback sendCb;
     void* sendData;
     uint8_t sendChannel;
+    bool sending;
     
     np_dtls_cli_received_callback recvAttachCb;
     void* recvAttachData;
@@ -200,6 +201,7 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
     ctx->conn = conn;
     ctx->pl = pl;
     ctx->state = CONNECTING;
+    ctx->sending = false;
     ctx->pl->conn.async_recv_from(ctx->pl, ctx->conn, &nm_dtls_connection_received_callback, ctx);
     ctx->connectCb = cb;
     ctx->connectData = data;
@@ -347,6 +349,10 @@ np_error_code nm_dtls_async_send_to(struct np_platform* pl, np_dtls_cli_context*
 np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_context* ctx, enum application_data_type type,
                                       np_dtls_cli_received_callback cb, void* data)
 {
+    if(ctx->state == CLOSING) {
+        NABTO_LOG_ERROR(LOG, "Tried to async_recv_from on closing DTLS context");
+        return NABTO_EC_CONNECTION_CLOSING;
+    }
     switch(type) {
         case AT_DEVICE_RELAY:
             ctx->recvAttachCb = cb;
@@ -380,6 +386,13 @@ void nm_dtls_event_close(void* data){
     mbedtls_ssl_config_free( &ctx->conf );
     mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
     mbedtls_entropy_free( &ctx->entropy );
+    ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->conn);
+    ctx->pl->conn.cancel_async_send(ctx->pl, ctx->conn);
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->tEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->connEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->sendEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->recvEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
     np_dtls_cli_close_callback cb = ctx->closeCb;
     void* cbData = ctx->closeData;
     free(ctx);
@@ -394,6 +407,9 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
     ctx->closeData = data;
     ctx->state = CLOSING;
     np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
+    if (!ctx->sending) {
+        np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
+    }
     return NABTO_EC_OK;
 }
 
@@ -425,8 +441,11 @@ void nm_dtls_connection_send_callback(const np_error_code ec, void* data)
     if (data == NULL) {
         return;
     }
+    ctx->sending = false;
     ctx->sslSendBufferSize = 0;
     if(ctx->state == CLOSING) {
+        nm_dtls_event_close(ctx);
+//        np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
         return;
     }
     nm_dtls_event_do_one(data);
@@ -436,6 +455,7 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if (ctx->sslSendBufferSize == 0) {
+        ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
 //        NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
 //        NABTO_LOG_BUF(LOG, buffer, bufferSize);
@@ -470,6 +490,10 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
 }
 
 void nm_dtls_timed_event_do_one(const np_error_code ec, void* data) {
+    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    if (ctx->state == CLOSING) {
+        return;
+    }
     nm_dtls_event_do_one(data);
 }
 
@@ -512,7 +536,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
 //    mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_debug_set_threshold( 0 );
+    mbedtls_debug_set_threshold( DEBUG_LEVEL );
     
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,

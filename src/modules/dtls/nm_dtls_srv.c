@@ -105,6 +105,7 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.async_recv_from = &nm_dtls_srv_async_recv_from;
     pl->dtlsS.cancel_recv_from = &nm_dtls_srv_cancel_recv_from;
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
+    pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;
     server.pl = pl;
     nm_dtls_srv_alpnList[0] = nm_dtls_srv_protocol;
     nm_dtls_srv_alpnList[1] = NULL;

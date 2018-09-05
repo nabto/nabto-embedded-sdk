@@ -26,6 +26,7 @@ void nc_connection_async_recv_from(struct np_platform* pl, np_connection* conn,
                                    np_connection_received_callback cb, void* data);
 
 np_error_code nc_connection_cancel_async_recv(struct np_platform* pl, np_connection* conn);
+np_error_code nc_connection_cancel_async_send(struct np_platform* pl, np_connection* conn);
 
 void nc_connection_async_destroy(struct np_platform* pl, np_connection* conn,
                                  np_connection_destroyed_callback cb, void* data);

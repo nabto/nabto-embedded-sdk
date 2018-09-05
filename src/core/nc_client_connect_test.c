@@ -158,6 +158,9 @@ void nc_client_connect_test_connect()
     struct np_udp_endpoint ep;
     np_communication_buffer* buf;
     uint8_t* ptr;
+    uint8_t fp[16];
+    memset(fp, 0, 16);
+    
     id.id[0] = 240;
     memcpy(id.id+1, "12345678912345\0",14);
     np_platform_init(&pl);
@@ -177,7 +180,7 @@ void nc_client_connect_test_connect()
     pl.conn.async_create = &nc_client_connect_test_conn_create;
     pl.conn.get_id = &nc_client_connect_test_conn_get_id;
 
-    nc_client_connect_init(&pl);
+    nc_client_connect_init(&pl, fp);
 
     buf = pl.buf.allocate();
     ptr = pl.buf.start(buf);

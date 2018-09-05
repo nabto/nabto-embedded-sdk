@@ -47,12 +47,15 @@ const unsigned char devicePublicKey[] =
 "XndF4oYF4h6yysELSJfuiamVURjo+KcM1ixwAWo=\r\n"
 "-----END CERTIFICATE-----\r\n";
 
+uint8_t fp[] = {0xdd, 0x5f, 0xec, 0x4f, 0x27, 0xb5, 0x65, 0x7c, 0xb7, 0x5e, 0x5e, 0x24, 0x7f, 0xe7, 0x92, 0xcc};
+
 struct test_context {
     int data;
 };
 struct np_platform pl;
 
 void attachedCb(const np_error_code ec, void* data) {
+    NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint32_t*)pl.dtlsS.create, (uint32_t*)pl.dtlsS.async_send_to, (uint32_t*)pl.dtlsS.get_fingerprint, (uint32_t*)pl.dtlsS.async_recv_from, (uint32_t*)pl.dtlsS.cancel_recv_from, (uint32_t*)pl.dtlsS.async_close);
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(0, "Received attached callback with NABTO_EC_OK");
     } else {
@@ -71,11 +74,13 @@ int main() {
     nm_unix_ts_init(&pl);
     nm_unix_dns_init(&pl);
     nc_connection_init(&pl);
-    nc_client_connect_init(&pl);
+    nc_client_connect_init(&pl, fp);
   
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;
 
+    NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint32_t*)pl.dtlsS.create, (uint32_t*)pl.dtlsS.async_send_to, (uint32_t*)pl.dtlsS.get_fingerprint, (uint32_t*)pl.dtlsS.async_recv_from, (uint32_t*)pl.dtlsS.cancel_recv_from, (uint32_t*)pl.dtlsS.async_close);
+    
     attachParams.appName = appName;
     attachParams.appNameLength = strlen(appName);
     attachParams.appVersion = appVer;
