@@ -95,6 +95,8 @@ void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct np_
                                               uint8_t channelId,  np_communication_buffer* buffer,
                                               uint16_t bufferSize, void* data);
 
+void nm_dtls_srv_event_send_to(void* data);
+
 // Get the result of the application layer protocol negotiation
 const char*  nm_dtls_srv_get_alpn_protocol(np_dtls_srv_connection* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
@@ -209,6 +211,15 @@ void nm_dtls_srv_do_one(void* data)
             NABTO_LOG_INFO(LOG, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             uint64_t seq = *((uint64_t*)ctx->ssl.in_ctr);
+            uint8_t* ptr = server.pl->buf.start(ctx->sslRecvBuf);
+            if (ptr[0] == AT_KEEP_ALIVE && ptr[1] == CT_KEEP_ALIVE_REQUEST) {
+                ptr[1] = CT_KEEP_ALIVE_RESPONSE;
+                ctx->sendCb = NULL;
+                ctx->sendBuffer = ptr;
+                ctx->sendBufferSize = ret;
+                nm_dtls_srv_event_send_to(ctx);
+                return;
+            }
             if(ctx->recvCb) {
                 NABTO_LOG_TRACE(LOG, "found Callback function");
                 np_dtls_srv_received_callback cb = ctx->recvCb;
@@ -236,6 +247,9 @@ void nm_dtls_srv_event_send_to(void* data)
 {
     np_dtls_srv_connection* ctx = (np_dtls_srv_connection*) data;
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) ctx->sendBuffer, ctx->sendBufferSize );
+    if (ctx->sendCb == NULL) {
+        return;
+    }
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // TODO: packet too large
         ctx->sendCb(NABTO_EC_MALFORMED_PACKET, ctx->sendCbData);

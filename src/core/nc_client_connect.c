@@ -72,6 +72,7 @@ void nc_client_connect_handle_app_packet(const np_error_code ec, uint8_t channel
     }
     NABTO_LOG_TRACE(LOG, "Received packet from DTLS server:");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buffer), bufferSize);
+    // TODO: handle the packet
 }
 
 // TODO: Do not take client fingerprint here!!

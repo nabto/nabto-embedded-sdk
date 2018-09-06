@@ -21,6 +21,8 @@ struct keep_alive_context
     uint8_t kaRetryInterval;
     uint8_t kaMaxRetries;
     uint8_t currentRetry;
+    uint32_t lastRecvCount;
+    uint32_t lastSentCount;
 };
 
 /**

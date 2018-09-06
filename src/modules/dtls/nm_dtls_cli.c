@@ -33,6 +33,8 @@ struct np_dtls_cli_context {
     struct np_event recvEv;
     struct np_event closeEv;
     struct np_timed_event tEv;
+    uint32_t recvCount;
+    uint32_t sentCount;
     np_dtls_cli_connect_callback connectCb;
     void* connectData;
     np_dtls_cli_send_to_callback sendCb;
@@ -94,9 +96,19 @@ void nm_dtls_event_do_one(void* data);
 void nm_dtls_connection_received_callback(const np_error_code ec, struct np_connection* conn,
                                           uint8_t channelId,  np_communication_buffer* buffer,
                                           uint16_t bufferSize, void* data);
+
+void nm_dtls_event_send_to(void* data);
+
 // setup function for the mbedtls context
 np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx);
 
+// Get the packet counters for given dtls_cli_context
+np_error_code nm_dtls_get_packet_count(np_dtls_cli_context* ctx, uint32_t* recvCount, uint32_t* sentCount)
+{
+    *recvCount = ctx->recvCount;
+    *sentCount = ctx->sentCount;
+    return NABTO_EC_OK;
+}
 
 // Get the result of the application layer protocol negotiation
 const char*  nm_dtls_get_alpn_protocol(np_dtls_cli_context* ctx) {
@@ -119,6 +131,7 @@ np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_dtls_cli_conte
             ctx->recvRelayCb = NULL;
             break;
         case AT_KEEP_ALIVE:
+            NABTO_LOG_TRACE(LOG, "cancelling recv_from for AT_KEEP_ALIVE");
             ctx->recvKeepAliveCb = NULL;
             break;
         default:
@@ -164,6 +177,7 @@ np_error_code nm_dtls_init(struct np_platform* pl,
     pl->dtlsC.cancel_recv_from = &nm_dtls_cancel_recv_from;
     pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &nm_dtls_get_alpn_protocol;
+    pl->dtlsC.get_packet_count = &nm_dtls_get_packet_count;
 
 //    nm_dtls_cli_alpnList[0] = nm_dtls_cli_protocol;
 //    nm_dtls_cli_alpnList[1] = NULL;
@@ -263,32 +277,49 @@ void nm_dtls_event_do_one(void* data)
                     NABTO_LOG_TRACE(LOG, "Attach Dispatch packet");
                     if(ctx->recvAttachDispatchCb) {
                         NABTO_LOG_TRACE(LOG, "found Callback function");
-                        ctx->recvAttachDispatchCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvAttachDispatchData);
+                        np_dtls_cli_received_callback cb = ctx->recvAttachDispatchCb;
                         ctx->recvAttachDispatchCb = NULL;
+                        cb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvAttachDispatchData);
                     }
                     break;
                 case AT_DEVICE_RELAY:
                     NABTO_LOG_TRACE(LOG, "Attach packet");
                     if(ctx->recvAttachCb) {
                         NABTO_LOG_TRACE(LOG, "found Callback function");
-                        ctx->recvAttachCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvAttachData);
+                        np_dtls_cli_received_callback cb = ctx->recvAttachCb;
                         ctx->recvAttachCb = NULL;
+                        cb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvAttachData);
                     }
                     break;
                 case AT_CLIENT_RELAY:
                     NABTO_LOG_TRACE(LOG, "Relay packet");
                     if (ctx->recvRelayCb) {
                         NABTO_LOG_TRACE(LOG, "found Callback function");
-                        ctx->recvRelayCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvRelayData);
+                        np_dtls_cli_received_callback cb = ctx->recvRelayCb;
                         ctx->recvRelayCb = NULL;
+                        cb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvRelayData);
                     }
                     break;
                 case AT_KEEP_ALIVE:
                     NABTO_LOG_TRACE(LOG, "keep alive packet");
-                    if (ctx->recvKeepAliveCb) {
+                    uint8_t* ptr = ctx->pl->buf.start(ctx->sslRecvBuf);
+                    NABTO_LOG_BUF(LOG, ptr, ret);
+                    if (ptr[1] == CT_KEEP_ALIVE_REQUEST) {
+                        NABTO_LOG_TRACE(LOG, "Keep alive request, responding imidiately");
+                        ptr[1] = CT_KEEP_ALIVE_RESPONSE;
+                        ctx->sendCb = NULL;
+                        ctx->sendBuffer = ptr;
+                        ctx->sendBufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
+                        nm_dtls_event_send_to(ctx);
+                        return;
+                    }
+                    if (ctx->recvKeepAliveCb != NULL) {
                         NABTO_LOG_TRACE(LOG, "found Callback function");
-                        ctx->recvKeepAliveCb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvKeepAliveData);
+                        np_dtls_cli_received_callback cb = ctx->recvKeepAliveCb;
                         ctx->recvKeepAliveCb = NULL;
+                        cb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvKeepAliveData);
+                    } else {
+                        NABTO_LOG_TRACE(LOG, "Received AT_KEEP_ALIVE, but no callback is registered");
                     }
                     break;
                 default:
@@ -315,6 +346,9 @@ void nm_dtls_event_send_to(void* data)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) ctx->sendBuffer, ctx->sendBufferSize );
+    if (ctx->sendCb == NULL) {
+        return;
+    }
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // TODO: packet too large
         ctx->sendCb(NABTO_EC_MALFORMED_PACKET, ctx->sendData);
@@ -365,6 +399,7 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_contex
             ctx->recvRelayData = data;
             break;
         case AT_KEEP_ALIVE:
+            NABTO_LOG_TRACE(LOG, "Registering recv callback for AT_KEEP_ALIVE");
             ctx->recvKeepAliveCb = cb;
             ctx->recvKeepAliveData = data;
             break;
@@ -415,12 +450,13 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
                                           uint8_t channelId, np_communication_buffer* buffer,
                                           uint16_t bufferSize, void* data)
 {
+    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if ( data == NULL) {
         return;
     }
+    ctx->recvCount++;
     NABTO_LOG_INFO(LOG, "connection data received callback");
     if (ec == NABTO_EC_OK) {
-        np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
         ctx->currentChannelId = channelId;
         memcpy(ctx->recvBuffer, ctx->pl->buf.start(buffer), bufferSize);
         ctx->recvBufferSize = bufferSize;
@@ -430,6 +466,27 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
     } else {
         // TODO: how to handle connection errors?
         NABTO_LOG_ERROR(LOG, "np_connection returned error code: %u", ec);
+        if (ctx->recvAttachCb != NULL) {
+            np_dtls_cli_received_callback cb = ctx->recvAttachCb;
+            ctx->recvAttachCb = NULL;
+            cb(ec, 0, 0, NULL, 0, ctx->recvAttachData);
+        }
+        if (ctx->recvAttachDispatchCb != NULL) {
+            np_dtls_cli_received_callback cb = ctx->recvAttachDispatchCb;
+            ctx->recvAttachDispatchCb = NULL;
+            cb(ec, 0, 0, NULL, 0, ctx->recvAttachDispatchData);
+        }
+        if (ctx->recvRelayCb != NULL) {
+            np_dtls_cli_received_callback cb = ctx->recvRelayCb;
+            ctx->recvRelayCb = NULL;
+            cb(ec, 0, 0, NULL, 0, ctx->recvRelayData);
+        }
+        if (ctx->recvKeepAliveCb != NULL) {
+            np_dtls_cli_received_callback cb = ctx->recvKeepAliveCb;
+            ctx->recvKeepAliveCb = NULL;
+            cb(ec, 0, 0, NULL, 0, ctx->recvKeepAliveData);
+        }
+        
     }
 }
 
@@ -439,6 +496,7 @@ void nm_dtls_connection_send_callback(const np_error_code ec, void* data)
     if (data == NULL) {
         return;
     }
+    ctx->sentCount++;
     ctx->sending = false;
     ctx->sslSendBufferSize = 0;
     if(ctx->state == CLOSING) {
