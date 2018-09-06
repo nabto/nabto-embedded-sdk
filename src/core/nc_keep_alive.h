@@ -24,6 +24,7 @@ struct nc_keep_alive_context
     uint32_t lastRecvCount;
     uint32_t lastSentCount;
     uint8_t lostKeepAlives;
+    uint16_t n;
 };
 
 /**

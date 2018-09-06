@@ -24,45 +24,43 @@ void nc_keep_alive_send_cb(const np_error_code ec, void* data);
 void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
                         np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
-void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_cli_context* conn, keep_alive_callback cb, void* data)
+void nc_keep_alive_init(struct np_platform* pl, struct nc_keep_alive_context* ctx)
 {
     memset(ctx, 0, sizeof(struct nc_keep_alive_context));
-    ctx->isCli = true;
     ctx->pl = pl;
-    ctx->cli = conn;
-    ctx->cb = cb;
-    ctx->data = data;
     ctx->buf = ctx->pl->buf.allocate();
     ctx->kaInterval = 30;
     ctx->kaRetryInterval = 2;
     ctx->kaMaxRetries = 15;
+    ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
+
+}
+
+void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_cli_context* conn, keep_alive_callback cb, void* data)
+{
+    nc_keep_alive_init(pl, ctx);
+    ctx->isCli = true;
+    ctx->cli = conn;
+    ctx->cb = cb;
+    ctx->data = data;
     ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->cli, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     nc_keep_alive_wait(ctx);
 }
 
 void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_srv_connection* conn, keep_alive_callback cb, void* data)
 {
-    memset(ctx, 0, sizeof(struct nc_keep_alive_context));
+    nc_keep_alive_init(pl, ctx);
     ctx->isCli = false;
-    ctx->pl = pl;
     ctx->srv = conn;
     ctx->cb = cb;
     ctx->data = data;
-    ctx->buf = ctx->pl->buf.allocate();
-    ctx->kaInterval = 30;
-    ctx->kaRetryInterval = 2;
-    ctx->kaMaxRetries = 15;
     ctx->pl->dtlsS.async_recv_from(ctx->pl, ctx->srv, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     nc_keep_alive_wait(ctx);
 }
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
 {
-    if (ctx->lostKeepAlives == 0) {
-        np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaInterval*1000, &nc_keep_alive_event, ctx);
-    } else {
-        np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaRetryInterval*1000, &nc_keep_alive_event, ctx);
-    }
+    np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaRetryInterval*1000, &nc_keep_alive_event, ctx);
 }
 
 void nc_keep_alive_event(const np_error_code ec, void* data)
@@ -104,7 +102,7 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
         nc_keep_alive_close(ctx, ec);
         return DTLS_ERROR;
     }
-    if (ctx->lostKeepAlives > ctx->kaMaxRetries) {
+    if (ctx->lostKeepAlives > ctx->kaMaxRetries*ctx->n) {
         return KA_TIMEOUT;
     }
     if (recvCount > ctx->lastRecvCount && sentCount > ctx->lastSentCount) {
@@ -114,7 +112,11 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
         return DO_NOTHING;
     } else {
         ctx->lostKeepAlives++;
-        return SEND_KA;
+        if(ctx->lostKeepAlives > ctx->n) {
+            return SEND_KA;
+        } else {
+            return DO_NOTHING;
+        }
     }
 }
 
