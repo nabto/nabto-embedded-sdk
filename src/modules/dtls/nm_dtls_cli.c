@@ -268,7 +268,7 @@ void nm_dtls_event_do_one(void* data)
             }
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             ctx->state = DATA;
-            nc_keep_alive_init(ctx->pl, &ctx->keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
+            nc_keep_alive_init_cli(ctx->pl, &ctx->keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
             ctx->connectCb(NABTO_EC_OK, ctx, ctx->connectData);
         }
         return;
@@ -280,6 +280,7 @@ void nm_dtls_event_do_one(void* data)
             NABTO_LOG_INFO(LOG, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             NABTO_LOG_INFO(LOG, "Received data, invoking callback");
+            ctx->recvCount++;
             uint64_t seq = *((uint64_t*)ctx->ssl.in_ctr);
             switch((enum application_data_type)ctx->pl->buf.start(ctx->sslRecvBuf)[0]) {
                 case AT_DEVICE_LB:
@@ -368,6 +369,7 @@ void nm_dtls_event_send_to(void* data)
         // TODO: unknown error
         ctx->sendCb(NABTO_EC_FAILED, ctx->sendData);
     } else {
+        ctx->sentCount++;
         ctx->sendCb(NABTO_EC_OK, ctx->sendData);
     }
 }
@@ -463,7 +465,6 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
     if ( data == NULL) {
         return;
     }
-    ctx->recvCount++;
     NABTO_LOG_INFO(LOG, "connection data received callback");
     if (ec == NABTO_EC_OK) {
         ctx->currentChannelId = channelId;
@@ -505,7 +506,6 @@ void nm_dtls_connection_send_callback(const np_error_code ec, void* data)
     if (data == NULL) {
         return;
     }
-    ctx->sentCount++;
     ctx->sending = false;
     ctx->sslSendBufferSize = 0;
     if(ctx->state == CLOSING) {

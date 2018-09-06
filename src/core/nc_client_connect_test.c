@@ -67,7 +67,7 @@ np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, np_dtls_s
     return NABTO_EC_OK;
 }
 np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, np_dtls_srv_connection* ctx,
-                                               np_dtls_srv_received_callback cb, void* data)
+                                               enum application_data_type type, np_dtls_srv_received_callback cb, void* data)
 {
     np_communication_buffer resp;
     uint8_t *ptr = resp.buf+2;

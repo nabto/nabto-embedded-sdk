@@ -79,7 +79,7 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
     np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->conn, &ctx->dtls);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    pl.dtlsS.async_recv_from(&pl, ctx->dtls, recvedCb, ctx);
+    pl.dtlsS.async_recv_from(&pl, ctx->dtls, AT_STREAM, recvedCb, ctx);
     if(ec2 != NABTO_EC_OK) {
         exit(1);
     }

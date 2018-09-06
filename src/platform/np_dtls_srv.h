@@ -24,7 +24,7 @@ struct np_dtls_srv_module {
                                    uint8_t* buffer, uint16_t bufferSize,
                                    np_dtls_srv_send_to_callback cb, void* data);
     np_error_code (*async_recv_from)(struct np_platform* pl, np_dtls_srv_connection* ctx,
-                                     np_dtls_srv_received_callback cb, void* data);
+                                     enum application_data_type type, np_dtls_srv_received_callback cb, void* data);
     np_error_code (*cancel_recv_from)(struct np_platform* pl, np_dtls_srv_connection* ctx,
                                       enum application_data_type type);
     np_error_code (*async_close)(struct np_platform* pl, np_dtls_srv_connection* ctx,
@@ -32,6 +32,8 @@ struct np_dtls_srv_module {
     np_error_code (*get_fingerprint)(struct np_platform* pl, np_dtls_srv_connection* ctx, uint8_t* fp);
 
     const char* (*get_alpn_protocol)(np_dtls_srv_connection* ctx);
+
+    np_error_code (*get_packet_count)(np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount);
 };
 
 #endif // NP_DTLS_SRV_H

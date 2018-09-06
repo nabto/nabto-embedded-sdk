@@ -113,7 +113,7 @@ void nc_client_connect_conn_created(const np_error_code ec, uint8_t channelId, v
         cc->recvCb(NABTO_EC_OK, cc->recvEp, cc->buf, cc->bufSize, cc->recvCbData);
     }
     ctx.pl->buf.free(cc->buf);
-    ctx.pl->dtlsS.async_recv_from(ctx.pl, cc->dtls, &nc_client_connect_handle_app_packet, cc);
+    ctx.pl->dtlsS.async_recv_from(ctx.pl, cc->dtls, AT_STREAM, &nc_client_connect_handle_app_packet, cc);
 }
 
 void nc_client_connect_connection_closed(const np_error_code ec, void* data)

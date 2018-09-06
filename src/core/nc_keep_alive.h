@@ -10,7 +10,9 @@ typedef void (*keep_alive_callback)(const np_error_code ec, void* data);
 struct nc_keep_alive_context
 {
     struct np_platform* pl;
-    np_dtls_cli_context* conn;
+    bool isCli;
+    np_dtls_cli_context* cli;
+    np_dtls_srv_connection* srv;
     keep_alive_callback cb;
     void* data;
     struct np_timed_event kaEv;
@@ -25,12 +27,20 @@ struct nc_keep_alive_context
 };
 
 /**
- * Initializes and starts keep alive for given DTLS connection
+ * Initializes and starts keep alive for given DTLS client connection
  * Callback is invoked if an error occurs while keeping the connection alive
  * Callback is invoked with NABTO_EC_OK if nc_keep_alive_stop is called
  */
-void nc_keep_alive_init(struct np_platform* pl, struct nc_keep_alive_context* ctx,
-                         np_dtls_cli_context* conn, keep_alive_callback cb, void* data);
+void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context* ctx,
+                            np_dtls_cli_context* conn, keep_alive_callback cb, void* data);
+
+/**
+ * Initializes and starts keep alive for given DTLS server connection
+ * Callback is invoked if an error occurs while keeping the connection alive
+ * Callback is invoked with NABTO_EC_OK if nc_keep_alive_stop is called
+ */
+void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx,
+                            np_dtls_srv_connection* conn, keep_alive_callback cb, void* data);
 
 /** 
  * Stops keep alive and invokes callback provided when the context was initialized

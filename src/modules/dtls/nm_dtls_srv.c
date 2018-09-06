@@ -3,6 +3,7 @@
 
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
+#include <core/nc_keep_alive.h>
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
@@ -35,6 +36,9 @@ struct np_dtls_srv_connection {
     struct np_connection* conn;
     enum sslState state;
     mbedtls_ssl_context ssl;
+    struct nc_keep_alive_context keepAliveCtx;
+    uint32_t recvCount;
+    uint32_t sentCount;
 
     np_communication_buffer* sslRecvBuf;
     size_t sslRecvBufSize;
@@ -47,8 +51,10 @@ struct np_dtls_srv_connection {
 
     uint8_t sendChannel;
     uint8_t currentChannelId;
-    np_dtls_srv_received_callback recvCb;
-    void* recvCbData;
+    np_dtls_srv_received_callback appRecvCb;
+    void* appRecvCbData;
+    np_dtls_srv_received_callback kaRecvCb;
+    void* kaRecvCbData;
     np_dtls_srv_send_to_callback sendCb;
     void* sendCbData;
     np_dtls_srv_close_callback closeCb;
@@ -97,6 +103,14 @@ void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct np_
 
 void nm_dtls_srv_event_send_to(void* data);
 
+// Get the packet counters for given dtls_cli_context
+np_error_code nm_dtls_srv_get_packet_count(np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount)
+{
+    *recvCount = ctx->recvCount;
+    *sentCount = ctx->sentCount;
+    return NABTO_EC_OK;
+}
+
 // Get the result of the application layer protocol negotiation
 const char*  nm_dtls_srv_get_alpn_protocol(np_dtls_srv_connection* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
@@ -114,6 +128,7 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
     pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;
     pl->dtlsS.get_alpn_protocol = &nm_dtls_srv_get_alpn_protocol;
+    pl->dtlsS.get_packet_count = &nm_dtls_srv_get_packet_count;
     server.pl = pl;
     nm_dtls_srv_alpnList[0] = nm_dtls_srv_protocol;
     nm_dtls_srv_alpnList[1] = NULL;
@@ -179,6 +194,12 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, np_connection* conn, np
     return NABTO_EC_OK;
 }
 
+void nm_dtls_srv_ka_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(LOG,"DTLS SRV received keep alive callback with error code: %u", ec);
+}
+
+
 void nm_dtls_srv_do_one(void* data)
 {
     np_dtls_srv_connection* ctx = (np_dtls_srv_connection*)data;
@@ -192,6 +213,7 @@ void nm_dtls_srv_do_one(void* data)
             NABTO_LOG_TRACE(LOG, "Keeping CONNECTING state");
         } else if (ret == 0) {
             NABTO_LOG_INFO(LOG, "State changed to DATA");
+            nc_keep_alive_init_srv(server.pl, &ctx->keepAliveCtx, ctx, &nm_dtls_srv_ka_cb, ctx);
             ctx->state = DATA;
         } else {
             NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
@@ -212,19 +234,29 @@ void nm_dtls_srv_do_one(void* data)
         } else if (ret > 0) {
             uint64_t seq = *((uint64_t*)ctx->ssl.in_ctr);
             uint8_t* ptr = server.pl->buf.start(ctx->sslRecvBuf);
-            if (ptr[0] == AT_KEEP_ALIVE && ptr[1] == CT_KEEP_ALIVE_REQUEST) {
-                ptr[1] = CT_KEEP_ALIVE_RESPONSE;
-                ctx->sendCb = NULL;
-                ctx->sendBuffer = ptr;
-                ctx->sendBufferSize = ret;
-                nm_dtls_srv_event_send_to(ctx);
-                return;
-            }
-            if(ctx->recvCb) {
+            ctx->recvCount++;
+            if (ptr[0] == AT_KEEP_ALIVE) {
+                if (ptr[1] == CT_KEEP_ALIVE_REQUEST) {
+                    NABTO_LOG_TRACE(LOG, "Keep alive request, responding imidiately");
+                    ptr[1] = CT_KEEP_ALIVE_RESPONSE;
+                    ctx->sendCb = NULL;
+                    ctx->sendBuffer = ptr;
+                    ctx->sendBufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
+                    nm_dtls_srv_event_send_to(ctx);
+                    return;
+                } else if (ctx->kaRecvCb) {
+                    NABTO_LOG_TRACE(LOG, "found Callback function");
+                    np_dtls_srv_received_callback cb = ctx->kaRecvCb;
+                    ctx->kaRecvCb = NULL;
+                    cb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->kaRecvCbData);
+                }
+            } else if (ctx->appRecvCb) {
                 NABTO_LOG_TRACE(LOG, "found Callback function");
-                np_dtls_srv_received_callback cb = ctx->recvCb;
-                ctx->recvCb = NULL;
-                cb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->recvCbData);
+                np_dtls_srv_received_callback cb = ctx->appRecvCb;
+                ctx->appRecvCb = NULL;
+                cb(NABTO_EC_OK, ctx->currentChannelId, seq, ctx->sslRecvBuf, ret, ctx->appRecvCbData);
+            } else {
+                NABTO_LOG_TRACE(LOG, "received application packet with no callback");
             }
           
         } else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
@@ -235,8 +267,11 @@ void nm_dtls_srv_do_one(void* data)
             // TODO: error handling
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
             ctx->state = CLOSING;
-            if(ctx->recvCb != NULL) {
-                ctx->recvCb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->recvCbData);
+            if(ctx->kaRecvCb != NULL) {
+                ctx->kaRecvCb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->kaRecvCbData);
+            }
+            if(ctx->appRecvCb != NULL) {
+                ctx->appRecvCb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->appRecvCbData);
             }
         }
     }
@@ -260,6 +295,7 @@ void nm_dtls_srv_event_send_to(void* data)
         // TODO: unknown error
         ctx->sendCb(NABTO_EC_FAILED, ctx->sendCbData);
     } else {
+        ctx->sentCount++;
         ctx->sendCb(NABTO_EC_OK, ctx->sendCbData);
     }
 }
@@ -282,12 +318,15 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, np_dtls_srv_conn
 }
 
 np_error_code nm_dtls_srv_async_recv_from(struct np_platform* pl, np_dtls_srv_connection* ctx,
-                                          np_dtls_srv_received_callback cb, void* data)
+                                          enum application_data_type type, np_dtls_srv_received_callback cb, void* data)
 {
-    NABTO_LOG_ERROR(LOG, "values are: %u, %u, %u, %u", pl, ctx, cb, data);
-    NABTO_LOG_ERROR(LOG, "value %i", ctx->recvCb);
-    ctx->recvCb = cb;
-    ctx->recvCbData = data;
+    if (type == AT_KEEP_ALIVE) {
+        ctx->kaRecvCb = cb;
+        ctx->kaRecvCbData = data;
+    } else {
+        ctx->appRecvCb = cb;
+        ctx->appRecvCbData = data;
+    }
     np_event_queue_post(server.pl, &ctx->recvEv, &nm_dtls_srv_do_one, ctx);
     return NABTO_EC_OK;
 }
@@ -295,7 +334,11 @@ np_error_code nm_dtls_srv_async_recv_from(struct np_platform* pl, np_dtls_srv_co
 np_error_code nm_dtls_srv_cancel_recv_from(struct np_platform* pl, np_dtls_srv_connection* ctx,
                                            enum application_data_type type)
 {
-    ctx->recvCb = NULL;
+    if (type == AT_KEEP_ALIVE) {
+        ctx->kaRecvCb = NULL;
+    } else {
+        ctx->appRecvCb = NULL;
+    }
     return NABTO_EC_OK;
 }
 
