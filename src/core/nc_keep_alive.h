@@ -15,14 +15,13 @@ struct keep_alive_context
     void* data;
     struct np_timed_event kaEv;
     np_communication_buffer* buf;
-    uint16_t sequence;
     uint16_t bufSize;
     uint16_t kaInterval;
     uint8_t kaRetryInterval;
     uint8_t kaMaxRetries;
-    uint8_t currentRetry;
     uint32_t lastRecvCount;
     uint32_t lastSentCount;
+    uint8_t lostKeepAlives;
 };
 
 /**
