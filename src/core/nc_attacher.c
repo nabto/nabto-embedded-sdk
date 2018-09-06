@@ -1,7 +1,6 @@
 
 #include "nc_attacher.h"
 
-#include <core/nc_keep_alive.h>
 #include <core/nc_packet.h>
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
@@ -40,7 +39,6 @@ struct nc_attach_context {
     struct np_connection_id id;
     struct np_connection_channel anChannel;
     struct np_connection_channel adChannel;
-    struct keep_alive_context kactx;
     char dns[256];
     uint8_t dnsLen;
 };
@@ -83,11 +81,6 @@ void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
 void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data);
 
 
-void nc_attacher_ka_cb(const np_error_code ec, void* data)
-{
-    NABTO_LOG_INFO(LOG,"Attacher received keep alive callback with error code: %u", ec);
-}
-
 void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     uint8_t type;
@@ -117,7 +110,6 @@ void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     if (type == CT_DEVICE_RELAY_HELLO_RESPONSE) {
         NABTO_LOG_INFO(LOG, "Device is now ATTACHED");
-        nc_keep_alive_init(ctx.pl, &ctx.kactx, ctx.anDtls, &nc_attacher_ka_cb, &ctx);
         ctx.cb(NABTO_EC_OK, ctx.cbData);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown attach_content_type %u found ",type); 

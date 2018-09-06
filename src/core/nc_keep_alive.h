@@ -7,7 +7,7 @@
 
 typedef void (*keep_alive_callback)(const np_error_code ec, void* data);
 
-struct keep_alive_context
+struct nc_keep_alive_context
 {
     struct np_platform* pl;
     np_dtls_cli_context* conn;
@@ -29,19 +29,19 @@ struct keep_alive_context
  * Callback is invoked if an error occurs while keeping the connection alive
  * Callback is invoked with NABTO_EC_OK if nc_keep_alive_stop is called
  */
-void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx,
+void nc_keep_alive_init(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                          np_dtls_cli_context* conn, keep_alive_callback cb, void* data);
 
 /** 
  * Stops keep alive and invokes callback provided when the context was initialized
  */
-void nc_keep_alive_stop(struct np_platform* pl,  struct keep_alive_context* ctx);
+void nc_keep_alive_stop(struct np_platform* pl,  struct nc_keep_alive_context* ctx);
 
 /**
  * Probes a connection on specific channelId.
  * callback is invoked when a KEEP_ALIVE_RESPONSE packet is received, or when timeout.
  */
-np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct keep_alive_context* ctx,
+np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                                         uint8_t channelId, keep_alive_callback cb, void* data);
 
 /** 
@@ -50,7 +50,7 @@ np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct keep_aliv
  * @param kaRetryInterval set the interval between retransmissions for packet losses
  * @param kaMaxRetries    set the number of retries before connection is assumed dead
  */
-np_error_code nc_keep_alive_set_settings(struct np_platform* pl, struct keep_alive_context* ctx,
+np_error_code nc_keep_alive_set_settings(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                                          uint16_t kaInterval, uint8_t kaRetryInterval, uint8_t kaMaxRetries);
 
 #endif //NC_KEEP_ALIVE_H

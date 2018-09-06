@@ -2,6 +2,7 @@
 #include "nm_dtls_util.h"
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
+#include <core/nc_keep_alive.h>
 
 #include <mbedtls/debug.h>
 #include <mbedtls/ssl.h>
@@ -33,6 +34,8 @@ struct np_dtls_cli_context {
     struct np_event recvEv;
     struct np_event closeEv;
     struct np_timed_event tEv;
+    struct nc_keep_alive_context keepAliveCtx;
+
     uint32_t recvCount;
     uint32_t sentCount;
     np_dtls_cli_connect_callback connectCb;
@@ -138,6 +141,11 @@ np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_dtls_cli_conte
             return NABTO_EC_INVALID_PACKET_TYPE;
     }
     return NABTO_EC_OK;
+}
+
+void nm_dtls_cli_ka_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(LOG,"DTLS CLI received keep alive callback with error code: %u", ec);
 }
 
 // Printing function used by mbedtls for logging
@@ -260,6 +268,7 @@ void nm_dtls_event_do_one(void* data)
             }
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             ctx->state = DATA;
+            nc_keep_alive_init(ctx->pl, &ctx->keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
             ctx->connectCb(NABTO_EC_OK, ctx, ctx->connectData);
         }
         return;

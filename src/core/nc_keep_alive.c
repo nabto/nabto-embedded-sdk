@@ -15,18 +15,18 @@ enum nc_keep_alive_action{
     DTLS_ERROR
 };
 
-void nc_keep_alive_wait(struct keep_alive_context* ctx);
-enum nc_keep_alive_action nc_keep_alive_should_send(struct keep_alive_context* ctx);
+void nc_keep_alive_wait(struct nc_keep_alive_context* ctx);
+enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx);
 void nc_keep_alive_event(const np_error_code ec, void* data);
-void nc_keep_alive_send_req(struct keep_alive_context* ctx);
-void nc_keep_alive_close(struct keep_alive_context* ctx, const np_error_code ec);
+void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx);
+void nc_keep_alive_close(struct nc_keep_alive_context* ctx, const np_error_code ec);
 void nc_keep_alive_send_cb(const np_error_code ec, void* data);
 void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
                         np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
-void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx, np_dtls_cli_context* conn, keep_alive_callback cb, void* data)
+void nc_keep_alive_init(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_cli_context* conn, keep_alive_callback cb, void* data)
 {
-    memset(ctx, 0, sizeof(struct keep_alive_context));
+    memset(ctx, 0, sizeof(struct nc_keep_alive_context));
     ctx->pl = pl;
     ctx->conn = conn;
     ctx->cb = cb;
@@ -41,7 +41,7 @@ void nc_keep_alive_init(struct np_platform* pl, struct keep_alive_context* ctx, 
     nc_keep_alive_send_req(ctx);
 }
 
-void nc_keep_alive_wait(struct keep_alive_context* ctx)
+void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
 {
     if (ctx->lostKeepAlives == 0) {
         np_event_queue_post_timed_event(ctx->pl, &ctx->kaEv, ctx->kaInterval*1000, &nc_keep_alive_event, ctx);
@@ -52,7 +52,7 @@ void nc_keep_alive_wait(struct keep_alive_context* ctx)
 
 void nc_keep_alive_event(const np_error_code ec, void* data)
 {
-    struct keep_alive_context* ctx = (struct keep_alive_context*)data;
+    struct nc_keep_alive_context* ctx = (struct nc_keep_alive_context*)data;
     if (ec != NABTO_EC_OK) {
         // TODO: handle error state
     } else {
@@ -74,7 +74,7 @@ void nc_keep_alive_event(const np_error_code ec, void* data)
     }
 }
 
-enum nc_keep_alive_action nc_keep_alive_should_send(struct keep_alive_context* ctx)
+enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx)
 {
     uint32_t recvCount;
     uint32_t sentCount;
@@ -99,7 +99,7 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct keep_alive_context* c
     }
 }
 
-void nc_keep_alive_send_req(struct keep_alive_context* ctx)
+void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx)
 {
     uint8_t* start = ctx->pl->buf.start(ctx->buf);
     uint8_t buf[16];
@@ -116,7 +116,7 @@ void nc_keep_alive_send_req(struct keep_alive_context* ctx)
 
 void nc_keep_alive_send_cb(const np_error_code ec, void* data)
 {
-    struct keep_alive_context* ctx = (struct keep_alive_context*)data;
+    struct nc_keep_alive_context* ctx = (struct nc_keep_alive_context*)data;
     if(ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Keep alive received error state from DTLS: %u", ec);
         nc_keep_alive_close(ctx, ec);
@@ -124,7 +124,7 @@ void nc_keep_alive_send_cb(const np_error_code ec, void* data)
     }
 }
 
-void nc_keep_alive_close(struct keep_alive_context* ctx, const np_error_code ec)
+void nc_keep_alive_close(struct nc_keep_alive_context* ctx, const np_error_code ec)
 {
     NABTO_LOG_WARN(LOG, "Keep alive closing with error code: %u", ec);
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->kaEv);
@@ -136,7 +136,7 @@ void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
                         np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     
-    struct keep_alive_context* ctx = (struct keep_alive_context*)data;
+    struct nc_keep_alive_context* ctx = (struct nc_keep_alive_context*)data;
     uint8_t* start = ctx->pl->buf.start(buf);
     uint8_t* ptr = start;
     NABTO_LOG_TRACE(LOG, "Received keep alive packet");
@@ -148,12 +148,12 @@ void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
     ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->conn, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
 }
 
-void nc_keep_alive_stop(struct np_platform* pl,  struct keep_alive_context* ctx)
+void nc_keep_alive_stop(struct np_platform* pl,  struct nc_keep_alive_context* ctx)
 {
     nc_keep_alive_close(ctx, NABTO_EC_OK);
 }
 
-np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct keep_alive_context* ctx,
+np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                                         uint8_t channelId, keep_alive_callback cb, void* data)
 {
     return NABTO_EC_FAILED;
