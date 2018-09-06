@@ -6,4 +6,5 @@ void nc_core_test_run_all()
     nc_connection_tests();
     nc_packet_tests();
     nc_client_connect_tests();
+    nc_keep_alive_tests();
 }

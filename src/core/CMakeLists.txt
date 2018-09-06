@@ -13,6 +13,7 @@ set(test_src
   ${src_dir}/nc_client_connect_test.c
   ${src_dir}/nc_connection_test.c
   ${src_dir}/nc_packet_test.c
+  ${src_dir}/nc_keep_alive_test.c
   ${src_dir}/nc_tests.c
   )
 
