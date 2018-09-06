@@ -67,7 +67,7 @@ void nc_keep_alive_event(const np_error_code ec, void* data)
 {
     struct nc_keep_alive_context* ctx = (struct nc_keep_alive_context*)data;
     if (ec != NABTO_EC_OK) {
-        // TODO: handle error state
+        nc_keep_alive_close(ctx, ec);
     } else {
         enum nc_keep_alive_action action = nc_keep_alive_should_send(ctx);
         switch(action) {

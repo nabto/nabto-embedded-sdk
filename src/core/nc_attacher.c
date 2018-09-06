@@ -20,9 +20,20 @@ struct nc_attach_an_endpoint {
     uint8_t dnsLen;
 };
 
+struct nc_attach_send_data {
+    np_dtls_cli_context* cryp;
+    uint8_t chan;
+    uint8_t* start;
+    uint32_t size;
+    np_dtls_cli_send_to_callback cb;
+    void* data;
+    struct np_timed_event ev;
+};
+
 struct nc_attach_context {
     struct np_platform* pl;
     const struct nc_attach_parameters* params;
+    struct nc_attach_send_data sendData;
     uint32_t sessionId;
     struct nc_attach_an_endpoint anEps[NABTO_MAX_AN_EPS];
     uint8_t activeAnEps;
@@ -74,12 +85,12 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
 void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data);
 void nc_attacher_lb_conn_created_cb(const np_error_code ec, uint8_t channelId, void* data);
 void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
-
 /**
  * create socket reused for both DTLS connections
  */
 void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data);
 
+void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_cli_send_to_callback cb, void* data);
 
 void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
@@ -109,6 +120,7 @@ void nc_attacher_an_handle_event(const np_error_code ec, np_communication_buffer
     NABTO_LOG_TRACE(LOG, "ATTACH packet received");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     if (type == CT_DEVICE_RELAY_HELLO_RESPONSE) {
+        np_event_queue_cancel_timed_event(ctx.pl, &ctx.sendData.ev);
         NABTO_LOG_INFO(LOG, "Device is now ATTACHED");
         ctx.cb(NABTO_EC_OK, ctx.cbData);
     } else {
@@ -138,6 +150,7 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
     NABTO_LOG_BUF(LOG, start, bufferSize);
     if (*(start+1) == CT_DEVICE_LB_RESPONSE) {
         NABTO_LOG_TRACE(LOG, "CT_DEVICE_LB_RESPONSE");
+        np_event_queue_cancel_timed_event(ctx.pl, &ctx.sendData.ev);
         ptr = ptr + NABTO_PACKET_HEADER_SIZE; // skip header;
         NABTO_LOG_TRACE(LOG, "starting while with %u <= %u", ptr-start+4, bufferSize);
         ctx.activeAnEps = 0;
@@ -152,10 +165,6 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
                     ctx.cb(NABTO_EC_MALFORMED_PACKET, ctx.cbData);
                     return;
                 } 
-                // TODO: remember this:
-                //ctx.anChannel.ep.port = uint16_read(ptr+4);
-                //dns = ptr+8;
-                //dnsLen = uint16_read(ptr+6);
                 if (ctx.activeAnEps < NABTO_MAX_AN_EPS) {
                     ctx.anEps[ctx.activeAnEps].port = uint16_read(ptr+4);
                     ctx.anEps[ctx.activeAnEps].az = *(ptr+6);
@@ -228,10 +237,25 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
     }
         
 }
+
+void nc_attacher_send_to_event(const np_error_code ec, void* data)
+{
+    if (ec == NABTO_EC_OK) {
+        nc_attacher_send_to(ctx.sendData.cryp, ctx.sendData.chan, ctx.sendData.start, ctx.sendData.size, ctx.sendData.cb, ctx.sendData.data);
+    }
+}
+
 void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_cli_send_to_callback cb, void* data)
 {
     // TODO: make retransmissions!!!
+    ctx.sendData.cryp = cryp;
+    ctx.sendData.chan = chan;
+    ctx.sendData.start = start;
+    ctx.sendData.size = size;
+    ctx.sendData.cb = cb;
+    ctx.sendData.data = data;
     ctx.pl->dtlsC.async_send_to(ctx.pl, cryp, chan, start, size, cb, data);
+    np_event_queue_post_timed_event(ctx.pl, &ctx.sendData.ev, 5000, &nc_attacher_send_to_event, &ctx);
 }
 
 void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data)

@@ -101,6 +101,7 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
                                           uint16_t bufferSize, void* data);
 
 void nm_dtls_event_send_to(void* data);
+void nm_dtls_do_close(void* data, np_error_code ec);
 
 // setup function for the mbedtls context
 np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx);
@@ -123,7 +124,6 @@ np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_dtls_cli_conte
                                        enum application_data_type type)
 {
     switch (type) {
-        // TODO: add AT_STREAM
         case AT_DEVICE_LB:
             ctx->recvAttachDispatchCb = NULL;
             break;
@@ -349,7 +349,7 @@ void nm_dtls_event_do_one(void* data)
             char buf[128];
             mbedtls_strerror(ret, buf, 128);
             NABTO_LOG_INFO(LOG, "Received ERROR -0x%04x : %s ", -ret, buf);
-            // TODO: ERROR handlig
+            nm_dtls_do_close(ctx, NABTO_EC_FAILED);
         }
         return;
     }
@@ -367,13 +367,13 @@ void nm_dtls_event_send_to(void* data)
     np_dtls_cli_send_to_callback cb = ctx->sendCb;
     ctx->sendCb = NULL;
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
-        // TODO: packet too large
+        // packet too large
         cb(NABTO_EC_MALFORMED_PACKET, ctx->sendData);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
-        // TODO: should not be possible.
+        // should not be possible.
         cb(NABTO_EC_FAILED, ctx->sendData);
     } else if (ret < 0) {
-        // TODO: unknown error
+        // unknown error
         cb(NABTO_EC_FAILED, ctx->sendData);
     } else {
         ctx->sentCount++;
@@ -435,11 +435,25 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_contex
     return NABTO_EC_OK;
 }
 
-void nm_dtls_event_close(void* data){
+void nm_dtls_do_close(void* data, np_error_code ec){
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     nc_keep_alive_stop(ctx->pl, &ctx->keepAliveCtx);
     mbedtls_ssl_close_notify(&ctx->ssl);
+
+    if (ctx->recvAttachCb != NULL) {
+        ctx->recvAttachCb(ec, 0,0,NULL,0, ctx->recvAttachData);
+    }
+    if (ctx->recvAttachDispatchCb != NULL) {
+        ctx->recvAttachDispatchCb(ec, 0,0,NULL,0, ctx->recvAttachDispatchData);
+    }
+    if (ctx->recvRelayCb != NULL) {
+        ctx->recvRelayCb(ec, 0,0,NULL,0, ctx->recvRelayData);
+    }
+    if (ctx->recvKeepAliveCb != NULL) {
+        ctx->recvKeepAliveCb(ec, 0,0,NULL,0, ctx->recvKeepAliveData);
+    }
+    
     mbedtls_x509_crt_free( &ctx->cacert );
     mbedtls_ssl_free( &ctx->ssl );
     mbedtls_ssl_config_free( &ctx->conf );
@@ -457,6 +471,10 @@ void nm_dtls_event_close(void* data){
     free(ctx);
     ctx = NULL;
     cb(NABTO_EC_OK, cbData);
+}
+
+void nm_dtls_event_close(void* data) {
+    nm_dtls_do_close(data, NABTO_EC_CONNECTION_CLOSING);
 }
 
 np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* ctx,
@@ -489,28 +507,8 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
         nm_dtls_event_do_one(ctx);
 //        np_event_queue_post(ctx->pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
     } else {
-        // TODO: how to handle connection errors?
         NABTO_LOG_ERROR(LOG, "np_connection returned error code: %u", ec);
-        if (ctx->recvAttachCb != NULL) {
-            np_dtls_cli_received_callback cb = ctx->recvAttachCb;
-            ctx->recvAttachCb = NULL;
-            cb(ec, 0, 0, NULL, 0, ctx->recvAttachData);
-        }
-        if (ctx->recvAttachDispatchCb != NULL) {
-            np_dtls_cli_received_callback cb = ctx->recvAttachDispatchCb;
-            ctx->recvAttachDispatchCb = NULL;
-            cb(ec, 0, 0, NULL, 0, ctx->recvAttachDispatchData);
-        }
-        if (ctx->recvRelayCb != NULL) {
-            np_dtls_cli_received_callback cb = ctx->recvRelayCb;
-            ctx->recvRelayCb = NULL;
-            cb(ec, 0, 0, NULL, 0, ctx->recvRelayData);
-        }
-        if (ctx->recvKeepAliveCb != NULL) {
-            np_dtls_cli_received_callback cb = ctx->recvKeepAliveCb;
-            ctx->recvKeepAliveCb = NULL;
-            cb(ec, 0, 0, NULL, 0, ctx->recvKeepAliveData);
-        }
+        nm_dtls_do_close(ctx, ec);
         
     }
 }

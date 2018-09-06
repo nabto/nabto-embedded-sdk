@@ -217,8 +217,6 @@ void nm_dtls_srv_do_one(void* data)
             ctx->state = DATA;
         } else {
             NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
-            // TODO: How to handle connection errors ?
-//ctx->connectCb(NABTO_EC_FAILED, NULL, ctx->connectData);
             np_event_queue_cancel_timed_event(server.pl, &ctx->tEv);
             server.pl->conn.cancel_async_recv(server.pl, ctx->conn);
             free(ctx);
@@ -264,7 +262,6 @@ void nm_dtls_srv_do_one(void* data)
         {
             // OK
         } else {
-            // TODO: error handling
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
             ctx->state = CLOSING;
             if(ctx->kaRecvCb != NULL) {
@@ -286,13 +283,13 @@ void nm_dtls_srv_event_send_to(void* data)
         return;
     }
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
-        // TODO: packet too large
+        // packet too large
         ctx->sendCb(NABTO_EC_MALFORMED_PACKET, ctx->sendCbData);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
-        // TODO: should not be possible.
+        // should not be possible.
         ctx->sendCb(NABTO_EC_FAILED, ctx->sendCbData);
     } else if (ret < 0) {
-        // TODO: unknown error
+        // unknown error
         ctx->sendCb(NABTO_EC_FAILED, ctx->sendCbData);
     } else {
         ctx->sentCount++;
@@ -344,13 +341,22 @@ np_error_code nm_dtls_srv_cancel_recv_from(struct np_platform* pl, np_dtls_srv_c
 
 void nm_dtls_srv_event_close(void* data){
     np_dtls_srv_connection* ctx = (np_dtls_srv_connection*) data;
+    nc_keep_alive_stop(server.pl, &ctx->keepAliveCtx);
     mbedtls_ssl_close_notify(&ctx->ssl);
     mbedtls_ssl_free( &ctx->ssl );
     np_dtls_srv_close_callback cb = ctx->closeCb;
     void* cbData = ctx->closeCbData;
+    server.pl->conn.cancel_async_recv(server.pl, ctx->conn);
+    server.pl->conn.cancel_async_send(server.pl, ctx->conn);
+    np_event_queue_cancel_timed_event(server.pl, &ctx->tEv);
+    np_event_queue_cancel_event(server.pl, &ctx->sendEv);
+    np_event_queue_cancel_event(server.pl, &ctx->recvEv);
+    np_event_queue_cancel_event(server.pl, &ctx->closeEv);
     free(ctx);
     ctx = NULL;
-    cb(NABTO_EC_OK, cbData);
+    if(cb != NULL) {
+        cb(NABTO_EC_OK, cbData);
+    }
 }
 
 np_error_code nm_dtls_srv_async_close(struct np_platform* pl, np_dtls_srv_connection* ctx,
@@ -379,8 +385,8 @@ void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct np_
         server.pl->conn.async_recv_from(server.pl, ctx->conn, &nm_dtls_srv_connection_received_callback, ctx);
         nm_dtls_srv_do_one(ctx);
     } else {
-        // TODO: how to handle connection errors?
         NABTO_LOG_ERROR(LOG, "np_connection returned error code: %u", ec);
+        nm_dtls_srv_event_close(data);
     }
 }
 

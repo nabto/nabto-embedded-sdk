@@ -19,6 +19,5 @@ np_error_code nc_client_connect_recv(struct np_platform* pl, const np_error_code
 np_error_code nc_client_connect_async_recv_from(np_connection* conn,
                                                 np_udp_packet_received_callback cb, void* data);
 
-// TODO: make this:
-// np_error_code nc_client_connect_cancel_recv_from(np_connection* conn);
+np_error_code nc_client_connect_cancel_recv_from(np_connection* conn);
 #endif //_NC_CLIENT_CONNECT_H_
