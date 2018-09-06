@@ -228,6 +228,11 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
     }
         
 }
+void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_cli_send_to_callback cb, void* data)
+{
+    // TODO: make retransmissions!!!
+    ctx.pl->dtlsC.async_send_to(ctx.pl, cryp, chan, start, size, cb, data);
+}
 
 void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data)
 {
@@ -268,7 +273,7 @@ void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
     
     NABTO_LOG_TRACE(LOG, "Sending CT_DEVICE_RELAY_HELLO_REQUEST:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
-    ctx.pl->dtlsC.async_send_to(ctx.pl, ctx.anDtls, 0xff, start, ptr - start, &nc_attacher_an_dtls_send_cb, &ctx);
+    nc_attacher_send_to(ctx.anDtls, 0xff, start, ptr-start, &nc_attacher_an_dtls_send_cb, &ctx);
     ctx.pl->dtlsC.async_recv_from(ctx.pl, ctx.anDtls, AT_DEVICE_RELAY, &nc_attacher_dtls_recv_cb, &ctx);
 //    ctx.pl->dtlsC.async_recv_from(ctx.pl, ctx.anDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
 }
@@ -334,7 +339,8 @@ void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
     
     NABTO_LOG_TRACE(LOG, "Sending device lb Request:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
-    ctx.pl->dtlsC.async_send_to(ctx.pl, ctx.adDtls, 0xff, start, ptr - start, &nc_attacher_lb_dtls_send_cb, &ctx);
+    nc_attacher_send_to(ctx.adDtls, 0xff, start, ptr-start, &nc_attacher_lb_dtls_send_cb, &ctx);
+    //ctx.pl->dtlsC.async_send_to(ctx.pl, ctx.adDtls, 0xff, start, ptr - start, &nc_attacher_lb_dtls_send_cb, &ctx);
     ctx.pl->dtlsC.async_recv_from(ctx.pl, ctx.adDtls, AT_DEVICE_LB, &nc_attacher_dtls_recv_cb, &ctx);
 }
 

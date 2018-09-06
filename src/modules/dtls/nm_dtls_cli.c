@@ -268,8 +268,8 @@ void nm_dtls_event_do_one(void* data)
             }
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             ctx->state = DATA;
-            nc_keep_alive_init_cli(ctx->pl, &ctx->keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
             ctx->connectCb(NABTO_EC_OK, ctx, ctx->connectData);
+            nc_keep_alive_init_cli(ctx->pl, &ctx->keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
         }
         return;
     } else if(ctx->state == DATA) {
@@ -317,6 +317,10 @@ void nm_dtls_event_do_one(void* data)
                     if (ptr[1] == CT_KEEP_ALIVE_REQUEST) {
                         NABTO_LOG_TRACE(LOG, "Keep alive request, responding imidiately");
                         ptr[1] = CT_KEEP_ALIVE_RESPONSE;
+                        if (ctx->sendCb != NULL) {
+                            NABTO_LOG_TRACE(LOG, "Received KA req, but sending is busy");
+                            return;
+                        }
                         ctx->sendCb = NULL;
                         ctx->sendBuffer = ptr;
                         ctx->sendBufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
@@ -355,28 +359,36 @@ void nm_dtls_event_do_one(void* data)
 void nm_dtls_event_send_to(void* data)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    NABTO_LOG_TRACE(LOG, "event_send_to with ctx->sendCb: %x", ctx->sendCb);
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) ctx->sendBuffer, ctx->sendBufferSize );
     if (ctx->sendCb == NULL) {
         return;
     }
+    np_dtls_cli_send_to_callback cb = ctx->sendCb;
+    ctx->sendCb = NULL;
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // TODO: packet too large
-        ctx->sendCb(NABTO_EC_MALFORMED_PACKET, ctx->sendData);
+        cb(NABTO_EC_MALFORMED_PACKET, ctx->sendData);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         // TODO: should not be possible.
-        ctx->sendCb(NABTO_EC_FAILED, ctx->sendData);
+        cb(NABTO_EC_FAILED, ctx->sendData);
     } else if (ret < 0) {
         // TODO: unknown error
-        ctx->sendCb(NABTO_EC_FAILED, ctx->sendData);
+        cb(NABTO_EC_FAILED, ctx->sendData);
     } else {
         ctx->sentCount++;
-        ctx->sendCb(NABTO_EC_OK, ctx->sendData);
+        cb(NABTO_EC_OK, ctx->sendData);
     }
 }
 
 np_error_code nm_dtls_async_send_to(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t channelId,
                                     uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_to_callback cb, void* data)
 {
+    NABTO_LOG_TRACE(LOG, "async_send_to with ctx->sendCb: %x", ctx->sendCb);
+    if (ctx->sendCb != NULL) {
+        NABTO_LOG_TRACE(LOG, "Send in progress try again");
+        return NABTO_EC_SEND_IN_PROGRESS;
+    }
     ctx->sendCb = cb;
     ctx->sendData = data;
     ctx->sendBuffer = buffer;
@@ -385,6 +397,7 @@ np_error_code nm_dtls_async_send_to(struct np_platform* pl, np_dtls_cli_context*
     if(channelId != 0xff) {
         ctx->sendChannel = channelId;
     }
+    NABTO_LOG_TRACE(LOG, "enqueing send event");
     np_event_queue_post(ctx->pl, &ctx->sendEv, &nm_dtls_event_send_to, ctx);
     return NABTO_EC_OK;
 }
@@ -423,7 +436,9 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_contex
 }
 
 void nm_dtls_event_close(void* data){
+    NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    nc_keep_alive_stop(ctx->pl, &ctx->keepAliveCtx);
     mbedtls_ssl_close_notify(&ctx->ssl);
     mbedtls_x509_crt_free( &ctx->cacert );
     mbedtls_ssl_free( &ctx->ssl );
