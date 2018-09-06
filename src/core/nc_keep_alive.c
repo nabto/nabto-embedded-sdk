@@ -38,8 +38,6 @@ void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context
     ctx->kaMaxRetries = 15;
     ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->cli, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     nc_keep_alive_wait(ctx);
-    
-    nc_keep_alive_send_req(ctx);
 }
 
 void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_srv_connection* conn, keep_alive_callback cb, void* data)
@@ -56,8 +54,6 @@ void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context
     ctx->kaMaxRetries = 15;
     ctx->pl->dtlsS.async_recv_from(ctx->pl, ctx->srv, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     nc_keep_alive_wait(ctx);
-    
-    nc_keep_alive_send_req(ctx);
 }
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
