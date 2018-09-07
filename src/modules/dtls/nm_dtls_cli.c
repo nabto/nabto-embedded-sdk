@@ -370,6 +370,7 @@ void nm_dtls_event_send_to(void* data)
     NABTO_LOG_TRACE(LOG, "event_send_to with ctx->sendCb: %x", ctx->sendCb);
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) ctx->sendBuffer, ctx->sendBufferSize );
     if (ctx->sendCb == NULL) {
+        ctx->sentCount++;
         return;
     }
     np_dtls_cli_send_to_callback cb = ctx->sendCb;

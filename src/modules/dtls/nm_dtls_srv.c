@@ -281,6 +281,7 @@ void nm_dtls_srv_event_send_to(void* data)
     np_dtls_srv_connection* ctx = (np_dtls_srv_connection*) data;
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) ctx->sendBuffer, ctx->sendBufferSize );
     if (ctx->sendCb == NULL) {
+        ctx->sentCount++;
         return;
     }
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
