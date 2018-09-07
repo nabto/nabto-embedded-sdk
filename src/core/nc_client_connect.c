@@ -220,7 +220,9 @@ np_error_code nc_client_connect_async_recv_from(np_connection* conn,
         if(ctx.connections[i].active) {
             NABTO_LOG_TRACE(LOG, "checking connection ID:");
             NABTO_LOG_BUF(LOG, ctx.pl->conn.get_id(ctx.pl, &ctx.connections[i].conn)->id, 16);
-            if(memcmp(ctx.pl->conn.get_id(ctx.pl, conn)->id, ctx.pl->conn.get_id(ctx.pl, &ctx.connections[i].conn)->id, 16) == 0) {
+            if(memcmp(ctx.pl->conn.get_id(ctx.pl, conn)->id,
+                      ctx.pl->conn.get_id(ctx.pl, &ctx.connections[i].conn)->id,
+                      16) == 0) {
                 ctx.connections[i].recvCb = cb;
                 ctx.connections[i].recvCbData = data;
                 return NABTO_EC_OK;

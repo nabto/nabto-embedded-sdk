@@ -94,7 +94,8 @@ void recvCb(const np_error_code ec, struct np_udp_endpoint ep, np_communication_
             }
         } else if (*start > 192) {
             channelId = start[15];
-            memmove(start, start+16, bufferSize);
+            memmove(start, start+16, bufferSize-16);
+            bufferSize = bufferSize-16;
             for (int i = 0; i < NABTO_CONNECTION_MAX_CHANNELS; i++) {
                 if (conn->channels[i].active == true && conn->channels[i].channelId == channelId) {
                     conn->channels[i].ep = ep;
