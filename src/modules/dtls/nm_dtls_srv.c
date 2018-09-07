@@ -205,6 +205,7 @@ void nm_dtls_srv_do_one(void* data)
     np_dtls_srv_connection* ctx = (np_dtls_srv_connection*)data;
     if (ctx->state == CONNECTING) {
         int ret;
+        ctx->sendChannel = ctx->currentChannelId;
         ret = mbedtls_ssl_handshake( &ctx->ssl );
         if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
             ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -488,6 +489,7 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
         memcpy(server.pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
         NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
+        NABTO_LOG_TRACE(LOG, "ctx->sendChannel: %u, ctx->currentChannelId: %u", ctx->sendChannel, ctx->currentChannelId);
         ctx->sslSendBufferSize = bufferSize;
         if(ctx->sendChannel != ctx->currentChannelId) {
             server.pl->conn.async_send_to(server.pl, ctx->conn, ctx->sendChannel, ctx->sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx);

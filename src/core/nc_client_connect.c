@@ -88,13 +88,6 @@ np_error_code nc_client_connect_init(struct np_platform* pl, uint8_t* fp)
     return NABTO_EC_OK;
 }
 
-void nc_client_connect_dtls_created(const np_error_code ec, struct np_connection_id* id,
-                                    np_dtls_srv_connection* dtls, void* data)
-{
-    struct nc_client_connection* cc = (struct nc_client_connection*)data;
-    cc->dtls = dtls;
-}
-
 void nc_client_connect_conn_created(const np_error_code ec, uint8_t channelId, void* data)
 {
     struct nc_client_connection* cc = (struct nc_client_connection*)data;

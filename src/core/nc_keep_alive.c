@@ -166,14 +166,12 @@ void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
 {
     
     struct nc_keep_alive_context* ctx = (struct nc_keep_alive_context*)data;
-    uint8_t* start = ctx->pl->buf.start(buf);
-    uint8_t* ptr = start;
-    NABTO_LOG_TRACE(LOG, "Received keep alive packet");
-    NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buf), bufferSize);
     if (ec != NABTO_EC_OK) {
         nc_keep_alive_close(ctx, ec);
         return;
     }
+    NABTO_LOG_TRACE(LOG, "Received keep alive packet");
+    NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buf), bufferSize);
     if(ctx->isCli) {
         ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->cli, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     } else {

@@ -81,14 +81,14 @@ void recvCb(const np_error_code ec, struct np_udp_endpoint ep, np_communication_
         } else if (*start == 0 || *start == 1) {
             // STUN
             for (int i = 0; i < NABTO_CONNECTION_MAX_CHANNELS; i++) {
-                if (conn->channels[i].type == NABTO_CHANNEL_STUN) {
+                if (conn->channels[i].active == true && conn->channels[i].type == NABTO_CHANNEL_STUN) {
                     conn->channels[i].ep = ep;
                 }
             }
         } else if (*start >= 20 && *start <= 64) {
             // DTLS
             for (int i = 0; i < NABTO_CONNECTION_MAX_CHANNELS; i++) {
-                if (conn->channels[i].type == NABTO_CHANNEL_DTLS) {
+                if (conn->channels[i].active == true && conn->channels[i].type == NABTO_CHANNEL_DTLS) {
                     conn->channels[i].ep = ep;
                 }
             }
@@ -96,7 +96,7 @@ void recvCb(const np_error_code ec, struct np_udp_endpoint ep, np_communication_
             channelId = start[15];
             memmove(start, start+16, bufferSize);
             for (int i = 0; i < NABTO_CONNECTION_MAX_CHANNELS; i++) {
-                if (conn->channels[i].channelId == channelId) {
+                if (conn->channels[i].active == true && conn->channels[i].channelId == channelId) {
                     conn->channels[i].ep = ep;
                 }
             }
@@ -121,6 +121,7 @@ void nc_connection_async_create(struct np_platform* pl, np_connection* conn, str
 {
     memset(conn, 0, sizeof(np_connection));
     memcpy(&conn->channels[0], channel, sizeof(struct np_connection_channel));
+    conn->channels[0].active = true;
     conn->createCb = cb;
     conn->createData = data;
     memcpy(&conn->id, id, sizeof(struct np_connection_id));
@@ -133,8 +134,9 @@ np_error_code nc_connection_add_channel(struct np_platform* pl, np_connection* c
 {
     int found = 0;
     for (int i = 0; i<NABTO_CONNECTION_MAX_CHANNELS; i++) {
-        if( conn->channels[i].sock == NULL ) {
+        if( conn->channels[i].active == false ) {
             memcpy(&conn->channels[i], channel, sizeof(struct np_connection_channel));
+            conn->channels[i].active = true;
             found = 1;
             break;
         }
@@ -149,9 +151,10 @@ np_error_code nc_connection_add_channel(struct np_platform* pl, np_connection* c
 np_error_code nc_connection_rem_channel(struct np_platform* pl, np_connection* conn, uint8_t channelId)
 {
     for (int i = 0; i < NABTO_CONNECTION_MAX_CHANNELS; i++) {
-        if (conn->channels[i].channelId == channelId) {
+        if (conn->channels[i].active == true && conn->channels[i].channelId == channelId) {
             conn->channels[i].sock = NULL;
             conn->channels[i].channelId = 0;
+            conn->channels[i].active = false;
             return NABTO_EC_OK;
         }
     }
@@ -165,8 +168,9 @@ void nc_connection_async_send_to(struct np_platform* pl, np_connection* conn, ui
     conn->sentCb = cb;
     conn->sentData = data;
     bool found = false;
+    NABTO_LOG_TRACE(LOG, "Trying to find channel: %u", channelId);
     for (int i = 0; i < NABTO_CONNECTION_MAX_CHANNELS; i++) {
-        if (conn->channels[i].channelId == channelId) {
+        if (conn->channels[i].active == true && conn->channels[i].channelId == channelId) {
             if(conn->channels[i].type == NABTO_CHANNEL_APP) {
                 if (bufferSize > pl->buf.size(buffer)-16) {
                     conn->ec = NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION;
@@ -198,7 +202,7 @@ void nc_connection_async_recv_from(struct np_platform* pl, np_connection* conn, 
     conn->recvData = data;
     conn->pl = pl;
     for (int i = 0; i < NABTO_CONNECTION_MAX_CHANNELS; i++) {
-        if (conn->channels[i].sock) {
+        if (conn->channels[i].active == true) {
             if(conn->channels[i].type == NABTO_CHANNEL_DTLS) {
                 pl->udp.async_recv_from(conn->channels[i].sock, NABTO_CHANNEL_DTLS, recvCb, conn);
             } else if (conn->channels[i].type == NABTO_CHANNEL_STUN) {

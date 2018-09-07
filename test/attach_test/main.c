@@ -79,8 +79,6 @@ int main() {
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;
 
-    NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint32_t*)pl.dtlsS.create, (uint32_t*)pl.dtlsS.async_send_to, (uint32_t*)pl.dtlsS.get_fingerprint, (uint32_t*)pl.dtlsS.async_recv_from, (uint32_t*)pl.dtlsS.cancel_recv_from, (uint32_t*)pl.dtlsS.async_close);
-    
     attachParams.appName = appName;
     attachParams.appNameLength = strlen(appName);
     attachParams.appVersion = appVer;

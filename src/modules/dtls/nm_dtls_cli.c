@@ -44,7 +44,8 @@ struct np_dtls_cli_context {
     void* sendData;
     uint8_t sendChannel;
     bool sending;
-    
+
+    // TODO: Simplify this, only nc_keep_alive and nc_attacher uses this module, so there is only a need for a recvKeepAliveCb and a recvAppCb
     np_dtls_cli_received_callback recvAttachCb;
     void* recvAttachData;
     np_dtls_cli_received_callback recvAttachDispatchCb;
@@ -145,7 +146,13 @@ np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_dtls_cli_conte
 
 void nm_dtls_cli_ka_cb(const np_error_code ec, void* data)
 {
+    np_dtls_cli_context* ctx = (np_dtls_cli_context*)data;
     NABTO_LOG_INFO(LOG,"DTLS CLI received keep alive callback with error code: %u", ec);
+    if (ctx->state == CLOSING) {
+        return;
+    }
+    ctx->state = CLOSING;
+    nm_dtls_do_close(data, ec);
 }
 
 // Printing function used by mbedtls for logging
@@ -349,6 +356,7 @@ void nm_dtls_event_do_one(void* data)
             char buf[128];
             mbedtls_strerror(ret, buf, 128);
             NABTO_LOG_INFO(LOG, "Received ERROR -0x%04x : %s ", -ret, buf);
+            ctx->state = CLOSING;
             nm_dtls_do_close(ctx, NABTO_EC_FAILED);
         }
         return;
@@ -484,9 +492,9 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
     ctx->closeData = data;
     ctx->state = CLOSING;
     np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
-    if (!ctx->sending) {
-        np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
-    }
+    /* if (!ctx->sending) { */
+    /*     np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx); */
+    /* } */
     return NABTO_EC_OK;
 }
 
@@ -508,6 +516,7 @@ void nm_dtls_connection_received_callback(const np_error_code ec, struct np_conn
 //        np_event_queue_post(ctx->pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
     } else {
         NABTO_LOG_ERROR(LOG, "np_connection returned error code: %u", ec);
+        ctx->state = CLOSING;
         nm_dtls_do_close(ctx, ec);
         
     }

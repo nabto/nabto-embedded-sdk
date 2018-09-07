@@ -30,6 +30,7 @@ struct np_connection_channel {
     struct np_udp_socket* sock;
     np_udp_endpoint ep;
     uint8_t channelId;
+    bool active;
 };
 
 #define NABTO_CONNECTION_MAX_CHANNELS 16

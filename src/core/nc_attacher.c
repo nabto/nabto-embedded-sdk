@@ -56,8 +56,6 @@ struct nc_attach_context {
 
 struct nc_attach_context ctx;
 
-// TODO: Handle error codes in all callback functions!!
-
 /**
  * Attach node functions
  */
@@ -247,7 +245,6 @@ void nc_attacher_send_to_event(const np_error_code ec, void* data)
 
 void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_cli_send_to_callback cb, void* data)
 {
-    // TODO: make retransmissions!!!
     ctx.sendData.cryp = cryp;
     ctx.sendData.chan = chan;
     ctx.sendData.start = start;
@@ -278,7 +275,6 @@ void nc_attacher_an_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
     ctx.anDtls = crypCtx;
     ptr = init_packet_header(ptr, AT_DEVICE_RELAY);
     *(start+1) = CT_DEVICE_RELAY_HELLO_REQUEST;
-    // TODO: insert extensions: SESSION_ID, ATTACH_INDEX, NABTO_VERSION, APP_VERSION, APP_NAME
     ptr = insert_packet_extension(ctx.pl, ptr, EX_SESSION_ID, (uint8_t*)&ctx.sessionId, 4);
     // TODO: only using first AN_EP for now, expand to multi attach
     ptr = insert_packet_extension(ctx.pl, ptr, EX_ATTACH_INDEX, (uint8_t*)&attachIndex, 1);
