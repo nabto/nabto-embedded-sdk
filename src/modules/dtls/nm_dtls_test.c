@@ -1,14 +1,30 @@
 #include <nabto_types.h>
 #include <platform/np_unit_test.h>
 #include "nm_dtls_util.h"
+#include "nm_dtls_cli.h"
+#include "nm_dtls_srv.h"
+#include <modules/communication_buffer/nm_unix_communication_buffer.h>
+#include <modules/logging/nm_unix_logging.h>
+#include <modules/timestamp/nm_unix_timestamp.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 struct np_test_system nts;
+struct np_platform pl;
 
-const char devicePublicKey[] =
+const unsigned char devicePrivateKey[] =
+"-----BEGIN EC PARAMETERS-----\r\n"
+"BggqhkjOPQMBBw==\r\n"
+"-----END EC PARAMETERS-----\r\n"
+"-----BEGIN EC PRIVATE KEY-----\r\n"
+"MHcCAQEEII2ifv12piNfHQd0kx/8oA2u7MkmnQ+f8t/uvHQvr5wOoAoGCCqGSM49\r\n"
+"AwEHoUQDQgAEY1JranqmEwvsv2GK5OukVPhcjeOW+MRiLCpy7Xdpdcdc7he2nQgh\r\n"
+"0+aTVTYvHZWacrSTZFQjXljtQBeuJR/Gsg==\r\n"
+"-----END EC PRIVATE KEY-----\r\n";
+
+const unsigned char devicePublicKey[] =
 "-----BEGIN CERTIFICATE-----\r\n"
 "MIIBaTCCARCgAwIBAgIJAOR5U6FNgvivMAoGCCqGSM49BAMCMBAxDjAMBgNVBAMM\r\n"
 "BW5hYnRvMB4XDTE4MDgwNzA2MzgyN1oXDTQ4MDczMDA2MzgyN1owEDEOMAwGA1UE\r\n"
@@ -35,6 +51,8 @@ const char devicePublicKey[] =
 const char certFingerprint[] = { 0xdd, 0x5f, 0xec, 0x4f, 0x27, 0xb5, 0x65, 0x7c, 0xb7, 0x5e, 0x5e, 0x24, 0x7f, 0xe7, 0x92, 0xcc};
 
 
+void test_dtls_connection();
+
 void on_check_fail(const char* file, int line)
 {
     printf("check failed: %s:%i\n", file, line);
@@ -46,7 +64,7 @@ int main() {
     mbedtls_x509_crt chain;
     mbedtls_x509_crt_init(&chain);
     
-    int status = mbedtls_x509_crt_parse(&chain, (const unsigned char*)devicePublicKey, strlen(devicePublicKey)+1);
+    int status = mbedtls_x509_crt_parse(&chain, devicePublicKey, strlen((const char*)devicePublicKey)+1);
     NABTO_TEST_CHECK(status == 0);
 
     np_error_code ec = nm_dtls_util_fp_from_crt(&chain, fp);
@@ -54,6 +72,8 @@ int main() {
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
 
     NABTO_TEST_CHECK(memcmp(certFingerprint, fp, 16) == 0);
+
+    test_dtls_connection();
     
     printf("%i errors, %i ok checks\n", nts.fail, nts.ok);
     if (nts.fail > 0) {
@@ -61,4 +81,126 @@ int main() {
     } else {
         exit(0);
     }
+}
+np_communication_buffer* cliSendBuf;
+uint16_t cliSendBufSize;
+np_communication_buffer* srvSendBuf;
+uint16_t srvSendBufSize;
+struct np_connection srvConn;
+struct np_connection cliConn;
+
+void test_async_send_to_server(void* data)
+{
+    if(cliSendBuf == NULL || srvConn.recvCb == NULL) {
+        NABTO_TEST_CHECK(false);
+    } else {
+        np_connection_received_callback cb = srvConn.recvCb;
+        srvConn.recvCb = NULL;
+        cb(NABTO_EC_OK, &srvConn, 0, cliSendBuf, cliSendBufSize, srvConn.recvData);
+        cliSendBuf = NULL;
+        cliConn.sentCb(NABTO_EC_OK, cliConn.sentData);
+    }
+}
+
+void test_async_send_to_client(void* data)
+{
+    if(srvSendBuf == NULL || cliConn.recvCb == NULL) {
+        NABTO_TEST_CHECK(false);
+    } else {
+        np_connection_received_callback cb = cliConn.recvCb;
+        cliConn.recvCb = NULL;
+        cb(NABTO_EC_OK, &cliConn, 0, srvSendBuf, srvSendBufSize, cliConn.recvData);
+        srvSendBuf = NULL;
+        srvConn.sentCb(NABTO_EC_OK, srvConn.sentData);
+    }
+}
+
+/* ========= Conn impl ======== */
+void conn_async_create(struct np_platform* pl, np_connection* conn, struct np_connection_channel* channel,
+                         struct np_connection_id* id, np_connection_created_callback cb, void* data)
+{
+    
+}
+
+struct np_connection_id* conn_get_id(struct np_platform* pl, np_connection* conn)
+{
+    return &conn->id;
+}
+
+void conn_async_send_to(struct np_platform* pl, np_connection* conn, uint8_t channelId,
+                          np_communication_buffer* buffer, uint16_t bufferSize,
+                          np_connection_sent_callback cb, void* data)
+{
+    conn->sentCb = cb;
+    conn->sentData = data;
+    if (conn == &srvConn) {
+        srvSendBuf = buffer;
+        srvSendBufSize = bufferSize;
+        np_event_queue_post(pl, &conn->ev, &test_async_send_to_client, conn);
+    } else if (conn == &cliConn) {
+        cliSendBuf = buffer;
+        cliSendBufSize = bufferSize;
+        np_event_queue_post(pl, &conn->ev, &test_async_send_to_server, conn);
+    } else {
+        NABTO_TEST_CHECK(false);
+    }
+}
+
+void conn_async_recv_from(struct np_platform* pl, np_connection* conn,
+                         np_connection_received_callback cb, void* data)
+{
+    conn->recvCb = cb;
+    conn->recvData = data;
+}
+
+np_error_code conn_cancel_async_recv(struct np_platform* pl, np_connection* conn)
+{
+    conn->recvCb = NULL;
+    return NABTO_EC_OK;
+}
+
+np_error_code conn_cancel_async_send(struct np_platform* pl, np_connection* conn)
+{
+    conn->sentCb = NULL;
+    return NABTO_EC_OK;
+}
+/* ========= Conn impl end  ======== */
+
+bool cliConnCbCalled = false;
+void test_dtls_cli_conn_cb(const np_error_code ec, np_dtls_cli_context* ctx, void* data)
+{
+    if(ec == NABTO_EC_OK) {
+        cliConnCbCalled = true;
+    } else {
+        NABTO_TEST_CHECK(false);
+    }
+}
+
+
+void test_dtls_connection()
+{
+    np_dtls_srv_connection* dtlsS;
+    np_error_code ec;
+
+    np_platform_init(&pl);
+    nm_unix_comm_buf_init(&pl);
+    nm_unix_ts_init(&pl);
+
+    pl.conn.async_create = &conn_async_create;
+    pl.conn.get_id = &conn_get_id;
+    pl.conn.async_send_to = &conn_async_send_to;
+    pl.conn.async_recv_from = &conn_async_recv_from;
+    pl.conn.cancel_async_recv = &conn_cancel_async_recv;
+    pl.conn.cancel_async_send = &conn_cancel_async_send;
+    
+
+    nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+    nm_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+
+    ec = pl.dtlsS.create(&pl, &srvConn, &dtlsS);
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+    ec = pl.dtlsC.async_connect(&pl, &cliConn, &test_dtls_cli_conn_cb, NULL);
+
+    np_event_queue_execute_all(&pl);
+    NABTO_TEST_CHECK(cliConnCbCalled);
 }

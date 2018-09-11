@@ -33,7 +33,7 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
         ptr = ptr + ret;
         
         for (n = 0; n < 16; n++) {
-            if(buf[i*16+n] > 0x1F && buf[i*16+n] < 0x7F) {
+            if(buf[i*16+n] > 0x1F && buf[i*16+n] < 0x7F && buf[i*16+n] != 0x25) {
                 ret = sprintf(ptr, "%c", (char)buf[i*16+n]);
                 ptr = ptr + ret;
             } else {
