@@ -49,7 +49,7 @@ uint16_t nc_attacher_test_size(np_communication_buffer* buffer) { return 1500; }
 
 // dtls cli impl
 np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t channelId,
-                                   uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_to_callback cb, void* data)
+                                   uint8_t* buffer, uint16_t bufferSize, np_dtls_send_to_callback cb, void* data)
 {
     if(buffer[0] == AT_DEVICE_LB) {
         if(buffer[1] == CT_DEVICE_LB_REQUEST) {
@@ -81,7 +81,7 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_con
     return NABTO_EC_OK;
 }
 np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                     enum application_data_type type, np_dtls_cli_received_callback cb, void* data)
+                                     enum application_data_type type, np_dtls_received_callback cb, void* data)
 {
     np_communication_buffer resp;
     uint8_t *ptr = resp.buf+2;
@@ -125,7 +125,7 @@ np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, np_connection* 
     return NABTO_EC_OK;
 }
 np_error_code nc_attacher_test_cryp_close(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                          np_dtls_cli_close_callback cb, void* data)
+                                          np_dtls_close_callback cb, void* data)
 {
     cb(NABTO_EC_OK, data);
     return NABTO_EC_OK;

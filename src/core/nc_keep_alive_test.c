@@ -13,7 +13,7 @@
 uint8_t testBuffer[30];
 uint32_t nc_keep_alive_test_recvCount = 0;
 uint32_t nc_keep_alive_test_sentCount = 0;
-np_dtls_cli_received_callback nc_keep_alive_test_cryp_recvCb;
+np_dtls_received_callback nc_keep_alive_test_cryp_recvCb;
 void* nc_keep_alive_test_cryp_recvCbData;
 bool validKaReqSend = false;
 bool crypKArecv1Called = false;
@@ -54,7 +54,7 @@ void nc_keep_alive_test_ts_set_future_timestamp(np_timestamp* ts, uint32_t milli
 
 // dtls cli impl
 np_error_code nc_keep_alive_test_cryp_send(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t channelId,
-                                   uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_to_callback cb, void* data)
+                                   uint8_t* buffer, uint16_t bufferSize, np_dtls_send_to_callback cb, void* data)
 {
     np_communication_buffer resp;
     if(buffer[0] == AT_KEEP_ALIVE) {
@@ -81,7 +81,7 @@ np_error_code nc_keep_alive_test_cryp_send(struct np_platform* pl, np_dtls_cli_c
     return NABTO_EC_OK;
 }
 np_error_code nc_keep_alive_test_cryp_recv(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                     enum application_data_type type, np_dtls_cli_received_callback cb, void* data)
+                                     enum application_data_type type, np_dtls_received_callback cb, void* data)
 {
     nc_keep_alive_test_cryp_recvCb = cb;
     nc_keep_alive_test_cryp_recvCbData = data;
@@ -95,7 +95,7 @@ np_error_code nc_keep_alive_test_cryp_conn(struct np_platform* pl, np_connection
     return NABTO_EC_OK;
 }
 np_error_code nc_keep_alive_test_cryp_close(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                          np_dtls_cli_close_callback cb, void* data)
+                                          np_dtls_close_callback cb, void* data)
 {
     cb(NABTO_EC_OK, data);
     return NABTO_EC_OK;

@@ -25,7 +25,7 @@ struct nc_attach_send_data {
     uint8_t chan;
     uint8_t* start;
     uint32_t size;
-    np_dtls_cli_send_to_callback cb;
+    np_dtls_send_to_callback cb;
     void* data;
     struct np_timed_event ev;
 };
@@ -88,7 +88,7 @@ void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
  */
 void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data);
 
-void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_cli_send_to_callback cb, void* data);
+void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_send_to_callback cb, void* data);
 
 void nc_attacher_dr_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
@@ -244,7 +244,7 @@ void nc_attacher_send_to_event(const np_error_code ec, void* data)
 }
 
 void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start,
-                         uint32_t size, np_dtls_cli_send_to_callback cb, void* data)
+                         uint32_t size, np_dtls_send_to_callback cb, void* data)
 {
     ctx.sendData.cryp = cryp;
     ctx.sendData.chan = chan;
