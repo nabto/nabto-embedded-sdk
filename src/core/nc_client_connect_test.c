@@ -12,7 +12,7 @@
 
 int nc_client_connect_test_recvState = 0; 
 
-np_dtls_srv_connection* crypCtx;
+struct np_dtls_srv_connection* crypCtx;
 struct np_udp_socket* sock;
 struct np_platform pl;
 char testCtx[] = "TestData";
@@ -31,9 +31,9 @@ uint8_t* nc_client_connect_test_start(np_communication_buffer* buffer) { return 
 uint16_t nc_client_connect_test_size(np_communication_buffer* buffer) { return 1500; }
 
 // dtls srv impl
-np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, np_dtls_srv_connection* ctx,
+np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                                uint8_t channelId, uint8_t* buffer, uint16_t bufferSize,
-                                               np_dtls_srv_send_to_callback cb, void* data)
+                                               np_dtls_send_to_callback cb, void* data)
 {
 
 /*    if(buffer[0] == AT_DEVICE_LB) {
@@ -66,8 +66,8 @@ np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, np_dtls_s
 */
     return NABTO_EC_OK;
 }
-np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, np_dtls_srv_connection* ctx,
-                                               enum application_data_type type, np_dtls_srv_received_callback cb, void* data)
+np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
+                                               enum application_data_type type, np_dtls_received_callback cb, void* data)
 {
     np_communication_buffer resp;
     uint8_t *ptr = resp.buf+2;
@@ -106,19 +106,19 @@ np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, np_dtls_s
     return NABTO_EC_OK;
 }
 np_error_code nc_client_connect_test_cryp_create(struct np_platform* pll, np_connection* conn,
-                                         np_dtls_srv_connection** ctx)
+                                                 struct np_dtls_srv_connection** ctx)
 {
     pl.clientConn.async_recv_from(conn, &nc_client_connect_test_recv_from_clientConn, &testCtx);
     //cb(NABTO_EC_OK, crypCtx, data);
     return NABTO_EC_OK;
 }
-np_error_code nc_client_connect_test_cryp_close(struct np_platform* pl, np_dtls_srv_connection* ctx,
-                                          np_dtls_srv_close_callback cb, void* data)
+np_error_code nc_client_connect_test_cryp_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
+                                                np_dtls_close_callback cb, void* data)
 {
     cb(NABTO_EC_OK, data);
     return NABTO_EC_OK;
 }
-np_error_code nc_client_connect_test_cryp_cancel(struct np_platform* pl, np_dtls_srv_connection* ctx,
+np_error_code nc_client_connect_test_cryp_cancel(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                                  enum application_data_type type)
 {
     return NABTO_EC_OK;

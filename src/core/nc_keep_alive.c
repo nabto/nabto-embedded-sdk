@@ -47,7 +47,7 @@ void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context
     nc_keep_alive_wait(ctx);
 }
 
-void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_srv_connection* conn, keep_alive_callback cb, void* data)
+void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx, struct np_dtls_srv_connection* conn, keep_alive_callback cb, void* data)
 {
     nc_keep_alive_init(pl, ctx);
     ctx->isCli = false;

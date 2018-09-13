@@ -215,7 +215,7 @@ void test_dtls_srv_received_callback(const np_error_code ec, uint8_t channelId, 
 
 void test_dtls_connection()
 {
-    np_dtls_srv_connection* dtlsS;
+    struct np_dtls_srv_connection* dtlsS;
     np_error_code ec;
 
     np_platform_init(&pl);

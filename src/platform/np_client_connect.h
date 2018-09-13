@@ -10,7 +10,7 @@ struct np_platform;
 
 #define NABTO_MAX_CLIENT_CONNECTIONS 8
 
-typedef void (*np_client_connect_created_callback)(const np_error_code ec, np_dtls_srv_connection* dtls, void* data);
+typedef void (*np_client_connect_created_callback)(const np_error_code ec, struct np_dtls_srv_connection* dtls, void* data);
 typedef void (*np_client_connect_close_callback)(const np_error_code ec, void* data);
 
 struct np_client_connect_module {

@@ -1,8 +1,8 @@
 #include "nm_dtls_cli.h"
 #include "nm_dtls_util.h"
+
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
-#include <core/nc_keep_alive.h>
 
 #include <mbedtls/debug.h>
 #include <mbedtls/ssl.h>
@@ -20,12 +20,12 @@
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0
 
-enum sslState {
+/*enum sslState {
     CONNECTING,
     DATA,
     CLOSING
 };
-
+*/
 // TODO: consider joining the common elements of this and the np_dtls_srv_connection into a common struct which is then used in this structure
 struct np_dtls_cli_context {
     struct np_connection* conn;
@@ -64,8 +64,6 @@ struct np_dtls_cli_context {
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_ssl_context ssl;
     mbedtls_ssl_config conf;
-    mbedtls_x509_crt cacert;
-    mbedtls_timing_delay_context timer;
     uint8_t recvBuffer[NABTO_SSL_RECV_BUFFER_SIZE];
     size_t recvBufferSize;
     np_communication_buffer* sslRecvBuf;
@@ -464,7 +462,6 @@ void nm_dtls_do_close(void* data, np_error_code ec){
         ctx->recvKeepAliveCb(ec, 0,0,NULL,0, ctx->recvKeepAliveData);
     }
     
-    mbedtls_x509_crt_free( &ctx->cacert );
     mbedtls_ssl_free( &ctx->ssl );
     mbedtls_ssl_config_free( &ctx->conf );
     mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
@@ -622,7 +619,6 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     const char *pers = "dtls_client";
     mbedtls_ssl_init( &ctx->ssl );
     mbedtls_ssl_config_init( &ctx->conf );
-//    mbedtls_x509_crt_init( &ctx->cacert );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
     mbedtls_debug_set_threshold( DEBUG_LEVEL );
@@ -658,7 +654,6 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
         free(ctx);
         return NABTO_EC_FAILED;
     }
-//    mbedtls_ssl_conf_ca_chain( &ctx->conf, &ctx->cacert, NULL );
     
     mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
     mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );

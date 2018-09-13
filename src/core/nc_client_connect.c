@@ -24,7 +24,7 @@ struct nc_client_connection {
     void* createdCbData;
     np_client_connect_close_callback closeCb;
     void* closeCbData;
-    np_dtls_srv_connection* dtls;
+    struct np_dtls_srv_connection* dtls;
 };
 
 struct nc_client_connect_context {

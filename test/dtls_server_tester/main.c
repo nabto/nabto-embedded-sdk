@@ -46,7 +46,7 @@ struct test_context {
     struct np_connection conn;
     np_udp_socket* sock;
     struct np_connection_channel channel;
-    np_dtls_srv_connection* dtls;
+    struct np_dtls_srv_connection* dtls;
     struct np_connection_id id;
 };
 
