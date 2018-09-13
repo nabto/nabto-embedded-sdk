@@ -166,16 +166,52 @@ np_error_code conn_cancel_async_send(struct np_platform* pl, np_connection* conn
 }
 /* ========= Conn impl end  ======== */
 
+
+/* ========= Callbacks ========*/
 bool cliConnCbCalled = false;
+np_dtls_cli_context* cliCtx = NULL;
 void test_dtls_cli_conn_cb(const np_error_code ec, np_dtls_cli_context* ctx, void* data)
 {
-    if(ec == NABTO_EC_OK) {
-        cliConnCbCalled = true;
-    } else {
-        NABTO_TEST_CHECK(false);
-    }
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+    cliConnCbCalled = true;
+    cliCtx = ctx;
 }
 
+bool cliSendCbCalled = false;
+void test_dtls_cli_send_to_callback(const np_error_code ec, void* data)
+{
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+    cliSendCbCalled = true;
+}
+
+const char srvSendTestBuf[] = {AT_DEVICE_LB, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90};
+bool cliRecvCbCalled = false;
+void test_dtls_cli_received_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                                     np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    NABTO_TEST_CHECK(ec==NABTO_EC_OK);
+    cliRecvCbCalled = true;
+    NABTO_TEST_CHECK(memcmp(pl.buf.start(buffer), srvSendTestBuf, 10) == 0);
+}
+
+bool srvSendCbCalled = false;
+void test_dtls_srv_send_to_callback(const np_error_code ec, void* data)
+{
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+    srvSendCbCalled = true;
+}
+
+const char cliSendTestBuf[] = {AT_DEVICE_LB, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+bool srvRecvCbCalled = false;
+void test_dtls_srv_received_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                                     np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    NABTO_TEST_CHECK(ec==NABTO_EC_OK);
+    srvRecvCbCalled = true;
+    NABTO_TEST_CHECK(memcmp(pl.buf.start(buffer), cliSendTestBuf, 10) == 0);
+}
+
+/* ========= Callbacks end ==========*/
 
 void test_dtls_connection()
 {
@@ -200,7 +236,29 @@ void test_dtls_connection()
     ec = pl.dtlsS.create(&pl, &srvConn, &dtlsS);
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
     ec = pl.dtlsC.async_connect(&pl, &cliConn, &test_dtls_cli_conn_cb, NULL);
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
 
     np_event_queue_execute_all(&pl);
+
     NABTO_TEST_CHECK(cliConnCbCalled);
+    NABTO_TEST_CHECK(cliCtx != NULL);
+
+    ec = pl.dtlsS.async_recv_from(&pl, dtlsS, AT_DEVICE_LB, &test_dtls_srv_received_callback, NULL);
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+    ec = pl.dtlsC.async_send_to(&pl, cliCtx, 0xff, (uint8_t*) cliSendTestBuf, 10, &test_dtls_cli_send_to_callback, NULL);
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+
+    np_event_queue_execute_all(&pl);
+
+    NABTO_TEST_CHECK(srvRecvCbCalled);
+    NABTO_TEST_CHECK(cliSendCbCalled);
+
+    ec = pl.dtlsC.async_recv_from(&pl, cliCtx, AT_DEVICE_LB, &test_dtls_cli_received_callback, NULL);
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+    ec = pl.dtlsS.async_send_to(&pl, dtlsS, 0xff, (uint8_t*) srvSendTestBuf, 10, &test_dtls_srv_send_to_callback, NULL);
+    NABTO_TEST_CHECK(ec == NABTO_EC_OK);
+
+    np_event_queue_execute_all(&pl);
+    NABTO_TEST_CHECK(cliRecvCbCalled);
+    NABTO_TEST_CHECK(srvSendCbCalled);
 }

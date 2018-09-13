@@ -26,6 +26,7 @@ enum sslState {
     CLOSING
 };
 
+// TODO: consider joining the common elements of this and the np_dtls_srv_connection into a common struct which is then used in this structure
 struct np_dtls_cli_context {
     struct np_connection* conn;
     struct np_platform* pl;

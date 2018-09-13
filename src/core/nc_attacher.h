@@ -3,7 +3,7 @@
 
 #include <platform/np_platform.h>
 
-#define ATTACH_DISPATCHER_PORT 4433
+#define LOAD_BALANCER_PORT 4433
 
 struct nc_attach_parameters {
     const char* appName;
