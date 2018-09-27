@@ -42,10 +42,10 @@ enum extension_type {
     EX_UDP_IPV4_EP         = 0x0002,
     EX_UDP_IPV6_EP         = 0x0003,
     EX_DTLS_EP             = 0x0004,
-    EX_KEEP_ALICE_SETTINGS = 0x0005,
+    EX_KEEP_ALIVE_SETTINGS = 0x0005,
     EX_NABTO_VERSION       = 0x0006,
     EX_APPLICATION_NAME    = 0x0007,
-    EX_KEEP_ALIVE          = 0x0008,
+    EX_UNKNOWN_CONNECTION  = 0x0008,
     EX_APPLICATION_VERSION = 0x0009,
     EX_SESSION_ID          = 0x000a,
     EX_ATTACH_INDEX        = 0x000b

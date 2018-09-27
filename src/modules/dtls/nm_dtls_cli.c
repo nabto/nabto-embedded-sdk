@@ -40,9 +40,6 @@ mbedtls_pk_context privateKey;
 
 const char* nm_dtls_cli_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
-//const char* nm_dtls_cli_alpnList[2];
-char nm_dtls_cli_protocol[] = NABTO_PROTOCOL_VERSION;
-
 // Function called by mbedtls when data should be sent to the network
 int nm_dtls_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
 // Function called by mbedtls when it wants data from the network
@@ -75,6 +72,12 @@ np_error_code nm_dtls_get_packet_count(np_dtls_cli_context* ctx, uint32_t* recvC
 // Get the result of the application layer protocol negotiation
 const char*  nm_dtls_get_alpn_protocol(np_dtls_cli_context* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ctx.ssl);
+}
+
+// Start keep alive on the dtls connection
+np_error_code nm_dtls_cli_start_keep_alive(struct np_dtls_cli_context* ctx, uint32_t interval, uint8_t retryInt, uint8_t maxRetries)
+{
+    return nc_keep_alive_start(ctx->pl, &ctx->ctx.keepAliveCtx, interval, retryInt, maxRetries);
 }
 
 // cancel recv_from callbacks
@@ -139,9 +142,7 @@ np_error_code nm_dtls_init(struct np_platform* pl,
     pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &nm_dtls_get_alpn_protocol;
     pl->dtlsC.get_packet_count = &nm_dtls_get_packet_count;
-
-//    nm_dtls_cli_alpnList[0] = nm_dtls_cli_protocol;
-//    nm_dtls_cli_alpnList[1] = NULL;
+    pl->dtlsC.start_keep_alive = &nm_dtls_cli_start_keep_alive;
     
     mbedtls_x509_crt_init( &publicKey );
     mbedtls_pk_init( &privateKey );
@@ -192,6 +193,7 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct np_connection
     ec = nm_dtls_setup_dtls_ctx(ctx);
     if(ec == NABTO_EC_OK) {
         np_event_queue_post(pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
+        nc_keep_alive_init_cli(ctx->pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
     }
     return ec;
 }
@@ -222,7 +224,6 @@ void nm_dtls_event_do_one(void* data)
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             ctx->ctx.state = DATA;
             ctx->connectCb(NABTO_EC_OK, ctx, ctx->connectData);
-            nc_keep_alive_init_cli(ctx->pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
         }
         return;
     } else if(ctx->ctx.state == DATA) {
@@ -342,6 +343,8 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_contex
 void nm_dtls_do_close(void* data, np_error_code ec){
     int i;
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    np_dtls_close_callback cb = ctx->ctx.closeCb;
+    void* cbData = ctx->ctx.closeCbData;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
     nc_keep_alive_stop(ctx->pl, &ctx->ctx.keepAliveCtx);
     mbedtls_ssl_close_notify(&ctx->ctx.ssl);
@@ -366,10 +369,11 @@ void nm_dtls_do_close(void* data, np_error_code ec){
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.recvEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
-    np_dtls_close_callback cb = ctx->ctx.closeCb;
-    void* cbData = ctx->ctx.closeCbData;
     free(ctx);
     ctx = NULL;
+    if (cb == NULL) {
+        return;
+    }
     cb(NABTO_EC_OK, cbData);
 }
 

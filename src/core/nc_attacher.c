@@ -39,7 +39,7 @@ struct nc_attach_context {
     uint8_t activeDrEps;
     nc_attached_callback cb;
     nc_detached_callback detachCb;
-    void* detachData;
+    void* detachCbData;
     np_udp_socket* sock;
     void* cbData;
     np_connection lbConn;
@@ -93,9 +93,12 @@ void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start
 void nc_attacher_dr_handle_event(const np_error_code ec, np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     uint8_t type;
+    uint8_t* ptr;
+    uint8_t* start;
     uint8_t fp[16];
     np_error_code fpEc;
     if(ec != NABTO_EC_OK) {
+        ctx.pl->dtlsC.async_close(ctx.pl, ctx.drDtls, &nc_attacher_dr_dtls_closed_cb, &ctx);
         ctx.cb(ec, ctx.cbData);
         return;
     }
@@ -104,6 +107,7 @@ void nc_attacher_dr_handle_event(const np_error_code ec, np_communication_buffer
         NABTO_LOG_ERROR(LOG, "get_fingerprint failed");
         NABTO_LOG_BUF(LOG, fp, 16);
         NABTO_LOG_BUF(LOG, ctx.drEps[0].fp, 16);
+        ctx.pl->dtlsC.async_close(ctx.pl, ctx.drDtls, &nc_attacher_dr_dtls_closed_cb, &ctx);
         ctx.cb(fpEc, ctx.cbData);
         return;
     }
@@ -111,16 +115,38 @@ void nc_attacher_dr_handle_event(const np_error_code ec, np_communication_buffer
         NABTO_LOG_ERROR(LOG, "Device relay connected with invalid fingerprint");
         NABTO_LOG_BUF(LOG, fp, 16);
         NABTO_LOG_BUF(LOG, ctx.drEps[0].fp, 16);
+        ctx.pl->dtlsC.async_close(ctx.pl, ctx.drDtls, &nc_attacher_dr_dtls_closed_cb, &ctx);
         ctx.cb(NABTO_EC_INVALID_PEER_FINGERPRINT, ctx.cbData);
         return;
     }
-    type= ctx.pl->buf.start(buf)[1];
+    start = ctx.pl->buf.start(buf);
+    ptr = start + NABTO_PACKET_HEADER_SIZE;
+    type= start[1];
     NABTO_LOG_TRACE(LOG, "ATTACH packet received");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     if (type == CT_DEVICE_RELAY_HELLO_RESPONSE) {
+        uint32_t interval;
+        uint8_t retryInt, maxRetries;
         np_event_queue_cancel_timed_event(ctx.pl, &ctx.sendData.ev);
         NABTO_LOG_INFO(LOG, "Device is now ATTACHED");
-        ctx.cb(NABTO_EC_OK, ctx.cbData);
+        // Find the keep alive settings extension
+        while(ptr < start+bufferSize) {
+            if(uint16_read(ptr) == EX_KEEP_ALIVE_SETTINGS) {
+                ptr += 4; // skip extensionheader
+                interval = uint32_read(ptr);
+                ptr += 4;
+                retryInt = *ptr;
+                ptr++;
+                maxRetries = *ptr;
+                ctx.pl->dtlsC.start_keep_alive(ctx.drDtls, interval, retryInt, maxRetries);
+                ctx.cb(NABTO_EC_OK, ctx.cbData);
+                return;
+            } else {
+                ptr += uint16_read(ptr+2) + 4;
+            }
+        }
+        ctx.pl->dtlsC.async_close(ctx.pl, ctx.drDtls, &nc_attacher_dr_dtls_closed_cb, &ctx);
+        ctx.cb(NABTO_EC_FAILED, ctx.cbData);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown attach_content_type %u found ",type); 
     }
@@ -404,7 +430,16 @@ void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, vo
 void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
                               np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
-    uint8_t* start = ctx.pl->buf.start(buf);
+    uint8_t* start;
+    if (ec != NABTO_EC_OK) {
+        if (ctx.detachCb) {
+            nc_detached_callback cb = ctx.detachCb;
+            ctx.detachCb = NULL;
+            cb(ec, ctx.detachCbData);
+        }
+        return;
+    }
+    start = ctx.pl->buf.start(buf);
     NABTO_LOG_TRACE(LOG, "Received data from dtls:");
     NABTO_LOG_BUF(LOG, ctx.pl->buf.start(buf), bufferSize);
     switch ((enum application_data_type)start[0]) {
@@ -440,7 +475,7 @@ np_error_code nc_attacher_async_attach(struct np_platform* pl, const struct nc_a
 np_error_code nc_attacher_register_detatch_callback(nc_detached_callback cb, void* data)
 {
     ctx.detachCb = cb;
-    ctx.detachData = data;
+    ctx.detachCbData = data;
 }
 
 /**

@@ -43,6 +43,16 @@ void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context
 void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                             struct np_dtls_srv_connection* conn, keep_alive_callback cb, void* data);
 
+/**
+ * Starts keep alive with the given parameters
+ * @param pl            The platform to use
+ * @param ctx           The keep alive context to use for keep alive
+ * @param interval      The interval between keep alive transmissions
+ * @param retryInterval The interval between retransmissions in case of packet loss
+ * @param maxRetries    The maximum amount of retransmissions before a connection is considered dead
+ */
+np_error_code nc_keep_alive_start(struct np_platform* pl, struct nc_keep_alive_context* ctx, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries);
+
 /** 
  * Stops keep alive and invokes callback provided when the context was initialized
  */

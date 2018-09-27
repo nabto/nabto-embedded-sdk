@@ -24,38 +24,46 @@ void nc_keep_alive_send_cb(const np_error_code ec, void* data);
 void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
                         np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
-void nc_keep_alive_init(struct np_platform* pl, struct nc_keep_alive_context* ctx)
+void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_cli_context* conn, keep_alive_callback cb, void* data)
 {
     memset(ctx, 0, sizeof(struct nc_keep_alive_context));
     ctx->pl = pl;
     ctx->buf = ctx->pl->buf.allocate();
-    ctx->kaInterval = 30;
-    ctx->kaRetryInterval = 2;
-    ctx->kaMaxRetries = 15;
-    ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
-
-}
-
-void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context* ctx, np_dtls_cli_context* conn, keep_alive_callback cb, void* data)
-{
-    nc_keep_alive_init(pl, ctx);
     ctx->isCli = true;
     ctx->cli = conn;
     ctx->cb = cb;
     ctx->data = data;
-    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->cli, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
-    nc_keep_alive_wait(ctx);
 }
 
 void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx, struct np_dtls_srv_connection* conn, keep_alive_callback cb, void* data)
 {
-    nc_keep_alive_init(pl, ctx);
+    memset(ctx, 0, sizeof(struct nc_keep_alive_context));
+    ctx->pl = pl;
+    ctx->buf = ctx->pl->buf.allocate();
     ctx->isCli = false;
     ctx->srv = conn;
     ctx->cb = cb;
     ctx->data = data;
-    ctx->pl->dtlsS.async_recv_from(ctx->pl, ctx->srv, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
+}
+
+np_error_code nc_keep_alive_start(struct np_platform* pl, struct nc_keep_alive_context* ctx, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries)
+{
+    NABTO_LOG_TRACE(LOG, "starting keep alive with interval: %u, retryInt: %u, maxRetries: %u", interval, retryInterval, maxRetries);
+    if (pl != ctx->pl) {
+        // either uninitialized or changed platform
+        return NABTO_EC_FAILED;
+    }
+    ctx->kaInterval = interval;
+    ctx->kaRetryInterval = retryInterval;
+    ctx->kaMaxRetries = maxRetries;
+    ctx->n = ctx->kaInterval/ctx->kaRetryInterval/1000;
+    if (ctx->isCli) {
+        ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->cli, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
+    } else {
+        ctx->pl->dtlsS.async_recv_from(ctx->pl, ctx->srv, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
+    }
     nc_keep_alive_wait(ctx);
+    return NABTO_EC_OK;
 }
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
@@ -102,7 +110,7 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
         nc_keep_alive_close(ctx, ec);
         return DTLS_ERROR;
     }
-    if (ctx->lostKeepAlives > ctx->kaMaxRetries*ctx->n) {
+    if (ctx->lostKeepAlives > ctx->kaMaxRetries+ctx->n) {
         return KA_TIMEOUT;
     }
     if (recvCount > ctx->lastRecvCount && sentCount > ctx->lastSentCount) {

@@ -30,6 +30,9 @@ struct np_dtls_cli_module {
     const char* (*get_alpn_protocol)(np_dtls_cli_context* ctx);
 
     np_error_code (*get_packet_count)(np_dtls_cli_context* ctx, uint32_t* recvCount, uint32_t* sentCount);
+
+    np_error_code (*start_keep_alive)(np_dtls_cli_context* ctx, uint32_t interval,
+                                      uint8_t retryInterval, uint8_t maxRetries);
 };
 
 #endif // NP_DTLS_CLI_H

@@ -22,8 +22,7 @@
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 #define DEBUG_LEVEL 4
 
-const char* nm_dtls_srv_alpnList[2];
-char nm_dtls_srv_protocol[] = NABTO_PROTOCOL_VERSION;
+const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
 struct np_dtls_srv_connection {
     struct nm_dtls_util_connection_ctx ctx;
@@ -73,6 +72,12 @@ const char*  nm_dtls_srv_get_alpn_protocol(struct np_dtls_srv_connection* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ctx.ssl);
 }
 
+// Start keep alive on the dtls connection
+np_error_code nm_dtls_srv_start_keep_alive(struct np_dtls_srv_connection* ctx, uint32_t interval, uint8_t retryInt, uint8_t maxRetries)
+{
+    return nc_keep_alive_start(server.pl, &ctx->ctx.keepAliveCtx, interval, retryInt, maxRetries);
+}
+
 
 np_error_code nm_dtls_srv_init(struct np_platform* pl,
                                const unsigned char* publicKeyL, size_t publicKeySize,
@@ -86,9 +91,8 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;
     pl->dtlsS.get_alpn_protocol = &nm_dtls_srv_get_alpn_protocol;
     pl->dtlsS.get_packet_count = &nm_dtls_srv_get_packet_count;
+    pl->dtlsS.start_keep_alive = &nm_dtls_srv_start_keep_alive;
     server.pl = pl;
-    nm_dtls_srv_alpnList[0] = nm_dtls_srv_protocol;
-    nm_dtls_srv_alpnList[1] = NULL;
     
     return nm_dtls_srv_init_config(publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }

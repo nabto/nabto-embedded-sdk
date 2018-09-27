@@ -28,6 +28,9 @@ struct np_dtls_srv_module {
     const char* (*get_alpn_protocol)(struct np_dtls_srv_connection* ctx);
 
     np_error_code (*get_packet_count)(struct np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount);
+
+    np_error_code (*start_keep_alive)(struct np_dtls_srv_connection* ctx, uint32_t interval,
+                                      uint8_t retryInterval, uint8_t maxRetries);
 };
 
 #endif // NP_DTLS_SRV_H
