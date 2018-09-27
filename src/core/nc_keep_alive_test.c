@@ -145,6 +145,7 @@ void nc_keep_alive_test_ka()
     int testData = 42;
     struct nc_keep_alive_context ctx;
     nc_keep_alive_init_cli(&pl, &ctx, crypCtx, &nc_keep_alive_test_cb, &testData);
+    nc_keep_alive_start(&pl, &ctx, 30000, 2, 15);
     np_event_queue_execute_all(&pl);
 
     for (int i = 0; i < 16; i++) {

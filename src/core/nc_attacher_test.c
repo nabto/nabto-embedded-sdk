@@ -31,6 +31,10 @@ bool validAdReqSend = false;
 bool validAnReqSend = false;
 bool crypAdRecvCalled = false;
 bool crypAnRecvCalled = false;
+bool kaStarted = false;
+uint32_t kaInt = 30000;
+uint8_t kaReInt = 2;
+uint8_t kaMaxRe = 15;
 uint32_t sessionId = 0x42424242;
 const char alpn[] = "n5";
 
@@ -105,12 +109,19 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
         cb(NABTO_EC_OK, 0, 0, &resp, 45, data);
         crypAdRecvCalled = true;
     } else if (nc_attacher_test_recvState == 2) {
-        resp.buf[0] = AT_DEVICE_RELAY;
-        resp.buf[1] = CT_DEVICE_RELAY_HELLO_RESPONSE;
-        resp.buf[2] = 0;
-        resp.buf[3] = 0;
+        // 02 02 00 05 00 06 00 00 75 30 02 0f 
+        ptr = resp.buf;
+        *ptr = AT_DEVICE_RELAY;
+        ptr++;
+        *ptr = CT_DEVICE_RELAY_HELLO_RESPONSE;
+        ptr++;
+        ptr = uint16_write_forward(ptr, EX_KEEP_ALIVE_SETTINGS);
+        ptr = uint16_write_forward(ptr, 6);
+        ptr = uint32_write_forward(ptr, kaInt);
+        *ptr = kaReInt; ptr++;
+        *ptr = kaMaxRe; ptr++;
         nc_attacher_test_recvState = 0;
-        cb(NABTO_EC_OK, 0, 0, &resp, 4, data);
+        cb(NABTO_EC_OK, 0, 0, &resp, 12, data);
         crypAnRecvCalled = true;
     } else {
         //cb(NABTO_EC_FAILED, 0, 0, NULL, 0, data);
@@ -147,6 +158,16 @@ const char* nc_attacher_test_cryp_get_alpn_protocol(np_dtls_cli_context* ctx)
     return alpn;
 }
 
+np_error_code nc_attacher_test_start_keep_alive(np_dtls_cli_context* ctx, uint32_t interval,
+                                      uint8_t retryInterval, uint8_t maxRetries)
+{
+    if (interval == kaInt && retryInterval == kaReInt && maxRetries == kaMaxRe) {
+        kaStarted = true;
+        return NABTO_EC_OK;
+    }
+    return NABTO_EC_FAILED;
+}
+
 // dns impl
 np_error_code nc_attacher_test_dns(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
 {
@@ -178,9 +199,12 @@ void nc_attacher_test_callback(const np_error_code ec, void* data)
     }
 }
 
+#include <modules/logging/nm_unix_logging.h>
+
 void nc_attacher_test_attach()
 {
     struct np_platform pl;
+    nm_unix_log_init(&pl);
     np_platform_init(&pl);
     pl.dtlsC.async_connect = &nc_attacher_test_cryp_conn;
     pl.dtlsC.async_send_to = &nc_attacher_test_cryp_send;
@@ -189,6 +213,7 @@ void nc_attacher_test_attach()
     pl.dtlsC.cancel_recv_from = &nc_attacher_test_cryp_cancel;
     pl.dtlsC.get_fingerprint = & nc_attacher_test_cryp_get_fingerprint;
     pl.dtlsC.get_alpn_protocol = & nc_attacher_test_cryp_get_alpn_protocol;
+    pl.dtlsC.start_keep_alive = &nc_attacher_test_start_keep_alive;
     
     pl.buf.start = &nc_attacher_test_start;
     pl.buf.allocate = &nc_attacher_test_allocate;

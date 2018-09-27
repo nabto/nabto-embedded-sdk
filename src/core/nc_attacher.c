@@ -132,12 +132,14 @@ void nc_attacher_dr_handle_event(const np_error_code ec, np_communication_buffer
         // Find the keep alive settings extension
         while(ptr < start+bufferSize) {
             if(uint16_read(ptr) == EX_KEEP_ALIVE_SETTINGS) {
+                NABTO_LOG_TRACE(LOG,"Found EX_KEEP_ALIVE_SETTINGS");
                 ptr += 4; // skip extensionheader
                 interval = uint32_read(ptr);
                 ptr += 4;
                 retryInt = *ptr;
                 ptr++;
                 maxRetries = *ptr;
+                NABTO_LOG_TRACE(LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u", interval, retryInt, maxRetries);
                 ctx.pl->dtlsC.start_keep_alive(ctx.drDtls, interval, retryInt, maxRetries);
                 ctx.cb(NABTO_EC_OK, ctx.cbData);
                 return;
