@@ -16,7 +16,7 @@ struct np_dtls_srv_connection* crypCtx;
 struct np_udp_socket* sock;
 struct np_platform pl;
 char testCtx[] = "TestData";
-struct np_connection_id id;
+struct nc_connection_id id;
 
 void nc_client_connect_test_recv_from_clientConn(const np_error_code ec, struct np_udp_endpoint ep,
                                                  np_communication_buffer* buffer, uint16_t bufferSize, void* data);

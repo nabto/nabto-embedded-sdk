@@ -47,6 +47,16 @@ struct np_udp_module {
     void (*async_recv_from)(np_udp_socket* socket, enum np_channel_type type, np_udp_packet_received_callback cb, void* data);
 
     /**
+     * Cancel previous call to async_recv_from
+     */
+    void (*cancel_recv_from)(np_udp_socket* socket, enum np_channel_type type);
+    
+    /**
+     * Cancel previous call to async_send_to
+     */
+    void (*cancel_send_to)(np_udp_socket* socket, enum np_channel_type type);
+    
+    /**
      * Get the IP protocol of the socket.
      */
     enum np_ip_address_type (*get_protocol)(np_udp_socket* socket);

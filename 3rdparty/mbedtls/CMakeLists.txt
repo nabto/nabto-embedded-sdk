@@ -48,6 +48,7 @@ set(src_crypto
     ${src_dir}/pkparse.c
     ${src_dir}/pkwrite.c
     ${src_dir}/platform.c
+    ${src_dir}/platform_util.c
     ${src_dir}/ripemd160.c
     ${src_dir}/rsa.c
     ${src_dir}/rsa_internal.c

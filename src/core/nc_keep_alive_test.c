@@ -88,8 +88,8 @@ np_error_code nc_keep_alive_test_cryp_recv(struct np_platform* pl, np_dtls_cli_c
     crypKArecv1Called = true;
     return NABTO_EC_OK;
 }
-np_error_code nc_keep_alive_test_cryp_conn(struct np_platform* pl, np_connection* conn,
-                                         np_dtls_cli_connect_callback cb, void* data)
+np_error_code nc_keep_alive_test_cryp_conn(struct np_platform* pl, np_udp_socket* sock, np_udp_endpoint ep,
+                                           np_dtls_cli_connect_callback cb, void* data)
 {
     cb(NABTO_EC_OK, crypCtx, data);
     return NABTO_EC_OK;

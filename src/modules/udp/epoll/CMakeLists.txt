@@ -7,4 +7,4 @@ set(epoll_src
 
 add_library( nm_epoll STATIC ${epoll_src})
 
-target_link_libraries(nm_epoll np_platform nm_unix_logging nm_unix_communication_buffer)
+target_link_libraries(nm_epoll np_platform nc_core nm_unix_logging nm_unix_communication_buffer)

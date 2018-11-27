@@ -6,8 +6,6 @@
 #include <modules/timestamp/nm_unix_timestamp.h>
 #include <modules/dtls/nm_dtls_srv.h>
 #include <platform/np_ip_address.h>
-#include <platform/np_connection.h>
-#include <core/nc_connection.h>
 #include <core/nc_client_connect.h>
 
 #include <stdio.h>
@@ -43,11 +41,9 @@ const char test_pub_key_crt[] =
 
 struct test_context {
     int data;
-    struct np_connection conn;
     np_udp_socket* sock;
-    struct np_connection_channel channel;
     struct np_dtls_srv_connection* dtls;
-    struct np_connection_id id;
+    struct nc_connection_id id;
 };
 
 struct np_platform pl;
@@ -67,7 +63,10 @@ void recvedCb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
     NABTO_LOG_INFO(0, "RECEIVED CB");
     pl.dtlsS.async_close(&pl, ctx->dtls, closeCb, data);
 }
-    
+void dtls_send_listener(uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data){
+    // TODO: send the dtls data somewhere find a way to use the UDP socket without client_connect_dispatch
+}
+
 void created(const np_error_code ec, uint8_t channelId, void* data)
 {
     if (ec != NABTO_EC_OK) {
@@ -77,7 +76,7 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->conn, &ctx->dtls);
+    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->dtls, &dtls_send_listener, ctx);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
     pl.dtlsS.async_recv_from(&pl, ctx->dtls, AT_STREAM, recvedCb, ctx);
     if(ec2 != NABTO_EC_OK) {
@@ -89,11 +88,8 @@ void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 {
     struct test_context* ctx = (struct test_context*)data;
     ctx->sock = sock;
-    ctx->channel.type = NABTO_CHANNEL_DTLS;
-    ctx->channel.sock = sock;
-    ctx->channel.ep.port = 0;
-    ctx->channel.channelId = 0;
-    pl.conn.async_create(&pl, &ctx->conn, &ctx->channel, &ctx->id, created, data);
+//    created(NABTO_EC_OK, 0, data);
+    return;
 }
 
 
@@ -108,11 +104,9 @@ int main() {
     nm_epoll_init(&pl);
     nm_dtls_srv_init(&pl, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
     nm_unix_ts_init(&pl);
-    nc_client_connect_init(&pl, fp);
 
     struct test_context data;
     data.data = 42;
-    nc_connection_init(&pl);
     pl.udp.async_bind_port(4433, sockCreatedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);

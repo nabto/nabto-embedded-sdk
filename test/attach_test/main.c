@@ -8,7 +8,6 @@
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/nm_unix_dns.h>
 #include <platform/np_ip_address.h>
-#include <core/nc_connection.h>
 #include <core/nc_attacher.h>
 #include <core/nc_client_connect.h>
 
@@ -73,8 +72,6 @@ int main() {
     nm_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     nm_unix_ts_init(&pl);
     nm_unix_dns_init(&pl);
-    nc_connection_init(&pl);
-    nc_client_connect_init(&pl, fp);
   
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;

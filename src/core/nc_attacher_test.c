@@ -5,6 +5,7 @@
 #include <platform/np_unit_test.h>
 #include <core/nc_tests.h>
 #include <core/nc_packet.h>
+#include <core/nc_client_connect.h>
 
 #include <string.h>
 #include <arpa/inet.h>
@@ -129,7 +130,7 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
     }
     return NABTO_EC_OK;
 }
-np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, np_connection* conn,
+np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, np_udp_socket* conn, np_udp_endpoint ep,
                                          np_dtls_cli_connect_callback cb, void* data)
 {
     cb(NABTO_EC_OK, crypCtx, data);
@@ -180,14 +181,6 @@ void nc_attacher_test_udp_create(np_udp_socket_created_callback cb, void* data)
     cb(NABTO_EC_OK, sock, data);
 }
 
-// connection impl
-void nc_attacher_test_conn_create(struct np_platform* pl, np_connection* conn,
-                                  struct np_connection_channel* channel, struct np_connection_id* id,
-                                  np_connection_created_callback cb, void* data)
-{
-    cb(NABTO_EC_OK, 0, data);
-}
-
 // ts impl
 void nc_attacher_test_ts_set(np_timestamp* ev, uint32_t ms) {}
 
@@ -223,8 +216,6 @@ void nc_attacher_test_attach()
     pl.dns.async_resolve = &nc_attacher_test_dns;
 
     pl.udp.async_create = &nc_attacher_test_udp_create;
-
-    pl.conn.async_create = &nc_attacher_test_conn_create;
 
     pl.ts.set_future_timestamp = &nc_attacher_test_ts_set;
 

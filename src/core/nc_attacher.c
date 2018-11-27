@@ -42,14 +42,10 @@ struct nc_attach_context {
     void* detachCbData;
     np_udp_socket* sock;
     void* cbData;
-    np_connection lbConn;
-    np_connection drConn;
+    np_udp_endpoint ep;
     np_dtls_cli_context* lbDtls;
     np_dtls_cli_context* drDtls;
     np_communication_buffer* buffer;
-    struct np_connection_id id;
-    struct np_connection_channel drChannel;
-    struct np_connection_channel lbChannel;
     char dns[256];
     uint8_t dnsLen;
 };
@@ -64,7 +60,6 @@ void nc_attacher_dr_dtls_send_cb(const np_error_code ec, void* data);
 void nc_attacher_dr_handle_event(const np_error_code ec, np_communication_buffer* buf,
                                      uint16_t bufferSize, void* data);
 void nc_attacher_dr_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data);
-void nc_attacher_dr_conn_created_cb(const np_error_code ec, uint8_t channelId, void* data);
 void nc_attacher_dr_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
 
 /**
@@ -81,7 +76,6 @@ void nc_attacher_lb_dtls_send_cb(const np_error_code ec, void* data);
 void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer* buf,
                                  uint16_t bufferSize, void* data);
 void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data);
-void nc_attacher_lb_conn_created_cb(const np_error_code ec, uint8_t channelId, void* data);
 void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
 /**
  * create socket reused for both DTLS connections
@@ -226,7 +220,7 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
         }
         // TODO: For now we simply attach to the first AN in the array
         ctx.sessionId = sessionId;
-        ctx.drChannel.ep.port = ctx.drEps[0].port;
+        ctx.ep.port = ctx.drEps[0].port;
         ctx.pl->dns.async_resolve(ctx.pl, ctx.drEps[0].dns, &nc_attacher_dr_dns_cb, &ctx);
         ctx.pl->dtlsC.cancel_recv_from(ctx.pl, ctx.lbDtls, AT_DEVICE_LB);
         ctx.pl->dtlsC.async_close(ctx.pl, ctx.lbDtls, &nc_attacher_lb_dtls_closed_cb, &ctx);
@@ -238,10 +232,10 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
             uint16_t extType = uint16_read(ptr);
             uint16_t extLen = uint16_read(ptr+2);
             if (extType == EX_UDP_DNS_EP) {
-                ctx.lbChannel.ep.port = uint16_read(ptr+4);
+                ctx.ep.port = uint16_read(ptr+4);
                 dns = ptr+8;
                 dnsLen = uint16_read(ptr+6);
-                NABTO_LOG_TRACE(LOG, "Found DNS extension with port: %u, dns: %s", ctx.lbChannel.ep.port, (char*)dns);
+                NABTO_LOG_TRACE(LOG, "Found DNS extension with port: %u, dns: %s", ctx.ep.port, (char*)dns);
                 break;
             }
             ptr = ptr + extLen + 4;
@@ -327,15 +321,6 @@ void nc_attacher_dr_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
 //    ctx.pl->dtlsC.async_recv_from(ctx.pl, ctx.drDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, &ctx);
 }
 
-void nc_attacher_dr_conn_created_cb(const np_error_code ec, uint8_t channelId, void* data)
-{
-    if( ec != NABTO_EC_OK ) {
-        ctx.cb(ec, ctx.cbData);
-        return;
-    }
-    ctx.pl->dtlsC.async_connect(ctx.pl, &ctx.drConn, &nc_attacher_dr_dtls_conn_cb, &ctx);
-}
-
 void nc_attacher_dr_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
 {
     NABTO_LOG_INFO(LOG, "Device relay address resolved with status: %u", ec);
@@ -344,10 +329,10 @@ void nc_attacher_dr_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
         ctx.cb(ec, ctx.cbData);
         return;
     }
-    memcpy(&ctx.drChannel.ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx.drChannel.type = NABTO_CHANNEL_DTLS;
-    ctx.drChannel.sock = ctx.sock;
-    ctx.pl->conn.async_create(ctx.pl, &ctx.drConn, &ctx.drChannel, &ctx.id, &nc_attacher_dr_conn_created_cb, &ctx);
+    memcpy(&ctx.ep.ip, &rec[0], sizeof(struct np_ip_address));
+//    ctx.pl->conn.async_create(ctx.pl, ctx.drConn, &ctx.drChannel, &ctx.id, &nc_attacher_dr_conn_created_cb, &ctx);
+
+    ctx.pl->dtlsC.async_connect(ctx.pl, ctx.sock, ctx.ep, &nc_attacher_dr_dtls_conn_cb, &ctx);
 }
 
 void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data)
@@ -399,7 +384,6 @@ void nc_attacher_lb_conn_created_cb(const np_error_code ec, uint8_t channelId, v
         ctx.cb(ec, ctx.cbData);
         return;
     }
-    ctx.pl->dtlsC.async_connect(ctx.pl, &ctx.lbConn, &nc_attacher_lb_dtls_conn_cb, &ctx);
 }
 
 void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
@@ -410,14 +394,12 @@ void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
         return;
     }
     // TODO: get load_balancer_port from somewhere
-    ctx.lbChannel.ep.port = LOAD_BALANCER_PORT;
+    ctx.ep.port = LOAD_BALANCER_PORT;
     // TODO: Pick a record which matches the supported protocol IPv4/IPv6 ?
     for (int i = 0; i < recSize; i++) {
     }
-    memcpy(&ctx.lbChannel.ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx.lbChannel.type = NABTO_CHANNEL_DTLS;
-    ctx.lbChannel.sock = ctx.sock;
-    ctx.pl->conn.async_create(ctx.pl, &ctx.lbConn, &ctx.lbChannel, &ctx.id, &nc_attacher_lb_conn_created_cb, &ctx);
+    memcpy(&ctx.ep.ip, &rec[0], sizeof(struct np_ip_address));
+    ctx.pl->dtlsC.async_connect(ctx.pl, ctx.sock, ctx.ep, &nc_attacher_lb_dtls_conn_cb, &ctx);
 }
 
 void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data)

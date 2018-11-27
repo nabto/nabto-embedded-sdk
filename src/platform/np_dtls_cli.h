@@ -4,8 +4,8 @@
 #include <core/nc_protocol_defines.h>
 
 #include <platform/np_error_code.h>
-#include <platform/np_connection.h>
 #include <platform/np_dtls.h>
+#include <platform/np_udp.h>
 
 struct np_platform;
 
@@ -15,7 +15,7 @@ typedef void (*np_dtls_cli_connect_callback)(const np_error_code ec, np_dtls_cli
 
 struct np_dtls_cli_module {
 
-    np_error_code (*async_connect)(struct np_platform* pl, np_connection* conn,
+    np_error_code (*async_connect)(struct np_platform* pl, np_udp_socket* conn, np_udp_endpoint ep,
                                    np_dtls_cli_connect_callback cb, void* data);
     np_error_code (*async_send_to)(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t channelId,
                                    uint8_t* buffer, uint16_t bufferSize, np_dtls_send_to_callback cb, void* data);
