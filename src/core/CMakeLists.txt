@@ -7,6 +7,7 @@ set(src
   ${src_dir}/nc_client_connect.c
   ${src_dir}/nc_client_connect_dispatch.c
   ${src_dir}/nc_stream_manager.c
+  ${src_dir}/nc_stream.c
   )
 
 set(test_src
@@ -14,9 +15,12 @@ set(test_src
   ${src_dir}/nc_client_connect_test.c
   ${src_dir}/nc_packet_test.c
   ${src_dir}/nc_keep_alive_test.c
+  ${src_dir}/nc_stream_test.c
   ${src_dir}/nc_tests.c
   )
 
 add_library( nc_core STATIC "${src}")
+
+target_link_libraries( nc_core nabto_stream)
 
 add_library( nc_core_test STATIC "${test_src}")

@@ -2,8 +2,11 @@
 #define NC_CLIENT_CONNECT_H
 
 #include <platform/np_platform.h>
+#include "nc_stream_manager.h"
 
 #define NC_CLIENT_CONNECT_MAX_CHANNELS 16
+
+struct nc_stream_manager_context;
 
 struct nc_connection_channel {
     enum np_channel_type type;
@@ -20,6 +23,7 @@ struct nc_connection_id {
 struct nc_client_connection {
     struct np_platform* pl;
     struct np_dtls_srv_connection* dtls;
+    struct nc_stream_manager_context* streamManager;
     struct nc_connection_channel channels[NC_CLIENT_CONNECT_MAX_CHANNELS]; // several application channels can exist
     struct nc_connection_id id;
     uint8_t clientFingerprint[16];
@@ -34,6 +38,7 @@ struct nc_client_connection {
 
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
+                                     struct nc_stream_manager_context* streamManager,
                                      struct np_udp_socket* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize);
 
@@ -53,7 +58,7 @@ struct np_dtls_srv_connection* nc_client_connect_get_dtls_connection(struct nc_c
 
 void nc_client_connect_async_send_to_udp(uint8_t channelId,
                                          np_communication_buffer* buffer, uint16_t bufferSize,
-                                         np_dtls_srv_send_callback cb, void* data);
+                                         np_dtls_srv_send_callback cb, void* data, void* listenerData);
 
 
 #endif //_NC_CLIENT_CONNECT_H_

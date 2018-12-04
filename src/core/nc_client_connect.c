@@ -1,6 +1,5 @@
 #include "nc_client_connect.h"
 #include "nc_client_connect_dispatch.h"
-#include "nc_stream_manager.h"
 
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
@@ -10,6 +9,7 @@
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECT
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
+                                     struct nc_stream_manager_context* streamManager,
                                      struct np_udp_socket* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize)
 {
@@ -21,14 +21,16 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->channels[0].ep = ep;
     conn->channels[0].channelId = conn->id.id[15];
     conn->channels[0].active = true;
+    conn->activeChannel = &conn->channels[0];
     conn->pl = pl;
+    conn->streamManager = streamManager;
 
     ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
         return NABTO_EC_FAILED;
     }
-    // TODO: receive other packets then stream
+    // TODO: receive other packets than stream
     pl->dtlsS.async_recv_from(pl, conn->dtls, AT_STREAM, &nc_client_connect_dtls_recv_callback, conn);
 
     // Remove connection ID before passing packet to DTLS
@@ -74,7 +76,8 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "DTLS server returned error: %u", ec);
-        conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+        //conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+        nc_client_connect_dtls_closed_cb(NABTO_EC_OK, data);
         return;
     }
     
@@ -102,7 +105,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     applicationType = *(conn->pl->buf.start(buffer));
     switch (applicationType) {
         case AT_STREAM:
-            nc_stream_manager_handle_packet(conn, buffer, bufferSize);
+            nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
             break;
         default:
             NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
@@ -152,13 +155,13 @@ void nc_client_connect_cancel_send_to(struct np_platform pl, struct nc_client_co
 
 void nc_client_connect_async_send_to_udp(uint8_t channelId,
                                          np_communication_buffer* buffer, uint16_t bufferSize,
-                                         np_dtls_srv_send_callback cb, void* data)
+                                         np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
-    struct nc_client_connection* conn = (struct nc_client_connection*)data;
+    struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
     bool found = false;
     conn->sentCb = cb;
     conn->sentData = data;
-    if (channelId == 0xff) {
+    if (channelId == 0xff || true) {
         if (bufferSize > conn->pl->buf.size(buffer)-16) {
             conn->ec = NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION;
             np_event_queue_post(conn->pl, &conn->ev, &nc_client_connect_send_failed, conn);

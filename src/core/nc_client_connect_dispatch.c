@@ -11,18 +11,20 @@ struct nc_client_connect_dispatch_element {
 };
 
 struct nc_client_connect_dispatch_context {
+    struct nc_stream_manager_context* streamManager;
     struct nc_client_connect_dispatch_element elms[NABTO_MAX_CLIENT_CONNECTIONS];
 };
 
 struct nc_client_connect_dispatch_context ctx;
 
-void nc_client_connect_dispatch_init(struct np_platform* pl)
+void nc_client_connect_dispatch_init(struct np_platform* pl, struct nc_stream_manager_context* streamManager)
 {
     int i = 0;
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         memset(&ctx.elms[i].conn, 0, sizeof(struct nc_client_connection));
         ctx.elms[i].active = false;
     }
+    ctx.streamManager = streamManager;
 }
 
 void nc_client_connect_dispatch_handle_packet(struct np_platform* pl, const np_error_code ec,
@@ -52,7 +54,7 @@ void nc_client_connect_dispatch_handle_packet(struct np_platform* pl, const np_e
     NABTO_LOG_INFO(LOG, "Found packet for new connection");
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         if(!ctx.elms[i].active) {
-            np_error_code ec = nc_client_connect_open(pl, &ctx.elms[i].conn, sock, ep, buffer, bufferSize);
+            np_error_code ec = nc_client_connect_open(pl, &ctx.elms[i].conn, ctx.streamManager, sock, ep, buffer, bufferSize);
             if (ec == NABTO_EC_OK) {
                 ctx.elms[i].active = true;
             }

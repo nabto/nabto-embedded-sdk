@@ -84,7 +84,6 @@ np_error_code nm_dtls_srv_start_keep_alive(struct np_dtls_srv_connection* ctx, u
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
 
-
 np_error_code nm_dtls_srv_init(struct np_platform* pl,
                                const unsigned char* publicKeyL, size_t publicKeySize,
                                const unsigned char* privateKeyL, size_t privateKeySize)
@@ -98,6 +97,8 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.get_alpn_protocol = &nm_dtls_srv_get_alpn_protocol;
     pl->dtlsS.get_packet_count = &nm_dtls_srv_get_packet_count;
     pl->dtlsS.start_keep_alive = &nm_dtls_srv_start_keep_alive;
+    pl->dtlsS.handle_packet = &nm_dtls_srv_handle_packet;
+    
     server.pl = pl;
     
     return nm_dtls_srv_init_config(publicKeyL, publicKeySize, privateKeyL, privateKeySize);
@@ -483,10 +484,10 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
         NABTO_LOG_TRACE(LOG, "ctx->ctx.sendChannel: %u, ctx->ctx.currentChannelId: %u", ctx->ctx.sendChannel, ctx->ctx.currentChannelId);
         ctx->ctx.sslSendBufferSize = bufferSize;
         if(ctx->ctx.sendChannel != ctx->ctx.currentChannelId) {
-            ctx->sendListener(ctx->ctx.sendChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx);
+            ctx->sendListener(ctx->ctx.sendChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->listenerData);
             ctx->ctx.sendChannel = ctx->ctx.currentChannelId;
         } else {
-            ctx->sendListener(ctx->ctx.currentChannelId, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx);
+            ctx->sendListener(ctx->ctx.currentChannelId, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->listenerData);
         }
         return bufferSize;
     } else {

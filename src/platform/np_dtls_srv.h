@@ -5,10 +5,9 @@
 #include <platform/np_dtls.h>
 
 typedef void (*np_dtls_srv_send_callback)(const np_error_code ec, void* data);
-typedef void (*np_dtls_srv_want_send_listener)(uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data);
+typedef void (*np_dtls_srv_want_send_listener)(uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData);
 
 #include <core/nc_protocol_defines.h>
-#include <core/nc_client_connect.h>
 
 struct np_platform;
 

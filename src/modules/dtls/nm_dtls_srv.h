@@ -3,6 +3,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_dtls_srv.h>
+#include <core/nc_client_connect.h>
 
 np_error_code nm_dtls_srv_init(struct np_platform* pl,
                   const unsigned char* publicKeyL, size_t publicKeySize,
