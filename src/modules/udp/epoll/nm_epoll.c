@@ -398,7 +398,7 @@ void nm_epoll_event_send_to(void* data){
         if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
         } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", strerror(status), (int) status);
+            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
             if (sock->sent.cb) {
                 sock->sent.cb(NABTO_EC_FAILED_TO_SEND_PACKET, sock->sent.data);
             }

@@ -63,11 +63,11 @@ np_error_code nc_stream_test_cli_dtls_srv_async_send_to(struct np_platform* pl, 
 {
     NABTO_LOG_ERROR(0, "Cli wants send: ");
     NABTO_LOG_BUF(0, buffer, bufferSize);
-    if (ctx.firstCliPacket) {
+/*    if (ctx.firstCliPacket) {
         NABTO_LOG_ERROR(0, "Dropping first packet");
         ctx.firstCliPacket = false;
         return NABTO_EC_OK;
-    }
+        }*/
     memcpy(ctx.cliBuffer.buf, buffer, bufferSize);
     ctx.cliBufferSize = bufferSize;
     np_event_queue_post(&ctx.cliPl, &ctx.cliEv, &nc_stream_test_send_to_dev, &ctx);
