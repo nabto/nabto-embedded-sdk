@@ -32,6 +32,6 @@ struct nc_stream_context {
 };
 void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager);
 
-void nc_stream_handle_packet(struct nc_stream_context* ctx, np_communication_buffer* buffer, uint16_t bufferSize);
+void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 
 #endif // NC_STREAM_H

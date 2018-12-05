@@ -24,7 +24,7 @@ struct nc_client_connection;
 
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl);
 
-void nc_stream_manager_set_lister(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb);
+void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data);
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
                                      np_communication_buffer* buffer, uint16_t bufferSize);

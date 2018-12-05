@@ -24,3 +24,5 @@ add_library( nc_core STATIC "${src}")
 target_link_libraries( nc_core nabto_stream)
 
 add_library( nc_core_test STATIC "${test_src}")
+
+target_link_libraries( nc_core_test nm_unix_timestamp nabto_stream)

@@ -57,6 +57,8 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->sendBuffer = pl->buf.allocate();
     ctx->streamId = streamId;
     ctx->streamManager = streamManager;
+    ctx->pl = pl;
+    ctx->currentExpiry = nabto_stream_stamp_infinite();
     
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
 }
@@ -76,7 +78,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
     nabto_stream_recv_segment_available(&ctx->stream);
     enum nabto_stream_next_event_type eventType = nabto_stream_next_event_to_handle(&ctx->stream);
 
-    NABTO_LOG_TRACE(LOG, "next event to handle %i current state %s", eventType, nabto_stream_state_as_string(ctx->stream.state));
+    NABTO_LOG_TRACE(LOG, "next event to handle %s current state %s", nabto_stream_next_event_type_to_string(eventType), nabto_stream_state_as_string(ctx->stream.state));
     switch(eventType) {
         case ET_ACCEPT:
             nc_stream_manager_ready_for_accept(ctx->streamManager, ctx);
@@ -107,7 +109,6 @@ void nc_stream_event(struct nc_stream_context* ctx)
             return;
         case ET_CLOSED:
             np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
-//            timer_.cancel();
             return;
     }
 
@@ -139,7 +140,7 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
             } else {
                 ctx->negativeCount = 0;
             }
-            np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
+//            np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
             np_event_queue_post_timed_event(ctx->pl, &ctx->timer, diff, &nc_stream_handle_timeout, ctx);
         }
     }
@@ -148,13 +149,14 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
 void nc_stream_handle_timeout(const np_error_code ec, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
+    NABTO_LOG_TRACE(LOG, "Handle timeout called");
     ctx->currentExpiry = nabto_stream_stamp_infinite();
     nc_stream_event(ctx);
 }
 
-void nc_stream_handle_packet(struct nc_stream_context* ctx, np_communication_buffer* buffer, uint16_t bufferSize)
+void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize)
 {
-    nabto_stream_handle_packet(&ctx->stream, ctx->pl->buf.start(buffer), bufferSize);
+    nabto_stream_handle_packet(&ctx->stream, buffer, bufferSize);
     nc_stream_event(ctx);
 }
 
@@ -189,7 +191,8 @@ void nc_stream_event_queue_callback(void* data)
 void nc_stream_event_callback(enum nabto_stream_module_event event, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
-    np_event_queue_cancel_event(ctx->pl, &ctx->ev);
+    NABTO_LOG_TRACE(LOG, "nc_stream_event_callback received");
+//    np_event_queue_cancel_event(ctx->pl, &ctx->ev);
     np_event_queue_post(ctx->pl, &ctx->ev, &nc_stream_event_queue_callback, ctx);
 }
 

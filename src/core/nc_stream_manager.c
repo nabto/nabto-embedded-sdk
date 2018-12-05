@@ -24,7 +24,7 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
     ctx->pl = pl;
 }
 
-void nc_stream_manager_async_listen(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data)
+void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data)
 {
     ctx->cbData = data;
     ctx->cb = cb;
@@ -34,20 +34,22 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
                                      np_communication_buffer* buffer, uint16_t bufferSize)
 {
     uint8_t* start = ctx->pl->buf.start(buffer);
-    uint8_t* ptr = start++; // skip application type
+    uint8_t* ptr = start+1; // skip application type
     uint64_t streamId = 0;
     uint8_t streamIdLen = 0;
     uint8_t flags = 0;
     struct nc_stream_context* stream;
     
-    NABTO_LOG_TRACE(LOG, "stream manager handling packet");
+    NABTO_LOG_TRACE(LOG, "stream manager handling packet. AT: %u", *start);
+    NABTO_LOG_BUF(LOG, start, bufferSize);
     if (bufferSize < 4) {
         return;
     }
     if(!var_uint_read(ptr, bufferSize-1, &streamId, &streamIdLen)) {
         return;
     }
-
+    NABTO_LOG_TRACE(LOG, "streamId=%u", streamId);
+    
     ptr += streamIdLen; // skip stream ID
     flags = *ptr;
 
@@ -64,7 +66,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     }
 
     if ( stream != NULL ) {
-        nc_stream_handle_packet(stream, buffer, bufferSize);
+        nc_stream_handle_packet(stream, ptr, bufferSize-(ptr-start));
     } else {
         NABTO_LOG_TRACE(LOG, "unable to handle packet of type %s, for stream ID %u no such stream", nabto_stream_flags_to_string(flags), streamId);
     }
@@ -73,7 +75,9 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 
 void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream)
 {
-    ctx->cb(&stream->stream, ctx->cbData);
+    if (ctx->cb != NULL) {
+        ctx->cb(&stream->stream, ctx->cbData);
+    }
     return;
 }
 
@@ -132,9 +136,18 @@ void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)
 
 struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
-    struct nabto_stream_send_segment* seg = malloc(sizeof(struct nabto_stream_send_segment));
-    uint8_t* buf = malloc(bufferSize);
+    struct nabto_stream_send_segment* seg = (struct nabto_stream_send_segment*)malloc(sizeof(struct nabto_stream_send_segment));
+    if (seg == NULL) {
+        return NULL;
+    }
+    memset(seg, 0, sizeof(struct nabto_stream_send_segment));
+    uint8_t* buf = (uint8_t*)malloc(bufferSize);
+    if (buf == NULL) {
+        free(seg);
+        return NULL;
+    }
     seg->buf = buf;
+    seg->capacity = bufferSize;
     return seg;
 }
 
@@ -146,9 +159,18 @@ void nc_stream_manager_free_send_segment(struct nc_stream_manager_context* ctx, 
 
 struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
-    struct nabto_stream_recv_segment* seg = malloc(sizeof(struct nabto_stream_recv_segment));
-    uint8_t* buf = malloc(bufferSize);
+    struct nabto_stream_recv_segment* seg = (struct nabto_stream_recv_segment*)malloc(sizeof(struct nabto_stream_recv_segment));
+    if (seg == NULL) {
+        return NULL;
+    }
+    memset(seg, 0, sizeof(struct nabto_stream_recv_segment));
+    uint8_t* buf = (uint8_t*)malloc(bufferSize);
+    if (buf == NULL) {
+        free(seg);
+        return NULL;
+    }
     seg->buf = buf;
+    seg->capacity = bufferSize;
     return seg;
 }
 
