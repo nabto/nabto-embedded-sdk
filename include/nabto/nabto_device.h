@@ -146,9 +146,6 @@ nabto_device_wait_attach(NabtoDevice* device);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
 nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream);
 
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnection* NABTO_DEVICE_API
-nabto_device_stream_get_connection(NabtoDeviceStream* stream);
-
 /**
  * Free a stream
  *
