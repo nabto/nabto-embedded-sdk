@@ -203,6 +203,7 @@ void nc_attacher_test_callback(const np_error_code ec, void* data)
 
 void nc_attacher_test_attach()
 {
+    struct nc_attach_context attach;
     struct np_platform pl;
     nm_unix_log_init(&pl);
     np_platform_init(&pl);
@@ -242,7 +243,7 @@ void nc_attacher_test_attach()
     attachParams.hostnameLength = strlen(hostname);
 
     
-    nc_attacher_async_attach(&pl, &attachParams, &nc_attacher_test_callback, NULL);
+    nc_attacher_async_attach(&attach, &pl, &attachParams, &nc_attacher_test_callback, NULL);
     
     NABTO_TEST_CHECK(callbackReceived);
     NABTO_TEST_CHECK(crypAdRecvCalled);

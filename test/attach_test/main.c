@@ -66,6 +66,7 @@ void attachedCb(const np_error_code ec, void* data) {
 
 
 int main() {
+    struct nc_attach_context attach;
     np_platform_init(&pl);
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
@@ -88,7 +89,7 @@ int main() {
     
     struct test_context data;
     data.data = 42;
-    nc_attacher_async_attach(&pl, &attachParams, attachedCb, &data);
+    nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         nm_epoll_wait();
