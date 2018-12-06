@@ -31,7 +31,6 @@ struct nc_attach_send_data {
     struct np_timed_event ev;
 };
 
-
 struct nc_attach_context {
     struct np_platform* pl;
     const struct nc_attach_parameters* params;
@@ -44,14 +43,10 @@ struct nc_attach_context {
     void* detachCbData;
     np_udp_socket* sock;
     void* cbData;
-    np_connection lbConn;
-    np_connection drConn;
+    np_udp_endpoint ep;
     np_dtls_cli_context* lbDtls;
     np_dtls_cli_context* drDtls;
     np_communication_buffer* buffer;
-    struct np_connection_id id;
-    struct np_connection_channel drChannel;
-    struct np_connection_channel lbChannel;
     char dns[256];
     uint8_t dnsLen;
 };

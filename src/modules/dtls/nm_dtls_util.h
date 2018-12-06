@@ -31,7 +31,6 @@ struct nm_dtls_util_recv_cb_ctx {
 
 struct nm_dtls_util_connection_ctx {
     enum sslState state;
-    struct np_connection* conn;
     struct np_event sendEv;
     struct np_event recvEv;
     struct np_event closeEv;

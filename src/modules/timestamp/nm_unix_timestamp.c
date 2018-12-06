@@ -10,6 +10,7 @@ void nm_unix_ts_init(struct np_platform* pl)
     pl->ts.set_future_timestamp = &nm_unix_ts_set_future_timestamp;
     pl->ts.now                  = &nm_unix_ts_now;
     pl->ts.difference           = &nm_unix_ts_difference;
+    pl->ts.now_ms               = &nm_unix_ts_now_ms;
 }
 
 bool nm_unix_ts_passed_or_now(np_timestamp* ts)
@@ -46,3 +47,9 @@ uint32_t nm_unix_ts_difference(np_timestamp* t1, np_timestamp* t2)
     }
 }
 
+uint32_t nm_unix_ts_now_ms()
+{
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    return ((spec.tv_sec * 1000) + (spec.tv_nsec / 1000000));
+}

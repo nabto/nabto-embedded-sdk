@@ -3,4 +3,4 @@
 	url = https://github.com/ARMmbed/mbedtls.git
 [submodule "nabto-common-cpp"]
 	path = nabto-common-cpp
-	url = git@github.com:nabto/nabto-common-cpp.git
+	url = ../nabto-common-cpp.git

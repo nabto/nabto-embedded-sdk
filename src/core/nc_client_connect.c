@@ -1,31 +1,210 @@
 #include "nc_client_connect.h"
+#include "nc_client_connect_dispatch.h"
+
 #include <platform/np_error_code.h>
-#include <platform/np_connection.h>
 #include <platform/np_logging.h>
 
 #include <string.h>
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECT
 
-struct nc_client_connection {
-    bool active;
-    bool verified;
+np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
+                                     struct nc_stream_manager_context* streamManager,
+                                     struct np_udp_socket* sock, struct np_udp_endpoint ep,
+                                     np_communication_buffer* buffer, uint16_t bufferSize)
+{
+    np_error_code ec;
+    uint8_t* start = pl->buf.start(buffer);
+    memset(conn, 0, sizeof(struct nc_client_connection));
+    memcpy(conn->id.id, pl->buf.start(buffer), 16);
+    conn->channels[0].sock = sock;
+    conn->channels[0].ep = ep;
+    conn->channels[0].channelId = conn->id.id[15];
+    conn->channels[0].active = true;
+    conn->activeChannel = &conn->channels[0];
+    conn->pl = pl;
+    conn->streamManager = streamManager;
+
+    ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
+        return NABTO_EC_FAILED;
+    }
+    // TODO: receive other packets than stream
+    pl->dtlsS.async_recv_from(pl, conn->dtls, AT_STREAM, &nc_client_connect_dtls_recv_callback, conn);
+
+    // Remove connection ID before passing packet to DTLS
+    memmove(start, start+16, bufferSize-16);
+    bufferSize = bufferSize-16;
+    ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->channels[0].channelId, buffer, bufferSize);
+    return ec;
+}
+
+np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
+                                              struct np_udp_socket* sock, struct np_udp_endpoint ep,
+                                              np_communication_buffer* buffer, uint16_t bufferSize)
+{
+    np_error_code ec;
+
+    // TODO: handle active channel properly
+    uint8_t* start = pl->buf.start(buffer);
+
+    for (int i = 0; i < NC_CLIENT_CONNECT_MAX_CHANNELS; i++) {
+        if (conn->channels[i].active && conn->channels[i].channelId == *(start+15)) {
+            conn->activeChannel = &conn->channels[i];
+            break;
+        }
+    }
     
-    // creation state
-    np_communication_buffer* buf;
-    uint16_t bufSize;
-    np_connection conn;
-    bool createdWithData;
-    struct np_udp_endpoint recvEp;
+    // Remove connection ID before passing packet to DTLS
+    memmove(start, start+16, bufferSize-16);
+    bufferSize = bufferSize-16;
+    ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->activeChannel->channelId, buffer, bufferSize);
+}
+
+void nc_client_connect_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
+{
+    nc_client_connect_dispatch_close_connection(pl, conn);
+    memset(conn, 0, sizeof(struct nc_client_connection));
+}
+
+void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                                          np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    struct nc_client_connection* conn = (struct nc_client_connection*)data;
+    uint8_t applicationType;
     
-    np_udp_packet_received_callback recvCb;
-    void* recvCbData;
-    np_client_connect_created_callback createdCb;
-    void* createdCbData;
-    np_client_connect_close_callback closeCb;
-    void* closeCbData;
-    struct np_dtls_srv_connection* dtls;
-};
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "DTLS server returned error: %u", ec);
+        //conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+        nc_client_connect_dtls_closed_cb(NABTO_EC_OK, data);
+        return;
+    }
+    
+    // TODO: update active channel
+
+    if(!conn->verified) {
+        if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
+            NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            return;
+        }
+        uint8_t fp[16];
+        conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+        NABTO_LOG_TRACE(LOG, "Retreived FP: ");
+        NABTO_LOG_BUF(LOG, fp, 16);
+        memcpy(conn->clientFingerprint, fp, 16);
+        if (!conn->pl->accCtrl.can_access(fp, NP_CONNECT_PERMISSION)) {
+            NABTO_LOG_ERROR(LOG, "Client connect fingerprint verification failed");
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            return;
+        }
+        conn->verified = true;
+    }
+
+    applicationType = *(conn->pl->buf.start(buffer));
+    switch (applicationType) {
+        case AT_STREAM:
+            nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
+            break;
+        default:
+            NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
+            break;
+    }
+    // TODO: receive other packets then stream
+    conn->pl->dtlsS.async_recv_from(conn->pl, conn->dtls, AT_STREAM, &nc_client_connect_dtls_recv_callback, conn);
+}
+
+void nc_client_connect_dtls_closed_cb(const np_error_code ec, void* data)
+{
+    struct nc_client_connection* cc =  (struct nc_client_connection*)data;
+    nc_client_connect_close_connection(cc->pl, cc, NABTO_EC_CONNECTION_CLOSING);
+}
+
+struct np_dtls_srv_connection* nc_client_connect_get_dtls_connection(struct nc_client_connection* conn)
+{
+    return conn->dtls;
+}
+
+void nc_client_connect_send_failed(void* data) {
+    struct nc_client_connection* conn = (struct nc_client_connection*)data;
+    if (conn->sentCb == NULL) {
+        return;
+    }
+    np_dtls_srv_send_callback cb = conn->sentCb;
+    conn->sentCb = NULL;
+    cb(conn->ec, conn->sentData);
+}
+
+void nc_client_connect_send_to_udp_cb(const np_error_code ec, void* data)
+{
+    struct nc_client_connection* conn = (struct nc_client_connection*)data;
+    if (conn->sentCb == NULL) {
+        return;
+    }
+    np_dtls_srv_send_callback cb = conn->sentCb;
+    conn->sentCb = NULL;
+    cb(ec, conn->sentData);
+}
+
+
+void nc_client_connect_cancel_send_to(struct np_platform pl, struct nc_client_connection* conn)
+{
+    conn->sentCb = NULL;
+}
+
+void nc_client_connect_async_send_to_udp(uint8_t channelId,
+                                         np_communication_buffer* buffer, uint16_t bufferSize,
+                                         np_dtls_srv_send_callback cb, void* data, void* listenerData)
+{
+    struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
+    bool found = false;
+    conn->sentCb = cb;
+    conn->sentData = data;
+    if (channelId == 0xff || true) {
+        if (bufferSize > conn->pl->buf.size(buffer)-16) {
+            conn->ec = NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION;
+            np_event_queue_post(conn->pl, &conn->ev, &nc_client_connect_send_failed, conn);
+            return;
+        }
+        uint8_t* start = conn->pl->buf.start(buffer);
+        memmove(start+16, start, bufferSize);
+        memcpy(start, conn->id.id, 15);
+        *(start+15) = conn->activeChannel->channelId;
+        bufferSize = bufferSize + 16;
+        NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
+        conn->pl->udp.async_send_to(conn->activeChannel->sock, &conn->activeChannel->ep, buffer, bufferSize, &nc_client_connect_send_to_udp_cb, conn);
+        return;
+    }
+        
+    NABTO_LOG_TRACE(LOG, "Sending on specific channel, trying to find it");
+    for (int i = 0; i < NC_CLIENT_CONNECT_MAX_CHANNELS; i++) {
+        if (conn->channels[i].active == true && conn->channels[i].channelId == channelId) {
+            if (bufferSize > conn->pl->buf.size(buffer)-16) {
+                conn->ec = NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION;
+                np_event_queue_post(conn->pl, &conn->ev, nc_client_connect_send_failed, conn);
+                return;
+            }
+            uint8_t* start = conn->pl->buf.start(buffer);
+            memmove(start+16, start, bufferSize);
+            memcpy(start, conn->id.id, 15);
+            *(start+15) = channelId;
+            bufferSize = bufferSize + 16;
+
+            NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
+            conn->pl->udp.async_send_to(conn->channels[i].sock, &conn->channels[i].ep, buffer, bufferSize, &nc_client_connect_send_to_udp_cb, conn);
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        conn->ec = NABTO_EC_INVALID_CHANNEL;
+        np_event_queue_post(conn->pl, &conn->ev, &nc_client_connect_send_failed, conn);
+    }
+}
+
+
+/*
 
 struct nc_client_connect_context {
     struct np_platform* pl;
@@ -126,7 +305,7 @@ void nc_client_connect_dtls_closed(const np_error_code ec, void* data)
 }
 
 
-/* API functions */
+// API functions 
 
 np_error_code nc_client_connect_async_create(struct np_platform* pl, struct np_connection_id* id,
                                              struct np_udp_socket* sock, struct np_udp_endpoint* ep,
@@ -265,3 +444,4 @@ np_error_code nc_client_connect_async_close(struct np_platform* pl, struct np_co
     }
     return NABTO_EC_INVALID_CONNECTION_ID;
 }
+*/

@@ -20,15 +20,15 @@ set(dtls_test_src
 add_library( nm_dtls_cli STATIC ${dtls_cli_src})
 add_library( nm_dtls_srv STATIC ${dtls_srv_src})
 
-add_executable( nm_dtls_test ${dtls_test_src})
+#add_executable( nm_dtls_test ${dtls_test_src})
 
 target_link_libraries(nm_dtls_cli mbedtls)
 target_link_libraries(nm_dtls_srv mbedtls)
 
-target_link_libraries(nm_dtls_test
-  np_platform
-  nm_unix_communication_buffer
-  nm_unix_timestamp
-  nc_core
-  mbedtls
-  )
+#target_link_libraries(nm_dtls_test
+#  np_platform
+#  nm_unix_communication_buffer
+#  nm_unix_timestamp
+#  nc_core
+#  mbedtls
+#  )

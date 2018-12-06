@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <string.h>
 
-#define NM_UNIX_LOGGING_FILE_LENGTH 16
+#define NM_UNIX_LOGGING_FILE_LENGTH 24
 
 void nm_unix_log_init()
 {

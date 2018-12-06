@@ -8,9 +8,9 @@
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/nm_unix_dns.h>
 #include <platform/np_ip_address.h>
-#include <core/nc_connection.h>
 #include <core/nc_attacher.h>
 #include <core/nc_client_connect.h>
+#include <core/nc_client_connect_dispatch.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,6 +53,31 @@ struct test_context {
     int data;
 };
 struct np_platform pl;
+struct nc_stream_manager_context streamManager;
+struct nabto_stream* stream;
+uint8_t buffer[1500];
+
+void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
+{
+    NABTO_LOG_ERROR(0, "application event callback eventType: %s", nabto_stream_application_event_type_to_string(eventType));
+    if (eventType == NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY) {
+        size_t readen = 0;
+        size_t written = 0;
+        nabto_stream_read_buffer(stream, buffer, 1500, &readen);
+        if (readen > 0) {
+            nabto_stream_write_buffer(stream, buffer, readen, &written);
+            NABTO_LOG_ERROR(0, "application event wrote %u bytes", written);
+        }
+    }
+}
+
+void stream_listener(struct nabto_stream* incStream, void* data)
+{
+    NABTO_LOG_ERROR(0, "Test listener callback ");
+    stream = incStream;
+    nabto_stream_set_application_event_callback(stream, &stream_application_event_callback, data);
+    nabto_stream_accept(stream);
+}
 
 void attachedCb(const np_error_code ec, void* data) {
     // NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint32_t*)pl.dtlsS.create, (uint32_t*)pl.dtlsS.async_send_to, (uint32_t*)pl.dtlsS.get_fingerprint, (uint32_t*)pl.dtlsS.async_recv_from, (uint32_t*)pl.dtlsS.cancel_recv_from, (uint32_t*)pl.dtlsS.async_close);
@@ -74,12 +99,17 @@ int main() {
     nm_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     nm_unix_ts_init(&pl);
     nm_unix_dns_init(&pl);
-    nc_connection_init(&pl);
-    nc_client_connect_init(&pl, fp);
   
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;
 
+    struct test_context data;
+    data.data = 42;
+
+    nc_stream_manager_init(&streamManager, &pl);
+    nc_client_connect_dispatch_init(&pl, &streamManager);
+    nc_stream_manager_set_listener(&streamManager, &stream_listener, &data);
+    
     attachParams.appName = appName;
     attachParams.appNameLength = strlen(appName);
     attachParams.appVersion = appVer;
@@ -87,9 +117,8 @@ int main() {
     attachParams.hostname = hostname;
     attachParams.hostnameLength = strlen(hostname);
     
-    struct test_context data;
-    data.data = 42;
     nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
+
     while (true) {
         np_event_queue_execute_all(&pl);
         nm_epoll_wait();

@@ -6,6 +6,7 @@
 #include <platform/np_unit_test.h>
 #include <core/nc_tests.h>
 #include <core/nc_packet.h>
+#include <core/nc_client_connect_dispatch.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -16,7 +17,7 @@ struct np_dtls_srv_connection* crypCtx;
 struct np_udp_socket* sock;
 struct np_platform pl;
 char testCtx[] = "TestData";
-struct np_connection_id id;
+struct nc_connection_id id;
 
 void nc_client_connect_test_recv_from_clientConn(const np_error_code ec, struct np_udp_endpoint ep,
                                                  np_communication_buffer* buffer, uint16_t bufferSize, void* data);
@@ -105,10 +106,10 @@ np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, struct np
     }
     return NABTO_EC_OK;
 }
-np_error_code nc_client_connect_test_cryp_create(struct np_platform* pll, np_connection* conn,
-                                                 struct np_dtls_srv_connection** ctx)
+np_error_code nc_client_connect_test_cryp_create(struct np_platform* pll, struct np_dtls_srv_connection** ctx,
+                                                 np_dtls_srv_want_send_listener listener, void* data)
 {
-    pl.clientConn.async_recv_from(conn, &nc_client_connect_test_recv_from_clientConn, &testCtx);
+//    pl.clientConn.async_recv_from(conn, &nc_client_connect_test_recv_from_clientConn, &testCtx);
     //cb(NABTO_EC_OK, crypCtx, data);
     return NABTO_EC_OK;
 }
@@ -128,18 +129,6 @@ np_error_code nc_client_connect_test_cryp_cancel(struct np_platform* pl, struct 
 void nc_client_connect_test_udp_create(np_udp_socket_created_callback cb, void* data)
 {
     cb(NABTO_EC_OK, sock, data);
-}
-
-// connection impl
-void nc_client_connect_test_conn_create(struct np_platform* pl, np_connection* conn,
-                                  struct np_connection_channel* channel, struct np_connection_id* id,
-                                  np_connection_created_callback cb, void* data)
-{
-    cb(NABTO_EC_OK, 0, data);
-}
-
-struct np_connection_id* nc_client_connect_test_conn_get_id(struct np_platform* pl, np_connection* conn) {
-    return &id;
 }
 
 bool testRecvFromCalled = false;
@@ -177,18 +166,14 @@ void nc_client_connect_test_connect()
 
     pl.udp.async_create = &nc_client_connect_test_udp_create;
 
-    pl.conn.async_create = &nc_client_connect_test_conn_create;
-    pl.conn.get_id = &nc_client_connect_test_conn_get_id;
-
-    nc_client_connect_init(&pl, fp);
-
     buf = pl.buf.allocate();
     ptr = pl.buf.start(buf);
     memcpy(ptr, id.id, 16);
     ptr += 16;
     memcpy(ptr, "TEST_DATA", 10);
     ptr += 10;
-    pl.clientConn.recv(&pl, NABTO_EC_OK, sock, ep, buf, 26);
+
+    nc_client_connect_dispatch_handle_packet(&pl, NABTO_EC_OK, sock, ep, buf, 26);
     
     NABTO_TEST_CHECK(testRecvFromCalled);
 }

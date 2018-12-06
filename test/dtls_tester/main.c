@@ -6,8 +6,6 @@
 #include <modules/timestamp/nm_unix_timestamp.h>
 #include <modules/dtls/nm_dtls_cli.h>
 #include <platform/np_ip_address.h>
-#include <platform/np_connection.h>
-#include <core/nc_connection.h>
 #include <core/nc_client_connect.h>
 
 #include <stdio.h>
@@ -40,10 +38,8 @@ const unsigned char devicePublicKey[] =
 
 struct test_context {
     int data;
-    struct np_connection conn;
     np_udp_socket* sock;
-    struct np_connection_channel channel;
-    struct np_connection_id id;
+    struct nc_connection_id id;
 };
 struct np_platform pl;
 uint8_t buffer[] = "Hello world";
@@ -100,18 +96,15 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    pl.dtlsC.async_connect(&pl, &ctx->conn, connected, data);
+    pl.dtlsC.async_connect(&pl, ctx->sock, ep, connected, data);
 }
 
 void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 {
     struct test_context* ctx = (struct test_context*)data;
     ctx->sock = sock;
-    ctx->channel.type = NABTO_CHANNEL_DTLS;
-    ctx->channel.sock = sock;
-    ctx->channel.ep = ep;
-    ctx->channel.channelId = 0;
-    pl.conn.async_create(&pl, &ctx->conn, &ctx->channel, &ctx->id, created, data);
+    created(NABTO_EC_OK, 0, data);
+    return;
 }
 
 int main() {
@@ -126,12 +119,10 @@ int main() {
     nm_epoll_init(&pl);
     nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     nm_unix_ts_init(&pl);
-    nc_client_connect_init(&pl, fp);
 
     np_log.log = &nm_unix_log;
     struct test_context data;
     data.data = 42;
-    nc_connection_init(&pl);
     pl.udp.async_create(sockCreatedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);

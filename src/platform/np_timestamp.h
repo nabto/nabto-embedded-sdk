@@ -29,6 +29,11 @@ struct np_timestamp_module {
     void (*now)(np_timestamp* timestamp);
 
     /**
+     * Return current timestamp as uint32_t 
+     */
+    uint32_t (*now_ms)();
+    
+    /**
      * Return the difference between timestamps in milliseconds,
      * returns 0 if ts2>ts1
      */

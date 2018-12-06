@@ -75,6 +75,15 @@ void nm_epoll_async_recv_from(np_udp_socket* socket, enum np_channel_type type,
 enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
 
+void nm_epoll_cancel_recv_from(np_udp_socket* socket, enum np_channel_type tye)
+{
+    socket->recvDtls.cb = NULL;
+}
+
+void nm_epoll_cancel_send_to(np_udp_socket* socket, enum np_channel_type tye)
+{
+    socket->sent.cb = NULL;
+}
 
 void nm_epoll_init(struct np_platform* pl_in) {
     if(!pl_in) {
@@ -86,6 +95,8 @@ void nm_epoll_init(struct np_platform* pl_in) {
     pl->udp.async_bind_port = &nm_epoll_async_bind_port;
     pl->udp.async_send_to   = &nm_epoll_async_send_to;
     pl->udp.async_recv_from = &nm_epoll_async_recv_from;
+    pl->udp.cancel_recv_from = &nm_epoll_cancel_recv_from;
+    pl->udp.cancel_send_to = &nm_epoll_cancel_send_to;
     pl->udp.get_protocol    = &nm_epoll_get_protocol;
     pl->udp.async_destroy   = &nm_epoll_async_destroy;
     nm_epoll_fd = epoll_create(42 /*unused*/);
@@ -171,7 +182,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
                 sock->recvDtls.cb = NULL;
                 cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recvDtls.data);
             }
-            pl->clientConn.recv(pl, NABTO_EC_UDP_SOCKET_ERROR, NULL, ep, NULL, 0);
+            nc_client_connect_dispatch_handle_packet(pl, NABTO_EC_UDP_SOCKET_ERROR, NULL, ep, NULL, 0);
             
             return;
         }
@@ -200,7 +211,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
         NABTO_LOG_TRACE(LOG, "received APP data, invoking callback");
 //        NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint64_t*)pl->dtlsS.create, (uint64_t*)pl->dtlsS.async_send_to, (uint64_t*)pl->dtlsS.get_fingerprint, (uint64_t*)pl->dtlsS.async_recv_from, (uint64_t*)pl->dtlsS.cancel_recv_from, (uint64_t*)pl->dtlsS.async_close);
 //        NABTO_LOG_BUF(0, pl->buf.start(recv_buf), recvLength);
-        pl->clientConn.recv(pl, NABTO_EC_OK, sock, ep, recv_buf, recvLength);
+        nc_client_connect_dispatch_handle_packet(pl, NABTO_EC_OK, sock, ep, recv_buf, recvLength);
     }
     nm_epoll_handle_event(sock);
 }
@@ -387,12 +398,16 @@ void nm_epoll_event_send_to(void* data){
         if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
         } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", strerror(status), (int) status);
-            sock->sent.cb(NABTO_EC_FAILED_TO_SEND_PACKET, sock->sent.data);
+            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
+            if (sock->sent.cb) {
+                sock->sent.cb(NABTO_EC_FAILED_TO_SEND_PACKET, sock->sent.data);
+            }
             return;
         }
     }
-    sock->sent.cb(NABTO_EC_OK, sock->sent.data);
+    if (sock->sent.cb) {
+        sock->sent.cb(NABTO_EC_OK, sock->sent.data);
+    }
     return;
 }
 
