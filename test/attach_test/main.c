@@ -54,6 +54,7 @@ struct test_context {
 };
 struct np_platform pl;
 struct nc_stream_manager_context streamManager;
+struct nc_client_connect_dispatch_context dispatch;
 struct nabto_stream* stream;
 uint8_t buffer[1500];
 
@@ -107,7 +108,7 @@ int main() {
     data.data = 42;
 
     nc_stream_manager_init(&streamManager, &pl);
-    nc_client_connect_dispatch_init(&pl, &streamManager);
+    nc_client_connect_dispatch_init(&dispatch, &pl, &streamManager);
     nc_stream_manager_set_listener(&streamManager, &stream_listener, &data);
     
     attachParams.appName = appName;
@@ -116,7 +117,7 @@ int main() {
     attachParams.appVersionLength = strlen(appVer);
     attachParams.hostname = hostname;
     attachParams.hostnameLength = strlen(hostname);
-    
+    attachParams.cliConn = &dispatch;
     nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
 
     while (true) {

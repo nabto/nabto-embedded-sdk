@@ -1,6 +1,8 @@
 #include "nc_client_connect.h"
 #include "nc_client_connect_dispatch.h"
 
+#include <core/nc_udp_dispatch.h>
+
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
 
@@ -9,8 +11,9 @@
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECT
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
+                                     struct nc_client_connect_dispatch_context* dispatch,
                                      struct nc_stream_manager_context* streamManager,
-                                     struct np_udp_socket* sock, struct np_udp_endpoint ep,
+                                     struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
@@ -24,6 +27,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->activeChannel = &conn->channels[0];
     conn->pl = pl;
     conn->streamManager = streamManager;
+    conn->dispatch = dispatch;
 
     ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
     if (ec != NABTO_EC_OK) {
@@ -41,7 +45,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
 }
 
 np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
-                                              struct np_udp_socket* sock, struct np_udp_endpoint ep,
+                                              struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                               np_communication_buffer* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
@@ -64,7 +68,7 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
 
 void nc_client_connect_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
 {
-    nc_client_connect_dispatch_close_connection(pl, conn);
+    nc_client_connect_dispatch_close_connection(conn->dispatch, conn);
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
 
@@ -173,7 +177,9 @@ void nc_client_connect_async_send_to_udp(uint8_t channelId,
         *(start+15) = conn->activeChannel->channelId;
         bufferSize = bufferSize + 16;
         NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
-        conn->pl->udp.async_send_to(conn->activeChannel->sock, &conn->activeChannel->ep, buffer, bufferSize, &nc_client_connect_send_to_udp_cb, conn);
+        nc_udp_dispatch_async_send_to(conn->activeChannel->sock, &conn->activeChannel->ep,
+                                      buffer, bufferSize,
+                                      &nc_client_connect_send_to_udp_cb, conn);
         return;
     }
         
@@ -192,7 +198,9 @@ void nc_client_connect_async_send_to_udp(uint8_t channelId,
             bufferSize = bufferSize + 16;
 
             NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
-            conn->pl->udp.async_send_to(conn->channels[i].sock, &conn->channels[i].ep, buffer, bufferSize, &nc_client_connect_send_to_udp_cb, conn);
+            nc_udp_dispatch_async_send_to(conn->channels[i].sock, &conn->channels[i].ep,
+                                          buffer, bufferSize,
+                                          &nc_client_connect_send_to_udp_cb, conn);
             found = true;
             break;
         }

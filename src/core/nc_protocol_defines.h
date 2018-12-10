@@ -5,10 +5,18 @@
 #define NABTO_PACKET_HEADER_SIZE 2
 #endif
 
-enum np_channel_type {
-    NABTO_CHANNEL_DTLS = 1,
-    NABTO_CHANNEL_STUN = 2,
-    NABTO_CHANNEL_APP = 3
+// TODO: 
+/* These are not actual multiplexing ids, but rather abstract
+ * values. In practice, the DTLS id is the range [20; 64], STUN is
+ * range [0;1] and APP is range [240; 255]. This should be fixed in
+ * the future to simplify udp dispatching. Possibly so
+ * udp.async_recv_from takes a range for which IDs to recv from.
+ */
+enum np_protocol_multiplexing_id {
+    NABTO_PROTOCOL_ID_DTLS = 1,
+    NABTO_PROTOCOL_ID_STUN = 2,
+    NABTO_PROTOCOL_ID_APP = 3,
+    NABTO_PROTOCOL_ID_PROBE = 4
 };
 
 enum application_data_type {

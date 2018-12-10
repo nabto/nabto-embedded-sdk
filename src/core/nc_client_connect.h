@@ -7,10 +7,10 @@
 #define NC_CLIENT_CONNECT_MAX_CHANNELS 16
 
 struct nc_stream_manager_context;
+struct nc_udp_dispatch_context;
 
 struct nc_connection_channel {
-    enum np_channel_type type;
-    struct np_udp_socket* sock;
+    struct nc_udp_dispatch_context* sock;
     np_udp_endpoint ep;
     uint8_t channelId;
     bool active;
@@ -23,6 +23,7 @@ struct nc_connection_id {
 struct nc_client_connection {
     struct np_platform* pl;
     struct np_dtls_srv_connection* dtls;
+    struct nc_client_connect_dispatch_context* dispatch;
     struct nc_stream_manager_context* streamManager;
     struct nc_connection_channel channels[NC_CLIENT_CONNECT_MAX_CHANNELS]; // several application channels can exist
     struct nc_connection_id id;
@@ -38,12 +39,13 @@ struct nc_client_connection {
 
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
+                                     struct nc_client_connect_dispatch_context* dispatch,
                                      struct nc_stream_manager_context* streamManager,
-                                     struct np_udp_socket* sock, struct np_udp_endpoint ep,
+                                     struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize);
 
 np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
-                                              struct np_udp_socket* sock, struct np_udp_endpoint ep,
+                                              struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                               np_communication_buffer* buffer, uint16_t bufferSize);
 
 void nc_client_connect_close_connection(struct np_platform* pl, struct nc_client_connection* conn,

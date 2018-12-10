@@ -20,7 +20,8 @@ typedef void (*np_udp_socket_created_callback)(const np_error_code ec, np_udp_so
 
 typedef void (*np_udp_packet_sent_callback)(const np_error_code ec, void* data);
 
-typedef void (*np_udp_packet_received_callback)(const np_error_code ec, struct np_udp_endpoint ep, np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+typedef void (*np_udp_packet_received_callback)(const np_error_code ec, struct np_udp_endpoint ep,
+                                                np_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
 typedef void (*np_udp_socket_destroyed_callback)(const np_error_code ec, void* data);
 
@@ -39,22 +40,24 @@ struct np_udp_module {
      * Send packet async. It's the responsibility of the caller to
      * keep the ep and buffer alive until the callback is invoked.
      */
-    void (*async_send_to)(np_udp_socket* socket, struct np_udp_endpoint* ep, np_communication_buffer* buffer, uint16_t bufferSize, np_udp_packet_sent_callback cb, void* data);
+    void (*async_send_to)(np_udp_socket* socket, struct np_udp_endpoint* ep,
+                          np_communication_buffer* buffer, uint16_t bufferSize,
+                          np_udp_packet_sent_callback cb, void* data);
 
     /**
      * Receive a packet async. If the socket is broken an error is returned.
      */
-    void (*async_recv_from)(np_udp_socket* socket, enum np_channel_type type, np_udp_packet_received_callback cb, void* data);
+    void (*async_recv_from)(np_udp_socket* socket, np_udp_packet_received_callback cb, void* data);
 
     /**
      * Cancel previous call to async_recv_from
      */
-    void (*cancel_recv_from)(np_udp_socket* socket, enum np_channel_type type);
+    void (*cancel_recv_from)(np_udp_socket* socket);
     
     /**
      * Cancel previous call to async_send_to
      */
-    void (*cancel_send_to)(np_udp_socket* socket, enum np_channel_type type);
+    void (*cancel_send_to)(np_udp_socket* socket);
     
     /**
      * Get the IP protocol of the socket.

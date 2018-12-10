@@ -13,8 +13,10 @@
 
 int nc_client_connect_test_recvState = 0; 
 
+struct nc_client_connect_dispatch_context cliConnDisp;
 struct np_dtls_srv_connection* crypCtx;
-struct np_udp_socket* sock;
+struct nc_udp_dispatch_context* sock;
+struct np_udp_socket* udpSock;
 struct np_platform pl;
 char testCtx[] = "TestData";
 struct nc_connection_id id;
@@ -128,7 +130,7 @@ np_error_code nc_client_connect_test_cryp_cancel(struct np_platform* pl, struct 
 // udp impl
 void nc_client_connect_test_udp_create(np_udp_socket_created_callback cb, void* data)
 {
-    cb(NABTO_EC_OK, sock, data);
+    cb(NABTO_EC_OK, udpSock, data);
 }
 
 bool testRecvFromCalled = false;
@@ -173,7 +175,7 @@ void nc_client_connect_test_connect()
     memcpy(ptr, "TEST_DATA", 10);
     ptr += 10;
 
-    nc_client_connect_dispatch_handle_packet(&pl, NABTO_EC_OK, sock, ep, buf, 26);
+    nc_client_connect_dispatch_handle_packet(&cliConnDisp, sock, ep, buf, 26);
     
     NABTO_TEST_CHECK(testRecvFromCalled);
 }

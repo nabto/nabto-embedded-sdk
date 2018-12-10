@@ -5,7 +5,6 @@
 #include <platform/np_unit_test.h>
 #include <core/nc_tests.h>
 #include <core/nc_packet.h>
-#include <core/nc_client_connect.h>
 
 #include <string.h>
 #include <arpa/inet.h>
@@ -130,7 +129,8 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
     }
     return NABTO_EC_OK;
 }
-np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, np_udp_socket* conn, np_udp_endpoint ep,
+np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, struct nc_udp_dispatch_context* conn,
+                                         np_udp_endpoint ep,
                                          np_dtls_cli_connect_callback cb, void* data)
 {
     cb(NABTO_EC_OK, crypCtx, data);

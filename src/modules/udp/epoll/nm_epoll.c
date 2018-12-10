@@ -47,9 +47,7 @@ struct np_udp_socket {
     struct nm_epoll_created_ctx created;
     struct nm_epoll_destroyed_ctx des;
     struct nm_epoll_sent_ctx sent;
-    struct nm_epoll_received_ctx recvDtls;
-    struct nm_epoll_received_ctx recvStun;
-    struct nm_epoll_received_ctx recvApp;
+    struct nm_epoll_received_ctx recv;
 };
 
 static int nm_epoll_fd = -1;
@@ -70,17 +68,17 @@ void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, 
 void nm_epoll_async_send_to(np_udp_socket* socket, struct np_udp_endpoint* ep,
                             np_communication_buffer* buffer, uint16_t bufferSize,
                             np_udp_packet_sent_callback cb, void* data);
-void nm_epoll_async_recv_from(np_udp_socket* socket, enum np_channel_type type,
+void nm_epoll_async_recv_from(np_udp_socket* socket,
                               np_udp_packet_received_callback cb, void* data);
 enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
 
-void nm_epoll_cancel_recv_from(np_udp_socket* socket, enum np_channel_type tye)
+void nm_epoll_cancel_recv_from(np_udp_socket* socket)
 {
-    socket->recvDtls.cb = NULL;
+    socket->recv.cb = NULL;
 }
 
-void nm_epoll_cancel_send_to(np_udp_socket* socket, enum np_channel_type tye)
+void nm_epoll_cancel_send_to(np_udp_socket* socket)
 {
     socket->sent.cb = NULL;
 }
@@ -172,46 +170,19 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
         } else {
             np_udp_packet_received_callback cb;
             NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_handle_event", strerror(status), (int) status);
-            if(sock->recvStun.cb) {
-                cb = sock->recvStun.cb;
-                sock->recvStun.cb = NULL;
-                cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recvStun.data);
+            if(sock->recv.cb) {
+                cb = sock->recv.cb;
+                sock->recv.cb = NULL;
+                cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recv.data);
             }
-            if(sock->recvDtls.cb) {
-                cb = sock->recvDtls.cb;
-                sock->recvDtls.cb = NULL;
-                cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recvDtls.data);
-            }
-            nc_client_connect_dispatch_handle_packet(pl, NABTO_EC_UDP_SOCKET_ERROR, NULL, ep, NULL, 0);
-            
             return;
         }
     }
-    if((start[0] == 0) || (start[0] == 1)) {
-        if (sock->recvStun.cb) {
-            np_udp_packet_received_callback cb = sock->recvStun.cb;
-            sock->recvStun.cb = NULL;
-            NABTO_LOG_TRACE(LOG, "received STUN data, invoking callback");
-            cb(NABTO_EC_OK, ep, recv_buf, recvLength, sock->recvStun.data);
-        } else {
-            NABTO_LOG_INFO(LOG, "UDP STUN data received, but no callback was registered");
-        }
-    }
-    if((start[0] >= 20)  && (start[0] <= 64)) {
-        if (sock->recvDtls.cb) {
-            np_udp_packet_received_callback cb = sock->recvDtls.cb;
-            sock->recvDtls.cb = NULL;
-            NABTO_LOG_TRACE(LOG, "received DTLS data, invoking callback");
-            cb(NABTO_EC_OK, ep, recv_buf, recvLength, sock->recvDtls.data);
-        } else {
-            NABTO_LOG_INFO(LOG, "UDP DTLS data received, but no callback was registered");
-        }
-    }
-    if(start[0] > 192) {
-        NABTO_LOG_TRACE(LOG, "received APP data, invoking callback");
-//        NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint64_t*)pl->dtlsS.create, (uint64_t*)pl->dtlsS.async_send_to, (uint64_t*)pl->dtlsS.get_fingerprint, (uint64_t*)pl->dtlsS.async_recv_from, (uint64_t*)pl->dtlsS.cancel_recv_from, (uint64_t*)pl->dtlsS.async_close);
-//        NABTO_LOG_BUF(0, pl->buf.start(recv_buf), recvLength);
-        nc_client_connect_dispatch_handle_packet(pl, NABTO_EC_OK, sock, ep, recv_buf, recvLength);
+    if (sock->recv.cb) {
+        np_udp_packet_received_callback cb = sock->recv.cb;
+        sock->recv.cb = NULL;
+        NABTO_LOG_TRACE(LOG, "received data, invoking callback");
+        cb(NABTO_EC_OK, ep, recv_buf, recvLength, sock->recv.data);
     }
     nm_epoll_handle_event(sock);
 }
@@ -421,25 +392,11 @@ void nm_epoll_async_send_to(np_udp_socket* socket, struct np_udp_endpoint* ep, n
     np_event_queue_post(pl, &socket->sent.event, nm_epoll_event_send_to, socket);
 }
 
-void nm_epoll_async_recv_from(np_udp_socket* socket, enum np_channel_type type, np_udp_packet_received_callback cb, void* data)
+void nm_epoll_async_recv_from(np_udp_socket* socket,
+                              np_udp_packet_received_callback cb, void* data)
 {
-    switch(type) {
-        case NABTO_CHANNEL_DTLS:
-            socket->recvDtls.cb = cb;
-            socket->recvDtls.data = data;
-            break;
-        case NABTO_CHANNEL_STUN:
-            socket->recvDtls.cb = cb;
-            socket->recvDtls.data = data;
-            break;
-        case NABTO_CHANNEL_APP:
-            socket->recvDtls.cb = cb;
-            socket->recvDtls.data = data;
-            break;
-        default:
-            NABTO_LOG_ERROR(LOG, "Tried to async receive with invalid type");
-            break;
-    }            
+    socket->recv.cb = cb;
+    socket->recv.data = data;
 }
 
 

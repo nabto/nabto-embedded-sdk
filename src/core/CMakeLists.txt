@@ -8,6 +8,7 @@ set(src
   ${src_dir}/nc_client_connect_dispatch.c
   ${src_dir}/nc_stream_manager.c
   ${src_dir}/nc_stream.c
+  ${src_dir}/nc_udp_dispatch.c
   )
 
 set(test_src

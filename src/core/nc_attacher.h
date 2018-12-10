@@ -2,6 +2,7 @@
 #define NC_ATTACHER_H
 
 #include <platform/np_platform.h>
+#include <core/nc_udp_dispatch.h>
 
 #define LOAD_BALANCER_PORT 4433
 
@@ -41,7 +42,7 @@ struct nc_attach_context {
     nc_attached_callback cb;
     nc_detached_callback detachCb;
     void* detachCbData;
-    np_udp_socket* sock;
+    struct nc_udp_dispatch_context udp;
     void* cbData;
     np_udp_endpoint ep;
     np_dtls_cli_context* lbDtls;
@@ -58,6 +59,7 @@ struct nc_attach_parameters {
     uint8_t appVersionLength;
     const char* hostname;
     uint8_t hostnameLength;
+    struct nc_client_connect_dispatch_context* cliConn;
 };
 
 np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_platform* pl, const struct nc_attach_parameters* params, nc_attached_callback cb, void* data);

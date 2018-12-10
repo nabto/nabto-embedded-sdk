@@ -39,7 +39,7 @@ void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
 /**
  * create socket reused for both DTLS connections
  */
-void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data);
+void nc_attacher_sock_created_cb(const np_error_code ec, void* data);
 
 void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_send_to_callback cb, void* data);
 
@@ -295,7 +295,7 @@ void nc_attacher_dr_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
         return;
     }
     memcpy(&ctx->ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx->pl->dtlsC.async_connect(ctx->pl, ctx->sock, ctx->ep, &nc_attacher_dr_dtls_conn_cb, ctx);
+    ctx->pl->dtlsC.async_connect(ctx->pl, &ctx->udp, ctx->ep, &nc_attacher_dr_dtls_conn_cb, ctx);
 }
 
 void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data)
@@ -365,13 +365,13 @@ void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, si
     for (int i = 0; i < recSize; i++) {
     }
     memcpy(&ctx->ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx->pl->dtlsC.async_connect(ctx->pl, ctx->sock, ctx->ep, &nc_attacher_lb_dtls_conn_cb, ctx);
+    ctx->pl->dtlsC.async_connect(ctx->pl, &ctx->udp, ctx->ep, &nc_attacher_lb_dtls_conn_cb, ctx);
 }
 
-void nc_attacher_sock_created_cb(const np_error_code ec, np_udp_socket* sock, void* data)
+void nc_attacher_sock_created_cb(const np_error_code ec, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    ctx->sock = sock;
+    nc_udp_dispatch_set_client_connect_context(&ctx->udp, ctx->params->cliConn);
     ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_lb_dns_cb, ctx);
 }
 
@@ -421,8 +421,9 @@ np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_
     ctx->cbData = data;
     ctx->params = params;
     
-    memcpy(ctx->dns, ctx->params->hostname, ctx->params->hostnameLength);
-    pl->udp.async_create(&nc_attacher_sock_created_cb, ctx);
+    memcpy(ctx->dns, ctx->params->hostname, ctx->params->hostnameLength+1);
+    nc_udp_dispatch_async_create(&ctx->udp, pl, &nc_attacher_sock_created_cb, ctx);
+    //pl->udp.async_create(&nc_attacher_sock_created_cb, ctx);
 }
 
 np_error_code nc_attacher_register_detatch_callback(struct nc_attach_context* ctx, nc_detached_callback cb, void* data)
