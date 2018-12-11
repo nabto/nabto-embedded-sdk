@@ -181,6 +181,11 @@ void nc_attacher_test_udp_create(np_udp_socket_created_callback cb, void* data)
     cb(NABTO_EC_OK, sock, data);
 }
 
+void nc_attacher_test_udp_async_recv_from(np_udp_socket* sock, np_udp_packet_received_callback cb, void* data)
+{
+
+}
+
 // ts impl
 void nc_attacher_test_ts_set(np_timestamp* ev, uint32_t ms) {}
 
@@ -217,6 +222,7 @@ void nc_attacher_test_attach()
     pl.dns.async_resolve = &nc_attacher_test_dns;
 
     pl.udp.async_create = &nc_attacher_test_udp_create;
+    pl.udp.async_recv_from = &nc_attacher_test_udp_async_recv_from;
 
     pl.ts.set_future_timestamp = &nc_attacher_test_ts_set;
 

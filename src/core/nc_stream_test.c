@@ -135,8 +135,8 @@ void nc_stream_test_listener_cb(struct nabto_stream* stream, void* data)
 void nc_stream_test_syn_ack()
 {
     memset(&ctx, 0, sizeof(struct nc_stream_test_context));
-    np_log.log = &nm_unix_log;
-    np_log.log_buf = &nm_unix_log_buf;
+
+//    nm_unix_log_init();
 
     ctx.cliPl.buf.start = &nc_stream_test_start;
     ctx.cliPl.buf.allocate = &nc_stream_test_allocate;
