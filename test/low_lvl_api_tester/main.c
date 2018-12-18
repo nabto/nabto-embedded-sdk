@@ -1,4 +1,5 @@
 
+#include <platform/np_logging.h>
 #include <core/nc_device.h>
 
 #include <modules/udp/epoll/nm_epoll.h>
@@ -36,11 +37,35 @@ const char* hostname = "localhost";
 
 struct nc_device_context device;
 struct np_platform pl;
+struct nabto_stream* stream;
+uint8_t buffer[1500];
 
 void nabto_device_init_platform(struct np_platform* pl);
 void nabto_device_init_platform_modules(struct np_platform* pl,
                                         const char* devicePublicKey,
                                         const char* devicePrivateKey);
+
+void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
+{
+    NABTO_LOG_ERROR(0, "application event callback eventType: %s", nabto_stream_application_event_type_to_string(eventType));
+    if (eventType == NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY) {
+        size_t readen = 0;
+        size_t written = 0;
+        nabto_stream_read_buffer(stream, buffer, 1500, &readen);
+        if (readen > 0) {
+            nabto_stream_write_buffer(stream, buffer, readen, &written);
+            NABTO_LOG_ERROR(0, "application event wrote %u bytes", written);
+        }
+    }
+}
+
+void stream_listener(struct nabto_stream* incStream, void* data)
+{
+    NABTO_LOG_INFO(0, "Test listener callback ");
+    stream = incStream;
+    nabto_stream_set_application_event_callback(stream, &stream_application_event_callback, data);
+    nabto_stream_accept(stream);
+}
 
 int main() {
     np_error_code ec;
@@ -52,6 +77,8 @@ int main() {
     if (ec != NABTO_EC_OK) {
         // fail
     }
+    nc_stream_manager_set_listener(&device.streamManager, &stream_listener, NULL);
+    
     while (true) {
         np_event_queue_execute_all(&pl);
         if (np_event_queue_has_timed_event(&pl)) {
