@@ -233,11 +233,8 @@ void nc_attacher_test_attach()
     struct nc_attach_parameters attachParams;
 
     attachParams.appName = appName;
-    attachParams.appNameLength = strlen(appName);
     attachParams.appVersion = appVer;
-    attachParams.appVersionLength = strlen(appVer);
     attachParams.hostname = hostname;
-    attachParams.hostnameLength = strlen(hostname);
 
     
     nc_attacher_async_attach(&attach, &pl, &attachParams, &nc_attacher_test_callback, NULL);

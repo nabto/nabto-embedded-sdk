@@ -12,6 +12,12 @@ void nc_udp_dispatch_sock_created_cb(const np_error_code ec, np_udp_socket* sock
 void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
                                    np_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
+void nc_udp_dispatch_cancel_send_to(struct nc_udp_dispatch_context* ctx)
+{
+    ctx->pl->udp.cancel_send_to(ctx->sock);
+}
+
+
 void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct np_platform* pl,
                                    nc_udp_dispatch_create_callback cb, void* data)
 {
@@ -20,6 +26,23 @@ void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct n
     ctx->createCb = cb;
     ctx->createCbData = data;
     pl->udp.async_create(&nc_udp_dispatch_sock_created_cb, ctx);
+}
+
+void nc_udp_dispatch_sock_destroyed_cb(const np_error_code ec, void* data)
+{
+    struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*)data;
+    NABTO_LOG_TRACE(LOG, "Socket destroyed");
+    ctx->sock = NULL;
+    ctx->destroyCb(ec, ctx->destroyCbData);
+}
+
+void nc_udp_dispatch_async_destroy(struct nc_udp_dispatch_context* ctx,
+                                   nc_udp_dispatch_destroy_callback cb, void* data)
+{
+    NABTO_LOG_TRACE(LOG, "Destroying socket");
+    ctx->destroyCb = cb;
+    ctx->destroyCbData = data;
+    ctx->pl->udp.async_destroy(ctx->sock, &nc_udp_dispatch_sock_destroyed_cb, data);
 }
 
 void nc_udp_dispatch_sock_created_cb(const np_error_code ec, np_udp_socket* socket, void* data)
@@ -43,6 +66,10 @@ void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoin
 {
     struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*) data;
     uint8_t* start = ctx->pl->buf.start(buffer);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Socker returned error: %u", ec);
+        return;
+    }
     if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
         // TODO: call stun module once implemented
         NABTO_LOG_ERROR(LOG, "Unable to dispatch stun packet");

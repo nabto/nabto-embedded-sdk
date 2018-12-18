@@ -7,10 +7,12 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 include_directories(src/types/linux)
 include_directories(src)
+include_directories(include)
 include_directories(nabto-common-cpp/src)
 
 add_subdirectory(src/platform)
 add_subdirectory(src/core)
+add_subdirectory(src/api)
 
 add_definitions("-Wall")
 
@@ -31,6 +33,7 @@ add_subdirectory(test/udp_epoll_tester)
 add_subdirectory(test/dtls_tester)
 add_subdirectory(test/dtls_server_tester)
 add_subdirectory(test/attach_test)
+add_subdirectory(test/api_test)
 
 add_executable(unit_test "${test_runner_src}")
 

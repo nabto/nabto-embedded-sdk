@@ -7,6 +7,7 @@
 #include <modules/dtls/nm_dtls_cli.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_client_connect.h>
+#include <core/nc_udp_dispatch.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +39,7 @@ const unsigned char devicePublicKey[] =
 
 struct test_context {
     int data;
-    np_udp_socket* sock;
+    struct nc_udp_dispatch_context udp;
     struct nc_connection_id id;
 };
 struct np_platform pl;
@@ -96,18 +97,17 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    pl.dtlsC.async_connect(&pl, ctx->sock, ep, connected, data);
+    pl.dtlsC.async_connect(&pl, &ctx->udp, ep, connected, data);
 }
 
-void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
+void sockCreatedCb (const np_error_code ec, void* data)
 {
-    struct test_context* ctx = (struct test_context*)data;
-    ctx->sock = sock;
     created(NABTO_EC_OK, 0, data);
     return;
 }
 
 int main() {
+    int nfds;
     uint8_t fp[16];
     memset(fp, 0, 16);
    
@@ -123,11 +123,17 @@ int main() {
     np_log.log = &nm_unix_log;
     struct test_context data;
     data.data = 42;
-    pl.udp.async_create(sockCreatedCb, &data);
+    nc_udp_dispatch_async_create(&data.udp, &pl, sockCreatedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));
-        nm_epoll_wait();
+        if (np_event_queue_has_timed_event(&pl)) {
+            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
+            nfds = nm_epoll_wait(ms);
+        } else {
+            nfds = nm_epoll_wait(0);
+        }
+        nm_epoll_read(nfds);
     }
 
     exit(0);

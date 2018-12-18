@@ -35,6 +35,8 @@
 #define NABTO_DEVICE_DECL_PREFIX extern
 #endif
 
+#include <platform/np_error_code.h>
+
 #include <stdint.h>
 #include <string.h>
 
@@ -43,10 +45,10 @@ extern "C" {
 #endif
 
 /**
- * The NabtoDeviceContext is a the place which owns the device id,
+ * The NabtoDevice is a the place which owns the device id,
  * sockets, etc.
  */
-typedef struct NabtoDeviceContext_ NabtoDeviceContext;
+typedef struct NabtoDevice_ NabtoDevice;
 
 /**
  * The NabtoDeviceConnection represents a connection between a client
@@ -58,6 +60,19 @@ typedef struct NabtoDeviceConnection_ NabtoDeviceConnection;
  * The NabtoDeviceStream represents a stream on top of a connection.
  */
 typedef struct NabtoDeviceStream_ NabtoDeviceStream;
+
+/**
+ * The NabtoDeviceError represents error codes 
+ */
+typedef np_error_code NabtoDeviceError;
+
+/**
+ * The NabtoDeviceFuture is used to resolve asyncronous function calls
+ */
+typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
+
+
+typedef uint32_t nabto_device_duration_t;
 
 
 /**********************
@@ -74,31 +89,49 @@ nabto_device_new();
  * Free a device instance
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_free();
+nabto_device_free(NabtoDevice* device);
 
 /**
  * Set the product id
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_product_id(NabtoDevice* device);
+nabto_device_set_product_id(NabtoDevice* device, const char* productId);
 
 /**
  * Set the device id.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_device_id(NabtoDevice* device);
+nabto_device_set_device_id(NabtoDevice* device, const char* deviceId);
+
+/**
+ * Set the server url.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
 
 /**
  * Set the public key for the device.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_public_key(NabtoDevice* device);
+nabto_device_set_public_key(NabtoDevice* device, const char* pubKey);
 
 /**
  * Set the private key from the device.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_private_key(NabtoDevice* device);
+nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
+
+/**
+ * Set the application name of the device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_app_name(NabtoDevice* device, const char* name);
+
+/**
+ * Set the application version the device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_app_version(NabtoDevice* device, const char* version);
 
 /**
  * Start the context, attach to some servers if possible, wait for
@@ -112,12 +145,6 @@ nabto_device_start(NabtoDevice* device);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
 nabto_device_close(NabtoDevice* device);
-
-/**
- * Wait for a device to be attached
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_wait_attach(NabtoDevice* device);
 
 /**************
  * Connection *
@@ -265,6 +292,11 @@ nabto_device_stream_close(NabtoDeviceStream* stream);
  */
 
 /**
+ * Callback function for resolving futures.
+ */
+typedef void (*NabtoDeviceFutureCallback)(NabtoDeviceError err, void* data);
+
+/**
  * Free a future.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
@@ -284,8 +316,8 @@ nabto_device_future_ready(NabtoDeviceFuture* future);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_set_callback(NabtoDeviceFuture* future,
-                          NabtoDeviceFutureCallback callback,
-                          void* data);
+                                 NabtoDeviceFutureCallback callback,
+                                 void* data);
 /**
  * Wait until a future is resolved.
  */
@@ -322,8 +354,12 @@ nabto_device_version();
 /***********
  * Logging *
  ***********/
+
+typedef void (*NabtoDeviceLogCallback)(const char* logLine, void* data);
+typedef enum NabtoDeviceLogLevel_ NabtoDeviceLogLevel;
+
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_log_callback(NabtoDeviceLogCallback, void* data);
+nabto_device_set_log_callback(NabtoDeviceLogCallback cb, void* data);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_level(NabtoDeviceLogLevel level);

@@ -53,6 +53,7 @@ struct np_udp_socket {
 static int nm_epoll_fd = -1;
 static struct np_platform* pl = 0;
 static np_communication_buffer* recv_buf;
+struct epoll_event events[64];
 
 /**
  * Handles events from epoll_wait
@@ -73,13 +74,24 @@ void nm_epoll_async_recv_from(np_udp_socket* socket,
 enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
 
+void nm_epoll_cancel_all_events(np_udp_socket* sock)
+{
+    NABTO_LOG_TRACE(LOG, "Cancelling all events");
+    np_event_queue_cancel_event(pl, &sock->created.event);
+    np_event_queue_cancel_event(pl, &sock->des.event);
+    np_event_queue_cancel_event(pl, &sock->sent.event);
+    np_event_queue_cancel_event(pl, &sock->recv.event);
+}
+
 void nm_epoll_cancel_recv_from(np_udp_socket* socket)
 {
+    np_event_queue_cancel_event(pl, &socket->recv.event);
     socket->recv.cb = NULL;
 }
 
 void nm_epoll_cancel_send_to(np_udp_socket* socket)
 {
+    np_event_queue_cancel_event(pl, &socket->sent.event);
     socket->sent.cb = NULL;
 }
 
@@ -113,22 +125,9 @@ enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket)
     }
 }
 
-void nm_epoll_wait()
+void nm_epoll_read(int nfds)
 {
-    struct epoll_event events[64];
-    int nfds;
-    if (np_event_queue_has_timed_event(pl)) {
-        uint32_t ms = np_event_queue_next_timed_event_occurance(pl);
-        NABTO_LOG_TRACE(LOG, "Found timed events, epoll waits for %u ms", ms);
-        nfds = epoll_wait(nm_epoll_fd, events, 64, ms);
-    } else {
-        NABTO_LOG_TRACE(LOG, "no timed events, epoll waits forever");
-        nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
-    }
-    if (nfds < 0) {
-        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
-        //exit(1);
-    }
+//    struct epoll_event events[64];
     NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
     for (int i = 0; i < nfds; i++) {
         if((events[i].events & EPOLLERR) ||
@@ -140,7 +139,45 @@ void nm_epoll_wait()
         np_udp_socket* sock = (np_udp_socket*)events[i].data.ptr;
         nm_epoll_handle_event(sock);
     }
+}
 
+int nm_epoll_wait(uint32_t ms)
+{
+//    struct epoll_event events[64];
+    int nfds;
+/*    if (np_event_queue_has_timed_event(pl)) {
+        uint32_t ms = np_event_queue_next_timed_event_occurance(pl);
+        NABTO_LOG_TRACE(LOG, "Found timed events, epoll waits for %u ms", ms);
+        nfds = epoll_wait(nm_epoll_fd, events, 64, ms);
+    } else {
+        NABTO_LOG_TRACE(LOG, "no timed events, epoll waits forever");
+        nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
+    }
+*/
+    if (ms == 0) {
+        NABTO_LOG_TRACE(LOG, "epoll waits forever");
+        nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
+    } else {
+        NABTO_LOG_TRACE(LOG, "waits for %u ms", ms);
+        nfds = epoll_wait(nm_epoll_fd, events, 64, ms);
+    }
+    if (nfds < 0) {
+        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
+        //exit(1);
+    }
+    return nfds;
+/*    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
+    for (int i = 0; i < nfds; i++) {
+        if((events[i].events & EPOLLERR) ||
+           (events[i].events & EPOLLHUP) ||
+           (!(events[i].events & EPOLLIN))) {
+            NABTO_LOG_TRACE(LOG, "epoll event with socket error %x", events[i].events);
+            continue;
+        }
+        np_udp_socket* sock = (np_udp_socket*)events[i].data.ptr;
+        nm_epoll_handle_event(sock);
+    }
+*/
 }
 void nm_epoll_handle_event(np_udp_socket* sock) {
     struct np_udp_endpoint ep;
@@ -200,6 +237,7 @@ void nm_epoll_event_create(void* data)
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
             ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
             us->created.cb(ec, NULL, us->created.data);
+            nm_epoll_cancel_all_events(us);
             free(us);
             return;
         } else {
@@ -216,6 +254,7 @@ void nm_epoll_event_create(void* data)
             ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR; 
             close(us->sock);
             us->created.cb(ec, NULL, us->created.data);
+            nm_epoll_cancel_all_events(us);
             free(us);
             return;
         }        
@@ -227,6 +266,7 @@ void nm_epoll_event_create(void* data)
         NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
         close(us->sock);
         us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
+        nm_epoll_cancel_all_events(us);
         free(us);
         return;
     }
@@ -248,12 +288,20 @@ void nm_epoll_async_create(np_udp_socket_created_callback cb, void* data)
 void nm_epoll_event_destroy(void* data)
 {
     np_udp_socket* sock = (np_udp_socket*)data;
+    np_udp_socket_destroyed_callback cb;
+    void* cbData;
+    if (sock == NULL) {
+        return;
+    }
     if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
         NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
     close(sock->sock);
-    sock->des.cb(NABTO_EC_OK, sock->des.data);
+    cb = sock->des.cb;
+    cbData = sock->des.data;
+    nm_epoll_cancel_all_events(sock);
     free(sock);
+    cb(NABTO_EC_OK, cbData);
 }
 
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data)
@@ -276,6 +324,7 @@ void nm_epoll_event_bind_port(void* data) {
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
             ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
             us->created.cb(ec, NULL, us->created.data);
+            nm_epoll_cancel_all_events(us);
             free(us);
             return;
         } else {
@@ -292,6 +341,7 @@ void nm_epoll_event_bind_port(void* data) {
             ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR; 
             close(us->sock);
             us->created.cb(ec, NULL, us->created.data);
+            nm_epoll_cancel_all_events(us);
             free(us);
             return;
         }        
@@ -318,6 +368,7 @@ void nm_epoll_event_bind_port(void* data) {
         ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         close(us->sock);
         us->created.cb(ec, NULL, us->created.data);
+        nm_epoll_cancel_all_events(us);
         free(us);
         return;
     }
@@ -328,6 +379,7 @@ void nm_epoll_event_bind_port(void* data) {
         NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
         close(us->sock);
         us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
+        nm_epoll_cancel_all_events(us);
         free(us);
         return;
     }

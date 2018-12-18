@@ -17,7 +17,9 @@
  */
 void nm_epoll_init(struct np_platform *pl_in);
 
-void nm_epoll_wait();
+int nm_epoll_wait(uint32_t ms);
+
+void nm_epoll_read(int nfds);
 
 
 #endif // _NP_UDP_EPOLL_MODULE_H_

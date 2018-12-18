@@ -208,6 +208,7 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, struct nc_udp_dispat
     if(ec == NABTO_EC_OK) {
         np_event_queue_post(pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
         nc_keep_alive_init_cli(ctx->pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
+        NABTO_LOG_ERROR(LOG, "DTLS cli connecting");
     }
     return ec;
 }
@@ -219,6 +220,7 @@ void nm_dtls_event_do_one(void* data)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*)data;
     int ret;
+    NABTO_LOG_TRACE(LOG, "doing one");
     if(ctx->ctx.state == CONNECTING) {
         ret = mbedtls_ssl_handshake( &ctx->ctx.ssl );
         if( ret == MBEDTLS_ERR_SSL_WANT_READ ||
@@ -371,12 +373,11 @@ void nm_dtls_do_close(void* data, np_error_code ec){
             cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCbs[i].data);
         }
     }
-   
+    nc_udp_dispatch_cancel_send_to(ctx->udp);
     mbedtls_ssl_free( &ctx->ctx.ssl );
     mbedtls_ssl_config_free( &ctx->conf );
     mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
     mbedtls_entropy_free( &ctx->entropy );
-    nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->connEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
@@ -385,8 +386,10 @@ void nm_dtls_do_close(void* data, np_error_code ec){
     free(ctx);
     ctx = NULL;
     if (cb == NULL) {
+        NABTO_LOG_ERROR(LOG, "close callback was NULL");
         return;
     }
+    NABTO_LOG_ERROR(LOG, "Calling close callback");
     cb(NABTO_EC_OK, cbData);
 }
 
@@ -397,6 +400,10 @@ void nm_dtls_event_close(void* data) {
 np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* ctx,
                                   np_dtls_close_callback cb, void* data)
 {
+    if (!ctx || ctx->ctx.state == CLOSING) {
+        return NABTO_EC_OK;
+    }
+    nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
     ctx->ctx.closeCb = cb;
     ctx->ctx.closeCbData = data;
     ctx->ctx.state = CLOSING;

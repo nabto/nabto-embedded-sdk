@@ -5,6 +5,7 @@ set(src
   ${src_dir}/np_platform.c
   ${src_dir}/np_logging.c
   ${src_dir}/np_event_queue.c
+  ${src_dir}/np_error_code.c
   )
 
 set(test_src

@@ -55,6 +55,8 @@ struct test_context {
 struct np_platform pl;
 struct nc_stream_manager_context streamManager;
 struct nc_client_connect_dispatch_context dispatch;
+struct nc_udp_dispatch_context udp;
+struct nc_attach_context attach;
 struct nabto_stream* stream;
 uint8_t buffer[1500];
 
@@ -90,10 +92,19 @@ void attachedCb(const np_error_code ec, void* data) {
     }
 }
 
+void connCreatedCb(const np_error_code ec, void* data) {
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(0, "udp create failed");
+        exit(1);
+    }
+    nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
+}
 
 int main() {
-    struct nc_attach_context attach;
+    int nfds;
     np_platform_init(&pl);
+    nm_unix_log_init();
+
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
     nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
@@ -101,9 +112,6 @@ int main() {
     nm_unix_ts_init(&pl);
     nm_unix_dns_init(&pl);
   
-    np_log.log = &nm_unix_log;
-    np_log.log_buf = &nm_unix_log_buf;
-
     struct test_context data;
     data.data = 42;
 
@@ -112,17 +120,23 @@ int main() {
     nc_stream_manager_set_listener(&streamManager, &stream_listener, &data);
     
     attachParams.appName = appName;
-    attachParams.appNameLength = strlen(appName);
     attachParams.appVersion = appVer;
-    attachParams.appVersionLength = strlen(appVer);
     attachParams.hostname = hostname;
-    attachParams.hostnameLength = strlen(hostname);
-    attachParams.cliConn = &dispatch;
-    nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
+    nc_udp_dispatch_async_create(&udp, &pl, &connCreatedCb, &data);
+    attachParams.udp = &udp;
 
     while (true) {
         np_event_queue_execute_all(&pl);
-        nm_epoll_wait();
+        if (np_event_queue_is_event_queue_empty(&pl)) {
+            NABTO_LOG_ERROR(0, "Event queue not empty after emptying");
+        }
+        if (np_event_queue_has_timed_event(&pl)) {
+            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
+            nfds = nm_epoll_wait(ms);
+        } else {
+            nfds = nm_epoll_wait(0);
+        }
+        nm_epoll_read(nfds);
     }
 
     exit(0);

@@ -18,6 +18,8 @@
 #define NABTO_LOG_MODULE_STREAM_MANAGER         0x00000400ul
 #define NABTO_LOG_MODULE_STREAM                 0x00000800ul
 #define NABTO_LOG_MODULE_UDP_DISPATCH           0x00001000ul
+#define NABTO_LOG_MODULE_API                    0x00002000ul
+#define NABTO_LOG_MODULE_CORE                   0x00004000ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                 0x00000000ul

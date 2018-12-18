@@ -22,8 +22,10 @@ typedef enum {
     NABTO_EC_CONNECTION_CLOSING,
     NABTO_EC_KEEP_ALIVE_TIMEOUT,
     NABTO_EC_SEND_IN_PROGRESS,
-    NABTO_EC_OUT_OF_RECV_CALLBACKS
+    NABTO_EC_OUT_OF_RECV_CALLBACKS,
+    NABTO_EC_API_FUTURE_NOT_READY
 } np_error_code;
 
+const char* np_error_code_to_string(np_error_code ec);
 
 #endif

@@ -22,10 +22,15 @@ void nc_attacher_dr_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
 void nc_attacher_dr_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
 
 /**
- * general packet dispatching
+ * Device relay packet dispatching
  */
-void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                              np_communication_buffer* buf, uint16_t bufferSize, void* data);
+void nc_attacher_dr_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                                 np_communication_buffer* buf, uint16_t bufferSize, void* data);
+/**
+ * Load balancer packet dispatching
+ */
+void nc_attacher_lb_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                                 np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
 /**
  * Attach dispatcher functions
@@ -36,10 +41,6 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
                                  uint16_t bufferSize, void* data);
 void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data);
 void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
-/**
- * create socket reused for both DTLS connections
- */
-void nc_attacher_sock_created_cb(const np_error_code ec, void* data);
 
 void nc_attacher_send_to(np_dtls_cli_context* cryp, uint8_t chan, uint8_t* start, uint32_t size, np_dtls_send_to_callback cb, void* data);
 
@@ -83,6 +84,7 @@ void nc_attacher_dr_handle_event(const np_error_code ec, np_communication_buffer
         uint8_t retryInt, maxRetries;
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->sendData.ev);
         NABTO_LOG_INFO(LOG, "Device is now ATTACHED");
+        ctx->state = NC_ATTACHER_ATTACHED;
         // Find the keep alive settings extension
         while(ptr < start+bufferSize) {
             if(uint16_read(ptr) == EX_KEEP_ALIVE_SETTINGS) {
@@ -185,6 +187,7 @@ void nc_attacher_lb_handle_event(const np_error_code ec, np_communication_buffer
         ctx->pl->dns.async_resolve(ctx->pl, ctx->drEps[0].dns, &nc_attacher_dr_dns_cb, ctx);
         ctx->pl->dtlsC.cancel_recv_from(ctx->pl, ctx->lbDtls, AT_DEVICE_LB);
         ctx->pl->dtlsC.async_close(ctx->pl, ctx->lbDtls, &nc_attacher_lb_dtls_closed_cb, ctx);
+        ctx->state = NC_ATTACHER_RESOLVING_DNS;
         
     } else if (*(start+1) == CT_DEVICE_LB_REDIRECT) {
         NABTO_LOG_TRACE(LOG, "CT_DEVICE_LB_REDIRECT");
@@ -258,6 +261,7 @@ void nc_attacher_dr_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
         ctx->cb(NABTO_EC_ALPN_FAILED, ctx->cbData);
         return;
     }
+    ctx->state = NC_ATTACHER_CONNECTED_TO_RELAY;
     
     ctx->drDtls = crypCtx;
     ptr = init_packet_header(ptr, AT_DEVICE_RELAY);
@@ -268,34 +272,46 @@ void nc_attacher_dr_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
 
     extBuffer[0] = (uint8_t)strlen(NABTO_VERSION);
     memcpy(&extBuffer[1], NABTO_VERSION, strlen(NABTO_VERSION));
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_NABTO_VERSION, extBuffer, strlen(NABTO_VERSION)+1);
+    ptr = insert_packet_extension(ctx->pl, ptr, EX_NABTO_VERSION, extBuffer, strlen(NABTO_VERSION));
 
-    extBuffer[0] = ctx->params->appVersionLength;
-    memcpy(&extBuffer[1], ctx->params->appVersion, ctx->params->appVersionLength);
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_VERSION, extBuffer, ctx->params->appVersionLength+1);
+    extBuffer[0] = strlen(ctx->params->appVersion);
+    memcpy(&extBuffer[1], ctx->params->appVersion, strlen(ctx->params->appVersion));
+    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_VERSION, extBuffer, strlen(ctx->params->appVersion));
 
-    extBuffer[0] = ctx->params->appNameLength;
-    memcpy(&extBuffer[1], ctx->params->appName, ctx->params->appNameLength);
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_NAME, extBuffer, ctx->params->appNameLength+1);
+    extBuffer[0] = strlen(ctx->params->appName);
+    memcpy(&extBuffer[1], ctx->params->appName, strlen(ctx->params->appName));
+    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_NAME, extBuffer, strlen(ctx->params->appName));
     
     NABTO_LOG_TRACE(LOG, "Sending CT_DEVICE_RELAY_HELLO_REQUEST:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
     nc_attacher_send_to(ctx->drDtls, 0xff, start, ptr-start, &nc_attacher_dr_dtls_send_cb, ctx);
-    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->drDtls, AT_DEVICE_RELAY, &nc_attacher_dtls_recv_cb, ctx);
+    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->drDtls, AT_DEVICE_RELAY, &nc_attacher_dr_dtls_recv_cb, ctx);
 //    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->drDtls, KEEP_ALIVE, &nc_attacher_dtls_recv_cb, ctx);
 }
 
 void nc_attacher_dr_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    np_error_code ec2;
     NABTO_LOG_INFO(LOG, "Device relay address resolved with status: %u", ec);
-    if (ec != NABTO_EC_OK || recSize == 0) {
+    if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to resolve device relay host");
         ctx->cb(ec, ctx->cbData);
         return;
     }
+    if (recSize == 0 || ctx->detaching) {
+        NABTO_LOG_ERROR(LOG, "no records resolved, or in detaching state");
+        ctx->cb(NABTO_EC_FAILED, ctx->cbData);
+        return;
+    }
     memcpy(&ctx->ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx->pl->dtlsC.async_connect(ctx->pl, &ctx->udp, ctx->ep, &nc_attacher_dr_dtls_conn_cb, ctx);
+    ec2 = ctx->pl->dtlsC.async_connect(ctx->pl, ctx->udp, ctx->ep, &nc_attacher_dr_dtls_conn_cb, ctx);
+    if (ec2 != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to connect to device Relay");
+        ctx->cb(ec2, ctx->cbData);
+        return;
+    }
+    ctx->state = NC_ATTACHER_CONNECTING_TO_RELAY;
 }
 
 void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data)
@@ -315,7 +331,7 @@ void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
         ctx->cb(NABTO_EC_ALPN_FAILED, ctx->cbData);
         return;
     }
-    
+    ctx->state = NC_ATTACHER_CONNECTED_TO_LB;
     ctx->lbDtls = crypCtx;
     ctx->buffer = ctx->pl->buf.allocate();
     ptr = ctx->pl->buf.start(ctx->buffer);
@@ -327,58 +343,48 @@ void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
     memcpy(&extBuffer[1], NABTO_VERSION, strlen(NABTO_VERSION));
     ptr = insert_packet_extension(ctx->pl, ptr, EX_NABTO_VERSION, extBuffer, strlen(NABTO_VERSION)+1);
 
-    extBuffer[0] = ctx->params->appVersionLength;
-    memcpy(&extBuffer[1], ctx->params->appVersion, ctx->params->appVersionLength);
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_VERSION, extBuffer, ctx->params->appVersionLength+1);
+    extBuffer[0] = strlen(ctx->params->appVersion);
+    memcpy(&extBuffer[1], ctx->params->appVersion, strlen(ctx->params->appVersion));
+    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_VERSION, extBuffer, strlen(ctx->params->appVersion));
 
-    extBuffer[0] = ctx->params->appNameLength;
-    memcpy(&extBuffer[1], ctx->params->appName, ctx->params->appNameLength);
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_NAME, extBuffer, ctx->params->appNameLength+1);
+    extBuffer[0] = strlen(ctx->params->appName);
+    memcpy(&extBuffer[1], ctx->params->appName, strlen(ctx->params->appName));
+    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_NAME, extBuffer, strlen(ctx->params->appName));
     
     NABTO_LOG_TRACE(LOG, "Sending device lb Request:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
     nc_attacher_send_to(ctx->lbDtls, 0xff, start, ptr-start, &nc_attacher_lb_dtls_send_cb, ctx);
     //ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->lbDtls, 0xff, start, ptr - start, &nc_attacher_lb_dtls_send_cb, ctx);
-    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->lbDtls, AT_DEVICE_LB, &nc_attacher_dtls_recv_cb, ctx);
-}
-
-void nc_attacher_lb_conn_created_cb(const np_error_code ec, uint8_t channelId, void* data)
-{
-    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    if( ec != NABTO_EC_OK ) {
-        ctx->cb(ec, ctx->cbData);
-        return;
-    }
+    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->lbDtls, AT_DEVICE_LB, &nc_attacher_lb_dtls_recv_cb, ctx);
 }
 
 void nc_attacher_lb_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    if (ec != NABTO_EC_OK || recSize == 0) {
+    if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to resolve attach dispatcher host");
         ctx->cb(ec, ctx->cbData);
         return;
     }
+    if (recSize == 0 || ctx->detaching) {
+        NABTO_LOG_ERROR(LOG, "Empty record list or detaching");
+        ctx->cb(NABTO_EC_FAILED, ctx->cbData);
+        return;
+    }
+    ctx->state = NC_ATTACHER_CONNECTING_TO_LB;
     // TODO: get load_balancer_port from somewhere
     ctx->ep.port = LOAD_BALANCER_PORT;
     // TODO: Pick a record which matches the supported protocol IPv4/IPv6 ?
     for (int i = 0; i < recSize; i++) {
     }
     memcpy(&ctx->ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx->pl->dtlsC.async_connect(ctx->pl, &ctx->udp, ctx->ep, &nc_attacher_lb_dtls_conn_cb, ctx);
-}
-
-void nc_attacher_sock_created_cb(const np_error_code ec, void* data)
-{
-    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    nc_udp_dispatch_set_client_connect_context(&ctx->udp, ctx->params->cliConn);
-    ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_lb_dns_cb, ctx);
+    ctx->pl->dtlsC.async_connect(ctx->pl, ctx->udp, ctx->ep, &nc_attacher_lb_dtls_conn_cb, ctx);
 }
 
 /**
- * Dispatching function for incoming packets
+ * Dispatching function for incoming dr packets
  */
-void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+void nc_attacher_dr_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
                               np_communication_buffer* buf, uint16_t bufferSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
@@ -396,11 +402,37 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
     NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buf), bufferSize);
     switch ((enum application_data_type)start[0]) {
         case AT_DEVICE_RELAY:
-            ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->drDtls, AT_DEVICE_RELAY, &nc_attacher_dtls_recv_cb, ctx);
+            ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->drDtls, AT_DEVICE_RELAY, &nc_attacher_dr_dtls_recv_cb, ctx);
             nc_attacher_dr_handle_event(ec, buf, bufferSize, data);
             return;
         case AT_DEVICE_LB:
-            ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->lbDtls, AT_DEVICE_LB, &nc_attacher_dtls_recv_cb, ctx);
+            ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->lbDtls, AT_DEVICE_LB, &nc_attacher_lb_dtls_recv_cb, ctx);
+            nc_attacher_lb_handle_event(ec, buf, bufferSize, data);
+            return;
+        default:
+            NABTO_LOG_ERROR(LOG, "Attacher received a packet which was neither AT_DEVICE_RELAY or AT_DEVICE_LB");
+            return;
+    }
+}
+
+/**
+ * Dispatching function for incoming lb packets
+ */
+void nc_attacher_lb_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+                              np_communication_buffer* buf, uint16_t bufferSize, void* data)
+{
+    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    uint8_t* start;
+    start = ctx->pl->buf.start(buf);
+    NABTO_LOG_TRACE(LOG, "Received data from dtls:");
+    NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buf), bufferSize);
+    switch ((enum application_data_type)start[0]) {
+        case AT_DEVICE_RELAY:
+            ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->drDtls, AT_DEVICE_RELAY, &nc_attacher_dr_dtls_recv_cb, ctx);
+            nc_attacher_dr_handle_event(ec, buf, bufferSize, data);
+            return;
+        case AT_DEVICE_LB:
+            ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->lbDtls, AT_DEVICE_LB, &nc_attacher_lb_dtls_recv_cb, ctx);
             nc_attacher_lb_handle_event(ec, buf, bufferSize, data);
             return;
         default:
@@ -420,9 +452,13 @@ np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_
     ctx->cb = cb;
     ctx->cbData = data;
     ctx->params = params;
+    ctx->udp = params->udp;
+    ctx->state = NC_ATTACHER_RESOLVING_DNS;
+    ctx->detaching = false;
     
-    memcpy(ctx->dns, ctx->params->hostname, ctx->params->hostnameLength+1);
-    nc_udp_dispatch_async_create(&ctx->udp, pl, &nc_attacher_sock_created_cb, ctx);
+    memcpy(ctx->dns, ctx->params->hostname, strlen(ctx->params->hostname)+1);
+    ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_lb_dns_cb, ctx);
+//    nc_udp_dispatch_async_create(&ctx->udp, pl, &nc_attacher_sock_created_cb, ctx);
     //pl->udp.async_create(&nc_attacher_sock_created_cb, ctx);
 }
 
@@ -430,6 +466,25 @@ np_error_code nc_attacher_register_detatch_callback(struct nc_attach_context* ct
 {
     ctx->detachCb = cb;
     ctx->detachCbData = data;
+}
+
+np_error_code nc_attacher_detach(struct nc_attach_context* ctx)
+{
+    switch (ctx->state) {
+        case NC_ATTACHER_RESOLVING_DNS:
+            ctx->detaching = true;
+            break;
+        case NC_ATTACHER_CONNECTING_TO_LB:
+        case NC_ATTACHER_CONNECTED_TO_LB:
+            ctx->pl->dtlsC.async_close(ctx->pl, ctx->lbDtls, ctx->detachCb, ctx->detachCbData);
+            break;
+        case NC_ATTACHER_CONNECTING_TO_RELAY:
+        case NC_ATTACHER_CONNECTED_TO_RELAY:
+        case NC_ATTACHER_ATTACHED:
+            ctx->pl->dtlsC.async_close(ctx->pl, ctx->drDtls, &nc_attacher_dr_dtls_closed_cb, ctx);
+            break;
+
+    }
 }
 
 /**
@@ -448,13 +503,18 @@ void nc_attacher_dr_dtls_send_cb(const np_error_code ec, void* data) {
 void nc_attacher_lb_dtls_closed_cb(const np_error_code ec, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    NABTO_LOG_INFO(LOG, "lb dtls connection closed callback");
+    NABTO_LOG_INFO(LOG, "load balancer dtls connection closed callback");
 }
 
 void nc_attacher_dr_dtls_closed_cb(const np_error_code ec, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    NABTO_LOG_INFO(LOG, "an dtls connection closed callback");
+    NABTO_LOG_INFO(LOG, "Device relay dtls connection closed callback");
+    if (ctx->detachCb) {
+        nc_detached_callback cb = ctx->detachCb;
+        ctx->detachCb = NULL;
+        cb(ec, ctx->detachCbData);
+    }
 }
 
 void nc_attacher_lb_dtls_send_cb(const np_error_code ec, void* data) {

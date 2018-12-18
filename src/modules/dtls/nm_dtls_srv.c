@@ -433,7 +433,7 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
         return NABTO_EC_FAILED;
     }
 
-    NABTO_LOG_TRACE(LOG, "parsing privateKey: %s", privateKeyL);
+//    NABTO_LOG_TRACE(LOG, "parsing privateKey: %s", privateKeyL);
     ret =  mbedtls_pk_parse_key( &server.privateKey, (const unsigned char*)privateKeyL, privateKeySize+1, NULL, 0 );
     if( ret != 0 )
     {

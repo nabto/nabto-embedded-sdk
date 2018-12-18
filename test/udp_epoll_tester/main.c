@@ -73,6 +73,7 @@ void dns_resolved(const np_error_code ec, struct np_ip_address* rec, size_t recS
 }
 
 int main() {
+    int nfds;
 //    ep.port = 12345;
     ep.port = 4242;
     inet_pton(AF_INET6, "::1", ep.ip.v6.addr);
@@ -92,7 +93,13 @@ int main() {
     pl.dns.async_resolve(&pl, "www.google.com", &dns_resolved, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
-        nm_epoll_wait();
+        if (np_event_queue_has_timed_event(&pl)) {
+            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
+            nfds = nm_epoll_wait(ms);
+        } else {
+            nfds = nm_epoll_wait(0);
+        }
+        nm_epoll_read(nfds);
     }
 
 //    pl.udp.async_destroy(data.sock, destroyed, &data);

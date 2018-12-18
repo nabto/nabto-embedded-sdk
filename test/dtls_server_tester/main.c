@@ -94,6 +94,7 @@ void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 
 
 int main() {
+    int nfds;
     uint8_t fp[16];
     memset(fp, 0, 16);
 
@@ -111,7 +112,13 @@ int main() {
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));
-        nm_epoll_wait();
+        if (np_event_queue_has_timed_event(&pl)) {
+            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
+            nfds = nm_epoll_wait(ms);
+        } else {
+            nfds = nm_epoll_wait(0);
+        }
+        nm_epoll_read(nfds);
     }
 
     exit(0);
