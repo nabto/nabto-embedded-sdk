@@ -109,7 +109,7 @@ np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, struct np
     return NABTO_EC_OK;
 }
 np_error_code nc_client_connect_test_cryp_create(struct np_platform* pll, struct np_dtls_srv_connection** ctx,
-                                                 np_dtls_srv_want_send_listener listener, void* data)
+                                                 np_dtls_srv_sender listener, void* data)
 {
 //    pl.clientConn.async_recv_from(conn, &nc_client_connect_test_recv_from_clientConn, &testCtx);
     //cb(NABTO_EC_OK, crypCtx, data);

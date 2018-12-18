@@ -57,9 +57,8 @@ uint16_t nc_stream_test_size(np_communication_buffer* buffer) { return 1500; }
 
 // DTLS SERVER TEST IMPL
 np_error_code nc_stream_test_cli_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* dtls,
-                                               uint8_t channelId,
-                                               uint8_t* buffer, uint16_t bufferSize,
-                                               np_dtls_send_to_callback cb, void* data)
+                                                        uint8_t* buffer, uint16_t bufferSize,
+                                                        np_dtls_send_to_callback cb, void* data)
 {
     NABTO_LOG_ERROR(0, "Cli wants send: ");
     NABTO_LOG_BUF(0, buffer, bufferSize);
@@ -74,7 +73,6 @@ np_error_code nc_stream_test_cli_dtls_srv_async_send_to(struct np_platform* pl, 
     return NABTO_EC_OK;
 }
 np_error_code nc_stream_test_dev_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* dtls,
-                                               uint8_t channelId,
                                                uint8_t* buffer, uint16_t bufferSize,
                                                np_dtls_send_to_callback cb, void* data)
 {

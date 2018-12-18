@@ -125,7 +125,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
 
     ret = nabto_stream_create_rst_packet(ptr, ctx->pl->buf.size(ctx->rstBuf) - (ptr - start));
 
-    ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, 0xff, start, ptr-start+ret, &nc_stream_manager_send_rst_callback, ctx);
+    ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, start, ptr-start+ret, &nc_stream_manager_send_rst_callback, ctx);
 }
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)

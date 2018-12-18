@@ -143,7 +143,7 @@ void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx)
     if(ctx->isCli) {
         ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->cli, 0xff, start, 16+NABTO_PACKET_HEADER_SIZE, &nc_keep_alive_send_cb, ctx);
     } else {
-        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, 0xff, start, 16+NABTO_PACKET_HEADER_SIZE, &nc_keep_alive_send_cb, ctx);
+        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, start, 16+NABTO_PACKET_HEADER_SIZE, &nc_keep_alive_send_cb, ctx);
     }
 }
 

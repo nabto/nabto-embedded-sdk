@@ -27,8 +27,9 @@ const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 struct np_dtls_srv_connection {
     struct nc_client_connect* conn;
     struct nm_dtls_util_connection_ctx ctx;
-    np_dtls_srv_want_send_listener sendListener;
-    void* listenerData;
+    np_dtls_srv_sender sender;
+    void* senderData;
+    bool activeChannel;
 };
 
 struct nm_dtls_srv_context {
@@ -55,10 +56,6 @@ int nm_dtls_srv_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferSize
 void nm_dtls_srv_mbedtls_timing_set_delay(void* ctx, uint32_t intermediateMilliseconds, uint32_t finalMilliseconds);
 // Function called by mbedtls to determine when the next timeout event occurs
 int nm_dtls_srv_mbedtls_timing_get_delay(void* ctx);
-// callback function called by the connection module when data is ready from the network
-void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct nc_client_connection* conn,
-                                              uint8_t channelId,  np_communication_buffer* buffer,
-                                              uint16_t bufferSize, void* data);
 
 void nm_dtls_srv_event_send_to(void* data);
 
@@ -117,7 +114,7 @@ np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls
 }
 
 np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_connection** dtls,
-                                 np_dtls_srv_want_send_listener listener, void* data)
+                                 np_dtls_srv_sender sender, void* data)
 {
     int ret;
     *dtls = (struct np_dtls_srv_connection*)malloc(sizeof(struct np_dtls_srv_connection));
@@ -125,10 +122,11 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
         return NABTO_EC_FAILED;
     }
     memset(*dtls, 0, sizeof(struct np_dtls_srv_connection));
-    (*dtls)->sendListener = listener;
-    (*dtls)->listenerData = data;
+    (*dtls)->sender = sender;
+    (*dtls)->senderData = data;
     (*dtls)->ctx.sslRecvBuf = server.pl->buf.allocate();
     (*dtls)->ctx.sslSendBuffer = server.pl->buf.allocate();
+    (*dtls)->activeChannel = true;
 
     NABTO_LOG_TRACE(LOG, "DTLS was allocated at: %u");
 
@@ -159,7 +157,6 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
 
     mbedtls_ssl_set_bio( &((*dtls)->ctx.ssl), (*dtls),
                          &nm_dtls_srv_mbedtls_send, &nm_dtls_srv_mbedtls_recv, NULL );
-//    server.pl->conn.async_recv_from(server.pl, (*dtls)->ctx.conn, &nm_dtls_srv_connection_received_callback, (*dtls));
 
     return NABTO_EC_OK;
 }
@@ -178,7 +175,6 @@ np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_s
     ctx->ctx.currentChannelId = channelId;
     memcpy(ctx->ctx.recvBuffer, server.pl->buf.start(buffer), bufferSize);
     ctx->ctx.recvBufferSize = bufferSize;
-//        server.pl->conn.async_recv_from(server.pl, ctx->ctx.conn, &nm_dtls_srv_connection_received_callback, ctx);
     nm_dtls_srv_do_one(ctx);
     return NABTO_EC_OK;
 }
@@ -189,7 +185,6 @@ void nm_dtls_srv_do_one(void* data)
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)data;
     if (ctx->ctx.state == CONNECTING) {
         int ret;
-        ctx->ctx.sendChannel = ctx->ctx.currentChannelId;
         ret = mbedtls_ssl_handshake( &ctx->ctx.ssl );
         if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
             ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -225,6 +220,7 @@ void nm_dtls_srv_do_one(void* data)
                     ctx->ctx.sendCb = NULL;
                     ctx->ctx.sendBuffer = ptr;
                     ctx->ctx.sendBufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
+                    ctx->activeChannel = false;
                     nm_dtls_srv_event_send_to(ctx);
                     return;
                 }
@@ -284,7 +280,7 @@ void nm_dtls_srv_event_send_to(void* data)
     }
 }
 
-np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* ctx, uint8_t channelId,
+np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                         uint8_t* buffer, uint16_t bufferSize,
                                         np_dtls_send_to_callback cb, void* data)
 {
@@ -292,10 +288,6 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
     ctx->ctx.sendCbData = data;
     ctx->ctx.sendBuffer = buffer;
     ctx->ctx.sendBufferSize = bufferSize;
-    // If channel id is 0xff send on whatever channel is currently active
-    if(channelId != 0xff) {
-        ctx->ctx.sendChannel = channelId;
-    }
     np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
 
     return NABTO_EC_OK;
@@ -360,27 +352,6 @@ np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv
     ctx->ctx.state = CLOSING;
     np_event_queue_post(server.pl, &ctx->ctx.closeEv, &nm_dtls_srv_event_close, ctx);
     return NABTO_EC_OK;
-}
-
-void nm_dtls_srv_connection_received_callback(const np_error_code ec, struct nc_client_connection* conn,
-                                              uint8_t channelId, np_communication_buffer* buffer,
-                                              uint16_t bufferSize, void* data)
-{
-    if ( data == NULL) {
-        return;
-    }
-    NABTO_LOG_INFO(LOG, "connection data received callback");
-    if (ec == NABTO_EC_OK) {
-        struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-        ctx->ctx.currentChannelId = channelId;
-        memcpy(ctx->ctx.recvBuffer, server.pl->buf.start(buffer), bufferSize);
-        ctx->ctx.recvBufferSize = bufferSize;
-//        server.pl->conn.async_recv_from(server.pl, ctx->ctx.conn, &nm_dtls_srv_connection_received_callback, ctx);
-        nm_dtls_srv_do_one(ctx);
-    } else {
-        NABTO_LOG_ERROR(LOG, "nc_client_connect returned error code: %u", ec);
-        nm_dtls_srv_event_close(data);
-    }
 }
 
 np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t publicKeySize,
@@ -481,14 +452,9 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
         memcpy(server.pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
         NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
-        NABTO_LOG_TRACE(LOG, "ctx->ctx.sendChannel: %u, ctx->ctx.currentChannelId: %u", ctx->ctx.sendChannel, ctx->ctx.currentChannelId);
         ctx->ctx.sslSendBufferSize = bufferSize;
-        if(ctx->ctx.sendChannel != ctx->ctx.currentChannelId) {
-            ctx->sendListener(ctx->ctx.sendChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->listenerData);
-            ctx->ctx.sendChannel = ctx->ctx.currentChannelId;
-        } else {
-            ctx->sendListener(ctx->ctx.currentChannelId, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->listenerData);
-        }
+        ctx->sender(ctx->activeChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
+        ctx->activeChannel = true;
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;

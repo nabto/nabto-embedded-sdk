@@ -180,7 +180,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         // no packet to send
         return;
     }
-    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, 0xff, ctx->pl->buf.start(ctx->sendBuffer), ptr-start+packetSize, &nc_stream_dtls_send_callback, ctx);
+    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, ctx->pl->buf.start(ctx->sendBuffer), ptr-start+packetSize, &nc_stream_dtls_send_callback, ctx);
 }
 
 void nc_stream_event_queue_callback(void* data)
