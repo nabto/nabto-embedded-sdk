@@ -1,5 +1,6 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
+#include <core/nc_udp_dispatch.h>
 #include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <modules/logging/nm_unix_logging.h>
@@ -23,6 +24,7 @@ np_communication_buffer* buffer;
 uint16_t bufferSize = 13;
 struct np_udp_endpoint ep;
 struct np_timed_event ev;
+struct nc_udp_dispatch_context udp;
 
 void sent_callback(const np_error_code ec, void* data)
 {
@@ -44,19 +46,25 @@ void recv_callback(const np_error_code ec, struct np_udp_endpoint ep, np_communi
     pl.udp.async_recv_from(ctx->sock, &recv_callback, data);
 }
 
-void created(const np_error_code ec, np_udp_socket* socket, void* data)
-{
-    struct test_context* ctx = (struct test_context*) data;
-    NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    ctx->sock = socket;
-    packet_sender(NABTO_EC_OK, ctx);
-    pl.udp.async_recv_from(socket, &recv_callback, data);
-}
-
 void destroyed(const np_error_code ec, void* data) {
     struct test_context* ctx = (struct test_context*) data;
     ctx->sock = NULL;
     NABTO_LOG_INFO(0, "Destroyed, error code was: %i, and data: %i", ec, ctx->data);
+}
+
+void created(const np_error_code ec, void* data)
+{
+    struct test_context* ctx = (struct test_context*) data;
+    NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
+    nc_udp_dispatch_async_destroy(&udp, &destroyed, data);
+}
+
+void createdRaw(const np_error_code ec, np_udp_socket* sock, void* data)
+{
+    struct test_context* ctx = (struct test_context*) data;
+    ctx->sock = sock;
+    NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
+    pl.udp.async_destroy(sock, &destroyed, ctx);
 }
 
 void dns_resolved(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
@@ -89,8 +97,9 @@ int main() {
     data.data = 42;
     buffer = pl.buf.allocate();
     memcpy(pl.buf.start(buffer), string, strlen(string));
-    pl.udp.async_create(created, &data);
-    pl.dns.async_resolve(&pl, "www.google.com", &dns_resolved, &data);
+    nc_udp_dispatch_async_create(&udp, &pl, &created, &data);
+//    pl.udp.async_create(createdRaw, &data);
+//    pl.dns.async_resolve(&pl, "www.google.com", &dns_resolved, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         if (np_event_queue_has_timed_event(&pl)) {

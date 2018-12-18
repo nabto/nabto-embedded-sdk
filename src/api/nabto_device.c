@@ -18,6 +18,8 @@
 
 struct nabto_device_context {
     struct np_platform pl;
+    pthread_t coreThread;
+    pthread_t networkThread;
     struct nc_device_context core;
     pthread_mutex_t eventMutex;
     pthread_cond_t eventCond;
@@ -62,6 +64,7 @@ void nabto_device_free(NabtoDevice* device)
 NabtoDeviceError nabto_device_set_product_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    pthread_mutex_lock(&dev->eventMutex);
     if (dev->productId != NULL) {
         free(dev->productId);
     }
@@ -70,12 +73,14 @@ NabtoDeviceError nabto_device_set_product_id(NabtoDevice* device, const char* st
         return NABTO_EC_FAILED;
     }
     memcpy(dev->productId, str, strlen(str)+1); // include trailing zero
+    pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 }
 
 NabtoDeviceError nabto_device_set_device_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    pthread_mutex_lock(&dev->eventMutex);
     if (dev->deviceId != NULL) {
         free(dev->deviceId);
     }
@@ -84,6 +89,7 @@ NabtoDeviceError nabto_device_set_device_id(NabtoDevice* device, const char* str
         return NABTO_EC_FAILED;
     }
     memcpy(dev->deviceId, str, strlen(str)+1); // include trailing zero
+    pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 
 }
@@ -91,6 +97,7 @@ NabtoDeviceError nabto_device_set_device_id(NabtoDevice* device, const char* str
 NabtoDeviceError nabto_device_set_server_url(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    pthread_mutex_lock(&dev->eventMutex);
     if (dev->serverUrl != NULL) {
         free(dev->serverUrl);
     }
@@ -99,6 +106,7 @@ NabtoDeviceError nabto_device_set_server_url(NabtoDevice* device, const char* st
         return NABTO_EC_FAILED;
     }
     memcpy(dev->serverUrl, str, strlen(str)+1); // include trailing zero
+    pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 
 }
@@ -106,6 +114,7 @@ NabtoDeviceError nabto_device_set_server_url(NabtoDevice* device, const char* st
 NabtoDeviceError nabto_device_set_public_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    pthread_mutex_lock(&dev->eventMutex);
     if (dev->publicKey != NULL) {
         free(dev->publicKey);
     }
@@ -114,6 +123,7 @@ NabtoDeviceError nabto_device_set_public_key(NabtoDevice* device, const char* st
         return NABTO_EC_FAILED;
     }
     memcpy(dev->publicKey, str, strlen(str)+1); // include trailing zero
+    pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 
 }
@@ -121,6 +131,7 @@ NabtoDeviceError nabto_device_set_public_key(NabtoDevice* device, const char* st
 NabtoDeviceError nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    pthread_mutex_lock(&dev->eventMutex);
     if (dev->privateKey != NULL) {
         free(dev->privateKey);
     }
@@ -129,6 +140,7 @@ NabtoDeviceError nabto_device_set_private_key(NabtoDevice* device, const char* s
         return NABTO_EC_FAILED;
     }
     memcpy(dev->privateKey, str, strlen(str)+1); // include trailing zero
+    pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 
 }
@@ -139,7 +151,9 @@ NabtoDeviceError nabto_device_set_app_name(NabtoDevice* device, const char* name
     if (strlen(name) > 32) {
         return NABTO_EC_FAILED;
     }
+    pthread_mutex_lock(&dev->eventMutex);
     memcpy(dev->appName, name, strlen(name));
+    pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 }
 
@@ -149,17 +163,18 @@ NabtoDeviceError nabto_device_set_app_version(NabtoDevice* device, const char* v
     if (strlen(version) > 32) {
         return NABTO_EC_FAILED;
     }
+    pthread_mutex_lock(&dev->eventMutex);
     memcpy(dev->appVersion, version, strlen(version));
+    pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 }
 
 NabtoDeviceError nabto_device_start(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    pthread_t coreThread;
-    pthread_t networkThread;
     pthread_attr_t attr;
     np_error_code ec;
+    pthread_mutex_lock(&dev->eventMutex);
     if (dev->publicKey == NULL || dev->privateKey == NULL || dev->serverUrl == NULL) {
         NABTO_LOG_ERROR(LOG, "Encryption key pair or server URL not set");
         return NABTO_EC_FAILED;
@@ -193,17 +208,18 @@ NabtoDeviceError nabto_device_start(NabtoDevice* device)
         return ec;
     }
 
-    if (pthread_create(&coreThread, &attr, nabto_device_core_thread, dev) != 0) {
+    if (pthread_create(&dev->coreThread, &attr, nabto_device_core_thread, dev) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create pthread");
         pthread_attr_destroy(&attr);
         return NABTO_EC_FAILED;
     }
-    if (pthread_create(&networkThread, &attr, nabto_device_network_thread, dev) != 0) {
+    if (pthread_create(&dev->networkThread, &attr, nabto_device_network_thread, dev) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create pthread");
         pthread_attr_destroy(&attr);
         return NABTO_EC_FAILED;
     }
     pthread_attr_destroy(&attr);
+    pthread_mutex_unlock(&dev->eventMutex);
      
 }
 
@@ -214,7 +230,6 @@ void nabto_device_close_cb(const np_error_code ec, void* data)
     dev->closing = true;
     nabto_api_future_set_error_code(dev->closeFut, ec);
     nabto_api_future_queue_post(dev->queueHead, dev->closeFut);
-//    nabto_device_future_resolve(fut);
 }
 
 NabtoDeviceFuture* nabto_device_close(NabtoDevice* device)
@@ -234,17 +249,19 @@ void* nabto_device_network_thread(void* data)
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     int nfds;
     while(true) {
-        nfds = nm_epoll_wait(0);
+        nfds = nm_epoll_wait(100);
         pthread_mutex_lock(&dev->eventMutex);
         if (nfds > 0) {
             nm_epoll_read(nfds);
+            pthread_cond_signal(&dev->eventCond);
         }
-        pthread_cond_signal(&dev->eventCond);
         if (dev->closing) {
+            pthread_cond_signal(&dev->eventCond);
             return NULL;
         }
         pthread_mutex_unlock(&dev->eventMutex);
     }
+    return NULL;
 }
 
 void* nabto_device_core_thread(void* data)
@@ -254,10 +271,15 @@ void* nabto_device_core_thread(void* data)
         struct timespec ts;
         struct timeval tp;
         NABTO_LOG_TRACE(LOG, "start of while");
+
         pthread_mutex_lock(&dev->eventMutex);
         np_event_queue_execute_all(&dev->pl);
         pthread_mutex_unlock(&dev->eventMutex);
+
         nabto_api_future_queue_execute_all(dev->queueHead);
+        if (dev->closing) {
+            return NULL;
+        }
 
         pthread_mutex_lock(&dev->eventMutex);
         if (np_event_queue_has_timed_event(&dev->pl)) {
@@ -270,13 +292,9 @@ void* nabto_device_core_thread(void* data)
 
             pthread_cond_timedwait(&dev->eventCond, &dev->eventMutex, &ts);
         } else {
+
             NABTO_LOG_TRACE(LOG, "no timed events, waits for signals forever");
             pthread_cond_wait(&dev->eventCond, &dev->eventMutex);
-        }
-        if (dev->closing) {
-            pthread_mutex_unlock(&dev->eventMutex);
-            nabto_api_future_queue_execute_all(dev->queueHead);
-            return NULL;
         }
         pthread_mutex_unlock(&dev->eventMutex);
     }
@@ -284,7 +302,7 @@ void* nabto_device_core_thread(void* data)
     return NULL;
 }
 
-void nabto_device_resolve_future(NabtoDevice* device, NabtoDeviceFuture* fut) {
+void nabto_device_post_future(NabtoDevice* device, NabtoDeviceFuture* fut) {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_api_future_queue_post(dev->queueHead, fut);
 }

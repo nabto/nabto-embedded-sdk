@@ -15,11 +15,11 @@ struct nc_udp_dispatch_context {
     // struct nc_stun_context* stun;
     void* stun;
 
-    nc_udp_dispatch_create_callback createCb;
-    void* createCbData;
-
     nc_udp_dispatch_destroy_callback destroyCb;
     void* destroyCbData;
+
+    nc_udp_dispatch_create_callback createCb;
+    void* createCbData;
     
 };
 

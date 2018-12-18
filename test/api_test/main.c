@@ -36,7 +36,7 @@ int main()
     nabto_device_set_server_url(dev, hostname);
     nabto_device_start(dev);
     sleep(1);
-    pthread_exit(NULL);
+//    pthread_exit(NULL);
     NabtoDeviceFuture* fut = nabto_device_close(dev);
     nabto_device_future_wait(fut);
     if (nabto_device_future_error_code(fut) == NABTO_EC_OK) {

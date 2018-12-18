@@ -7,7 +7,7 @@
 #define LOG NABTO_LOG_MODULE_API
 
 typedef uint32_t nabto_device_duration_t_;
-void nabto_device_resolve_future(NabtoDevice* device, NabtoDeviceFuture* fut);
+void nabto_device_post_future(NabtoDevice* device, NabtoDeviceFuture* fut);
 
 NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev)
 {
@@ -52,7 +52,7 @@ NabtoDeviceError nabto_device_future_set_callback(NabtoDeviceFuture* future,
     fut->cb = callback;
     fut->cbData = data;
     if (fut->ready) {
-        nabto_device_resolve_future(fut->dev, (NabtoDeviceFuture*)fut);
+        nabto_device_post_future(fut->dev, (NabtoDeviceFuture*)fut);
     }
     return NABTO_EC_OK;
 }

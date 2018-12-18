@@ -362,8 +362,6 @@ void nm_dtls_do_close(void* data, np_error_code ec){
     np_dtls_close_callback cb = ctx->ctx.closeCb;
     void* cbData = ctx->ctx.closeCbData;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
-    nc_keep_alive_stop(ctx->pl, &ctx->ctx.keepAliveCtx);
-    mbedtls_ssl_close_notify(&ctx->ctx.ssl);
 
     for(i = 0; i < NABTO_DTLS_MAX_RECV_CBS; i++) {
         if (ctx->ctx.recvCbs[i].cb != NULL) {
@@ -373,7 +371,6 @@ void nm_dtls_do_close(void* data, np_error_code ec){
             cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCbs[i].data);
         }
     }
-    nc_udp_dispatch_cancel_send_to(ctx->udp);
     mbedtls_ssl_free( &ctx->ctx.ssl );
     mbedtls_ssl_config_free( &ctx->conf );
     mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
@@ -394,6 +391,11 @@ void nm_dtls_do_close(void* data, np_error_code ec){
 }
 
 void nm_dtls_event_close(void* data) {
+    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    if (ctx->sending) {
+        np_event_queue_post(ctx->pl, &ctx->ctx.closeEv, &nm_dtls_event_close, ctx);
+        return;
+    }
     nm_dtls_do_close(data, NABTO_EC_CONNECTION_CLOSING);
 }
 
@@ -407,10 +409,9 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
     ctx->ctx.closeCb = cb;
     ctx->ctx.closeCbData = data;
     ctx->ctx.state = CLOSING;
+    nc_keep_alive_stop(ctx->pl, &ctx->ctx.keepAliveCtx);
+    mbedtls_ssl_close_notify(&ctx->ctx.ssl);
     np_event_queue_post(ctx->pl, &ctx->ctx.closeEv, &nm_dtls_event_close, ctx);
-    /* if (!ctx->sending) { */
-    /*     np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx); */
-    /* } */
     return NABTO_EC_OK;
 }
 
@@ -433,7 +434,7 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     ctx->sending = false;
     ctx->ctx.sslSendBufferSize = 0;
     if(ctx->ctx.state == CLOSING) {
-        nm_dtls_event_close(ctx);
+//        nm_dtls_event_close(ctx);
 //        np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
         return;
     }

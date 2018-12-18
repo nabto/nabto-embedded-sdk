@@ -47,6 +47,7 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     np_error_code ec2;
+    NABTO_LOG_TRACE(LOG, "nc_device_udp_created_cb");
     if (dev->stopping) {
         nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
         return;
