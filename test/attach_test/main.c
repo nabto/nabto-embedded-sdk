@@ -97,6 +97,7 @@ void connCreatedCb(const np_error_code ec, void* data) {
         NABTO_LOG_ERROR(0, "udp create failed");
         exit(1);
     }
+    nc_udp_dispatch_set_client_connect_context(&udp, &dispatch);
     nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
 }
 

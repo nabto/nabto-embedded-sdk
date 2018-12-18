@@ -249,7 +249,7 @@ void* nabto_device_network_thread(void* data)
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     int nfds;
     while(true) {
-        nfds = nm_epoll_wait(100);
+        nfds = nm_epoll_wait(0);
         pthread_mutex_lock(&dev->eventMutex);
         if (nfds > 0) {
             nm_epoll_read(nfds);
