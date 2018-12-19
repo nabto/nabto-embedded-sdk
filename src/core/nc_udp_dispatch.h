@@ -35,6 +35,8 @@ void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct n
 
 void nc_udp_dispatch_cancel_send_to(struct nc_udp_dispatch_context* ctx);
 
+uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx);
+
 // SET AND CLEAR CONTEXTS
 void nc_udp_dispatch_set_client_connect_context(struct nc_udp_dispatch_context* ctx,
                                                 struct nc_client_connect_dispatch_context* cliConn);

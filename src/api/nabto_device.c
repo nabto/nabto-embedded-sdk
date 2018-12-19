@@ -1,4 +1,5 @@
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_experimental.h>
 #include <api/nabto_api_future_queue.h>
 #include <platform/np_error_code.h>
 
@@ -165,6 +166,15 @@ NabtoDeviceError nabto_device_set_app_version(NabtoDevice* device, const char* v
     }
     pthread_mutex_lock(&dev->eventMutex);
     memcpy(dev->appVersion, version, strlen(version));
+    pthread_mutex_unlock(&dev->eventMutex);
+    return NABTO_EC_OK;
+}
+
+NabtoDeviceError nabto_device_experimental_get_local_port(NabtoDevice* device, uint16_t* port)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    pthread_mutex_lock(&dev->eventMutex);
+    *port = nc_udp_dispatch_get_local_port(&dev->core.udp);
     pthread_mutex_unlock(&dev->eventMutex);
     return NABTO_EC_OK;
 }

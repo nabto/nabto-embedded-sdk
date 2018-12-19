@@ -9,5 +9,5 @@ set(api_test_src
 add_executable(api_test "${api_test_src}")
 
 target_link_libraries(api_test
-  nabto_linux_api
+  nabto_device
   )

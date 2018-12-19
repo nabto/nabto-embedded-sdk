@@ -64,6 +64,11 @@ void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct n
     ctx->pl->udp.async_send_to(ctx->sock, ep, buffer, bufferSize, cb, data);
 }
 
+uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx)
+{
+    return ctx->pl->udp.get_local_port(ctx->sock);
+}
+
 
 void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
                                    np_communication_buffer* buffer, uint16_t bufferSize, void* data)

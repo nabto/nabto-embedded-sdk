@@ -75,6 +75,10 @@ typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
 typedef uint32_t nabto_device_duration_t;
 
 
+enum NabtoDeviceLogLevel_ {
+    NABTO_DEVICE_TRACE = 0
+};
+
 /**********************
  * Device Api *
  **********************/

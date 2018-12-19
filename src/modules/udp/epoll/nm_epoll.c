@@ -72,6 +72,7 @@ void nm_epoll_async_send_to(np_udp_socket* socket, struct np_udp_endpoint* ep,
 void nm_epoll_async_recv_from(np_udp_socket* socket,
                               np_udp_packet_received_callback cb, void* data);
 enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
+uint16_t nm_epoll_get_local_port(np_udp_socket* socket);
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
 
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
@@ -128,6 +129,7 @@ void nm_epoll_init(struct np_platform* pl_in) {
     pl->udp.cancel_recv_from = &nm_epoll_cancel_recv_from;
     pl->udp.cancel_send_to = &nm_epoll_cancel_send_to;
     pl->udp.get_protocol    = &nm_epoll_get_protocol;
+    pl->udp.get_local_port  = &nm_epoll_get_local_port;
     pl->udp.async_destroy   = &nm_epoll_async_destroy;
     nm_epoll_fd = epoll_create(42 /*unused*/);
     recv_buf = pl->buf.allocate();
@@ -143,6 +145,14 @@ enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket)
     } else {
         return NABTO_IPV4;
     }
+}
+
+uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
+{
+    struct sockaddr_in6 addr;
+    socklen_t length = sizeof(struct sockaddr_in6);
+    getsockname(socket->sock, (struct sockaddr*)(&addr), &length);
+    return htons(addr.sin6_port);
 }
 
 void nm_epoll_read(int nfds)

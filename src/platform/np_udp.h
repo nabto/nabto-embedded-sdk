@@ -63,6 +63,11 @@ struct np_udp_module {
      * Get the IP protocol of the socket.
      */
     enum np_ip_address_type (*get_protocol)(np_udp_socket* socket);
+
+    /**
+     * Get the local port number
+     */
+    uint16_t (*get_local_port)(np_udp_socket* socket);
     
     /**
      * Destroy a socket. This will stop any outstanding send/receive operation.

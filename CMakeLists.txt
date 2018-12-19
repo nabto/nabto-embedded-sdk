@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 project(nabto-embedded-sdk)
 
 # build all of nabto on linux, windows, mac
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
