@@ -3,6 +3,8 @@
 
 #include <platform/np_platform.h>
 
+struct nc_stun_context;
+
 typedef void (*nc_udp_dispatch_send_callback)(const np_error_code ec, void* data);
 typedef void (*nc_udp_dispatch_create_callback)(const np_error_code ec, void* data);
 typedef void (*nc_udp_dispatch_destroy_callback)(const np_error_code ec, void* data);
@@ -12,8 +14,7 @@ struct nc_udp_dispatch_context {
     struct np_udp_socket* sock;
     struct nc_client_connect_dispatch_context* cliConn;
     struct np_dtls_cli_context* dtls;
-    // struct nc_stun_context* stun;
-    void* stun;
+    struct nc_stun_context* stun;
 
     nc_udp_dispatch_destroy_callback destroyCb;
     void* destroyCbData;
@@ -44,9 +45,8 @@ void nc_udp_dispatch_set_client_connect_context(struct nc_udp_dispatch_context* 
 void nc_udp_dispatch_set_dtls_cli_context(struct nc_udp_dispatch_context* ctx,
                                           struct np_dtls_cli_context* dtls);
 
-// TODO: fix stun type when stun is implemented
 void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
-                                      void* stun);
+                                      struct nc_stun_context* stun);
 
 void nc_udp_dispatch_clear_client_connect_context(struct nc_udp_dispatch_context* ctx);
 void nc_udp_dispatch_clear_dtls_cli_context(struct nc_udp_dispatch_context* ctx);

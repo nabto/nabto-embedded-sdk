@@ -43,6 +43,11 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
     }
 }
 
+void nc_device_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data)
+{
+    NABTO_LOG_INFO(LOG, "Stun analysis finished with ec: %s", np_error_code_to_string(ec));
+}
+
 void nc_device_udp_created_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
@@ -53,18 +58,23 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
         return;
     }
     nc_udp_dispatch_set_client_connect_context(&dev->udp, &dev->clientConnect);
+    
     ec2 = nc_attacher_register_detatch_callback(&dev->attacher, &nc_device_detached_cb, dev);
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, &dev);
+    
+    nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp);
+    ec2 = nc_stun_async_analyze(&dev->stun, &nc_device_stun_analysed_cb, dev);
 }
 
 np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname)
+                              const char* hostname, const char* stunHost)
 {
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->pl = pl;
     dev->stopping = false;
+    dev->stunHost = stunHost;
     nc_stream_manager_init(&dev->streamManager, pl);
     nc_client_connect_dispatch_init(&dev->clientConnect, pl, &dev->streamManager);
 

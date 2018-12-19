@@ -26,7 +26,6 @@ struct np_dtls_srv_module {
                                    np_dtls_send_to_callback cb, void* data);
 
     np_error_code (*async_recv_from)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                     enum application_data_type type,
                                      np_dtls_received_callback cb, void* data);
 
     np_error_code (*cancel_recv_from)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,

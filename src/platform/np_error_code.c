@@ -21,7 +21,6 @@ const char* np_error_code_to_string(np_error_code ec)
         case NABTO_EC_CONNECTION_CLOSING: return "Connection closing";
         case NABTO_EC_KEEP_ALIVE_TIMEOUT:  return "Keep alive timed out";
         case NABTO_EC_SEND_IN_PROGRESS: return "Send in progress";
-        case NABTO_EC_OUT_OF_RECV_CALLBACKS: return "Out of receive callbacks";
     }
     return "Unknown error";
 }

@@ -29,6 +29,7 @@ add_subdirectory(src/modules/udp/epoll)
 add_subdirectory(src/modules/dtls)
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(nabto-common-cpp/src/streaming)
+add_subdirectory(nabto-common-cpp/src/stun)
 
 add_subdirectory(test/udp_epoll_tester)
 add_subdirectory(test/dtls_tester)

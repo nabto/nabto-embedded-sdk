@@ -74,4 +74,7 @@ np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct nc_keep_a
 np_error_code nc_keep_alive_set_settings(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                                          uint16_t kaInterval, uint8_t kaRetryInterval, uint8_t kaMaxRetries);
 
+
+void nc_keep_alive_handle_packet(const np_error_code ec, uint8_t channelId, uint64_t seq,
+                                 np_communication_buffer* buf, uint16_t bufferSize, struct nc_keep_alive_context* data);
 #endif //NC_KEEP_ALIVE_H

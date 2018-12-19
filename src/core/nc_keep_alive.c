@@ -57,11 +57,11 @@ np_error_code nc_keep_alive_start(struct np_platform* pl, struct nc_keep_alive_c
     ctx->kaRetryInterval = retryInterval;
     ctx->kaMaxRetries = maxRetries;
     ctx->n = ctx->kaInterval/ctx->kaRetryInterval/1000;
-    if (ctx->isCli) {
+/*    if (ctx->isCli) {
         ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->cli, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     } else {
         ctx->pl->dtlsS.async_recv_from(ctx->pl, ctx->srv, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
-    }
+        }*/
     nc_keep_alive_wait(ctx);
     return NABTO_EC_OK;
 }
@@ -169,22 +169,22 @@ void nc_keep_alive_close(struct nc_keep_alive_context* ctx, const np_error_code 
     ctx->cb(ec, ctx->data);
 }
 
-void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
-                        np_communication_buffer* buf, uint16_t bufferSize, void* data)
+void nc_keep_alive_handle_packet(const np_error_code ec, uint8_t channelId, uint64_t seq,
+                                 np_communication_buffer* buf, uint16_t bufferSize,
+                                 struct nc_keep_alive_context* ctx)
 {
     
-    struct nc_keep_alive_context* ctx = (struct nc_keep_alive_context*)data;
     if (ec != NABTO_EC_OK) {
         nc_keep_alive_close(ctx, ec);
         return;
     }
     NABTO_LOG_TRACE(LOG, "Received keep alive packet");
     NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buf), bufferSize);
-    if(ctx->isCli) {
+/*    if(ctx->isCli) {
         ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->cli, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
     } else {
         ctx->pl->dtlsS.async_recv_from(ctx->pl, ctx->srv, AT_KEEP_ALIVE, &nc_keep_alive_recv, ctx);
-    } 
+        } */
 }
 
 void nc_keep_alive_stop(struct np_platform* pl,  struct nc_keep_alive_context* ctx)

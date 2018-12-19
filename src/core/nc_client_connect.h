@@ -2,7 +2,8 @@
 #define NC_CLIENT_CONNECT_H
 
 #include <platform/np_platform.h>
-#include "nc_stream_manager.h"
+#include <core/nc_rendezvous.h>
+#include <core/nc_stream_manager.h>
 
 #define NC_CLIENT_CONNECT_MAX_CHANNELS 16
 
@@ -24,6 +25,7 @@ struct nc_client_connection {
     struct np_dtls_srv_connection* dtls;
     struct nc_client_connect_dispatch_context* dispatch;
     struct nc_stream_manager_context* streamManager;
+    struct nc_rendezvous_context rendezvous;
     struct nc_connection_id id;
     uint8_t clientFingerprint[16];
     bool verified;

@@ -33,8 +33,11 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
         return NABTO_EC_FAILED;
     }
+
+    nc_rendezvous_init(&conn->rendezvous, conn, conn->dtls);
+    
     // TODO: receive other packets than stream
-    pl->dtlsS.async_recv_from(pl, conn->dtls, AT_STREAM, &nc_client_connect_dtls_recv_callback, conn);
+    pl->dtlsS.async_recv_from(pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 
     // Remove connection ID before passing packet to DTLS
     memmove(start, start+16, bufferSize-16);
@@ -114,7 +117,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
             break;
     }
     // TODO: receive other packets then stream
-    conn->pl->dtlsS.async_recv_from(conn->pl, conn->dtls, AT_STREAM, &nc_client_connect_dtls_recv_callback, conn);
+    conn->pl->dtlsS.async_recv_from(conn->pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 }
 
 void nc_client_connect_dtls_closed_cb(const np_error_code ec, void* data)

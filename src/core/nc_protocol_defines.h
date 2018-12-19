@@ -24,7 +24,9 @@ enum application_data_type {
     AT_DEVICE_RELAY = 0x02,
     AT_CLIENT_RELAY = 0x03,
     AT_KEEP_ALIVE   = 0x04,
-    AT_STREAM       = 0x05
+    AT_STREAM       = 0x05,
+    AT_RENDEZVOUS_CONTROL = 0x06,
+    AT_RENDEZVOUS   = 0x07
 };
 
 enum attach_dispatch_content_type {
@@ -43,6 +45,20 @@ enum keep_alive_content_type {
     CT_KEEP_ALIVE_SETTINGS_ACK = 0x02,
     CT_KEEP_ALIVE_REQUEST      = 0x03,
     CT_KEEP_ALIVE_RESPONSE     = 0x04
+};
+
+enum rendezvous_content_type {
+    CT_RENDEZVOUS_CLIENT_REQUEST  = 0x01,
+    CT_RENDEZVOUS_CLIENT_RESPONSE = 0x02,
+    CT_RENDEZVOUS_DEVICE_REQUEST = 0x03
+};
+
+enum rendezvous_ctrl_content_type {
+    CT_RENDEZVOUS_CTRL_STUN_START_REQ  = 0x04,
+    CT_RENDEZVOUS_CTRL_STUN_START_RESP = 0x05,
+    CT_RENDEZVOUS_CTRL_STUN_DATA_REQ   = 0x06,
+    CT_RENDEZVOUS_CTRL_STUN_DATA_RESP  = 0x07,
+    CT_RENDEZVOUS_CTRL_REQUEST         = 0x08
 };
 
 enum extension_type {

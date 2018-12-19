@@ -5,6 +5,7 @@
 #include <platform/np_dtls_cli.h>
 
 #include <core/nc_client_connect_dispatch.h>
+#include <core/nc_stun.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
 
@@ -60,7 +61,6 @@ void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct n
                                    np_communication_buffer* buffer, uint16_t bufferSize,
                                    nc_udp_dispatch_send_callback cb, void* data)
 {
-    NABTO_LOG_TRACE(LOG, "Async send");
     ctx->pl->udp.async_send_to(ctx->sock, ep, buffer, bufferSize, cb, data);
 }
 
@@ -81,8 +81,7 @@ void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoin
         return;
     }
     if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
-        // TODO: call stun module once implemented
-        NABTO_LOG_ERROR(LOG, "Unable to dispatch stun packet");
+        nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
     }  else if (ctx->dtls != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
         ctx->pl->dtlsC.handle_packet(ctx->pl, ctx->dtls, buffer, bufferSize);
     } else if (ctx->cliConn != NULL && (start[0] == 240)) {
@@ -109,7 +108,7 @@ void nc_udp_dispatch_set_dtls_cli_context(struct nc_udp_dispatch_context* ctx,
 
 // TODO: fix stun type when stun is implemented
 void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
-                                      void* stun)
+                                      struct nc_stun_context* stun)
 {
     NABTO_LOG_TRACE(LOG, "set stun");
     ctx->stun = stun;

@@ -10,6 +10,8 @@ set(src
   ${src_dir}/nc_stream.c
   ${src_dir}/nc_udp_dispatch.c
   ${src_dir}/nc_device.c
+  ${src_dir}/nc_rendezvous.c
+  ${src_dir}/nc_stun.c
   )
 
 set(test_src
@@ -23,8 +25,8 @@ set(test_src
 
 add_library( nc_core STATIC "${src}")
 
-target_link_libraries( nc_core nabto_stream)
+target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client)
 
 add_library( nc_core_test STATIC "${test_src}")
 
-target_link_libraries( nc_core_test nm_unix_timestamp nabto_stream)
+target_link_libraries( nc_core_test nm_unix_timestamp nabto_stream nabto_stun_client)

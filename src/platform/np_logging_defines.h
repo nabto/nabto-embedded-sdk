@@ -20,6 +20,7 @@
 #define NABTO_LOG_MODULE_UDP_DISPATCH           0x00001000ul
 #define NABTO_LOG_MODULE_API                    0x00002000ul
 #define NABTO_LOG_MODULE_CORE                   0x00004000ul
+#define NABTO_LOG_MODULE_STUN                   0x00008000ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                 0x00000000ul

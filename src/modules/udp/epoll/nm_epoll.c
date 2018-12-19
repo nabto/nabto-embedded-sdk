@@ -158,7 +158,7 @@ uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
 void nm_epoll_read(int nfds)
 {
 //    struct epoll_event events[64];
-    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
+//    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
     for (int i = 0; i < nfds; i++) {
         if((events[i].events & EPOLLERR) ||
            (events[i].events & EPOLLHUP) ||
@@ -196,10 +196,10 @@ int nm_epoll_wait(uint32_t ms)
     }
 */
     if (ms == 0) {
-        NABTO_LOG_TRACE(LOG, "epoll waits forever");
+//        NABTO_LOG_TRACE(LOG, "epoll waits forever");
         nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
     } else {
-        NABTO_LOG_TRACE(LOG, "waits for %u ms", ms);
+//        NABTO_LOG_TRACE(LOG, "waits for %u ms", ms);
         nfds = epoll_wait(nm_epoll_fd, events, 64, ms);
     }
     if (nfds < 0) {

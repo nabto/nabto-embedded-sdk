@@ -466,6 +466,7 @@ np_error_code nc_attacher_register_detatch_callback(struct nc_attach_context* ct
 {
     ctx->detachCb = cb;
     ctx->detachCbData = data;
+    return NABTO_EC_OK;
 }
 
 np_error_code nc_attacher_detach(struct nc_attach_context* ctx)

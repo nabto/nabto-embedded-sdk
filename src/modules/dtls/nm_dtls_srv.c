@@ -223,38 +223,35 @@ void nm_dtls_srv_do_one(void* data)
                     ctx->activeChannel = false;
                     nm_dtls_srv_event_send_to(ctx);
                     return;
-                }
-            }
-            int i;
-            for(i = 0; i < NABTO_DTLS_MAX_RECV_CBS; i++) {
-                if (ctx->ctx.recvCbs[i].type == ptr[0] && ctx->ctx.recvCbs[i].cb != NULL) {
-                    NABTO_LOG_TRACE(LOG, "found Callback function");
-                    np_dtls_received_callback cb = ctx->ctx.recvCbs[i].cb;
-                    ctx->ctx.recvCbs[i].cb = NULL;
-                    cb(NABTO_EC_OK, ctx->ctx.currentChannelId, seq,
-                       ctx->ctx.sslRecvBuf, ret, ctx->ctx.recvCbs[i].data);
+                } else {
+                    nc_keep_alive_handle_packet(NABTO_EC_OK, ctx->ctx.currentChannelId, seq,
+                                                ctx->ctx.sslRecvBuf, ret, &ctx->ctx.keepAliveCtx);
                     return;
                 }
+            }
+            if (ctx->ctx.recvCb.cb != NULL) {
+                NABTO_LOG_TRACE(LOG, "found Callback function");
+                np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
+                ctx->ctx.recvCb.cb = NULL;
+                cb(NABTO_EC_OK, ctx->ctx.currentChannelId, seq,
+                   ctx->ctx.sslRecvBuf, ret, ctx->ctx.recvCb.data);
+                return;
             }
         } else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                    ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             // OK
         } else {
-            int i;
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
             ctx->ctx.state = CLOSING;
-            for(i = 0; i < NABTO_DTLS_MAX_RECV_CBS; i++) {
-                if (ctx->ctx.recvCbs[i].cb != NULL) {
-                    NABTO_LOG_TRACE(LOG, "found Callback function");
-                    np_dtls_received_callback cb = ctx->ctx.recvCbs[i].cb;
-                    ctx->ctx.recvCbs[i].cb = NULL;
-                    cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCbs[i].data);
-                }
+            if (ctx->ctx.recvCb.cb != NULL) {
+                NABTO_LOG_TRACE(LOG, "found Callback function");
+                np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
+                ctx->ctx.recvCb.cb = NULL;
+                cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCb.data);
             }
         }
     }
-
 }
 
 void nm_dtls_srv_event_send_to(void* data)
@@ -294,34 +291,21 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
 }
 
 np_error_code nm_dtls_srv_async_recv_from(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                          enum application_data_type type,
                                           np_dtls_received_callback cb, void* data)
 {
-    int i;
     if (ctx->ctx.state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
-    for(i = 0; i < NABTO_DTLS_MAX_RECV_CBS; i++) {
-        if (ctx->ctx.recvCbs[i].cb == NULL) {
-            ctx->ctx.recvCbs[i].cb = cb;
-            ctx->ctx.recvCbs[i].data = data;
-            ctx->ctx.recvCbs[i].type = type;
-            np_event_queue_post(server.pl, &ctx->ctx.recvEv, &nm_dtls_srv_do_one, ctx);
-            return NABTO_EC_OK;
-        }
-    }
-    return NABTO_EC_OUT_OF_RECV_CALLBACKS;
+    ctx->ctx.recvCb.cb = cb;
+    ctx->ctx.recvCb.data = data;
+    np_event_queue_post(server.pl, &ctx->ctx.recvEv, &nm_dtls_srv_do_one, ctx);
+    return NABTO_EC_OK;
 }
 
 np_error_code nm_dtls_srv_cancel_recv_from(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                            enum application_data_type type)
 {
-    int i;
-    for (i = 0; i < NABTO_DTLS_MAX_RECV_CBS; i++) {
-        if (ctx->ctx.recvCbs[i].type == type) {
-            ctx->ctx.recvCbs[i].cb = NULL;
-        }
-    }
+    ctx->ctx.recvCb.cb = NULL;
     return NABTO_EC_OK;
 }
 

@@ -83,7 +83,7 @@ void stream_listener(struct nabto_stream* incStream, void* data)
 }
 
 void attachedCb(const np_error_code ec, void* data) {
-    // NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint32_t*)pl.dtlsS.create, (uint32_t*)pl.dtlsS.async_send_to, (uint32_t*)pl.dtlsS.get_fingerprint, (uint32_t*)pl.dtlsS.async_recv_from, (uint32_t*)pl.dtlsS.cancel_recv_from, (uint32_t*)pl.dtlsS.async_close);
+
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(0, "Received attached callback with NABTO_EC_OK");
     } else {

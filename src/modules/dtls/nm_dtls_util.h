@@ -26,7 +26,6 @@ enum sslState {
 struct nm_dtls_util_recv_cb_ctx {
     np_dtls_received_callback cb;
     void* data;
-    enum application_data_type type;
 };
 
 struct nm_dtls_util_connection_ctx {
@@ -41,7 +40,7 @@ struct nm_dtls_util_connection_ctx {
     void* closeCbData;
     np_dtls_send_to_callback sendCb;
     void* sendCbData;
-    struct nm_dtls_util_recv_cb_ctx recvCbs[NABTO_DTLS_MAX_RECV_CBS];
+    struct nm_dtls_util_recv_cb_ctx recvCb;
 
     uint32_t recvCount;
     uint32_t sentCount;

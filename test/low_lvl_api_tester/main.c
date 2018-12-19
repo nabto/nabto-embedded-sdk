@@ -34,6 +34,7 @@ const char* productId = "product";
 const char* deviceId = "a";
 //const char* hostname = "a.devices.dev.nabto.net";
 const char* hostname = "localhost";
+const char* stunHost = "stun.nabto.net";
 
 struct nc_device_context device;
 struct np_platform pl;
@@ -73,7 +74,7 @@ int main() {
     nabto_device_init_platform(&pl);
     nabto_device_init_platform_modules(&pl, devicePublicKey, devicePrivateKey);
     // start the core
-    ec = nc_device_start(&device, &pl, appName, appVersion, productId, deviceId, hostname);
+    ec = nc_device_start(&device, &pl, appName, appVersion, productId, deviceId, hostname, stunHost);
     if (ec != NABTO_EC_OK) {
         // fail
     }

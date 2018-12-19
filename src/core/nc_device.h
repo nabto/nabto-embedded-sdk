@@ -4,6 +4,7 @@
 #include <core/nc_attacher.h>
 #include <core/nc_stream_manager.h>
 #include <core/nc_client_connect_dispatch.h>
+#include <core/nc_stun.h>
 
 #include <platform/np_error_code.h>
 
@@ -17,7 +18,10 @@ struct nc_device_context {
     struct nc_attach_context attacher;
     struct nc_stream_manager_context streamManager;
     struct nc_client_connect_dispatch_context clientConnect;
+    struct nc_stun_context stun;
 
+    const char* stunHost;
+    
     nc_device_close_callback closeCb;
     void* closeCbData;
 };
@@ -25,7 +29,7 @@ struct nc_device_context {
 np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname);
+                              const char* hostname, const char* stunHost);
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data);
 

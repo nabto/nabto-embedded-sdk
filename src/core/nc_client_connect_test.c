@@ -35,7 +35,7 @@ uint16_t nc_client_connect_test_size(np_communication_buffer* buffer) { return 1
 
 // dtls srv impl
 np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                               uint8_t channelId, uint8_t* buffer, uint16_t bufferSize,
+                                               uint8_t* buffer, uint16_t bufferSize,
                                                np_dtls_send_to_callback cb, void* data)
 {
 
@@ -70,7 +70,7 @@ np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, struct np
     return NABTO_EC_OK;
 }
 np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                               enum application_data_type type, np_dtls_received_callback cb, void* data)
+                                               np_dtls_received_callback cb, void* data)
 {
     np_communication_buffer resp;
     uint8_t *ptr = resp.buf+2;

@@ -17,6 +17,9 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
+// TODO: Take though api or something
+const char* stunHost = "stun.nabto.net";
+
 struct nabto_device_context {
     struct np_platform pl;
     pthread_t coreThread;
@@ -210,7 +213,7 @@ NabtoDeviceError nabto_device_start(NabtoDevice* device)
     // Init platform
     nabto_device_init_platform_modules(&dev->pl, dev->publicKey, dev->privateKey);
     // start the core
-    ec = nc_device_start(&dev->core, &dev->pl, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl);
+    ec = nc_device_start(&dev->core, &dev->pl, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost);
 
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");
