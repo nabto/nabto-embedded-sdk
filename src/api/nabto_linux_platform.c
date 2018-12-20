@@ -7,6 +7,7 @@
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/nm_unix_dns.h>
+#include <modules/access_control/nm_access_control.h>
 
 
 void nabto_device_init_platform(struct np_platform* pl)
@@ -17,6 +18,7 @@ void nabto_device_init_platform(struct np_platform* pl)
 
 void nabto_device_init_platform_modules(struct np_platform* pl, const char* devicePublicKey, const char* devicePrivateKey)
 {
+    nm_access_control_init(pl);
     nm_unix_comm_buf_init(pl);
     nm_epoll_init(pl);
     nm_dtls_init(pl, devicePublicKey, strlen((const char*)devicePublicKey),

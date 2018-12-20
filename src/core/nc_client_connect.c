@@ -36,7 +36,6 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
 
     nc_rendezvous_init(&conn->rendezvous, conn, conn->dtls);
     
-    // TODO: receive other packets than stream
     pl->dtlsS.async_recv_from(pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 
     // Remove connection ID before passing packet to DTLS
@@ -51,9 +50,17 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
                                               np_communication_buffer* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
-
-    // TODO: handle active channel properly
     uint8_t* start = pl->buf.start(buffer);
+
+    if (*start == NABTO_PROTOCOL_PREFIX_RENDEZVOUS) {
+        memmove(start, start+16, bufferSize-16);
+        bufferSize = bufferSize-16;
+        if (*start == AT_RENDEZVOUS) {
+            nc_rendezvous_handle_packet(&conn->rendezvous, buffer, bufferSize);
+        }
+        return;
+    }
+    
 
     conn->lastChannel.sock = sock;
     conn->lastChannel.ep = ep;
@@ -111,6 +118,9 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     switch (applicationType) {
         case AT_STREAM:
             nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
+            break;
+        case AT_RENDEZVOUS_CONTROL:
+            nc_rendezvous_handle_packet(&conn->rendezvous, buffer, bufferSize);
             break;
         default:
             NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);

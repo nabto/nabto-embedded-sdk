@@ -7,6 +7,7 @@
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/nm_unix_dns.h>
+#include <modules/access_control/nm_access_control.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_attacher.h>
 #include <core/nc_client_connect.h>
@@ -106,6 +107,7 @@ int main() {
     np_platform_init(&pl);
     nm_unix_log_init();
 
+    nm_access_control_init(&pl);
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
     nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));

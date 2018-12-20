@@ -19,6 +19,11 @@ enum np_protocol_multiplexing_id {
     NABTO_PROTOCOL_ID_PROBE = 4
 };
 
+enum np_protocol_prefix {
+    NABTO_PROTOCOL_PREFIX_CONNECTION = 240,
+    NABTO_PROTOCOL_PREFIX_RENDEZVOUS = 241
+};
+
 enum application_data_type {
     AT_DEVICE_LB    = 0x01,
     AT_DEVICE_RELAY = 0x02,
@@ -72,7 +77,9 @@ enum extension_type {
     EX_UNKNOWN_CONNECTION  = 0x0008,
     EX_APPLICATION_VERSION = 0x0009,
     EX_SESSION_ID          = 0x000a,
-    EX_ATTACH_INDEX        = 0x000b
+    EX_ATTACH_INDEX        = 0x000b,
+    EX_STUN_RESULT_IPV4    = 0x000c,
+    EX_STUN_DEFECT_FIREWALL = 0x000d
 };
 
 #endif // _NC_PROTOCOL_DEFINES_H_
