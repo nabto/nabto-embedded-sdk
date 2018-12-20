@@ -10,9 +10,16 @@
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECT
 
+void nc_client_connect_async_send_to_udp(bool channelId,
+                                         np_communication_buffer* buffer, uint16_t bufferSize,
+                                         np_dtls_srv_send_callback cb, void* data, void* listenerData);
+void nc_client_connect_send_to_ep_cb(const np_error_code ec, void* data);
+
+
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
                                      struct nc_client_connect_dispatch_context* dispatch,
                                      struct nc_stream_manager_context* streamManager,
+                                     struct nc_stun_context* stun,
                                      struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize)
 {
@@ -27,6 +34,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->pl = pl;
     conn->streamManager = streamManager;
     conn->dispatch = dispatch;
+    conn->stun = stun;
 
     ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
     if (ec != NABTO_EC_OK) {
@@ -34,7 +42,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
         return NABTO_EC_FAILED;
     }
 
-    nc_rendezvous_init(&conn->rendezvous, conn, conn->dtls);
+    nc_rendezvous_init(&conn->rendezvous, pl, conn, conn->dtls, conn->stun);
     
     pl->dtlsS.async_recv_from(pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 
@@ -56,9 +64,9 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
         memmove(start, start+16, bufferSize-16);
         bufferSize = bufferSize-16;
         if (*start == AT_RENDEZVOUS) {
-            nc_rendezvous_handle_packet(&conn->rendezvous, buffer, bufferSize);
+            nc_rendezvous_handle_packet(&conn->rendezvous, ep, buffer, bufferSize);
         }
-        return;
+        return NABTO_EC_OK;
     }
     
 
@@ -70,10 +78,12 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
     ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->lastChannel.channelId, buffer, bufferSize);
+    return ec;
 }
 
 void nc_client_connect_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
 {
+    nc_rendezvous_destroy(&conn->rendezvous);
     nc_client_connect_dispatch_close_connection(conn->dispatch, conn);
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
@@ -120,13 +130,15 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
             nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
             break;
         case AT_RENDEZVOUS_CONTROL:
-            nc_rendezvous_handle_packet(&conn->rendezvous, buffer, bufferSize);
+        {
+            np_udp_endpoint ep; // the endpoint is not used for dtls packets
+            nc_rendezvous_handle_packet(&conn->rendezvous, ep, buffer, bufferSize);
             break;
+        }
         default:
             NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
             break;
     }
-    // TODO: receive other packets then stream
     conn->pl->dtlsS.async_recv_from(conn->pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 }
 
@@ -200,3 +212,37 @@ void nc_client_connect_async_send_to_udp(bool activeChannel,
     }
 }
 
+np_error_code nc_client_connect_async_send_to_ep(struct nc_client_connection* conn,
+                                                 struct np_udp_endpoint* ep,
+                                                 np_communication_buffer* buffer, uint16_t bufferSize,
+                                                 nc_client_connect_send_callback cb, void* data)
+{
+    conn->sentToEpCb = cb;
+    conn->sentToEpCbData = data;
+    if (bufferSize > conn->pl->buf.size(buffer)-16) {
+        return NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION;
+    }
+    uint8_t* start = conn->pl->buf.start(buffer);
+    memmove(start+16, start, bufferSize);
+    memcpy(start, conn->id.id, 15);
+    *start = NABTO_PROTOCOL_PREFIX_RENDEZVOUS;
+    bufferSize = bufferSize + 16;
+    NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
+    
+    *(start+15) = 0;
+    nc_udp_dispatch_async_send_to(conn->currentChannel.sock, ep,
+                                  buffer, bufferSize,
+                                  &nc_client_connect_send_to_ep_cb, conn);
+    
+}
+
+void nc_client_connect_send_to_ep_cb(const np_error_code ec, void* data)
+{
+    struct nc_client_connection* conn = (struct nc_client_connection*)data;
+    if (conn->sentToEpCb == NULL) {
+        return;
+    }
+    nc_client_connect_send_callback cb = conn->sentToEpCb;
+    conn->sentToEpCb = NULL;
+    cb(ec, conn->sentToEpCbData);
+}

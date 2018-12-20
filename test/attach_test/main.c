@@ -12,6 +12,7 @@
 #include <core/nc_attacher.h>
 #include <core/nc_client_connect.h>
 #include <core/nc_client_connect_dispatch.h>
+#include <core/nc_stun.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +60,7 @@ struct nc_client_connect_dispatch_context dispatch;
 struct nc_udp_dispatch_context udp;
 struct nc_attach_context attach;
 struct nabto_stream* stream;
+struct nc_stun_context stun;
 uint8_t buffer[1500];
 
 void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
@@ -132,7 +134,7 @@ int main() {
     data.data = 42;
 
     nc_stream_manager_init(&streamManager, &pl);
-    nc_client_connect_dispatch_init(&dispatch, &pl, &streamManager);
+    nc_client_connect_dispatch_init(&dispatch, &pl, &stun, &streamManager);
     nc_stream_manager_set_listener(&streamManager, &stream_listener, &data);
     
     attachParams.appName = appName;
