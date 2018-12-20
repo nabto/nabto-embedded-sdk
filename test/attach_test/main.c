@@ -64,23 +64,21 @@ uint8_t buffer[1500];
 void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
 {
     NABTO_LOG_ERROR(0, "application event callback eventType: %s", nabto_stream_application_event_type_to_string(eventType));
-    //if (eventType == NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY) {
-        size_t readen = 0;
-        size_t written = 0;
-        nabto_stream_status status;
-        status = nabto_stream_read_buffer(stream, buffer, 1500, &readen);
-        if (status == NABTO_STREAM_STATUS_OK) {
-            if (readen > 0) {
-                nabto_stream_write_buffer(stream, buffer, readen, &written);
-                NABTO_LOG_ERROR(0, "application event wrote %u bytes", written);
-            }
-        } else {
-            status = nabto_stream_close(stream);
-            if (status != NABTO_STREAM_STATUS_OK) {
-                nabto_stream_release(stream);
-            }
+    size_t readen = 0;
+    size_t written = 0;
+    nabto_stream_status status;
+    status = nabto_stream_read_buffer(stream, buffer, 1500, &readen);
+    if (status == NABTO_STREAM_STATUS_OK) {
+        if (readen > 0) {
+            nabto_stream_write_buffer(stream, buffer, readen, &written);
+            NABTO_LOG_ERROR(0, "application event wrote %u bytes", written);
         }
-        //}
+    } else {
+        status = nabto_stream_close(stream);
+        if (status != NABTO_STREAM_STATUS_OK) {
+            nabto_stream_release(stream);
+        }
+    }
 }
 
 void stream_listener(struct nabto_stream* incStream, void* data)
