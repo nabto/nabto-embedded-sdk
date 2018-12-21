@@ -2,6 +2,8 @@
 #include "nm_dtls_util.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_udp.h>
+
 #include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>
 
@@ -31,6 +33,7 @@ struct np_dtls_cli_context {
     void* connectData;
 
     bool sending;
+    struct np_udp_send_context sendCtx;
 
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
@@ -436,7 +439,8 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 //        NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
 //        NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
-        nc_udp_dispatch_async_send_to(ctx->udp, &ctx->ep,
+        nc_udp_dispatch_async_send_to(ctx->udp,
+                                      &ctx->sendCtx, &ctx->ep,
                                       ctx->ctx.sslSendBuffer, bufferSize,
                                       &nm_dtls_udp_send_callback, ctx);
         return bufferSize;

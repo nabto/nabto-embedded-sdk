@@ -190,10 +190,13 @@ uint8_t* udp_ep_ext_write_forward(uint8_t* buf, struct np_udp_endpoint* ep)
         buf = uint16_write_forward(buf, 6);
         buf = uint16_write_forward(buf, ep->port);
         memcpy(buf, ep->ip.v4.addr, 4);
+        buf += 4;
     } else if (ep->ip.type == NABTO_IPV6) {
         buf = uint16_write_forward(buf, EX_UDP_IPV6_EP);
         buf = uint16_write_forward(buf, 18);
         buf = uint16_write_forward(buf, ep->port);
         memcpy(buf, ep->ip.v6.addr, 16);
+        buf += 16;
     }
+    return buf;
 }

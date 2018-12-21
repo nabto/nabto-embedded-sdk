@@ -83,12 +83,18 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
                                     nc_stun_analyze_callback cb, void* data)
 {
     int i;
+    bool found = false;
     for (i = 0; i < NC_STUN_MAX_CALLBACKS; i++) {
         if (ctx->cbs[i].cb == NULL) {
             ctx->cbs[i].cb = cb;
             ctx->cbs[i].data = data;
+            found  = true;
             break;
         }
+    }
+    if (!found) {
+        NABTO_LOG_ERROR(LOG, "Out of callbacks");
+        return NABTO_EC_FAILED;
     }
     if (ctx->state == NC_STUN_STATE_RUNNING) {
         return NABTO_EC_OK;
@@ -97,6 +103,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
         np_event_queue_post(ctx->pl, &ctx->resultEv, &nc_stun_resolve_callbacks, ctx);
         return NABTO_EC_OK;
     }
+    ctx->state = NC_STUN_STATE_RUNNING;
     nc_udp_dispatch_async_create(&ctx->secUdp, ctx->pl, &nc_stun_udp_created_cb, ctx);
     return NABTO_EC_OK;
 }
@@ -121,7 +128,6 @@ void nc_stun_event(struct nc_stun_context* ctx)
         case STUN_ET_SEND_PRIMARY:
         {
             struct nabto_stun_endpoint stunEp;
-            struct np_udp_endpoint ep;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
                 NABTO_LOG_ERROR(LOG, "get endpoint failed");
@@ -129,23 +135,22 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 nc_stun_resolve_callbacks(ctx);
                 return;
             }
-            ep.port = stunEp.port;
+            ctx->sendEp.port = stunEp.port;
             if (stunEp.addr.type == NABTO_STUN_IPV4) {
-                ep.ip.type = NABTO_IPV4;
-                memcpy(ep.ip.v4.addr, stunEp.addr.v4.addr, 4);
+                ctx->sendEp.ip.type = NABTO_IPV4;
+                memcpy(ctx->sendEp.ip.v4.addr, stunEp.addr.v4.addr, 4);
             } else {
-                ep.ip.type = NABTO_IPV6;
-                memcpy(ep.ip.v6.addr, stunEp.addr.v6.addr, 16);
+                ctx->sendEp.ip.type = NABTO_IPV6;
+                memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
 //            NABTO_LOG_TRACE(LOG, "Sending addr: %u, boost port: {}", boostEp.address(), boostEp.port());
-            nc_udp_dispatch_async_send_to(ctx->priUdp, &ep, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
+            nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
         case STUN_ET_SEND_SECONDARY:
         {
             struct nabto_stun_endpoint stunEp;
-            struct np_udp_endpoint ep;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
                 NABTO_LOG_ERROR(LOG, "get endpoint failed");
@@ -153,17 +158,17 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 nc_stun_resolve_callbacks(ctx);
                 return;
             }
-            ep.port = stunEp.port;
+            ctx->sendEp.port = stunEp.port;
             if (stunEp.addr.type == NABTO_STUN_IPV4) {
-                ep.ip.type = NABTO_IPV4;
-                memcpy(ep.ip.v4.addr, stunEp.addr.v4.addr, 4);
+                ctx->sendEp.ip.type = NABTO_IPV4;
+                memcpy(ctx->sendEp.ip.v4.addr, stunEp.addr.v4.addr, 4);
             } else {
-                ep.ip.type = NABTO_IPV6;
-                memcpy(ep.ip.v6.addr, stunEp.addr.v6.addr, 16);
+                ctx->sendEp.ip.type = NABTO_IPV6;
+                memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
 //            NABTO_LOG_TRACE(LOG, "Sending addr: %u, boost port: {}", boostEp.address(), boostEp.port());
-            nc_udp_dispatch_async_send_to(&ctx->secUdp, &ep, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
+            nc_udp_dispatch_async_send_to(&ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
         case STUN_ET_WAIT:

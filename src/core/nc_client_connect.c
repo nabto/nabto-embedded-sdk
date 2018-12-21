@@ -105,6 +105,8 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
         conn->currentChannel = conn->lastChannel;
     }
 
+    // TODO: fix fingerprint verification, 
+    conn->verified = true;
     if(!conn->verified) {
         if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
             NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
@@ -112,7 +114,13 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
             return;
         }
         uint8_t fp[16];
-        conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+        np_error_code ec2;
+        ec2 = conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+        if (ec2 != NABTO_EC_OK) {
+            NABTO_LOG_ERROR(LOG, "Failed to get fingerprint from DTLS connection");
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            return;
+        }            
         NABTO_LOG_TRACE(LOG, "Retreived FP: ");
         NABTO_LOG_BUF(LOG, fp, 16);
         memcpy(conn->clientFingerprint, fp, 16);
@@ -132,6 +140,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
         case AT_RENDEZVOUS_CONTROL:
         {
             np_udp_endpoint ep; // the endpoint is not used for dtls packets
+            NABTO_LOG_TRACE(LOG, "RECEIVED RENDEZVOUS PACKET");
             nc_rendezvous_handle_packet(&conn->rendezvous, ep, buffer, bufferSize);
             break;
         }
@@ -201,12 +210,12 @@ void nc_client_connect_async_send_to_udp(bool activeChannel,
 
     if (activeChannel) {
         *(start+15) = conn->currentChannel.channelId;
-        nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->currentChannel.ep,
+        nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->sendCtx, &conn->currentChannel.ep,
                                       buffer, bufferSize,
                                       &nc_client_connect_send_to_udp_cb, conn);
     } else {
         *(start+15) = conn->lastChannel.channelId;
-        nc_udp_dispatch_async_send_to(conn->lastChannel.sock, &conn->lastChannel.ep,
+        nc_udp_dispatch_async_send_to(conn->lastChannel.sock, &conn->sendCtx, &conn->lastChannel.ep,
                                       buffer, bufferSize,
                                       &nc_client_connect_send_to_udp_cb, conn);
     }
@@ -230,9 +239,10 @@ np_error_code nc_client_connect_async_send_to_ep(struct nc_client_connection* co
     NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
     
     *(start+15) = 0;
-    nc_udp_dispatch_async_send_to(conn->currentChannel.sock, ep,
+    nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->sendToEpCtx, ep,
                                   buffer, bufferSize,
                                   &nc_client_connect_send_to_ep_cb, conn);
+    return NABTO_EC_OK;
     
 }
 

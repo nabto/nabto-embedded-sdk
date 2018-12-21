@@ -34,6 +34,8 @@ void np_raw_adapter(uint32_t severity, uint32_t module, uint32_t line, const cha
 #endif
 void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
 
+//#define NABTO_LOG_MODULE_FILTER (NABTO_LOG_MODULE_RENDEZVOUS | NABTO_LOG_MODULE_CLIENT_CONNECT)
+
 #ifndef NABTO_LOG_SEVERITY_FILTER
 #define NABTO_LOG_SEVERITY_FILTER     NABTO_LOG_SEVERITY_LEVEL_TRACE
 #endif

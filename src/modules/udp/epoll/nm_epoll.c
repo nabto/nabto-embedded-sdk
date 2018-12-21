@@ -26,15 +26,6 @@ struct nm_epoll_destroyed_ctx {
     struct np_event event;
 };
 
-struct nm_epoll_sent_ctx {
-    np_udp_packet_sent_callback cb;
-    void* data;
-    struct np_event event;
-    struct np_udp_endpoint* ep;
-    np_communication_buffer* buf;
-    uint16_t bufSize;
-};
-
 struct nm_epoll_received_ctx {
     np_udp_packet_received_callback cb;
     void* data;
@@ -46,8 +37,8 @@ struct np_udp_socket {
     bool isIpv6;
     struct nm_epoll_created_ctx created;
     struct nm_epoll_destroyed_ctx des;
-    struct nm_epoll_sent_ctx sent;
     struct nm_epoll_received_ctx recv;
+    bool sending;
 };
 
 static int nm_epoll_fd = -1;
@@ -66,9 +57,7 @@ void nm_epoll_handle_event(np_udp_socket* sock); // consider an np_epoll_event t
  */
 void nm_epoll_async_create(np_udp_socket_created_callback cb, void* data);
 void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data);
-void nm_epoll_async_send_to(np_udp_socket* socket, struct np_udp_endpoint* ep,
-                            np_communication_buffer* buffer, uint16_t bufferSize,
-                            np_udp_packet_sent_callback cb, void* data);
+void nm_epoll_async_send_to(struct np_udp_send_context* ctx);
 void nm_epoll_async_recv_from(np_udp_socket* socket,
                               np_udp_packet_received_callback cb, void* data);
 enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
@@ -80,7 +69,6 @@ void nm_epoll_cancel_all_events(np_udp_socket* sock)
     NABTO_LOG_TRACE(LOG, "Cancelling all events");
     np_event_queue_cancel_event(pl, &sock->created.event);
     np_event_queue_cancel_event(pl, &sock->des.event);
-    np_event_queue_cancel_event(pl, &sock->sent.event);
     np_event_queue_cancel_event(pl, &sock->recv.event);
 }
 
@@ -110,10 +98,10 @@ void nm_epoll_cancel_recv_from(np_udp_socket* socket)
     socket->recv.cb = NULL;
 }
 
-void nm_epoll_cancel_send_to(np_udp_socket* socket)
+void nm_epoll_cancel_send_to(struct np_udp_send_context* ctx)
 {
-    np_event_queue_cancel_event(pl, &socket->sent.event);
-    socket->sent.cb = NULL;
+    np_event_queue_cancel_event(pl, &ctx->ev);
+    ctx->cb = NULL;
 }
 
 void nm_epoll_init(struct np_platform* pl_in) {
@@ -206,7 +194,7 @@ int nm_epoll_wait(uint32_t ms)
         NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
         //exit(1);
     }
-    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
+//    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
     return nfds;
 /*    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
     for (int i = 0; i < nfds; i++) {
@@ -222,7 +210,7 @@ int nm_epoll_wait(uint32_t ms)
 */
 }
 void nm_epoll_handle_event(np_udp_socket* sock) {
-    NABTO_LOG_TRACE(LOG, "handle event with data: %u", sock->des.data);
+    NABTO_LOG_TRACE(LOG, "handle event");
     struct np_udp_endpoint ep;
     ssize_t recvLength;
     uint8_t* start;
@@ -325,6 +313,7 @@ void nm_epoll_async_create(np_udp_socket_created_callback cb, void* data)
     sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
+    sock->sending = false;
     np_event_queue_post(pl, &sock->created.event, &nm_epoll_event_create, sock);
 }
 
@@ -332,8 +321,6 @@ void nm_epoll_async_create(np_udp_socket_created_callback cb, void* data)
 void nm_epoll_event_destroy(void* data)
 {
     np_udp_socket* sock = (np_udp_socket*)data;
-    np_udp_socket_destroyed_callback cb;
-    void* cbData;
     if (sock == NULL) {
         return;
     }
@@ -341,7 +328,7 @@ void nm_epoll_event_destroy(void* data)
     NABTO_LOG_TRACE(LOG, "shutdown with data: %u", sock->des.data);
     return;
     
-    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
+/*    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
         NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
     close(sock->sock);
@@ -350,6 +337,7 @@ void nm_epoll_event_destroy(void* data)
     nm_epoll_cancel_all_events(sock);
     free(sock);
     cb(NABTO_EC_OK, cbData);
+*/
 }
 
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data)
@@ -448,22 +436,24 @@ void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, 
 }
 
 void nm_epoll_event_send_to(void* data){
-    np_udp_socket* sock = (np_udp_socket*)data;
+    struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
+    np_udp_socket* sock = ctx->sock;
     ssize_t res;
-    if (sock->sent.ep->ip.type == NABTO_IPV4) {
+    if (ctx->ep.ip.type == NABTO_IPV4) {
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
-        srv_addr.sin_port = htons (sock->sent.ep->port);
-        memcpy((void*)&srv_addr.sin_addr,sock->sent.ep->ip.v4.addr, sizeof(srv_addr.sin_addr));
-        res = sendto (sock->sock, pl->buf.start(sock->sent.buf), sock->sent.bufSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        srv_addr.sin_port = htons (ctx->ep.port);
+        memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
+        NABTO_LOG_TRACE(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
+        res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6
         struct sockaddr_in6 srv_addr;
         srv_addr.sin6_family = AF_INET6;
         srv_addr.sin6_flowinfo = 0;
         srv_addr.sin6_scope_id = 0;
-        srv_addr.sin6_port = htons (sock->sent.ep->port);
-        memcpy((void*)&srv_addr.sin6_addr,sock->sent.ep->ip.v6.addr, sizeof(srv_addr.sin6_addr));
-        res = sendto (sock->sock, pl->buf.start(sock->sent.buf), sock->sent.bufSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        srv_addr.sin6_port = htons (ctx->ep.port);
+        memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, sizeof(srv_addr.sin6_addr));
+        res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     }
     if (res < 0) {
         int status = errno;
@@ -472,26 +462,48 @@ void nm_epoll_event_send_to(void* data){
             // expected
         } else {
             NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
-            if (sock->sent.cb) {
-                sock->sent.cb(NABTO_EC_FAILED_TO_SEND_PACKET, sock->sent.data);
+            if (ctx->cb) {
+                ctx->cb(NABTO_EC_FAILED_TO_SEND_PACKET, ctx->cbData);
             }
+            sock->sending = false;
             return;
         }
     }
-    if (sock->sent.cb) {
-        sock->sent.cb(NABTO_EC_OK, sock->sent.data);
+    if (ctx->cb) {
+        ctx->cb(NABTO_EC_OK, ctx->cbData);
     }
+    sock->sending = false;
     return;
 }
 
-void nm_epoll_async_send_to(np_udp_socket* socket, struct np_udp_endpoint* ep, np_communication_buffer* buffer, uint16_t bufferSize, np_udp_packet_sent_callback cb, void* data)
+void nm_epoll_retry_send_to(void* data)
 {
-    socket->sent.ep = ep;
-    socket->sent.buf = buffer;
-    socket->sent.bufSize = bufferSize;
-    socket->sent.cb = cb;
-    socket->sent.data = data;
-    np_event_queue_post(pl, &socket->sent.event, nm_epoll_event_send_to, socket);
+    struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
+    if (ctx->sock->sending) {
+        NABTO_LOG_TRACE(LOG, "Already sending, reretrying " PRIip4 " in a bit", MAKE_IPV4_PRINTABLE(ctx->ep.ip.v4.addr));
+        np_event_queue_post(pl, &ctx->ev, nm_epoll_retry_send_to, ctx);
+    } else {
+        NABTO_LOG_TRACE(LOG, "No longer sending, sending now");
+        ctx->sock->sending = true;
+        np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
+    }
+}
+
+void nm_epoll_async_send_to(struct np_udp_send_context* ctx)
+//    np_udp_socket* socket, struct np_udp_endpoint* ep, np_communication_buffer* buffer, uint16_t bufferSize, np_udp_packet_sent_callback cb, void* data)
+{
+    /* socket->sent.ep = ep; */
+    /* socket->sent.buf = buffer; */
+    /* socket->sent.bufSize = bufferSize; */
+    /* socket->sent.cb = cb; */
+    /* socket->sent.data = data; */
+    if (ctx->sock->sending) {
+        NABTO_LOG_TRACE(LOG, "Already sending, retrying in a bit");
+        np_event_queue_post(pl, &ctx->ev, nm_epoll_retry_send_to, ctx);
+    } else {
+        ctx->sock->sending = true;
+        np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
+    }
 }
 
 void nm_epoll_async_recv_from(np_udp_socket* socket,

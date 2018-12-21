@@ -33,7 +33,6 @@ const char* appName = "Weather_app";
 const char* productId = "product";
 const char* deviceId = "a";
 //const char* hostname = "a.devices.dev.nabto.net";
-const char* hostname = "localhost";
 const char* stunHost = "stun.nabto.net";
 
 struct nc_device_context device;
@@ -49,13 +48,19 @@ void nabto_device_init_platform_modules(struct np_platform* pl,
 void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
 {
     NABTO_LOG_ERROR(0, "application event callback eventType: %s", nabto_stream_application_event_type_to_string(eventType));
-    if (eventType == NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY) {
-        size_t readen = 0;
-        size_t written = 0;
-        nabto_stream_read_buffer(stream, buffer, 1500, &readen);
+    size_t readen = 0;
+    size_t written = 0;
+    nabto_stream_status status;
+    status = nabto_stream_read_buffer(stream, buffer, 1500, &readen);
+    if (status == NABTO_STREAM_STATUS_OK) {
         if (readen > 0) {
             nabto_stream_write_buffer(stream, buffer, readen, &written);
             NABTO_LOG_ERROR(0, "application event wrote %u bytes", written);
+        }
+    } else {
+        status = nabto_stream_close(stream);
+        if (status != NABTO_STREAM_STATUS_OK) {
+            nabto_stream_release(stream);
         }
     }
 }
@@ -71,6 +76,12 @@ void stream_listener(struct nabto_stream* incStream, void* data)
 int main() {
     np_error_code ec;
     int nfds;
+    const char* hostname = "localhost";
+    const char* deviceLbHost = getenv("DEVICE_LB_HOST");
+    if (deviceLbHost) {
+        hostname = deviceLbHost;
+    }
+
     nabto_device_init_platform(&pl);
     nabto_device_init_platform_modules(&pl, devicePublicKey, devicePrivateKey);
     // start the core

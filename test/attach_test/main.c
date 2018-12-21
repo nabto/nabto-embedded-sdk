@@ -24,6 +24,7 @@ const char* appVer = "0.0.1";
 const char* appName = "Weather_app";
 //const char* hostname = "a.devices.dev.nabto.net";
 const char* hostname = "localhost";
+const char* stunHost = "stun.nabto.net";
 
 struct nc_attach_parameters attachParams;
 
@@ -106,6 +107,7 @@ void connCreatedCb(const np_error_code ec, void* data) {
         NABTO_LOG_ERROR(0, "udp create failed");
         exit(1);
     }
+    nc_stun_init(&stun, &pl, stunHost, &udp);
     nc_udp_dispatch_set_client_connect_context(&udp, &dispatch);
     nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
 }

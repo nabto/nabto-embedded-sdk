@@ -39,8 +39,10 @@ struct nc_client_connection {
 
     np_dtls_srv_send_callback sentCb;
     void* sentData;
+    struct np_udp_send_context sendCtx;
     nc_client_connect_send_callback sentToEpCb;
     void* sentToEpCbData;
+    struct np_udp_send_context sendToEpCtx;
 
     np_error_code ec;
 };

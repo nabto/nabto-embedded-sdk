@@ -29,6 +29,7 @@ struct np_dtls_srv_connection {
     struct nm_dtls_util_connection_ctx ctx;
     np_dtls_srv_sender sender;
     void* senderData;
+    bool sending;
     bool activeChannel;
 };
 
@@ -108,6 +109,7 @@ np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls
 {
     const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&ctx->ctx.ssl);
     if (!crt) {
+        NABTO_LOG_ERROR(LOG, "Failed to get peer cert from mbedtls");
         return NABTO_EC_FAILED;
     }
     return nm_dtls_util_fp_from_crt(crt, fp);
@@ -127,6 +129,7 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
     (*dtls)->ctx.sslRecvBuf = server.pl->buf.allocate();
     (*dtls)->ctx.sslSendBuffer = server.pl->buf.allocate();
     (*dtls)->activeChannel = true;
+    (*dtls)->sending = true;
 
     NABTO_LOG_TRACE(LOG, "DTLS was allocated at: %u");
 
@@ -309,10 +312,8 @@ np_error_code nm_dtls_srv_cancel_recv_from(struct np_platform* pl, struct np_dtl
     return NABTO_EC_OK;
 }
 
-void nm_dtls_srv_event_close(void* data){
-    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-    nc_keep_alive_stop(server.pl, &ctx->ctx.keepAliveCtx);
-    mbedtls_ssl_close_notify(&ctx->ctx.ssl);
+void nm_dtls_srv_do_close(struct np_dtls_srv_connection* ctx)
+{
     mbedtls_ssl_free( &ctx->ctx.ssl );
     np_dtls_close_callback cb = ctx->ctx.closeCb;
     void* cbData = ctx->ctx.closeCbData;
@@ -328,12 +329,26 @@ void nm_dtls_srv_event_close(void* data){
     }
 }
 
+void nm_dtls_srv_event_close(void* data){
+    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
+    if (ctx->sending) {
+        np_event_queue_post(server.pl, &ctx->ctx.closeEv, &nm_dtls_srv_event_close, ctx);
+        return;
+    }
+    nm_dtls_srv_do_close(ctx);
+}
+        
 np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                       np_dtls_close_callback cb, void* data)
 {
+    if (!ctx || ctx->ctx.state == CLOSING) {
+        return NABTO_EC_OK;
+    }
     ctx->ctx.closeCb = cb;
     ctx->ctx.closeCbData = data;
     ctx->ctx.state = CLOSING;
+    nc_keep_alive_stop(server.pl, &ctx->ctx.keepAliveCtx);
+    mbedtls_ssl_close_notify(&ctx->ctx.ssl);
     np_event_queue_post(server.pl, &ctx->ctx.closeEv, &nm_dtls_srv_event_close, ctx);
     return NABTO_EC_OK;
 }
@@ -437,6 +452,7 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
         NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
+        ctx->sending = true;
         ctx->sender(ctx->activeChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
         ctx->activeChannel = true;
         return bufferSize;
@@ -449,11 +465,12 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Connection Async Send failed with code: %u", ec);
+    if (data == NULL) {
         return;
     }
-    if (data == NULL) {
+    ctx->sending = false;
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Connection Async Send failed with code: %u", ec);
         return;
     }
     ctx->ctx.sslSendBufferSize = 0;
@@ -491,7 +508,7 @@ void nm_dtls_srv_mbedtls_timing_set_delay(void* data, uint32_t intermediateMilli
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (finalMilliseconds == 0) {
-        // disable current timer  
+        // able current timer  
         np_event_queue_cancel_timed_event(server.pl, &ctx->ctx.tEv);
         ctx->ctx.finalTp = 0;
     } else {

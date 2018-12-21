@@ -8,6 +8,7 @@ typedef struct np_udp_socket np_udp_socket;
 #include <platform/np_ip_address.h>
 #include <platform/np_error_code.h>
 #include <platform/np_communication_buffer.h>
+#include <platform/np_event_queue.h>
 
 struct np_platform;
 
@@ -25,6 +26,21 @@ typedef void (*np_udp_packet_received_callback)(const np_error_code ec, struct n
 
 typedef void (*np_udp_socket_destroyed_callback)(const np_error_code ec, void* data);
 
+struct np_udp_send_context {
+    np_udp_socket* sock;
+    struct np_udp_endpoint ep;
+    np_communication_buffer* buffer;
+    uint16_t bufferSize;
+    np_udp_packet_sent_callback cb;
+    void* cbData;
+    struct np_event ev;
+};
+
+void np_udp_populate_send_context(struct np_udp_send_context* ctx, np_udp_socket* sock,
+                                  struct np_udp_endpoint ep,
+                                  np_communication_buffer* buffer, uint16_t bufferSize,
+                                  np_udp_packet_sent_callback cb, void* data);
+
 struct np_udp_module {
     /**
      * Create a udp socket. The socket is bound to an ephemeral port.
@@ -40,9 +56,12 @@ struct np_udp_module {
      * Send packet async. It's the responsibility of the caller to
      * keep the ep and buffer alive until the callback is invoked.
      */
-    void (*async_send_to)(np_udp_socket* socket, struct np_udp_endpoint* ep,
+    void (*async_send_to)(struct np_udp_send_context* ctx);
+/*
+                          np_udp_socket* socket, struct np_udp_endpoint* ep,
                           np_communication_buffer* buffer, uint16_t bufferSize,
                           np_udp_packet_sent_callback cb, void* data);
+*/
 
     /**
      * Receive a packet async. If the socket is broken an error is returned.
@@ -57,7 +76,7 @@ struct np_udp_module {
     /**
      * Cancel previous call to async_send_to
      */
-    void (*cancel_send_to)(np_udp_socket* socket);
+    void (*cancel_send_to)(struct np_udp_send_context* ctx);
     
     /**
      * Get the IP protocol of the socket.

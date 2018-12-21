@@ -105,7 +105,7 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
     } else {
         ec = ctx->pl->dtlsS.get_packet_count(ctx->srv, &recvCount, &sentCount);
     }
-    NABTO_LOG_TRACE(LOG, "lastRecvCount: %u, recvCount: %u, LastSentCount: %u, sentCount: %u", ctx->lastRecvCount, recvCount, ctx->lastSentCount, sentCount);
+//    NABTO_LOG_TRACE(LOG, "lastRecvCount: %u, recvCount: %u, LastSentCount: %u, sentCount: %u", ctx->lastRecvCount, recvCount, ctx->lastSentCount, sentCount);
     if (ec != NABTO_EC_OK) {
         nc_keep_alive_close(ctx, ec);
         return DTLS_ERROR;

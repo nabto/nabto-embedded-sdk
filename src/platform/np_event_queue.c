@@ -121,7 +121,7 @@ void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_e
     }
     struct np_timed_event* current = ev->head;
     struct np_timed_event* next = current->next;
-    NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Trying to cancel timed event");
+//    NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Trying to cancel timed event");
     while(next != NULL) {
         if (next == event) {
             NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Found and canceled timed event");

@@ -47,6 +47,8 @@ struct nc_stun_context {
     struct np_timed_event toEv;
 
     np_communication_buffer* sendBuf;
+    struct np_udp_endpoint sendEp;
+    struct np_udp_send_context sendCtx;
 };
 
 void nc_stun_init(struct nc_stun_context* ctx,
