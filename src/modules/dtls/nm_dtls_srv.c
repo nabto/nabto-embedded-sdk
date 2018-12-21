@@ -20,7 +20,7 @@
 #define NABTO_SSL_RECV_BUFFER_SIZE 4096
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
-#define DEBUG_LEVEL 4
+#define DEBUG_LEVEL 0
 
 const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
