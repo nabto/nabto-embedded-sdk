@@ -160,7 +160,6 @@ void nm_epoll_read(int nfds)
             NABTO_LOG_TRACE(LOG, "epoll event with socket error %x", events[i].events);
             {
                 np_udp_socket* sock = (np_udp_socket*)events[i].data.ptr;
-                NABTO_LOG_TRACE(LOG, "read with data: %u", sock->des.data);
                 np_udp_socket_destroyed_callback cb;
                 void* cbData;
                 cb = sock->des.cb;
@@ -326,10 +325,8 @@ void nm_epoll_event_destroy(void* data)
 
 void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data)
 {
-    NABTO_LOG_TRACE(LOG, "Destroying with data: %u", data);
     socket->des.cb = cb;
     socket->des.data = data;
-    NABTO_LOG_TRACE(LOG, "Destroying with data: %u", socket->des.data);
     np_event_queue_post(pl, &socket->des.event, nm_epoll_event_destroy, socket);
 
 }
@@ -464,10 +461,10 @@ void nm_epoll_retry_send_to(void* data)
 {
     struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
     if (ctx->sock->sending) {
-        NABTO_LOG_TRACE(LOG, "Already sending, reretrying " PRIip4 " in a bit", MAKE_IPV4_PRINTABLE(ctx->ep.ip.v4.addr));
+//        NABTO_LOG_TRACE(LOG, "Already sending, reretrying " PRIip4 " in a bit", MAKE_IPV4_PRINTABLE(ctx->ep.ip.v4.addr));
         np_event_queue_post(pl, &ctx->ev, nm_epoll_retry_send_to, ctx);
     } else {
-        NABTO_LOG_TRACE(LOG, "No longer sending, sending now");
+//        NABTO_LOG_TRACE(LOG, "No longer sending, sending now");
         ctx->sock->sending = true;
         np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
     }
@@ -482,7 +479,7 @@ void nm_epoll_async_send_to(struct np_udp_send_context* ctx)
     /* socket->sent.cb = cb; */
     /* socket->sent.data = data; */
     if (ctx->sock->sending) {
-        NABTO_LOG_TRACE(LOG, "Already sending, retrying in a bit");
+//        NABTO_LOG_TRACE(LOG, "Already sending, retrying in a bit");
         np_event_queue_post(pl, &ctx->ev, nm_epoll_retry_send_to, ctx);
     } else {
         ctx->sock->sending = true;

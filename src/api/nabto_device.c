@@ -64,6 +64,8 @@ void nabto_device_free(NabtoDevice* device)
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     dev->closing = true;
     nm_epoll_close(&dev->pl);
+    pthread_join(dev->networkThread, NULL);
+    pthread_join(dev->coreThread, NULL);
     free(dev);
 }
 
