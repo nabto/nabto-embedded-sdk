@@ -126,6 +126,12 @@ void nm_epoll_init(struct np_platform* pl_in) {
     }
 }
 
+void nm_epoll_close(struct np_platform* pl)
+{
+    close(nm_epoll_fd);
+    pl->buf.free(recv_buf);
+}
+
 enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket)
 {
     if(socket->isIpv6) {
@@ -172,17 +178,7 @@ void nm_epoll_read(int nfds)
 
 int nm_epoll_wait(uint32_t ms)
 {
-//    struct epoll_event events[64];
     int nfds;
-/*    if (np_event_queue_has_timed_event(pl)) {
-        uint32_t ms = np_event_queue_next_timed_event_occurance(pl);
-        NABTO_LOG_TRACE(LOG, "Found timed events, epoll waits for %u ms", ms);
-        nfds = epoll_wait(nm_epoll_fd, events, 64, ms);
-    } else {
-        NABTO_LOG_TRACE(LOG, "no timed events, epoll waits forever");
-        nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
-    }
-*/
     if (ms == 0) {
 //        NABTO_LOG_TRACE(LOG, "epoll waits forever");
         nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
@@ -192,23 +188,11 @@ int nm_epoll_wait(uint32_t ms)
     }
     if (nfds < 0) {
         NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
-        //exit(1);
     }
 //    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
     return nfds;
-/*    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
-    for (int i = 0; i < nfds; i++) {
-        if((events[i].events & EPOLLERR) ||
-           (events[i].events & EPOLLHUP) ||
-           (!(events[i].events & EPOLLIN))) {
-            NABTO_LOG_TRACE(LOG, "epoll event with socket error %x", events[i].events);
-            continue;
-        }
-        np_udp_socket* sock = (np_udp_socket*)events[i].data.ptr;
-        nm_epoll_handle_event(sock);
-    }
-*/
 }
+
 void nm_epoll_handle_event(np_udp_socket* sock) {
     NABTO_LOG_TRACE(LOG, "handle event");
     struct np_udp_endpoint ep;

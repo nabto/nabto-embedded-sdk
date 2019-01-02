@@ -13,6 +13,7 @@ void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
         nc_device_close_callback cb = dev->closeCb;
         dev->closeCb = NULL;
         cb(ec, dev->closeCbData);
+        return;
     }
 }
 

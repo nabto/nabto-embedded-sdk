@@ -61,7 +61,10 @@ NabtoDevice* nabto_device_new()
 
 void nabto_device_free(NabtoDevice* device)
 {
-    free((struct nabto_device_context*)device);
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    dev->closing = true;
+    nm_epoll_close(&dev->pl);
+    free(dev);
 }
 
 
@@ -240,9 +243,9 @@ void nabto_device_close_cb(const np_error_code ec, void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     NABTO_LOG_ERROR(LOG, "nc_device_close callback");
-    dev->closing = true;
+//    dev->closing = true;
     nabto_api_future_set_error_code(dev->closeFut, ec);
-    nabto_api_future_queue_post(dev->queueHead, dev->closeFut);
+    nabto_api_future_queue_post(&dev->queueHead, dev->closeFut);
 }
 
 NabtoDeviceFuture* nabto_device_close(NabtoDevice* device)
@@ -266,10 +269,10 @@ void* nabto_device_network_thread(void* data)
         pthread_mutex_lock(&dev->eventMutex);
         if (nfds > 0) {
             nm_epoll_read(nfds);
-            pthread_cond_signal(&dev->eventCond);
         }
+        pthread_cond_signal(&dev->eventCond);
         if (dev->closing) {
-            pthread_cond_signal(&dev->eventCond);
+            pthread_mutex_unlock(&dev->eventMutex);
             return NULL;
         }
         pthread_mutex_unlock(&dev->eventMutex);
@@ -317,5 +320,5 @@ void* nabto_device_core_thread(void* data)
 
 void nabto_device_post_future(NabtoDevice* device, NabtoDeviceFuture* fut) {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    nabto_api_future_queue_post(dev->queueHead, fut);
+    nabto_api_future_queue_post(&dev->queueHead, fut);
 }

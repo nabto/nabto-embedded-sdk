@@ -21,10 +21,10 @@ void nabto_api_future_queue_execute_all(NabtoDeviceFuture* queue)
     
 }
 
-void nabto_api_future_queue_post(NabtoDeviceFuture* queue, NabtoDeviceFuture* future)
+void nabto_api_future_queue_post(NabtoDeviceFuture** queue, NabtoDeviceFuture* future)
 {
-    struct nabto_device_future* head = (struct nabto_device_future*) queue;
+    struct nabto_device_future** head = (struct nabto_device_future**) queue;
     struct nabto_device_future* fut = (struct nabto_device_future*) future;
-    fut->next = head;
-    head = fut;
+    fut->next = *head;
+    *head = fut;
 }

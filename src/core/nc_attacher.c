@@ -486,6 +486,7 @@ np_error_code nc_attacher_detach(struct nc_attach_context* ctx)
             break;
 
     }
+    return NABTO_EC_OK;
 }
 
 /**
