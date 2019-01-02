@@ -471,13 +471,7 @@ void nm_epoll_retry_send_to(void* data)
 }
 
 void nm_epoll_async_send_to(struct np_udp_send_context* ctx)
-//    np_udp_socket* socket, struct np_udp_endpoint* ep, np_communication_buffer* buffer, uint16_t bufferSize, np_udp_packet_sent_callback cb, void* data)
 {
-    /* socket->sent.ep = ep; */
-    /* socket->sent.buf = buffer; */
-    /* socket->sent.bufSize = bufferSize; */
-    /* socket->sent.cb = cb; */
-    /* socket->sent.data = data; */
     if (ctx->sock->sending) {
 //        NABTO_LOG_TRACE(LOG, "Already sending, retrying in a bit");
         np_event_queue_post(pl, &ctx->ev, nm_epoll_retry_send_to, ctx);

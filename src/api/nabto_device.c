@@ -43,6 +43,11 @@ struct nabto_device_context {
     NabtoDeviceFuture* closeFut;
 };
 
+struct  nabto_device_stream {
+    struct nabto_stream* stream;
+    NabtoDeviceFuture fut;
+}
+
 void* nabto_device_network_thread(void* data);
 void* nabto_device_core_thread(void* data);
 void nabto_device_init_platform(struct np_platform* pl);
@@ -50,6 +55,9 @@ void nabto_device_init_platform_modules(struct np_platform* pl, const char* devi
 void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const np_error_code ec);
 NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev);
 
+/**
+ * Allocate new device
+ */
 NabtoDevice* nabto_device_new()
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
@@ -59,6 +67,9 @@ NabtoDevice* nabto_device_new()
     return (NabtoDevice*)dev;
 }
 
+/**
+ * free device when closed
+ */
 void nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -69,7 +80,9 @@ void nabto_device_free(NabtoDevice* device)
     free(dev);
 }
 
-
+/**
+ * Self explanetory set functions
+ */
 NabtoDeviceError nabto_device_set_product_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -187,6 +200,9 @@ NabtoDeviceError nabto_device_experimental_get_local_port(NabtoDevice* device, u
     return NABTO_EC_OK;
 }
 
+/**
+ * Starting the device
+ */
 NabtoDeviceError nabto_device_start(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -241,11 +257,13 @@ NabtoDeviceError nabto_device_start(NabtoDevice* device)
      
 }
 
+
+/**
+ * Closing the device
+ */
 void nabto_device_close_cb(const np_error_code ec, void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
-    NABTO_LOG_ERROR(LOG, "nc_device_close callback");
-//    dev->closing = true;
     nabto_api_future_set_error_code(dev->closeFut, ec);
     nabto_api_future_queue_post(&dev->queueHead, dev->closeFut);
 }
@@ -258,10 +276,62 @@ NabtoDeviceFuture* nabto_device_close(NabtoDevice* device)
     dev->closeFut = fut;
     nc_device_close(&dev->core, &nabto_device_close_cb, dev);
     pthread_mutex_unlock(&dev->eventMutex);
-    NABTO_LOG_ERROR(LOG, "nc_device_close returned");
     return fut;
 }
 
+
+/*******************************************
+ * Streaming Api
+ *******************************************/
+
+NabtoDeviceFuture* nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream)
+{
+
+}
+
+void nabto_device_stream_free(NabtoDeviceStream* stream)
+{
+
+}
+
+NabtoDeviceFuture* nabto_device_stream_accept(NabtoDeviceStream* stream)
+{
+
+}
+
+NabtoDeviceFuture* nabto_device_stream_read_all(NabtoDeviceStream* stream,
+                                                void* buffer, size_t bufferLength,
+                                                size_t* readLength)
+{
+
+}
+
+NabtoDeviceFuture* nabto_device_stream_read_some(NabtoDeviceStream* stream,
+                                                 void* buffer, size_t bufferLength,
+                                                 size_t* readLength)
+{
+
+}
+
+NabtoDeviceFuture* nabto_device_stream_write(NabtoDeviceStream* stream,
+                                             const void* buffer, size_t bufferLength)
+{
+
+}
+
+NabtoDeviceFuture* nabto_device_stream_close(NabtoDeviceStream* stream)
+{
+
+}
+
+/*******************************************
+ * Streaming Api End
+ *******************************************/
+
+
+/*
+ * Thread running the network
+ */
 void* nabto_device_network_thread(void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
@@ -282,6 +352,9 @@ void* nabto_device_network_thread(void* data)
     return NULL;
 }
 
+/*
+ * Thread running the core
+ */
 void* nabto_device_core_thread(void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
@@ -320,6 +393,9 @@ void* nabto_device_core_thread(void* data)
     return NULL;
 }
 
+/*
+ * Posting futures for resolving on the future queue
+ */
 void nabto_device_post_future(NabtoDevice* device, NabtoDeviceFuture* fut) {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_api_future_queue_post(&dev->queueHead, fut);
