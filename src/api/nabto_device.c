@@ -45,8 +45,8 @@ struct nabto_device_context {
 
 struct  nabto_device_stream {
     struct nabto_stream* stream;
-    NabtoDeviceFuture fut;
-}
+    NabtoDeviceFuture* fut;
+};
 
 void* nabto_device_network_thread(void* data);
 void* nabto_device_core_thread(void* data);
