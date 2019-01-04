@@ -42,6 +42,17 @@ void nc_stream_log(const char* file, int line, enum nabto_stream_log_level level
     }
 }
 
+np_error_code nc_stream_status_to_ec(nabto_stream_status status)
+{
+    switch(status) {
+        case NABTO_STREAM_STATUS_OK: return NABTO_EC_OK;
+        case NABTO_STREAM_STATUS_CLOSED: return NABTO_EC_STREAM_CLOSED;
+        case NABTO_STREAM_STATUS_EOF: return NABTO_EC_STREAM_EOF;
+        case NABTO_STREAM_STATUS_ABORTED: return NABTO_EC_ABORTED;
+        default: return NABTO_EC_FAILED;
+    }
+}
+
 void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager)
 {
     nc_stream_module.get_stamp = pl->ts.now_ms;

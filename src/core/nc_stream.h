@@ -34,4 +34,6 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 
+np_error_code nc_stream_status_to_ec(nabto_stream_status status);
+
 #endif // NC_STREAM_H

@@ -4,17 +4,17 @@
 
 #include <platform/np_logging.h>
 
-void nabto_api_future_queue_execute_all(NabtoDeviceFuture* queue)
+void nabto_api_future_queue_execute_all(NabtoDeviceFuture** queue)
 {
-    struct nabto_device_future* head = (struct nabto_device_future*) queue;
+    struct nabto_device_future** head = (struct nabto_device_future**)queue;
     struct nabto_device_future* elm;
     NABTO_LOG_TRACE(NABTO_LOG_MODULE_API, "executing future callbacks. Head: %u", head); 
-    if (head == NULL ) {
+    if (*head == NULL ) {
         return;
     }
-    while (head != NULL) {
-        elm = head;
-        head = head->next;
+    while (*head != NULL) {
+        elm = *head;
+        *head = (*head)->next;
         nabto_device_future_resolve((NabtoDeviceFuture* )elm);
         //elm->cb(elm->ec, elm->cbData);
     }

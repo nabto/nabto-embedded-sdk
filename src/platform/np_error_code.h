@@ -23,7 +23,11 @@ typedef enum {
     NABTO_EC_KEEP_ALIVE_TIMEOUT,
     NABTO_EC_SEND_IN_PROGRESS,
     NABTO_EC_API_FUTURE_NOT_READY,
-    NABTO_EC_NO_VALID_ENDPOINTS
+    NABTO_EC_NO_VALID_ENDPOINTS,
+    NABTO_EC_OPERATION_IN_PROGRESS,
+    NABTO_EC_ABORTED,
+    NABTO_EC_STREAM_CLOSED,
+    NABTO_EC_STREAM_EOF
 } np_error_code;
 
 const char* np_error_code_to_string(np_error_code ec);

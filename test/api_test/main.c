@@ -30,13 +30,43 @@ const char* hostname = "localhost";
 int main()
 {
     NabtoDevice* dev = nabto_device_new();
+    NabtoDeviceStream* stream;
+    uint8_t buf[1500];
+    size_t readen;
 
     nabto_device_set_public_key(dev, (const char*)devicePublicKey);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, hostname);
     nabto_device_start(dev);
+
+    NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, &stream);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+
+    fut = nabto_device_stream_accept(stream);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+
+    fut = nabto_device_stream_read_some(stream, buf, 1500, &readen);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+    NABTO_LOG_INFO(0, "read %u bytes into buf:", readen);
+    NABTO_LOG_BUF(0, buf, readen);
+
+    fut = nabto_device_stream_write(stream, buf, readen);
+    if (fut == NULL) {
+        NABTO_LOG_ERROR(0, "Write returned NULL future");
+    } else {
+        nabto_device_future_wait(fut);
+        nabto_device_future_free(fut);
+    }
+    
+    fut = nabto_device_stream_close(stream);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+    
     sleep(1);
-    NabtoDeviceFuture* fut = nabto_device_close(dev);
+    fut = nabto_device_close(dev);
     nabto_device_future_wait(fut);
     if (nabto_device_future_error_code(fut) == NABTO_EC_OK) {
         NABTO_LOG_INFO(0, "Close OK");
