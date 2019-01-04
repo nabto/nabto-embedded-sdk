@@ -43,9 +43,15 @@ struct nabto_device_context {
     NabtoDeviceFuture* closeFut;
 };
 
-struct  nabto_device_stream {
+struct nabto_device_stream {
     struct nabto_stream* stream;
-    NabtoDeviceFuture* fut;
+    NabtoDeviceFuture* acceptFut;
+    NabtoDeviceFuture* listenFut;
+    NabtoDeviceFuture* readSomeFut;
+    NabtoDeviceFuture* readAllFut;
+    NabtoDeviceFuture* writeFut;
+    NabtoDeviceFuture* closeFut;
+    struct nabto_device_context* dev;
 };
 
 void* nabto_device_network_thread(void* data);
@@ -284,25 +290,38 @@ NabtoDeviceFuture* nabto_device_close(NabtoDevice* device)
  * Streaming Api
  *******************************************/
 
+void nabto_device_stream_listener_callback(struct nabto_stream* stream, void* data);
+void nabto_device_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
+
 NabtoDeviceFuture* nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream)
 {
-
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct nabto_device_stream* str = (struct nabto_device_stream*)malloc(sizeof(struct nabto_device_stream));
+    *stream = (NabtoDeviceStream*)str;
+    str->listenFut = nabto_device_future_new(device);
+    str->dev = dev;
+    nc_stream_manager_set_listener(&dev->core.streamManager, &nabto_device_stream_listener_callback, str);
 }
 
 void nabto_device_stream_free(NabtoDeviceStream* stream)
 {
-
+    // nabto_stream_reset();
+    free(stream);
 }
 
 NabtoDeviceFuture* nabto_device_stream_accept(NabtoDeviceStream* stream)
 {
-
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    str->acceptFut = nabto_device_future_new((NabtoDevice*)str->dev);
+    nabto_stream_set_application_event_callback(str->stream, &nabto_device_stream_application_event_callback, str);
+    nabto_stream_accept(str->stream);
 }
 
 NabtoDeviceFuture* nabto_device_stream_read_all(NabtoDeviceStream* stream,
                                                 void* buffer, size_t bufferLength,
                                                 size_t* readLength)
 {
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
 }
 
@@ -310,22 +329,73 @@ NabtoDeviceFuture* nabto_device_stream_read_some(NabtoDeviceStream* stream,
                                                  void* buffer, size_t bufferLength,
                                                  size_t* readLength)
 {
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
 }
 
 NabtoDeviceFuture* nabto_device_stream_write(NabtoDeviceStream* stream,
                                              const void* buffer, size_t bufferLength)
 {
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
 }
 
 NabtoDeviceFuture* nabto_device_stream_close(NabtoDeviceStream* stream)
 {
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
 }
 
 /*******************************************
- * Streaming Api End
+ * Streaming Api End impl Start
+ *******************************************/
+
+void nabto_device_stream_listener_callback(struct nabto_stream* stream, void* data)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)data;
+    str->stream = stream;
+    nabto_api_future_set_error_code(str->listenFut, NABTO_EC_OK);
+    nabto_api_future_queue_post(&str->dev->queueHead, str->listenFut);
+}
+void nabto_device_stream_read(struct nabto_device_stream* str)
+{
+
+}
+
+void nabto_device_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)data;
+    switch(eventType) {
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_OPENED:
+            if (str->acceptFut) {
+                nabto_api_future_set_error_code(str->acceptFut, NABTO_EC_OK);
+                nabto_api_future_queue_post(&str->dev->queueHead, str->acceptFut);
+                str->acceptFut = NULL;
+            }
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY:
+            nabto_device_stream_read(str);
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_WRITE:
+            if (str->writeFut) {
+                nabto_api_future_set_error_code(str->writeFut, NABTO_EC_OK);
+                nabto_api_future_queue_post(&str->dev->queueHead, str->writeFut);
+                str->writeFut = NULL;
+            }
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_READ_CLOSED:
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_WRITE_CLOSED:
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_CLOSED:
+            break;
+        default:
+            NABTO_LOG_ERROR(LOG, "Unknown stream application event type %s", nabto_stream_application_event_type_to_string(eventType));
+    }
+}
+
+/*******************************************
+ * Streaming impl End
  *******************************************/
 
 
