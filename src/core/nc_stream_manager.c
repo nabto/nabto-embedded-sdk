@@ -14,7 +14,7 @@
 
 //struct nc_stream_manager_context ctx;
 
-struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId);
+struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_client_connection* conn);
 struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
 void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data);
@@ -53,7 +53,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     ptr += streamIdLen; // skip stream ID
     flags = *ptr;
 
-    stream = nc_stream_manager_find_stream(ctx, streamId);
+    stream = nc_stream_manager_find_stream(ctx, streamId, conn);
     
     if (stream == NULL && flags == NABTO_STREAM_FLAG_SYN) {
         stream = nc_stream_manager_accept_stream(ctx, conn, streamId);
@@ -81,11 +81,24 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
     return;
 }
 
-struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId)
+void nc_stream_manager_close_stream(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream)
 {
     int i = 0;
     for (i = 0; i < NABTO_MAX_STREAMS; i++) {
-        if (ctx->streams[i].streamId == streamId) {
+        if (&ctx->streams[i] == stream) {
+            //memset(&ctx->streams[i], 0, sizeof(struct nc_stream_context));
+            ctx->streams[i].streamId = 0;
+            ctx->streamConns[i] = NULL;
+            return;
+        }
+    }
+}
+
+struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_client_connection* conn)
+{
+    int i = 0;
+    for (i = 0; i < NABTO_MAX_STREAMS; i++) {
+        if (ctx->streams[i].streamId == streamId && ctx->streamConns[i] == conn) {
             return &ctx->streams[i];
         }
     }
@@ -101,6 +114,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         for (i = 0; i < NABTO_MAX_STREAMS; i++) {
             if (ctx->streams[i].active == false) {
                 nc_stream_init(ctx->pl, &ctx->streams[i], streamId, nc_client_connect_get_dtls_connection(conn), ctx);
+                ctx->streamConns[i] = conn;
                 return &ctx->streams[i];
             }
         }

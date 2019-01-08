@@ -97,12 +97,13 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
         return NABTO_EC_FAILED;
     }
     if (ctx->state == NC_STUN_STATE_RUNNING) {
+        NABTO_LOG_INFO(LOG, "Stun already running, adding callback");
         return NABTO_EC_OK;
     }
-    if (ctx->state == NC_STUN_STATE_DONE) {
+    /*if (ctx->state == NC_STUN_STATE_DONE) {
         np_event_queue_post(ctx->pl, &ctx->resultEv, &nc_stun_resolve_callbacks, ctx);
         return NABTO_EC_OK;
-    }
+        }*/
     ctx->state = NC_STUN_STATE_RUNNING;
     nc_udp_dispatch_async_create(&ctx->secUdp, ctx->pl, &nc_stun_udp_created_cb, ctx);
     return NABTO_EC_OK;
@@ -114,6 +115,7 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            np_communication_buffer* buffer,
                            uint16_t bufferSize)
 {
+    NABTO_LOG_INFO(LOG, "Stun handling packet");
     nabto_stun_handle_packet(&ctx->stun, ctx->pl->buf.start(buffer), bufferSize);
     nc_stun_event(ctx);
 
@@ -144,7 +146,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-//            NABTO_LOG_TRACE(LOG, "Sending addr: %u, boost port: {}", boostEp.address(), boostEp.port());
+            NABTO_LOG_INFO(LOG, "Sending stun packet");
             nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
@@ -167,7 +169,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-//            NABTO_LOG_TRACE(LOG, "Sending addr: %u, boost port: {}", boostEp.address(), boostEp.port());
+            NABTO_LOG_INFO(LOG, "Sending stun packet");
             nc_udp_dispatch_async_send_to(&ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
@@ -182,6 +184,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
             NABTO_LOG_TRACE(LOG, "event state: STUN_ET_NO_EVENT");
             break;
         case STUN_ET_COMPLETED:
+            ctx->state = NC_STUN_STATE_DONE;
             ctx->ec = NABTO_EC_OK;
             ctx->res = nabto_stun_get_result(&ctx->stun);
             nc_stun_resolve_callbacks(ctx);

@@ -100,13 +100,14 @@ NabtoDeviceError nabto_device_future_resolve(NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     fut->ready = true;
-    if(fut->cb != NULL) {
-        fut->cb(fut->ec, fut->cbData);
-    }
     NABTO_LOG_TRACE(LOG, "signalling future condition");
-    pthread_mutex_lock(&fut->mutex);
-    pthread_cond_signal(&fut->cond);
-    pthread_mutex_unlock(&fut->mutex);
+    if(fut->cb != NULL) {
+        fut->cb(future, fut->ec, fut->cbData);
+    } else {
+        pthread_mutex_lock(&fut->mutex);
+        pthread_cond_signal(&fut->cond);
+        pthread_mutex_unlock(&fut->mutex);
+    }
 }
 
 void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const np_error_code ec)

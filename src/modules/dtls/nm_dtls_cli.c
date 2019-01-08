@@ -305,9 +305,14 @@ void nm_dtls_event_send_to(void* data)
         cb(NABTO_EC_MALFORMED_PACKET, ctx->ctx.sendCbData);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         // should not be possible.
+//        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_write returned with error: %i", ret);
+//        nm_dtls_event_do_one(ctx);
+//        np_event_queue_post(ctx->pl, &ctx->ctx.sendEv, &nm_dtls_event_send_to, ctx);
+//        return;
         cb(NABTO_EC_FAILED, ctx->ctx.sendCbData);
     } else if (ret < 0) {
         // unknown error
+        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_write returned with error: %i", ret);
         cb(NABTO_EC_FAILED, ctx->ctx.sendCbData);
     } else {
         ctx->ctx.sentCount++;
@@ -407,7 +412,7 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
 np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_cli_context* ctx,
                                    np_communication_buffer* buffer, uint16_t bufferSize)
 {
-    NABTO_LOG_INFO(LOG, "connection data received callback");
+    NABTO_LOG_TRACE(LOG, "connection data received callback");
     memcpy(ctx->ctx.recvBuffer, ctx->pl->buf.start(buffer), bufferSize);
     ctx->ctx.recvBufferSize = bufferSize;
     nm_dtls_event_do_one(ctx);
@@ -434,6 +439,7 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if (ctx->ctx.sslSendBufferSize == 0) {
+        NABTO_LOG_INFO(LOG, "mbedtls wants send, sending state: %u", ctx->sending);
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
 //        NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
@@ -453,13 +459,13 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if (ctx->ctx.recvBufferSize == 0) {
-        NABTO_LOG_INFO(LOG, "Empty buffer, returning WANT_READ");
+        NABTO_LOG_TRACE(LOG, "Empty buffer, returning WANT_READ");
         return MBEDTLS_ERR_SSL_WANT_READ;
     } else {
         NABTO_LOG_TRACE(LOG, "mbtls wants read %u bytes into buffersize: %u", ctx->ctx.recvBufferSize, bufferSize);
         size_t maxCp = bufferSize > ctx->ctx.recvBufferSize ? ctx->ctx.recvBufferSize : bufferSize;
         memcpy(buffer, ctx->ctx.recvBuffer, maxCp);
-        NABTO_LOG_INFO(LOG, "returning %i bytes to mbedtls:", maxCp);
+        NABTO_LOG_TRACE(LOG, "returning %i bytes to mbedtls:", maxCp);
 //        NABTO_LOG_BUF(LOG, buffer, maxCp);
         ctx->ctx.recvBufferSize = 0;
         return maxCp;

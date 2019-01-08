@@ -22,7 +22,8 @@ const unsigned char devicePublicKey[] =
 "XndF4oYF4h6yysELSJfuiamVURjo+KcM1ixwAWo=\r\n"
 "-----END CERTIFICATE-----\r\n";
 
-const char* hostname = "localhost";
+//const char* hostname = "localhost";
+const char* hostname = "a.devices.dev.nabto.net";
 #include <pthread.h>
 #include <platform/np_logging.h>
 #include <unistd.h>

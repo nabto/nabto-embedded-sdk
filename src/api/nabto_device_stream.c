@@ -26,10 +26,15 @@ void nabto_device_stream_resolve_read(struct nabto_device_stream* str, np_error_
 void nabto_device_stream_listener_callback(struct nabto_stream* stream, void* data)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)data;
+    NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", str->listenFut);
     str->stream = stream;
-    nabto_api_future_set_error_code(str->listenFut, NABTO_EC_OK);
-    nabto_api_future_queue_post(&str->dev->queueHead, str->listenFut);
-    str->listenFut = NULL;
+    if (str->listenFut) {
+        nabto_api_future_set_error_code(str->listenFut, NABTO_EC_OK);
+        nabto_api_future_queue_post(&str->dev->queueHead, str->listenFut);
+        str->listenFut = NULL;
+    } else {
+        NABTO_LOG_INFO(LOG, "stream_listener had no listen future");
+    }
 }
 void nabto_device_stream_do_read(struct nabto_device_stream* str)
 {

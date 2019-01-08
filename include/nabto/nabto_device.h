@@ -298,7 +298,7 @@ nabto_device_stream_close(NabtoDeviceStream* stream);
 /**
  * Callback function for resolving futures.
  */
-typedef void (*NabtoDeviceFutureCallback)(NabtoDeviceError err, void* data);
+typedef void (*NabtoDeviceFutureCallback)(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data);
 
 /**
  * Free a future.

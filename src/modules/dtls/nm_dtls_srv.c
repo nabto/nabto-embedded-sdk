@@ -486,13 +486,13 @@ int nm_dtls_srv_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSiz
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->ctx.recvBufferSize == 0) {
-        NABTO_LOG_INFO(LOG, "Empty buffer, returning WANT_READ");
+        NABTO_LOG_TRACE(LOG, "Empty buffer, returning WANT_READ");
         return MBEDTLS_ERR_SSL_WANT_READ;
     } else {
         NABTO_LOG_TRACE(LOG, "mbtls wants read %u bytes into buffersize: %u", ctx->ctx.recvBufferSize, bufferSize);
         size_t maxCp = bufferSize > ctx->ctx.recvBufferSize ? ctx->ctx.recvBufferSize : bufferSize;
         memcpy(buffer, ctx->ctx.recvBuffer, maxCp);
-        NABTO_LOG_INFO(LOG, "returning %i bytes to mbedtls:", maxCp);
+        NABTO_LOG_TRACE(LOG, "returning %i bytes to mbedtls:", maxCp);
 //        NABTO_LOG_BUF(LOG, buffer, maxCp);
         ctx->ctx.recvBufferSize = 0;
         return maxCp;

@@ -51,19 +51,6 @@ struct epoll_event events[64];
  */
 void nm_epoll_handle_event(np_udp_socket* sock); // consider an np_epoll_event type instead of reusing the socket structure
 
-/**
- * async functions implementing epoll functionallity for the udp
- * interface of <platform/udp.h> used in the np_platform.
- */
-void nm_epoll_async_create(np_udp_socket_created_callback cb, void* data);
-void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data);
-void nm_epoll_async_send_to(struct np_udp_send_context* ctx);
-void nm_epoll_async_recv_from(np_udp_socket* socket,
-                              np_udp_packet_received_callback cb, void* data);
-enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
-uint16_t nm_epoll_get_local_port(np_udp_socket* socket);
-void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
-
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
 {
     NABTO_LOG_TRACE(LOG, "Cancelling all events");
@@ -100,7 +87,7 @@ void nm_epoll_cancel_recv_from(np_udp_socket* socket)
 
 void nm_epoll_cancel_send_to(struct np_udp_send_context* ctx)
 {
-    np_event_queue_cancel_event(pl, &ctx->ev);
+    np_event_queue_cancel_timed_event(pl, &ctx->ev);
     ctx->cb = NULL;
 }
 
@@ -175,16 +162,23 @@ void nm_epoll_read(int nfds)
     }
 }
 
-int nm_epoll_wait(uint32_t ms)
+int nm_epoll_timed_wait(uint32_t ms)
 {
     int nfds;
-    if (ms == 0) {
-//        NABTO_LOG_TRACE(LOG, "epoll waits forever");
-        nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
-    } else {
-//        NABTO_LOG_TRACE(LOG, "waits for %u ms", ms);
-        nfds = epoll_wait(nm_epoll_fd, events, 64, ms);
+//    NABTO_LOG_TRACE(LOG, "waits for %u ms", ms);
+    nfds = epoll_wait(nm_epoll_fd, events, 64, ms);
+    if (nfds < 0) {
+        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
     }
+//    NABTO_LOG_TRACE(LOG, "epoll_wait returned with %i file descriptors", nfds);
+    return nfds;
+}
+
+int nm_epoll_inf_wait()
+{
+    int nfds;
+//        NABTO_LOG_TRACE(LOG, "epoll waits forever");
+    nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
     if (nfds < 0) {
         NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
     }
@@ -457,27 +451,27 @@ void nm_epoll_event_send_to(void* data){
     return;
 }
 
-void nm_epoll_retry_send_to(void* data)
+void nm_epoll_retry_send_to(np_error_code ec, void* data)
 {
     struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
     if (ctx->sock->sending) {
-//        NABTO_LOG_TRACE(LOG, "Already sending, reretrying " PRIip4 " in a bit", MAKE_IPV4_PRINTABLE(ctx->ep.ip.v4.addr));
-        np_event_queue_post(pl, &ctx->ev, nm_epoll_retry_send_to, ctx);
+        NABTO_LOG_TRACE(LOG, "Already sending, reretrying " PRIip4 " in a bit", MAKE_IPV4_PRINTABLE(ctx->ep.ip.v4.addr));
+        np_event_queue_post_timed_event(pl, &ctx->ev, 1, nm_epoll_retry_send_to, ctx);
     } else {
-//        NABTO_LOG_TRACE(LOG, "No longer sending, sending now");
+        NABTO_LOG_TRACE(LOG, "No longer sending, sending now");
         ctx->sock->sending = true;
-        np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
+        np_event_queue_post(pl, &ctx->ev2, nm_epoll_event_send_to, ctx);
     }
 }
 
 void nm_epoll_async_send_to(struct np_udp_send_context* ctx)
 {
     if (ctx->sock->sending) {
-//        NABTO_LOG_TRACE(LOG, "Already sending, retrying in a bit");
-        np_event_queue_post(pl, &ctx->ev, nm_epoll_retry_send_to, ctx);
+        NABTO_LOG_TRACE(LOG, "Already sending, retrying in a bit");
+        np_event_queue_post_timed_event(pl, &ctx->ev, 1, nm_epoll_retry_send_to, ctx);
     } else {
         ctx->sock->sending = true;
-        np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
+        np_event_queue_post(pl, &ctx->ev2, nm_epoll_event_send_to, ctx);
     }
 }
 

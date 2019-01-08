@@ -523,7 +523,7 @@ void nc_attacher_lb_dtls_send_cb(const np_error_code ec, void* data) {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     NABTO_LOG_TRACE(LOG, "dtlsSendCb invoked");
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_TRACE(LOG, "Failed to send attach dispatcher request");
+        NABTO_LOG_TRACE(LOG, "Failed to send attach dispatcher request: %s", np_error_code_to_string(ec));
         ctx->cb(ec, ctx->cbData);
         return;
     }

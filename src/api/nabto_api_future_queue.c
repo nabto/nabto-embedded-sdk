@@ -8,7 +8,7 @@ void nabto_api_future_queue_execute_all(NabtoDeviceFuture** queue)
 {
     struct nabto_device_future** head = (struct nabto_device_future**)queue;
     struct nabto_device_future* elm;
-    NABTO_LOG_TRACE(NABTO_LOG_MODULE_API, "executing future callbacks. Head: %u", head); 
+    NABTO_LOG_TRACE(NABTO_LOG_MODULE_API, "executing future callbacks. Head: %u", *head); 
     if (*head == NULL ) {
         return;
     }
