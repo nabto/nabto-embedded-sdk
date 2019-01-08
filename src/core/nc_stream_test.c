@@ -171,9 +171,9 @@ void nc_stream_test_syn_ack()
 
     while(
         np_event_queue_has_ready_event(&ctx.cliPl) ||
-        np_event_queue_has_ready_event(&ctx.devPl) ||
-        np_event_queue_has_timed_event(&ctx.cliPl) ||
-        np_event_queue_has_timed_event(&ctx.devPl)
+        np_event_queue_has_ready_event(&ctx.devPl) //||
+//        np_event_queue_has_timed_event(&ctx.cliPl) ||
+//        np_event_queue_has_timed_event(&ctx.devPl)
         ) {
         
         np_event_queue_execute_all(&ctx.cliPl);
