@@ -11,11 +11,13 @@
 struct np_platform pl;
 np_udp_socket* sock;
 np_udp_socket* sock2;
+np_udp_socket* sock3;
 struct np_udp_send_context sendCtx1;
 struct np_udp_send_context sendCtx2;
 uint32_t counter = 0;
 
 void sockSendCtx1(np_udp_packet_sent_callback cb);
+void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data);
 
 void sendCb1(const np_error_code ec, void* data)
 {
@@ -66,6 +68,22 @@ void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
     nm_epoll_async_bind_port(4242, &sock2Created, NULL);
 }
 
+void sock3DestroyedCb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_INFO(0, "socket3 destroyed");
+    if (counter >= 100) {
+        return;
+    }
+    nm_epoll_async_create(&sock3Created, NULL);
+}
+
+void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data)
+{
+    NABTO_LOG_INFO(0, "socket3 created");
+    sock3 = socket;
+    nm_epoll_async_destroy(sock3, &sock3DestroyedCb, NULL);
+}
+
 int main()
 {
     int nfds;
@@ -79,6 +97,7 @@ int main()
     sendCtx1.buffer = pl.buf.allocate();
     sendCtx2.buffer = pl.buf.allocate();
     nm_epoll_async_create(&sockCreated, NULL);
+    nm_epoll_async_create(&sock3Created, NULL);
 
     while(true) {
         np_event_queue_execute_all(&pl);

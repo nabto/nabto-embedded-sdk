@@ -38,7 +38,6 @@ struct np_udp_socket {
     struct nm_epoll_created_ctx created;
     struct nm_epoll_destroyed_ctx des;
     struct nm_epoll_received_ctx recv;
-    bool sending;
 };
 
 static int nm_epoll_fd = -1;
@@ -87,7 +86,7 @@ void nm_epoll_cancel_recv_from(np_udp_socket* socket)
 
 void nm_epoll_cancel_send_to(struct np_udp_send_context* ctx)
 {
-    np_event_queue_cancel_timed_event(pl, &ctx->ev);
+    np_event_queue_cancel_event(pl, &ctx->ev);
     ctx->cb = NULL;
 }
 
@@ -290,7 +289,6 @@ void nm_epoll_async_create(np_udp_socket_created_callback cb, void* data)
     sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
-    sock->sending = false;
     np_event_queue_post(pl, &sock->created.event, &nm_epoll_event_create, sock);
 }
 
@@ -440,39 +438,18 @@ void nm_epoll_event_send_to(void* data){
             if (ctx->cb) {
                 ctx->cb(NABTO_EC_FAILED_TO_SEND_PACKET, ctx->cbData);
             }
-            sock->sending = false;
             return;
         }
     }
     if (ctx->cb) {
         ctx->cb(NABTO_EC_OK, ctx->cbData);
     }
-    sock->sending = false;
     return;
-}
-
-void nm_epoll_retry_send_to(np_error_code ec, void* data)
-{
-    struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
-    if (ctx->sock->sending) {
-        NABTO_LOG_TRACE(LOG, "Already sending, reretrying " PRIip4 " in a bit", MAKE_IPV4_PRINTABLE(ctx->ep.ip.v4.addr));
-        np_event_queue_post_timed_event(pl, &ctx->ev, 1, nm_epoll_retry_send_to, ctx);
-    } else {
-        NABTO_LOG_TRACE(LOG, "No longer sending, sending now");
-        ctx->sock->sending = true;
-        np_event_queue_post(pl, &ctx->ev2, nm_epoll_event_send_to, ctx);
-    }
 }
 
 void nm_epoll_async_send_to(struct np_udp_send_context* ctx)
 {
-    if (ctx->sock->sending) {
-        NABTO_LOG_TRACE(LOG, "Already sending, retrying in a bit");
-        np_event_queue_post_timed_event(pl, &ctx->ev, 1, nm_epoll_retry_send_to, ctx);
-    } else {
-        ctx->sock->sending = true;
-        np_event_queue_post(pl, &ctx->ev2, nm_epoll_event_send_to, ctx);
-    }
+    np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
 }
 
 void nm_epoll_async_recv_from(np_udp_socket* socket,

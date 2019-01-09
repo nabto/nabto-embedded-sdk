@@ -61,6 +61,7 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
     uint8_t* start = pl->buf.start(buffer);
 
     if (*start == NABTO_PROTOCOL_PREFIX_RENDEZVOUS) {
+        NABTO_LOG_INFO(LOG, "handle packet with rendezvous prefix");
         memmove(start, start+16, bufferSize-16);
         bufferSize = bufferSize-16;
         if (*start == AT_RENDEZVOUS) {
@@ -70,6 +71,7 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
     }
     
 
+    NABTO_LOG_INFO(LOG, "handle packet for DTLS");
     conn->lastChannel.sock = sock;
     conn->lastChannel.ep = ep;
     conn->lastChannel.channelId = *(start+15);
@@ -135,6 +137,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     applicationType = *(conn->pl->buf.start(buffer));
     switch (applicationType) {
         case AT_STREAM:
+            NABTO_LOG_INFO(LOG, "Received stream packet");
             nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
             break;
         case AT_RENDEZVOUS_CONTROL:

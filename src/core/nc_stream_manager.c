@@ -40,7 +40,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     uint8_t flags = 0;
     struct nc_stream_context* stream;
     
-    NABTO_LOG_TRACE(LOG, "stream manager handling packet. AT: %u", *start);
+    NABTO_LOG_INFO(LOG, "stream manager handling packet. AT: %u", *start);
     NABTO_LOG_BUF(LOG, start, bufferSize);
     if (bufferSize < 4) {
         return;
@@ -48,7 +48,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     if(!var_uint_read(ptr, bufferSize-1, &streamId, &streamIdLen)) {
         return;
     }
-    NABTO_LOG_TRACE(LOG, "streamId=%u", streamId);
+    NABTO_LOG_INFO(LOG, "streamId=%u", streamId);
     
     ptr += streamIdLen; // skip stream ID
     flags = *ptr;
@@ -75,9 +75,11 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 
 void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream)
 {
+    NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
     if (ctx->cb != NULL) {
         ctx->cb(&stream->stream, ctx->cbData);
     }
+    NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
     return;
 }
 

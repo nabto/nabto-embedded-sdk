@@ -20,7 +20,7 @@
 #define NABTO_SSL_RECV_BUFFER_SIZE 4096
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 4
 
 const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
@@ -45,7 +45,7 @@ struct nm_dtls_srv_context {
 struct nm_dtls_srv_context server;
 np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t publicKeySize,
                                       const unsigned char* privateKeyL, size_t privateKeySize);
-static void nm_dtls_srv_tls_logger( void *ctx, int level, const char *file, int line, const char *str );
+//static void nm_dtls_srv_tls_logger( void *ctx, int level, const char *file, int line, const char *str );
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data);
 void nm_dtls_srv_do_one(void* data);
 
@@ -232,6 +232,7 @@ void nm_dtls_srv_do_one(void* data)
                     return;
                 }
             }
+            NABTO_LOG_INFO(LOG, "sending to callback: %u", ctx->ctx.recvCb.cb);
             if (ctx->ctx.recvCb.cb != NULL) {
                 NABTO_LOG_TRACE(LOG, "found Callback function");
                 np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
@@ -353,6 +354,33 @@ np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv
     return NABTO_EC_OK;
 }
 
+static void nm_dtls_srv_tls_logger( void *ctx, int level,
+                                    const char *file, int line,
+                                    const char *str )
+{
+    ((void) level);
+    uint32_t severity;
+    switch (level) {
+        case 1:
+            severity = NABTO_LOG_SEVERITY_ERROR;
+            break;
+        case 2:
+            severity = NABTO_LOG_SEVERITY_INFO;
+            break;
+        default:
+            severity = NABTO_LOG_SEVERITY_TRACE;
+            break;
+    }
+    // TODO: fix this ugly hack to remove \n after all mbedtls log strings
+    NABTO_LOG_ERROR(LOG, "LOGGER CALLED!");
+    char ns[strlen(str)];
+    memset(ns, 0, strlen(str));
+    memcpy(ns, str, strlen(str));
+    ns[strlen(str)-1] = '\0';
+    NABTO_LOG_RAW(severity, LOG, line, file, ns );
+}
+
+
 np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t publicKeySize,
                                       const unsigned char* privateKeyL, size_t privateKeySize)
 {
@@ -384,8 +412,8 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ctr_drbg_seed returned %d", ret );
         return NABTO_EC_FAILED;
     }
-    mbedtls_ssl_conf_dbg( &server.conf, nm_dtls_srv_tls_logger, stdout );
     mbedtls_ssl_conf_rng( &server.conf, mbedtls_ctr_drbg_random, &server.ctr_drbg );
+    mbedtls_ssl_conf_dbg( &server.conf, &nm_dtls_srv_tls_logger, stdout );
 
 //    ret = mbedtls_ssl_cookie_setup( &server.cookie_ctx, mbedtls_ctr_drbg_random, &server.ctr_drbg );
 //    if( ret != 0)
@@ -417,30 +445,6 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
         return NABTO_EC_FAILED;
     }
     return NABTO_EC_OK;
-}
-static void nm_dtls_srv_tls_logger( void *ctx, int level,
-                                    const char *file, int line,
-                                    const char *str )
-{
-    ((void) level);
-    uint32_t severity;
-    switch (level) {
-        case 1:
-            severity = NABTO_LOG_SEVERITY_ERROR;
-            break;
-        case 2:
-            severity = NABTO_LOG_SEVERITY_INFO;
-            break;
-        default:
-            severity = NABTO_LOG_SEVERITY_TRACE;
-            break;
-    }
-    // TODO: fix this ugly hack to remove \n after all mbedtls log strings
-    char ns[strlen(str)];
-    memset(ns, 0, strlen(str));
-    memcpy(ns, str, strlen(str));
-    ns[strlen(str)-1] = '\0';
-    NABTO_LOG_RAW(severity, LOG, line, file, ns );
 }
 
 // Function called by mbedtls when data should be sent to the network

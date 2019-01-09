@@ -151,7 +151,7 @@ void nc_keep_alive_send_cb(const np_error_code ec, void* data)
 {
     struct nc_keep_alive_context* ctx = (struct nc_keep_alive_context*)data;
     if(ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Keep alive received error state from DTLS: %u", ec);
+        NABTO_LOG_ERROR(LOG, "Keep alive received error state from DTLS: %s", np_error_code_to_string(ec));
         nc_keep_alive_close(ctx, ec);
         return;
     }

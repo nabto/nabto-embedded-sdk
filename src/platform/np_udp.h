@@ -33,8 +33,7 @@ struct np_udp_send_context {
     uint16_t bufferSize;
     np_udp_packet_sent_callback cb;
     void* cbData;
-    struct np_timed_event ev;
-    struct np_event ev2;
+    struct np_event ev;
 };
 
 void np_udp_populate_send_context(struct np_udp_send_context* ctx, np_udp_socket* sock,

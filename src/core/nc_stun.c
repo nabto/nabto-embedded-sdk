@@ -18,6 +18,7 @@ void nc_stun_event(struct nc_stun_context* ctx);
 
 // Async callback functions
 void nc_stun_udp_created_cb(const np_error_code ec, void* data);
+void nc_stun_udp_destroyed_cb(const np_error_code ec, void* data);
 void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
 void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data);
 void nc_stun_send_to_cb(const np_error_code ec, void* data);
@@ -188,6 +189,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
             ctx->ec = NABTO_EC_OK;
             ctx->res = nabto_stun_get_result(&ctx->stun);
             nc_stun_resolve_callbacks(ctx);
+            nc_udp_dispatch_async_destroy(&ctx->secUdp, &nc_stun_udp_destroyed_cb, ctx);
             break;
         case STUN_ET_FAILED:
             ctx->ec = NABTO_EC_FAILED;
@@ -212,6 +214,11 @@ void nc_stun_udp_created_cb(const np_error_code ec, void* data)
     nc_udp_dispatch_set_stun_context(ctx->priUdp, ctx);
     nc_udp_dispatch_set_stun_context(&ctx->secUdp, ctx);
     ctx->pl->dns.async_resolve(ctx->pl, ctx->hostname, &nc_stun_dns_cb, ctx);
+}
+
+void nc_stun_udp_destroyed_cb(const np_error_code ec, void* data)
+{
+    NABTO_LOG_TRACE(LOG, "UDP socket destroyed");
 }
 
 void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)

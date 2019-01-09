@@ -53,7 +53,7 @@ void nc_rendezvous_handle_packet(struct nc_rendezvous_context* ctx,
     np_error_code ec;
     switch(ct) {
         case CT_RENDEZVOUS_CTRL_STUN_START_REQ:
-            NABTO_LOG_TRACE(LOG, "CTRL_STUN_START_REQ received");
+            NABTO_LOG_INFO(LOG, "CTRL_STUN_START_REQ received");
             nc_rendezvous_send_stun_start_resp(ctx);
             ec = nc_stun_async_analyze(ctx->stun, &nc_rendezvous_send_stun_data_req, ctx);
             if (ec != NABTO_EC_OK) {
@@ -68,10 +68,10 @@ void nc_rendezvous_handle_packet(struct nc_rendezvous_context* ctx,
             NABTO_LOG_ERROR(LOG, "Device should not receive STUN_DATA_REQUEST");
             break;
         case CT_RENDEZVOUS_CTRL_STUN_DATA_RESP:
-            NABTO_LOG_TRACE(LOG, "Ignoring STUN_DATA_RESP, no retransmissions for now");
+            NABTO_LOG_INFO(LOG, "Ignoring STUN_DATA_RESP, no retransmissions for now");
             break;
         case CT_RENDEZVOUS_CTRL_REQUEST:
-            NABTO_LOG_TRACE(LOG, "CTRL_REQUEST received");
+            NABTO_LOG_INFO(LOG, "CTRL_REQUEST received");
             nc_rendezvous_handle_ctrl_req(ctx, buffer, bufferSize);
             break;
         case CT_RENDEZVOUS_CLIENT_REQUEST:
@@ -79,7 +79,7 @@ void nc_rendezvous_handle_packet(struct nc_rendezvous_context* ctx,
             uint8_t* start = ctx->pl->buf.start(ctx->secBuf);
             uint8_t* ptr = start;
             np_error_code ec;
-            NABTO_LOG_TRACE(LOG, "RENDEZVOUS_CLIENT_REQUEST received");
+            NABTO_LOG_INFO(LOG, "RENDEZVOUS_CLIENT_REQUEST received");
             ctx->cliRespEp = ep;
             *ptr = AT_RENDEZVOUS;
             ptr++;
@@ -111,7 +111,7 @@ void nc_rendezvous_send_stun_start_resp(struct nc_rendezvous_context* ctx)
     *ptr = AT_RENDEZVOUS_CONTROL;
     ptr++;
     *ptr = CT_RENDEZVOUS_CTRL_STUN_START_RESP;
-    NABTO_LOG_TRACE(LOG, "Sending CTRL_STUN_START_RESP");
+    NABTO_LOG_INFO(LOG, "Sending CTRL_STUN_START_RESP");
     ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, start, 2, &nc_rendezvous_dtls_send_cb, ctx);
 }
 
@@ -119,7 +119,7 @@ void nc_rendezvous_dtls_send_cb(const np_error_code ec, void* data)
 {
     if (ec != NABTO_EC_OK) {
         // No retransmissions for now
-        NABTO_LOG_TRACE(LOG, "DTLS send failed");
+        NABTO_LOG_INFO(LOG, "DTLS send failed");
     }
 }
 
@@ -128,6 +128,7 @@ void nc_rendezvous_send_stun_data_req(const np_error_code ec, const struct nabto
     struct nc_rendezvous_context* ctx = (struct nc_rendezvous_context*)data;
     uint8_t* start = ctx->pl->buf.start(ctx->secBuf);
     uint8_t* ptr = start;
+    NABTO_LOG_INFO(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
     if (ec != NABTO_EC_OK) {
         // TODO: Handle error
         NABTO_LOG_ERROR(LOG, "Stun analysis failed, Ignoring errors for now");
@@ -139,7 +140,7 @@ void nc_rendezvous_send_stun_data_req(const np_error_code ec, const struct nabto
     ptr++;
     if (res->extEp.addr.type == NABTO_STUN_IPV4) {
         struct np_udp_endpoint ep;
-        NABTO_LOG_TRACE(LOG, "External IP: %u.%u.%u.%u:%u", res->extEp.addr.v4.addr[0], res->extEp.addr.v4.addr[1], res->extEp.addr.v4.addr[2], res->extEp.addr.v4.addr[3], res->extEp.port);
+        NABTO_LOG_INFO(LOG, "External IP: %u.%u.%u.%u:%u", res->extEp.addr.v4.addr[0], res->extEp.addr.v4.addr[1], res->extEp.addr.v4.addr[2], res->extEp.addr.v4.addr[3], res->extEp.port);
         ep.port = res->extEp.port;
         memcpy(ep.ip.v4.addr, res->extEp.addr.v4.addr, 4);
         ep.ip.type = NABTO_IPV4;
@@ -157,7 +158,7 @@ void nc_rendezvous_send_stun_data_req(const np_error_code ec, const struct nabto
 
     // TODO: insert defect router extension
     
-    NABTO_LOG_TRACE(LOG, "Sending CTRL_STUN_DATA_REQ");
+    NABTO_LOG_INFO(LOG, "Sending CTRL_STUN_DATA_REQ");
     ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, start, ptr-start, &nc_rendezvous_dtls_send_cb, ctx);
     
 }
@@ -182,7 +183,7 @@ void nc_rendezvous_handle_ctrl_req(struct nc_rendezvous_context* ctx,
             ctx->epList[ctx->epIndex].ip.type = NABTO_IPV4;
             memcpy(ctx->epList[ctx->epIndex].ip.v4.addr, ptr, 4);
             ptr += 4;
-            NABTO_LOG_TRACE(LOG, "Received IP: %u.%u.%u.%u:%u", ctx->epList[ctx->epIndex].ip.v4.addr[0], ctx->epList[ctx->epIndex].ip.v4.addr[1], ctx->epList[ctx->epIndex].ip.v4.addr[2], ctx->epList[ctx->epIndex].ip.v4.addr[3], ctx->epList[ctx->epIndex].port);
+            NABTO_LOG_INFO(LOG, "Received IP: %u.%u.%u.%u:%u", ctx->epList[ctx->epIndex].ip.v4.addr[0], ctx->epList[ctx->epIndex].ip.v4.addr[1], ctx->epList[ctx->epIndex].ip.v4.addr[2], ctx->epList[ctx->epIndex].ip.v4.addr[3], ctx->epList[ctx->epIndex].port);
             ctx->epIndex++;
         } else {
             // TODO: handle other extensions
@@ -208,7 +209,7 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
     *ptr = AT_RENDEZVOUS;
     ptr++;
     *ptr = CT_RENDEZVOUS_DEVICE_REQUEST;
-    NABTO_LOG_TRACE(LOG, "Sending RENDEZVOUS_DEVICE_REQUEST");
+    NABTO_LOG_INFO(LOG, "Sending RENDEZVOUS_DEVICE_REQUEST");
     ec = nc_client_connect_async_send_to_ep(ctx->conn, &ctx->epList[ctx->epIndex], ctx->priBuf, 2, &nc_rendezvous_send_dev_req_cb, ctx);
     if (ec != NABTO_EC_OK) {
         // TODO: handle_error
