@@ -287,7 +287,9 @@ nabto_device_stream_close(NabtoDeviceStream* stream);
 /************
  * Coap API *
  ************/
-
+/**
+ * Represents the COAP method for requests and responses
+ */
 typedef enum {
     NABTO_DEVICE_COAP_GET,
     NABTO_DEVICE_COAP_POST,
@@ -295,37 +297,135 @@ typedef enum {
     NABTO_DEVICE_COAP_DELETE
 } NabtoDeviceCoapMethod;
 
+/**
+ * The COAP resource is used when notifying observers of a specefic resource
+ */
 typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
+
+/**
+ * Representing a COAP request received from the client
+ */
 typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
+
+/**
+ * Representing a COAP response for a specific request
+ */
 typedef struct NabtoDeviceCoapResponse_ NabtoDeviceCoapResponse;
 
+/**
+ * Resource handling callback invoked when a request is available for the resource
+ */
 typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, void* userData);
 
+/**
+ * Add a COAP resource. Once a COAP resource is added, incoming
+ * requests will invoke the handler. The returned resource is alive
+ * for the life time of the COAP server
+ *
+ * @param method    The COAP method for which to handle requests
+ * @param path      The COAP path for which to handle requests
+ * @param handler   The handler to be invoked when a request is received
+ * @param userData  Data to be passed along to the handler when invoked
+ *
+ * @return A representation of the added COAP resource.
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResource* NABTO_DEVICE_API
 nabto_device_coap_add_resource(NabtoDeviceCoapMethod method, const char* path, NabtoDeviceCoapResourceHandler handler, void* userData);
 
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+/**
+ * Notify observers of a resource retreived by calling
+ * nabto_device_coap_add_resource. Notifying observers will trigger an
+ * invokation of the resource handler assosiated with the resource,
+ * which should ensure a response is made ready.
+ *
+ * @param resource  The COAP resource to notify
+ *
+ * @return NABTO_EC_OK if notify was successful
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
 
+/**
+ * Create a COAP response for a given request. This MUST only be
+ * called once per resource handler invokation. That is, for
+ * non-observable requests ONLY once per request, and for observable
+ * requests ONLY once per notification.
+ *
+ * @param request  The COAP request assosiated with the response
+ * 
+ * @return A representation of the created response
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResponse* NABTO_DEVICE_API
-nabto_device_coap_create_response(NabtoDeviceCoapRequest* req);
+nabto_device_coap_create_response(NabtoDeviceCoapRequest* request);
 
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+/**
+ * Set the response code of a given response. This code should follow
+ * the standard HTTP status codes (eg. 200 for success).
+ *
+ * @param response  The response for which to set the code
+ * @param code      The code to be set
+ *
+ * @return NABTO_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code);
 
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+/**
+ * Set the payload of a given response.
+ * 
+ * @param response  The response for which to set the payload
+ * @param data      The payload to set
+ * @param dataSize  The length of the payload in bytes
+ *
+ * @return NABTO_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response, const void* data, size_t dataSize);
 
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+/**
+ * Set the content format of a given response. This should follow the
+ * content format definitions defined by IANA (same as HTTP).
+ *
+ * @param response  The response for which to set the content format
+ * @param format    The format to set
+ *
+ * @return NABTO_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format);
 
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+/**
+ * Mark a response as ready. Once ready, the response will be sent to
+ * the client, and cleaned up.
+ *
+ * @param response  The response to be sent
+ *
+ * @return NABTO_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response);
 
-NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+/**
+ * Get the content format of a given request.
+ *
+ * @param request       The request for which to get the content format
+ * @param contentFormat A reference to where to put the content format
+ *
+ * @return NABTO_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest request, uint16_t* contentFormat);
 
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+/**
+ * Get the payload of a given request.
+ *
+ * @param request       The request for which to get the payload
+ * @param payload       A reference to where to put the payload reference
+ * @param payloadLength A reference to where to put the length of the payload
+ *
+ * @return NABTO_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest request, void** payload, size_t* payloadLength);
 
 
