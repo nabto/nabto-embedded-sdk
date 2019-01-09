@@ -37,6 +37,8 @@
 
 #include <platform/np_error_code.h>
 
+#include <nabto_types.h>
+
 #include <stdint.h>
 #include <string.h>
 
@@ -281,6 +283,51 @@ nabto_device_stream_write(NabtoDeviceStream* stream, const void* buffer, size_t 
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
 nabto_device_stream_close(NabtoDeviceStream* stream);
+
+/************
+ * Coap API *
+ ************/
+
+typedef enum {
+    NABTO_DEVICE_COAP_GET,
+    NABTO_DEVICE_COAP_POST,
+    NABTO_DEVICE_COAP_PUT,
+    NABTO_DEVICE_COAP_DELETE
+} NabtoDeviceCoapMethod;
+
+typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
+typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
+typedef struct NabtoDeviceCoapResponse_ NabtoDeviceCoapResponse;
+
+typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, void* userData);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResource* NABTO_DEVICE_API
+nabto_device_coap_add_resource(NabtoDeviceCoapMethod method, const char* path, NabtoDeviceCoapResourceHandler handler, void* userData);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResponse* NABTO_DEVICE_API
+nabto_device_coap_create_response(NabtoDeviceCoapRequest* req);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response, const void* data, size_t dataSize);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response);
+
+NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest request, uint16_t* contentFormat);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest request, void** payload, size_t* payloadLength);
+
 
 /**************
  * Future API *

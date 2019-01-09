@@ -5,6 +5,7 @@
 #include <core/nc_stream_manager.h>
 #include <core/nc_client_connect_dispatch.h>
 #include <core/nc_stun.h>
+#include <core/nc_coap.h>
 
 #include <platform/np_error_code.h>
 
@@ -19,9 +20,10 @@ struct nc_device_context {
     struct nc_stream_manager_context streamManager;
     struct nc_client_connect_dispatch_context clientConnect;
     struct nc_stun_context stun;
+    struct nc_coap_context coap;
 
     const char* stunHost;
-    
+
     nc_device_close_callback closeCb;
     void* closeCbData;
 };

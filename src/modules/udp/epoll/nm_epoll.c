@@ -384,7 +384,7 @@ void nm_epoll_event_bind_port(void* data) {
         return;
     }
     ev = (struct epoll_event*)malloc(sizeof(struct epoll_event));
-    ev->events = EPOLLIN | EPOLLOUT | EPOLLET;
+    ev->events = EPOLLIN | EPOLLET;
     ev->data.ptr = us;
     if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_ADD, us->sock, ev) == -1) {
         NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));

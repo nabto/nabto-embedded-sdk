@@ -62,6 +62,7 @@ struct nc_udp_dispatch_context udp;
 struct nc_attach_context attach;
 struct nabto_stream* stream;
 struct nc_stun_context stun;
+struct nc_coap_context coap;
 uint8_t buffer[1500];
 
 void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
@@ -136,7 +137,8 @@ int main() {
     data.data = 42;
 
     nc_stream_manager_init(&streamManager, &pl);
-    nc_client_connect_dispatch_init(&dispatch, &pl, &stun, &streamManager);
+    nc_coap_init(&pl, &coap);
+    nc_client_connect_dispatch_init(&dispatch, &pl, &stun, &coap, &streamManager);
     nc_stream_manager_set_listener(&streamManager, &stream_listener, &data);
     
     attachParams.appName = appName;

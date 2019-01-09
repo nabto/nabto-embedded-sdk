@@ -20,6 +20,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
                                      struct nc_client_connect_dispatch_context* dispatch,
                                      struct nc_stream_manager_context* streamManager,
                                      struct nc_stun_context* stun,
+                                     struct nc_coap_context* coap,
                                      struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize)
 {
@@ -35,6 +36,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->streamManager = streamManager;
     conn->dispatch = dispatch;
     conn->stun = stun;
+    conn->coap = coap;
 
     ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
     if (ec != NABTO_EC_OK) {
@@ -135,21 +137,17 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     }
 
     applicationType = *(conn->pl->buf.start(buffer));
-    switch (applicationType) {
-        case AT_STREAM:
-            NABTO_LOG_INFO(LOG, "Received stream packet");
-            nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
-            break;
-        case AT_RENDEZVOUS_CONTROL:
-        {
-            np_udp_endpoint ep; // the endpoint is not used for dtls packets
-            NABTO_LOG_TRACE(LOG, "RECEIVED RENDEZVOUS PACKET");
-            nc_rendezvous_handle_packet(&conn->rendezvous, ep, buffer, bufferSize);
-            break;
-        }
-        default:
-            NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
-            break;
+    if (applicationType == AT_STREAM) {
+        NABTO_LOG_INFO(LOG, "Received stream packet");
+        nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
+    } else if (applicationType == AT_RENDEZVOUS_CONTROL) {
+        np_udp_endpoint ep; // the endpoint is not used for dtls packets
+        NABTO_LOG_TRACE(LOG, "RECEIVED RENDEZVOUS PACKET");
+        nc_rendezvous_handle_packet(&conn->rendezvous, ep, buffer, bufferSize);
+    } else if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
+        nc_coap_handle_packet(conn->coap, conn, buffer, bufferSize);
+    } else {
+        NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
     }
     conn->pl->dtlsS.async_recv_from(conn->pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 }
