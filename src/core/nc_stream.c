@@ -42,6 +42,17 @@ void nc_stream_log(const char* file, int line, enum nabto_stream_log_level level
     }
 }
 
+np_error_code nc_stream_status_to_ec(nabto_stream_status status)
+{
+    switch(status) {
+        case NABTO_STREAM_STATUS_OK: return NABTO_EC_OK;
+        case NABTO_STREAM_STATUS_CLOSED: return NABTO_EC_STREAM_CLOSED;
+        case NABTO_STREAM_STATUS_EOF: return NABTO_EC_STREAM_EOF;
+        case NABTO_STREAM_STATUS_ABORTED: return NABTO_EC_ABORTED;
+        default: return NABTO_EC_FAILED;
+    }
+}
+
 void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager)
 {
     nc_stream_module.get_stamp = pl->ts.now_ms;
@@ -78,7 +89,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
     nabto_stream_recv_segment_available(&ctx->stream);
     enum nabto_stream_next_event_type eventType = nabto_stream_next_event_to_handle(&ctx->stream);
 
-    NABTO_LOG_TRACE(LOG, "next event to handle %s current state %s", nabto_stream_next_event_type_to_string(eventType), nabto_stream_state_as_string(ctx->stream.state));
+    NABTO_LOG_INFO(LOG, "next event to handle %s current state %s", nabto_stream_next_event_type_to_string(eventType), nabto_stream_state_as_string(ctx->stream.state));
     switch(eventType) {
         case ET_ACCEPT:
             nc_stream_manager_ready_for_accept(ctx->streamManager, ctx);
@@ -180,7 +191,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         // no packet to send
         return;
     }
-    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, 0xff, ctx->pl->buf.start(ctx->sendBuffer), ptr-start+packetSize, &nc_stream_dtls_send_callback, ctx);
+    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, ctx->pl->buf.start(ctx->sendBuffer), ptr-start+packetSize, &nc_stream_dtls_send_callback, ctx);
 }
 
 void nc_stream_event_queue_callback(void* data)

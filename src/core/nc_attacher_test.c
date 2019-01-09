@@ -5,7 +5,6 @@
 #include <platform/np_unit_test.h>
 #include <core/nc_tests.h>
 #include <core/nc_packet.h>
-#include <core/nc_client_connect.h>
 
 #include <string.h>
 #include <arpa/inet.h>
@@ -130,7 +129,8 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
     }
     return NABTO_EC_OK;
 }
-np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, np_udp_socket* conn, np_udp_endpoint ep,
+np_error_code nc_attacher_test_cryp_conn(struct np_platform* pl, struct nc_udp_dispatch_context* conn,
+                                         np_udp_endpoint ep,
                                          np_dtls_cli_connect_callback cb, void* data)
 {
     cb(NABTO_EC_OK, crypCtx, data);
@@ -181,6 +181,11 @@ void nc_attacher_test_udp_create(np_udp_socket_created_callback cb, void* data)
     cb(NABTO_EC_OK, sock, data);
 }
 
+void nc_attacher_test_udp_async_recv_from(np_udp_socket* sock, np_udp_packet_received_callback cb, void* data)
+{
+
+}
+
 // ts impl
 void nc_attacher_test_ts_set(np_timestamp* ev, uint32_t ms) {}
 
@@ -196,6 +201,7 @@ void nc_attacher_test_callback(const np_error_code ec, void* data)
 
 void nc_attacher_test_attach()
 {
+    struct nc_attach_context attach;
     struct np_platform pl;
 //    nm_unix_log_init(&pl);
     np_platform_init(&pl);
@@ -216,6 +222,7 @@ void nc_attacher_test_attach()
     pl.dns.async_resolve = &nc_attacher_test_dns;
 
     pl.udp.async_create = &nc_attacher_test_udp_create;
+    pl.udp.async_recv_from = &nc_attacher_test_udp_async_recv_from;
 
     pl.ts.set_future_timestamp = &nc_attacher_test_ts_set;
 
@@ -226,14 +233,11 @@ void nc_attacher_test_attach()
     struct nc_attach_parameters attachParams;
 
     attachParams.appName = appName;
-    attachParams.appNameLength = strlen(appName);
     attachParams.appVersion = appVer;
-    attachParams.appVersionLength = strlen(appVer);
     attachParams.hostname = hostname;
-    attachParams.hostnameLength = strlen(hostname);
 
     
-    nc_attacher_async_attach(&pl, &attachParams, &nc_attacher_test_callback, NULL);
+    nc_attacher_async_attach(&attach, &pl, &attachParams, &nc_attacher_test_callback, NULL);
     
     NABTO_TEST_CHECK(callbackReceived);
     NABTO_TEST_CHECK(crypAdRecvCalled);

@@ -16,6 +16,6 @@ target_link_libraries(attach_tester
   nm_unix_timestamp
   nm_dtls_cli
   nm_dtls_srv
-  nc_core
   nm_unix_dns
+  nc_core
   )

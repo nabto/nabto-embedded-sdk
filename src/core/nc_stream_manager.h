@@ -11,15 +11,17 @@
 
 typedef void (*nc_stream_manager_listen_callback)(struct nabto_stream* stream, void* data);
 
+struct nc_client_connection;
+
 struct nc_stream_manager_context {
     struct np_platform* pl;
     nc_stream_manager_listen_callback cb;
     void* cbData;
     np_communication_buffer* rstBuf;
     struct nc_stream_context streams[NABTO_MAX_STREAMS];
+    struct nc_client_connection* streamConns[NABTO_MAX_STREAMS];
 };
 
-struct nc_client_connection;
 
 
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl);
@@ -28,6 +30,8 @@ void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_st
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
                                      np_communication_buffer* buffer, uint16_t bufferSize);
+
+void nc_stream_manager_close_stream(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream);
 
 void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream);
 

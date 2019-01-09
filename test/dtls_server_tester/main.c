@@ -63,7 +63,7 @@ void recvedCb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
     NABTO_LOG_INFO(0, "RECEIVED CB");
     pl.dtlsS.async_close(&pl, ctx->dtls, closeCb, data);
 }
-void dtls_send_listener(uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
+void dtls_send_listener(bool channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
     // TODO: send the dtls data somewhere find a way to use the UDP socket without client_connect_dispatch
 }
 
@@ -78,7 +78,7 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
     np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->dtls, &dtls_send_listener, ctx);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    pl.dtlsS.async_recv_from(&pl, ctx->dtls, AT_STREAM, recvedCb, ctx);
+    pl.dtlsS.async_recv_from(&pl, ctx->dtls, recvedCb, ctx);
     if(ec2 != NABTO_EC_OK) {
         exit(1);
     }
@@ -94,6 +94,7 @@ void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 
 
 int main() {
+    int nfds;
     uint8_t fp[16];
     memset(fp, 0, 16);
 
@@ -111,7 +112,13 @@ int main() {
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));
-        nm_epoll_wait();
+        if (np_event_queue_has_timed_event(&pl)) {
+            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
+            nfds = nm_epoll_timed_wait(ms);
+        } else {
+            nfds = nm_epoll_inf_wait(0);
+        }
+        nm_epoll_read(nfds);
     }
 
     exit(0);

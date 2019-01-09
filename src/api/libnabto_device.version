@@ -1,0 +1,5 @@
+NABTO_DEVICEABI_0.1 {
+    global:
+        nabto_device_*;
+    local: *;
+};

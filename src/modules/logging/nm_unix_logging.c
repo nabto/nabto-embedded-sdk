@@ -70,7 +70,7 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
 
 void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
-    if((NABTO_LOG_SEVERITY_FILTER & severity) && ((NABTO_LOG_MODULE_FILTER & module) || module == 0)) {
+    if(((NABTO_LOG_SEVERITY_FILTER & severity) && ((NABTO_LOG_MODULE_FILTER & module) || module == 0))) {
         time_t sec;
         unsigned int ms;
         struct timeval tv;

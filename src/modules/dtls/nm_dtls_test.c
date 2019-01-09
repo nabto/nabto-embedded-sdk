@@ -243,7 +243,7 @@ void test_dtls_connection()
     NABTO_TEST_CHECK(cliConnCbCalled);
     NABTO_TEST_CHECK(cliCtx != NULL);
 
-    ec = pl.dtlsS.async_recv_from(&pl, dtlsS, AT_DEVICE_LB, &test_dtls_srv_received_callback, NULL);
+    ec = pl.dtlsS.async_recv_from(&pl, dtlsS, &test_dtls_srv_received_callback, NULL);
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
     ec = pl.dtlsC.async_send_to(&pl, cliCtx, 0xff, (uint8_t*) cliSendTestBuf, 10, &test_dtls_cli_send_to_callback, NULL);
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);

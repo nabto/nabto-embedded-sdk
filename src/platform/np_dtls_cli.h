@@ -8,6 +8,7 @@
 #include <platform/np_udp.h>
 
 struct np_platform;
+struct nc_udp_dispatch_context;
 
 typedef struct np_dtls_cli_context np_dtls_cli_context;
 
@@ -15,7 +16,7 @@ typedef void (*np_dtls_cli_connect_callback)(const np_error_code ec, np_dtls_cli
 
 struct np_dtls_cli_module {
 
-    np_error_code (*async_connect)(struct np_platform* pl, np_udp_socket* conn, np_udp_endpoint ep,
+    np_error_code (*async_connect)(struct np_platform* pl, struct nc_udp_dispatch_context* udp, np_udp_endpoint ep,
                                    np_dtls_cli_connect_callback cb, void* data);
     np_error_code (*async_send_to)(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t channelId,
                                    uint8_t* buffer, uint16_t bufferSize, np_dtls_send_to_callback cb, void* data);
@@ -23,6 +24,8 @@ struct np_dtls_cli_module {
                                      enum application_data_type type, np_dtls_received_callback cb, void* data);
     np_error_code (*cancel_recv_from)(struct np_platform* pl, np_dtls_cli_context* ctx,
                                       enum application_data_type type);
+    np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_cli_context* ctx,
+                                   np_communication_buffer* buffer, uint16_t bufferSize);
     np_error_code (*async_close)(struct np_platform* pl, np_dtls_cli_context* ctx,
                                  np_dtls_close_callback cb, void* data);
     np_error_code (*get_fingerprint)(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp);

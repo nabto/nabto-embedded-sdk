@@ -7,10 +7,12 @@
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/nm_unix_dns.h>
+#include <modules/access_control/nm_access_control.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_attacher.h>
 #include <core/nc_client_connect.h>
 #include <core/nc_client_connect_dispatch.h>
+#include <core/nc_stun.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +24,7 @@ const char* appVer = "0.0.1";
 const char* appName = "Weather_app";
 //const char* hostname = "a.devices.dev.nabto.net";
 const char* hostname = "localhost";
+const char* stunHost = "stun.nabto.net";
 
 struct nc_attach_parameters attachParams;
 
@@ -54,19 +57,29 @@ struct test_context {
 };
 struct np_platform pl;
 struct nc_stream_manager_context streamManager;
+struct nc_client_connect_dispatch_context dispatch;
+struct nc_udp_dispatch_context udp;
+struct nc_attach_context attach;
 struct nabto_stream* stream;
+struct nc_stun_context stun;
 uint8_t buffer[1500];
 
 void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
 {
     NABTO_LOG_ERROR(0, "application event callback eventType: %s", nabto_stream_application_event_type_to_string(eventType));
-    if (eventType == NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY) {
-        size_t readen = 0;
-        size_t written = 0;
-        nabto_stream_read_buffer(stream, buffer, 1500, &readen);
+    size_t readen = 0;
+    size_t written = 0;
+    nabto_stream_status status;
+    status = nabto_stream_read_buffer(stream, buffer, 1500, &readen);
+    if (status == NABTO_STREAM_STATUS_OK) {
         if (readen > 0) {
             nabto_stream_write_buffer(stream, buffer, readen, &written);
             NABTO_LOG_ERROR(0, "application event wrote %u bytes", written);
+        }
+    } else {
+        status = nabto_stream_close(stream);
+        if (status != NABTO_STREAM_STATUS_OK) {
+            nabto_stream_release(stream);
         }
     }
 }
@@ -80,7 +93,7 @@ void stream_listener(struct nabto_stream* incStream, void* data)
 }
 
 void attachedCb(const np_error_code ec, void* data) {
-    // NABTO_LOG_INFO(0, "dtlsS.create: %04x dtlsS.send: %04x dtlsS.get_fp: %04x dtlsS.recv: %04x dtlsS.cancel_recv: %04x dtlsS.close: %04x", (uint32_t*)pl.dtlsS.create, (uint32_t*)pl.dtlsS.async_send_to, (uint32_t*)pl.dtlsS.get_fingerprint, (uint32_t*)pl.dtlsS.async_recv_from, (uint32_t*)pl.dtlsS.cancel_recv_from, (uint32_t*)pl.dtlsS.async_close);
+
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(0, "Received attached callback with NABTO_EC_OK");
     } else {
@@ -89,9 +102,29 @@ void attachedCb(const np_error_code ec, void* data) {
     }
 }
 
+void connCreatedCb(const np_error_code ec, void* data) {
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(0, "udp create failed");
+        exit(1);
+    }
+    nc_stun_init(&stun, &pl, stunHost, &udp);
+    nc_udp_dispatch_set_client_connect_context(&udp, &dispatch);
+    nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
+}
 
 int main() {
+    int nfds;
+
+    attachParams.hostname = hostname;
+    const char* deviceLbHost = getenv("DEVICE_LB_HOST");
+    if (deviceLbHost) {
+        attachParams.hostname = deviceLbHost;
+    }
+    
     np_platform_init(&pl);
+    nm_unix_log_init();
+
+    nm_access_control_init(&pl);
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
     nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
@@ -99,27 +132,31 @@ int main() {
     nm_unix_ts_init(&pl);
     nm_unix_dns_init(&pl);
   
-    np_log.log = &nm_unix_log;
-    np_log.log_buf = &nm_unix_log_buf;
-
     struct test_context data;
     data.data = 42;
 
     nc_stream_manager_init(&streamManager, &pl);
-    nc_client_connect_dispatch_init(&pl, &streamManager);
+    nc_client_connect_dispatch_init(&dispatch, &pl, &stun, &streamManager);
     nc_stream_manager_set_listener(&streamManager, &stream_listener, &data);
     
     attachParams.appName = appName;
-    attachParams.appNameLength = strlen(appName);
     attachParams.appVersion = appVer;
-    attachParams.appVersionLength = strlen(appVer);
-    attachParams.hostname = hostname;
-    attachParams.hostnameLength = strlen(hostname);
-    
-    nc_attacher_async_attach(&pl, &attachParams, attachedCb, &data);
+
+    nc_udp_dispatch_async_create(&udp, &pl, &connCreatedCb, &data);
+    attachParams.udp = &udp;
+
     while (true) {
         np_event_queue_execute_all(&pl);
-        nm_epoll_wait();
+        if (np_event_queue_is_event_queue_empty(&pl)) {
+            NABTO_LOG_ERROR(0, "Event queue not empty after emptying");
+        }
+        if (np_event_queue_has_timed_event(&pl)) {
+            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
+            nfds = nm_epoll_timed_wait(ms);
+        } else {
+            nfds = nm_epoll_inf_wait();
+        }
+        nm_epoll_read(nfds);
     }
 
     exit(0);

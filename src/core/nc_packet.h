@@ -16,3 +16,5 @@ uint8_t* write_uint16_length_data(uint8_t* buf, uint8_t* data, uint16_t size);
 uint16_t uint16_read(uint8_t* buf);
 uint32_t uint32_read(uint8_t* buf);
 
+uint8_t* udp_ep_ext_write_forward(uint8_t* buf, struct np_udp_endpoint* ep);
+
