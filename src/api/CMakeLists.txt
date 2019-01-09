@@ -3,6 +3,7 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 set(linux_src
   ${src_dir}/nabto_device.c
   ${src_dir}/nabto_device_stream.c
+  ${src_dir}/nabto_device_coap.c
   ${src_dir}/nabto_device_future.c
   ${src_dir}/nabto_api_future_queue.c
   ${src_dir}/nabto_linux_platform.c

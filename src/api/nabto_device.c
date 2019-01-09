@@ -2,6 +2,7 @@
 #include <nabto/nabto_device_experimental.h>
 #include <api/nabto_device_defines.h>
 #include <api/nabto_device_stream.h>
+#include <api/nabto_device_coap.h>
 #include <api/nabto_api_future_queue.h>
 #include <platform/np_error_code.h>
 
@@ -376,6 +377,81 @@ NabtoDeviceFuture* nabto_device_stream_close(NabtoDeviceStream* stream)
 
 /*******************************************
  * Streaming Api End
+ *******************************************/
+
+/*******************************************
+ * COAP API Start
+ *******************************************/
+
+NabtoDeviceCoapResource* nabto_device_coap_add_resource(NabtoDevice* device,
+                                                        NabtoDeviceCoapMethod method,
+                                                        const char* path,
+                                                        NabtoDeviceCoapResourceHandler handler,
+                                                        void* userData)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_coap_code code;
+    struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)malloc(sizeof(struct nabto_device_coap_resource));
+
+    resource->dev = dev;
+    resource->handler = handler;
+    resource->userData = userData;
+    
+    pthread_mutex_lock(&dev->eventMutex);
+    
+    resource->res = nabto_coap_server_add_resource(nc_coap_get_server(&dev->core.coap), nabto_device_coap_method_to_code(method), path, &nabto_device_coap_resource_handler, resource);
+    
+    pthread_mutex_unlock(&dev->eventMutex);
+
+    return (NabtoDeviceCoapResource*)resource;
+}
+
+NabtoDeviceError nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource)
+{
+
+}
+
+NabtoDeviceCoapResponse* nabto_device_coap_create_response(NabtoDeviceCoapRequest* request)
+{
+
+}
+
+NabtoDeviceError nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code)
+{
+
+}
+
+NabtoDeviceError nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response,
+                                                        const void* data, size_t dataSize)
+{
+
+}
+
+NabtoDeviceError nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format)
+{
+
+}
+
+NabtoDeviceError nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response)
+{
+
+}
+
+NabtoDeviceError nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
+                                                              uint16_t* contentFormat)
+{
+
+}
+
+NabtoDeviceError nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
+                                                       void** payload, size_t* payloadLength)
+{
+
+}
+
+
+/*******************************************
+ * COAP API End
  *******************************************/
 
 /*

@@ -330,7 +330,7 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * @return A representation of the added COAP resource.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResource* NABTO_DEVICE_API
-nabto_device_coap_add_resource(NabtoDeviceCoapMethod method, const char* path, NabtoDeviceCoapResourceHandler handler, void* userData);
+nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char* path, NabtoDeviceCoapResourceHandler handler, void* userData);
 
 /**
  * Notify observers of a resource retreived by calling
@@ -396,7 +396,8 @@ nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response,
 
 /**
  * Mark a response as ready. Once ready, the response will be sent to
- * the client, and cleaned up.
+ * the client. After this call, both the request and the response will
+ * be cleaned up.
  *
  * @param response  The response to be sent
  *
@@ -414,7 +415,7 @@ nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response);
  * @return NABTO_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest request, uint16_t* contentFormat);
+nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request, uint16_t* contentFormat);
 
 /**
  * Get the payload of a given request.
@@ -426,7 +427,7 @@ nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest request, uin
  * @return NABTO_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest request, void** payload, size_t* payloadLength);
+nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** payload, size_t* payloadLength);
 
 
 /**************
