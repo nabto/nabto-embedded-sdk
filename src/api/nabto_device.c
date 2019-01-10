@@ -408,45 +408,93 @@ NabtoDeviceCoapResource* nabto_device_coap_add_resource(NabtoDevice* device,
 
 NabtoDeviceError nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource)
 {
-
+    struct nabto_device_coap_resource* reso = (struct nabto_device_coap_resource*)resource;
+    pthread_mutex_lock(&reso->dev->eventMutex);
+    // TODO: implement observables 
+    //nabto_coap_server_notify_observers(nc_coap_get_server(&reso->dev->core.coap), reso->res);
+    pthread_mutex_unlock(&reso->dev->eventMutex);
 }
 
 NabtoDeviceCoapResponse* nabto_device_coap_create_response(NabtoDeviceCoapRequest* request)
 {
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
 
+    pthread_mutex_lock(&req->dev->eventMutex);
+    struct nabto_coap_server_response* resp = nabto_coap_server_create_response(req->req);
+    pthread_mutex_unlock(&req->dev->eventMutex);
+
+    struct nabto_device_coap_response* response = (struct nabto_device_coap_response*)malloc(sizeof(struct nabto_device_coap_response));
+    response->resp = resp;
+    response->dev = req->dev;
+    response->req = req;
+    return (NabtoDeviceCoapResponse*)response;
 }
 
 NabtoDeviceError nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code)
 {
-
+    struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
+    pthread_mutex_lock(&resp->dev->eventMutex);
+    nabto_coap_server_response_set_code(resp->resp, nabto_coap_uint16_to_code(code));
+    pthread_mutex_unlock(&resp->dev->eventMutex);
+    return NABTO_EC_OK;
 }
 
 NabtoDeviceError nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response,
                                                         const void* data, size_t dataSize)
 {
-
+    struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
+    pthread_mutex_lock(&resp->dev->eventMutex);
+    nabto_coap_server_response_set_payload(resp->resp, data, dataSize);
+    pthread_mutex_unlock(&resp->dev->eventMutex);
+    return NABTO_EC_OK;
 }
 
 NabtoDeviceError nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format)
 {
-
+    struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
+    pthread_mutex_lock(&resp->dev->eventMutex);
+    nabto_coap_server_response_set_content_format(resp->resp, format);
+    pthread_mutex_unlock(&resp->dev->eventMutex);
+    return NABTO_EC_OK;
 }
 
 NabtoDeviceError nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response)
 {
-
+    struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
+    pthread_mutex_lock(&resp->dev->eventMutex);
+    nabto_coap_server_response_ready(resp->resp);
+    pthread_mutex_unlock(&resp->dev->eventMutex);
+    free(resp->req);
+    free(resp);
+    return NABTO_EC_OK;
 }
 
 NabtoDeviceError nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
                                                               uint16_t* contentFormat)
 {
-
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
+    pthread_mutex_lock(&req->dev->eventMutex);
+    bool res = nabto_coap_server_request_get_content_format(req->req, contentFormat);
+    pthread_mutex_unlock(&req->dev->eventMutex);
+    if (res) {
+        return NABTO_EC_OK;
+    } else {
+        return NABTO_EC_FAILED;
+    }
 }
 
 NabtoDeviceError nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
                                                        void** payload, size_t* payloadLength)
 {
-
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
+    pthread_mutex_lock(&req->dev->eventMutex);
+    nabto_coap_server_request_get_payload(req->req, payload, payloadLength);
+    pthread_mutex_unlock(&req->dev->eventMutex);
+    if(*payload == NULL) {
+        return NABTO_EC_FAILED;
+    } else {
+        return NABTO_EC_OK;
+    }
 }
 
 
