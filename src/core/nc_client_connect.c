@@ -110,7 +110,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     }
 
     // TODO: fix fingerprint verification, 
-    conn->verified = true;
+//    conn->verified = true;
     if(!conn->verified) {
         if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
             NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");

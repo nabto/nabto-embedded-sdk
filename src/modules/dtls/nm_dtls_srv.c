@@ -108,8 +108,9 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl,
 np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls_srv_connection* ctx, uint8_t* fp)
 {
     const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&ctx->ctx.ssl);
-    if (!crt) {
+    if (crt == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to get peer cert from mbedtls");
+        NABTO_LOG_ERROR(LOG, "Verification returned %u", mbedtls_ssl_get_verify_result(&ctx->ctx.ssl));
         return NABTO_EC_FAILED;
     }
     return nm_dtls_util_fp_from_crt(crt, fp);
@@ -151,6 +152,8 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
 //        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_set_client_transport_id() returned -0x%x\n\n", -ret);
 //        return NABTO_EC_FAILED;
 //    }
+    
+    mbedtls_ssl_set_hs_authmode( &((*dtls)->ctx.ssl), MBEDTLS_SSL_VERIFY_OPTIONAL );
     
     ret = mbedtls_ssl_set_hs_own_cert(&((*dtls)->ctx.ssl), &server.publicKey, &server.privateKey);
     if (ret != 0) {
