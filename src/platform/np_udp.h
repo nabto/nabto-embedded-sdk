@@ -64,7 +64,8 @@ struct np_udp_module {
 */
 
     /**
-     * Receive a packet async. If the socket is broken an error is returned.
+     * Receive a packet async. If the socket is broken an error is
+     * returned.
      */
     void (*async_recv_from)(np_udp_socket* socket, np_udp_packet_received_callback cb, void* data);
 
@@ -89,10 +90,29 @@ struct np_udp_module {
     uint16_t (*get_local_port)(np_udp_socket* socket);
     
     /**
-     * Destroy a socket. This will stop any outstanding send/receive operation.
+     * Destroy a socket. This will stop any outstanding send/receive
+     * operation.
      */
     void (*async_destroy)(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
-    
+
+    /**
+     * Wait for ever for incoming traffic from the network.
+     * @return The number of filedescriptors available for read
+     */
+    int (*inf_wait)();
+
+    /**
+     * Wait a maximum of 'ms' milliseconds for incoming traffic from
+     * the network.
+     * @return The number of filedescriptors available for read
+     */
+    int (*timed_wait)(uint32_t ms);
+
+    /**
+     * Read incoming traffic signalled by wait.
+     * @param nfds  The number of filedescriptors ready for read
+     */
+    void (*read)(int nfds);
 };
 
 

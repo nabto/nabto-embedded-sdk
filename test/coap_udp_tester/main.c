@@ -86,11 +86,11 @@ int main()
         np_event_queue_execute_all(&pl);
         if (np_event_queue_has_timed_event(&pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
-            nfds = nm_epoll_timed_wait(ms);
+            nfds = pl.udp.timed_wait(ms);
         } else {
-            nfds = nm_epoll_inf_wait();
+            nfds = pl.udp.inf_wait();
         }
-        nm_epoll_read(nfds);
+        pl.udp.read(nfds);
     }
    
 }

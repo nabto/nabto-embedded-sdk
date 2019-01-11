@@ -2,7 +2,6 @@
 #define NM_UDP_EPOLL_MODULE_H
 
 #include <nabto_types.h>
-#include <core/nc_client_connect_dispatch.h>
 #include <platform/np_udp.h>
 #include <platform/np_platform.h>
 #include <sys/epoll.h>

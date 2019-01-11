@@ -105,6 +105,10 @@ void nm_epoll_init(struct np_platform* pl_in) {
     pl->udp.get_protocol    = &nm_epoll_get_protocol;
     pl->udp.get_local_port  = &nm_epoll_get_local_port;
     pl->udp.async_destroy   = &nm_epoll_async_destroy;
+    pl->udp.inf_wait        = &nm_epoll_inf_wait;
+    pl->udp.timed_wait      = &nm_epoll_timed_wait;
+    pl->udp.read            = &nm_epoll_read;
+    
     nm_epoll_fd = epoll_create(42 /*unused*/);
     recv_buf = pl->buf.allocate();
     if (nm_epoll_fd == -1) {
@@ -323,7 +327,8 @@ void nm_epoll_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callb
 
 }
 
-void nm_epoll_event_bind_port(void* data) {
+void nm_epoll_event_bind_port(void* data)
+{
     np_udp_socket* us = (np_udp_socket*)data;
     struct epoll_event* ev;
 
@@ -398,6 +403,7 @@ void nm_epoll_event_bind_port(void* data) {
     return;
     
 }
+
 void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data)
 {
     np_udp_socket* sock;
@@ -408,7 +414,8 @@ void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, 
     np_event_queue_post(pl, &sock->created.event, nm_epoll_event_bind_port, sock);
 }
 
-void nm_epoll_event_send_to(void* data){
+void nm_epoll_event_send_to(void* data)
+{
     struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
     np_udp_socket* sock = ctx->sock;
     ssize_t res;

@@ -7,6 +7,7 @@
 #include <platform/np_platform.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 struct np_platform pl;
 np_udp_socket* sock;

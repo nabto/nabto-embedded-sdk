@@ -510,10 +510,10 @@ void* nabto_device_network_thread(void* data)
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     int nfds;
     while(true) {
-        nfds = nm_epoll_inf_wait();
+        nfds = dev->pl.udp.inf_wait();
         pthread_mutex_lock(&dev->eventMutex);
         if (nfds > 0) {
-            nm_epoll_read(nfds);
+            dev->pl.udp.read(nfds);
         }
         pthread_cond_signal(&dev->eventCond);
         if (dev->closing) {
