@@ -154,8 +154,8 @@ uint16_t uint16_read(uint8_t* buf)
 uint32_t uint32_read(uint8_t* buf)
 {
     uint32_t res = buf[0] << 24;
-    res = res + buf[1] << 16;
-    res = res + buf[2] << 8;
+    res = res + (buf[1] << 16);
+    res = res + (buf[2] << 8);
     res = res + buf[3];
     return res;
 }

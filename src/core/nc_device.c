@@ -96,4 +96,5 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     dev->closeCbData = data;
     dev->stopping = true;
     nc_attacher_detach(&dev->attacher);
+    return NABTO_EC_OK;
 }

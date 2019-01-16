@@ -59,7 +59,7 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_con
         if(buffer[1] == CT_DEVICE_LB_REQUEST) {
             uint16_t ext = (((uint16_t)buffer[2]) << 8) + buffer[3];
             // TODO: check all three extensions not just first
-            if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || EX_APPLICATION_VERSION) {
+            if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || ext == EX_APPLICATION_VERSION) {
                 validAdReqSend = true;
                 nc_attacher_test_recvState = 1;
                 cb(NABTO_EC_OK, data);
@@ -173,6 +173,7 @@ np_error_code nc_attacher_test_start_keep_alive(np_dtls_cli_context* ctx, uint32
 np_error_code nc_attacher_test_dns(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
 {
     cb(NABTO_EC_OK, rec, 1, data);
+    return NABTO_EC_OK;
 }
 
 // udp impl

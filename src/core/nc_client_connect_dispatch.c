@@ -67,5 +67,6 @@ np_error_code nc_client_connect_dispatch_close_connection(struct nc_client_conne
             ctx->elms[i].active = false;
         }
     }
+    return NABTO_EC_OK;
 }
 

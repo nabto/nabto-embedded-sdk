@@ -21,6 +21,8 @@ const char* np_error_code_to_string(np_error_code ec)
         case NABTO_EC_CONNECTION_CLOSING: return "Connection closing";
         case NABTO_EC_KEEP_ALIVE_TIMEOUT:  return "Keep alive timed out";
         case NABTO_EC_SEND_IN_PROGRESS: return "Send in progress";
+        case NABTO_EC_API_FUTURE_NOT_READY: return "Future has not yet resolved";
+        case NABTO_EC_NO_VALID_ENDPOINTS: return "There where no valid endpoints";
         case NABTO_EC_OPERATION_IN_PROGRESS: return "Operation in progress";
         case NABTO_EC_ABORTED: return "Operation was aborted";
         case NABTO_EC_STREAM_CLOSED: return "Stream closed";

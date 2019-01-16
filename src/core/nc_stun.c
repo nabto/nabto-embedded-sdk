@@ -59,6 +59,7 @@ bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
         *buf = (uint8_t)rand();
         buf++;
     }
+    return true;
 }
 
 // init function

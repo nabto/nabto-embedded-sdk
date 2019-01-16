@@ -460,6 +460,7 @@ np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_
     ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_lb_dns_cb, ctx);
 //    nc_udp_dispatch_async_create(&ctx->udp, pl, &nc_attacher_sock_created_cb, ctx);
     //pl->udp.async_create(&nc_attacher_sock_created_cb, ctx);
+    return NABTO_EC_OK;
 }
 
 np_error_code nc_attacher_register_detatch_callback(struct nc_attach_context* ctx, nc_detached_callback cb, void* data)
