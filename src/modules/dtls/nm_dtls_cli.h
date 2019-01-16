@@ -1,5 +1,5 @@
 #ifndef NM_DTLS_CLI_H
-#define NM_DTLS_CLi_H
+#define NM_DTLS_CLI_H
 
 #include <platform/np_platform.h>
 #include <platform/np_dtls_cli.h>
