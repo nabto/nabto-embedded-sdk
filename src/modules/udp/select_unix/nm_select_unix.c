@@ -389,9 +389,9 @@ void nm_select_unix_build_fd_sets()
 
 np_error_code nm_select_unix_create_socket(np_udp_socket* sock)
 {
-    sock->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    sock->sock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (sock->sock == -1) {
-        sock->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+        sock->sock = socket(AF_INET, SOCK_DGRAM, 0);
         if (sock->sock == -1) {
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;

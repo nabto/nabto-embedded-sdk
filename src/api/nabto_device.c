@@ -7,8 +7,8 @@
 #include <platform/np_error_code.h>
 
 //TODO: only on linux
-#include <modules/udp/epoll/nm_epoll.h>
-#include <sys/time.h>
+//#include <modules/udp/epoll/nm_epoll.h>
+//#include <sys/time.h>
 
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
@@ -53,7 +53,8 @@ void nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     dev->closing = true;
-    nm_epoll_close(&dev->pl);
+    // TODO: reintroduce this through the udp platform as to not leak buffers
+    //nm_epoll_close(&dev->pl);
     nabto_device_threads_join(dev->networkThread);
     nabto_device_threads_join(dev->coreThread);
     free(dev);
