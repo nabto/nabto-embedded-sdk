@@ -212,7 +212,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
     }
     if (recvLength < 0) {
         int status = errno;
-        if (status == EAGAIN || EWOULDBLOCK) {
+        if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
             return;
         } else {
