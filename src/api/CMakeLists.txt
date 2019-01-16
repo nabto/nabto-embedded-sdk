@@ -15,23 +15,27 @@ if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
     set(nabto_device_src
       ${nabto_device_src}
       ${src_dir}/nabto_linux_platform.c
+      ${src_dir}/nabto_device_threads_unix.c
       )
   else()
     set(nabto_device_src
       ${nabto_device_src}
       ${src_dir}/nabto_linux_select_platform.c
+      ${src_dir}/nabto_device_threads_unix.c
       )
   endif()    
     
-elseif (CMAKE_HOST_SYSTEM_NAME EQUAL "Windows")
+elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
   set(nabto_device_src
     ${nabto_device_src}
     ${src_dir}/nabto_linux_platform.c
+    ${src_dir}/nabto_device_threads_unix.c
     )
-elseif (CMAKE_HOST_SYSTEM_NAME EQUAL "Darwin")
+elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   set(nabto_device_src
     ${nabto_device_src}
     ${src_dir}/nabto_linux_platform.c
+    ${src_dir}/nabto_device_threads_unix.c
     )
 endif ()
 
@@ -64,12 +68,12 @@ if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
       )
   endif()    
     
-elseif (CMAKE_HOST_SYSTEM_NAME EQUAL "Windows")
+elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
     target_link_libraries( nabto_device
       nm_select_win
       nm_win_dns
       )
-elseif (CMAKE_HOST_SYSTEM_NAME EQUAL "Darwin")
+elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
     target_link_libraries( nabto_device
       nm_select_unix
       nm_unix_dns
