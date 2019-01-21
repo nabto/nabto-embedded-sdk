@@ -99,7 +99,7 @@ struct np_udp_module {
      * Wait for ever for incoming traffic from the network.
      * @return The number of filedescriptors available for read
      */
-    int (*inf_wait)();
+    int (*inf_wait)(void);
 
     /**
      * Wait a maximum of 'ms' milliseconds for incoming traffic from

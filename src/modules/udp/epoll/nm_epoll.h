@@ -19,7 +19,7 @@ void nm_epoll_init(struct np_platform *pl_in);
 void nm_epoll_close(struct np_platform* pl);
 
 int nm_epoll_timed_wait(uint32_t ms);
-int nm_epoll_inf_wait();
+int nm_epoll_inf_wait(void);
 
 void nm_epoll_read(int nfds);
 

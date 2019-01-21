@@ -16,6 +16,6 @@ void nm_unix_ts_now(np_timestamp* ts);
 
 uint32_t nm_unix_ts_difference(np_timestamp* t1, np_timestamp* t2);
 
-uint32_t nm_unix_ts_now_ms();
+uint32_t nm_unix_ts_now_ms(void);
 
 #endif // _NP_UNIX_TIMESTAMP_H_

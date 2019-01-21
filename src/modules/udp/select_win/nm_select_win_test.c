@@ -1,8 +1,8 @@
 #include "nm_select_win.h"
 
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
+#include <modules/logging/win/nm_win_logging.h>
+#include <modules/timestamp/win/nm_win_timestamp.h>
 
 #include <platform/np_platform.h>
 

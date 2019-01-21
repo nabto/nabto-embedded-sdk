@@ -376,11 +376,7 @@ static void nm_dtls_srv_tls_logger( void *ctx, int level,
     }
     // TODO: fix this ugly hack to remove \n after all mbedtls log strings
     NABTO_LOG_ERROR(LOG, "LOGGER CALLED!");
-    char ns[strlen(str)];
-    memset(ns, 0, strlen(str));
-    memcpy(ns, str, strlen(str));
-    ns[strlen(str)-1] = '\0';
-    NABTO_LOG_RAW(severity, LOG, line, file, ns );
+    NABTO_LOG_RAW(severity, LOG, line, file, str );
 }
 
 

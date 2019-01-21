@@ -6,6 +6,8 @@
 #include <windows.h>
 #include <string.h>
 
+#define LOG NABTO_LOG_MODULE_API
+
 //TODO: switch to SRW locks
 struct nabto_device_thread {
 	HANDLE thread;
@@ -18,13 +20,13 @@ struct nabto_device_mutex {
 };
 
 struct nabto_device_condition {
-
+    int i;
 };
 
 struct nabto_device_thread* nabto_device_threads_create_thread()
 {
 	struct nabto_device_thread* thread = (struct nabto_device_thread*)malloc(sizeof(struct nabto_device_thread));
-	if (mutex == NULL) {
+	if (thread == NULL) {
 		NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
 		return NULL;
 	}
@@ -63,7 +65,7 @@ void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
 	free(thread);
 }
 
-void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutext)
+void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutex)
 {
 	CloseHandle(mutex->mutex);
 	free(mutex);

@@ -42,6 +42,10 @@
 #define MBEDTLS_HAVE_ASM
 #define MBEDTLS_HAVE_TIME
 
+#if defined(_WIN32)
+#define MBEDTLS_PLATFORM_C
+#endif
+
 /* mbed TLS feature support */
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 //#define MBEDTLS_ECP_DP_SECP384R1_ENABLED

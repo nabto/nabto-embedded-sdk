@@ -30,7 +30,7 @@ void nabto_device_free_threads(struct nabto_device_context* dev);
 /**
  * Allocate new device
  */
-NabtoDevice* nabto_device_new()
+NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
     memset(dev, 0, sizeof(struct nabto_device_context));
@@ -49,7 +49,7 @@ NabtoDevice* nabto_device_new()
 /**
  * free device when closed
  */
-void nabto_device_free(NabtoDevice* device)
+void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     dev->closing = true;
@@ -63,7 +63,7 @@ void nabto_device_free(NabtoDevice* device)
 /**
  * Self explanetory set functions
  */
-NabtoDeviceError nabto_device_set_product_id(NabtoDevice* device, const char* str)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_product_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -79,7 +79,7 @@ NabtoDeviceError nabto_device_set_product_id(NabtoDevice* device, const char* st
     return NABTO_EC_OK;
 }
 
-NabtoDeviceError nabto_device_set_device_id(NabtoDevice* device, const char* str)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_device_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -96,7 +96,7 @@ NabtoDeviceError nabto_device_set_device_id(NabtoDevice* device, const char* str
 
 }
 
-NabtoDeviceError nabto_device_set_server_url(NabtoDevice* device, const char* str)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -113,7 +113,7 @@ NabtoDeviceError nabto_device_set_server_url(NabtoDevice* device, const char* st
 
 }
 
-NabtoDeviceError nabto_device_set_public_key(NabtoDevice* device, const char* str)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_public_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -130,7 +130,7 @@ NabtoDeviceError nabto_device_set_public_key(NabtoDevice* device, const char* st
 
 }
 
-NabtoDeviceError nabto_device_set_private_key(NabtoDevice* device, const char* str)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -147,7 +147,7 @@ NabtoDeviceError nabto_device_set_private_key(NabtoDevice* device, const char* s
 
 }
 
-NabtoDeviceError nabto_device_set_app_name(NabtoDevice* device, const char* name)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_name(NabtoDevice* device, const char* name)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     if (strlen(name) > 32) {
@@ -159,7 +159,7 @@ NabtoDeviceError nabto_device_set_app_name(NabtoDevice* device, const char* name
     return NABTO_EC_OK;
 }
 
-NabtoDeviceError nabto_device_set_app_version(NabtoDevice* device, const char* version)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* device, const char* version)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     if (strlen(version) > 32) {
@@ -171,7 +171,7 @@ NabtoDeviceError nabto_device_set_app_version(NabtoDevice* device, const char* v
     return NABTO_EC_OK;
 }
 
-NabtoDeviceError nabto_device_experimental_get_local_port(NabtoDevice* device, uint16_t* port)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_experimental_get_local_port(NabtoDevice* device, uint16_t* port)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -183,7 +183,7 @@ NabtoDeviceError nabto_device_experimental_get_local_port(NabtoDevice* device, u
 /**
  * Starting the device
  */
-NabtoDeviceError nabto_device_start(NabtoDevice* device)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
@@ -240,7 +240,7 @@ void nabto_device_close_cb(const np_error_code ec, void* data)
     nabto_api_future_queue_post(&dev->queueHead, dev->closeFut);
 }
 
-NabtoDeviceFuture* nabto_device_close(NabtoDevice* device)
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_close(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -256,7 +256,7 @@ NabtoDeviceFuture* nabto_device_close(NabtoDevice* device)
  * Streaming Api
  *******************************************/
 
-NabtoDeviceFuture* nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream)
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_stream* str = (struct nabto_device_stream*)malloc(sizeof(struct nabto_device_stream));
@@ -271,7 +271,7 @@ NabtoDeviceFuture* nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceSt
     return fut;
 }
 
-void nabto_device_stream_free(NabtoDeviceStream* stream)
+void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
@@ -281,7 +281,7 @@ void nabto_device_stream_free(NabtoDeviceStream* stream)
     free(str);
 }
 
-NabtoDeviceFuture* nabto_device_stream_accept(NabtoDeviceStream* stream)
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
@@ -299,7 +299,7 @@ NabtoDeviceFuture* nabto_device_stream_accept(NabtoDeviceStream* stream)
     return fut;
 }
 
-NabtoDeviceFuture* nabto_device_stream_read_all(NabtoDeviceStream* stream,
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
                                                 void* buffer, size_t bufferLength,
                                                 size_t* readLength)
 {
@@ -321,7 +321,7 @@ NabtoDeviceFuture* nabto_device_stream_read_all(NabtoDeviceStream* stream,
     return fut;
 }
 
-NabtoDeviceFuture* nabto_device_stream_read_some(NabtoDeviceStream* stream,
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStream* stream,
                                                  void* buffer, size_t bufferLength,
                                                  size_t* readLength)
 {
@@ -343,7 +343,7 @@ NabtoDeviceFuture* nabto_device_stream_read_some(NabtoDeviceStream* stream,
     return fut;
 }
 
-NabtoDeviceFuture* nabto_device_stream_write(NabtoDeviceStream* stream,
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
                                              const void* buffer, size_t bufferLength)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
@@ -362,7 +362,7 @@ NabtoDeviceFuture* nabto_device_stream_write(NabtoDeviceStream* stream,
     return fut;
 }
 
-NabtoDeviceFuture* nabto_device_stream_close(NabtoDeviceStream* stream)
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
@@ -384,7 +384,7 @@ NabtoDeviceFuture* nabto_device_stream_close(NabtoDeviceStream* stream)
  * COAP API Start
  *******************************************/
 
-NabtoDeviceCoapResource* nabto_device_coap_add_resource(NabtoDevice* device,
+NabtoDeviceCoapResource* NABTO_DEVICE_API nabto_device_coap_add_resource(NabtoDevice* device,
                                                         NabtoDeviceCoapMethod method,
                                                         const char* path,
                                                         NabtoDeviceCoapResourceHandler handler,
@@ -407,7 +407,7 @@ NabtoDeviceCoapResource* nabto_device_coap_add_resource(NabtoDevice* device,
     return (NabtoDeviceCoapResource*)resource;
 }
 
-NabtoDeviceError nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource)
 {
     struct nabto_device_coap_resource* reso = (struct nabto_device_coap_resource*)resource;
     nabto_device_threads_mutex_lock(reso->dev->eventMutex);
@@ -416,7 +416,7 @@ NabtoDeviceError nabto_device_coap_notify_observers(NabtoDeviceCoapResource* res
     nabto_device_threads_mutex_unlock(reso->dev->eventMutex);
 }
 
-NabtoDeviceCoapResponse* nabto_device_coap_create_response(NabtoDeviceCoapRequest* request)
+NabtoDeviceCoapResponse* NABTO_DEVICE_API nabto_device_coap_create_response(NabtoDeviceCoapRequest* request)
 {
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
 
@@ -431,7 +431,7 @@ NabtoDeviceCoapResponse* nabto_device_coap_create_response(NabtoDeviceCoapReques
     return (NabtoDeviceCoapResponse*)response;
 }
 
-NabtoDeviceError nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code)
 {
     struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
     nabto_device_threads_mutex_lock(resp->dev->eventMutex);
@@ -440,7 +440,7 @@ NabtoDeviceError nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* re
     return NABTO_EC_OK;
 }
 
-NabtoDeviceError nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response,
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response,
                                                         const void* data, size_t dataSize)
 {
     struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
@@ -450,7 +450,7 @@ NabtoDeviceError nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse*
     return NABTO_EC_OK;
 }
 
-NabtoDeviceError nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format)
 {
     struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
     nabto_device_threads_mutex_lock(resp->dev->eventMutex);
@@ -459,7 +459,7 @@ NabtoDeviceError nabto_device_coap_response_set_content_format(NabtoDeviceCoapRe
     return NABTO_EC_OK;
 }
 
-NabtoDeviceError nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response)
 {
     struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;
     nabto_device_threads_mutex_lock(resp->dev->eventMutex);
@@ -470,7 +470,7 @@ NabtoDeviceError nabto_device_coap_response_ready(NabtoDeviceCoapResponse* respo
     return NABTO_EC_OK;
 }
 
-NabtoDeviceError nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
                                                               uint16_t* contentFormat)
 {
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
@@ -484,7 +484,7 @@ NabtoDeviceError nabto_device_coap_request_get_content_format(NabtoDeviceCoapReq
     }
 }
 
-NabtoDeviceError nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
                                                        void** payload, size_t* payloadLength)
 {
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
@@ -533,8 +533,6 @@ void* nabto_device_core_thread(void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     while (true) {
-        struct timespec ts;
-        struct timeval tp;
         NABTO_LOG_TRACE(LOG, "start of while");
 
         nabto_device_threads_mutex_lock(dev->eventMutex);

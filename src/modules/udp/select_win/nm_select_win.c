@@ -1,13 +1,13 @@
 #include "nm_select_win.h"
 
 #include <platform/np_logging.h>
-
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
+#include <nabto_types.h>
+// #include <stdlib.h>
+// #include <sys/socket.h>
+// #include <netinet/in.h>
+// #include <errno.h>
+// #include <string.h>
+// #include <unistd.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -45,7 +45,7 @@ struct np_udp_socket {
 static struct np_platform* pl = 0;
 static np_communication_buffer* recvBuf;
 static struct np_udp_socket* head = NULL;
-static fd_set readFds;
+//static fd_set readFds;
 static int maxReadFd;
 static int pipefd[2];
 
@@ -102,10 +102,10 @@ void nm_select_win_init(struct np_platform *pl_in)
     pl->udp.read             = &nm_select_win_read;
 
     recvBuf = pl->buf.allocate();
-    if(pipe(pipefd) == -1) {
-        NABTO_LOG_ERROR(LOG, "Failed to create pipe file descriptors");
-    }
-    nm_select_win_build_fd_sets();
+    // if(pipe(pipefd) == -1) {
+        // NABTO_LOG_ERROR(LOG, "Failed to create pipe file descriptors");
+    // }
+    // nm_select_win_build_fd_sets();
 }
 
 void nm_select_win_async_create(np_udp_socket_created_callback cb, void* data)
@@ -168,10 +168,11 @@ enum np_ip_address_type nm_select_win_get_protocol(np_udp_socket* socket)
 
 uint16_t nm_select_win_get_local_port(np_udp_socket* socket)
 {
-    struct sockaddr_in6 addr;
-    socklen_t length = sizeof(struct sockaddr_in6);
-    getsockname(socket->sock, (struct sockaddr*)(&addr), &length);
-    return htons(addr.sin6_port);
+    // struct sockaddr_in6 addr;
+    // socklen_t length = sizeof(struct sockaddr_in6);
+    // getsockname(socket->sock, (struct sockaddr*)(&addr), &length);
+    // return htons(addr.sin6_port);
+	return 0;
 }
 
 void nm_select_win_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data)
@@ -184,26 +185,26 @@ void nm_select_win_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_
 int nm_select_win_inf_wait()
 {
     int nfds;
-    nfds = select(maxReadFd+1, &readFds, NULL, NULL, NULL);
-    if (nfds < 0) {
-        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
-    } else {
-        NABTO_LOG_INFO(LOG, "select returned with %i file descriptors", nfds);
-    }
+    // nfds = select(maxReadFd+1, &readFds, NULL, NULL, NULL);
+    // if (nfds < 0) {
+        // NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
+    // } else {
+        // NABTO_LOG_INFO(LOG, "select returned with %i file descriptors", nfds);
+    // }
     return nfds;
 }
 
 int nm_select_win_timed_wait(uint32_t ms)
 {
     int nfds;
-    struct timeval timeout_val;
-    timeout_val.tv_sec = (ms/1000);
-    timeout_val.tv_usec = ((ms)%1000)*1000;
+    // struct timeval timeout_val;
+    // timeout_val.tv_sec = (ms/1000);
+    // timeout_val.tv_usec = ((ms)%1000)*1000;
 
-    nfds = select(maxReadFd+1, &readFds, NULL, NULL, &timeout_val);
-    if (nfds < 0) {
-        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
-    }
+    // nfds = select(maxReadFd+1, &readFds, NULL, NULL, &timeout_val);
+    // if (nfds < 0) {
+        // NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
+    // }
     return nfds;
 }
 
@@ -212,21 +213,21 @@ void nm_select_win_read(int nfds)
     np_udp_socket* next = head;
     char one;
     NABTO_LOG_INFO(LOG, "read: %i", nfds);
-    while (next != NULL) {
-        if (FD_ISSET(next->sock, &readFds)) {
-            nm_select_win_handle_event(next);
-        }
-        next = next->next;
-    }
-    if (FD_ISSET(pipefd[0], &readFds)) {
-        NABTO_LOG_INFO(LOG, "Reading from pipe[0]");
-        read(pipefd[0], &one, 1);
-    }
-    if (FD_ISSET(pipefd[1], &readFds)) {
-        NABTO_LOG_INFO(LOG, "Reading from pipe[1]");
-        read(pipefd[1], &one, 1);
-    }
-    nm_select_win_build_fd_sets();
+    // while (next != NULL) {
+        // if (FD_ISSET(next->sock, &readFds)) {
+            // nm_select_win_handle_event(next);
+        // }
+        // next = next->next;
+    // }
+    // if (FD_ISSET(pipefd[0], &readFds)) {
+        // NABTO_LOG_INFO(LOG, "Reading from pipe[0]");
+        // read(pipefd[0], &one, 1);
+    // }
+    // if (FD_ISSET(pipefd[1], &readFds)) {
+        // NABTO_LOG_INFO(LOG, "Reading from pipe[1]");
+        // read(pipefd[1], &one, 1);
+    // }
+    // nm_select_win_build_fd_sets();
 }
 
 /**
@@ -254,8 +255,8 @@ void nm_select_win_event_create(void* data)
         }
         head = sock;
         NABTO_LOG_INFO(LOG, "Writing to pipe");
-        int i = write(pipefd[1], "1", 1);
-        NABTO_LOG_INFO(LOG, "%i", i);
+        // int i = write(pipefd[1], "1", 1);
+        // NABTO_LOG_INFO(LOG, "%i", i);
         sock->created.cb(NABTO_EC_OK, sock, sock->created.data);
         return;
     } else {
@@ -273,37 +274,37 @@ void nm_select_win_event_bind_port(void* data)
     np_error_code ec = nm_select_win_create_socket(sock);
 
     if (ec == NABTO_EC_OK) {
-        if (sock->isIpv6) {
-            struct sockaddr_in6 si_me6;
-            si_me6.sin6_family = AF_INET6;
-            si_me6.sin6_port = htons(sock->created.port);
-            si_me6.sin6_addr = in6addr_any;
-            i = bind(sock->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
-            NABTO_LOG_INFO(LOG, "bind returned %i", i);
-        } else {
-            struct sockaddr_in si_me;
-            si_me.sin_family = AF_INET;
-            si_me.sin_port = htons(sock->created.port);
-            si_me.sin_addr.s_addr = INADDR_ANY;
-            i = bind(sock->sock, (struct sockaddr*)&si_me, sizeof(si_me));
-            NABTO_LOG_INFO(LOG, "bind returned %i", i);
-        }
-        if (i != 0) {
-            NABTO_LOG_ERROR(LOG,"Unable to bind to port %i: (%i) '%s'.", sock->created.port, errno, strerror(errno));
-            ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-            close(sock->sock);
-            sock->created.cb(ec, NULL, sock->created.data);
-            free(sock);
-            return;
-        }
-        sock->next = head;
-        if (head != NULL) {
-            head->prev = sock;
-        }
-        head = sock;
-        write(pipefd[1], "1", 1);
-        sock->created.cb(NABTO_EC_OK, sock, sock->created.data);
-        return;
+        // if (sock->isIpv6) {
+            // struct sockaddr_in6 si_me6;
+            // si_me6.sin6_family = AF_INET6;
+            // si_me6.sin6_port = htons(sock->created.port);
+            // si_me6.sin6_addr = in6addr_any;
+            // i = bind(sock->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
+            // NABTO_LOG_INFO(LOG, "bind returned %i", i);
+        // } else {
+            // struct sockaddr_in si_me;
+            // si_me.sin_family = AF_INET;
+            // si_me.sin_port = htons(sock->created.port);
+            // si_me.sin_addr.s_addr = INADDR_ANY;
+            // i = bind(sock->sock, (struct sockaddr*)&si_me, sizeof(si_me));
+            // NABTO_LOG_INFO(LOG, "bind returned %i", i);
+        // }
+        // if (i != 0) {
+            // NABTO_LOG_ERROR(LOG,"Unable to bind to port %i: (%i) '%s'.", sock->created.port, errno, strerror(errno));
+            // ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
+            // close(sock->sock);
+            // sock->created.cb(ec, NULL, sock->created.data);
+            // free(sock);
+            // return;
+        // }
+        // sock->next = head;
+        // if (head != NULL) {
+            // head->prev = sock;
+        // }
+        // head = sock;
+        // write(pipefd[1], "1", 1);
+        // sock->created.cb(NABTO_EC_OK, sock, sock->created.data);
+        // return;
     } else {
         sock->created.cb(ec, NULL, sock->created.data);
         free(sock);
@@ -317,37 +318,37 @@ void nm_select_win_event_send_to(void* data)
 
     struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
     np_udp_socket* sock = ctx->sock;
-    ssize_t res;
-    if (ctx->ep.ip.type == NABTO_IPV4) {
-        struct sockaddr_in srv_addr;
-        srv_addr.sin_family = AF_INET;
-        srv_addr.sin_port = htons (ctx->ep.port);
-        memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
-        NABTO_LOG_INFO(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
-        res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
-    } else { // IPv6
-        struct sockaddr_in6 srv_addr;
-        srv_addr.sin6_family = AF_INET6;
-        srv_addr.sin6_flowinfo = 0;
-        srv_addr.sin6_scope_id = 0;
-        srv_addr.sin6_port = htons (ctx->ep.port);
-        memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, sizeof(srv_addr.sin6_addr));
-        NABTO_LOG_INFO(LOG, "Sending to v6");
-        res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
-    }
-    if (res < 0) {
-        int status = errno;
-        NABTO_LOG_TRACE(LOG, "UDP returned error status %i", status);
-        if (status == EAGAIN || status == EWOULDBLOCK) {
+    // ssize_t res;
+    // if (ctx->ep.ip.type == NABTO_IPV4) {
+        // struct sockaddr_in srv_addr;
+        // srv_addr.sin_family = AF_INET;
+        // srv_addr.sin_port = htons (ctx->ep.port);
+        // memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
+        // NABTO_LOG_INFO(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
+        // res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+    // } else { // IPv6
+        // struct sockaddr_in6 srv_addr;
+        // srv_addr.sin6_family = AF_INET6;
+        // srv_addr.sin6_flowinfo = 0;
+        // srv_addr.sin6_scope_id = 0;
+        // srv_addr.sin6_port = htons (ctx->ep.port);
+        // memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, sizeof(srv_addr.sin6_addr));
+        // NABTO_LOG_INFO(LOG, "Sending to v6");
+        // res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+    // }
+    // if (res < 0) {
+        // int status = errno;
+        // NABTO_LOG_TRACE(LOG, "UDP returned error status %i", status);
+        // if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
-        } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
-            if (ctx->cb) {
-                ctx->cb(NABTO_EC_FAILED_TO_SEND_PACKET, ctx->cbData);
-            }
-            return;
-        }
-    }
+        // } else {
+            // NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
+            // if (ctx->cb) {
+                // ctx->cb(NABTO_EC_FAILED_TO_SEND_PACKET, ctx->cbData);
+            // }
+            // return;
+        // }
+    // }
     if (ctx->cb) {
         ctx->cb(NABTO_EC_OK, ctx->cbData);
     }
@@ -361,102 +362,102 @@ void nm_select_win_event_destroy(void* data)
         return;
     }
     sock->closing = true;
-    shutdown(sock->sock, SHUT_RDWR);
+    // shutdown(sock->sock, SHUT_RDWR);
     NABTO_LOG_TRACE(LOG, "shutdown with data: %u", sock->des.data);
     return;
 }
 
 void nm_select_win_build_fd_sets()
 {
-    np_udp_socket* next = head;
-    FD_SET(pipefd[0], &readFds);
-    maxReadFd = pipefd[0];
-    FD_SET(pipefd[1], &readFds);
-    maxReadFd = MAX(maxReadFd, pipefd[1]);
-    while (next != NULL) {
-        if (!next->closing) {
-            FD_SET(next->sock, &readFds);
-            maxReadFd = MAX(maxReadFd, next->sock);
-            next = next->next;
-        } else {
-            np_udp_socket* tmp;
-            tmp = next;
-            next = next->next;
-            nm_select_win_free_socket(tmp);
-        }
-    }
+    // np_udp_socket* next = head;
+    // FD_SET(pipefd[0], &readFds);
+    // maxReadFd = pipefd[0];
+    // FD_SET(pipefd[1], &readFds);
+    // maxReadFd = MAX(maxReadFd, pipefd[1]);
+    // while (next != NULL) {
+        // if (!next->closing) {
+            // FD_SET(next->sock, &readFds);
+            // maxReadFd = MAX(maxReadFd, next->sock);
+            // next = next->next;
+        // } else {
+            // np_udp_socket* tmp;
+            // tmp = next;
+            // next = next->next;
+            // nm_select_win_free_socket(tmp);
+        // }
+    // }
 }
 
 np_error_code nm_select_win_create_socket(np_udp_socket* sock)
 {
-    sock->sock = socket(AF_INET6, SOCK_DGRAM, 0);
-    if (sock->sock == -1) {
-        sock->sock = socket(AF_INET, SOCK_DGRAM, 0);
-        if (sock->sock == -1) {
-            NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
-            return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-        } else {
-            NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
-            sock->isIpv6 = false;
-        }
-    } else {
-        int no = 0;
-        sock->isIpv6 = true;
-        if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_V6ONLY, (void*) &no, sizeof(no))) {
-            NABTO_LOG_ERROR(LOG, "Unable to set option: (%i) '%s'.", errno, strerror(errno));
-            close(sock->sock);
-            return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-        }
-    }
+    // sock->sock = socket(AF_INET6, SOCK_DGRAM, 0);
+    // if (sock->sock == -1) {
+        // sock->sock = socket(AF_INET, SOCK_DGRAM, 0);
+        // if (sock->sock == -1) {
+            // NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
+            // return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
+        // } else {
+            // NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
+            // sock->isIpv6 = false;
+        // }
+    // } else {
+        // int no = 0;
+        // sock->isIpv6 = true;
+        // if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_V6ONLY, (void*) &no, sizeof(no))) {
+            // NABTO_LOG_ERROR(LOG, "Unable to set option: (%i) '%s'.", errno, strerror(errno));
+            // close(sock->sock);
+            // return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
+        // }
+    // }
     return NABTO_EC_OK;
 }
 
 void nm_select_win_handle_event(np_udp_socket* sock)
 {
-    NABTO_LOG_TRACE(LOG, "handle event");
-    struct np_udp_endpoint ep;
-    ssize_t recvLength;
-    uint8_t* start;
-    start = pl->buf.start(recvBuf);
-    if (sock->isIpv6) {
-        struct sockaddr_in6 sa;
-        socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, start,  pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.v6.addr,&sa.sin6_addr.s6_addr, sizeof(ep.ip.v6.addr));
-        ep.port = ntohs(sa.sin6_port);
-        ep.ip.type = NABTO_IPV6;
-    } else {
-        struct sockaddr_in sa;
-        socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, start, pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.v4.addr,&sa.sin_addr.s_addr, sizeof(ep.ip.v4.addr));
-        ep.port = ntohs(sa.sin_port);
-        ep.ip.type = NABTO_IPV4;
-    }
-    if (recvLength < 0) {
-        int status = errno;
-        if (status == EAGAIN || status == EWOULDBLOCK) {
+    // NABTO_LOG_TRACE(LOG, "handle event");
+    // struct np_udp_endpoint ep;
+    // ssize_t recvLength;
+    // uint8_t* start;
+    // start = pl->buf.start(recvBuf);
+    // if (sock->isIpv6) {
+        // struct sockaddr_in6 sa;
+        // socklen_t addrlen = sizeof(sa);
+        // recvLength = recvfrom(sock->sock, start,  pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
+        // memcpy(&ep.ip.v6.addr,&sa.sin6_addr.s6_addr, sizeof(ep.ip.v6.addr));
+        // ep.port = ntohs(sa.sin6_port);
+        // ep.ip.type = NABTO_IPV6;
+    // } else {
+        // struct sockaddr_in sa;
+        // socklen_t addrlen = sizeof(sa);
+        // recvLength = recvfrom(sock->sock, start, pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
+        // memcpy(&ep.ip.v4.addr,&sa.sin_addr.s_addr, sizeof(ep.ip.v4.addr));
+        // ep.port = ntohs(sa.sin_port);
+        // ep.ip.type = NABTO_IPV4;
+    // }
+    // if (recvLength < 0) {
+        // int status = errno;
+        // if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
-            return;
-        } else {
-            np_udp_packet_received_callback cb;
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_handle_event", strerror(status), (int) status);
-            if(sock->recv.cb) {
-                cb = sock->recv.cb;
-                sock->recv.cb = NULL;
-                cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recv.data);
-            }
-            nm_select_win_free_socket(sock);
-            return;
-        }
-    }
-    if (sock->recv.cb) {
-        np_udp_packet_received_callback cb = sock->recv.cb;
-        sock->recv.cb = NULL;
-        NABTO_LOG_TRACE(LOG, "received data, invoking callback");
-        cb(NABTO_EC_OK, ep, recvBuf, recvLength, sock->recv.data);
-    }
-    nm_select_win_handle_event(sock);
+            // return;
+        // } else {
+            // np_udp_packet_received_callback cb;
+            // NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_handle_event", strerror(status), (int) status);
+            // if(sock->recv.cb) {
+                // cb = sock->recv.cb;
+                // sock->recv.cb = NULL;
+                // cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recv.data);
+            // }
+            // nm_select_win_free_socket(sock);
+            // return;
+        // }
+    // }
+    // if (sock->recv.cb) {
+        // np_udp_packet_received_callback cb = sock->recv.cb;
+        // sock->recv.cb = NULL;
+        // NABTO_LOG_TRACE(LOG, "received data, invoking callback");
+        // cb(NABTO_EC_OK, ep, recvBuf, recvLength, sock->recv.data);
+    // }
+    // nm_select_win_handle_event(sock);
 }
 
 void nm_select_win_free_socket(np_udp_socket* sock)

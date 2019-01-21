@@ -19,7 +19,7 @@ void nm_select_unix_cancel_send_to(struct np_udp_send_context* socket);
 enum np_ip_address_type nm_select_unix_get_protocol(np_udp_socket* socket);
 uint16_t nm_select_unix_get_local_port(np_udp_socket* socket);
 void nm_select_unix_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
-int nm_select_unix_inf_wait();
+int nm_select_unix_inf_wait(void);
 int nm_select_unix_timed_wait(uint32_t ms);
 void nm_select_unix_read(int nfds);
 
