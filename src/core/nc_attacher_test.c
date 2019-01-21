@@ -197,13 +197,12 @@ void nc_attacher_test_callback(const np_error_code ec, void* data)
     }
 }
 
-//#include <modules/logging/nm_unix_logging.h>
 
 void nc_attacher_test_attach()
 {
     struct nc_attach_context attach;
     struct np_platform pl;
-//    nm_unix_log_init(&pl);
+//    np_log_init(&pl);
     np_platform_init(&pl);
     pl.dtlsC.async_connect = &nc_attacher_test_cryp_conn;
     pl.dtlsC.async_send_to = &nc_attacher_test_cryp_send;

@@ -53,9 +53,15 @@ np_error_code nc_stream_status_to_ec(nabto_stream_status status)
     }
 }
 
+uint32_t nc_stream_get_stamp(void* userData)
+{
+    struct nc_stream_context* ctx = (struct nc_stream_context*)userData;
+    return ctx->pl->ts.now_ms();
+}
+
 void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager)
 {
-    nc_stream_module.get_stamp = pl->ts.now_ms;
+    nc_stream_module.get_stamp = &nc_stream_get_stamp;
     nc_stream_module.log = &nc_stream_log;
     nc_stream_module.alloc_send_segment = &nc_stream_alloc_send_segment;
     nc_stream_module.free_send_segment = &nc_stream_free_send_segment;

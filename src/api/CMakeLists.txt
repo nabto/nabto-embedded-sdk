@@ -43,8 +43,9 @@ add_library( nabto_device SHARED "${nabto_device_src}")
 
 target_link_libraries( nabto_device
   np_platform
-  nm_unix_logging
+  nm_logging
   nm_unix_communication_buffer
+  nm_access_control
   nm_unix_timestamp
   nm_dtls_cli
   nm_dtls_srv

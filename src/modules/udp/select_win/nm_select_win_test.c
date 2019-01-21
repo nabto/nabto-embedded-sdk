@@ -90,9 +90,9 @@ int main()
 {
     int nfds;
     np_platform_init(&pl);
-    nm_unix_log_init();
+    np_log_init();
     nm_unix_comm_buf_init(&pl);
-    nm_unix_ts_init(&pl);
+    np_ts_init(&pl);
     nm_select_win_init(&pl);
     NABTO_LOG_INFO(0, "main");
 

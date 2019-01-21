@@ -4,8 +4,6 @@
 #include "nm_dtls_cli.h"
 #include "nm_dtls_srv.h"
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -220,7 +218,7 @@ void test_dtls_connection()
 
     np_platform_init(&pl);
     nm_unix_comm_buf_init(&pl);
-    nm_unix_ts_init(&pl);
+    np_ts_init(&pl);
 
     pl.conn.async_create = &conn_async_create;
     pl.conn.get_id = &conn_get_id;

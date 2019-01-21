@@ -8,7 +8,7 @@
 
 #define NM_UNIX_LOGGING_FILE_LENGTH 24
 
-void nm_unix_log_init()
+void np_log_init()
 {
     np_log.log = &nm_unix_log;
     np_log.log_buf = &nm_unix_log_buf;

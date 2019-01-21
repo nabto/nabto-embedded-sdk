@@ -5,4 +5,4 @@ set(unix_src
   )
 
 
-add_library( nm_unix_logging STATIC ${unix_src})
+add_library( nm_logging STATIC ${unix_src})

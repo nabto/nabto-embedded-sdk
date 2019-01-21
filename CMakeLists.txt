@@ -29,6 +29,7 @@ set(test_runner_src
   )
 
 add_subdirectory(src/modules/communication_buffer)
+add_subdirectory(src/modules/access_control)
 add_subdirectory(src/modules/dtls)
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(nabto-common-cpp/src/streaming)
@@ -71,5 +72,5 @@ target_link_libraries(unit_test
   nc_core_test
   np_platform
   nc_core
-  nm_unix_logging)
+  nm_logging)
 endif()

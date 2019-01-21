@@ -2,7 +2,6 @@
 
 #include <modules/udp/select_win/nm_select_win.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
 #include <modules/timestamp/win/nm_win_timestamp.h>
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/dtls/nm_dtls_srv.h>
@@ -13,7 +12,7 @@
 void nabto_device_init_platform(struct np_platform* pl)
 {
     np_platform_init(pl);
-    nm_unix_log_init();
+    np_log_init();
 }
 
 void nabto_device_init_platform_modules(struct np_platform* pl, const char* devicePublicKey, const char* devicePrivateKey)

@@ -2,12 +2,9 @@
 #include <platform/np_logging.h>
 #include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/unix/nm_unix_logging.h>
-#include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/unix/nm_unix_dns.h>
-#include <modules/access_control/nm_access_control.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_attacher.h>
 #include <core/nc_client_connect.h>
@@ -123,14 +120,14 @@ int main() {
     }
     
     np_platform_init(&pl);
-    nm_unix_log_init();
+    np_log_init();
 
-    nm_access_control_init(&pl);
+    np_access_control_init(&pl);
     nm_unix_comm_buf_init(&pl);
     nm_epoll_init(&pl);
     nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     nm_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
-    nm_unix_ts_init(&pl);
+    np_ts_init(&pl);
     nm_unix_dns_init(&pl);
   
     struct test_context data;

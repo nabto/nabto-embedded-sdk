@@ -2,8 +2,6 @@
 #include <platform/np_logging.h>
 #include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/unix/nm_unix_logging.h>
-#include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <core/nc_coap.h>
 
 #include <stdlib.h>
@@ -65,9 +63,9 @@ int main()
 {
     int nfds;
     np_platform_init(&pl);
-    nm_unix_log_init();
+    np_log_init();
     nm_unix_comm_buf_init(&pl);
-    nm_unix_ts_init(&pl);
+    np_ts_init(&pl);
     nm_epoll_init(&pl);
     
     pl.dtlsS.async_send_to = &dtlsSendTo;
