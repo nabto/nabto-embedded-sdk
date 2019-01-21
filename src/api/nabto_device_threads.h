@@ -12,7 +12,7 @@ struct nabto_device_condition;
 
 struct nabto_device_thread* nabto_device_threads_create_thread(void);
 struct nabto_device_mutex* nabto_device_threads_create_mutex(void);
-struct nabto_device_condition* nabto_device_threads_create_cond(void);
+struct nabto_device_condition* nabto_device_threads_create_condition(void);
 
 void nabto_device_threads_free_thread(struct nabto_device_thread* thread);
 void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutext);

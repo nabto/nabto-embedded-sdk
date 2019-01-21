@@ -7,9 +7,9 @@
 #include <core/nc_tests.h>
 
 #include <platform/np_logging.h>
-#include <modules/logging/nm_unix_logging.h>
+#include <modules/logging/unix/nm_unix_logging.h>
 
-#include <modules/timestamp/nm_unix_timestamp.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 
 #include <stdlib.h>
 

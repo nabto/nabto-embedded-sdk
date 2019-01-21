@@ -2,11 +2,11 @@
 #include <platform/np_logging.h>
 #include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
+#include <modules/logging/unix/nm_unix_logging.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/dtls/nm_dtls_srv.h>
-#include <modules/dns/nm_unix_dns.h>
+#include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/access_control/nm_access_control.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_attacher.h>

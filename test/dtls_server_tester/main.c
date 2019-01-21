@@ -2,8 +2,8 @@
 #include <platform/np_logging.h>
 #include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
+#include <modules/logging/unix/nm_unix_logging.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dtls/nm_dtls_srv.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_client_connect.h>
@@ -116,7 +116,7 @@ int main() {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
             nfds = nm_epoll_timed_wait(ms);
         } else {
-            nfds = nm_epoll_inf_wait(0);
+            nfds = nm_epoll_inf_wait();
         }
         nm_epoll_read(nfds);
     }

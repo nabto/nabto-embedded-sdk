@@ -191,7 +191,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
         NABTO_LOG_ERROR(LOG, "Encryption key pair or server URL not set");
         return NABTO_EC_FAILED;
     }
-    dev->eventCond = nabto_device_threads_create_cond();
+    dev->eventCond = nabto_device_threads_create_condition();
     if (dev->eventCond == NULL) {
         NABTO_LOG_ERROR(LOG, "condition init has failed");
         nabto_device_free_threads(dev);
