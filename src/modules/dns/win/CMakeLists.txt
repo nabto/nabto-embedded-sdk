@@ -5,5 +5,5 @@ set(win_src
   )
 
 
-add_library( nm_win_dns STATIC ${win_src})
-target_link_libraries( nm_win_dns)
+add_library( nm_dns STATIC ${win_src})
+target_link_libraries( nm_dns wsock32 ws2_32 )

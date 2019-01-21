@@ -4,8 +4,6 @@
 #include <platform/np_platform.h>
 #include <nabto_types.h>
 
-void nm_win_ts_init(struct np_platform* pl);
-
 bool nm_win_ts_passed_or_now(np_timestamp* ts);
 
 bool nm_win_ts_less_or_equal(np_timestamp* t1, np_timestamp* t2);

@@ -25,9 +25,8 @@ const unsigned char devicePublicKey[] =
 
 //const char* hostname = "localhost";
 const char* hostname = "a.devices.dev.nabto.net";
-#include <pthread.h>
+
 #include <platform/np_logging.h>
-#include <unistd.h>
 
 struct streamContext {
     NabtoDeviceStream* stream;

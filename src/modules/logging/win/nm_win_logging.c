@@ -9,7 +9,7 @@
 
 #define NM_WIN_LOGGING_FILE_LENGTH 24
 
-void nm_win_log_init()
+void np_log_init()
 {
     np_log.log = &nm_win_log;
     np_log.log_buf = &nm_win_log_buf;
