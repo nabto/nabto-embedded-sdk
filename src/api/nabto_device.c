@@ -6,10 +6,6 @@
 #include <api/nabto_api_future_queue.h>
 #include <platform/np_error_code.h>
 
-//TODO: only on linux
-//#include <modules/udp/epoll/nm_epoll.h>
-//#include <sys/time.h>
-
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
 
@@ -547,10 +543,12 @@ void* nabto_device_core_thread(void* data)
         }
 
         nabto_device_threads_mutex_lock(dev->eventMutex);
+//        np_event_queue_execute_all(&dev->pl);
         if (np_event_queue_has_timed_event(&dev->pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&dev->pl);
             NABTO_LOG_TRACE(LOG, "Found timed events, waits %u ms for signals", ms);
             nabto_device_threads_cond_timed_wait(dev->eventCond, dev->eventMutex, ms);
+            NABTO_LOG_TRACE(LOG, "timed wait returned");
         } else {
 
             NABTO_LOG_TRACE(LOG, "no timed events, waits for signals forever");

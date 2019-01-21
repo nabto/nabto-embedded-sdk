@@ -10,10 +10,10 @@ set(select_win_test_src
   )
 
 
-add_library( nm_select_win STATIC ${select_win_src})
+add_library( nm_udp STATIC ${select_win_src})
 
 add_executable(nm_select_win_test "${select_win_test_src}")
 
-target_link_libraries(nm_select_win_test np_platform nc_core nm_win_logging nm_unix_communication_buffer nm_win_timestamp)
+target_link_libraries(nm_select_win_test np_platform nc_core nm_logging nm_unix_communication_buffer nm_timestamp)
 
-target_link_libraries(nm_select_win np_platform nc_core nm_win_logging nm_unix_communication_buffer)
+target_link_libraries(nm_udp np_platform nc_core nm_logging nm_unix_communication_buffer)

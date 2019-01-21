@@ -82,7 +82,7 @@ np_error_code nm_dtls_srv_start_keep_alive(struct np_dtls_srv_connection* ctx, u
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
 
-np_error_code nm_dtls_srv_init(struct np_platform* pl,
+np_error_code np_dtls_srv_init(struct np_platform* pl,
                                const unsigned char* publicKeyL, size_t publicKeySize,
                                const unsigned char* privateKeyL, size_t privateKeySize)
 {

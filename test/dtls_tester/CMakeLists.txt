@@ -11,9 +11,9 @@ add_executable(dtls_tester "${dtls_tester_src}")
 target_link_libraries(dtls_tester
   np_platform
   nm_logging
-  nm_epoll
+  nm_udp
   nm_unix_communication_buffer
-  nm_unix_timestamp
+  nm_timestamp
   nm_dtls_cli
   nc_core
   )

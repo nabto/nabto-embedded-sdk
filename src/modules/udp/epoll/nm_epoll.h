@@ -14,7 +14,6 @@
  * module, and must therefore be kept alive from the call of this
  * function until the module is no longer needed.
  */
-void nm_epoll_init(struct np_platform *pl_in);
 
 void nm_epoll_close(struct np_platform* pl);
 

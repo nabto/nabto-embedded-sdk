@@ -5,9 +5,6 @@
 #include <platform/np_udp.h>
 #include <platform/np_platform.h>
 
-void nm_select_unix_init(struct np_platform *pl);
-
-
 /** defined here for testing purposes **/
 void nm_select_unix_async_create(np_udp_socket_created_callback cb, void* data);
 void nm_select_unix_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data);

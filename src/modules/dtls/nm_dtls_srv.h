@@ -5,10 +5,6 @@
 #include <platform/np_dtls_srv.h>
 #include <core/nc_client_connect.h>
 
-np_error_code nm_dtls_srv_init(struct np_platform* pl,
-                  const unsigned char* publicKeyL, size_t publicKeySize,
-                  const unsigned char* privateKeyL, size_t privateKeySize);
-
 np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_connection** dtls,
                                  np_dtls_srv_sender sender, void* data);
 

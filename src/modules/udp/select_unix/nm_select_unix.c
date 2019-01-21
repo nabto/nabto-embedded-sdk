@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -84,7 +85,7 @@ void nm_select_unix_free_socket(np_udp_socket* sock);
 /**
  * Api functions start
  */
-void nm_select_unix_init(struct np_platform *pl_in)
+void np_udp_init(struct np_platform *pl_in)
 {
     NABTO_LOG_ERROR(LOG, "Hello from select sockets");
     pl = pl_in;
@@ -135,6 +136,7 @@ void nm_select_unix_async_bind_port(uint16_t port, np_udp_socket_created_callbac
 
 void nm_select_unix_async_send_to(struct np_udp_send_context* ctx)
 {
+    NABTO_LOG_TRACE(LOG, "Async_send_to");
     np_event_queue_post(pl, &ctx->ev, nm_select_unix_event_send_to, ctx);
 }
 
@@ -202,7 +204,7 @@ int nm_select_unix_timed_wait(uint32_t ms)
 
     nfds = select(maxReadFd+1, &readFds, NULL, NULL, &timeout_val);
     if (nfds < 0) {
-        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
+        NABTO_LOG_ERROR(LOG, "Error in select wait: (%i) '%s'", errno, strerror(errno));
     }
     return nfds;
 }
@@ -408,6 +410,11 @@ np_error_code nm_select_unix_create_socket(np_udp_socket* sock)
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         }
     }
+    int flags = fcntl(sock->sock, F_GETFL, 0);
+    if (flags == -1) flags = 0;
+    fcntl(sock->sock, F_SETFL, flags | O_NONBLOCK);
+
+
     return NABTO_EC_OK;
 }
 

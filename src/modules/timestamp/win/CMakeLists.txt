@@ -5,4 +5,4 @@ set(win_src
   )
 
 
-add_library( nm_win_timestamp STATIC ${win_src})
+add_library( nm_timestamp STATIC ${win_src})

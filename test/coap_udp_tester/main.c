@@ -1,6 +1,5 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
-#include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <core/nc_coap.h>
 
@@ -66,7 +65,7 @@ int main()
     np_log_init();
     nm_unix_comm_buf_init(&pl);
     np_ts_init(&pl);
-    nm_epoll_init(&pl);
+    np_udp_init(&pl);
     
     pl.dtlsS.async_send_to = &dtlsSendTo;
 

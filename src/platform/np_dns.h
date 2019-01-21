@@ -13,6 +13,8 @@ struct np_platform;
 
 typedef void (*np_dns_resolve_callback)(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
 
+void np_dns_init(struct np_platform* pl);
+
 struct np_dns_module {
     /**
      * Resolve Hostname host

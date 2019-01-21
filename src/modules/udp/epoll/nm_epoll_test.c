@@ -91,7 +91,7 @@ int main()
     np_log_init();
     nm_unix_comm_buf_init(&pl);
     np_ts_init(&pl);
-    nm_epoll_init(&pl);
+    np_udp_init(&pl);
     NABTO_LOG_INFO(0, "main");
 
     sendCtx1.buffer = pl.buf.allocate();

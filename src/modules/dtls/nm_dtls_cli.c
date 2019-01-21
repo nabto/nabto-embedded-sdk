@@ -139,9 +139,9 @@ static void my_debug( void *ctx, int level,
 /*
  * Initialize the np_platform to use this particular dtls cli module
  */
-np_error_code nm_dtls_init(struct np_platform* pl,
-                           const unsigned char* publicKeyL, size_t publicKeySize,
-                           const unsigned char* privateKeyL, size_t privateKeySize)
+np_error_code np_dtls_cli_init(struct np_platform* pl,
+                               const unsigned char* publicKeyL, size_t publicKeySize,
+                               const unsigned char* privateKeyL, size_t privateKeySize)
 {
     int ret = 0;
     pl->dtlsC.async_connect = &nm_dtls_async_connect;

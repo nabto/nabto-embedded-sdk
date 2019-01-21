@@ -5,4 +5,4 @@ set(win_src
   )
 
 
-add_library( nm_win_logging STATIC ${win_src})
+add_library( nm_logging STATIC ${win_src})

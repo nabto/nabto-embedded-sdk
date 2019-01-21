@@ -228,8 +228,8 @@ void test_dtls_connection()
     pl.conn.cancel_async_send = &conn_cancel_async_send;
     
 
-    nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
-    nm_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+    np_dtls_cli_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+    np_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
 
     ec = pl.dtlsS.create(&pl, &srvConn, &dtlsS);
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
