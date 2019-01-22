@@ -5,8 +5,6 @@
 #include <platform/np_udp.h>
 #include <platform/np_platform.h>
 
-void nm_select_win_init(struct np_platform *pl);
-
 
 /** defined here for testing purposes **/
 void nm_select_win_async_create(np_udp_socket_created_callback cb, void* data);

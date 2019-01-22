@@ -39,6 +39,7 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
     )
 endif ()
 
+add_definitions(-DNABTO_DEVICE_CLIENT_API_EXPORTS)
 add_library( nabto_device SHARED "${nabto_device_src}")
 
 target_link_libraries( nabto_device

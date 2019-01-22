@@ -81,7 +81,7 @@ void acceptStream(struct streamContext* strCtx) {
     nabto_device_future_set_callback(fut, &acceptCallback, strCtx);
 }
 
-int main()
+int main(void)
 {
     NabtoDeviceStream* stream;
     NabtoDevice* dev = nabto_device_new();

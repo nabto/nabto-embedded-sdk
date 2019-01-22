@@ -1,10 +1,13 @@
+#include <platform/np_logging.h>
+#include <platform/np_udp.h>
+#include <platform/np_timestamp.h>
+#include <platform/np_dns.h>
+
 #include <platform/np_platform.h>
 
-#include <modules/udp/select_win/nm_select_win.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/timestamp/win/nm_win_timestamp.h>
-#include <modules/access_control/nm_access_control.h>
 
+#include <string.h>
 
 void nabto_device_init_platform(struct np_platform* pl)
 {
@@ -16,7 +19,7 @@ void nabto_device_init_platform_modules(struct np_platform* pl, const char* devi
 {
     np_access_control_init(pl);
     nm_unix_comm_buf_init(pl);
-    nm_select_win_init(pl);
+    np_udp_init(pl);
     np_dtls_cli_init(pl, devicePublicKey, strlen((const char*)devicePublicKey),
                  devicePrivateKey, strlen((const char*)devicePrivateKey));
     np_dtls_srv_init(pl, devicePublicKey, strlen((const char*)devicePublicKey),

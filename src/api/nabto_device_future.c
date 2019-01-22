@@ -102,6 +102,7 @@ NabtoDeviceError nabto_device_future_resolve(NabtoDeviceFuture* future)
         nabto_device_threads_cond_signal(fut->cond);
         nabto_device_threads_mutex_unlock(fut->mutex);
     }
+	return NABTO_EC_OK;
 }
 
 void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const np_error_code ec)

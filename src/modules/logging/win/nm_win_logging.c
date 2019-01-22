@@ -76,7 +76,7 @@ void nm_win_log (uint32_t severity, uint32_t module, uint32_t line, const char* 
         GetSystemTime(&st);
 
         size_t fileLen = strlen(file);
-        char fileTmp[NM_WIN_LOGGING_FILE_LENGTH+1];
+        char fileTmp[NM_WIN_LOGGING_FILE_LENGTH+4];
         if(fileLen > NM_WIN_LOGGING_FILE_LENGTH) {
             strcpy(fileTmp, "...");
             strcpy(fileTmp + 3, file + fileLen - NM_WIN_LOGGING_FILE_LENGTH);

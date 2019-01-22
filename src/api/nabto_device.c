@@ -222,7 +222,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
         return NABTO_EC_FAILED;
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-     
+    return NABTO_EC_OK;
 }
 
 
@@ -410,6 +410,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDevice
     // TODO: implement observables 
     //nabto_coap_server_notify_observers(nc_coap_get_server(&reso->dev->core.coap), reso->res);
     nabto_device_threads_mutex_unlock(reso->dev->eventMutex);
+	return NABTO_EC_OK;
 }
 
 NabtoDeviceCoapResponse* NABTO_DEVICE_API nabto_device_coap_create_response(NabtoDeviceCoapRequest* request)

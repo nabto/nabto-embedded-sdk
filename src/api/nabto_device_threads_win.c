@@ -16,11 +16,11 @@ struct nabto_device_thread {
 };
 
 struct nabto_device_mutex {
-	HANDLE mutex;
+	SRWLOCK mutex;
 };
 
 struct nabto_device_condition {
-    int i;
+    CONDITION_VARIABLE cond;
 };
 
 struct nabto_device_thread* nabto_device_threads_create_thread()
@@ -40,12 +40,7 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
 		NABTO_LOG_ERROR(LOG, "Failed to allocate mutex");
 		return NULL;
 	}
-	mutex->mutex = CreateMutex(NULL, FALSE, NULL);
-	if (mutex->mutex == NULL) {
-		NABTO_LOG_ERROR(LOG, "Failed to create mutex");
-		free(mutex);
-		return NULL;
-	}
+	InitializeSRWLock(&mutex->mutex);
 	return mutex;
 }
 
@@ -56,6 +51,7 @@ struct nabto_device_condition* nabto_device_threads_create_condition()
 		NABTO_LOG_ERROR(LOG, "Failed to allocate condition");
 		return NULL;
 	}
+	InitializeConditionVariable(&cond->cond);
 	return cond;
 }
 
@@ -67,7 +63,6 @@ void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
 
 void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutex)
 {
-	CloseHandle(mutex->mutex);
 	free(mutex);
 }
 
@@ -83,12 +78,12 @@ void nabto_device_threads_join(struct nabto_device_thread* thread)
 
 void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex)
 {
-	WaitForSingleObject(mutex->mutex, INFINITE);
+	AcquireSRWLockExclusive(&mutex->mutex);
 }
 
 void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 {
-	ReleaseMutex(mutex->mutex);
+	ReleaseSRWLockExclusive(&mutex->mutex);
 }
 
 DWORD WINAPI nabto_device_threads_func(void* data) {
@@ -109,19 +104,19 @@ np_error_code nabto_device_threads_run(struct nabto_device_thread* thread,
 
 void nabto_device_threads_cond_signal(struct nabto_device_condition* cond)
 {
-
+	WakeConditionVariable(&cond->cond);
 }
 
 void nabto_device_threads_cond_wait(struct nabto_device_condition* cond,
                                     struct nabto_device_mutex* mut)
 {
-
+    SleepConditionVariableSRW(&cond->cond, &mut->mutex, INFINITE, 0);
 }
 
 void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
                                           struct nabto_device_mutex* mut,
                                           uint32_t ms)
 {
-
+    SleepConditionVariableSRW(&cond->cond, &mut->mutex, ms, 0);
 }
 
