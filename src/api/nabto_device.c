@@ -210,7 +210,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
         nabto_device_free_threads(dev);
         return ec;
     }
-
     if (nabto_device_threads_run(dev->coreThread, nabto_device_core_thread, dev) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create thread");
         nabto_device_free_threads(dev);
@@ -387,7 +386,6 @@ NabtoDeviceCoapResource* NABTO_DEVICE_API nabto_device_coap_add_resource(NabtoDe
                                                         void* userData)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    nabto_coap_code code;
     struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)malloc(sizeof(struct nabto_device_coap_resource));
 
     resource->dev = dev;

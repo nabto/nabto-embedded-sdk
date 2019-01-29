@@ -1,5 +1,5 @@
-#ifndef _NP_WIN_DNS_H_
-#define _NP_WIN_DNS_H_
+#ifndef _NM_WIN_DNS_H_
+#define _NM_WIN_DNS_H_
 
 #include <platform/np_dns.h>
 #include <nabto_types.h>

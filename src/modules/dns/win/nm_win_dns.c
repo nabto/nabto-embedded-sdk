@@ -6,6 +6,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include <ws2tcpip.h>
 #include <string.h>
 
 #define LOG NABTO_LOG_MODULE_DNS
@@ -26,35 +27,42 @@ void nm_win_dns_check_resolved(const np_error_code ec, void* data);
 
 DWORD WINAPI resolver_thread(LPVOID data) {
     struct nm_win_dns_ctx* ctx = (struct nm_win_dns_ctx*)data;
-
-    struct hostent* he = gethostbyname(ctx->host);
-    if (he == 0) {
-        ctx->ec = NABTO_EC_FAILED;
-    } else if (he->h_addrtype == AF_INET && he->h_length == 4) {
-        uint8_t i;
-        ctx->ec = NABTO_EC_OK;
-        for (i = 0; i < NP_DNS_RESOLVED_IPS_MAX; i++) {
-            uint8_t* addr = (uint8_t*)he->h_addr_list[i];
-            if (addr == NULL) {
-                break;
-            }
-			ctx->recSize++;
-			ctx->ips[i].type = NABTO_IPV4;
-			memcpy(ctx->ips[i].v4.addr, addr, 4);
-        }
-    } else if (he->h_addrtype == AF_INET6 && he->h_length == 16) {
-        uint8_t i;
-        ctx->ec = NABTO_EC_OK;
-        for (i = 0; i < NP_DNS_RESOLVED_IPS_MAX; i++) {
-            uint8_t* addr = (uint8_t*)he->h_addr_list[i];
-            if (addr == NULL) {
-                break;
-            }
-			ctx->recSize++;
-			ctx->ips[i].type = NABTO_IPV6;
-			memcpy(ctx->ips[i].v4.addr, addr, 16);
-        }
-	}
+    NABTO_LOG_TRACE(LOG, "thread start for host: %s", ctx->host);
+	struct addrinfo hints, *infoptr;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+    int res = getaddrinfo(ctx->host, "80" , &hints, &infoptr); //  GetAddrInfoW
+	ctx->ec = NABTO_EC_FAILED; // in case we dont find suitable addresses
+	if (res) {
+		NABTO_LOG_ERROR(LOG, "getaddrinfo: %s\n", gai_strerror(res));
+	} else {
+		struct addrinfo* p;
+		ctx->recSize = 0;
+		for (p = infoptr; p != NULL; p = p->ai_next) {
+			if (p->ai_family == AF_INET) {
+				struct sockaddr_in* sockaddr_ipv4 = (struct sockaddr_in *) p->ai_addr;
+				NABTO_LOG_TRACE(LOG, "Found IPv4");
+				ctx->ec = NABTO_EC_OK;
+				ctx->ips[ctx->recSize].type = NABTO_IPV4;
+				memcpy(ctx->ips[ctx->recSize].v4.addr, &sockaddr_ipv4->sin_addr, 4);
+				ctx->recSize++;
+			} else if (p->ai_family == AF_INET6) {
+				struct sockaddr_in6* sockaddr_ipv6 = (struct sockaddr_in6 *) p->ai_addr;
+				NABTO_LOG_TRACE(LOG, "Found IPv6");
+		        ctx->ec = NABTO_EC_OK;
+				ctx->ips[ctx->recSize].type = NABTO_IPV6;
+				memcpy(ctx->ips[ctx->recSize].v6.addr, &sockaddr_ipv6->sin6_addr, 16);
+				ctx->recSize++;
+			} else {
+				// unknown address family, skipping
+			}
+			if (ctx->recSize == NP_DNS_RESOLVED_IPS_MAX) {
+				break;
+			}
+		}
+		freeaddrinfo(infoptr);
+    }
+	NABTO_LOG_ERROR(LOG, "Resolver thread returning");
     ctx->resolverIsRunning = false;
     return 0;
 }
@@ -65,7 +73,7 @@ void np_dns_init(struct np_platform* pl)
 }
 
 np_error_code nm_win_dns_resolve(struct  np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data) {
-    // host isn't a dotted IP, so resolve it through DNS
+    NABTO_LOG_TRACE(LOG, "resolving %s", host);
 	struct nm_win_dns_ctx* ctx = (struct nm_win_dns_ctx*)malloc(sizeof(struct nm_win_dns_ctx));
 	if (!ctx) {
 		NABTO_LOG_ERROR(LOG, "Failed to allocate context");
@@ -79,22 +87,25 @@ np_error_code nm_win_dns_resolve(struct  np_platform* pl, const char* host, np_d
 	ctx->pl = pl;
 	ctx->ec = NABTO_EC_OPERATION_IN_PROGRESS;
     HANDLE thread;
-    thread = CreateThread(NULL, 0, resolver_thread, &ctx, 0, NULL);
+    NABTO_LOG_TRACE(LOG, "creating thread");
+    thread = CreateThread(NULL, 0, resolver_thread, ctx, 0, NULL);
     if (!thread) {
 		NABTO_LOG_ERROR(LOG, "Failed to create resolver thread");
 		free(ctx);
         return NABTO_EC_FAILED;
     }
-	np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_win_dns_check_resolved, data);
+	np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_win_dns_check_resolved, ctx);
     return NABTO_EC_OK;
 }
 
 void nm_win_dns_check_resolved(const np_error_code ec, void* data) {
 	struct nm_win_dns_ctx* ctx = (struct nm_win_dns_ctx*)data;
     if (ctx->resolverIsRunning) {
+        NABTO_LOG_TRACE(LOG, "dns is NOT resolved");
 		np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_win_dns_check_resolved, data);
         return;
     } else {
+        NABTO_LOG_TRACE(LOG, "dns is resolved");
 		ctx->cb(ctx->ec, ctx->ips, ctx->recSize, ctx->data);
 		free(ctx);
 		return;

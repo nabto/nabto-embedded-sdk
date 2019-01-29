@@ -1,11 +1,14 @@
 #include "nm_select_win.h"
 
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/win/nm_win_logging.h>
-#include <modules/timestamp/win/nm_win_timestamp.h>
 
 #include <platform/np_platform.h>
+#include <platform/np_timestamp.h>
+#include <platform/np_udp.h>
+#include <platform/np_logging.h>
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,23 +29,30 @@ void sendCb1(const np_error_code ec, void* data)
 		NABTO_LOG_ERROR(0, "sock sendCb1 failed");
 		return;
 	}
-    if (counter < 100) {
+    if (counter < 10) {
         sockSendCtx1(&sendCb1);
     }
 //    sockSendCtx1(&sendCb1);
 //    sockSendCtx1(NULL);
 //    sockSendCtx1(NULL);
 }
-
+//#define IPV4
 void sockSendCtx1(np_udp_packet_sent_callback cb)
 {
     sendCtx1.sock = sock;
-    sendCtx1.ep.port = 42424;
-    sendCtx1.ep.ip.type = NABTO_IPV4;
+    sendCtx1.ep.port = 4242;
+
+#ifdef IPV4
+	sendCtx1.ep.ip.type = NABTO_IPV4;
     sendCtx1.ep.ip.v4.addr[0] = 127;
     sendCtx1.ep.ip.v4.addr[1] = 0;
     sendCtx1.ep.ip.v4.addr[2] = 0;
     sendCtx1.ep.ip.v4.addr[3] = 1;
+#else
+	sendCtx1.ep.ip.type = NABTO_IPV6;
+	memset(sendCtx1.ep.ip.v6.addr, 0, 16);
+	sendCtx1.ep.ip.v6.addr[15] = 1;
+#endif
     memcpy(pl.buf.start(sendCtx1.buffer), &counter, 4);
     sendCtx1.bufferSize = 4;
     sendCtx1.cb = cb;
@@ -83,7 +93,7 @@ void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
 		return;
 	}
     sock = socket;
-    nm_select_win_async_bind_port(42424, &sock2Created, NULL);
+    nm_select_win_async_bind_port(4242, &sock2Created, NULL);
 }
 
 void sock3DestroyedCb(const np_error_code ec, void* data)
@@ -118,6 +128,7 @@ int main()
 
     sendCtx1.buffer = pl.buf.allocate();
     sendCtx2.buffer = pl.buf.allocate();
+	NABTO_LOG_ERROR(0, "buf1 start: %u", pl.buf.start(sendCtx1.buffer));
 
     nm_select_win_async_create(&sockCreated, NULL);
     nm_select_win_async_create(&sock3Created, NULL);

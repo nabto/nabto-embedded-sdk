@@ -30,6 +30,7 @@ struct nabto_device_thread* nabto_device_threads_create_thread()
 		NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
 		return NULL;
 	}
+	NABTO_LOG_TRACE(LOG, "Allocated thread: %u", thread);
 	return thread;
 }
 
@@ -57,6 +58,7 @@ struct nabto_device_condition* nabto_device_threads_create_condition()
 
 void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
 {
+	NABTO_LOG_TRACE(LOG, "freeing thread: %u", thread);
 	CloseHandle(thread->thread);
 	free(thread);
 }
@@ -78,11 +80,14 @@ void nabto_device_threads_join(struct nabto_device_thread* thread)
 
 void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex)
 {
+	NABTO_LOG_INFO(LOG, "locking mutex: %u", mutex);
 	AcquireSRWLockExclusive(&mutex->mutex);
+	NABTO_LOG_INFO(LOG, "lock acheived", mutex);
 }
 
 void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 {
+	NABTO_LOG_INFO(LOG, "unlocking mutex: %u", mutex);
 	ReleaseSRWLockExclusive(&mutex->mutex);
 }
 
@@ -95,6 +100,9 @@ DWORD WINAPI nabto_device_threads_func(void* data) {
 np_error_code nabto_device_threads_run(struct nabto_device_thread* thread,
                                        void *(*run_routine) (void *), void* data)
 {
+	NABTO_LOG_TRACE(LOG, "creating thread: %u", thread);
+	thread->run_routine = run_routine;
+	thread->data = data;
 	thread->thread = CreateThread(NULL, 0, nabto_device_threads_func, thread, 0, NULL);
 	if (!thread->thread) {
 		return NABTO_EC_FAILED;

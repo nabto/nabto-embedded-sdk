@@ -115,9 +115,15 @@ void np_udp_init(struct np_platform *pl_in)
 
 void nm_select_win_async_create(np_udp_socket_created_callback cb, void* data)
 {
+    NABTO_LOG_TRACE(LOG, "nm_select_win_async_create");
     np_udp_socket* sock;
 
     sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
+	if (sock == NULL) {
+		// TODO: always call callback
+		NABTO_LOG_ERROR(LOG, "Failed to allocate socket structure");
+		return;
+	}
     memset(sock, 0, sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
@@ -254,6 +260,8 @@ void nm_select_win_cancel_all_events(np_udp_socket* sock)
 
 void nm_select_win_event_create(void* data)
 {
+	NABTO_LOG_TRACE(LOG, "event_create");
+
     np_udp_socket* sock = (np_udp_socket*)data;
 
     np_error_code ec = nm_select_win_create_socket(sock);
@@ -264,7 +272,7 @@ void nm_select_win_event_create(void* data)
             head->prev = sock;
         }
         head = sock;
-        NABTO_LOG_INFO(LOG, "Writing to pipe");
+        // NABTO_LOG_INFO(LOG, "Writing to pipe");
         // int i = write(pipefd[1], "1", 1);
         // NABTO_LOG_INFO(LOG, "%i", i);
         sock->created.cb(NABTO_EC_OK, sock, sock->created.data);
@@ -290,7 +298,7 @@ void nm_select_win_event_bind_port(void* data)
             si_me6.sin6_family = AF_INET6;
             si_me6.sin6_port = htons(sock->created.port);
             si_me6.sin6_addr = in6addr_any;
-			NABTO_LOG_INFO(LOG, "Binding to port: %u, and addr: %u", si_me6.sin6_port, si_me6.sin6_addr);
+			NABTO_LOG_INFO(LOG, "Binding to port: %u, and addr: %u", sock->created.port, si_me6.sin6_addr);
             i = bind(sock->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
             NABTO_LOG_INFO(LOG, "IPv6 bind returned %i", i);
         } else {
@@ -331,22 +339,33 @@ void nm_select_win_event_send_to(void* data)
     struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
     np_udp_socket* sock = ctx->sock;
     int res;
-    if (ctx->ep.ip.type == NABTO_IPV4) {
+    if (ctx->ep.ip.type == NABTO_IPV4 && !sock->isIpv6) { // IPv4 addr on IPv4 socket
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
-        memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
+        memcpy((void*)&srv_addr.sin_addr.s_addr, ctx->ep.ip.v4.addr, 4);
+		
         NABTO_LOG_INFO(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
-        res = sendto (sock->sock, (const char*)pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
-    } else { // IPv6
+        res = sendto (sock->sock, (const char*)pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (SOCKADDR*)&srv_addr, sizeof(srv_addr));
+	} else { // IPv6 addr or IPv4 addr on IPv6 socket
         struct sockaddr_in6 srv_addr;
         srv_addr.sin6_family = AF_INET6;
         srv_addr.sin6_flowinfo = 0;
         srv_addr.sin6_scope_id = 0;
         srv_addr.sin6_port = htons (ctx->ep.port);
-        memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, sizeof(srv_addr.sin6_addr));
+	    if (ctx->ep.ip.type == NABTO_IPV4) { // IPv4 addr on IPv6 socket
+			// Map ipv4 to ipv6
+			uint8_t* ptr = &srv_addr.sin6_addr;
+			memset(ptr, 0, 10); // 80  bits of 0
+			ptr += 10;
+			memset(ptr, 0xFF, 2); // 16 bits of 1
+			ptr += 2;
+			memcpy(ptr,ctx->ep.ip.v4.addr, 4); // 32 bits of IPv4
+		} else { // IPv6 addr copied directly
+			memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, 16);
+		}
         NABTO_LOG_INFO(LOG, "Sending to v6");
-        res = sendto (sock->sock, (const char*)pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        res = sendto (sock->sock, (const char*)pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (SOCKADDR*)&srv_addr, sizeof(srv_addr));
     }
     if (res < 0) {
         int status = WSAGetLastError();
@@ -397,6 +416,7 @@ void nm_select_win_build_fd_sets(void)
 
 np_error_code nm_select_win_create_socket(np_udp_socket* sock)
 {
+	NABTO_LOG_TRACE(LOG, "create_socket");
     sock->sock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (sock->sock == INVALID_SOCKET) {
         sock->sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -408,9 +428,9 @@ np_error_code nm_select_win_create_socket(np_udp_socket* sock)
             sock->isIpv6 = false;
         }
     } else {
-		DWORD no = 0;
+		int no = 0;
         sock->isIpv6 = true;
-        if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_V6ONLY, (char*) &no, sizeof(no))) {
+        if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_V6ONLY,(const char*) &no, sizeof(no)) == SOCKET_ERROR) {
             NABTO_LOG_ERROR(LOG, "Unable to set option: (%i).", WSAGetLastError());
             closesocket(sock->sock);
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
@@ -429,14 +449,14 @@ void nm_select_win_handle_event(np_udp_socket* sock)
     if (sock->isIpv6) {
         struct sockaddr_in6 sa;
         socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, start,  (char*)pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, (char*)start,  pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep.ip.v6.addr,&sa.sin6_addr.s6_addr, sizeof(ep.ip.v6.addr));
         ep.port = ntohs(sa.sin6_port);
         ep.ip.type = NABTO_IPV6;
     } else {
         struct sockaddr_in sa;
         socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, start, (char*)pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, (char*)start, pl->buf.size(recvBuf), 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep.ip.v4.addr,&sa.sin_addr.s_addr, sizeof(ep.ip.v4.addr));
         ep.port = ntohs(sa.sin_port);
         ep.ip.type = NABTO_IPV4;
