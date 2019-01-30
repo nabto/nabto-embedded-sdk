@@ -36,7 +36,7 @@ void sendCb1(const np_error_code ec, void* data)
 //    sockSendCtx1(NULL);
 //    sockSendCtx1(NULL);
 }
-//#define IPV4
+#define IPV4
 void sockSendCtx1(np_udp_packet_sent_callback cb)
 {
     sendCtx1.sock = sock;
@@ -81,8 +81,8 @@ void sock2Created(const np_error_code ec, np_udp_socket* socket, void* data)
 		return;
 	}
     sock2 = socket;
-    sockSendCtx1(&sendCb1);
     nm_select_win_async_recv_from(sock2, &sock2Recv, NULL);
+    sockSendCtx1(&sendCb1);
 }
 
 void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
@@ -99,7 +99,7 @@ void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
 void sock3DestroyedCb(const np_error_code ec, void* data)
 {
     NABTO_LOG_INFO(0, "socket3 destroyed");
-    if (counter >= 100) {
+    if (counter >= 10) {
         return;
     }
     nm_select_win_async_create(&sock3Created, NULL);

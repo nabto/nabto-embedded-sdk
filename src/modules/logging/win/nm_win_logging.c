@@ -21,7 +21,7 @@ void nm_win_log_buf(uint32_t severity, uint32_t module, uint32_t line, const cha
     size_t chunks = len/16;
     size_t i, n;
     int ret = 0;
-    va_list list;
+    va_list list = NULL;
     
     for (i = 0; i < chunks; i++) {
         ret = sprintf(str, "%04lx: ", i*16);

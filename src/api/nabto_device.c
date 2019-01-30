@@ -528,15 +528,11 @@ void* nabto_device_core_thread(void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     while (true) {
-        NABTO_LOG_TRACE(LOG, "start of while");
-
         nabto_device_threads_mutex_lock(dev->eventMutex);
         np_event_queue_execute_all(&dev->pl);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
 
-        NABTO_LOG_TRACE(LOG, "dev->queueHead %u", dev->queueHead);
         nabto_api_future_queue_execute_all(&dev->queueHead);
-        NABTO_LOG_TRACE(LOG, "dev->queueHead %u", dev->queueHead);
         if (dev->closing) {
             return NULL;
         }
@@ -547,7 +543,6 @@ void* nabto_device_core_thread(void* data)
             uint32_t ms = np_event_queue_next_timed_event_occurance(&dev->pl);
             NABTO_LOG_TRACE(LOG, "Found timed events, waits %u ms for signals", ms);
             nabto_device_threads_cond_timed_wait(dev->eventCond, dev->eventMutex, ms);
-            NABTO_LOG_TRACE(LOG, "timed wait returned");
         } else {
 
             NABTO_LOG_TRACE(LOG, "no timed events, waits for signals forever");

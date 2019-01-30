@@ -80,14 +80,11 @@ void nabto_device_threads_join(struct nabto_device_thread* thread)
 
 void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex)
 {
-	NABTO_LOG_INFO(LOG, "locking mutex: %u", mutex);
 	AcquireSRWLockExclusive(&mutex->mutex);
-	NABTO_LOG_INFO(LOG, "lock acheived", mutex);
 }
 
 void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 {
-	NABTO_LOG_INFO(LOG, "unlocking mutex: %u", mutex);
 	ReleaseSRWLockExclusive(&mutex->mutex);
 }
 
