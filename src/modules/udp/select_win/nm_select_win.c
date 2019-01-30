@@ -84,10 +84,10 @@ void nm_select_win_free_socket(np_udp_socket* sock);
  */
 void np_udp_init(struct np_platform *pl_in)
 {
-	WORD wVerReq;
-	WSADATA wsaData;
-	int err;
-	
+    WORD wVerReq;
+    WSADATA wsaData;
+    int err;
+    
     NABTO_LOG_ERROR(LOG, "Hello from select sockets");
     pl = pl_in;
     pl->udp.async_create     = &nm_select_win_async_create;
@@ -107,62 +107,62 @@ void np_udp_init(struct np_platform *pl_in)
     // if(pipe(pipefd) == -1) {
         // NABTO_LOG_ERROR(LOG, "Failed to create pipe file descriptors");
     // }
-	wVerReq = MAKEWORD(2,2);
-	err = WSAStartup(wVerReq, &wsaData);
-	if (err != 0) {
-		NABTO_LOG_ERROR(LOG, "Could not find a usable version of winsock.dll");
-	}
-	struct sockaddr addr;
-	struct sockaddr_in si;
+    wVerReq = MAKEWORD(2,2);
+    err = WSAStartup(wVerReq, &wsaData);
+    if (err != 0) {
+        NABTO_LOG_ERROR(LOG, "Could not find a usable version of winsock.dll");
+    }
+    struct sockaddr addr;
+    struct sockaddr_in si;
     int yes = 1; // SO_REUSE enabled
-	u_long iMode = 1; // non-blocking mode
-	int ret;
-	int len;
+    u_long iMode = 1; // non-blocking mode
+    int ret;
+    int len;
 
-	sock1 = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock1 == INVALID_SOCKET) {
-		NABTO_LOG_ERROR(LOG, "Failed to create interrupt socket");
-		return;
-	}
-	sock2 = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock2 == INVALID_SOCKET) {
-		NABTO_LOG_ERROR(LOG, "Failed to create interrupt socket 2");
-		return;
-	}
-	si.sin_family = AF_INET;
-	si.sin_port = 0;
-	si.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	ret = setsockopt(sock1, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes));
+    sock1 = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock1 == INVALID_SOCKET) {
+        NABTO_LOG_ERROR(LOG, "Failed to create interrupt socket");
+        return;
+    }
+    sock2 = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock2 == INVALID_SOCKET) {
+        NABTO_LOG_ERROR(LOG, "Failed to create interrupt socket 2");
+        return;
+    }
+    si.sin_family = AF_INET;
+    si.sin_port = 0;
+    si.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    ret = setsockopt(sock1, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes));
 
-	ret = ioctlsocket(sock1, FIONBIO, &iMode);
-	if (ret != NO_ERROR) {
-		NABTO_LOG_ERROR(LOG, "Failed to set socket non-blocking");
-		return;
-	}
+    ret = ioctlsocket(sock1, FIONBIO, &iMode);
+    if (ret != NO_ERROR) {
+        NABTO_LOG_ERROR(LOG, "Failed to set socket non-blocking");
+        return;
+    }
 
-	if (ret != 0) {
-		NABTO_LOG_ERROR(LOG, "Failed to set socket option");
-		return;
-	}
-	ret = bind(sock1, (struct sockaddr*)&si, sizeof(si));
-	if (ret != 0) {
-		NABTO_LOG_ERROR(LOG, "Failed to bind socket");
-		return;
-	}
-	len = sizeof(addr);
-	ret = getsockname(sock1, &addr, &len);
-	if (ret != 0) {
-		NABTO_LOG_ERROR(LOG, "Failed to get socket name");
-		return;
-	}
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "Failed to set socket option");
+        return;
+    }
+    ret = bind(sock1, (struct sockaddr*)&si, sizeof(si));
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "Failed to bind socket");
+        return;
+    }
+    len = sizeof(addr);
+    ret = getsockname(sock1, &addr, &len);
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "Failed to get socket name");
+        return;
+    }
 
-	ret = connect(sock2, &addr, len);
-	if (ret != 0) {
-		NABTO_LOG_ERROR(LOG, "Failed to connect socket (probably wouldblock)");
-		//return;
-	}
+    ret = connect(sock2, &addr, len);
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "Failed to connect socket (probably wouldblock)");
+        //return;
+    }
     nm_select_win_build_fd_sets();
-	nm_select_win_timed_wait(1);
+    nm_select_win_timed_wait(1);
     nm_select_win_build_fd_sets();
 }
 
@@ -172,11 +172,11 @@ void nm_select_win_async_create(np_udp_socket_created_callback cb, void* data)
     np_udp_socket* sock;
 
     sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
-	if (sock == NULL) {
-		// TODO: always call callback
-		NABTO_LOG_ERROR(LOG, "Failed to allocate socket structure");
-		return;
-	}
+    if (sock == NULL) {
+        // TODO: always call callback
+        NABTO_LOG_ERROR(LOG, "Failed to allocate socket structure");
+        return;
+    }
     memset(sock, 0, sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
@@ -240,33 +240,33 @@ uint16_t nm_select_win_get_local_port(np_udp_socket* socket)
 
 void nm_select_win_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data)
 {
-	if (socket) {
+    if (socket) {
         socket->des.cb = cb;
         socket->des.data = data;
         np_event_queue_post(pl, &socket->des.event, nm_select_win_event_destroy, socket);
-	}
+    }
 }
 
 int nm_select_win_inf_wait(void)
 {
     int nfds;
-	NABTO_LOG_INFO(LOG, "SELECT");
+    NABTO_LOG_INFO(LOG, "SELECT");
     nfds = select(42/*unused*/, &readFds, NULL, NULL, NULL);
     if (nfds < 0) {
-		LPVOID lpMsgBuf;
-		lpMsgBuf = (LPVOID)"Unknown Error";
-		int e = WSAGetLastError();
-		if (FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        LPVOID lpMsgBuf;
+        lpMsgBuf = (LPVOID)"Unknown Error";
+        int e = WSAGetLastError();
+        if (FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | 
                            FORMAT_MESSAGE_FROM_SYSTEM | 
                            FORMAT_MESSAGE_IGNORE_INSERTS, 
-						   NULL, e, 
-						   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-						   (LPTSTR)&lpMsgBuf, 0, NULL)) 
-		{
-		    NABTO_LOG_ERROR(LOG, "Error in select: (%i), %S", e, lpMsgBuf);
-		} else {
-			NABTO_LOG_ERROR(LOG, "Error in select: (%i). Windows failed to format error", e);
-		}
+                           NULL, e, 
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                           (LPTSTR)&lpMsgBuf, 0, NULL)) 
+        {
+            NABTO_LOG_ERROR(LOG, "Error in select: (%i), %S", e, lpMsgBuf);
+        } else {
+            NABTO_LOG_ERROR(LOG, "Error in select: (%i). Windows failed to format error", e);
+        }
     } else {
         NABTO_LOG_INFO(LOG, "select returned with %i file descriptors", nfds);
     }
@@ -276,23 +276,23 @@ int nm_select_win_inf_wait(void)
 int nm_select_win_timed_wait(uint32_t ms)
 {
     int nfds = 0;
-	TIMEVAL to;
-	to.tv_sec = (ms/1000);
-	to.tv_usec = ((ms)%1000)*1000;
+    TIMEVAL to;
+    to.tv_sec = (ms/1000);
+    to.tv_usec = ((ms)%1000)*1000;
 
-	NABTO_LOG_INFO(LOG, "SELECT");
+    NABTO_LOG_INFO(LOG, "SELECT");
     nfds = select(42/*unused*/, &readFds, NULL, NULL, &to);
     if (nfds < 0) {
         NABTO_LOG_ERROR(LOG, "Error in select: (%i)", WSAGetLastError());
     } else {
         NABTO_LOG_INFO(LOG, "select returned with %i file descriptors", nfds);
-	}
+    }
     return nfds;
 }
 
 void nm_select_win_read(int nfds)
 {
-	char one;
+    char one;
     np_udp_socket* next = head;
     NABTO_LOG_INFO(LOG, "read: %i", nfds);
     while (next != NULL) {
@@ -301,9 +301,9 @@ void nm_select_win_read(int nfds)
         }
         next = next->next;
     }
-	if (FD_ISSET(sock1, &readFds)) {
-		recv(sock1, &one, 1, 0);
-	}
+    if (FD_ISSET(sock1, &readFds)) {
+        recv(sock1, &one, 1, 0);
+    }
     nm_select_win_build_fd_sets();
 }
 
@@ -321,7 +321,7 @@ void nm_select_win_cancel_all_events(np_udp_socket* sock)
 
 void nm_select_win_event_create(void* data)
 {
-	NABTO_LOG_TRACE(LOG, "event_create");
+    NABTO_LOG_TRACE(LOG, "event_create");
 
     np_udp_socket* sock = (np_udp_socket*)data;
 
@@ -355,11 +355,11 @@ void nm_select_win_event_bind_port(void* data)
     if (ec == NABTO_EC_OK) {
         if (sock->isIpv6) {
             struct sockaddr_in6 si_me6;
-			memset(&si_me6, 0, sizeof(struct sockaddr_in6));
+            memset(&si_me6, 0, sizeof(struct sockaddr_in6));
             si_me6.sin6_family = AF_INET6;
             si_me6.sin6_port = htons(sock->created.port);
             si_me6.sin6_addr = in6addr_any;
-			NABTO_LOG_INFO(LOG, "Binding to port: %u, and addr: %u", sock->created.port, si_me6.sin6_addr);
+            NABTO_LOG_INFO(LOG, "Binding to port: %u, and addr: %u", sock->created.port, si_me6.sin6_addr);
             i = bind(sock->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
             NABTO_LOG_INFO(LOG, "IPv6 bind returned %i", i);
         } else {
@@ -403,28 +403,28 @@ void nm_select_win_event_send_to(void* data)
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin_addr.s_addr, ctx->ep.ip.v4.addr, 4);
-		
+        
         NABTO_LOG_INFO(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
         res = sendto (sock->sock, (const char*)pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (SOCKADDR*)&srv_addr, sizeof(srv_addr));
-	} else { // IPv6 addr or IPv4 addr on IPv6 socket
+    } else { // IPv6 addr or IPv4 addr on IPv6 socket
         struct sockaddr_in6 srv_addr;
         srv_addr.sin6_family = AF_INET6;
         srv_addr.sin6_flowinfo = 0;
         srv_addr.sin6_scope_id = 0;
         srv_addr.sin6_port = htons (ctx->ep.port);
-	    if (ctx->ep.ip.type == NABTO_IPV4) { // IPv4 addr on IPv6 socket
-			// Map ipv4 to ipv6
+        if (ctx->ep.ip.type == NABTO_IPV4) { // IPv4 addr on IPv6 socket
+            // Map ipv4 to ipv6
             NABTO_LOG_INFO(LOG, "mapping: %u.%u.%u.%u:%u to IPv6", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
-			uint8_t* ptr = &srv_addr.sin6_addr;
-			memset(ptr, 0, 10); // 80  bits of 0
-			ptr += 10;
-			memset(ptr, 0xFF, 2); // 16 bits of 1
-			ptr += 2;
-			memcpy(ptr,ctx->ep.ip.v4.addr, 4); // 32 bits of IPv4
-		} else { // IPv6 addr copied directly
+            uint8_t* ptr = &srv_addr.sin6_addr;
+            memset(ptr, 0, 10); // 80  bits of 0
+            ptr += 10;
+            memset(ptr, 0xFF, 2); // 16 bits of 1
+            ptr += 2;
+            memcpy(ptr,ctx->ep.ip.v4.addr, 4); // 32 bits of IPv4
+        } else { // IPv6 addr copied directly
             NABTO_LOG_INFO(LOG, "Sending to v6");
-			memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, 16);
-		}
+            memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, 16);
+        }
         res = sendto (sock->sock, (const char*)pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (SOCKADDR*)&srv_addr, sizeof(srv_addr));
     }
     if (res < 0) {
@@ -463,7 +463,7 @@ void nm_select_win_build_fd_sets(void)
     np_udp_socket* next = head;
     while (next != NULL) {
         if (!next->closing) {
-			NABTO_LOG_TRACE(LOG, "Adding socket to set");
+            NABTO_LOG_TRACE(LOG, "Adding socket to set");
             FD_SET(next->sock, &readFds);
             next = next->next;
         } else {
@@ -473,15 +473,15 @@ void nm_select_win_build_fd_sets(void)
             nm_select_win_free_socket(tmp);
         }
     }
-	FD_SET(sock1, &readFds);
-	FD_SET(sock2, &readFds);
+    FD_SET(sock1, &readFds);
+    FD_SET(sock2, &readFds);
 }
 
 np_error_code nm_select_win_create_socket(np_udp_socket* sock)
 {
-	u_long iMode = 1; // non-blocking mode
-	int ret;
-	NABTO_LOG_TRACE(LOG, "create_socket");
+    u_long iMode = 1; // non-blocking mode
+    int ret;
+    NABTO_LOG_TRACE(LOG, "create_socket");
     sock->sock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (sock->sock == INVALID_SOCKET) {
         sock->sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -493,7 +493,7 @@ np_error_code nm_select_win_create_socket(np_udp_socket* sock)
             sock->isIpv6 = false;
         }
     } else {
-		int no = 0;
+        int no = 0;
         sock->isIpv6 = true;
         if (setsockopt(sock->sock, IPPROTO_IPV6, IPV6_V6ONLY,(const char*) &no, sizeof(no)) == SOCKET_ERROR) {
             NABTO_LOG_ERROR(LOG, "Unable to set option: (%i).", WSAGetLastError());
@@ -501,11 +501,11 @@ np_error_code nm_select_win_create_socket(np_udp_socket* sock)
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         }
     }
-	ret = ioctlsocket(sock->sock, FIONBIO, &iMode);
-	if (ret != NO_ERROR) {
-		NABTO_LOG_ERROR(LOG, "Failed to set socket non-blocking");
-		return;
-	}
+    ret = ioctlsocket(sock->sock, FIONBIO, &iMode);
+    if (ret != NO_ERROR) {
+        NABTO_LOG_ERROR(LOG, "Failed to set socket non-blocking");
+        return;
+    }
 
     return NABTO_EC_OK;
 }

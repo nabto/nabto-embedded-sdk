@@ -24,17 +24,17 @@ void nm_unix_comm_buf_init(struct np_platform* pl)
 np_communication_buffer* nm_unix_comm_buf_allocate()
 {
     np_communication_buffer* buf = (np_communication_buffer*)malloc(sizeof(np_communication_buffer));
-	if (!buf) {
-		NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer structure");
-		return NULL;
-	}
+    if (!buf) {
+        NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer structure");
+        return NULL;
+    }
     buf->buf = (uint8_t*)malloc(NABTO_COMMUNICATION_BUFFER_LENGTH);
-	if (!buf->buf) {
-		NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer");
-		free(buf);
-		return NULL;
-	}
-	buf->size = NABTO_COMMUNICATION_BUFFER_LENGTH;
+    if (!buf->buf) {
+        NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer");
+        free(buf);
+        return NULL;
+    }
+    buf->size = NABTO_COMMUNICATION_BUFFER_LENGTH;
     return buf;
 }
 
