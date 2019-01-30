@@ -90,7 +90,7 @@ void nm_epoll_cancel_send_to(struct np_udp_send_context* ctx)
     ctx->cb = NULL;
 }
 
-void nm_epoll_init(struct np_platform* pl_in) {
+void np_udp_init(struct np_platform* pl_in) {
     if(!pl_in) {
         NABTO_LOG_FATAL(LOG, "No np_platform provided");
         return;

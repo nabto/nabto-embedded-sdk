@@ -39,41 +39,21 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
     )
 endif ()
 
+add_definitions(-DNABTO_DEVICE_CLIENT_API_EXPORTS)
 add_library( nabto_device SHARED "${nabto_device_src}")
 
 target_link_libraries( nabto_device
   np_platform
-  nm_unix_logging
+  nm_logging
   nm_unix_communication_buffer
-  nm_unix_timestamp
+  nm_access_control
+  nm_timestamp
   nm_dtls_cli
   nm_dtls_srv
+  nm_udp
+  nm_dns
   nc_core
   )
-if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
-  if (ENV{USE_SELECT})
-    target_link_libraries( nabto_device
-      nm_select_unix
-      nm_unix_dns
-      )
-  else()
-    target_link_libraries( nabto_device
-      nm_epoll
-      nm_unix_dns
-      )
-  endif()    
-    
-elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
-    target_link_libraries( nabto_device
-      nm_select_win
-      nm_win_dns
-      )
-elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
-    target_link_libraries( nabto_device
-      nm_select_unix
-      nm_unix_dns
-      )
-endif ()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h")
 

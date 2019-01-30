@@ -40,6 +40,7 @@ void np_udp_populate_send_context(struct np_udp_send_context* ctx, np_udp_socket
                                   struct np_udp_endpoint ep,
                                   np_communication_buffer* buffer, uint16_t bufferSize,
                                   np_udp_packet_sent_callback cb, void* data);
+void np_udp_init(struct np_platform* pl);
 
 struct np_udp_module {
     /**
@@ -99,7 +100,7 @@ struct np_udp_module {
      * Wait for ever for incoming traffic from the network.
      * @return The number of filedescriptors available for read
      */
-    int (*inf_wait)();
+    int (*inf_wait)(void);
 
     /**
      * Wait a maximum of 'ms' milliseconds for incoming traffic from

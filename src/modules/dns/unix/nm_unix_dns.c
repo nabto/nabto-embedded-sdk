@@ -76,7 +76,7 @@ void* resolver_thread(void* ctx) {
     return NULL;
 }
 
-void nm_unix_dns_init(struct np_platform* pl)
+void np_dns_init(struct np_platform* pl)
 {
     pl->dns.async_resolve = &nm_unix_dns_resolve;
 }

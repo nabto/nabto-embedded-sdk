@@ -82,7 +82,7 @@ np_error_code nm_dtls_srv_start_keep_alive(struct np_dtls_srv_connection* ctx, u
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
 
-np_error_code nm_dtls_srv_init(struct np_platform* pl,
+np_error_code np_dtls_srv_init(struct np_platform* pl,
                                const unsigned char* publicKeyL, size_t publicKeySize,
                                const unsigned char* privateKeyL, size_t privateKeySize)
 {
@@ -376,11 +376,7 @@ static void nm_dtls_srv_tls_logger( void *ctx, int level,
     }
     // TODO: fix this ugly hack to remove \n after all mbedtls log strings
     NABTO_LOG_ERROR(LOG, "LOGGER CALLED!");
-    char ns[strlen(str)];
-    memset(ns, 0, strlen(str));
-    memcpy(ns, str, strlen(str));
-    ns[strlen(str)-1] = '\0';
-    NABTO_LOG_RAW(severity, LOG, line, file, ns );
+    NABTO_LOG_RAW(severity, LOG, line, file, str );
 }
 
 

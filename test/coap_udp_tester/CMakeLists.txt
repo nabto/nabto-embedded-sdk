@@ -10,8 +10,8 @@ add_executable(coap_udp_tester "${coap_udp_tester_src}")
 
 target_link_libraries(coap_udp_tester
   np_platform
-  nm_unix_logging
-  nm_epoll
+  nm_logging
+  nm_udp
   nm_unix_communication_buffer
-  nm_unix_timestamp
+  nm_timestamp
   )

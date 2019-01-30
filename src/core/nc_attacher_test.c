@@ -7,7 +7,6 @@
 #include <core/nc_packet.h>
 
 #include <string.h>
-#include <arpa/inet.h>
 #include <stdarg.h>
 #include <stdlib.h>
 
@@ -198,13 +197,12 @@ void nc_attacher_test_callback(const np_error_code ec, void* data)
     }
 }
 
-//#include <modules/logging/nm_unix_logging.h>
 
 void nc_attacher_test_attach()
 {
     struct nc_attach_context attach;
     struct np_platform pl;
-//    nm_unix_log_init(&pl);
+//    np_log_init(&pl);
     np_platform_init(&pl);
     pl.dtlsC.async_connect = &nc_attacher_test_cryp_conn;
     pl.dtlsC.async_send_to = &nc_attacher_test_cryp_send;
@@ -229,8 +227,9 @@ void nc_attacher_test_attach()
 
     np_dtls_cli_context* crypCtx;
     callbackReceived = false;
-    inet_pton(AF_INET6, "::1", rec[0].v6.addr);
-
+	memset(rec[0].v6.addr, 0, 16);
+	rec[0].v6.addr[15] = 1; // ::1
+    
     struct nc_attach_parameters attachParams;
 
     attachParams.appName = appName;

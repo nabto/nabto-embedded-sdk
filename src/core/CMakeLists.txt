@@ -30,4 +30,4 @@ target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap2)
 
 add_library( nc_core_test STATIC "${test_src}")
 
-target_link_libraries( nc_core_test nm_unix_timestamp nabto_stream nabto_stun_client)
+target_link_libraries( nc_core_test nm_timestamp nabto_stream nabto_stun_client)

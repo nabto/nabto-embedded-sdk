@@ -5,6 +5,8 @@
 #include <nabto_types.h>
 #include <stdarg.h>
 
+void np_log_init(void);
+
 void np_default_log(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
 void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
 
@@ -37,8 +39,8 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 //#define NABTO_LOG_MODULE_FILTER (NABTO_LOG_MODULE_RENDEZVOUS | NABTO_LOG_MODULE_CLIENT_CONNECT)
 
 #ifndef NABTO_LOG_SEVERITY_FILTER
-#define NABTO_LOG_SEVERITY_FILTER     NABTO_LOG_SEVERITY_LEVEL_INFO
-//#define NABTO_LOG_SEVERITY_FILTER     NABTO_LOG_SEVERITY_LEVEL_TRACE
+//#define NABTO_LOG_SEVERITY_FILTER     NABTO_LOG_SEVERITY_LEVEL_INFO
+#define NABTO_LOG_SEVERITY_FILTER     NABTO_LOG_SEVERITY_LEVEL_TRACE
 #endif
 
 #ifndef NABTO_LOG_MODULE_FILTER

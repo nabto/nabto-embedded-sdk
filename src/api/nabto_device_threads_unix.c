@@ -58,7 +58,7 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
     return mut;    
 }
 
-struct nabto_device_condition* nabto_device_threads_create_cond()
+struct nabto_device_condition* nabto_device_threads_create_condition()
 {
     struct nabto_device_condition* cond = (struct nabto_device_condition*)malloc(sizeof(struct nabto_device_condition));
     if (cond == NULL) {

@@ -1,10 +1,6 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
-#include <modules/udp/epoll/nm_epoll.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
-#include <modules/dtls/nm_dtls_srv.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_client_connect.h>
 
@@ -99,12 +95,11 @@ int main() {
     memset(fp, 0, 16);
 
     np_platform_init(&pl);
-    np_log.log = &nm_unix_log;
-    np_log.log_buf = &nm_unix_log_buf;
+    np_log_init();
     nm_unix_comm_buf_init(&pl);
-    nm_epoll_init(&pl);
-    nm_dtls_srv_init(&pl, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
-    nm_unix_ts_init(&pl);
+    np_udp_init(&pl);
+    np_dtls_srv_init(&pl, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
+    np_ts_init(&pl);
 
     struct test_context data;
     data.data = 42;
@@ -114,11 +109,11 @@ int main() {
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));
         if (np_event_queue_has_timed_event(&pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
-            nfds = nm_epoll_timed_wait(ms);
+            nfds = pl.udp.timed_wait(ms);
         } else {
-            nfds = nm_epoll_inf_wait(0);
+            nfds = pl.udp.inf_wait();
         }
-        nm_epoll_read(nfds);
+        pl.udp.read(nfds);
     }
 
     exit(0);

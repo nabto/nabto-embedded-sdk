@@ -5,7 +5,15 @@
 #define NP_DNS_RESOLVED_IPS_MAX 4
 #endif
 
+#include <platform/np_error_code.h>
+#include <platform/np_ip_address.h>
+#include <nabto_types.h>
+
+struct np_platform;
+
 typedef void (*np_dns_resolve_callback)(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
+
+void np_dns_init(struct np_platform* pl);
 
 struct np_dns_module {
     /**

@@ -24,9 +24,8 @@ const unsigned char devicePublicKey[] =
 
 //const char* hostname = "localhost";
 const char* hostname = "a.devices.dev.nabto.net";
-#include <pthread.h>
+
 #include <platform/np_logging.h>
-#include <unistd.h>
 
 int main()
 {
@@ -66,7 +65,6 @@ int main()
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
     
-    sleep(1);
     fut = nabto_device_close(dev);
     nabto_device_future_wait(fut);
     if (nabto_device_future_error_code(fut) == NABTO_EC_OK) {

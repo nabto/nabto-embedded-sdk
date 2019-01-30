@@ -1,10 +1,9 @@
 #include "nm_select_unix.h"
 
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
 
 #include <platform/np_platform.h>
+#include <platform/np_logging.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -90,10 +89,10 @@ int main()
 {
     int nfds;
     np_platform_init(&pl);
-    nm_unix_log_init();
+    np_log_init();
     nm_unix_comm_buf_init(&pl);
-    nm_unix_ts_init(&pl);
-    nm_select_unix_init(&pl);
+    np_ts_init(&pl);
+    np_udp_init(&pl);
     NABTO_LOG_INFO(0, "main");
 
     sendCtx1.buffer = pl.buf.allocate();

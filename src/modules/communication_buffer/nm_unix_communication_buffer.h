@@ -11,7 +11,7 @@
 
 void nm_unix_comm_buf_init(struct np_platform* pl);
 
-np_communication_buffer* nm_unix_comm_buf_allocate();
+np_communication_buffer* nm_unix_comm_buf_allocate(void);
 
 void nm_unix_comm_buf_free(np_communication_buffer* buf);
 

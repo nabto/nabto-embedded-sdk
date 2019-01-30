@@ -1,11 +1,14 @@
 #include "nm_select_win.h"
 
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
 
 #include <platform/np_platform.h>
+#include <platform/np_timestamp.h>
+#include <platform/np_udp.h>
+#include <platform/np_logging.h>
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,23 +25,34 @@ void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data);
 void sendCb1(const np_error_code ec, void* data)
 {
     NABTO_LOG_ERROR(0, "    sendCb1");
-    if (counter < 100) {
+	if (ec != NABTO_EC_OK) {
+		NABTO_LOG_ERROR(0, "sock sendCb1 failed");
+		return;
+	}
+    if (counter < 10) {
         sockSendCtx1(&sendCb1);
     }
 //    sockSendCtx1(&sendCb1);
 //    sockSendCtx1(NULL);
 //    sockSendCtx1(NULL);
 }
-
+#define IPV4
 void sockSendCtx1(np_udp_packet_sent_callback cb)
 {
     sendCtx1.sock = sock;
     sendCtx1.ep.port = 4242;
-    sendCtx1.ep.ip.type = NABTO_IPV4;
+
+#ifdef IPV4
+	sendCtx1.ep.ip.type = NABTO_IPV4;
     sendCtx1.ep.ip.v4.addr[0] = 127;
     sendCtx1.ep.ip.v4.addr[1] = 0;
     sendCtx1.ep.ip.v4.addr[2] = 0;
     sendCtx1.ep.ip.v4.addr[3] = 1;
+#else
+	sendCtx1.ep.ip.type = NABTO_IPV6;
+	memset(sendCtx1.ep.ip.v6.addr, 0, 16);
+	sendCtx1.ep.ip.v6.addr[15] = 1;
+#endif
     memcpy(pl.buf.start(sendCtx1.buffer), &counter, 4);
     sendCtx1.bufferSize = 4;
     sendCtx1.cb = cb;
@@ -52,20 +66,32 @@ void sock2Recv(const np_error_code ec, struct np_udp_endpoint ep,
 {
     NABTO_LOG_ERROR(0, "  recv from sock2: %u", *((uint32_t*)pl.buf.start(buffer)));
 //    NABTO_LOG_BUF(0, pl.buf.start(buffer), bufferSize);
+	if (ec != NABTO_EC_OK) {
+		NABTO_LOG_ERROR(0, "sock2 recv failed");
+		return;
+	}
     nm_select_win_async_recv_from(sock2, &sock2Recv, NULL);
 }
 
 void sock2Created(const np_error_code ec, np_udp_socket* socket, void* data)
 {
     NABTO_LOG_INFO(0, "socket2 created");
+	if (ec != NABTO_EC_OK) {
+		NABTO_LOG_ERROR(0, "sock2 creation failed");
+		return;
+	}
     sock2 = socket;
-    sockSendCtx1(&sendCb1);
     nm_select_win_async_recv_from(sock2, &sock2Recv, NULL);
+    sockSendCtx1(&sendCb1);
 }
 
 void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
 {
     NABTO_LOG_INFO(0, "socket created");
+	if (ec != NABTO_EC_OK) {
+		NABTO_LOG_ERROR(0, "sock creation failed");
+		return;
+	}
     sock = socket;
     nm_select_win_async_bind_port(4242, &sock2Created, NULL);
 }
@@ -73,7 +99,7 @@ void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
 void sock3DestroyedCb(const np_error_code ec, void* data)
 {
     NABTO_LOG_INFO(0, "socket3 destroyed");
-    if (counter >= 100) {
+    if (counter >= 10) {
         return;
     }
     nm_select_win_async_create(&sock3Created, NULL);
@@ -82,6 +108,10 @@ void sock3DestroyedCb(const np_error_code ec, void* data)
 void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data)
 {
     NABTO_LOG_INFO(0, "socket3 created");
+	if (ec != NABTO_EC_OK) {
+		NABTO_LOG_ERROR(0, "sock3 creation failed");
+		return;
+	}
     sock3 = socket;
     nm_select_win_async_destroy(sock3, &sock3DestroyedCb, NULL);
 }
@@ -90,14 +120,15 @@ int main()
 {
     int nfds;
     np_platform_init(&pl);
-    nm_unix_log_init();
+    np_log_init();
     nm_unix_comm_buf_init(&pl);
-    nm_unix_ts_init(&pl);
-    nm_select_win_init(&pl);
+    np_ts_init(&pl);
+    np_udp_init(&pl);
     NABTO_LOG_INFO(0, "main");
 
     sendCtx1.buffer = pl.buf.allocate();
     sendCtx2.buffer = pl.buf.allocate();
+	NABTO_LOG_ERROR(0, "buf1 start: %u", pl.buf.start(sendCtx1.buffer));
 
     nm_select_win_async_create(&sockCreated, NULL);
     nm_select_win_async_create(&sock3Created, NULL);

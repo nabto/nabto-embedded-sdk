@@ -4,8 +4,6 @@
 #include "nm_dtls_cli.h"
 #include "nm_dtls_srv.h"
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
-#include <modules/logging/nm_unix_logging.h>
-#include <modules/timestamp/nm_unix_timestamp.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -220,7 +218,7 @@ void test_dtls_connection()
 
     np_platform_init(&pl);
     nm_unix_comm_buf_init(&pl);
-    nm_unix_ts_init(&pl);
+    np_ts_init(&pl);
 
     pl.conn.async_create = &conn_async_create;
     pl.conn.get_id = &conn_get_id;
@@ -230,8 +228,8 @@ void test_dtls_connection()
     pl.conn.cancel_async_send = &conn_cancel_async_send;
     
 
-    nm_dtls_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
-    nm_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+    np_dtls_cli_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+    np_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
 
     ec = pl.dtlsS.create(&pl, &srvConn, &dtlsS);
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);

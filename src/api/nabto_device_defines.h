@@ -6,8 +6,6 @@
 #include <platform/np_platform.h>
 #include <core/nc_device.h>
 
-#include <pthread.h>
-
 void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const np_error_code ec);
 
 struct nabto_device_context {
@@ -18,13 +16,6 @@ struct nabto_device_context {
     struct nabto_device_thread* networkThread;
     struct nabto_device_mutex* eventMutex;
     struct nabto_device_condition* eventCond;
-
-/*
-    pthread_t coreThread;
-    pthread_t networkThread;
-    pthread_mutex_t eventMutex;
-    pthread_cond_t eventCond;
-*/
     
     bool closing;
 

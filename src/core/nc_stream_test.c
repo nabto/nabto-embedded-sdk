@@ -7,9 +7,6 @@
 #include <core/nc_tests.h>
 
 #include <platform/np_logging.h>
-#include <modules/logging/nm_unix_logging.h>
-
-#include <modules/timestamp/nm_unix_timestamp.h>
 
 #include <stdlib.h>
 
@@ -134,7 +131,7 @@ void nc_stream_test_syn_ack()
 {
     memset(&ctx, 0, sizeof(struct nc_stream_test_context));
 
-//    nm_unix_log_init();
+//    np_log_init();
 
     ctx.cliPl.buf.start = &nc_stream_test_start;
     ctx.cliPl.buf.allocate = &nc_stream_test_allocate;
@@ -143,7 +140,7 @@ void nc_stream_test_syn_ack()
 
     ctx.cliPl.dtlsS.async_send_to = &nc_stream_test_cli_dtls_srv_async_send_to;
     
-    nm_unix_ts_init(&ctx.cliPl);
+    np_ts_init(&ctx.cliPl);
 
     ctx.devPl.buf.start = &nc_stream_test_start;
     ctx.devPl.buf.allocate = &nc_stream_test_allocate;
@@ -152,7 +149,7 @@ void nc_stream_test_syn_ack()
 
     ctx.devPl.dtlsS.async_send_to = &nc_stream_test_dev_dtls_srv_async_send_to;
 
-    nm_unix_ts_init(&ctx.devPl);
+    np_ts_init(&ctx.devPl);
 
 
     ctx.firstCliPacket = true;

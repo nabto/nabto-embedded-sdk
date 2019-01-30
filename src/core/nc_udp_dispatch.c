@@ -23,7 +23,7 @@ void nc_udp_dispatch_cancel_send_to(struct nc_udp_dispatch_context* ctx, struct 
 void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct np_platform* pl,
                                    nc_udp_dispatch_create_callback cb, void* data)
 {
-    NABTO_LOG_TRACE(LOG, "Async create");
+    NABTO_LOG_TRACE(LOG, "Async create: %u", pl);
     memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
     ctx->pl = pl;
     ctx->createCb = cb;
