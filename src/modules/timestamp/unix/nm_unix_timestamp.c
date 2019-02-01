@@ -36,7 +36,7 @@ void nm_unix_ts_now(np_timestamp* ts)
 {
     struct timespec spec;
     clock_gettime(CLOCK_REALTIME, &spec);
-    *ts = (spec.tv_sec * 1000) + (spec.tv_nsec / 1000000);
+    *ts = (uint64_t)spec.tv_sec * 1000 + (spec.tv_nsec / 1000000);
 }
 
 uint32_t nm_unix_ts_difference(np_timestamp* t1, np_timestamp* t2)
@@ -44,7 +44,7 @@ uint32_t nm_unix_ts_difference(np_timestamp* t1, np_timestamp* t2)
     if(*t1<*t2) {
         return 0;
     } else {
-        return *t1-*t2;
+        return (uint64_t)(*t1-*t2);
     }
 }
 

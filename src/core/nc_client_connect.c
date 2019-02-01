@@ -44,7 +44,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
         return NABTO_EC_FAILED;
     }
 
-    nc_rendezvous_init(&conn->rendezvous, pl, conn, conn->dtls, conn->stun);
+    nc_rendezvous_init(&conn->rendezvous, pl, conn, conn->dtls, conn->stun, conn->coap);
     
     pl->dtlsS.async_recv_from(pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 
@@ -144,9 +144,10 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
         np_udp_endpoint ep; // the endpoint is not used for dtls packets
         ep.ip.type = NABTO_IPV4; // initializing to make windows happy
         ep.port = 4242;
-        NABTO_LOG_TRACE(LOG, "RECEIVED RENDEZVOUS PACKET");
+        NABTO_LOG_TRACE(LOG, "Received rendezvous packet");
         nc_rendezvous_handle_packet(&conn->rendezvous, ep, buffer, bufferSize);
     } else if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
+        NABTO_LOG_TRACE(LOG, "Received COAP packet");
         nc_coap_handle_packet(conn->coap, conn, buffer, bufferSize);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);

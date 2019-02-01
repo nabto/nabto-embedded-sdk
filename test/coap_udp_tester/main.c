@@ -77,7 +77,7 @@ int main()
     
     pl.udp.async_bind_port(4242, &udpCreatedCb, NULL);
 
-    nabto_coap_server_add_resource(nc_coap_get_server(&coap), NABTO_COAP_CODE_GET, "hello", &handleHelloReq, NULL);
+    nabto_coap_server_add_resource(nc_coap_get_server(&coap), NABTO_COAP_CODE_GET, "helloworld", &handleHelloReq, NULL);
     
     while(true) {
         np_event_queue_execute_all(&pl);
