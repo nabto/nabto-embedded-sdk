@@ -10,13 +10,13 @@
 
 //TODO: switch to SRW locks
 struct nabto_device_thread {
-	HANDLE thread;
-	void *(*run_routine) (void *);
-	void* data;
+    HANDLE thread;
+    void *(*run_routine) (void *);
+    void* data;
 };
 
 struct nabto_device_mutex {
-	SRWLOCK mutex;
+    SRWLOCK mutex;
 };
 
 struct nabto_device_condition {
@@ -25,91 +25,91 @@ struct nabto_device_condition {
 
 struct nabto_device_thread* nabto_device_threads_create_thread()
 {
-	struct nabto_device_thread* thread = (struct nabto_device_thread*)malloc(sizeof(struct nabto_device_thread));
-	if (thread == NULL) {
-		NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
-		return NULL;
-	}
-	NABTO_LOG_TRACE(LOG, "Allocated thread: %u", thread);
-	return thread;
+    struct nabto_device_thread* thread = (struct nabto_device_thread*)malloc(sizeof(struct nabto_device_thread));
+    if (thread == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
+        return NULL;
+    }
+    NABTO_LOG_TRACE(LOG, "Allocated thread: %u", thread);
+    return thread;
 }
 
 struct nabto_device_mutex* nabto_device_threads_create_mutex()
 {
-	struct nabto_device_mutex* mutex = (struct nabto_device_mutex*)malloc(sizeof(struct nabto_device_mutex));
-	if (mutex == NULL) {
-		NABTO_LOG_ERROR(LOG, "Failed to allocate mutex");
-		return NULL;
-	}
-	InitializeSRWLock(&mutex->mutex);
-	return mutex;
+    struct nabto_device_mutex* mutex = (struct nabto_device_mutex*)malloc(sizeof(struct nabto_device_mutex));
+    if (mutex == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to allocate mutex");
+        return NULL;
+    }
+    InitializeSRWLock(&mutex->mutex);
+    return mutex;
 }
 
 struct nabto_device_condition* nabto_device_threads_create_condition()
 {
-	struct nabto_device_condition* cond = (struct nabto_device_condition*)malloc(sizeof(struct nabto_device_condition));
-	if (cond == NULL) {
-		NABTO_LOG_ERROR(LOG, "Failed to allocate condition");
-		return NULL;
-	}
-	InitializeConditionVariable(&cond->cond);
-	return cond;
+    struct nabto_device_condition* cond = (struct nabto_device_condition*)malloc(sizeof(struct nabto_device_condition));
+    if (cond == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to allocate condition");
+        return NULL;
+    }
+    InitializeConditionVariable(&cond->cond);
+    return cond;
 }
 
 void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
 {
-	NABTO_LOG_TRACE(LOG, "freeing thread: %u", thread);
-	CloseHandle(thread->thread);
-	free(thread);
+    NABTO_LOG_TRACE(LOG, "freeing thread: %u", thread);
+    CloseHandle(thread->thread);
+    free(thread);
 }
 
 void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutex)
 {
-	free(mutex);
+    free(mutex);
 }
 
 void nabto_device_threads_free_cond(struct nabto_device_condition* cond)
 {
-	free(cond);
+    free(cond);
 }
 
 void nabto_device_threads_join(struct nabto_device_thread* thread)
 {
-	WaitForSingleObject(thread->thread, INFINITE);
+    WaitForSingleObject(thread->thread, INFINITE);
 }
 
 void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex)
 {
-	AcquireSRWLockExclusive(&mutex->mutex);
+    AcquireSRWLockExclusive(&mutex->mutex);
 }
 
 void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 {
-	ReleaseSRWLockExclusive(&mutex->mutex);
+    ReleaseSRWLockExclusive(&mutex->mutex);
 }
 
 DWORD WINAPI nabto_device_threads_func(void* data) {
-	struct nabto_device_thread* ctx = (struct nabto_device_thread*)data;
-	ctx->run_routine(ctx->data);
-	return 0;
+    struct nabto_device_thread* ctx = (struct nabto_device_thread*)data;
+    ctx->run_routine(ctx->data);
+    return 0;
 }
 
 np_error_code nabto_device_threads_run(struct nabto_device_thread* thread,
                                        void *(*run_routine) (void *), void* data)
 {
-	NABTO_LOG_TRACE(LOG, "creating thread: %u", thread);
-	thread->run_routine = run_routine;
-	thread->data = data;
-	thread->thread = CreateThread(NULL, 0, nabto_device_threads_func, thread, 0, NULL);
-	if (!thread->thread) {
-		return NABTO_EC_FAILED;
-	}
-	return NABTO_EC_OK;
+    NABTO_LOG_TRACE(LOG, "creating thread: %u", thread);
+    thread->run_routine = run_routine;
+    thread->data = data;
+    thread->thread = CreateThread(NULL, 0, nabto_device_threads_func, thread, 0, NULL);
+    if (!thread->thread) {
+        return NABTO_EC_FAILED;
+    }
+    return NABTO_EC_OK;
 }
 
 void nabto_device_threads_cond_signal(struct nabto_device_condition* cond)
 {
-	WakeConditionVariable(&cond->cond);
+    WakeConditionVariable(&cond->cond);
 }
 
 void nabto_device_threads_cond_wait(struct nabto_device_condition* cond,

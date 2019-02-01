@@ -24,8 +24,18 @@ const unsigned char devicePublicKey[] =
 
 //const char* hostname = "localhost";
 const char* hostname = "a.devices.dev.nabto.net";
+const char* buf = "helloworld";
 
 #include <platform/np_logging.h>
+
+void handler(NabtoDeviceCoapRequest* req, void* data)
+{
+    NABTO_LOG_TRACE(0, "Handler called!!");
+    NabtoDeviceCoapResponse* resp = nabto_device_coap_create_response(req);
+    nabto_device_coap_response_set_code(resp, 205);
+    nabto_device_coap_response_set_payload(resp, buf, strlen(buf));
+    nabto_device_coap_response_ready(resp);
+}
 
 int main()
 {
@@ -39,6 +49,8 @@ int main()
     nabto_device_set_server_url(dev, hostname);
     nabto_device_start(dev);
 
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/helloworld", &handler, dev);
+    
     NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, &stream);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);

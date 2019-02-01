@@ -33,16 +33,16 @@ void nm_win_ts_set_future_timestamp(np_timestamp* ts, uint32_t ms)
 
 void nm_win_ts_now(np_timestamp* ts)
 {
-	SYSTEMTIME st;
-	FILETIME ft;
-	np_timestamp time;
-	GetSystemTime(&st);
-	SystemTimeToFileTime(&st, &ft);
-	time = ft.dwHighDateTime;
-	time << 32;
-	time |= ft.dwLowDateTime;
+    SYSTEMTIME st;
+    FILETIME ft;
+    np_timestamp time;
+    GetSystemTime(&st);
+    SystemTimeToFileTime(&st, &ft);
+    time = ft.dwHighDateTime;
+    time << 32;
+    time |= ft.dwLowDateTime;
 
-	time /= 10000;
+    time /= 10000;
     *ts = time;
 }
 
@@ -58,6 +58,6 @@ uint32_t nm_win_ts_difference(np_timestamp* t1, np_timestamp* t2)
 uint32_t nm_win_ts_now_ms()
 {
     np_timestamp ts;
-	nm_win_ts_now(&ts);
+    nm_win_ts_now(&ts);
     return (uint32_t)ts;
 }

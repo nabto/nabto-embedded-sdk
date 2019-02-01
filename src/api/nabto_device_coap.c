@@ -15,8 +15,8 @@ nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method)
         case NABTO_DEVICE_COAP_PUT: return NABTO_COAP_CODE_PUT;
         case NABTO_DEVICE_COAP_DELETE: return NABTO_COAP_CODE_DELETE;
     }
-	// Should hopefully not happen, since all possibilities should be covered in switch
-	return NABTO_COAP_CODE_GET;
+    // Should hopefully not happen, since all possibilities should be covered in switch
+    return NABTO_COAP_CODE_GET;
 }
 
 void nabto_device_coap_resource_future_resolver(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
@@ -30,6 +30,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
     struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)userData;
 
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)malloc(sizeof(struct nabto_device_coap_request));
+    req->dev = resource->dev;
     req->req = request;
     req->handler = resource->handler;
     req->userData = resource->userData;
