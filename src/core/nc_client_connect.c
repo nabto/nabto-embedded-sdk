@@ -73,7 +73,7 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
     }
     
 
-    NABTO_LOG_INFO(LOG, "handle packet for DTLS");
+    NABTO_LOG_TRACE(LOG, "handle packet for DTLS");
     conn->lastChannel.sock = sock;
     conn->lastChannel.ep = ep;
     conn->lastChannel.channelId = *(start+15);
@@ -109,8 +109,6 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
         conn->currentChannel = conn->lastChannel;
     }
 
-    // TODO: fix fingerprint verification, 
-//    conn->verified = true;
     if(!conn->verified) {
         if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
             NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
@@ -138,7 +136,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
 
     applicationType = *(conn->pl->buf.start(buffer));
     if (applicationType == AT_STREAM) {
-        NABTO_LOG_INFO(LOG, "Received stream packet");
+        NABTO_LOG_TRACE(LOG, "Received stream packet");
         nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
     } else if (applicationType == AT_RENDEZVOUS_CONTROL) {
         np_udp_endpoint ep; // the endpoint is not used for dtls packets

@@ -64,7 +64,7 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, &dev);
     
     nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp);
-    // TODO: determine if we should make stun analysis
+    // TODO: determine if we should make stun analysis on startup
 //    ec2 = nc_stun_async_analyze(&dev->stun, &nc_device_stun_analysed_cb, dev);
 }
 

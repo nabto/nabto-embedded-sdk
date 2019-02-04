@@ -246,8 +246,8 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
     uint8_t* payload;
     size_t payloadLength;
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
+    NABTO_LOG_BUF(LOG, payload, payloadLength);
     uint8_t* ptr = payload;
-    ptr += 2; // Skip Application type and content type
     while (ptr < payload+payloadLength-4) {
         if (uint16_read(ptr) == EX_UDP_IPV4_EP && ptr <= payload+payloadLength-10) {// its IPV4 and theres space for IPV4 ext
             if (ctx->epIndex >= 10) {
@@ -279,7 +279,7 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
             ctx->epIndex++;
         } else {
             // TODO: handle other extensions
-            NABTO_LOG_ERROR(LOG, "CTRL_REQ should only have EX_UDP_IPV4_EP extensions for now");
+            NABTO_LOG_ERROR(LOG, "CTRL_REQ should only have EX_UDP_IPV4_EP extensions for now, this was: %u", uint16_read(ptr));
             ptr += 2; // skip extension type
             uint16_t len = uint16_read(ptr);
             ptr += 2 + len;

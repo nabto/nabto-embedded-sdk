@@ -176,7 +176,7 @@ void nm_dtls_srv_ka_cb(const np_error_code ec, void* data)
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize)
 {
-    NABTO_LOG_INFO(LOG, "Handle packet called");
+    NABTO_LOG_TRACE(LOG, "Handle packet called");
     // TODO: remove channel IDs from dtls srv
     ctx->ctx.currentChannelId = channelId;
     memcpy(ctx->ctx.recvBuffer, server.pl->buf.start(buffer), bufferSize);
@@ -202,7 +202,7 @@ void nm_dtls_srv_do_one(void* data)
             nc_keep_alive_init_srv(server.pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_srv_ka_cb, ctx);
             ctx->ctx.state = DATA;
         } else {
-            NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
+            NABTO_LOG_ERROR(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
             np_event_queue_cancel_timed_event(server.pl, &ctx->ctx.tEv);
 //            server.pl->conn.cancel_async_recv(server.pl, ctx->ctx.conn);
             free(ctx);
@@ -235,7 +235,7 @@ void nm_dtls_srv_do_one(void* data)
                     return;
                 }
             }
-            NABTO_LOG_INFO(LOG, "sending to callback: %u", ctx->ctx.recvCb.cb);
+            NABTO_LOG_TRACE(LOG, "sending to callback: %u", ctx->ctx.recvCb.cb);
             if (ctx->ctx.recvCb.cb != NULL) {
                 NABTO_LOG_TRACE(LOG, "found Callback function");
                 np_dtls_received_callback cb = ctx->ctx.recvCb.cb;

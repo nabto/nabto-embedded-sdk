@@ -82,6 +82,9 @@ void nc_coap_handle_wait(struct nc_coap_context* ctx)
         ctx->currentExpiry = nextStamp;
         uint32_t now = nabto_coap_server_stamp_now(&ctx->server);
         int32_t diff = nabto_coap_stamp_diff(nextStamp, now);
+        if (diff < 0) {
+            diff = 0;
+        }
         np_event_queue_post_timed_event(ctx->pl, &ctx->timer, diff, &nc_coap_handle_timeout, ctx);
     }
 }

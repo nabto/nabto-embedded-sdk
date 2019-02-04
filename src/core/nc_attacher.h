@@ -6,6 +6,8 @@
 
 #define LOAD_BALANCER_PORT 4433
 
+// TODO: implement multi attach
+
 // TODO: Move this definition to some configuration
 #define NABTO_MAX_DR_EPS 2
 

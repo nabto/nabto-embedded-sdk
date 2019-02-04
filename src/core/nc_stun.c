@@ -86,6 +86,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
 {
     int i;
     bool found = false;
+    NABTO_LOG_INFO(LOG, "Starting STUN analysis");
     for (i = 0; i < NC_STUN_MAX_CALLBACKS; i++) {
         if (ctx->cbs[i].cb == NULL) {
             ctx->cbs[i].cb = cb;
@@ -117,7 +118,7 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            np_communication_buffer* buffer,
                            uint16_t bufferSize)
 {
-    NABTO_LOG_INFO(LOG, "Stun handling packet");
+    NABTO_LOG_TRACE(LOG, "Stun handling packet");
     nabto_stun_handle_packet(&ctx->stun, ctx->pl->buf.start(buffer), bufferSize);
     nc_stun_event(ctx);
 
@@ -148,7 +149,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            NABTO_LOG_INFO(LOG, "Sending stun packet");
+            NABTO_LOG_TRACE(LOG, "Sending stun packet");
             nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
@@ -171,7 +172,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            NABTO_LOG_INFO(LOG, "Sending stun packet");
+            NABTO_LOG_TRACE(LOG, "Sending stun packet");
             nc_udp_dispatch_async_send_to(&ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }

@@ -108,7 +108,6 @@ void nc_udp_dispatch_set_dtls_cli_context(struct nc_udp_dispatch_context* ctx,
     ctx->dtls = dtls;
 }
 
-// TODO: fix stun type when stun is implemented
 void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
                                       struct nc_stun_context* stun)
 {

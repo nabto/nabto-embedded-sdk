@@ -8,7 +8,6 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
-//TODO: switch to SRW locks
 struct nabto_device_thread {
     HANDLE thread;
     void *(*run_routine) (void *);
