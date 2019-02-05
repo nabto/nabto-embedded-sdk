@@ -79,7 +79,7 @@ int main()
     
     fut = nabto_device_close(dev);
     nabto_device_future_wait(fut);
-    if (nabto_device_future_error_code(fut) == NABTO_EC_OK) {
+    if (nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_OK) {
         NABTO_LOG_INFO(0, "Close OK");
     } else {
         NABTO_LOG_INFO(0, "Close FAILED");

@@ -1,5 +1,4 @@
 #include <nabto/nabto_device.h>
-#include <modules/logging/api/nm_api_logging.h>
 #include <stdlib.h>
 
 const unsigned char devicePrivateKey[] =
@@ -41,7 +40,7 @@ void writeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
 {
     struct streamContext* strCtx = (struct streamContext*)data;
     nabto_device_future_free(fut);
-    if (err == NABTO_EC_STREAM_CLOSED || err == NABTO_EC_ABORTED) {
+    if (err == NABTO_DEVICE_EC_FAILED) {
         NABTO_LOG_INFO(0, "stream closed or aborted");
         nabto_device_stream_free(strCtx->stream);
         free(strCtx);
@@ -56,7 +55,7 @@ void readSomeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
 {
     struct streamContext* strCtx = (struct streamContext*)data;
     nabto_device_future_free(fut);
-    if (err == NABTO_EC_STREAM_CLOSED || err == NABTO_EC_STREAM_EOF) {
+    if (err == NABTO_DEVICE_EC_FAILED) {
         NABTO_LOG_INFO(0, "stream closed or aborted");
         nabto_device_stream_free(strCtx->stream);
         free(strCtx);
@@ -89,7 +88,7 @@ int main(void)
     nabto_device_set_public_key(dev, (const char*)devicePublicKey);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, hostname);
-    nabto_device_set_log_callback(&nm_api_logging_std_out_callback, NULL);
+    nabto_device_set_std_out_log_callback();
     nabto_device_start(dev);
 
     while (true) {

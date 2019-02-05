@@ -6,7 +6,8 @@
 #include <platform/np_platform.h>
 #include <core/nc_device.h>
 
-void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const np_error_code ec);
+void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const NabtoDeviceError ec);
+NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec);
 
 struct nabto_device_context {
     struct np_platform pl;

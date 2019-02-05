@@ -11,11 +11,11 @@ void nabto_device_stream_resolve_read(struct nabto_device_stream* str, np_error_
     str->readBufferLength = 0;
     
     if (str->readAllFut) {
-        nabto_api_future_set_error_code(str->readAllFut, ec);
+        nabto_api_future_set_error_code(str->readAllFut, nabto_device_error_core_to_api(ec));
         nabto_api_future_queue_post(&str->dev->queueHead, str->readAllFut);
         str->readAllFut = NULL;
     } else if (str->readSomeFut) {
-        nabto_api_future_set_error_code(str->readSomeFut, ec);
+        nabto_api_future_set_error_code(str->readSomeFut, nabto_device_error_core_to_api(ec));
         nabto_api_future_queue_post(&str->dev->queueHead, str->readSomeFut);
         str->readSomeFut = NULL;
     } else {
@@ -29,7 +29,7 @@ void nabto_device_stream_listener_callback(struct nabto_stream* stream, void* da
     NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", str->listenFut);
     str->stream = stream;
     if (str->listenFut) {
-        nabto_api_future_set_error_code(str->listenFut, NABTO_EC_OK);
+        nabto_api_future_set_error_code(str->listenFut, NABTO_DEVICE_EC_OK);
         nabto_api_future_queue_post(&str->dev->queueHead, str->listenFut);
         str->listenFut = NULL;
     } else {
@@ -80,7 +80,7 @@ void nabto_device_stream_do_write_all(struct nabto_device_stream* str)
             // would block
             return;
         } else if (written == str->writeBufferLength) {
-            nabto_api_future_set_error_code(str->writeFut, NABTO_EC_OK);
+            nabto_api_future_set_error_code(str->writeFut, NABTO_DEVICE_EC_OK);
             nabto_api_future_queue_post(&str->dev->queueHead, str->writeFut);
             str->writeFut = NULL;
         } else {
@@ -89,7 +89,7 @@ void nabto_device_stream_do_write_all(struct nabto_device_stream* str)
             nabto_device_stream_do_write_all(str);
         }
     } else {
-        nabto_api_future_set_error_code(str->writeFut, nc_stream_status_to_ec(status));
+        nabto_api_future_set_error_code(str->writeFut, nabto_device_error_core_to_api(nc_stream_status_to_ec(status)));
         nabto_api_future_queue_post(&str->dev->queueHead, str->writeFut);
         str->writeFut = NULL;
     }        
@@ -105,11 +105,11 @@ void nabto_device_stream_handle_close(struct nabto_device_stream* str)
     if (status == NABTO_STREAM_STATUS_OK) {
         return;
     } else if (status == NABTO_STREAM_STATUS_CLOSED) {
-        nabto_api_future_set_error_code(str->closeFut, NABTO_EC_OK);
+        nabto_api_future_set_error_code(str->closeFut, NABTO_DEVICE_EC_OK);
         nabto_api_future_queue_post(&str->dev->queueHead, str->closeFut);
         str->closeFut = NULL;
     } else {
-        nabto_api_future_set_error_code(str->closeFut, nc_stream_status_to_ec(status));
+        nabto_api_future_set_error_code(str->closeFut, nabto_device_error_core_to_api(nc_stream_status_to_ec(status)));
         nabto_api_future_queue_post(&str->dev->queueHead, str->closeFut);
         str->closeFut = NULL;
     }        
@@ -121,7 +121,7 @@ void nabto_device_stream_application_event_callback(nabto_stream_application_eve
     switch(eventType) {
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_OPENED:
             if (str->acceptFut) {
-                nabto_api_future_set_error_code(str->acceptFut, NABTO_EC_OK);
+                nabto_api_future_set_error_code(str->acceptFut, NABTO_DEVICE_EC_OK);
                 nabto_api_future_queue_post(&str->dev->queueHead, str->acceptFut);
                 str->acceptFut = NULL;
             }
@@ -139,7 +139,7 @@ void nabto_device_stream_application_event_callback(nabto_stream_application_eve
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_WRITE_CLOSED:
             if (str->closeFut) {
-                nabto_api_future_set_error_code(str->closeFut, NABTO_EC_OK);
+                nabto_api_future_set_error_code(str->closeFut, NABTO_DEVICE_EC_OK);
                 nabto_api_future_queue_post(&str->dev->queueHead, str->closeFut);
                 str->closeFut = NULL;
             }
@@ -149,7 +149,7 @@ void nabto_device_stream_application_event_callback(nabto_stream_application_eve
                 nabto_device_stream_do_write_all(str);
             }
             if (str->acceptFut) {
-                nabto_api_future_set_error_code(str->acceptFut, NABTO_EC_ABORTED);
+                nabto_api_future_set_error_code(str->acceptFut, nabto_device_error_core_to_api(NABTO_EC_ABORTED));
                 nabto_api_future_queue_post(&str->dev->queueHead, str->acceptFut);
                 str->acceptFut = NULL;
             }

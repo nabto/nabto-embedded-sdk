@@ -35,9 +35,7 @@
 #define NABTO_DEVICE_DECL_PREFIX extern
 #endif
 
-#include <platform/np_error_code.h>
-
-#include <nabto_types.h>
+//#include <nabto_types.h>
 
 #include <stdint.h>
 #include <string.h>
@@ -64,11 +62,6 @@ typedef struct NabtoDeviceConnection_ NabtoDeviceConnection;
 typedef struct NabtoDeviceStream_ NabtoDeviceStream;
 
 /**
- * The NabtoDeviceError represents error codes 
- */
-typedef np_error_code NabtoDeviceError;
-
-/**
  * The NabtoDeviceFuture is used to resolve asyncronous function calls
  */
 typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
@@ -76,6 +69,13 @@ typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
 
 typedef uint32_t nabto_device_duration_t;
 
+/**
+ * The NabtoDeviceError represents error codes 
+ */
+typedef enum NabtoDeviceError_ {
+    NABTO_DEVICE_EC_OK = 0,
+    NABTO_DEVICE_EC_FAILED
+}NabtoDeviceError;
 
 /**********************
  * Device Api *
@@ -526,6 +526,9 @@ typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_callback(NabtoDeviceLogCallback cb, void* data);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_std_out_log_callback();
 
 #ifdef __cplusplus
 } // extern c

@@ -36,7 +36,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
     req->userData = resource->userData;
     
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)resource->dev);
-    nabto_api_future_set_error_code(fut, NABTO_EC_OK);
+    nabto_api_future_set_error_code(fut, NABTO_DEVICE_EC_OK);
     nabto_device_future_set_callback(fut, &nabto_device_coap_resource_future_resolver, req);
     nabto_api_future_queue_post(&resource->dev->queueHead, fut);
 }

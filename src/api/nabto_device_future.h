@@ -22,7 +22,7 @@ NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev);
 
 NabtoDeviceError nabto_device_future_resolve(NabtoDeviceFuture* future);
 
-void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const np_error_code ec);
+void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const NabtoDeviceError ec);
 
 
 #endif // NABTO_DEVICE_FUTURE_H

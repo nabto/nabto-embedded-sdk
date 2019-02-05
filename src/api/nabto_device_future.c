@@ -105,7 +105,7 @@ NabtoDeviceError nabto_device_future_resolve(NabtoDeviceFuture* future)
     return NABTO_EC_OK;
 }
 
-void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const np_error_code ec)
+void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const NabtoDeviceError ec)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     fut->ec = ec;

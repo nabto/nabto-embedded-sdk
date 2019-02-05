@@ -70,11 +70,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_product_id(NabtoDevice* devic
     }
     dev->productId = (char*)malloc(strlen(str)+1); // include trailing zero
     if (dev->productId == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     memcpy(dev->productId, str, strlen(str)+1); // include trailing zero
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_device_id(NabtoDevice* device, const char* str)
@@ -86,11 +86,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_device_id(NabtoDevice* device
     }
     dev->deviceId = (char*)malloc(strlen(str)+1); // include trailing zero
     if (dev->deviceId == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     memcpy(dev->deviceId, str, strlen(str)+1); // include trailing zero
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 
 }
 
@@ -103,11 +103,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* devic
     }
     dev->serverUrl = (char*)malloc(strlen(str)+1); // include trailing zero
     if (dev->serverUrl == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     memcpy(dev->serverUrl, str, strlen(str)+1); // include trailing zero
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 
 }
 
@@ -120,11 +120,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_public_key(NabtoDevice* devic
     }
     dev->publicKey = (char*)malloc(strlen(str)+1); // include trailing zero
     if (dev->publicKey == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     memcpy(dev->publicKey, str, strlen(str)+1); // include trailing zero
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 
 }
 
@@ -137,11 +137,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
     }
     dev->privateKey = (char*)malloc(strlen(str)+1); // include trailing zero
     if (dev->privateKey == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     memcpy(dev->privateKey, str, strlen(str)+1); // include trailing zero
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 
 }
 
@@ -149,24 +149,24 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_name(NabtoDevice* device,
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     if (strlen(name) > 32) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
     memcpy(dev->appName, name, strlen(name));
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* device, const char* version)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     if (strlen(version) > 32) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
     memcpy(dev->appVersion, version, strlen(version));
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_experimental_get_local_port(NabtoDevice* device, uint16_t* port)
@@ -175,7 +175,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_experimental_get_local_port(Nabto
     nabto_device_threads_mutex_lock(dev->eventMutex);
     *port = nc_udp_dispatch_get_local_port(&dev->core.udp);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 /**
@@ -187,13 +187,13 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     np_error_code ec;
     if (dev->publicKey == NULL || dev->privateKey == NULL || dev->serverUrl == NULL) {
         NABTO_LOG_ERROR(LOG, "Encryption key pair or server URL not set");
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     dev->eventCond = nabto_device_threads_create_condition();
     if (dev->eventCond == NULL) {
         NABTO_LOG_ERROR(LOG, "condition init has failed");
         nabto_device_free_threads(dev);
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     dev->coreThread = nabto_device_threads_create_thread();
     dev->networkThread = nabto_device_threads_create_thread();
@@ -210,20 +210,20 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");
         nabto_device_free_threads(dev);
-        return ec;
+        return nabto_device_error_core_to_api(ec);
     }
     if (nabto_device_threads_run(dev->coreThread, nabto_device_core_thread, dev) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create thread");
         nabto_device_free_threads(dev);
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     if (nabto_device_threads_run(dev->networkThread, nabto_device_network_thread, dev) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create thread");
         nabto_device_free_threads(dev);
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 
@@ -233,7 +233,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
 void nabto_device_close_cb(const np_error_code ec, void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
-    nabto_api_future_set_error_code(dev->closeFut, ec);
+    nabto_api_future_set_error_code(dev->closeFut, nabto_device_error_core_to_api(ec));
     nabto_api_future_queue_post(&dev->queueHead, dev->closeFut);
 }
 
@@ -251,7 +251,13 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_close(NabtoDevice* device)
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDeviceLogCallback cb, void* data)
 {
     nm_api_logging_set_callback(cb, data);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_std_out_log_callback()
+{
+    nm_api_logging_set_callback(&nm_api_logging_std_out_callback, NULL);
+    return NABTO_DEVICE_EC_OK;
 }
 
 /*******************************************
@@ -288,7 +294,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
     if (str->acceptFut) {
-        nabto_api_future_set_error_code(fut, NABTO_EC_OPERATION_IN_PROGRESS);
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
         return fut;
     }
@@ -308,7 +314,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStre
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
     if (str->readSomeFut || str->readAllFut) {
-        nabto_api_future_set_error_code(fut, NABTO_EC_OPERATION_IN_PROGRESS);
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
         return fut;
     }
@@ -330,7 +336,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStr
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
     if (str->readSomeFut || str->readAllFut) {
-        nabto_api_future_set_error_code(fut, NABTO_EC_OPERATION_IN_PROGRESS);
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
         return fut;
     }
@@ -351,7 +357,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream*
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
     if (str->writeFut) {
-        nabto_api_future_set_error_code(fut, NABTO_EC_OPERATION_IN_PROGRESS);
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
         return fut;
     }
@@ -369,7 +375,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream*
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
     if (str->closeFut) {
-        nabto_api_future_set_error_code(fut, NABTO_EC_OPERATION_IN_PROGRESS);
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
         return fut;
     }
@@ -415,7 +421,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDevice
     // TODO: implement observables 
     //nabto_coap_server_notify_observers(nc_coap_get_server(&reso->dev->core.coap), reso->res);
     nabto_device_threads_mutex_unlock(reso->dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceCoapResponse* NABTO_DEVICE_API nabto_device_coap_create_response(NabtoDeviceCoapRequest* request)
@@ -439,7 +445,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_code(NabtoDevic
     nabto_device_threads_mutex_lock(resp->dev->eventMutex);
     nabto_coap_server_response_set_code(resp->resp, nabto_coap_uint16_to_code(code));
     nabto_device_threads_mutex_unlock(resp->dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response,
@@ -449,7 +455,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_payload(NabtoDe
     nabto_device_threads_mutex_lock(resp->dev->eventMutex);
     nabto_coap_server_response_set_payload(resp->resp, data, dataSize);
     nabto_device_threads_mutex_unlock(resp->dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format)
@@ -458,7 +464,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_content_format(
     nabto_device_threads_mutex_lock(resp->dev->eventMutex);
     nabto_coap_server_response_set_content_format(resp->resp, format);
     nabto_device_threads_mutex_unlock(resp->dev->eventMutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response)
@@ -469,7 +475,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_ready(NabtoDeviceCo
     nabto_device_threads_mutex_unlock(resp->dev->eventMutex);
     free(resp->req);
     free(resp);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
@@ -480,9 +486,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(N
     bool res = nabto_coap_server_request_get_content_format(req->req, contentFormat);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
     if (res) {
-        return NABTO_EC_OK;
+        return NABTO_DEVICE_EC_OK;
     } else {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     }
 }
 
@@ -494,9 +500,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     nabto_coap_server_request_get_payload(req->req, payload, payloadLength);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
     if(*payload == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_DEVICE_EC_FAILED;
     } else {
-        return NABTO_EC_OK;
+        return NABTO_DEVICE_EC_OK;
     }
 }
 
@@ -585,5 +591,14 @@ void nabto_device_free_threads(struct nabto_device_context* dev)
     }
     if (dev->eventCond) {
         nabto_device_threads_free_cond(dev->eventCond);
+    }
+}
+
+NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec)
+{
+    if (ec != NABTO_EC_OK) {
+        return NABTO_DEVICE_EC_FAILED;
+    } else {
+        return NABTO_DEVICE_EC_OK;
     }
 }
