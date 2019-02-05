@@ -77,10 +77,6 @@ typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
 typedef uint32_t nabto_device_duration_t;
 
 
-enum NabtoDeviceLogLevel_ {
-    NABTO_DEVICE_TRACE = 0
-};
-
 /**********************
  * Device Api *
  **********************/
@@ -507,15 +503,29 @@ nabto_device_version();
  * Logging *
  ***********/
 
-typedef void (*NabtoDeviceLogCallback)(const char* logLine, void* data);
+enum NabtoDeviceLogLevel_ {
+    NABTO_DEVICE_LOG_FATAL = 0x00000001ul,
+    NABTO_DEVICE_LOG_ERROR = 0x00000002ul,
+    NABTO_DEVICE_LOG_WARN  = 0x00000004ul,
+    NABTO_DEVICE_LOG_INFO  = 0x00000008ul,
+    NABTO_DEVICE_LOG_TRACE = 0x00000010ul
+};
+
 typedef enum NabtoDeviceLogLevel_ NabtoDeviceLogLevel;
+
+struct NabtoDeviceLogMessage_ {
+    NabtoDeviceLogLevel severity;
+    const char* file;
+    int line;
+    const char* message; /** the message null terminated utf-8 */    
+};
+
+typedef struct NabtoDeviceLogMessage_ NabtoDeviceLogMessage;
+
+typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_callback(NabtoDeviceLogCallback cb, void* data);
-
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_log_level(NabtoDeviceLogLevel level);
-
 
 #ifdef __cplusplus
 } // extern c

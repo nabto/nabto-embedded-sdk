@@ -70,9 +70,6 @@ void np_logging_test()
     NABTO_LOG_INFO (45, "%d:%c", 22, 'c');
     NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_INFO, 45, "%d:%c", 22 , 'c'));
     reset_pnt();
-    NABTO_LOG_DEBUG(46, "%d:%c", 23, 'b');
-    NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_DEBUG, 46, "%d:%c", 23 , 'b'));
-    reset_pnt();
     NABTO_LOG_TRACE(47, "%d:%c", 24, 'a');
     NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_TRACE, 47, "%d:%c", 24 , 'a'));
     reset_pnt();

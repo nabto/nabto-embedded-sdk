@@ -40,7 +40,7 @@ void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
         np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
 
     } else if (level == NABTO_STUN_LOG_LEVEL_DEBUG) {
-        np_log.log(NABTO_LOG_SEVERITY_DEBUG, LOG, line, file, fmt, args);
+        np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
 
     } else if (level == NABTO_STUN_LOG_LEVEL_ERROR) {
         np_log.log(NABTO_LOG_SEVERITY_ERROR, LOG, line, file, fmt, args);

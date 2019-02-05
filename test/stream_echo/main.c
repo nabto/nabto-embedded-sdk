@@ -1,4 +1,5 @@
 #include <nabto/nabto_device.h>
+#include <modules/logging/api/nm_api_logging.h>
 #include <stdlib.h>
 
 const unsigned char devicePrivateKey[] =
@@ -88,6 +89,7 @@ int main(void)
     nabto_device_set_public_key(dev, (const char*)devicePublicKey);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, hostname);
+    nabto_device_set_log_callback(&nm_api_logging_std_out_callback, NULL);
     nabto_device_start(dev);
 
     while (true) {

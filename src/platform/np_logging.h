@@ -22,7 +22,6 @@ void np_fatal_adapter(uint32_t module, const char* fmt, ...);
 void np_error_adapter(uint32_t module, const char* fmt, ...);
 void np_warn_adapter(uint32_t module, const char* fmt, ...);
 void np_info_adapter(uint32_t module, const char* fmt, ...);
-void np_debug_adapter(uint32_t module, const char* fmt, ...);
 void np_trace_adapter(uint32_t module, const char* fmt, ...);
 #else
 #define VA_ARGS(...) , ##__VA_ARGS__
@@ -30,7 +29,6 @@ void np_fatal_adapter(uint32_t severity, uint32_t module, uint32_t line, const c
 void np_error_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_warn_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_info_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
-void np_debug_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_trace_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_raw_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 #endif
@@ -76,14 +74,6 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #    define NABTO_LOG_INFO np_info_adapter
 #  else
 #    define NABTO_LOG_INFO(module, fmt, ...) np_info_adapter(NABTO_LOG_SEVERITY_INFO, module, __LINE__, __FILE__, fmt VA_ARGS(__VA_ARGS__));
-#  endif
-#endif
-
-#ifndef NABTO_LOG_DEBUG
-#  ifdef HAS_NO_VARADIC_MACROS
-#    define NABTO_LOG_DEBUG np_debug_adapter
-#  else
-#    define NABTO_LOG_DEBUG(module, fmt, ...) np_debug_adapter(NABTO_LOG_SEVERITY_DEBUG, module, __LINE__, __FILE__, fmt VA_ARGS(__VA_ARGS__));
 #  endif
 #endif
 

@@ -38,7 +38,7 @@ void nc_client_connect_dispatch_handle_packet(struct nc_client_connect_dispatch_
         // compare middle 14 bytes, ignoring the channel ID and protocol prefix
         if (ctx->elms[i].active && memcmp(id+1, ctx->elms[i].conn.id.id+1, 14) == 0) { 
             np_error_code ec;
-            NABTO_LOG_INFO(LOG, "Found existing connection for new packet");
+            NABTO_LOG_TRACE(LOG, "Found existing connection for new packet");
             ec = nc_client_connect_handle_packet(ctx->pl, &ctx->elms[i].conn, sock, ep, buffer, bufferSize);
             if (ec != NABTO_EC_OK) {
                 nc_client_connect_dispatch_close_connection(ctx, &ctx->elms[i].conn);

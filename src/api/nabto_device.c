@@ -9,6 +9,8 @@
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
 
+#include <modules/logging/api/nm_api_logging.h>
+
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_API
@@ -246,6 +248,11 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_close(NabtoDevice* device)
     return fut;
 }
 
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDeviceLogCallback cb, void* data)
+{
+    nm_api_logging_set_callback(cb, data);
+    return NABTO_EC_OK;
+}
 
 /*******************************************
  * Streaming Api

@@ -31,7 +31,7 @@ void nc_stream_log(const char* file, int line, enum nabto_stream_log_level level
             np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
             break;
         case NABTO_STREAM_LOG_LEVEL_DEBUG:
-            np_log.log(NABTO_LOG_SEVERITY_DEBUG, LOG, line, file, fmt, args);
+            np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
             break;
         case NABTO_STREAM_LOG_LEVEL_ERROR:
             np_log.log(NABTO_LOG_SEVERITY_ERROR, LOG, line, file, fmt, args);

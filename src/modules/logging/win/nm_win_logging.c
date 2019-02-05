@@ -97,9 +97,6 @@ void nm_win_log (uint32_t severity, uint32_t module, uint32_t line, const char* 
             case NABTO_LOG_SEVERITY_INFO:
                 strcpy(level, "_INFO");
                 break;
-            case NABTO_LOG_SEVERITY_DEBUG:
-                strcpy(level, "DEBUG");
-                break;
             case NABTO_LOG_SEVERITY_TRACE:
                 strcpy(level, "TRACE");
                 break;

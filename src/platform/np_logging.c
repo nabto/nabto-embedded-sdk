@@ -37,13 +37,6 @@ void np_info_adapter(uint32_t module, const char* fmt, ...)
     np_log.log(NABTO_LOG_SEVERITY_INFO, "", 0, "", fmt, args);
     va_end(args);
 }
-void np_debug_adapter(uint32_t module, const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    np_log.log(NABTO_LOG_SEVERITY_DEBUG, "", 0, "", fmt, args);
-    va_end(args);
-}
 void np_trace_adapter(uint32_t module, const char* fmt, ...)
 {
     va_list args;
@@ -78,13 +71,6 @@ void np_info_adapter(uint32_t severity, uint32_t module, uint32_t line, const ch
     va_list args;
     va_start(args, fmt);
     np_log.log(NABTO_LOG_SEVERITY_INFO, module, line, file, fmt, args);
-    va_end(args);
-}
-void np_debug_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    np_log.log(NABTO_LOG_SEVERITY_DEBUG, module, line, file, fmt, args);
     va_end(args);
 }
 void np_trace_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...)
