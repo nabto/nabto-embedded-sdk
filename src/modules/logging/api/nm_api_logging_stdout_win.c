@@ -1,17 +1,19 @@
 #include "nm_api_logging.h"
 #include <windows.h>
 
+#define NM_WIN_LOGGING_FILE_LENGTH 24
+
 void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
 {
-       if(NABTO_LOG_SEVERITY_FILTER & severity) {
+       if(NABTO_LOG_SEVERITY_FILTER & msg->severity) {
         SYSTEMTIME st;
         GetSystemTime(&st);
 
         size_t fileLen = strlen(msg->file);
-        char fileTmp[NM_UNIX_LOGGING_FILE_LENGTH+4];
-        if(fileLen > NM_UNIX_LOGGING_FILE_LENGTH) {
+        char fileTmp[NM_WIN_LOGGING_FILE_LENGTH+4];
+        if(fileLen > NM_WIN_LOGGING_FILE_LENGTH) {
             strcpy(fileTmp, "...");
-            strcpy(fileTmp + 3, msg->file + fileLen - NM_UNIX_LOGGING_FILE_LENGTH);
+            strcpy(fileTmp + 3, msg->file + fileLen - NM_WIN_LOGGING_FILE_LENGTH);
         } else {
             strcpy(fileTmp, msg->file);
         }

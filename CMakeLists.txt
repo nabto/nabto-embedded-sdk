@@ -8,12 +8,15 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   include_directories(src/types/linux)
+  add_definitions("-Wall")
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
   set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out CACHE STRING "" )
   set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out CACHE STRING "" )
   include_directories(src/types/linux)
+  add_definitions("/W4")
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   include_directories(src/types/linux)
+  add_definitions("-Wall")
 endif()
 
 include_directories(src)
@@ -24,7 +27,6 @@ add_subdirectory(src/platform)
 add_subdirectory(src/core)
 add_subdirectory(src/api)
 
-add_definitions("-Wall")
 set(CMAKE_BUILD_TYPE Debug)
 
 set(test_runner_src
