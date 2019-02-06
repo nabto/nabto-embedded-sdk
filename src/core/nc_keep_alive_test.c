@@ -1,6 +1,5 @@
 #include "nc_keep_alive.h"
 
-#include <platform/np_logging.h>
 #include <platform/np_event_queue.h>
 #include <platform/np_platform.h>
 #include <platform/np_unit_test.h>

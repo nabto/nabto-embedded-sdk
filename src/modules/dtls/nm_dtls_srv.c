@@ -82,6 +82,14 @@ np_error_code nm_dtls_srv_start_keep_alive(struct np_dtls_srv_connection* ctx, u
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
 
+np_error_code nm_dtls_srv_async_discover_mtu(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
+                                             np_dtls_srv_mtu_callback cb, void* data)
+{
+    // TODO: disover mtu
+    //nc_keep_alive_async_discover_mtu(pl, &ctx->ctx.keepAliveCtx, cb, data);
+    return NABTO_EC_OK;
+}
+
 np_error_code np_dtls_srv_init(struct np_platform* pl,
                                const unsigned char* publicKeyL, size_t publicKeySize,
                                const unsigned char* privateKeyL, size_t privateKeySize)
@@ -96,6 +104,7 @@ np_error_code np_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.get_packet_count = &nm_dtls_srv_get_packet_count;
     pl->dtlsS.start_keep_alive = &nm_dtls_srv_start_keep_alive;
     pl->dtlsS.handle_packet = &nm_dtls_srv_handle_packet;
+    pl->dtlsS.async_discover_mtu = &nm_dtls_srv_async_discover_mtu;
     
     server.pl = pl;
     

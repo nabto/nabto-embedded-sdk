@@ -14,7 +14,7 @@ void nc_client_connect_async_send_to_udp(bool channelId,
                                          np_communication_buffer* buffer, uint16_t bufferSize,
                                          np_dtls_srv_send_callback cb, void* data, void* listenerData);
 void nc_client_connect_send_to_ep_cb(const np_error_code ec, void* data);
-
+void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
                                      struct nc_client_connect_dispatch_context* dispatch,
@@ -47,7 +47,6 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     nc_rendezvous_init(&conn->rendezvous, pl, conn, conn->dtls, conn->stun, conn->coap);
     
     pl->dtlsS.async_recv_from(pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
-
     // Remove connection ID before passing packet to DTLS
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
@@ -110,6 +109,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     }
 
     if(!conn->verified) {
+        conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connect_mtu_discovered, conn);
         if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
             NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
             conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
@@ -256,4 +256,13 @@ void nc_client_connect_send_to_ep_cb(const np_error_code ec, void* data)
     nc_client_connect_send_callback cb = conn->sentToEpCb;
     conn->sentToEpCb = NULL;
     cb(ec, conn->sentToEpCbData);
+}
+
+void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data)
+{
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_INFO(LOG, "MTU discovery failed with %s. mtu is %u", np_error_code_to_string(ec), mtu);
+    } else {
+        NABTO_LOG_INFO(LOG, "MTU discovered to be %u", mtu);
+    }
 }

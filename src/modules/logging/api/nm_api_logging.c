@@ -119,6 +119,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
     size_t i, n;
     int ret = 0;
     
+    // TODO: better support for multiline logging through the API
     for (i = 0; i < chunks; i++) {
         ret = sprintf(str, "%04lx: ", i*16);
         ptr = str + ret;

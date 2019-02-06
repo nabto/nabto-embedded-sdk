@@ -5,6 +5,7 @@
 #include <platform/np_dtls.h>
 
 typedef void (*np_dtls_srv_send_callback)(const np_error_code ec, void* data);
+typedef void (*np_dtls_srv_mtu_callback)(const np_error_code ec, uint16_t mtu, void* data);
 typedef void (*np_dtls_srv_sender)(bool activeChannel,
                                    np_communication_buffer* buffer, uint16_t bufferSize,
                                    np_dtls_srv_send_callback cb, void* data,
@@ -49,6 +50,8 @@ struct np_dtls_srv_module {
 
     np_error_code (*start_keep_alive)(struct np_dtls_srv_connection* ctx, uint32_t interval,
                                       uint8_t retryInterval, uint8_t maxRetries);
+    np_error_code (*async_discover_mtu)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
+                                        np_dtls_srv_mtu_callback cb, void* data);
 };
 
 #endif // NP_DTLS_SRV_H

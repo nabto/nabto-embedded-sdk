@@ -5,7 +5,24 @@
 
 #include <nabto_types.h>
 
+#ifndef NC_KEEP_ALIVE_MTU_MAX
+#define NC_KEEP_ALIVE_MTU_MAX 1400
+#endif
+
+#ifndef NC_KEEP_ALIVE_MTU_START
+#define NC_KEEP_ALIVE_MTU_START 1024
+#endif
+
+#ifndef NC_KEEP_ALIVE_MTU_RETRY_INTERVAL
+#define NC_KEEP_ALIVE_MTU_RETRY_INTERVAL 2000 // ms
+#endif
+
+#ifndef NC_KEEP_ALIVE_MTU_MAX_TRIES
+#define NC_KEEP_ALIVE_MTU_MAX_TRIES 5
+#endif
+
 typedef void (*keep_alive_callback)(const np_error_code ec, void* data);
+typedef void (*keep_alive_mtu_callback)(const np_error_code ec, uint16_t mtu, void* data);
 
 struct nc_keep_alive_context
 {
@@ -17,7 +34,7 @@ struct nc_keep_alive_context
     void* data;
     struct np_timed_event kaEv;
     np_communication_buffer* buf;
-    uint16_t bufSize;
+//    uint16_t bufSize;
     uint16_t kaInterval;
     uint8_t kaRetryInterval;
     uint8_t kaMaxRetries;
@@ -25,6 +42,13 @@ struct nc_keep_alive_context
     uint32_t lastSentCount;
     uint8_t lostKeepAlives;
     uint16_t n;
+    bool sending;
+
+    struct np_timed_event mtuDiscEv;
+    uint8_t mtuTries;
+    keep_alive_mtu_callback mtuCb;
+    void* mtuData;
+    uint32_t mtuSeq;
 };
 
 /**
@@ -74,6 +98,14 @@ np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct nc_keep_a
 np_error_code nc_keep_alive_set_settings(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                                          uint16_t kaInterval, uint8_t kaRetryInterval, uint8_t kaMaxRetries);
 
+/**
+ * Starts async discovery of maximum MTU for the dtls context of a keep alive context
+ * @param pl    The platform to use
+ * @param ctx   The keep alive context to use for discovery
+ * @param cb    The callback to be invoked once the MTU is determined
+ * @param data  User data to be passed along when the callback is invoked
+ */
+np_error_code nc_keep_alive_async_discover_mtu(struct np_platform* pl, struct nc_keep_alive_context* ctx, keep_alive_mtu_callback cb, void* data);
 
 void nc_keep_alive_handle_packet(const np_error_code ec, uint8_t channelId, uint64_t seq,
                                  np_communication_buffer* buf, uint16_t bufferSize, struct nc_keep_alive_context* data);
