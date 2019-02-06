@@ -38,7 +38,7 @@ np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, struct np
                                                uint8_t* buffer, uint16_t bufferSize,
                                                np_dtls_send_to_callback cb, void* data)
 {
-
+// TODO: fix this test
 /*    if(buffer[0] == AT_DEVICE_LB) {
         if(buffer[1] == CT_DEVICE_LB_REQUEST) {
             uint16_t ext = (((uint16_t)buffer[2]) << 8) + buffer[3];
@@ -72,8 +72,8 @@ np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, struct np
 np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                                np_dtls_received_callback cb, void* data)
 {
-    np_communication_buffer resp;
-    uint8_t *ptr = resp.buf+2;
+//    np_communication_buffer resp;
+//    uint8_t *ptr = resp.buf+2;
     if (nc_client_connect_test_recvState == 1) {
 /*        resp.buf[0] = AT_DEVICE_LB;
         resp.buf[1] = CT_DEVICE_LB_RESPONSE;

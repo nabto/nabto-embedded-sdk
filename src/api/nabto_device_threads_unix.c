@@ -130,7 +130,7 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
 {
     struct timespec ts;
     struct timeval tp;
-    int rc = gettimeofday(&tp, NULL);
+    gettimeofday(&tp, NULL);
     long future_us = tp.tv_usec+ms*1000;
     ts.tv_nsec = (future_us % 1000000) * 1000;
     ts.tv_sec = tp.tv_sec + future_us / 1000000;

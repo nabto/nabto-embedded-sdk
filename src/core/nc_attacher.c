@@ -319,7 +319,6 @@ void nc_attacher_lb_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* cr
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     uint8_t* ptr;
     uint8_t* start;
-    uint16_t len;
     uint8_t extBuffer[34];
     if( ec != NABTO_EC_OK ) {
         ctx->cb(ec, ctx->cbData);
@@ -505,7 +504,7 @@ void nc_attacher_dr_dtls_send_cb(const np_error_code ec, void* data) {
 
 void nc_attacher_lb_dtls_closed_cb(const np_error_code ec, void* data)
 {
-    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+//    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     NABTO_LOG_INFO(LOG, "load balancer dtls connection closed callback");
 }
 

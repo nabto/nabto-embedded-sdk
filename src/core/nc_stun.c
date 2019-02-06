@@ -33,7 +33,6 @@ uint32_t nc_stun_get_stamp(void* data)
 void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
                  const char* fmt, va_list args, void* data)
 {
-    struct nc_stun_context* ctx = (struct nc_stun_context*)data;
     if (level == NABTO_STUN_LOG_LEVEL_INFO) {
         np_log.log(NABTO_LOG_SEVERITY_INFO, LOG, line, file, fmt, args);
     } else if (level == NABTO_STUN_LOG_LEVEL_TRACE) {
@@ -53,7 +52,7 @@ void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
 
 bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 {
-    struct nc_stun_context* ctx = (struct nc_stun_context*)data;
+//    struct nc_stun_context* ctx = (struct nc_stun_context*)data;
     int i;
     for ( i = 0; i < size; i++) {
         *buf = (uint8_t)rand();

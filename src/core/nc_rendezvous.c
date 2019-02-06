@@ -62,7 +62,6 @@ void nc_rendezvous_handle_packet(struct nc_rendezvous_context* ctx,
 {
     uint8_t* start = ctx->pl->buf.start(buffer);
     uint8_t ct = *(start+1);
-    np_error_code ec;
     switch(ct) {
         case CT_RENDEZVOUS_CTRL_STUN_START_REQ:
         case CT_RENDEZVOUS_CTRL_STUN_START_RESP:

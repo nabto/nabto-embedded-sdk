@@ -225,7 +225,7 @@ void nc_attacher_test_attach()
 
     pl.ts.set_future_timestamp = &nc_attacher_test_ts_set;
 
-    np_dtls_cli_context* crypCtx;
+//    np_dtls_cli_context* crypCtx;
     callbackReceived = false;
     memset(rec[0].v6.addr, 0, 16);
     rec[0].v6.addr[15] = 1; // ::1

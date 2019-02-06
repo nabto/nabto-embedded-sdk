@@ -196,7 +196,6 @@ void nc_client_connect_async_send_to_udp(bool activeChannel,
                                          np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
-    bool found = false;
     conn->sentCb = cb;
     conn->sentData = data;
     if (bufferSize > conn->pl->buf.size(buffer)-16) {

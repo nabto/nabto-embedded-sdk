@@ -131,7 +131,6 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
 void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx)
 {
     uint8_t* start = ctx->pl->buf.start(ctx->buf);
-    uint8_t buf[16];
     int i = 0;
     start[0] = (enum application_data_type)AT_KEEP_ALIVE;
     start[1] = (enum keep_alive_content_type)CT_KEEP_ALIVE_REQUEST;

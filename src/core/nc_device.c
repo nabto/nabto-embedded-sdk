@@ -61,6 +61,9 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     nc_udp_dispatch_set_client_connect_context(&dev->udp, &dev->clientConnect);
     
     ec2 = nc_attacher_register_detatch_callback(&dev->attacher, &nc_device_detached_cb, dev);
+    if ( ec2 != NABTO_EC_OK ) {
+        // TODO: handle impossible error
+    }
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, &dev);
     
     nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp);

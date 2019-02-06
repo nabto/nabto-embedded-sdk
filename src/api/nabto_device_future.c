@@ -34,7 +34,7 @@ NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev)
 void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    free(future);
+    free(fut);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_future_ready(NabtoDeviceFuture* future)
