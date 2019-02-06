@@ -118,7 +118,6 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
     size_t chunks = len/16;
     size_t i, n;
     int ret = 0;
-    va_list list = {};
     
     for (i = 0; i < chunks; i++) {
         ret = sprintf(str, "%04lx: ", i*16);
@@ -139,7 +138,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
                 ptr = ptr + ret;
             }
         }
-        nm_api_log(severity, module, line, file, str, list);
+        nm_api_log_buf_line(severity, module, line, file, str);
     }
     ret = sprintf(str, "%04lx: ", chunks*16);
     ptr = str + ret;
@@ -163,7 +162,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
             ptr = ptr + ret;
         }
     }
-    nm_api_log(severity, module, line, file, str, list);
+    nm_api_log_buf_line(severity, module, line, file, str);
 
 }
 
