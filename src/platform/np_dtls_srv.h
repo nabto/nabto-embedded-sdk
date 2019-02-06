@@ -11,6 +11,14 @@ typedef void (*np_dtls_srv_sender)(bool activeChannel,
                                    np_dtls_srv_send_callback cb, void* data,
                                    void* senderData);
 
+struct np_dtls_srv_send_context {
+    uint8_t* buffer;
+    uint16_t bufferSize;
+    np_dtls_send_to_callback cb;
+    void* data;
+    struct np_dtls_srv_send_context* next;
+};
+
 #include <core/nc_protocol_defines.h>
 
 struct np_platform;
@@ -27,8 +35,9 @@ struct np_dtls_srv_module {
                             np_dtls_srv_sender sender, void* data);
 
     np_error_code (*async_send_to)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                   uint8_t* buffer, uint16_t bufferSize,
-                                   np_dtls_send_to_callback cb, void* data);
+                                   struct np_dtls_srv_send_context* sendCtx);
+//                                   uint8_t* buffer, uint16_t bufferSize,
+//                                   np_dtls_send_to_callback cb, void* data);
 
     np_error_code (*async_recv_from)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                      np_dtls_received_callback cb, void* data);

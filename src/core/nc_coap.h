@@ -2,6 +2,7 @@
 #define NC_COAP_H
 
 #include <platform/np_platform.h>
+#include <platform/np_dtls_srv.h>
 
 #include <core/nc_client_connect.h>
 
@@ -14,6 +15,7 @@ struct nc_coap_context {
     struct np_event ev;
     struct np_timed_event timer;
     np_communication_buffer* sendBuffer;
+    struct np_dtls_srv_send_context sendCtx;
 };
 
 void nc_coap_init(struct np_platform* pl, struct nc_coap_context* ctx);

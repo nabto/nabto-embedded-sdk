@@ -154,7 +154,11 @@ void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx)
     if(ctx->isCli) {
         ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->cli, 0xff, start, 16+NABTO_PACKET_HEADER_SIZE, &nc_keep_alive_send_cb, ctx);
     } else {
-        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, start, 16+NABTO_PACKET_HEADER_SIZE, &nc_keep_alive_send_cb, ctx);
+        ctx->sendCtx.buffer = start;
+        ctx->sendCtx.bufferSize = 16+NABTO_PACKET_HEADER_SIZE;
+        ctx->sendCtx.cb = &nc_keep_alive_send_cb;
+        ctx->sendCtx.data = ctx;
+        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, &ctx->sendCtx);
     }
 }
 
@@ -269,7 +273,11 @@ void nc_keep_alive_send_mtu_req(struct nc_keep_alive_context* ctx, uint16_t size
     if(ctx->isCli) {
         ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->cli, 0xff, start, size, &nc_keep_alive_send_cb, ctx);
     } else {
-        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, start, size, &nc_keep_alive_send_cb, ctx);
+        ctx->sendCtx.buffer = start;
+        ctx->sendCtx.bufferSize = size;
+        ctx->sendCtx.cb = &nc_keep_alive_send_cb;
+        ctx->sendCtx.data = ctx;
+        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, &ctx->sendCtx);
     }
     np_event_queue_post_timed_event(ctx->pl, &ctx->mtuDiscEv, NC_KEEP_ALIVE_MTU_RETRY_INTERVAL, &nc_keep_alive_mtu_discover_retry, ctx);
 }

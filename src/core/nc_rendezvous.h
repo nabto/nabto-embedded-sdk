@@ -2,6 +2,7 @@
 #define NC_RENDEZVOUS_H
 
 #include <platform/np_platform.h>
+#include <platform/np_dtls_srv.h>
 
 struct nc_rendezvous_context {
     struct np_platform* pl;
@@ -11,7 +12,9 @@ struct nc_rendezvous_context {
     struct nc_coap_context* coap;
 
     struct nabto_coap_server_request* stunRequest;
-    
+
+    struct np_dtls_srv_send_context sendCtx;
+
     np_communication_buffer* priBuf;
     np_communication_buffer* secBuf;
 

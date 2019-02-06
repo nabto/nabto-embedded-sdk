@@ -70,7 +70,12 @@ void nc_coap_handle_send(struct nc_coap_context* ctx)
         // nc_coap_event(ctx);
         return;
     }
-    ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, ctx->pl->buf.start(ctx->sendBuffer), sendSize, &nc_coap_send_to_callback, ctx);
+    
+    ctx->sendCtx.buffer = ctx->pl->buf.start(ctx->sendBuffer);
+    ctx->sendCtx.bufferSize = sendSize;
+    ctx->sendCtx.cb = &nc_coap_send_to_callback;
+    ctx->sendCtx.data = ctx;
+    ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, &ctx->sendCtx);
 }
 
 void nc_coap_handle_wait(struct nc_coap_context* ctx)

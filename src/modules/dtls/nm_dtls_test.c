@@ -215,6 +215,7 @@ void test_dtls_connection()
 {
     struct np_dtls_srv_connection* dtlsS;
     np_error_code ec;
+    struct np_dtls_srv_send_context sendCtx;
 
     np_platform_init(&pl);
     nm_unix_comm_buf_init(&pl);
@@ -253,7 +254,11 @@ void test_dtls_connection()
 
     ec = pl.dtlsC.async_recv_from(&pl, cliCtx, AT_DEVICE_LB, &test_dtls_cli_received_callback, NULL);
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
-    ec = pl.dtlsS.async_send_to(&pl, dtlsS, 0xff, (uint8_t*) srvSendTestBuf, 10, &test_dtls_srv_send_to_callback, NULL);
+    sendCtx.buffer = (uint8_t*) srvSendTestBuf;
+    sendCtx.bufferSize = 10;
+    sendCtx.cb = &test_dtls_srv_send_to_callback;
+    sendCtx.data = NULL;
+    ec = pl.dtlsS.async_send_to(&pl, dtlsS, 0xff, &sendCtx);
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
 
     np_event_queue_execute_all(&pl);

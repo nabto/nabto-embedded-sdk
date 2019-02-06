@@ -27,6 +27,7 @@ const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 struct np_dtls_srv_connection {
     struct nc_client_connect* conn;
     struct nm_dtls_util_connection_ctx ctx;
+    struct np_dtls_srv_send_context* sendHead;
     np_dtls_srv_sender sender;
     void* senderData;
     bool sending;
@@ -273,36 +274,49 @@ void nm_dtls_srv_do_one(void* data)
 void nm_dtls_srv_event_send_to(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-    int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ctx->ctx.sendBuffer, ctx->ctx.sendBufferSize );
-    if (ctx->ctx.sendCb == NULL) {
+    int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ctx->sendHead->buffer, ctx->sendHead->bufferSize );
+    if (ctx->sendHead->cb == NULL) {
         ctx->ctx.sentCount++;
+        ctx->sendHead = ctx->sendHead->next;
+        if (ctx->sendHead != NULL) {
+            np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
+        }
         return;
     }
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // packet too large
-        ctx->ctx.sendCb(NABTO_EC_MALFORMED_PACKET, ctx->ctx.sendCbData);
+        ctx->sendHead->cb(NABTO_EC_MALFORMED_PACKET, ctx->sendHead->data);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         // should not be possible.
-        ctx->ctx.sendCb(NABTO_EC_FAILED, ctx->ctx.sendCbData);
+        ctx->sendHead->cb(NABTO_EC_FAILED, ctx->sendHead->data);
     } else if (ret < 0) {
         // unknown error
-        ctx->ctx.sendCb(NABTO_EC_FAILED, ctx->ctx.sendCbData);
+        ctx->sendHead->cb(NABTO_EC_FAILED, ctx->sendHead->data);
     } else {
         ctx->ctx.sentCount++;
-        ctx->ctx.sendCb(NABTO_EC_OK, ctx->ctx.sendCbData);
+        ctx->sendHead->cb(NABTO_EC_OK, ctx->sendHead->data);
+    }
+    ctx->sendHead = ctx->sendHead->next;
+    if (ctx->sendHead != NULL) {
+        np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
     }
 }
 
 np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                        uint8_t* buffer, uint16_t bufferSize,
-                                        np_dtls_send_to_callback cb, void* data)
+                                        struct np_dtls_srv_send_context* sendCtx)
+//                                        uint8_t* buffer, uint16_t bufferSize,
+//                                        np_dtls_send_to_callback cb, void* data)
 {
-    ctx->ctx.sendCb = cb;
-    ctx->ctx.sendCbData = data;
-    ctx->ctx.sendBuffer = buffer;
-    ctx->ctx.sendBufferSize = bufferSize;
-    np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
-
+    struct np_dtls_srv_send_context* elm = ctx->sendHead;
+    if (elm == NULL) {
+        ctx->sendHead = sendCtx;
+        np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
+    } else {
+        while (elm->next != NULL) {
+            elm = elm->next;
+        }
+        elm->next = sendCtx;
+    }
     return NABTO_EC_OK;
 }
 

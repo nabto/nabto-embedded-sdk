@@ -9,8 +9,7 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
                                  np_dtls_srv_sender sender, void* data);
 
 np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                        uint8_t* buffer, uint16_t bufferSize,
-                                        np_dtls_send_to_callback cb, void* data);
+                                        struct np_dtls_srv_send_context* sendCtx);
 
 np_error_code nm_dtls_srv_async_recv_from(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                           np_dtls_received_callback cb, void* data);

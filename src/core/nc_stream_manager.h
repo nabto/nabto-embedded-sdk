@@ -2,6 +2,7 @@
 #define NC_STREAM_MANAGER_H
 
 #include <platform/np_platform.h>
+#include <platform/np_dtls_srv.h>
 #include <streaming/nabto_stream_window.h>
 #include <core/nc_stream.h>
 
@@ -20,6 +21,7 @@ struct nc_stream_manager_context {
     np_communication_buffer* rstBuf;
     struct nc_stream_context streams[NABTO_MAX_STREAMS];
     struct nc_client_connection* streamConns[NABTO_MAX_STREAMS];
+    struct np_dtls_srv_send_context sendCtx;
 };
 
 

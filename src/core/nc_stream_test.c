@@ -54,29 +54,31 @@ uint16_t nc_stream_test_size(np_communication_buffer* buffer) { return 1500; }
 
 // DTLS SERVER TEST IMPL
 np_error_code nc_stream_test_cli_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* dtls,
-                                                        uint8_t* buffer, uint16_t bufferSize,
-                                                        np_dtls_send_to_callback cb, void* data)
+                                                        struct np_dtls_srv_send_context* sendCtx)
+//                                                        uint8_t* buffer, uint16_t bufferSize,
+//                                                        np_dtls_send_to_callback cb, void* data)
 {
     NABTO_LOG_ERROR(0, "Cli wants send: ");
-    NABTO_LOG_BUF(0, buffer, bufferSize);
+    NABTO_LOG_BUF(0, sendCtx->buffer, sendCtx->bufferSize);
 /*    if (ctx.firstCliPacket) {
         NABTO_LOG_ERROR(0, "Dropping first packet");
         ctx.firstCliPacket = false;
         return NABTO_EC_OK;
         }*/
-    memcpy(ctx.cliBuffer.buf, buffer, bufferSize);
-    ctx.cliBufferSize = bufferSize;
+    memcpy(ctx.cliBuffer.buf, sendCtx->buffer, sendCtx->bufferSize);
+    ctx.cliBufferSize = sendCtx->bufferSize;
     np_event_queue_post(&ctx.cliPl, &ctx.cliEv, &nc_stream_test_send_to_dev, &ctx);
     return NABTO_EC_OK;
 }
 np_error_code nc_stream_test_dev_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* dtls,
-                                               uint8_t* buffer, uint16_t bufferSize,
-                                               np_dtls_send_to_callback cb, void* data)
+                                                        struct np_dtls_srv_send_context* sendCtx)
+//                                               uint8_t* buffer, uint16_t bufferSize,
+//                                               np_dtls_send_to_callback cb, void* data)
 {
     NABTO_LOG_ERROR(0, "Dev wants send:");
-    NABTO_LOG_BUF(0, buffer, bufferSize);
-    memcpy(ctx.devBuffer.buf, buffer, bufferSize);
-    ctx.devBufferSize = bufferSize;
+    NABTO_LOG_BUF(0, sendCtx->buffer, sendCtx->bufferSize);
+    memcpy(ctx.devBuffer.buf, sendCtx->buffer, sendCtx->bufferSize);
+    ctx.devBufferSize = sendCtx->bufferSize;
     np_event_queue_post(&ctx.devPl, &ctx.devEv, &nc_stream_test_send_to_cli, &ctx);
     return NABTO_EC_OK;
 }

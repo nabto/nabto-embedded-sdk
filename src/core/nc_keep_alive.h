@@ -2,6 +2,7 @@
 #define NC_KEEP_ALIVE_H
 
 #include <platform/np_platform.h>
+#include <platform/np_dtls_srv.h>
 
 #include <nabto_types.h>
 
@@ -43,6 +44,7 @@ struct nc_keep_alive_context
     uint8_t lostKeepAlives;
     uint16_t n;
     bool sending;
+    struct np_dtls_srv_send_context sendCtx;
 
     struct np_timed_event mtuDiscEv;
     uint8_t mtuTries;

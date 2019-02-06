@@ -2,6 +2,7 @@
 #define NC_STREAM_H
 
 #include <platform/np_platform.h>
+#include <platform/np_dtls_srv.h>
 
 #include <streaming/nabto_stream.h>
 #include <streaming/nabto_stream_interface.h>
@@ -20,6 +21,7 @@ struct nc_stream_context {
     uint64_t streamId;
     struct np_dtls_srv_connection* dtls;
     struct nc_stream_manager_context* streamManager;
+    struct np_dtls_srv_send_context sendCtx;
     struct np_event ev;
     bool active;
     

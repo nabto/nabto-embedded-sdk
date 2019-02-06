@@ -24,11 +24,12 @@ void udpSendCb(const np_error_code ec, void* data)
 }
 
 np_error_code dtlsSendTo(struct np_platform* plIn, struct np_dtls_srv_connection* ctx,
-                                   uint8_t* buffer, uint16_t bufferSize,
-                                   np_dtls_send_to_callback cb, void* data)
+                         struct np_dtls_srv_send_context* send)
+//                                   uint8_t* buffer, uint16_t bufferSize,
+//                                   np_dtls_send_to_callback cb, void* data)
 {
-    memcpy(pl.buf.start(sendCtx.buffer), buffer, bufferSize);
-    sendCtx.bufferSize = bufferSize;
+    memcpy(pl.buf.start(sendCtx.buffer), send->buffer, send->bufferSize);
+    sendCtx.bufferSize = send->bufferSize;
     pl.udp.async_send_to(&sendCtx);
     return NABTO_EC_OK;
 }

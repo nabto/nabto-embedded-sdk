@@ -107,7 +107,11 @@ void nc_rendezvous_send_stun_start_resp(struct nc_rendezvous_context* ctx)
     ptr++;
     *ptr = CT_RENDEZVOUS_CTRL_STUN_START_RESP;
     NABTO_LOG_INFO(LOG, "Sending CTRL_STUN_START_RESP");
-    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, start, 2, &nc_rendezvous_dtls_send_cb, ctx);
+    ctx->sendCtx.buffer = start;
+    ctx->sendCtx.bufferSize = 2;
+    ctx->sendCtx.cb = &nc_rendezvous_dtls_send_cb;
+    ctx->sendCtx.data = ctx;
+    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, &ctx->sendCtx);
 }
 
 void nc_rendezvous_dtls_send_cb(const np_error_code ec, void* data)

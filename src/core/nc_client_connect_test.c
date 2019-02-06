@@ -35,8 +35,9 @@ uint16_t nc_client_connect_test_size(np_communication_buffer* buffer) { return 1
 
 // dtls srv impl
 np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                               uint8_t* buffer, uint16_t bufferSize,
-                                               np_dtls_send_to_callback cb, void* data)
+                                               struct np_dtls_srv_send_context* sendCtx)
+//                                               uint8_t* buffer, uint16_t bufferSize,
+//                                               np_dtls_send_to_callback cb, void* data)
 {
 // TODO: fix this test
 /*    if(buffer[0] == AT_DEVICE_LB) {
