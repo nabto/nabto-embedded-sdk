@@ -59,15 +59,56 @@ void nm_api_log(uint32_t severity, uint32_t module,
                 msg.severity = NABTO_DEVICE_LOG_ERROR;
                 break;
         }
-               
+
         msg.file = file;
         msg.line = line;
         msg.message = log;
         logCallback(&msg, userData);
     }
-    
 }
 
+void nm_api_log_buf_line(uint32_t severity, uint32_t module,
+                uint32_t line, const char* file,
+                const char* fmt)
+{
+    if ((NABTO_LOG_MODULE_FILTER & module) || module == 0 ) {
+        NabtoDeviceLogMessage msg;
+        char log[128];
+        int ret;
+
+        ret = snprintf(log, 128, fmt);
+        if (ret >= 128) {
+            // TODO: handle too long log lines
+            // The log line was too large for the array
+        }
+
+        switch(severity) {
+            case NABTO_LOG_SEVERITY_FATAL:
+                msg.severity = NABTO_DEVICE_LOG_FATAL;
+                break;
+            case NABTO_LOG_SEVERITY_ERROR:
+                msg.severity = NABTO_DEVICE_LOG_ERROR;
+                break;
+            case NABTO_LOG_SEVERITY_WARN:
+                msg.severity = NABTO_DEVICE_LOG_WARN;
+                break;
+            case NABTO_LOG_SEVERITY_INFO:
+                msg.severity = NABTO_DEVICE_LOG_INFO;
+                break;
+            case NABTO_LOG_SEVERITY_TRACE:
+                msg.severity = NABTO_DEVICE_LOG_TRACE;
+                break;
+            default:
+                msg.severity = NABTO_DEVICE_LOG_ERROR;
+                break;
+        }
+
+        msg.file = file;
+        msg.line = line;
+        msg.message = log;
+        logCallback(&msg, userData);
+    }
+}
 void nm_api_log_buf(uint32_t severity, uint32_t module,
                     uint32_t line, const char* file,
                     const uint8_t* buf, size_t len)
