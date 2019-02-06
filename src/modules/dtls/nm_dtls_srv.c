@@ -87,7 +87,7 @@ np_error_code nm_dtls_srv_async_discover_mtu(struct np_platform* pl, struct np_d
                                              np_dtls_srv_mtu_callback cb, void* data)
 {
     // TODO: disover mtu
-    //nc_keep_alive_async_discover_mtu(pl, &ctx->ctx.keepAliveCtx, cb, data);
+    nc_keep_alive_async_discover_mtu(pl, &ctx->ctx.keepAliveCtx, cb, data);
     return NABTO_EC_OK;
 }
 
@@ -307,6 +307,7 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
 //                                        uint8_t* buffer, uint16_t bufferSize,
 //                                        np_dtls_send_to_callback cb, void* data)
 {
+    sendCtx->next = NULL;
     struct np_dtls_srv_send_context* elm = ctx->sendHead;
     if (elm == NULL) {
         ctx->sendHead = sendCtx;
@@ -315,7 +316,12 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
         while (elm->next != NULL) {
             elm = elm->next;
         }
-        elm->next = sendCtx;
+        if (elm == sendCtx) {
+            NABTO_LOG_ERROR(LOG, "Someone tried to reuse sendCtx before it resolved");
+            return NABTO_EC_OPERATION_IN_PROGRESS;
+        } else {
+            elm->next = sendCtx;
+        }
     }
     return NABTO_EC_OK;
 }

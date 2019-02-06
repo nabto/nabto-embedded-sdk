@@ -269,7 +269,7 @@ void nc_keep_alive_send_mtu_req(struct nc_keep_alive_context* ctx, uint16_t size
     memset(ptr, 0, size - 6);
     
     NABTO_LOG_INFO(LOG, "Sending keep alive request for MTU: ");
-    NABTO_LOG_BUF(LOG, start, 16+NABTO_PACKET_HEADER_SIZE);
+    NABTO_LOG_BUF(LOG, start, size);
     if(ctx->isCli) {
         ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->cli, 0xff, start, size, &nc_keep_alive_send_cb, ctx);
     } else {
@@ -285,9 +285,14 @@ void nc_keep_alive_send_mtu_req(struct nc_keep_alive_context* ctx, uint16_t size
 void nc_keep_alive_mtu_resolve_discovery(struct nc_keep_alive_context* ctx, np_error_code ec, uint16_t mtu)
 {
     keep_alive_mtu_callback cb = ctx->mtuCb;
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->mtuDiscEv);
     ctx->mtuSeq++;
     ctx->mtuCb = NULL;
-    cb(ec, mtu, ctx->mtuData);
+    if (cb != NULL) {
+        cb(ec, mtu, ctx->mtuData);
+    } else {
+        NABTO_LOG_ERROR(LOG, "someone made mtu discovery with no callback");
+    }
 }
 
 void nc_keep_alive_mtu_handle_response(struct nc_keep_alive_context* ctx, uint32_t seq)
