@@ -28,6 +28,7 @@ struct np_dtls_srv_connection {
     struct nc_client_connect* conn;
     struct nm_dtls_util_connection_ctx ctx;
     struct np_dtls_srv_send_context* sendHead;
+    struct np_dtls_srv_send_context kaSendCtx;
     np_dtls_srv_sender sender;
     void* senderData;
     bool sending;
@@ -233,10 +234,13 @@ void nm_dtls_srv_do_one(void* data)
                 if (ptr[1] == CT_KEEP_ALIVE_REQUEST) {
                     NABTO_LOG_TRACE(LOG, "Keep alive request, responding imidiately");
                     ptr[1] = CT_KEEP_ALIVE_RESPONSE;
-                    ctx->ctx.sendCb = NULL;
-                    ctx->ctx.sendBuffer = ptr;
-                    ctx->ctx.sendBufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
+                    ctx->kaSendCtx.cb = NULL;
+                    ctx->kaSendCtx.data = NULL;
+                    ctx->kaSendCtx.buffer = ptr;
+                    ctx->kaSendCtx.bufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
                     ctx->activeChannel = false;
+                    ctx->kaSendCtx.next = ctx->sendHead;
+                    ctx->sendHead = &ctx->kaSendCtx;
                     nm_dtls_srv_event_send_to(ctx);
                     return;
                 } else {
@@ -275,6 +279,7 @@ void nm_dtls_srv_event_send_to(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ctx->sendHead->buffer, ctx->sendHead->bufferSize );
+    struct np_dtls_srv_send_context* next = ctx->sendHead->next;
     if (ctx->sendHead->cb == NULL) {
         ctx->ctx.sentCount++;
         ctx->sendHead = ctx->sendHead->next;
@@ -285,18 +290,21 @@ void nm_dtls_srv_event_send_to(void* data)
     }
     if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // packet too large
+        NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i (Packet too large)", ret);
         ctx->sendHead->cb(NABTO_EC_MALFORMED_PACKET, ctx->sendHead->data);
     } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
         // should not be possible.
+        NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
         ctx->sendHead->cb(NABTO_EC_FAILED, ctx->sendHead->data);
     } else if (ret < 0) {
         // unknown error
+        NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
         ctx->sendHead->cb(NABTO_EC_FAILED, ctx->sendHead->data);
     } else {
         ctx->ctx.sentCount++;
         ctx->sendHead->cb(NABTO_EC_OK, ctx->sendHead->data);
     }
-    ctx->sendHead = ctx->sendHead->next;
+    ctx->sendHead = next;
     if (ctx->sendHead != NULL) {
         np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
     }

@@ -5,6 +5,8 @@
 #include <platform/np_logging.h>
 #include <platform/np_event_queue.h>
 
+#include <stdlib.h>
+
 #define LOG NABTO_LOG_MODULE_STREAM
 
 struct nabto_stream_module nc_stream_module;
@@ -179,29 +181,35 @@ void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uin
 
 void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 {
+    struct np_dtls_srv_send_context* ctx = (struct np_dtls_srv_send_context*)data;
+    free(ctx->buffer);
+    free(ctx);
     // TODO: possibly handle errors
 }
 
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType)
 {
-    uint8_t* ptr = ctx->pl->buf.start(ctx->sendBuffer);
-    uint8_t* start = ptr;
+    // TODO: Don't use malloc, get buffer from future buffer manager
+    struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
+    sendCtx->buffer = (uint8_t*)malloc(1500);
+    uint8_t* start = sendCtx->buffer;
+    //uint8_t* ptr = ctx->pl->buf.start(ctx->sendBuffer);
+    uint8_t* ptr = start;
     
     *ptr = (uint8_t)AT_STREAM;
     ptr++;
 
     ptr = var_uint_write_forward(ptr, ctx->streamId);
 
-    size_t packetSize = nabto_stream_create_packet(&ctx->stream, ptr, ctx->pl->buf.size(ctx->sendBuffer)+start-ptr, eventType);
+    size_t packetSize = nabto_stream_create_packet(&ctx->stream, ptr, 1500+start-ptr, eventType);
     if (packetSize == 0) {
         // no packet to send
         return;
     }
-    ctx->sendCtx.buffer = ctx->pl->buf.start(ctx->sendBuffer);
-    ctx->sendCtx.bufferSize = ptr-start+packetSize;
-    ctx->sendCtx.cb = &nc_stream_dtls_send_callback;
-    ctx->sendCtx.data = ctx;
-    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, &ctx->sendCtx);
+    sendCtx->bufferSize = ptr-start+packetSize;
+    sendCtx->cb = &nc_stream_dtls_send_callback;
+    sendCtx->data = sendCtx;
+    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, sendCtx);
 }
 
 void nc_stream_event_queue_callback(void* data)

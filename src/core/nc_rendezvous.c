@@ -69,11 +69,8 @@ void nc_rendezvous_handle_packet(struct nc_rendezvous_context* ctx,
         case CT_RENDEZVOUS_CTRL_STUN_DATA_RESP:
         case CT_RENDEZVOUS_CLIENT_RESPONSE:
         case CT_RENDEZVOUS_DEVICE_REQUEST:
-            NABTO_LOG_ERROR(LOG, "Device should not receive rendezvouse contet type: %u", ct);
-            break;
         case CT_RENDEZVOUS_CTRL_REQUEST:
-            NABTO_LOG_INFO(LOG, "CTRL_REQUEST received");
-            nc_rendezvous_handle_ctrl_req(ctx, buffer, bufferSize);
+            NABTO_LOG_ERROR(LOG, "Device should not receive rendezvouse contet type: %u", ct);
             break;
         case CT_RENDEZVOUS_CLIENT_REQUEST:
         {
@@ -103,6 +100,9 @@ void nc_rendezvous_send_stun_start_resp(struct nc_rendezvous_context* ctx)
 {
     uint8_t* start = ctx->pl->buf.start(ctx->priBuf);
     uint8_t* ptr = start;
+    if (ctx->sendCtx.buffer != NULL) {
+        NABTO_LOG_ERROR(LOG, "Sending rendezvous packet with non-NULL buffer");
+    }
     *ptr = AT_RENDEZVOUS_CONTROL;
     ptr++;
     *ptr = CT_RENDEZVOUS_CTRL_STUN_START_RESP;
@@ -116,6 +116,8 @@ void nc_rendezvous_send_stun_start_resp(struct nc_rendezvous_context* ctx)
 
 void nc_rendezvous_dtls_send_cb(const np_error_code ec, void* data)
 {
+    struct nc_rendezvous_context* ctx = (struct nc_rendezvous_context*)data;
+    ctx->sendCtx.buffer = NULL;
     if (ec != NABTO_EC_OK) {
         // No retransmissions for now
         NABTO_LOG_INFO(LOG, "DTLS send failed");
@@ -160,45 +162,12 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
     nabto_coap_server_response_ready(response);
 }
 
-void nc_rendezvous_handle_ctrl_req(struct nc_rendezvous_context* ctx,
-                                   np_communication_buffer* buffer,
-                                   uint16_t bufferSize)
-{
-    uint8_t* start = ctx->pl->buf.start(buffer);
-    uint8_t* ptr = start;
-    ptr += 2; // Skip Application type and content type
-    while (ptr < start+bufferSize-4) {
-        if (uint16_read(ptr) == EX_UDP_IPV4_EP && ptr <= start+bufferSize-10) {// its IPV4 and theres space for IPV4 ext
-            if (ctx->epIndex >= 10) {
-                ptr += 10;
-                NABTO_LOG_ERROR(LOG, "No room for more endpoints, ingnoring endpoint");
-                continue;
-            }
-            ptr += 4; // skip extension header
-            ctx->epList[ctx->epIndex].port = uint16_read(ptr);
-            ptr += 2;
-            ctx->epList[ctx->epIndex].ip.type = NABTO_IPV4;
-            memcpy(ctx->epList[ctx->epIndex].ip.v4.addr, ptr, 4);
-            ptr += 4;
-            NABTO_LOG_INFO(LOG, "Received IP: %u.%u.%u.%u:%u", ctx->epList[ctx->epIndex].ip.v4.addr[0], ctx->epList[ctx->epIndex].ip.v4.addr[1], ctx->epList[ctx->epIndex].ip.v4.addr[2], ctx->epList[ctx->epIndex].ip.v4.addr[3], ctx->epList[ctx->epIndex].port);
-            ctx->epIndex++;
-        } else {
-            // TODO: handle other extensions
-            NABTO_LOG_ERROR(LOG, "CTRL_REQ should only have EX_UDP_IPV4_EP extensions for now");
-        }
-    }
-    if (!ctx->sendingDevReqs) {
-        nc_rendezvous_send_device_request(ctx);
-    }
-}
-
-
 void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 {
     uint8_t* start = ctx->pl->buf.start(ctx->priBuf);
     uint8_t* ptr = start;
     np_error_code ec;
-    if (ctx->epIndex == 0) {
+    if (ctx->epIndex <= 0) {
         ctx->sendingDevReqs = false;
         return;
     }

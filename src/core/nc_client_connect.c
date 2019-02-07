@@ -260,6 +260,7 @@ void nc_client_connect_send_to_ep_cb(const np_error_code ec, void* data)
 
 void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data)
 {
+    // TODO: use the discovered MTU!
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "MTU discovery failed with %s. mtu is %u", np_error_code_to_string(ec), mtu);
     } else {
