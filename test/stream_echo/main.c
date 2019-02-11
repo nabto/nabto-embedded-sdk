@@ -23,9 +23,6 @@ const unsigned char devicePublicKey[] =
 "XndF4oYF4h6yysELSJfuiamVURjo+KcM1ixwAWo=\r\n"
 "-----END CERTIFICATE-----\r\n";
 
-//const char* hostname = "localhost";
-const char* hostname = "a.devices.dev.nabto.net";
-
 #include <platform/np_logging.h>
 
 struct streamContext {
@@ -83,11 +80,18 @@ void acceptStream(struct streamContext* strCtx) {
 
 int main(void)
 {
+    const char* serverHostname = "a.devices.dev.nabto.net";
     NabtoDeviceStream* stream;
     NabtoDevice* dev = nabto_device_new();
+
+    char* deviceLbEnv = getenv("DEVICE_LB_HOST");
+    if (deviceLbEnv) {
+        serverHostname = deviceLbEnv;
+    }
+
     nabto_device_set_public_key(dev, (const char*)devicePublicKey);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
-    nabto_device_set_server_url(dev, hostname);
+    nabto_device_set_server_url(dev, serverHostname);
     nabto_device_set_std_out_log_callback();
     nabto_device_start(dev);
 
