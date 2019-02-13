@@ -279,12 +279,16 @@ void nm_dtls_srv_event_send_to(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ctx->sendHead->buffer, ctx->sendHead->bufferSize );
+    NABTO_LOG_INFO(LOG, "Writing to ssl");
     struct np_dtls_srv_send_context* next = ctx->sendHead->next;
     if (ctx->sendHead->cb == NULL) {
         ctx->ctx.sentCount++;
         ctx->sendHead = ctx->sendHead->next;
         if (ctx->sendHead != NULL) {
+//            NABTO_LOG_INFO(LOG, "No callback, posting next send event");
             np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
+        } else {
+//            NABTO_LOG_INFO(LOG, "No callback, no next send event");
         }
         return;
     }
@@ -292,10 +296,6 @@ void nm_dtls_srv_event_send_to(void* data)
         // packet too large
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i (Packet too large)", ret);
         ctx->sendHead->cb(NABTO_EC_MALFORMED_PACKET, ctx->sendHead->data);
-    } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
-        // should not be possible.
-        NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
-        ctx->sendHead->cb(NABTO_EC_FAILED, ctx->sendHead->data);
     } else if (ret < 0) {
         // unknown error
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
@@ -317,6 +317,7 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
 {
     sendCtx->next = NULL;
     struct np_dtls_srv_send_context* elm = ctx->sendHead;
+    NABTO_LOG_INFO(LOG, "Enqueueing send, head: %u", ctx->sendHead);
     if (elm == NULL) {
         ctx->sendHead = sendCtx;
         np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
@@ -328,6 +329,7 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
             NABTO_LOG_ERROR(LOG, "Someone tried to reuse sendCtx before it resolved");
             return NABTO_EC_OPERATION_IN_PROGRESS;
         } else {
+//            NABTO_LOG_INFO(LOG, "Send events found, inserting new event in queue");
             elm->next = sendCtx;
         }
     }
@@ -489,7 +491,7 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->ctx.sslSendBufferSize == 0) {
         memcpy(server.pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
-        NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
+        NABTO_LOG_INFO(LOG, "mbedtls wants write %u bytes:", bufferSize);
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         ctx->sending = true;

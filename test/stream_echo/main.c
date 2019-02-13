@@ -37,6 +37,7 @@ void writeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
 {
     struct streamContext* strCtx = (struct streamContext*)data;
     nabto_device_future_free(fut);
+    NABTO_LOG_INFO(0, "Stream write callback invoked");
     if (err == NABTO_DEVICE_EC_FAILED) {
         NABTO_LOG_INFO(0, "stream closed or aborted");
         nabto_device_stream_free(strCtx->stream);

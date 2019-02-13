@@ -220,8 +220,10 @@ void nc_stream_event_queue_callback(void* data)
 void nc_stream_event_callback(enum nabto_stream_module_event event, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
-    NABTO_LOG_TRACE(LOG, "nc_stream_event_callback received");
+    NABTO_LOG_TRACE(LOG, "nc_stream_event_callback received!!");
 //    np_event_queue_cancel_event(ctx->pl, &ctx->ev);
+    // TODO: DONT DO THIS
+    //nc_stream_event((struct nc_stream_context*)data);
     np_event_queue_post(ctx->pl, &ctx->ev, &nc_stream_event_queue_callback, ctx);
 }
 
