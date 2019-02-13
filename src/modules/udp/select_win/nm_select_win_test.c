@@ -134,11 +134,11 @@ int main()
     nm_select_win_async_create(&sockCreated, NULL);
     nm_select_win_async_create(&sock3Created, NULL);
 
-    size_t nIps = nm_select_unix_get_local_ip(&localIps, 5);
+    size_t nIps = nm_select_win_get_local_ip(&localIps, 5);
     NABTO_LOG_INFO(0, "Found %u local IP's", nIps);
     for (int i = 0; i < nIps; i++) {
         if (localIps[i].type == NABTO_IPV4) {
-            NABTO_LOG_BUF(0, localIps[i].v4.addr, 4);
+            NABTO_LOG_INFO(0, "%u.%u.%u.%u", localIps[i].v4.addr[0], localIps[i].v4.addr[1], localIps[i].v4.addr[2], localIps[i].v4.addr[3]);
         } else {
             NABTO_LOG_BUF(0, localIps[i].v6.addr, 16);
         }

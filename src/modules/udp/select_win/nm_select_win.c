@@ -231,7 +231,7 @@ enum np_ip_address_type nm_select_win_get_protocol(np_udp_socket* socket)
     }
 }
 
-size_t nm_select_unix_get_local_ip( struct np_ip_address *addrs[], size_t addrsSize)
+size_t nm_select_win_get_local_ip( struct np_ip_address *addrs[], size_t addrsSize)
 {
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;
@@ -244,7 +244,7 @@ size_t nm_select_unix_get_local_ip( struct np_ip_address *addrs[], size_t addrsS
     if (addrsSize < 1) {
         return 0;
     }
-    int s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s != -1) {
         memset(&si_me, 0, sizeof(si_me));
         memset(&si_other, 0, sizeof(si_me));
@@ -256,7 +256,7 @@ size_t nm_select_unix_get_local_ip( struct np_ip_address *addrs[], size_t addrsS
         //"connect" google's DNS server at 8.8.8.8 , port 4567
         si_other.sin_family = AF_INET;
         si_other.sin_port = htons(4567);
-        si_other.sin_addr.s_addr = inet_addr("8.8.8.8");
+		inet_pton(AF_INET, "8.8.8.8", &si_other.sin_addr.s_addr);
         if(connect(s,(struct sockaddr*)&si_other,sizeof(si_other)) == -1) {
             NABTO_LOG_ERROR(LOG, "Cannot connect to host");
         } else {
@@ -272,7 +272,6 @@ size_t nm_select_unix_get_local_ip( struct np_ip_address *addrs[], size_t addrsS
                 }
             }
         }
-        close(s);
     }
     if (addrsSize < ind+1) {
         return ind;
@@ -305,7 +304,7 @@ size_t nm_select_unix_get_local_ip( struct np_ip_address *addrs[], size_t addrsS
                 }
             }
         }
-        close(s);
+        closesocket(s);
     }
     return ind;
 }
@@ -495,7 +494,7 @@ void nm_select_win_event_send_to(void* data)
         if (ctx->ep.ip.type == NABTO_IPV4) { // IPv4 addr on IPv6 socket
             // Map ipv4 to ipv6
             NABTO_LOG_INFO(LOG, "mapping: %u.%u.%u.%u:%u to IPv6", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
-            uint8_t* ptr = &srv_addr.sin6_addr;
+            uint8_t* ptr = (uint8_t*)&srv_addr.sin6_addr;
             memset(ptr, 0, 10); // 80  bits of 0
             ptr += 10;
             memset(ptr, 0xFF, 2); // 16 bits of 1
@@ -584,7 +583,7 @@ np_error_code nm_select_win_create_socket(np_udp_socket* sock)
     ret = ioctlsocket(sock->sock, FIONBIO, &iMode);
     if (ret != NO_ERROR) {
         NABTO_LOG_ERROR(LOG, "Failed to set socket non-blocking");
-        return;
+        return NABTO_EC_FAILED;
     }
 
     return NABTO_EC_OK;
