@@ -21,7 +21,7 @@ void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data);
 void sendCb1(const np_error_code ec, void* data)
 {
     NABTO_LOG_ERROR(0, "    sendCb1");
-    if (counter < 100) {
+    if (counter < 10) {
         sockSendCtx1(&sendCb1);
     }
 //    sockSendCtx1(&sendCb1);
@@ -72,7 +72,7 @@ void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
 void sock3DestroyedCb(const np_error_code ec, void* data)
 {
     NABTO_LOG_INFO(0, "socket3 destroyed");
-    if (counter >= 100) {
+    if (counter >= 10) {
         return;
     }
     nm_select_unix_async_create(&sock3Created, NULL);
@@ -88,6 +88,7 @@ void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data)
 int main()
 {
     int nfds;
+    struct np_ip_address *localIps = malloc(5*sizeof(struct np_ip_address));
     np_platform_init(&pl);
     np_log_init();
     nm_unix_comm_buf_init(&pl);
@@ -100,6 +101,16 @@ int main()
 
     nm_select_unix_async_create(&sockCreated, NULL);
     nm_select_unix_async_create(&sock3Created, NULL);
+
+    size_t nIps = nm_select_unix_get_local_ip(&localIps, 5);
+    NABTO_LOG_INFO(0, "Found %u local IP's", nIps);
+    for (int i = 0; i < nIps; i++) {
+        if (localIps[i].type == NABTO_IPV4) {
+            NABTO_LOG_BUF(0, localIps[i].v4.addr, 4);
+        } else {
+            NABTO_LOG_BUF(0, localIps[i].v6.addr, 16);
+        }
+    }
 
     while(true) {
         np_event_queue_execute_all(&pl);
