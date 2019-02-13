@@ -11,12 +11,6 @@
 
 #define LOG NABTO_LOG_MODULE_RENDEZVOUS
 
-void nc_rendezvous_send_stun_start_resp(struct nc_rendezvous_context* ctx);
-void nc_rendezvous_send_stun_data_req(const np_error_code ec, const struct nabto_stun_result* res, void* data);
-void nc_rendezvous_dtls_send_cb(const np_error_code ec, void* data);
-void nc_rendezvous_handle_ctrl_req(struct nc_rendezvous_context* ctx,
-                                   np_communication_buffer* buffer,
-                                   uint16_t bufferSize);
 void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx);
 void nc_rendezvous_send_dev_req_cb(const np_error_code ec, void* data);
 void nc_rendezvous_handle_coap_p2p_stun(struct nabto_coap_server_request* request, void* userData);
@@ -62,65 +56,22 @@ void nc_rendezvous_handle_packet(struct nc_rendezvous_context* ctx,
 {
     uint8_t* start = ctx->pl->buf.start(buffer);
     uint8_t ct = *(start+1);
-    switch(ct) {
-        case CT_RENDEZVOUS_CTRL_STUN_START_REQ:
-        case CT_RENDEZVOUS_CTRL_STUN_START_RESP:
-        case CT_RENDEZVOUS_CTRL_STUN_DATA_REQ:
-        case CT_RENDEZVOUS_CTRL_STUN_DATA_RESP:
-        case CT_RENDEZVOUS_CLIENT_RESPONSE:
-        case CT_RENDEZVOUS_DEVICE_REQUEST:
-        case CT_RENDEZVOUS_CTRL_REQUEST:
-            NABTO_LOG_ERROR(LOG, "Device should not receive rendezvouse contet type: %u", ct);
-            break;
-        case CT_RENDEZVOUS_CLIENT_REQUEST:
-        {
-            uint8_t* start = ctx->pl->buf.start(ctx->secBuf);
-            uint8_t* ptr = start;
-            np_error_code ec;
-            NABTO_LOG_INFO(LOG, "RENDEZVOUS_CLIENT_REQUEST received");
-            ctx->cliRespEp = ep;
-            *ptr = AT_RENDEZVOUS;
-            ptr++;
-            *ptr = CT_RENDEZVOUS_CLIENT_RESPONSE;
-            ec = nc_client_connect_async_send_to_ep(ctx->conn, &ctx->cliRespEp, ctx->priBuf, 2, &nc_rendezvous_send_dev_req_cb, ctx);
-            if (ec != NABTO_EC_OK) {
-                // TODO: handle_error
-                NABTO_LOG_ERROR(LOG, "error sending CLIENT_RESPONSE, ignoring for now");
-            }
-            break;
+    if (ct == CT_RENDEZVOUS_CLIENT_REQUEST) {
+        uint8_t* start = ctx->pl->buf.start(ctx->secBuf);
+        uint8_t* ptr = start;
+        np_error_code ec;
+        NABTO_LOG_INFO(LOG, "RENDEZVOUS_CLIENT_REQUEST received");
+        ctx->cliRespEp = ep;
+        *ptr = AT_RENDEZVOUS;
+        ptr++;
+        *ptr = CT_RENDEZVOUS_CLIENT_RESPONSE;
+        ec = nc_client_connect_async_send_to_ep(ctx->conn, &ctx->cliRespEp, ctx->priBuf, 2, &nc_rendezvous_send_dev_req_cb, ctx);
+        if (ec != NABTO_EC_OK) {
+            // TODO: handle_error
+            NABTO_LOG_ERROR(LOG, "error sending CLIENT_RESPONSE, ignoring for now");
         }
-        default:
-            NABTO_LOG_ERROR(LOG, "Invalid content type received");
-            break;
-    }
-}
-
-
-void nc_rendezvous_send_stun_start_resp(struct nc_rendezvous_context* ctx)
-{
-    uint8_t* start = ctx->pl->buf.start(ctx->priBuf);
-    uint8_t* ptr = start;
-    if (ctx->sendCtx.buffer != NULL) {
-        NABTO_LOG_ERROR(LOG, "Sending rendezvous packet with non-NULL buffer");
-    }
-    *ptr = AT_RENDEZVOUS_CONTROL;
-    ptr++;
-    *ptr = CT_RENDEZVOUS_CTRL_STUN_START_RESP;
-    NABTO_LOG_INFO(LOG, "Sending CTRL_STUN_START_RESP");
-    ctx->sendCtx.buffer = start;
-    ctx->sendCtx.bufferSize = 2;
-    ctx->sendCtx.cb = &nc_rendezvous_dtls_send_cb;
-    ctx->sendCtx.data = ctx;
-    ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->dtls, &ctx->sendCtx);
-}
-
-void nc_rendezvous_dtls_send_cb(const np_error_code ec, void* data)
-{
-    struct nc_rendezvous_context* ctx = (struct nc_rendezvous_context*)data;
-    ctx->sendCtx.buffer = NULL;
-    if (ec != NABTO_EC_OK) {
-        // No retransmissions for now
-        NABTO_LOG_INFO(LOG, "DTLS send failed");
+    } else {
+        NABTO_LOG_ERROR(LOG, "Invalid content type received: %u", ct);
     }
 }
 
@@ -149,6 +100,7 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
         ptr++;
         ptr = udp_ep_ext_write_forward(ptr, &ep);
     } else {
+        //TODO: Insert IPv6 stun results as well
         NABTO_LOG_ERROR(LOG, "No IPV6 stun results yet");
         return;
     }
@@ -217,13 +169,20 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
     struct nc_rendezvous_context* ctx = (struct nc_rendezvous_context*)data;
     uint8_t* payload;
     size_t payloadLength;
+    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
     NABTO_LOG_BUF(LOG, payload, payloadLength);
+    if (payload == NULL) {
+        nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(4,00));
+        nabto_coap_server_response_ready(response);
+        return;
+    }
     uint8_t* ptr = payload;
-    while (ptr < payload+payloadLength-4) {
-        if (uint16_read(ptr) == EX_UDP_IPV4_EP && ptr <= payload+payloadLength-10) {// its IPV4 and theres space for IPV4 ext
+    uint8_t* end = payload+payloadLength;
+    while (ptr+4 < end) {
+        if (uint16_read(ptr) == EX_UDP_IPV4_EP && ptr+10 <= payload+payloadLength) {// its IPV4 and theres space for IPV4 ext
             if (ctx->epIndex >= 10) {
-                ptr += 10;
+                ptr += payloadLength;
                 NABTO_LOG_ERROR(LOG, "No room for more endpoints, ingnoring endpoint");
                 continue;
             }
@@ -235,9 +194,9 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
             ptr += 4;
             NABTO_LOG_INFO(LOG, "Received IP: %u.%u.%u.%u:%u", ctx->epList[ctx->epIndex].ip.v4.addr[0], ctx->epList[ctx->epIndex].ip.v4.addr[1], ctx->epList[ctx->epIndex].ip.v4.addr[2], ctx->epList[ctx->epIndex].ip.v4.addr[3], ctx->epList[ctx->epIndex].port);
             ctx->epIndex++;
-        } else if (uint16_read(ptr) == EX_UDP_IPV6_EP && ptr <= payload+payloadLength-22) {// its IPV6 and theres space for IPV6 ext
+        } else if (uint16_read(ptr) == EX_UDP_IPV6_EP && ptr+22 <= payload+payloadLength) {// its IPV6 and theres space for IPV6 ext
             if (ctx->epIndex >= 10) {
-                ptr += 22;
+                ptr += payloadLength;
                 NABTO_LOG_ERROR(LOG, "No room for more endpoints, ingnoring endpoint");
                 continue;
             }
@@ -261,7 +220,6 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
     if (!ctx->sendingDevReqs) {
         nc_rendezvous_send_device_request(ctx);
     }
-    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
     nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,04));
     nabto_coap_server_response_ready(response);
 }

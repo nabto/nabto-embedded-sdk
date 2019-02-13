@@ -138,12 +138,6 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     if (applicationType == AT_STREAM) {
         NABTO_LOG_TRACE(LOG, "Received stream packet");
         nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
-    } else if (applicationType == AT_RENDEZVOUS_CONTROL) {
-        np_udp_endpoint ep; // the endpoint is not used for dtls packets
-        ep.ip.type = NABTO_IPV4; // initializing to make windows happy
-        ep.port = 4242;
-        NABTO_LOG_TRACE(LOG, "Received rendezvous packet");
-        nc_rendezvous_handle_packet(&conn->rendezvous, ep, buffer, bufferSize);
     } else if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
         NABTO_LOG_TRACE(LOG, "Received COAP packet");
         nc_coap_handle_packet(conn->coap, conn, buffer, bufferSize);

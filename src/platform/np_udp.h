@@ -58,11 +58,6 @@ struct np_udp_module {
      * keep the ep and buffer alive until the callback is invoked.
      */
     void (*async_send_to)(struct np_udp_send_context* ctx);
-/*
-                          np_udp_socket* socket, struct np_udp_endpoint* ep,
-                          np_communication_buffer* buffer, uint16_t bufferSize,
-                          np_udp_packet_sent_callback cb, void* data);
-*/
 
     /**
      * Receive a packet async. If the socket is broken an error is
@@ -84,6 +79,14 @@ struct np_udp_module {
      * Get the IP protocol of the socket.
      */
     enum np_ip_address_type (*get_protocol)(np_udp_socket* socket);
+
+    /**
+     * Get the local IP address.
+     * @param addrs     Pointer to an ip_address array of size addrsSize
+     * @param addrsSize size of addrs
+     * @return number of ip addresses put into the array
+     */
+    size_t (*get_local_ip)( struct np_ip_address *addrs[], size_t addrsSize);
 
     /**
      * Get the local port number
