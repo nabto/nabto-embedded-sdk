@@ -86,7 +86,7 @@ struct np_udp_module {
      * @param addrsSize size of addrs
      * @return number of ip addresses put into the array
      */
-    size_t (*get_local_ip)( struct np_ip_address *addrs[], size_t addrsSize);
+    size_t (*get_local_ip)( struct np_ip_address *addrs, size_t addrsSize);
 
     /**
      * Get the local port number

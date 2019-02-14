@@ -102,7 +102,7 @@ int main()
     nm_epoll_async_create(&sockCreated, NULL);
     nm_epoll_async_create(&sock3Created, NULL);
 
-    size_t nIps = nm_epoll_get_local_ip(&localIps, 5);
+    size_t nIps = nm_epoll_get_local_ip(localIps, 5);
     NABTO_LOG_INFO(0, "Found %u local IP's", nIps);
     for (int i = 0; i < nIps; i++) {
         if (localIps[i].type == NABTO_IPV4) {

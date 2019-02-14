@@ -133,7 +133,7 @@ enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket)
     }
 }
 
-size_t nm_epoll_get_local_ip( struct np_ip_address *addrs[], size_t addrsSize)
+size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
 {
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;
@@ -168,8 +168,8 @@ size_t nm_epoll_get_local_ip( struct np_ip_address *addrs[], size_t addrsSize)
                 NABTO_LOG_ERROR(LOG, "getsockname failed");
             } else {
                 if (memcmp(&my_addr.sin_addr, &v4any, 4) != 0) {
-                    (*addrs)[ind].type = NABTO_IPV4;
-                    memcpy((*addrs)[ind].v4.addr, &my_addr.sin_addr.s_addr, 4);
+                    addrs[ind].type = NABTO_IPV4;
+                    memcpy(addrs[ind].v4.addr, &my_addr.sin_addr.s_addr, 4);
                     ind++;
                 }
             }
@@ -201,8 +201,8 @@ size_t nm_epoll_get_local_ip( struct np_ip_address *addrs[], size_t addrsSize)
                 NABTO_LOG_ERROR(LOG, "getsockname failed");
             } else {
                 if (memcmp(&my_addr.sin6_addr, &v6any, 16) != 0) {
-                    (*addrs)[ind].type = NABTO_IPV6;
-                    memcpy((*addrs)[ind].v6.addr, my_addr.sin6_addr.s6_addr, 16);
+                    addrs[ind].type = NABTO_IPV6;
+                    memcpy(addrs[ind].v6.addr, my_addr.sin6_addr.s6_addr, 16);
                     ind++;
                 }
             }

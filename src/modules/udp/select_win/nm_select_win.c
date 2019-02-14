@@ -231,7 +231,7 @@ enum np_ip_address_type nm_select_win_get_protocol(np_udp_socket* socket)
     }
 }
 
-size_t nm_select_win_get_local_ip( struct np_ip_address *addrs[], size_t addrsSize)
+size_t nm_select_win_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
 {
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;
