@@ -113,6 +113,7 @@ void nc_coap_handle_timeout(const np_error_code ec, void* data)
     struct nc_coap_context* ctx = (struct nc_coap_context*) data;
     NABTO_LOG_TRACE(LOG, "Handle timeout called");
     nc_coap_set_infinite_stamp(ctx);
+    nabto_coap_server_handle_timeout(&ctx->server);
     nc_coap_event(ctx);
 }
 
