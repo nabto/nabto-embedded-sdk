@@ -114,6 +114,7 @@ void nm_dtls_cli_ka_cb(const np_error_code ec, void* data)
     nm_dtls_do_close(data, ec);
 }
 
+#if defined(MBEDTLS_DEBUG_C)
 // Printing function used by mbedtls for logging
 static void my_debug( void *ctx, int level,
                       const char *file, int line,
@@ -135,6 +136,7 @@ static void my_debug( void *ctx, int level,
     
     NABTO_LOG_RAW(severity, NABTO_LOG_MODULE_DTLS_CLI, line, file, str );
 }
+#endif
 
 /*
  * Initialize the np_platform to use this particular dtls cli module
@@ -518,7 +520,9 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     mbedtls_ssl_config_init( &ctx->conf );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
+#if defined(MBEDTLS_DEBUG_C)
     mbedtls_debug_set_threshold( DEBUG_LEVEL );
+#endif
     
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,
@@ -553,7 +557,9 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     }
     
     mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
+#if defined(MBEDTLS_DEBUG_C)
     mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
+#endif
     if( ( ret = mbedtls_ssl_setup( &ctx->ctx.ssl, &ctx->conf ) ) != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );

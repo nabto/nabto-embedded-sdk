@@ -88,5 +88,6 @@ set(src_tls
 
 add_library(mbedtls "${src_tls}" "${src_x509}" "${src_crypto}")
 
-target_include_directories(mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_include_directories(mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config/mbedtls)
 target_include_directories(mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include)
+target_compile_definitions(mbedtls PUBLIC -DMBEDTLS_CONFIG_FILE=<nabto_mbedtls_config.h>)

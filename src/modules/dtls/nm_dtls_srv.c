@@ -424,7 +424,9 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
 {
     const char *pers = "dtls_server";
     int ret;
+#if defined(MBEDTLS_DEBUG_C)
     mbedtls_debug_set_threshold( DEBUG_LEVEL );
+#endif
     mbedtls_ssl_config_init( &server.conf );
 //    mbedtls_ssl_cookie_init( &server.cookie_ctx );
     mbedtls_entropy_init( &server.entropy );
@@ -451,7 +453,10 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
         return NABTO_EC_FAILED;
     }
     mbedtls_ssl_conf_rng( &server.conf, mbedtls_ctr_drbg_random, &server.ctr_drbg );
+
+#if defined(MBEDTLS_DEBUG_C)
     mbedtls_ssl_conf_dbg( &server.conf, &nm_dtls_srv_tls_logger, stdout );
+#endif
 
 //    ret = mbedtls_ssl_cookie_setup( &server.cookie_ctx, mbedtls_ctr_drbg_random, &server.ctr_drbg );
 //    if( ret != 0)
