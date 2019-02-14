@@ -83,7 +83,7 @@
 #define MBEDTLS_X509_CRT_PARSE_C
 #define MBEDTLS_X509_USE_C
 #define MBEDTLS_SSL_SERVER_NAME_INDICATION
-//#define MBEDTLS_DEBUG_C
+#define MBEDTLS_DEBUG_C
 #define MBEDTLS_ERROR_C
 
 /* For test certificates */

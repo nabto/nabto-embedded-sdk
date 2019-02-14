@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define NABTO_SSL_RECV_BUFFER_SIZE 4096
 #define SERVER_NAME "localhost"
@@ -280,9 +281,11 @@ void nm_dtls_event_do_one(void* data)
         {
             // OK
         } else {
+#if defined(MBEDTLS_ERROR_C)
             char buf[128];
             mbedtls_strerror(ret, buf, 128);
             NABTO_LOG_INFO(LOG, "Received ERROR -0x%04x : %s ", -ret, buf);
+#endif
             ctx->ctx.state = CLOSING;
             nm_dtls_do_close(ctx, NABTO_EC_FAILED);
         }

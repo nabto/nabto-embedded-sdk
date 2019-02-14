@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #define NABTO_SSL_RECV_BUFFER_SIZE 4096
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
@@ -396,6 +397,7 @@ np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv
     return NABTO_EC_OK;
 }
 
+#if defined(MBEDTLS_DEBUG_C)
 static void nm_dtls_srv_tls_logger( void *ctx, int level,
                                     const char *file, int line,
                                     const char *str )
@@ -417,6 +419,7 @@ static void nm_dtls_srv_tls_logger( void *ctx, int level,
     NABTO_LOG_ERROR(LOG, "LOGGER CALLED!");
     NABTO_LOG_RAW(severity, LOG, line, file, str );
 }
+#endif
 
 
 np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t publicKeySize,
