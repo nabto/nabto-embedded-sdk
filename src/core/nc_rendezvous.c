@@ -81,48 +81,47 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
     uint8_t* start = ctx->pl->buf.start(ctx->secBuf);
     uint8_t* ptr = start;
     NABTO_LOG_INFO(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
-    if (ec != NABTO_EC_OK) {
-        // TODO: Handle error
-        NABTO_LOG_ERROR(LOG, "Stun analysis failed, Ignoring errors for now");
-        return;
-    }
 
-    // Write ipv4 nat mapping and filtering
-    ptr = uint16_write_forward(ptr, EX_STUN_RESULT_IPV4);
-    ptr = uint16_write_forward(ptr, 2);
-    *ptr = res->mapping;
-    ptr++;
-    *ptr = res->filtering;
-    ptr++;
-
-    // write public ip address
-    if (res->extEp.addr.type == NABTO_STUN_IPV4) {
-        struct np_udp_endpoint ep;
-        ep.port = res->extEp.port;
-        memcpy(ep.ip.v4.addr, res->extEp.addr.v4.addr, 4);
-        ep.ip.type = NABTO_IPV4;
-        ptr = udp_ep_ext_write_forward(ptr, &ep);
-    }
-    
-    // write local ips
-    struct np_ip_address localAddrs[2];
-
-    size_t addrs = ctx->pl->udp.get_local_ip(localAddrs, 2);
-
-    for (size_t i = 0; i < addrs; i++) {
-        struct np_udp_endpoint ep;
-        ep.ip = localAddrs[i];
-        ep.port = res->extEp.port;
-        ptr = udp_ep_ext_write_forward(ptr, &ep);
-    }
-
-    // TODO: insert defect router extension
-        
-    
     struct nabto_coap_server_response* response = nabto_coap_server_create_response(ctx->stunRequest);
-    nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,05));
-    nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
-    nabto_coap_server_response_set_payload(response, start, ptr-start);
+    
+    if (ec != NABTO_EC_OK) {
+        nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(5,00));
+    } else {
+ 
+        // Write ipv4 nat mapping and filtering
+        ptr = uint16_write_forward(ptr, EX_STUN_RESULT_IPV4);
+        ptr = uint16_write_forward(ptr, 2);
+        *ptr = res->mapping;
+        ptr++;
+        *ptr = res->filtering;
+        ptr++;
+        
+        // write public ip address
+        if (res->extEp.addr.type == NABTO_STUN_IPV4) {
+            struct np_udp_endpoint ep;
+            ep.port = res->extEp.port;
+            memcpy(ep.ip.v4.addr, res->extEp.addr.v4.addr, 4);
+            ep.ip.type = NABTO_IPV4;
+            ptr = udp_ep_ext_write_forward(ptr, &ep);
+        }
+        
+        // write local ips
+        struct np_ip_address localAddrs[2];
+        
+        size_t addrs = ctx->pl->udp.get_local_ip(localAddrs, 2);
+        
+        for (size_t i = 0; i < addrs; i++) {
+            struct np_udp_endpoint ep;
+            ep.ip = localAddrs[i];
+            ep.port = res->extEp.port;
+            ptr = udp_ep_ext_write_forward(ptr, &ep);
+        }
+        
+        // TODO: insert defect router extension
+        nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,05));
+        nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
+        nabto_coap_server_response_set_payload(response, start, ptr-start);
+    }
     nabto_coap_server_response_ready(response);
 }
 
