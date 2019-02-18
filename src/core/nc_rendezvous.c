@@ -84,10 +84,7 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
 
     struct nabto_coap_server_response* response = nabto_coap_server_create_response(ctx->stunRequest);
     
-    if (ec != NABTO_EC_OK) {
-        nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(5,00));
-    } else {
- 
+    if (ec == NABTO_EC_OK) {
         // Write ipv4 nat mapping and filtering
         ptr = uint16_write_forward(ptr, EX_STUN_RESULT_IPV4);
         ptr = uint16_write_forward(ptr, 2);
@@ -105,23 +102,24 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
             ptr = udp_ep_ext_write_forward(ptr, &ep);
         }
         
-        // write local ips
-        struct np_ip_address localAddrs[2];
-        
-        size_t addrs = ctx->pl->udp.get_local_ip(localAddrs, 2);
-        
-        for (size_t i = 0; i < addrs; i++) {
-            struct np_udp_endpoint ep;
-            ep.ip = localAddrs[i];
-            ep.port = res->extEp.port;
-            ptr = udp_ep_ext_write_forward(ptr, &ep);
-        }
-        
         // TODO: insert defect router extension
-        nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,05));
-        nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
-        nabto_coap_server_response_set_payload(response, start, ptr-start);
     }
+    // write local ips
+    struct np_ip_address localAddrs[2];
+    
+    size_t addrs = ctx->pl->udp.get_local_ip(localAddrs, 2);
+    
+    for (size_t i = 0; i < addrs; i++) {
+        struct np_udp_endpoint ep;
+        ep.ip = localAddrs[i];
+        ep.port = res->extEp.port;
+        ptr = udp_ep_ext_write_forward(ptr, &ep);
+    }
+
+    nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,05));
+    nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
+    nabto_coap_server_response_set_payload(response, start, ptr-start);
+
     nabto_coap_server_response_ready(response);
 }
 
