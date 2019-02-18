@@ -32,6 +32,8 @@ struct streamContext {
 };
 
 void readSomeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data);
+void closeStream(struct streamContext* strCtx);
+void closeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data);
 
 void writeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
 {
@@ -40,8 +42,7 @@ void writeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
     NABTO_LOG_INFO(0, "Stream write callback invoked");
     if (err == NABTO_DEVICE_EC_FAILED) {
         NABTO_LOG_INFO(0, "stream closed or aborted");
-        nabto_device_stream_free(strCtx->stream);
-        free(strCtx);
+        closeStream(strCtx);
         return;
     }
     memset(strCtx->buf, 0, 1500);
@@ -55,8 +56,7 @@ void readSomeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
     nabto_device_future_free(fut);
     if (err == NABTO_DEVICE_EC_FAILED) {
         NABTO_LOG_INFO(0, "stream closed or aborted");
-        nabto_device_stream_free(strCtx->stream);
-        free(strCtx);
+        closeStream(strCtx);
         return;
     }
     NABTO_LOG_INFO(0, "read %u bytes into buf:", strCtx->readen);
@@ -64,6 +64,20 @@ void readSomeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
 
     fut = nabto_device_stream_write(strCtx->stream, strCtx->buf, strCtx->readen);
     nabto_device_future_set_callback(fut, &writeCallback, strCtx);
+}
+
+void closeStream(struct streamContext* strCtx)
+{
+    NabtoDeviceFuture* fut = nabto_device_stream_close(strCtx->stream);
+    nabto_device_future_set_callback(fut, &closeCallback, strCtx);
+}
+
+void closeCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
+{
+    struct streamContext* strCtx = (struct streamContext*)data;
+    nabto_device_future_free(fut);
+    nabto_device_stream_free(strCtx->stream);
+    free(strCtx);
 }
 
 void acceptCallback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
