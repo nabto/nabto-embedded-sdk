@@ -240,12 +240,7 @@ void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t re
 void nc_stun_send_to_cb(const np_error_code ec, void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
-    if (ec != NABTO_EC_OK) {
-        ctx->state = NC_STUN_STATE_DONE;
-        ctx->ec = ec;
-        nc_stun_resolve_callbacks(ctx);
-        return;
-    }
+    // send errors is ok in stun context
     nc_stun_event(ctx);
 }
 
