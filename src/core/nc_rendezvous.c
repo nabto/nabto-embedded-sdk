@@ -112,7 +112,8 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
     for (size_t i = 0; i < addrs; i++) {
         struct np_udp_endpoint ep;
         ep.ip = localAddrs[i];
-        ep.port = res->extEp.port;
+        uint16_t localPort = nc_stun_get_local_port(ctx->stun);
+        ep.port = localPort;
         ptr = udp_ep_ext_write_forward(ptr, &ep);
     }
 

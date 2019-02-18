@@ -308,3 +308,8 @@ size_t nc_stun_convert_ep_list(struct np_ip_address* rec, size_t recSize,
     return end;
 }
 
+uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx)
+{
+    return nc_udp_dispatch_get_local_port(ctx->priUdp);
+}
+

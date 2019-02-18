@@ -63,4 +63,7 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            struct np_udp_endpoint ep,
                            np_communication_buffer* buffer,
                            uint16_t bufferSize);
+
+uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx);
+
 #endif // NC_STUN_H
