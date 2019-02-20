@@ -88,7 +88,6 @@ void np_udp_init(struct np_platform *pl_in)
     WSADATA wsaData;
     int err;
     
-    NABTO_LOG_ERROR(LOG, "Hello from select sockets");
     pl = pl_in;
     pl->udp.async_create     = &nm_select_win_async_create;
     pl->udp.async_bind_port  = &nm_select_win_async_bind_port;
@@ -266,8 +265,8 @@ size_t nm_select_win_get_local_ip( struct np_ip_address *addrs, size_t addrsSize
                 NABTO_LOG_ERROR(LOG, "getsockname failed");
             } else {
                 if (memcmp(&my_addr.sin_addr, &v4any, 4) != 0) {
-                    (*addrs)[ind].type = NABTO_IPV4;
-                    memcpy((*addrs)[ind].v4.addr, &my_addr.sin_addr.s_addr, 4);
+                    addrs[ind].type = NABTO_IPV4;
+                    memcpy(addrs[ind].v4.addr, &my_addr.sin_addr.s_addr, 4);
                     ind++;
                 }
             }
@@ -298,8 +297,8 @@ size_t nm_select_win_get_local_ip( struct np_ip_address *addrs, size_t addrsSize
                 NABTO_LOG_ERROR(LOG, "getsockname failed");
             } else {
                 if (memcmp(&my_addr.sin6_addr, &v6any, 16) != 0) {
-                    (*addrs)[ind].type = NABTO_IPV6;
-                    memcpy((*addrs)[ind].v6.addr, my_addr.sin6_addr.s6_addr, 16);
+                    addrs[ind].type = NABTO_IPV6;
+                    memcpy(addrs[ind].v6.addr, my_addr.sin6_addr.s6_addr, 16);
                     ind++;
                 }
             }
