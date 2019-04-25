@@ -12,7 +12,7 @@ set(src
   ${src_dir}/nc_device.c
   ${src_dir}/nc_rendezvous.c
   ${src_dir}/nc_stun.c
-  ${src_dir}/nc_coap.c
+  ${src_dir}/nc_coap_server.c
   )
 
 set(test_src

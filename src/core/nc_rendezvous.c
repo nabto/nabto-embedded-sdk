@@ -2,7 +2,7 @@
 
 #include <core/nc_packet.h>
 #include <core/nc_stun.h>
-#include <core/nc_coap.h>
+#include <core/nc_coap_server.h>
 #include <core/nc_client_connect.h>
 
 #include <platform/np_logging.h>
@@ -22,7 +22,7 @@ void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
                         struct nc_client_connection* conn,
                         struct np_dtls_srv_connection* dtls,
                         struct nc_stun_context* stun,
-                        struct nc_coap_context* coap)
+                        struct nc_coap_server_context* coap)
 {
     memset(ctx, 0, sizeof(struct nc_rendezvous_context));
     ctx->pl = pl;
@@ -36,9 +36,9 @@ void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
     ctx->epIndex = 0;
     ctx->sendingDevReqs = false;
 
-    nabto_coap_server_add_resource(nc_coap_get_server(coap), NABTO_COAP_CODE_POST, "/p2p/stun",
+    nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST, "/p2p/stun",
                                    &nc_rendezvous_handle_coap_p2p_stun, ctx);
-    nabto_coap_server_add_resource(nc_coap_get_server(coap), NABTO_COAP_CODE_POST, "/p2p/rendezvous",
+    nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST, "/p2p/rendezvous",
                                    &nc_rendezvous_handle_coap_p2p_rendezvous, ctx);
     
 }

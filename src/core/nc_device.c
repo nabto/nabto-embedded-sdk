@@ -81,7 +81,7 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
     dev->stopping = false;
     dev->stunHost = stunHost;
     nc_stream_manager_init(&dev->streamManager, pl);
-    nc_coap_init(pl, &dev->coap);
+    nc_coap_server_init(pl, &dev->coap);
     nc_client_connect_dispatch_init(&dev->clientConnect, pl, &dev->stun, &dev->coap, &dev->streamManager);
 
     dev->attachParams.appName = appName;

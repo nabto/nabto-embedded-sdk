@@ -10,7 +10,7 @@
 void nc_client_connect_dispatch_init(struct nc_client_connect_dispatch_context* ctx,
                                      struct np_platform* pl,
                                      struct nc_stun_context* stun,
-                                     struct nc_coap_context* coap,
+                                     struct nc_coap_server_context* coap,
                                      struct nc_stream_manager_context* streamManager)
 {
     int i = 0;

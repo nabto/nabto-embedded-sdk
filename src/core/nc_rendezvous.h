@@ -9,7 +9,7 @@ struct nc_rendezvous_context {
     struct nc_client_connection* conn;
     struct np_dtls_srv_connection* dtls;
     struct nc_stun_context* stun;
-    struct nc_coap_context* coap;
+    struct nc_coap_server_context* coap;
 
     struct nabto_coap_server_request* stunRequest;
 
@@ -31,7 +31,7 @@ void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
                         struct nc_client_connection* conn,
                         struct np_dtls_srv_connection* dtls,
                         struct nc_stun_context* stun,
-                        struct nc_coap_context* coap);
+                        struct nc_coap_server_context* coap);
 
 void nc_rendezvous_destroy(struct nc_rendezvous_context* ctx);
 

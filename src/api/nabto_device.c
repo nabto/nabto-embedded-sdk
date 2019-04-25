@@ -407,7 +407,7 @@ NabtoDeviceCoapResource* NABTO_DEVICE_API nabto_device_coap_add_resource(NabtoDe
     
     nabto_device_threads_mutex_lock(dev->eventMutex);
     
-    resource->res = nabto_coap_server_add_resource(nc_coap_get_server(&dev->core.coap), nabto_device_coap_method_to_code(method), path, &nabto_device_coap_resource_handler, resource);
+    resource->res = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coap), nabto_device_coap_method_to_code(method), path, &nabto_device_coap_resource_handler, resource);
     
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
@@ -419,7 +419,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDevice
     struct nabto_device_coap_resource* reso = (struct nabto_device_coap_resource*)resource;
     nabto_device_threads_mutex_lock(reso->dev->eventMutex);
     // TODO: implement observables 
-    //nabto_coap_server_notify_observers(nc_coap_get_server(&reso->dev->core.coap), reso->res);
+    //nabto_coap_server_notify_observers(nc_coap_server_get_server(&reso->dev->core.coap), reso->res);
     nabto_device_threads_mutex_unlock(reso->dev->eventMutex);
     return NABTO_DEVICE_EC_OK;
 }

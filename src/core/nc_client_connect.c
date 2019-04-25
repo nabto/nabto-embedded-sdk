@@ -20,7 +20,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
                                      struct nc_client_connect_dispatch_context* dispatch,
                                      struct nc_stream_manager_context* streamManager,
                                      struct nc_stun_context* stun,
-                                     struct nc_coap_context* coap,
+                                     struct nc_coap_server_context* coap,
                                      struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize)
 {
@@ -140,7 +140,7 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
         nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
     } else if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
         NABTO_LOG_TRACE(LOG, "Received COAP packet");
-        nc_coap_handle_packet(conn->coap, conn, buffer, bufferSize);
+        nc_coap_server_handle_packet(conn->coap, conn, buffer, bufferSize);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
     }

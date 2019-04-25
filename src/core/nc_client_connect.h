@@ -4,7 +4,7 @@
 #include <platform/np_platform.h>
 #include <core/nc_rendezvous.h>
 #include <core/nc_stream_manager.h>
-#include <core/nc_coap.h>
+#include <core/nc_coap_server.h>
 
 #define NC_CLIENT_CONNECT_MAX_CHANNELS 16
 
@@ -29,7 +29,7 @@ struct nc_client_connection {
     struct nc_client_connect_dispatch_context* dispatch;
     struct nc_stream_manager_context* streamManager;
     struct nc_stun_context* stun;
-    struct nc_coap_context* coap;
+    struct nc_coap_server_context* coap;
     struct nc_rendezvous_context rendezvous;
     struct nc_connection_id id;
     uint8_t clientFingerprint[16];
@@ -54,7 +54,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
                                      struct nc_client_connect_dispatch_context* dispatch,
                                      struct nc_stream_manager_context* streamManager,
                                      struct nc_stun_context* stun,
-                                     struct nc_coap_context* coap,
+                                     struct nc_coap_server_context* coap,
                                      struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize);
 
