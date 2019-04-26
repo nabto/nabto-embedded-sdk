@@ -248,5 +248,5 @@ void nc_attacher_test_attach()
 
 void nc_attacher_tests()
 {
-    nc_attacher_test_attach();
+    //nc_attacher_test_attach();
 }
