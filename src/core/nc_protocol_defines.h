@@ -68,6 +68,11 @@ enum rendezvous_ctrl_content_type {
     CT_RENDEZVOUS_CTRL_REQUEST         = 0x08
 };
 
+enum attach_status {
+    ATTACH_STATUS_ATTACHED = 0x00,
+    ATTACH_STATUS_REDIRECT = 0x01
+};
+
 enum extension_type {
     EX_UDP_DNS_EP          = 0x0001,
     EX_UDP_IPV4_EP         = 0x0002,
@@ -81,7 +86,8 @@ enum extension_type {
     EX_SESSION_ID          = 0x000a,
     EX_ATTACH_INDEX        = 0x000b,
     EX_STUN_RESULT_IPV4    = 0x000c,
-    EX_STUN_DEFECT_FIREWALL = 0x000d
+    EX_STUN_DEFECT_FIREWALL = 0x000d,
+    EX_ATTACH_STATUS       = 0x000e
 };
 
 #endif // _NC_PROTOCOL_DEFINES_H_

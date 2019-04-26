@@ -3,6 +3,7 @@
 
 #include <platform/np_platform.h>
 #include <core/nc_udp_dispatch.h>
+#include <core/nc_coap_client.h>
 
 #define LOAD_BALANCER_PORT 4433
 
@@ -17,11 +18,9 @@ typedef void (*nc_attached_callback)(const np_error_code ec, void* data);
 typedef void (*nc_detached_callback)(const np_error_code ec, void* data);
 
 enum nc_attacher_state {
-    NC_ATTACHER_RESOLVING_DNS,
-    NC_ATTACHER_CONNECTING_TO_LB,
-    NC_ATTACHER_CONNECTED_TO_LB,
-    NC_ATTACHER_CONNECTING_TO_RELAY,
-    NC_ATTACHER_CONNECTED_TO_RELAY,
+    NC_ATTACHER_RESOLVING_DNS, 
+    NC_ATTACHER_CONNECTING_TO_BS,
+    NC_ATTACHER_CONNECTED_TO_BS,
     NC_ATTACHER_ATTACHED
 };
 
@@ -56,13 +55,13 @@ struct nc_attach_context {
     struct nc_udp_dispatch_context* udp;
     void* cbData;
     np_udp_endpoint ep;
-    np_dtls_cli_context* lbDtls;
-    np_dtls_cli_context* drDtls;
+    np_dtls_cli_context* dtls;
     np_communication_buffer* buffer;
     char dns[256];
     uint8_t dnsLen;
     enum nc_attacher_state state;
     bool detaching;
+    struct nc_coap_client_context coap;
 };
 
 struct nc_attach_parameters {
