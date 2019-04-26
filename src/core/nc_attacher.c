@@ -204,18 +204,17 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
                 // SUCCESS, just continue
             } else if (status == ATTACH_STATUS_REDIRECT) {
                 uint8_t* dns = NULL;
-                uint16_t dnsLen;
                 while (true) {
                     uint16_t extType = uint16_read(ptr);
                     uint16_t extLen = uint16_read(ptr+2);
                     if (extType == EX_DTLS_EP) {
                         ctx->ep.port = uint16_read(ptr+4);
                         // TODO: look at fingerprint as well
-                        dnsLen = *(ptr+23); // skip header + port + az + fp = 4+2+1+16 = 23
+                        ctx->dnsLen = *(ptr+23); // skip header + port + az + fp = 4+2+1+16 = 23
                         dns = ptr+24; 
                         NABTO_LOG_TRACE(LOG, "Found DNS extension with port: %u, dns: %s",
                                         ctx->ep.port, (char*)dns);
-                        memcpy(ctx->dns, dns, dnsLen);
+                        memcpy(ctx->dns, dns, ctx->dnsLen);
                         break;
                     }
                     ptr = ptr + extLen + 4;

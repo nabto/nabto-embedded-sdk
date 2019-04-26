@@ -32,23 +32,10 @@ struct nc_attach_dr_endpoint {
     uint8_t dnsLen;
 };
 
-struct nc_attach_send_data {
-    np_dtls_cli_context* cryp;
-    uint8_t chan;
-    uint8_t* start;
-    uint32_t size;
-    np_dtls_send_to_callback cb;
-    void* data;
-    struct np_timed_event ev;
-};
-
 struct nc_attach_context {
     struct np_platform* pl;
     const struct nc_attach_parameters* params;
-    struct nc_attach_send_data sendData;
     uint32_t sessionId;
-    struct nc_attach_dr_endpoint drEps[NABTO_MAX_DR_EPS];
-    uint8_t activeDrEps;
     nc_attached_callback cb;
     nc_detached_callback detachCb;
     void* detachCbData;
