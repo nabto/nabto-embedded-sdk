@@ -42,9 +42,17 @@ struct test_context {
     struct nc_connection_id id;
 };
 
+struct udp_send_context {
+    struct np_udp_send_context udpSendCtx;
+    np_dtls_srv_send_callback cb;
+    void* data;
+};
+
 struct np_platform pl;
 struct np_timed_event ev;
 struct np_timed_event closeEv;
+struct np_udp_endpoint ep;
+
 
 void closeCb(const np_error_code ec, void* data)
 {
@@ -52,15 +60,56 @@ void closeCb(const np_error_code ec, void* data)
     exit(0);
 }
 
+void dtlsSendCb(const np_error_code ec, void* data)
+{
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(0, "dtls send failed");
+        exit(1);
+    }
+    struct np_dtls_srv_send_context* sendCtx = ( struct np_dtls_srv_send_context* ) data;
+    free(sendCtx->buffer);
+    free(sendCtx);
+    NABTO_LOG_INFO(0, "DTLS packet sent");
+}
+
 void recvedCb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
             np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(0, "dtls receive failed");
+        exit(1);
+    }
     struct test_context* ctx = (struct test_context*) data;
-    NABTO_LOG_INFO(0, "RECEIVED CB");
-    pl.dtlsS.async_close(&pl, ctx->dtls, closeCb, data);
+    NABTO_LOG_INFO(0, "Server Received data:");
+    NABTO_LOG_BUF(0, pl.buf.start(buffer), bufferSize);
+    pl.dtlsS.async_recv_from(&pl, ctx->dtls, recvedCb, ctx);
+    uint8_t* sendBuf = malloc(1500);
+    struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
+    memcpy(sendBuf, pl.buf.start(buffer), bufferSize);
+    sendCtx->buffer = sendBuf;
+    sendCtx->bufferSize = bufferSize;
+    sendCtx->cb = &dtlsSendCb;
+    sendCtx->data = sendCtx;
+    pl.dtlsS.async_send_to(&pl, ctx->dtls, sendCtx);
+    //pl.dtlsS.async_close(&pl, ctx->dtls, closeCb, data);
 }
+
+void udpSendCb(const np_error_code ec, void* data)
+{
+    struct udp_send_context* udpSendCtx = (struct udp_send_context*) data;
+    udpSendCtx->cb(ec, udpSendCtx->data);
+    free(udpSendCtx);
+}
+
 void dtls_send_listener(bool channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
+    struct test_context* ctx =  (struct test_context*) listenerData;
+    NABTO_LOG_INFO(0, "Dtls wants to send to udp");
     // TODO: send the dtls data somewhere find a way to use the UDP socket without client_connect_dispatch
+    struct udp_send_context* udpSendCtx = malloc(sizeof(struct udp_send_context));
+    udpSendCtx->cb = cb;
+    udpSendCtx->data = data;
+    np_udp_populate_send_context(&udpSendCtx->udpSendCtx, ctx->sock, ep, buffer, bufferSize, &udpSendCb, udpSendCtx);
+    pl.udp.async_send_to(&udpSendCtx->udpSendCtx);
 }
 
 void created(const np_error_code ec, uint8_t channelId, void* data)
@@ -80,11 +129,23 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     }
 }
 
+void udpRecvCb(const np_error_code ec, struct np_udp_endpoint epLocal,
+               np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    struct test_context* ctx = (struct test_context*)data;
+    ep = epLocal;
+    NABTO_LOG_INFO(0, "UDP received:");
+    NABTO_LOG_BUF(0, pl.buf.start(buffer), bufferSize);
+    pl.dtlsS.handle_packet(&pl, ctx->dtls, 0, buffer, bufferSize);
+    pl.udp.async_recv_from(ctx->sock, udpRecvCb, data);
+}
+
 void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 {
     struct test_context* ctx = (struct test_context*)data;
     ctx->sock = sock;
-//    created(NABTO_EC_OK, 0, data);
+    pl.udp.async_recv_from(ctx->sock, udpRecvCb, data);
+    created(ec, 0, data);
     return;
 }
 
@@ -102,8 +163,9 @@ int main() {
     np_ts_init(&pl);
 
     struct test_context data;
+    memset(&data, 0, sizeof(data));
     data.data = 42;
-    pl.udp.async_bind_port(4433, sockCreatedCb, &data);
+    pl.udp.async_bind_port(4439, sockCreatedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));

@@ -21,7 +21,7 @@
 #define NABTO_SSL_RECV_BUFFER_SIZE 4096
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
-#define DEBUG_LEVEL 4
+#define DEBUG_LEVEL 0
 
 const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
@@ -226,14 +226,14 @@ void nm_dtls_srv_do_one(void* data)
         if (ret == 0) {
             // EOF
             ctx->ctx.state = CLOSING;
-            NABTO_LOG_INFO(LOG, "Received EOF, state = CLOSING");
+            NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             uint64_t seq = *((uint64_t*)ctx->ctx.ssl.in_ctr);
             uint8_t* ptr = server.pl->buf.start(ctx->ctx.sslRecvBuf);
             ctx->ctx.recvCount++;
             if (ptr[0] == AT_KEEP_ALIVE) {
                 if (ptr[1] == CT_KEEP_ALIVE_REQUEST) {
-                    NABTO_LOG_TRACE(LOG, "Keep alive request, responding imidiately");
+                    NABTO_LOG_INFO(LOG, "Keep alive request, responding imidiately");
                     ptr[1] = CT_KEEP_ALIVE_RESPONSE;
                     ctx->kaSendCtx.cb = NULL;
                     ctx->kaSendCtx.data = NULL;
@@ -243,6 +243,7 @@ void nm_dtls_srv_do_one(void* data)
                     ctx->kaSendCtx.next = ctx->sendHead;
                     ctx->sendHead = &ctx->kaSendCtx;
                     nm_dtls_srv_event_send_to(ctx);
+                    //int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ptr, 16 + NABTO_PACKET_HEADER_SIZE );
                     return;
                 } else {
                     nc_keep_alive_handle_packet(NABTO_EC_OK, ctx->ctx.currentChannelId, seq,
@@ -278,18 +279,22 @@ void nm_dtls_srv_do_one(void* data)
 
 void nm_dtls_srv_event_send_to(void* data)
 {
+    NABTO_LOG_TRACE(LOG, "Writing to ssl");
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
+    if (ctx->sendHead == NULL) {
+        NABTO_LOG_ERROR(LOG, "event_send_to with empty send queue");
+        return;
+    }
     int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ctx->sendHead->buffer, ctx->sendHead->bufferSize );
-    NABTO_LOG_INFO(LOG, "Writing to ssl");
     struct np_dtls_srv_send_context* next = ctx->sendHead->next;
     if (ctx->sendHead->cb == NULL) {
         ctx->ctx.sentCount++;
-        ctx->sendHead = ctx->sendHead->next;
+        ctx->sendHead = next;
         if (ctx->sendHead != NULL) {
-//            NABTO_LOG_INFO(LOG, "No callback, posting next send event");
+            NABTO_LOG_INFO(LOG, "No callback, posting next send event");
             np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
         } else {
-//            NABTO_LOG_INFO(LOG, "No callback, no next send event");
+            NABTO_LOG_INFO(LOG, "No callback, no next send event");
         }
         return;
     }
@@ -306,6 +311,7 @@ void nm_dtls_srv_event_send_to(void* data)
         ctx->sendHead->cb(NABTO_EC_OK, ctx->sendHead->data);
     }
     ctx->sendHead = next;
+    NABTO_LOG_TRACE(LOG, "Setting new sendHead to: %i", ctx->sendHead);
     if (ctx->sendHead != NULL) {
         np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
     }
@@ -318,7 +324,7 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
 {
     sendCtx->next = NULL;
     struct np_dtls_srv_send_context* elm = ctx->sendHead;
-    NABTO_LOG_INFO(LOG, "Enqueueing send, head: %u", ctx->sendHead);
+    NABTO_LOG_TRACE(LOG, "Enqueueing send, head: %u", ctx->sendHead);
     if (elm == NULL) {
         ctx->sendHead = sendCtx;
         np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
@@ -333,6 +339,7 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
 //            NABTO_LOG_INFO(LOG, "Send events found, inserting new event in queue");
             elm->next = sendCtx;
         }
+        np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
     }
     return NABTO_EC_OK;
 }
@@ -416,7 +423,6 @@ static void nm_dtls_srv_tls_logger( void *ctx, int level,
             break;
     }
     // TODO: fix this ugly hack to remove \n after all mbedtls log strings
-    NABTO_LOG_ERROR(LOG, "LOGGER CALLED!");
     NABTO_LOG_RAW(severity, LOG, line, file, str );
 }
 #endif
@@ -499,7 +505,7 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->ctx.sslSendBufferSize == 0) {
         memcpy(server.pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
-        NABTO_LOG_INFO(LOG, "mbedtls wants write %u bytes:", bufferSize);
+        NABTO_LOG_TRACE(LOG, "mbedtls wants write %u bytes:", bufferSize);
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         ctx->sending = true;

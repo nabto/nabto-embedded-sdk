@@ -43,6 +43,7 @@ uint8_t buffer[] = "Hello world";
 uint16_t bufferSize = 12;
 struct np_udp_endpoint ep;
 struct np_timed_event ev;
+struct np_timed_event ev2;
 struct np_timed_event closeEv;
 
 void exitter(const np_error_code ec, void* data)
@@ -64,7 +65,7 @@ void mainRecvCb(const np_error_code ec, uint8_t channelId, uint64_t sequence, np
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));
-    pl.dtlsC.async_close(&pl, ctx, &closeCb, NULL);
+//    pl.dtlsC.async_close(&pl, ctx, &closeCb, NULL);
 }
 
 void echo(const np_error_code ec, void* data)
@@ -79,9 +80,22 @@ void echo(const np_error_code ec, void* data)
     np_event_queue_post_timed_event(&pl, &ev, 1000, &echo, data);
 }
 
+void echo2(const np_error_code ec, void* data)
+{
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(0, "echo with FAILED status");
+        exit(1);
+    }
+    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    pl.dtlsC.async_send_to(&pl, ctx, 0xff, buffer, bufferSize, &sendCb, data);
+    pl.dtlsC.async_recv_from(&pl, ctx, AT_DEVICE_RELAY, &mainRecvCb, data);
+    np_event_queue_post_timed_event(&pl, &ev2, 1000, &echo2, data);
+}
+
 void connected(const np_error_code ec, np_dtls_cli_context* ctx, void* data)
 {
     echo(ec, ctx);
+    echo2(ec, ctx);
     NABTO_LOG_INFO(0, "CONNECTION ESTABLISHED!!");
 }
 
@@ -107,8 +121,9 @@ int main() {
     uint8_t fp[16];
     memset(fp, 0, 16);
    
-    ep.port = 4433;
+    ep.port = 4439;
     inet_pton(AF_INET6, "::1", ep.ip.v6.addr);
+    ep.ip.type = NABTO_IPV6;
     NABTO_LOG_INFO(0, "pl: %i", &pl);
     np_platform_init(&pl);
     nm_unix_comm_buf_init(&pl);
@@ -129,7 +144,9 @@ int main() {
         } else {
             nfds = pl.udp.inf_wait();
         }
-        pl.udp.read(nfds);
+        if (nfds > 0) {
+            pl.udp.read(nfds);
+        }
     }
 
     exit(0);

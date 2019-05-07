@@ -78,7 +78,7 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
         return;
     }
     if( ctx->pl->dtlsC.get_alpn_protocol(crypCtx) == NULL ) {
-        NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Device Load Balancer connection");
+        NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Basestation connection");
         ctx->pl->dtlsC.async_close(ctx->pl, crypCtx, &nc_attacher_dtls_closed_cb, ctx);
         ctx->cb(NABTO_EC_ALPN_FAILED, ctx->cbData);
         return;

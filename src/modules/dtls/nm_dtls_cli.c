@@ -444,7 +444,7 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if (ctx->ctx.sslSendBufferSize == 0) {
-        NABTO_LOG_INFO(LOG, "mbedtls wants send, sending state: %u", ctx->sending);
+        NABTO_LOG_TRACE(LOG, "mbedtls wants send, sending state: %u", ctx->sending);
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
 //        NABTO_LOG_TRACE(LOG, "mbedtls wants write:");

@@ -311,7 +311,7 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
     if (sock->recv.cb) {
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;
-        NABTO_LOG_TRACE(LOG, "received data, invoking callback");
+        NABTO_LOG_TRACE(LOG, "received %i bytes of data data, invoking callback", recvLength);
         cb(NABTO_EC_OK, ep, recv_buf, recvLength, sock->recv.data);
     }
     nm_epoll_handle_event(sock);
@@ -446,6 +446,7 @@ void nm_epoll_event_bind_port(void* data)
     int i;
     if(us->isIpv6) {
         struct sockaddr_in6 si_me6;
+        memset(&si_me6, 0, sizeof(si_me6));
         si_me6.sin6_family = AF_INET6;
         si_me6.sin6_port = htons(us->created.port);
         si_me6.sin6_addr = in6addr_any;
@@ -453,6 +454,7 @@ void nm_epoll_event_bind_port(void* data)
         NABTO_LOG_INFO(LOG, "bind returned %i", i);
     } else {
         struct sockaddr_in si_me;
+        memset(&si_me, 0, sizeof(si_me));
         si_me.sin_family = AF_INET;
         si_me.sin_port = htons(us->created.port);
         si_me.sin_addr.s_addr = INADDR_ANY;

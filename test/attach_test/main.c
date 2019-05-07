@@ -143,7 +143,7 @@ int main() {
     while (true) {
         np_event_queue_execute_all(&pl);
         if (np_event_queue_is_event_queue_empty(&pl)) {
-            NABTO_LOG_ERROR(0, "Event queue not empty after emptying");
+//            NABTO_LOG_ERROR(0, "Event queue not empty after emptying");
         }
         if (np_event_queue_has_timed_event(&pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
