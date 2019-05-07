@@ -32,7 +32,7 @@ void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* 
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
                                   np_communication_buffer* buffer, uint16_t bufferSize)
 {
-    nabto_coap_server_handle_packet(&ctx->server,(nabto_coap_server_connection*) nc_client_connect_get_dtls_connection(conn), ctx->pl->buf.start(buffer), bufferSize);
+    nabto_coap_server_handle_packet(&ctx->server,(void*) nc_client_connect_get_dtls_connection(conn), ctx->pl->buf.start(buffer), bufferSize);
     nc_coap_server_event(ctx);
 }
 
@@ -65,7 +65,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         return;
     }
 
-    nabto_coap_server_connection* connection = nabto_coap_server_get_connection_send(&ctx->server);
+    void* connection = nabto_coap_server_get_connection_send(&ctx->server);
     if (!connection) {
         nc_coap_server_event(ctx);
         return;
