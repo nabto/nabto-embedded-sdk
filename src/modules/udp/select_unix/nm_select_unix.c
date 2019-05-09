@@ -88,7 +88,6 @@ void nm_select_unix_free_socket(np_udp_socket* sock);
  */
 void np_udp_init(struct np_platform *pl_in)
 {
-    NABTO_LOG_ERROR(LOG, "Hello from select sockets");
     pl = pl_in;
     pl->udp.async_create     = &nm_select_unix_async_create;
     pl->udp.async_bind_port  = &nm_select_unix_async_bind_port;
@@ -271,7 +270,7 @@ int nm_select_unix_inf_wait()
     if (nfds < 0) {
         NABTO_LOG_ERROR(LOG, "Error in select: (%i) '%s'", errno, strerror(errno));
     } else {
-        NABTO_LOG_INFO(LOG, "select returned with %i file descriptors", nfds);
+        NABTO_LOG_TRACE(LOG, "select returned with %i file descriptors", nfds);
     }
     return nfds;
 }
@@ -294,7 +293,7 @@ void nm_select_unix_read(int nfds)
 {
     np_udp_socket* next = head;
     char one;
-    NABTO_LOG_INFO(LOG, "read: %i", nfds);
+    NABTO_LOG_TRACE(LOG, "read: %i", nfds);
     while (next != NULL) {
         if (FD_ISSET(next->sock, &readFds)) {
             nm_select_unix_handle_event(next);
@@ -302,11 +301,9 @@ void nm_select_unix_read(int nfds)
         next = next->next;
     }
     if (FD_ISSET(pipefd[0], &readFds)) {
-        NABTO_LOG_INFO(LOG, "Reading from pipe[0]");
         read(pipefd[0], &one, 1);
     }
     if (FD_ISSET(pipefd[1], &readFds)) {
-        NABTO_LOG_INFO(LOG, "Reading from pipe[1]");
         read(pipefd[1], &one, 1);
     }
     nm_select_unix_build_fd_sets();
@@ -336,9 +333,7 @@ void nm_select_unix_event_create(void* data)
             head->prev = sock;
         }
         head = sock;
-        NABTO_LOG_INFO(LOG, "Writing to pipe");
-        int i = write(pipefd[1], "1", 1);
-        NABTO_LOG_INFO(LOG, "%i", i);
+        write(pipefd[1], "1", 1);
         sock->created.cb(NABTO_EC_OK, sock, sock->created.data);
         return;
     } else {
@@ -362,14 +357,14 @@ void nm_select_unix_event_bind_port(void* data)
             si_me6.sin6_port = htons(sock->created.port);
             si_me6.sin6_addr = in6addr_any;
             i = bind(sock->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
-            NABTO_LOG_INFO(LOG, "bind returned %i", i);
+            NABTO_LOG_TRACE(LOG, "bind returned %i", i);
         } else {
             struct sockaddr_in si_me;
             si_me.sin_family = AF_INET;
             si_me.sin_port = htons(sock->created.port);
             si_me.sin_addr.s_addr = INADDR_ANY;
             i = bind(sock->sock, (struct sockaddr*)&si_me, sizeof(si_me));
-            NABTO_LOG_INFO(LOG, "bind returned %i", i);
+            NABTO_LOG_TRACE(LOG, "bind returned %i", i);
         }
         if (i != 0) {
             NABTO_LOG_ERROR(LOG,"Unable to bind to port %i: (%i) '%s'.", sock->created.port, errno, strerror(errno));
@@ -396,8 +391,6 @@ void nm_select_unix_event_bind_port(void* data)
 
 void nm_select_unix_event_send_to(void* data)
 {
-    NABTO_LOG_INFO(LOG, "event send to");
-
     struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
     np_udp_socket* sock = ctx->sock;
     ssize_t res;
@@ -406,7 +399,7 @@ void nm_select_unix_event_send_to(void* data)
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
-        NABTO_LOG_INFO(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
+        NABTO_LOG_TRACE(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
         res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6 addr or IPv4 addr on IPv6 socket
         struct sockaddr_in6 srv_addr;
@@ -417,7 +410,7 @@ void nm_select_unix_event_send_to(void* data)
 
         if (ctx->ep.ip.type == NABTO_IPV4) { // IPv4 addr on IPv6 socket
             // Map ipv4 to ipv6
-            NABTO_LOG_INFO(LOG, "mapping: %u.%u.%u.%u:%u to IPv6", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
+            NABTO_LOG_TRACE(LOG, "mapping: %u.%u.%u.%u:%u to IPv6", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
             uint8_t* ptr = (uint8_t*)&srv_addr.sin6_addr;
             memset(ptr, 0, 10); // 80  bits of 0
             ptr += 10;
@@ -425,10 +418,9 @@ void nm_select_unix_event_send_to(void* data)
             ptr += 2;
             memcpy(ptr,ctx->ep.ip.v4.addr, 4); // 32 bits of IPv4
         } else { // IPv6 addr copied directly
-            NABTO_LOG_INFO(LOG, "Sending to v6");
+            NABTO_LOG_TRACE(LOG, "Sending to v6");
             memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, 16);
         }
-        NABTO_LOG_INFO(LOG, "Sending to v6");
         res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     }
     if (res < 0) {
