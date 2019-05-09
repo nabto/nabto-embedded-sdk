@@ -34,6 +34,8 @@ void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
                                                                            ctx->pl->ts.now_ms(),
                                                                            ctx->pl->buf.start(buffer),
                                                                            bufferSize);
+    NABTO_LOG_TRACE(LOG, "coap handling packet with status %i: ", status);
+    NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buffer), bufferSize);
     if (status == NABTO_COAP_CLIENT_STATUS_DECODE_ERROR) {
         // TODO log error
         NABTO_LOG_ERROR(LOG, "nabto_coap_client_handle_packet failed with status: %d", status);

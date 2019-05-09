@@ -89,9 +89,9 @@ void stream_listener(struct nabto_stream* incStream, void* data)
 void attachedCb(const np_error_code ec, void* data) {
 
     if (ec == NABTO_EC_OK) {
-        NABTO_LOG_INFO(0, "Received attached callback with NABTO_EC_OK");
+        NABTO_LOG_INFO(0, "DEVICE ATTACHED!! Received attached callback with NABTO_EC_OK");
     } else {
-        NABTO_LOG_INFO(0, "Received attached callback with ERROR %u", ec);
+        NABTO_LOG_INFO(0, "DEVICE ATTACH FAILED!!! Received attached callback with ERROR %u", ec);
         exit(1);
     }
 }
@@ -119,7 +119,7 @@ int main() {
     np_log_init();
 
     np_access_control_init(&pl);
-    nm_unix_comm_buf_init(&pl);
+    np_communication_buffer_init(&pl);
     np_udp_init(&pl);
     np_dtls_cli_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     np_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));

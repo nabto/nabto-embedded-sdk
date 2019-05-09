@@ -22,8 +22,8 @@ const unsigned char devicePublicKey[] =
 "XndF4oYF4h6yysELSJfuiamVURjo+KcM1ixwAWo=\r\n"
 "-----END CERTIFICATE-----\r\n";
 
-//const char* hostname = "localhost";
-const char* hostname = "a.devices.dev.nabto.net";
+const char* hostname = "localhost";
+//const char* hostname = "a.devices.dev.nabto.net";
 const char* buf = "helloworld";
 
 #include <platform/np_logging.h>
@@ -43,7 +43,7 @@ int main()
     NabtoDeviceStream* stream;
     uint8_t buf[1500];
     size_t readen;
-
+    nabto_device_set_std_out_log_callback();
     nabto_device_set_public_key(dev, (const char*)devicePublicKey);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, hostname);

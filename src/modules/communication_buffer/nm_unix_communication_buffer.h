@@ -9,7 +9,7 @@
 #define NABTO_COMMUNICATION_BUFFER_LENGTH 1500
 #endif
 
-void nm_unix_comm_buf_init(struct np_platform* pl);
+//void nm_unix_comm_buf_init(struct np_platform* pl);
 
 np_communication_buffer* nm_unix_comm_buf_allocate(void);
 

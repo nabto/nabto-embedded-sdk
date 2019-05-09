@@ -218,7 +218,7 @@ void test_dtls_connection()
     struct np_dtls_srv_send_context sendCtx;
 
     np_platform_init(&pl);
-    nm_unix_comm_buf_init(&pl);
+    np_communication_buffer_init(&pl);
     np_ts_init(&pl);
 
     pl.conn.async_create = &conn_async_create;

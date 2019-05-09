@@ -136,6 +136,7 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
         }
         return;
     }
+    NABTO_LOG_TRACE(LOG, "recv cb from dtls, passing to coap");
     // TODO: if (!ctx->verified) { verify bs fingerprint }
     nc_coap_client_handle_packet(&ctx->coap, buffer, bufferSize);
     ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, 42 /* unused */, &nc_attacher_dtls_recv_cb, ctx);
@@ -152,6 +153,7 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
     struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
     if (!res) {
         // Request failed
+        NABTO_LOG_ERROR(LOG, "Coap request failed, no response");
         ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
         if (ctx->detachCb) {
             nc_detached_callback cb = ctx->detachCb;
@@ -182,7 +184,7 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
         return;
     }
     ptr = (uint8_t*)start;
-    while(ptr < start+bufferSize) {
+    while(ptr + 4 < start+bufferSize) { // while still space for an extension header
         if(uint16_read(ptr) == EX_KEEP_ALIVE_SETTINGS) {
             uint32_t interval;
             uint8_t retryInt, maxRetries;

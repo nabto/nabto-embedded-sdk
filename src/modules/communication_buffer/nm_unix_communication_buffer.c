@@ -13,7 +13,7 @@ struct np_communication_buffer {
 };
 
 
-void nm_unix_comm_buf_init(struct np_platform* pl)
+void np_communication_buffer_init(struct np_platform* pl)
 {
     pl->buf.allocate = &nm_unix_comm_buf_allocate;
     pl->buf.free     = &nm_unix_comm_buf_free;

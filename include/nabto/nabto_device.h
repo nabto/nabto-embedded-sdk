@@ -66,7 +66,10 @@ typedef struct NabtoDeviceStream_ NabtoDeviceStream;
  */
 typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
 
-
+/**
+ * The nabto_device_duration_t is a time abstraction used to wait for
+ * futures.
+ */
 typedef uint32_t nabto_device_duration_t;
 
 /**

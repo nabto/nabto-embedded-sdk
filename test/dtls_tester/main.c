@@ -63,7 +63,7 @@ void sendCb(const np_error_code ec, void* data)
 
 void mainRecvCb(const np_error_code ec, uint8_t channelId, uint64_t sequence, np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
-    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+//    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     NABTO_LOG_INFO(0, "Received rec callback with ec: %i, and data: %s", ec, pl.buf.start(buffer));
 //    pl.dtlsC.async_close(&pl, ctx, &closeCb, NULL);
 }
@@ -126,7 +126,7 @@ int main() {
     ep.ip.type = NABTO_IPV6;
     NABTO_LOG_INFO(0, "pl: %i", &pl);
     np_platform_init(&pl);
-    nm_unix_comm_buf_init(&pl);
+    np_communication_buffer_init(&pl);
     np_udp_init(&pl);
     np_dtls_cli_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     np_ts_init(&pl);

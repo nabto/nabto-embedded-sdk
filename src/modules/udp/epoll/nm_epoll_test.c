@@ -92,7 +92,7 @@ int main()
     struct np_ip_address *localIps = malloc(5*sizeof(struct np_ip_address));
     np_platform_init(&pl);
     np_log_init();
-    nm_unix_comm_buf_init(&pl);
+    np_communication_buffer_init(&pl);
     np_ts_init(&pl);
     np_udp_init(&pl);
     NABTO_LOG_INFO(0, "main");
