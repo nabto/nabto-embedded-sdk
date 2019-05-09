@@ -269,7 +269,7 @@ int nm_select_unix_inf_wait()
     int nfds;
     nfds = select(maxReadFd+1, &readFds, NULL, NULL, NULL);
     if (nfds < 0) {
-        NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));
+        NABTO_LOG_ERROR(LOG, "Error in select: (%i) '%s'", errno, strerror(errno));
     } else {
         NABTO_LOG_INFO(LOG, "select returned with %i file descriptors", nfds);
     }
@@ -424,7 +424,7 @@ void nm_select_unix_event_send_to(void* data)
         if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
         } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
+            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_select_unix_event_send_to", (int) status, strerror(status));
             if (ctx->cb) {
                 ctx->cb(NABTO_EC_FAILED_TO_SEND_PACKET, ctx->cbData);
             }
@@ -528,7 +528,7 @@ void nm_select_unix_handle_event(np_udp_socket* sock)
             return;
         } else {
             np_udp_packet_received_callback cb;
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_handle_event", strerror(status), (int) status);
+            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_select_unix_handle_event", strerror(status), (int) status);
             if(sock->recv.cb) {
                 cb = sock->recv.cb;
                 sock->recv.cb = NULL;
@@ -570,7 +570,7 @@ void nm_select_unix_free_socket(np_udp_socket* sock)
             }
         }
     }
-    
+
     np_udp_socket_destroyed_callback cb;
     void* cbData;
     close(sock->sock);
@@ -582,5 +582,3 @@ void nm_select_unix_free_socket(np_udp_socket* sock)
         cb(NABTO_EC_OK, cbData);
     }
 }
-
-
