@@ -96,6 +96,8 @@ void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_e
 
 void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* ev);
 
+bool np_event_queue_is_event_enqueued(struct np_platform* pl, struct np_event* ev);
+
 /**
  * Return the time in milliseconds until the next timed event is due,
  * returns 0 if np_event_queue_has_timed_event returns false.

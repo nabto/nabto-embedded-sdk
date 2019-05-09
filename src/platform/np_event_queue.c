@@ -151,6 +151,9 @@ void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* event)
         if (next == event) {
             NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Found and canceled timed event");
             current->next = next->next;
+            if (ev->tail == event) {
+                ev->tail = current;
+            }
             return;
         }
         current = current->next;
@@ -228,4 +231,23 @@ uint32_t np_event_queue_next_timed_event_occurance(struct np_platform* pl)
     }
     pl->ts.now(&now);
     return pl->ts.difference(&ev->head->timestamp, &now);
+}
+
+bool np_event_queue_is_event_enqueued(struct np_platform* pl, struct np_event* event)
+{
+    struct np_event_list* ev = &pl->eq.events;
+    if (ev->head == NULL) {
+        return false;
+    }
+    if (ev->head == event) {
+        return true;
+    }
+    struct np_event* elm = ev->head;
+    while(elm->next != NULL) {
+        if (elm == event) {
+            return true;
+        }
+        elm = elm->next;
+    }
+    return false;
 }

@@ -352,6 +352,12 @@ np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_contex
     if (ctx->ctx.state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
+
+    if(ctx->ctx.recvCb.cb != NULL || np_event_queue_is_event_enqueued(pl, &ctx->ctx.recvEv)) {
+        NABTO_LOG_INFO(LOG, "Tried to asyc recv from twice");
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+
     ctx->ctx.recvCb.cb = cb;
     ctx->ctx.recvCb.data = data;
     np_event_queue_post(ctx->pl, &ctx->ctx.recvEv, &nm_dtls_event_do_one, ctx);
