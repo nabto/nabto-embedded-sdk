@@ -2,8 +2,6 @@
 
 #include <platform/np_logging.h>
 
-#include <modules/communication_buffer/nm_unix_communication_buffer.h>
-
 #include <string.h>
 
 void nabto_device_init_platform(struct np_platform* pl)

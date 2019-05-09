@@ -13,20 +13,20 @@ message(STATUS "host name: ${CMAKE_HOST_SYSTEM_NAME}")
 if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   set(nabto_device_src
     ${nabto_device_src}
-    ${src_dir}/nabto_linux_platform.c
+    ${src_dir}/nabto_platform.c
     ${src_dir}/nabto_device_threads_unix.c
     )
     
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
   set(nabto_device_src
     ${nabto_device_src}
-    ${src_dir}/nabto_win_platform.c
+    ${src_dir}/nabto_platform.c
     ${src_dir}/nabto_device_threads_win.c
     )
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   set(nabto_device_src
     ${nabto_device_src}
-    ${src_dir}/nabto_linux_platform.c
+    ${src_dir}/nabto_platform.c
     ${src_dir}/nabto_device_threads_unix.c
     )
 endif ()
