@@ -64,7 +64,7 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     if ( ec2 != NABTO_EC_OK ) {
         // TODO: handle impossible error
     }
-    nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, &dev);
+    nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
     
     nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp);
     // TODO: determine if we should make stun analysis on startup
