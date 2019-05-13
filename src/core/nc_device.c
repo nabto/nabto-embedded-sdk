@@ -17,12 +17,20 @@ void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
     }
 }
 
+void nc_device_reattach(const np_error_code ec, void* data)
+{
+    struct nc_device_context* dev = (struct nc_device_context*)data;
+    nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
+}
+
 void nc_device_detached_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     NABTO_LOG_INFO(LOG, "Device detached callback");
     if (!dev->stopping) {
-        nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
+        // TODO: waiting 5s between attaches for now, make better timing later
+        np_event_queue_post_timed_event(dev->pl, &dev->tEv, 5000, &nc_device_reattach, data);
+//        nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
     } else {
         nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
     }
@@ -39,7 +47,8 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
            nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
        } else {
            NABTO_LOG_TRACE(LOG, "Not stopping, trying to reattach");
-           nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
+           np_event_queue_post_timed_event(dev->pl, &dev->tEv, 5000, &nc_device_reattach, data);
+//           nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
        }
     }
 }
