@@ -1,3 +1,5 @@
+#include "create_keypair.h"
+
 #include <gopt/gopt.h>
 
 #include <stdio.h>
@@ -68,15 +70,7 @@ bool file_exists(const char* filename)
     return (access(filename, R_OK) == 0);
 }
 
-bool test_if_certs_exists() {
-    char keyFilename[128];
-    char crtFilename[128];
-    memset(keyFilename, 0, 128);
-    memset(crtFilename, 0, 128);
-    // TODO check for overflow.
-    snprintf(keyFilename, 128, "%s_%s.key", config.productId, config.deviceId);
-    snprintf(crtFilename, 128, "%s_%s.crt", config.productId, config.deviceId);
-
+bool test_if_certs_exists(const char* crtFilename, const char* keyFilename) {
     if (file_exists(keyFilename) &&
         file_exists(crtFilename))
     {
@@ -87,10 +81,36 @@ bool test_if_certs_exists() {
 
 int main(int argc, const char** argv)
 {
+    char keyFilename[128];
+    char crtFilename[128];
+    memset(keyFilename, 0, 128);
+    memset(crtFilename, 0, 128);
+
     memset(&config, 0, sizeof(struct config));
     if (!parse_args(argc, argv)) {
         exit(1);
     }
 
+    snprintf(keyFilename, 127, "%s_%s.key", config.productId, config.deviceId);
+    snprintf(crtFilename, 127, "%s_%s.crt", config.productId, config.deviceId);
+
+
+    if (!test_if_certs_exists(crtFilename, keyFilename)) {
+        if (!create_keypair(crtFilename, keyFilename)) {
+            printf("FATAL cannot create a new keypair" NEWLINE);
+            exit(1);
+        }
+
+        printf("Created keypair." NEWLINE);
+        printf("Install the fingerprint of the public key of the device into the basestation." NEWLINE);
+        // todo print the fignerprint
+
+        printf("Start the device again when the fingerprint has been added to the basestation." NEWLINE);
+        exit(1);
+    }
+
+    // TODO read crt and key
+    // TODO start a device
+    // TODO add streaming and coap handlers
 
 }
