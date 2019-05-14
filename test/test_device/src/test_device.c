@@ -1,3 +1,6 @@
+
+#include <nabto/nabto_device.h>
+
 #include <gopt/gopt.h>
 
 #include "mbedtls/error.h"
@@ -23,6 +26,7 @@ struct config {
     const char* productId;
     const char* deviceId;
     const char* keyFile;
+    const char* hostname;
     char keyPemBuffer[MAX_KEY_PEM_SIZE];
     char crtPemBuffer[MAX_CRT_PEM_SIZE];
     uint8_t deviceFingerprint[16];
@@ -47,17 +51,20 @@ bool parse_args(int argc, const char** argv)
     const char* productId;
     const char* deviceId;
     const char* keyFile;
+    const char* hostname;
 
     const char* helpLong[] = { "help", 0 };
     const char* productLong[] = { "product", 0 };
     const char* deviceLong[] = { "device", 0 };
     const char* keyFileLong[] = { "keyfile", 0 };
+    const char* hostnameLong[] = { "hostname", 0 };
 
     const struct { int key; int format; const char* shortName; const char*const* longNames; } opts[] = {
         { 1, GOPT_NOARG, "h", helpLong },
         { 2, GOPT_ARG, "p", productLong },
         { 3, GOPT_ARG, "d", deviceLong },
         { 4, GOPT_ARG, "k", keyFileLong },
+        { 5, GOPT_ARG, "", hostnameLong },
         {0,0,0,0}
     };
 
@@ -85,6 +92,13 @@ bool parse_args(int argc, const char** argv)
         config.keyFile = keyFile;
     } else {
         print_help("Missing key filename");
+        return false;
+    }
+
+    if (gopt_arg(options, 5, &hostname)) {
+        config.hostname = hostname;
+    } else {
+        print_help("Missing hostname");
         return false;
     }
 
@@ -176,7 +190,7 @@ bool create_pem_cert(const char* keyPemBuffer)
         }
         
         ret = mbedtls_sha256_ret(buffer,  len, hash, false);
-        if (ret <= 0) {
+        if (ret != 0) {
             return false;
         }
         memcpy(config.deviceFingerprint, hash, 16);
@@ -212,6 +226,33 @@ bool load_key_from_file(const char* filename)
     return true;
 }
 
+void run_device() {
+    NabtoDeviceError ec;
+    NabtoDevice* dev = nabto_device_new();
+    nabto_device_set_std_out_log_callback();
+    ec = nabto_device_set_public_key(dev, config.crtPemBuffer);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return;
+    }
+    ec = nabto_device_set_private_key(dev, config.keyPemBuffer);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return;
+    }
+    ec = nabto_device_set_server_url(dev, config.hostname);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return;
+    }
+    ec = nabto_device_start(dev);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return;
+    }
+
+    //nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/helloworld", &handler, dev);
+
+    // wait for ctrl-c
+    sleep(3600);
+}
+
 int main(int argc, const char** argv)
 {
     memset(&config, 0, sizeof(struct config));
@@ -236,9 +277,18 @@ int main(int argc, const char** argv)
         exit(1);
     }
 
+    uint8_t* f = config.deviceFingerprint;
+    printf("Starting device productid: %s, deviceid: %s, fingerprint: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x" NEWLINE, config.productId, config.deviceId,
+           f[0], f[1], f[2],  f[3],  f[4],  f[5],  f[6],  f[7],
+           f[8], f[9], f[10], f[11], f[12], f[13], f[14], f[15]);
+
+    printf("%s" NEWLINE, config.keyPemBuffer);
+    printf("%s" NEWLINE, config.crtPemBuffer);
     
+    run_device();
     
     // TODO start a device
     // TODO add streaming and coap handlers
 
 }
+
