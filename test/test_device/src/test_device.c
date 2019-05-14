@@ -2,6 +2,17 @@
 
 #include <gopt/gopt.h>
 
+#include "mbedtls/error.h"
+#include "mbedtls/pk.h"
+#include "mbedtls/ecdsa.h"
+#include "mbedtls/rsa.h"
+#include "mbedtls/error.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/platform.h"
+#include "mbedtls/x509_crt.h"
+#include "mbedtls/x509_csr.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -16,6 +27,7 @@ struct config {
     const char* keyFile;
     char keyPemBuffer[MAX_KEY_PEM_SIZE];
     char crtPemBuffer[MAX_CRT_PEM_SIZE];
+    uint8_t deviceFingerprint[16];
 };
 
 static struct config config;
@@ -81,6 +93,108 @@ bool parse_args(int argc, const char** argv)
     return true;
 }
 
+bool create_pem_cert(const char* keyPemBuffer)
+{
+    // 1. load key from pem
+    // 2. create crt
+    // 3. write crt to pem string.
+    mbedtls_pk_context key;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_x509write_cert crt;
+    mbedtls_mpi serial;
+    mbedtls_sha256_context sha256;
+
+    int ret;
+
+    mbedtls_pk_init(&key);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+    mbedtls_entropy_init(&entropy);
+    mbedtls_x509write_crt_init(&crt);
+    mbedtls_mpi_init(&serial);
+    mbedtls_sha256_init(&sha256);
+
+    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (ret != 0) {
+        return false;
+    }
+
+    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)config.keyPemBuffer, strlen(config.keyPemBuffer)+1, NULL, 0 );
+    if (ret != 0) {
+        return false;
+    }
+
+    // initialize crt
+    mbedtls_x509write_crt_set_subject_key( &crt, &key );
+    mbedtls_x509write_crt_set_issuer_key( &crt, &key );
+
+    ret = mbedtls_mpi_read_string( &serial, 10, "1");
+    if (ret != 0) {
+        return false;
+    }
+    
+    mbedtls_x509write_crt_set_serial( &crt, &serial );
+
+    ret = mbedtls_x509write_crt_set_subject_name( &crt, "CN=nabto" );
+    if (ret != 0) {
+        return false;
+    }
+
+    ret = mbedtls_x509write_crt_set_issuer_name( &crt, "CN=nabto" );
+    if (ret != 0) {
+        return false;
+    }
+
+    mbedtls_x509write_crt_set_version( &crt, 2 );
+    mbedtls_x509write_crt_set_md_alg( &crt, MBEDTLS_MD_SHA256 );
+
+    ret = mbedtls_x509write_crt_set_validity( &crt, "20010101000000", "20491231235959" );
+    if (ret != 0) {
+        return false;
+    }
+
+    ret = mbedtls_x509write_crt_set_basic_constraints( &crt, 1, -1);
+    if (ret != 0) {
+        return false;
+    }
+
+    {
+        // write crt
+        ret = mbedtls_x509write_crt_pem( &crt, (unsigned char*)config.crtPemBuffer, MAX_CRT_PEM_SIZE,
+                                         mbedtls_ctr_drbg_random, &ctr_drbg );
+
+        if (ret != 0) {
+            return false;
+        }
+    }
+    {
+        // get fingerprint
+        uint8_t buffer[256];
+        uint8_t hash[32];
+        int len = mbedtls_pk_write_pubkey_der( &key, buffer, sizeof(buffer));
+        if (len <= 0) {
+            return false;
+        }
+        
+        ret = mbedtls_sha256_ret(buffer,  len, hash, false);
+        if (ret <= 0) {
+            return false;
+        }
+        memcpy(config.deviceFingerprint, hash, 16);
+    }
+
+    // TODO cleanup in case of error
+	mbedtls_sha256_free(&sha256);
+    mbedtls_x509write_crt_free(&crt);
+    mbedtls_mpi_free(&serial);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+    mbedtls_pk_free(&key);
+    return true;
+}
+
+
 bool file_exists(const char* filename)
 {
     return (access(filename, R_OK) == 0);
@@ -113,9 +227,19 @@ int main(int argc, const char** argv)
         printf("Generate a new keyfile with: openssl ecparam -genkey -name prime256v1 -out <filename>.pem" NEWLINE);
         exit(1);
     }
-    
 
-    // TODO read crt and key
+    if (!load_key_from_file(config.keyFile)) {
+        printf("Keyfile could not be read" NEWLINE);
+        exit(1);
+    }
+
+    if (!create_pem_cert(config.keyPemBuffer)) {
+        printf("could not create crt container for the public key." NEWLINE);
+        exit(1);
+    }
+
+    
+    
     // TODO start a device
     // TODO add streaming and coap handlers
 
