@@ -1,7 +1,6 @@
 set(src
   gopt/gopt.c
   test_device.c
-  create_keypair.c
   )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
