@@ -34,6 +34,12 @@ struct config {
 
 static struct config config;
 
+struct streamContext {
+    NabtoDeviceStream* stream;
+    uint8_t buffer[1500];
+    size_t readen;
+};
+
 #ifdef _WIN32
 #define NEWLINE "\r\n"
 #else
@@ -232,8 +238,92 @@ bool load_key_from_file(const char* filename)
     return true;
 }
 
-void run_device() {
+void handle_coap_get_request(NabtoDeviceCoapRequest* request, void* data)
+{
+    printf("Received CoAP GET request" NEWLINE);
+    const char* responseData = "helloWorld";
+    NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
+    nabto_device_coap_response_set_code(response, 205);
+    nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
+    nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
+    nabto_device_coap_response_ready(response);
+}
+
+void handle_coap_post_request(NabtoDeviceCoapRequest* request, void* data)
+{
+    const char* responseData = "helloWorld";
+    uint16_t contentFormat;
+    NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
+    nabto_device_coap_request_get_content_format(request, &contentFormat);
+    if (contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) {
+        const char* responseData = "Invalid content format";
+        printf("Received CoAP POST request with invalid content format" NEWLINE);
+        nabto_device_coap_response_set_code(response, 400);
+        nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
+        nabto_device_coap_response_ready(response);
+    } else {
+        char* payload = (char*)malloc(1500);
+        size_t payloadLength;
+        nabto_device_coap_request_get_payload(request, (void**)&payload, &payloadLength);
+        printf("Received CoAP POST request with a %li byte payload: " NEWLINE "%s", payloadLength, payload);
+        nabto_device_coap_response_set_code(response, 205);
+        nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
+        nabto_device_coap_response_ready(response);
+    }
+}
+
+void close_stream(struct streamContext* streamContext)
+{
+    NabtoDeviceFuture* fut = nabto_device_stream_close(streamContext->stream);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+    nabto_device_stream_free(streamContext->stream);
+    free(streamContext);
+}
+
+void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
+{
+    struct streamContext* streamContext = (struct streamContext*)data;
+    nabto_device_future_free(fut);
+    if (err == NABTO_DEVICE_EC_FAILED) {
+        printf("stream closed or aborted" NEWLINE);
+        close_stream(streamContext);
+        return;
+    }
+    printf("read %lu bytes into buf:", streamContext->readen);
+    printf("%s" NEWLINE, streamContext->buffer);
+
+    fut = nabto_device_stream_write(streamContext->stream, streamContext->buffer, streamContext->readen);
+    nabto_device_future_wait(fut);
+    if (nabto_device_future_error_code(fut) != NABTO_DEVICE_EC_OK) {
+        printf("stream write failed" NEWLINE);
+        close_stream(streamContext);
+        return;
+    }
+    nabto_device_future_free(fut);
+    memset(streamContext->buffer, 0, 1500);
+    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->readen);
+    nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
+}
+
+void handle_new_stream(struct streamContext* streamContext)
+{
+    NabtoDeviceFuture* fut = nabto_device_stream_accept(streamContext->stream);
+    nabto_device_future_wait(fut);
+    if (nabto_device_future_error_code(fut) != NABTO_DEVICE_EC_OK) {
+        printf("stream accept failed, dropping stream");
+        nabto_device_stream_free(streamContext->stream);
+        free(streamContext);
+        return;
+    }
+    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->readen);
+    nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
+}
+
+void run_device()
+{
     NabtoDeviceError ec;
+    NabtoDeviceStream* stream;
     NabtoDevice* dev = nabto_device_new();
     nabto_device_set_std_out_log_callback();
     ec = nabto_device_set_public_key(dev, config.crtPemBuffer);
@@ -253,10 +343,22 @@ void run_device() {
         return;
     }
 
-    //nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/helloworld", &handler, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/test/get", &handle_coap_get_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, "/test/post", &handle_coap_post_request, dev);
 
     // wait for ctrl-c
-    sleep(3600);
+    while (true) {
+        NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, &stream);
+        nabto_device_future_wait(fut);
+        if (nabto_device_future_error_code(fut) != NABTO_DEVICE_EC_OK) {
+            printf("Stream listen returned with an error");
+            return;
+        }
+        nabto_device_future_free(fut);
+        struct streamContext* strCtx = malloc(sizeof(struct streamContext));
+        strCtx->stream = stream;
+        handle_new_stream(strCtx);
+    }
 }
 
 int main(int argc, const char** argv)

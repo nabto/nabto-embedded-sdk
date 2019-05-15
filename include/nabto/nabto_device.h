@@ -296,6 +296,13 @@ typedef enum {
     NABTO_DEVICE_COAP_DELETE
 } NabtoDeviceCoapMethod;
 
+typedef enum  {
+    NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8 = 0,
+    NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM = 42,
+    NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_JSON = 50,
+    NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR = 60
+} nabto_device_coap_content_format;
+
 /**
  * The COAP resource is used when notifying observers of a specefic resource
  */

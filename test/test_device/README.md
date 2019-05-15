@@ -12,5 +12,5 @@ it echoes all the received data back to the client.
 
 The device has a coap server which have a POST and a GET endpoint.
 
-CoAP POST /test/echo
+CoAP POST /test/post
 CoAP GET /test/get
