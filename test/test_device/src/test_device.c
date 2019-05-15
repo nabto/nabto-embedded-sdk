@@ -155,6 +155,7 @@ void handle_coap_post_request(NabtoDeviceCoapRequest* request, void* data)
         printf("Received CoAP POST request with a %li byte payload: " NEWLINE "%s", payloadLength, payload);
         nabto_device_coap_response_set_code(response, 205);
         nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
+        nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
         nabto_device_coap_response_ready(response);
     }
 }

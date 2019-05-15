@@ -60,10 +60,10 @@ struct nc_coap_server_send_ctx {
 
 void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 {
-    NABTO_LOG_TRACE(LOG, "handle send");
-    if (ctx->isSending) {
-        return;
-    }
+    NABTO_LOG_TRACE(LOG, "handle send, isSending: %i", ctx->isSending );
+    /* if (ctx->isSending) { */
+    /*     return; */
+    /* } */
 
     void* connection = nabto_coap_server_get_connection_send(&ctx->server);
     if (!connection) {
