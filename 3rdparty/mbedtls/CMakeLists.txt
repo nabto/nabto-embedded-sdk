@@ -66,11 +66,11 @@ set(src_x509
     ${src_dir}/certs.c
     #${src_dir}/pkcs11.c
     ${src_dir}/x509.c
-    #${src_dir}/x509_create.c
+    ${src_dir}/x509_create.c
     #${src_dir}/x509_crl.c
     ${src_dir}/x509_crt.c
     #${src_dir}/x509_csr.c
-    #${src_dir}/x509write_crt.c
+    ${src_dir}/x509write_crt.c
     #${src_dir}/x509write_csr.c
 )
 

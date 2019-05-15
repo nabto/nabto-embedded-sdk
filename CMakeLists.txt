@@ -69,6 +69,7 @@ endif()
 
 add_subdirectory(test/api_test)
 add_subdirectory(test/stream_echo)
+add_subdirectory(test/test_device)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_executable(unit_test "${test_runner_src}")
