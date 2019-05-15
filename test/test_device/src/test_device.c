@@ -53,7 +53,8 @@ void print_help(const char* message)
         printf(NEWLINE);
     }
     printf("test_device" NEWLINE);
-    printf(" USAGE test_device -p <productId> -d <deviceId> -k <keyfile>" NEWLINE);
+    printf(" USAGE test_device -p <productId> -d <deviceId> -k <keyfile> --hostname <hostname>" NEWLINE);
+    printf(" Create a new keypair using `openssl ecparam -genkey -name prime256v1 -out <keyfile>.pem`" NEWLINE);
 }
 
 bool parse_args(int argc, const char** argv)
@@ -368,15 +369,8 @@ int main(int argc, const char** argv)
         exit(1);
     }
 
-    if (!file_exists(config.keyFile)) {
-        // TODO generate key with this application.
-        printf("Missing keyfile." NEWLINE);
-        printf("Generate a new keyfile with: openssl ecparam -genkey -name prime256v1 -out <filename>.pem" NEWLINE);
-        exit(1);
-    }
-
     if (!load_key_from_file(config.keyFile)) {
-        printf("Keyfile could not be read" NEWLINE);
+        print_help("keyfile could not be read");
         exit(1);
     }
 
