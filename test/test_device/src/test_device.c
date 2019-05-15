@@ -37,7 +37,7 @@ static struct config config;
 struct streamContext {
     NabtoDeviceStream* stream;
     uint8_t buffer[1500];
-    size_t readen;
+    size_t read;
 };
 
 #ifdef _WIN32
@@ -291,10 +291,10 @@ void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* da
         close_stream(streamContext);
         return;
     }
-    printf("read %lu bytes into buf:", streamContext->readen);
+    printf("read %lu bytes into buf:", streamContext->read);
     printf("%s" NEWLINE, streamContext->buffer);
 
-    fut = nabto_device_stream_write(streamContext->stream, streamContext->buffer, streamContext->readen);
+    fut = nabto_device_stream_write(streamContext->stream, streamContext->buffer, streamContext->read);
     nabto_device_future_wait(fut);
     if (nabto_device_future_error_code(fut) != NABTO_DEVICE_EC_OK) {
         printf("stream write failed" NEWLINE);
@@ -303,7 +303,7 @@ void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* da
     }
     nabto_device_future_free(fut);
     memset(streamContext->buffer, 0, 1500);
-    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->readen);
+    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
     nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
 }
 
@@ -317,7 +317,7 @@ void handle_new_stream(struct streamContext* streamContext)
         free(streamContext);
         return;
     }
-    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->readen);
+    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
     nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
 }
 
