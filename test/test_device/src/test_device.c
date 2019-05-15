@@ -34,7 +34,11 @@ struct config {
 
 static struct config config;
 
+#ifdev _WIN32
+#define NEWLINE "\r\n"
+#else
 #define NEWLINE "\n"
+#endif
 
 void print_help(const char* message)
 {
@@ -145,7 +149,7 @@ bool create_pem_cert(const char* keyPemBuffer)
     if (ret != 0) {
         return false;
     }
-    
+
     mbedtls_x509write_crt_set_serial( &crt, &serial );
 
     ret = mbedtls_x509write_crt_set_subject_name( &crt, "CN=nabto" );
@@ -188,7 +192,7 @@ bool create_pem_cert(const char* keyPemBuffer)
         if (len <= 0) {
             return false;
         }
-        
+
         ret = mbedtls_sha256_ret(buffer,  len, hash, false);
         if (ret != 0) {
             return false;
@@ -223,6 +227,7 @@ bool load_key_from_file(const char* filename)
     // if the read failed the key is invalid and we will fail later.
     fread(config.keyPemBuffer, 1, MAX_KEY_PEM_SIZE, f);
 
+    fclose(f);
     return true;
 }
 
@@ -284,11 +289,10 @@ int main(int argc, const char** argv)
 
     printf("%s" NEWLINE, config.keyPemBuffer);
     printf("%s" NEWLINE, config.crtPemBuffer);
-    
+
     run_device();
-    
+
     // TODO start a device
     // TODO add streaming and coap handlers
 
 }
-
