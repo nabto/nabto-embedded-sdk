@@ -34,7 +34,7 @@ struct config {
 
 static struct config config;
 
-#ifdev _WIN32
+#ifdef _WIN32
 #define NEWLINE "\r\n"
 #else
 #define NEWLINE "\n"
@@ -188,12 +188,13 @@ bool create_pem_cert(const char* keyPemBuffer)
         // get fingerprint
         uint8_t buffer[256];
         uint8_t hash[32];
+        // !!! The key is written to the end of the buffer
         int len = mbedtls_pk_write_pubkey_der( &key, buffer, sizeof(buffer));
         if (len <= 0) {
             return false;
         }
 
-        ret = mbedtls_sha256_ret(buffer,  len, hash, false);
+        ret = mbedtls_sha256_ret(buffer+256 - len,  len, hash, false);
         if (ret != 0) {
             return false;
         }
