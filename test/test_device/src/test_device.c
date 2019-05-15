@@ -49,7 +49,7 @@ struct streamContext {
 void print_help(const char* message)
 {
     if (message) {
-        printf(message);
+        printf("%s", message);
         printf(NEWLINE);
     }
     printf("test_device" NEWLINE);
