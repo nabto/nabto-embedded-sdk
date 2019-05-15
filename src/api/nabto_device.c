@@ -11,6 +11,17 @@
 
 #include <modules/logging/api/nm_api_logging.h>
 
+#include "mbedtls/error.h"
+#include "mbedtls/pk.h"
+#include "mbedtls/ecdsa.h"
+#include "mbedtls/rsa.h"
+#include "mbedtls/error.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/platform.h"
+#include "mbedtls/x509_crt.h"
+#include "mbedtls/x509_csr.h"
+
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_API
@@ -24,6 +35,7 @@ void nabto_device_init_platform(struct np_platform* pl);
 void nabto_device_init_platform_modules(struct np_platform* pl, const char* devicePublicKey, const char* devicePrivateKey);
 NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev);
 void nabto_device_free_threads(struct nabto_device_context* dev);
+NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
 
 /**
  * Allocate new device
@@ -35,10 +47,10 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nabto_device_init_platform(&dev->pl);
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
-    if (dev->eventMutex == NULL) { 
+    if (dev->eventMutex == NULL) {
         NABTO_LOG_ERROR(LOG, "mutex init has failed");
         free(dev);
-        return NULL; 
+        return NULL;
     }
 
     return (NabtoDevice*)dev;
@@ -111,23 +123,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* devic
 
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_set_public_key(NabtoDevice* device, const char* str)
-{
-    struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (dev->publicKey != NULL) {
-        free(dev->publicKey);
-    }
-    dev->publicKey = (char*)malloc(strlen(str)+1); // include trailing zero
-    if (dev->publicKey == NULL) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-    memcpy(dev->publicKey, str, strlen(str)+1); // include trailing zero
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
-
-}
-
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -140,8 +135,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         return NABTO_DEVICE_EC_FAILED;
     }
     memcpy(dev->privateKey, str, strlen(str)+1); // include trailing zero
+
+    NabtoDeviceError status = nabto_device_create_crt_from_private_key(dev);
+
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return status;
 
 }
 
@@ -175,6 +173,100 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_experimental_get_local_port(Nabto
     nabto_device_threads_mutex_lock(dev->eventMutex);
     *port = nc_udp_dispatch_get_local_port(&dev->core.udp);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_create_crt_from_private_key(struct nabto_device_context* dev)
+{
+    // 1. load key from pem
+    // 2. create crt
+    // 3. write crt to pem string.
+    mbedtls_pk_context key;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_x509write_cert crt;
+    mbedtls_mpi serial;
+
+    int ret;
+
+    mbedtls_pk_init(&key);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+    mbedtls_entropy_init(&entropy);
+    mbedtls_x509write_crt_init(&crt);
+    mbedtls_mpi_init(&serial);
+
+    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+
+    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)dev->privateKey, strlen(dev->privateKey)+1, NULL, 0 );
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+
+    // initialize crt
+    mbedtls_x509write_crt_set_subject_key( &crt, &key );
+    mbedtls_x509write_crt_set_issuer_key( &crt, &key );
+
+    ret = mbedtls_mpi_read_string( &serial, 10, "1");
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+
+    mbedtls_x509write_crt_set_serial( &crt, &serial );
+
+    ret = mbedtls_x509write_crt_set_subject_name( &crt, "CN=nabto" );
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+
+    ret = mbedtls_x509write_crt_set_issuer_name( &crt, "CN=nabto" );
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+
+    mbedtls_x509write_crt_set_version( &crt, 2 );
+    mbedtls_x509write_crt_set_md_alg( &crt, MBEDTLS_MD_SHA256 );
+
+    ret = mbedtls_x509write_crt_set_validity( &crt, "20010101000000", "20491231235959" );
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+
+    ret = mbedtls_x509write_crt_set_basic_constraints( &crt, 1, -1);
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+
+    {
+        // write crt
+        char buffer[1024];
+        memset(buffer, 0, 1024);
+        ret = mbedtls_x509write_crt_pem( &crt, (unsigned char*)buffer, 1024,
+                                         mbedtls_ctr_drbg_random, &ctr_drbg );
+
+        if (ret != 0) {
+            return false;
+        }
+        int len = strlen(buffer);
+        if (dev->publicKey != NULL) {
+            free(dev->publicKey);
+        }
+        dev->publicKey = (char*)malloc(len+1); // include trailing zero
+        if (dev->publicKey == NULL) {
+            return NABTO_DEVICE_EC_FAILED;
+        }
+        memcpy(dev->publicKey, buffer, len+1); // include trailing zero
+    }
+
+    // TODO cleanup in case of error
+    mbedtls_x509write_crt_free(&crt);
+    mbedtls_mpi_free(&serial);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+    mbedtls_pk_free(&key);
     return NABTO_DEVICE_EC_OK;
 }
 
@@ -226,6 +318,44 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     return NABTO_DEVICE_EC_OK;
 }
 
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char* out)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    if (dev->publicKey == NULL) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+    mbedtls_pk_context key;
+    int ret;
+
+    mbedtls_pk_init(&key);
+    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)dev->privateKey, strlen(dev->privateKey)+1, NULL, 0 );
+    if (ret != 0) {
+        return NABTO_DEVICE_EC_FAILED;
+    }
+    {
+        // get fingerprint
+        uint8_t buffer[256];
+        uint8_t hash[32];
+        // !!! The key is written to the end of the buffer
+        int len = mbedtls_pk_write_pubkey_der( &key, buffer, sizeof(buffer));
+        if (len <= 0) {
+            return NABTO_DEVICE_EC_FAILED;
+        }
+
+        ret = mbedtls_sha256_ret(buffer+256 - len,  len, hash, false);
+        if (ret != 0) {
+            return NABTO_DEVICE_EC_FAILED;
+        }
+
+        sprintf(out, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+                hash[0], hash[1], hash[2],  hash[3],  hash[4],  hash[5],  hash[6],  hash[7],
+                hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+
+    }
+    mbedtls_pk_free(&key);
+    return NABTO_DEVICE_EC_OK;
+}
 
 /**
  * Closing the device
@@ -343,7 +473,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStr
     str->readSomeFut = fut;
     str->readBuffer = buffer;
     str->readBufferLength = bufferLength;
-    str->readLength = readLength;    
+    str->readLength = readLength;
     *str->readLength = 0;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
     nabto_device_stream_do_read(str);
@@ -404,11 +534,11 @@ NabtoDeviceCoapResource* NABTO_DEVICE_API nabto_device_coap_add_resource(NabtoDe
     resource->dev = dev;
     resource->handler = handler;
     resource->userData = userData;
-    
+
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    
+
     resource->res = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coap), nabto_device_coap_method_to_code(method), path, &nabto_device_coap_resource_handler, resource);
-    
+
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return (NabtoDeviceCoapResource*)resource;
@@ -418,7 +548,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDevice
 {
     struct nabto_device_coap_resource* reso = (struct nabto_device_coap_resource*)resource;
     nabto_device_threads_mutex_lock(reso->dev->eventMutex);
-    // TODO: implement observables 
+    // TODO: implement observables
     //nabto_coap_server_notify_observers(nc_coap_server_get_server(&reso->dev->core.coap), reso->res);
     nabto_device_threads_mutex_unlock(reso->dev->eventMutex);
     return NABTO_DEVICE_EC_OK;
@@ -570,7 +700,7 @@ void* nabto_device_core_thread(void* data)
             return NULL;
         }
     }
-    
+
     return NULL;
 }
 

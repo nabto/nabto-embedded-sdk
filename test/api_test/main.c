@@ -44,13 +44,12 @@ int main()
     uint8_t buf[1500];
     size_t readen;
     nabto_device_set_std_out_log_callback();
-    nabto_device_set_public_key(dev, (const char*)devicePublicKey);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, hostname);
     nabto_device_start(dev);
 
     nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/helloworld", &handler, dev);
-    
+
     NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, &stream);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
@@ -72,11 +71,11 @@ int main()
         nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
     }
-    
+
     fut = nabto_device_stream_close(stream);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
-    
+
     fut = nabto_device_close(dev);
     nabto_device_future_wait(fut);
     if (nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_OK) {

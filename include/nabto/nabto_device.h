@@ -5,7 +5,7 @@
  * Nabto Device High Level C Api.
  *
  * Nabto provides a platform for connecting applications with
- * devices. The platform consists of three major parts. 
+ * devices. The platform consists of three major parts.
  *
  * Vocabulary:
  *
@@ -73,7 +73,7 @@ typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
 typedef uint32_t nabto_device_duration_t;
 
 /**
- * The NabtoDeviceError represents error codes 
+ * The NabtoDeviceError represents error codes
  */
 typedef enum NabtoDeviceError_ {
     NABTO_DEVICE_EC_OK = 0,
@@ -115,12 +115,6 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
 
 /**
- * Set the public key for the device.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_public_key(NabtoDevice* device, const char* pubKey);
-
-/**
  * Set the private key from the device.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
@@ -145,6 +139,16 @@ nabto_device_set_app_version(NabtoDevice* device, const char* version);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device);
 
+
+/**
+ * Get the public key fingerprint of the device.
+ *
+ * @param out pointer to a buffer of at least 32 chars. The
+ * fingerprint is 16 bytes encoded as 32 hex characters.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char* out);
+
 /**
  * Close a context.
  */
@@ -166,7 +170,7 @@ nabto_device_close(NabtoDevice* device);
 /* nabto_device_connection_close(NabtoDeviceConnection* connection); */
 
 /* nabto_device_connection_get_client_fingerprint(NabtoDeviceConnection* connection); */
-    
+
 /*************
  * Streaming *
  *************/
@@ -249,7 +253,7 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream, void* buffer, size_t bu
  * written bytes have been acked, a succesful call to
  * nabto_device_stream_close is neccessary after last call to
  * nabto_device_stream_write.
- * 
+ *
  * @param stream, the stream to write data to.
  * @param buffer, the input buffer with data to write to the stream.
  * @param bufferLenth, length of the input data.
@@ -259,7 +263,7 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream, void* buffer, size_t bu
  *  NABTO_DEVICE_OK if write was ok.
  *  NABTO_DEVICE_STREAM_CLOSED if the stream is closed for writing.
  *  NABTO_DEVICE_STREAM_ABORTED if the stream is aborted.
- * 
+ *
  * TODO clarify what happens when a stream is closed while a call to write is in progress.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
@@ -272,7 +276,7 @@ nabto_device_stream_write(NabtoDeviceStream* stream, const void* buffer, size_t 
  *
  * When close returns all written data has been acknowledged by the
  * other peer.
- * 
+ *
  * @param stream, the stream to close.
  *
  * Future status:
@@ -358,7 +362,7 @@ nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
  * requests ONLY once per notification.
  *
  * @param request  The COAP request assosiated with the response
- * 
+ *
  * @return A representation of the created response
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResponse* NABTO_DEVICE_API
@@ -378,7 +382,7 @@ nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t 
 
 /**
  * Set the payload of a given response.
- * 
+ *
  * @param response  The response for which to set the payload
  * @param data      The payload to set
  * @param dataSize  The length of the payload in bytes
@@ -527,7 +531,7 @@ struct NabtoDeviceLogMessage_ {
     NabtoDeviceLogLevel severity;
     const char* file;
     int line;
-    const char* message; /** the message null terminated utf-8 */    
+    const char* message; /** the message null terminated utf-8 */
 };
 
 typedef struct NabtoDeviceLogMessage_ NabtoDeviceLogMessage;
