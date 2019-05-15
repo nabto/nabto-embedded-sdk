@@ -54,7 +54,7 @@ void print_help(const char* message)
     }
     printf("test_device" NEWLINE);
     printf(" USAGE test_device -p <productId> -d <deviceId> -k <keyfile> --hostname <hostname>" NEWLINE);
-    printf(" Create a new keypair using `openssl ecparam -genkey -name prime256v1 -out <keyfile>.pem`" NEWLINE);
+    printf(" Create a new keypair using `openssl ecparam -genkey -name prime256v1 -out <keyfile>`" NEWLINE);
 }
 
 bool parse_args(int argc, const char** argv)
