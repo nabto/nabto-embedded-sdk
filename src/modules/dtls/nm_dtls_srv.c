@@ -108,9 +108,9 @@ np_error_code np_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.start_keep_alive = &nm_dtls_srv_start_keep_alive;
     pl->dtlsS.handle_packet = &nm_dtls_srv_handle_packet;
     pl->dtlsS.async_discover_mtu = &nm_dtls_srv_async_discover_mtu;
-    
+
     server.pl = pl;
-    
+
     return nm_dtls_srv_init_config(publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
@@ -158,15 +158,15 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
                               &nm_dtls_srv_mbedtls_timing_get_delay );
 
     mbedtls_ssl_session_reset( &((*dtls)->ctx.ssl) );
-    
+
 //    ret = mbedtls_ssl_set_client_transport_id(&((*dtls)->ssl), (const unsigned char*)conn, sizeof(np_connection));
 //    if (ret != 0) {
 //        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_set_client_transport_id() returned -0x%x\n\n", -ret);
 //        return NABTO_EC_FAILED;
 //    }
-    
+
     mbedtls_ssl_set_hs_authmode( &((*dtls)->ctx.ssl), MBEDTLS_SSL_VERIFY_OPTIONAL );
-    
+
     ret = mbedtls_ssl_set_hs_own_cert(&((*dtls)->ctx.ssl), &server.publicKey, &server.privateKey);
     if (ret != 0) {
         NABTO_LOG_ERROR(LOG, "failed ! mbedtls_ssl_set_hs_own_cert returned %d", ret);
@@ -233,7 +233,7 @@ void nm_dtls_srv_do_one(void* data)
             ctx->ctx.recvCount++;
             if (ptr[0] == AT_KEEP_ALIVE) {
                 if (ptr[1] == CT_KEEP_ALIVE_REQUEST) {
-                    NABTO_LOG_INFO(LOG, "Keep alive request, responding imidiately");
+                    NABTO_LOG_INFO(LOG, "Keep alive request, responding immediately");
                     ptr[1] = CT_KEEP_ALIVE_RESPONSE;
                     ctx->kaSendCtx.cb = NULL;
                     ctx->kaSendCtx.data = NULL;
@@ -388,7 +388,7 @@ void nm_dtls_srv_event_close(void* data){
     }
     nm_dtls_srv_do_close(ctx);
 }
-        
+
 np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                       np_dtls_close_callback cb, void* data)
 {
@@ -564,7 +564,7 @@ void nm_dtls_srv_mbedtls_timing_set_delay(void* data, uint32_t intermediateMilli
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (finalMilliseconds == 0) {
-        // able current timer  
+        // able current timer
         np_event_queue_cancel_timed_event(server.pl, &ctx->ctx.tEv);
         ctx->ctx.finalTp = 0;
     } else {
