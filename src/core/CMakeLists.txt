@@ -27,7 +27,7 @@ set(test_src
 
 add_library( nc_core STATIC "${src}")
 
-target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap2)
+target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap)
 
 add_library( nc_core_test STATIC "${test_src}")
 

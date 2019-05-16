@@ -39,7 +39,7 @@ add_subdirectory(src/modules/dtls)
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(nabto-common-cpp/src/streaming)
 add_subdirectory(nabto-common-cpp/src/stun)
-add_subdirectory(nabto-common-cpp/src/coap2)
+add_subdirectory(nabto-common-cpp/src/coap)
 
 add_subdirectory(src/modules/logging/api)
 

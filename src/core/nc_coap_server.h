@@ -6,7 +6,7 @@
 
 #include <core/nc_client_connect.h>
 
-#include <coap2/nabto_coap_server.h>
+#include <coap/nabto_coap_server.h>
 
 struct nc_coap_server_context {
     struct np_platform* pl;
