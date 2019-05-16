@@ -41,7 +41,7 @@ void print_help(const char* message)
         printf("%s", message);
         printf(NEWLINE);
     }
-    printf("test_device" NEWLINE);
+    printf("test_device version %s" NEWLINE, nabto_device_version());
     printf(" USAGE test_device -p <productId> -d <deviceId> -k <keyfile> --hostname <hostname>" NEWLINE);
     printf(" Create a new keypair using `openssl ecparam -genkey -name prime256v1 -out <keyfile>`" NEWLINE);
 }

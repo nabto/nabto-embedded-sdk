@@ -8,6 +8,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
+#include <core/nc_version.h>
 
 #include <modules/logging/api/nm_api_logging.h>
 
@@ -36,6 +37,11 @@ void nabto_device_init_platform_modules(struct np_platform* pl, const char* devi
 NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev);
 void nabto_device_free_threads(struct nabto_device_context* dev);
 NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
+
+const char* nabto_device_version()
+{
+    return NABTO_VERSION;
+}
 
 /**
  * Allocate new device
