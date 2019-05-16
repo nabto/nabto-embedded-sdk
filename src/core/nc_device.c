@@ -4,6 +4,7 @@
 #define LOG NABTO_LOG_MODULE_CORE
 
 void nc_device_attached_cb(const np_error_code ec, void* data);
+uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 
 void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
 {
@@ -28,9 +29,7 @@ void nc_device_detached_cb(const np_error_code ec, void* data)
     struct nc_device_context* dev = (struct nc_device_context*)data;
     NABTO_LOG_INFO(LOG, "Device detached callback");
     if (!dev->stopping) {
-        // TODO: waiting 5s between attaches for now, make better timing later
-        np_event_queue_post_timed_event(dev->pl, &dev->tEv, 5000, &nc_device_reattach, data);
-//        nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
+        np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
     } else {
         nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
     }
@@ -41,14 +40,14 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
     struct nc_device_context* dev = (struct nc_device_context*)data;
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "Device is now attached");
+        dev->attachAttempts = 0;
     } else {
         NABTO_LOG_INFO(LOG, "Device failed to attached");
        if (dev->stopping) {
            nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
        } else {
            NABTO_LOG_TRACE(LOG, "Not stopping, trying to reattach");
-           np_event_queue_post_timed_event(dev->pl, &dev->tEv, 5000, &nc_device_reattach, data);
-//           nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
+           np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
        }
     }
 }
@@ -86,6 +85,7 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
                               const char* hostname, const char* stunHost)
 {
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
+    memset(dev, 0, sizeof(struct nc_device_context));
     dev->pl = pl;
     dev->stopping = false;
     dev->stunHost = stunHost;
@@ -110,4 +110,18 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     dev->stopping = true;
     nc_attacher_detach(&dev->attacher);
     return NABTO_EC_OK;
+}
+
+uint32_t nc_device_get_reattach_time(struct nc_device_context* dev)
+{
+    uint32_t ms;
+    if (dev->attachAttempts >= 19) { // 2^19s > 12h
+        ms = 43200000; // 12h
+    } else {
+        ms = 2 << dev->attachAttempts; // 2sec^n
+        ms = ms * 1000; // s to ms
+        dev->attachAttempts++;
+    }
+    NABTO_LOG_INFO(LOG, "returning reattach time: %i, attachAttempts: %i", ms, dev->attachAttempts);
+    return ms;
 }
