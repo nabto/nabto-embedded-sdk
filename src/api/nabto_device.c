@@ -22,6 +22,7 @@
 #include "mbedtls/platform.h"
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
+#include "mbedtls/sha256.h"
 
 #include <stdlib.h>
 
