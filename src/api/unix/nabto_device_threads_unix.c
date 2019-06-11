@@ -1,4 +1,4 @@
-#include "nabto_device_threads.h"
+#include <api/nabto_device_threads.h>
 
 #include <platform/np_logging.h>
 
@@ -39,7 +39,7 @@ struct nabto_device_thread* nabto_device_threads_create_thread()
         pthread_attr_destroy(&thread->attr);
         free(thread);
         return NULL;
-    }    
+    }
     return thread;
 }
 
@@ -50,12 +50,12 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
         NABTO_LOG_ERROR(LOG, "Failed to allocate mutex");
         return NULL;
     }
-    if (pthread_mutex_init(&mut->mut, NULL) != 0) { 
+    if (pthread_mutex_init(&mut->mut, NULL) != 0) {
         NABTO_LOG_ERROR(LOG, "mutex init has failed");
         free(mut);
-        return NULL; 
+        return NULL;
     }
-    return mut;    
+    return mut;
 }
 
 struct nabto_device_condition* nabto_device_threads_create_condition()
@@ -70,7 +70,7 @@ struct nabto_device_condition* nabto_device_threads_create_condition()
         free(cond);
         return NULL;
     }
-    return cond;    
+    return cond;
 }
 
 void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
@@ -136,5 +136,3 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
     ts.tv_sec = tp.tv_sec + future_us / 1000000;
     pthread_cond_timedwait(&cond->cond, &mut->mut, &ts);
 }
-
-

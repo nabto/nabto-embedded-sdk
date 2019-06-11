@@ -1,4 +1,4 @@
-#include "nabto_device_threads.h"
+#include <api/nabto_device_threads.h>
 
 #include <platform/np_logging.h>
 
@@ -123,4 +123,3 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
 {
     SleepConditionVariableSRW(&cond->cond, &mut->mutex, ms, 0);
 }
-
