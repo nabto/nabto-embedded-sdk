@@ -1,0 +1,20 @@
+#include <nabto/nabto_device.h>
+
+
+#define NABTO_DEVICE_ERROR_MAPPING(XX) \
+    XX(NABTO_DEVICE_EC_OK, 0, "Ok") \
+    XX(NABTO_DEVICE_EC_FAILED, 1000, "Failed")
+
+#define XX_ERROR(name, value, _) const NabtoDeviceError name = value;
+NABTO_DEVICE_ERROR_MAPPING(XX_ERROR)
+#undef XX_ERROR
+
+const char* NABTO_DEVICE_API nabto_device_error_get_message(NabtoDeviceError ec)
+{
+#define XX_ERROR(name, _, message) if (ec == name) { return message; } else
+    NABTO_DEVICE_ERROR_MAPPING(XX_ERROR)
+#undef XX_ERROR
+    {
+        return "Unknown error code, this should not happen";
+    }
+}

@@ -72,13 +72,13 @@ typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
  */
 typedef uint32_t nabto_device_duration_t;
 
+typedef int NabtoDeviceError;
+
 /**
  * The NabtoDeviceError represents error codes
  */
-typedef enum NabtoDeviceError_ {
-    NABTO_DEVICE_EC_OK = 0,
-    NABTO_DEVICE_EC_FAILED
-}NabtoDeviceError;
+extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
+extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
 
 /**********************
  * Device Api *
