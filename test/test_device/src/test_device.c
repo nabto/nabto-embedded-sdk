@@ -225,6 +225,15 @@ void run_device()
     NabtoDeviceStream* stream;
     NabtoDevice* dev = nabto_device_new();
     nabto_device_log_set_std_out_callback(dev);
+    char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        ec = nabto_device_log_set_level(dev, logLevel);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Could not set log level: %s , %s" NEWLINE, logLevel, nabto_device_error_get_message(ec));
+        } else {
+            printf("Log level set to %s" NEWLINE, logLevel);
+        }
+    }
 
     ec = nabto_device_set_private_key(dev, config.keyPemBuffer);
     if (ec != NABTO_DEVICE_EC_OK) {
