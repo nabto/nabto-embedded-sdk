@@ -385,13 +385,19 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_close(NabtoDevice* device)
     return fut;
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDeviceLogCallback cb, void* data)
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data)
 {
     nm_api_logging_set_callback(cb, data);
     return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_set_std_out_log_callback()
+NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_level(NabtoDevice* device, const char* level)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_std_out_callback(NabtoDevice* device)
 {
     nm_api_logging_set_callback(&nm_api_logging_std_out_callback, NULL);
     return NABTO_DEVICE_EC_OK;

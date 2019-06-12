@@ -224,7 +224,7 @@ void run_device()
     NabtoDeviceError ec;
     NabtoDeviceStream* stream;
     NabtoDevice* dev = nabto_device_new();
-    nabto_device_set_std_out_log_callback();
+    nabto_device_log_set_std_out_callback(dev);
 
     ec = nabto_device_set_private_key(dev, config.keyPemBuffer);
     if (ec != NABTO_DEVICE_EC_OK) {

@@ -3,7 +3,8 @@
 
 #define NABTO_DEVICE_ERROR_MAPPING(XX) \
     XX(NABTO_DEVICE_EC_OK, 0, "Ok") \
-    XX(NABTO_DEVICE_EC_FAILED, 1000, "Failed")
+    XX(NABTO_DEVICE_EC_FAILED, 1000, "Failed") \
+    XX(NABTO_DEVICE_EC_NOT_IMPLEMENTED, 1001, "Not implemented")
 
 #define XX_ERROR(name, value, _) const NabtoDeviceError name = value;
 NABTO_DEVICE_ERROR_MAPPING(XX_ERROR)

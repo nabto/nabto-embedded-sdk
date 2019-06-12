@@ -79,6 +79,7 @@ typedef int NabtoDeviceError;
  */
 extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
 extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
+extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_IMPLEMENTED;
 
 /**********************
  * Device Api *
@@ -539,10 +540,13 @@ typedef struct NabtoDeviceLogMessage_ NabtoDeviceLogMessage;
 typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_log_callback(NabtoDeviceLogCallback cb, void* data);
+nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_std_out_log_callback();
+nabto_device_log_set_level(NabtoDevice* device, const char* level);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_log_set_std_out_callback(NabtoDevice* device);
 
 #ifdef __cplusplus
 } // extern c

@@ -106,7 +106,7 @@ int main(void)
 
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, serverHostname);
-    nabto_device_set_std_out_log_callback();
+    nabto_device_log_set_std_out_callback(dev);
     nabto_device_start(dev);
 
     while (true) {

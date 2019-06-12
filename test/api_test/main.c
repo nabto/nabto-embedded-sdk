@@ -43,7 +43,7 @@ int main()
     NabtoDeviceStream* stream;
     uint8_t buf[1500];
     size_t readen;
-    nabto_device_set_std_out_log_callback();
+    nabto_device_log_set_std_out_callback(dev);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, hostname);
     nabto_device_start(dev);
