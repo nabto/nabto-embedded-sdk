@@ -80,6 +80,7 @@ typedef int NabtoDeviceError;
 extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
 extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
 extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LOG_LEVEL;
 
 /**********************
  * Device Api *

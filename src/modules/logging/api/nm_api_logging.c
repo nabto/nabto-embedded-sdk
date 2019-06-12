@@ -3,6 +3,7 @@
 
 NabtoDeviceLogCallback logCallback;
 void* userData;
+static uint32_t level_ = NABTO_LOG_SEVERITY_LEVEL_INFO;
 
 void nm_api_log_default_log_callback(NabtoDeviceLogMessage* msg, void* data)
 {
@@ -24,11 +25,16 @@ void np_log_init()
     userData = NULL;
 }
 
+void nm_api_logging_set_level(uint32_t level)
+{
+    level_ = level;
+}
+
 void nm_api_log(uint32_t severity, uint32_t module,
                 uint32_t line, const char* file,
                 const char* fmt, va_list args)
 {
-    if ((NABTO_LOG_MODULE_FILTER & module) || module == 0 ) {
+    if (level_ & severity) {
         NabtoDeviceLogMessage msg;
         char log[128];
         int ret;
@@ -71,7 +77,7 @@ void nm_api_log_buf_line(uint32_t severity, uint32_t module,
                 uint32_t line, const char* file,
                 const char* fmt)
 {
-    if ((NABTO_LOG_MODULE_FILTER & module) || module == 0 ) {
+    if (level_ & severity) {
         NabtoDeviceLogMessage msg;
         char log[128];
         int ret;
@@ -118,7 +124,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
     size_t chunks = len/16;
     size_t i, n;
     int ret = 0;
-    
+
     // TODO: better support for multiline logging through the API
     for (i = 0; i < chunks; i++) {
         ret = sprintf(str, "%04lx: ", i*16);
@@ -129,7 +135,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
         }
         ret = sprintf(ptr, ": ");
         ptr = ptr + ret;
-        
+
         for (n = 0; n < 16; n++) {
             if(buf[i*16+n] > 0x1F && buf[i*16+n] < 0x7F && buf[i*16+n] != 0x25) {
                 ret = sprintf(ptr, "%c", (char)buf[i*16+n]);
@@ -153,7 +159,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
     }
     ret = sprintf(ptr, ": ");
     ptr = ptr + ret;
-        
+
     for (n = chunks*16; n < len; n++) {
         if(buf[n] > 0x1F && buf[n] < 0x7F) {
             ret = sprintf(ptr, "%c", (char)buf[n]);

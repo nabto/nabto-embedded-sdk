@@ -394,7 +394,20 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_callback(NabtoDevice* dev
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_level(NabtoDevice* device, const char* level)
 {
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    uint32_t l = 0;
+    if (strcmp(level, "error") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_ERROR;
+    } else if (strcmp(level, "warn") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_WARN;
+    } else if (strcmp(level, "info") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_INFO;
+    } else if (strcmp(level, "trace") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_TRACE;
+    } else {
+        return NABTO_DEVICE_EC_INVALID_LOG_LEVEL;
+    }
+    nm_api_logging_set_level(l);
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_std_out_callback(NabtoDevice* device)
