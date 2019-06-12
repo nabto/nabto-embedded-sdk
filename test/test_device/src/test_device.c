@@ -280,8 +280,4 @@ int main(int argc, const char** argv)
     }
 
     run_device();
-
-    // TODO start a device
-    // TODO add streaming and coap handlers
-
 }
