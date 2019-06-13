@@ -13,6 +13,7 @@ struct nc_rendezvous_coap_context {
 
 };
 
-void nc_rendezvous_coap_init();
+
+void nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context, struct nc_coap_server_context* coap, struct nc_rendezvous_context* rendezvous);
 
 #endif

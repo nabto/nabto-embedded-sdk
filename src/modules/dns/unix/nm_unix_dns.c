@@ -28,12 +28,12 @@ void nm_unix_dns_check_resolved(const np_error_code ec, void* data);
 
 void* resolver_thread(void* ctx) {
     struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
-    
+
     struct addrinfo hints, *infoptr;
     memset(&hints, 0, sizeof (struct addrinfo));
 
     hints.ai_socktype = SOCK_DGRAM;
-    
+
     NABTO_LOG_TRACE(LOG, "Resolving host: %s", state->host);
 
     hints.ai_family = AF_UNSPEC;
@@ -113,12 +113,14 @@ np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_
         return NABTO_EC_FAILED;
     }
     pthread_attr_destroy(&attr);
+//     NABTO_LOG_TRACE(LOG, "resolving dns");
     np_event_queue_post_timed_event(pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, ctx);
     return NABTO_EC_OK;
 }
 
 void nm_unix_dns_check_resolved(const np_error_code ec, void* data)
 {
+    NABTO_LOG_TRACE(LOG, "nm_unix_dns_check_resolved");
     struct nm_unix_dns_ctx* ctx = (struct nm_unix_dns_ctx*)data;
     if(ctx->resolver_is_running) {
         np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, data);

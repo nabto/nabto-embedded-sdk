@@ -4,6 +4,7 @@
 #include <core/nc_client_connect.h>
 #include <core/nc_udp_dispatch.h>
 
+
 #include <platform/np_logging.h>
 
 #include <string.h>
@@ -21,7 +22,6 @@ void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
     ctx->pl = pl;
     ctx->udpDispatch = udpDispatch;
     ctx->priBuf = pl->buf.allocate();
-    ctx->secBuf = pl->buf.allocate();
     ctx->packetIndex = 0;
     ctx->sendingDevReqs = false;
 }
@@ -30,7 +30,6 @@ void nc_rendezvous_destroy(struct nc_rendezvous_context* ctx)
 {
 
     ctx->pl->buf.free(ctx->priBuf);
-    ctx->pl->buf.free(ctx->secBuf);
 }
 
 void nc_rendezvous_handle_client_request(struct nc_rendezvous_context* ctx,
@@ -71,8 +70,6 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
     *ptr = AT_RENDEZVOUS;
     ptr++;
     *ptr = packet->type;
-
-    NABTO_LOG_INFO(LOG, "Sending RENDEZVOUS_DEVICE_REQUEST");
 
     ctx->sendingDevReqs = true;
     size_t used = ptr - start;

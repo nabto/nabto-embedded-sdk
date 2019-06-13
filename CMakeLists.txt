@@ -74,10 +74,10 @@ add_subdirectory(test/test_device)
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_executable(unit_test "${test_runner_src}")
 
-target_link_libraries(unit_test
-  np_platform_test
-  nc_core_test
-  np_platform
-  nc_core
-  nm_logging)
+  target_link_libraries(unit_test
+    np_platform_test
+    nc_core_test
+    np_platform
+    nc_core
+    nm_logging)
 endif()

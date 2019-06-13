@@ -32,10 +32,10 @@ enum nc_stun_state {
 struct nc_stun_context {
     struct np_platform* pl;
     struct nc_udp_dispatch_context* priUdp;
-    struct nc_udp_dispatch_context secUdp;
+    struct nc_udp_dispatch_context* secUdp;
     struct nabto_stun stun;
     struct nabto_stun_module stunModule;
-    
+
     struct nc_stun_callback cbs[NC_STUN_MAX_CALLBACKS];
     enum nc_stun_state state;
     np_error_code ec;
@@ -53,8 +53,9 @@ struct nc_stun_context {
 
 void nc_stun_init(struct nc_stun_context* ctx,
                   struct np_platform* pl,
-                  const char* hostname, 
-                  struct nc_udp_dispatch_context* udp);
+                  const char* hostname,
+                  struct nc_udp_dispatch_context* udp,
+                  struct nc_udp_dispatch_context* secondaryUdp);
 
 np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
                                     nc_stun_analyze_callback cb, void* data);

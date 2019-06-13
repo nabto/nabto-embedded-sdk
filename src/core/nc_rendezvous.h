@@ -20,7 +20,6 @@ struct nc_rendezvous_context {
     struct np_udp_send_context sendCtx;
 
     np_communication_buffer* priBuf;
-    np_communication_buffer* secBuf;
 
     struct nc_rendezvous_send_packet packetList[NC_RENDEZVOUS_SEND_QUEUE_LENGTH];
     // index of first empty spot in epList

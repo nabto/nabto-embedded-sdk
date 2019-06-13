@@ -191,15 +191,13 @@ void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* eve
 
     while(current->next != NULL && pl->ts.less_or_equal(&current->next->timestamp, &current->timestamp))
     {
-        struct np_timed_event* tmp;
-        tmp = current->next;
-        current->next = tmp->next;
-        tmp->next = current;
+        struct np_timed_event* next = current->next;
         if (prev != NULL) {
-            prev->next = tmp;
+            prev->next = next;
         }
-
-        prev = tmp;
+        current->next = next->next;
+        next->next = current;
+        prev = next;
     }
 }
 
