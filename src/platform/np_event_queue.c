@@ -206,6 +206,8 @@ void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* eve
         struct np_timed_event* next = current->next;
         if (prev != NULL) {
             prev->next = next;
+        } else {
+            ev->head = next;
         }
         current->next = next->next;
         next->next = current;
