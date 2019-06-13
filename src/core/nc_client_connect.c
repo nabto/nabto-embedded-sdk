@@ -86,6 +86,7 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
 
 void nc_client_connect_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
 {
+    nc_coap_server_remove_connection(conn->coap, conn);
     nc_client_connect_dispatch_close_connection(conn->dispatch, conn);
     memset(conn, 0, sizeof(struct nc_client_connection));
 }

@@ -136,6 +136,11 @@ void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_cont
 
 }
 
+void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection)
+{
+    nabto_coap_server_remove_connection(&ctx->server, (void*) nc_client_connect_get_dtls_connection(connection));
+}
+
 // ========= UTIL FUNCTIONS ============= //
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data)
 {
