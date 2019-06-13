@@ -14,6 +14,8 @@ set(src
   ${src_dir}/nc_stun.c
   ${src_dir}/nc_coap_server.c
   ${src_dir}/nc_coap_client.c
+  ${src_dir}/nc_stun_coap.c
+  ${src_dir}/nc_rendezvous_coap.c
   )
 
 set(test_src

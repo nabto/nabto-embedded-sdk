@@ -67,13 +67,13 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
         return;
     }
     nc_udp_dispatch_set_client_connect_context(&dev->udp, &dev->clientConnect);
-    
+
     ec2 = nc_attacher_register_detatch_callback(&dev->attacher, &nc_device_detached_cb, dev);
     if ( ec2 != NABTO_EC_OK ) {
         // TODO: handle impossible error
     }
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
-    
+
     nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp);
     // TODO: determine if we should make stun analysis on startup
 //    ec2 = nc_stun_async_analyze(&dev->stun, &nc_device_stun_analysed_cb, dev);
@@ -99,7 +99,10 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
     dev->attachParams.udp = &dev->udp;
 
     nc_udp_dispatch_async_create(&dev->udp, pl, &nc_device_udp_created_cb, dev);
-    
+
+    nc_stun_coap_init(&dev->stunCoap, pl, &dev->coap, &dev->stun);
+    nc_rendezvous_init(&dev->rendezvous, pl, &dev->udp);
+
     return NABTO_EC_OK;
 }
 

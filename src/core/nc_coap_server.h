@@ -25,4 +25,6 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
 
 struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_context* ctx);
 
+void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request, uint8_t* connectionId);
+
 #endif // NC_COAP_SERVER_H

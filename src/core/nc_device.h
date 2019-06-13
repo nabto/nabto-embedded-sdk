@@ -6,6 +6,7 @@
 #include <core/nc_client_connect_dispatch.h>
 #include <core/nc_stun.h>
 #include <core/nc_coap_server.h>
+#include <core/nc_stun_coap.h>
 
 #include <platform/np_error_code.h>
 
@@ -21,6 +22,8 @@ struct nc_device_context {
     struct nc_client_connect_dispatch_context clientConnect;
     struct nc_stun_context stun;
     struct nc_coap_server_context coap;
+    struct nc_rendezvous_context rendezvous;
+    struct nc_stun_coap_context stunCoap;
 
     const char* stunHost;
 
