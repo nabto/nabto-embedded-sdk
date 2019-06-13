@@ -33,6 +33,12 @@ void np_event_queue_execute_all(struct np_platform* pl)
 
 void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
 {
+    {
+        // remove event if already present in queue TODO this is bad
+        // since we are not calling the completion handler exactly
+        // once.
+        np_event_queue_cancel_event(pl, event);
+    }
     event->next = NULL;
     event->cb = cb;
     event->data = data;
@@ -103,6 +109,12 @@ bool np_event_queue_is_event_queue_empty(struct np_platform* pl)
 
 void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data)
 {
+    {
+        // if the event is already in the timed queue cancel it first
+        // TODO this is not good since we should call the completion
+        // handler exactly once.
+        np_event_queue_cancel_timed_event(pl, event);
+    }
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
     event->next = NULL;
     event->cb = cb;
