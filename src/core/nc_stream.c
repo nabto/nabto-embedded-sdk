@@ -78,7 +78,7 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->streamManager = streamManager;
     ctx->pl = pl;
     ctx->currentExpiry = nabto_stream_stamp_infinite();
-    
+
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
 }
 
@@ -132,7 +132,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
     }
 
     nabto_stream_event_handled(&ctx->stream, eventType);
-    
+
     // se if more events can be processed, until we reach ET_WAIT.
     nc_stream_event(ctx);
 }
@@ -195,7 +195,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     uint8_t* start = sendCtx->buffer;
     //uint8_t* ptr = ctx->pl->buf.start(ctx->sendBuffer);
     uint8_t* ptr = start;
-    
+
     *ptr = (uint8_t)AT_STREAM;
     ptr++;
 
@@ -238,7 +238,7 @@ void nc_stream_free_send_segment(struct nabto_stream_send_segment* segment, void
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
     nc_stream_manager_free_send_segment(ctx->streamManager, segment);
 }
-    
+
 struct nabto_stream_recv_segment* nc_stream_alloc_recv_segment(size_t bufferSize, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;

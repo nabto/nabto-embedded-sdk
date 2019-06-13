@@ -9,7 +9,7 @@ void nabto_device_stream_resolve_read(struct nabto_device_stream* str, np_error_
     str->readLength = NULL;
     str->readBuffer = NULL;
     str->readBufferLength = 0;
-    
+
     if (str->readAllFut) {
         nabto_api_future_set_error_code(str->readAllFut, nabto_device_error_core_to_api(ec));
         nabto_api_future_queue_post(&str->dev->queueHead, str->readAllFut);
@@ -92,8 +92,8 @@ void nabto_device_stream_do_write_all(struct nabto_device_stream* str)
         nabto_api_future_set_error_code(str->writeFut, nabto_device_error_core_to_api(nc_stream_status_to_ec(status)));
         nabto_api_future_queue_post(&str->dev->queueHead, str->writeFut);
         str->writeFut = NULL;
-    }        
-            
+    }
+
 }
 
 void nabto_device_stream_handle_close(struct nabto_device_stream* str)
@@ -112,7 +112,7 @@ void nabto_device_stream_handle_close(struct nabto_device_stream* str)
         nabto_api_future_set_error_code(str->closeFut, nabto_device_error_core_to_api(nc_stream_status_to_ec(status)));
         nabto_api_future_queue_post(&str->dev->queueHead, str->closeFut);
         str->closeFut = NULL;
-    }        
+    }
 }
 
 void nabto_device_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
@@ -122,6 +122,7 @@ void nabto_device_stream_application_event_callback(nabto_stream_application_eve
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_OPENED:
             if (str->acceptFut) {
                 nabto_api_future_set_error_code(str->acceptFut, NABTO_DEVICE_EC_OK);
+                NABTO_LOG_TRACE(LOG, "stream opened");
                 nabto_api_future_queue_post(&str->dev->queueHead, str->acceptFut);
                 str->acceptFut = NULL;
             }
