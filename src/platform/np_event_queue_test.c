@@ -206,7 +206,7 @@ void np_platform_test_post_timed_event_sorting()
     np_event_queue_poll_one_timed_event(&pl);
 
     NABTO_TEST_CHECK(!np_event_queue_has_ready_timed_event(&pl));
-    NABTO_TEST_CHECK(!np_event_queue_has_timed_event(&pl));
+    NABTO_TEST_CHECK(np_event_queue_has_timed_event(&pl));
 
     NABTO_TEST_CHECK(state2.called == true);
     NABTO_TEST_CHECK(state1.called == false);

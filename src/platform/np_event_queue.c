@@ -3,7 +3,6 @@
 #include <platform/np_logging.h>
 
 static void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* event);
-static void np_timed_event_insert(struct np_timed_event* prev, struct np_timed_event* event);
 
 void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify notify, void* notifyData)
 {
@@ -180,35 +179,28 @@ void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* event)
 void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* event)
 {
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    struct np_timed_event* next;
+    struct np_timed_event* prev;
     struct np_timed_event* current;
+
+    struct np_timed_event* oldHead = ev->head;
+    ev->head = event;
+    event->next = oldHead;
+
     current = ev->head;
-    next = current->next;
+    prev = NULL;
 
-    while(next != NULL) {
-        if (pl->ts.less_or_equal(&next->timestamp, &event->timestamp)) {
-            current = current->next;
-            next = current->next;
-        } else {
-            break;
+    while(current->next != NULL && pl->ts.less_or_equal(&current->next->timestamp, &current->timestamp))
+    {
+        struct np_timed_event* tmp;
+        tmp = current->next;
+        current->next = tmp->next;
+        tmp->next = current;
+        if (prev != NULL) {
+            prev->next = tmp;
         }
+
+        prev = tmp;
     }
-
-    // next points to where we want to insert the element.
-
-    // if we end here, insert the event as the last event
-    // insert the event after the event current points to.
-    np_timed_event_insert(current, event);
-}
-
-/**
- * Insert a timed event in the queue where place is currently.
- */
-void np_timed_event_insert(struct np_timed_event* prev, struct np_timed_event* event)
-{
-    struct np_timed_event* currentNext = prev->next;
-    prev->next = event;
-    event->next = currentNext;
 }
 
 /**
