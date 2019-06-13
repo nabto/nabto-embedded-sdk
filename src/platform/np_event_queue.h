@@ -20,6 +20,8 @@ struct np_platform;
 typedef void (*np_event_callback)(void* data);
 typedef void (*np_timed_event_callback)(const np_error_code ec, void* data);
 
+typedef void (*np_event_queue_executor_notify)(void* data);
+
 /**
  * The event is owned by the one who is posting the event. This way we
  * do not need to allocate space for a large queue inside this module.
@@ -37,7 +39,7 @@ struct np_timed_event {
     struct np_timed_event* next;
     np_timestamp timestamp;
     np_timed_event_callback cb;
-    void* data;    
+    void* data;
 };
 
 struct np_event_list {
@@ -55,7 +57,13 @@ struct np_event_queue {
 
     // Private data for the timed events module
     struct np_timed_event_list timedEvents;
+
+    // called to notify the executor that a new event has been posted to the eventQueue.
+    np_event_queue_executor_notify notify;
+    void* notifyData;
 };
+
+void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify notify, void* notifyData);
 
 bool np_event_queue_has_ready_event(struct np_platform* pl);
 /**

@@ -2,9 +2,14 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 
-static void np_timed_event_bubble_up();
+static void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* event);
 static void np_timed_event_insert(struct np_timed_event* prev, struct np_timed_event* event);
 
+void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify notify, void* notifyData)
+{
+    pl->eq.notify = notify;
+    pl->eq.notifyData = notifyData;
+}
 
 void np_event_queue_execute_one(struct np_platform* pl)
 {
@@ -34,13 +39,16 @@ void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
     event->data = data;
 
     struct np_event_list* ev = &pl->eq.events;
-    
+
     if (ev->head == NULL && ev->tail == NULL) {
         ev->head = event;
         ev->tail = event;
     } else {
         ev->tail->next = event;
         ev->tail = event;
+    }
+    if (pl->eq.notify) {
+        pl->eq.notify(pl->eq.notifyData);
     }
 }
 
@@ -57,7 +65,7 @@ void np_event_queue_poll_one(struct np_platform* pl)
     struct np_event* event;
 
 
-    
+
     if (ev->head == ev->tail) {
         // one event
         event = ev->head;
@@ -79,7 +87,7 @@ void np_event_queue_poll_one_timed_event(struct np_platform* pl)
     if (ev->head == NULL) {
         return;
     }
-    
+
     struct np_timed_event* event = ev->head;
     ev->head = event->next;
 
@@ -106,6 +114,9 @@ void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_eve
         ev->head = event;
     } else {
         np_timed_event_bubble_up(pl, event);
+    }
+    if (pl->eq.notify) {
+        pl->eq.notify(pl->eq.notifyData);
     }
 }
 
@@ -230,6 +241,7 @@ uint32_t np_event_queue_next_timed_event_occurance(struct np_platform* pl)
         return 0;
     }
     pl->ts.now(&now);
+    // TODO this could be 0 or negative, which violates the api.
     return pl->ts.difference(&ev->head->timestamp, &now);
 }
 

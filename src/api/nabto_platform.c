@@ -1,3 +1,6 @@
+
+#include "nabto_platform.h"
+
 #include <platform/np_platform.h>
 
 #include <platform/np_logging.h>

@@ -4,6 +4,7 @@
 #include <api/nabto_device_stream.h>
 #include <api/nabto_device_coap.h>
 #include <api/nabto_api_future_queue.h>
+#include <api/nabto_platform.h>
 #include <platform/np_error_code.h>
 
 #include <platform/np_logging.h>
@@ -44,6 +45,12 @@ const char* nabto_device_version()
     return NABTO_VERSION;
 }
 
+void notify_event_queue_post(void* data)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)data;
+    nabto_device_threads_cond_signal(dev->eventCond);
+}
+
 /**
  * Allocate new device
  */
@@ -52,6 +59,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
     memset(dev, 0, sizeof(struct nabto_device_context));
     nabto_device_init_platform(&dev->pl);
+    np_event_queue_init(&dev->pl, &notify_event_queue_post, dev);
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
     if (dev->eventMutex == NULL) {
@@ -456,7 +464,6 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream
     }
     str->acceptFut = fut;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    // TODO: Set start sequence number ?
     nabto_stream_set_application_event_callback(str->stream, &nabto_device_stream_application_event_callback, str);
     nabto_stream_accept(str->stream);
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
