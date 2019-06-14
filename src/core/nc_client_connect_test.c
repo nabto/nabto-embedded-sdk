@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int nc_client_connect_test_recvState = 0; 
+int nc_client_connect_test_recvState = 0;
 
 struct nc_client_connect_dispatch_context cliConnDisp;
 struct np_dtls_srv_connection* crypCtx;
@@ -51,10 +51,10 @@ np_error_code nc_client_connect_test_cryp_send(struct np_platform* pl, struct np
                 return NABTO_EC_OK;
             }
         }
-        
+
     } else if(buffer[0] == AT_DEVICE_RELAY) {
         if(buffer[1] == CT_DEVICE_RELAY_HELLO_REQUEST) {
-            // TODO: check all extentions not just first 
+            // TODO: check all extentions not just first
             uint16_t ext = (((uint16_t)buffer[2]) << 8) + buffer[3];
             if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || ext == EX_APPLICATION_VERSION || ext == EX_APPLICATION_VERSION || ext == EX_SESSION_ID || ext == EX_ATTACH_INDEX) {
                 validAnReqSend = true;
@@ -78,7 +78,7 @@ np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, struct np
     if (nc_client_connect_test_recvState == 1) {
 /*        resp.buf[0] = AT_DEVICE_LB;
         resp.buf[1] = CT_DEVICE_LB_RESPONSE;
-        ptr = uint16_write_forward(ptr, EX_DTLS_EP); 
+        ptr = uint16_write_forward(ptr, EX_DTLS_EP);
         ptr = uint16_write_forward(ptr, 31); //extension data length
         ptr = uint16_write_forward(ptr, 0x4242); // port
         *ptr = 3; ptr++; // az
@@ -90,7 +90,7 @@ np_error_code nc_client_connect_test_cryp_recv(struct np_platform* pl, struct np
         ptr = uint16_write_forward(ptr, EX_SESSION_ID);
         ptr = uint16_write_forward(ptr, 4); // extension data length
         ptr = uint32_write_forward(ptr, sessionId); // session ID
-        
+
         nc_client_connect_test_recvState = 0;
         cb(NABTO_EC_OK, 0, 0, &resp, 45, data);
         crypAdRecvCalled = true;
@@ -148,11 +148,12 @@ void nc_client_connect_test_recv_from_clientConn(const np_error_code ec, struct 
 void nc_client_connect_test_connect()
 {
     struct np_udp_endpoint ep;
+    memset(ep, 0, sizeof(struct nabto_udp_endpoint));
     np_communication_buffer* buf;
     uint8_t* ptr;
     uint8_t fp[16];
     memset(fp, 0, 16);
-    
+
     id.id[0] = 240;
     memcpy(id.id+1, "12345678912345\0",14);
     np_platform_init(&pl);
@@ -177,7 +178,7 @@ void nc_client_connect_test_connect()
     ptr += 10;
 
     nc_client_connect_dispatch_handle_packet(&cliConnDisp, sock, ep, buf, 26);
-    
+
     NABTO_TEST_CHECK(testRecvFromCalled);
 }
 
