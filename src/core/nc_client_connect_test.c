@@ -148,7 +148,7 @@ void nc_client_connect_test_recv_from_clientConn(const np_error_code ec, struct 
 void nc_client_connect_test_connect()
 {
     struct np_udp_endpoint ep;
-    memset(ep, 0, sizeof(struct nabto_udp_endpoint));
+    memset(&ep, 0, sizeof(struct np_udp_endpoint));
     np_communication_buffer* buf;
     uint8_t* ptr;
     uint8_t fp[16];
