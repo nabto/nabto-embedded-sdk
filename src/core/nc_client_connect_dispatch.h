@@ -19,13 +19,14 @@ struct nc_client_connect_dispatch_context {
     struct nc_stream_manager_context* streamManager;
     struct nc_stun_context* stun;
     struct nc_coap_server_context* coap;
+    struct nc_rendezvous_context* rendezvous;
     struct nc_client_connect_dispatch_element elms[NABTO_MAX_CLIENT_CONNECTIONS];
 };
 
 void nc_client_connect_dispatch_init(struct nc_client_connect_dispatch_context* ctx,
                                      struct np_platform* pl,
-                                     struct nc_stun_context* stun,
                                      struct nc_coap_server_context* coap,
+                                     struct nc_rendezvous_context* rendezvous,
                                      struct nc_stream_manager_context* streamManager);
 
 void nc_client_connect_dispatch_handle_packet(struct nc_client_connect_dispatch_context* ctx,

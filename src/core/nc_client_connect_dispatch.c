@@ -9,8 +9,8 @@
 
 void nc_client_connect_dispatch_init(struct nc_client_connect_dispatch_context* ctx,
                                      struct np_platform* pl,
-                                     struct nc_stun_context* stun,
                                      struct nc_coap_server_context* coap,
+                                     struct nc_rendezvous_context* rendezvous,
                                      struct nc_stream_manager_context* streamManager)
 {
     int i = 0;
@@ -20,7 +20,7 @@ void nc_client_connect_dispatch_init(struct nc_client_connect_dispatch_context* 
     }
     ctx->streamManager = streamManager;
     ctx->coap = coap;
-    ctx->stun = stun;
+    ctx->rendezvous = rendezvous;
     ctx->pl = pl;
 }
 
@@ -36,7 +36,7 @@ void nc_client_connect_dispatch_handle_packet(struct nc_client_connect_dispatch_
     id = ctx->pl->buf.start(buffer);
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         // compare middle 14 bytes, ignoring the channel ID and protocol prefix
-        if (ctx->elms[i].active && memcmp(id+1, ctx->elms[i].conn.id.id+1, 14) == 0) { 
+        if (ctx->elms[i].active && memcmp(id+1, ctx->elms[i].conn.id.id+1, 14) == 0) {
             np_error_code ec;
             NABTO_LOG_TRACE(LOG, "Found existing connection for new packet");
             ec = nc_client_connect_handle_packet(ctx->pl, &ctx->elms[i].conn, sock, ep, buffer, bufferSize);
@@ -49,7 +49,7 @@ void nc_client_connect_dispatch_handle_packet(struct nc_client_connect_dispatch_
     NABTO_LOG_INFO(LOG, "Found packet for new connection");
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         if(!ctx->elms[i].active) {
-            np_error_code ec = nc_client_connect_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->streamManager, ctx->stun, ctx->coap, sock, ep, buffer, bufferSize);
+            np_error_code ec = nc_client_connect_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->streamManager, ctx->coap, ctx->rendezvous, sock, ep, buffer, bufferSize);
             if (ec == NABTO_EC_OK) {
                 ctx->elms[i].active = true;
             }
@@ -69,4 +69,3 @@ np_error_code nc_client_connect_dispatch_close_connection(struct nc_client_conne
     }
     return NABTO_EC_OK;
 }
-

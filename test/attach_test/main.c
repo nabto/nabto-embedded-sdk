@@ -52,10 +52,12 @@ struct np_platform pl;
 struct nc_stream_manager_context streamManager;
 struct nc_client_connect_dispatch_context dispatch;
 struct nc_udp_dispatch_context udp;
+struct nc_udp_dispatch_context secondaryUdp;
 struct nc_attach_context attach;
 struct nabto_stream* stream;
 struct nc_stun_context stun;
 struct nc_coap_server_context coap;
+struct nc_rendezvous_context rendezvous;
 uint8_t buffer[1500];
 
 void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
@@ -101,7 +103,7 @@ void connCreatedCb(const np_error_code ec, void* data) {
         NABTO_LOG_ERROR(0, "udp create failed");
         exit(1);
     }
-    nc_stun_init(&stun, &pl, stunHost, &udp);
+    nc_stun_init(&stun, &pl, stunHost, &udp, &secondaryUdp);
     nc_udp_dispatch_set_client_connect_context(&udp, &dispatch);
     nc_attacher_async_attach(&attach, &pl, &attachParams, attachedCb, &data);
 }
@@ -114,7 +116,7 @@ int main() {
     if (deviceLbHost) {
         attachParams.hostname = deviceLbHost;
     }
-    
+
     np_platform_init(&pl);
     np_log_init();
 
@@ -125,15 +127,15 @@ int main() {
     np_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     np_ts_init(&pl);
     np_dns_init(&pl);
-  
+
     struct test_context data;
     data.data = 42;
 
     nc_stream_manager_init(&streamManager, &pl);
     nc_coap_server_init(&pl, &coap);
-    nc_client_connect_dispatch_init(&dispatch, &pl, &stun, &coap, &streamManager);
+    nc_client_connect_dispatch_init(&dispatch, &pl, &coap, &rendezvous, &streamManager);
     nc_stream_manager_set_listener(&streamManager, &stream_listener, &data);
-    
+
     attachParams.appName = appName;
     attachParams.appVersion = appVer;
 

@@ -57,6 +57,17 @@ void nc_device_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_
     NABTO_LOG_INFO(LOG, "Stun analysis finished with ec: %s", np_error_code_to_string(ec));
 }
 
+void nc_device_secondary_udp_created_cb(const np_error_code ec, void* data) {
+    struct nc_device_context* dev = (struct nc_device_context*)data;
+    nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp, &dev->secondaryUdp);
+
+    nc_udp_dispatch_set_stun_context(&dev->udp, &dev->stun);
+    nc_udp_dispatch_set_stun_context(&dev->secondaryUdp, &dev->stun);
+
+    // TODO: determine if we should make stun analysis on startup
+    // ec2 = nc_stun_async_analyze(&dev->stun, &nc_device_stun_analysed_cb, dev);
+}
+
 void nc_device_udp_created_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
@@ -67,16 +78,14 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
         return;
     }
     nc_udp_dispatch_set_client_connect_context(&dev->udp, &dev->clientConnect);
-    
+
     ec2 = nc_attacher_register_detatch_callback(&dev->attacher, &nc_device_detached_cb, dev);
     if ( ec2 != NABTO_EC_OK ) {
         // TODO: handle impossible error
     }
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
-    
-    nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp);
-    // TODO: determine if we should make stun analysis on startup
-//    ec2 = nc_stun_async_analyze(&dev->stun, &nc_device_stun_analysed_cb, dev);
+
+    nc_udp_dispatch_async_create(&dev->secondaryUdp, dev->pl, &nc_device_secondary_udp_created_cb, dev);
 }
 
 np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
@@ -91,7 +100,7 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
     dev->stunHost = stunHost;
     nc_stream_manager_init(&dev->streamManager, pl);
     nc_coap_server_init(pl, &dev->coap);
-    nc_client_connect_dispatch_init(&dev->clientConnect, pl, &dev->stun, &dev->coap, &dev->streamManager);
+    nc_client_connect_dispatch_init(&dev->clientConnect, pl, &dev->coap, &dev->rendezvous, &dev->streamManager);
 
     dev->attachParams.appName = appName;
     dev->attachParams.appVersion = appVersion;
@@ -99,7 +108,10 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
     dev->attachParams.udp = &dev->udp;
 
     nc_udp_dispatch_async_create(&dev->udp, pl, &nc_device_udp_created_cb, dev);
-    
+    nc_rendezvous_init(&dev->rendezvous, pl, &dev->udp);
+
+    nc_stun_coap_init(&dev->stunCoap, pl, &dev->coap, &dev->stun);
+    nc_rendezvous_coap_init(&dev->rendezvousCoap, &dev->coap, &dev->rendezvous);
     return NABTO_EC_OK;
 }
 

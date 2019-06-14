@@ -89,7 +89,8 @@ np_error_code nm_dtls_srv_async_discover_mtu(struct np_platform* pl, struct np_d
                                              np_dtls_srv_mtu_callback cb, void* data)
 {
     // TODO: disover mtu
-    nc_keep_alive_async_discover_mtu(pl, &ctx->ctx.keepAliveCtx, cb, data);
+    // mtu discovery currently segfaults.
+    // nc_keep_alive_async_discover_mtu(pl, &ctx->ctx.keepAliveCtx, cb, data);
     return NABTO_EC_OK;
 }
 

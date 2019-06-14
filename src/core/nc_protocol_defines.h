@@ -5,7 +5,7 @@
 #define NABTO_PACKET_HEADER_SIZE 2
 #endif
 
-// TODO: 
+// TODO:
 /* These are not actual multiplexing ids, but rather abstract
  * values. In practice, the DTLS id is the range [20; 64], STUN is
  * range [0;1] and APP is range [240; 255]. This should be fixed in
@@ -58,14 +58,6 @@ enum rendezvous_content_type {
     CT_RENDEZVOUS_CLIENT_REQUEST  = 0x01,
     CT_RENDEZVOUS_CLIENT_RESPONSE = 0x02,
     CT_RENDEZVOUS_DEVICE_REQUEST = 0x03
-};
-
-enum rendezvous_ctrl_content_type {
-    CT_RENDEZVOUS_CTRL_STUN_START_REQ  = 0x04,
-    CT_RENDEZVOUS_CTRL_STUN_START_RESP = 0x05,
-    CT_RENDEZVOUS_CTRL_STUN_DATA_REQ   = 0x06,
-    CT_RENDEZVOUS_CTRL_STUN_DATA_RESP  = 0x07,
-    CT_RENDEZVOUS_CTRL_REQUEST         = 0x08
 };
 
 enum attach_status {

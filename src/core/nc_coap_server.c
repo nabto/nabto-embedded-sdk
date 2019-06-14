@@ -17,7 +17,7 @@ void nc_coap_server_handle_timeout(const np_error_code ec, void* data);
 // TODO: Dummy function since this is not yet used
 void nc_coap_server_event_handler(void* hest, enum nabto_coap_server_event event, ...)
 {
-    
+
 }
 
 void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
@@ -39,7 +39,7 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
 void nc_coap_server_event(struct nc_coap_server_context* ctx)
 {
     enum nabto_coap_server_next_event nextEvent = nabto_coap_server_next_event(&ctx->server);
-    NABTO_LOG_TRACE(LOG, "nc_coap_server_event: %u", nextEvent); 
+    NABTO_LOG_TRACE(LOG, "nc_coap_server_event: %u", nextEvent);
     switch (nextEvent) {
         case NABTO_COAP_SERVER_NEXT_EVENT_SEND:
             nc_coap_server_handle_send(ctx);
@@ -89,7 +89,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         nc_coap_server_event(ctx);
         return;
     }
-    
+
 //    sendCtx->dtls.buffer = ctx->pl->buf.start(ctx->sendBuffer);
     sendCtx->dtls.bufferSize = sendEnd - sendCtx->dtls.buffer;
     sendCtx->dtls.cb = &nc_coap_server_send_to_callback;
@@ -127,6 +127,18 @@ void nc_coap_server_handle_timeout(const np_error_code ec, void* data)
 struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_context* ctx)
 {
     return &ctx->server;
+}
+
+void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request, uint8_t* connectionId)
+{
+    struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request);
+    memcpy(connectionId, conn->id.id+1, 14);
+
+}
+
+void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection)
+{
+    nabto_coap_server_remove_connection(&ctx->server, (void*) nc_client_connect_get_dtls_connection(connection));
 }
 
 // ========= UTIL FUNCTIONS ============= //
