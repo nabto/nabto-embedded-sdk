@@ -88,7 +88,7 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
 
     nc_coap_client_init(ctx->pl, &ctx->coap, crypCtx);
     req = nabto_coap_client_request_new(nc_coap_client_get_client(&ctx->coap),
-                                        NABTO_COAP_CODE_POST,
+                                        NABTO_COAP_METHOD_POST,
                                         2, attachPath,
                                         &nc_attacher_coap_request_handler,
                                         ctx);
@@ -109,13 +109,13 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
     extBuffer[0] = strlen(ctx->params->appName);
     memcpy(&extBuffer[1], ctx->params->appName, strlen(ctx->params->appName));
     ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_NAME, extBuffer, strlen(ctx->params->appName));
-    
+
     NABTO_LOG_TRACE(LOG, "Sending attach CoAP Request:");
     NABTO_LOG_BUF(LOG, start, ptr - start);
 
     nabto_coap_client_request_set_payload(req, start, ptr - start);
     nabto_coap_client_request_send(req);
-    
+
     ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, AT_DEVICE_RELAY, &nc_attacher_dtls_recv_cb, ctx);
 }
 
@@ -141,14 +141,14 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
     nc_coap_client_handle_packet(&ctx->coap, buffer, bufferSize);
     ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, 42 /* unused */, &nc_attacher_dtls_recv_cb, ctx);
 }
-        
+
 void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request, void* data)
 {
     NABTO_LOG_INFO(LOG, "Received CoAP response");
     uint8_t* ptr;
     const uint8_t* start;
     size_t bufferSize;
-    
+
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
     if (!res) {
@@ -213,7 +213,7 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
                         ctx->ep.port = uint16_read(ptr+4);
                         // TODO: look at fingerprint as well
                         ctx->dnsLen = *(ptr+23); // skip header + port + az + fp = 4+2+1+16 = 23
-                        dns = ptr+24; 
+                        dns = ptr+24;
                         NABTO_LOG_TRACE(LOG, "Found DNS extension with port: %u, dns: %s",
                                         ctx->ep.port, (char*)dns);
                         memcpy(ctx->dns, dns, ctx->dnsLen);
@@ -239,7 +239,7 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
         }
     }
     ctx->cb(NABTO_EC_OK, ctx->cbData);
-  
+
 }
 
 np_error_code nc_attacher_register_detatch_callback(struct nc_attach_context* ctx, nc_detached_callback cb, void* data)
