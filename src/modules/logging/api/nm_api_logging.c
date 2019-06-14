@@ -82,7 +82,7 @@ void nm_api_log_buf_line(uint32_t severity, uint32_t module,
         char log[128];
         int ret;
 
-        ret = snprintf(log, 128, fmt);
+        ret = snprintf(log, 128, "%s", fmt);
         if (ret >= 128) {
             // TODO: handle too long log lines
             // The log line was too large for the array

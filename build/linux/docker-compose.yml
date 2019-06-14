@@ -1,0 +1,8 @@
+version: "3"
+services:
+  build:
+    build: .
+    volumes:
+      - ../..:/nabto/nabto-embedded-sdk
+      - ../../../artifacts/nabto-embedded-sdk:/nabto/artifacts
+    command: bash -c "mkdir /tmp/build && cd /tmp/build && cmake -DCMAKE_INSTALL_PREFIX=/nabto/artifacts -DCMAKE_BUILD_TYPE=release /nabto/nabto-embedded-sdk && make -j && make install"
