@@ -6,8 +6,19 @@ static void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_eve
 
 void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify notify, void* notifyData)
 {
-    pl->eq.notify = notify;
-    pl->eq.notifyData = notifyData;
+    struct np_event_queue* eq = &pl->eq;
+    eq->notify = notify;
+    eq->notifyData = notifyData;
+
+    eq->events.sentinel = &eq->events.sentinelData;
+    eq->events.sentinel->next = eq->events.sentinel;
+    eq->events.sentinel->prev = eq->events.sentinel;
+
+    eq->timedEvents.sentinel = &eq->timedEvents.sentinelData;
+    eq->timedEvents.sentinel->next = eq->timedEvents.sentinel;
+    eq->timedEvents.sentinel->prev = eq->timedEvents.sentinel;
+
+
 }
 
 void np_event_queue_execute_one(struct np_platform* pl)
@@ -31,6 +42,30 @@ void np_event_queue_execute_all(struct np_platform* pl)
     }
 }
 
+static void insert_event_between_nodes(struct np_event* event, struct np_event* after, struct np_event* before)
+{
+    after->next = event;
+    before->prev = event;
+    event->next = before;
+    event->prev = after;
+}
+
+static void remove_event(struct np_event* event)
+{
+    struct np_event* before = event->prev;
+    struct np_event* after = event->next;
+    before->next = after;
+    after->prev = before;
+}
+
+static void remove_timed_event(struct np_timed_event* event)
+{
+    struct np_timed_event* before = event->prev;
+    struct np_timed_event* after = event->next;
+    before->next = after;
+    after->prev = before;
+}
+
 void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
 {
     {
@@ -39,19 +74,14 @@ void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
         // once.
         np_event_queue_cancel_event(pl, event);
     }
-    event->next = NULL;
     event->cb = cb;
     event->data = data;
 
-    struct np_event_list* ev = &pl->eq.events;
+    struct np_event* before = pl->eq.events.sentinel->prev;
+    struct np_event* after = pl->eq.events.sentinel;
 
-    if (ev->head == NULL && ev->tail == NULL) {
-        ev->head = event;
-        ev->tail = event;
-    } else {
-        ev->tail->next = event;
-        ev->tail = event;
-    }
+    insert_event_between_nodes(event, after, before);
+
     if (pl->eq.notify) {
         pl->eq.notify(pl->eq.notifyData);
     }
@@ -61,41 +91,30 @@ void np_event_queue_poll_one(struct np_platform* pl)
 {
     struct np_event_list* ev = &pl->eq.events;
     // No events
-    if (ev->head == NULL) {
+    if (ev->sentinel->next == ev->sentinel) {
         return;
     }
 
     // first remove the event from the queue such that a new event can
     // be enqueued in the handling of the event.
-    struct np_event* event;
+    struct np_event* event = ev->sentinel->next;
 
-
-
-    if (ev->head == ev->tail) {
-        // one event
-        event = ev->head;
-        ev->head = NULL;
-        ev->tail = NULL;
-    } else {
-        // more than one event
-        event = ev->head;
-        struct np_event* next = ev->head->next;
-        ev->head = next;
-    }
-
+    remove_event(event);
     event->cb(event->data);
 }
 
 void np_event_queue_poll_one_timed_event(struct np_platform* pl)
 {
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    if (ev->head == NULL) {
+    if (ev->sentinel->next == ev->sentinel) {
         return;
     }
 
-    struct np_timed_event* event = ev->head;
-    ev->head = event->next;
+    struct np_timed_event* event = ev->sentinel->next;
+    struct np_timed_event* after = event->next;
 
+    ev->sentinel->next = after;
+    after->prev = ev->sentinel;
     event->cb(NABTO_EC_OK, event->data);
 }
 
@@ -103,9 +122,16 @@ void np_event_queue_poll_one_timed_event(struct np_platform* pl)
 bool np_event_queue_is_event_queue_empty(struct np_platform* pl)
 {
     struct np_event_list* ev = &pl->eq.events;
-    return (ev->head == NULL);
+    return (ev->sentinel->next == ev->sentinel);
 }
 
+static void insert_timed_event_between_nodes(struct np_timed_event* event, struct np_timed_event* after, struct np_timed_event* before)
+{
+    after->next = event;
+    before->prev = event;
+    event->next = before;
+    event->prev = after;
+}
 
 void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data)
 {
@@ -115,43 +141,38 @@ void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_eve
         // handler exactly once.
         np_event_queue_cancel_timed_event(pl, event);
     }
-    struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    event->next = NULL;
     event->cb = cb;
     event->data = data;
     pl->ts.set_future_timestamp(&event->timestamp, milliseconds);
 
-    if (ev->head == NULL) {
-        ev->head = event;
-    } else {
-        np_timed_event_bubble_up(pl, event);
-    }
-    if (pl->eq.notify) {
-        pl->eq.notify(pl->eq.notifyData);
+    struct np_timed_event_list* ev = &pl->eq.timedEvents;
+
+    struct np_timed_event* before = ev->sentinel;
+    struct np_timed_event* after = ev->sentinel->next;
+    insert_timed_event_between_nodes(event, before, after);
+
+    np_timed_event_bubble_up(pl, event);
+
+    if (ev->sentinel->next == event) {
+        // the event has changed the current time for timed events.
+        if (pl->eq.notify) {
+            pl->eq.notify(pl->eq.notifyData);
+        }
     }
 }
 
 void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* event)
 {
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    if (ev->head == NULL) {
-        return;
-    }
-    if (ev->head == event) {
-        ev->head = ev->head->next;
-        return;
-    }
-    struct np_timed_event* current = ev->head;
-    struct np_timed_event* next = current->next;
-//    NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Trying to cancel timed event");
-    while(next != NULL) {
-        if (next == event) {
-            NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Found and canceled timed event");
-            current->next = next->next;
+
+    struct np_timed_event* iterator = ev->sentinel->next;
+
+    while(iterator != ev->sentinel) {
+        if (iterator == event) {
+            remove_timed_event(iterator);
             return;
         }
-        current = current->next;
-        next = current->next;
+        iterator = iterator->next;
     }
 }
 
@@ -159,30 +180,32 @@ void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_e
 void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* event)
 {
     struct np_event_list* ev = &pl->eq.events;
-    if (ev->head == NULL) {
-        return;
-    }
-    if (ev->head == event) {
-        ev->head = ev->head->next;
-        return;
-    }
-    struct np_event* current = ev->head;
-    struct np_event* next = current->next;
-    NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Trying to cancel event");
-    while(next != NULL) {
-        if (next == event) {
-            NABTO_LOG_TRACE(NABTO_LOG_MODULE_EVENT_QUEUE, "Found and canceled timed event");
-            current->next = next->next;
-            if (ev->tail == event) {
-                ev->tail = current;
-            }
+    struct np_event* iterator = ev->sentinel->next;
+    while(iterator != ev->sentinel) {
+        if (iterator == event) {
+            remove_event(iterator);
             return;
         }
-        current = current->next;
-        next = current->next;
+        iterator = iterator->next;
     }
 }
 
+
+static void swap_timed_events(struct np_timed_event* e1, struct np_timed_event* e2)
+{
+    struct np_timed_event* before = e1->prev;
+    struct np_timed_event* after = e2->next;
+
+    // create forward chain
+    before->next = e2;
+    e2->next = e1;
+    e1->next = after;
+
+    // create backward chain
+    after->prev = e1;
+    e1->prev = e2;
+    e2->prev = before;
+}
 
 /**
  * bubble up a timed event such that it has the right location in the
@@ -191,27 +214,11 @@ void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* event)
 void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* event)
 {
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    struct np_timed_event* prev;
-    struct np_timed_event* current;
+    struct np_timed_event* iterator = event;
 
-    struct np_timed_event* oldHead = ev->head;
-    ev->head = event;
-    event->next = oldHead;
-
-    current = ev->head;
-    prev = NULL;
-
-    while(current->next != NULL && pl->ts.less_or_equal(&current->next->timestamp, &current->timestamp))
+    while(iterator->next != ev->sentinel && pl->ts.less_or_equal(&iterator->next->timestamp, &iterator->timestamp))
     {
-        struct np_timed_event* next = current->next;
-        if (prev != NULL) {
-            prev->next = next;
-        } else {
-            ev->head = next;
-        }
-        current->next = next->next;
-        next->next = current;
-        prev = next;
+        swap_timed_events(iterator, iterator->next);
     }
 }
 
@@ -221,17 +228,17 @@ void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* eve
 bool np_event_queue_has_timed_event(struct np_platform* pl)
 {
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    return (ev->head != NULL);
+    return (ev->sentinel->next != ev->sentinel);
 }
 
 bool np_event_queue_has_ready_timed_event(struct np_platform* pl)
 {
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    if (ev->head == NULL) {
+    if (ev->sentinel->next == ev->sentinel) {
         return false;
     }
 
-    if (pl->ts.passed_or_now(&ev->head->timestamp)) {
+    if (pl->ts.passed_or_now(&ev->sentinel->next->timestamp)) {
         return true;
     }
     return false;
@@ -241,29 +248,24 @@ uint32_t np_event_queue_next_timed_event_occurance(struct np_platform* pl)
 {
     np_timestamp now;
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
-    if (ev->head == NULL) {
+    if (ev->sentinel->next == ev->sentinel) {
         return 0;
     }
     pl->ts.now(&now);
     // TODO this could be 0 or negative, which violates the api.
-    return pl->ts.difference(&ev->head->timestamp, &now);
+    return pl->ts.difference(&ev->sentinel->next->timestamp, &now);
 }
 
 bool np_event_queue_is_event_enqueued(struct np_platform* pl, struct np_event* event)
 {
     struct np_event_list* ev = &pl->eq.events;
-    if (ev->head == NULL) {
-        return false;
-    }
-    if (ev->head == event) {
-        return true;
-    }
-    struct np_event* elm = ev->head;
-    while(elm->next != NULL) {
-        if (elm == event) {
+    struct np_event* iterator = ev->sentinel->next;
+
+    while(iterator != ev->sentinel) {
+        if (iterator == event) {
             return true;
         }
-        elm = elm->next;
+        iterator = iterator->next;
     }
     return false;
 }

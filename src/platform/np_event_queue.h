@@ -30,6 +30,7 @@ struct np_event;
 struct np_event {
     // Reference to next element in the queue
     struct np_event* next;
+    struct np_event* prev;
     np_event_callback cb;
     void* data;
 };
@@ -37,21 +38,24 @@ struct np_event {
 struct np_timed_event {
     // Reference to the previous element in the priority queue
     struct np_timed_event* next;
+    struct np_timed_event* prev;
     np_timestamp timestamp;
     np_timed_event_callback cb;
     void* data;
 };
 
 struct np_event_list {
-    struct np_event* head;
-    struct np_event* tail;
+    struct np_event sentinelData;
+    struct np_event* sentinel;
 };
 
 struct np_timed_event_list {
-    struct np_timed_event* head;
+    struct np_timed_event sentinelData;
+    struct np_timed_event* sentinel;
 };
 
 struct np_event_queue {
+
     // Private data for the event module
     struct np_event_list events;
 

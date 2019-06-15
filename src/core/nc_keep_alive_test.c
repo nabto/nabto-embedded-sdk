@@ -64,7 +64,7 @@ np_error_code nc_keep_alive_test_cryp_send(struct np_platform* pl, np_dtls_cli_c
                 nc_keep_alive_test_recvState = 1;
                 nc_keep_alive_test_sentCount++;
                 cb(NABTO_EC_OK, data);
-                
+
                 memcpy(resp.buf, testBuffer, 18);
                 resp.buf[1] = CT_KEEP_ALIVE_RESPONSE;
                 nc_keep_alive_test_recvCount++;
@@ -72,7 +72,7 @@ np_error_code nc_keep_alive_test_cryp_send(struct np_platform* pl, np_dtls_cli_c
                 return NABTO_EC_OK;
             }
         }
-        
+
     } else {
         nc_keep_alive_test_recvState = 0;
         cb(NABTO_EC_FAILED, data);
@@ -124,6 +124,7 @@ void nc_keep_alive_test_ka()
 {
     struct np_platform pl;
     np_platform_init(&pl);
+    np_event_queue_init(&pl, NULL, NULL);
     pl.dtlsC.async_connect = &nc_keep_alive_test_cryp_conn;
     pl.dtlsC.async_send_to = &nc_keep_alive_test_cryp_send;
     pl.dtlsC.async_recv_from = &nc_keep_alive_test_cryp_recv;
@@ -171,7 +172,7 @@ void nc_keep_alive_test_ka()
     np_event_queue_execute_all(&pl);
 //    NABTO_TEST_CHECK(crypKArecv1Called);
     NABTO_TEST_CHECK(!validKaReqSend);
-    
+
 }
 
 void nc_keep_alive_tests() {

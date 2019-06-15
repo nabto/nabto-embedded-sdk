@@ -23,6 +23,7 @@ void np_platform_test_post_event()
     struct np_platform pl;
 
     np_platform_init(&pl);
+    np_event_queue_init(&pl, NULL, NULL);
 
     NABTO_TEST_CHECK(np_event_queue_is_event_queue_empty(&pl));
 
@@ -66,6 +67,7 @@ void np_platform_test_post_timed_event()
 {
     struct np_platform pl;
     np_platform_init(&pl);
+    np_event_queue_init(&pl, NULL, NULL);
 
     time = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
@@ -101,6 +103,7 @@ void np_platform_test_cancel_timed_event()
 {
     struct np_platform pl;
     np_platform_init(&pl);
+    np_event_queue_init(&pl, NULL, NULL);
 
     time = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
@@ -133,6 +136,7 @@ void np_platform_test_cancel_timed_event_for_non_empty_q()
 {
     struct np_platform pl;
     np_platform_init(&pl);
+    np_event_queue_init(&pl, NULL, NULL);
 
     time = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
@@ -171,6 +175,7 @@ void np_platform_test_post_timed_event_sorting()
 {
     struct np_platform pl;
     np_platform_init(&pl);
+    np_event_queue_init(&pl, NULL, NULL);
 
     time = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
@@ -219,4 +224,5 @@ void np_event_queue_tests()
     np_platform_test_post_timed_event_sorting();
     np_platform_test_cancel_timed_event();
     np_platform_test_cancel_timed_event_for_non_empty_q();
+    np_platform_test_post_timed_event_sorting();
 }

@@ -141,7 +141,8 @@ void nc_stream_test_syn_ack()
     ctx.cliPl.buf.size = &nc_stream_test_size;
 
     ctx.cliPl.dtlsS.async_send_to = &nc_stream_test_cli_dtls_srv_async_send_to;
-    
+
+    np_event_queue_init(&ctx.cliPl, NULL, NULL);
     np_ts_init(&ctx.cliPl);
 
     ctx.devPl.buf.start = &nc_stream_test_start;
@@ -151,13 +152,14 @@ void nc_stream_test_syn_ack()
 
     ctx.devPl.dtlsS.async_send_to = &nc_stream_test_dev_dtls_srv_async_send_to;
 
+    np_event_queue_init(&ctx.devPl, NULL, NULL);
     np_ts_init(&ctx.devPl);
 
 
     ctx.firstCliPacket = true;
     memcpy(ctx.devTestData, "TEST_DATA", 10);
     ctx.devTestDataSize = 10;
-    
+
     nc_stream_manager_init(&ctx.cliCtx, &ctx.cliPl);
     nc_stream_manager_init(&ctx.devCtx, &ctx.devPl);
 
@@ -174,7 +176,7 @@ void nc_stream_test_syn_ack()
 //        np_event_queue_has_timed_event(&ctx.cliPl) ||
 //        np_event_queue_has_timed_event(&ctx.devPl)
         ) {
-        
+
         np_event_queue_execute_all(&ctx.cliPl);
         np_event_queue_execute_all(&ctx.devPl);
     }
