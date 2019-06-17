@@ -7,7 +7,7 @@ np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp)
 {
     uint8_t buffer[256];
     uint8_t fullSha[32];
-    
+
     mbedtls_pk_context *ctx = (mbedtls_pk_context*)(&crt->pk);
     int len = mbedtls_pk_write_pubkey_der( ctx, buffer, sizeof(buffer));
     if (len <= 0) {

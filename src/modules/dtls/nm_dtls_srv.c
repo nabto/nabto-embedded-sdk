@@ -28,8 +28,10 @@ const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 struct np_dtls_srv_connection {
     struct nc_client_connect* conn;
     struct nm_dtls_util_connection_ctx ctx;
-    struct np_dtls_srv_send_context* sendHead;
     struct np_dtls_srv_send_context kaSendCtx;
+
+    struct np_dtls_srv_send_context sendSentinel;
+
     np_dtls_srv_sender sender;
     void* senderData;
     bool sending;
@@ -45,12 +47,33 @@ struct nm_dtls_srv_context {
     mbedtls_pk_context privateKey;
 };
 
+// insert chunk into double linked list after elm.
+void nm_dtls_srv_insert_send_data(struct np_dtls_srv_send_context* chunk, struct np_dtls_srv_send_context* elm)
+{
+    struct np_dtls_srv_send_context* before = elm;
+    struct np_dtls_srv_send_context* after = elm->next;
+
+    before->next = chunk;
+    chunk->next = after;
+    after->prev = chunk;
+    chunk->prev = before;
+}
+
+void nm_dtls_srv_remove_send_data(struct np_dtls_srv_send_context* elm)
+{
+    struct np_dtls_srv_send_context* before = elm->prev;
+    struct np_dtls_srv_send_context* after = elm->next;
+    before->next = after;
+    after->prev = before;
+}
+
 struct nm_dtls_srv_context server;
 np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t publicKeySize,
                                       const unsigned char* privateKeyL, size_t privateKeySize);
 //static void nm_dtls_srv_tls_logger( void *ctx, int level, const char *file, int line, const char *str );
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data);
 void nm_dtls_srv_do_one(void* data);
+void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx);
 
 // Function called by mbedtls when data should be sent to the network
 int nm_dtls_srv_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
@@ -142,7 +165,10 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
     (*dtls)->ctx.sslRecvBuf = server.pl->buf.allocate();
     (*dtls)->ctx.sslSendBuffer = server.pl->buf.allocate();
     (*dtls)->activeChannel = true;
-    (*dtls)->sending = true;
+    (*dtls)->sending = false;
+
+    (*dtls)->sendSentinel.next = &(*dtls)->sendSentinel;
+    (*dtls)->sendSentinel.prev = &(*dtls)->sendSentinel;
 
     NABTO_LOG_TRACE(LOG, "DTLS was allocated at: %u");
 
@@ -240,9 +266,8 @@ void nm_dtls_srv_do_one(void* data)
                     ctx->kaSendCtx.buffer = ptr;
                     ctx->kaSendCtx.bufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
                     ctx->activeChannel = false;
-                    ctx->kaSendCtx.next = ctx->sendHead;
-                    ctx->sendHead = &ctx->kaSendCtx;
-                    nm_dtls_srv_event_send_to(ctx);
+                    nm_dtls_srv_insert_send_data(&ctx->kaSendCtx, &ctx->sendSentinel);
+                    nm_dtls_srv_start_send(ctx);
                     //int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ptr, 16 + NABTO_PACKET_HEADER_SIZE );
                     return;
                 } else {
@@ -277,44 +302,38 @@ void nm_dtls_srv_do_one(void* data)
     }
 }
 
-void nm_dtls_srv_event_send_to(void* data)
+void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 {
-    NABTO_LOG_TRACE(LOG, "Writing to ssl");
-    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-    if (ctx->sendHead == NULL) {
-        NABTO_LOG_ERROR(LOG, "event_send_to with empty send queue");
+    if (ctx->sending) {
         return;
     }
-    int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ctx->sendHead->buffer, ctx->sendHead->bufferSize );
-    struct np_dtls_srv_send_context* next = ctx->sendHead->next;
-    if (ctx->sendHead->cb == NULL) {
+
+    if (ctx->sendSentinel.next == &ctx->sendSentinel) {
+        // empty send queue
+        return;
+    }
+
+    struct np_dtls_srv_send_context* next = ctx->sendSentinel.next;
+    nm_dtls_srv_remove_send_data(next);
+
+    int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) next->buffer, next->bufferSize );
+    if (next->cb == NULL) {
         ctx->ctx.sentCount++;
-        ctx->sendHead = next;
-        if (ctx->sendHead != NULL) {
-            NABTO_LOG_INFO(LOG, "No callback, posting next send event");
-            np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
-        } else {
-            NABTO_LOG_INFO(LOG, "No callback, no next send event");
-        }
-        return;
-    }
-    if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
+    } else if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // packet too large
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i (Packet too large)", ret);
-        ctx->sendHead->cb(NABTO_EC_MALFORMED_PACKET, ctx->sendHead->data);
+        next->cb(NABTO_EC_MALFORMED_PACKET, next->data);
     } else if (ret < 0) {
         // unknown error
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
-        ctx->sendHead->cb(NABTO_EC_FAILED, ctx->sendHead->data);
+        next->cb(NABTO_EC_FAILED, next->data);
     } else {
         ctx->ctx.sentCount++;
-        ctx->sendHead->cb(NABTO_EC_OK, ctx->sendHead->data);
+        next->cb(NABTO_EC_OK, next->data);
     }
-    ctx->sendHead = next;
-    NABTO_LOG_TRACE(LOG, "Setting new sendHead to: %i", ctx->sendHead);
-    if (ctx->sendHead != NULL) {
-        np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
-    }
+
+    // can we send more packets?
+    nm_dtls_srv_start_send(ctx);
 }
 
 np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
@@ -322,25 +341,9 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
 //                                        uint8_t* buffer, uint16_t bufferSize,
 //                                        np_dtls_send_to_callback cb, void* data)
 {
-    sendCtx->next = NULL;
-    struct np_dtls_srv_send_context* elm = ctx->sendHead;
-    NABTO_LOG_TRACE(LOG, "Enqueueing send, head: %u", ctx->sendHead);
-    if (elm == NULL) {
-        ctx->sendHead = sendCtx;
-        np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
-    } else {
-        while (elm->next != NULL) {
-            elm = elm->next;
-        }
-        if (elm == sendCtx) {
-            NABTO_LOG_ERROR(LOG, "Someone tried to reuse sendCtx before it resolved");
-            return NABTO_EC_OPERATION_IN_PROGRESS;
-        } else {
-//            NABTO_LOG_INFO(LOG, "Send events found, inserting new event in queue");
-            elm->next = sendCtx;
-        }
-        np_event_queue_post(server.pl, &ctx->ctx.sendEv, &nm_dtls_srv_event_send_to, ctx);
-    }
+    NABTO_LOG_TRACE(LOG, "enqueued dtls application data packet");
+    nm_dtls_srv_insert_send_data(sendCtx, &ctx->sendSentinel);
+    nm_dtls_srv_start_send(ctx);
     return NABTO_EC_OK;
 }
 
@@ -496,7 +499,7 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
 int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferSize)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-    if (ctx->ctx.sslSendBufferSize == 0) {
+    if (!ctx->sending) {
         memcpy(server.pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
         NABTO_LOG_TRACE(LOG, "mbedtls wants write %u bytes:", bufferSize);
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
@@ -527,6 +530,7 @@ void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data)
         return;
     }
     nm_dtls_srv_do_one(ctx);
+    nm_dtls_srv_start_send(ctx);
 }
 
 

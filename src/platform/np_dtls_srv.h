@@ -17,6 +17,7 @@ struct np_dtls_srv_send_context {
     np_dtls_send_to_callback cb;
     void* data;
     struct np_dtls_srv_send_context* next;
+    struct np_dtls_srv_send_context* prev;
 };
 
 #include <core/nc_protocol_defines.h>

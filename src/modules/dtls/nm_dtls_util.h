@@ -60,8 +60,9 @@ struct nm_dtls_util_connection_ctx {
 
     np_timestamp intermediateTp;
     np_timestamp finalTp;
-    
+
 };
+
 
 typedef struct nm_dtls_util_connection_ctx nm_dtls_util_connection_ctx;
 
