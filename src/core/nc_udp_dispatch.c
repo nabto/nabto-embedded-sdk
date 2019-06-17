@@ -20,7 +20,7 @@ void nc_udp_dispatch_cancel_send_to(struct nc_udp_dispatch_context* ctx, struct 
 }
 
 
-void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct np_platform* pl,
+void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
                                    nc_udp_dispatch_create_callback cb, void* data)
 {
     NABTO_LOG_TRACE(LOG, "Async create: %u", pl);
@@ -28,7 +28,11 @@ void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct n
     ctx->pl = pl;
     ctx->createCb = cb;
     ctx->createCbData = data;
-    pl->udp.async_create(&nc_udp_dispatch_sock_created_cb, ctx);
+    if (port == 0) {
+        pl->udp.async_create(&nc_udp_dispatch_sock_created_cb, ctx);
+    } else {
+        pl->udp.async_bind_port(port, &nc_udp_dispatch_sock_created_cb, ctx);
+    }
 }
 
 void nc_udp_dispatch_sock_destroyed_cb(const np_error_code ec, void* data)

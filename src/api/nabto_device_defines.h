@@ -30,6 +30,7 @@ struct nabto_device_context {
     char* serverUrl;
     char* publicKey;
     char* privateKey;
+    uint16_t port;
 
     NabtoDeviceFuture* closeFut;
 };

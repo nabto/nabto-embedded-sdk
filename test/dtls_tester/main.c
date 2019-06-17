@@ -134,7 +134,7 @@ int main() {
     np_log_init();
     struct test_context data;
     data.data = 42;
-    nc_udp_dispatch_async_create(&data.udp, &pl, sockCreatedCb, &data);
+    nc_udp_dispatch_async_create(&data.udp, &pl, 0, sockCreatedCb, &data);
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));

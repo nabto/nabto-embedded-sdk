@@ -108,6 +108,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
         }*/
     ctx->state = NC_STUN_STATE_RUNNING;
     ctx->pl->dns.async_resolve(ctx->pl, ctx->hostname, &nc_stun_dns_cb, ctx);
+
     return NABTO_EC_OK;
 }
 

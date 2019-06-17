@@ -182,7 +182,14 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* devi
     return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_experimental_get_local_port(NabtoDevice* device, uint16_t* port)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_local_port(NabtoDevice* device, uint16_t port)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    dev->port = port;
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_get_local_port(NabtoDevice* device, uint16_t* port)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -312,7 +319,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     // Init platform
     nabto_device_init_platform_modules(&dev->pl, dev->publicKey, dev->privateKey);
     // start the core
-    ec = nc_device_start(&dev->core, &dev->pl, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost);
+    ec = nc_device_start(&dev->core, &dev->pl, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost, dev->port);
 
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");

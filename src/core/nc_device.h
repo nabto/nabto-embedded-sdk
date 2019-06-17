@@ -40,7 +40,8 @@ struct nc_device_context {
 np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname, const char* stunHost);
+                              const char* hostname, const char* stunHost,
+                              const uint16_t port);
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data);
 

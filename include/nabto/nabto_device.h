@@ -135,6 +135,18 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_version(NabtoDevice* device, const char* version);
 
 /**
+ * Set local port to use, if unset or 0 using ephemeral
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_local_port(NabtoDevice* device, uint16_t port);
+
+/**
+ * Set the application version the device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
+
+/**
  * Start the context, attach to some servers if possible, wait for
  * client connections.
  */

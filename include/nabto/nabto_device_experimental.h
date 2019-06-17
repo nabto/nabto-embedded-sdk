@@ -6,12 +6,6 @@
 extern "C" {
 #endif
 
-/**
- * Set the application version the device.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_experimental_get_local_port(NabtoDevice* device, uint16_t* port);
-
 #ifdef __cplusplus
 } // extern c
 #endif

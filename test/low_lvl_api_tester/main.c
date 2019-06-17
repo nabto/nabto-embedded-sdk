@@ -83,7 +83,7 @@ int main() {
     nabto_device_init_platform(&pl);
     nabto_device_init_platform_modules(&pl, devicePublicKey, devicePrivateKey);
     // start the core
-    ec = nc_device_start(&device, &pl, appName, appVersion, productId, deviceId, hostname, stunHost);
+    ec = nc_device_start(&device, &pl, appName, appVersion, productId, deviceId, hostname, stunHost,4242);
     if (ec != NABTO_EC_OK) {
         // fail
     }

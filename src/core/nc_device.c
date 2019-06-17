@@ -85,13 +85,14 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     }
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
 
-    nc_udp_dispatch_async_create(&dev->secondaryUdp, dev->pl, &nc_device_secondary_udp_created_cb, dev);
+    nc_udp_dispatch_async_create(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_created_cb, dev);
 }
 
 np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname, const char* stunHost)
+                              const char* hostname, const char* stunHost,
+                              const uint16_t port)
 {
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     memset(dev, 0, sizeof(struct nc_device_context));
@@ -107,11 +108,12 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
     dev->attachParams.hostname = hostname;
     dev->attachParams.udp = &dev->udp;
 
-    nc_udp_dispatch_async_create(&dev->udp, pl, &nc_device_udp_created_cb, dev);
+    nc_udp_dispatch_async_create(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
     nc_rendezvous_init(&dev->rendezvous, pl, &dev->udp);
 
     nc_stun_coap_init(&dev->stunCoap, pl, &dev->coap, &dev->stun);
     nc_rendezvous_coap_init(&dev->rendezvousCoap, &dev->coap, &dev->rendezvous);
+    
     return NABTO_EC_OK;
 }
 

@@ -25,7 +25,7 @@ struct nc_udp_dispatch_context {
     
 };
 
-void nc_udp_dispatch_async_create(struct nc_udp_dispatch_context* ctx, struct np_platform* pl,
+void nc_udp_dispatch_async_create(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
                                   nc_udp_dispatch_create_callback cb, void* data);
 
 void nc_udp_dispatch_async_destroy(struct nc_udp_dispatch_context* ctx,

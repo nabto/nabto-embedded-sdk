@@ -235,6 +235,8 @@ void run_device()
         }
     }
 
+    nabto_device_set_local_port(dev, 4433);
+
     ec = nabto_device_set_private_key(dev, config.keyPemBuffer);
     if (ec != NABTO_DEVICE_EC_OK) {
         return;

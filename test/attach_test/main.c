@@ -139,7 +139,7 @@ int main() {
     attachParams.appName = appName;
     attachParams.appVersion = appVer;
 
-    nc_udp_dispatch_async_create(&udp, &pl, &connCreatedCb, &data);
+    nc_udp_dispatch_async_create(&udp, &pl, 0, &connCreatedCb, &data);
     attachParams.udp = &udp;
 
     while (true) {
