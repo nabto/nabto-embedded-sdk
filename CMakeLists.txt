@@ -62,13 +62,12 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
 
   add_subdirectory(test/dtls_tester)
   add_subdirectory(test/dtls_server_tester)
-  add_subdirectory(test/attach_test)
   add_subdirectory(test/coap_udp_tester)
   add_subdirectory(test/low_lvl_api_tester)
 endif()
 
 add_subdirectory(test/api_test)
-add_subdirectory(test/stream_echo)
+#add_subdirectory(test/stream_echo)
 add_subdirectory(test/test_device)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
