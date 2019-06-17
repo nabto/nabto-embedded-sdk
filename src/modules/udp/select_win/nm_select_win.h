@@ -12,8 +12,6 @@ void nm_select_win_async_bind_port(uint16_t port, np_udp_socket_created_callback
 void nm_select_win_async_send_to(struct np_udp_send_context* ctx);
 void nm_select_win_async_recv_from(np_udp_socket* socket,
                                     np_udp_packet_received_callback cb, void* data);
-void nm_select_win_cancel_recv_from(np_udp_socket* socket);
-void nm_select_win_cancel_send_to(struct np_udp_send_context* socket);
 enum np_ip_address_type nm_select_win_get_protocol(np_udp_socket* socket);
 size_t nm_select_win_get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
 uint16_t nm_select_win_get_local_port(np_udp_socket* socket);

@@ -180,11 +180,6 @@ void nc_client_connect_send_to_udp_cb(const np_error_code ec, void* data)
 }
 
 
-void nc_client_connect_cancel_send_to(struct np_platform pl, struct nc_client_connection* conn)
-{
-    conn->sentCb = NULL;
-}
-
 void nc_client_connect_async_send_to_udp(bool activeChannel,
                                          np_communication_buffer* buffer, uint16_t bufferSize,
                                          np_dtls_srv_send_callback cb, void* data, void* listenerData)

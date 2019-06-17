@@ -96,14 +96,6 @@ np_error_code nm_dtls_cli_start_keep_alive(struct np_dtls_cli_context* ctx, uint
     return nc_keep_alive_start(ctx->pl, &ctx->ctx.keepAliveCtx, interval, retryInt, maxRetries);
 }
 
-// cancel recv_from callbacks
-np_error_code nm_dtls_cancel_recv_from(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                       enum application_data_type type)
-{
-    ctx->ctx.recvCb.cb = NULL;
-    return NABTO_EC_OK;
-}
-
 void nm_dtls_cli_ka_cb(const np_error_code ec, void* data)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*)data;
@@ -134,7 +126,7 @@ static void my_debug( void *ctx, int level,
             severity = NABTO_LOG_SEVERITY_TRACE;
             break;
     }
-    
+
     NABTO_LOG_RAW(severity, NABTO_LOG_MODULE_DTLS_CLI, line, file, str );
 }
 #endif
@@ -151,13 +143,12 @@ np_error_code np_dtls_cli_init(struct np_platform* pl,
     pl->dtlsC.async_send_to = &nm_dtls_async_send_to;
     pl->dtlsC.async_recv_from = &nm_dtls_async_recv_from;
     pl->dtlsC.async_close = &nm_dtls_async_close;
-    pl->dtlsC.cancel_recv_from = &nm_dtls_cancel_recv_from;
     pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &nm_dtls_get_alpn_protocol;
     pl->dtlsC.get_packet_count = &nm_dtls_get_packet_count;
     pl->dtlsC.start_keep_alive = &nm_dtls_cli_start_keep_alive;
     pl->dtlsC.handle_packet = &nm_dtls_cli_handle_packet;
-    
+
     mbedtls_x509_crt_init( &publicKey );
     mbedtls_pk_init( &privateKey );
     ret = mbedtls_x509_crt_parse( &publicKey, publicKeyL, publicKeySize+1);
@@ -291,7 +282,7 @@ void nm_dtls_event_do_one(void* data)
         }
         return;
     }
-        
+
 }
 
 void nm_dtls_event_send_to(void* data)
@@ -532,11 +523,11 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
 #if defined(MBEDTLS_DEBUG_C)
     mbedtls_debug_set_threshold( DEBUG_LEVEL );
 #endif
-    
+
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,
                                strlen( pers ) ) ) != 0 ) {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret ); 
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret );
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
         free(ctx);
@@ -564,7 +555,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
         free(ctx);
         return NABTO_EC_FAILED;
     }
-    
+
     mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 #if defined(MBEDTLS_DEBUG_C)
     mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );

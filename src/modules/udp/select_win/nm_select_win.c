@@ -55,8 +55,6 @@ void nm_select_win_async_bind_port(uint16_t port, np_udp_socket_created_callback
 void nm_select_win_async_send_to(struct np_udp_send_context* ctx);
 void nm_select_win_async_recv_from(np_udp_socket* socket,
                                     np_udp_packet_received_callback cb, void* data);
-void nm_select_win_cancel_recv_from(np_udp_socket* socket);
-void nm_select_win_cancel_send_to(struct np_udp_send_context* socket);
 enum np_ip_address_type nm_select_win_get_protocol(np_udp_socket* socket);
 uint16_t nm_select_win_get_local_port(np_udp_socket* socket);
 void nm_select_win_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
@@ -87,14 +85,12 @@ void np_udp_init(struct np_platform *pl_in)
     WORD wVerReq;
     WSADATA wsaData;
     int err;
-    
+
     pl = pl_in;
     pl->udp.async_create     = &nm_select_win_async_create;
     pl->udp.async_bind_port  = &nm_select_win_async_bind_port;
     pl->udp.async_send_to    = &nm_select_win_async_send_to;
     pl->udp.async_recv_from  = &nm_select_win_async_recv_from;
-    pl->udp.cancel_recv_from = &nm_select_win_cancel_recv_from;
-    pl->udp.cancel_send_to   = &nm_select_win_cancel_send_to;
     pl->udp.get_protocol     = &nm_select_win_get_protocol;
     pl->udp.get_local_ip     = &nm_select_win_get_local_ip;
     pl->udp.get_local_port   = &nm_select_win_get_local_port;
@@ -207,18 +203,6 @@ void nm_select_win_async_recv_from(np_udp_socket* socket,
 {
     socket->recv.cb = cb;
     socket->recv.data = data;
-}
-
-void nm_select_win_cancel_recv_from(np_udp_socket* socket)
-{
-    np_event_queue_cancel_event(pl, &socket->recv.event);
-    socket->recv.cb = NULL;
-}
-
-void nm_select_win_cancel_send_to(struct np_udp_send_context* ctx)
-{
-    np_event_queue_cancel_event(pl, &ctx->ev);
-    ctx->cb = NULL;
 }
 
 enum np_ip_address_type nm_select_win_get_protocol(np_udp_socket* socket)
@@ -334,12 +318,12 @@ int nm_select_win_inf_wait(void)
         LPVOID lpMsgBuf;
         lpMsgBuf = (LPVOID)"Unknown Error";
         int e = WSAGetLastError();
-        if (FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-                           FORMAT_MESSAGE_FROM_SYSTEM | 
-                           FORMAT_MESSAGE_IGNORE_INSERTS, 
-                           NULL, e, 
+        if (FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                           FORMAT_MESSAGE_FROM_SYSTEM |
+                           FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL, e,
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                           (LPTSTR)&lpMsgBuf, 0, NULL)) 
+                           (LPTSTR)&lpMsgBuf, 0, NULL))
         {
             NABTO_LOG_ERROR(LOG, "Error in select: (%i), %S", e, lpMsgBuf);
         } else {
@@ -481,7 +465,7 @@ void nm_select_win_event_send_to(void* data)
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin_addr.s_addr, ctx->ep.ip.v4.addr, 4);
-        
+
         NABTO_LOG_INFO(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
         res = sendto (sock->sock, (const char*)pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (SOCKADDR*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6 addr or IPv4 addr on IPv6 socket
@@ -659,7 +643,7 @@ void nm_select_win_free_socket(np_udp_socket* sock)
             }
         }
     }
-    
+
     np_udp_socket_destroyed_callback cb;
     void* cbData;
     closesocket(sock->sock);
@@ -671,5 +655,3 @@ void nm_select_win_free_socket(np_udp_socket* sock)
         cb(NABTO_EC_OK, cbData);
     }
 }
-
-

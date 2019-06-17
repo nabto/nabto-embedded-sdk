@@ -161,7 +161,6 @@ void nc_client_connect_test_connect()
     pl.dtlsS.async_send_to = &nc_client_connect_test_cryp_send;
     pl.dtlsS.async_recv_from = &nc_client_connect_test_cryp_recv;
     pl.dtlsS.async_close = &nc_client_connect_test_cryp_close;
-    pl.dtlsS.cancel_recv_from = &nc_client_connect_test_cryp_cancel;
 
     pl.buf.start = &nc_client_connect_test_start;
     pl.buf.allocate = &nc_client_connect_test_allocate;

@@ -13,13 +13,6 @@ void nc_udp_dispatch_sock_created_cb(const np_error_code ec, np_udp_socket* sock
 void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
                                    np_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
-void nc_udp_dispatch_cancel_send_to(struct nc_udp_dispatch_context* ctx, struct np_udp_send_context* sendCtx)
-{
-    NABTO_LOG_TRACE(LOG, "cancel send to");
-    ctx->pl->udp.cancel_send_to(sendCtx);
-}
-
-
 void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
                                    nc_udp_dispatch_create_callback cb, void* data)
 {

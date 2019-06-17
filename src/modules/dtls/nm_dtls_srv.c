@@ -101,7 +101,6 @@ np_error_code np_dtls_srv_init(struct np_platform* pl,
     pl->dtlsS.create = &nm_dtls_srv_create;
     pl->dtlsS.async_send_to = &nm_dtls_srv_async_send_to;
     pl->dtlsS.async_recv_from = &nm_dtls_srv_async_recv_from;
-    pl->dtlsS.cancel_recv_from = &nm_dtls_srv_cancel_recv_from;
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
     pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;
     pl->dtlsS.get_alpn_protocol = &nm_dtls_srv_get_alpn_protocol;
@@ -354,13 +353,6 @@ np_error_code nm_dtls_srv_async_recv_from(struct np_platform* pl, struct np_dtls
     ctx->ctx.recvCb.cb = cb;
     ctx->ctx.recvCb.data = data;
     np_event_queue_post(server.pl, &ctx->ctx.recvEv, &nm_dtls_srv_do_one, ctx);
-    return NABTO_EC_OK;
-}
-
-np_error_code nm_dtls_srv_cancel_recv_from(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                           enum application_data_type type)
-{
-    ctx->ctx.recvCb.cb = NULL;
     return NABTO_EC_OK;
 }
 

@@ -79,18 +79,6 @@ void nm_epoll_free_socket(np_udp_socket* sock)
     }
 }
 
-void nm_epoll_cancel_recv_from(np_udp_socket* socket)
-{
-    np_event_queue_cancel_event(pl, &socket->recv.event);
-    socket->recv.cb = NULL;
-}
-
-void nm_epoll_cancel_send_to(struct np_udp_send_context* ctx)
-{
-    np_event_queue_cancel_event(pl, &ctx->ev);
-    ctx->cb = NULL;
-}
-
 void np_udp_init(struct np_platform* pl_in) {
     if(!pl_in) {
         NABTO_LOG_FATAL(LOG, "No np_platform provided");
@@ -101,8 +89,6 @@ void np_udp_init(struct np_platform* pl_in) {
     pl->udp.async_bind_port  = &nm_epoll_async_bind_port;
     pl->udp.async_send_to    = &nm_epoll_async_send_to;
     pl->udp.async_recv_from  = &nm_epoll_async_recv_from;
-    pl->udp.cancel_recv_from = &nm_epoll_cancel_recv_from;
-    pl->udp.cancel_send_to   = &nm_epoll_cancel_send_to;
     pl->udp.get_protocol     = &nm_epoll_get_protocol;
     pl->udp.get_local_ip     = &nm_epoll_get_local_ip;
     pl->udp.get_local_port   = &nm_epoll_get_local_port;
@@ -110,7 +96,7 @@ void np_udp_init(struct np_platform* pl_in) {
     pl->udp.inf_wait         = &nm_epoll_inf_wait;
     pl->udp.timed_wait       = &nm_epoll_timed_wait;
     pl->udp.read             = &nm_epoll_read;
-    
+
     nm_epoll_fd = epoll_create(42 /*unused*/);
     recv_buf = pl->buf.allocate();
     if (nm_epoll_fd == -1) {
@@ -344,13 +330,13 @@ void nm_epoll_event_create(void* data)
         {
             np_error_code ec;
             NABTO_LOG_ERROR(LOG,"Unable to set option: (%i) '%s'.", errno, strerror(errno));
-            ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR; 
+            ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
             close(us->sock);
             us->created.cb(ec, NULL, us->created.data);
             nm_epoll_cancel_all_events(us);
             free(us);
             return;
-        }        
+        }
     }
     ev = (struct epoll_event*)malloc(sizeof(struct epoll_event));
     ev->events = EPOLLIN | EPOLLET;
@@ -387,7 +373,7 @@ void nm_epoll_event_destroy(void* data)
     shutdown(sock->sock, SHUT_RDWR);
     NABTO_LOG_TRACE(LOG, "shutdown with data: %u", sock->des.data);
     return;
-    
+
 /*    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
         NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
@@ -435,13 +421,13 @@ void nm_epoll_event_bind_port(void* data)
         {
             np_error_code ec;
             NABTO_LOG_ERROR(LOG,"Unable to set option: (%i) '%s'.", errno, strerror(errno));
-            ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR; 
+            ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
             close(us->sock);
             us->created.cb(ec, NULL, us->created.data);
             nm_epoll_cancel_all_events(us);
             free(us);
             return;
-        }        
+        }
     }
     int i;
     if(us->isIpv6) {
@@ -484,7 +470,7 @@ void nm_epoll_event_bind_port(void* data)
     }
     us->created.cb(NABTO_EC_OK, us, us->created.data);
     return;
-    
+
 }
 
 void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data)
@@ -548,5 +534,3 @@ void nm_epoll_async_recv_from(np_udp_socket* socket,
     socket->recv.cb = cb;
     socket->recv.data = data;
 }
-
-

@@ -37,8 +37,8 @@ uint8_t kaMaxRe = 15;
 uint32_t sessionId = 0x42424242;
 const char alpn[] = "n5";
 
-/* state to know which packet attacher is to receive next: 
- * 0 NONE, 
+/* state to know which packet attacher is to receive next:
+ * 0 NONE,
  * 1 ATTACH_DISPATCH_RESPONSE,
  * 2 ATTACH_SERVER_HELLO
 */
@@ -65,10 +65,10 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_con
                 return NABTO_EC_OK;
             }
         }
-        
+
     } else if(buffer[0] == AT_DEVICE_RELAY) {
         if(buffer[1] == CT_DEVICE_RELAY_HELLO_REQUEST) {
-            // TODO: check all extentions not just first 
+            // TODO: check all extentions not just first
             uint16_t ext = (((uint16_t)buffer[2]) << 8) + buffer[3];
             if (ext == EX_NABTO_VERSION || ext == EX_APPLICATION_NAME || ext == EX_APPLICATION_VERSION || ext == EX_APPLICATION_VERSION || ext == EX_SESSION_ID || ext == EX_ATTACH_INDEX) {
                 validAnReqSend = true;
@@ -91,7 +91,7 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
     if (nc_attacher_test_recvState == 1) {
         resp.buf[0] = AT_DEVICE_LB;
         resp.buf[1] = CT_DEVICE_LB_RESPONSE;
-        ptr = uint16_write_forward(ptr, EX_DTLS_EP); 
+        ptr = uint16_write_forward(ptr, EX_DTLS_EP);
         ptr = uint16_write_forward(ptr, 31); //extension data length
         ptr = uint16_write_forward(ptr, 0x4242); // port
         *ptr = 3; ptr++; // az
@@ -103,12 +103,12 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
         ptr = uint16_write_forward(ptr, EX_SESSION_ID);
         ptr = uint16_write_forward(ptr, 4); // extension data length
         ptr = uint32_write_forward(ptr, sessionId); // session ID
-        
+
         nc_attacher_test_recvState = 0;
         cb(NABTO_EC_OK, 0, 0, &resp, 45, data);
         crypAdRecvCalled = true;
     } else if (nc_attacher_test_recvState == 2) {
-        // 02 02 00 05 00 06 00 00 75 30 02 0f 
+        // 02 02 00 05 00 06 00 00 75 30 02 0f
         ptr = resp.buf;
         *ptr = AT_DEVICE_RELAY;
         ptr++;
@@ -208,11 +208,10 @@ void nc_attacher_test_attach()
     pl.dtlsC.async_send_to = &nc_attacher_test_cryp_send;
     pl.dtlsC.async_recv_from = &nc_attacher_test_cryp_recv;
     pl.dtlsC.async_close = &nc_attacher_test_cryp_close;
-    pl.dtlsC.cancel_recv_from = &nc_attacher_test_cryp_cancel;
     pl.dtlsC.get_fingerprint = & nc_attacher_test_cryp_get_fingerprint;
     pl.dtlsC.get_alpn_protocol = & nc_attacher_test_cryp_get_alpn_protocol;
     pl.dtlsC.start_keep_alive = &nc_attacher_test_start_keep_alive;
-    
+
     pl.buf.start = &nc_attacher_test_start;
     pl.buf.allocate = &nc_attacher_test_allocate;
     pl.buf.free = &nc_attacher_test_free;
@@ -229,16 +228,16 @@ void nc_attacher_test_attach()
     callbackReceived = false;
     memset(rec[0].v6.addr, 0, 16);
     rec[0].v6.addr[15] = 1; // ::1
-    
+
     struct nc_attach_parameters attachParams;
 
     attachParams.appName = appName;
     attachParams.appVersion = appVer;
     attachParams.hostname = hostname;
 
-    
+
     nc_attacher_async_attach(&attach, &pl, &attachParams, &nc_attacher_test_callback, NULL);
-    
+
     NABTO_TEST_CHECK(callbackReceived);
     NABTO_TEST_CHECK(crypAdRecvCalled);
     NABTO_TEST_CHECK(crypAnRecvCalled);

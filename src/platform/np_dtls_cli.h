@@ -27,8 +27,6 @@ struct np_dtls_cli_module {
     // TODO: Do not take enum application_data_type type
     np_error_code (*async_recv_from)(struct np_platform* pl, np_dtls_cli_context* ctx,
                                      enum application_data_type type, np_dtls_received_callback cb, void* data);
-    np_error_code (*cancel_recv_from)(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                      enum application_data_type type);
     np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_cli_context* ctx,
                                    np_communication_buffer* buffer, uint16_t bufferSize);
     np_error_code (*async_close)(struct np_platform* pl, np_dtls_cli_context* ctx,

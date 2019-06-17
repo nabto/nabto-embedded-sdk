@@ -129,7 +129,6 @@ void nc_keep_alive_test_ka()
     pl.dtlsC.async_send_to = &nc_keep_alive_test_cryp_send;
     pl.dtlsC.async_recv_from = &nc_keep_alive_test_cryp_recv;
     pl.dtlsC.async_close = &nc_keep_alive_test_cryp_close;
-    pl.dtlsC.cancel_recv_from = &nc_keep_alive_test_cryp_cancel;
     pl.dtlsC.get_packet_count = &nc_keep_alive_test_cryp_get_packet_count;
 
     pl.buf.start = &nc_keep_alive_test_start;

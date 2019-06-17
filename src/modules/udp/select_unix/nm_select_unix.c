@@ -59,8 +59,6 @@ void nm_select_unix_async_bind_port(uint16_t port, np_udp_socket_created_callbac
 void nm_select_unix_async_send_to(struct np_udp_send_context* ctx);
 void nm_select_unix_async_recv_from(np_udp_socket* socket,
                                     np_udp_packet_received_callback cb, void* data);
-void nm_select_unix_cancel_recv_from(np_udp_socket* socket);
-void nm_select_unix_cancel_send_to(struct np_udp_send_context* socket);
 enum np_ip_address_type nm_select_unix_get_protocol(np_udp_socket* socket);
 uint16_t nm_select_unix_get_local_port(np_udp_socket* socket);
 void nm_select_unix_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
@@ -93,8 +91,6 @@ void np_udp_init(struct np_platform *pl_in)
     pl->udp.async_bind_port  = &nm_select_unix_async_bind_port;
     pl->udp.async_send_to    = &nm_select_unix_async_send_to;
     pl->udp.async_recv_from  = &nm_select_unix_async_recv_from;
-    pl->udp.cancel_recv_from = &nm_select_unix_cancel_recv_from;
-    pl->udp.cancel_send_to   = &nm_select_unix_cancel_send_to;
     pl->udp.get_protocol     = &nm_select_unix_get_protocol;
     pl->udp.get_local_ip     = &nm_select_unix_get_local_ip;
     pl->udp.get_local_port   = &nm_select_unix_get_local_port;
@@ -146,18 +142,6 @@ void nm_select_unix_async_recv_from(np_udp_socket* socket,
 {
     socket->recv.cb = cb;
     socket->recv.data = data;
-}
-
-void nm_select_unix_cancel_recv_from(np_udp_socket* socket)
-{
-    np_event_queue_cancel_event(pl, &socket->recv.event);
-    socket->recv.cb = NULL;
-}
-
-void nm_select_unix_cancel_send_to(struct np_udp_send_context* ctx)
-{
-    np_event_queue_cancel_event(pl, &ctx->ev);
-    ctx->cb = NULL;
 }
 
 enum np_ip_address_type nm_select_unix_get_protocol(np_udp_socket* socket)
