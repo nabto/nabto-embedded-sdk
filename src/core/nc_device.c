@@ -79,7 +79,7 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     }
     nc_udp_dispatch_set_client_connect_context(&dev->udp, &dev->clientConnect);
 
-    ec2 = nc_attacher_register_detatch_callback(&dev->attacher, &nc_device_detached_cb, dev);
+    ec2 = nc_attacher_register_detach_callback(&dev->attacher, &nc_device_detached_cb, dev);
     if ( ec2 != NABTO_EC_OK ) {
         // TODO: handle impossible error
     }
@@ -113,7 +113,7 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
 
     nc_stun_coap_init(&dev->stunCoap, pl, &dev->coap, &dev->stun);
     nc_rendezvous_coap_init(&dev->rendezvousCoap, &dev->coap, &dev->rendezvous);
-    
+
     return NABTO_EC_OK;
 }
 

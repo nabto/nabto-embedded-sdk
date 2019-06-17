@@ -242,7 +242,7 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
 
 }
 
-np_error_code nc_attacher_register_detatch_callback(struct nc_attach_context* ctx, nc_detached_callback cb, void* data)
+np_error_code nc_attacher_register_detach_callback(struct nc_attach_context* ctx, nc_detached_callback cb, void* data)
 {
     ctx->detachCb = cb;
     ctx->detachCbData = data;

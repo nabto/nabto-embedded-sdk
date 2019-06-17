@@ -18,7 +18,7 @@ typedef void (*nc_attached_callback)(const np_error_code ec, void* data);
 typedef void (*nc_detached_callback)(const np_error_code ec, void* data);
 
 enum nc_attacher_state {
-    NC_ATTACHER_RESOLVING_DNS, 
+    NC_ATTACHER_RESOLVING_DNS,
     NC_ATTACHER_CONNECTING_TO_BS,
     NC_ATTACHER_CONNECTED_TO_BS,
     NC_ATTACHER_ATTACHED
@@ -63,8 +63,8 @@ np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx,
                                        const struct nc_attach_parameters* params,
                                        nc_attached_callback cb, void* data);
 
-np_error_code nc_attacher_register_detatch_callback(struct nc_attach_context* ctx,
-                                                    nc_detached_callback cb, void* data);
+np_error_code nc_attacher_register_detach_callback(struct nc_attach_context* ctx,
+                                                   nc_detached_callback cb, void* data);
 
 np_error_code nc_attacher_detach(struct nc_attach_context* ctx);
 
