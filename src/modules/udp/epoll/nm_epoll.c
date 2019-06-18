@@ -525,7 +525,17 @@ void nm_epoll_event_send_to(void* data)
 
 void nm_epoll_async_send_to(struct np_udp_send_context* ctx)
 {
-    np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
+    bool status = np_event_queue_post(pl, &ctx->ev, nm_epoll_event_send_to, ctx);
+
+    if (status) {
+        NABTO_LOG_TRACE(LOG, "nm_epoll_async_send_to canceled event");
+    }
+
+
+
+    if (!np_event_queue_is_event_enqueued(pl, &ctx->ev)) {
+        NABTO_LOG_ERROR(LOG, "the event should be enqueued");
+    }
 }
 
 void nm_epoll_async_recv_from(np_udp_socket* socket,

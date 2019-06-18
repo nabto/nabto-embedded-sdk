@@ -73,7 +73,7 @@ bool np_event_queue_has_ready_event(struct np_platform* pl);
 /**
  * Enqueue an event to the event queue.
  */
-void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
+bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
 
 void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data);
 
@@ -104,9 +104,9 @@ bool np_event_queue_has_timed_event(struct np_platform* pl);
 
 bool np_event_queue_has_ready_timed_event(struct np_platform* pl);
 
-void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* ev);
+bool np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* ev);
 
-void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* ev);
+bool np_event_queue_cancel_event(struct np_platform* pl, struct np_event* ev);
 
 bool np_event_queue_is_event_enqueued(struct np_platform* pl, struct np_event* ev);
 

@@ -43,6 +43,39 @@ void np_platform_test_post_event()
     NABTO_TEST_CHECK(state.called);
 }
 
+void np_platform_test_post_many_event()
+{
+    struct np_platform pl;
+    int i;
+
+    np_platform_init(&pl);
+    np_event_queue_init(&pl, NULL, NULL);
+
+    NABTO_TEST_CHECK(np_event_queue_is_event_queue_empty(&pl));
+
+    struct test_state state[100];
+    for (i = 0; i < 100; i++) {
+        state[i].called = false;
+    }
+
+    struct np_event event[100];
+
+    for(i = 0; i < 100; i++) {
+        np_event_queue_post(&pl, &event[i], &np_test_callback, &state[i]);
+    }
+
+    for (int i = 0; i < 100; i++) {
+        NABTO_TEST_CHECK(!np_event_queue_is_event_queue_empty(&pl));
+        np_event_queue_poll_one(&pl);
+    }
+
+    NABTO_TEST_CHECK(np_event_queue_is_event_queue_empty(&pl));
+
+    for (int i = 0; i < 100; i++) {
+        NABTO_TEST_CHECK(state[i].called);
+    }
+}
+
 np_timestamp time;
 bool np_platform_test_ts_passed_or_now(np_timestamp* timestamp)
 {
@@ -220,6 +253,7 @@ void np_platform_test_post_timed_event_sorting()
 void np_event_queue_tests()
 {
     np_platform_test_post_event();
+    np_platform_test_post_many_event();
     np_platform_test_post_timed_event();
     np_platform_test_post_timed_event_sorting();
     np_platform_test_cancel_timed_event();

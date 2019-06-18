@@ -2,6 +2,8 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 
+#define LOG NABTO_LOG_MODULE_EVENT_QUEUE
+
 static void np_timed_event_bubble_up(struct np_platform* pl, struct np_timed_event* event);
 
 void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify notify, void* notifyData)
@@ -66,13 +68,17 @@ static void remove_timed_event(struct np_timed_event* event)
     after->prev = before;
 }
 
-void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
+bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
 {
+    bool canceledEvent = false;
     {
         // remove event if already present in queue TODO this is bad
         // since we are not calling the completion handler exactly
         // once.
-        np_event_queue_cancel_event(pl, event);
+        if (np_event_queue_cancel_event(pl, event)) {
+            NABTO_LOG_TRACE(LOG, "cancelling queued event");
+            canceledEvent = true;
+        }
     }
     event->cb = cb;
     event->data = data;
@@ -80,11 +86,12 @@ void np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
     struct np_event* before = pl->eq.events.sentinel->prev;
     struct np_event* after = pl->eq.events.sentinel;
 
-    insert_event_between_nodes(event, after, before);
+    insert_event_between_nodes(event, before, after);
 
     if (pl->eq.notify) {
         pl->eq.notify(pl->eq.notifyData);
     }
+    return canceledEvent;
 }
 
 void np_event_queue_poll_one(struct np_platform* pl)
@@ -139,7 +146,9 @@ void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_eve
         // if the event is already in the timed queue cancel it first
         // TODO this is not good since we should call the completion
         // handler exactly once.
-        np_event_queue_cancel_timed_event(pl, event);
+        if (np_event_queue_cancel_timed_event(pl, event)) {
+            NABTO_LOG_TRACE(LOG, "cancelling queued timed event");
+        }
     }
     event->cb = cb;
     event->data = data;
@@ -161,7 +170,7 @@ void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_eve
     }
 }
 
-void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* event)
+bool np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* event)
 {
     struct np_timed_event_list* ev = &pl->eq.timedEvents;
 
@@ -170,24 +179,26 @@ void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_e
     while(iterator != ev->sentinel) {
         if (iterator == event) {
             remove_timed_event(iterator);
-            return;
+            return true;
         }
         iterator = iterator->next;
     }
+    return false;
 }
 
 
-void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* event)
+bool np_event_queue_cancel_event(struct np_platform* pl, struct np_event* event)
 {
     struct np_event_list* ev = &pl->eq.events;
     struct np_event* iterator = ev->sentinel->next;
     while(iterator != ev->sentinel) {
         if (iterator == event) {
             remove_event(iterator);
-            return;
+            return true;
         }
         iterator = iterator->next;
     }
+    return false;
 }
 
 

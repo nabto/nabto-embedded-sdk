@@ -1,4 +1,5 @@
 #include "nc_coap_server.h"
+#include "nc_coap_packet_printer.h"
 
 #include <platform/np_logging.h>
 #include <stdlib.h>
@@ -29,9 +30,11 @@ void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* 
     nc_coap_server_set_infinite_stamp(ctx);
 }
 
+
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
                                   np_communication_buffer* buffer, uint16_t bufferSize)
 {
+    nc_coap_packet_print("coap server handle packet", ctx->pl->buf.start(buffer), bufferSize);
     nabto_coap_server_handle_packet(&ctx->server,(void*) nc_client_connect_get_dtls_connection(conn), ctx->pl->buf.start(buffer), bufferSize);
     nc_coap_server_event(ctx);
 }
@@ -61,9 +64,9 @@ struct nc_coap_server_send_ctx {
 void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 {
     NABTO_LOG_TRACE(LOG, "handle send, isSending: %i", ctx->isSending );
-    /* if (ctx->isSending) { */
-    /*     return; */
-    /* } */
+    if (ctx->isSending) {
+        return;
+    }
 
     void* connection = nabto_coap_server_get_connection_send(&ctx->server);
     if (!connection) {
@@ -96,6 +99,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
     sendCtx->dtls.data = sendCtx;
     sendCtx->ctx = ctx;
     ctx->isSending = true;
+    nc_coap_packet_print("coap server send packet", sendCtx->dtls.buffer, sendCtx->dtls.bufferSize);
     ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, &sendCtx->dtls);
 }
 

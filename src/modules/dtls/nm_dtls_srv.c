@@ -31,6 +31,8 @@ struct np_dtls_srv_connection {
     struct np_dtls_srv_send_context kaSendCtx;
 
     struct np_dtls_srv_send_context sendSentinel;
+    struct np_event startSendEvent;
+
 
     np_dtls_srv_sender sender;
     void* senderData;
@@ -74,6 +76,7 @@ np_error_code nm_dtls_srv_init_config(const unsigned char* publicKeyL, size_t pu
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data);
 void nm_dtls_srv_do_one(void* data);
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx);
+void nm_dtls_srv_start_send_deferred(void* data);
 
 // Function called by mbedtls when data should be sent to the network
 int nm_dtls_srv_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
@@ -304,6 +307,12 @@ void nm_dtls_srv_do_one(void* data)
 
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 {
+    np_event_queue_post(server.pl, &ctx->startSendEvent, &nm_dtls_srv_start_send_deferred, ctx);
+}
+
+void nm_dtls_srv_start_send_deferred(void* data)
+{
+    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->sending) {
         return;
     }
@@ -505,8 +514,9 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         ctx->sending = true;
-        ctx->sender(ctx->activeChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
         ctx->activeChannel = true;
+        ctx->sender(ctx->activeChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
+
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;
@@ -516,6 +526,7 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
 
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data)
 {
+
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (data == NULL) {
         return;

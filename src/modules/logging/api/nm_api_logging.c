@@ -36,11 +36,11 @@ void nm_api_log(uint32_t severity, uint32_t module,
 {
     if (level_ & severity) {
         NabtoDeviceLogMessage msg;
-        char log[128];
+        char log[256];
         int ret;
 
-        ret = vsnprintf(log, 128, fmt, args);
-        if (ret >= 128) {
+        ret = vsnprintf(log, 256, fmt, args);
+        if (ret >= 256) {
             // TODO: handle too long log lines
             // The log line was too large for the array
         }
@@ -79,11 +79,11 @@ void nm_api_log_buf_line(uint32_t severity, uint32_t module,
 {
     if (level_ & severity) {
         NabtoDeviceLogMessage msg;
-        char log[128];
+        char log[256];
         int ret;
 
-        ret = snprintf(log, 128, "%s", fmt);
-        if (ret >= 128) {
+        ret = snprintf(log, 256, "%s", fmt);
+        if (ret >= 256) {
             // TODO: handle too long log lines
             // The log line was too large for the array
         }
