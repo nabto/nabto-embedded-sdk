@@ -454,11 +454,13 @@ void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    nabto_stream_destroy(str->stream);
+    str->readyToFree = true;
+    nabto_stream_release(str->stream);
     // TODO: resolve all futures
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
-    free(str);
 }
+
+
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream)
 {

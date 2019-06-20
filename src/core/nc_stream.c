@@ -91,6 +91,14 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
 }
 
+
+void nc_stream_remove_connection(struct nc_stream_context* ctx)
+{
+    ctx->dtls = NULL;
+
+}
+
+
 void nc_stream_event(struct nc_stream_context* ctx)
 {
     nabto_stream_send_segment_available(&ctx->stream);
@@ -179,6 +187,12 @@ void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uin
     nc_stream_event(ctx);
 }
 
+void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
+{
+    nabto_stream_connection_died(&ctx->stream);
+    nc_stream_event(ctx);
+}
+
 void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 {
     struct np_dtls_srv_send_context* ctx = (struct np_dtls_srv_send_context*)data;
@@ -189,6 +203,9 @@ void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType)
 {
+    if (ctx->dtls == NULL) {
+        return;
+    }
     // TODO: Don't use malloc, get buffer from future buffer manager
     struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
     sendCtx->buffer = (uint8_t*)malloc(1500);
@@ -220,10 +237,6 @@ void nc_stream_event_queue_callback(void* data)
 void nc_stream_event_callback(enum nabto_stream_module_event event, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
-    NABTO_LOG_TRACE(LOG, "nc_stream_event_callback received!!");
-//    np_event_queue_cancel_event(ctx->pl, &ctx->ev);
-    // TODO: DONT DO THIS
-    //nc_stream_event((struct nc_stream_context*)data);
     np_event_queue_post(ctx->pl, &ctx->ev, &nc_stream_event_queue_callback, ctx);
 }
 

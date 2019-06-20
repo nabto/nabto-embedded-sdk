@@ -17,13 +17,16 @@ struct nabto_device_stream {
     uint8_t* readBuffer;
     size_t readBufferLength;
     size_t* readLength;
-    
+
     NabtoDeviceFuture* writeFut;
     const uint8_t* writeBuffer;
     size_t writeBufferLength;
-    
+
     NabtoDeviceFuture* closeFut;
     struct nabto_device_context* dev;
+
+    // coordinate freeing of this context which can both be initiated by the user and by the system
+    bool readyToFree;
 };
 
 void nabto_device_stream_listener_callback(struct nabto_stream* stream, void* data);

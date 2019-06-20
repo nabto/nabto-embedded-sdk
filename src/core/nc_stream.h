@@ -24,7 +24,7 @@ struct nc_stream_context {
     struct np_dtls_srv_send_context sendCtx;
     struct np_event ev;
     bool active;
-    
+
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
     struct np_timed_event timer;
@@ -32,9 +32,12 @@ struct nc_stream_context {
     np_communication_buffer* sendBuffer;
     uint16_t sendBufferSize;
 };
+
 void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager);
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
+
+void nc_stream_remove_connection(struct nc_stream_context* ctx);
 
 np_error_code nc_stream_status_to_ec(nabto_stream_status status);
 

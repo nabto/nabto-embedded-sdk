@@ -39,7 +39,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     uint8_t streamIdLen = 0;
     uint8_t flags = 0;
     struct nc_stream_context* stream;
-    
+
     NABTO_LOG_INFO(LOG, "stream manager handling packet. AT: %u", *start);
     NABTO_LOG_BUF(LOG, start, bufferSize);
     if (bufferSize < 4) {
@@ -49,14 +49,17 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
         return;
     }
     NABTO_LOG_INFO(LOG, "streamId=%u", streamId);
-    
+
     ptr += streamIdLen; // skip stream ID
     flags = *ptr;
 
     stream = nc_stream_manager_find_stream(ctx, streamId, conn);
-    
+
     if (stream == NULL && flags == NABTO_STREAM_FLAG_SYN) {
         stream = nc_stream_manager_accept_stream(ctx, conn, streamId);
+        if (stream == NULL) {
+            NABTO_LOG_INFO(LOG, "out of streaming resources, sending RST");
+        }
     }
 
     if (stream == NULL && ((flags & NABTO_STREAM_FLAG_RST) != 0)) {
@@ -198,4 +201,15 @@ void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, 
 {
     free(segment->buf);
     free(segment);
+}
+
+void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* connection)
+{
+    int i;
+    for(i = 0; i < NABTO_MAX_STREAMS; i++) {
+        if (ctx->streamConns[i] == connection) {
+            ctx->streamConns[i] = NULL;
+            nc_stream_remove_connection(&ctx->streams[i]);
+        }
+    }
 }

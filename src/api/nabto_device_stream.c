@@ -1,6 +1,9 @@
 #include "nabto_device_stream.h"
 #include <api/nabto_device_defines.h>
 #include <platform/np_logging.h>
+
+#include <stdlib.h>
+
 #define LOG NABTO_LOG_MODULE_API
 
 
@@ -156,6 +159,13 @@ void nabto_device_stream_application_event_callback(nabto_stream_application_eve
             }
             nabto_device_stream_do_read(str);
             nabto_device_stream_handle_close(str);
+
+
+            if (str->readyToFree) {
+                free(str);
+            } else {
+                NABTO_LOG_ERROR(LOG, "ended in closed state but the stream has not been freed by the user yet");
+            }
             break;
         default:
             NABTO_LOG_ERROR(LOG, "Unknown stream application event type %s", nabto_stream_application_event_type_to_string(eventType));
