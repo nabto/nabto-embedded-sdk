@@ -77,6 +77,7 @@ void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data);
 void nm_dtls_srv_do_one(void* data);
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx);
 void nm_dtls_srv_start_send_deferred(void* data);
+void nm_dtls_srv_close_from_self(struct np_dtls_srv_connection* ctx);
 
 // Function called by mbedtls when data should be sent to the network
 int nm_dtls_srv_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
@@ -294,14 +295,33 @@ void nm_dtls_srv_do_one(void* data)
             // OK
         } else {
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
-            ctx->ctx.state = CLOSING;
-            if (ctx->ctx.recvCb.cb != NULL) {
-                NABTO_LOG_TRACE(LOG, "found Callback function");
-                np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
-                ctx->ctx.recvCb.cb = NULL;
-                cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCb.data);
-            }
+            nm_dtls_srv_close_from_self(ctx);
         }
+    }
+}
+
+
+
+void nm_dtls_srv_close_from_self(struct np_dtls_srv_connection* ctx)
+{
+    ctx->ctx.state = CLOSING;
+    struct np_dtls_srv_send_context* iterator = ctx->sendSentinel.next;
+    while(ctx->sendSentinel.next != &ctx->sendSentinel) {
+        struct np_dtls_srv_send_context* first = ctx->sendSentinel.next;
+        nm_dtls_srv_remove_send_data(first);
+        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
+    }
+    np_event_queue_cancel_timed_event(server.pl, &ctx->ctx.tEv);
+    np_event_queue_cancel_event(server.pl, &ctx->ctx.sendEv);
+    np_event_queue_cancel_event(server.pl, &ctx->ctx.recvEv);
+    np_event_queue_cancel_event(server.pl, &ctx->ctx.closeEv);
+    np_event_queue_cancel_event(server.pl, &ctx->startSendEvent);
+
+    if (ctx->ctx.recvCb.cb != NULL) {
+        NABTO_LOG_TRACE(LOG, "found Callback function");
+        np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
+        ctx->ctx.recvCb.cb = NULL;
+        cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCb.data);
     }
 }
 
@@ -350,6 +370,9 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
 //                                        uint8_t* buffer, uint16_t bufferSize,
 //                                        np_dtls_send_to_callback cb, void* data)
 {
+    if (ctx->ctx.state == CLOSING) {
+        return NABTO_EC_CONNECTION_CLOSING;
+    }
     NABTO_LOG_TRACE(LOG, "enqueued dtls application data packet");
     nm_dtls_srv_insert_send_data(sendCtx, &ctx->sendSentinel);
     nm_dtls_srv_start_send(ctx);
@@ -378,6 +401,7 @@ void nm_dtls_srv_do_close(struct np_dtls_srv_connection* ctx)
     np_event_queue_cancel_event(server.pl, &ctx->ctx.sendEv);
     np_event_queue_cancel_event(server.pl, &ctx->ctx.recvEv);
     np_event_queue_cancel_event(server.pl, &ctx->ctx.closeEv);
+    np_event_queue_cancel_event(server.pl, &ctx->startSendEvent);
     free(ctx);
     ctx = NULL;
     if(cb != NULL) {
