@@ -59,8 +59,39 @@ Example policy
  */
 
 
+
 bool nm_iam_parse_policy(struct nm_iam* iam, const char* json)
 {
     cJSON* root = cJSON_Parse(json);
+    bool status;
+    if (root == NULL) {
+        return false;
+    }
+
+    status = nm_iam_parse_policy_json(&iam, root);
+
+    cJSON_Delete(root);
+    return status;
+}
+
+bool nm_iam_parse_policy_json(struct nm_iam* iam, cJSON* root)
+{
+    const cJSON* version = NULL;
+    const cJSON* name = NULL;
+    const cJSON* statements = NULL;
+    version = cJSON_GetObjectItemCaseSensitive(root, "version");
+    name = cJSON_GetObjectItemCaseSensitive(root, "name");
+    statements = cJSON_GetObjectItemCaseSensitive(root, "statements");
+    if (!cJSON_IsNumber(version) ||
+        !cJSON_IsString(name) ||
+        !cJSON_IsArray(statements))
+    {
+        return false;
+    }
+
+    if (version->valueint != 1) {
+        // invalid version
+        return false;
+    }
 
 }
