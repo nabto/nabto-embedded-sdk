@@ -3,20 +3,22 @@
 
 #include <platform/np_access_control.h>
 
+#include <stdbool.h>
+
 //bool nm_access_control_can_access(uint8_t* fingerprint, enum np_access_control_permission feature);
 
 #define NM_IAM_POLICY_NAME_LEN 32
 
 enum nm_iam_variable_type {
-    NABTO_ACCESS_CONTROL_VARIABLE_TYPE_INTEGER,
-    NABTO_ACCESS_CONTROL_VARIABLE_TYPE_STRING
+    NM_IAM_VARIABLE_TYPE_INTEGER,
+    NM_IAM_VARIABLE_TYPE_STRING
 };
 
 enum nm_iam_condition_type {
-    NABTO_ACCESS_CONTROL_CONDITION_TYPE_STRING_EQUAL,
-    NABTO_ACCESS_CONTROL_CONDITION_TYPE_STRING_VARIABLE_EQUAL,
-    NABTO_ACCESS_CONTROL_CONDITION_TYPE_INTEGER_EQUAL,
-    NABTO_ACCESS_CONTROL_CONDITION_TYPE_INTEGER_VARIABLE_EQUAL
+    NM_IAM_CONDITION_TYPE_STRING_EQUAL,
+    NM_IAM_CONDITION_TYPE_STRING_VARIABLE_EQUAL,
+    NM_IAM_CONDITION_TYPE_INTEGER_EQUAL,
+    NM_IAM_CONDITION_TYPE_INTEGER_VARIABLE_EQUAL
 };
 
 enum nm_iam_effect {
@@ -116,7 +118,7 @@ void nm_iam_init_variable_instance_string(struct nm_iam_variable_instance* insta
 
 // ACTIONS
 bool nm_iam_add_action(struct nm_iam* iam, const char* name);
-struct nm_iam_action* nm_iam_get_action(const char* name);
+struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* name);
 
 
 // Policies
@@ -129,6 +131,7 @@ typedef void(*nm_iam_is_action_allowed_cb)(bool status, void* userData);
 bool nm_iam_async_is_action_allowed(struct nm_iam_list* roles, struct nm_iam_action* action, struct nm_iam_list* variables, nm_iam_is_action_allowed_cb cb, void* userData);
 
 // LISTS
+void nm_iam_list_init(struct nm_iam_list* list);
 void nm_iam_list_clear(struct nm_iam_list* list);
 void nm_iam_list_insert_entry_back(struct nm_iam_list* list, void* item);
 void nm_iam_list_remove_entry(struct nm_iam_list_entry* entry);

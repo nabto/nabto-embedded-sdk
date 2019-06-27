@@ -82,6 +82,12 @@ void nm_iam_statement_free(struct nm_iam_statement* statement)
     free(statement);
 }
 
+void nm_iam_list_init(struct nm_iam_list* list) {
+    list->sentinel.next = &list->sentinel;
+    list->sentinel.prev = &list->sentinel;
+    list->sentinel.item = NULL;
+}
+
 // Remove all entries from a list. The data is not touched.
 void nm_iam_list_clear(struct nm_iam_list* list)
 {
