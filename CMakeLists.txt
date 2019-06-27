@@ -77,6 +77,7 @@ if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   target_link_libraries(unit_test
     np_platform_test
     nc_core_test
+    nm_access_control_test
     np_platform
     nc_core
     nm_logging)

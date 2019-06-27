@@ -95,9 +95,13 @@ struct nm_iam_user {
     struct nm_iam_list* roles;
 };
 
+struct nm_iam_action {
+    const char* name;
+};
 
 struct nm_iam {
     struct nm_iam_list users;
+    struct nm_iam_list actions;
     struct nm_iam_list roles;
     struct nm_iam_list policies;
     struct nm_iam_list variables;

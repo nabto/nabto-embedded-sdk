@@ -15,6 +15,26 @@ void np_access_control_init(struct np_platform* pl)
     pl->accCtrl.can_access = &nm_access_control_can_access;
 }
 
+void nm_iam_init(struct nm_iam* iam)
+{
+    nm_iam_list_init(&iam->users);
+    nm_iam_list_init(&iam->actions);
+    nm_iam_list_init(&iam->roles);
+    nm_iam_list_init(&iam->policies);
+    nm_iam_list_init(&iam->variables);
+}
+
+struct nm_iam_action* nm_iam_get_action(struct nm_iam*iam, const char* action)
+{
+    struct nm_iam_list_entry* iterator = iam->actions.sentinel.next;
+    while (iterator != &iam->actions.sentinel) {
+        struct nm_iam_action* a = (struct nm_iam_action*)iterator->item;
+        if (strcmp(a->name, action) == 0) {
+            return a;
+        }
+    }
+    return NULL;
+}
 
 struct nm_iam_policy* nm_iam_policy_new(struct nm_iam* iam, const char* name)
 {
