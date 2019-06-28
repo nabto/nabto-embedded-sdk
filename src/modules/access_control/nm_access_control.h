@@ -96,7 +96,7 @@ struct nm_iam_user {
 };
 
 struct nm_iam_action {
-    const char* name;
+    // the pointer is just a pointer to the name.
 };
 
 struct nm_iam {
@@ -121,9 +121,12 @@ void nm_iam_init_variable_instance_string(struct nm_iam_variable_instance* insta
 
 
 // ACTIONS
-bool nm_iam_add_action(struct nm_iam* iam, const char* name);
-struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* name);
+struct nm_iam_action* nm_iam_action_new(const char* name);
+void nm_iam_action_free(struct nm_iam_action* action);
 
+// operations on the iam object
+bool nm_iam_add_action(struct nm_iam* iam, struct nm_iam_action* action);
+struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* name);
 
 // Policies
 
@@ -145,6 +148,7 @@ void nm_iam_list_entry_free(struct nm_iam_list_entry* entry);
 // STATEMENTS
 struct nm_iam_statement* nm_iam_statement_new();
 void nm_iam_statement_free(struct nm_iam_statement* statement);
+bool nm_iam_statement_has_action(struct nm_iam_statement* statement, struct nm_iam_action* action);
 
 // CONDITIONS
 struct nm_iam_condition* nm_iam_condition_new();

@@ -24,14 +24,33 @@ void nm_iam_init(struct nm_iam* iam)
     nm_iam_list_init(&iam->variables);
 }
 
-struct nm_iam_action* nm_iam_get_action(struct nm_iam*iam, const char* action)
+struct nm_iam_action* nm_iam_action_new(const char* name)
+{
+    struct nm_iam_action* action = (struct nm_iam_action*)name;
+    return action;
+}
+
+void nm_iam_action_free(struct nm_iam_action* action)
+{
+    // the pointer is just the const char* owner elsewhere
+}
+
+bool nm_iam_add_action(struct nm_iam* iam, struct nm_iam_action* action)
+{
+    nm_iam_list_insert_entry_back(&iam->actions, action);
+    return true;
+}
+
+struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* action)
 {
     struct nm_iam_list_entry* iterator = iam->actions.sentinel.next;
     while (iterator != &iam->actions.sentinel) {
         struct nm_iam_action* a = (struct nm_iam_action*)iterator->item;
-        if (strcmp(a->name, action) == 0) {
+        const char* name = (const char*)a;
+        if (strcmp(name, action) == 0) {
             return a;
         }
+        iterator = iterator->next;
     }
     return NULL;
 }
@@ -45,6 +64,7 @@ struct nm_iam_policy* nm_iam_policy_new(struct nm_iam* iam, const char* name)
     memset(policy, 0, sizeof(struct nm_iam_policy));
 
     strcpy(policy->name, name);
+    nm_iam_list_init(&policy->statements);
     return policy;
 }
 
@@ -85,6 +105,8 @@ bool nm_iam_policy_free(struct nm_iam* iam, struct nm_iam_policy* policy)
 struct nm_iam_statement* nm_iam_statement_new()
 {
     struct nm_iam_statement* statement = (struct nm_iam_statement*)malloc(sizeof(struct nm_iam_statement));
+    nm_iam_list_init(&statement->actions);
+    nm_iam_list_init(&statement->conditions);
     return statement;
 }
 
@@ -100,6 +122,18 @@ void nm_iam_statement_free(struct nm_iam_statement* statement)
     }
     nm_iam_list_clear(&statement->conditions);
     free(statement);
+}
+
+bool nm_iam_statement_has_action(struct nm_iam_statement* statement, struct nm_iam_action* action)
+{
+    struct nm_iam_list_entry* iterator = statement->actions.sentinel.next;
+    while (iterator != &statement->actions.sentinel) {
+        if (iterator->item == action) {
+            return true;
+        }
+        iterator = iterator->next;
+    }
+    return false;
 }
 
 void nm_iam_list_init(struct nm_iam_list* list) {
