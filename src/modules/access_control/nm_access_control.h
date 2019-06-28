@@ -56,20 +56,20 @@ struct nm_iam_condition {
     enum nm_iam_condition_type type;
     union {
         struct {
-            const char* variable;
+            struct nm_iam_variable* variable;
             const char* string;
         } stringEqual;
         struct {
-            const char* variable1;
-            const char* variable2;
+            struct nm_iam_variable* variable1;
+            struct nm_iam_variable* variable2;
         } stringVariableEqual;
         struct {
-            const char* variable;
+            struct nm_iam_variable*variable;
             uint32_t integer;
         } integerEqual ;
         struct {
-            const char* variable1;
-            const char* variable2;
+            struct nm_iam_variable* variable1;
+            struct nm_iam_variable* variable2;
         } integerVariableEqual;
     } condition;
 };
@@ -109,6 +109,8 @@ struct nm_iam {
 
 void nm_iam_init(struct nm_iam* iam);
 
+void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy);
+
 // VARIABLES
 // return false if the variable could not be added to the list of known variables
 bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_condition_type type);
@@ -132,6 +134,7 @@ struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* name);
 
 struct nm_iam_policy* nm_iam_policy_new(struct nm_iam* iam, const char* name);
 bool nm_iam_policy_free(struct nm_iam* iam, struct nm_iam_policy* policy);
+void nm_iam_policy_add_statement(struct nm_iam_policy* policy, struct nm_iam_statement* statement);
 
 // Test if action is allowed given the context.
 typedef void(*nm_iam_is_action_allowed_cb)(bool status, void* userData);
@@ -149,6 +152,7 @@ void nm_iam_list_entry_free(struct nm_iam_list_entry* entry);
 struct nm_iam_statement* nm_iam_statement_new();
 void nm_iam_statement_free(struct nm_iam_statement* statement);
 bool nm_iam_statement_has_action(struct nm_iam_statement* statement, struct nm_iam_action* action);
+void nm_iam_statement_add_action(struct nm_iam_statement* statement, struct nm_iam_action* action);
 
 // CONDITIONS
 struct nm_iam_condition* nm_iam_condition_new();

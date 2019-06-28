@@ -24,6 +24,11 @@ void nm_iam_init(struct nm_iam* iam)
     nm_iam_list_init(&iam->variables);
 }
 
+void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy)
+{
+    nm_iam_list_insert_entry_back(&iam->policies, policy);
+}
+
 struct nm_iam_action* nm_iam_action_new(const char* name)
 {
     struct nm_iam_action* action = (struct nm_iam_action*)name;
@@ -102,6 +107,11 @@ bool nm_iam_policy_free(struct nm_iam* iam, struct nm_iam_policy* policy)
     }
 }
 
+void nm_iam_policy_add_statement(struct nm_iam_policy* policy, struct nm_iam_statement* statement)
+{
+    nm_iam_list_insert_entry_back(&policy->statements, statement);
+}
+
 struct nm_iam_statement* nm_iam_statement_new()
 {
     struct nm_iam_statement* statement = (struct nm_iam_statement*)malloc(sizeof(struct nm_iam_statement));
@@ -134,6 +144,11 @@ bool nm_iam_statement_has_action(struct nm_iam_statement* statement, struct nm_i
         iterator = iterator->next;
     }
     return false;
+}
+
+void nm_iam_statement_add_action(struct nm_iam_statement* statement, struct nm_iam_action* action)
+{
+    nm_iam_list_insert_entry_back(&statement->actions, action);
 }
 
 void nm_iam_list_init(struct nm_iam_list* list) {

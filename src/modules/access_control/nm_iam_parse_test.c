@@ -5,6 +5,11 @@
 
 const char* testPolicy1 = "{ \"version\": 1, \"name\": \"FirmwareUpdate\", \"statements\": [ { \"effect\": \"Allow\", \"actions\": [ \"firmware:Update\", \"firmware:Show\" ] } ] }";
 
+const char* testRole = "{ \"version\": 1, \"name\": \"DeviceAdmin\", \"policies\": [ \"FirmwareUpdate\" ] }";
+
+const char* testUser = "{ \"name\": \"TestUser\", \"fingerprints\": [ \"11223344556677889900112233445566\" ] }";
+
+
 
 const char* firmwareShow = "firmware:Show";
 const char* firmwareUpdate = "firmware:Update";

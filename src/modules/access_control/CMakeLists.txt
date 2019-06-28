@@ -8,6 +8,7 @@ set(access_control_src
 set(test_src
   nm_iam_parse_test.c
   nm_access_control_tests.c
+  nm_iam_test.c
   )
 
 add_library( nm_access_control STATIC ${access_control_src})
