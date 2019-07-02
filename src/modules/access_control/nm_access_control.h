@@ -9,17 +9,31 @@
 
 #define NM_IAM_POLICY_NAME_LEN 32
 
-enum nm_iam_variable_type {
-    NM_IAM_VARIABLE_TYPE_INTEGER,
-    NM_IAM_VARIABLE_TYPE_STRING
+// Max levels of nested conditions, such that we can use recursive functions instead of relying on tree traversals.
+#define NM_IAM_MAX_NESTED_CONDITION_EXPRESSIONS 10
+
+enum nm_iam_evaluation_result {
+    NM_IAM_EVALUATION_RESULT_NONE,
+    NM_IAM_EVALUATION_RESULT_ALLOW,
+    NM_IAM_EVALUATION_RESULT_DENY
 };
 
-enum nm_iam_condition_type {
-    NM_IAM_CONDITION_TYPE_STRING_EQUAL,
-    NM_IAM_CONDITION_TYPE_STRING_VARIABLE_EQUAL,
-    NM_IAM_CONDITION_TYPE_INTEGER_EQUAL,
-    NM_IAM_CONDITION_TYPE_INTEGER_VARIABLE_EQUAL
+enum nm_iam_value_type {
+    NM_IAM_VALUE_TYPE_NUMBER,
+    NM_IAM_VALUE_TYPE_STRING
 };
+
+enum nm_iam_predicate_type {
+    NM_IAM_PREDICATE_TYPE_STRING_EQUAL,
+    NM_IAM_PREDICATE_TYPE_NUMBER_EQUAL,
+};
+
+enum nm_iam_boolean_expression_type {
+    NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND,
+    NM_IAM_BOOLEAN_EXPRESSION_TYPE_OR,
+};
+
+
 
 enum nm_iam_effect {
     NM_IAM_EFFECT_ALLOW,
@@ -38,46 +52,66 @@ struct nm_iam_list {
 };
 
 struct nm_iam_variable {
-    enum nm_iam_variable_type type;
+    enum nm_iam_value_type type;
     const char* name;
 };
 
-struct nm_iam_variable_instance {
-    struct nm_iam_variable* variable;
-    union data {
-        uint32_t integer;
+// TODO rename to attribute value
+struct nm_iam_value {
+    enum nm_iam_value_type type;
+    union {
+        uint32_t number;
         const char* string;
     } data;
 };
 
+struct nm_iam_variable_instance {
+    struct nm_iam_variable* variable;
+    struct nm_iam_value value;
+};
 
+enum nm_iam_expression_type {
+    NM_IAM_EXPRESSION_TYPE_PREDICATE,
+    NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION
+};
 
-struct nm_iam_condition {
-    enum nm_iam_condition_type type;
+enum nm_iam_predicate_item_type {
+    NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE,
+    NM_IAM_PREDICATE_ITEM_TYPE_VALUE
+};
+
+struct nm_iam_predicate_item {
+    enum nm_iam_predicate_item_type type;
     union {
-        struct {
-            struct nm_iam_variable* variable;
-            const char* string;
-        } stringEqual;
-        struct {
-            struct nm_iam_variable* variable1;
-            struct nm_iam_variable* variable2;
-        } stringVariableEqual;
-        struct {
-            struct nm_iam_variable*variable;
-            uint32_t integer;
-        } integerEqual ;
-        struct {
-            struct nm_iam_variable* variable1;
-            struct nm_iam_variable* variable2;
-        } integerVariableEqual;
-    } condition;
+        struct nm_iam_variable* variable;
+        struct nm_iam_value value;
+    } data;
+};
+
+struct nm_iam_predicate {
+    enum nm_iam_predicate_type type;
+    struct nm_iam_variable* lhs;
+    struct nm_iam_predicate_item rhs;
+};
+
+struct nm_iam_boolean_expression {
+    enum nm_iam_boolean_expression_type type;
+    struct nm_iam_expression* lhs;
+    struct nm_iam_expression* rhs;
+};
+
+struct nm_iam_expression {
+    enum nm_iam_expression_type type;
+    union {
+        struct nm_iam_predicate predicate;
+        struct nm_iam_boolean_expression booleanExpression;
+    } data;
 };
 
 struct nm_iam_statement {
     struct nm_iam_list actions;
     enum nm_iam_effect effect;
-    struct nm_iam_list conditions;
+    struct nm_iam_expression* conditions;
 };
 
 struct nm_iam_policy {
@@ -89,6 +123,7 @@ struct nm_iam_role {
     const char* name;
     struct nm_iam_list policies;
 };
+
 
 struct nm_iam_user {
     const char* name;
@@ -111,9 +146,14 @@ void nm_iam_init(struct nm_iam* iam);
 
 void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy);
 
+enum nm_iam_evaluation_result nm_iam_eval_statement(struct nm_iam_statement* statement, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action);
+
+// test if a user has access to the given action by evaluating the roles the user is giving in the context given by the variable instances.
+bool nn_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action);
+
 // VARIABLES
 // return false if the variable could not be added to the list of known variables
-bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_condition_type type);
+bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_value_type type);
 
 // return a variable or NULL if it does not exists.
 struct nm_iam_variable* nm_iam_get_variable(struct nm_iam* iam, const char* name);
@@ -154,8 +194,18 @@ void nm_iam_statement_free(struct nm_iam_statement* statement);
 bool nm_iam_statement_has_action(struct nm_iam_statement* statement, struct nm_iam_action* action);
 void nm_iam_statement_add_action(struct nm_iam_statement* statement, struct nm_iam_action* action);
 
-// CONDITIONS
-struct nm_iam_condition* nm_iam_condition_new();
-void nm_iam_condition_free(struct nm_iam_condition* condition);
+// CONDITION EXPRESSIONS
+
+struct nm_iam_expression* nm_iam_expression_new();
+void nm_iam_expression_free(struct nm_iam_expression* expression);
+
+struct nm_iam_expression* nm_iam_expression_and(struct nm_iam_expression* lhs, struct nm_iam_expression* rhs);
+
+struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item rhs);
+struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item rhs);
+
+struct nm_iam_predicate_item nm_iam_predicate_item_string(const char* string);
+struct nm_iam_predicate_item nm_iam_predicate_item_number(uint32_t number);
+struct nm_iam_predicate_item nm_iam_predicate_item_variable(struct nm_iam_variable* variable);
 
 #endif

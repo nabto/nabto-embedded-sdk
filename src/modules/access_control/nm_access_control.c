@@ -29,6 +29,143 @@ void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy)
     nm_iam_list_insert_entry_back(&iam->policies, policy);
 }
 
+struct nm_iam_variable_instance* nm_iam_find_variable(struct nm_iam_list* variableInstances, struct nm_iam_variable* variable)
+{
+    struct nm_iam_list_entry* iterator = variableInstances->sentinel.next;
+    while(iterator != &variableInstances->sentinel) {
+        struct nm_iam_variable_instance* currentVariable = (struct nm_iam_variable_instance*)iterator->item;
+        if (currentVariable->variable == variable) {
+            return currentVariable;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
+bool nm_iam_expression_has_all_variables(struct nm_iam_expression* expression, struct nm_iam_list* variableInstances)
+{
+    if (expression->type == NM_IAM_EXPRESSION_TYPE_PREDICATE) {
+        struct nm_iam_predicate* predicate = &expression->data.predicate;
+        if (nm_iam_find_variable(variableInstances, predicate->lhs) != NULL) {
+            if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE) {
+                return (nm_iam_find_variable(variableInstances, predicate->rhs.data.variable) != NULL);
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    } else if (expression->type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
+        struct nm_iam_boolean_expression* booleanExpression = &expression->data.booleanExpression;
+        return
+            nm_iam_expression_has_all_variables(booleanExpression->lhs, variableInstances) &&
+            nm_iam_expression_has_all_variables(booleanExpression->rhs, variableInstances);
+    }
+
+    return false;
+}
+
+bool nm_iam_evaluate_string_equal(struct nm_iam_value* lhs, struct nm_iam_value* rhs)
+{
+    if (lhs->type == NM_IAM_VALUE_TYPE_STRING && rhs->type == NM_IAM_VALUE_TYPE_STRING) {
+        return (strcmp(lhs->data.string, rhs->data.string) == 0);
+    }
+    return false;
+}
+
+bool nm_iam_evaluate_number_equal(struct nm_iam_value* lhs, struct nm_iam_value* rhs)
+{
+    if (lhs->type == NM_IAM_VALUE_TYPE_NUMBER && rhs->type == NM_IAM_VALUE_TYPE_NUMBER) {
+        return (lhs->data.number == rhs->data.number);
+    }
+    return false;
+}
+
+bool nm_iam_evaluate_predicate(struct nm_iam_predicate* predicate, struct nm_iam_list* variableInstances)
+{
+    struct nm_iam_value lhs;
+    struct nm_iam_value rhs;
+
+    struct nm_iam_variable_instance* lhsVariableInstance = nm_iam_find_variable(variableInstances, predicate->lhs);
+    lhs = lhsVariableInstance->value;
+
+    if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE) {
+        struct nm_iam_variable_instance* rhsVariableInstance = nm_iam_find_variable(variableInstances, predicate->rhs.data.variable);
+        rhs = rhsVariableInstance->value;
+    } else if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_VALUE) {
+        rhs = predicate->rhs.data.value;
+    } else {
+        // unknown rhs type
+        return false;
+    }
+
+    if (predicate->type == NM_IAM_PREDICATE_TYPE_STRING_EQUAL) {
+        return nm_iam_evaluate_string_equal(&lhs, &rhs);
+    } else if (predicate->type == NM_IAM_PREDICATE_TYPE_NUMBER_EQUAL) {
+        return nm_iam_evaluate_number_equal(&lhs, &rhs);
+    } else {
+        // unknown predicate
+        return false;
+    }
+
+    // never here
+    return false;
+}
+
+bool nm_iam_evaluate_expression(struct nm_iam_expression* expression, struct nm_iam_list* variableInstances)
+{
+    if (expression->type == NM_IAM_EXPRESSION_TYPE_PREDICATE) {
+        struct nm_iam_predicate* predicate = &expression->data.predicate;
+        struct nm_iam_variable_instance* lhs = nm_iam_find_variable(variableInstances, predicate->lhs);
+
+
+    }
+    return false;
+}
+
+enum nm_iam_evaluation_result nm_iam_eval_statement(struct nm_iam_statement* statement, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action)
+{
+    // 1. check that action matches
+    // 2. check that the conditions has all the required variables.
+    // 3. check if the conditions evaluates to true or false.
+    return NM_IAM_EVALUATION_RESULT_DENY;
+}
+
+bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action)
+{
+    //bool granted = false;
+    /* for (role r : roles) { */
+    /*     for (policy p : policies) { */
+    /*         for (statement s : statements) { */
+
+    /*         } */
+    /*     } */
+    /* } */
+    return false;
+}
+
+bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_value_type type)
+{
+    struct nm_iam_variable* variable = (struct nm_iam_variable*)malloc(sizeof(struct nm_iam_variable));
+    variable->name = name;
+    variable->type = type;
+    nm_iam_list_insert_entry_back(&iam->variables, variable);
+    return true;
+}
+
+struct nm_iam_variable* nm_iam_get_variable(struct nm_iam* iam, const char* name)
+{
+    struct nm_iam_list_entry* iterator = iam->variables.sentinel.next;
+    while (iterator != &iam->variables.sentinel) {
+        struct nm_iam_variable* variable = (struct nm_iam_variable*)iterator->item;
+        if (strcmp(variable->name, name) == 0) {
+            return variable;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
 struct nm_iam_action* nm_iam_action_new(const char* name)
 {
     struct nm_iam_action* action = (struct nm_iam_action*)name;
@@ -115,8 +252,9 @@ void nm_iam_policy_add_statement(struct nm_iam_policy* policy, struct nm_iam_sta
 struct nm_iam_statement* nm_iam_statement_new()
 {
     struct nm_iam_statement* statement = (struct nm_iam_statement*)malloc(sizeof(struct nm_iam_statement));
+    memset(statement,0,sizeof(struct nm_iam_statement));
     nm_iam_list_init(&statement->actions);
-    nm_iam_list_init(&statement->conditions);
+
     return statement;
 }
 
@@ -124,13 +262,9 @@ void nm_iam_statement_free(struct nm_iam_statement* statement)
 {
     nm_iam_list_clear(&statement->actions);
 
-    struct nm_iam_list_entry* iterator = statement->conditions.sentinel.next;
-    while (iterator != &statement->conditions.sentinel) {
-        struct nm_iam_condition* condition = (struct nm_iam_condition*)iterator->item;
-        nm_iam_condition_free(condition);
-        iterator = iterator->next;
+    if (statement->conditions != NULL) {
+        nm_iam_expression_free(statement->conditions);
     }
-    nm_iam_list_clear(&statement->conditions);
     free(statement);
 }
 
@@ -206,12 +340,65 @@ void nm_iam_list_entry_free(struct nm_iam_list_entry* entry)
     free(entry);
 }
 
-struct nm_iam_condition* nm_iam_condition_new()
+struct nm_iam_expression* nm_iam_expression_new()
 {
-    return (struct nm_iam_condition*)malloc(sizeof(struct nm_iam_condition));
+    return (struct nm_iam_expression*)malloc(sizeof(struct nm_iam_expression));
 }
 
-void nm_iam_condition_free(struct nm_iam_condition* condition)
+void nm_iam_expression_free(struct nm_iam_expression* expression)
 {
-    free(condition);
+    free(expression);
+}
+
+struct nm_iam_expression* nm_iam_expression_and(struct nm_iam_expression* lhs, struct nm_iam_expression* rhs)
+{
+    struct nm_iam_expression* expression = nm_iam_expression_new();
+    expression->type = NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND;
+    expression->data.booleanExpression.lhs = lhs;
+    expression->data.booleanExpression.rhs = rhs;
+    return expression;
+}
+
+struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item item)
+{
+    struct nm_iam_expression* expression = nm_iam_expression_new();
+    expression->data.predicate.type = NM_IAM_PREDICATE_TYPE_STRING_EQUAL;
+    expression->data.predicate.lhs = lhs;
+    expression->data.predicate.rhs = item;
+    return expression;
+}
+
+struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item rhs)
+{
+    struct nm_iam_expression* expression = nm_iam_expression_new();
+    expression->data.predicate.type = NM_IAM_PREDICATE_TYPE_NUMBER_EQUAL;
+    expression->data.predicate.lhs = lhs;
+    expression->data.predicate.rhs = rhs;
+    return expression;
+}
+
+struct nm_iam_predicate_item nm_iam_predicate_item_string(const char* string)
+{
+    struct nm_iam_predicate_item item;
+    item.type = NM_IAM_PREDICATE_ITEM_TYPE_VALUE;
+    item.data.value.type = NM_IAM_VALUE_TYPE_STRING;
+    item.data.value.data.string = string;
+    return item;
+}
+
+struct nm_iam_predicate_item nm_iam_predicate_item_number(uint32_t number)
+{
+    struct nm_iam_predicate_item item;
+    item.type = NM_IAM_PREDICATE_ITEM_TYPE_VALUE;
+    item.data.value.type = NM_IAM_VALUE_TYPE_NUMBER;
+    item.data.value.data.number = number;
+    return item;
+}
+
+struct nm_iam_predicate_item nm_iam_predicate_item_variable(struct nm_iam_variable* variable)
+{
+    struct nm_iam_predicate_item item;
+    item.type = NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE;
+    item.data.variable = variable;
+    return item;
 }

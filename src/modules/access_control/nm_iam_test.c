@@ -1,6 +1,8 @@
 #include "nm_access_control_tests.h"
 #include "nm_access_control.h"
 
+#include <platform/np_unit_test.h>
+
 void nm_iam_test_prepare_firmware_iam(struct nm_iam* iam)
 {
     nm_iam_add_action(iam, nm_iam_action_new("firmware:Update"));
@@ -33,10 +35,10 @@ void nm_iam_test_add_ssh_tunnel_policy(struct nm_iam* iam)
     nm_iam_statement_add_action(statement, nm_iam_get_action(iam, "tunnel:Open"));
     nm_iam_statement_add_action(statement, nm_iam_get_action(iam, "tunnel:Get"));
 
-    // TODO add conditions for port and host
-    //struct nm_iam_condition* hostMatches = nm_iam_condition_new();
 
-//    nm_iam_statement_add_condition()
+    statement->conditions = nm_iam_expression_and(
+        nm_iam_expression_string_equal(nm_iam_get_variable(iam, "tcptunnel:host"), nm_iam_predicate_item_string("localhost")),
+        nm_iam_expression_string_equal(nm_iam_get_variable(iam, "tcptunnel:port"), nm_iam_predicate_item_number(22)));
 
     nm_iam_policy_add_statement(policy, statement);
     nm_iam_add_policy(iam, policy);
@@ -51,5 +53,6 @@ void nm_iam_test_create_programmatic_policy()
     nm_iam_test_prepare_tunnel_iam(&iam);
     nm_iam_test_add_firmware_update_policy(&iam);
     nm_iam_test_add_ssh_tunnel_policy(&iam);
+
 
 }

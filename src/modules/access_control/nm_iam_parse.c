@@ -26,7 +26,7 @@ Example policy
     {
       "effect": "allow",
       "actions": [ "tcptunnel:Open", "tcptunnel:Get" ],
-      "conditions": [
+      "condition": [
         { "StringEqual": { "tcptunnel:Host": [ "localhost" ] } },
         { "integerEqual": { "tcptunnel:Port": [ 22 ] } }
       ]
@@ -50,9 +50,7 @@ Example policy
     {
       "effect": "allow",
       "actions": [ "tcptunnel:Show" ],
-      "condition": [
-        { "StringEqual": { "tcptunnel:UserId": [ "${connection:UserId}" ] } }
-      ]
+      "condition": { "StringEqual": [ { "Variable": "tcptunnel:UserId" }, {"Variable": "connection:UserId"} ] )
     }
   ]
 }
