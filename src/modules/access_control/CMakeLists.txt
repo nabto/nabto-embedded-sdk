@@ -3,6 +3,7 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 set(access_control_src
   nm_access_control.c
   nm_iam_parse.c
+  nm_iam_util.c
   )
 
 set(test_src

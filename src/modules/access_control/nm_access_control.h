@@ -127,7 +127,7 @@ struct nm_iam_role {
 
 struct nm_iam_user {
     const char* name;
-    struct nm_iam_list* roles;
+    struct nm_iam_list roles;
 };
 
 struct nm_iam_action {
@@ -145,11 +145,12 @@ struct nm_iam {
 void nm_iam_init(struct nm_iam* iam);
 
 void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy);
+struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* name);
 
 enum nm_iam_evaluation_result nm_iam_eval_statement(struct nm_iam_statement* statement, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action);
 
 // test if a user has access to the given action by evaluating the roles the user is giving in the context given by the variable instances.
-bool nn_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action);
+bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action);
 
 // VARIABLES
 // return false if the variable could not be added to the list of known variables
@@ -158,9 +159,14 @@ bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_value
 // return a variable or NULL if it does not exists.
 struct nm_iam_variable* nm_iam_get_variable(struct nm_iam* iam, const char* name);
 
-void nm_iam_init_variable_instance_integer(struct nm_iam_variable_instance* instance, struct nm_iam_variable* variable, uint32_t integer);
-void nm_iam_init_variable_instance_string(struct nm_iam_variable_instance* instance, struct nm_iam_variable* variable, const char* string);
+void nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role);
+struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* name);
 
+void nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user);
+struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* name);
+
+void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy);
+struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* name);
 
 // ACTIONS
 struct nm_iam_action* nm_iam_action_new(const char* name);
@@ -207,5 +213,21 @@ struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_variable*
 struct nm_iam_predicate_item nm_iam_predicate_item_string(const char* string);
 struct nm_iam_predicate_item nm_iam_predicate_item_number(uint32_t number);
 struct nm_iam_predicate_item nm_iam_predicate_item_variable(struct nm_iam_variable* variable);
+
+// ROLES
+
+struct nm_iam_role* nm_iam_role_new(const char* name);
+void nm_iam_role_free(struct nm_iam_role* role);
+
+void nm_iam_role_add_policy(struct nm_iam_role* role, struct nm_iam_policy* policy);
+
+
+// USERS
+
+struct nm_iam_user* nm_iam_user_new(const char* name);
+void nm_iam_user_free(struct nm_iam_user* user);
+
+void nm_iam_user_add_role(struct nm_iam_user* user, struct nm_iam_role* role);
+
 
 #endif

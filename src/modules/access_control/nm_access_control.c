@@ -1,4 +1,5 @@
 #include "nm_access_control.h"
+#include "nm_iam_util.h"
 
 #include <platform/np_platform.h>
 
@@ -22,11 +23,6 @@ void nm_iam_init(struct nm_iam* iam)
     nm_iam_list_init(&iam->roles);
     nm_iam_list_init(&iam->policies);
     nm_iam_list_init(&iam->variables);
-}
-
-void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy)
-{
-    nm_iam_list_insert_entry_back(&iam->policies, policy);
 }
 
 struct nm_iam_variable_instance* nm_iam_find_variable(struct nm_iam_list* variableInstances, struct nm_iam_variable* variable)
@@ -116,24 +112,72 @@ bool nm_iam_evaluate_expression(struct nm_iam_expression* expression, struct nm_
 {
     if (expression->type == NM_IAM_EXPRESSION_TYPE_PREDICATE) {
         struct nm_iam_predicate* predicate = &expression->data.predicate;
-        struct nm_iam_variable_instance* lhs = nm_iam_find_variable(variableInstances, predicate->lhs);
-
-
+        return nm_iam_evaluate_predicate(predicate, variableInstances);
+    } else if (expression->type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
+        struct nm_iam_boolean_expression* booleanExpression = &expression->data.booleanExpression;
+        struct nm_iam_expression* lhs = booleanExpression->lhs;
+        struct nm_iam_expression* rhs = booleanExpression->rhs;
+        if (booleanExpression->type == NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND) {
+            return
+                nm_iam_evaluate_expression(lhs, variableInstances) &&
+                nm_iam_evaluate_expression(rhs, variableInstances);
+        } else if (booleanExpression->type == NM_IAM_BOOLEAN_EXPRESSION_TYPE_OR) {
+            return
+                nm_iam_evaluate_expression(lhs, variableInstances) ||
+                nm_iam_evaluate_expression(rhs, variableInstances);
+        } else {
+            return false;
+        }
     }
     return false;
 }
 
-enum nm_iam_evaluation_result nm_iam_eval_statement(struct nm_iam_statement* statement, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action)
+enum nm_iam_evaluation_result nm_iam_evaluate_statement(struct nm_iam_statement* statement, struct nm_iam_list* variableInstances, struct nm_iam_action* action)
 {
     // 1. check that action matches
     // 2. check that the conditions has all the required variables.
     // 3. check if the conditions evaluates to true or false.
-    return NM_IAM_EVALUATION_RESULT_DENY;
+
+    if (!nm_iam_find_action_in_list(&statement->actions, action)) {
+        return NM_IAM_EVALUATION_RESULT_NONE;
+    }
+
+    // if conditions is NULL then the check is only based on the list of actions.
+    if (statement->conditions == NULL) {
+        if (statement->effect == NM_IAM_EFFECT_ALLOW) {
+            return NM_IAM_EVALUATION_RESULT_ALLOW;
+        } else if (statement->effect == NM_IAM_EFFECT_DENY) {
+            return NM_IAM_EVALUATION_RESULT_DENY;
+        } else {
+            // never here
+            return NM_IAM_EVALUATION_RESULT_NONE;
+        }
+    }
+
+    if (!nm_iam_expression_has_all_variables(statement->conditions, variableInstances)) {
+        // TODO decide if this is deny or none
+        return NM_IAM_EVALUATION_RESULT_NONE;
+    }
+
+
+    if (nm_iam_evaluate_expression(statement->conditions, variableInstances)) {
+        if (statement->effect == NM_IAM_EFFECT_ALLOW) {
+            return NM_IAM_EVALUATION_RESULT_ALLOW;
+        } else if (statement->effect == NM_IAM_EFFECT_DENY) {
+            return NM_IAM_EVALUATION_RESULT_DENY;
+        }
+    } else {
+        return NM_IAM_EVALUATION_RESULT_NONE;
+    }
+
+    // never here
+    return NM_IAM_EVALUATION_RESULT_NONE;
+
 }
 
 bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action)
 {
-    //bool granted = false;
+    bool granted = false;
     /* for (role r : roles) { */
     /*     for (policy p : policies) { */
     /*         for (statement s : statements) { */
@@ -141,7 +185,32 @@ bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, s
     /*         } */
     /*     } */
     /* } */
-    return false;
+
+    struct nm_iam_list_entry* roleIterator = user->roles.sentinel.next;
+    while(roleIterator != &user->roles.sentinel) {
+        struct nm_iam_role* role = (struct nm_iam_role*)roleIterator->item;
+        struct nm_iam_list_entry* policyIterator = role->policies.sentinel.next;
+        while(policyIterator != & role->policies.sentinel) {
+            struct nm_iam_policy* policy = (struct nm_iam_policy*)policyIterator->item;
+            struct nm_iam_list_entry* statementIterator = policy->statements.sentinel.next;
+            while (statementIterator != &policy->statements.sentinel) {
+                struct nm_iam_statement* statement = (struct nm_iam_statement*)(statementIterator->item);
+                enum nm_iam_evaluation_result result = nm_iam_evaluate_statement(statement, variableInstances, action);
+                if (result == NM_IAM_EVALUATION_RESULT_NONE) {
+                    // no change
+                } else if (result == NM_IAM_EVALUATION_RESULT_ALLOW) {
+                    granted = true;
+                } else if (result == NM_IAM_EVALUATION_RESULT_DENY) {
+                    granted = false;
+                }
+                statementIterator = statementIterator->next;
+            }
+            policyIterator = policyIterator->next;
+
+        }
+        roleIterator = roleIterator->next;
+    }
+    return granted;
 }
 
 bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_value_type type)
@@ -160,6 +229,60 @@ struct nm_iam_variable* nm_iam_get_variable(struct nm_iam* iam, const char* name
         struct nm_iam_variable* variable = (struct nm_iam_variable*)iterator->item;
         if (strcmp(variable->name, name) == 0) {
             return variable;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
+void nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role)
+{
+    nm_iam_list_insert_entry_back(&iam->roles, role);
+}
+
+struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* name)
+{
+    struct nm_iam_list_entry* iterator = iam->roles.sentinel.next;
+    while(iterator != &iam->roles.sentinel) {
+        struct nm_iam_role* role = (struct nm_iam_role*)iterator->item;
+        if (strcmp(role->name, name) == 0) {
+            return role;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
+void nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
+{
+    nm_iam_list_insert_entry_back(&iam->users, user);
+}
+
+struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* name)
+{
+    struct nm_iam_list_entry* iterator = iam->users.sentinel.next;
+    while(iterator != &iam->users.sentinel) {
+        struct nm_iam_user* user = (struct nm_iam_user*)iterator->item;
+        if (strcmp(user->name, name) == 0) {
+            return user;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
+void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy)
+{
+    nm_iam_list_insert_entry_back(&iam->policies, policy);
+}
+
+struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* name)
+{
+    struct nm_iam_list_entry* iterator = iam->policies.sentinel.next;
+    while(iterator != &iam->policies.sentinel) {
+        struct nm_iam_policy* policy = (struct nm_iam_policy*)iterator->item;
+        if (strcmp(policy->name, name) == 0) {
+            return policy;
         }
         iterator = iterator->next;
     }
@@ -401,4 +524,45 @@ struct nm_iam_predicate_item nm_iam_predicate_item_variable(struct nm_iam_variab
     item.type = NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE;
     item.data.variable = variable;
     return item;
+}
+
+struct nm_iam_role* nm_iam_role_new(const char* name)
+{
+    struct nm_iam_role* role = (struct nm_iam_role*)malloc(sizeof(struct nm_iam_role));
+    role->name = name;
+    nm_iam_list_init(&role->policies);
+    return role;
+}
+
+void nm_iam_role_free(struct nm_iam_role* role)
+{
+    // TODO free list of roles
+    free(role);
+}
+
+void nm_iam_role_add_policy(struct nm_iam_role* role, struct nm_iam_policy* policy)
+{
+    nm_iam_list_insert_entry_back(&role->policies, policy);
+}
+
+
+// USERS
+
+struct nm_iam_user* nm_iam_user_new(const char* name)
+{
+    struct nm_iam_user* user = (struct nm_iam_user*)malloc(sizeof(struct nm_iam_user));
+    user->name = name;
+    nm_iam_list_init(&user->roles);
+    return user;
+}
+
+void nm_iam_user_free(struct nm_iam_user* user)
+{
+    // todo free list of roles.
+    free(user);
+}
+
+void nm_iam_user_add_role(struct nm_iam_user* user, struct nm_iam_role* role)
+{
+    nm_iam_list_insert_entry_back(&user->roles, role);
 }
