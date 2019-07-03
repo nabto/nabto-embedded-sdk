@@ -42,15 +42,17 @@ bool nm_iam_expression_has_all_attributes(struct nm_iam_expression* expression, 
 {
     if (expression->type == NM_IAM_EXPRESSION_TYPE_PREDICATE) {
         struct nm_iam_predicate* predicate = &expression->data.predicate;
-        if (nm_iam_find_attribute(attributes, predicate->lhs) != NULL) {
-            if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE) {
-                return (nm_iam_find_attribute(attributes, predicate->rhs.data.attributeName) != NULL);
-            } else {
-                return true;
+        if (predicate->lhs.type == NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE) {
+            if (nm_iam_find_attribute(attributes, predicate->lhs.data.attributeName) == NULL) {
+                return false;
             }
-        } else {
-            return false;
         }
+        if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE) {
+            if (nm_iam_find_attribute(attributes, predicate->rhs.data.attributeName) == NULL) {
+                return false;
+            }
+        }
+        return true;
     } else if (expression->type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
         struct nm_iam_boolean_expression* booleanExpression = &expression->data.booleanExpression;
         struct nm_iam_list_entry* iterator = booleanExpression->expressions.sentinel.next;
@@ -89,8 +91,14 @@ bool nm_iam_evaluate_predicate(struct nm_iam_predicate* predicate, struct nm_iam
     struct nm_iam_value lhs;
     struct nm_iam_value rhs;
 
-    struct nm_iam_attribute* lhsAttribute = nm_iam_find_attribute(attributes, predicate->lhs);
-    lhs = lhsAttribute->value;
+    if (predicate->lhs.type == NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE) {
+        struct nm_iam_attribute* lhsAttribute = nm_iam_find_attribute(attributes, predicate->lhs.data.attributeName);
+        lhs = lhsAttribute->value;
+    } else if (predicate->lhs.type == NM_IAM_PREDICATE_ITEM_TYPE_VALUE) {
+        lhs = predicate->lhs.data.value;
+    } else {
+        return false;
+    }
 
     if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE) {
         struct nm_iam_attribute* rhsAttribute = nm_iam_find_attribute(attributes, predicate->rhs.data.attributeName);
@@ -483,22 +491,41 @@ void nm_iam_list_entry_free(struct nm_iam_list_entry* entry)
     free(entry);
 }
 
-struct nm_iam_expression* nm_iam_expression_new()
+struct nm_iam_expression* nm_iam_expression_new(enum nm_iam_expression_type type)
 {
-    return (struct nm_iam_expression*)malloc(sizeof(struct nm_iam_expression));
+    struct nm_iam_expression* expression = (struct nm_iam_expression*)malloc(sizeof(struct nm_iam_expression));
+    expression->type = type;
+
+    if (type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
+        nm_iam_list_init(&expression->data.booleanExpression.expressions);
+    }
+    return expression;
+}
+
+struct nm_iam_expression* nm_iam_boolean_expression_new(enum nm_iam_boolean_expression_type type)
+{
+    struct nm_iam_expression* expression = nm_iam_expression_new(NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION);
+    expression->data.booleanExpression.type = type;
+    return expression;
+}
+
+struct nm_iam_expression* nm_iam_predicate_new(enum nm_iam_predicate_type type)
+{
+    struct nm_iam_expression* expression = nm_iam_expression_new(NM_IAM_EXPRESSION_TYPE_PREDICATE);
+    expression->data.predicate.type = type;
+    return expression;
 }
 
 void nm_iam_expression_free(struct nm_iam_expression* expression)
 {
+    // todo free expression list
     free(expression);
 }
 
 struct nm_iam_expression* nm_iam_expression_and()
 {
-    struct nm_iam_expression* expression = nm_iam_expression_new();
-    expression->type = NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION;
+    struct nm_iam_expression* expression = nm_iam_expression_new(NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION);
     expression->data.booleanExpression.type = NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND;
-    nm_iam_list_init(&expression->data.booleanExpression.expressions);
     return expression;
 }
 
@@ -507,20 +534,18 @@ void nm_iam_boolean_expression_add_expression(struct nm_iam_expression* expressi
     nm_iam_list_insert_entry_back(&expression->data.booleanExpression.expressions, e);
 }
 
-struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item item)
+struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_predicate_item lhs, struct nm_iam_predicate_item rhs)
 {
-    struct nm_iam_expression* expression = nm_iam_expression_new();
-    expression->type = NM_IAM_EXPRESSION_TYPE_PREDICATE;
+    struct nm_iam_expression* expression = nm_iam_expression_new(NM_IAM_EXPRESSION_TYPE_PREDICATE);
     expression->data.predicate.type = NM_IAM_PREDICATE_TYPE_STRING_EQUAL;
     expression->data.predicate.lhs = lhs;
-    expression->data.predicate.rhs = item;
+    expression->data.predicate.rhs = rhs;
     return expression;
 }
 
-struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs)
+struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_predicate_item lhs, struct nm_iam_predicate_item rhs)
 {
-    struct nm_iam_expression* expression = nm_iam_expression_new();
-    expression->type = NM_IAM_EXPRESSION_TYPE_PREDICATE;
+    struct nm_iam_expression* expression = nm_iam_expression_new(NM_IAM_EXPRESSION_TYPE_PREDICATE);
     expression->data.predicate.type = NM_IAM_PREDICATE_TYPE_NUMBER_EQUAL;
     expression->data.predicate.lhs = lhs;
     expression->data.predicate.rhs = rhs;
@@ -545,8 +570,9 @@ struct nm_iam_predicate_item nm_iam_predicate_item_number(uint32_t number)
     return item;
 }
 
-struct nm_iam_predicate_item nm_iam_predicate_item_attribute_name(struct nm_iam_attribute_name* attributeName)
+struct nm_iam_predicate_item nm_iam_predicate_item_attribute(struct nm_iam* iam, const char* name)
 {
+    struct nm_iam_attribute_name* attributeName = nm_iam_get_attribute_name(iam, name);
     struct nm_iam_predicate_item item;
     item.type = NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE;
     item.data.attributeName = attributeName;

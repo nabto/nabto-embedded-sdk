@@ -89,7 +89,7 @@ struct nm_iam_predicate_item {
 
 struct nm_iam_predicate {
     enum nm_iam_predicate_type type;
-    struct nm_iam_attribute_name* lhs;
+    struct nm_iam_predicate_item lhs;
     struct nm_iam_predicate_item rhs;
 };
 
@@ -196,18 +196,21 @@ void nm_iam_statement_add_action(struct nm_iam_statement* statement, struct nm_i
 
 // CONDITION EXPRESSIONS
 
-struct nm_iam_expression* nm_iam_expression_new();
+struct nm_iam_expression* nm_iam_expression_new(enum nm_iam_expression_type type);
+struct nm_iam_expression* nm_iam_boolean_expression_new(enum nm_iam_boolean_expression_type type);
+struct nm_iam_expression* nm_iam_predicate_new(enum nm_iam_predicate_type type);
+
 void nm_iam_expression_free(struct nm_iam_expression* expression);
 
 struct nm_iam_expression* nm_iam_expression_and();
 void nm_iam_boolean_expression_add_expression(struct nm_iam_expression* expression, struct nm_iam_expression* e);
 
-struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs);
-struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs);
+struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_predicate_item lhs, struct nm_iam_predicate_item rhs);
+struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_predicate_item lhs, struct nm_iam_predicate_item rhs);
 
 struct nm_iam_predicate_item nm_iam_predicate_item_string(const char* string);
 struct nm_iam_predicate_item nm_iam_predicate_item_number(uint32_t number);
-struct nm_iam_predicate_item nm_iam_predicate_item_attribute(struct nm_iam_attribute* attribute);
+struct nm_iam_predicate_item nm_iam_predicate_item_attribute(struct nm_iam* iam, const char* attributeName);
 
 // ROLES
 

@@ -64,8 +64,10 @@ struct nm_iam_policy* nm_iam_parse_policy_json(struct nm_iam* iam, cJSON* root);
 bool nm_iam_parse_statement(struct nm_iam* iam, cJSON* statement, struct nm_iam_policy* policy);
 bool nm_iam_parse_statement_effect(cJSON* effect, struct nm_iam_statement* statement);
 bool nm_iam_parse_statement_actions(struct nm_iam* iam, cJSON* actions, struct nm_iam_statement* statement);
-bool nm_iam_parse_expression(struct nm_iam* iam, cJSON* conditions, struct nm_iam_statement* statement);
-
+struct nm_iam_expression* nm_iam_parse_expression(struct nm_iam* iam, cJSON* conditions);
+struct nm_iam_expression* nm_iam_parse_boolean_expression(struct nm_iam* iam, cJSON* list, enum nm_iam_boolean_expression_type type);
+struct nm_iam_expression* nm_iam_parse_predicate(struct nm_iam* iam, cJSON* predicate, enum nm_iam_predicate_type type);
+bool nm_iam_parse_predicate_item(struct nm_iam* iam, cJSON* obj, struct nm_iam_predicate_item* item);
 
 struct nm_iam_policy* nm_iam_parse_policy(struct nm_iam* iam, const char* json)
 {
@@ -142,7 +144,7 @@ bool nm_iam_parse_statement(struct nm_iam* iam, cJSON* statement, struct nm_iam_
 
     if (nm_iam_parse_statement_effect(effect, iamStatement) &&
         nm_iam_parse_statement_actions(iam, actions, iamStatement) &&
-        nm_iam_parse_expression(iam, conditions, iamStatement))
+        nm_iam_parse_expression(iam, conditions))
     {
         return true;
     }
@@ -178,28 +180,79 @@ bool nm_iam_parse_statement_actions(struct nm_iam* iam, cJSON* actions, struct n
     return true;
 }
 
-bool nm_iam_parse_expression(struct nm_iam* iam, cJSON* conditions, struct nm_iam_statement* statement)
+struct nm_iam_expression* nm_iam_parse_expression(struct nm_iam* iam, cJSON* conditions)
 {
     if (conditions == NULL) {
-        return true;
+        return NULL;
     }
-    /* cJSON* and =  cJSON_GetObjectItemCaseSensitive(statement, "And"); */
-    /* cJSON* or = cJSON_GetObjectItemCaseSensitive(statement, "Or"); */
-    /* cJSON* stringEqual = cJSON_GetObjectItemCaseSensitive(statement, "StringEqual"); */
-    /* cJSON* numberEqual = cJSON_GetObjectItemCaseSensitive(statement, "NumberEqual"); */
+    cJSON* and =  cJSON_GetObjectItemCaseSensitive(conditions, "And");
+    cJSON* or = cJSON_GetObjectItemCaseSensitive(conditions, "Or");
+    cJSON* stringEqual = cJSON_GetObjectItemCaseSensitive(conditions, "StringEqual");
+    cJSON* numberEqual = cJSON_GetObjectItemCaseSensitive(conditions, "NumberEqual");
 
-    /* if (and) { */
-    /*     nm_iam_parse_boolean_expression(iam, and) */
-    /* } */
+    if (and) {
+        return nm_iam_parse_boolean_expression(iam, and, NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND);
+    } else if (or) {
+        return nm_iam_parse_boolean_expression(iam, or, NM_IAM_BOOLEAN_EXPRESSION_TYPE_OR);
+    } else if (stringEqual) {
+        return nm_iam_parse_predicate(iam, stringEqual, NM_IAM_PREDICATE_TYPE_STRING_EQUAL);
+    } else if (numberEqual) {
+        return nm_iam_parse_predicate(iam, numberEqual, NM_IAM_PREDICATE_TYPE_NUMBER_EQUAL);
+    }
 
     /* // TODO */
-    return false;
+    return NULL;
 }
 
-bool nm_iam_parse_predicate(struct nm_iam* iam, cJSON* predicate, struct nm_iam_expression* expression)
+struct nm_iam_expression* nm_iam_parse_boolean_expression(struct nm_iam* iam, cJSON* list, enum nm_iam_boolean_expression_type type)
 {
+    struct nm_iam_expression* expression = nm_iam_boolean_expression_new(type);
+
+    cJSON* j;
+
+    cJSON_ArrayForEach(j, list)
+    {
+        struct nm_iam_expression* e = nm_iam_parse_expression(iam, j);
+        nm_iam_list_insert_entry_back(&expression->data.booleanExpression.expressions, e);
+    }
+    return expression;
+}
+
+struct nm_iam_expression* nm_iam_parse_predicate(struct nm_iam* iam, cJSON* predicate, enum nm_iam_predicate_type type)
+{
+    int arraySize = cJSON_GetArraySize(predicate);
+    if (arraySize != 2) {
+        return NULL;
+    }
+    struct nm_iam_expression* expression = nm_iam_predicate_new(type);
+
+    nm_iam_parse_predicate_item(iam, cJSON_GetArrayItem(predicate, 0), &expression->data.predicate.lhs);
+    nm_iam_parse_predicate_item(iam, cJSON_GetArrayItem(predicate, 1), &expression->data.predicate.rhs);
+
     return false;
 
+}
+
+bool nm_iam_parse_predicate_item(struct nm_iam* iam, cJSON* obj, struct nm_iam_predicate_item* item)
+{
+    cJSON* attribute = cJSON_GetObjectItemCaseSensitive(obj, "Attribute");
+    if (cJSON_IsNumber(obj)) {
+        item->type = NM_IAM_PREDICATE_ITEM_TYPE_VALUE;
+        item->data.value.type = NM_IAM_VALUE_TYPE_NUMBER;
+        item->data.value.data.number = obj->valueint;
+    } else if (cJSON_IsString(obj)) {
+        item->type = NM_IAM_PREDICATE_ITEM_TYPE_VALUE;
+        item->data.value.type = NM_IAM_VALUE_TYPE_STRING;
+        item->data.value.data.string = strdup(obj->string);
+    } else if (cJSON_IsObject(obj) && cJSON_IsString(attribute)) {
+        item->type = NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE;
+        struct nm_iam_attribute_name* attributeName = nm_iam_get_attribute_name(iam, attribute->string);
+        item->data.attributeName = attributeName;
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 //bool nm_iam_parse_boolean_expression()
