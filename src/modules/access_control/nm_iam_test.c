@@ -3,14 +3,6 @@
 
 #include <platform/np_unit_test.h>
 
-void nm_iam_test_prepare_firmware_iam(struct nm_iam* iam)
-{
-}
-
-void nm_iam_test_prepare_tunnel_iam(struct nm_iam* iam)
-{
-}
-
 void nm_iam_test_add_firmware_update_policy(struct nm_iam* iam)
 {
     struct nm_iam_policy* policy = nm_iam_policy_new(iam, "FirmwareUpdate");
@@ -68,8 +60,6 @@ void nm_iam_test_create_programmatic_policy()
 {
     struct nm_iam iam;
     nm_iam_init(&iam);
-    nm_iam_test_prepare_firmware_iam(&iam);
-    nm_iam_test_prepare_tunnel_iam(&iam);
     nm_iam_test_add_firmware_update_policy(&iam);
     nm_iam_test_add_ssh_tunnel_policy(&iam);
 

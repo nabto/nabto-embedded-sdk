@@ -302,7 +302,7 @@ struct nm_iam_action* nm_iam_action_new(const char* name)
 
 void nm_iam_action_free(struct nm_iam_action* action)
 {
-    // the pointer is just the const char* owner elsewhere
+    free(action);
 }
 
 struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* action)

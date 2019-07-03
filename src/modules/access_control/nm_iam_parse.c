@@ -64,7 +64,7 @@ struct nm_iam_policy* nm_iam_parse_policy_json(struct nm_iam* iam, cJSON* root);
 bool nm_iam_parse_statement(struct nm_iam* iam, cJSON* statement, struct nm_iam_policy* policy);
 bool nm_iam_parse_statement_effect(cJSON* effect, struct nm_iam_statement* statement);
 bool nm_iam_parse_statement_actions(struct nm_iam* iam, cJSON* actions, struct nm_iam_statement* statement);
-bool nm_iam_parse_statement_conditions(struct nm_iam* iam, cJSON* conditions, struct nm_iam_statement* statement);
+bool nm_iam_parse_expression(struct nm_iam* iam, cJSON* conditions, struct nm_iam_statement* statement);
 
 
 struct nm_iam_policy* nm_iam_parse_policy(struct nm_iam* iam, const char* json)
@@ -142,7 +142,7 @@ bool nm_iam_parse_statement(struct nm_iam* iam, cJSON* statement, struct nm_iam_
 
     if (nm_iam_parse_statement_effect(effect, iamStatement) &&
         nm_iam_parse_statement_actions(iam, actions, iamStatement) &&
-        nm_iam_parse_statement_conditions(iam, conditions, iamStatement))
+        nm_iam_parse_expression(iam, conditions, iamStatement))
     {
         return true;
     }
@@ -178,11 +178,28 @@ bool nm_iam_parse_statement_actions(struct nm_iam* iam, cJSON* actions, struct n
     return true;
 }
 
-bool nm_iam_parse_statement_conditions(struct nm_iam* iam, cJSON* conditions, struct nm_iam_statement* statement)
+bool nm_iam_parse_expression(struct nm_iam* iam, cJSON* conditions, struct nm_iam_statement* statement)
 {
     if (conditions == NULL) {
         return true;
     }
-    // TODO
+    /* cJSON* and =  cJSON_GetObjectItemCaseSensitive(statement, "And"); */
+    /* cJSON* or = cJSON_GetObjectItemCaseSensitive(statement, "Or"); */
+    /* cJSON* stringEqual = cJSON_GetObjectItemCaseSensitive(statement, "StringEqual"); */
+    /* cJSON* numberEqual = cJSON_GetObjectItemCaseSensitive(statement, "NumberEqual"); */
+
+    /* if (and) { */
+    /*     nm_iam_parse_boolean_expression(iam, and) */
+    /* } */
+
+    /* // TODO */
     return false;
 }
+
+bool nm_iam_parse_predicate(struct nm_iam* iam, cJSON* predicate, struct nm_iam_expression* expression)
+{
+    return false;
+
+}
+
+//bool nm_iam_parse_boolean_expression()
