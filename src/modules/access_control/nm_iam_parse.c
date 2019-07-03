@@ -50,7 +50,11 @@ Example policy
     {
       "effect": "allow",
       "actions": [ "tcptunnel:Show" ],
-      "condition": { "StringEqual": [ { "Variable": "tcptunnel:UserId" }, {"Variable": "connection:UserId"} ] )
+      "condition": {
+        "StringEqual": [
+          {"Attribute": "tcptunnel:UserId" },
+          {"Attribute": "connection:UserId"}
+        ] }
     }
   ]
 }

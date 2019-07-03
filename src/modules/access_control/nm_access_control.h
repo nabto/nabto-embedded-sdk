@@ -51,12 +51,11 @@ struct nm_iam_list {
     struct nm_iam_list_entry sentinel;
 };
 
-struct nm_iam_variable {
+struct nm_iam_attribute_name {
     enum nm_iam_value_type type;
     const char* name;
 };
 
-// TODO rename to attribute value
 struct nm_iam_value {
     enum nm_iam_value_type type;
     union {
@@ -65,8 +64,8 @@ struct nm_iam_value {
     } data;
 };
 
-struct nm_iam_variable_instance {
-    struct nm_iam_variable* variable;
+struct nm_iam_attribute {
+    struct nm_iam_attribute_name* name;
     struct nm_iam_value value;
 };
 
@@ -76,21 +75,21 @@ enum nm_iam_expression_type {
 };
 
 enum nm_iam_predicate_item_type {
-    NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE,
+    NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE,
     NM_IAM_PREDICATE_ITEM_TYPE_VALUE
 };
 
 struct nm_iam_predicate_item {
     enum nm_iam_predicate_item_type type;
     union {
-        struct nm_iam_variable* variable;
+        struct nm_iam_attribute_name* attributeName;
         struct nm_iam_value value;
     } data;
 };
 
 struct nm_iam_predicate {
     enum nm_iam_predicate_type type;
-    struct nm_iam_variable* lhs;
+    struct nm_iam_attribute_name* lhs;
     struct nm_iam_predicate_item rhs;
 };
 
@@ -134,12 +133,16 @@ struct nm_iam_action {
     // the pointer is just a pointer to the name.
 };
 
+struct nm_iam_attributes {
+    struct nm_iam_list attributes;
+};
+
 struct nm_iam {
     struct nm_iam_list users;
     struct nm_iam_list actions;
     struct nm_iam_list roles;
     struct nm_iam_list policies;
-    struct nm_iam_list variables;
+    struct nm_iam_list attributeNames;
 };
 
 void nm_iam_init(struct nm_iam* iam);
@@ -147,17 +150,16 @@ void nm_iam_init(struct nm_iam* iam);
 void nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy);
 struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* name);
 
-enum nm_iam_evaluation_result nm_iam_eval_statement(struct nm_iam_statement* statement, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action);
+enum nm_iam_evaluation_result nm_iam_eval_statement(struct nm_iam_statement* statement, struct nm_iam_user* user, struct nm_iam_attributes* attributes, struct nm_iam_action* action);
 
-// test if a user has access to the given action by evaluating the roles the user is giving in the context given by the variable instances.
-bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action);
+// test if a user has access to the given action by evaluating the roles the user is giving in the context given by the attributes.
+bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_attributes* attributes, struct nm_iam_action* action);
 
-// VARIABLES
-// return false if the variable could not be added to the list of known variables
-bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_value_type type);
-
-// return a variable or NULL if it does not exists.
-struct nm_iam_variable* nm_iam_get_variable(struct nm_iam* iam, const char* name);
+// ATTRIBUTES
+// return false if the attribute could not be added to the list of known variables
+bool nm_iam_add_attribute_name(struct nm_iam* iam, const char* name, enum nm_iam_value_type type);
+struct nm_iam_attribute_name* nm_iam_add_and_get_attribute_name(struct nm_iam* iam, const char* name);
+struct nm_iam_attribute_name* nm_iam_get_attribute_name(struct nm_iam* iam, const char* name);
 
 void nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role);
 struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* name);
@@ -182,10 +184,6 @@ struct nm_iam_policy* nm_iam_policy_new(struct nm_iam* iam, const char* name);
 bool nm_iam_policy_free(struct nm_iam* iam, struct nm_iam_policy* policy);
 void nm_iam_policy_add_statement(struct nm_iam_policy* policy, struct nm_iam_statement* statement);
 
-// Test if action is allowed given the context.
-typedef void(*nm_iam_is_action_allowed_cb)(bool status, void* userData);
-bool nm_iam_async_is_action_allowed(struct nm_iam_list* roles, struct nm_iam_action* action, struct nm_iam_list* variables, nm_iam_is_action_allowed_cb cb, void* userData);
-
 // LISTS
 void nm_iam_list_init(struct nm_iam_list* list);
 void nm_iam_list_clear(struct nm_iam_list* list);
@@ -207,12 +205,12 @@ void nm_iam_expression_free(struct nm_iam_expression* expression);
 
 struct nm_iam_expression* nm_iam_expression_and(struct nm_iam_expression* lhs, struct nm_iam_expression* rhs);
 
-struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item rhs);
-struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item rhs);
+struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs);
+struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs);
 
 struct nm_iam_predicate_item nm_iam_predicate_item_string(const char* string);
 struct nm_iam_predicate_item nm_iam_predicate_item_number(uint32_t number);
-struct nm_iam_predicate_item nm_iam_predicate_item_variable(struct nm_iam_variable* variable);
+struct nm_iam_predicate_item nm_iam_predicate_item_attribute(struct nm_iam_attribute* attribute);
 
 // ROLES
 
@@ -228,6 +226,19 @@ struct nm_iam_user* nm_iam_user_new(const char* name);
 void nm_iam_user_free(struct nm_iam_user* user);
 
 void nm_iam_user_add_role(struct nm_iam_user* user, struct nm_iam_role* role);
+
+// ATTRIBUTE
+
+struct nm_iam_attribute* nm_iam_attribute_new();
+void nm_iam_attribute_free();
+
+// ATTRIBUTES
+
+struct nm_iam_attributes* nm_iam_attributes_new();
+void nm_iam_attributes_free(struct nm_iam_attributes* attributes);
+
+void nm_iam_attributes_add_string(struct nm_iam* iam, struct nm_iam_attributes* attributes, const char* attributeName, const char* attribute);
+void nm_iam_attributes_add_number(struct nm_iam* iam, struct nm_iam_attributes* attributes, const char* attributeName, uint32_t number);
 
 
 #endif

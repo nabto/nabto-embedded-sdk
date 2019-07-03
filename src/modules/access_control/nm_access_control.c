@@ -22,29 +22,29 @@ void nm_iam_init(struct nm_iam* iam)
     nm_iam_list_init(&iam->actions);
     nm_iam_list_init(&iam->roles);
     nm_iam_list_init(&iam->policies);
-    nm_iam_list_init(&iam->variables);
+    nm_iam_list_init(&iam->attributeNames);
 }
 
-struct nm_iam_variable_instance* nm_iam_find_variable(struct nm_iam_list* variableInstances, struct nm_iam_variable* variable)
+struct nm_iam_attribute* nm_iam_find_attribute(struct nm_iam_attributes* attributes, struct nm_iam_attribute_name* attributeName)
 {
-    struct nm_iam_list_entry* iterator = variableInstances->sentinel.next;
-    while(iterator != &variableInstances->sentinel) {
-        struct nm_iam_variable_instance* currentVariable = (struct nm_iam_variable_instance*)iterator->item;
-        if (currentVariable->variable == variable) {
-            return currentVariable;
+    struct nm_iam_list_entry* iterator = attributes->attributes.sentinel.next;
+    while(iterator != &attributes->attributes.sentinel) {
+        struct nm_iam_attribute* current = (struct nm_iam_attribute*)iterator->item;
+        if (current->name == attributeName) {
+            return current;
         }
         iterator = iterator->next;
     }
     return NULL;
 }
 
-bool nm_iam_expression_has_all_variables(struct nm_iam_expression* expression, struct nm_iam_list* variableInstances)
+bool nm_iam_expression_has_all_attributes(struct nm_iam_expression* expression, struct nm_iam_attributes* attributes)
 {
     if (expression->type == NM_IAM_EXPRESSION_TYPE_PREDICATE) {
         struct nm_iam_predicate* predicate = &expression->data.predicate;
-        if (nm_iam_find_variable(variableInstances, predicate->lhs) != NULL) {
-            if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE) {
-                return (nm_iam_find_variable(variableInstances, predicate->rhs.data.variable) != NULL);
+        if (nm_iam_find_attribute(attributes, predicate->lhs) != NULL) {
+            if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE) {
+                return (nm_iam_find_attribute(attributes, predicate->rhs.data.attributeName) != NULL);
             } else {
                 return true;
             }
@@ -54,8 +54,8 @@ bool nm_iam_expression_has_all_variables(struct nm_iam_expression* expression, s
     } else if (expression->type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
         struct nm_iam_boolean_expression* booleanExpression = &expression->data.booleanExpression;
         return
-            nm_iam_expression_has_all_variables(booleanExpression->lhs, variableInstances) &&
-            nm_iam_expression_has_all_variables(booleanExpression->rhs, variableInstances);
+            nm_iam_expression_has_all_attributes(booleanExpression->lhs, attributes) &&
+            nm_iam_expression_has_all_attributes(booleanExpression->rhs, attributes);
     }
 
     return false;
@@ -77,17 +77,17 @@ bool nm_iam_evaluate_number_equal(struct nm_iam_value* lhs, struct nm_iam_value*
     return false;
 }
 
-bool nm_iam_evaluate_predicate(struct nm_iam_predicate* predicate, struct nm_iam_list* variableInstances)
+bool nm_iam_evaluate_predicate(struct nm_iam_predicate* predicate, struct nm_iam_attributes* attributes)
 {
     struct nm_iam_value lhs;
     struct nm_iam_value rhs;
 
-    struct nm_iam_variable_instance* lhsVariableInstance = nm_iam_find_variable(variableInstances, predicate->lhs);
-    lhs = lhsVariableInstance->value;
+    struct nm_iam_attribute* lhsAttribute = nm_iam_find_attribute(attributes, predicate->lhs);
+    lhs = lhsAttribute->value;
 
-    if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE) {
-        struct nm_iam_variable_instance* rhsVariableInstance = nm_iam_find_variable(variableInstances, predicate->rhs.data.variable);
-        rhs = rhsVariableInstance->value;
+    if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE) {
+        struct nm_iam_attribute* rhsAttribute = nm_iam_find_attribute(attributes, predicate->rhs.data.attributeName);
+        rhs = rhsAttribute->value;
     } else if (predicate->rhs.type == NM_IAM_PREDICATE_ITEM_TYPE_VALUE) {
         rhs = predicate->rhs.data.value;
     } else {
@@ -108,23 +108,23 @@ bool nm_iam_evaluate_predicate(struct nm_iam_predicate* predicate, struct nm_iam
     return false;
 }
 
-bool nm_iam_evaluate_expression(struct nm_iam_expression* expression, struct nm_iam_list* variableInstances)
+bool nm_iam_evaluate_expression(struct nm_iam_expression* expression, struct nm_iam_attributes* attributes)
 {
     if (expression->type == NM_IAM_EXPRESSION_TYPE_PREDICATE) {
         struct nm_iam_predicate* predicate = &expression->data.predicate;
-        return nm_iam_evaluate_predicate(predicate, variableInstances);
+        return nm_iam_evaluate_predicate(predicate, attributes);
     } else if (expression->type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
         struct nm_iam_boolean_expression* booleanExpression = &expression->data.booleanExpression;
         struct nm_iam_expression* lhs = booleanExpression->lhs;
         struct nm_iam_expression* rhs = booleanExpression->rhs;
         if (booleanExpression->type == NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND) {
             return
-                nm_iam_evaluate_expression(lhs, variableInstances) &&
-                nm_iam_evaluate_expression(rhs, variableInstances);
+                nm_iam_evaluate_expression(lhs, attributes) &&
+                nm_iam_evaluate_expression(rhs, attributes);
         } else if (booleanExpression->type == NM_IAM_BOOLEAN_EXPRESSION_TYPE_OR) {
             return
-                nm_iam_evaluate_expression(lhs, variableInstances) ||
-                nm_iam_evaluate_expression(rhs, variableInstances);
+                nm_iam_evaluate_expression(lhs, attributes) ||
+                nm_iam_evaluate_expression(rhs, attributes);
         } else {
             return false;
         }
@@ -132,10 +132,10 @@ bool nm_iam_evaluate_expression(struct nm_iam_expression* expression, struct nm_
     return false;
 }
 
-enum nm_iam_evaluation_result nm_iam_evaluate_statement(struct nm_iam_statement* statement, struct nm_iam_list* variableInstances, struct nm_iam_action* action)
+enum nm_iam_evaluation_result nm_iam_evaluate_statement(struct nm_iam_statement* statement, struct nm_iam_attributes* attributes, struct nm_iam_action* action)
 {
     // 1. check that action matches
-    // 2. check that the conditions has all the required variables.
+    // 2. check that the conditions has all the required attributes.
     // 3. check if the conditions evaluates to true or false.
 
     if (!nm_iam_find_action_in_list(&statement->actions, action)) {
@@ -154,13 +154,13 @@ enum nm_iam_evaluation_result nm_iam_evaluate_statement(struct nm_iam_statement*
         }
     }
 
-    if (!nm_iam_expression_has_all_variables(statement->conditions, variableInstances)) {
+    if (!nm_iam_expression_has_all_attributes(statement->conditions, attributes)) {
         // TODO decide if this is deny or none
         return NM_IAM_EVALUATION_RESULT_NONE;
     }
 
 
-    if (nm_iam_evaluate_expression(statement->conditions, variableInstances)) {
+    if (nm_iam_evaluate_expression(statement->conditions, attributes)) {
         if (statement->effect == NM_IAM_EFFECT_ALLOW) {
             return NM_IAM_EVALUATION_RESULT_ALLOW;
         } else if (statement->effect == NM_IAM_EFFECT_DENY) {
@@ -175,7 +175,7 @@ enum nm_iam_evaluation_result nm_iam_evaluate_statement(struct nm_iam_statement*
 
 }
 
-bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_list* variableInstances, struct nm_iam_action* action)
+bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, struct nm_iam_attributes* attributes, struct nm_iam_action* action)
 {
     bool granted = false;
     /* for (role r : roles) { */
@@ -195,7 +195,7 @@ bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, s
             struct nm_iam_list_entry* statementIterator = policy->statements.sentinel.next;
             while (statementIterator != &policy->statements.sentinel) {
                 struct nm_iam_statement* statement = (struct nm_iam_statement*)(statementIterator->item);
-                enum nm_iam_evaluation_result result = nm_iam_evaluate_statement(statement, variableInstances, action);
+                enum nm_iam_evaluation_result result = nm_iam_evaluate_statement(statement, attributes, action);
                 if (result == NM_IAM_EVALUATION_RESULT_NONE) {
                     // no change
                 } else if (result == NM_IAM_EVALUATION_RESULT_ALLOW) {
@@ -213,22 +213,22 @@ bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, s
     return granted;
 }
 
-bool nm_iam_add_variable(struct nm_iam* iam, const char* name, enum nm_iam_value_type type)
+bool nm_iam_add_attribute_name(struct nm_iam* iam, const char* name, enum nm_iam_value_type type)
 {
-    struct nm_iam_variable* variable = (struct nm_iam_variable*)malloc(sizeof(struct nm_iam_variable));
-    variable->name = name;
-    variable->type = type;
-    nm_iam_list_insert_entry_back(&iam->variables, variable);
+    struct nm_iam_attribute_name* attributeName = (struct nm_iam_attribute_name*)malloc(sizeof(struct nm_iam_attribute_name));
+    attributeName->name = name;
+    attributeName->type = type;
+    nm_iam_list_insert_entry_back(&iam->attributeNames, attributeName);
     return true;
 }
 
-struct nm_iam_variable* nm_iam_get_variable(struct nm_iam* iam, const char* name)
+struct nm_iam_attribute_name* nm_iam_get_attribute_name(struct nm_iam* iam, const char* name)
 {
-    struct nm_iam_list_entry* iterator = iam->variables.sentinel.next;
-    while (iterator != &iam->variables.sentinel) {
-        struct nm_iam_variable* variable = (struct nm_iam_variable*)iterator->item;
-        if (strcmp(variable->name, name) == 0) {
-            return variable;
+    struct nm_iam_list_entry* iterator = iam->attributeNames.sentinel.next;
+    while (iterator != &iam->attributeNames.sentinel) {
+        struct nm_iam_attribute_name* attribute = (struct nm_iam_attribute_name*)iterator->item;
+        if (strcmp(attribute->name, name) == 0) {
+            return attribute;
         }
         iterator = iterator->next;
     }
@@ -476,24 +476,26 @@ void nm_iam_expression_free(struct nm_iam_expression* expression)
 struct nm_iam_expression* nm_iam_expression_and(struct nm_iam_expression* lhs, struct nm_iam_expression* rhs)
 {
     struct nm_iam_expression* expression = nm_iam_expression_new();
-    expression->type = NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND;
+    expression->type = NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION;
     expression->data.booleanExpression.lhs = lhs;
     expression->data.booleanExpression.rhs = rhs;
     return expression;
 }
 
-struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item item)
+struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item item)
 {
     struct nm_iam_expression* expression = nm_iam_expression_new();
+    expression->type = NM_IAM_EXPRESSION_TYPE_PREDICATE;
     expression->data.predicate.type = NM_IAM_PREDICATE_TYPE_STRING_EQUAL;
     expression->data.predicate.lhs = lhs;
     expression->data.predicate.rhs = item;
     return expression;
 }
 
-struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_variable* lhs, struct nm_iam_predicate_item rhs)
+struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs)
 {
     struct nm_iam_expression* expression = nm_iam_expression_new();
+    expression->type = NM_IAM_EXPRESSION_TYPE_PREDICATE;
     expression->data.predicate.type = NM_IAM_PREDICATE_TYPE_NUMBER_EQUAL;
     expression->data.predicate.lhs = lhs;
     expression->data.predicate.rhs = rhs;
@@ -518,11 +520,11 @@ struct nm_iam_predicate_item nm_iam_predicate_item_number(uint32_t number)
     return item;
 }
 
-struct nm_iam_predicate_item nm_iam_predicate_item_variable(struct nm_iam_variable* variable)
+struct nm_iam_predicate_item nm_iam_predicate_item_attribute_name(struct nm_iam_attribute_name* attributeName)
 {
     struct nm_iam_predicate_item item;
-    item.type = NM_IAM_PREDICATE_ITEM_TYPE_VARIABLE;
-    item.data.variable = variable;
+    item.type = NM_IAM_PREDICATE_ITEM_TYPE_ATTRIBUTE;
+    item.data.attributeName = attributeName;
     return item;
 }
 
@@ -565,4 +567,49 @@ void nm_iam_user_free(struct nm_iam_user* user)
 void nm_iam_user_add_role(struct nm_iam_user* user, struct nm_iam_role* role)
 {
     nm_iam_list_insert_entry_back(&user->roles, role);
+}
+
+struct nm_iam_attribute* nm_iam_attribute_new(struct nm_iam_attribute_name* name)
+{
+    struct nm_iam_attribute* attribute = (struct nm_iam_attribute*)malloc(sizeof(struct nm_iam_attribute));
+    attribute->name = name;
+    return attribute;
+}
+
+void nm_iam_attribute_free(struct nm_iam_attribute* attribute)
+{
+    free(attribute);
+}
+
+struct nm_iam_attributes* nm_iam_attributes_new()
+{
+    struct nm_iam_attributes* attributes = (struct nm_iam_attributes*)malloc(sizeof(struct nm_iam_attributes));
+    nm_iam_list_init(&attributes->attributes);
+    return attributes;
+}
+
+void nm_iam_attributes_free(struct nm_iam_attributes* attributes)
+{
+    // todo free list
+    free(attributes);
+}
+
+void nm_iam_attributes_add_string(struct nm_iam* iam, struct nm_iam_attributes* attributes, const char* attributeName, const char* attributeValue)
+{
+    struct nm_iam_attribute_name* name = nm_iam_get_attribute_name(iam, attributeName);
+    struct nm_iam_attribute* attribute = nm_iam_attribute_new(name);
+    attribute->value.type = NM_IAM_VALUE_TYPE_STRING;
+    attribute->value.data.string = attributeValue;
+
+    nm_iam_list_insert_entry_back(&attributes->attributes, attribute);
+}
+
+void nm_iam_attributes_add_number(struct nm_iam* iam, struct nm_iam_attributes* attributes, const char* attributeName, uint32_t number)
+{
+    struct nm_iam_attribute_name* name = nm_iam_get_attribute_name(iam, attributeName);
+    struct nm_iam_attribute* attribute = nm_iam_attribute_new(name);
+    attribute->value.type = NM_IAM_VALUE_TYPE_NUMBER;
+    attribute->value.data.number = number;
+
+    nm_iam_list_insert_entry_back(&attributes->attributes, attribute);
 }
