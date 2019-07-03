@@ -10,6 +10,8 @@ const char* testRole = "{ \"version\": 1, \"name\": \"DeviceAdmin\", \"policies\
 const char* testUser = "{ \"name\": \"TestUser\", \"fingerprints\": [ \"11223344556677889900112233445566\" ] }";
 
 
+const char* testPolicy2 = "{ \"version\": 1, \"name\": \"SshAccess\", \"statements\": [ { \"effect\": \"Allow\", \"actions\": [ \"tcptunnel:Open\" ], \"conditions\": { \"And\": [ {\"NumberEqual\": [  { \"Attribute\": \"tcptunnel:port\", 42] }, { \"StringEqual\": [ { \"Attribute\": \"tcptunnel:host\" }, \"localhost\"] } ] } } ] }";
+
 
 const char* firmwareShow = "firmware:Show";
 const char* firmwareUpdate = "firmware:Update";
@@ -18,9 +20,6 @@ void test_parse_policy()
 {
     struct nm_iam iam;
     nm_iam_init(&iam);
-
-    nm_iam_add_action(&iam, nm_iam_action_new(firmwareShow));
-    nm_iam_add_action(&iam, nm_iam_action_new(firmwareUpdate));
 
     struct nm_iam_policy* policy = nm_iam_parse_policy(&iam, testPolicy1);
     NABTO_TEST_CHECK(policy != NULL);
@@ -37,6 +36,13 @@ void test_parse_policy()
     NABTO_TEST_CHECK(show != NULL);
     NABTO_TEST_CHECK(nm_iam_statement_has_action(statement, update));
     NABTO_TEST_CHECK(nm_iam_statement_has_action(statement, show));
+}
+
+void test_parse_policy2()
+{
+    struct nm_iam iam;
+    nm_iam_init(&iam);
+
 }
 
 

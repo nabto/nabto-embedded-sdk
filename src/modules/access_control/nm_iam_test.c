@@ -5,16 +5,10 @@
 
 void nm_iam_test_prepare_firmware_iam(struct nm_iam* iam)
 {
-    nm_iam_add_action(iam, nm_iam_action_new("firmware:Update"));
-    nm_iam_add_action(iam, nm_iam_action_new("firmware:Get"));
 }
 
 void nm_iam_test_prepare_tunnel_iam(struct nm_iam* iam)
 {
-    nm_iam_add_action(iam, nm_iam_action_new("tcptunnel:Open"));
-    nm_iam_add_action(iam, nm_iam_action_new("tcptunnel:Get"));
-    nm_iam_add_attribute_name(iam, "tcptunnel:host", NM_IAM_VALUE_TYPE_STRING);
-    nm_iam_add_attribute_name(iam, "tcptunnel:port", NM_IAM_VALUE_TYPE_NUMBER);
 }
 
 void nm_iam_test_add_firmware_update_policy(struct nm_iam* iam)

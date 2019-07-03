@@ -157,8 +157,6 @@ bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, s
 
 // ATTRIBUTES
 // return false if the attribute could not be added to the list of known variables
-bool nm_iam_add_attribute_name(struct nm_iam* iam, const char* name, enum nm_iam_value_type type);
-struct nm_iam_attribute_name* nm_iam_add_and_get_attribute_name(struct nm_iam* iam, const char* name);
 struct nm_iam_attribute_name* nm_iam_get_attribute_name(struct nm_iam* iam, const char* name);
 
 void nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role);
@@ -175,7 +173,6 @@ struct nm_iam_action* nm_iam_action_new(const char* name);
 void nm_iam_action_free(struct nm_iam_action* action);
 
 // operations on the iam object
-bool nm_iam_add_action(struct nm_iam* iam, struct nm_iam_action* action);
 struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* name);
 
 // Policies

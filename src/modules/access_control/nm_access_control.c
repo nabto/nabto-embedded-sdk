@@ -232,7 +232,12 @@ struct nm_iam_attribute_name* nm_iam_get_attribute_name(struct nm_iam* iam, cons
         }
         iterator = iterator->next;
     }
-    return NULL;
+
+    struct nm_iam_attribute_name* attributeName = (struct nm_iam_attribute_name*)malloc(sizeof(struct nm_iam_attribute_name));
+    attributeName->name = name;
+    nm_iam_list_insert_entry_back(&iam->attributeNames, attributeName);
+
+    return attributeName;
 }
 
 void nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role)
@@ -291,19 +296,13 @@ struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* name)
 
 struct nm_iam_action* nm_iam_action_new(const char* name)
 {
-    struct nm_iam_action* action = (struct nm_iam_action*)name;
+    struct nm_iam_action* action = (struct nm_iam_action*)strdup(name);
     return action;
 }
 
 void nm_iam_action_free(struct nm_iam_action* action)
 {
     // the pointer is just the const char* owner elsewhere
-}
-
-bool nm_iam_add_action(struct nm_iam* iam, struct nm_iam_action* action)
-{
-    nm_iam_list_insert_entry_back(&iam->actions, action);
-    return true;
 }
 
 struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* action)
@@ -317,7 +316,10 @@ struct nm_iam_action* nm_iam_get_action(struct nm_iam* iam, const char* action)
         }
         iterator = iterator->next;
     }
-    return NULL;
+    // insert the action and return the newly created action
+    struct nm_iam_action* a = nm_iam_action_new(action);
+    nm_iam_list_insert_entry_back(&iam->actions, a);
+    return a;
 }
 
 struct nm_iam_policy* nm_iam_policy_new(struct nm_iam* iam, const char* name)
