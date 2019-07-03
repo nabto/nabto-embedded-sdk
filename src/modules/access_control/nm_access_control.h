@@ -95,8 +95,7 @@ struct nm_iam_predicate {
 
 struct nm_iam_boolean_expression {
     enum nm_iam_boolean_expression_type type;
-    struct nm_iam_expression* lhs;
-    struct nm_iam_expression* rhs;
+    struct nm_iam_list expressions;
 };
 
 struct nm_iam_expression {
@@ -200,7 +199,8 @@ void nm_iam_statement_add_action(struct nm_iam_statement* statement, struct nm_i
 struct nm_iam_expression* nm_iam_expression_new();
 void nm_iam_expression_free(struct nm_iam_expression* expression);
 
-struct nm_iam_expression* nm_iam_expression_and(struct nm_iam_expression* lhs, struct nm_iam_expression* rhs);
+struct nm_iam_expression* nm_iam_expression_and();
+void nm_iam_boolean_expression_add_expression(struct nm_iam_expression* expression, struct nm_iam_expression* e);
 
 struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs);
 struct nm_iam_expression* nm_iam_expression_number_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item rhs);

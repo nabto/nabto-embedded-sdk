@@ -24,9 +24,9 @@ void nm_iam_test_add_ssh_tunnel_policy(struct nm_iam* iam)
     nm_iam_statement_add_action(statement, nm_iam_get_action(iam, "tcptunnel:Get"));
 
 
-    statement->conditions = nm_iam_expression_and(
-        nm_iam_expression_string_equal(nm_iam_get_attribute_name(iam, "tcptunnel:host"), nm_iam_predicate_item_string("localhost")),
-        nm_iam_expression_number_equal(nm_iam_get_attribute_name(iam, "tcptunnel:port"), nm_iam_predicate_item_number(22)));
+    statement->conditions = nm_iam_expression_and();
+    nm_iam_boolean_expression_add_expression(statement->conditions, nm_iam_expression_string_equal(nm_iam_get_attribute_name(iam, "tcptunnel:host"), nm_iam_predicate_item_string("localhost")));
+    nm_iam_boolean_expression_add_expression(statement->conditions, nm_iam_expression_number_equal(nm_iam_get_attribute_name(iam, "tcptunnel:port"), nm_iam_predicate_item_number(22)));
 
     nm_iam_policy_add_statement(policy, statement);
     nm_iam_add_policy(iam, policy);

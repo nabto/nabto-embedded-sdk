@@ -53,9 +53,16 @@ bool nm_iam_expression_has_all_attributes(struct nm_iam_expression* expression, 
         }
     } else if (expression->type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
         struct nm_iam_boolean_expression* booleanExpression = &expression->data.booleanExpression;
-        return
-            nm_iam_expression_has_all_attributes(booleanExpression->lhs, attributes) &&
-            nm_iam_expression_has_all_attributes(booleanExpression->rhs, attributes);
+        struct nm_iam_list_entry* iterator = booleanExpression->expressions.sentinel.next;
+
+        while (iterator != &booleanExpression->expressions.sentinel) {
+            struct nm_iam_expression* current = (struct nm_iam_expression*)iterator->item;
+            if (!nm_iam_expression_has_all_attributes(current, attributes)) {
+                return false;
+            }
+            iterator = iterator->next;
+        }
+        return true;
     }
 
     return false;
@@ -115,16 +122,27 @@ bool nm_iam_evaluate_expression(struct nm_iam_expression* expression, struct nm_
         return nm_iam_evaluate_predicate(predicate, attributes);
     } else if (expression->type == NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION) {
         struct nm_iam_boolean_expression* booleanExpression = &expression->data.booleanExpression;
-        struct nm_iam_expression* lhs = booleanExpression->lhs;
-        struct nm_iam_expression* rhs = booleanExpression->rhs;
+
         if (booleanExpression->type == NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND) {
-            return
-                nm_iam_evaluate_expression(lhs, attributes) &&
-                nm_iam_evaluate_expression(rhs, attributes);
+            struct nm_iam_list_entry* iterator = booleanExpression->expressions.sentinel.next;
+            while(iterator != &booleanExpression->expressions.sentinel) {
+                struct nm_iam_expression* current = (struct nm_iam_expression*)iterator->item;
+                if (!nm_iam_evaluate_expression(current, attributes)) {
+                    return false;
+                }
+                iterator = iterator->next;
+            }
+            return true;
         } else if (booleanExpression->type == NM_IAM_BOOLEAN_EXPRESSION_TYPE_OR) {
-            return
-                nm_iam_evaluate_expression(lhs, attributes) ||
-                nm_iam_evaluate_expression(rhs, attributes);
+            struct nm_iam_list_entry* iterator = booleanExpression->expressions.sentinel.next;
+            while(iterator != &booleanExpression->expressions.sentinel) {
+                struct nm_iam_expression* current = (struct nm_iam_expression*)iterator->item;
+                if (nm_iam_evaluate_expression(current, attributes)) {
+                    return true;
+                }
+                iterator = iterator->next;
+            }
+            return false;
         } else {
             return false;
         }
@@ -475,13 +493,18 @@ void nm_iam_expression_free(struct nm_iam_expression* expression)
     free(expression);
 }
 
-struct nm_iam_expression* nm_iam_expression_and(struct nm_iam_expression* lhs, struct nm_iam_expression* rhs)
+struct nm_iam_expression* nm_iam_expression_and()
 {
     struct nm_iam_expression* expression = nm_iam_expression_new();
     expression->type = NM_IAM_EXPRESSION_TYPE_BOOLEAN_EXPRESSION;
-    expression->data.booleanExpression.lhs = lhs;
-    expression->data.booleanExpression.rhs = rhs;
+    expression->data.booleanExpression.type = NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND;
+    nm_iam_list_init(&expression->data.booleanExpression.expressions);
     return expression;
+}
+
+void nm_iam_boolean_expression_add_expression(struct nm_iam_expression* expression, struct nm_iam_expression* e)
+{
+    nm_iam_list_insert_entry_back(&expression->data.booleanExpression.expressions, e);
 }
 
 struct nm_iam_expression* nm_iam_expression_string_equal(struct nm_iam_attribute_name* lhs, struct nm_iam_predicate_item item)
