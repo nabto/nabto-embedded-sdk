@@ -143,9 +143,10 @@ bool nm_iam_parse_statement(struct nm_iam* iam, cJSON* statement, struct nm_iam_
     nm_iam_list_insert_entry_back(&policy->statements, iamStatement);
 
     if (nm_iam_parse_statement_effect(effect, iamStatement) &&
-        nm_iam_parse_statement_actions(iam, actions, iamStatement) &&
-        nm_iam_parse_expression(iam, conditions))
+        nm_iam_parse_statement_actions(iam, actions, iamStatement))
     {
+        struct nm_iam_expression* expression = nm_iam_parse_expression(iam, conditions);
+        iamStatement->conditions = expression;
         return true;
     }
     return false;
