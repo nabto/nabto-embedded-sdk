@@ -19,6 +19,7 @@ Attribute := Identifier
 
 ## Example heatpump access control system
 
+```
 {
   "version": 1,
   "name": "HeatpumpRead",
@@ -29,7 +30,9 @@ Attribute := Identifier
     }
   ]
 }
+```
 
+```
 {
   "version": 1,
   "name": "HeatpumpWrite",
@@ -40,7 +43,9 @@ Attribute := Identifier
     }
   ]
 }
+```
 
+```
 {
   "version": 1,
   "name": "FullUserAdmin",
@@ -51,7 +56,9 @@ Attribute := Identifier
     }
   ]
 }
+```
 
+```
 {
   "version": 1,
   "name": "ModifyOwnUser",
@@ -64,7 +71,9 @@ Attribute := Identifier
     }
   ]
 }
+```
 
+```
 {
   "version": 1,
   "name": "FirstUserCanPair",
@@ -76,7 +85,9 @@ Attribute := Identifier
     }
   ]
 }
+```
 
+```
 {
   "version": 1,
   "name": "CanAskForAccess",
@@ -87,7 +98,9 @@ Attribute := Identifier
     }
   ]
 }
+```
 
+```
 {
     "version": 1,
     "roles": [
@@ -123,3 +136,4 @@ Attribute := Identifier
       "defaultUser": [ "Anonymous" ]
     }
 }
+```
