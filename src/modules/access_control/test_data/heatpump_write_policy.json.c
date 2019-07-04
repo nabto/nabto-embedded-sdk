@@ -1,2 +1,0 @@
-// Generated source file do not edit.
-const char* heatpump_write_policy = "{\"version\": 1,\"name\": \"HeatpumpWrite\",\"statements\": [{\"actions\": [ \"heatpump:SetTargetTemperature\", \"heatpump:SetTemperature\", \"heatpump:SetMode\" ],\"effect\": \"Allow\"}]}"
