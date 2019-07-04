@@ -5,16 +5,9 @@
 
 const char* testPolicy1 = "{ \"version\": 1, \"name\": \"FirmwareUpdate\", \"statements\": [ { \"effect\": \"Allow\", \"actions\": [ \"firmware:Update\", \"firmware:Show\" ] } ] }";
 
-const char* testRole = "{ \"version\": 1, \"name\": \"DeviceAdmin\", \"policies\": [ \"FirmwareUpdate\" ] }";
+#include "test_data/policy_ssh_access.json.c"
+#include "test_data/iam.json.c"
 
-const char* testUser = "{ \"name\": \"TestUser\", \"fingerprints\": [ \"11223344556677889900112233445566\" ] }";
-
-
-const char* testPolicy2 = "{ \"version\": 1, \"name\": \"SshAccess\", \"statements\": [ { \"effect\": \"Allow\", \"actions\": [ \"tcptunnel:Open\" ], \"conditions\": { \"And\": [ {\"NumberEqual\": [  { \"Attribute\": \"tcptunnel:port\" }, 42] }, { \"StringEqual\": [ { \"Attribute\": \"tcptunnel:host\" }, \"localhost\"] } ] } } ] }";
-
-
-const char* firmwareShow = "firmware:Show";
-const char* firmwareUpdate = "firmware:Update";
 
 void test_parse_policy()
 {
@@ -43,10 +36,17 @@ void test_parse_policy2()
     struct nm_iam iam;
     nm_iam_init(&iam);
 
-    struct nm_iam_policy* policy = nm_iam_parse_policy(&iam, testPolicy2);
+    struct nm_iam_policy* policy = nm_iam_parse_policy(&iam, policy_ssh_access);
     NABTO_TEST_CHECK(policy != NULL);
 }
 
+void test_parse_role()
+{
+    struct nm_iam iam;
+    nm_iam_init(&iam);
+
+    nm_iam_parse_config(&iam, iam_json);
+}
 
 void nm_iam_parse_test()
 {
