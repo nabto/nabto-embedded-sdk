@@ -133,7 +133,7 @@ Attribute := Identifier
         }
     ],
     "system": {
-      "defaultUser": [ "Anonymous" ]
+      "defaultUser": "Anonymous"
     }
 }
 ```
