@@ -121,11 +121,12 @@ Attribute := Identifier
         {
             "name": "user1",
             "roles": [ "Owner" ],
-            "fingerprints": []
+            "fingerprints": [ "11223344556677881122334455667788" ]
         },
         {
             "name": "user2",
-            "roles": [ "Guest" ]
+            "roles": [ "Guest" ],
+            "fingerprints": [ "88776655443322118877665544332211" ]
         },
         {
             "name": "Anonymous",
