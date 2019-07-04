@@ -1,0 +1,2 @@
+// Generated source file do not edit.
+const char* full_user_admin_policy = "{\"version\": 1,\"name\": \"FullUserAdmin\",\"statements\": [{\"actions\": [ \"iam:AddUser\", \"iam:GetUser\", \"iam:ListUsers\", \"iam:AddRoleToUser\", \"iam:RemoveRoleFromUser\" ],\"effect\": \"Allow\"}]}"

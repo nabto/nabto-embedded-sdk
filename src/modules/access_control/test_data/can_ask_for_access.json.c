@@ -1,0 +1,2 @@
+// Generated source file do not edit.
+const char* can_ask_for_access = "{\"version\": 1,\"name\": \"CanAskForAccess\",\"statements\": [{\"effect\": \"Allow\",\"actions\": [ \"pairing:AskOwnerForAccess\" ]}]}"

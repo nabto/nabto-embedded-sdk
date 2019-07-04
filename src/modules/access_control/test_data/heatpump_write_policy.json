@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "name": "HeatpumpWrite",
+  "statements": [
+    {
+      "actions": [ "heatpump:SetTargetTemperature", "heatpump:SetTemperature", "heatpump:SetMode" ],
+      "effect": "Allow"
+    }
+  ]
+}

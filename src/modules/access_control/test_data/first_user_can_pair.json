@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "FirstUserCanPair",
+  "statements": [
+    {
+      "effect": "Allow",
+      "actions": [ "pairing:PairUser" ],
+      "conditions": { "NumberEqual": [ { "Attribute": "pairing:SystemIsPaired"}, 0 ] }
+    }
+  ]
+}
