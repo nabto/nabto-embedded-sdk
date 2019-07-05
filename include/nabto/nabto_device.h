@@ -561,6 +561,10 @@ nabto_device_log_set_level(NabtoDevice* device, const char* level);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_log_set_std_out_callback(NabtoDevice* device);
 
+/********
+ * Util *
+ ********/
+
 #ifdef __cplusplus
 } // extern c
 #endif
