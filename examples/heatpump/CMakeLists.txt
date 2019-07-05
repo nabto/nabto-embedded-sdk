@@ -4,4 +4,4 @@ set(src
   )
 
 add_executable(heatpump ${src})
-target_link_libraries(heatpump nabto_device)
+target_link_libraries(heatpump nabto_device 3rdparty_gopt)
