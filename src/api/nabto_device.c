@@ -80,8 +80,12 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     dev->closing = true;
     // TODO: reintroduce this through the udp platform as to not leak buffers
     //nm_epoll_close(&dev->pl);
-    nabto_device_threads_join(dev->networkThread);
-    nabto_device_threads_join(dev->coreThread);
+    if (dev->networkThread != NULL) {
+        nabto_device_threads_join(dev->networkThread);
+    }
+    if (dev->coreThread != NULL) {
+        nabto_device_threads_join(dev->coreThread);
+    }
     free(dev);
 }
 
