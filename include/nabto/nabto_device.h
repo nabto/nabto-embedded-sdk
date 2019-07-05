@@ -366,8 +366,9 @@ nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method
  *
  * @return NABTO_EC_OK if notify was successful
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
+// TODO
+//NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+//nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
 
 /**
  * Create a COAP response for a given request. This MUST only be
