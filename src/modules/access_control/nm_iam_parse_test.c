@@ -36,7 +36,7 @@ void test_parse_policy2()
     struct nm_iam iam;
     nm_iam_init(&iam);
 
-    struct nm_iam_policy* policy = nm_iam_parse_policy(&iam, policy_ssh_access);
+    struct nm_iam_policy* policy = nm_iam_parse_policy(&iam, policy_ssh_access_json);
     NABTO_TEST_CHECK(policy != NULL);
 }
 
@@ -45,7 +45,7 @@ void test_parse_role()
     struct nm_iam iam;
     nm_iam_init(&iam);
 
-    nm_iam_parse_config(&iam, iam_json);
+    //nm_iam_parse_config(&iam, iam_json);
 }
 
 void nm_iam_parse_test()

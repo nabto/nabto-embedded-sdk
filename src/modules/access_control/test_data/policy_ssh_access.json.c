@@ -1,2 +1,2 @@
 // Generated source file do not edit.
-const char* policy_ssh_access = "{\"version\": 1,\"name\": \"SshAccess\",\"statements\": [{ \"effect\": \"Allow\",\"actions\": [ \"tcptunnel:Open\" ],\"conditions\":{\"And\": [{\"NumberEqual\": [ { \"Attribute\": \"tcptunnel:port\" }, 42] },{ \"StringEqual\": [ { \"Attribute\": \"tcptunnel:host\" }, \"localhost\"] }]}}]}";
+const char* policy_ssh_access_json = "{\"version\": 1,\"name\": \"SshAccess\",\"statements\": [{ \"effect\": \"Allow\",\"actions\": [ \"tcptunnel:Open\" ],\"conditions\":{\"And\": [{\"NumberEqual\": [ { \"Attribute\": \"tcptunnel:port\" }, 42] },{ \"StringEqual\": [ { \"Attribute\": \"tcptunnel:host\" }, \"localhost\"] }]}}]}";
