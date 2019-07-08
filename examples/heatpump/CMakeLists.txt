@@ -1,6 +1,7 @@
 set(src
   src/heatpump.c
   src/heatpump_config.c
+  src/heatpump_application.c
   )
 
 add_executable(heatpump ${src})

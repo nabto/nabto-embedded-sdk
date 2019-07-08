@@ -1,4 +1,13 @@
 #include "heatpump_application.h"
+#include "nabto/nabto_device.h"
+#include "nabto/nabto_device_experimental.h"
+
+#include <cjson/cJSON.h>
+
+#include <stdlib.h>
+#include <stdbool.h>
+
+
 
 struct heatpump_application_state* heatpump_application_state_new()
 {
@@ -6,8 +15,9 @@ struct heatpump_application_state* heatpump_application_state_new()
 
     state->powerState = HEATPUMP_POWER_STATE_ON;
     state->roomTemperature = 19;
-    state->targetTemperature = 23;
+    state->target = 23;
     state->mode = HEATPUMP_MODE_HEAT;
+    return state;
 }
 
 void heatpump_application_state_free(struct heatpump_application_state* state)
@@ -20,7 +30,7 @@ void heatpump_coap_send_error(NabtoDeviceCoapRequest* request, uint16_t code, co
      NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
      nabto_device_coap_response_set_code(response, code);
      nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
-     nabto_device_coap_response_set_payload(response, message);
+     nabto_device_coap_response_set_payload(response, message, strlen(message));
      nabto_device_coap_response_ready(response);
 }
 
@@ -34,11 +44,10 @@ void heatpump_coap_send_ok(NabtoDeviceCoapRequest* request, uint16_t code)
 // return true if action was allowed
 bool heatpump_coap_check_action(NabtoDeviceCoapRequest* request, const char* action)
 {
-    NabtoDeviceConnection* connection = nabto_device_coap_request_get_connection_reference(request);
-    NabtoDeviceIamAttributes* attributes = nabto_device_iam_attributes_new(connection);
+    NabtoDeviceIamEnv* iamEnv = nabto_device_iam_env_from_coap_request(request);
 
-    NabtoDeviceIamEffect effect = nabto_device_iam_check_action(attributes, action);
-    nabto_device_iam_attributes_free(attributes);
+    NabtoDeviceIamEffect effect = nabto_device_iam_check_action(iamEnv, action);
+    nabto_device_iam_env_free(iamEnv);
     if (effect == NABTO_DEVICE_IAM_EFFECT_ALLOW) {
         return true;
     } else {
@@ -54,18 +63,22 @@ cJSON* heatpump_parse_json_request(NabtoDeviceCoapRequest* request)
     NabtoDeviceError ec;
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_JSON) {
-        heatpump_coap_error(request, 400, "Invalid Content Format");
+        heatpump_coap_send_error(request, 400, "Invalid Content Format");
         return NULL;
     }
 
     void* payload;
     size_t payloadSize;
     if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
-        heatpump_coap_error(request, 400, "Missing payload");
+        heatpump_coap_send_error(request, 400, "Missing payload");
         return NULL;
     }
 
-    cJSON* root = cJSON_parse((const char*)payload);
+    cJSON* root = cJSON_Parse((const char*)payload);
+    if (root == NULL) {
+        heatpump_coap_send_error(request, 400, "Could not parse json");
+        return NULL;
+    }
     return root;
 }
 
@@ -82,18 +95,17 @@ void heatpump_set_state(NabtoDeviceCoapRequest* request, void* userData)
 {
     struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
 
-    if (!heatpump_check_action(request, "heatpump:SetPower")) {
+    if (!heatpump_coap_check_action(request, "heatpump:SetPower")) {
         return;
     }
 
     cJSON* root = heatpump_parse_json_request(request);
-    if (json == NULL) {
+    if (root == NULL) {
         return;
     }
-
     char* power = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(root, "power"));
     if (power == NULL) {
-        heatpump_coap_error(request, 400, "Could not parse json");
+        heatpump_coap_send_error(request, 400, "Could not parse json");
     } else {
         bool unknown = false;
         if (strcmp(power, "ON") == 0) {
@@ -110,7 +122,7 @@ void heatpump_set_state(NabtoDeviceCoapRequest* request, void* userData)
         }
     }
 
-    cJSON_free(state);
+    cJSON_free(root);
 }
 
 // change heatpump mode
@@ -118,18 +130,17 @@ void heatpump_set_state(NabtoDeviceCoapRequest* request, void* userData)
 void heatpump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 {
     struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
-    if (!heatpump_check_action(request, "heatpump:SetMode")) {
+    if (!heatpump_coap_check_action(request, "heatpump:SetMode")) {
         return;
     }
 
     cJSON* root = heatpump_parse_json_request(request);
-    if (json == NULL) {
+    if (root == NULL) {
         return;
     }
-
     char* mode = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(root, "mode"));
     if (mode == NULL) {
-        heatpump_coap_error(request, 400, "Could not parse json");
+        heatpump_coap_send_error(request, 400, "Could not parse json");
     } else {
         bool unknown = false;
         if (strcmp(mode, "cool") == 0) {
@@ -155,23 +166,23 @@ void heatpump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 
 // Set target temperature
 // CoAP POST /heatpump/target
-void heatpump_set_target_temperature(NabtoDeviceCoapRequest* request, void* userData)
+void heatpump_set_target(NabtoDeviceCoapRequest* request, void* userData)
 {
     struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
-    if (!heatpump_check_action(request, "heatpump:SetTarget")) {
+    if (!heatpump_coap_check_action(request, "heatpump:SetTarget")) {
         return;
     }
 
     cJSON* root = heatpump_parse_json_request(request);
-    if (json == NULL) {
+    if (root == NULL) {
         return;
     }
     cJSON* temperature = cJSON_GetObjectItemCaseSensitive(root, "target");
     if (!cJSON_IsNumber(temperature)) {
         heatpump_coap_send_error(request, 400, "Could not parse json");
     } else {
-        application->targetTemperature = target->valuedouble;
-        heatpump_coap_send_ok(request, 204)
+        application->target = temperature->valuedouble;
+        heatpump_coap_send_ok(request, 204);
     }
     cJSON_free(root);
 }
@@ -181,14 +192,29 @@ void heatpump_set_target_temperature(NabtoDeviceCoapRequest* request, void* user
 void heatpump_get(NabtoDeviceCoapRequest* request, void* userData)
 {
     struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
-    if (!heatpump_check_action(request, "heatpump:GetState")) {
+    if (!heatpump_coap_check_action(request, "heatpump:GetState")) {
         return;
     }
 
     cJSON* root = cJSON_CreateObject();
 
-    cJSON_AddStringToObject(root, "power", )
+    cJSON_AddStringToObject(root, "power", heatpump_power_state_to_string(application->powerState));
+    cJSON_AddStringToObject(root, "mode", heatpump_mode_to_string(application->mode));
+    cJSON_AddNumberToObject(root, "roomTemperature", application->roomTemperature);
+    cJSON_AddNumberToObject(root, "target", application->target);
 
+    char* encoded = cJSON_PrintUnformatted(root);
+    if (encoded == NULL) {
+        heatpump_coap_send_error(request, 500, "Internal error");
+    } else {
+        NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
+        nabto_device_coap_response_set_code(response, 200);
+        nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_JSON);
+        nabto_device_coap_response_set_payload(response, encoded, strlen(encoded));
+        nabto_device_coap_response_ready(response);
+    }
+    cJSON_free(encoded);
+    cJSON_free(root);
 }
 
 
