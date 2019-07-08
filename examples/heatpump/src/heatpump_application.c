@@ -24,45 +24,190 @@ void heatpump_coap_send_error(NabtoDeviceCoapRequest* request, uint16_t code, co
      nabto_device_coap_response_ready(response);
 }
 
-// Change heatpump power state (turn it on or off)
-/**
- * Coap POST /heatpump/state,
- * Request, ContentFormat application/json
- * {
- *   "state": "ON"
- * }
- * Response, 200,
- */
-void heatpump_set_state(NabtoDeviceCoapRequest* request)
+void heatpump_coap_send_ok(NabtoDeviceCoapRequest* request, uint16_t code)
+{
+     NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
+     nabto_device_coap_response_set_code(response, code);
+     nabto_device_coap_response_ready(response);
+}
+
+// return true if action was allowed
+bool heatpump_coap_check_action(NabtoDeviceCoapRequest* request, const char* action)
+{
+    NabtoDeviceConnection* connection = nabto_device_coap_request_get_connection_reference(request);
+    NabtoDeviceIamAttributes* attributes = nabto_device_iam_attributes_new(connection);
+
+    NabtoDeviceIamEffect effect = nabto_device_iam_check_action(attributes, action);
+    nabto_device_iam_attributes_free(attributes);
+    if (effect == NABTO_DEVICE_IAM_EFFECT_ALLOW) {
+        return true;
+    } else {
+        // deny
+        heatpump_coap_send_error(request, 403, "Unauthorized");
+        return false;
+    }
+}
+
+cJSON* heatpump_parse_json_request(NabtoDeviceCoapRequest* request)
 {
     uint16_t contentFormat;
     NabtoDeviceError ec;
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_JSON) {
         heatpump_coap_error(request, 400, "Invalid Content Format");
-            return;
+        return NULL;
     }
-    NabtoDeviceCoapResponse* response = nabto_device_coap_create_response();
 
+    void* payload;
+    size_t payloadSize;
+    if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
+        heatpump_coap_error(request, 400, "Missing payload");
+        return NULL;
+    }
+
+    cJSON* root = cJSON_parse((const char*)payload);
+    return root;
+}
+
+// Change heatpump power state (turn it on or off)
+/**
+ * Coap POST /heatpump/power,
+ * Request, ContentFormat application/json
+ * {
+ *   "power": "ON" | "OFF"
+ * }
+ * Response, 200,
+ */
+void heatpump_set_state(NabtoDeviceCoapRequest* request, void* userData)
+{
+    struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
+
+    if (!heatpump_check_action(request, "heatpump:SetPower")) {
+        return;
+    }
+
+    cJSON* root = heatpump_parse_json_request(request);
+    if (json == NULL) {
+        return;
+    }
+
+    char* power = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(root, "power"));
+    if (power == NULL) {
+        heatpump_coap_error(request, 400, "Could not parse json");
+    } else {
+        bool unknown = false;
+        if (strcmp(power, "ON") == 0) {
+            application->powerState = HEATPUMP_POWER_STATE_ON;
+        } else if (strcmp(power, "OFF") == 0) {
+            application->powerState = HEATPUMP_POWER_STATE_OFF;
+        } else {
+            unknown = true;
+        }
+        if (unknown) {
+            heatpump_coap_send_error(request, 400, "unknown power state");
+        } else {
+            heatpump_coap_send_ok(request, 204);
+        }
+    }
+
+    cJSON_free(state);
 }
 
 // change heatpump mode
 // CoAP post /heatpump/mode
-void heatpump_set_mode()
+void heatpump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 {
+    struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
+    if (!heatpump_check_action(request, "heatpump:SetMode")) {
+        return;
+    }
 
+    cJSON* root = heatpump_parse_json_request(request);
+    if (json == NULL) {
+        return;
+    }
+
+    char* mode = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(root, "mode"));
+    if (mode == NULL) {
+        heatpump_coap_error(request, 400, "Could not parse json");
+    } else {
+        bool unknown = false;
+        if (strcmp(mode, "cool") == 0) {
+            application->mode = HEATPUMP_MODE_COOL;
+        } else if (strcmp(mode, "heat") == 0) {
+            application->mode = HEATPUMP_MODE_HEAT;
+        } else if (strcmp(mode, "circulate") == 0) {
+            application->mode = HEATPUMP_MODE_CIRCULATE;
+        } else if (strcmp(mode, "dehumidify") == 0) {
+            application->mode = HEATPUMP_MODE_DEHUMIDIFY;
+        } else {
+            unknown = true;
+        }
+
+        if (unknown) {
+            heatpump_coap_send_error(request, 400, "Unknown mode value");
+        } else {
+            heatpump_coap_send_ok(request, 204);
+        }
+    }
+    cJSON_free(root);
 }
 
 // Set target temperature
 // CoAP POST /heatpump/target
-void heatpump_set_target_temperature()
+void heatpump_set_target_temperature(NabtoDeviceCoapRequest* request, void* userData)
 {
+    struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
+    if (!heatpump_check_action(request, "heatpump:SetTarget")) {
+        return;
+    }
 
+    cJSON* root = heatpump_parse_json_request(request);
+    if (json == NULL) {
+        return;
+    }
+    cJSON* temperature = cJSON_GetObjectItemCaseSensitive(root, "target");
+    if (!cJSON_IsNumber(temperature)) {
+        heatpump_coap_send_error(request, 400, "Could not parse json");
+    } else {
+        application->targetTemperature = target->valuedouble;
+        heatpump_coap_send_ok(request, 204)
+    }
+    cJSON_free(root);
 }
 
 // Get heatpump state
 // CoAP GET /heatpump
-void heatpump_get()
+void heatpump_get(NabtoDeviceCoapRequest* request, void* userData)
 {
+    struct heatpump_application_state* application = (struct heatpump_application_state*)userData;
+    if (!heatpump_check_action(request, "heatpump:GetState")) {
+        return;
+    }
 
+    cJSON* root = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(root, "power", )
+
+}
+
+
+const char* heatpump_power_state_to_string(enum heatpump_power_state powerState)
+{
+    switch (powerState) {
+        case HEATPUMP_POWER_STATE_ON: return "ON";
+        case HEATPUMP_POWER_STATE_OFF: return "OFF";
+        default: return "UNKNOWN";
+    }
+}
+
+const char* heatpump_mode_to_string(enum heatpump_mode mode)
+{
+    switch (mode) {
+        case HEATPUMP_MODE_COOL: return "COOL";
+        case HEATPUMP_MODE_HEAT: return "HEAT";
+        case HEATPUMP_MODE_CIRCULATE: return "CIRCULATE";
+        case HEATPUMP_MODE_DEHUMIDIFY: return "DEHUMIDIFY";
+        default: return "UNKNOWN";
+    }
 }
