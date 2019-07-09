@@ -480,6 +480,18 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream
     return fut;
 }
 
+NabtoDeviceConnectionId NABTO_DEVICE_API nabto_device_stream_get_connection_id(NabtoDeviceStream* stream)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceConnectionId id;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+
+    id = nc_device_get_connection_id_from_stream(&str->dev->core, str->stream);
+
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return id;
+}
+
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
                                                 void* buffer, size_t bufferLength,
                                                 size_t* readLength)

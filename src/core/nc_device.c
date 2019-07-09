@@ -148,3 +148,8 @@ uint64_t nc_device_next_connection_id(struct nc_device_context* dev)
     dev->connectionId += 1;
     return dev->connectionId;
 }
+
+uint64_t nc_device_get_connection_id_from_stream(struct nc_device_context* dev, struct nabto_stream* stream)
+{
+    return nc_stream_manager_get_connection_id(&dev->streamManager, stream);
+}
