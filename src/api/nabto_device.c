@@ -10,6 +10,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
 #include <core/nc_version.h>
+#include <core/nc_client_connect.h>
 
 #include <modules/logging/api/nm_api_logging.h>
 
@@ -678,6 +679,20 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     }
 }
 
+NabtoDeviceConnectionId nabto_device_coap_request_get_connection_id(NabtoDeviceCoapRequest* request)
+{
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
+    nabto_device_threads_mutex_lock(req->dev->eventMutex);
+    struct nc_client_connection* connection = (struct nc_client_connection*)nabto_coap_server_request_get_connection(req->req);
+    NabtoDeviceConnectionId id;
+    if (connection != NULL) {
+        id = connection->connectionId;
+    } else {
+        id = 0;
+    }
+    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
+    return id;
+}
 
 /*******************************************
  * COAP API End

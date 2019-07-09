@@ -75,6 +75,12 @@ typedef uint32_t nabto_device_duration_t;
 typedef int NabtoDeviceError;
 
 /**
+ * Connection Id, used to correlate requests on connections with
+ * e.g. IAM systems.
+ */
+typedef uint64_t NabtoDeviceConnectionId;
+
+/**
  * The NabtoDeviceError represents error codes
  */
 extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
@@ -216,6 +222,12 @@ nabto_device_stream_free(NabtoDeviceStream* stream);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
 nabto_device_stream_accept(NabtoDeviceStream* stream);
+
+/**
+ * Get the id for the underlying connection
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionId NABTO_DEVICE_API
+nabto_device_stream_get_connection_id(NabtoDeviceStream* stream);
 
 /**
  * Read exactly n bytes from a stream
@@ -453,6 +465,8 @@ nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request, ui
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** payload, size_t* payloadLength);
 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionId NABTO_DEVICE_API
+nabto_device_coap_request_get_connection_id(NabtoDeviceCoapRequest* request);
 
 /**************
  * Future API *

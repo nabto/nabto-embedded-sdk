@@ -1,4 +1,5 @@
 #include "nc_coap_server.h"
+#include "nc_client_connect.h"
 #include "nc_coap_packet_printer.h"
 
 #include <platform/np_logging.h>
@@ -35,7 +36,7 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
                                   np_communication_buffer* buffer, uint16_t bufferSize)
 {
     nc_coap_packet_print("coap server handle packet", ctx->pl->buf.start(buffer), bufferSize);
-    nabto_coap_server_handle_packet(&ctx->server,(void*) nc_client_connect_get_dtls_connection(conn), ctx->pl->buf.start(buffer), bufferSize);
+    nabto_coap_server_handle_packet(&ctx->server,(void*) conn, ctx->pl->buf.start(buffer), bufferSize);
     nc_coap_server_event(ctx);
 }
 
@@ -73,7 +74,8 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         nc_coap_server_event(ctx);
         return;
     }
-    np_dtls_srv_connection* dtls = (np_dtls_srv_connection*)connection;
+    struct nc_client_connection* clientConnection = (struct nc_client_connection*)connection;
+    np_dtls_srv_connection* dtls = clientConnection->dtls;
 
     // TODO: Using 1400 as it is assumed to fit with the network MTU use mtu discovery result
     size_t bufferSize = 1400;
