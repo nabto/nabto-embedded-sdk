@@ -101,12 +101,14 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
     dev->stunHost = stunHost;
     nc_stream_manager_init(&dev->streamManager, pl);
     nc_coap_server_init(pl, &dev->coap);
-    nc_client_connect_dispatch_init(&dev->clientConnect, pl, &dev->coap, &dev->rendezvous, &dev->streamManager);
+    nc_client_connect_dispatch_init(&dev->clientConnect, pl, dev);
 
     dev->attachParams.appName = appName;
     dev->attachParams.appVersion = appVersion;
     dev->attachParams.hostname = hostname;
     dev->attachParams.udp = &dev->udp;
+
+    dev->connectionId = 0;
 
     nc_udp_dispatch_async_create(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
     nc_rendezvous_init(&dev->rendezvous, pl, &dev->udp);
@@ -138,4 +140,16 @@ uint32_t nc_device_get_reattach_time(struct nc_device_context* dev)
     }
     NABTO_LOG_INFO(LOG, "returning reattach time: %i, attachAttempts: %i", ms, dev->attachAttempts);
     return ms;
+}
+
+uint64_t nc_device_next_connection_id(struct nc_device_context* dev)
+{
+    // TODO fail if we wrap around, highly unlikely!
+    dev->connectionId += 1;
+    return dev->connectionId;
+}
+
+uint64_t nc_device_get_connection_id_from_stream(struct nc_device_context* dev, struct nabto_stream* stream)
+{
+    return nc_stream_manager_get_connection_id(&dev->streamManager, stream);
 }

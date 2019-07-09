@@ -9,18 +9,14 @@
 
 void nc_client_connect_dispatch_init(struct nc_client_connect_dispatch_context* ctx,
                                      struct np_platform* pl,
-                                     struct nc_coap_server_context* coap,
-                                     struct nc_rendezvous_context* rendezvous,
-                                     struct nc_stream_manager_context* streamManager)
+                                     struct nc_device_context* dev)
 {
     int i = 0;
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         memset(&ctx->elms[i].conn, 0, sizeof(struct nc_client_connection));
         ctx->elms[i].active = false;
     }
-    ctx->streamManager = streamManager;
-    ctx->coap = coap;
-    ctx->rendezvous = rendezvous;
+    ctx->device = dev;
     ctx->pl = pl;
 }
 
@@ -49,7 +45,7 @@ void nc_client_connect_dispatch_handle_packet(struct nc_client_connect_dispatch_
     NABTO_LOG_INFO(LOG, "Found packet for new connection");
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         if(!ctx->elms[i].active) {
-            np_error_code ec = nc_client_connect_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->streamManager, ctx->coap, ctx->rendezvous, sock, ep, buffer, bufferSize);
+            np_error_code ec = nc_client_connect_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->device, sock, ep, buffer, bufferSize);
             if (ec == NABTO_EC_OK) {
                 ctx->elms[i].active = true;
             }

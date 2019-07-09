@@ -1,5 +1,6 @@
 #include "nc_client_connect.h"
 #include "nc_client_connect_dispatch.h"
+#include "nc_device.h"
 
 #include <core/nc_udp_dispatch.h>
 
@@ -17,9 +18,7 @@ void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
                                      struct nc_client_connect_dispatch_context* dispatch,
-                                     struct nc_stream_manager_context* streamManager,
-                                     struct nc_coap_server_context* coap,
-                                     struct nc_rendezvous_context* rendezvous,
+                                     struct nc_device_context* device,
                                      struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                      np_communication_buffer* buffer, uint16_t bufferSize)
 {
@@ -32,10 +31,11 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->currentChannel.channelId = conn->id.id[15];
     conn->lastChannel = conn->currentChannel;
     conn->pl = pl;
-    conn->streamManager = streamManager;
+    conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
-    conn->coap = coap;
-    conn->rendezvous = rendezvous;
+    conn->coap = &device->coap;
+    conn->rendezvous = &device->rendezvous;
+    conn->connectionId = nc_device_next_connection_id(device);
 
     ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
     if (ec != NABTO_EC_OK) {
