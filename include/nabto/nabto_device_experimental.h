@@ -55,6 +55,13 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_iam_env_free(NabtoDeviceIamEnv* env);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_env_add_attribute_string(NabtoDeviceIamEnv* env, const char* name, const char* value);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_env_add_attribute_number(NabtoDeviceIamEnv* env, const char* name, uint32_t value);
+
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_connection_set_user(NabtoDevice* device, NabtoDeviceConnectionId connectionId, const char* user);
 
 // add a user to the iam system
