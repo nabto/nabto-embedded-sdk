@@ -10,6 +10,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
 #include <core/nc_version.h>
+#include <core/nc_client_connect.h>
 
 #include <modules/logging/api/nm_api_logging.h>
 
@@ -483,6 +484,18 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream
     return fut;
 }
 
+NabtoDeviceConnectionId NABTO_DEVICE_API nabto_device_stream_get_connection_id(NabtoDeviceStream* stream)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceConnectionId id;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+
+    id = nc_device_get_connection_id_from_stream(&str->dev->core, str->stream);
+
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return id;
+}
+
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
                                                 void* buffer, size_t bufferLength,
                                                 size_t* readLength)
@@ -568,11 +581,12 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream*
  * COAP API Start
  *******************************************/
 
-NabtoDeviceCoapResource* NABTO_DEVICE_API nabto_device_coap_add_resource(NabtoDevice* device,
-                                                        NabtoDeviceCoapMethod method,
-                                                        const char* path,
-                                                        NabtoDeviceCoapResourceHandler handler,
-                                                        void* userData)
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_coap_add_resource(NabtoDevice* device,
+                               NabtoDeviceCoapMethod method,
+                               const char** pathSegments,
+                               NabtoDeviceCoapResourceHandler handler,
+                               void* userData)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)malloc(sizeof(struct nabto_device_coap_resource));
@@ -583,22 +597,22 @@ NabtoDeviceCoapResource* NABTO_DEVICE_API nabto_device_coap_add_resource(NabtoDe
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    resource->res = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coap), nabto_device_coap_method_to_code(method), path, &nabto_device_coap_resource_handler, resource);
+    nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coap), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, resource);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
-    return (NabtoDeviceCoapResource*)resource;
-}
-
-NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource)
-{
-    struct nabto_device_coap_resource* reso = (struct nabto_device_coap_resource*)resource;
-    nabto_device_threads_mutex_lock(reso->dev->eventMutex);
-    // TODO: implement observables
-    //nabto_coap_server_notify_observers(nc_coap_server_get_server(&reso->dev->core.coap), reso->res);
-    nabto_device_threads_mutex_unlock(reso->dev->eventMutex);
     return NABTO_DEVICE_EC_OK;
 }
+
+/* NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource) */
+/* { */
+/*     struct nabto_device_coap_resource* reso = (struct nabto_device_coap_resource*)resource; */
+/*     nabto_device_threads_mutex_lock(reso->dev->eventMutex); */
+/*     // TODO: implement observables */
+/*     //nabto_coap_server_notify_observers(nc_coap_server_get_server(&reso->dev->core.coap), reso->res); */
+/*     nabto_device_threads_mutex_unlock(reso->dev->eventMutex); */
+/*     return NABTO_DEVICE_EC_OK; */
+/* } */
 
 NabtoDeviceCoapResponse* NABTO_DEVICE_API nabto_device_coap_create_response(NabtoDeviceCoapRequest* request)
 {
@@ -682,6 +696,30 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     }
 }
 
+NabtoDeviceConnectionId nabto_device_coap_request_get_connection_id(NabtoDeviceCoapRequest* request)
+{
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
+    nabto_device_threads_mutex_lock(req->dev->eventMutex);
+    struct nc_client_connection* connection = (struct nc_client_connection*)nabto_coap_server_request_get_connection(req->req);
+    NabtoDeviceConnectionId id;
+    if (connection != NULL) {
+        id = connection->connectionId;
+    } else {
+        id = 0;
+    }
+    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
+    return id;
+}
+
+const char* NABTO_DEVICE_API nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName)
+{
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
+    const char* value;
+    nabto_device_threads_mutex_lock(req->dev->eventMutex);
+    value = nabto_coap_server_request_get_parameter(req->req, parameterName);
+    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
+    return value;
+}
 
 /*******************************************
  * COAP API End

@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #define MAX_KEY_PEM_SIZE 1024
 #define MAX_CRT_PEM_SIZE 1024
@@ -127,7 +128,8 @@ bool load_key_from_file(const char* filename)
 
 void handle_coap_get_request(NabtoDeviceCoapRequest* request, void* data)
 {
-    printf("Received CoAP GET request" NEWLINE);
+    NabtoDeviceConnectionId connectionId = nabto_device_coap_request_get_connection_id(request);
+    printf("Received CoAP GET request, connectionId: %" PRIu64 "" NEWLINE, connectionId);
     const char* responseData = "helloWorld";
     NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
     nabto_device_coap_response_set_code(response, 205);
@@ -214,6 +216,9 @@ void handle_new_stream(struct streamContext* streamContext)
         nabto_device_stream_free(streamContext->stream);
         free(streamContext);
         return;
+    } else {
+        NabtoDeviceConnectionId connectionId = nabto_device_stream_get_connection_id(streamContext->stream);
+        printf("accepted new stream connectionId: %" PRIu64 "" NEWLINE, connectionId);
     }
     fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
     nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
@@ -258,8 +263,8 @@ void run_device()
         return;
     }
 
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/test/get", &handle_coap_get_request, dev);
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, "/test/post", &handle_coap_post_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"test", "get", NULL}, &handle_coap_get_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, (const char*[]){"test", "post", NULL}, &handle_coap_post_request, dev);
 
     // wait for ctrl-c
     while (true) {

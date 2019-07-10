@@ -75,7 +75,7 @@ int main()
     np_communication_buffer_init(&pl);
     np_ts_init(&pl);
     np_udp_init(&pl);
-    
+
     pl.dtlsS.async_send_to = &dtlsSendTo;
 
     nc_coap_server_init(&pl, &coap);
@@ -83,11 +83,11 @@ int main()
     sendCtx.buffer = pl.buf.allocate();
     sendCtx.cb = &udpSendCb;
     sendCtx.cbData = NULL;
-    
+
     pl.udp.async_bind_port(4242, &udpCreatedCb, NULL);
 
-    nabto_coap_server_add_resource(nc_coap_server_get_server(&coap), NABTO_COAP_CODE_GET, "/helloworld", &handleHelloReq, NULL);
-    
+    nabto_coap_server_add_resource(nc_coap_server_get_server(&coap), NABTO_COAP_CODE_GET, (const char*[]){"helloworld", NULL}, &handleHelloReq, NULL);
+
     while(true) {
         np_event_queue_execute_all(&pl);
         if (np_event_queue_has_timed_event(&pl)) {
@@ -98,5 +98,5 @@ int main()
         }
         pl.udp.read(nfds);
     }
-   
+
 }

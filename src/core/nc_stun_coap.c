@@ -17,7 +17,8 @@ void nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_platform*
     context->coap = coap;
     context->pl = platform;
     context->stunRequest = NULL;
-    nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST, "/p2p/stun",
+    nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
+                                   (const char*[]){"p2p", "stun", NULL},
                                    &nc_rendezvous_handle_coap_p2p_stun, context);
 }
 

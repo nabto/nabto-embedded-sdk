@@ -28,6 +28,8 @@ struct nc_device_context {
     struct nc_rendezvous_context rendezvous;
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
+    // unique connectionId for each connection
+    uint64_t connectionId;
 
     const char* stunHost;
 
@@ -44,5 +46,9 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
                               const uint16_t port);
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data);
+
+uint64_t nc_device_next_connection_id(struct nc_device_context* dev);
+
+uint64_t nc_device_get_connection_id_from_stream(struct nc_device_context* dev, struct nabto_stream* stream);
 
 #endif // NC_DEVICE_H

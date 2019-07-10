@@ -213,3 +213,19 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
         }
     }
 }
+
+uint64_t nc_stream_manager_get_connection_id(struct nc_stream_manager_context* ctx, struct nabto_stream* stream)
+{
+    for (int i = 0; i < NABTO_MAX_STREAMS; i++) {
+
+        if (ctx->streams[i].active && &ctx->streams[i].stream == stream) {
+            struct nc_client_connection* connection = ctx->streamConns[i];
+            if (connection == NULL) {
+                return 0;
+            } else {
+                return connection->connectionId;
+            }
+        }
+    }
+    return 0;
+}

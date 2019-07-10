@@ -75,6 +75,12 @@ typedef uint32_t nabto_device_duration_t;
 typedef int NabtoDeviceError;
 
 /**
+ * Connection Id, used to correlate requests on connections with
+ * e.g. IAM systems.
+ */
+typedef uint64_t NabtoDeviceConnectionId;
+
+/**
  * The NabtoDeviceError represents error codes
  */
 extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
@@ -218,6 +224,12 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
 nabto_device_stream_accept(NabtoDeviceStream* stream);
 
 /**
+ * Get the id for the underlying connection
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionId NABTO_DEVICE_API
+nabto_device_stream_get_connection_id(NabtoDeviceStream* stream);
+
+/**
  * Read exactly n bytes from a stream
  *
  * if (readLength != bufferLength) the stream has reached a state
@@ -324,7 +336,7 @@ typedef enum  {
 /**
  * The COAP resource is used when notifying observers of a specefic resource
  */
-typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
+// typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
 
 /**
  * Representing a COAP request received from the client
@@ -346,15 +358,21 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * requests will invoke the handler. The returned resource is alive
  * for the life time of the COAP server
  *
- * @param method    The COAP method for which to handle requests
- * @param path      The COAP path for which to handle requests
- * @param handler   The handler to be invoked when a request is received
- * @param userData  Data to be passed along to the handler when invoked
+ * @param method     The CoAP method for which to handle requests
+ * @param pathSegments
  *
- * @return A representation of the added COAP resource.
+ * The CoAP path segments of the resource. The array of segments is a
+ * NULL terminated array of null terminated strings. The familiar
+ * notation for rest resources "/heatpump/state" becomes the array
+ * {"heatpump", "state", NULL }
+ *
+ * @param handler    The handler to be invoked when a request is received
+ * @param userData   Data to be passed along to the handler when invoked
+ *
+ * @return A OK iff ok.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResource* NABTO_DEVICE_API
-nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char* path, NabtoDeviceCoapResourceHandler handler, void* userData);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, NabtoDeviceCoapResourceHandler handler, void* userData);
 
 /**
  * Notify observers of a resource retreived by calling
@@ -454,6 +472,16 @@ nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request, ui
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** payload, size_t* payloadLength);
 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionId NABTO_DEVICE_API
+nabto_device_coap_request_get_connection_id(NabtoDeviceCoapRequest* request);
+
+/**
+ * Get a parameter from a coap requests. If the parameter does not
+ * exist NULL is returned. The lifetime for the returned value is no
+ * longer than the lifetime of the NabtoDeviceCoapRequest.
+ */
+NABTO_DEVICE_DECL_PREFIX const char*  NABTO_DEVICE_API
+nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName);
 
 /**************
  * Future API *

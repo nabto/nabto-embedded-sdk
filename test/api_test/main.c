@@ -48,7 +48,7 @@ int main()
     nabto_device_set_server_url(dev, hostname);
     nabto_device_start(dev);
 
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/helloworld", &handler, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"helloworld", NULL}, &handler, dev);
 
     NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, &stream);
     nabto_device_future_wait(fut);
