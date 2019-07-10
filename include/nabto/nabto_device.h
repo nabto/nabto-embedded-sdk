@@ -475,6 +475,14 @@ nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** pa
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionId NABTO_DEVICE_API
 nabto_device_coap_request_get_connection_id(NabtoDeviceCoapRequest* request);
 
+/**
+ * Get a parameter from a coap requests. If the parameter does not
+ * exist NULL is returned. The lifetime for the returned value is no
+ * longer than the lifetime of the NabtoDeviceCoapRequest.
+ */
+NABTO_DEVICE_DECL_PREFIX const char*  NABTO_DEVICE_API
+nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName);
+
 /**************
  * Future API *
  **************/

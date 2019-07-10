@@ -707,6 +707,16 @@ NabtoDeviceConnectionId nabto_device_coap_request_get_connection_id(NabtoDeviceC
     return id;
 }
 
+const char* NABTO_DEVICE_API nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName)
+{
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
+    const char* value;
+    nabto_device_threads_mutex_lock(req->dev->eventMutex);
+    value = nabto_coap_server_request_get_parameter(req->req, parameterName);
+    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
+    return value;
+}
+
 /*******************************************
  * COAP API End
  *******************************************/
