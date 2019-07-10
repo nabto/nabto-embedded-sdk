@@ -336,7 +336,7 @@ typedef enum  {
 /**
  * The COAP resource is used when notifying observers of a specefic resource
  */
-typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
+// typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
 
 /**
  * Representing a COAP request received from the client
@@ -358,15 +358,21 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * requests will invoke the handler. The returned resource is alive
  * for the life time of the COAP server
  *
- * @param method    The COAP method for which to handle requests
- * @param path      The COAP path for which to handle requests
- * @param handler   The handler to be invoked when a request is received
- * @param userData  Data to be passed along to the handler when invoked
+ * @param method     The CoAP method for which to handle requests
+ * @param pathSegments
  *
- * @return A representation of the added COAP resource.
+ * The CoAP path segments of the resource. The array of segments is a
+ * NULL terminated array of null terminated strings. The familiar
+ * notation for rest resources "/heatpump/state" becomes the array
+ * {"heatpump", "state", NULL }
+ *
+ * @param handler    The handler to be invoked when a request is received
+ * @param userData   Data to be passed along to the handler when invoked
+ *
+ * @return A OK iff ok.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResource* NABTO_DEVICE_API
-nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char* path, NabtoDeviceCoapResourceHandler handler, void* userData);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, NabtoDeviceCoapResourceHandler handler, void* userData);
 
 /**
  * Notify observers of a resource retreived by calling
@@ -378,8 +384,9 @@ nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method
  *
  * @return NABTO_EC_OK if notify was successful
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
+// TODO
+//NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+//nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
 
 /**
  * Create a COAP response for a given request. This MUST only be

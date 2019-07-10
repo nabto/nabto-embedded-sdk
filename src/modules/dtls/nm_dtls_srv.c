@@ -305,7 +305,7 @@ void nm_dtls_srv_do_one(void* data)
 void nm_dtls_srv_close_from_self(struct np_dtls_srv_connection* ctx)
 {
     ctx->ctx.state = CLOSING;
-    struct np_dtls_srv_send_context* iterator = ctx->sendSentinel.next;
+    // remove the first element until the list is empty
     while(ctx->sendSentinel.next != &ctx->sendSentinel) {
         struct np_dtls_srv_send_context* first = ctx->sendSentinel.next;
         nm_dtls_srv_remove_send_data(first);

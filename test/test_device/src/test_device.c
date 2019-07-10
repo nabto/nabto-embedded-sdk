@@ -263,8 +263,8 @@ void run_device()
         return;
     }
 
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, "/test/get", &handle_coap_get_request, dev);
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, "/test/post", &handle_coap_post_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"test", "get", NULL}, &handle_coap_get_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, (const char*[]){"test", "post", NULL}, &handle_coap_post_request, dev);
 
     // wait for ctrl-c
     while (true) {
