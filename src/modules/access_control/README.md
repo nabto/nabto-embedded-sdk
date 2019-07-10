@@ -1,3 +1,42 @@
+## Api considerations.
+
+  * be able to come with custom actions.
+  * be able to come with custom attributes.
+  * be able to control roles for a connection.
+
+api:
+  * `check_action(environment, action);`
+  * `associate_role_with_connection(connection, role);`
+
+  * `add_role(device, role)`
+  * `remove_role(device, role)`
+  * `list_roles(device)`
+  * `add_policy(device, policy)`
+  * `remove_policy(device, policy)`
+  * `add_user(device, user)`
+  * `remove_user(device, user)`
+  * `list_users(device)`
+
+
+Alternative 1:
+
+Let iam live inside the core
+/**
+ * Modify iam system
+ */
+nabto_device_iam_add_user(NabtoDevice* device, ...)
+nabto_device_iam_remove_user(NabtoDevice* device, ...)
+
+Alternative 2:
+
+Let iam live outside the core, and have callbacks for certain events.
+
+nabto_device_connection_created_cb(connection* )
+nabto_device_connection_destroyed_cb(connection* )
+nabto_device_coap_request_cb()
+Call out from the core on certain events
+
+
 ## conditions grammar
 
 
