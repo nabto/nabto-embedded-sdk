@@ -46,9 +46,9 @@ bool heatpump_coap_check_action(NabtoDeviceCoapRequest* request, const char* act
 {
     NabtoDeviceIamEnv* iamEnv = nabto_device_iam_env_from_coap_request(request);
 
-    NabtoDeviceIamEffect effect = nabto_device_iam_check_action(iamEnv, action);
+    NabtoDeviceError effect = nabto_device_iam_check_action(iamEnv, action);
     nabto_device_iam_env_free(iamEnv);
-    if (effect == NABTO_DEVICE_IAM_EFFECT_ALLOW) {
+    if (effect == NABTO_DEVICE_EC_OK) {
         return true;
     } else {
         // deny

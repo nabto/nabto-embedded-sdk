@@ -25,7 +25,7 @@ nabto_device_experimental_util_free(void* data);
  * neccessary attributes and user information to decide if the given
  * action is allowed.
  */
-struct NabtoDeviceIamEnv_ NabtoDeviceIamEnv;
+typedef struct NabtoDeviceIamEnv_ NabtoDeviceIamEnv;
 
 /**
  * Callback when the iam system has been modified. The application can choose to persist the changes.
@@ -50,6 +50,9 @@ nabto_device_iam_check_action(NabtoDeviceIamEnv* env, const char* action);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceIamEnv* NABTO_DEVICE_API
 nabto_device_iam_env_new(NabtoDevice* device, NabtoDeviceConnectionId connectionId);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceIamEnv* NABTO_DEVICE_API
+nabto_device_iam_env_from_coap_request(NabtoDeviceCoapRequest* coapRequest);
 
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_iam_env_free(NabtoDeviceIamEnv* env);
@@ -85,7 +88,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const char* role);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_list_roles(NabtoDevice* device* const char* user, void** cbor, size_t cborLength);
+nabto_device_iam_users_list_roles(NabtoDevice* device, const char* user, void** cbor, size_t cborLength);
 
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
