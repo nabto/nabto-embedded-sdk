@@ -4,6 +4,7 @@ set(access_control_src
   nm_access_control.c
   nm_iam_parse.c
   nm_iam_util.c
+  nm_iam_coap.c
   )
 
 set(test_src

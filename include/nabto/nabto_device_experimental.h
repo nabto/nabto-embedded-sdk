@@ -51,14 +51,12 @@ nabto_device_iam_set_changed_callback(NabtoDevice* device, NabtoDeviceIamChanged
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_check_action(NabtoDeviceIamEnv* env, const char* action);
 
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceIamEnv* NABTO_DEVICE_API
-nabto_device_iam_env_new(NabtoDevice* device, NabtoDeviceConnectionId connectionId);
-
+/**
+ * the env is owned by the coap request, the lifetime is limited by
+ * the request
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceIamEnv* NABTO_DEVICE_API
 nabto_device_iam_env_from_coap_request(NabtoDeviceCoapRequest* coapRequest);
-
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_iam_env_free(NabtoDeviceIamEnv* env);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_env_add_attribute_string(NabtoDeviceIamEnv* env, const char* name, const char* value);

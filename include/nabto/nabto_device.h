@@ -389,6 +389,17 @@ nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method
 //nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
 
 /**
+ * Send back an error.
+ *
+ * A coap error consists of a status code and an error description in
+ * UTF8. If more complex errors needs to be returned they have to be
+ * constructed using a response.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_coap_error_response(NabtoDeviceCoapRequest* request, uint16_t code, const char* message);
+
+
+/**
  * Create a COAP response for a given request. This MUST only be
  * called once per resource handler invokation. That is, for
  * non-observable requests ONLY once per request, and for observable
