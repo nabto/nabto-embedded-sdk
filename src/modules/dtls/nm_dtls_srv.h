@@ -14,9 +14,6 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
 np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                           struct np_dtls_srv_send_context* sendCtx);
 
-np_error_code nm_dtls_srv_async_recv_from(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                          np_dtls_received_callback cb, void* data);
-
 np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                       np_dtls_close_callback cb, void* data);
 
