@@ -142,6 +142,7 @@ struct nm_iam {
     struct nm_iam_list roles;
     struct nm_iam_list policies;
     struct nm_iam_list attributeNames;
+    struct nm_iam_user* defaultUser;
 };
 
 void nm_iam_init(struct nm_iam* iam);
