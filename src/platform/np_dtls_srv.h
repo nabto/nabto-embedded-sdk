@@ -4,12 +4,20 @@
 #include <platform/np_error_code.h>
 #include <platform/np_dtls.h>
 
+enum np_dtls_srv_event {
+    NP_DTLS_SRV_EVENT_CLOSED,
+    NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE
+};
+
 typedef void (*np_dtls_srv_send_callback)(const np_error_code ec, void* data);
 typedef void (*np_dtls_srv_mtu_callback)(const np_error_code ec, uint16_t mtu, void* data);
 typedef void (*np_dtls_srv_sender)(bool activeChannel,
                                    np_communication_buffer* buffer, uint16_t bufferSize,
                                    np_dtls_srv_send_callback cb, void* data,
                                    void* senderData);
+typedef void (*np_dtls_srv_event_handler)(enum np_dtls_srv_event event, void* data);
+typedef void (*np_dtls_srv_data_handler)(uint8_t channelId, uint64_t sequence,
+                                         np_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
 struct np_dtls_srv_send_context {
     uint8_t* buffer;
@@ -33,15 +41,10 @@ np_error_code np_dtls_srv_init(struct np_platform* pl,
 struct np_dtls_srv_module {
 
     np_error_code (*create)(struct np_platform* pl, struct np_dtls_srv_connection** dtls,
-                            np_dtls_srv_sender sender, void* data);
+                            np_dtls_srv_sender packetSender, np_dtls_srv_data_handler dataHandler, np_dtls_srv_event_handler eventHandler, void* data);
 
-    np_error_code (*async_send_to)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                   struct np_dtls_srv_send_context* sendCtx);
-//                                   uint8_t* buffer, uint16_t bufferSize,
-//                                   np_dtls_send_to_callback cb, void* data);
-
-    np_error_code (*async_recv_from)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                     np_dtls_received_callback cb, void* data);
+    np_error_code (*async_send_data)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
+                                     struct np_dtls_srv_send_context* sendCtx);
 
     np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                    uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);

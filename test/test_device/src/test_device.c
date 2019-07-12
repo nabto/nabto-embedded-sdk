@@ -128,7 +128,7 @@ bool load_key_from_file(const char* filename)
 
 void handle_coap_get_request(NabtoDeviceCoapRequest* request, void* data)
 {
-    NabtoDeviceConnectionId connectionId = nabto_device_coap_request_get_connection_id(request);
+    NabtoDeviceConnectionRef connectionId = nabto_device_coap_request_get_connection_ref(request);
     printf("Received CoAP GET request, connectionId: %" PRIu64 "" NEWLINE, connectionId);
     const char* responseData = "helloWorld";
     NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
@@ -217,7 +217,7 @@ void handle_new_stream(struct streamContext* streamContext)
         free(streamContext);
         return;
     } else {
-        NabtoDeviceConnectionId connectionId = nabto_device_stream_get_connection_id(streamContext->stream);
+        NabtoDeviceConnectionRef connectionId = nabto_device_stream_get_connection_ref(streamContext->stream);
         printf("accepted new stream connectionId: %" PRIu64 "" NEWLINE, connectionId);
     }
     fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);

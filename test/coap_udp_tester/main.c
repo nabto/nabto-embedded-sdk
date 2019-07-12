@@ -76,7 +76,7 @@ int main()
     np_ts_init(&pl);
     np_udp_init(&pl);
 
-    pl.dtlsS.async_send_to = &dtlsSendTo;
+    pl.dtlsS.async_send_data = &dtlsSendTo;
 
     nc_coap_server_init(&pl, &coap);
 

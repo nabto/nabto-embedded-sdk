@@ -148,7 +148,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     ctx->sendCtx.bufferSize = ptr-start+ret;
     ctx->sendCtx.cb = &nc_stream_manager_send_rst_callback;
     ctx->sendCtx.data = ctx;
-    ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, &ctx->sendCtx);
+    ctx->pl->dtlsS.async_send_data(ctx->pl, dtls, &ctx->sendCtx);
 }
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)
@@ -214,7 +214,7 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
     }
 }
 
-uint64_t nc_stream_manager_get_connection_id(struct nc_stream_manager_context* ctx, struct nabto_stream* stream)
+uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* stream)
 {
     for (int i = 0; i < NABTO_MAX_STREAMS; i++) {
 
@@ -223,7 +223,7 @@ uint64_t nc_stream_manager_get_connection_id(struct nc_stream_manager_context* c
             if (connection == NULL) {
                 return 0;
             } else {
-                return connection->connectionId;
+                return connection->connectionRef;
             }
         }
     }

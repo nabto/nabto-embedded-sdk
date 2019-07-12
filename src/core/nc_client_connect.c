@@ -16,6 +16,10 @@ void nc_client_connect_async_send_to_udp(bool channelId,
                                          np_dtls_srv_send_callback cb, void* data, void* listenerData);
 void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
+void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data);
+void nc_client_connect_handle_data(uint8_t channelId, uint64_t sequence,
+                                      np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
                                      struct nc_client_connect_dispatch_context* dispatch,
                                      struct nc_device_context* device,
@@ -35,15 +39,18 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->dispatch = dispatch;
     conn->coap = &device->coap;
     conn->rendezvous = &device->rendezvous;
-    conn->connectionId = nc_device_next_connection_id(device);
+    conn->connectionRef = nc_device_next_connection_ref(device);
+    conn->userRef = 0;
 
-    ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
+    ec = pl->dtlsS.create(pl, &conn->dtls,
+                          &nc_client_connect_async_send_to_udp,
+                          &nc_client_connect_handle_data,
+                          &nc_client_connect_handle_event, conn);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
         return NABTO_EC_FAILED;
     }
 
-    pl->dtlsS.async_recv_from(pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
     // Remove connection ID before passing packet to DTLS
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
@@ -92,47 +99,52 @@ void nc_client_connect_close_connection(struct np_platform* pl, struct nc_client
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
 
-void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                                          np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data)
+{
+    struct nc_client_connection* conn = (struct nc_client_connection*)data;
+    if (event == NP_DTLS_SRV_EVENT_CLOSED) {
+        nc_client_connect_dtls_closed_cb(NABTO_EC_OK, data);
+    } else if (event == NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE) {
+        // test fingerprint and alpn
+        // if ok try to assign user to connection.
+        // if fail, reject the connection.
+        if(!conn->verified) {
+            conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connect_mtu_discovered, conn);
+            if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
+                NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
+                conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+                return;
+            }
+            uint8_t fp[16];
+            np_error_code ec2;
+            ec2 = conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+            if (ec2 != NABTO_EC_OK) {
+                NABTO_LOG_ERROR(LOG, "Failed to get fingerprint from DTLS connection");
+                conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+                return;
+            }
+            NABTO_LOG_TRACE(LOG, "Retreived FP: ");
+            NABTO_LOG_BUF(LOG, fp, 16);
+            memcpy(conn->clientFingerprint, fp, 16);
+            if (!conn->pl->accCtrl.can_access(fp, NP_CONNECT_PERMISSION)) {
+                NABTO_LOG_ERROR(LOG, "Client connect fingerprint verification failed");
+                conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+                return;
+            }
+            conn->verified = true;
+        }
+    }
+}
+
+// handle data from the dtls module
+void nc_client_connect_handle_data(uint8_t channelId, uint64_t sequence,
+                                   np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
     uint8_t applicationType;
 
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "DTLS server returned error: %u", ec);
-        //conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
-        nc_client_connect_dtls_closed_cb(NABTO_EC_OK, data);
-        return;
-    }
-
     if (conn->currentChannel.channelId != conn->lastChannel.channelId) {
         conn->currentChannel = conn->lastChannel;
-    }
-
-    if(!conn->verified) {
-        conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connect_mtu_discovered, conn);
-        if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
-            NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
-            return;
-        }
-        uint8_t fp[16];
-        np_error_code ec2;
-        ec2 = conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
-        if (ec2 != NABTO_EC_OK) {
-            NABTO_LOG_ERROR(LOG, "Failed to get fingerprint from DTLS connection");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
-            return;
-        }
-        NABTO_LOG_TRACE(LOG, "Retreived FP: ");
-        NABTO_LOG_BUF(LOG, fp, 16);
-        memcpy(conn->clientFingerprint, fp, 16);
-        if (!conn->pl->accCtrl.can_access(fp, NP_CONNECT_PERMISSION)) {
-            NABTO_LOG_ERROR(LOG, "Client connect fingerprint verification failed");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
-            return;
-        }
-        conn->verified = true;
     }
 
     applicationType = *(conn->pl->buf.start(buffer));
@@ -145,7 +157,6 @@ void nc_client_connect_dtls_recv_callback(const np_error_code ec, uint8_t channe
     } else {
         NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
     }
-    conn->pl->dtlsS.async_recv_from(conn->pl, conn->dtls, &nc_client_connect_dtls_recv_callback, conn);
 }
 
 void nc_client_connect_dtls_closed_cb(const np_error_code ec, void* data)
