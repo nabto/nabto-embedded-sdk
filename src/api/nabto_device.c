@@ -480,16 +480,16 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream
     return fut;
 }
 
-NabtoDeviceConnectionId NABTO_DEVICE_API nabto_device_stream_get_connection_id(NabtoDeviceStream* stream)
+NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
-    NabtoDeviceConnectionId id;
+    NabtoDeviceConnectionRef ref;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
 
-    id = nc_device_get_connection_id_from_stream(&str->dev->core, str->stream);
+    ref = nc_device_get_connection_ref_from_stream(&str->dev->core, str->stream);
 
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
-    return id;
+    return ref;
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
@@ -692,19 +692,19 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     }
 }
 
-NabtoDeviceConnectionId nabto_device_coap_request_get_connection_id(NabtoDeviceCoapRequest* request)
+NabtoDeviceConnectionRef nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request)
 {
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
     nabto_device_threads_mutex_lock(req->dev->eventMutex);
     struct nc_client_connection* connection = (struct nc_client_connection*)nabto_coap_server_request_get_connection(req->req);
-    NabtoDeviceConnectionId id;
+    NabtoDeviceConnectionRef ref;
     if (connection != NULL) {
-        id = connection->connectionId;
+        ref= connection->connectionRef;
     } else {
-        id = 0;
+        ref = 0;
     }
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
-    return id;
+    return ref;
 }
 
 const char* NABTO_DEVICE_API nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName)

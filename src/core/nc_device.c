@@ -108,7 +108,7 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
     dev->attachParams.hostname = hostname;
     dev->attachParams.udp = &dev->udp;
 
-    dev->connectionId = 0;
+    dev->connectionRef = 0;
 
     nc_udp_dispatch_async_create(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
     nc_rendezvous_init(&dev->rendezvous, pl, &dev->udp);
@@ -142,14 +142,14 @@ uint32_t nc_device_get_reattach_time(struct nc_device_context* dev)
     return ms;
 }
 
-uint64_t nc_device_next_connection_id(struct nc_device_context* dev)
+uint64_t nc_device_next_connection_ref(struct nc_device_context* dev)
 {
     // TODO fail if we wrap around, highly unlikely!
-    dev->connectionId += 1;
-    return dev->connectionId;
+    dev->connectionRef += 1;
+    return dev->connectionRef;
 }
 
-uint64_t nc_device_get_connection_id_from_stream(struct nc_device_context* dev, struct nabto_stream* stream)
+uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream)
 {
-    return nc_stream_manager_get_connection_id(&dev->streamManager, stream);
+    return nc_stream_manager_get_connection_ref(&dev->streamManager, stream);
 }

@@ -214,7 +214,7 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
     }
 }
 
-uint64_t nc_stream_manager_get_connection_id(struct nc_stream_manager_context* ctx, struct nabto_stream* stream)
+uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* stream)
 {
     for (int i = 0; i < NABTO_MAX_STREAMS; i++) {
 
@@ -223,7 +223,7 @@ uint64_t nc_stream_manager_get_connection_id(struct nc_stream_manager_context* c
             if (connection == NULL) {
                 return 0;
             } else {
-                return connection->connectionId;
+                return connection->connectionRef;
             }
         }
     }
