@@ -46,6 +46,7 @@ struct nc_client_connection {
     struct np_udp_send_context sendCtx;
     np_error_code ec;
     uint64_t connectionRef;
+    uint64_t userRef;
 };
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,

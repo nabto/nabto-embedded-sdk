@@ -36,6 +36,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->coap = &device->coap;
     conn->rendezvous = &device->rendezvous;
     conn->connectionRef = nc_device_next_connection_ref(device);
+    conn->userRef = 0;
 
     ec = pl->dtlsS.create(pl, &conn->dtls, &nc_client_connect_async_send_to_udp, conn);
     if (ec != NABTO_EC_OK) {
