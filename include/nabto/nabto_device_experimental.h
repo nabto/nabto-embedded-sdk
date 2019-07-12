@@ -89,8 +89,10 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const char* role);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_list_roles(NabtoDevice* device, const char* user, void** cbor, size_t cborLength);
+nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t cborLength);
 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void** cbor, size_t cborLength);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_create(NabtoDevice* device, const char* role);
@@ -103,9 +105,6 @@ nabto_device_iam_roles_add_policy(NabtoDevice* device, const char* role, const c
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_deivce_iam_roles_remove_policy(NabtoDevice* device, const char* role, const char* policy);
-
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_roles_list_policies(NabtoDevice* device, const char* role, void** cbor, size_t cborLength);
 
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
