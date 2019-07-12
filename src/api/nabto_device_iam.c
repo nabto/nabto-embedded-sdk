@@ -36,5 +36,17 @@ void nabto_device_iam_env_free(NabtoDeviceIamEnv* e)
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_iam_check_action(NabtoDeviceIamEnv* env, const char* action)
 {
-    return NABTO_DEVICE_EC_IAM_DENY;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_IAM_DENY;
+    struct nabto_device_iam_env* iamEnv = (struct nabto_device_iam_env*) env;
+
+    struct nabto_device_context* dev = iamEnv->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    // get the user
+    // get the attributes
+
+    if (nm_iam_has_access_to_action(&device->iam, user, attributes, nm_iam_get_action(&device->iam, action))) {
+        ec = NABTO_DEVICE_EC_OK;
+    }
+    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
+    return ec;
 }
