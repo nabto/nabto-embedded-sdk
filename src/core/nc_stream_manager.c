@@ -148,7 +148,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     ctx->sendCtx.bufferSize = ptr-start+ret;
     ctx->sendCtx.cb = &nc_stream_manager_send_rst_callback;
     ctx->sendCtx.data = ctx;
-    ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, &ctx->sendCtx);
+    ctx->pl->dtlsS.async_send_data(ctx->pl, dtls, &ctx->sendCtx);
 }
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)

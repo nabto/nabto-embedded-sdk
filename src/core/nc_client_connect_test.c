@@ -157,9 +157,9 @@ void nc_client_connect_test_connect()
     id.id[0] = 240;
     memcpy(id.id+1, "12345678912345\0",14);
     np_platform_init(&pl);
-    pl.dtlsS.create = &nc_client_connect_test_cryp_create;
-    pl.dtlsS.async_send_to = &nc_client_connect_test_cryp_send;
-    pl.dtlsS.async_recv_from = &nc_client_connect_test_cryp_recv;
+//    pl.dtlsS.create = &nc_client_connect_test_cryp_create;
+    pl.dtlsS.async_send_data = &nc_client_connect_test_cryp_send;
+    //  pl.dtlsS.async_recv_from = &nc_client_connect_test_cryp_recv;
     pl.dtlsS.async_close = &nc_client_connect_test_cryp_close;
 
     pl.buf.start = &nc_client_connect_test_start;

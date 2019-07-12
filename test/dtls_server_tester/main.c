@@ -72,17 +72,12 @@ void dtlsSendCb(const np_error_code ec, void* data)
     NABTO_LOG_INFO(0, "DTLS packet sent");
 }
 
-void recvedCb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
+void receivedCb(uint8_t channelId, uint64_t sequence,
             np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(0, "dtls receive failed");
-        exit(1);
-    }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Server Received data:");
     NABTO_LOG_BUF(0, pl.buf.start(buffer), bufferSize);
-    pl.dtlsS.async_recv_from(&pl, ctx->dtls, recvedCb, ctx);
     uint8_t* sendBuf = malloc(1500);
     struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
     memcpy(sendBuf, pl.buf.start(buffer), bufferSize);
@@ -90,8 +85,16 @@ void recvedCb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
     sendCtx->bufferSize = bufferSize;
     sendCtx->cb = &dtlsSendCb;
     sendCtx->data = sendCtx;
-    pl.dtlsS.async_send_to(&pl, ctx->dtls, sendCtx);
+    pl.dtlsS.async_send_data(&pl, ctx->dtls, sendCtx);
     //pl.dtlsS.async_close(&pl, ctx->dtls, closeCb, data);
+}
+
+void eventCb(enum np_dtls_srv_event event, void* data)
+{
+    if (event == NP_DTLS_SRV_EVENT_CLOSED) {
+        NABTO_LOG_ERROR(0, "dtls connection closed");
+        exit(1);
+    }
 }
 
 void udpSendCb(const np_error_code ec, void* data)
@@ -121,9 +124,8 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->dtls, &dtls_send_listener, ctx);
+    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->dtls, &dtls_send_listener, &receivedCb, &eventCb, ctx);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    pl.dtlsS.async_recv_from(&pl, ctx->dtls, recvedCb, ctx);
     if(ec2 != NABTO_EC_OK) {
         exit(1);
     }
