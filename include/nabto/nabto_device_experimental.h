@@ -65,6 +65,19 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_env_add_attribute_number(NabtoDeviceIamEnv* env, const char* name, uint32_t value);
 
 
+/**
+ * Add a user to the system which is not meant to be persisted in the
+ * iam system. This is usually called from an coap resource which
+ * validates a JWT access token, the jwt token then defines which
+ * roles the user has.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_add_federated_user(NabtoDevice* device, const char* user);
+
+/**
+ * Set the user a connection is associated with, this is often used
+ * together with jwt and a federated user.
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_connection_set_user(NabtoDevice* device, NabtoDeviceConnectionId connectionId, const char* user);
 
@@ -87,6 +100,7 @@ nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const cha
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const char* role);
+
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t cborLength);
