@@ -247,7 +247,9 @@ void nm_dtls_srv_do_one(void* data)
         } else if (ret == 0) {
             NABTO_LOG_INFO(LOG, "State changed to DATA");
             nc_keep_alive_init_srv(server.pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_srv_ka_cb, ctx);
+
             ctx->ctx.state = DATA;
+            ctx->eventHandler(NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE, ctx->senderData);
         } else {
             NABTO_LOG_ERROR(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
             np_event_queue_cancel_timed_event(server.pl, &ctx->ctx.tEv);
