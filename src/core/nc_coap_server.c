@@ -102,7 +102,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
     sendCtx->ctx = ctx;
     ctx->isSending = true;
     nc_coap_packet_print("coap server send packet", sendCtx->dtls.buffer, sendCtx->dtls.bufferSize);
-    ctx->pl->dtlsS.async_send_to(ctx->pl, dtls, &sendCtx->dtls);
+    ctx->pl->dtlsS.async_send_data(ctx->pl, dtls, &sendCtx->dtls);
 }
 
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)

@@ -140,7 +140,7 @@ void nc_stream_test_syn_ack()
     ctx.cliPl.buf.free = &nc_stream_test_free;
     ctx.cliPl.buf.size = &nc_stream_test_size;
 
-    ctx.cliPl.dtlsS.async_send_to = &nc_stream_test_cli_dtls_srv_async_send_to;
+    ctx.cliPl.dtlsS.async_send_data = &nc_stream_test_cli_dtls_srv_async_send_to;
 
     np_event_queue_init(&ctx.cliPl, NULL, NULL);
     np_ts_init(&ctx.cliPl);
@@ -150,7 +150,7 @@ void nc_stream_test_syn_ack()
     ctx.devPl.buf.free = &nc_stream_test_free;
     ctx.devPl.buf.size = &nc_stream_test_size;
 
-    ctx.devPl.dtlsS.async_send_to = &nc_stream_test_dev_dtls_srv_async_send_to;
+    ctx.devPl.dtlsS.async_send_data = &nc_stream_test_dev_dtls_srv_async_send_to;
 
     np_event_queue_init(&ctx.devPl, NULL, NULL);
     np_ts_init(&ctx.devPl);

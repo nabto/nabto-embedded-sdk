@@ -158,7 +158,7 @@ void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx)
         ctx->sendCtx.bufferSize = 16+NABTO_PACKET_HEADER_SIZE;
         ctx->sendCtx.cb = &nc_keep_alive_send_cb;
         ctx->sendCtx.data = ctx;
-        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, &ctx->sendCtx);
+        ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->srv, &ctx->sendCtx);
     }
 }
 
@@ -260,14 +260,14 @@ void nc_keep_alive_send_mtu_req(struct nc_keep_alive_context* ctx, uint16_t size
         NABTO_LOG_ERROR(LOG, "Tried to send mtu request larger than communication buffer");
         return;
     }
-    
+
     ctx->sending = true;
     start[0] = (enum application_data_type)AT_KEEP_ALIVE;
     start[1] = (enum keep_alive_content_type)CT_KEEP_ALIVE_REQUEST;
     ptr += 2;
     ptr = uint32_write_forward(ptr, ctx->mtuSeq);
     memset(ptr, 0, size - 6);
-    
+
     NABTO_LOG_INFO(LOG, "Sending keep alive request for MTU: ");
     NABTO_LOG_BUF(LOG, start, size);
     if(ctx->isCli) {
@@ -277,7 +277,7 @@ void nc_keep_alive_send_mtu_req(struct nc_keep_alive_context* ctx, uint16_t size
         ctx->sendCtx.bufferSize = size;
         ctx->sendCtx.cb = &nc_keep_alive_send_cb;
         ctx->sendCtx.data = ctx;
-        ctx->pl->dtlsS.async_send_to(ctx->pl, ctx->srv, &ctx->sendCtx);
+        ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->srv, &ctx->sendCtx);
     }
     np_event_queue_post_timed_event(ctx->pl, &ctx->mtuDiscEv, NC_KEEP_ALIVE_MTU_RETRY_INTERVAL, &nc_keep_alive_mtu_discover_retry, ctx);
 }

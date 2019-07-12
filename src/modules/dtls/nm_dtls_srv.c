@@ -35,6 +35,8 @@ struct np_dtls_srv_connection {
 
 
     np_dtls_srv_sender sender;
+    np_dtls_srv_data_handler dataHandler;
+    np_dtls_srv_event_handler eventHandler;
     void* senderData;
     bool sending;
     bool activeChannel;
@@ -126,8 +128,7 @@ np_error_code np_dtls_srv_init(struct np_platform* pl,
                                const unsigned char* privateKeyL, size_t privateKeySize)
 {
     pl->dtlsS.create = &nm_dtls_srv_create;
-    pl->dtlsS.async_send_to = &nm_dtls_srv_async_send_to;
-    pl->dtlsS.async_recv_from = &nm_dtls_srv_async_recv_from;
+    pl->dtlsS.async_send_data = &nm_dtls_srv_async_send_data;
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
     pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;
     pl->dtlsS.get_alpn_protocol = &nm_dtls_srv_get_alpn_protocol;
@@ -156,7 +157,9 @@ np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls
 }
 
 np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_connection** dtls,
-                                 np_dtls_srv_sender sender, void* data)
+                                 np_dtls_srv_sender sender,
+                                 np_dtls_srv_data_handler dataHandler,
+                                 np_dtls_srv_event_handler eventHandler, void* data)
 {
     int ret;
     *dtls = (struct np_dtls_srv_connection*)malloc(sizeof(struct np_dtls_srv_connection));
@@ -165,6 +168,8 @@ np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_conn
     }
     memset(*dtls, 0, sizeof(struct np_dtls_srv_connection));
     (*dtls)->sender = sender;
+    (*dtls)->dataHandler = dataHandler;
+    (*dtls)->eventHandler = eventHandler;
     (*dtls)->senderData = data;
     (*dtls)->ctx.sslRecvBuf = server.pl->buf.allocate();
     (*dtls)->ctx.sslSendBuffer = server.pl->buf.allocate();
@@ -281,14 +286,9 @@ void nm_dtls_srv_do_one(void* data)
                 }
             }
             NABTO_LOG_TRACE(LOG, "sending to callback: %u", ctx->ctx.recvCb.cb);
-            if (ctx->ctx.recvCb.cb != NULL) {
-                NABTO_LOG_TRACE(LOG, "found Callback function");
-                np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
-                ctx->ctx.recvCb.cb = NULL;
-                cb(NABTO_EC_OK, ctx->ctx.currentChannelId, seq,
-                   ctx->ctx.sslRecvBuf, ret, ctx->ctx.recvCb.data);
-                return;
-            }
+            ctx->dataHandler(ctx->ctx.currentChannelId, seq,
+                             ctx->ctx.sslRecvBuf, ret, ctx->senderData);
+            return;
         } else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                    ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
@@ -317,12 +317,7 @@ void nm_dtls_srv_close_from_self(struct np_dtls_srv_connection* ctx)
     np_event_queue_cancel_event(server.pl, &ctx->ctx.closeEv);
     np_event_queue_cancel_event(server.pl, &ctx->startSendEvent);
 
-    if (ctx->ctx.recvCb.cb != NULL) {
-        NABTO_LOG_TRACE(LOG, "found Callback function");
-        np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
-        ctx->ctx.recvCb.cb = NULL;
-        cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCb.data);
-    }
+    ctx->eventHandler(NP_DTLS_SRV_EVENT_CLOSED, ctx->senderData);
 }
 
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
@@ -365,10 +360,8 @@ void nm_dtls_srv_start_send_deferred(void* data)
     nm_dtls_srv_start_send(ctx);
 }
 
-np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                        struct np_dtls_srv_send_context* sendCtx)
-//                                        uint8_t* buffer, uint16_t bufferSize,
-//                                        np_dtls_send_to_callback cb, void* data)
+np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
+                                          struct np_dtls_srv_send_context* sendCtx)
 {
     if (ctx->ctx.state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
@@ -376,18 +369,6 @@ np_error_code nm_dtls_srv_async_send_to(struct np_platform* pl, struct np_dtls_s
     NABTO_LOG_TRACE(LOG, "enqueued dtls application data packet");
     nm_dtls_srv_insert_send_data(sendCtx, &ctx->sendSentinel);
     nm_dtls_srv_start_send(ctx);
-    return NABTO_EC_OK;
-}
-
-np_error_code nm_dtls_srv_async_recv_from(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                          np_dtls_received_callback cb, void* data)
-{
-    if (ctx->ctx.state == CLOSING) {
-        return NABTO_EC_CONNECTION_CLOSING;
-    }
-    ctx->ctx.recvCb.cb = cb;
-    ctx->ctx.recvCb.data = data;
-    np_event_queue_post(server.pl, &ctx->ctx.recvEv, &nm_dtls_srv_do_one, ctx);
     return NABTO_EC_OK;
 }
 
