@@ -101,6 +101,12 @@ nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const cha
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const char* role);
 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_add_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint);
+
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t cborLength);
