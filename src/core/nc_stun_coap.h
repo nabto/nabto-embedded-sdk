@@ -9,6 +9,7 @@ struct nabto_coap_server_request;
 struct nc_stun_coap_context {
     struct nc_stun_context* stun;
     struct nc_coap_server_context* coap;
+    struct nc_device_context* device;
     struct np_platform* pl;
     struct nabto_coap_server_request* stunRequest;
 };

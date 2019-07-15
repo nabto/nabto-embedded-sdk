@@ -27,6 +27,8 @@ struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_contex
 
 void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request, uint8_t* connectionId);
 
+struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request);
+
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection);
 
 #endif // NC_COAP_SERVER_H

@@ -6,6 +6,7 @@
 #include <core/nc_stun.h>
 #include <platform/np_logging.h>
 #include <core/nc_packet.h>
+#include <core/nc_iam.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
 
@@ -82,18 +83,17 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
 void nc_rendezvous_handle_coap_p2p_stun(struct nabto_coap_server_request* request, void* data)
 {
     struct nc_stun_coap_context* ctx = (struct nc_stun_coap_context*)data;
-    /* struct nm_iam_env* iamEnv = nm_iam_env_new(); */
 
-    /* struct nm_iam_attributes* attributes = nm_iam_attributes_new(); */
+    struct nc_iam_env env;
+    nc_iam_env_init_coap(&env, ctx->device, request);
 
-    /* bool hasAccess = nm_iam_has_access_to_action(ctx->server->iam, ); */
+    bool hasAccess = nc_iam_check_access(&env, "p2p:Stun");
+    nc_iam_env_deinit(&env);
 
-    /* nm_iam_attributes_free(attributes); */
-
-    /* if (!hasAccess) { */
-    /*     nabto_coap_server_error_response(request, NABTO_COAP_CODE_FORBIDDEN, "Access denied"); */
-    /*     return; */
-    /* } */
+    if (!hasAccess) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE_FORBIDDEN, "Access denied");
+        return;
+    }
 
 
     if (ctx->stunRequest != NULL) {
