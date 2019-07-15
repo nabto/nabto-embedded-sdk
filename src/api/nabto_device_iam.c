@@ -19,34 +19,34 @@ void nabto_device_iam_env_free_internal(struct nabto_device_iam_env* env)
 
 NabtoDeviceIamEnv* NABTO_DEVICE_API nabto_device_iam_env_from_coap_request(NabtoDeviceCoapRequest* request)
 {
-    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
-    NabtoDeviceIamEnv* env = NULL;
-    nabto_device_threads_mutex_lock(req->dev->eventMutex);
+    /* struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request; */
+    /* NabtoDeviceIamEnv* env = NULL; */
+    /* nabto_device_threads_mutex_lock(req->dev->eventMutex); */
 
-    // TODO
+    /* // TODO */
 
-    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
-    return env;
+    /* nabto_device_threads_mutex_unlock(req->dev->eventMutex); */
+    /* return env; */
 }
 
 void nabto_device_iam_env_free(NabtoDeviceIamEnv* e)
 {
-    struct nabto_device_iam_env* env = (struct nabto_device_iam_env*) e;
+//    struct nabto_device_iam_env* env = (struct nabto_device_iam_env*) e;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_iam_check_action(NabtoDeviceIamEnv* env, const char* action)
 {
-    NabtoDeviceError ec = NABTO_DEVICE_EC_IAM_DENY;
-    struct nabto_device_iam_env* iamEnv = (struct nabto_device_iam_env*) env;
+    /* NabtoDeviceError ec = NABTO_DEVICE_EC_IAM_DENY; */
+    /* struct nabto_device_iam_env* iamEnv = (struct nabto_device_iam_env*) env; */
 
-    struct nabto_device_context* dev = iamEnv->device;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-    // get the user
-    // get the attributes
+    /* struct nabto_device_context* dev = iamEnv->device; */
+    /* nabto_device_threads_mutex_lock(dev->eventMutex); */
+    /* // get the user */
+    /* // get the attributes */
 
-    if (nm_iam_has_access_to_action(&device->iam, user, attributes, nm_iam_get_action(&device->iam, action))) {
-        ec = NABTO_DEVICE_EC_OK;
-    }
-    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
-    return ec;
+    /* if (nm_iam_has_access_to_action(&device->iam, user, attributes, nm_iam_get_action(&device->iam, action))) { */
+    /*     ec = NABTO_DEVICE_EC_OK; */
+    /* } */
+    /* nabto_device_threads_mutex_unlock(req->dev->eventMutex); */
+    /* return ec; */
 }

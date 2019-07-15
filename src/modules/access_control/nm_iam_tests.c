@@ -1,4 +1,4 @@
-#include "nm_access_control_tests.h"
+#include "nm_iam_tests.h"
 
 #include "nm_iam_parse_test.h"
 

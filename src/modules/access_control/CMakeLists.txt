@@ -1,7 +1,7 @@
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(access_control_src
-  nm_access_control.c
+  nm_iam.c
   nm_iam_parse.c
   nm_iam_util.c
   nm_iam_coap.c
@@ -10,7 +10,7 @@ set(access_control_src
 
 set(test_src
   nm_iam_parse_test.c
-  nm_access_control_tests.c
+  nm_iam_tests.c
   nm_iam_test.c
   )
 

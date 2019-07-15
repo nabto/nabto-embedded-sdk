@@ -66,6 +66,13 @@ nabto_device_iam_env_add_attribute_number(NabtoDeviceIamEnv* env, const char* na
 
 
 /**
+ * Set a default user for a connection if no other users with the
+ * given fingerprint exists on the system
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_set_default_user(NabtoDevice* device, const char* user);
+
+/**
  * Add a user to the system which is not meant to be persisted in the
  * iam system. This is usually called from an coap resource which
  * validates a JWT access token, the jwt token then defines which
@@ -79,7 +86,7 @@ nabto_device_iam_add_federated_user(NabtoDevice* device, const char* user);
  * together with jwt and a federated user.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_connection_set_user(NabtoDevice* device, NabtoDeviceConnectionId connectionId, const char* user);
+nabto_device_iam_connection_set_user(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* user);
 
 // add a user to the iam system
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API

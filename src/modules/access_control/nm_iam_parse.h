@@ -1,7 +1,7 @@
 #ifndef _NM_IAM_PARSE_H_
 #define _NM_IAM_PARSE_H_
 
-#include "nm_access_control.h"
+#include "nm_iam.h"
 
 #include <stdbool.h>
 #include <string.h>

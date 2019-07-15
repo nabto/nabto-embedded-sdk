@@ -1,5 +1,5 @@
-#ifndef NM_ACCESS_CONTROL_H
-#define NM_ACCESS_CONTROL_H
+#ifndef NM_IAM_H
+#define NM_IAM_H
 
 #include <platform/np_access_control.h>
 
@@ -32,8 +32,6 @@ enum nm_iam_boolean_expression_type {
     NM_IAM_BOOLEAN_EXPRESSION_TYPE_AND,
     NM_IAM_BOOLEAN_EXPRESSION_TYPE_OR,
 };
-
-
 
 enum nm_iam_effect {
     NM_IAM_EFFECT_ALLOW,

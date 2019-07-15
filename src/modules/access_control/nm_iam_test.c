@@ -1,5 +1,5 @@
-#include "nm_access_control_tests.h"
-#include "nm_access_control.h"
+#include "nm_iam_tests.h"
+#include "nm_iam.h"
 
 #include <platform/np_unit_test.h>
 
