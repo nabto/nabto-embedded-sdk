@@ -82,6 +82,20 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
 void nc_rendezvous_handle_coap_p2p_stun(struct nabto_coap_server_request* request, void* data)
 {
     struct nc_stun_coap_context* ctx = (struct nc_stun_coap_context*)data;
+    /* struct nm_iam_env* iamEnv = nm_iam_env_new(); */
+
+    /* struct nm_iam_attributes* attributes = nm_iam_attributes_new(); */
+
+    /* bool hasAccess = nm_iam_has_access_to_action(ctx->server->iam, ); */
+
+    /* nm_iam_attributes_free(attributes); */
+
+    /* if (!hasAccess) { */
+    /*     nabto_coap_server_error_response(request, NABTO_COAP_CODE_FORBIDDEN, "Access denied"); */
+    /*     return; */
+    /* } */
+
+
     if (ctx->stunRequest != NULL) {
         NABTO_LOG_ERROR(LOG, "Received stun request while one is already active");
         struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);

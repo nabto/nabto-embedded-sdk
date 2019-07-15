@@ -124,6 +124,8 @@ struct nm_iam_role {
 struct nm_iam_user {
     const char* name;
     struct nm_iam_list roles;
+    struct nm_iam_list clientFingerprints;
+    uint64_t reference;
 };
 
 struct nm_iam_action {
@@ -134,6 +136,11 @@ struct nm_iam_attributes {
     struct nm_iam_list attributes;
 };
 
+struct nm_iam_client_fingerprint {
+    uint8_t fp[16];
+    struct nm_iam_user* user;
+};
+
 struct nm_iam {
     struct nm_iam_list users;
     struct nm_iam_list actions;
@@ -141,6 +148,12 @@ struct nm_iam {
     struct nm_iam_list policies;
     struct nm_iam_list attributeNames;
     struct nm_iam_user* defaultUser;
+};
+
+struct nm_iam_env {
+    struct nm_iam* iam;
+    struct nm_iam_user* user;
+    struct nm_iam_attributes attributes;
 };
 
 void nm_iam_init(struct nm_iam* iam);
@@ -157,6 +170,7 @@ bool nm_iam_has_access_to_action(struct nm_iam* iam, struct nm_iam_user* user, s
 // return false if the attribute could not be added to the list of known variables
 struct nm_iam_attribute_name* nm_iam_get_attribute_name(struct nm_iam* iam, const char* name);
 
+// IAM
 void nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role);
 struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* name);
 
@@ -225,6 +239,7 @@ struct nm_iam_user* nm_iam_user_new(const char* name);
 void nm_iam_user_free(struct nm_iam_user* user);
 
 void nm_iam_user_add_role(struct nm_iam_user* user, struct nm_iam_role* role);
+struct nm_iam_user* nm_iam_user_from_ref(struct nm_iam* iam, uint64_t reference);
 
 // ATTRIBUTE
 

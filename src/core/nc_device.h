@@ -8,6 +8,7 @@
 #include <core/nc_coap_server.h>
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
+#include <core/nc_iam.h>
 
 #include <platform/np_error_code.h>
 
@@ -28,6 +29,8 @@ struct nc_device_context {
     struct nc_rendezvous_context rendezvous;
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
+    struct nc_iam iam;
+
     // unique connectionReference for each connection
     uint64_t connectionRef;
 

@@ -34,10 +34,10 @@ struct nc_client_connection {
     struct nc_coap_server_context* coap;
     struct nc_rendezvous_context* rendezvous;
     struct nc_connection_id id;
-    uint8_t clientFingerprint[16];
-    bool verified;
     struct nc_connection_channel currentChannel;
     struct nc_connection_channel lastChannel;
+    struct nc_device_context* device;
+    struct nc_iam_user* user;
 
     struct np_event ev;
 
@@ -46,7 +46,6 @@ struct nc_client_connection {
     struct np_udp_send_context sendCtx;
     np_error_code ec;
     uint64_t connectionRef;
-    uint64_t userRef;
 };
 
 np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,

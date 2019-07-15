@@ -40,7 +40,7 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->coap = &device->coap;
     conn->rendezvous = &device->rendezvous;
     conn->connectionRef = nc_device_next_connection_ref(device);
-    conn->userRef = 0;
+    conn->device = device;
 
     ec = pl->dtlsS.create(pl, &conn->dtls,
                           &nc_client_connect_async_send_to_udp,
@@ -108,31 +108,30 @@ void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data)
         // test fingerprint and alpn
         // if ok try to assign user to connection.
         // if fail, reject the connection.
-        if(!conn->verified) {
-            conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connect_mtu_discovered, conn);
-            if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
-                NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
-                conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
-                return;
-            }
-            uint8_t fp[16];
-            np_error_code ec2;
-            ec2 = conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
-            if (ec2 != NABTO_EC_OK) {
-                NABTO_LOG_ERROR(LOG, "Failed to get fingerprint from DTLS connection");
-                conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
-                return;
-            }
-            NABTO_LOG_TRACE(LOG, "Retreived FP: ");
-            NABTO_LOG_BUF(LOG, fp, 16);
-            memcpy(conn->clientFingerprint, fp, 16);
-            if (!conn->pl->accCtrl.can_access(fp, NP_CONNECT_PERMISSION)) {
-                NABTO_LOG_ERROR(LOG, "Client connect fingerprint verification failed");
-                conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
-                return;
-            }
-            conn->verified = true;
+        conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connect_mtu_discovered, conn);
+
+        if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
+            NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            return;
         }
+
+        uint8_t fp[16];
+        np_error_code ec2;
+        ec2 = conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+        if (ec2 != NABTO_EC_OK) {
+            NABTO_LOG_ERROR(LOG, "Failed to get fingerprint from DTLS connection");
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            return;
+        }
+
+        struct nc_iam_user* user = nc_iam_find_user(&conn->device->iam, fp);
+        if (user == NULL) {
+            NABTO_LOG_ERROR(LOG, "Client connect, cannot find a user, closing the connection");
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            return;
+        }
+        conn->user = user;
     }
 }
 
