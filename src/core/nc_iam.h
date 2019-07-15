@@ -45,7 +45,7 @@ struct nc_iam {
 };
 
 struct nc_iam_user {
-
+    const char* id;
 };
 
 struct nc_iam_value {
@@ -75,6 +75,7 @@ void nc_iam_init(struct nc_iam* iam);
 void nc_iam_deinit(struct nc_iam* iam);
 
 struct nc_iam_user* nc_iam_find_user(struct nc_iam* iam, uint8_t fingerprint[16]);
+uint32_t nc_iam_get_user_count(struct nc_iam* iam);
 
 bool nc_iam_check_access(struct nc_iam_env* env, const char* action);
 
@@ -83,7 +84,7 @@ void nc_iam_env_init_coap(struct nc_iam_env* env, struct nc_device_context* devi
 void nc_iam_env_deinit(struct nc_iam_env* env);
 
 void nc_iam_attributes_add_string(struct nc_iam_env* env, const char* attributeName, const char* attribute);
-void nc_iam_attributes_add_number(struct nc_iam_env* iam, const char* attributeName, uint32_t number);
+void nc_iam_attributes_add_number(struct nc_iam_env* env, const char* attributeName, uint32_t number);
 
 struct nc_iam_attribute* nc_iam_attribute_new();
 void nc_iam_attribute_free(struct nc_iam_attribute* attribute);

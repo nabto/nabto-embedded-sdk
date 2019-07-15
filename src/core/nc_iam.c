@@ -13,6 +13,12 @@ struct nc_iam_user* nc_iam_find_user(struct nc_iam* iam, uint8_t fingerprint[16]
 
 bool nc_iam_check_access(struct nc_iam_env* env, const char* action)
 {
+    // add "connection:UserId"
+    // add "system:UserCount"
+
+    nc_iam_attributes_add_string(env, "connection:UserId", env->connection->user->id);
+    nc_iam_attributes_add_number(env, "system:UserCount", nc_iam_get_user_count(env->iam));
+
     return false;
 }
 
@@ -33,9 +39,17 @@ void nc_iam_env_deinit(struct nc_iam_env* env)
         nc_iam_attribute_free(current);
     }
     nc_iam_list_clear(&env->attributes);
-
 }
 
+void nc_iam_attributes_add_string(struct nc_iam_env* env, const char* attributeName, const char* attribute)
+{
+    // TODO
+}
+
+void nc_iam_attributes_add_number(struct nc_iam_env* env, const char* attributeName, uint32_t number)
+{
+    // TODO
+}
 
 struct nc_iam_attribute* nc_iam_attribute_new()
 {
@@ -48,4 +62,10 @@ void nc_iam_attribute_free(struct nc_iam_attribute* attribute)
         free(attribute->value.data.string);
     }
     free(attribute);
+}
+
+uint32_t nc_iam_get_user_count(struct nc_iam* iam)
+{
+    // TODO
+    return 42;
 }

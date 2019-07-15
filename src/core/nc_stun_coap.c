@@ -87,14 +87,13 @@ void nc_rendezvous_handle_coap_p2p_stun(struct nabto_coap_server_request* reques
     struct nc_iam_env env;
     nc_iam_env_init_coap(&env, ctx->device, request);
 
-    bool hasAccess = nc_iam_check_access(&env, "p2p:Stun");
+    bool hasAccess = nc_iam_check_access(&env, "system:Rendezvous");
     nc_iam_env_deinit(&env);
 
     if (!hasAccess) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE_FORBIDDEN, "Access denied");
         return;
     }
-
 
     if (ctx->stunRequest != NULL) {
         NABTO_LOG_ERROR(LOG, "Received stun request while one is already active");
