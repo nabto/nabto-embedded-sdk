@@ -1,5 +1,6 @@
 
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_experimental.h>
 
 #include <gopt/gopt.h>
 
@@ -9,8 +10,13 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include <string>
+#include <vector>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 #define MAX_KEY_PEM_SIZE 1024
-#define MAX_CRT_PEM_SIZE 1024
 
 struct config {
     const char* productId;
@@ -263,8 +269,10 @@ void run_device()
         return;
     }
 
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"test", "get", NULL}, &handle_coap_get_request, dev);
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, (const char*[]){"test", "post", NULL}, &handle_coap_post_request, dev);
+    const char* coapTestGet[]  = {"test", "get", NULL};
+    const char* coapTestPost[] = {"test", "post", NULL};
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &handle_coap_get_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &handle_coap_post_request, dev);
 
     // wait for ctrl-c
     while (true) {
@@ -275,7 +283,7 @@ void run_device()
             return;
         }
         nabto_device_future_free(fut);
-        struct streamContext* strCtx = malloc(sizeof(struct streamContext));
+        struct streamContext* strCtx = (struct streamContext*)malloc(sizeof(struct streamContext));
         strCtx->stream = stream;
         handle_new_stream(strCtx);
     }
@@ -294,4 +302,25 @@ int main(int argc, const char** argv)
     }
 
     run_device();
+}
+
+
+json addAllPolicy = R"(
+{
+  "Version": 1
+  "Name": "AllowAll",
+  "Statement": {
+    "Action": [ "test:CoapGet", "test:CoapPost" ],
+    "Effect": "Allow",
+    "Condition": { "StringEqual": [ "${foo}", "bar" ] }
+  }
+}
+)"_json;
+
+void load_policies(NabtoDevice* device)
+{
+
+    std::vector<uint8_t> cbor = json::to_cbor(addAllPolicy);
+    nabto_device_iam_policy_create(device, cbor.data(), cbor.size());
+
 }
