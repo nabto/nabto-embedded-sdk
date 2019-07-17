@@ -125,7 +125,7 @@ void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data)
             return;
         }
 
-        struct nc_iam_user* user = nc_iam_find_user(&conn->device->iam, fp);
+        struct nc_iam_user* user = nc_iam_find_user_by_fingerprint(&conn->device->iam, fp);
         if (user == NULL) {
             NABTO_LOG_ERROR(LOG, "Client connect, cannot find a user, closing the connection");
             conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);

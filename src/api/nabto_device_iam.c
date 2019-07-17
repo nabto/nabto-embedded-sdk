@@ -4,7 +4,7 @@
 
 #include "nabto_device_defines.h"
 #include "nabto_device_coap.h"
-#include <core/nc_iam_cbor.h>
+#include <core/nc_iam_policy.h>
 
 #include <stdlib.h>
 
@@ -51,6 +51,86 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_iam_check_action(NabtoDeviceIamEn
     /* nabto_device_threads_mutex_unlock(req->dev->eventMutex); */
     /* return ec; */
 }
+
+// add a user to the iam system
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_create(NabtoDevice* device, const char* user)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    // TODO check return value
+    nc_iam_create_user(&dev->core.iam, user);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_delete(NabtoDevice* device, const char* user);
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_get(NabtoDevice* device, const char* user, void** cbor, size_t* cborLength);
+
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_list(NabtoDevice* device, void** cbor, size_t* cborLength);
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const char* role);
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const char* role);
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_add_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint);
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint);
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t* cborLength)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    // TODO check return value
+    nc_iam_list_roles(&dev->core.iam, cbor, cborLength);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void** cbor, size_t cborLength)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_roles_create(NabtoDevice* device, const char* role)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_roles_delete(NabtoDevice* device, const char* role)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_roles_add_policy(NabtoDevice* device, const char* role, const char* policy)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_deivce_iam_roles_remove_policy(NabtoDevice* device, const char* role, const char* policy)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_policy_create(NabtoDevice* device, const char* name, void* cbor, size_t cborLength)

@@ -1,6 +1,8 @@
 #ifndef _NC_IAM_H_
 #define _NC_IAM_H_
 
+#include <platform/np_error_code.h>
+
 #include "nc_iam_util.h"
 
 #include <stdint.h>
@@ -42,12 +44,14 @@ struct nc_iam_fingerprint {
 struct nc_iam {
     struct nc_iam_list fingerprints;
     struct nc_iam_list users;
+    struct nc_iam_list roles;
     struct nc_iam_list policies;
     struct nc_iam_user* defaultUser;
 };
 
 struct nc_iam_user {
     const char* id;
+    struct nc_iam_list roles;
 };
 
 struct nc_iam_value {
@@ -73,6 +77,11 @@ struct nc_iam_policy {
     size_t cborLength;
 };
 
+struct nc_iam_role {
+    char* name;
+    struct nc_iam_list policies;
+};
+
 struct nc_iam_env {
     struct nc_iam* iam;
     struct nc_client_connection* connection;
@@ -83,7 +92,8 @@ struct nc_iam_env {
 void nc_iam_init(struct nc_iam* iam);
 void nc_iam_deinit(struct nc_iam* iam);
 
-struct nc_iam_user* nc_iam_find_user(struct nc_iam* iam, uint8_t fingerprint[16]);
+struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16]);
+struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
 uint32_t nc_iam_get_user_count(struct nc_iam* iam);
 
 bool nc_iam_check_access(struct nc_iam_env* env, const char* action);
@@ -98,5 +108,8 @@ void nc_iam_attributes_add_number(struct nc_iam_env* env, const char* attributeN
 struct nc_iam_attribute* nc_iam_attribute_new();
 void nc_iam_attribute_free(struct nc_iam_attribute* attribute);
 
+void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);
+
+np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name);
 
 #endif

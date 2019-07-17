@@ -27,7 +27,8 @@ typedef enum {
     NABTO_EC_OPERATION_IN_PROGRESS,
     NABTO_EC_ABORTED,
     NABTO_EC_STREAM_CLOSED,
-    NABTO_EC_STREAM_EOF
+    NABTO_EC_STREAM_EOF,
+    NABTO_EC_RESOURCE_EXISTS
 } np_error_code;
 
 const char* np_error_code_to_string(np_error_code ec);

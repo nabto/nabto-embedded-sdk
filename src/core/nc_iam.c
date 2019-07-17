@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-struct nc_iam_user* nc_iam_find_user(struct nc_iam* iam, uint8_t fingerprint[16])
+struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16])
 {
     return iam->defaultUser;
 }
@@ -70,4 +70,56 @@ uint32_t nc_iam_get_user_count(struct nc_iam* iam)
 {
     // TODO
     return 42;
+}
+
+
+void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength)
+{
+    uint8_t buffer[1024];
+
+    CborEncoder encoder;
+    CborEncoder array;
+    cbor_encoder_init(&encoder, buffer, 1024, 0);
+    cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
+
+    struct nc_iam_list_entry* iterator = iam->roles.sentinel.next;
+    while(iterator != &iam->roles.sentinel) {
+        struct nc_iam_role* role = iterator->item;
+        cbor_encode_text_stringz(&array, role->name);
+        iterator = iterator->next;
+    };
+    cbor_encoder_close_container(&encoder, &array);
+
+    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
+    *cbor = malloc(used);
+    memcpy(*cbor, buffer, used);
+    *cborLength = used;
+}
+
+
+struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_list_entry* iterator = iam->users.sentinel.next;
+    while(iterator != &iam->users.sentinel) {
+        struct nc_iam_user* u = iterator->item;
+        if (strcmp(u->id, name) == 0) {
+            return u;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
+np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_user* existing = nc_iam_find_user_by_name(iam, name);
+    if (existing) {
+        return NABTO_EC_RESOURCE_EXISTS;
+    }
+
+    struct nc_iam_user* user = calloc(1, sizeof(struct nc_iam_user));
+    user->id = strdup(name);
+    nc_iam_list_init(&user->roles);
+    nc_iam_list_insert(&iam->users, user);
+    return NABTO_EC_OK;
 }
