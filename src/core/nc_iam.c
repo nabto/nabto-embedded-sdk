@@ -1,4 +1,5 @@
 #include "nc_iam.h"
+#include "nc_iam_policy.h"
 
 #include "nc_device.h"
 #include "nc_coap_server.h"
@@ -130,7 +131,7 @@ np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
     return NABTO_EC_OK;
 }
 
-void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength)
+np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength)
 {
     uint8_t buffer[1024];
 
@@ -149,10 +150,49 @@ void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength)
 
     size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
     *cbor = malloc(used);
+    if (*cbor == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     memcpy(*cbor, buffer, used);
     *cborLength = used;
+    return NABTO_EC_OK;
 }
 
+np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void** cbor, size_t* cborLength)
+{
+    uint8_t buffer[1024];
+    CborEncoder encoder;
+    CborEncoder array;
+    CborEncoder map;
+
+    struct nc_iam_role* role = nc_iam_find_role_by_name(iam, name);
+    if (!role) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+
+    cbor_encoder_init(&encoder, buffer, 1024, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "Policies");
+    cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
+
+    struct nc_iam_list_entry* iterator = role->policies.sentinel.next;
+    while(iterator != &role->policies.sentinel) {
+        struct nc_iam_policy* p = iterator->item;
+        cbor_encode_text_stringz(&array, p->name);
+        iterator = iterator->next;
+    }
+    cbor_encoder_close_container(&map, &array);
+    cbor_encoder_close_container(&encoder, &map);
+
+    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
+    *cbor = malloc(used);
+    if (*cbor == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    memcpy(*cbor, buffer, used);
+    *cborLength = used;
+    return NABTO_EC_OK;
+}
 
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name)
 {

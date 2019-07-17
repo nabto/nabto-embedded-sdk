@@ -92,19 +92,26 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t* cborLength)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    // TODO check return value
-    nc_iam_list_roles(&dev->core.iam, cbor, cborLength);
+    ec = nc_iam_list_roles(&dev->core.iam, cbor, cborLength);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void** cbor, size_t cborLength)
+nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void** cbor, size_t* cborLength)
 {
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_role_get(&dev->core.iam, role, cbor, cborLength);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
