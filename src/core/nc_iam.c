@@ -3,6 +3,8 @@
 #include "nc_device.h"
 #include "nc_coap_server.h"
 
+#include <cbor.h>
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -68,4 +70,77 @@ uint32_t nc_iam_get_user_count(struct nc_iam* iam)
 {
     // TODO
     return 42;
+}
+
+struct nc_iam_policy* nc_iam_policy_new(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_policy* p = calloc(1, sizeof(struct nc_iam_policy));
+    p->name = strdup(name);
+
+    nc_iam_list_insert(&iam->policies, p);
+    return p;
+}
+
+void nc_iam_policy_free(struct nc_iam_policy* p)
+{
+    free(p->name);
+    free(p->cbor);
+    free(p);
+}
+
+void nc_iam_policy_set_cbor(struct nc_iam_policy* p, void* cbor, size_t cborLength)
+{
+    free(p->cbor);
+    p->cbor = malloc(cborLength);
+    memcpy(p->cbor, cbor, cborLength);
+}
+
+struct nc_iam_policy* nc_iam_find_policy(struct nc_iam* iam, const char* policy)
+{
+    struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
+    while(iterator != &iam->policies.sentinel) {
+        struct nc_iam_policy* p = iterator->item;
+        if (strcmp(p->name, policy) == 0) {
+            return p;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
+void nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
+{
+    struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
+    while(iterator != &iam->policies.sentinel) {
+        struct nc_iam_policy* p = iterator->item;
+        if (strcmp(p->name, policy) == 0) {
+            nc_iam_list_remove(iterator);
+            nc_iam_policy_free(p);
+            return;
+        }
+        iterator = iterator->next;
+    }
+}
+
+void nc_iam_list_policies(struct nc_iam* iam, void** cbor, size_t* cborLength)
+{
+    uint8_t buffer[1024];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, buffer, 1024, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+
+    struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
+    while(iterator != &iam->policies.sentinel) {
+        struct nc_iam_policy* p = iterator->item;
+        cbor_encode_text_stringz(&map, p->name);
+        iterator = iterator->next;
+    }
+    cbor_encoder_close_container(&encoder, &map);
+
+    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
+    *cbor = malloc(used);
+    memcpy(*cbor, buffer, used);
+    *cborLength = used;
+    return;
 }

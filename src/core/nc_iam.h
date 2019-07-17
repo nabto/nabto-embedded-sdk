@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 struct nabto_coap_server_request;
 struct nc_device_context;
@@ -41,6 +42,7 @@ struct nc_iam_fingerprint {
 struct nc_iam {
     struct nc_iam_list fingerprints;
     struct nc_iam_list users;
+    struct nc_iam_list policies;
     struct nc_iam_user* defaultUser;
 };
 
@@ -65,10 +67,17 @@ struct nc_iam_attribute {
     struct nc_iam_value value;
 };
 
+struct nc_iam_policy {
+    char* name;
+    void* cbor;
+    size_t cborLength;
+};
+
 struct nc_iam_env {
     struct nc_iam* iam;
     struct nc_client_connection* connection;
     struct nc_iam_list attributes;
+    struct nc_iam_list policies;
 };
 
 void nc_iam_init(struct nc_iam* iam);
@@ -88,5 +97,14 @@ void nc_iam_attributes_add_number(struct nc_iam_env* env, const char* attributeN
 
 struct nc_iam_attribute* nc_iam_attribute_new();
 void nc_iam_attribute_free(struct nc_iam_attribute* attribute);
+
+// create a new policy and add it to the iam module
+struct nc_iam_policy* nc_iam_policy_new(struct nc_iam* iam, const char* name);
+void nc_iam_policy_free(struct nc_iam_policy* policy);
+void nc_iam_policy_delete(struct nc_iam* iam, const char* name);
+
+struct nc_iam_policy* nc_iam_find_policy(struct nc_iam* iam, const char* policy);
+
+void nc_iam_list_policies(struct nc_iam* iam, void** cbor, size_t* cborLength);
 
 #endif

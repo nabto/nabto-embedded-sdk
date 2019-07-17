@@ -134,8 +134,11 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_deivce_iam_roles_remove_policy(NabtoDevice* device, const char* role, const char* policy);
 
 
+/**
+ * Create or update a policy.
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_create(NabtoDevice* device, void* cbor, size_t cborLength);
+nabto_device_iam_policy_create(NabtoDevice* device, const char* policy, void* cbor, size_t cborLength);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_policy_delete(NabtoDevice* device, const char* policy);
