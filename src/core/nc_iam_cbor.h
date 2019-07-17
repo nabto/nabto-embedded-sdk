@@ -8,8 +8,6 @@
 #include <stdlib.h>
 
 
-bool nc_iam_cbor_policy_create(struct nc_device_context* device, const char* name, void* cbor, size_t cborLength);
-
 bool nc_iam_cbor_users_get(struct nc_device_context* device, const char* name, void** cbor, size_t* cborLength);
 
 #endif

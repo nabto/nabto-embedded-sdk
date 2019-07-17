@@ -307,7 +307,7 @@ int main(int argc, const char** argv)
 
 json addAllPolicy = R"(
 {
-  "Version": 1
+  "Version": 1,
   "Name": "AllowAll",
   "Statement": {
     "Action": [ "test:CoapGet", "test:CoapPost" ],
