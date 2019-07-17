@@ -324,3 +324,12 @@ void load_policies(NabtoDevice* device)
     nabto_device_iam_policy_create(device, "All", cbor.data(), cbor.size());
 
 }
+
+void init_iam(NabtoDevice* device)
+{
+    load_policies(device);
+    nabto_device_iam_users_create(device, "admin");
+    nabto_device_iam_roles_create(device, "admin-role");
+    nabto_device_iam_users_add_role(device, "admin", "admin-role");
+    nabto_device_iam_roles_add_policy(device, "admin-role", "All");
+}

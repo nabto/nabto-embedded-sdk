@@ -112,6 +112,8 @@ void nc_iam_attribute_free(struct nc_iam_attribute* attribute);
 
 
 np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name);
+np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const char* role);
+np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, const char* role);
 
 // ROLES
 np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);

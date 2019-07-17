@@ -221,6 +221,28 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
     return NABTO_EC_OK;
 }
 
+np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const char* role)
+{
+    struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
+    struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
+    if (!u || !r) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+    nc_iam_list_insert(&u->roles, r);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, const char* role)
+{
+    struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
+    struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
+    if (!u || !r) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+    nc_iam_list_remove_item(&u->roles, r);
+    return NABTO_EC_OK;
+}
+
 
 np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const char* policy)
 {

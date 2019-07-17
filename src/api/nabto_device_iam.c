@@ -77,10 +77,31 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_list(NabtoDevice* device, void** cbor, size_t* cborLength);
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const char* role);
+nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const char* role)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_user_add_role(&dev->core.iam, user, role);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const char* role);
+nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const char* role)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_user_remove_role(&dev->core.iam, user, role);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+
+}
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_add_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint);
