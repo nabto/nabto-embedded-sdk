@@ -73,6 +73,63 @@ uint32_t nc_iam_get_user_count(struct nc_iam* iam)
 }
 
 
+struct nc_iam_role* nc_iam_find_role_by_name(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_list_entry* iterator = iam->roles.sentinel.next;
+    while(iterator != &iam->roles.sentinel)
+    {
+        struct nc_iam_role* role = iterator->item;
+        if (strcmp(role->name, name) == 0) {
+            return role;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+
+}
+
+np_error_code nc_iam_create_role(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_role* r = nc_iam_find_role_by_name(iam, name);
+    if (r) {
+        return NABTO_EC_RESOURCE_EXISTS;
+    }
+    r = calloc(1, sizeof(struct nc_iam_role));
+    r->name = strdup(name);
+    nc_iam_list_init(&r->policies);
+    nc_iam_list_insert(&iam->roles, r);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_role* role = nc_iam_find_role_by_name(iam, name);
+    if (!name) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+    // find users using the role if found, do not delete it.
+    struct nc_iam_list_entry* iterator = iam->users.sentinel.next;
+    while (iterator != &iam->users.sentinel) {
+        struct nc_iam_user* user = iterator->item;
+        struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
+        while(roleIterator != &user->roles.sentinel) {
+            if (roleIterator->item == role) {
+                return NABTO_EC_RESOURCE_IN_USE;
+            }
+            roleIterator = roleIterator->next;
+        }
+        iterator = iterator->next;
+    }
+
+    // role is found and not in use.
+
+    nc_iam_list_remove_item(&iam->roles, role);
+    free(role->name);
+    nc_iam_list_clear(&role->policies);
+    free(role);
+    return NABTO_EC_OK;
+}
+
 void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength)
 {
     uint8_t buffer[1024];

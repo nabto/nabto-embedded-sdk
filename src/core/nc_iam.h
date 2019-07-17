@@ -108,8 +108,13 @@ void nc_iam_attributes_add_number(struct nc_iam_env* env, const char* attributeN
 struct nc_iam_attribute* nc_iam_attribute_new();
 void nc_iam_attribute_free(struct nc_iam_attribute* attribute);
 
-void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);
+
 
 np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name);
+
+// ROLES
+void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);
+np_error_code nc_iam_create_role(struct nc_iam* iam, const char* name);
+
 
 #endif

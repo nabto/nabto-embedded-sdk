@@ -46,6 +46,18 @@ void nc_iam_list_remove(struct nc_iam_list_entry* entry)
     nc_iam_list_entry_free(entry);
 }
 
+void nc_iam_list_remove_item(struct nc_iam_list* list, void* item)
+{
+    struct nc_iam_list_entry* iterator = list->sentinel.next;
+    while(iterator != &list->sentinel) {
+        if (iterator->item == item) {
+            nc_iam_list_remove(iterator);
+            return;
+        }
+        iterator = iterator->next;
+    }
+}
+
 struct nc_iam_list_entry* nc_iam_list_entry_new()
 {
     return calloc(1, sizeof(struct nc_iam_list_entry));

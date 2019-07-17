@@ -110,13 +110,27 @@ nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void** cbor, s
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_create(NabtoDevice* device, const char* role)
 {
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_create_role(&dev->core.iam, role);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_delete(NabtoDevice* device, const char* role)
 {
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_delete_role(&dev->core.iam, role);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
