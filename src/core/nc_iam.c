@@ -180,3 +180,27 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
     nc_iam_list_insert(&iam->users, user);
     return NABTO_EC_OK;
 }
+
+
+np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const char* policy)
+{
+    struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
+    struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, policy);
+    if (!r || !p) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+
+    nc_iam_list_insert(&r->policies, p);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, const char* policy)
+{
+    struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
+    struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, policy);
+    if (!r || !p) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+    nc_iam_list_remove_item(&r->policies, p);
+    return NABTO_EC_OK;
+}

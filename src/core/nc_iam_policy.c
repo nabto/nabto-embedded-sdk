@@ -227,3 +227,17 @@ bool nc_iam_cbor_validate_policy(struct nc_device_context* context, void* cbor, 
 
     return true;
 }
+
+
+struct nc_iam_policy* nc_iam_find_policy_by_name(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
+    while(iterator != &iam->policies.sentinel) {
+        struct nc_iam_policy* p = iterator->item;
+        if (strcmp(p->name, name) == 0) {
+            return p;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}

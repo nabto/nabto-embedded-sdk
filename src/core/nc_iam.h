@@ -94,6 +94,7 @@ void nc_iam_deinit(struct nc_iam* iam);
 
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16]);
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
+
 uint32_t nc_iam_get_user_count(struct nc_iam* iam);
 
 bool nc_iam_check_access(struct nc_iam_env* env, const char* action);
@@ -115,6 +116,9 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name);
 // ROLES
 void nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);
 np_error_code nc_iam_create_role(struct nc_iam* iam, const char* name);
+np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name);
 
+np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const char* policy);
+np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, const char* policy);
 
 #endif
