@@ -35,20 +35,26 @@ typedef struct NabtoDeviceIamEnv_ NabtoDeviceIamEnv;
  */
 typedef void (*NabtoDeviceIamChangedCallback)(void* userData);
 
-// Dump all iam state in a single cbor object such that it can be
-// persisted.
+/**
+ * Dump all iam state in a single cbor object such that it can be
+ * persisted.
+ *
+ * @param version  the current version of the iam
+ * @param buffer   if NULL or too small the function returns OUT_OF_MEMORY
+ *                 and used is set to the required buffer size
+ * @return ok if buffer was large enough else return
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_dump(NabtoDevice* device, void** cbor, size_t* cborLength);
+nabto_device_iam_dump(NabtoDevice* device, uint64_t* version, void* buffer, size_t bufferLength, size_t* used);
 
 // Load iam state from a cbor file.
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_load(NabtoDevice* device, void* cbor, size_t cborLength);
 
-// Called whenever the internal iam representation is changed.  When
-// it is called one would often want to save the changes to the
-// system.
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_set_changed_callback(NabtoDevice* device, NabtoDeviceIamChangedCallback callback, void* userData);
+// Listen for changes. Resolves imediately, if the current version is
+// greater than version.
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
+nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version);
 
 /**
  * Decide if action is allowed given the decision context.

@@ -11,6 +11,9 @@
 
 void nc_iam_init(struct nc_iam* iam)
 {
+    iam->version = 0;
+    iam->changeCallback = NULL;
+    iam->changeCallbackUserData = NULL;
     nc_iam_list_init(&iam->fingerprints);
     nc_iam_list_init(&iam->users);
     nc_iam_list_init(&iam->roles);
@@ -21,6 +24,14 @@ void nc_iam_init(struct nc_iam* iam)
 void nc_iam_deinit(struct nc_iam* iam)
 {
 
+}
+
+void nc_iam_updated(struct nc_iam* iam)
+{
+    iam->version++;
+    if (iam->changeCallback) {
+        iam->changeCallback(iam->changeCallbackUserData);
+    }
 }
 
 

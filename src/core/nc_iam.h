@@ -39,13 +39,17 @@ struct nc_iam_fingerprint {
     uint8_t fingerprint[16];
 };
 
+typedef void (*nc_iam_change_callback)(void* userData);
 
 struct nc_iam {
+    uint64_t version;
     struct nc_iam_list fingerprints;
     struct nc_iam_list users;
     struct nc_iam_list roles;
     struct nc_iam_list policies;
     struct nc_iam_user* defaultUser;
+    nc_iam_change_callback changeCallback;
+    void* changeCallbackUserData;
 };
 
 struct nc_iam_user {
