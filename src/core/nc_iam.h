@@ -34,7 +34,6 @@ enum nc_iam_boolean_expression_type {
 };
 
 
-
 struct nc_iam_fingerprint {
     struct nc_iam_user* user;
     uint8_t fingerprint[16];
@@ -110,10 +109,11 @@ struct nc_iam_attribute* nc_iam_attribute_new();
 void nc_iam_attribute_free(struct nc_iam_attribute* attribute);
 
 
-
+// USERS
 np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name);
 np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const char* role);
 np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, const char* role);
+np_error_code nc_iam_list_users(struct nc_iam* iam, void** cbor, size_t* cborLength);
 
 // ROLES
 np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);

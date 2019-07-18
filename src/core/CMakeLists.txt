@@ -21,6 +21,7 @@ set(src
   ${src_dir}/nc_iam_util.c
   ${src_dir}/nc_iam_cbor.c
   ${src_dir}/nc_iam_policy.c
+  ${src_dir}/nc_iam_coap.c
   )
 
 set(test_src
