@@ -35,8 +35,6 @@ bool initialize_application(int argc, const char** argv, NabtoDevice* device)
             printf("Could not create a new private key\n");
             return false;
         }
-    } else {
-
     }
 
     if (!heatpump_config_read_private_key(device)) {

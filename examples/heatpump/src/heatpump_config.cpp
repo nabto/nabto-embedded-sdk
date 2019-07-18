@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
+#include <fstream>
+#include <cstdio>
 
 static const char* privateKeyFilename = "key.pem";
 
@@ -110,3 +111,37 @@ char* heatpump_read_file(const char* filename)
 /*     free(settingsData); */
 /*     return status; */
 /* } */
+
+
+bool loadConfig(const char* filename, json& config)
+{
+    json j;
+    try {
+        std::ifstream configFile(filename);
+        configFile >> j;
+    } catch (...) {
+        return false;
+    }
+    config = j;
+    return true;
+}
+
+bool saveConfig(const char* filename, const char* tmpFile, const json& config)
+{
+    bool status = false;
+    std::remove(tmpFile);
+    try {
+        std::ofstream configFile(tmpFile);
+        configFile << config;
+        std::rename(tmpFile, filename);
+        status = true;
+    } catch (...) {
+    }
+
+    try {
+        std::remove(tmpFile);
+    } catch (...) {
+
+    }
+    return status;
+}

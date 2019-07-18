@@ -57,6 +57,7 @@ NabtoDeviceIamEnv* NABTO_DEVICE_API nabto_device_iam_env_from_coap_request(Nabto
 
     /* nabto_device_threads_mutex_unlock(req->dev->eventMutex); */
     /* return env; */
+    return NULL;
 }
 
 void nabto_device_iam_env_free(NabtoDeviceIamEnv* e)
@@ -79,6 +80,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_iam_check_action(NabtoDeviceIamEn
     /* } */
     /* nabto_device_threads_mutex_unlock(req->dev->eventMutex); */
     /* return ec; */
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
 }
 
 NabtoDeviceError NABTO_DEVICE_API
