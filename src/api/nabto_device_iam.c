@@ -5,6 +5,8 @@
 #include "nabto_device_defines.h"
 #include "nabto_device_coap.h"
 #include <core/nc_iam_policy.h>
+#include <core/nc_iam.h>
+#include <core/nc_iam_dump.h>
 
 #include <stdlib.h>
 
@@ -16,6 +18,33 @@ struct nabto_device_iam_env* nabto_device_iam_env_new_internal()
 void nabto_device_iam_env_free_internal(struct nabto_device_iam_env* env)
 {
     free(env);
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_dump(NabtoDevice* device, uint64_t* version, void* buffer, size_t bufferLength, size_t* used)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_dump(&dev->core.iam, version, buffer, bufferLength, used);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
+
+// Load iam state from a cbor file.
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_load(NabtoDevice* device, void* cbor, size_t cborLength)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_load(&dev->core.iam, cbor, cborLength);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceIamEnv* NABTO_DEVICE_API nabto_device_iam_env_from_coap_request(NabtoDeviceCoapRequest* request)

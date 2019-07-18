@@ -39,7 +39,7 @@ typedef void (*NabtoDeviceIamChangedCallback)(void* userData);
  * Dump all iam state in a single cbor object such that it can be
  * persisted.
  *
- * @param version  the current version of the iam
+ * @param version  the current version of the iam database
  * @param buffer   if NULL or too small the function returns OUT_OF_MEMORY
  *                 and used is set to the required buffer size
  * @return ok if buffer was large enough else return

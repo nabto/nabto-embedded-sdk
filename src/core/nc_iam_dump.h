@@ -7,7 +7,7 @@
 #include <string.h>
 
 
-np_error_code nc_iam_dump(struct nc_iam* iam, void* buffer, size_t bufferLength, size_t* used);
+np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, size_t bufferLength, size_t* used);
 np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength);
 
 

@@ -7,8 +7,9 @@ void nc_iam_dump_users(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_user(struct nc_iam_user* iam, CborEncoder*);
 
 
-np_error_code nc_iam_dump(struct nc_iam* iam, void* buffer, size_t bufferLength, size_t* used)
+np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, size_t bufferLength, size_t* used)
 {
+    *version = iam->version;
     CborEncoder encoder;
     CborEncoder map;
     cbor_encoder_init(&encoder, buffer, bufferLength, 0);
@@ -64,4 +65,7 @@ void nc_iam_dump_user(struct nc_iam_user* user, CborEncoder* encoder)
 
 
 
-np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength);
+np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength)
+{
+    return NABTO_EC_NOT_IMPLEMENTED;
+}
