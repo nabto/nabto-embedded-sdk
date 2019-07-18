@@ -3,6 +3,8 @@
 
 #include "nc_coap_server.h"
 
+#include <stdlib.h>
+
 static void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* userData);
 
 static void access_denied(struct nabto_coap_server_request* request);
@@ -63,10 +65,10 @@ void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* use
         size_t cborLength;
         ec = nc_iam_list_users(&device->iam, &cbor, &cborLength);
         if (ec) {
-            nabto_device_coap_error_response(request, 500, "");
+            internal_error(request);
         } else {
             create_cbor_response(request, cbor, cborLength);
-            nabto_device_free(cbor);
+            free(cbor);
         }
     } else {
         // return 403
@@ -93,6 +95,6 @@ void bad_request(struct nabto_coap_server_request* request)
 void ok_response(struct nabto_coap_server_request* request, uint16_t code)
 {
     struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
-    nabto_coap_server_set_code(response, code);
+    nabto_coap_server_response_set_code(response, code);
     nabto_coap_server_response_ready(response);
 }

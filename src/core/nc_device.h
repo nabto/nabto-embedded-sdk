@@ -42,6 +42,9 @@ struct nc_device_context {
     void* closeCbData;
 };
 
+void nc_device_init(struct nc_device_context* dev);
+
+
 np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,

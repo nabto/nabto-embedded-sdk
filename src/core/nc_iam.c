@@ -9,6 +9,21 @@
 #include <string.h>
 #include <stdlib.h>
 
+void nc_iam_init(struct nc_iam* iam)
+{
+    nc_iam_list_init(&iam->fingerprints);
+    nc_iam_list_init(&iam->users);
+    nc_iam_list_init(&iam->roles);
+    nc_iam_list_init(&iam->policies);
+    iam->defaultUser = NULL;
+}
+
+void nc_iam_deinit(struct nc_iam* iam)
+{
+
+}
+
+
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16])
 {
     return iam->defaultUser;
@@ -73,6 +88,15 @@ uint32_t nc_iam_get_user_count(struct nc_iam* iam)
     return 42;
 }
 
+np_error_code nc_iam_set_default_user(struct nc_iam* iam, const char* name)
+{
+    struct nc_iam_user* user = nc_iam_find_user_by_name(iam, name);
+    if (!user) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+    iam->defaultUser = user;
+    return NABTO_EC_OK;
+}
 
 struct nc_iam_role* nc_iam_find_role_by_name(struct nc_iam* iam, const char* name)
 {

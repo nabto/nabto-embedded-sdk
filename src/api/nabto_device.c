@@ -59,6 +59,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
     memset(dev, 0, sizeof(struct nabto_device_context));
+    nc_device_init(&dev->core);
     nabto_device_init_platform(&dev->pl);
     np_event_queue_init(&dev->pl, &notify_event_queue_post, dev);
     dev->closing = false;

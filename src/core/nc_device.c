@@ -6,6 +6,12 @@
 void nc_device_attached_cb(const np_error_code ec, void* data);
 uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 
+
+void nc_device_init(struct nc_device_context* device)
+{
+    nc_iam_init(&device->iam);
+}
+
 void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
@@ -95,7 +101,6 @@ np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform*
                               const uint16_t port)
 {
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
-    memset(dev, 0, sizeof(struct nc_device_context));
     dev->pl = pl;
     dev->stopping = false;
     dev->stunHost = stunHost;

@@ -35,11 +35,18 @@ typedef struct NabtoDeviceIamEnv_ NabtoDeviceIamEnv;
  */
 typedef void (*NabtoDeviceIamChangedCallback)(void* userData);
 
-// flush all iam settings.
+// Dump all iam state in a single cbor object such that it can be
+// persisted.
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_flush(NabtoDevice* device);
+nabto_device_iam_dump(NabtoDevice* device, void** cbor, size_t* cborLength);
 
-// Called whenever the internal iam representation is changed.
+// Load iam state from a cbor file.
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_load(NabtoDevice* device, void* cbor, size_t cborLength);
+
+// Called whenever the internal iam representation is changed.  When
+// it is called one would often want to save the changes to the
+// system.
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_set_changed_callback(NabtoDevice* device, NabtoDeviceIamChangedCallback callback, void* userData);
 

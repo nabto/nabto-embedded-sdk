@@ -229,7 +229,7 @@ void handle_new_stream(struct streamContext* streamContext)
     fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
     nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
 }
-
+void init_iam(NabtoDevice* device);
 void run_device()
 {
     NabtoDeviceError ec;
@@ -263,6 +263,8 @@ void run_device()
     }
 
     printf("Starting device productid: %s, deviceid: %s, fingerprint: %s" NEWLINE, config.productId, config.deviceId, fingerprint);
+
+    init_iam(dev);
 
     ec = nabto_device_start(dev);
     if (ec != NABTO_DEVICE_EC_OK) {
@@ -332,4 +334,5 @@ void init_iam(NabtoDevice* device)
     nabto_device_iam_roles_create(device, "admin-role");
     nabto_device_iam_users_add_role(device, "admin", "admin-role");
     nabto_device_iam_roles_add_policy(device, "admin-role", "All");
+    nabto_device_iam_set_default_user(device, "admin");
 }
