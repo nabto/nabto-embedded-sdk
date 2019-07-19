@@ -24,7 +24,7 @@ config file structure
         "policies": "...",
         "defaultUser": "..."
     },
-    "privateKey":
+    "PrivateKey":
 }
 
 ## Features

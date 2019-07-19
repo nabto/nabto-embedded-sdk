@@ -4,17 +4,12 @@
 #include <stdbool.h>
 #include <nabto/nabto_device.h>
 
-struct heatpump_config {
-    char* hostname;
-    char* deviceId;
-    char* productId;
-    char* productName;
-    char* privateKey;
-};
+#include <nlohmann/json.hpp>
 
-bool heatpump_config_has_private_key();
-bool heatpump_config_read_private_key(NabtoDevice* device);
-bool heatpump_config_create_new_private_key(NabtoDevice* device);
+using json = nlohmann::json;
 
+bool heatpump_config_exists(const std::string& filename);
+bool heatpump_load_config(const std::string& fileName, json& config);
+bool heatpump_save_config(const std::string& fileName, const std::string& tmpFile, const json& config);
 
 #endif
