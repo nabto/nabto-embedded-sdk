@@ -42,7 +42,10 @@ typedef void (*NabtoDeviceIamChangedCallback)(void* userData);
  * @param version  the current version of the iam database
  * @param buffer   if NULL or too small the function returns OUT_OF_MEMORY
  *                 and used is set to the required buffer size
- * @return ok if buffer was large enough else return
+ * @return
+ *  NABTO_DEVICE_EC_OK             If ok.
+ *  NABTO_DEVICE_EC_OUT_OF_MEMORY  If the buffer is too small.
+ *  NABTO_DEVICE_EC_FAILED         If an unknown error has happened.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_dump(NabtoDevice* device, uint64_t* version, void* buffer, size_t bufferLength, size_t* used);

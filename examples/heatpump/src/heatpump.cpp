@@ -56,17 +56,17 @@ bool validate_config(const json& config) {
         config["Iam"]["Users"];
         config["Iam"]["Roles"];
         config["Iam"]["Policies"];
-    } catch (std::exception e) {
+    } catch (std::exception& e) {
         return false;
     }
     return true;
 
 }
 
-void load_policy(NabtoDevice* device, const std::string& name, json policy)
+NabtoDeviceError load_policy(NabtoDevice* device, const std::string& name, json policy)
 {
     auto cbor = json::to_cbor(policy);
-    nabto_device_iam_policy_create(device, name.c_str(), cbor.data(), cbor.size());
+    return nabto_device_iam_policy_create(device, name.c_str(), cbor.data(), cbor.size());
 }
 
 bool init_heatpump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
@@ -86,18 +86,30 @@ bool init_heatpump(const std::string& configFile, const std::string& productId, 
     config["DeviceId"] = deviceId;
     config["Server"] = server;
 
-    nabto_device_iam_users_create(device, "Unpaired");
-    nabto_device_iam_roles_create(device, "FirstUserCanPair");
-
-    nabto_device_iam_users_add_role(device, "Unpaired", "FirstUserCanPair");
-
-
-    load_policy(device, "HeatPumpRead", HeatPumpRead);
-    load_policy(device, "HeatPumpWrite", HeatPumpWrite);
-
+    if (nabto_device_iam_users_create(device, "Unpaired") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (nabto_device_iam_roles_create(device, "FirstUser") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (nabto_device_iam_users_add_role(device, "Unpaired", "FirstUser") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (load_policy(device, "HeatPumpRead", HeatPumpRead) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (load_policy(device, "HeatPumpWrite", HeatPumpWrite) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (load_policy(device, "FirstUserCanPair", FirstUserCanPair) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (nabto_device_iam_roles_add_policy(device, "FirstUser", "FirstUserCanPair") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
     uint64_t version;
     size_t used;
-    if (nabto_device_iam_dump(device, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_iam_dump(device, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OUT_OF_MEMORY) {
         return false;
     }
 
@@ -163,7 +175,7 @@ int main(int argc, char** argv) {
     options.add_options("General")
         ("h,help", "Show help")
         ("i,init", "Initialize configuration file")
-        ("c,config", "Configuration file", cxxopts::value<std::string>());
+        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heatpump.json"));
 
     options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
@@ -176,7 +188,7 @@ int main(int argc, char** argv) {
 
         if (result.count("help"))
         {
-            std::cout << options.help({"", "Group"}) << std::endl;
+            std::cout << options.help() << std::endl;
             exit(0);
         }
 
@@ -185,7 +197,9 @@ int main(int argc, char** argv) {
             std::string productId = result["product"].as<std::string>();
             std::string deviceId = result["device"].as<std::string>();
             std::string server = result["server"].as<std::string>();
-            init_heatpump(configFile, productId, deviceId, server);
+            if (!init_heatpump(configFile, productId, deviceId, server)) {
+                std::cerr << "Initialization failed" << std::endl;
+            }
         } else {
             std::string configFile = result["config"].as<std::string>();
             run_heatpump(configFile);

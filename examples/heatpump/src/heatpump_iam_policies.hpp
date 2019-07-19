@@ -30,38 +30,38 @@ const json HeatPumpWrite = R"(
 
 const json FullUserAdmin = R"(
 {
-  "version": 1,
-  "name": "FullUserAdmin",
-  "statements": [
+  "Version": 1,
+  "Name": "FullUserAdmin",
+  "Statement": [
     {
-      "actions": [ "iam:AddUser", "iam:GetUser", "iam:ListUsers", "iam:AddRoleToUser", "iam:RemoveRoleFromUser" ],
-      "effect": "Allow"
+      "Action": [ "iam:AddUser", "iam:GetUser", "iam:ListUsers", "iam:AddRoleToUser", "iam:RemoveRoleFromUser" ],
+      "Allow": true
     }
   ]
 })"_json;
 
 const json ModifyOwnUser = R"(
 {
-  "version": 1,
-  "name": "ModifyOwnUser",
-  "statements": [
+  "Version": 1,
+  "Name": "ModifyOwnUser",
+  "Statement": [
     {
-      "effect": "Allow",
-      "actions": [ "iam:AddFingerprint", "iam:RemoveFingerprint", "iam:SetName" ],
-      "conditions": { "StringEqual": [ { "Attribute": "connection:UserId" }, { "Attribute": "iam:UserId" } ] }
+      "Allow": true,
+      "Action": [ "iam:AddFingerprint", "iam:RemoveFingerprint", "iam:SetName" ],
+      "Condition": [ { "StringEqual": [ { "Attribute": "connection:UserId" }, { "Attribute": "iam:UserId" } ] } ]
     }
   ]
 })"_json;
 
 const json FirstUserCanPair = R"(
 {
-  "version": 1,
-  "name": "FirstUserCanPair",
-  "statements": [
+  "Version": 1,
+  "Name": "FirstUserCanPair",
+  "Statement": [
     {
-      "effect": "Allow",
-      "actions": [ "pairing:PairUser" ],
-      "conditions": { "NumberEqual": [ { "Attribute": "pairing:SystemIsPaired"}, 0 ] }
+      "Allow": true,
+      "Action": [ "pairing:PairUser" ],
+      "Condition": [ { "NumberEqual": [ { "Attribute": "pairing:SystemIsPaired"}, 0 ] } ]
     }
   ]
 })"_json;

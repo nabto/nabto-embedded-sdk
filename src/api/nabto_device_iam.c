@@ -236,13 +236,13 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_policy_create(NabtoDevice* device, const char* name, void* cbor, size_t cborLength)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    // TODO check return value
-    nc_iam_cbor_policy_create(&dev->core, name, cbor, cborLength);
+    ec = nc_iam_cbor_policy_create(&dev->core, name, cbor, cborLength);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API

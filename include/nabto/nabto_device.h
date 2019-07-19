@@ -87,6 +87,7 @@ extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
 extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
 extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_IMPLEMENTED;
 extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LOG_LEVEL;
+extern const NabtoDeviceError NABTO_DEVICE_EC_OUT_OF_MEMORY;
 
 /**********************
  * Device Api *

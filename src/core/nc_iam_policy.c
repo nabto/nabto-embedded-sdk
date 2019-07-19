@@ -79,11 +79,11 @@ void nc_iam_list_policies(struct nc_iam* iam, void** cbor, size_t* cborLength)
     return;
 }
 
-bool nc_iam_cbor_policy_create(struct nc_device_context* device, const char* name, void* cbor, size_t cborLength)
+np_error_code nc_iam_cbor_policy_create(struct nc_device_context* device, const char* name, void* cbor, size_t cborLength)
 {
     struct nc_iam* iam = &device->iam;
     if (!nc_iam_cbor_validate_policy(device, cbor, cborLength)) {
-        return false;
+        return NABTO_EC_IAM_INVALID_POLICY;
     }
 
     struct nc_iam_policy* p = nc_iam_find_policy(iam, name);
@@ -92,7 +92,7 @@ bool nc_iam_cbor_policy_create(struct nc_device_context* device, const char* nam
     }
     nc_iam_policy_set_cbor(p, cbor, cborLength);
 
-    return true;
+    return NABTO_EC_OK;
 }
 
 
@@ -220,9 +220,10 @@ bool nc_iam_cbor_validate_policy(struct nc_device_context* context, void* cbor, 
 
     cbor_parser_init(cbor, cborLength, 0, &parser, &map);
 
-    if (cbor_value_is_map(&map)) {
+    if (!cbor_value_is_map(&map)) {
         return false;
     }
+
 
 
     return true;

@@ -815,9 +815,10 @@ void nabto_device_free_threads(struct nabto_device_context* dev)
 
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec)
 {
-    if (ec != NABTO_EC_OK) {
-        return NABTO_DEVICE_EC_FAILED;
-    } else {
-        return NABTO_DEVICE_EC_OK;
+    switch (ec) {
+        case NABTO_EC_OK: return NABTO_DEVICE_EC_OK;
+        case NABTO_EC_FAILED: return NABTO_DEVICE_EC_FAILED;
+        case NABTO_EC_OUT_OF_MEMORY: return NABTO_DEVICE_EC_OUT_OF_MEMORY;
+        default: return NABTO_DEVICE_EC_FAILED;
     }
 }
