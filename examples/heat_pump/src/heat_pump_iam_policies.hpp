@@ -1,29 +1,29 @@
-#ifndef _HEATPUMP_IAM_POLICIES_HPP_
-#define _HEATPUMP_IAM_POLICIES_HPP_
+#ifndef _HEAT_PUMP_IAM_POLICIES_HPP_
+#define _HEAT_PUMP_IAM_POLICIES_HPP_
 
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-const json HeatPumpRead = R"(
+const json Heat_PumpRead = R"(
 {
   "Version": 1,
   "Statement": [
     {
       "Allow": true,
-      "Action": ["heatpump:GetTargetTemperature", "heatpump:GetTemperature", "heatpump:GetMode"]
+      "Action": ["HeatPump:GetTargetTemperature", "HeatPump:GetTemperature", "HeatPump:GetMode"]
     }
   ]
 }
 )"_json;
 
-const json HeatPumpWrite = R"(
+const json Heat_PumpWrite = R"(
 {
   "Version": 1,
   "Statement": [
     {
       "Allow": true,
-      "Action": [ "heatpump:SetTargetTemperature", "heatpump:SetTemperature", "heatpump:SetMode" ]
+      "Action": [ "HeatPump:SetTargetTemperature", "HeatPump:SetTemperature", "HeatPump:SetMode" ]
     }
   ]
 })"_json;
@@ -34,7 +34,7 @@ const json FullUserAdmin = R"(
   "Name": "FullUserAdmin",
   "Statement": [
     {
-      "Action": [ "iam:AddUser", "iam:GetUser", "iam:ListUsers", "iam:AddRoleToUser", "iam:RemoveRoleFromUser" ],
+      "Action": [ "IAM:AddUser", "IAM:GetUser", "iam:ListUsers", "iam:AddRoleToUser", "iam:RemoveRoleFromUser" ],
       "Allow": true
     }
   ]

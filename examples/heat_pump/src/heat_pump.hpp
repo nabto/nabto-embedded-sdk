@@ -1,11 +1,11 @@
-#ifndef _HEATPUMP_HPP_
-#define _HEATPUMP_HPP_
+#ifndef _HEAT_PUMP_HPP_
+#define _HEAT_PUMP_HPP_
 
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-class Heatpump {
+class HeatPump {
   public:
     enum class Mode {
         COOL = 0,

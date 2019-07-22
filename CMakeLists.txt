@@ -74,7 +74,7 @@ endif()
 add_subdirectory(test/api_test)
 #add_subdirectory(test/stream_echo)
 add_subdirectory(test/test_device)
-add_subdirectory(examples/heatpump)
+add_subdirectory(examples/heat_pump)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_executable(unit_test "${test_runner_src}")

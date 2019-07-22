@@ -1,5 +1,5 @@
-#include "heatpump.hpp"
-#include "heatpump_config.hpp"
+#include "heat_pump.hpp"
+#include "heat_pump_config.hpp"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -22,21 +22,21 @@ bool validate_config(const json& config) {
     return true;
 }
 
-void Heatpump::setMode(Mode mode)
+void HeatPump::setMode(Mode mode)
 {
     state_["HeatPump"]["Mode"] = modeToString(mode);
 }
-void Heatpump::setTarget(double target)
+void HeatPump::setTarget(double target)
 {
     state_["HeatPump"]["Target"] = target;
 }
 
-void Heatpump::setPower(bool power)
+void HeatPump::setPower(bool power)
 {
     state_["HeatPump"]["Power"] = power;
 }
 
-Heatpump::Mode Heatpump::getMode()
+HeatPump::Mode HeatPump::getMode()
 {
     try {
         std::string mode = state_["HeatPump"]["Mode"].get<std::string>();
@@ -55,7 +55,7 @@ Heatpump::Mode Heatpump::getMode()
     return Mode::COOL;
 }
 
-double Heatpump::getTarget()
+double HeatPump::getTarget()
 {
     try {
         return state_["HeatPump"]["Target"].get<double>();
@@ -67,7 +67,7 @@ double Heatpump::getTarget()
     return 21;
 }
 
-bool Heatpump::getPower()
+bool HeatPump::getPower()
 {
     try {
         return state_["HeatPump"]["Power"].get<bool>();
@@ -78,24 +78,24 @@ bool Heatpump::getPower()
     return false;
 }
 
-double Heatpump::getTemperature()
+double HeatPump::getTemperature()
 {
     // TODO implement changing temperature logic
     return 22.3;
 }
 
-const char* Heatpump::getModeString()
+const char* HeatPump::getModeString()
 {
     return modeToString(getMode());
 }
 
-const char* Heatpump::modeToString(Heatpump::Mode mode)
+const char* HeatPump::modeToString(HeatPump::Mode mode)
 {
     switch (mode) {
-        case Heatpump::Mode::COOL: return "COOL";
-        case Heatpump::Mode::HEAT: return "HEAT";
-        case Heatpump::Mode::FAN: return "FAN";
-        case Heatpump::Mode::DRY: return "DRY";
+        case HeatPump::Mode::COOL: return "COOL";
+        case HeatPump::Mode::HEAT: return "HEAT";
+        case HeatPump::Mode::FAN: return "FAN";
+        case HeatPump::Mode::DRY: return "DRY";
         default: return "UNKNOWN";
     }
 }

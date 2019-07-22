@@ -1,15 +1,15 @@
-#include "heatpump_config.hpp"
+#include "heat_pump_config.hpp"
 
 #include <fstream>
 #include <cstdio>
 
-bool heatpump_config_exists(const std::string& filename)
+bool heat_pump_config_exists(const std::string& filename)
 {
     std::ifstream configFile(filename);
     return (configFile.is_open() && !configFile.fail());
 }
 
-bool heatpump_load_config(const std::string& filename, json& config)
+bool heat_pump_load_config(const std::string& filename, json& config)
 {
     json j;
     try {
@@ -22,7 +22,7 @@ bool heatpump_load_config(const std::string& filename, json& config)
     return true;
 }
 
-bool heatpump_save_config(const std::string& filename, const std::string& tmpFile, const json& config)
+bool heat_pump_save_config(const std::string& filename, const std::string& tmpFile, const json& config)
 {
     bool status = false;
     std::remove(tmpFile.c_str());

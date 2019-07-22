@@ -1,22 +1,22 @@
-#include "heatpump.hpp"
-#include "heatpump_config.hpp"
-#include "heatpump_iam_policies.hpp"
+#include "heat_pump.hpp"
+#include "heat_pump_config.hpp"
+#include "heat_pump_iam_policies.hpp"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
 #include <cxxopts.hpp>
 
-bool init_heatpump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-void run_heatpump(const std::string& configFile);
+bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
+void run_heat_pump(const std::string& configFile);
 
 int main(int argc, char** argv) {
-    cxxopts::Options options("Heatpump", "Nabto Heatpump example.");
+    cxxopts::Options options("Heat_Pump", "Nabto Heat_Pump example.");
 
     options.add_options("General")
         ("h,help", "Show help")
         ("i,init", "Initialize configuration file")
-        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heatpump.json"));
+        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump.json"));
 
     options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
@@ -38,12 +38,12 @@ int main(int argc, char** argv) {
             std::string productId = result["product"].as<std::string>();
             std::string deviceId = result["device"].as<std::string>();
             std::string server = result["server"].as<std::string>();
-            if (!init_heatpump(configFile, productId, deviceId, server)) {
+            if (!init_heat_pump(configFile, productId, deviceId, server)) {
                 std::cerr << "Initialization failed" << std::endl;
             }
         } else {
             std::string configFile = result["config"].as<std::string>();
-            run_heatpump(configFile);
+            run_heat_pump(configFile);
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -63,9 +63,9 @@ NabtoDeviceError load_policy(NabtoDevice* device, const std::string& name, json 
     return nabto_device_iam_policy_create(device, name.c_str(), cbor.data(), cbor.size());
 }
 
-bool init_heatpump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
+bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
 {
-    if (heatpump_config_exists(configFile)) {
+    if (heat_pump_config_exists(configFile)) {
         std::cerr << "The config already file exists, remove " << configFile << " and try again" << std::endl;
         exit(2);
     }
@@ -89,10 +89,10 @@ bool init_heatpump(const std::string& configFile, const std::string& productId, 
     if (nabto_device_iam_users_add_role(device, "Unpaired", "FirstUser") != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    if (load_policy(device, "HeatPumpRead", HeatPumpRead) != NABTO_DEVICE_EC_OK) {
+    if (load_policy(device, "Heat_PumpRead", Heat_PumpRead) != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    if (load_policy(device, "HeatPumpWrite", HeatPumpWrite) != NABTO_DEVICE_EC_OK) {
+    if (load_policy(device, "Heat_PumpWrite", Heat_PumpWrite) != NABTO_DEVICE_EC_OK) {
         return false;
     }
     if (load_policy(device, "FirstUserCanPair", FirstUserCanPair) != NABTO_DEVICE_EC_OK) {
@@ -116,18 +116,18 @@ bool init_heatpump(const std::string& configFile, const std::string& productId, 
 
 
     std::string tmpFile = "tmp.json";
-    heatpump_save_config(configFile, tmpFile, config);
+    heat_pump_save_config(configFile, tmpFile, config);
 
     nabto_device_free(device);
 
     return true;
 }
 
-void run_heatpump(const std::string& configFile)
+void run_heat_pump(const std::string& configFile)
 {
     NabtoDeviceError ec;
     json config;
-    if (!heatpump_load_config(configFile, config)) {
+    if (!heat_pump_load_config(configFile, config)) {
         std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
         exit(-1);
     }
