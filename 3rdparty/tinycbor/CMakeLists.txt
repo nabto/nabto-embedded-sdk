@@ -5,6 +5,7 @@ set(src
   tinycbor/src/cbortojson.c
   tinycbor/src/cborvalidation.c
   extra/cbor_encode_encoded_cbor.c
+  extra/cbor_extra.c
   )
 
 add_library(3rdparty_tinycbor ${src})

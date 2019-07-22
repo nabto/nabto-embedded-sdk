@@ -1,13 +1,5 @@
 #include "heatpump_config.hpp"
 
-#include <nabto/nabto_device.h>
-#include <nabto/nabto_device_experimental.h>
-
-#include <cjson/cJSON.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <fstream>
 #include <cstdio>
 

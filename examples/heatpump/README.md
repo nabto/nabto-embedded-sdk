@@ -29,4 +29,31 @@ config file structure
 
 ## Features
 
-TODO
+The heatpump example shows how a heatpump can be implemented including
+iam and heatpump functionality.
+
+## Heatpump Features
+
+This is a hypothetical heatpump. It has the following functionality.
+
+Settings:
+
+The heatpump has four modes:
+
+  * Cool
+  * Heat
+  * Circulate
+  * Dehumidify
+
+The heatpump has two power modes:
+
+  * On
+  * Off
+
+A target temperature:
+
+  * TargetTemperature
+
+Sensors:
+
+  * RoomTemperature

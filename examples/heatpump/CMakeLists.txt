@@ -1,7 +1,9 @@
 set(src
+  src/main.cpp
   src/heatpump.cpp
   src/heatpump_config.cpp
   src/heatpump_application.cpp
+
   )
 
 add_executable(heatpump ${src})

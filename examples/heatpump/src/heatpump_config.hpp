@@ -2,7 +2,6 @@
 #define _HEATPUMP_CONFIG_H_
 
 #include <stdbool.h>
-#include <nabto/nabto_device.h>
 
 #include <nlohmann/json.hpp>
 
