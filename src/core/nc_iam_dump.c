@@ -1,11 +1,13 @@
 #include "nc_iam_dump.h"
 
 #include <cbor.h>
+#include <cbor_extra.h>
 
 
 void nc_iam_dump_users(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_user(struct nc_iam_user* iam, CborEncoder*);
 void nc_iam_dump_roles(struct nc_iam* iam, CborEncoder* encoder);
+void nc_iam_dump_policies(struct nc_iam* iam, CborEncoder* encoder);
 
 
 np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, size_t bufferLength, size_t* used)
@@ -21,6 +23,9 @@ np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, s
 
     cbor_encode_text_stringz(&map, "Roles");
     nc_iam_dump_roles(iam, &map);
+
+    cbor_encode_text_stringz(&map, "Policies");
+    nc_iam_dump_policies(iam, &map);
 
     CborError ec = cbor_encoder_close_container(&encoder, &map);
     if (ec == CborNoError) {
@@ -101,6 +106,21 @@ void nc_iam_dump_roles(struct nc_iam* iam, CborEncoder* encoder)
         iterator = iterator->next;
     }
 
+    cbor_encoder_close_container(encoder, &map);
+}
+
+void nc_iam_dump_policies(struct nc_iam* iam, CborEncoder* encoder)
+{
+    CborEncoder map;
+    cbor_encoder_create_map(encoder, &map, CborIndefiniteLength);
+    struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
+    while (iterator != &iam->policies.sentinel)
+    {
+        struct nc_iam_policy* policy = iterator->item;
+        cbor_encode_text_stringz(&map, policy->name);
+        cbor_encode_encoded_item(&map, policy->cbor, policy->cborLength);
+        iterator = iterator->next;
+    }
     cbor_encoder_close_container(encoder, &map);
 }
 
