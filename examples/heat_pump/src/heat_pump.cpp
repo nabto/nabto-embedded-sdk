@@ -99,3 +99,27 @@ const char* HeatPump::modeToString(HeatPump::Mode mode)
         default: return "UNKNOWN";
     }
 }
+
+bool HeatPump::saveConfig()
+{
+    // config is the current state with the current iam
+    json config = state_;
+
+    // add iam to the config
+    uint64_t version;
+    size_t used;
+    if (nabto_device_iam_dump(device_, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OUT_OF_MEMORY) {
+        return false;
+    }
+
+    std::vector<uint8_t> buffer(used);
+    if(nabto_device_iam_dump(device_, &version, buffer.data(), buffer.size(), &used) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+    config["Iam"] = json::from_cbor(buffer);
+
+    std::string tmpFile = "tmp.json";
+    heat_pump_save_config(configFile_, tmpFile, config);
+    return true;
+}

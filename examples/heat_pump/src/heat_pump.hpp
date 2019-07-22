@@ -1,12 +1,20 @@
 #ifndef _HEAT_PUMP_HPP_
 #define _HEAT_PUMP_HPP_
 
+#include <nabto/nabto_device.h>
+
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
 class HeatPump {
   public:
+
+    HeatPump(NabtoDevice* device, const std::string& configFile)
+        : device_(device), configFile_(configFile)
+    {
+    }
+
     enum class Mode {
         COOL = 0,
         HEAT = 1,
@@ -26,9 +34,11 @@ class HeatPump {
     bool getPower();
     double getTemperature();
 
-
+    bool saveConfig();
 
   private:
+    NabtoDevice* device_;
+    const std::string& configFile_;
     json state_;
 };
 
