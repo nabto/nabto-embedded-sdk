@@ -35,7 +35,7 @@ class HeatPump {
     double getTemperature();
 
     bool saveConfig();
-
+    bool loadConfig();
   private:
     NabtoDevice* device_;
     const std::string& configFile_;

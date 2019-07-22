@@ -1,4 +1,5 @@
 #include "nc_iam_dump.h"
+#include "nc_iam_policy.h"
 
 #include <cbor.h>
 #include <cbor_extra.h>
@@ -124,7 +125,59 @@ void nc_iam_dump_policies(struct nc_iam* iam, CborEncoder* encoder)
     cbor_encoder_close_container(encoder, &map);
 }
 
+
+
+
 np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength)
 {
+    CborParser parser;
+    CborValue map;
+    cbor_parser_init(cbor, cborLength, 0, &parser, &map);
+
+
+    CborValue policies;
+    // map with users, roles and policies
+    if (!cbor_value_is_map(&map)) {
+        return false;
+    }
+
+    cbor_value_map_find_value(&map, "Policies", &policies);
+
+    if (!cbor_value_is_map(&policies)) {
+        return false;
+    }
+
+    CborValue policy;
+    cbor_value_enter_container(&policies, &policy);
+
+    while (!cbor_value_at_end(&policy)) {
+        char buffer[33];
+        memset(buffer, 0, 33);
+        if (!cbor_value_is_text_string(&policy)) {
+            return false;
+        }
+
+        size_t stringLength;
+        if (!cbor_value_calculate_string_length(&policy, &stringLength) || stringLength > 32) {
+            return false;
+        }
+
+        CborValue next;
+        size_t len = 33;
+        cbor_value_copy_text_string(&policy, buffer, &len, &next);
+
+        cbor_value_advance(&policy);
+        const uint8_t* start = cbor_value_get_next_byte(&policy);
+        cbor_value_advance(&policy);
+        const uint8_t* end = cbor_value_get_next_byte(&policy);
+
+        size_t policyLength = end - start;
+
+        nc_iam_cbor_policy_create(iam, buffer, start, policyLength);
+    }
+
+    cbor_value_leave_container(&policies, &policy);
+
+
     return NABTO_EC_NOT_IMPLEMENTED;
 }

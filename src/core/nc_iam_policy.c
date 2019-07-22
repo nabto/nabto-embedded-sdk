@@ -4,7 +4,7 @@
 #include <cbor.h>
 #include <stdlib.h>
 
-static bool nc_iam_cbor_validate_policy(struct nc_device_context* context, void* cbor, size_t cborLength);
+static bool nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, size_t cborLength);
 
 struct nc_iam_policy* nc_iam_policy_new(struct nc_iam* iam, const char* name)
 {
@@ -22,7 +22,7 @@ void nc_iam_policy_free(struct nc_iam_policy* p)
     free(p);
 }
 
-void nc_iam_policy_set_cbor(struct nc_iam_policy* p, void* cbor, size_t cborLength)
+void nc_iam_policy_set_cbor(struct nc_iam_policy* p, const void* cbor, size_t cborLength)
 {
     free(p->cbor);
     p->cbor = malloc(cborLength);
@@ -80,10 +80,9 @@ void nc_iam_list_policies(struct nc_iam* iam, void** cbor, size_t* cborLength)
     return;
 }
 
-np_error_code nc_iam_cbor_policy_create(struct nc_device_context* device, const char* name, void* cbor, size_t cborLength)
+np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, const void* cbor, size_t cborLength)
 {
-    struct nc_iam* iam = &device->iam;
-    if (!nc_iam_cbor_validate_policy(device, cbor, cborLength)) {
+    if (!nc_iam_cbor_validate_policy(iam, cbor, cborLength)) {
         return NABTO_EC_IAM_INVALID_POLICY;
     }
 
@@ -214,7 +213,7 @@ bool nc_iam_cbor_validate_statement(CborValue* statement)
 
 
 
-bool nc_iam_cbor_validate_policy(struct nc_device_context* context, void* cbor, size_t cborLength)
+bool nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, size_t cborLength)
 {
     CborParser parser;
     CborValue map;

@@ -123,3 +123,19 @@ bool HeatPump::saveConfig()
     heat_pump_save_config(configFile_, tmpFile, config);
     return true;
 }
+
+bool HeatPump::loadConfig()
+{
+    if (!heat_pump_load_config(configFile_, state_)) {
+        return false;
+    }
+
+    std::vector<uint8_t> iam = json::to_cbor(state_["Iam"]);
+    NabtoDeviceError ec = nabto_device_iam_load(device_, iam.data(), iam.size());
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+    return true;
+
+}
