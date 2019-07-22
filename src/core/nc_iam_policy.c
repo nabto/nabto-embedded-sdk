@@ -27,6 +27,7 @@ void nc_iam_policy_set_cbor(struct nc_iam_policy* p, void* cbor, size_t cborLeng
     free(p->cbor);
     p->cbor = malloc(cborLength);
     memcpy(p->cbor, cbor, cborLength);
+    p->cborLength = cborLength;
 }
 
 struct nc_iam_policy* nc_iam_find_policy(struct nc_iam* iam, const char* policy)
