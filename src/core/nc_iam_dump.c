@@ -245,6 +245,18 @@ bool nc_iam_load_user(struct nc_iam* iam, const char* userName, CborValue* user)
     while(!cbor_value_at_end(&role)) {
         char roleName[33];
         memset(roleName, 0, 33);
+        if (!cbor_value_is_text_string(&role)) {
+            return false;
+        }
+        size_t stringLength;
+        if (!cbor_value_calculate_string_length(&role, &stringLength) || stringLength > 32) {
+            return false;
+        }
+        CborValue next;
+        size_t len = 33;
+        cbor_value_copy_text_string(&role, roleName, &len, &next);
+        cbor_value_advance(&role);
+        nc_iam_user_add_role(iam, userName, roleName);
 
     }
 
