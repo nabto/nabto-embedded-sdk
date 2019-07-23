@@ -240,13 +240,16 @@ bool nc_iam_load_user(struct nc_iam* iam, const char* userName, CborValue* user)
     }
 
     CborValue role;
-    cbor_value_enter_container(roles, &role);
+    cbor_value_enter_container(&roles, &role);
 
     while(!cbor_value_at_end(&role)) {
-        char role[33];
+        char roleName[33];
+        memset(roleName, 0, 33);
+
     }
 
-    cbor_value_leave_container(roles, &role);
+
+    cbor_value_leave_container(&roles, &role);
     return true;
 }
 
