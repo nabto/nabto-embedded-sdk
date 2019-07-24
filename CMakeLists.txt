@@ -40,8 +40,10 @@ add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(nabto-common-cpp/src/streaming)
 add_subdirectory(nabto-common-cpp/src/stun)
 add_subdirectory(nabto-common-cpp/src/coap)
+add_subdirectory(nabto-common-cpp/src/mdns)
 
 add_subdirectory(src/modules/logging/api)
+add_subdirectory(src/modules/mdns)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_subdirectory(src/modules/dns/unix)
