@@ -167,7 +167,6 @@ bool nc_iam_load_default_user(struct nc_iam* iam, CborValue* defaultUser)
         nc_iam_set_default_user(iam, buffer);
     }
     return true;
-
 }
 
 

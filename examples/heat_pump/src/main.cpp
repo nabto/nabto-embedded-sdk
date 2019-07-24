@@ -11,7 +11,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
 void run_heat_pump(const std::string& configFile);
 
 int main(int argc, char** argv) {
-    cxxopts::Options options("Heat_Pump", "Nabto Heat_Pump example.");
+    cxxopts::Options options("Heat pump", "Nabto heat pump example.");
 
     options.add_options("General")
         ("h,help", "Show help")
