@@ -1,10 +1,153 @@
 #include "nabto_device_stream.h"
+#include "nabto_device_future.h"
 #include <api/nabto_device_defines.h>
 #include <platform/np_logging.h>
 
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_API
+
+
+/*******************************************
+ * Streaming Api
+ *******************************************/
+
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct nabto_device_stream* str = (struct nabto_device_stream*)malloc(sizeof(struct nabto_device_stream));
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    memset(str, 0, sizeof(struct nabto_device_stream));
+    *stream = (NabtoDeviceStream*)str;
+    str->listenFut = fut;
+    str->dev = dev;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    nc_stream_manager_set_listener(&dev->core.streamManager, &nabto_device_stream_listener_callback, str);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return fut;
+}
+
+void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    str->readyToFree = true;
+    nabto_stream_release(str->stream);
+    // TODO: resolve all futures
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+}
+
+
+
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    if (str->acceptFut) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_queue_post(&str->dev->queueHead, fut);
+        return fut;
+    }
+    str->acceptFut = fut;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    nabto_stream_set_application_event_callback(str->stream, &nabto_device_stream_application_event_callback, str);
+    nabto_stream_accept(str->stream);
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return fut;
+}
+
+NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceConnectionRef ref;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+
+    ref = nc_device_get_connection_ref_from_stream(&str->dev->core, str->stream);
+
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return ref;
+}
+
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
+                                                void* buffer, size_t bufferLength,
+                                                size_t* readLength)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    if (str->readSomeFut || str->readAllFut) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_queue_post(&str->dev->queueHead, fut);
+        return fut;
+    }
+    str->readAllFut = fut;
+    str->readBuffer = buffer;
+    str->readBufferLength = bufferLength;
+    str->readLength = readLength;
+    *str->readLength = 0;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    nabto_device_stream_do_read(str);
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return fut;
+}
+
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStream* stream,
+                                                 void* buffer, size_t bufferLength,
+                                                 size_t* readLength)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    if (str->readSomeFut || str->readAllFut) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_queue_post(&str->dev->queueHead, fut);
+        return fut;
+    }
+    str->readSomeFut = fut;
+    str->readBuffer = buffer;
+    str->readBufferLength = bufferLength;
+    str->readLength = readLength;
+    *str->readLength = 0;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    nabto_device_stream_do_read(str);
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return fut;
+}
+
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
+                                             const void* buffer, size_t bufferLength)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    if (str->writeFut) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_queue_post(&str->dev->queueHead, fut);
+        return fut;
+    }
+    str->writeFut = fut;
+    str->writeBuffer = buffer;
+    str->writeBufferLength = bufferLength;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    nabto_device_stream_do_write_all(str);
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return fut;
+}
+
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    if (str->closeFut) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_queue_post(&str->dev->queueHead, fut);
+        return fut;
+    }
+    str->closeFut = fut;
+    nabto_device_stream_handle_close(str);
+    return fut;
+}
+
+/*******************************************
+ * Streaming Api End
+ *******************************************/
 
 
 void nabto_device_stream_resolve_read(struct nabto_device_stream* str, np_error_code ec)

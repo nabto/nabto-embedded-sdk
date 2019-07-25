@@ -46,6 +46,7 @@ target_link_libraries( nabto_device
   nm_udp
   nm_dns
   nc_core
+  nm_mdns
   )
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h")

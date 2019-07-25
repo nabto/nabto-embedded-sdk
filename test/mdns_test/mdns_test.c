@@ -10,9 +10,9 @@ const char* productId = "pr-test";
 const char* deviceId = "de-test";
 const uint16_t port = 1234;
 
-void mdns_started(const np_error_code ec, void* userData)
+uint16_t getPort(void* userData)
 {
-    printf("Started %d\n", ec);
+    return 4242;
 }
 
 int main(int argc, char** argv)
@@ -29,9 +29,7 @@ int main(int argc, char** argv)
 
     np_log_init();
 
-    nm_mdns_init(&mdns, &pl, productId, deviceId, port);
-
-    nm_mdns_async_start(&mdns, mdns_started, NULL);
+    nm_mdns_init(&mdns, &pl, productId, deviceId, getPort, NULL);
 
     while (true) {
         np_event_queue_execute_all(&pl);

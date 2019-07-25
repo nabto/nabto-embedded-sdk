@@ -7,17 +7,12 @@ extern "C" {
 #endif
 
 /**
- * Starts the optional internal mdns responder/server. The mdns
- * responder can be used if the system does not provide a mdns
- * implementation.
- *
- * Before starting the mdns responder, the product id, and device id
- * has to be set.
- *
- * The responder is stopped when the device is closed.
+ * Enable the optional mdns server/responder. The server is started when the
+ * device is started. Mdns has to be enabled before the device is
+ * started. The responder is stopped when the device is closed.
  */
-NabtoDeviceError nabto_device_mdns_start(NabtoDevice* device);
-
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_enable_mdns(NabtoDevice* device);
 
 #ifdef __cplusplus
 } // extern c
