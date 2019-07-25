@@ -15,10 +15,13 @@ struct nm_mdns {
     nm_mdns_get_port getPort;
     void* getPortUserData;
     struct nabto_mdns_server_context mdnsServer;
-    np_udp_socket* socket;
+    np_udp_socket* socketv4;
+    np_udp_socket* socketv6;
     struct nabto_mdns_ip_address mdnsIps[2];
-    struct np_communication_buffer* sendBuffer;
-    struct np_udp_send_context sendContext;
+    struct np_communication_buffer* sendBufferv4;
+    struct np_communication_buffer* sendBufferv6;
+    struct np_udp_send_context sendContextv4;
+    struct np_udp_send_context sendContextv6;
 };
 
 void nm_mdns_init(struct nm_mdns* mdns, struct np_platform* pl, const char* productId, const char* deviceId, nm_mdns_get_port getPort, void* userData);
