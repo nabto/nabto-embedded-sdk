@@ -1,5 +1,6 @@
 
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_experimental.h>
 
 #include <gopt/gopt.h>
 
@@ -245,6 +246,14 @@ void run_device()
         return;
     }
     ec = nabto_device_set_server_url(dev, config.hostname);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return;
+    }
+
+    nabto_device_set_product_id(dev, config.productId);
+    nabto_device_set_device_id(dev, config.deviceId);
+
+    ec = nabto_device_enable_mdns(dev);
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     }
