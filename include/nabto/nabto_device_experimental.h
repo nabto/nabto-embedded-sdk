@@ -168,6 +168,13 @@ nabto_device_iam_policy_list(NabtoDevice* device, void** cbor, size_t* cborLengt
 
 
 
+/**
+ * Enable the optional mdns server/responder. The server is started when the
+ * device is started. Mdns has to be enabled before the device is
+ * started. The responder is stopped when the device is closed.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_enable_mdns(NabtoDevice* device);
 
 #ifdef __cplusplus
 } // extern c

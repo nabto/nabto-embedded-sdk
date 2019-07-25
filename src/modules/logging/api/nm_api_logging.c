@@ -127,7 +127,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
 
     // TODO: better support for multiline logging through the API
     for (i = 0; i < chunks; i++) {
-        ret = sprintf(str, "%04lx: ", i*16);
+        ret = sprintf(str, "%04dx: ", (int)(i*16));
         ptr = str + ret;
         for (n = 0; n < 16; n++) {
             ret = sprintf(ptr, "%02x ", buf[i*16+n]);
@@ -147,7 +147,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
         }
         nm_api_log_buf_line(severity, module, line, file, str);
     }
-    ret = sprintf(str, "%04lx: ", chunks*16);
+    ret = sprintf(str, "%04dx: ", (int)(chunks*16));
     ptr = str + ret;
     for (n = chunks*16; n < len; n++) {
         ret = sprintf(ptr, "%02x ", buf[n]);

@@ -45,8 +45,10 @@ add_subdirectory(3rdparty/cxxopts)
 add_subdirectory(nabto-common-cpp/src/streaming)
 add_subdirectory(nabto-common-cpp/src/stun)
 add_subdirectory(nabto-common-cpp/src/coap)
+add_subdirectory(nabto-common-cpp/src/mdns)
 
 add_subdirectory(src/modules/logging/api)
+add_subdirectory(src/modules/mdns)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_subdirectory(src/modules/dns/unix)
@@ -75,6 +77,7 @@ add_subdirectory(test/api_test)
 #add_subdirectory(test/stream_echo)
 add_subdirectory(test/test_device)
 add_subdirectory(examples/heat_pump)
+add_subdirectory(test/mdns_test)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_executable(unit_test "${test_runner_src}")

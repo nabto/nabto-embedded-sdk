@@ -255,6 +255,14 @@ void run_device()
         return;
     }
 
+    nabto_device_set_product_id(dev, config.productId);
+    nabto_device_set_device_id(dev, config.deviceId);
+
+    ec = nabto_device_enable_mdns(dev);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return;
+    }
+
     char fingerprint[33];
     memset(fingerprint, 0, 33);
     ec = nabto_device_get_device_fingerprint_hex(dev, fingerprint);
