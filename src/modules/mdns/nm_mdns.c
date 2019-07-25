@@ -10,11 +10,15 @@ static void nm_mdns_socket_destroyed(const np_error_code ec, void* userData);
 
 void nm_mdns_init(struct nm_mdns* mdns, struct np_platform* pl, const char* productId, const char* deviceId, uint16_t port)
 {
+    memset(mdns, 0, sizeof(struct nm_mdns));
     mdns->stopped = false;
     mdns->pl = pl;
     mdns->productId = productId;
     mdns->deviceId = deviceId;
     mdns->port = port;
+
+    mdns->sendBuffer = pl->buf.allocate();
+
 
 }
 
@@ -23,7 +27,11 @@ void nm_mdns_async_start(struct nm_mdns* mdns, nm_mdns_started cb, void* userDat
     mdns->cb = cb;
     mdns->cbUserData = userData;
     struct np_platform* pl = mdns->pl;
-    pl->udp.async_bind_port(5353, nm_mdns_socket_opened, mdns);
+    if (pl->udp.async_create_ipv4_mdns != NULL) {
+        pl->udp.async_create_ipv4_mdns(nm_mdns_socket_opened, mdns);
+    } else {
+        // TODO fail.
+    }
 }
 
 void nm_mdns_stop(struct nm_mdns* mdns)
@@ -34,6 +42,7 @@ void nm_mdns_stop(struct nm_mdns* mdns)
     struct np_platform* pl = mdns->pl;
     mdns->stopped = true;
     pl->udp.async_destroy(mdns->socket, nm_mdns_socket_destroyed, NULL);
+    pl->buf.free(mdns->sendBuffer);
 }
 
 void nm_mdns_socket_destroyed(const np_error_code ec, void* userData)

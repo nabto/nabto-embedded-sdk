@@ -54,6 +54,12 @@ struct np_udp_module {
     void (*async_bind_port)(uint16_t port, np_udp_socket_created_callback cb, void* data);
 
     /**
+     * Optional create function which creates a mdns ready socket.
+     * The socket is bound to 5353 and uses has the REUSEPORT flag set.
+     */
+    void (*async_create_ipv4_mdns)(np_udp_socket_created_callback cb, void* data);
+
+    /**
      * Send packet async. It's the responsibility of the caller to
      * keep the ep and buffer alive until the callback is invoked.
      */

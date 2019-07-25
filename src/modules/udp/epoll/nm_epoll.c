@@ -51,6 +51,10 @@ struct epoll_event events[64];
  */
 void nm_epoll_handle_event(np_udp_socket* sock); // consider an np_epoll_event type instead of reusing the socket structure
 
+static void nm_epoll_event_create_ipv4_mdns(void* data);
+static bool nm_epoll_init_ipv4_mdns_socket(int sock);
+static void nm_epoll_async_create_ipv4_mdns(np_udp_socket_created_callback cb, void* data);
+
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
 {
     NABTO_LOG_TRACE(LOG, "Cancelling all events");
@@ -87,6 +91,7 @@ void np_udp_init(struct np_platform* pl_in) {
     pl = pl_in;
     pl->udp.async_create     = &nm_epoll_async_create;
     pl->udp.async_bind_port  = &nm_epoll_async_bind_port;
+    pl->udp.async_create_ipv4_mdns = &nm_epoll_async_create_ipv4_mdns;
     pl->udp.async_send_to    = &nm_epoll_async_send_to;
     pl->udp.async_recv_from  = &nm_epoll_async_recv_from;
     pl->udp.get_protocol     = &nm_epoll_get_protocol;
@@ -146,7 +151,8 @@ size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
         si_other.sin_port = htons(4567);
         si_other.sin_addr.s_addr = inet_addr("8.8.8.8");
         if(connect(s,(struct sockaddr*)&si_other,sizeof(si_other)) == -1) {
-            NABTO_LOG_ERROR(LOG, "Cannot connect to host");
+            // This is expected if the device does not have ipv4 access
+            // NABTO_LOG_ERROR(LOG, "Cannot connect to host");
         } else {
             struct sockaddr_in my_addr;
             socklen_t len = sizeof my_addr;
@@ -179,7 +185,8 @@ size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
         si6_other.sin6_port = htons(4567);
         inet_pton(AF_INET6, "2001:4860:4860::8888", si6_other.sin6_addr.s6_addr);
         if(connect(s,(struct sockaddr*)&si6_other,sizeof(si6_other)) == -1) {
-            NABTO_LOG_ERROR(LOG, "Cannot connect to host");
+            // this is expected if the host does not have a public ipv6 address.
+            // NABTO_LOG_ERROR(LOG, "Cannot connect to host");
         } else {
             struct sockaddr_in6 my_addr;
             socklen_t len = sizeof my_addr;
@@ -481,6 +488,82 @@ void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, 
     sock->created.data = data;
     sock->created.port = port;
     np_event_queue_post(pl, &sock->created.event, nm_epoll_event_bind_port, sock);
+}
+
+
+void nm_epoll_async_create_ipv4_mdns(np_udp_socket_created_callback cb, void* data)
+{
+    np_udp_socket* sock;
+    sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
+    sock->created.cb = cb;
+    sock->created.data = data;
+    np_event_queue_post(pl, &sock->created.event, nm_epoll_event_create_ipv4_mdns, sock);
+}
+
+void nm_epoll_event_create_ipv4_mdns(void* data)
+{
+    np_udp_socket* us = (np_udp_socket*)data;
+    us->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    if (us->sock < 0) {
+        us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
+        free(us);
+    }
+    us->isIpv6 = false;
+
+    // TODO test return value
+    if (!nm_epoll_init_ipv4_mdns_socket(us->sock)) {
+        us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
+        close(us->sock);
+        nm_epoll_cancel_all_events(us);
+        free(us);
+    }
+
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.ptr = us;
+    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
+        NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
+        close(us->sock);
+        us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
+        nm_epoll_cancel_all_events(us);
+        free(us);
+        return;
+    }
+    us->created.cb(NABTO_EC_OK, us, us->created.data);
+    return;
+}
+
+bool nm_epoll_init_ipv4_mdns_socket(int sock)
+{
+    int reuse = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0) {
+        return false;
+    }
+
+#ifdef SO_REUSEPORT
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuse, sizeof(reuse)) < 0) {
+        return false;
+    }
+#endif
+
+    struct sockaddr_in si_me;
+    memset(&si_me, 0, sizeof(si_me));
+    si_me.sin_family = AF_INET;
+    si_me.sin_port = htons(5353);
+    si_me.sin_addr.s_addr = INADDR_ANY;
+    if (bind(sock, (struct sockaddr*)&si_me, sizeof(si_me)) < 0) {
+        return false;
+    }
+
+    struct ip_mreq group;
+    memset(&group, 0, sizeof(struct ip_mreq));
+    group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
+    group.imr_interface.s_addr = INADDR_ANY;
+    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0) {
+        return false;
+    }
+
+    return true;
 }
 
 void nm_epoll_event_send_to(void* data)
