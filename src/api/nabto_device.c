@@ -79,6 +79,11 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     dev->closing = true;
+
+    if (dev->enableMdns) {
+        nm_mdns_deinit(&dev->mdns);
+    }
+
     // TODO: reintroduce this through the udp platform as to not leak buffers
     //nm_epoll_close(&dev->pl);
     nabto_device_threads_join(dev->networkThread);
@@ -310,6 +315,10 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     np_error_code ec;
     if (dev->publicKey == NULL || dev->privateKey == NULL || dev->serverUrl == NULL) {
         NABTO_LOG_ERROR(LOG, "Encryption key pair or server URL not set");
+        return NABTO_DEVICE_EC_FAILED;
+    }
+    if (dev->deviceId == NULL || dev->productId == NULL) {
+        NABTO_LOG_ERROR(LOG, "Missing deviceId or productdId");
         return NABTO_DEVICE_EC_FAILED;
     }
     dev->eventCond = nabto_device_threads_create_condition();

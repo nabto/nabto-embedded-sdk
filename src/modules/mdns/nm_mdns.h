@@ -14,9 +14,6 @@ struct nm_mdns {
     bool stopped;
     nm_mdns_get_port getPort;
     void* getPortUserData;
-    const char* productId;
-    const char* deviceId;
-    uint16_t port;
     struct nabto_mdns_server_context mdnsServer;
     np_udp_socket* socket;
     struct nabto_mdns_ip_address mdnsIps[2];
