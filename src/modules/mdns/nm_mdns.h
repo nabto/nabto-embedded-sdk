@@ -25,8 +25,8 @@ struct nm_mdns {
 
 void nm_mdns_init(struct nm_mdns* mdns, struct np_platform* pl, const char* productId, const char* deviceId, uint16_t port);
 
-void nm_mdns_async_start(struct nm_mdns* mdns, nm_mdns_started cb, void* userData);
+void nm_mdns_deinit(struct nm_mdns* mdns);
 
-void nm_mdns_stop(struct nm_mdns* mdns);
+void nm_mdns_async_start(struct nm_mdns* mdns, nm_mdns_started cb, void* userData);
 
 #endif

@@ -16,25 +16,10 @@ void nm_mdns_init(struct nm_mdns* mdns, struct np_platform* pl, const char* prod
     mdns->productId = productId;
     mdns->deviceId = deviceId;
     mdns->port = port;
-
     mdns->sendBuffer = pl->buf.allocate();
-
-
 }
 
-void nm_mdns_async_start(struct nm_mdns* mdns, nm_mdns_started cb, void* userData)
-{
-    mdns->cb = cb;
-    mdns->cbUserData = userData;
-    struct np_platform* pl = mdns->pl;
-    if (pl->udp.async_create_ipv4_mdns != NULL) {
-        pl->udp.async_create_ipv4_mdns(nm_mdns_socket_opened, mdns);
-    } else {
-        // TODO fail.
-    }
-}
-
-void nm_mdns_stop(struct nm_mdns* mdns)
+void nm_mdns_deinit(struct nm_mdns* mdns)
 {
     if (mdns->stopped) {
         return;
@@ -43,6 +28,18 @@ void nm_mdns_stop(struct nm_mdns* mdns)
     mdns->stopped = true;
     pl->udp.async_destroy(mdns->socket, nm_mdns_socket_destroyed, NULL);
     pl->buf.free(mdns->sendBuffer);
+}
+
+void nm_mdns_async_start(struct nm_mdns* mdns, nm_mdns_started cb, void* userData)
+{
+    mdns->cb = cb;
+    mdns->cbUserData = userData;
+    struct np_platform* pl = mdns->pl;
+    if (pl->udp.async_create_mdns != NULL) {
+        pl->udp.async_create_mdns(nm_mdns_socket_opened, mdns);
+    } else {
+        // TODO fail.
+    }
 }
 
 void nm_mdns_socket_destroyed(const np_error_code ec, void* userData)
@@ -54,6 +51,11 @@ void nm_mdns_socket_destroyed(const np_error_code ec, void* userData)
 void nm_mdns_socket_opened(const np_error_code ec, np_udp_socket* socket, void* userData)
 {
     struct nm_mdns* mdns = userData;
+
+    if (socket == NULL) {
+        mdns->cb(NABTO_EC_FAILED, mdns->cbUserData);
+    }
+
     mdns->socket = socket;
 
     struct np_ip_address ips[2];
@@ -72,7 +74,7 @@ void nm_mdns_socket_opened(const np_error_code ec, np_udp_socket* socket, void* 
         }
     }
 
-    nabto_mdns_server_init(&mdns->mdnsServer, mdns->deviceId, mdns->productId, "nabto", mdns->deviceId, mdns->port, mdns->mdnsIps, 2);
+    nabto_mdns_server_init(&mdns->mdnsServer, mdns->deviceId, mdns->productId, "nabto", mdns->deviceId, mdns->port, mdns->mdnsIps, ipsFound);
     nm_mdns_recv_packet(mdns);
 }
 

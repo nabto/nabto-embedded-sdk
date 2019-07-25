@@ -47,11 +47,5 @@ int main(int argc, char** argv)
         }
     }
 
-
-    printf("Press q to quit\n");
-    int c = 0;
-    while (c != 'q') {
-        c = getchar();
-    }
-    nm_mdns_stop(&mdns);
+    nm_mdns_deinit(&mdns);
 }

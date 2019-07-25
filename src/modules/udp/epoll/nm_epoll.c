@@ -10,7 +10,9 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <ifaddrs.h>
 #include <arpa/inet.h>
+#include <net/if.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 
@@ -51,9 +53,9 @@ struct epoll_event events[64];
  */
 void nm_epoll_handle_event(np_udp_socket* sock); // consider an np_epoll_event type instead of reusing the socket structure
 
-static void nm_epoll_event_create_ipv4_mdns(void* data);
-static bool nm_epoll_init_ipv4_mdns_socket(int sock);
-static void nm_epoll_async_create_ipv4_mdns(np_udp_socket_created_callback cb, void* data);
+static void nm_epoll_event_create_mdns(void* data);
+static bool nm_epoll_init_mdns_socket(int sock);
+static void nm_epoll_async_create_mdns(np_udp_socket_created_callback cb, void* data);
 
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
 {
@@ -89,18 +91,18 @@ void np_udp_init(struct np_platform* pl_in) {
         return;
     }
     pl = pl_in;
-    pl->udp.async_create     = &nm_epoll_async_create;
-    pl->udp.async_bind_port  = &nm_epoll_async_bind_port;
-    pl->udp.async_create_ipv4_mdns = &nm_epoll_async_create_ipv4_mdns;
-    pl->udp.async_send_to    = &nm_epoll_async_send_to;
-    pl->udp.async_recv_from  = &nm_epoll_async_recv_from;
-    pl->udp.get_protocol     = &nm_epoll_get_protocol;
-    pl->udp.get_local_ip     = &nm_epoll_get_local_ip;
-    pl->udp.get_local_port   = &nm_epoll_get_local_port;
-    pl->udp.async_destroy    = &nm_epoll_async_destroy;
-    pl->udp.inf_wait         = &nm_epoll_inf_wait;
-    pl->udp.timed_wait       = &nm_epoll_timed_wait;
-    pl->udp.read             = &nm_epoll_read;
+    pl->udp.async_create      = &nm_epoll_async_create;
+    pl->udp.async_bind_port   = &nm_epoll_async_bind_port;
+    pl->udp.async_create_mdns = &nm_epoll_async_create_mdns;
+    pl->udp.async_send_to     = &nm_epoll_async_send_to;
+    pl->udp.async_recv_from   = &nm_epoll_async_recv_from;
+    pl->udp.get_protocol      = &nm_epoll_get_protocol;
+    pl->udp.get_local_ip      = &nm_epoll_get_local_ip;
+    pl->udp.get_local_port    = &nm_epoll_get_local_port;
+    pl->udp.async_destroy     = &nm_epoll_async_destroy;
+    pl->udp.inf_wait          = &nm_epoll_inf_wait;
+    pl->udp.timed_wait        = &nm_epoll_timed_wait;
+    pl->udp.read              = &nm_epoll_read;
 
     nm_epoll_fd = epoll_create(42 /*unused*/);
     recv_buf = pl->buf.allocate();
@@ -491,27 +493,27 @@ void nm_epoll_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, 
 }
 
 
-void nm_epoll_async_create_ipv4_mdns(np_udp_socket_created_callback cb, void* data)
+void nm_epoll_async_create_mdns(np_udp_socket_created_callback cb, void* data)
 {
     np_udp_socket* sock;
     sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
-    np_event_queue_post(pl, &sock->created.event, nm_epoll_event_create_ipv4_mdns, sock);
+    np_event_queue_post(pl, &sock->created.event, nm_epoll_event_create_mdns, sock);
 }
 
-void nm_epoll_event_create_ipv4_mdns(void* data)
+void nm_epoll_event_create_mdns(void* data)
 {
     np_udp_socket* us = (np_udp_socket*)data;
-    us->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (us->sock < 0) {
         us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
         free(us);
     }
-    us->isIpv6 = false;
+    us->isIpv6 = true;
 
     // TODO test return value
-    if (!nm_epoll_init_ipv4_mdns_socket(us->sock)) {
+    if (!nm_epoll_init_mdns_socket(us->sock)) {
         us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
         close(us->sock);
         nm_epoll_cancel_all_events(us);
@@ -533,7 +535,7 @@ void nm_epoll_event_create_ipv4_mdns(void* data)
     return;
 }
 
-bool nm_epoll_init_ipv4_mdns_socket(int sock)
+bool nm_epoll_init_mdns_socket(int sock)
 {
     int reuse = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0) {
@@ -546,23 +548,50 @@ bool nm_epoll_init_ipv4_mdns_socket(int sock)
     }
 #endif
 
-    struct sockaddr_in si_me;
+    struct sockaddr_in6 si_me;
     memset(&si_me, 0, sizeof(si_me));
-    si_me.sin_family = AF_INET;
-    si_me.sin_port = htons(5353);
-    si_me.sin_addr.s_addr = INADDR_ANY;
+    si_me.sin6_family = AF_INET6;
+    si_me.sin6_port = htons(5353);
+    si_me.sin6_addr = in6addr_any;
     if (bind(sock, (struct sockaddr*)&si_me, sizeof(si_me)) < 0) {
         return false;
     }
 
-    struct ip_mreq group;
-    memset(&group, 0, sizeof(struct ip_mreq));
-    group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
-    group.imr_interface.s_addr = INADDR_ANY;
-    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0) {
-        return false;
-    }
+    {
+        struct ifaddrs* interfaces = NULL;
+        if (getifaddrs(&interfaces) == 0) {
 
+            struct ifaddrs* iterator = interfaces;
+            while (iterator != NULL) {
+
+                int index = if_nametoindex(iterator->ifa_name);
+                {
+                    struct ipv6_mreq group;
+                    memset(&group, 0, sizeof(struct ipv6_mreq));
+                    inet_pton(AF_INET6, "ff02::fb", &group.ipv6mr_multiaddr);
+                    group.ipv6mr_interface = index;
+                    if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&group, sizeof(struct ipv6_mreq)) < 0) {
+                        // todo log warning.
+                    }
+                }
+
+                if (iterator->ifa_addr->sa_family == AF_INET) {
+                    struct ip_mreq group;
+                    memset(&group, 0, sizeof(struct ip_mreq));
+                    group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
+                    struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
+                    group.imr_interface = in->sin_addr;
+                    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0) {
+                        // TODO log warning
+                    }
+
+                }
+
+                iterator = iterator->ifa_next;
+            }
+            freeifaddrs(interfaces);
+        }
+    }
     return true;
 }
 
