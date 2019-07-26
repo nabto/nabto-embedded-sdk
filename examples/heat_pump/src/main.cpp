@@ -144,12 +144,20 @@ void run_heat_pump(const std::string& configFile)
     nabto_device_set_device_id(device, deviceId.c_str());
     nabto_device_set_server_url(device, server.c_str());
     nabto_device_set_private_key(device, privateKey.c_str());
+    nabto_device_enable_mdns(device);
+    nabto_device_log_set_std_out_callback(device);
 
     // run application
     ec = nabto_device_start(device);
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     }
+
+    char fp[33];
+    memset(fp, 0, 33);
+    nabto_device_get_device_fingerprint_hex(device, fp);
+
+    std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
     printf("Press enter to stop\n");
     int c = 0;
