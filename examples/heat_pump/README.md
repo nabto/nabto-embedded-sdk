@@ -92,3 +92,15 @@ with the device.
 If the fingerprint of the heat pump is not validated, it's not safe to
 send any confidential information on the connection. Since there could
 be a man in the middle attack.
+
+If the heat pump has an access point, the access point can be secured
+with a password. In this case anyone connecting can be allowed to pair
+with the heat pump.
+
+### Without password or button
+
+It's not generally a good idea to have devices a on network which is
+open for anyone become administrator of. A button requires the person
+to have physical access to the device. In this case access can also
+often be obtained by doing a factory reset of the device. A password
+requires the person wanting access to know some secret.
