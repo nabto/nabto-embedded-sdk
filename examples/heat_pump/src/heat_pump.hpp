@@ -5,6 +5,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <mutex>
+
 using json = nlohmann::json;
 
 class HeatPump {
@@ -36,10 +38,26 @@ class HeatPump {
 
     bool saveConfig();
     bool loadConfig();
+
+    bool beginPairing() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (pairing_) {
+            return false;
+        }
+        pairing_ = true;
+        return true;
+    }
+    void pairingEnded() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        pairing_ = false;
+    }
+
   private:
+    std::mutex mutex_;
     NabtoDevice* device_;
     const std::string& configFile_;
     json state_;
+    bool pairing_ = false;
 };
 
 #endif

@@ -10,6 +10,11 @@
 #include <cbor.h>
 #include <cbor_extra.h>
 
+#include <mutex>
+#include <thread>
+#include <condition_variable>
+#include <iostream>
+
 void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData);
@@ -27,11 +32,6 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
     nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postTarget, heat_pump_set_target, heatPump);
 }
 
-void heat_pump_application_state_free(struct heat_pump_application_state* state)
-{
-    free(state);
-
-}
 
 void heat_pump_coap_send_error(NabtoDeviceCoapRequest* request, uint16_t code, const char* message)
 {
@@ -86,6 +86,75 @@ bool heat_pump_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* par
     cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, 0);
     return true;
 }
+
+std::condition_variable cv;
+bool answer;
+
+void readInput()
+{
+    for(;;) {
+        char c;
+        std::cin >> c;
+        if (c == 'n') {
+            answer = false;
+            cv.notify_one();
+        } else if (c == 'y') {
+            answer = true;
+            cv.notify_one();
+        } else {
+            std::cout << "valid answers y or n" << std::endl;
+        }
+    }
+
+}
+
+void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application)
+{
+    NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
+    char* fingerprint = nabto_device_connection_get_client_fingerprint_hex(ref);
+    std::cout << "Allow client with fingerprint: " << std::string(fingerprint) << " [yn]" << std::endl;
+
+    std::thread t(readInput);
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+    bool result = false;
+    if (cv.wait_for(lock, std::chrono::seconds(60)) == std::cv_status::timeout) {
+        std::cout << "No input given defaulting to n" << std::endl;
+    } else {
+        result = answer;
+    }
+    t.join();
+
+    if (result == true) {
+        auto response = nabto_device_coap_create_response(request);
+        nabto_device_coap_response_set_code(response, 205);
+        nabto_device_coap_response_ready(response);
+    } else {
+        nabto_device_coap_error_response(request, 403, "Rejected");
+    }
+    application->pairingEnded();
+}
+
+/**
+ * Pair with a device.
+ *
+ * The pairing asks the user for a confirmation that the client in
+ * question is allowed to pair with the device. This simulates a
+ * button on the device.
+ */
+void heat_pump_coap_pair(NabtoDeviceCoapRequest* request, void* userData)
+{
+    HeatPump* application = (HeatPump*)userData;
+
+    if (!application->beginPairing()) {
+        nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
+    }
+
+    std::thread t(questionHandler, request, application);
+    t.detach();
+
+}
+
 
 // Change heat_pump power state (turn it on or off)
 /**
