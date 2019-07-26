@@ -239,7 +239,7 @@ nabto_device_iam_policy_create(NabtoDevice* device, const char* name, void* cbor
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    ec = nc_iam_cbor_policy_create(&dev->core, name, cbor, cborLength);
+    ec = nc_iam_cbor_policy_create(&dev->core.iam, name, cbor, cborLength);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
