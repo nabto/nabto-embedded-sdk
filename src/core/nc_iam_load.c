@@ -120,6 +120,7 @@ bool nc_iam_load_roles(struct nc_iam* iam, CborValue* roles)
 
 bool nc_iam_load_user(struct nc_iam* iam, const char* userName, CborValue* user)
 {
+    nc_iam_create_user(iam, userName);
     if (!cbor_value_is_map(user)) {
         return false;
     }
@@ -155,7 +156,15 @@ bool nc_iam_load_users(struct nc_iam* iam, CborValue* users)
     }
     CborValue user;
     cbor_value_enter_container(users, &user);
+    while(!cbor_value_at_end(&user)) {
+        char userName[33];
+        if (!load_string_identifier(&user, userName, 33)) {
+            return false;
+        }
+        cbor_value_advance(&user);
+        nc_iam_load_user(iam, userName, &user);
 
+    }
     cbor_value_leave_container(users, &user);
     return true;
 }
@@ -172,12 +181,12 @@ bool nc_iam_load_default_user(struct nc_iam* iam, CborValue* defaultUser)
 
 bool load_string_identifier(CborValue* value, char* buffer, size_t bufferLength)
 {
-    memset(buffer, 0, 33);
+    memset(buffer, 0, bufferLength);
     if (!cbor_value_is_text_string(value)) {
         return false;
     }
     size_t stringLength;
-    if (!cbor_value_calculate_string_length(value, &stringLength) || stringLength > (bufferLength - 1)) {
+    if (cbor_value_calculate_string_length(value, &stringLength) != CborNoError || stringLength > (bufferLength - 1)) {
         return false;
     }
 

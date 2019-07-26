@@ -77,7 +77,7 @@ void nc_iam_dump_user(struct nc_iam_user* user, CborEncoder* encoder)
 
     cbor_encoder_create_map(encoder, &map, CborIndefiniteLength);
 
-    cbor_encode_text_stringz(&map, "roles");
+    cbor_encode_text_stringz(&map, "Roles");
     {
         CborEncoder roles;
         cbor_encoder_create_array(&map, &roles, CborIndefiniteLength);

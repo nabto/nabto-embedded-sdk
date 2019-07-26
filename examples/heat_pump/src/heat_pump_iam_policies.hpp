@@ -11,7 +11,7 @@ const json Heat_PumpRead = R"(
   "Statement": [
     {
       "Allow": true,
-      "Action": ["HeatPump:GetTargetTemperature", "HeatPump:GetTemperature", "HeatPump:GetMode"]
+      "Action": ["HeatPump:Get"]
     }
   ]
 }
@@ -23,7 +23,7 @@ const json Heat_PumpWrite = R"(
   "Statement": [
     {
       "Allow": true,
-      "Action": [ "HeatPump:SetTargetTemperature", "HeatPump:SetTemperature", "HeatPump:SetMode" ]
+      "Action": [ "HeatPump:Set" ]
     }
   ]
 })"_json;
@@ -34,7 +34,7 @@ const json FullUserAdmin = R"(
   "Name": "FullUserAdmin",
   "Statement": [
     {
-      "Action": [ "IAM:AddUser", "IAM:GetUser", "iam:ListUsers", "iam:AddRoleToUser", "iam:RemoveRoleFromUser" ],
+      "Action": [ "IAM:AddUser", "IAM:GetUser", "IAM:ListUsers", "IAM:AddRoleToUser", "IAM:RemoveRoleFromUser" ],
       "Allow": true
     }
   ]
@@ -47,7 +47,7 @@ const json ModifyOwnUser = R"(
   "Statement": [
     {
       "Allow": true,
-      "Action": [ "iam:AddFingerprint", "iam:RemoveFingerprint", "iam:SetName" ],
+      "Action": [ "IAM:AddFingerprint", "IAM:RemoveFingerprint", "IAM:SetName" ],
       "Condition": [ { "StringEqual": [ { "Attribute": "connection:UserId" }, { "Attribute": "iam:UserId" } ] } ]
     }
   ]

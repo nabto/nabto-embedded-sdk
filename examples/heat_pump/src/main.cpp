@@ -144,6 +144,11 @@ void run_heat_pump(const std::string& configFile)
     nabto_device_set_device_id(device, deviceId.c_str());
     nabto_device_set_server_url(device, server.c_str());
     nabto_device_set_private_key(device, privateKey.c_str());
+    std::vector<uint8_t> iamCbor = json::to_cbor(iam);
+
+    if (nabto_device_iam_load(device, iamCbor.data(), iamCbor.size()) != NABTO_DEVICE_EC_OK) {
+        std::cerr << "failed to load iam" << std::endl;
+    }
     nabto_device_enable_mdns(device);
     nabto_device_log_set_std_out_callback(device);
 
