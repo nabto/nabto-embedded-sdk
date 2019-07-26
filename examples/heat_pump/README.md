@@ -57,3 +57,38 @@ A target temperature:
 Sensors:
 
   * RoomTemperature
+
+## Pairing
+
+### A demo running on a pc: (Button)
+
+When the first user, which becomes the owner of the heat pump connects
+to the heat pump, it's neccessary to accept the user on the heatpump
+within a minute. Else the pairing attempt will fail. If the
+fingerprint on the heatpump matches that of the client which wants to
+connect the connection can be trusted. Further only a single pairing
+can happen at a time, so if the app waits for a pairing and the device
+fingerprint was validatet then it's given that the fingerprint matches
+the client fingerprint.
+
+
+### A demo running on a WiFi module. (Button)
+
+The heat pump starts in AP mode. The nabto client connects to the heat
+pump, it makes a pairing with the heat pump in AP mode, the client
+checks the fingerprint of the heat pump to ensure the connection is
+safe. The client initiates the pairing and waits for a button to be
+pressed on the device. If another client connects at the same time and
+also asks for pairing at the same time, one of the requests will fail,
+this way concurrency attacks can be avoided.
+
+### Using a password
+
+If the fingerprint of the heat pump is validated in the client, the
+client can assume the connection is secure. In this case a password
+can be sent in clear text to prove that the user is allowed to pair
+with the device.
+
+If the fingerprint of the heat pump is not validated, it's not safe to
+send any confidential information on the connection. Since there could
+be a man in the middle attack.
