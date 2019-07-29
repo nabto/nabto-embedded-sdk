@@ -2,6 +2,9 @@
 #define _NABTO_DEVICE_EXPERIMENTAL_H_
 
 #include "nabto_device.h"
+
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -88,6 +91,8 @@ nabto_device_iam_env_add_attribute_string(NabtoDeviceIamEnv* env, const char* na
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_env_add_attribute_number(NabtoDeviceIamEnv* env, const char* name, uint32_t value);
 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_env_add_attribute_bool(NabtoDeviceIamEnv* env, const char* name, bool value);
 
 /**
  * Set a default user for a connection if no other users with the

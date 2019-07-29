@@ -37,3 +37,20 @@ bool nc_iam_cbor_users_get(struct nc_device_context* device, const char* name, v
     memcpy(*cbor, tmpBuffer, *cborLength);
     return true;
 }
+
+
+bool nc_iam_cbor_get_string(CborValue* value, char* buffer, size_t bufferLength)
+{
+    memset(buffer, 0, bufferLength);
+    if (!cbor_value_is_text_string(value)) {
+        return false;
+    }
+    size_t stringLength;
+    if (cbor_value_calculate_string_length(value, &stringLength) != CborNoError || stringLength > (bufferLength - 1)) {
+        return false;
+    }
+
+    size_t len = bufferLength;
+    cbor_value_copy_text_string(value, buffer, &len, NULL);
+    return true;
+}

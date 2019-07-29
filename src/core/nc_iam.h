@@ -87,7 +87,8 @@ struct nc_iam_role {
 
 struct nc_iam_env {
     struct nc_iam* iam;
-    struct nc_client_connection* connection;
+    struct nc_device_context* device;
+    uint64_t connectionRef;
     struct nc_iam_list attributes;
     struct nc_iam_list policies;
 };

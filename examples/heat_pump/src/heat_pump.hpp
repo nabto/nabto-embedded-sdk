@@ -56,6 +56,11 @@ class HeatPump {
         pairing_ = false;
     }
 
+    bool isPaired() {
+        // TODO
+        return false;
+    }
+
   private:
     std::mutex mutex_;
     NabtoDevice* device_;

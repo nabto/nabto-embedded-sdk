@@ -19,6 +19,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData);
+void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData);
 
 void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
 {
@@ -26,10 +27,12 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
     const char* postPower[] = { "heat-pump", "power", NULL };
     const char* postMode[] = { "heat-pump", "mode", NULL };
     const char* postTarget[] = { "heat-pump", "target", NULL };
+    const char* postPairingButton[] = { "pairing", "button", NULL };
     nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_GET, getState, heat_pump_get, heatPump);
     nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postPower, heat_pump_set_power, heatPump);
     nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postMode, heat_pump_set_mode, heatPump);
     nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postTarget, heat_pump_set_target, heatPump);
+    nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postPairingButton, heat_pump_pairing_button, heatPump);
 }
 
 
@@ -143,10 +146,25 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application)
  * question is allowed to pair with the device. This simulates a
  * button on the device.
  */
-void heat_pump_coap_pair(NabtoDeviceCoapRequest* request, void* userData)
+void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
 
+    NabtoDeviceIamEnv* iamEnv = nabto_device_iam_env_from_coap_request(request);
+
+    bool isPaired = application->isPaired();
+
+    nabto_device_iam_env_add_attribute_number(iamEnv, "Pairing:IsPaired", isPaired ? 1 : 0);
+
+    NabtoDeviceError effect = nabto_device_iam_check_action(iamEnv, "Pairing:Button");
+
+    if (effect != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 403, "Unauthorized");
+    }
+
+    if (!heat_pump_coap_check_action(request, "Pairing:Button")) {
+        return;
+    }
     if (!application->beginPairing()) {
         nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
     }
@@ -168,7 +186,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
 
-    if (!heat_pump_coap_check_action(request, "heat_pump:SetPower")) {
+    if (!heat_pump_coap_check_action(request, "HeatPump:Set")) {
         return;
     }
 
@@ -195,7 +213,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(request, "heat_pump:SetMode")) {
+    if (!heat_pump_coap_check_action(request, "HeatPump:Set")) {
         return;
     }
 
@@ -235,7 +253,7 @@ void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(request, "heat_pump:SetTarget")) {
+    if (!heat_pump_coap_check_action(request, "HeatPump:Set")) {
         return;
     }
 
@@ -262,7 +280,7 @@ void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(request, "heat_pump:GetState")) {
+    if (!heat_pump_coap_check_action(request, "HeatPump:Get")) {
         return;
     }
 

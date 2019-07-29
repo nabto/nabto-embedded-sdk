@@ -5,7 +5,7 @@
 
 using json = nlohmann::json;
 
-const json Heat_PumpRead = R"(
+const json HeatPumpRead = R"(
 {
   "Version": 1,
   "Statement": [
@@ -17,7 +17,7 @@ const json Heat_PumpRead = R"(
 }
 )"_json;
 
-const json Heat_PumpWrite = R"(
+const json HeatPumpWrite = R"(
 {
   "Version": 1,
   "Statement": [
@@ -48,7 +48,7 @@ const json ModifyOwnUser = R"(
     {
       "Allow": true,
       "Action": [ "IAM:AddFingerprint", "IAM:RemoveFingerprint", "IAM:SetName" ],
-      "Condition": [ { "StringEqual": [ { "Attribute": "connection:UserId" }, { "Attribute": "iam:UserId" } ] } ]
+      "Condition": [ { "StringEqual": [ { "Attribute": "Connection:UserId" }, { "Attribute": "IAM:UserId" } ] } ]
     }
   ]
 })"_json;
@@ -60,8 +60,8 @@ const json FirstUserCanPair = R"(
   "Statement": [
     {
       "Allow": true,
-      "Action": [ "pairing:PairUser" ],
-      "Condition": [ { "NumberEqual": [ { "Attribute": "pairing:SystemIsPaired"}, 0 ] } ]
+      "Action": [ "Pairing:PairUser" ],
+      "Condition": [ { "NumberEqual": [ { "Attribute": "Pairing:SystemIsPaired"}, 0 ] } ]
     }
   ]
 })"_json;

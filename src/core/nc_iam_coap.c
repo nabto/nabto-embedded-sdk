@@ -60,6 +60,7 @@ void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* use
     np_error_code ec;
     nc_iam_env_init_coap(&iamEnv, device, request);
     ec = nc_iam_check_access(&iamEnv, "iam:ListUsers");
+    nc_iam_env_deinit(&iamEnv);
     if (ec == NABTO_EC_OK) {
         void* cbor;
         size_t cborLength;

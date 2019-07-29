@@ -1,5 +1,6 @@
 #include "nc_iam_dump.h"
 #include "nc_iam_policy.h"
+#include "nc_iam_cbor.h"
 
 #include <cbor.h>
 #include <cbor_extra.h>
@@ -8,8 +9,6 @@ bool nc_iam_load_policies(struct nc_iam* iam, CborValue* policies);
 bool nc_iam_load_roles(struct nc_iam* iam, CborValue* roles);
 bool nc_iam_load_users(struct nc_iam* iam, CborValue* users);
 bool nc_iam_load_default_user(struct nc_iam* iam, CborValue* defaultUser);
-
-bool load_string_identifier(CborValue* value, char* buffer, size_t bufferLength);
 
 np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength)
 {
@@ -56,7 +55,7 @@ bool nc_iam_load_policies(struct nc_iam* iam, CborValue* policies)
 
     while (!cbor_value_at_end(&policy)) {
         char buffer[33];
-        if (!load_string_identifier(&policy, buffer, 33)) {
+        if (!nc_iam_cbor_get_string(&policy, buffer, 33)) {
             return false;
         }
 
@@ -84,7 +83,7 @@ bool nc_iam_load_role(struct nc_iam* iam, const char* roleName, CborValue* role)
     cbor_value_enter_container(role, &policyName);
     while(!cbor_value_at_end(&policyName)) {
         char buffer[33];
-        if (!load_string_identifier(&policyName, buffer, 33)) {
+        if (!nc_iam_cbor_get_string(&policyName, buffer, 33)) {
             return false;
         }
         nc_iam_role_add_policy(iam, roleName, buffer);
@@ -104,7 +103,7 @@ bool nc_iam_load_roles(struct nc_iam* iam, CborValue* roles)
     cbor_value_enter_container(roles, &role);
     while(!cbor_value_at_end(&role)) {
         char buffer[33];
-        if (!load_string_identifier(&role, buffer, 33)) {
+        if (!nc_iam_cbor_get_string(&role, buffer, 33)) {
             return false;
         }
         cbor_value_advance(&role);
@@ -136,7 +135,7 @@ bool nc_iam_load_user(struct nc_iam* iam, const char* userName, CborValue* user)
 
     while(!cbor_value_at_end(&role)) {
         char roleName[33];
-        if (!load_string_identifier(&role, roleName, 33)) {
+        if (!nc_iam_cbor_get_string(&role, roleName, 33)) {
             return false;
         }
         cbor_value_advance(&role);
@@ -158,7 +157,7 @@ bool nc_iam_load_users(struct nc_iam* iam, CborValue* users)
     cbor_value_enter_container(users, &user);
     while(!cbor_value_at_end(&user)) {
         char userName[33];
-        if (!load_string_identifier(&user, userName, 33)) {
+        if (!nc_iam_cbor_get_string(&user, userName, 33)) {
             return false;
         }
         cbor_value_advance(&user);
@@ -172,25 +171,8 @@ bool nc_iam_load_users(struct nc_iam* iam, CborValue* users)
 bool nc_iam_load_default_user(struct nc_iam* iam, CborValue* defaultUser)
 {
     char buffer[33];
-    if (cbor_value_is_text_string(defaultUser) && load_string_identifier(defaultUser, buffer, 33)) {
+    if (nc_iam_cbor_get_string(defaultUser, buffer, 33)) {
         nc_iam_set_default_user(iam, buffer);
     }
-    return true;
-}
-
-
-bool load_string_identifier(CborValue* value, char* buffer, size_t bufferLength)
-{
-    memset(buffer, 0, bufferLength);
-    if (!cbor_value_is_text_string(value)) {
-        return false;
-    }
-    size_t stringLength;
-    if (cbor_value_calculate_string_length(value, &stringLength) != CborNoError || stringLength > (bufferLength - 1)) {
-        return false;
-    }
-
-    size_t len = bufferLength;
-    cbor_value_copy_text_string(value, buffer, &len, NULL);
     return true;
 }

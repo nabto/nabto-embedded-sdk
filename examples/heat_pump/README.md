@@ -58,6 +58,12 @@ Sensors:
 
   * RoomTemperature
 
+### Iam identifiers
+
+Actions:
+  * HeatPump:Get get the heatpump state
+  * HeatPump:Set set the heatpump state
+
 ## Pairing
 
 ### A demo running on a pc: (Button)

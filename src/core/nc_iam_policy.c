@@ -95,19 +95,18 @@ np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, co
     return NABTO_EC_OK;
 }
 
-
-
 /**
  * Format of a policy
 {
   "Version": 1,
-  "Statement": {
+  "Statements": {
     "Allow": true|false,
-    "Action": [ "module:action1", "module:action2" ],
-    "Condition": [
-      { "StringEqual": { "iam:User", "admin" } },
-      { "NumberEqual": { "system:UserCount", 1 } },
-      { "StringEqual": { "tcptunnel:Host", { "Attribute": "system:Localhost" } } }
+    "Actions": [ "Module:Action1", "Module:Action2" ],
+    "Conditions": [
+      { "StringEqual": { "IAM:UserId", "admin" } },
+      { "StringEqual": { "TcpTunnel:Host", "localhost" } },
+      { "NumberEqual": { "TcpTunnel:Port", 4242 } },
+      { "AttributeEqual": { "IAM:UserId", "Connection:UserId" } }
     ]
   }
 }
@@ -121,7 +120,7 @@ bool nc_iam_cbor_validate_condition_value(CborValue* value)
 
     if (cbor_value_is_map(value)) {
         CborValue attribute;
-        cbor_value_map_find_value(value, "Attriute", &attribute);
+        cbor_value_map_find_value(value, "Attribute", &attribute);
         return cbor_value_is_text_string(&attribute);
     }
     return false;
@@ -193,8 +192,8 @@ bool nc_iam_cbor_validate_statement(CborValue* statement)
     CborValue condition;
 
     cbor_value_map_find_value(statement, "Effect", &effect);
-    cbor_value_map_find_value(statement, "Action", &action);
-    cbor_value_map_find_value(statement, "Condition", &condition);
+    cbor_value_map_find_value(statement, "Actions", &action);
+    cbor_value_map_find_value(statement, "Conditions", &condition);
 
     if (!cbor_value_is_array(&action)) {
         return false;
@@ -223,8 +222,6 @@ bool nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, size_t cb
     if (!cbor_value_is_map(&map)) {
         return false;
     }
-
-
 
     return true;
 }

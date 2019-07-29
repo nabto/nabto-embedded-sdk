@@ -89,10 +89,10 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     if (nabto_device_iam_users_add_role(device, "Unpaired", "FirstUser") != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    if (load_policy(device, "Heat_PumpRead", Heat_PumpRead) != NABTO_DEVICE_EC_OK) {
+    if (load_policy(device, "Heat_PumpRead", HeatPumpRead) != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    if (load_policy(device, "Heat_PumpWrite", Heat_PumpWrite) != NABTO_DEVICE_EC_OK) {
+    if (load_policy(device, "Heat_PumpWrite", HeatPumpWrite) != NABTO_DEVICE_EC_OK) {
         return false;
     }
     if (load_policy(device, "FirstUserCanPair", FirstUserCanPair) != NABTO_DEVICE_EC_OK) {
