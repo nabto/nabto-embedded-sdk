@@ -57,4 +57,6 @@ uint64_t nc_device_next_connection_ref(struct nc_device_context* dev);
 
 uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream);
 
+struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
+
 #endif // NC_DEVICE_H

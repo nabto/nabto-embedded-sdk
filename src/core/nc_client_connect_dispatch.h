@@ -32,4 +32,7 @@ void nc_client_connect_dispatch_handle_packet(struct nc_client_connect_dispatch_
 np_error_code nc_client_connect_dispatch_close_connection(struct nc_client_connect_dispatch_context* ctx,
                                                           struct nc_client_connection* conn);
 
+struct nc_client_connection* nc_client_connect_dispatch_connection_from_ref(struct nc_client_connect_dispatch_context* ctx, uint64_t ref);
+
+
 #endif

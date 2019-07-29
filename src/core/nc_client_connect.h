@@ -68,4 +68,6 @@ void nc_client_connect_dtls_closed_cb(const np_error_code ec, void* data);
 
 struct np_dtls_srv_connection* nc_client_connect_get_dtls_connection(struct nc_client_connection* conn);
 
+np_error_code nc_client_connect_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
+
 #endif //_NC_CLIENT_CONNECT_H_

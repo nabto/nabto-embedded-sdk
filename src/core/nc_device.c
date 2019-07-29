@@ -158,3 +158,9 @@ uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev,
 {
     return nc_stream_manager_get_connection_ref(&dev->streamManager, stream);
 }
+
+
+struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
+{
+    return nc_client_connect_dispatch_connection_from_ref(&dev->clientConnect, ref);
+}

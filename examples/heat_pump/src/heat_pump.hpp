@@ -25,6 +25,10 @@ class HeatPump {
 
     };
 
+    NabtoDevice* getDevice() {
+        return device_;
+    }
+
     void setMode(Mode mode);
     void setTarget(double target);
     void setPower(bool on);

@@ -231,3 +231,8 @@ void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void
         NABTO_LOG_INFO(LOG, "MTU discovered to be %u", mtu);
     }
 }
+
+np_error_code nc_client_connect_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp)
+{
+    return conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+}

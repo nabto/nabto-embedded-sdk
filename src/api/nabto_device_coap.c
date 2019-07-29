@@ -59,6 +59,17 @@ NabtoDeviceCoapResponse* NABTO_DEVICE_API nabto_device_coap_create_response(Nabt
     return (NabtoDeviceCoapResponse*)response;
 }
 
+NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_error_response(NabtoDeviceCoapRequest* request, uint16_t code, const char* message)
+{
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    nabto_device_threads_mutex_lock(req->dev->eventMutex);
+    nabto_coap_server_create_error_response(req->req, nabto_coap_uint16_to_code(code), message);
+    nabto_device_threads_mutex_unlock(req->dev->eventMutex);
+
+    return ec;
+}
+
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code)
 {
     struct nabto_device_coap_response* resp = (struct nabto_device_coap_response*)response;

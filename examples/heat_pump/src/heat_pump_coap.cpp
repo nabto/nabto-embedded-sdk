@@ -111,7 +111,8 @@ void readInput()
 void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application)
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    char* fingerprint = nabto_device_connection_get_client_fingerprint_hex(ref);
+    char* fingerprint;
+    nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
     std::cout << "Allow client with fingerprint: " << std::string(fingerprint) << " [yn]" << std::endl;
 
     std::thread t(readInput);

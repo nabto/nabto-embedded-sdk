@@ -65,3 +65,15 @@ np_error_code nc_client_connect_dispatch_close_connection(struct nc_client_conne
     }
     return NABTO_EC_OK;
 }
+
+
+struct nc_client_connection* nc_client_connect_dispatch_connection_from_ref(struct nc_client_connect_dispatch_context* ctx, uint64_t ref)
+{
+    int i;
+    for (i = 0; i<NABTO_MAX_CLIENT_CONNECTIONS; i++) {
+        if (ctx->elms[i].active && ctx->elms[i].conn.connectionRef == ref) {
+            return &ctx->elms[i].conn;
+        }
+    }
+    return NULL;
+}
