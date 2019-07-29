@@ -3,8 +3,6 @@
 #include "nabto/nabto_device.h"
 #include "nabto/nabto_device_experimental.h"
 
-#include <cjson/cJSON.h>
-
 #include <stdlib.h>
 #include <stdbool.h>
 #include <cbor.h>
@@ -58,10 +56,9 @@ void heat_pump_coap_send_ok(NabtoDeviceCoapRequest* request, uint16_t code)
 }
 
 // return true if action was allowed
-bool heat_pump_coap_check_action(NabtoDeviceCoapRequest* request, const char* action)
+bool heat_pump_coap_check_action(NabtoDevice* device, NabtoDeviceCoapRequest* request, const char* action)
 {
-    NabtoDeviceIamEnv* iamEnv = nabto_device_iam_env_from_coap_request(request);
-    NabtoDeviceError effect = nabto_device_iam_check_action(iamEnv, action);
+    NabtoDeviceError effect = nabto_device_iam_check_action(device, nabto_device_coap_request_get_connection_ref(request), action);
     if (effect == NABTO_DEVICE_EC_OK) {
         return true;
     } else {
@@ -150,19 +147,22 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
 
-    NabtoDeviceIamEnv* iamEnv = nabto_device_iam_env_from_coap_request(request);
+    NabtoDeviceConnectionRef c = nabto_device_coap_request_get_connection_ref(request);
 
     bool isPaired = application->isPaired();
 
-    nabto_device_iam_env_add_attribute_number(iamEnv, "Pairing:IsPaired", isPaired ? 1 : 0);
+    json attributes;
+    attributes["Pairing:IsPaired"] = isPaired ? 1 : 0;
 
-    NabtoDeviceError effect = nabto_device_iam_check_action(iamEnv, "Pairing:Button");
+    std::vector<uint8_t> cbor = json::to_cbor(attributes);
+
+    NabtoDeviceError effect = nabto_device_iam_check_action_attributes(application->getDevice(), c, "Pairing:Button", cbor.data(), cbor.size());
 
     if (effect != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 403, "Unauthorized");
     }
 
-    if (!heat_pump_coap_check_action(request, "Pairing:Button")) {
+    if (!heat_pump_coap_check_action(application->getDevice(), request, "Pairing:Button")) {
         return;
     }
     if (!application->beginPairing()) {
@@ -171,7 +171,6 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 
     std::thread t(questionHandler, request, application);
     t.detach();
-
 }
 
 
@@ -186,7 +185,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
 
-    if (!heat_pump_coap_check_action(request, "HeatPump:Set")) {
+    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Set")) {
         return;
     }
 
@@ -213,7 +212,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(request, "HeatPump:Set")) {
+    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Set")) {
         return;
     }
 
@@ -253,7 +252,7 @@ void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(request, "HeatPump:Set")) {
+    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Set")) {
         return;
     }
 
@@ -280,7 +279,7 @@ void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(request, "HeatPump:Get")) {
+    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Get")) {
         return;
     }
 

@@ -73,26 +73,20 @@ nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version);
 /**
  * Decide if action is allowed given the decision context.
  *
+ * The cbor data is a key value map with attribute:(string|number) pairs. e.g.
+ *
+ * {
+ *   "Pairing:IsPaired": 0,
+ *   "Pairing:Password": "..."
+ * }
+ *
  * @return NABTO_DEVICE_EC_OK iff the action is allowed.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_check_action(NabtoDeviceIamEnv* env, const char* action);
-
-/**
- * the env is owned by the coap request, the lifetime is limited by
- * the request
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceIamEnv* NABTO_DEVICE_API
-nabto_device_iam_env_from_coap_request(NabtoDeviceCoapRequest* coapRequest);
+nabto_device_iam_check_action_attributes(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* action, void* attributesCbor, size_t cborLength);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_env_add_attribute_string(NabtoDeviceIamEnv* env, const char* name, const char* value);
-
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_env_add_attribute_number(NabtoDeviceIamEnv* env, const char* name, uint32_t value);
-
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_env_add_attribute_bool(NabtoDeviceIamEnv* env, const char* name, bool value);
+nabto_device_iam_check_action(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* action);
 
 /**
  * Set a default user for a connection if no other users with the

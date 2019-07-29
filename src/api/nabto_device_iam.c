@@ -61,17 +61,7 @@ NabtoDeviceIamEnv* NABTO_DEVICE_API nabto_device_iam_env_from_coap_request(Nabto
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_env_add_attribute_number(NabtoDeviceIamEnv* env, const char* name, uint32_t value)
-{
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
-}
-
-void nabto_device_iam_env_free(NabtoDeviceIamEnv* e)
-{
-//    struct nabto_device_iam_env* env = (struct nabto_device_iam_env*) e;
-}
-
-NabtoDeviceError NABTO_DEVICE_API nabto_device_iam_check_action(NabtoDeviceIamEnv* env, const char* action)
+nabto_device_iam_check_action(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* action)
 {
     /* NabtoDeviceError ec = NABTO_DEVICE_EC_IAM_DENY; */
     /* struct nabto_device_iam_env* iamEnv = (struct nabto_device_iam_env*) env; */
@@ -89,7 +79,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_iam_check_action(NabtoDeviceIamEn
     return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
 }
 
-
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_check_action_attributes(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* action, void* attributesCbor, size_t cborLength)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_set_default_user(NabtoDevice* device, const char* user)

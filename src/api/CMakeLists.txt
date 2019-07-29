@@ -42,7 +42,6 @@ target_link_libraries( nabto_device
   np_platform
   nm_logging_api
   nm_unix_communication_buffer
-  nm_access_control
   nm_timestamp
   nm_dtls_cli
   nm_dtls_srv

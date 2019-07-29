@@ -34,7 +34,7 @@ set(test_runner_src
   )
 
 add_subdirectory(src/modules/communication_buffer)
-add_subdirectory(src/modules/access_control)
+#add_subdirectory(src/modules/access_control)
 add_subdirectory(src/modules/dtls)
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
@@ -85,7 +85,6 @@ if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   target_link_libraries(unit_test
     np_platform_test
     nc_core_test
-    nm_access_control_test
     np_platform
     nc_core
     nm_logging)
