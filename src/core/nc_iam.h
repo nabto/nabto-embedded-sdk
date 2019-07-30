@@ -84,14 +84,6 @@ struct nc_iam_role {
     struct nc_iam_list policies;
 };
 
-struct nc_iam_env {
-    struct nc_iam* iam;
-    struct nc_device_context* device;
-    uint64_t connectionRef;
-    struct nc_iam_list attributes;
-    struct nc_iam_list policies;
-};
-
 #define NC_IAM_MAX_ATTRIBUTES 10
 
 struct nc_iam_attributes {
@@ -105,24 +97,12 @@ void nc_iam_deinit(struct nc_iam* iam);
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16]);
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
 
-/**
- * Copy a string, take NC_IAM_MAX_STRING_LENGTH into account.
- */
-np_error_code nc_iam_str_cpy(char* dst, const char* src);
-
 uint32_t nc_iam_get_user_count(struct nc_iam* iam);
 
 np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength);
 
-
-void nc_iam_env_init_coap(struct nc_iam_env* env, struct nc_device_context* device, struct nabto_coap_server_request* request);
-void nc_iam_env_deinit(struct nc_iam_env* env);
-
 np_error_code nc_iam_attributes_add_string(struct nc_iam_attributes* attributes, const char* attributeName, const char* attribute);
 np_error_code nc_iam_attributes_add_number(struct nc_iam_attributes* attributes, const char* attributeName, int64_t number);
-
-struct nc_iam_attribute* nc_iam_attribute_new();
-void nc_iam_attribute_free(struct nc_iam_attribute* attribute);
 
 // SYSTEM
 np_error_code nc_iam_set_default_user(struct nc_iam* iam, const char* name);
@@ -142,5 +122,13 @@ np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void** cbor,
 
 np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const char* policy);
 np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, const char* policy);
+
+
+
+/**
+ * Copy a string, take NC_IAM_MAX_STRING_LENGTH into account.
+ */
+np_error_code nc_iam_str_cpy(char* dst, const char* src);
+
 
 #endif

@@ -12,7 +12,7 @@
 
 static enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy);
 static enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* action, CborValue* statement);
-static struct nc_iam_attribute* nc_iam_env_find_attribute(struct nc_iam_attributes* attributes, const char* attributeName);
+static struct nc_iam_attribute* nc_iam_attributes_find_attribute(struct nc_iam_attributes* attributes, const char* attributeName);
 
 static np_error_code nc_iam_check_conditions(struct nc_iam_attributes* attributes, CborValue* conditions);
 static np_error_code nc_iam_check_condition(struct nc_iam_attributes* attributes, CborValue* condition);
@@ -317,7 +317,7 @@ np_error_code nc_iam_string_equal(struct nc_iam_attributes* attributes, CborValu
         return NABTO_EC_NOT_A_STRING;
     }
 
-    struct nc_iam_attribute* attribute = nc_iam_env_find_attribute(attributes, attributeName);
+    struct nc_iam_attribute* attribute = nc_iam_attributes_find_attribute(attributes, attributeName);
     if (!attribute || attribute->value.type != NC_IAM_VALUE_TYPE_STRING) {
         return NABTO_EC_IAM_INVALID_ATTRIBUTES;
     }
@@ -346,7 +346,7 @@ np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValu
         return NABTO_EC_NOT_A_STRING;
     }
 
-    struct nc_iam_attribute* attribute = nc_iam_env_find_attribute(attributes, attributeName);
+    struct nc_iam_attribute* attribute = nc_iam_attributes_find_attribute(attributes, attributeName);
     if (!attribute || attribute->value.type != NC_IAM_VALUE_TYPE_NUMBER) {
         return NABTO_EC_IAM_INVALID_ATTRIBUTES;
     }
@@ -374,8 +374,8 @@ np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborV
         return NABTO_EC_NOT_A_STRING;
     }
 
-    struct nc_iam_attribute* attribute1 = nc_iam_env_find_attribute(attributes, attributeName1);
-    struct nc_iam_attribute* attribute2 = nc_iam_env_find_attribute(attributes, attributeName2);
+    struct nc_iam_attribute* attribute1 = nc_iam_attributes_find_attribute(attributes, attributeName1);
+    struct nc_iam_attribute* attribute2 = nc_iam_attributes_find_attribute(attributes, attributeName2);
     if (!attribute1 || !attribute2) {
         return NABTO_EC_IAM_INVALID_ATTRIBUTES;
     }
@@ -394,7 +394,7 @@ np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborV
     }
 }
 
-struct nc_iam_attribute* nc_iam_env_find_attribute(struct nc_iam_attributes* attributes, const char* attributeName)
+struct nc_iam_attribute* nc_iam_attributes_find_attribute(struct nc_iam_attributes* attributes, const char* attributeName)
 {
     size_t i;
     for (i = 0; i < attributes->used; i++) {
