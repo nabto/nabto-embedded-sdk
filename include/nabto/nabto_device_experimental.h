@@ -34,6 +34,8 @@ nabto_device_experimental_util_free(void* data);
 
 extern const NabtoDeviceError NABTO_DEVICE_EC_IAM_DENY;
 
+extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_ARGUMENT;
+
 /**
  * IAM decision context for a query, the environment contains all the
  * neccessary attributes and user information to decide if the given

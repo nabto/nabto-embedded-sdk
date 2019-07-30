@@ -46,8 +46,9 @@ void nc_iam_updated(struct nc_iam* iam)
 }
 
 
-struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16])
+struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, const uint8_t fingerprint[16])
 {
+    // TODO
     return iam->defaultUser;
 }
 
@@ -475,7 +476,6 @@ np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
     // role is found and not in use.
 
     nc_iam_list_remove_item(&iam->roles, role);
-    free(role->name);
     nc_iam_list_clear(&role->policies);
     free(role);
     return NABTO_EC_OK;
@@ -595,6 +595,29 @@ np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, cons
     }
     nc_iam_list_remove_item(&u->roles, r);
     return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16])
+{
+    struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
+    struct nc_iam_user* u2 = nc_iam_find_user_by_fingerprint(iam, fingerprint);
+    if (!u) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+    if (u2 && u != u2) {
+        return NABTO_EC_RESOURCE_EXISTS;
+    }
+    if (u2 == u) {
+        return NABTO_EC_OK;
+    }
+    // TODO
+    return NABTO_EC_FAILED;
+}
+
+np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16])
+{
+    // TODO
+    return NABTO_EC_FAILED;
 }
 
 

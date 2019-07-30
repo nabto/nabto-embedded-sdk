@@ -21,7 +21,6 @@ struct nc_iam_policy* nc_iam_policy_new(struct nc_iam* iam, const char* name)
 
 void nc_iam_policy_free(struct nc_iam_policy* p)
 {
-    free(p->name);
     free(p->cbor);
     free(p);
 }

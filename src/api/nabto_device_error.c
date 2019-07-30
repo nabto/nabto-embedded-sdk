@@ -7,7 +7,9 @@
     XX(NABTO_DEVICE_EC_NOT_IMPLEMENTED, 1001, "Not implemented") \
     XX(NABTO_DEVICE_EC_INVALID_LOG_LEVEL, 1002, "Invalid log level") \
     XX(NABTO_DEVICE_EC_OUT_OF_MEMORY, 1003, "Out of memory")          \
+    XX(NABTO_DEVICE_EC_INVALID_ARGUMENT, 1004, "Invalid argument") \
     XX(NABTO_DEVICE_EC_IAM_DENY, 2000, "Action denied")
+
 
 
 #define XX_ERROR(name, value, _) const NabtoDeviceError name = value;

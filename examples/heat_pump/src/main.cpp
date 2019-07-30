@@ -8,6 +8,16 @@
 
 #include <cxxopts.hpp>
 
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
+void my_handler(int s){
+           printf("Caught signal %d\n",s);
+           exit(1);
+}
+
 bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
 void run_heat_pump(const std::string& configFile);
 
@@ -169,11 +179,16 @@ void run_heat_pump(const std::string& configFile)
 
     heat_pump_coap_init(device, &hp);
 
-    printf("Press enter to stop\n");
-    int c = 0;
-    while (c != '\n') {
-        c = getchar();
-    }
-    nabto_device_free(device);
+    struct sigaction sigIntHandler;
 
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
+    pause();
+
+    nabto_device_free(device);
+    exit(0);
 }

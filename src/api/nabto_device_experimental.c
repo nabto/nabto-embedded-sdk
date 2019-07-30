@@ -29,7 +29,8 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
         ec = NABTO_EC_INVALID_CONNECTION;
     } else {
 
-        *fp = malloc(17);
+        *fp = malloc(33);
+        memset(*fp, 0, 33);
         uint8_t* f = clientFingerprint;
         sprintf(*fp, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
                 f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7],

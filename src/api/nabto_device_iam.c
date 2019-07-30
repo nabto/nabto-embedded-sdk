@@ -120,11 +120,73 @@ nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const 
 
 }
 
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_add_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint);
+bool hexToData(const char* hex, uint8_t* data, size_t dataLength)
+{
+    size_t hexLength = strlen(hex);
+    if (strlen(hex) != dataLength * 2) {
+        return false;
+    }
+
+    size_t index = 0;
+    while (index < hexLength) {
+        char c = hex[index];
+        int value = 0;
+        if(c >= '0' && c <= '9')
+          value = (c - '0');
+        else if (c >= 'A' && c <= 'F')
+          value = (10 + (c - 'A'));
+        else if (c >= 'a' && c <= 'f')
+          value = (10 + (c - 'a'));
+        else {
+            return false;
+        }
+
+        // shift each even hex byte 4 up
+        data[(index/2)] += value << (((index + 1) % 2) * 4);
+
+        index++;
+    }
+
+    return true;
+}
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint);
+nabto_device_iam_users_add_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+
+    uint8_t fp[16];
+    if (!hexToData(fingerprint, fp, 16)) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
+
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_user_add_fingerprint(&dev->core.iam, user, fp);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+
+    uint8_t fp[16];
+    if (!hexToData(fingerprint, fp, 16)) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
+
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_user_remove_fingerprint(&dev->core.iam, user, fp);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
+}
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t* cborLength)

@@ -98,14 +98,28 @@ void readInput()
         if (c == 'n') {
             answer = false;
             cv.notify_one();
+            return;
         } else if (c == 'y') {
             answer = true;
             cv.notify_one();
+            return;
         } else {
             std::cout << "valid answers y or n" << std::endl;
         }
     }
 
+}
+
+bool pairFirstUser( HeatPump* application, const std::string& fingerprint)
+{
+    NabtoDeviceError ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), "Owner", fingerprint.c_str());
+    if (ec) {
+        std::cout << "Could not add fingerprint to the owner user of the heat pump" << std::endl;
+        return false;
+    }
+
+    std::cout << "Added the fingerprint " << fingerprint << " as the owner of the device" << std::endl;
+    return true;
 }
 
 void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application)
@@ -116,6 +130,7 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application)
     std::cout << "Allow client with fingerprint: " << std::string(fingerprint) << " [yn]" << std::endl;
 
     std::thread t(readInput);
+    t.detach();
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
     bool result = false;
@@ -124,9 +139,8 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application)
     } else {
         result = answer;
     }
-    t.join();
 
-    if (result == true) {
+    if (result == true && pairFirstUser(application, std::string(fingerprint))) {
         auto response = nabto_device_coap_create_response(request);
         nabto_device_coap_response_set_code(response, 205);
         nabto_device_coap_response_ready(response);

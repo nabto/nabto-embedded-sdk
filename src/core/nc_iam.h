@@ -36,7 +36,6 @@ enum nc_iam_boolean_expression_type {
     NC_IAM_BOOLEAN_EXPRESSION_TYPE_OR,
 };
 
-
 struct nc_iam_fingerprint {
     struct nc_iam_user* user;
     uint8_t fingerprint[16];
@@ -94,7 +93,7 @@ struct nc_iam_attributes {
 void nc_iam_init(struct nc_iam* iam);
 void nc_iam_deinit(struct nc_iam* iam);
 
-struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16]);
+struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, const uint8_t fingerprint[16]);
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
 
 np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength);
@@ -111,6 +110,8 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name);
 np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const char* role);
 np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, const char* role);
 np_error_code nc_iam_list_users(struct nc_iam* iam, void** cbor, size_t* cborLength);
+np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16]);
+np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16]);
 
 // ROLES
 np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);
