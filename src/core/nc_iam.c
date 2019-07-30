@@ -132,9 +132,12 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
     struct nc_iam_attributes attributes;
     memset(&attributes, 0, sizeof(struct nc_iam_attributes));
     np_error_code ec;
-    ec = nc_iam_load_attributes_from_cbor(&attributes, attributesCbor, attributesCborLength);
-    if (ec != NABTO_EC_OK) {
-        return ec;
+
+    if (attributesCbor != NULL && attributesCborLength > 0) {
+        ec = nc_iam_load_attributes_from_cbor(&attributes, attributesCbor, attributesCborLength);
+        if (ec != NABTO_EC_OK) {
+            return ec;
+        }
     }
 
     ec = nc_iam_attributes_add_string(&attributes, "Connection:UserId", connection->user->id);
@@ -404,13 +407,6 @@ struct nc_iam_attribute* nc_iam_attributes_find_attribute(struct nc_iam_attribut
         }
     }
     return NULL;
-}
-
-
-uint32_t nc_iam_get_user_count(struct nc_iam* iam)
-{
-    // TODO
-    return 42;
 }
 
 np_error_code nc_iam_set_default_user(struct nc_iam* iam, const char* name)
