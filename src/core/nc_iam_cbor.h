@@ -10,6 +10,6 @@
 
 bool nc_iam_cbor_users_get(struct nc_device_context* device, const char* name, void** cbor, size_t* cborLength);
 
-bool nc_iam_cbor_get_string(CborValue* value, char* buffer, size_t bufferLength);
+np_error_code nc_iam_cbor_get_string(CborValue* value, char* buffer, size_t bufferLength);
 
 #endif

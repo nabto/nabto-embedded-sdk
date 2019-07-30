@@ -9,8 +9,12 @@ static bool nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, si
 struct nc_iam_policy* nc_iam_policy_new(struct nc_iam* iam, const char* name)
 {
     struct nc_iam_policy* p = calloc(1, sizeof(struct nc_iam_policy));
-    p->name = strdup(name);
-
+    np_error_code ec;
+    ec = nc_iam_str_cpy(p->name, name);
+    if (ec != NABTO_EC_OK) {
+        free(p);
+        return NULL;
+    }
     nc_iam_list_insert(&iam->policies, p);
     return p;
 }

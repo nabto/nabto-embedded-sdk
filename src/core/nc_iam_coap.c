@@ -56,11 +56,9 @@ static void create_cbor_response(struct nabto_coap_server_request* request, void
 void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* userData)
 {
     struct nc_device_context* device = userData;
-    struct nc_iam_env iamEnv;
     np_error_code ec;
-    nc_iam_env_init_coap(&iamEnv, device, request);
-    ec = nc_iam_check_access(&iamEnv, "iam:ListUsers");
-    nc_iam_env_deinit(&iamEnv);
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+    ec = nc_iam_check_access(connection, "IAM:ListUsers", NULL, 0);
     if (ec == NABTO_EC_OK) {
         void* cbor;
         size_t cborLength;

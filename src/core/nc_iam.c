@@ -10,12 +10,15 @@
 #include <string.h>
 #include <stdlib.h>
 
-static enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_env* env, const char* action, struct nc_iam_policy* policy);
-static enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_env* env, const char* action, CborValue* statement);
-static struct nc_iam_attribute* nc_iam_env_find_attribute(struct nc_iam_env* env, const char* attributeName);
+static enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy);
+static enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* action, CborValue* statement);
+static struct nc_iam_attribute* nc_iam_env_find_attribute(struct nc_iam_attributes* attributes, const char* attributeName);
 
-static bool nc_iam_check_conditions(struct nc_iam_env* env, CborValue* conditions);
-static bool nc_iam_check_condition(struct nc_iam_env* env, CborValue* condition);
+static np_error_code nc_iam_check_conditions(struct nc_iam_attributes* attributes, CborValue* conditions);
+static np_error_code nc_iam_check_condition(struct nc_iam_attributes* attributes, CborValue* condition);
+static np_error_code nc_iam_string_equal(struct nc_iam_attributes* attributes, CborValue* parameters);
+static np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValue* parameters);
+static np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborValue* parameters);
 
 void nc_iam_init(struct nc_iam* iam)
 {
@@ -48,16 +51,95 @@ struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t 
     return iam->defaultUser;
 }
 
-bool nc_iam_check_access(struct nc_iam_env* env, const char* action)
+np_error_code nc_iam_load_attributes_from_cbor(struct nc_iam_attributes* attributes, void* attributesCbor, size_t attributesCborLength)
 {
-    struct nc_client_connection* connection = nc_device_connection_from_ref(env->device, env->connectionRef);
-    if (!connection) {
-        return false;
+    np_error_code ec;
+    CborParser parser;
+    CborValue root;
+    CborValue mapEntry;
+    cbor_parser_init(attributesCbor, attributesCborLength, 0, &parser, &root);
+
+    cbor_value_enter_container(&root,&mapEntry);
+    while(!cbor_value_at_end(&mapEntry)) {
+        char name[NC_IAM_MAX_STRING_LENGTH];
+        char valueString[NC_IAM_MAX_STRING_LENGTH];
+        int64_t valueNumber;
+
+        ec = nc_iam_cbor_get_string(&mapEntry, name, NC_IAM_MAX_STRING_LENGTH);
+        if (ec != NABTO_EC_OK) {
+            return ec;
+        }
+        cbor_value_advance(&mapEntry);
+        ec = nc_iam_cbor_get_string(&mapEntry, valueString, NC_IAM_MAX_STRING_LENGTH);
+        if (ec == NABTO_EC_OK) {
+            ec = nc_iam_attributes_add_string(attributes, name, valueString);
+            if (ec != NABTO_EC_OK) {
+                return ec;
+            }
+        } else if (cbor_value_is_integer(&mapEntry) && cbor_value_get_int64(&mapEntry, &valueNumber)) {
+            ec = nc_iam_attributes_add_number(attributes, name, valueNumber);
+            if (ec != NABTO_EC_OK) {
+                return ec;
+            }
+        } else {
+            return NABTO_EC_IAM_INVALID_ATTRIBUTES;
+        }
+        cbor_value_advance(&mapEntry);
+    }
+    cbor_value_leave_container(&root,&mapEntry);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_attributes_add_string(struct nc_iam_attributes* attributes, const char* name, const char* value)
+{
+    if (strlen(name) >= NC_IAM_MAX_STRING_LENGTH || strlen(value) >= NC_IAM_MAX_STRING_LENGTH) {
+        return NABTO_EC_IAM_STRING_TOO_LONG;
+    }
+    if (attributes->used >= NC_IAM_MAX_ATTRIBUTES)
+    {
+        return NABTO_EC_IAM_TOO_MANY_ATTRIBUTES;
+    }
+    struct nc_iam_attribute* attribute = &attributes->attributes[attributes->used];
+    attribute->value.type = NC_IAM_VALUE_TYPE_STRING;
+    strcpy(attribute->name, name);
+    strcpy(attribute->value.data.string, value);
+    attributes->used += 1;
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_attributes_add_number(struct nc_iam_attributes* attributes, const char* name, int64_t number)
+{
+    if (strlen(name) >= NC_IAM_MAX_STRING_LENGTH) {
+        return NABTO_EC_IAM_STRING_TOO_LONG;
+    }
+    if (attributes->used >= NC_IAM_MAX_ATTRIBUTES)
+    {
+        return NABTO_EC_IAM_TOO_MANY_ATTRIBUTES;
+    }
+    struct nc_iam_attribute* attribute = &attributes->attributes[attributes->used];
+    attribute->value.type = NC_IAM_VALUE_TYPE_NUMBER;
+    strcpy(attribute->name, name);
+    attribute->value.data.number = number;
+    attributes->used += 1;
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength)
+{
+    if (connection == NULL) {
+        return NABTO_EC_FAILED;
+    }
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+    np_error_code ec;
+    ec = nc_iam_load_attributes_from_cbor(&attributes, attributesCbor, attributesCborLength);
+    if (ec != NABTO_EC_OK) {
+        return ec;
     }
 
-    struct nc_iam_user* user = connection->user;
+    ec = nc_iam_attributes_add_string(&attributes, "Connection:UserId", connection->user->id);
 
-    nc_iam_attributes_add_string(env, "Connection:UserId", connection->user->id);
+    struct nc_iam_user* user = connection->user;
 
     bool granted = false;
     struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
@@ -66,7 +148,7 @@ bool nc_iam_check_access(struct nc_iam_env* env, const char* action)
         struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
         while(policyIterator != & role->policies.sentinel) {
             struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
-            enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(env, action, policy);
+            enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(&attributes, action, policy);
             if (result == NC_IAM_EVALUATION_RESULT_NONE) {
                 // no change
             } else if (result == NC_IAM_EVALUATION_RESULT_ALLOW) {
@@ -82,7 +164,7 @@ bool nc_iam_check_access(struct nc_iam_env* env, const char* action)
     return false;
 }
 
-enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_env* env, const char* action, struct nc_iam_policy* policy)
+enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy)
 {
     CborParser parser;
     CborValue map;
@@ -110,7 +192,7 @@ enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_env* env, con
     CborValue statement;
     cbor_value_enter_container(&statements, &statement);
     while (!cbor_value_at_end(&statement)) {
-        enum nc_iam_evaluation_result result = nc_iam_evaluate_statement(env, action, &statement);
+        enum nc_iam_evaluation_result result = nc_iam_evaluate_statement(attributes, action, &statement);
         if (result != NC_IAM_EVALUATION_RESULT_NONE) {
             currentResult = result;
         }
@@ -120,8 +202,10 @@ enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_env* env, con
     return currentResult;
 }
 
-enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_env* env, const char* actionStr, CborValue* statement)
+enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* actionStr, CborValue* statement)
 {
+
+
     if (!cbor_value_is_map(statement)) {
         return NC_IAM_EVALUATION_RESULT_DENY;
     }
@@ -159,7 +243,7 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_env* env, 
     }
     cbor_value_leave_container(&actions, &action);
 
-    bool conditionsOk = nc_iam_check_conditions(env, &conditions);
+    bool conditionsOk = nc_iam_check_conditions(attributes, &conditions);
     if (found && conditionsOk) {
 
         if (allowAction) {
@@ -171,7 +255,7 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_env* env, 
     return NC_IAM_EVALUATION_RESULT_NONE;
 }
 
-bool nc_iam_check_conditions(struct nc_iam_env* env, CborValue* conditions)
+np_error_code nc_iam_check_conditions(struct nc_iam_attributes* attributes, CborValue* conditions)
 {
     if (cbor_value_is_null(conditions)) {
         return true;
@@ -179,14 +263,14 @@ bool nc_iam_check_conditions(struct nc_iam_env* env, CborValue* conditions)
     if (!cbor_value_is_array(conditions))
     {
         // conditions must be nonexisting or an array.
-        return false;
+        return NABTO_EC_IAM_INVALID_CONDITIONS;
     }
 
     CborValue condition;
     cbor_value_enter_container(conditions, &condition);
     while(!cbor_value_at_end(&condition))
     {
-        if (!nc_iam_check_condition(env, &condition)) {
+        if (!nc_iam_check_condition(attributes, &condition)) {
             return false;
         }
         cbor_value_advance(&condition);
@@ -195,10 +279,10 @@ bool nc_iam_check_conditions(struct nc_iam_env* env, CborValue* conditions)
     return true;
 }
 
-bool nc_iam_check_condition(struct nc_iam_env* env, CborValue* condition)
+np_error_code nc_iam_check_condition(struct nc_iam_attributes* attributes, CborValue* condition)
 {
     if (!cbor_value_is_map(condition)) {
-        return false;
+        return NABTO_EC_IAM_INVALID_CONDITIONS;
     }
 
     CborValue stringEqual;
@@ -209,150 +293,119 @@ bool nc_iam_check_condition(struct nc_iam_env* env, CborValue* condition)
     cbor_value_map_find_value(condition, "AttributeEqual", &attributeEqual);
 
     if (cbor_value_is_map(&stringEqual)) {
-
+        return nc_iam_string_equal(attributes, &stringEqual);
     } else if (cbor_value_is_map(&numberEqual)) {
-
+        return nc_iam_number_equal(attributes, &numberEqual);
     } else if (cbor_value_is_map(&attributeEqual)) {
-
-    } else {
-        // unknown condition
-        return false;
+        return nc_iam_attribute_equal(attributes, &attributeEqual);
     }
-// todo
-    return false;
+    return NABTO_EC_IAM_INVALID_CONDITIONS;
 }
 
-bool nc_iam_string_equal(struct nc_iam_env* env, CborValue* parameters)
+np_error_code nc_iam_string_equal(struct nc_iam_attributes* attributes, CborValue* parameters)
 {
+    np_error_code ec;
     char attributeName[33];
     CborValue parameter;
     cbor_value_enter_container(parameters, &parameter);
-    if (!nc_iam_cbor_get_string(&parameter, attributeName, 33)) {
-        return false;
+    ec = nc_iam_cbor_get_string(&parameter, attributeName, 33);
+    if (ec != NABTO_EC_OK) {
+        return ec;
     }
     cbor_value_advance(&parameter);
     if (!cbor_value_is_text_string(&parameter)) {
-        return false;
+        return NABTO_EC_NOT_A_STRING;
     }
 
-    struct nc_iam_attribute* attribute = nc_iam_env_find_attribute(env, attributeName);
+    struct nc_iam_attribute* attribute = nc_iam_env_find_attribute(attributes, attributeName);
     if (!attribute || attribute->value.type != NC_IAM_VALUE_TYPE_STRING) {
-        return false;
+        return NABTO_EC_IAM_INVALID_ATTRIBUTES;
     }
 
     bool matches;
-    return (cbor_value_text_string_equals(&parameter, attribute->value.data.string, &matches) && matches);
+    if (cbor_value_text_string_equals(&parameter, attribute->value.data.string, &matches) && matches) {
+        return NABTO_EC_OK;
+    } else {
+        return NABTO_EC_FAILED;
+    }
 }
 
-bool nc_iam_number_equal(struct nc_iam_env* env, CborValue* parameters)
+np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValue* parameters)
 {
+    np_error_code ec;
     char attributeName[33];
     CborValue parameter;
     cbor_value_enter_container(parameters, &parameter);
-    if (!nc_iam_cbor_get_string(&parameter, attributeName, 33)) {
-        return false;
+
+    ec = nc_iam_cbor_get_string(&parameter, attributeName, 33);
+    if (ec != NABTO_EC_OK) {
+        return ec;
     }
     cbor_value_advance(&parameter);
     if (!cbor_value_is_text_string(&parameter)) {
-        return false;
+        return NABTO_EC_NOT_A_STRING;
     }
 
-    struct nc_iam_attribute* attribute = nc_iam_env_find_attribute(env, attributeName);
+    struct nc_iam_attribute* attribute = nc_iam_env_find_attribute(attributes, attributeName);
     if (!attribute || attribute->value.type != NC_IAM_VALUE_TYPE_NUMBER) {
-        return false;
+        return NABTO_EC_IAM_INVALID_ATTRIBUTES;
     }
     int64_t value;
-    if (!cbor_value_is_integer(&parameter) || !cbor_value_get_int64(&parameter, &value)) {
-        return false;
+    if (!cbor_value_is_integer(&parameter) ||
+        !cbor_value_get_int64(&parameter, &value) ||
+        attribute->value.data.number != value)
+    {
+        return NABTO_EC_FAILED;
     }
-
-    return (attribute->value.data.number == value);
+    return NABTO_EC_OK;
 }
 
-bool nc_iam_attribute_equals(struct nc_iam_env* env, CborValue* parameters)
+np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborValue* parameters)
 {
     char attributeName1[33];
     char attributeName2[33];
     CborValue parameter;
     cbor_value_enter_container(parameters, &parameter);
     if (!nc_iam_cbor_get_string(&parameter, attributeName1, 33)) {
-        return false;
+        return NABTO_EC_NOT_A_STRING;
     }
     cbor_value_advance(&parameter);
     if (!nc_iam_cbor_get_string(&parameter, attributeName2, 33)) {
-        return false;
+        return NABTO_EC_NOT_A_STRING;
     }
 
-    struct nc_iam_attribute* attribute1 = nc_iam_env_find_attribute(env, attributeName1);
-    struct nc_iam_attribute* attribute2 = nc_iam_env_find_attribute(env, attributeName2);
+    struct nc_iam_attribute* attribute1 = nc_iam_env_find_attribute(attributes, attributeName1);
+    struct nc_iam_attribute* attribute2 = nc_iam_env_find_attribute(attributes, attributeName2);
     if (!attribute1 || !attribute2) {
-        return false;
+        return NABTO_EC_IAM_INVALID_ATTRIBUTES;
     }
 
+    bool result = false;
     if (attribute1->value.type == NC_IAM_VALUE_TYPE_NUMBER && attribute2->value.type == NC_IAM_VALUE_TYPE_NUMBER) {
-        return (attribute1->value.data.number == attribute2->value.data.number);
+        result = (attribute1->value.data.number == attribute2->value.data.number);
     } else if (attribute1->value.type == NC_IAM_VALUE_TYPE_STRING && attribute2->value.type == NC_IAM_VALUE_TYPE_STRING) {
-        return (strcmp(attribute1->value.data.string, attribute2->value.data.string) == 0);
+        result = (strcmp(attribute1->value.data.string, attribute2->value.data.string) == 0);
     }
 
-    return false;
+    if (result) {
+        return NABTO_EC_OK;
+    } else {
+        return NABTO_EC_FAILED;
+    }
 }
 
-struct nc_iam_attribute* nc_iam_env_find_attribute(struct nc_iam_env* env, const char* attributeName)
+struct nc_iam_attribute* nc_iam_env_find_attribute(struct nc_iam_attributes* attributes, const char* attributeName)
 {
-    struct nc_iam_list_entry* iterator = env->attributes.sentinel.next;
-    while (iterator !=&env->attributes.sentinel) {
-        struct nc_iam_attribute* a = iterator->item;
-        if (strcmp(a->name->name, attributeName) == 0) {
-            return a;
+    size_t i;
+    for (i = 0; i < attributes->used; i++) {
+        struct nc_iam_attribute* attribute = &attributes->attributes[i];
+        if (strcmp(attribute->name, attributeName) == 0) {
+            return attribute;
         }
-        iterator = iterator->next;
     }
     return NULL;
 }
 
-void nc_iam_env_init_coap(struct nc_iam_env* env, struct nc_device_context* device, struct nabto_coap_server_request* request)
-{
-    env->iam = &device->iam;
-    env->device = device;
-    struct nc_client_connection* connection = nc_coap_server_get_connection(&device->coap, request);
-    env->connectionRef = connection->connectionRef;
-    nc_iam_list_init(&env->attributes);
-}
-
-void nc_iam_env_deinit(struct nc_iam_env* env)
-{
-    struct nc_iam_list_entry* iterator = env->attributes.sentinel.next;
-    while(iterator != &env->attributes.sentinel) {
-        struct nc_iam_attribute* current = iterator->item;
-        iterator = iterator->next;
-        nc_iam_attribute_free(current);
-    }
-    nc_iam_list_clear(&env->attributes);
-}
-
-void nc_iam_attributes_add_string(struct nc_iam_env* env, const char* attributeName, const char* attribute)
-{
-    // TODO
-}
-
-void nc_iam_attributes_add_number(struct nc_iam_env* env, const char* attributeName, uint32_t number)
-{
-    // TODO
-}
-
-struct nc_iam_attribute* nc_iam_attribute_new()
-{
-    return calloc(1, sizeof(struct nc_iam_attribute));
-}
-
-void nc_iam_attribute_free(struct nc_iam_attribute* attribute)
-{
-    if (attribute->value.type == NC_IAM_VALUE_TYPE_STRING) {
-        free(attribute->value.data.string);
-    }
-    free(attribute);
-}
 
 uint32_t nc_iam_get_user_count(struct nc_iam* iam)
 {
@@ -387,12 +440,17 @@ struct nc_iam_role* nc_iam_find_role_by_name(struct nc_iam* iam, const char* nam
 
 np_error_code nc_iam_create_role(struct nc_iam* iam, const char* name)
 {
+    np_error_code ec;
     struct nc_iam_role* r = nc_iam_find_role_by_name(iam, name);
     if (r) {
         return NABTO_EC_RESOURCE_EXISTS;
     }
     r = calloc(1, sizeof(struct nc_iam_role));
-    r->name = strdup(name);
+    ec = nc_iam_str_cpy(r->name, name);
+    if (ec != NABTO_EC_OK) {
+        free(r);
+        return ec;
+    }
     nc_iam_list_init(&r->policies);
     nc_iam_list_insert(&iam->roles, r);
     return NABTO_EC_OK;
@@ -505,13 +563,17 @@ struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* nam
 
 np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
 {
+    np_error_code ec;
     struct nc_iam_user* existing = nc_iam_find_user_by_name(iam, name);
     if (existing) {
         return NABTO_EC_RESOURCE_EXISTS;
     }
 
     struct nc_iam_user* user = calloc(1, sizeof(struct nc_iam_user));
-    user->id = strdup(name);
+    ec = nc_iam_str_cpy(user->id, name);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
     nc_iam_list_init(&user->roles);
     nc_iam_list_insert(&iam->users, user);
     return NABTO_EC_OK;
@@ -560,5 +622,14 @@ np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, co
         return NABTO_EC_NO_SUCH_RESOURCE;
     }
     nc_iam_list_remove_item(&r->policies, p);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_str_cpy(char* dst, const char* src)
+{
+    if (strlen(src) >= NC_IAM_MAX_STRING_LENGTH) {
+        return NABTO_EC_IAM_STRING_TOO_LONG;
+    }
+    strcpy(dst, src);
     return NABTO_EC_OK;
 }

@@ -9,6 +9,9 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define NC_IAM_MAX_STRING_LENGTH 33
+
+struct nc_client_connection;
 struct nabto_coap_server_request;
 struct nc_device_context;
 
@@ -53,35 +56,31 @@ struct nc_iam {
 };
 
 struct nc_iam_user {
-    const char* id;
+    char id[NC_IAM_MAX_STRING_LENGTH];
     struct nc_iam_list roles;
 };
 
 struct nc_iam_value {
     enum nc_iam_value_type type;
     union {
-        uint32_t number;
-        char* string;
+        int64_t number;
+        char string[NC_IAM_MAX_STRING_LENGTH];
     } data;
 };
 
-struct nc_iam_attribute_name {
-    const char* name;
-};
-
 struct nc_iam_attribute {
-    struct nc_iam_attribute_name* name;
+    char name[NC_IAM_MAX_STRING_LENGTH];
     struct nc_iam_value value;
 };
 
 struct nc_iam_policy {
-    char* name;
+    char name[NC_IAM_MAX_STRING_LENGTH];
     void* cbor;
     size_t cborLength;
 };
 
 struct nc_iam_role {
-    char* name;
+    char name[NC_IAM_MAX_STRING_LENGTH];
     struct nc_iam_list policies;
 };
 
@@ -93,22 +92,34 @@ struct nc_iam_env {
     struct nc_iam_list policies;
 };
 
+#define NC_IAM_MAX_ATTRIBUTES 10
+
+struct nc_iam_attributes {
+    struct nc_iam_attribute attributes[NC_IAM_MAX_ATTRIBUTES];
+    size_t used;
+};
+
 void nc_iam_init(struct nc_iam* iam);
 void nc_iam_deinit(struct nc_iam* iam);
 
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, uint8_t fingerprint[16]);
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
 
+/**
+ * Copy a string, take NC_IAM_MAX_STRING_LENGTH into account.
+ */
+np_error_code nc_iam_str_cpy(char* dst, const char* src);
+
 uint32_t nc_iam_get_user_count(struct nc_iam* iam);
 
-bool nc_iam_check_access(struct nc_iam_env* env, const char* action);
+np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength);
 
 
 void nc_iam_env_init_coap(struct nc_iam_env* env, struct nc_device_context* device, struct nabto_coap_server_request* request);
 void nc_iam_env_deinit(struct nc_iam_env* env);
 
-void nc_iam_attributes_add_string(struct nc_iam_env* env, const char* attributeName, const char* attribute);
-void nc_iam_attributes_add_number(struct nc_iam_env* env, const char* attributeName, uint32_t number);
+np_error_code nc_iam_attributes_add_string(struct nc_iam_attributes* attributes, const char* attributeName, const char* attribute);
+np_error_code nc_iam_attributes_add_number(struct nc_iam_attributes* attributes, const char* attributeName, int64_t number);
 
 struct nc_iam_attribute* nc_iam_attribute_new();
 void nc_iam_attribute_free(struct nc_iam_attribute* attribute);

@@ -39,18 +39,18 @@ bool nc_iam_cbor_users_get(struct nc_device_context* device, const char* name, v
 }
 
 
-bool nc_iam_cbor_get_string(CborValue* value, char* buffer, size_t bufferLength)
+np_error_code nc_iam_cbor_get_string(CborValue* value, char* buffer, size_t bufferLength)
 {
     memset(buffer, 0, bufferLength);
     if (!cbor_value_is_text_string(value)) {
-        return false;
+        return NABTO_EC_NOT_A_STRING;
     }
     size_t stringLength;
     if (cbor_value_calculate_string_length(value, &stringLength) != CborNoError || stringLength > (bufferLength - 1)) {
-        return false;
+        return NABTO_EC_STRING_TOO_LONG;
     }
 
     size_t len = bufferLength;
     cbor_value_copy_text_string(value, buffer, &len, NULL);
-    return true;
+    return NABTO_EC_OK;
 }
