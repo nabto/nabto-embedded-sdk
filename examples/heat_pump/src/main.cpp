@@ -1,6 +1,7 @@
 #include "heat_pump.hpp"
 #include "heat_pump_config.hpp"
 #include "heat_pump_iam_policies.hpp"
+#include "heat_pump_coap.hpp"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -163,6 +164,10 @@ void run_heat_pump(const std::string& configFile)
     nabto_device_get_device_fingerprint_hex(device, fp);
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
+
+    HeatPump hp(device, configFile);
+
+    heat_pump_coap_init(device, &hp);
 
     printf("Press enter to stop\n");
     int c = 0;

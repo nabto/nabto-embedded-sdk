@@ -10,16 +10,6 @@
 
 #include <stdlib.h>
 
-struct nabto_device_iam_env* nabto_device_iam_env_new_internal()
-{
-    return calloc(1, sizeof(struct nabto_device_iam_env));
-}
-
-void nabto_device_iam_env_free_internal(struct nabto_device_iam_env* env)
-{
-    free(env);
-}
-
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_dump(NabtoDevice* device, uint64_t* version, void* buffer, size_t bufferLength, size_t* used)
 {
@@ -47,42 +37,23 @@ nabto_device_iam_load(NabtoDevice* device, void* cbor, size_t cborLength)
     return nabto_device_error_core_to_api(ec);
 }
 
-NabtoDeviceIamEnv* NABTO_DEVICE_API nabto_device_iam_env_from_coap_request(NabtoDeviceCoapRequest* request)
-{
-    /* struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request; */
-    /* NabtoDeviceIamEnv* env = NULL; */
-    /* nabto_device_threads_mutex_lock(req->dev->eventMutex); */
-
-    /* // TODO */
-
-    /* nabto_device_threads_mutex_unlock(req->dev->eventMutex); */
-    /* return env; */
-    return NULL;
-}
-
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_check_action(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* action)
 {
-    /* NabtoDeviceError ec = NABTO_DEVICE_EC_IAM_DENY; */
-    /* struct nabto_device_iam_env* iamEnv = (struct nabto_device_iam_env*) env; */
-
-    /* struct nabto_device_context* dev = iamEnv->device; */
-    /* nabto_device_threads_mutex_lock(dev->eventMutex); */
-    /* // get the user */
-    /* // get the attributes */
-
-    /* if (nm_iam_has_access_to_action(&device->iam, user, attributes, nm_iam_get_action(&device->iam, action))) { */
-    /*     ec = NABTO_DEVICE_EC_OK; */
-    /* } */
-    /* nabto_device_threads_mutex_unlock(req->dev->eventMutex); */
-    /* return ec; */
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    return nabto_device_iam_check_action_attributes(device, connectionRef, action, NULL, 0);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_check_action_attributes(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* action, void* attributesCbor, size_t cborLength)
 {
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
+    ec = nc_iam_check_access(connection, action, NULL, 0);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
 }
 
 NabtoDeviceError NABTO_DEVICE_API

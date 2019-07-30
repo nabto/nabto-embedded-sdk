@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include <mutex>
+#include <thread>
 
 using json = nlohmann::json;
 
@@ -61,6 +62,7 @@ class HeatPump {
         return false;
     }
 
+    std::unique_ptr<std::thread> pairingThread_;
   private:
     std::mutex mutex_;
     NabtoDevice* device_;

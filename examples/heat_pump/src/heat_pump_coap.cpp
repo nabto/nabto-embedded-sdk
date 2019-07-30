@@ -169,8 +169,9 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
         nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
     }
 
-    std::thread t(questionHandler, request, application);
-    t.detach();
+
+    application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application);
+    application->pairingThread_->detach();
 }
 
 

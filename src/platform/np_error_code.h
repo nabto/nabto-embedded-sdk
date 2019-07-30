@@ -43,7 +43,8 @@ typedef enum {
     NABTO_EC_IAM_INVALID_ROLES,
     NABTO_EC_IAM_INVALID_POLICIES,
     NABTO_EC_STRING_TOO_LONG,
-    NABTO_EC_NOT_A_STRING
+    NABTO_EC_NOT_A_STRING,
+    NABTO_EC_INVALID_CONNECTION
 } np_error_code;
 
 const char* np_error_code_to_string(np_error_code ec);
