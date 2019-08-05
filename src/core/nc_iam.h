@@ -95,6 +95,7 @@ void nc_iam_deinit(struct nc_iam* iam);
 
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, const uint8_t fingerprint[16]);
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
+struct nc_iam_user* nc_iam_get_default_user(struct nc_iam* iam);
 
 np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength);
 

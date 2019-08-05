@@ -1,6 +1,7 @@
 #include "nc_iam.h"
 #include "nc_iam_policy.h"
 #include "nc_iam_cbor.h"
+#include "nc_iam_dump.h"
 
 #include "nc_device.h"
 #include "nc_coap_server.h"
@@ -48,9 +49,22 @@ void nc_iam_updated(struct nc_iam* iam)
 
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, const uint8_t fingerprint[16])
 {
-    // TODO
+    struct nc_iam_list_entry* iterator = iam->fingerprints.sentinel.next;
+    while (iterator != &iam->fingerprints.sentinel) {
+        struct nc_iam_fingerprint* item = iterator->item;
+        if (memcmp(item->fingerprint, fingerprint, 16) == 0) {
+            return item->user;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
+}
+
+struct nc_iam_user* nc_iam_get_default_user(struct nc_iam* iam)
+{
     return iam->defaultUser;
 }
+
 
 np_error_code nc_iam_load_attributes_from_cbor(struct nc_iam_attributes* attributes, void* attributesCbor, size_t attributesCborLength)
 {
@@ -658,8 +672,11 @@ np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, 
     if (u2 == u) {
         return NABTO_EC_OK;
     }
-    // TODO
-    return NABTO_EC_FAILED;
+    struct nc_iam_fingerprint* fp = calloc(1, sizeof(struct nc_iam_fingerprint));
+    fp->user = u;
+    memcpy(fp->fingerprint, fingerprint, 16);
+    nc_iam_list_insert(&iam->fingerprints, fp);
+    return NABTO_EC_OK;
 }
 
 np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16])

@@ -172,6 +172,7 @@ np_error_code nc_iam_load_users(struct nc_iam* iam, CborValue* users)
         }
         cbor_value_advance(&user);
         nc_iam_load_user(iam, userName, &user);
+        cbor_value_advance(&user);
 
     }
     cbor_value_leave_container(users, &user);
