@@ -54,10 +54,14 @@ void nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
         if (strcmp(p->name, policy) == 0) {
             nc_iam_list_remove(iterator);
             nc_iam_policy_free(p);
+            // TODO return np_error_code
+            nc_iam_updated(iam);
             return;
         }
         iterator = iterator->next;
     }
+
+
 }
 
 void nc_iam_list_policies(struct nc_iam* iam, void** cbor, size_t* cborLength)
@@ -94,7 +98,7 @@ np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, co
         p = nc_iam_policy_new(iam, name);
     }
     nc_iam_policy_set_cbor(p, cbor, cborLength);
-
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 

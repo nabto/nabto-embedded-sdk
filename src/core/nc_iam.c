@@ -2,6 +2,7 @@
 #include "nc_iam_policy.h"
 #include "nc_iam_cbor.h"
 #include "nc_iam_dump.h"
+#include "nc_iam_util.h"
 
 #include "nc_device.h"
 #include "nc_coap_server.h"
@@ -35,14 +36,28 @@ void nc_iam_init(struct nc_iam* iam)
 
 void nc_iam_deinit(struct nc_iam* iam)
 {
+    if (iam->changeCallback) {
+        iam->changeCallback(NABTO_EC_STOPPED, iam->changeCallbackUserData);
+        iam->changeCallback = NULL;
+    }
+}
 
+np_error_code nc_iam_set_change_callback(struct nc_iam* iam, nc_iam_change_callback changeCallback, void* userData)
+{
+    if (iam->changeCallback != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    iam->changeCallback = changeCallback;
+    iam->changeCallbackUserData = userData;
+    return NABTO_EC_OK;
 }
 
 void nc_iam_updated(struct nc_iam* iam)
 {
     iam->version++;
     if (iam->changeCallback) {
-        iam->changeCallback(iam->changeCallbackUserData);
+        iam->changeCallback(NABTO_EC_OK, iam->changeCallbackUserData);
+        iam->changeCallback = NULL;
     }
 }
 
@@ -91,7 +106,7 @@ np_error_code nc_iam_load_attributes_from_cbor(struct nc_iam_attributes* attribu
             if (ec != NABTO_EC_OK) {
                 return ec;
             }
-        } else if (cbor_value_is_integer(&mapEntry) && cbor_value_get_int64(&mapEntry, &valueNumber)) {
+        } else if (cbor_value_is_integer(&mapEntry) && (cbor_value_get_int64(&mapEntry, &valueNumber) == CborNoError)) {
             ec = nc_iam_attributes_add_number(attributes, name, valueNumber);
             if (ec != NABTO_EC_OK) {
                 return ec;
@@ -178,8 +193,10 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
         }
         roleIterator = roleIterator->next;
     }
-    return granted;
-    return false;
+    if (granted) {
+        return NABTO_EC_OK;
+    }
+    return NABTO_EC_IAM_DENY;
 }
 
 enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy)
@@ -194,7 +211,7 @@ enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* a
     cbor_value_map_find_value(&map, "Version", &version);
     int v;
     if (!cbor_value_is_integer(&version) ||
-        !cbor_value_get_int(&version, &v) ||
+        (cbor_value_get_int(&version, &v) != CborNoError) ||
         v != 1)
     {
         // Could not parse policy. A unparseable policy should not end in an accept so default to deny.
@@ -222,8 +239,6 @@ enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* a
 
 enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* actionStr, CborValue* statement)
 {
-
-
     if (!cbor_value_is_map(statement)) {
         return NC_IAM_EVALUATION_RESULT_DENY;
     }
@@ -236,7 +251,7 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes
     cbor_value_map_find_value(statement, "Conditions", &conditions);
 
     if (!cbor_value_is_array(&actions) ||
-        !cbor_value_is_boolean(&actions))
+        !cbor_value_is_boolean(&allow))
     {
         return NC_IAM_EVALUATION_RESULT_DENY;
     }
@@ -253,16 +268,15 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes
             // cannot parse statement
             return NC_IAM_EVALUATION_RESULT_DENY;
         }
+        cbor_value_advance(&action);
         if (result == true) {
             found = true;
             break;
         }
-        cbor_value_advance(&action);
     }
-    cbor_value_leave_container(&actions, &action);
 
-    bool conditionsOk = nc_iam_check_conditions(attributes, &conditions);
-    if (found && conditionsOk) {
+    np_error_code conditionsOk = nc_iam_check_conditions(attributes, &conditions);
+    if (found && conditionsOk == NABTO_EC_OK) {
 
         if (allowAction) {
             return NC_IAM_EVALUATION_RESULT_ALLOW;
@@ -275,8 +289,8 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes
 
 np_error_code nc_iam_check_conditions(struct nc_iam_attributes* attributes, CborValue* conditions)
 {
-    if (cbor_value_is_null(conditions)) {
-        return true;
+    if (!cbor_value_is_valid(conditions)) {
+        return NABTO_EC_OK;
     }
     if (!cbor_value_is_array(conditions))
     {
@@ -288,13 +302,14 @@ np_error_code nc_iam_check_conditions(struct nc_iam_attributes* attributes, Cbor
     cbor_value_enter_container(conditions, &condition);
     while(!cbor_value_at_end(&condition))
     {
-        if (!nc_iam_check_condition(attributes, &condition)) {
-            return false;
+        np_error_code ec = nc_iam_check_condition(attributes, &condition);
+        if (ec != NABTO_EC_OK) {
+            return ec;
         }
         cbor_value_advance(&condition);
     }
     cbor_value_leave_container(conditions, &condition);
-    return true;
+    return NABTO_EC_OK;
 }
 
 np_error_code nc_iam_check_condition(struct nc_iam_attributes* attributes, CborValue* condition)
@@ -360,8 +375,8 @@ np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValu
         return ec;
     }
     cbor_value_advance(&parameter);
-    if (!cbor_value_is_text_string(&parameter)) {
-        return NABTO_EC_NOT_A_STRING;
+    if (!cbor_value_is_integer(&parameter)) {
+        return NABTO_EC_NOT_A_NUMBER;
     }
 
     struct nc_iam_attribute* attribute = nc_iam_attributes_find_attribute(attributes, attributeName);
@@ -370,7 +385,7 @@ np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValu
     }
     int64_t value;
     if (!cbor_value_is_integer(&parameter) ||
-        !cbor_value_get_int64(&parameter, &value) ||
+        (cbor_value_get_int64(&parameter, &value) != CborNoError) ||
         attribute->value.data.number != value)
     {
         return NABTO_EC_FAILED;
@@ -431,6 +446,7 @@ np_error_code nc_iam_set_default_user(struct nc_iam* iam, const char* name)
         return NABTO_EC_NO_SUCH_RESOURCE;
     }
     iam->defaultUser = user;
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 
@@ -464,6 +480,7 @@ np_error_code nc_iam_create_role(struct nc_iam* iam, const char* name)
     }
     nc_iam_list_init(&r->policies);
     nc_iam_list_insert(&iam->roles, r);
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 
@@ -586,6 +603,7 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
     }
     nc_iam_list_init(&user->roles);
     nc_iam_list_insert(&iam->users, user);
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 
@@ -623,7 +641,7 @@ np_error_code nc_iam_user_get(struct nc_iam* iam, const char* name, void* cborBu
     CborEncoder encoder;
     cbor_encoder_init(&encoder, cborBuffer, cborBufferLength, 0);
 
-    nc_iam_dump_user(user, &encoder);
+    nc_iam_dump_user(iam, user, &encoder);
 
     size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
     if (extra != 0) {
@@ -643,6 +661,7 @@ np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const c
         return NABTO_EC_NO_SUCH_RESOURCE;
     }
     nc_iam_list_insert(&u->roles, r);
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 
@@ -654,13 +673,19 @@ np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, cons
         return NABTO_EC_NO_SUCH_RESOURCE;
     }
     nc_iam_list_remove_item(&u->roles, r);
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 
 
 
-np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16])
+np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const char* fingerprintHex)
 {
+    uint8_t fingerprint[16];
+
+    if (!nc_iam_hex_to_data(fingerprintHex, fingerprint, 16)) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
     struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
     struct nc_iam_user* u2 = nc_iam_find_user_by_fingerprint(iam, fingerprint);
     if (!u) {
@@ -676,11 +701,17 @@ np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, 
     fp->user = u;
     memcpy(fp->fingerprint, fingerprint, 16);
     nc_iam_list_insert(&iam->fingerprints, fp);
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 
-np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16])
+np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const char* fingerprintHex)
 {
+    uint8_t fingerprint[16];
+
+    if (!nc_iam_hex_to_data(fingerprintHex, fingerprint, 16)) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
     // TODO
     return NABTO_EC_FAILED;
 }
@@ -695,6 +726,7 @@ np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const
     }
 
     nc_iam_list_insert(&r->policies, p);
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 
@@ -706,6 +738,7 @@ np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, co
         return NABTO_EC_NO_SUCH_RESOURCE;
     }
     nc_iam_list_remove_item(&r->policies, p);
+    nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
 

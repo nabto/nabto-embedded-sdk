@@ -8,10 +8,10 @@ using json = nlohmann::json;
 const json HeatPumpRead = R"(
 {
   "Version": 1,
-  "Statement": [
+  "Statements": [
     {
       "Allow": true,
-      "Action": ["HeatPump:Get"]
+      "Actions": ["HeatPump:Get"]
     }
   ]
 }
@@ -20,10 +20,10 @@ const json HeatPumpRead = R"(
 const json HeatPumpWrite = R"(
 {
   "Version": 1,
-  "Statement": [
+  "Statements": [
     {
       "Allow": true,
-      "Action": [ "HeatPump:Set" ]
+      "Actions": [ "HeatPump:Set" ]
     }
   ]
 })"_json;
@@ -32,9 +32,9 @@ const json IAMFullAccess = R"(
 {
   "Version": 1,
   "Name": "IAMFullAccess",
-  "Statement": [
+  "Statements": [
     {
-      "Action": [ "IAM:AddUser", "IAM:GetUser", "IAM:ListUsers", "IAM:AddRoleToUser", "IAM:RemoveRoleFromUser" ],
+      "Actions": [ "IAM:AddUser", "IAM:GetUser", "IAM:ListUsers", "IAM:AddRoleToUser", "IAM:RemoveRoleFromUser" ],
       "Allow": true
     }
   ]
@@ -48,7 +48,7 @@ const json ModifyOwnUser = R"(
     {
       "Allow": true,
       "Actions": [ "IAM:AddFingerprint", "IAM:RemoveFingerprint", "IAM:SetName" ],
-      "Conditions": [ { "StringEqual": [ { "Attribute": "Connection:UserId" }, { "Attribute": "IAM:UserId" } ] } ]
+      "Conditions": [ { "StringEqual": { "Connection:UserId": { "Attribute": "IAM:UserId" } } } ]
     }
   ]
 })"_json;
@@ -60,8 +60,8 @@ const json FirstUserCanPair = R"(
   "Statements": [
     {
       "Allow": true,
-      "Actions": [ "Pairing:PairUser" ],
-      "Conditions": [ { "NumberEqual": [ { "Attribute": "Pairing:IsPaired"}, 0 ] } ]
+      "Actions": [ "Pairing:Button" ],
+      "Conditions": [ { "NumberEqual": { "Pairing:IsPaired": 0 } } ]
     }
   ]
 })"_json;

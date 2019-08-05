@@ -151,8 +151,26 @@ np_error_code nc_iam_load_user(struct nc_iam* iam, const char* userName, CborVal
 
     }
 
+    CborValue fingerprints;
+    cbor_value_map_find_value(user, "Fingerprints", &fingerprints);
+    if (!cbor_value_is_array(&fingerprints)) {
+        return NABTO_EC_IAM_INVALID_USERS;
+    }
 
-    cbor_value_leave_container(&roles, &role);
+    CborValue fingerprint;
+    cbor_value_enter_container(&fingerprints, &fingerprint);
+
+    while(!cbor_value_at_end(&fingerprint)) {
+        char fpHex[33];
+        ec = nc_iam_cbor_get_string(&fingerprint, fpHex, 33);
+        if (ec) {
+            return ec;
+        }
+        cbor_value_advance(&fingerprint);
+        nc_iam_user_add_fingerprint(iam, userName, fpHex);
+    }
+
+    cbor_value_leave_container(&fingerprints, &fingerprint);
     return NABTO_EC_OK;
 }
 

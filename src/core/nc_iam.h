@@ -41,7 +41,7 @@ struct nc_iam_fingerprint {
     uint8_t fingerprint[16];
 };
 
-typedef void (*nc_iam_change_callback)(void* userData);
+typedef void (*nc_iam_change_callback)(const np_error_code ec, void* userData);
 
 struct nc_iam {
     uint64_t version;
@@ -93,6 +93,9 @@ struct nc_iam_attributes {
 void nc_iam_init(struct nc_iam* iam);
 void nc_iam_deinit(struct nc_iam* iam);
 
+void nc_iam_updated(struct nc_iam* iam);
+np_error_code nc_iam_set_change_callback(struct nc_iam* iam, nc_iam_change_callback changeCallback, void* userData);
+
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, const uint8_t fingerprint[16]);
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
 struct nc_iam_user* nc_iam_get_default_user(struct nc_iam* iam);
@@ -112,8 +115,8 @@ np_error_code nc_iam_list_users(struct nc_iam* iam, void* cborBuffer, size_t cbo
 np_error_code nc_iam_user_get(struct nc_iam* iam, const char* name, void* cborBuffer, size_t cborBufferLength, size_t* used);
 np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const char* role);
 np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, const char* role);
-np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16]);
-np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16]);
+np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const char* fingerprint);
+np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const char* fingerprint);
 
 // ROLES
 np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);

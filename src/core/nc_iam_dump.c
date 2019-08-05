@@ -6,11 +6,11 @@
 
 
 void nc_iam_dump_users(struct nc_iam* iam, CborEncoder* encoder);
-void nc_iam_dump_user(struct nc_iam_user* user, CborEncoder* encoder);
 void nc_iam_dump_roles(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_policies(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_default_user(struct nc_iam* iam, CborEncoder* encoder);
 
+static void nc_iam_dump_fingerprint_as_text_string(CborEncoder* encoder, uint8_t fp[16]);
 
 np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, size_t bufferLength, size_t* used)
 {
@@ -64,14 +64,23 @@ void nc_iam_dump_users(struct nc_iam* iam, CborEncoder* encoder)
         struct nc_iam_user* user = iterator->item;
 
         cbor_encode_text_stringz(&users, user->id);
-        nc_iam_dump_user(user, &users);
+        nc_iam_dump_user(iam, user, &users);
 
         iterator = iterator->next;
     }
     cbor_encoder_close_container(encoder, &users);
 }
 
-void nc_iam_dump_user(struct nc_iam_user* user, CborEncoder* encoder)
+void nc_iam_dump_fingerprint_as_text_string(CborEncoder* encoder, uint8_t fp[16])
+{
+    char out[33];
+    sprintf(out, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+            fp[0], fp[1], fp[2],  fp[3],  fp[4],  fp[5],  fp[6],  fp[7],
+            fp[8], fp[9], fp[10], fp[11], fp[12], fp[13], fp[14], fp[15]);
+    cbor_encode_text_string(encoder, out, 32);
+}
+
+void nc_iam_dump_user(struct nc_iam* iam, struct nc_iam_user* user, CborEncoder* encoder)
 {
     CborEncoder map;
 
@@ -89,6 +98,21 @@ void nc_iam_dump_user(struct nc_iam_user* user, CborEncoder* encoder)
         }
 
         cbor_encoder_close_container(&map, &roles);
+    }
+    cbor_encode_text_stringz(&map, "Fingerprints");
+    {
+        CborEncoder fingerprints;
+        cbor_encoder_create_array(&map, &fingerprints, CborIndefiniteLength);
+        struct nc_iam_list_entry* iterator = iam->fingerprints.sentinel.next;
+        while(iterator != &iam->fingerprints.sentinel) {
+            struct nc_iam_fingerprint* f = iterator->item;
+            if (f->user == user) {
+                nc_iam_dump_fingerprint_as_text_string(&fingerprints, f->fingerprint);
+            }
+            iterator = iterator->next;
+        }
+
+        cbor_encoder_close_container(&map, &fingerprints);
     }
 
     cbor_encoder_close_container(encoder, &map);

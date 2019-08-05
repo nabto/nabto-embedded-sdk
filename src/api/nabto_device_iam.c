@@ -4,6 +4,8 @@
 
 #include "nabto_device_defines.h"
 #include "nabto_device_coap.h"
+#include "nabto_device_future.h"
+#include "nabto_api_future_queue.h"
 #include <core/nc_iam_policy.h>
 #include <core/nc_iam.h>
 #include <core/nc_iam_dump.h>
@@ -37,6 +39,46 @@ nabto_device_iam_load(NabtoDevice* device, void* cbor, size_t cborLength)
     return nabto_device_error_core_to_api(ec);
 }
 
+void iamChanged(const np_error_code ec, void* userData)
+{
+
+    struct nabto_device_context* dev = (struct nabto_device_context*)userData;
+    if (dev->iamChangedFuture) {
+        nabto_api_future_set_error_code(dev->iamChangedFuture, nabto_device_error_core_to_api(ec));
+        nabto_api_future_queue_post(&dev->queueHead, dev->iamChangedFuture);
+        dev->iamChangedFuture = NULL;
+    }
+}
+
+NabtoDeviceFuture* NABTO_DEVICE_API
+nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    NabtoDeviceFuture* fut = NULL;
+
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    fut = nabto_device_future_new(device);
+    if (fut) {
+        if (dev->iamChangedFuture != NULL) {
+            nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+            nabto_api_future_queue_post(&dev->queueHead, fut);
+        } else {
+            ec = nc_iam_set_change_callback(&dev->core.iam, iamChanged, dev);
+            if (ec) {
+                nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(ec));
+                nabto_api_future_queue_post(&dev->queueHead, fut);
+            } else {
+                dev->iamChangedFuture = fut;
+            }
+        }
+    }
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return fut;
+}
+
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_check_action(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, const char* action)
 {
@@ -50,10 +92,10 @@ nabto_device_iam_check_action_attributes(NabtoDevice* device, NabtoDeviceConnect
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
-    ec = nc_iam_check_access(connection, action, NULL, 0);
+    ec = nc_iam_check_access(connection, action, attributesCbor, cborLength);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
@@ -113,36 +155,6 @@ nabto_device_iam_users_remove_role(NabtoDevice* device, const char* user, const 
 
 }
 
-bool hexToData(const char* hex, uint8_t* data, size_t dataLength)
-{
-    size_t hexLength = strlen(hex);
-    if (strlen(hex) != dataLength * 2) {
-        return false;
-    }
-
-    size_t index = 0;
-    while (index < hexLength) {
-        char c = hex[index];
-        int value = 0;
-        if(c >= '0' && c <= '9')
-          value = (c - '0');
-        else if (c >= 'A' && c <= 'F')
-          value = (10 + (c - 'A'));
-        else if (c >= 'a' && c <= 'f')
-          value = (10 + (c - 'a'));
-        else {
-            return false;
-        }
-
-        // shift each even hex byte 4 up
-        data[(index/2)] += value << (((index + 1) % 2) * 4);
-
-        index++;
-    }
-
-    return true;
-}
-
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_list(NabtoDevice* device, void* cbor, size_t cborLength, size_t* used)
 {
@@ -174,15 +186,10 @@ nabto_device_iam_users_add_fingerprint(NabtoDevice* device, const char* user, co
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
-    uint8_t fp[16];
-    if (!hexToData(fingerprint, fp, 16)) {
-        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
-    }
-
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    ec = nc_iam_user_add_fingerprint(&dev->core.iam, user, fp);
+    ec = nc_iam_user_add_fingerprint(&dev->core.iam, user, fingerprint);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ec;
@@ -193,15 +200,10 @@ nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user,
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
-    uint8_t fp[16];
-    if (!hexToData(fingerprint, fp, 16)) {
-        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
-    }
-
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    ec = nc_iam_user_remove_fingerprint(&dev->core.iam, user, fp);
+    ec = nc_iam_user_remove_fingerprint(&dev->core.iam, user, fingerprint);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);

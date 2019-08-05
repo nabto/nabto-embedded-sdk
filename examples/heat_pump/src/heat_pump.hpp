@@ -16,10 +16,12 @@ using json = nlohmann::json;
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, const std::string& configFile)
-        : device_(device), configFile_(configFile)
+    HeatPump(NabtoDevice* device, json config, const std::string& configFile)
+        : device_(device), config_(config), configFile_(configFile)
     {
     }
+
+    void init();
 
     enum class Mode {
         COOL = 0,
@@ -43,9 +45,6 @@ class HeatPump {
     double getTarget();
     bool getPower();
     double getTemperature();
-
-    bool saveConfig();
-    bool loadConfig();
 
     bool beginPairing() {
         std::unique_lock<std::mutex> lock(mutex_);
@@ -77,11 +76,19 @@ class HeatPump {
 
     std::unique_ptr<std::thread> pairingThread_;
   private:
+
+    static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
+    void listenForIamChanges();
+    void saveConfig();
+
     std::mutex mutex_;
     NabtoDevice* device_;
+    json config_;
     const std::string& configFile_;
     json state_;
     bool pairing_ = false;
+    uint64_t currentIamVersion_;
+
 };
 
 #endif

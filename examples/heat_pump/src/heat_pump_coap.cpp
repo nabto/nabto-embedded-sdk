@@ -58,14 +58,15 @@ void heat_pump_coap_send_ok(NabtoDeviceCoapRequest* request, uint16_t code)
 // return true if action was allowed
 bool heat_pump_coap_check_action(NabtoDevice* device, NabtoDeviceCoapRequest* request, const char* action)
 {
-    NabtoDeviceError effect = nabto_device_iam_check_action(device, nabto_device_coap_request_get_connection_ref(request), action);
-    if (effect == NABTO_DEVICE_EC_OK) {
-        return true;
-    } else {
-        // deny
-        heat_pump_coap_send_error(request, 403, "Unauthorized");
+    NabtoDeviceError effect = nabto_device_iam_check_action_attributes(
+        device,
+        nabto_device_coap_request_get_connection_ref(request), action, NULL, 0);
+
+    if (effect != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 403, "Unauthorized");
         return false;
     }
+    return true;
 }
 
 bool heat_pump_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
@@ -161,10 +162,8 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
 
-    NabtoDeviceConnectionRef c = nabto_device_coap_request_get_connection_ref(request);
-
     bool isPaired;
-    NabtoDeviceError ec =  application->isPaired(isPaired);
+    NabtoDeviceError ec = application->isPaired(isPaired);
     if (ec) {
         nabto_device_coap_error_response(request, 500, "");
         return;
@@ -175,16 +174,15 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 
     std::vector<uint8_t> cbor = json::to_cbor(attributes);
 
-    NabtoDeviceError effect = nabto_device_iam_check_action_attributes(application->getDevice(), c, "Pairing:Button", cbor.data(), cbor.size());
+    NabtoDeviceError effect = nabto_device_iam_check_action_attributes(
+        application->getDevice(),
+        nabto_device_coap_request_get_connection_ref(request), "Pairing:Button", cbor.data(), cbor.size());
 
     if (effect != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 403, "Unauthorized");
         return;
     }
 
-    if (!heat_pump_coap_check_action(application->getDevice(), request, "Pairing:Button")) {
-        return;
-    }
     if (!application->beginPairing()) {
         nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
         return;
@@ -330,7 +328,7 @@ void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
     }
 
     NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-    nabto_device_coap_response_set_code(response, 200);
+    nabto_device_coap_response_set_code(response, 205);
     nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
     nabto_device_coap_response_set_payload(response, buffer, cbor_encoder_get_buffer_size(&encoder, buffer));
     nabto_device_coap_response_ready(response);

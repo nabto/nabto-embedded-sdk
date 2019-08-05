@@ -68,7 +68,6 @@ void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* use
             internal_error(request);
         } else {
             create_cbor_response(request, cbor, used);
-            free(cbor);
         }
     } else {
         // return 403

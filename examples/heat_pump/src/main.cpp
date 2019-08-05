@@ -212,7 +212,8 @@ void run_heat_pump(const std::string& configFile)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
-    HeatPump hp(device, configFile);
+    HeatPump hp(device, config, configFile);
+    hp.init();
 
     heat_pump_coap_init(device, &hp);
 

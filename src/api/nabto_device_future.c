@@ -16,10 +16,10 @@ NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev)
     fut->ready = false;
     fut->dev = dev;
     fut->mutex = nabto_device_threads_create_mutex();
-    if (fut->mutex == NULL) { 
+    if (fut->mutex == NULL) {
         NABTO_LOG_ERROR(LOG, "mutex init has failed");
         free(fut);
-        return NULL; 
+        return NULL;
     }
     fut->cond = nabto_device_threads_create_condition();
     if (fut->cond == NULL) {
@@ -64,7 +64,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFu
 void NABTO_DEVICE_API nabto_device_future_wait(NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    
+
     nabto_device_threads_mutex_lock(fut->mutex);
     nabto_device_threads_cond_wait(fut->cond, fut->mutex);
     nabto_device_threads_mutex_unlock(fut->mutex);
