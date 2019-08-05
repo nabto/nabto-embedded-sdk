@@ -28,10 +28,10 @@ const json HeatPumpWrite = R"(
   ]
 })"_json;
 
-const json FullUserAdmin = R"(
+const json IAMFullAccess = R"(
 {
   "Version": 1,
-  "Name": "FullUserAdmin",
+  "Name": "IAMFullAccess",
   "Statement": [
     {
       "Action": [ "IAM:AddUser", "IAM:GetUser", "IAM:ListUsers", "IAM:AddRoleToUser", "IAM:RemoveRoleFromUser" ],
@@ -44,11 +44,11 @@ const json ModifyOwnUser = R"(
 {
   "Version": 1,
   "Name": "ModifyOwnUser",
-  "Statement": [
+  "Statements": [
     {
       "Allow": true,
-      "Action": [ "IAM:AddFingerprint", "IAM:RemoveFingerprint", "IAM:SetName" ],
-      "Condition": [ { "StringEqual": [ { "Attribute": "Connection:UserId" }, { "Attribute": "IAM:UserId" } ] } ]
+      "Actions": [ "IAM:AddFingerprint", "IAM:RemoveFingerprint", "IAM:SetName" ],
+      "Conditions": [ { "StringEqual": [ { "Attribute": "Connection:UserId" }, { "Attribute": "IAM:UserId" } ] } ]
     }
   ]
 })"_json;
@@ -57,11 +57,11 @@ const json FirstUserCanPair = R"(
 {
   "Version": 1,
   "Name": "FirstUserCanPair",
-  "Statement": [
+  "Statements": [
     {
       "Allow": true,
-      "Action": [ "Pairing:PairUser" ],
-      "Condition": [ { "NumberEqual": [ { "Attribute": "Pairing:SystemIsPaired"}, 0 ] } ]
+      "Actions": [ "Pairing:PairUser" ],
+      "Conditions": [ { "NumberEqual": [ { "Attribute": "Pairing:IsPaired"}, 0 ] } ]
     }
   ]
 })"_json;

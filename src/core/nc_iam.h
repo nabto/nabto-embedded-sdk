@@ -107,9 +107,10 @@ np_error_code nc_iam_set_default_user(struct nc_iam* iam, const char* name);
 
 // USERS
 np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name);
+np_error_code nc_iam_list_users(struct nc_iam* iam, void* cborBuffer, size_t cborBufferLength, size_t* used);
+np_error_code nc_iam_user_get(struct nc_iam* iam, const char* name, void* cborBuffer, size_t cborBufferLength, size_t* used);
 np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const char* role);
 np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, const char* role);
-np_error_code nc_iam_list_users(struct nc_iam* iam, void** cbor, size_t* cborLength);
 np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16]);
 np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16]);
 

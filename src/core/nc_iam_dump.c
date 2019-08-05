@@ -6,7 +6,7 @@
 
 
 void nc_iam_dump_users(struct nc_iam* iam, CborEncoder* encoder);
-void nc_iam_dump_user(struct nc_iam_user* iam, CborEncoder*);
+void nc_iam_dump_user(struct nc_iam_user* user, CborEncoder* encoder);
 void nc_iam_dump_roles(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_policies(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_default_user(struct nc_iam* iam, CborEncoder* encoder);

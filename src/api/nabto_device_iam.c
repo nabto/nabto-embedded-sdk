@@ -87,13 +87,6 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_delete(NabtoDevice* device, const char* user);
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_get(NabtoDevice* device, const char* user, void** cbor, size_t* cborLength);
-
-
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_list(NabtoDevice* device, void** cbor, size_t* cborLength);
-
-NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const char* role)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -150,6 +143,32 @@ bool hexToData(const char* hex, uint8_t* data, size_t dataLength)
     return true;
 }
 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_list(NabtoDevice* device, void* cbor, size_t cborLength, size_t* used)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_list_users(&dev->core.iam, cbor, cborLength, used);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_iam_users_get(NabtoDevice* device, const char* user, void* cbor, size_t cborLength, size_t* used)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_user_get(&dev->core.iam, user, cbor, cborLength, used);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
+
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_add_fingerprint(NabtoDevice* device, const char* user, const char* fingerprint)
 {
@@ -185,7 +204,7 @@ nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user,
     ec = nc_iam_user_remove_fingerprint(&dev->core.iam, user, fp);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API

@@ -27,7 +27,9 @@ int main(int argc, char** argv) {
     options.add_options("General")
         ("h,help", "Show help")
         ("i,init", "Initialize configuration file")
-        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump.json"));
+        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump_device.json"))
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"))
+        ("log-file", "File to log to", cxxopts::value<std::string>()->default_value("heat_pump_device_log.txt"));
 
     options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
@@ -94,24 +96,59 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     if (nabto_device_iam_users_create(device, "Unpaired") != NABTO_DEVICE_EC_OK) {
         return false;
     }
+    if (nabto_device_iam_set_default_user(device, "Unpaired") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+    if (nabto_device_iam_users_create(device, OWNER_USER_NAME) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
     if (nabto_device_iam_roles_create(device, "FirstUser") != NABTO_DEVICE_EC_OK) {
         return false;
     }
     if (nabto_device_iam_users_add_role(device, "Unpaired", "FirstUser") != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    if (load_policy(device, "Heat_PumpRead", HeatPumpRead) != NABTO_DEVICE_EC_OK) {
+
+    if (nabto_device_iam_roles_create(device, "FullAccess") != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    if (load_policy(device, "Heat_PumpWrite", HeatPumpWrite) != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_iam_users_add_role(device, OWNER_USER_NAME, "FullAccess") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+
+    if (load_policy(device, "HeatPumpRead", HeatPumpRead) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (load_policy(device, "HeatPumpWrite", HeatPumpWrite) != NABTO_DEVICE_EC_OK) {
         return false;
     }
     if (load_policy(device, "FirstUserCanPair", FirstUserCanPair) != NABTO_DEVICE_EC_OK) {
         return false;
     }
+    if (load_policy(device, "IAMFullAccess", IAMFullAccess) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (load_policy(device, "ModifyOwnUser", IAMFullAccess) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+
+
     if (nabto_device_iam_roles_add_policy(device, "FirstUser", "FirstUserCanPair") != NABTO_DEVICE_EC_OK) {
         return false;
     }
+
+    if (nabto_device_iam_roles_add_policy(device, "FullAccess", "HeatPumpWrite") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+    if (nabto_device_iam_roles_add_policy(device, "FullAccess", "IAMFullAccess") != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+
     uint64_t version;
     size_t used;
     if (nabto_device_iam_dump(device, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OUT_OF_MEMORY) {

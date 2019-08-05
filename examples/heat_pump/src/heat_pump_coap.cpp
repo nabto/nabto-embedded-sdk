@@ -112,7 +112,7 @@ void readInput()
 
 bool pairFirstUser( HeatPump* application, const std::string& fingerprint)
 {
-    NabtoDeviceError ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), "Owner", fingerprint.c_str());
+    NabtoDeviceError ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), OWNER_USER_NAME, fingerprint.c_str());
     if (ec) {
         std::cout << "Could not add fingerprint to the owner user of the heat pump" << std::endl;
         return false;
@@ -163,7 +163,12 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 
     NabtoDeviceConnectionRef c = nabto_device_coap_request_get_connection_ref(request);
 
-    bool isPaired = application->isPaired();
+    bool isPaired;
+    NabtoDeviceError ec =  application->isPaired(isPaired);
+    if (ec) {
+        nabto_device_coap_error_response(request, 500, "");
+        return;
+    }
 
     json attributes;
     attributes["Pairing:IsPaired"] = isPaired ? 1 : 0;
@@ -174,6 +179,7 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 
     if (effect != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 403, "Unauthorized");
+        return;
     }
 
     if (!heat_pump_coap_check_action(application->getDevice(), request, "Pairing:Button")) {
@@ -181,6 +187,7 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
     }
     if (!application->beginPairing()) {
         nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
+        return;
     }
 
 

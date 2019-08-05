@@ -60,13 +60,14 @@ void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* use
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
     ec = nc_iam_check_access(connection, "IAM:ListUsers", NULL, 0);
     if (ec == NABTO_EC_OK) {
-        void* cbor;
-        size_t cborLength;
-        ec = nc_iam_list_users(&device->iam, &cbor, &cborLength);
+        uint8_t cbor[128];
+        size_t used;
+
+        ec = nc_iam_list_users(&device->iam, cbor, 128, &used);
         if (ec) {
             internal_error(request);
         } else {
-            create_cbor_response(request, cbor, cborLength);
+            create_cbor_response(request, cbor, used);
             free(cbor);
         }
     } else {

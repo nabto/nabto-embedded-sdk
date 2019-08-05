@@ -575,6 +575,52 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
     return NABTO_EC_OK;
 }
 
+np_error_code nc_iam_list_users(struct nc_iam* iam, void* cborBuffer, size_t cborBufferLength, size_t* used)
+{
+    CborEncoder encoder;
+    cbor_encoder_init(&encoder, cborBuffer, cborBufferLength, 0);
+    CborEncoder array;
+    cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
+
+    struct nc_iam_list_entry* iterator = iam->users.sentinel.next;
+    while(iterator != &iam->users.sentinel) {
+        struct nc_iam_user* user = iterator->item;
+
+        cbor_encode_text_stringz(&array, user->id);
+        iterator = iterator->next;
+    }
+    cbor_encoder_close_container(&encoder, &array);
+    size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (extra != 0) {
+        *used = cborBufferLength + extra;
+        return NABTO_EC_OUT_OF_MEMORY;
+    } else {
+        *used = cbor_encoder_get_buffer_size(&encoder, cborBuffer);
+    }
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_iam_user_get(struct nc_iam* iam, const char* name, void* cborBuffer, size_t cborBufferLength, size_t* used)
+{
+    struct nc_iam_user* user = nc_iam_find_user_by_name(iam, name);
+    if (!user) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+    CborEncoder encoder;
+    cbor_encoder_init(&encoder, cborBuffer, cborBufferLength, 0);
+
+    nc_iam_dump_user(user, &encoder);
+
+    size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (extra != 0) {
+        *used = cborBufferLength + extra;
+        return NABTO_EC_OUT_OF_MEMORY;
+    } else {
+        *used = cbor_encoder_get_buffer_size(&encoder, cborBuffer);
+    }
+    return NABTO_EC_OK;
+}
+
 np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const char* role)
 {
     struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
@@ -596,6 +642,8 @@ np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, cons
     nc_iam_list_remove_item(&u->roles, r);
     return NABTO_EC_OK;
 }
+
+
 
 np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const uint8_t fingerprint[16])
 {

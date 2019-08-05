@@ -121,11 +121,11 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_delete(NabtoDevice* device, const char* user);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_get(NabtoDevice* device, const char* user, void** cbor, size_t* cborLength);
+nabto_device_iam_users_get(NabtoDevice* device, const char* user, void* cbor, size_t cborLength, size_t* used);
 
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_list(NabtoDevice* device, void** cbor, size_t* cborLength);
+nabto_device_iam_users_list(NabtoDevice* device, void* cbor, size_t cborLength, size_t* used);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const char* role);
