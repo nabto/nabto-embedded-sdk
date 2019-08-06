@@ -8,7 +8,7 @@
 np_error_code nc_iam_load_policies(struct nc_iam* iam, CborValue* policies);
 np_error_code nc_iam_load_roles(struct nc_iam* iam, CborValue* roles);
 np_error_code nc_iam_load_users(struct nc_iam* iam, CborValue* users);
-np_error_code nc_iam_load_default_user(struct nc_iam* iam, CborValue* defaultUser);
+np_error_code nc_iam_load_default_role(struct nc_iam* iam, CborValue* defaultRole);
 
 np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength)
 {
@@ -34,9 +34,9 @@ np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength)
     cbor_value_map_find_value(&map, "Users", &users);
     nc_iam_load_users(iam, &users);
 
-    CborValue defaultUser;
-    cbor_value_map_find_value(&map, "DefaultUser", &defaultUser);
-    nc_iam_load_default_user(iam, &defaultUser);
+    CborValue defaultRole;
+    cbor_value_map_find_value(&map, "DefaultRole", &defaultRole);
+    nc_iam_load_default_role(iam, &defaultRole);
 
 
 
@@ -197,13 +197,13 @@ np_error_code nc_iam_load_users(struct nc_iam* iam, CborValue* users)
     return NABTO_EC_OK;
 }
 
-np_error_code nc_iam_load_default_user(struct nc_iam* iam, CborValue* defaultUser)
+np_error_code nc_iam_load_default_role(struct nc_iam* iam, CborValue* defaultRole)
 {
     np_error_code ec;
     char buffer[33];
-    ec = nc_iam_cbor_get_string(defaultUser, buffer, 33);
+    ec = nc_iam_cbor_get_string(defaultRole, buffer, 33);
     if (ec) {
         return ec;
     }
-    return nc_iam_set_default_user(iam, buffer);
+    return nc_iam_set_default_role(iam, buffer);
 }

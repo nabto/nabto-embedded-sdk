@@ -554,6 +554,7 @@ NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec)
         case NABTO_EC_OK: return NABTO_DEVICE_EC_OK;
         case NABTO_EC_FAILED: return NABTO_DEVICE_EC_FAILED;
         case NABTO_EC_OUT_OF_MEMORY: return NABTO_DEVICE_EC_OUT_OF_MEMORY;
+        case NABTO_EC_NO_SUCH_RESOURCE: return NABTO_DEVICE_EC_NO_SUCH_RESOURCE;
         default: return NABTO_DEVICE_EC_FAILED;
     }
 }

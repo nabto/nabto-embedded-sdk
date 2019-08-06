@@ -342,5 +342,5 @@ void init_iam(NabtoDevice* device)
     nabto_device_iam_roles_create(device, "admin-role");
     nabto_device_iam_users_add_role(device, "admin", "admin-role");
     nabto_device_iam_roles_add_policy(device, "admin-role", "All");
-    nabto_device_iam_set_default_user(device, "admin");
+    nabto_device_iam_set_default_role(device, "admin-role");
 }

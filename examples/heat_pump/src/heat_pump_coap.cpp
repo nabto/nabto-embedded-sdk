@@ -111,39 +111,46 @@ void readInput()
 
 }
 
-bool pairFirstUser( HeatPump* application, const std::string& fingerprint)
+bool pairUser( HeatPump* application, const std::string& fingerprint)
 {
-    NabtoDeviceError ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), OWNER_USER_NAME, fingerprint.c_str());
-    if (ec) {
-        std::cout << "Could not add fingerprint to the owner user of the heat pump" << std::endl;
+    std::string userName;
+    size_t userCount;
+    NabtoDeviceError ec;
+    ec = application->nextUserName(userName);
+    if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
 
-    std::cout << "Added the fingerprint " << fingerprint << " as the owner of the device" << std::endl;
-    return true;
-}
+    ec = application->userCount(userCount);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
 
-bool pairGuest(HeatPump* application, const std::string& fingerprint)
-{
-    auto guestName = application->nextGuestName();
-
-    NabtoDeviceError ec = nabto_device_iam_users_create(application->getDevice(), guestName.c_str());
+    ec = nabto_device_iam_users_create(application->getDevice(), userName.c_str());
     if (ec) {
         return false;
     }
 
-    ec = nabto_device_iam_users_add_role(application->getDevice(), guestName.c_str(), GUEST_ROLE_NAME);
+    ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), userName.c_str(), fingerprint.c_str());
     if (ec) {
-        nabto_device_iam_users_delete(application->getDevice(), guestName.c_str());
+        nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
+        std::cout << "Could not add fingerprint to the heat pump" << std::endl;
         return false;
     }
 
-    ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), guestName.c_str(), fingerprint.c_str());
+    std::string role;
+    if (userCount == 0) {
+        role = "Owner";
+    } else {
+        role = "User";
+    }
+    ec = nabto_device_iam_users_add_role(application->getDevice(), userName.c_str(), role.c_str());
     if (ec) {
-        nabto_device_iam_users_delete(application->getDevice(), guestName.c_str());
+        nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
+        std::cout << "Could not add the role " << role.c_str() << " to the user " << userName << std::endl;
         return false;
     }
-    std::cout << "Added the user " << guestName << " with the fingerprint " << fingerprint << " as a guest user to the heat pump" << std::endl;
+    std::cout << "Added the fingerprint " << fingerprint << " to the user " << userName << " with the role " << role<< std::endl;
     return true;
 }
 
@@ -156,6 +163,7 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
     char* fingerprint;
     nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
+
     std::cout << "Allow client with fingerprint: " << std::string(fingerprint) << " [yn]" << std::endl;
 
     std::thread t(readInput);
@@ -169,7 +177,7 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
         result = answer;
     }
 
-    if (result == true && pairFirstUser(application, std::string(fingerprint))) {
+    if (result == true && pairUser(application, std::string(fingerprint))) {
         auto response = nabto_device_coap_create_response(request);
         nabto_device_coap_response_set_code(response, 205);
         nabto_device_coap_response_ready(response);
@@ -190,15 +198,15 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
 
-    bool isPaired;
-    NabtoDeviceError ec = application->isPaired(isPaired);
+    size_t userCount;
+    NabtoDeviceError ec = application->userCount(userCount);
     if (ec) {
         nabto_device_coap_error_response(request, 500, "");
         return;
     }
 
     json attributes;
-    attributes["Pairing:IsPaired"] = isPaired ? 1 : 0;
+    attributes["Pairing:UserCount"] = userCount;
 
     std::vector<uint8_t> cbor = json::to_cbor(attributes);
 

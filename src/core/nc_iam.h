@@ -49,7 +49,7 @@ struct nc_iam {
     struct nc_iam_list users;
     struct nc_iam_list roles;
     struct nc_iam_list policies;
-    struct nc_iam_user* defaultUser;
+    struct nc_iam_role* defaultRole;
     nc_iam_change_callback changeCallback;
     void* changeCallbackUserData;
 };
@@ -98,7 +98,7 @@ np_error_code nc_iam_set_change_callback(struct nc_iam* iam, nc_iam_change_callb
 
 struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, const uint8_t fingerprint[16]);
 struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* name);
-struct nc_iam_user* nc_iam_get_default_user(struct nc_iam* iam);
+struct nc_iam_role* nc_iam_get_default_role(struct nc_iam* iam);
 
 np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength);
 
@@ -106,7 +106,7 @@ np_error_code nc_iam_attributes_add_string(struct nc_iam_attributes* attributes,
 np_error_code nc_iam_attributes_add_number(struct nc_iam_attributes* attributes, const char* attributeName, int64_t number);
 
 // SYSTEM
-np_error_code nc_iam_set_default_user(struct nc_iam* iam, const char* name);
+np_error_code nc_iam_set_default_role(struct nc_iam* iam, const char* name);
 
 
 // USERS

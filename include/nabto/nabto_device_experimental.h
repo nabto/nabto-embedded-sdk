@@ -35,6 +35,7 @@ nabto_device_experimental_util_free(void* data);
 extern const NabtoDeviceError NABTO_DEVICE_EC_IAM_DENY;
 
 extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_ARGUMENT;
+extern const NabtoDeviceError NABTO_DEVICE_EC_NO_SUCH_RESOURCE;
 
 /**
  * IAM decision context for a query, the environment contains all the
@@ -95,7 +96,7 @@ nabto_device_iam_check_action(NabtoDevice* device, NabtoDeviceConnectionRef conn
  * given fingerprint exists on the system
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_set_default_user(NabtoDevice* device, const char* user);
+nabto_device_iam_set_default_role(NabtoDevice* device, const char* user);
 
 /**
  * Add a user to the system which is not meant to be persisted in the

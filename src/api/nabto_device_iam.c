@@ -99,13 +99,13 @@ nabto_device_iam_check_action_attributes(NabtoDevice* device, NabtoDeviceConnect
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_set_default_user(NabtoDevice* device, const char* user)
+nabto_device_iam_set_default_role(NabtoDevice* device, const char* role)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    ec = nc_iam_set_default_user(&dev->core.iam, user);
+    ec = nc_iam_set_default_role(&dev->core.iam, role);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
@@ -132,7 +132,7 @@ nabto_device_iam_users_delete(NabtoDevice* device, const char* user)
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    ec = nc_iam_delete_user(&dev->core.iam, user);
+    ec = nc_iam_delete_user(&dev->core, user);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);

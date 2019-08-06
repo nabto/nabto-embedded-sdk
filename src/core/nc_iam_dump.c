@@ -8,7 +8,7 @@
 void nc_iam_dump_users(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_roles(struct nc_iam* iam, CborEncoder* encoder);
 void nc_iam_dump_policies(struct nc_iam* iam, CborEncoder* encoder);
-void nc_iam_dump_default_user(struct nc_iam* iam, CborEncoder* encoder);
+void nc_iam_dump_default_role(struct nc_iam* iam, CborEncoder* encoder);
 
 static void nc_iam_dump_fingerprint_as_text_string(CborEncoder* encoder, uint8_t fp[16]);
 
@@ -29,8 +29,8 @@ np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, s
     cbor_encode_text_stringz(&map, "Policies");
     nc_iam_dump_policies(iam, &map);
 
-    cbor_encode_text_stringz(&map, "DefaultUser");
-    nc_iam_dump_default_user(iam, &map);
+    cbor_encode_text_stringz(&map, "DefaultRole");
+    nc_iam_dump_default_role(iam, &map);
 
     CborError ec = cbor_encoder_close_container(&encoder, &map);
     if (ec == CborNoError) {
@@ -46,10 +46,10 @@ np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, s
     return NABTO_EC_FAILED;
 }
 
-void nc_iam_dump_default_user(struct nc_iam* iam, CborEncoder* encoder)
+void nc_iam_dump_default_role(struct nc_iam* iam, CborEncoder* encoder)
 {
-    if (iam->defaultUser) {
-        cbor_encode_text_stringz(encoder, iam->defaultUser->id);
+    if (iam->defaultRole) {
+        cbor_encode_text_stringz(encoder, iam->defaultRole->name);
     } else {
         cbor_encode_null(encoder);
     }

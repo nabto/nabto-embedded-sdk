@@ -8,19 +8,15 @@ using json = nlohmann::json;
 
 const json defaultHeatPumpIam = R"(
 {
-  "DefaultUser": "Unpaired",
+  "DefaultRole": "Unpaired",
   "Policies": {
-    "FirstUserCanPair": {
-      "Name": "FirstUserCanPair",
+    "ButtonPairing": {
       "Statements": [
         {
           "Actions": [
             "Pairing:Button"
           ],
-          "Allow": true,
-          "Conditions": [
-            { "NumberEqual": { "Pairing:IsPaired": 0 } }
-          ]
+          "Allow": true
         }
       ],
       "Version": 1
@@ -80,47 +76,27 @@ const json defaultHeatPumpIam = R"(
         }
       ],
       "Version": 1
-    },
-    "ButtonPairAsGuest": {
-      "Version": 1,
-      "Statements": [
-        {
-          "Allow": true,
-          "Actions": [ "Pairing:ButtonGuest" ]
-        }
-      ]
     }
   },
   "Roles": {
     "Unpaired": [
-      "FirstUserCanPair",
-      "ButtonPairAsGuest"
+      "ButtonPairing"
     ],
-    "FullAccess": [
+    "Owner": [
       "HeatPumpWrite",
       "HeatPumpRead",
       "IAMFullAccess"
     ],
-    "GuestAccess": [
+    "User": [
       "HeatPumpRead",
       "HeatPumpWrite",
       "ModifyOwnUser"
+    ],
+    "Guest": [
+      "HeatPumpRead"
     ]
   },
   "Users": {
-    "Unpaired": {
-      "Fingerprints": [],
-      "Roles": [
-        "Unpaired"
-      ]
-    },
-    "owner": {
-      "Fingerprints": [
-      ],
-      "Roles": [
-        "FullAccess"
-      ]
-    }
   }
 }
 )"_json;

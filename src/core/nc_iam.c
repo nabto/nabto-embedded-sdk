@@ -23,6 +23,7 @@ static np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, C
 static np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborValue* parameters);
 
 static void nc_iam_remove_all_fingerprints_user(struct nc_iam* iam, struct nc_iam_user* user);
+static struct nc_iam_role* nc_iam_find_role_by_name(struct nc_iam* iam, const char* name);
 
 void nc_iam_init(struct nc_iam* iam)
 {
@@ -33,7 +34,7 @@ void nc_iam_init(struct nc_iam* iam)
     nc_iam_list_init(&iam->users);
     nc_iam_list_init(&iam->roles);
     nc_iam_list_init(&iam->policies);
-    iam->defaultUser = NULL;
+    iam->defaultRole = NULL;
 }
 
 void nc_iam_deinit(struct nc_iam* iam)
@@ -77,9 +78,9 @@ struct nc_iam_user* nc_iam_find_user_by_fingerprint(struct nc_iam* iam, const ui
     return NULL;
 }
 
-struct nc_iam_user* nc_iam_get_default_user(struct nc_iam* iam)
+struct nc_iam_role* nc_iam_get_default_role(struct nc_iam* iam)
 {
-    return iam->defaultUser;
+    return iam->defaultRole;
 }
 
 
@@ -172,14 +173,33 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
         }
     }
 
-    ec = nc_iam_attributes_add_string(&attributes, "Connection:UserId", connection->user->id);
-
     struct nc_iam_user* user = connection->user;
-
     bool granted = false;
-    struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
-    while(roleIterator != &user->roles.sentinel) {
-        struct nc_iam_role* role = (struct nc_iam_role*)roleIterator->item;
+    if (user != NULL) {
+        nc_iam_attributes_add_string(&attributes, "Connection:UserId", connection->user->id);
+
+        struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
+        while(roleIterator != &user->roles.sentinel) {
+            struct nc_iam_role* role = (struct nc_iam_role*)roleIterator->item;
+            struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
+            while(policyIterator != & role->policies.sentinel) {
+                struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
+                enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(&attributes, action, policy);
+                if (result == NC_IAM_EVALUATION_RESULT_NONE) {
+                    // no change
+                } else if (result == NC_IAM_EVALUATION_RESULT_ALLOW) {
+                    granted = true;
+                } else if (result == NC_IAM_EVALUATION_RESULT_DENY) {
+                    granted = false;
+                }
+                policyIterator = policyIterator->next;
+            }
+            roleIterator = roleIterator->next;
+        }
+    } else {
+        // user == NULL
+        // use the default role
+        struct nc_iam_role* role = nc_iam_get_default_role(&connection->device->iam);
         struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
         while(policyIterator != & role->policies.sentinel) {
             struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
@@ -193,7 +213,6 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
             }
             policyIterator = policyIterator->next;
         }
-        roleIterator = roleIterator->next;
     }
     if (granted) {
         return NABTO_EC_OK;
@@ -441,13 +460,13 @@ struct nc_iam_attribute* nc_iam_attributes_find_attribute(struct nc_iam_attribut
     return NULL;
 }
 
-np_error_code nc_iam_set_default_user(struct nc_iam* iam, const char* name)
+np_error_code nc_iam_set_default_role(struct nc_iam* iam, const char* name)
 {
-    struct nc_iam_user* user = nc_iam_find_user_by_name(iam, name);
-    if (!user) {
+    struct nc_iam_role* role = nc_iam_find_role_by_name(iam, name);
+    if (!role) {
         return NABTO_EC_NO_SUCH_RESOURCE;
     }
-    iam->defaultUser = user;
+    iam->defaultRole = role;
     nc_iam_updated(iam);
     return NABTO_EC_OK;
 }
