@@ -5,65 +5,124 @@
 
 using json = nlohmann::json;
 
-const json HeatPumpRead = R"(
+
+const json defaultHeatPumpIam = R"(
 {
-  "Version": 1,
-  "Statements": [
-    {
-      "Allow": true,
-      "Actions": ["HeatPump:Get"]
+  "DefaultUser": "Unpaired",
+  "Policies": {
+    "FirstUserCanPair": {
+      "Name": "FirstUserCanPair",
+      "Statements": [
+        {
+          "Actions": [
+            "Pairing:Button"
+          ],
+          "Allow": true,
+          "Conditions": [
+            { "NumberEqual": { "Pairing:IsPaired": 0 } }
+          ]
+        }
+      ],
+      "Version": 1
+    },
+    "HeatPumpRead": {
+      "Statements": [
+        {
+          "Actions": [
+            "HeatPump:Get"
+          ],
+          "Allow": true
+        }
+      ],
+      "Version": 1
+    },
+    "HeatPumpWrite": {
+      "Statements": [
+        {
+          "Actions": [
+            "HeatPump:Set"
+          ],
+          "Allow": true
+        }
+      ],
+      "Version": 1
+    },
+    "IAMFullAccess": {
+      "Name": "IAMFullAccess",
+      "Statements": [
+        {
+          "Actions": [
+            "IAM:AddUser",
+            "IAM:GetUser",
+            "IAM:ListUsers",
+            "IAM:AddRoleToUser",
+            "IAM:RemoveRoleFromUser"
+          ],
+          "Allow": true
+        }
+      ],
+      "Version": 1
+    },
+    "ModifyOwnUser": {
+      "Name": "IAMFullAccess",
+      "Statements": [
+        {
+          "Actions": [
+            "IAM:GetUser",
+            "IAM:ListUsers",
+            "IAM:AddFingerprint",
+            "IAM:RemoveFingerprint"
+          ],
+          "Allow": true,
+          "Conditions": [
+            { "StringEqual": { "Connection:UserId": { "Attribute": "IAM:UserId" } } }
+          ]
+        }
+      ],
+      "Version": 1
+    },
+    "ButtonPairAsGuest": {
+      "Version": 1,
+      "Statements": [
+        {
+          "Allow": true,
+          "Actions": [ "Pairing:ButtonGuest" ]
+        }
+      ]
     }
-  ]
+  },
+  "Roles": {
+    "Unpaired": [
+      "FirstUserCanPair",
+      "ButtonPairAsGuest"
+    ],
+    "FullAccess": [
+      "HeatPumpWrite",
+      "HeatPumpRead",
+      "IAMFullAccess"
+    ],
+    "GuestAccess": [
+      "HeatPumpRead",
+      "HeatPumpWrite",
+      "ModifyOwnUser"
+    ]
+  },
+  "Users": {
+    "Unpaired": {
+      "Fingerprints": [],
+      "Roles": [
+        "Unpaired"
+      ]
+    },
+    "owner": {
+      "Fingerprints": [
+      ],
+      "Roles": [
+        "FullAccess"
+      ]
+    }
+  }
 }
 )"_json;
-
-const json HeatPumpWrite = R"(
-{
-  "Version": 1,
-  "Statements": [
-    {
-      "Allow": true,
-      "Actions": [ "HeatPump:Set" ]
-    }
-  ]
-})"_json;
-
-const json IAMFullAccess = R"(
-{
-  "Version": 1,
-  "Name": "IAMFullAccess",
-  "Statements": [
-    {
-      "Actions": [ "IAM:AddUser", "IAM:GetUser", "IAM:ListUsers", "IAM:AddRoleToUser", "IAM:RemoveRoleFromUser" ],
-      "Allow": true
-    }
-  ]
-})"_json;
-
-const json ModifyOwnUser = R"(
-{
-  "Version": 1,
-  "Name": "ModifyOwnUser",
-  "Statements": [
-    {
-      "Allow": true,
-      "Actions": [ "IAM:AddFingerprint", "IAM:RemoveFingerprint", "IAM:SetName" ],
-      "Conditions": [ { "StringEqual": { "Connection:UserId": { "Attribute": "IAM:UserId" } } } ]
-    }
-  ]
-})"_json;
-
-const json FirstUserCanPair = R"(
-{
-  "Version": 1,
-  "Name": "FirstUserCanPair",
-  "Statements": [
-    {
-      "Allow": true,
-      "Actions": [ "Pairing:Button" ],
-      "Conditions": [ { "NumberEqual": { "Pairing:IsPaired": 0 } } ]
-    }
-  ]
-})"_json;
 
 #endif

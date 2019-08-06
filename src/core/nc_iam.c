@@ -22,6 +22,8 @@ static np_error_code nc_iam_string_equal(struct nc_iam_attributes* attributes, C
 static np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValue* parameters);
 static np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborValue* parameters);
 
+static void nc_iam_remove_all_fingerprints_user(struct nc_iam* iam, struct nc_iam_user* user);
+
 void nc_iam_init(struct nc_iam* iam)
 {
     iam->version = 0;
@@ -604,6 +606,40 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
     nc_iam_list_init(&user->roles);
     nc_iam_list_insert(&iam->users, user);
     nc_iam_updated(iam);
+    return NABTO_EC_OK;
+}
+
+void nc_iam_remove_all_fingerprints_user(struct nc_iam* iam, struct nc_iam_user* user)
+{
+    struct nc_iam_list_entry* iterator = iam->fingerprints.sentinel.next;
+    while (iterator != &iam->fingerprints.sentinel) {
+        struct nc_iam_fingerprint* fp = iterator->item;
+        struct nc_iam_list_entry* current = iterator;
+        iterator = iterator->next;
+
+        free(fp);
+        nc_iam_list_remove(current);
+    }
+}
+
+np_error_code nc_iam_delete_user(struct nc_device_context* device, const char* name)
+{
+    struct nc_iam_user* user = nc_iam_find_user_by_name(&device->iam, name);
+    if (!user) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    }
+
+    // check that user is not used by a connection
+    if (nc_device_user_in_use(device, user)) {
+        return NABTO_EC_IN_USE;
+    }
+
+    // remove all fingerprints the user has
+    nc_iam_remove_all_fingerprints_user(&device->iam, user);
+
+    // remove the user
+    nc_iam_list_remove_item(&device->iam.users, user);
+    free(user);
     return NABTO_EC_OK;
 }
 

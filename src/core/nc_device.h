@@ -59,4 +59,6 @@ uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev,
 
 struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
 
+bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user);
+
 #endif // NC_DEVICE_H

@@ -29,69 +29,19 @@ bool validate_config(const json& config) {
 
 void HeatPump::setMode(Mode mode)
 {
-    state_["HeatPump"]["Mode"] = modeToString(mode);
+    config_["HeatPump"]["Mode"] = modeToString(mode);
+    saveConfig();
 }
 void HeatPump::setTarget(double target)
 {
-    state_["HeatPump"]["Target"] = target;
+    config_["HeatPump"]["Target"] = target;
+    saveConfig();
 }
 
 void HeatPump::setPower(bool power)
 {
-    state_["HeatPump"]["Power"] = power;
-}
-
-HeatPump::Mode HeatPump::getMode()
-{
-    try {
-        std::string mode = state_["HeatPump"]["Mode"].get<std::string>();
-        if (mode == "COOL") {
-            return Mode::COOL;
-        } else if (mode == "HEAT") {
-            return Mode::HEAT;
-        } else if (mode == "FAN") {
-            return Mode::FAN;
-        } else if (mode == "DRY") {
-            return Mode::DRY;
-        }
-    } catch (std::exception& e) {
-    }
-    // default
-    return Mode::COOL;
-}
-
-double HeatPump::getTarget()
-{
-    try {
-        return state_["HeatPump"]["Target"].get<double>();
-    } catch (std::exception& e) {
-
-    }
-
-    // default sane value 42/2
-    return 21;
-}
-
-bool HeatPump::getPower()
-{
-    try {
-        return state_["HeatPump"]["Power"].get<bool>();
-    } catch (std::exception& e) {
-    }
-
-    // sane value
-    return false;
-}
-
-double HeatPump::getTemperature()
-{
-    // TODO implement changing temperature logic
-    return 22.3;
-}
-
-const char* HeatPump::getModeString()
-{
-    return modeToString(getMode());
+    config_["HeatPump"]["Power"] = power;
+    saveConfig();
 }
 
 const char* HeatPump::modeToString(HeatPump::Mode mode)
@@ -104,6 +54,7 @@ const char* HeatPump::modeToString(HeatPump::Mode mode)
         default: return "UNKNOWN";
     }
 }
+
 
 void HeatPump::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
 {

@@ -8,8 +8,10 @@
 
 #include <mutex>
 #include <thread>
+#include <sstream>
 
 static const char* OWNER_USER_NAME = "owner";
+static const char* GUEST_ROLE_NAME = "GuestAccess";
 
 using json = nlohmann::json;
 
@@ -38,13 +40,11 @@ class HeatPump {
     void setMode(Mode mode);
     void setTarget(double target);
     void setPower(bool on);
-
-    Mode getMode();
-    const char* modeToString(Mode mode);
+    const char* modeToString(HeatPump::Mode mode);
     const char* getModeString();
-    double getTarget();
-    bool getPower();
-    double getTemperature();
+    json getState() {
+        return config_["HeatPump"];
+    }
 
     bool beginPairing() {
         std::unique_lock<std::mutex> lock(mutex_);
@@ -74,6 +74,13 @@ class HeatPump {
         return NABTO_DEVICE_EC_OK;
     }
 
+    std::string nextGuestName() {
+        std::stringstream ss;
+        ss << "Guest-" << 42;
+
+        return "42";
+    }
+
     std::unique_ptr<std::thread> pairingThread_;
   private:
 
@@ -85,7 +92,6 @@ class HeatPump {
     NabtoDevice* device_;
     json config_;
     const std::string& configFile_;
-    json state_;
     bool pairing_ = false;
     uint64_t currentIamVersion_;
 

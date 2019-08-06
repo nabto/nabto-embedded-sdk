@@ -116,17 +116,27 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_create(NabtoDevice* device, const char* user)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    // TODO check return value
-    nc_iam_create_user(&dev->core.iam, user);
+    ec = nc_iam_create_user(&dev->core.iam, user);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_users_delete(NabtoDevice* device, const char* user);
+nabto_device_iam_users_delete(NabtoDevice* device, const char* user)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    ec = nc_iam_delete_user(&dev->core.iam, user);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_users_add_role(NabtoDevice* device, const char* user, const char* role)

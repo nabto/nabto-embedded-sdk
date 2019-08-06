@@ -48,7 +48,8 @@ typedef enum {
     NABTO_EC_NOT_A_STRING,
     NABTO_EC_NOT_A_NUMBER,
     NABTO_EC_INVALID_CONNECTION,
-    NABTO_EC_INVALID_ARGUMENT
+    NABTO_EC_INVALID_ARGUMENT,
+    NABTO_EC_IN_USE
 } np_error_code;
 
 const char* np_error_code_to_string(np_error_code ec);

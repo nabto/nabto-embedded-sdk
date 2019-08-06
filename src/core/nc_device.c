@@ -164,3 +164,8 @@ struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_cont
 {
     return nc_client_connect_dispatch_connection_from_ref(&dev->clientConnect, ref);
 }
+
+bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user)
+{
+    return nc_client_connect_dispatch_user_in_use(&dev->clientConnect, user);
+}

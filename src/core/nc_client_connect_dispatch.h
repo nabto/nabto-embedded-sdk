@@ -34,5 +34,7 @@ np_error_code nc_client_connect_dispatch_close_connection(struct nc_client_conne
 
 struct nc_client_connection* nc_client_connect_dispatch_connection_from_ref(struct nc_client_connect_dispatch_context* ctx, uint64_t ref);
 
+bool nc_client_connect_dispatch_user_in_use(struct nc_client_connect_dispatch_context* ctx, struct nc_iam_user* user);
+
 
 #endif

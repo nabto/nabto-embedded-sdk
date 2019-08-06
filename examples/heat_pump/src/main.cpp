@@ -92,76 +92,22 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     config["ProductId"] = productId;
     config["DeviceId"] = deviceId;
     config["Server"] = server;
+    config["HeatPump"]["Mode"] = "COOL";
+    config["HeatPump"]["Power"] = false;
+    config["HeatPump"]["Target"] = 22.3;
+    config["HeatPump"]["Temperature"] = 21.2;
 
-    if (nabto_device_iam_users_create(device, "Unpaired") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (nabto_device_iam_set_default_user(device, "Unpaired") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
 
-    if (nabto_device_iam_users_create(device, OWNER_USER_NAME) != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
+    std::vector<uint8_t> iamCbor = json::to_cbor(defaultHeatPumpIam);
+    std::cout << "iam size " << iamCbor.size() << std::endl;
 
-    if (nabto_device_iam_roles_create(device, "FirstUser") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (nabto_device_iam_users_add_role(device, "Unpaired", "FirstUser") != NABTO_DEVICE_EC_OK) {
+    // test the iam config
+    if (nabto_device_iam_load(device, iamCbor.data(), iamCbor.size()) != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Error loading default iam" << std::endl;
         return false;
     }
 
-    if (nabto_device_iam_roles_create(device, "FullAccess") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (nabto_device_iam_users_add_role(device, OWNER_USER_NAME, "FullAccess") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-
-
-    if (load_policy(device, "HeatPumpRead", HeatPumpRead) != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (load_policy(device, "HeatPumpWrite", HeatPumpWrite) != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (load_policy(device, "FirstUserCanPair", FirstUserCanPair) != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (load_policy(device, "IAMFullAccess", IAMFullAccess) != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (load_policy(device, "ModifyOwnUser", IAMFullAccess) != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-
-
-
-    if (nabto_device_iam_roles_add_policy(device, "FirstUser", "FirstUserCanPair") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-
-    if (nabto_device_iam_roles_add_policy(device, "FullAccess", "HeatPumpWrite") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    if (nabto_device_iam_roles_add_policy(device, "FullAccess", "IAMFullAccess") != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-
-
-    uint64_t version;
-    size_t used;
-    if (nabto_device_iam_dump(device, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OUT_OF_MEMORY) {
-        return false;
-    }
-
-    std::vector<uint8_t> buffer(used);
-    if(nabto_device_iam_dump(device, &version, buffer.data(), buffer.size(), &used) != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-
-    config["Iam"] = json::from_cbor(buffer);
-
+    config["Iam"] = defaultHeatPumpIam;
 
     std::string tmpFile = "tmp.json";
     heat_pump_save_config(configFile, tmpFile, config);

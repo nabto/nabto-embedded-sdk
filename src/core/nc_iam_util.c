@@ -74,6 +74,7 @@ bool nc_iam_hex_to_data(const char* hex, uint8_t* data, size_t dataLength)
     if (strlen(hex) != dataLength * 2) {
         return false;
     }
+    memset(data, 0, dataLength);
 
     size_t index = 0;
     while (index < hexLength) {

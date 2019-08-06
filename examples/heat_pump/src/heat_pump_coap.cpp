@@ -123,8 +123,36 @@ bool pairFirstUser( HeatPump* application, const std::string& fingerprint)
     return true;
 }
 
-void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application)
+bool pairGuest(HeatPump* application, const std::string& fingerprint)
 {
+    auto guestName = application->nextGuestName();
+
+    NabtoDeviceError ec = nabto_device_iam_users_create(application->getDevice(), guestName.c_str());
+    if (ec) {
+        return false;
+    }
+
+    ec = nabto_device_iam_users_add_role(application->getDevice(), guestName.c_str(), GUEST_ROLE_NAME);
+    if (ec) {
+        nabto_device_iam_users_delete(application->getDevice(), guestName.c_str());
+        return false;
+    }
+
+    ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), guestName.c_str(), fingerprint.c_str());
+    if (ec) {
+        nabto_device_iam_users_delete(application->getDevice(), guestName.c_str());
+        return false;
+    }
+    std::cout << "Added the user " << guestName << " with the fingerprint " << fingerprint << " as a guest user to the heat pump" << std::endl;
+    return true;
+}
+
+void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, bool asOwner)
+{
+    if (!application->beginPairing()) {
+        nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
+        return;
+    }
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
     char* fingerprint;
     nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
@@ -183,16 +211,26 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
         return;
     }
 
-    if (!application->beginPairing()) {
-        nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
-        return;
-    }
-
-
-    application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application);
+    application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application, true);
     application->pairingThread_->detach();
 }
 
+void heat_pump_pairing_button_guest(NabtoDeviceCoapRequest* request, void* userData)
+{
+    HeatPump* application = (HeatPump*)userData;
+
+    NabtoDeviceError effect = nabto_device_iam_check_action(
+        application->getDevice(),
+        nabto_device_coap_request_get_connection_ref(request), "Pairing:ButtonGuest");
+
+    if (effect != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 403, "Unauthorized");
+        return;
+    }
+
+    application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application, false);
+    application->pairingThread_->detach();
+}
 
 // Change heat_pump power state (turn it on or off)
 /**
@@ -303,33 +341,11 @@ void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
         return;
     }
 
-    uint8_t buffer[128];
-    CborEncoder encoder;
-    cbor_encoder_init(&encoder, buffer, 128, 0);
-
-    CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-
-    cbor_encode_text_stringz(&map, "power");
-    cbor_encode_boolean(&map, application->getPower());
-
-    cbor_encode_text_stringz(&map, "mode");
-    cbor_encode_text_stringz(&map, application->getModeString());
-
-    cbor_encode_text_stringz(&map, "temperature");
-    cbor_encode_double(&map, application->getTemperature());
-
-    cbor_encode_text_stringz(&map, "target");
-    cbor_encode_double(&map, application->getTarget());
-
-    CborError ec = cbor_encoder_close_container(&encoder, &map);
-    if (ec) {
-        return heat_pump_coap_send_error(request, 500, "Internal error");
-    }
+    auto d = json::to_cbor(application->getState());
 
     NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
     nabto_device_coap_response_set_code(response, 205);
     nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    nabto_device_coap_response_set_payload(response, buffer, cbor_encoder_get_buffer_size(&encoder, buffer));
+    nabto_device_coap_response_set_payload(response, d.data(), d.size());
     nabto_device_coap_response_ready(response);
 }
