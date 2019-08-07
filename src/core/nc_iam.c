@@ -528,7 +528,7 @@ np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
         struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
         while(roleIterator != &user->roles.sentinel) {
             if (roleIterator->item == role) {
-                return NABTO_EC_RESOURCE_IN_USE;
+                return NABTO_EC_IN_USE;
             }
             roleIterator = roleIterator->next;
         }
@@ -646,8 +646,10 @@ void nc_iam_remove_all_fingerprints_user(struct nc_iam* iam, struct nc_iam_user*
         struct nc_iam_list_entry* current = iterator;
         iterator = iterator->next;
 
-        free(fp);
-        nc_iam_list_remove(current);
+        if (fp->user == user) {
+            free(fp);
+            nc_iam_list_remove(current);
+        }
     }
 }
 
@@ -669,6 +671,7 @@ np_error_code nc_iam_delete_user(struct nc_device_context* device, const char* n
     // remove the user
     nc_iam_list_remove_item(&device->iam.users, user);
     free(user);
+    nc_iam_updated(&device->iam);
     return NABTO_EC_OK;
 }
 

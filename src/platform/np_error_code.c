@@ -27,6 +27,9 @@ const char* np_error_code_to_string(np_error_code ec)
         case NABTO_EC_ABORTED: return "Operation was aborted";
         case NABTO_EC_STREAM_CLOSED: return "Stream closed";
         case NABTO_EC_STREAM_EOF: return "Stream reached end of file";
+        case NABTO_EC_IN_USE: return "In use";
+        case NABTO_EC_NO_SUCH_RESOURCE: return "No such resource";
+
     }
     return "Unknown error";
 }
