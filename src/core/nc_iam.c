@@ -35,6 +35,8 @@ void nc_iam_init(struct nc_iam* iam)
     nc_iam_list_init(&iam->roles);
     nc_iam_list_init(&iam->policies);
     iam->defaultRole = NULL;
+
+
 }
 
 void nc_iam_deinit(struct nc_iam* iam)
@@ -159,9 +161,6 @@ np_error_code nc_iam_attributes_add_number(struct nc_iam_attributes* attributes,
 
 np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength)
 {
-    if (connection == NULL) {
-        return NABTO_EC_FAILED;
-    }
     struct nc_iam_attributes attributes;
     memset(&attributes, 0, sizeof(struct nc_iam_attributes));
     np_error_code ec;
@@ -172,11 +171,19 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
             return ec;
         }
     }
+    return nc_iam_check_access_attributes(connection, action, &attributes);
+}
+
+np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connection, const char* action, struct nc_iam_attributes* attributes)
+{
+    if (connection == NULL) {
+        return NABTO_EC_FAILED;
+    }
 
     struct nc_iam_user* user = connection->user;
     bool granted = false;
     if (user != NULL) {
-        nc_iam_attributes_add_string(&attributes, "Connection:UserId", connection->user->id);
+        nc_iam_attributes_add_string(attributes, "Connection:UserId", connection->user->id);
 
         struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
         while(roleIterator != &user->roles.sentinel) {
@@ -184,7 +191,7 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
             struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
             while(policyIterator != & role->policies.sentinel) {
                 struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
-                enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(&attributes, action, policy);
+                enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(attributes, action, policy);
                 if (result == NC_IAM_EVALUATION_RESULT_NONE) {
                     // no change
                 } else if (result == NC_IAM_EVALUATION_RESULT_ALLOW) {
@@ -203,7 +210,7 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
         struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
         while(policyIterator != & role->policies.sentinel) {
             struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
-            enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(&attributes, action, policy);
+            enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(attributes, action, policy);
             if (result == NC_IAM_EVALUATION_RESULT_NONE) {
                 // no change
             } else if (result == NC_IAM_EVALUATION_RESULT_ALLOW) {
@@ -416,15 +423,18 @@ np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValu
 
 np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborValue* parameters)
 {
+    np_error_code ec;
     char attributeName1[33];
     char attributeName2[33];
     CborValue parameter;
     cbor_value_enter_container(parameters, &parameter);
-    if (!nc_iam_cbor_get_string(&parameter, attributeName1, 33)) {
+    ec = nc_iam_cbor_get_string(&parameter, attributeName1, 33);
+    if (ec != NABTO_EC_OK) {
         return NABTO_EC_NOT_A_STRING;
     }
     cbor_value_advance(&parameter);
-    if (!nc_iam_cbor_get_string(&parameter, attributeName2, 33)) {
+    ec = nc_iam_cbor_get_string(&parameter, attributeName2, 33);
+    if (ec != NABTO_EC_OK) {
         return NABTO_EC_NOT_A_STRING;
     }
 

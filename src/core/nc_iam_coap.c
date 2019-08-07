@@ -5,7 +5,8 @@
 
 #include <stdlib.h>
 
-static void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* userData);
+static void nc_iam_coap_users_list(struct nabto_coap_server_request* request, void* userData);
+static void nc_iam_coap_users_get(struct nabto_coap_server_request* request, void* userData);
 
 static void access_denied(struct nabto_coap_server_request* request);
 
@@ -20,10 +21,10 @@ void nc_iam_coap_register_handlers(struct nc_device_context* device)
 {
     nabto_coap_server_add_resource(nc_coap_server_get_server(&device->coap), NABTO_COAP_CODE_GET,
                                    (const char*[]){"iam", "users", NULL},
-                                   nc_iam_coap_list_users, device);
-    /* nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_GET, */
-    /*                                (const char*[]){"iam", "users", "{user}"}, */
-    /*                                nc_iam_coap_get_user, device); */
+                                   nc_iam_coap_users_list, device);
+    nabto_coap_server_add_resource(nc_coap_server_get_server(&device->coap), NABTO_COAP_CODE_GET,
+                                   (const char*[]){"iam", "users", "{user}", NULL},
+                                   nc_iam_coap_users_get, device);
     /* nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_PUT, */
     /*                                (const char*[]){"iam", "users", "{user}", NULL }, */
     /*                                nc_iam_coap_create_user, device); */
@@ -53,7 +54,7 @@ static void create_cbor_response(struct nabto_coap_server_request* request, void
 /**
  * CoAP GET /iam/users
  */
-void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* userData)
+void nc_iam_coap_users_list(struct nabto_coap_server_request* request, void* userData)
 {
     struct nc_device_context* device = userData;
     np_error_code ec;
@@ -75,20 +76,52 @@ void nc_iam_coap_list_users(struct nabto_coap_server_request* request, void* use
     }
 }
 
+/**
+ * CoAP GET /iam/users/{user}
+ */
+void nc_iam_coap_users_get(struct nabto_coap_server_request* request, void* userData)
+{
+    struct nc_device_context* device = userData;
+    np_error_code ec;
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+
+    const char* user = nabto_coap_server_request_get_parameter(request, "user");
+
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+
+    ec = nc_iam_check_access_attributes(connection, "IAM:GetUser", &attributes);
+    if (ec == NABTO_EC_OK) {
+        uint8_t cbor[128];
+        size_t used;
+
+        ec = nc_iam_user_get(&device->iam, user, cbor, 128, &used);
+        if (ec) {
+            internal_error(request);
+        } else {
+            create_cbor_response(request, cbor, used);
+        }
+    } else {
+        // return 403
+        access_denied(request);
+    }
+}
+
 
 void access_denied(struct nabto_coap_server_request* request)
 {
-    nabto_coap_server_create_error_response(request, 403, "Access Denied");
+    nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), "Access Denied");
 }
 
 void internal_error(struct nabto_coap_server_request* request)
 {
-    nabto_coap_server_create_error_response(request, 500, "Internal Error");
+    nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,00), "Internal Error");
 }
 
 void bad_request(struct nabto_coap_server_request* request)
 {
-    nabto_coap_server_create_error_response(request, 400, "Bad Request");
+    nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,00), "Bad Request");
 }
 
 void ok_response(struct nabto_coap_server_request* request, uint16_t code)

@@ -101,6 +101,7 @@ struct nc_iam_user* nc_iam_find_user_by_name(struct nc_iam* iam, const char* nam
 struct nc_iam_role* nc_iam_get_default_role(struct nc_iam* iam);
 
 np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength);
+np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connection, const char* action, struct nc_iam_attributes* attributes);
 
 np_error_code nc_iam_attributes_add_string(struct nc_iam_attributes* attributes, const char* attributeName, const char* attribute);
 np_error_code nc_iam_attributes_add_number(struct nc_iam_attributes* attributes, const char* attributeName, int64_t number);

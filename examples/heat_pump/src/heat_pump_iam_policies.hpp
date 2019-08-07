@@ -71,7 +71,7 @@ const json defaultHeatPumpIam = R"(
           ],
           "Allow": true,
           "Conditions": [
-            { "StringEqual": { "Connection:UserId": { "Attribute": "IAM:UserId" } } }
+            { "AttributeEqual": { "Connection:UserId": "IAM:UserId" } }
           ]
         }
       ],
