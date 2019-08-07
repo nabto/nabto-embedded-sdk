@@ -46,7 +46,7 @@ CborError cbor_value_get_floating_point(CborValue* value, double* fp)
         }
         *fp = f;
         return ec;
-    } else if (cbor_value_is_float(value)) {
+    } else if (cbor_value_is_double(value)) {
         return cbor_value_get_double(value, fp);
     } else {
         return CborErrorIllegalType;

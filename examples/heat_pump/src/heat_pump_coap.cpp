@@ -333,7 +333,7 @@ void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData)
     }
 
     double target;
-    if (!cbor_value_get_floating_point(&value, &target)) {
+    if (cbor_value_get_floating_point(&value, &target) != CborNoError) {
         return heat_pump_coap_send_bad_request(request);
     }
     application->setTarget(target);
