@@ -780,8 +780,25 @@ np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* use
     if (!nc_iam_hex_to_data(fingerprintHex, fingerprint, 16)) {
         return NABTO_EC_INVALID_ARGUMENT;
     }
-    // TODO
-    return NABTO_EC_FAILED;
+    struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
+
+    struct nc_iam_list_entry* iterator = iam->fingerprints.sentinel.next;
+    while (iterator != &iam->fingerprints.sentinel) {
+        struct nc_iam_fingerprint* fp = iterator->item;
+        struct nc_iam_list_entry* current = iterator;
+        iterator = iterator->next;
+
+        if (fp->user == u && memcmp(fp->fingerprint, fingerprint, 16) == 0) {
+            free(fp);
+            nc_iam_list_remove(current);
+
+            nc_iam_updated(iam);
+            return NABTO_EC_OK;
+        }
+    }
+
+
+    return NABTO_EC_NO_SUCH_RESOURCE;
 }
 
 

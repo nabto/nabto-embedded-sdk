@@ -41,6 +41,12 @@ void nc_iam_coap_register_handlers(struct nc_device_context* device)
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_DELETE,
                                    (const char*[]){"iam", "users", "{user}", NULL },
                                    nc_iam_coap_users_delete, device);
+    nabto_coap_server_add_resource(server, NABTO_COAP_CODE_PUT,
+                                   (const char*[]){"iam", "users", "{user}", "fingerprints", "{fingerprint}", NULL },
+                                   nc_iam_coap_users_add_fingerprint, device);
+    nabto_coap_server_add_resource(server, NABTO_COAP_CODE_DELETE,
+                                   (const char*[]){"iam", "users", "{user}", "fingerprints", "{fingerprint}", NULL },
+                                   nc_iam_coap_users_remove_fingerprint, device);
 }
 
 
@@ -68,7 +74,7 @@ void nc_iam_coap_users_list(struct nabto_coap_server_request* request, void* use
 
         ec = nc_iam_list_users(&device->iam, cbor, 128, &used);
         if (ec) {
-            internal_error(request);
+            error_response(request, ec);
         } else {
             create_cbor_response(request, cbor, used);
         }
@@ -100,7 +106,7 @@ void nc_iam_coap_users_get(struct nabto_coap_server_request* request, void* user
 
         ec = nc_iam_user_get(&device->iam, user, cbor, 128, &used);
         if (ec) {
-            internal_error(request);
+            error_response(request, ec);
         } else {
             create_cbor_response(request, cbor, used);
         }
@@ -129,7 +135,7 @@ void nc_iam_coap_users_create(struct nabto_coap_server_request* request, void* u
     if (ec == NABTO_EC_OK) {
         ec = nc_iam_create_user(&device->iam, user);
         if (ec) {
-            internal_error(request);
+            error_response(request, ec);
         } else {
             ok_response(request, NABTO_COAP_CODE(2,01));
         }
@@ -168,6 +174,59 @@ void nc_iam_coap_users_delete(struct nabto_coap_server_request* request, void* u
     }
 }
 
+void nc_iam_coap_users_add_fingerprint(struct nabto_coap_server_request* request, void* userData)
+{
+    struct nc_device_context* device = userData;
+    np_error_code ec;
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+
+    const char* user = nabto_coap_server_request_get_parameter(request, "user");
+    const char* fingerprint = nabto_coap_server_request_get_parameter(request, "fingerprint");
+
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+
+    ec = nc_iam_check_access_attributes(connection, "IAM:AddFingerprintUser", &attributes);
+    if (ec == NABTO_EC_OK) {
+        ec = nc_iam_user_add_fingerprint(&device->iam, user, fingerprint);
+        if (ec) {
+            error_response(request, ec);
+        } else {
+            ok_response(request, NABTO_COAP_CODE(2,01));
+        }
+    } else {
+        // return 403
+        access_denied(request);
+    }
+}
+
+void nc_iam_coap_users_remove_fingerprint(struct nabto_coap_server_request* request, void* userData)
+{
+    struct nc_device_context* device = userData;
+    np_error_code ec;
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+
+    const char* user = nabto_coap_server_request_get_parameter(request, "user");
+    const char* fingerprint = nabto_coap_server_request_get_parameter(request, "fingerprint");
+
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+
+    ec = nc_iam_check_access_attributes(connection, "IAM:RemoveFingerprintUser", &attributes);
+    if (ec == NABTO_EC_OK) {
+        ec = nc_iam_user_remove_fingerprint(&device->iam, user, fingerprint);
+        if (ec) {
+            error_response(request, ec);
+        } else {
+            ok_response(request, NABTO_COAP_CODE(2,02));
+        }
+    } else {
+        // return 403
+        access_denied(request);
+    }
+}
 
 
 void access_denied(struct nabto_coap_server_request* request)
@@ -185,6 +244,7 @@ nabto_coap_code ec_to_coap_code(np_error_code ec)
     switch (ec) {
         case NABTO_EC_NO_SUCH_RESOURCE: return NABTO_COAP_CODE(4,04);
         case NABTO_EC_IN_USE: return NABTO_COAP_CODE(4,00);
+        case NABTO_EC_INVALID_ARGUMENT: return NABTO_COAP_CODE(4,00);
         default: return NABTO_COAP_CODE(5,00);
     }
 }
