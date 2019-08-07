@@ -46,7 +46,7 @@ struct nc_iam_policy* nc_iam_find_policy(struct nc_iam* iam, const char* policy)
     return NULL;
 }
 
-void nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
+np_error_code nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
 {
     struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
     while(iterator != &iam->policies.sentinel) {
@@ -56,20 +56,19 @@ void nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
             nc_iam_policy_free(p);
             // TODO return np_error_code
             nc_iam_updated(iam);
-            return;
+            return NABTO_EC_OK;
         }
         iterator = iterator->next;
     }
 
-
+    return NABTO_EC_NO_SUCH_RESOURCE;
 }
 
-void nc_iam_list_policies(struct nc_iam* iam, void** cbor, size_t* cborLength)
+np_error_code nc_iam_list_policies(struct nc_iam* iam, void* buffer, size_t bufferLength, size_t* used)
 {
-    uint8_t buffer[1024];
     CborEncoder encoder;
     CborEncoder map;
-    cbor_encoder_init(&encoder, buffer, 1024, 0);
+    cbor_encoder_init(&encoder, buffer, bufferLength, 0);
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
 
     struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
@@ -80,11 +79,14 @@ void nc_iam_list_policies(struct nc_iam* iam, void** cbor, size_t* cborLength)
     }
     cbor_encoder_close_container(&encoder, &map);
 
-    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
-    *cbor = malloc(used);
-    memcpy(*cbor, buffer, used);
-    *cborLength = used;
-    return;
+    size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (extra != 0) {
+        *used = bufferLength + extra;
+        return NABTO_EC_OUT_OF_MEMORY;
+    } else {
+        *used = cbor_encoder_get_buffer_size(&encoder, buffer);
+    }
+    return NABTO_EC_OK;
 }
 
 np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, const void* cbor, size_t cborLength)

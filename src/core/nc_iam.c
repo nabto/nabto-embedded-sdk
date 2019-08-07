@@ -543,13 +543,11 @@ np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
     return NABTO_EC_OK;
 }
 
-np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength)
+np_error_code nc_iam_list_roles(struct nc_iam* iam, void* buffer, size_t bufferLength, size_t* used)
 {
-    uint8_t buffer[1024];
-
     CborEncoder encoder;
     CborEncoder array;
-    cbor_encoder_init(&encoder, buffer, 1024, 0);
+    cbor_encoder_init(&encoder, buffer, bufferLength, 0);
     cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
 
     struct nc_iam_list_entry* iterator = iam->roles.sentinel.next;
@@ -560,19 +558,18 @@ np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLen
     };
     cbor_encoder_close_container(&encoder, &array);
 
-    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
-    *cbor = malloc(used);
-    if (*cbor == NULL) {
+    size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (extra != 0) {
+        *used = bufferLength + extra;
         return NABTO_EC_OUT_OF_MEMORY;
+    } else {
+        *used = cbor_encoder_get_buffer_size(&encoder, buffer);
     }
-    memcpy(*cbor, buffer, used);
-    *cborLength = used;
     return NABTO_EC_OK;
 }
 
-np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void** cbor, size_t* cborLength)
+np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void* buffer, size_t bufferLength, size_t* used)
 {
-    uint8_t buffer[1024];
     CborEncoder encoder;
     CborEncoder array;
     CborEncoder map;
@@ -582,7 +579,7 @@ np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void** cbor,
         return NABTO_EC_NO_SUCH_RESOURCE;
     }
 
-    cbor_encoder_init(&encoder, buffer, 1024, 0);
+    cbor_encoder_init(&encoder, buffer, bufferLength, 0);
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
     cbor_encode_text_stringz(&map, "Policies");
     cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
@@ -595,14 +592,13 @@ np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void** cbor,
     }
     cbor_encoder_close_container(&map, &array);
     cbor_encoder_close_container(&encoder, &map);
-
-    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
-    *cbor = malloc(used);
-    if (*cbor == NULL) {
+    size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (extra != 0) {
+        *used = bufferLength + extra;
         return NABTO_EC_OUT_OF_MEMORY;
+    } else {
+        *used = cbor_encoder_get_buffer_size(&encoder, buffer);
     }
-    memcpy(*cbor, buffer, used);
-    *cborLength = used;
     return NABTO_EC_OK;
 }
 

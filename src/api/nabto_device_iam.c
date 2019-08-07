@@ -220,26 +220,26 @@ nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user,
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t* cborLength)
+nabto_device_iam_roles_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    ec = nc_iam_list_roles(&dev->core.iam, cbor, cborLength);
+    ec = nc_iam_list_roles(&dev->core.iam, buffer, bufferLength, used);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void** cbor, size_t* cborLength)
+nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void* buffer, size_t bufferLength, size_t* used)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    ec = nc_iam_role_get(&dev->core.iam, role, cbor, cborLength);
+    ec = nc_iam_role_get(&dev->core.iam, role, buffer, bufferLength, used);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
@@ -315,48 +315,50 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_policy_delete(NabtoDevice* device, const char* policy)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    // TODO check return value
-    nc_iam_policy_delete(&dev->core.iam, policy);
+    ec = nc_iam_policy_delete(&dev->core.iam, policy);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_get(NabtoDevice* device, const char* policy, void** cbor, size_t* cborLength)
+nabto_device_iam_policy_get(NabtoDevice* device, const char* policy, void* buffer, size_t bufferLength, size_t* used)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec;
+    ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    // TODO check return value
     struct nc_iam_policy* p = nc_iam_find_policy(&dev->core.iam, policy);
     if (p == NULL) {
-        // TODO policy not found or just not found
-        ec = NABTO_DEVICE_EC_FAILED;
+        ec = NABTO_EC_NO_SUCH_RESOURCE;
     } else {
-
-        *cbor = malloc(p->cborLength);
-        memcpy(*cbor, p->cbor, p->cborLength);
-        *cborLength = p->cborLength;
+        *used = p->cborLength;
+        if (p->cborLength > bufferLength) {
+            ec = NABTO_EC_OUT_OF_MEMORY;
+        } else {
+            memcpy(buffer, p->cbor, p->cborLength);
+            ec = NABTO_EC_OK;
+        }
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_list(NabtoDevice* device, void** cbor, size_t* cborLength)
+nabto_device_iam_policy_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    nc_iam_list_policies(&dev->core.iam, cbor, cborLength);
+    ec = nc_iam_list_policies(&dev->core.iam, buffer, bufferLength, used);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }

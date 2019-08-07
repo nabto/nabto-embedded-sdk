@@ -122,10 +122,10 @@ np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, 
 np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* user, const char* fingerprint);
 
 // ROLES
-np_error_code nc_iam_list_roles(struct nc_iam* iam, void** cbor, size_t* cborLength);
+np_error_code nc_iam_list_roles(struct nc_iam* iam, void* buffer, size_t bufferLength, size_t* used);
 np_error_code nc_iam_create_role(struct nc_iam* iam, const char* name);
 np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name);
-np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void** cbor, size_t* cborLength);
+np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void* buffer, size_t bufferLength, size_t* used);
 
 np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const char* policy);
 np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, const char* policy);

@@ -84,7 +84,7 @@ bool heat_pump_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* par
         heat_pump_coap_send_error(request, 400, "Missing payload");
         return false;
     }
-    cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, 0);
+    cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
     return true;
 }
 
@@ -262,7 +262,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
     }
 
     bool powerState;
-    if (!cbor_value_is_boolean(&value) || !cbor_value_get_boolean(&value, &powerState)) {
+    if (!cbor_value_is_boolean(&value) || cbor_value_get_boolean(&value, &powerState) != CborNoError) {
         heat_pump_coap_send_error(request, 400, "Invalid request");
         return;
     }
@@ -298,13 +298,13 @@ void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
     const char* dry = "DRY";
     bool match;
 
-    if (cbor_value_text_string_equals(&value, cool, &match) && match) {
+    if ((cbor_value_text_string_equals(&value, cool, &match) == CborNoError) && match) {
         application->setMode(HeatPump::Mode::COOL);
-    } else if (cbor_value_text_string_equals(&value, heat, &match) && match) {
+    } else if ((cbor_value_text_string_equals(&value, heat, &match) == CborNoError) && match) {
         application->setMode(HeatPump::Mode::HEAT);
-    } else if (cbor_value_text_string_equals(&value, fan, &match) && match) {
+    } else if ((cbor_value_text_string_equals(&value, fan, &match) == CborNoError) && match) {
         application->setMode(HeatPump::Mode::FAN);
-    } else if (cbor_value_text_string_equals(&value, dry, &match) && match) {
+    } else if ((cbor_value_text_string_equals(&value, dry, &match) == CborNoError) && match) {
         application->setMode(HeatPump::Mode::DRY);
     } else {
         return heat_pump_coap_send_bad_request(request);

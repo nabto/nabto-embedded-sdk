@@ -142,10 +142,10 @@ nabto_device_iam_users_remove_fingerprint(NabtoDevice* device, const char* user,
 
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_roles_list(NabtoDevice* device, void** cbor, size_t* cborLength);
+nabto_device_iam_roles_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void** cbor, size_t* cborLength);
+nabto_device_iam_roles_get(NabtoDevice* device, const char* role, void* buffer, size_t bufferLength, size_t* used);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_roles_create(NabtoDevice* device, const char* role);
@@ -170,10 +170,10 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_policy_delete(NabtoDevice* device, const char* policy);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_get(NabtoDevice* device, const char* policy, void** cbor, size_t* cborLength);
+nabto_device_iam_policy_get(NabtoDevice* device, const char* policy, void* buffer, size_t bufferLength, size_t* used);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_list(NabtoDevice* device, void** cbor, size_t* cborLength);
+nabto_device_iam_policy_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used);
 
 
 
