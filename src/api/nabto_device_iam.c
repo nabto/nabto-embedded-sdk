@@ -332,19 +332,7 @@ nabto_device_iam_policy_get(NabtoDevice* device, const char* policy, void* buffe
     np_error_code ec;
     ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-
-    struct nc_iam_policy* p = nc_iam_find_policy(&dev->core.iam, policy);
-    if (p == NULL) {
-        ec = NABTO_EC_NO_SUCH_RESOURCE;
-    } else {
-        *used = p->cborLength;
-        if (p->cborLength > bufferLength) {
-            ec = NABTO_EC_OUT_OF_MEMORY;
-        } else {
-            memcpy(buffer, p->cbor, p->cborLength);
-            ec = NABTO_EC_OK;
-        }
-    }
+    ec = nc_iam_policy_get(&dev->core.iam, policy, buffer, bufferLength, used);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);

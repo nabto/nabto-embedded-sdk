@@ -104,6 +104,23 @@ np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, co
     return NABTO_EC_OK;
 }
 
+np_error_code nc_iam_policy_get(struct nc_iam* iam, const char* name, void* buffer, size_t bufferLength, size_t* used)
+{
+    struct nc_iam_policy* p = nc_iam_find_policy(iam, name);
+    if (p == NULL) {
+        return NABTO_EC_NO_SUCH_RESOURCE;
+    } else {
+        *used = p->cborLength;
+        if (p->cborLength > bufferLength) {
+            return NABTO_EC_OUT_OF_MEMORY;
+        } else {
+            memcpy(buffer, p->cbor, p->cborLength);
+            return NABTO_EC_OK;
+        }
+    }
+    return NABTO_EC_OK;
+}
+
 /**
  * Format of a policy
 {
