@@ -44,7 +44,7 @@ void nc_iam_coap_register_handlers(struct nc_device_context* device)
 static void create_cbor_response(struct nabto_coap_server_request* request, void* cbor, size_t cborLength)
 {
     struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
-    nabto_coap_server_response_set_code(response, 205);
+    nabto_coap_server_response_set_code(response, NABTO_COAP_CODE(2,05));
     nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
     nabto_coap_server_response_set_payload(response, cbor, cborLength);
     nabto_coap_server_response_ready(response);

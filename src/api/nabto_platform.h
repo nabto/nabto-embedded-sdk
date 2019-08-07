@@ -6,6 +6,7 @@
 #include <platform/np_logging.h>
 
 void nabto_device_init_platform(struct np_platform* pl);
-void nabto_device_init_platform_modules(struct np_platform* pl, const char* devicePublicKey, const char* devicePrivateKey);
+void nabto_device_init_platform_modules(struct np_platform* pl);
+void nabto_device_init_dtls_modules(struct np_platform* pl, const char* devicePublicKey, const char* devicePrivateKey);
 
 #endif

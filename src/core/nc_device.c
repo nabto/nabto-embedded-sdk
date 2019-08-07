@@ -1,4 +1,5 @@
 #include "nc_device.h"
+#include "nc_iam_coap.h"
 #include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_CORE
@@ -7,9 +8,12 @@ void nc_device_attached_cb(const np_error_code ec, void* data);
 uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 
 
-void nc_device_init(struct nc_device_context* device)
+void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
+    device->pl = pl;
     nc_iam_init(&device->iam);
+    nc_coap_server_init(pl, &device->coap);
+    nc_iam_coap_register_handlers(device);
 }
 
 void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
@@ -94,18 +98,17 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     nc_udp_dispatch_async_create(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_created_cb, dev);
 }
 
-np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
+np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
                               const char* hostname, const char* stunHost,
                               const uint16_t port)
 {
+    struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
-    dev->pl = pl;
     dev->stopping = false;
     dev->stunHost = stunHost;
     nc_stream_manager_init(&dev->streamManager, pl);
-    nc_coap_server_init(pl, &dev->coap);
     nc_client_connect_dispatch_init(&dev->clientConnect, pl, dev);
 
     dev->attachParams.appName = appName;

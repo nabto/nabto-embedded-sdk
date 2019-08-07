@@ -42,10 +42,10 @@ struct nc_device_context {
     void* closeCbData;
 };
 
-void nc_device_init(struct nc_device_context* dev);
+void nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
 
 
-np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
+np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
                               const char* hostname, const char* stunHost,

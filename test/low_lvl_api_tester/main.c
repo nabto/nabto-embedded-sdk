@@ -82,13 +82,14 @@ int main() {
 
     nabto_device_init_platform(&pl);
     nabto_device_init_platform_modules(&pl, devicePublicKey, devicePrivateKey);
+    nc_device_init(&device, &pl);
     // start the core
-    ec = nc_device_start(&device, &pl, appName, appVersion, productId, deviceId, hostname, stunHost,4242);
+    ec = nc_device_start(&device, appName, appVersion, productId, deviceId, hostname, stunHost,4242);
     if (ec != NABTO_EC_OK) {
         // fail
     }
     nc_stream_manager_set_listener(&device.streamManager, &stream_listener, NULL);
-    
+
     while (true) {
         np_event_queue_execute_all(&pl);
         if (np_event_queue_has_timed_event(&pl)) {
@@ -99,7 +100,7 @@ int main() {
         }
         pl.udp.read(nfds);
     }
-    
+
     exit(0);
-   
+
 }
