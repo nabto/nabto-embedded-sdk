@@ -15,7 +15,6 @@
 
 void my_handler(int s){
            printf("Caught signal %d\n",s);
-           exit(1);
 }
 
 bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);

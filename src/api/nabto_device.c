@@ -94,7 +94,15 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     if (dev->coreThread != NULL) {
         nabto_device_threads_join(dev->coreThread);
     }
+
+    free(dev->productId);
+    free(dev->deviceId);
+    free(dev->serverUrl);
+    free(dev->publicKey);
+    free(dev->privateKey);
+
     free(dev);
+
 }
 
 /**
@@ -103,70 +111,67 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_product_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (dev->productId != NULL) {
-        free(dev->productId);
-    }
-    dev->productId = (char*)malloc(strlen(str)+1); // include trailing zero
+
+    free(dev->productId);
+
+    dev->productId = strdup(str);
     if (dev->productId == NULL) {
-        return NABTO_DEVICE_EC_FAILED;
+        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
-    memcpy(dev->productId, str, strlen(str)+1); // include trailing zero
+
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+
+    return ec;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_device_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (dev->deviceId != NULL) {
-        free(dev->deviceId);
-    }
-    dev->deviceId = (char*)malloc(strlen(str)+1); // include trailing zero
-    if (dev->deviceId == NULL) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-    memcpy(dev->deviceId, str, strlen(str)+1); // include trailing zero
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    free(dev->deviceId);
 
+    dev->deviceId = strdup(str);
+    if (dev->deviceId == NULL) {
+        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (dev->serverUrl != NULL) {
-        free(dev->serverUrl);
-    }
-    dev->serverUrl = (char*)malloc(strlen(str)+1); // include trailing zero
-    if (dev->serverUrl == NULL) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-    memcpy(dev->serverUrl, str, strlen(str)+1); // include trailing zero
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    free(dev->serverUrl);
 
+    dev->serverUrl = strdup(str);
+    if (dev->serverUrl == NULL) {
+        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (dev->privateKey != NULL) {
-        free(dev->privateKey);
-    }
-    dev->privateKey = (char*)malloc(strlen(str)+1); // include trailing zero
-    if (dev->privateKey == NULL) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-    memcpy(dev->privateKey, str, strlen(str)+1); // include trailing zero
+    free(dev->privateKey);
 
-    NabtoDeviceError status = nabto_device_create_crt_from_private_key(dev);
+    dev->privateKey = strdup(str);
+    if (dev->privateKey == NULL) {
+        ec = NABTO_DEVICE_EC_FAILED;
+    } else {
+        ec = nabto_device_create_crt_from_private_key(dev);
+    }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return status;
+    return ec;
 
 }
 
@@ -197,7 +202,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* devi
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_local_port(NabtoDevice* device, uint16_t port)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
     dev->port = port;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
     return NABTO_DEVICE_EC_OK;
 }
 
