@@ -7,6 +7,8 @@ set(nabto_device_src
   ${src_dir}/nabto_device_future.c
   ${src_dir}/nabto_api_future_queue.c
   ${src_dir}/nabto_device_error.c
+  ${src_dir}/nabto_device_util.c
+  ${src_dir}/nabto_device_iam.c
   ${src_dir}/nabto_device_experimental.c
   )
 
@@ -40,7 +42,6 @@ target_link_libraries( nabto_device
   np_platform
   nm_logging_api
   nm_unix_communication_buffer
-  nm_access_control
   nm_timestamp
   nm_dtls_cli
   nm_dtls_srv

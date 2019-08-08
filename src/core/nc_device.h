@@ -8,6 +8,7 @@
 #include <core/nc_coap_server.h>
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
+#include <core/nc_iam.h>
 
 #include <platform/np_error_code.h>
 
@@ -28,6 +29,8 @@ struct nc_device_context {
     struct nc_rendezvous_context rendezvous;
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
+    struct nc_iam iam;
+
     // unique connectionReference for each connection
     uint64_t connectionRef;
 
@@ -39,7 +42,10 @@ struct nc_device_context {
     void* closeCbData;
 };
 
-np_error_code nc_device_start(struct nc_device_context* dev, struct np_platform* pl,
+void nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
+
+
+np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
                               const char* hostname, const char* stunHost,
@@ -50,5 +56,9 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
 uint64_t nc_device_next_connection_ref(struct nc_device_context* dev);
 
 uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream);
+
+struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
+
+bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user);
 
 #endif // NC_DEVICE_H

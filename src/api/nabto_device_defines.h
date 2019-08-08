@@ -18,6 +18,7 @@ struct nabto_device_context {
     struct nabto_device_thread* networkThread;
     struct nabto_device_mutex* eventMutex;
     struct nabto_device_condition* eventCond;
+    NabtoDeviceFuture* iamChangedFuture;
 
     bool enableMdns;
     struct nm_mdns mdns;

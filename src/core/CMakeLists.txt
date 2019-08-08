@@ -17,6 +17,13 @@ set(src
   ${src_dir}/nc_coap_packet_printer.c
   ${src_dir}/nc_stun_coap.c
   ${src_dir}/nc_rendezvous_coap.c
+  ${src_dir}/nc_iam.c
+  ${src_dir}/nc_iam_util.c
+  ${src_dir}/nc_iam_cbor.c
+  ${src_dir}/nc_iam_policy.c
+  ${src_dir}/nc_iam_coap.c
+  ${src_dir}/nc_iam_dump.c
+  ${src_dir}/nc_iam_load.c
   )
 
 set(test_src
@@ -30,7 +37,7 @@ set(test_src
 
 add_library( nc_core STATIC "${src}")
 
-target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap)
+target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap 3rdparty_tinycbor)
 
 add_library( nc_core_test STATIC "${test_src}")
 

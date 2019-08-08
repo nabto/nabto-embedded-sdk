@@ -36,7 +36,6 @@ const char* stunHost = "stun.nabto.net";
 void* nabto_device_network_thread(void* data);
 void* nabto_device_core_thread(void* data);
 void nabto_device_init_platform(struct np_platform* pl);
-void nabto_device_init_platform_modules(struct np_platform* pl, const char* devicePublicKey, const char* devicePrivateKey);
 NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev);
 void nabto_device_free_threads(struct nabto_device_context* dev);
 NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
@@ -59,7 +58,10 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
     memset(dev, 0, sizeof(struct nabto_device_context));
+
     nabto_device_init_platform(&dev->pl);
+    nabto_device_init_platform_modules(&dev->pl);
+    nc_device_init(&dev->core, &dev->pl);
     np_event_queue_init(&dev->pl, &notify_event_queue_post, dev);
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
@@ -86,8 +88,12 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
     // TODO: reintroduce this through the udp platform as to not leak buffers
     //nm_epoll_close(&dev->pl);
-    nabto_device_threads_join(dev->networkThread);
-    nabto_device_threads_join(dev->coreThread);
+    if (dev->networkThread != NULL) {
+        nabto_device_threads_join(dev->networkThread);
+    }
+    if (dev->coreThread != NULL) {
+        nabto_device_threads_join(dev->coreThread);
+    }
     free(dev);
 }
 
@@ -335,9 +341,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
     // Init platform
-    nabto_device_init_platform_modules(&dev->pl, dev->publicKey, dev->privateKey);
+    nabto_device_init_dtls_modules(&dev->pl, dev->publicKey, dev->privateKey);
     // start the core
-    ec = nc_device_start(&dev->core, &dev->pl, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost, dev->port);
+    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost, dev->port);
 
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");
@@ -545,9 +551,11 @@ void nabto_device_free_threads(struct nabto_device_context* dev)
 
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec)
 {
-    if (ec != NABTO_EC_OK) {
-        return NABTO_DEVICE_EC_FAILED;
-    } else {
-        return NABTO_DEVICE_EC_OK;
+    switch (ec) {
+        case NABTO_EC_OK: return NABTO_DEVICE_EC_OK;
+        case NABTO_EC_FAILED: return NABTO_DEVICE_EC_FAILED;
+        case NABTO_EC_OUT_OF_MEMORY: return NABTO_DEVICE_EC_OUT_OF_MEMORY;
+        case NABTO_EC_NO_SUCH_RESOURCE: return NABTO_DEVICE_EC_NO_SUCH_RESOURCE;
+        default: return NABTO_DEVICE_EC_FAILED;
     }
 }

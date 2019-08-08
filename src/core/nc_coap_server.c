@@ -142,6 +142,11 @@ void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_cont
 
 }
 
+struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request)
+{
+    return (struct nc_client_connection*)nabto_coap_server_request_get_connection(request);
+}
+
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection)
 {
     nabto_coap_server_remove_connection(&ctx->server, (void*) connection);

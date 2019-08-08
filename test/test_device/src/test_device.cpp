@@ -10,8 +10,13 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include <string>
+#include <vector>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 #define MAX_KEY_PEM_SIZE 1024
-#define MAX_CRT_PEM_SIZE 1024
 
 struct config {
     const char* productId;
@@ -224,7 +229,7 @@ void handle_new_stream(struct streamContext* streamContext)
     fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
     nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
 }
-
+void init_iam(NabtoDevice* device);
 void run_device()
 {
     NabtoDeviceError ec;
@@ -267,13 +272,17 @@ void run_device()
 
     printf("Starting device productid: %s, deviceid: %s, fingerprint: %s" NEWLINE, config.productId, config.deviceId, fingerprint);
 
+    init_iam(dev);
+
     ec = nabto_device_start(dev);
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     }
 
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"test", "get", NULL}, &handle_coap_get_request, dev);
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, (const char*[]){"test", "post", NULL}, &handle_coap_post_request, dev);
+    const char* coapTestGet[]  = {"test", "get", NULL};
+    const char* coapTestPost[] = {"test", "post", NULL};
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &handle_coap_get_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &handle_coap_post_request, dev);
 
     // wait for ctrl-c
     while (true) {
@@ -284,7 +293,7 @@ void run_device()
             return;
         }
         nabto_device_future_free(fut);
-        struct streamContext* strCtx = malloc(sizeof(struct streamContext));
+        struct streamContext* strCtx = (struct streamContext*)malloc(sizeof(struct streamContext));
         strCtx->stream = stream;
         handle_new_stream(strCtx);
     }
@@ -303,4 +312,35 @@ int main(int argc, const char** argv)
     }
 
     run_device();
+}
+
+
+json addAllPolicy = R"(
+{
+  "Version": 1,
+  "Name": "AllowAll",
+  "Statement": {
+    "Action": [ "test:CoapGet", "test:CoapPost" ],
+    "Effect": "Allow",
+    "Condition": { "StringEqual": [ "${foo}", "bar" ] }
+  }
+}
+)"_json;
+
+void load_policies(NabtoDevice* device)
+{
+
+    std::vector<uint8_t> cbor = json::to_cbor(addAllPolicy);
+    nabto_device_iam_policy_create(device, "All", cbor.data(), cbor.size());
+
+}
+
+void init_iam(NabtoDevice* device)
+{
+    load_policies(device);
+    nabto_device_iam_users_create(device, "admin");
+    nabto_device_iam_roles_create(device, "admin-role");
+    nabto_device_iam_users_add_role(device, "admin", "admin-role");
+    nabto_device_iam_roles_add_policy(device, "admin-role", "All");
+    nabto_device_iam_set_default_role(device, "admin-role");
 }

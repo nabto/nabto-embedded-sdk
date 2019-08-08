@@ -4,3 +4,6 @@
 [submodule "nabto-common-cpp"]
 	path = nabto-common-cpp
 	url = ../nabto-common-cpp.git
+[submodule "3rdparty/tinycbor/tinycbor"]
+	path = 3rdparty/tinycbor/tinycbor
+	url = https://github.com/intel/tinycbor
