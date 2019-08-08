@@ -16,13 +16,10 @@ static void nc_iam_coap_users_remove_role(struct nabto_coap_server_request* requ
 
 
 
+static nabto_coap_code ec_to_coap_code(np_error_code ec);
 static void access_denied(struct nabto_coap_server_request* request);
-
-static void internal_error(struct nabto_coap_server_request* request);
 static void error_response(struct nabto_coap_server_request* request, np_error_code ec);
-
 static void bad_request(struct nabto_coap_server_request* request);
-
 static void ok_response(struct nabto_coap_server_request* request, nabto_coap_code code);
 
 
@@ -47,6 +44,12 @@ void nc_iam_coap_register_handlers(struct nc_device_context* device)
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_DELETE,
                                    (const char*[]){"iam", "users", "{user}", "fingerprints", "{fingerprint}", NULL },
                                    nc_iam_coap_users_remove_fingerprint, device);
+    nabto_coap_server_add_resource(server, NABTO_COAP_CODE_PUT,
+                                   (const char*[]){"iam", "users", "{user}", "roles", "{role}", NULL },
+                                   nc_iam_coap_users_add_role, device);
+    nabto_coap_server_add_resource(server, NABTO_COAP_CODE_DELETE,
+                                   (const char*[]){"iam", "users", "{user}", "roles", "{role}", NULL },
+                                   nc_iam_coap_users_remove_role, device);
 }
 
 
@@ -228,15 +231,63 @@ void nc_iam_coap_users_remove_fingerprint(struct nabto_coap_server_request* requ
     }
 }
 
+void nc_iam_coap_users_add_role(struct nabto_coap_server_request* request, void* userData)
+{
+    struct nc_device_context* device = userData;
+    np_error_code ec;
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+
+    const char* user = nabto_coap_server_request_get_parameter(request, "user");
+    const char* role = nabto_coap_server_request_get_parameter(request, "role");
+
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+
+    ec = nc_iam_check_access_attributes(connection, "IAM:AddRoleUser", &attributes);
+    if (ec == NABTO_EC_OK) {
+        ec = nc_iam_user_add_role(&device->iam, user, role);
+        if (ec) {
+            error_response(request, ec);
+        } else {
+            ok_response(request, NABTO_COAP_CODE(2,01));
+        }
+    } else {
+        // return 403
+        access_denied(request);
+    }
+}
+
+void nc_iam_coap_users_remove_role(struct nabto_coap_server_request* request, void* userData)
+{
+    struct nc_device_context* device = userData;
+    np_error_code ec;
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+
+    const char* user = nabto_coap_server_request_get_parameter(request, "user");
+    const char* role = nabto_coap_server_request_get_parameter(request, "role");
+
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+
+    ec = nc_iam_check_access_attributes(connection, "IAM:RemoveRoleUser", &attributes);
+    if (ec == NABTO_EC_OK) {
+        ec = nc_iam_user_remove_role(&device->iam, user, role);
+        if (ec) {
+            error_response(request, ec);
+        } else {
+            ok_response(request, NABTO_COAP_CODE(2,02));
+        }
+    } else {
+        // return 403
+        access_denied(request);
+    }
+}
 
 void access_denied(struct nabto_coap_server_request* request)
 {
     nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), "Access Denied");
-}
-
-void internal_error(struct nabto_coap_server_request* request)
-{
-    nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,00), "Internal Error");
 }
 
 nabto_coap_code ec_to_coap_code(np_error_code ec)

@@ -26,16 +26,6 @@ enum nc_iam_value_type {
     NC_IAM_VALUE_TYPE_STRING
 };
 
-enum nc_iam_predicate_type {
-    NC_IAM_PREDICATE_TYPE_STRING_EQUAL,
-    NC_IAM_PREDICATE_TYPE_NUMBER_EQUAL,
-};
-
-enum nc_iam_boolean_expression_type {
-    NC_IAM_BOOLEAN_EXPRESSION_TYPE_AND,
-    NC_IAM_BOOLEAN_EXPRESSION_TYPE_OR,
-};
-
 struct nc_iam_fingerprint {
     struct nc_iam_user* user;
     uint8_t fingerprint[16];

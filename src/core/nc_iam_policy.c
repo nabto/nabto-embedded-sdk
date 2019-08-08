@@ -33,18 +33,6 @@ void nc_iam_policy_set_cbor(struct nc_iam_policy* p, const void* cbor, size_t cb
     p->cborLength = cborLength;
 }
 
-struct nc_iam_policy* nc_iam_find_policy(struct nc_iam* iam, const char* policy)
-{
-    struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
-    while(iterator != &iam->policies.sentinel) {
-        struct nc_iam_policy* p = iterator->item;
-        if (strcmp(p->name, policy) == 0) {
-            return p;
-        }
-        iterator = iterator->next;
-    }
-    return NULL;
-}
 
 np_error_code nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
 {
@@ -95,7 +83,7 @@ np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, co
         return NABTO_EC_IAM_INVALID_POLICY;
     }
 
-    struct nc_iam_policy* p = nc_iam_find_policy(iam, name);
+    struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, name);
     if (!p) {
         p = nc_iam_policy_new(iam, name);
     }
@@ -106,7 +94,7 @@ np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, co
 
 np_error_code nc_iam_policy_get(struct nc_iam* iam, const char* name, void* buffer, size_t bufferLength, size_t* used)
 {
-    struct nc_iam_policy* p = nc_iam_find_policy(iam, name);
+    struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, name);
     if (p == NULL) {
         return NABTO_EC_NO_SUCH_RESOURCE;
     } else {
