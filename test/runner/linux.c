@@ -1,6 +1,5 @@
 #include <platform/np_unit_test.h>
 #include <platform/np_tests.h>
-#include <modules/access_control/nm_iam_tests.h>
 #include <core/nc_tests.h>
 
 #include <stdio.h>

@@ -1,2 +1,0 @@
-// Generated source file do not edit.
-const char* policy_first_user_can_pair_json = "{\"version\": 1,\"name\": \"FirstUserCanPair\",\"statements\": [{\"effect\": \"Allow\",\"actions\": [ \"pairing:PairUser\" ],\"conditions\": { \"NumberEqual\": [ { \"Attribute\": \"pairing:SystemIsPaired\"}, 0 ] }}]}";

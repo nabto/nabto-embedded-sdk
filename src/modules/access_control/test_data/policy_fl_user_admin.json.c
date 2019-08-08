@@ -1,2 +1,0 @@
-// Generated source file do not edit.
-const char* policy_fl_user_admin_json = "{\"version\": 1,\"name\": \"FullUserAdmin\",\"statements\": [{\"actions\": [ \"iam:AddUser\", \"iam:GetUser\", \"iam:ListUsers\", \"iam:AddRoleToUser\", \"iam:RemoveRoleFromUser\" ],\"effect\": \"Allow\"}]}";

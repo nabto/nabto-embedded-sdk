@@ -1,2 +1,0 @@
-// Generated source file do not edit.
-const char* policy_can_ask_for_access_json = "{\"version\": 1,\"name\": \"CanAskForAccess\",\"statements\": [{\"effect\": \"Allow\",\"actions\": [ \"pairing:AskOwnerForAccess\" ]}]}";
