@@ -12,8 +12,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-static enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy);
-static enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* action, CborValue* statement);
+static np_error_code nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy);
+static np_error_code nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* action, CborValue* statement);
 static struct nc_iam_attribute* nc_iam_attributes_find_attribute(struct nc_iam_attributes* attributes, const char* attributeName);
 
 static np_error_code nc_iam_check_conditions(struct nc_iam_attributes* attributes, CborValue* conditions);
@@ -176,12 +176,13 @@ np_error_code nc_iam_check_access(struct nc_client_connection* connection, const
 
 np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connection, const char* action, struct nc_iam_attributes* attributes)
 {
+    np_error_code ec;
     if (connection == NULL) {
         return NABTO_EC_FAILED;
     }
 
     struct nc_iam_user* user = connection->user;
-    bool granted = false;
+    np_error_code result = NABTO_EC_IAM_DENY;
     if (user != NULL) {
         nc_iam_attributes_add_string(attributes, "Connection:UserId", connection->user->id);
 
@@ -191,13 +192,13 @@ np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connec
             struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
             while(policyIterator != & role->policies.sentinel) {
                 struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
-                enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(attributes, action, policy);
-                if (result == NC_IAM_EVALUATION_RESULT_NONE) {
+                ec = nc_iam_evaluate_policy(attributes, action, policy);
+                if (ec == NABTO_EC_IAM_NONE) {
                     // no change
-                } else if (result == NC_IAM_EVALUATION_RESULT_ALLOW) {
-                    granted = true;
-                } else if (result == NC_IAM_EVALUATION_RESULT_DENY) {
-                    granted = false;
+                } else if (ec == NABTO_EC_OK || ec == NABTO_EC_IAM_DENY) {
+                    result = ec;
+                } else {
+                    return ec;
                 }
                 policyIterator = policyIterator->next;
             }
@@ -210,25 +211,24 @@ np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connec
         struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
         while(policyIterator != & role->policies.sentinel) {
             struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
-            enum nc_iam_evaluation_result result = nc_iam_evaluate_policy(attributes, action, policy);
-            if (result == NC_IAM_EVALUATION_RESULT_NONE) {
+            ec = nc_iam_evaluate_policy(attributes, action, policy);
+            if (ec == NABTO_EC_IAM_NONE) {
                 // no change
-            } else if (result == NC_IAM_EVALUATION_RESULT_ALLOW) {
-                granted = true;
-            } else if (result == NC_IAM_EVALUATION_RESULT_DENY) {
-                granted = false;
+            } else if (ec == NABTO_EC_OK || ec == NABTO_EC_IAM_DENY) {
+                result = ec;
+            } else {
+                return ec;
             }
+
             policyIterator = policyIterator->next;
         }
     }
-    if (granted) {
-        return NABTO_EC_OK;
-    }
-    return NABTO_EC_IAM_DENY;
+    return result;
 }
 
-enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy)
+np_error_code nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy)
 {
+    np_error_code ec;
     CborParser parser;
     CborValue map;
     CborValue version;
@@ -243,21 +243,23 @@ enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* a
         v != 1)
     {
         // Could not parse policy. A unparseable policy should not end in an accept so default to deny.
-        return NC_IAM_EVALUATION_RESULT_DENY;
+        return NABTO_EC_IAM_INVALID_POLICIES;
     }
 
     cbor_value_map_find_value(&map, "Statements", &statements);
 
     if (!cbor_value_is_array(&statements)) {
-        return NC_IAM_EVALUATION_RESULT_DENY;
+        return NABTO_EC_IAM_INVALID_POLICIES;
     }
-    enum nc_iam_evaluation_result currentResult = NC_IAM_EVALUATION_RESULT_NONE;
+    np_error_code currentResult = NABTO_EC_IAM_NONE;
     CborValue statement;
     cbor_value_enter_container(&statements, &statement);
     while (!cbor_value_at_end(&statement)) {
-        enum nc_iam_evaluation_result result = nc_iam_evaluate_statement(attributes, action, &statement);
-        if (result != NC_IAM_EVALUATION_RESULT_NONE) {
-            currentResult = result;
+        ec = nc_iam_evaluate_statement(attributes, action, &statement);
+        if (ec == NABTO_EC_OK || ec == NABTO_EC_IAM_NONE || ec == NABTO_EC_IAM_DENY) {
+            currentResult = ec;
+        } else {
+            return ec;
         }
         cbor_value_advance(&statement);
     }
@@ -265,10 +267,12 @@ enum nc_iam_evaluation_result nc_iam_evaluate_policy(struct nc_iam_attributes* a
     return currentResult;
 }
 
-enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* actionStr, CborValue* statement)
+
+np_error_code nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* actionStr, CborValue* statement)
 {
+    np_error_code ec;
     if (!cbor_value_is_map(statement)) {
-        return NC_IAM_EVALUATION_RESULT_DENY;
+        return NABTO_EC_IAM_INVALID_STATEMENTS;
     }
     CborValue actions;
     CborValue allow;
@@ -281,7 +285,7 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes
     if (!cbor_value_is_array(&actions) ||
         !cbor_value_is_boolean(&allow))
     {
-        return NC_IAM_EVALUATION_RESULT_DENY;
+        return NABTO_EC_IAM_INVALID_STATEMENTS;
     }
 
     bool allowAction;
@@ -294,7 +298,7 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes
         bool result;
         if (cbor_value_text_string_equals(&action, actionStr, &result) != CborNoError) {
             // cannot parse statement
-            return NC_IAM_EVALUATION_RESULT_DENY;
+            return NABTO_EC_IAM_INVALID_STATEMENTS;
         }
         cbor_value_advance(&action);
         if (result == true) {
@@ -303,16 +307,15 @@ enum nc_iam_evaluation_result nc_iam_evaluate_statement(struct nc_iam_attributes
         }
     }
 
-    np_error_code conditionsOk = nc_iam_check_conditions(attributes, &conditions);
-    if (found && conditionsOk == NABTO_EC_OK) {
-
+    ec = nc_iam_check_conditions(attributes, &conditions);
+    if (found && ec == NABTO_EC_OK) {
         if (allowAction) {
-            return NC_IAM_EVALUATION_RESULT_ALLOW;
+            return NABTO_EC_OK;
         } else {
-            return NC_IAM_EVALUATION_RESULT_DENY;
+            return NABTO_EC_IAM_DENY;
         }
     }
-    return NC_IAM_EVALUATION_RESULT_NONE;
+    return NABTO_EC_IAM_NONE;
 }
 
 np_error_code nc_iam_check_conditions(struct nc_iam_attributes* attributes, CborValue* conditions)

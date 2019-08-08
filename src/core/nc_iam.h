@@ -15,12 +15,6 @@ struct nc_client_connection;
 struct nabto_coap_server_request;
 struct nc_device_context;
 
-enum nc_iam_evaluation_result {
-    NC_IAM_EVALUATION_RESULT_NONE,
-    NC_IAM_EVALUATION_RESULT_ALLOW,
-    NC_IAM_EVALUATION_RESULT_DENY
-};
-
 enum nc_iam_value_type {
     NC_IAM_VALUE_TYPE_NUMBER,
     NC_IAM_VALUE_TYPE_STRING

@@ -19,7 +19,6 @@ static void nc_iam_coap_users_remove_role(struct nabto_coap_server_request* requ
 static nabto_coap_code ec_to_coap_code(np_error_code ec);
 static void access_denied(struct nabto_coap_server_request* request);
 static void error_response(struct nabto_coap_server_request* request, np_error_code ec);
-static void bad_request(struct nabto_coap_server_request* request);
 static void ok_response(struct nabto_coap_server_request* request, nabto_coap_code code);
 
 
@@ -303,11 +302,6 @@ nabto_coap_code ec_to_coap_code(np_error_code ec)
 void error_response(struct nabto_coap_server_request* request, np_error_code ec)
 {
     nabto_coap_server_create_error_response(request, ec_to_coap_code(ec), np_error_code_to_string(ec));
-}
-
-void bad_request(struct nabto_coap_server_request* request)
-{
-    nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,00), "Bad Request");
 }
 
 void ok_response(struct nabto_coap_server_request* request, nabto_coap_code code)
