@@ -263,14 +263,14 @@ void run_device()
         return;
     }
 
-    char fingerprint[33];
-    memset(fingerprint, 0, 33);
-    ec = nabto_device_get_device_fingerprint_hex(dev, fingerprint);
+    char* fingerprint;
+    ec = nabto_device_get_device_fingerprint_hex(dev, &fingerprint);
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     }
 
     printf("Starting device productid: %s, deviceid: %s, fingerprint: %s" NEWLINE, config.productId, config.deviceId, fingerprint);
+    nabto_device_string_free(fingerprint);
 
     init_iam(dev);
 

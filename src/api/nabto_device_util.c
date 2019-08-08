@@ -15,15 +15,15 @@
 #include "mbedtls/ctr_drbg.h"
 
 
-void NABTO_DEVICE_API nabto_device_experimental_util_free(void* data)
+void NABTO_DEVICE_API nabto_device_string_free(char* str)
 {
-    free(data);
+    free(str);
 }
 
-char* NABTO_DEVICE_API nabto_device_experimental_util_create_private_key(NabtoDevice* device)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_experimental_util_create_private_key(NabtoDevice* device, char** privateKey)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    char* privateKey = NULL;
+    *privateKey = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     unsigned char output_buf[1024];
     mbedtls_pk_context key;
@@ -48,7 +48,7 @@ char* NABTO_DEVICE_API nabto_device_experimental_util_create_private_key(NabtoDe
     {
         // generating the private key failed
     } else {
-        privateKey = strdup((char*)output_buf);
+        *privateKey = strdup((char*)output_buf);
     }
 
     mbedtls_pk_free( &key );
@@ -56,5 +56,5 @@ char* NABTO_DEVICE_API nabto_device_experimental_util_create_private_key(NabtoDe
     mbedtls_entropy_free( &entropy );
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return privateKey;
+    return NABTO_DEVICE_EC_OK;
 }

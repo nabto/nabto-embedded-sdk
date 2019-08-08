@@ -164,11 +164,15 @@ nabto_device_start(NabtoDevice* device);
 /**
  * Get the public key fingerprint of the device.
  *
- * @param out pointer to a buffer of at least 32 chars. The
- * fingerprint is 16 bytes encoded as 32 hex characters.
+ * @param fingerprint  the fingerprint is stored as hex in the
+ * parameter. The fingerprint should be freed by calling
+ * nabto_device_string_free afterwards.
+ *
+ * @return
+ *  NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char* out);
+nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint);
 
 /**
  * Close a context.
@@ -492,7 +496,7 @@ nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request);
  * exist NULL is returned. The lifetime for the returned value is no
  * longer than the lifetime of the NabtoDeviceCoapRequest.
  */
-NABTO_DEVICE_DECL_PREFIX const char*  NABTO_DEVICE_API
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName);
 
 /**************
@@ -567,6 +571,12 @@ nabto_device_error_get_message(NabtoDeviceError error);
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_version();
+
+/**
+ * Free a string allocated by the device.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_string_free(char* str);
 
 /***********
  * Logging *

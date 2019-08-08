@@ -370,8 +370,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
 }
 
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char* out)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
 {
+    *fingerprint = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     if (dev->publicKey == NULL) {
         return NABTO_DEVICE_EC_FAILED;
@@ -399,7 +400,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
             return NABTO_DEVICE_EC_FAILED;
         }
 
-        sprintf(out, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+        *fingerprint = malloc(33);
+        memset(*fingerprint, 0, 33);
+        sprintf(*fingerprint, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
                 hash[0], hash[1], hash[2],  hash[3],  hash[4],  hash[5],  hash[6],  hash[7],
                 hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
 

@@ -80,9 +80,20 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     json config;
 
     NabtoDevice* device = nabto_device_new();
+    NabtoDeviceError ec;
 
-    char* privateKey = nabto_device_experimental_util_create_private_key(device);
-    config["PrivateKey"] = std::string(privateKey);
+    char* str;
+    ec = nabto_device_experimental_util_create_private_key(device, &str);
+    std::string privateKey(str);
+    nabto_device_string_free(str);
+
+    if (ec) {
+        std::cerr << "Error creating private key" << std::endl;
+        return false;
+    }
+
+
+    config["PrivateKey"] = privateKey;
     config["ProductId"] = productId;
     config["DeviceId"] = deviceId;
     config["Server"] = server;
@@ -146,9 +157,10 @@ void run_heat_pump(const std::string& configFile)
         return;
     }
 
-    char fp[33];
-    memset(fp, 0, 33);
-    nabto_device_get_device_fingerprint_hex(device, fp);
+    char* fpTemp;
+    nabto_device_get_device_fingerprint_hex(device, &fpTemp);
+    std::string fp(fpTemp);
+    nabto_device_string_free(fpTemp);
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
