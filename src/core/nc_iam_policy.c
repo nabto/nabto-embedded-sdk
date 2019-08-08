@@ -4,7 +4,7 @@
 #include <cbor.h>
 #include <stdlib.h>
 
-static bool nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, size_t cborLength);
+static np_error_code nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, size_t cborLength);
 
 struct nc_iam_policy* nc_iam_policy_new(struct nc_iam* iam, const char* name)
 {
@@ -42,7 +42,6 @@ np_error_code nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
         if (strcmp(p->name, policy) == 0) {
             nc_iam_list_remove(iterator);
             nc_iam_policy_free(p);
-            // TODO return np_error_code
             nc_iam_updated(iam);
             return NABTO_EC_OK;
         }
@@ -79,8 +78,10 @@ np_error_code nc_iam_list_policies(struct nc_iam* iam, void* buffer, size_t buff
 
 np_error_code nc_iam_cbor_policy_create(struct nc_iam* iam, const char* name, const void* cbor, size_t cborLength)
 {
-    if (!nc_iam_cbor_validate_policy(iam, cbor, cborLength)) {
-        return NABTO_EC_IAM_INVALID_POLICY;
+    np_error_code ec;
+    ec = nc_iam_cbor_validate_policy(iam, cbor, cborLength);
+    if (ec) {
+        return ec;
     }
 
     struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, name);
@@ -126,118 +127,146 @@ np_error_code nc_iam_policy_get(struct nc_iam* iam, const char* name, void* buff
 }
  */
 
-bool nc_iam_cbor_validate_condition_value(CborValue* value)
+np_error_code nc_iam_cbor_validate_condition_value(CborValue* value)
 {
     if (cbor_value_is_text_string(value) || cbor_value_is_unsigned_integer(value)) {
-        return true;
+        return NABTO_EC_OK;
     }
 
-    if (cbor_value_is_map(value)) {
-        CborValue attribute;
-        cbor_value_map_find_value(value, "Attribute", &attribute);
-        return cbor_value_is_text_string(&attribute);
-    }
-    return false;
+    return NABTO_EC_IAM_INVALID_CONDITIONS;
 }
 
-bool nc_iam_cbor_validate_predicate_type(CborValue* predicate, const char* type)
+np_error_code nc_iam_cbor_validate_predicate_type(CborValue* predicate, const char* type)
 {
     CborValue found;
-    cbor_value_map_find_value(predicate, "StringEqual", &found);
+    cbor_value_map_find_value(predicate, type, &found);
     if (!cbor_value_is_valid(&found)) {
-        return true;
+        return NABTO_EC_IAM_INVALID_CONDITIONS;
     }
     return nc_iam_cbor_validate_condition_value(&found);
 }
 
-bool nc_iam_cbor_validate_predicate(CborValue* predicate)
+np_error_code nc_iam_cbor_validate_predicate(CborValue* predicate)
 {
     if (!cbor_value_is_map(predicate)) {
-        return false;
+        return NABTO_EC_IAM_INVALID_PREDICATES;
     }
 
-    if (!nc_iam_cbor_validate_predicate_type(predicate, "StringEqual") ||
-        !nc_iam_cbor_validate_predicate_type(predicate, "NumberEqual") )
+    // just one needs to be ok
+    if (nc_iam_cbor_validate_predicate_type(predicate, "StringEqual") == NABTO_EC_OK ||
+        nc_iam_cbor_validate_predicate_type(predicate, "NumberEqual") == NABTO_EC_OK ||
+        nc_iam_cbor_validate_predicate_type(predicate, "AttributeEqual") == NABTO_EC_OK )
     {
-        return false;
+        return NABTO_EC_OK;
     }
 
-    return true;
+    return NABTO_EC_IAM_INVALID_PREDICATES;
 }
 
-bool nc_iam_cbor_validate_condition(CborValue* conditions)
+np_error_code nc_iam_cbor_validate_condition(CborValue* conditions)
 {
+    np_error_code ec;
     if (!cbor_value_is_array(conditions)) {
-        return false;
+        return NABTO_EC_IAM_INVALID_CONDITIONS;
     }
     CborValue it;
     cbor_value_enter_container(conditions, &it);
 
     while (!cbor_value_at_end(&it)) {
-        if (!nc_iam_cbor_validate_predicate(&it)) {
-            return false;
+        ec = nc_iam_cbor_validate_predicate(&it);
+        if (ec) {
+            return ec;
         }
         cbor_value_advance(&it);
     }
-    return true;
+    return NABTO_EC_OK;
 }
 
-bool nc_iam_cbor_validate_actions(CborValue* actions)
+np_error_code nc_iam_cbor_validate_actions(CborValue* actions)
 {
     CborValue it;
     cbor_value_enter_container(actions, &it);
     while (!cbor_value_at_end(&it)) {
         if (!cbor_value_is_text_string(&it)) {
-            return false;
+            return NABTO_EC_IAM_INVALID_ACTIONS;
         }
         cbor_value_advance(&it);
     }
     cbor_value_leave_container(actions, &it);
-    return true;
+    return NABTO_EC_OK;
 }
 
-bool nc_iam_cbor_validate_statement(CborValue* statement)
+np_error_code nc_iam_cbor_validate_statement(CborValue* statement)
 {
+    np_error_code ec;
     if (!cbor_value_is_map(statement)) {
-        return false;
+        return NABTO_EC_IAM_INVALID_STATEMENTS;
     }
-    CborValue effect;
+    CborValue allow;
     CborValue action;
     CborValue condition;
 
-    cbor_value_map_find_value(statement, "Effect", &effect);
+    cbor_value_map_find_value(statement, "Allow", &allow);
     cbor_value_map_find_value(statement, "Actions", &action);
     cbor_value_map_find_value(statement, "Conditions", &condition);
 
     if (!cbor_value_is_array(&action)) {
-        return false;
-    }
-    if (!nc_iam_cbor_validate_actions(&action)) {
-        return false;
+        return NABTO_EC_IAM_INVALID_STATEMENTS;
     }
 
-    if (!cbor_value_is_boolean(&effect)) {
-        return false;
+    ec = nc_iam_cbor_validate_actions(&action);
+    if (ec) {
+        return ec;
+    }
+
+    if (!cbor_value_is_boolean(&allow)) {
+        return NABTO_EC_IAM_INVALID_STATEMENTS;
     }
 
 
-    return true;
+    return NABTO_EC_OK;
 }
 
 
 
-bool nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, size_t cborLength)
+np_error_code nc_iam_cbor_validate_policy(struct nc_iam* iam, const void* cbor, size_t cborLength)
 {
+    np_error_code ec;
     CborParser parser;
     CborValue map;
 
     cbor_parser_init(cbor, cborLength, 0, &parser, &map);
 
     if (!cbor_value_is_map(&map)) {
-        return false;
+        return NABTO_EC_IAM_INVALID_POLICIES;
     }
 
-    return true;
+    CborValue version;
+    CborValue statements;
+
+    cbor_value_map_find_value(&map, "Version", &version);
+    cbor_value_map_find_value(&map, "Statements", &statements);
+
+    if (!cbor_value_is_integer(&version)) {
+        return NABTO_EC_IAM_INVALID_POLICIES;
+    }
+
+    if (!cbor_value_is_array(&statements)) {
+        return NABTO_EC_IAM_INVALID_POLICIES;
+    }
+
+    CborValue statement;
+    cbor_value_enter_container(&statements, &statement);
+    while (!cbor_value_at_end(&statement)) {
+        ec = nc_iam_cbor_validate_statement(&statement);
+        if (ec) {
+            return ec;
+        }
+        cbor_value_advance(&statement);
+    }
+    cbor_value_leave_container(&statements, &statement);
+
+    return NABTO_EC_OK;
 }
 
 

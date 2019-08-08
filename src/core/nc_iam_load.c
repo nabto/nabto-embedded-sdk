@@ -14,6 +14,7 @@ np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength)
 {
     CborParser parser;
     CborValue map;
+    np_error_code ec;
     cbor_parser_init(cbor, cborLength, 0, &parser, &map);
 
 
@@ -24,19 +25,31 @@ np_error_code nc_iam_load(struct nc_iam* iam, void* cbor, size_t cborLength)
     }
 
     cbor_value_map_find_value(&map, "Policies", &policies);
-    nc_iam_load_policies(iam, &policies);
+    ec = nc_iam_load_policies(iam, &policies);
+    if (ec) {
+        return ec;
+    }
 
     CborValue roles;
     cbor_value_map_find_value(&map, "Roles", &roles);
-    nc_iam_load_roles(iam, &roles);
+    ec = nc_iam_load_roles(iam, &roles);
+    if (ec) {
+        return ec;
+    }
 
     CborValue users;
     cbor_value_map_find_value(&map, "Users", &users);
-    nc_iam_load_users(iam, &users);
+    ec = nc_iam_load_users(iam, &users);
+    if (ec) {
+        return ec;
+    }
 
     CborValue defaultRole;
     cbor_value_map_find_value(&map, "DefaultRole", &defaultRole);
-    nc_iam_load_default_role(iam, &defaultRole);
+    ec = nc_iam_load_default_role(iam, &defaultRole);
+    if (ec) {
+        return ec;
+    }
 
 
 
@@ -68,7 +81,10 @@ np_error_code nc_iam_load_policies(struct nc_iam* iam, CborValue* policies)
 
         size_t policyLength = end - start;
 
-        nc_iam_cbor_policy_create(iam, buffer, start, policyLength);
+        ec = nc_iam_cbor_policy_create(iam, buffer, start, policyLength);
+        if (ec) {
+            return ec;
+        }
     }
 
     cbor_value_leave_container(policies, &policy);
@@ -90,7 +106,10 @@ np_error_code nc_iam_load_role(struct nc_iam* iam, const char* roleName, CborVal
         if (ec) {
             return ec;
         }
-        nc_iam_role_add_policy(iam, roleName, buffer);
+        ec = nc_iam_role_add_policy(iam, roleName, buffer);
+        if (ec) {
+            return ec;
+        }
         cbor_value_advance(&policyName);
     }
     cbor_value_leave_container(role, &policyName);
@@ -114,8 +133,10 @@ np_error_code nc_iam_load_roles(struct nc_iam* iam, CborValue* roles)
         }
         cbor_value_advance(&role);
 
-        nc_iam_load_role(iam, buffer, &role);
-
+        ec = nc_iam_load_role(iam, buffer, &role);
+        if (ec) {
+            return ec;
+        }
     }
     cbor_value_leave_container(roles, &role);
     return NABTO_EC_OK;
@@ -147,7 +168,10 @@ np_error_code nc_iam_load_user(struct nc_iam* iam, const char* userName, CborVal
             return ec;
         }
         cbor_value_advance(&role);
-        nc_iam_user_add_role(iam, userName, roleName);
+        ec = nc_iam_user_add_role(iam, userName, roleName);
+        if (ec) {
+            return ec;
+        }
 
     }
 
@@ -167,7 +191,10 @@ np_error_code nc_iam_load_user(struct nc_iam* iam, const char* userName, CborVal
             return ec;
         }
         cbor_value_advance(&fingerprint);
-        nc_iam_user_add_fingerprint(iam, userName, fpHex);
+        ec = nc_iam_user_add_fingerprint(iam, userName, fpHex);
+        if (ec) {
+            return ec;
+        }
     }
 
     cbor_value_leave_container(&fingerprints, &fingerprint);
@@ -189,7 +216,10 @@ np_error_code nc_iam_load_users(struct nc_iam* iam, CborValue* users)
             return ec;
         }
         cbor_value_advance(&user);
-        nc_iam_load_user(iam, userName, &user);
+        ec = nc_iam_load_user(iam, userName, &user);
+        if (ec) {
+            return ec;
+        }
         cbor_value_advance(&user);
 
     }
