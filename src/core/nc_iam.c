@@ -477,7 +477,7 @@ np_error_code nc_iam_set_default_role(struct nc_iam* iam, const char* name)
 {
     struct nc_iam_role* role = nc_iam_find_role_by_name(iam, name);
     if (!role) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
     iam->defaultRole = role;
     nc_iam_updated(iam);
@@ -522,7 +522,7 @@ np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
 {
     struct nc_iam_role* role = nc_iam_find_role_by_name(iam, name);
     if (!name) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
     // find users using the role if found, do not delete it.
     struct nc_iam_list_entry* iterator = iam->users.sentinel.next;
@@ -579,7 +579,7 @@ np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void* buffer
 
     struct nc_iam_role* role = nc_iam_find_role_by_name(iam, name);
     if (!role) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
 
     cbor_encoder_init(&encoder, buffer, bufferLength, 0);
@@ -656,7 +656,7 @@ np_error_code nc_iam_delete_user(struct nc_device_context* device, const char* n
 {
     struct nc_iam_user* user = nc_iam_find_user_by_name(&device->iam, name);
     if (!user) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
 
     // check that user is not used by a connection
@@ -703,7 +703,7 @@ np_error_code nc_iam_user_get(struct nc_iam* iam, const char* name, void* cborBu
 {
     struct nc_iam_user* user = nc_iam_find_user_by_name(iam, name);
     if (!user) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
     CborEncoder encoder;
     cbor_encoder_init(&encoder, cborBuffer, cborBufferLength, 0);
@@ -725,7 +725,7 @@ np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const c
     struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
     struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
     if (!u || !r) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
     nc_iam_list_insert(&u->roles, r);
     nc_iam_updated(iam);
@@ -737,7 +737,7 @@ np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, cons
     struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
     struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
     if (!u || !r) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
     nc_iam_list_remove_item(&u->roles, r);
     nc_iam_updated(iam);
@@ -756,7 +756,7 @@ np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, 
     struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
     struct nc_iam_user* u2 = nc_iam_find_user_by_fingerprint(iam, fingerprint);
     if (!u) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
     if (u2 && u != u2) {
         return NABTO_EC_RESOURCE_EXISTS;
@@ -797,7 +797,7 @@ np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* use
     }
 
 
-    return NABTO_EC_NO_SUCH_RESOURCE;
+    return NABTO_EC_NOT_FOUND;
 }
 
 
@@ -806,7 +806,7 @@ np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const
     struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
     struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, policy);
     if (!r || !p) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
 
     nc_iam_list_insert(&r->policies, p);
@@ -819,7 +819,7 @@ np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, co
     struct nc_iam_role* r = nc_iam_find_role_by_name(iam, role);
     struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, policy);
     if (!r || !p) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     }
     nc_iam_list_remove_item(&r->policies, p);
     nc_iam_updated(iam);

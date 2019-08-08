@@ -331,7 +331,7 @@ void load_policies(NabtoDevice* device)
 {
 
     std::vector<uint8_t> cbor = json::to_cbor(addAllPolicy);
-    nabto_device_iam_policy_create(device, "All", cbor.data(), cbor.size());
+    nabto_device_iam_policies_create(device, "All", cbor.data(), cbor.size());
 
 }
 

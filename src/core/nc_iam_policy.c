@@ -48,7 +48,7 @@ np_error_code nc_iam_policy_delete(struct nc_iam* iam, const char* policy)
         iterator = iterator->next;
     }
 
-    return NABTO_EC_NO_SUCH_RESOURCE;
+    return NABTO_EC_NOT_FOUND;
 }
 
 np_error_code nc_iam_list_policies(struct nc_iam* iam, void* buffer, size_t bufferLength, size_t* used)
@@ -97,7 +97,7 @@ np_error_code nc_iam_policy_get(struct nc_iam* iam, const char* name, void* buff
 {
     struct nc_iam_policy* p = nc_iam_find_policy_by_name(iam, name);
     if (p == NULL) {
-        return NABTO_EC_NO_SUCH_RESOURCE;
+        return NABTO_EC_NOT_FOUND;
     } else {
         *used = p->cborLength;
         if (p->cborLength > bufferLength) {

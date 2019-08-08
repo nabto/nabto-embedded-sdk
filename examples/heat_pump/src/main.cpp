@@ -70,12 +70,6 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-NabtoDeviceError load_policy(NabtoDevice* device, const std::string& name, json policy)
-{
-    auto cbor = json::to_cbor(policy);
-    return nabto_device_iam_policy_create(device, name.c_str(), cbor.data(), cbor.size());
-}
-
 bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
 {
     if (heat_pump_config_exists(configFile)) {

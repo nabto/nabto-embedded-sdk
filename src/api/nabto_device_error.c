@@ -9,7 +9,7 @@
     XX(NABTO_DEVICE_EC_OUT_OF_MEMORY, 1003, "Out of memory")          \
     XX(NABTO_DEVICE_EC_INVALID_ARGUMENT, 1004, "Invalid argument") \
     XX(NABTO_DEVICE_EC_IAM_DENY, 2000, "Action denied") \
-    XX(NABTO_DEVICE_EC_NO_SUCH_RESOURCE, 3000, "No such resource") \
+    XX(NABTO_DEVICE_EC_NOT_FOUND, 3000, "No such resource") \
 
 
 

@@ -292,7 +292,7 @@ void access_denied(struct nabto_coap_server_request* request)
 nabto_coap_code ec_to_coap_code(np_error_code ec)
 {
     switch (ec) {
-        case NABTO_EC_NO_SUCH_RESOURCE: return NABTO_COAP_CODE(4,04);
+        case NABTO_EC_NOT_FOUND: return NABTO_COAP_CODE(4,04);
         case NABTO_EC_IN_USE: return NABTO_COAP_CODE(4,00);
         case NABTO_EC_INVALID_ARGUMENT: return NABTO_COAP_CODE(4,00);
         default: return NABTO_COAP_CODE(5,00);

@@ -299,7 +299,7 @@ nabto_deivce_iam_roles_remove_policy(NabtoDevice* device, const char* role, cons
 
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_create(NabtoDevice* device, const char* name, void* cbor, size_t cborLength)
+nabto_device_iam_policies_create(NabtoDevice* device, const char* name, void* cbor, size_t cborLength)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
@@ -312,7 +312,7 @@ nabto_device_iam_policy_create(NabtoDevice* device, const char* name, void* cbor
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_delete(NabtoDevice* device, const char* policy)
+nabto_device_iam_policies_delete(NabtoDevice* device, const char* policy)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
@@ -326,7 +326,7 @@ nabto_device_iam_policy_delete(NabtoDevice* device, const char* policy)
 
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_get(NabtoDevice* device, const char* policy, void* buffer, size_t bufferLength, size_t* used)
+nabto_device_iam_policies_get(NabtoDevice* device, const char* policy, void* buffer, size_t bufferLength, size_t* used)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
@@ -339,7 +339,7 @@ nabto_device_iam_policy_get(NabtoDevice* device, const char* policy, void* buffe
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_policy_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used)
+nabto_device_iam_policies_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;

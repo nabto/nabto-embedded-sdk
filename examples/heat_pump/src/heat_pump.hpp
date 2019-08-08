@@ -10,9 +10,6 @@
 #include <thread>
 #include <sstream>
 
-static const char* OWNER_USER_NAME = "owner";
-static const char* GUEST_ROLE_NAME = "GuestAccess";
-
 using json = nlohmann::json;
 
 class HeatPump {
@@ -86,7 +83,7 @@ class HeatPump {
             if (ec == NABTO_DEVICE_EC_OUT_OF_MEMORY) {
                 // user was found but buffer was too small
                 continue;
-            } else if (ec == NABTO_DEVICE_EC_NO_SUCH_RESOURCE) {
+            } else if (ec == NABTO_DEVICE_EC_NOT_FOUND) {
                 // user was not found use this for the next user
                 name = str;
                 return NABTO_DEVICE_EC_OK;
