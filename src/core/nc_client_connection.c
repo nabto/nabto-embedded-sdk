@@ -1,5 +1,5 @@
-#include "nc_client_connect.h"
-#include "nc_client_connect_dispatch.h"
+#include "nc_client_connection.h"
+#include "nc_client_connection_dispatch.h"
 #include "nc_device.h"
 
 #include <core/nc_udp_dispatch.h>

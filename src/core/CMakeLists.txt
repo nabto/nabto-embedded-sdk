@@ -4,8 +4,8 @@ set(src
   ${src_dir}/nc_attacher.c
   ${src_dir}/nc_packet.c
   ${src_dir}/nc_keep_alive.c
-  ${src_dir}/nc_client_connect.c
-  ${src_dir}/nc_client_connect_dispatch.c
+  ${src_dir}/nc_client_connection.c
+  ${src_dir}/nc_client_connection_dispatch.c
   ${src_dir}/nc_stream_manager.c
   ${src_dir}/nc_stream.c
   ${src_dir}/nc_udp_dispatch.c

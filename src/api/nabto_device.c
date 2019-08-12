@@ -10,7 +10,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
 #include <core/nc_version.h>
-#include <core/nc_client_connect.h>
+#include <core/nc_client_connection.h>
 
 #include <modules/logging/api/nm_api_logging.h>
 #include <modules/dtls/nm_dtls_util.h>

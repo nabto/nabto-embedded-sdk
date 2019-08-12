@@ -2,7 +2,7 @@
 #include <platform/np_logging.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <platform/np_ip_address.h>
-#include <core/nc_client_connect.h>
+#include <core/nc_client_connection.h>
 #include <core/nc_udp_dispatch.h>
 
 #include <stdio.h>
@@ -120,7 +120,7 @@ int main() {
     int nfds;
     uint8_t fp[16];
     memset(fp, 0, 16);
-   
+
     ep.port = 4439;
     inet_pton(AF_INET6, "::1", ep.ip.v6.addr);
     ep.ip.type = NABTO_IPV6;

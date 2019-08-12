@@ -2,7 +2,7 @@
 #include <platform/np_logging.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <platform/np_ip_address.h>
-#include <core/nc_client_connect.h>
+#include <core/nc_client_connection.h>
 
 #include <stdio.h>
 #include <stdlib.h>

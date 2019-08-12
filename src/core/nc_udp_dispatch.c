@@ -4,7 +4,7 @@
 #include <platform/np_udp.h>
 #include <platform/np_dtls_cli.h>
 
-#include <core/nc_client_connect_dispatch.h>
+#include <core/nc_client_connection_dispatch.h>
 #include <core/nc_stun.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH

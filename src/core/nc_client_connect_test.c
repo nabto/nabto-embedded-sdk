@@ -1,4 +1,4 @@
-#include "nc_client_connect.h"
+#include "nc_client_connection.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_dtls_srv.h>
@@ -6,7 +6,7 @@
 #include <platform/np_unit_test.h>
 #include <core/nc_tests.h>
 #include <core/nc_packet.h>
-#include <core/nc_client_connect_dispatch.h>
+#include <core/nc_client_connection_dispatch.h>
 
 #include <string.h>
 #include <stdlib.h>

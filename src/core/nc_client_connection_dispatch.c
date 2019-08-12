@@ -1,4 +1,4 @@
-#include "nc_client_connect_dispatch.h"
+#include "nc_client_connection_dispatch.h"
 
 #include <platform/np_logging.h>
 #include <string.h>

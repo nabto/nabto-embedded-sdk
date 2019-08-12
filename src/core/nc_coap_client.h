@@ -4,7 +4,7 @@
 #include <platform/np_platform.h>
 #include <platform/np_dtls_cli.h>
 
-#include <core/nc_client_connect.h>
+#include <core/nc_client_connection.h>
 
 #include <coap/nabto_coap_client.h>
 

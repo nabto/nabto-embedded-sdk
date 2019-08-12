@@ -3,7 +3,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_dtls_srv.h>
-#include <core/nc_client_connect.h>
+#include <core/nc_client_connection.h>
 
 np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv_connection** dtls,
                                  np_dtls_srv_sender sender,

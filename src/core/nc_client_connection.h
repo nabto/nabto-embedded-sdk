@@ -1,5 +1,5 @@
-#ifndef NC_CLIENT_CONNECT_H
-#define NC_CLIENT_CONNECT_H
+#ifndef NC_CLIENT_CONNECTION_H
+#define NC_CLIENT_CONNECTION_H
 
 #include <platform/np_platform.h>
 #include <core/nc_rendezvous.h>
@@ -70,4 +70,4 @@ struct np_dtls_srv_connection* nc_client_connect_get_dtls_connection(struct nc_c
 
 np_error_code nc_client_connect_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
 
-#endif //_NC_CLIENT_CONNECT_H_
+#endif //_NC_CLIENT_CONNECTION_H_

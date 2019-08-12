@@ -3,7 +3,7 @@
 
 #include <core/nc_attacher.h>
 #include <core/nc_stream_manager.h>
-#include <core/nc_client_connect_dispatch.h>
+#include <core/nc_client_connection_dispatch.h>
 #include <core/nc_stun.h>
 #include <core/nc_coap_server.h>
 #include <core/nc_stun_coap.h>

@@ -1,7 +1,7 @@
-#ifndef NC_CLIENT_CONNECT_DISPATCH_H
-#define NC_CLIENT_CONNECT_DISPATCH_H
+#ifndef NC_CLIENT_CONNECTION_DISPATCH_H
+#define NC_CLIENT_CONNECTION_DISPATCH_H
 
-#include <core/nc_client_connect.h>
+#include <core/nc_client_connection.h>
 
 #ifndef NABTO_MAX_CLIENT_CONNECTIONS
 #define NABTO_MAX_CLIENT_CONNECTIONS 10

@@ -2,7 +2,7 @@
 #include "nc_stream_manager.h"
 
 #include <core/nc_packet.h>
-#include <core/nc_client_connect.h>
+#include <core/nc_client_connection.h>
 
 #include <platform/np_logging.h>
 
