@@ -10,7 +10,6 @@
 
 struct nabto_device_thread {
     pthread_t thread;
-    pthread_attr_t attr;
 };
 
 struct nabto_device_mutex {
@@ -24,20 +23,9 @@ struct nabto_device_condition {
 
 struct nabto_device_thread* nabto_device_threads_create_thread()
 {
-    struct nabto_device_thread* thread = (struct nabto_device_thread*)malloc(sizeof(struct nabto_device_thread));
+    struct nabto_device_thread* thread = calloc(1, sizeof(struct nabto_device_thread));
     if (thread == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
-        return NULL;
-    }
-    if (pthread_attr_init(&thread->attr) !=0) {
-        NABTO_LOG_ERROR(LOG, "Failed to initialize pthread_attr");
-        free(thread);
-        return NULL;
-    }
-    if (pthread_attr_setdetachstate(&thread->attr, PTHREAD_CREATE_DETACHED) != 0) {
-        NABTO_LOG_ERROR(LOG, "Failed to set detach state for pthread_attr");
-        pthread_attr_destroy(&thread->attr);
-        free(thread);
         return NULL;
     }
     return thread;
@@ -75,17 +63,18 @@ struct nabto_device_condition* nabto_device_threads_create_condition()
 
 void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
 {
-    pthread_attr_destroy(&thread->attr);
     free(thread);
 }
 
 void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutex)
 {
+    pthread_mutex_destroy(&mutex->mut);
     free(mutex);
 }
 
 void nabto_device_threads_free_cond(struct nabto_device_condition* cond)
 {
+    pthread_cond_destroy(&cond->cond);
     free(cond);
 }
 
@@ -106,7 +95,7 @@ void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 
 np_error_code nabto_device_threads_run(struct nabto_device_thread* thread, void *(*run_routine) (void *), void* data)
 {
-    if (pthread_create(&thread->thread, &thread->attr, run_routine, data) != 0) {
+    if (pthread_create(&thread->thread, NULL, run_routine, data) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create pthread");
         return NABTO_EC_FAILED;
     }

@@ -69,12 +69,15 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    dev->closing = true;
-
+    nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->enableMdns) {
         nm_mdns_deinit(&dev->mdns);
     }
 
+    nc_device_deinit(&dev->core);
+
+    dev->closing = true;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
     // TODO: reintroduce this through the udp platform as to not leak buffers
     //nm_epoll_close(&dev->pl);
     if (dev->networkThread != NULL) {
@@ -83,6 +86,13 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     if (dev->coreThread != NULL) {
         nabto_device_threads_join(dev->coreThread);
     }
+
+    nabto_device_threads_free_thread(dev->networkThread);
+    nabto_device_threads_free_thread(dev->coreThread);
+
+    nabto_device_threads_free_cond(dev->eventCond);
+    nabto_device_threads_free_mutex(dev->eventMutex);
+
 
     free(dev->productId);
     free(dev->deviceId);
@@ -402,9 +412,9 @@ void* nabto_device_core_thread(void* data)
             nabto_device_threads_cond_wait(dev->eventCond, dev->eventMutex);
         }
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        if (dev->closing) {
-            return NULL;
-        }
+        /* if (dev->closing) { */
+        /*     return NULL; */
+        /* } */
     }
 
     return NULL;

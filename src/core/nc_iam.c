@@ -35,8 +35,6 @@ void nc_iam_init(struct nc_iam* iam)
     nc_iam_list_init(&iam->roles);
     nc_iam_list_init(&iam->policies);
     iam->defaultRole = NULL;
-
-
 }
 
 void nc_iam_deinit(struct nc_iam* iam)
@@ -45,6 +43,17 @@ void nc_iam_deinit(struct nc_iam* iam)
         iam->changeCallback(NABTO_EC_STOPPED, iam->changeCallbackUserData);
         iam->changeCallback = NULL;
     }
+    nc_iam_list_clear_and_free_items(&iam->fingerprints);
+    nc_iam_list_clear_and_free_items(&iam->users);
+    nc_iam_list_clear_and_free_items(&iam->roles);
+    struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
+    while (iterator != &iam->policies.sentinel) {
+        struct nc_iam_policy* item = iterator->item;
+        nc_iam_policy_free(item);
+        iterator = iterator->next;
+    }
+    nc_iam_list_clear(&iam->policies);
+    iam->defaultRole = NULL;
 }
 
 np_error_code nc_iam_set_change_callback(struct nc_iam* iam, nc_iam_change_callback changeCallback, void* userData)
@@ -184,14 +193,36 @@ np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connec
     struct nc_iam_user* user = connection->user;
     np_error_code result = NABTO_EC_IAM_DENY;
     if (user != NULL) {
+        size_t i;
         nc_iam_attributes_add_string(attributes, "Connection:UserId", connection->user->id);
 
-        struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
-        while(roleIterator != &user->roles.sentinel) {
-            struct nc_iam_role* role = (struct nc_iam_role*)roleIterator->item;
-            struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
-            while(policyIterator != & role->policies.sentinel) {
-                struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
+        for (i = 0; i < NC_IAM_USER_MAX_ROLES; i++) {
+            struct nc_iam_role* role = user->roles[i];
+            if (role != NULL) {
+                size_t j;
+                for (j = 0; j < NC_IAM_ROLE_MAX_POLICIES; j++) {
+                    struct nc_iam_policy* policy = role->policies[j];
+                    if (policy != NULL) {
+                        ec = nc_iam_evaluate_policy(attributes, action, policy);
+                        if (ec == NABTO_EC_IAM_NONE) {
+                            // no change
+                        } else if (ec == NABTO_EC_OK || ec == NABTO_EC_IAM_DENY) {
+                            result = ec;
+                        } else {
+                            return ec;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // user == NULL
+        // use the default role
+        struct nc_iam_role* role = nc_iam_get_default_role(&connection->device->iam);
+        size_t j;
+        for (j = 0; j < NC_IAM_ROLE_MAX_POLICIES; j++) {
+            struct nc_iam_policy* policy = role->policies[j];
+            if (policy != NULL) {
                 ec = nc_iam_evaluate_policy(attributes, action, policy);
                 if (ec == NABTO_EC_IAM_NONE) {
                     // no change
@@ -200,27 +231,7 @@ np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connec
                 } else {
                     return ec;
                 }
-                policyIterator = policyIterator->next;
             }
-            roleIterator = roleIterator->next;
-        }
-    } else {
-        // user == NULL
-        // use the default role
-        struct nc_iam_role* role = nc_iam_get_default_role(&connection->device->iam);
-        struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
-        while(policyIterator != & role->policies.sentinel) {
-            struct nc_iam_policy* policy = (struct nc_iam_policy*)policyIterator->item;
-            ec = nc_iam_evaluate_policy(attributes, action, policy);
-            if (ec == NABTO_EC_IAM_NONE) {
-                // no change
-            } else if (ec == NABTO_EC_OK || ec == NABTO_EC_IAM_DENY) {
-                result = ec;
-            } else {
-                return ec;
-            }
-
-            policyIterator = policyIterator->next;
         }
     }
     return result;
@@ -512,7 +523,6 @@ np_error_code nc_iam_create_role(struct nc_iam* iam, const char* name)
         free(r);
         return ec;
     }
-    nc_iam_list_init(&r->policies);
     nc_iam_list_insert(&iam->roles, r);
     nc_iam_updated(iam);
     return NABTO_EC_OK;
@@ -525,15 +535,16 @@ np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
         return NABTO_EC_NOT_FOUND;
     }
     // find users using the role if found, do not delete it.
+
     struct nc_iam_list_entry* iterator = iam->users.sentinel.next;
     while (iterator != &iam->users.sentinel) {
         struct nc_iam_user* user = iterator->item;
-        struct nc_iam_list_entry* roleIterator = user->roles.sentinel.next;
-        while(roleIterator != &user->roles.sentinel) {
-            if (roleIterator->item == role) {
+        size_t i;
+        for (i = 0; i < NC_IAM_USER_MAX_ROLES; i++) {
+            struct nc_iam_role* item = user->roles[i];
+            if (item == role) {
                 return NABTO_EC_IN_USE;
             }
-            roleIterator = roleIterator->next;
         }
         iterator = iterator->next;
     }
@@ -541,7 +552,6 @@ np_error_code nc_iam_delete_role(struct nc_iam* iam, const char* name)
     // role is found and not in use.
 
     nc_iam_list_remove_item(&iam->roles, role);
-    nc_iam_list_clear(&role->policies);
     free(role);
     return NABTO_EC_OK;
 }
@@ -587,11 +597,12 @@ np_error_code nc_iam_role_get(struct nc_iam* iam, const char* name, void* buffer
     cbor_encode_text_stringz(&map, "Policies");
     cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
 
-    struct nc_iam_list_entry* iterator = role->policies.sentinel.next;
-    while(iterator != &role->policies.sentinel) {
-        struct nc_iam_policy* p = iterator->item;
-        cbor_encode_text_stringz(&array, p->name);
-        iterator = iterator->next;
+    size_t i;
+    for (i = 0; i < NC_IAM_ROLE_MAX_POLICIES; i++) {
+        struct nc_iam_policy* p = role->policies[i];
+        if (p != NULL) {
+            cbor_encode_text_stringz(&array, p->name);
+        }
     }
     cbor_encoder_close_container(&map, &array);
     cbor_encoder_close_container(&encoder, &map);
@@ -631,7 +642,6 @@ np_error_code nc_iam_create_user(struct nc_iam* iam, const char* name)
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    nc_iam_list_init(&user->roles);
     nc_iam_list_insert(&iam->users, user);
     nc_iam_updated(iam);
     return NABTO_EC_OK;
@@ -727,9 +737,15 @@ np_error_code nc_iam_user_add_role(struct nc_iam* iam, const char* user, const c
     if (!u || !r) {
         return NABTO_EC_NOT_FOUND;
     }
-    nc_iam_list_insert(&u->roles, r);
-    nc_iam_updated(iam);
-    return NABTO_EC_OK;
+    size_t i;
+    for (i = 0; i < NC_IAM_USER_MAX_ROLES; i++) {
+        if (u->roles[i] == NULL) {
+            u->roles[i] = r;
+            nc_iam_updated(iam);
+            return NABTO_EC_OK;
+        }
+    }
+    return NABTO_EC_OUT_OF_MEMORY;
 }
 
 np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, const char* role)
@@ -739,12 +755,16 @@ np_error_code nc_iam_user_remove_role(struct nc_iam* iam, const char* user, cons
     if (!u || !r) {
         return NABTO_EC_NOT_FOUND;
     }
-    nc_iam_list_remove_item(&u->roles, r);
-    nc_iam_updated(iam);
-    return NABTO_EC_OK;
+    size_t i;
+    for (i = 0; i < NC_IAM_USER_MAX_ROLES; i++) {
+        if (u->roles[i] == r) {
+            u->roles[i] = NULL;
+            nc_iam_updated(iam);
+            return NABTO_EC_OK;
+        }
+    }
+    return NABTO_EC_NOT_FOUND;
 }
-
-
 
 np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, const char* fingerprintHex)
 {
@@ -809,9 +829,15 @@ np_error_code nc_iam_role_add_policy(struct nc_iam* iam, const char* role, const
         return NABTO_EC_NOT_FOUND;
     }
 
-    nc_iam_list_insert(&r->policies, p);
-    nc_iam_updated(iam);
-    return NABTO_EC_OK;
+    size_t i;
+    for(i = 0; i < NC_IAM_ROLE_MAX_POLICIES; i++) {
+        if (r->policies[i] == NULL) {
+            r->policies[i] = p;
+            nc_iam_updated(iam);
+            return NABTO_EC_OK;
+        }
+    }
+    return NABTO_EC_OUT_OF_MEMORY;
 }
 
 np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, const char* policy)
@@ -821,9 +847,15 @@ np_error_code nc_iam_role_remove_policy(struct nc_iam* iam, const char* role, co
     if (!r || !p) {
         return NABTO_EC_NOT_FOUND;
     }
-    nc_iam_list_remove_item(&r->policies, p);
-    nc_iam_updated(iam);
-    return NABTO_EC_OK;
+    size_t i;
+    for(i = 0; i < NC_IAM_ROLE_MAX_POLICIES; i++) {
+        if (r->policies[i] == p) {
+            r->policies[i] = NULL;
+            nc_iam_updated(iam);
+            return NABTO_EC_OK;
+        }
+    }
+    return NABTO_EC_NOT_FOUND;
 }
 
 np_error_code nc_iam_str_cpy(char* dst, const char* src)

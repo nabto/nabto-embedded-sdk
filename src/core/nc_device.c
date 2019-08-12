@@ -16,6 +16,11 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
     nc_iam_coap_register_handlers(device);
 }
 
+void nc_device_deinit(struct nc_device_context* device) {
+    nc_iam_deinit(&device->iam);
+    nc_coap_server_deinit(&device->coap);
+}
+
 void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;

@@ -10,6 +10,8 @@
 #include <string.h>
 
 #define NC_IAM_MAX_STRING_LENGTH 33
+#define NC_IAM_USER_MAX_ROLES 5
+#define NC_IAM_ROLE_MAX_POLICIES 10
 
 struct nc_client_connection;
 struct nabto_coap_server_request;
@@ -40,7 +42,7 @@ struct nc_iam {
 
 struct nc_iam_user {
     char id[NC_IAM_MAX_STRING_LENGTH];
-    struct nc_iam_list roles;
+    struct nc_iam_role* roles[NC_IAM_USER_MAX_ROLES];
 };
 
 struct nc_iam_value {
@@ -64,7 +66,7 @@ struct nc_iam_policy {
 
 struct nc_iam_role {
     char name[NC_IAM_MAX_STRING_LENGTH];
-    struct nc_iam_list policies;
+    struct nc_iam_policy* policies[NC_IAM_ROLE_MAX_POLICIES];
 };
 
 #define NC_IAM_MAX_ATTRIBUTES 10

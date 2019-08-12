@@ -31,6 +31,11 @@ void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* 
     nc_coap_server_set_infinite_stamp(ctx);
 }
 
+void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
+{
+    nabto_coap_server_destroy(&ctx->server);
+    ctx->pl->buf.free(ctx->sendBuffer);
+}
 
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
                                   np_communication_buffer* buffer, uint16_t bufferSize)

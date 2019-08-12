@@ -43,6 +43,7 @@ struct nc_device_context {
 };
 
 void nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
+void nc_device_deinit(struct nc_device_context* dev);
 
 
 np_error_code nc_device_start(struct nc_device_context* dev,

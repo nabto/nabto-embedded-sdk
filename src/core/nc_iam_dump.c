@@ -89,12 +89,13 @@ void nc_iam_dump_user(struct nc_iam* iam, struct nc_iam_user* user, CborEncoder*
     cbor_encode_text_stringz(&map, "Roles");
     {
         CborEncoder roles;
+        size_t i;
         cbor_encoder_create_array(&map, &roles, CborIndefiniteLength);
-        struct nc_iam_list_entry* iterator = user->roles.sentinel.next;
-        while(iterator != &user->roles.sentinel) {
-            struct nc_iam_role* role = iterator->item;
-            cbor_encode_text_stringz(&roles, role->name);
-            iterator = iterator->next;
+        for (i = 0; i < NC_IAM_USER_MAX_ROLES; i++) {
+            struct nc_iam_role* role = user->roles[i];
+            if (role != NULL) {
+                cbor_encode_text_stringz(&roles, role->name);
+            }
         }
 
         cbor_encoder_close_container(&map, &roles);
@@ -131,11 +132,12 @@ void nc_iam_dump_roles(struct nc_iam* iam, CborEncoder* encoder)
         CborEncoder array;
         cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
 
-        struct nc_iam_list_entry* policyIterator = role->policies.sentinel.next;
-        while (policyIterator != &role->policies.sentinel) {
-            struct nc_iam_policy* policy = policyIterator->item;
-            cbor_encode_text_stringz(&array, policy->name);
-            policyIterator = policyIterator->next;
+        size_t i;
+        for (i = 0; i < NC_IAM_ROLE_MAX_POLICIES; i++) {
+            struct nc_iam_policy* policy = role->policies[i];
+            if (policy != NULL) {
+                cbor_encode_text_stringz(&array, policy->name);
+            }
         }
 
         cbor_encoder_close_container(&map, &array);

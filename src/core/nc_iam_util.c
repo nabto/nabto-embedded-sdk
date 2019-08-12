@@ -22,6 +22,20 @@ void nc_iam_list_clear(struct nc_iam_list* list)
     list->sentinel.prev = &list->sentinel;
 }
 
+void nc_iam_list_clear_and_free_items(struct nc_iam_list* list)
+{
+    struct nc_iam_list_entry* iterator = list->sentinel.next;
+    while (iterator != &list->sentinel) {
+        struct nc_iam_list_entry* entry = iterator;
+        iterator = iterator->next;
+        free(entry->item);
+        nc_iam_list_entry_free(entry);
+    }
+
+    list->sentinel.next = &list->sentinel;
+    list->sentinel.prev = &list->sentinel;
+}
+
 void nc_iam_list_insert(struct nc_iam_list* list, void* item)
 {
     struct nc_iam_list_entry* entry = nc_iam_list_entry_new();

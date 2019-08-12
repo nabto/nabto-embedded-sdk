@@ -29,7 +29,8 @@ void nm_unix_dns_check_resolved(const np_error_code ec, void* data);
 void* resolver_thread(void* ctx) {
     struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
 
-    struct addrinfo hints, *infoptr;
+    struct addrinfo hints;
+    struct addrinfo *infoptr;
     memset(&hints, 0, sizeof (struct addrinfo));
 
     hints.ai_socktype = SOCK_DGRAM;
@@ -73,6 +74,7 @@ void* resolver_thread(void* ctx) {
         p = p->ai_next;
     }
     state->resolver_is_running = false;
+    freeaddrinfo(infoptr);
     return NULL;
 }
 

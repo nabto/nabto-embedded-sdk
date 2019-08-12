@@ -19,6 +19,7 @@ struct nc_iam_list {
 
 void nc_iam_list_init(struct nc_iam_list* list);
 void nc_iam_list_clear(struct nc_iam_list* list);
+void nc_iam_list_clear_and_free_items(struct nc_iam_list* list);
 void nc_iam_list_insert(struct nc_iam_list* list, void* item);
 void nc_iam_list_remove(struct nc_iam_list_entry* entry);
 void nc_iam_list_remove_item(struct nc_iam_list* list, void* item);

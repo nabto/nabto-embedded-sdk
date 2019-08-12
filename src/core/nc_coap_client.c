@@ -27,6 +27,12 @@ void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* 
     nc_coap_client_set_infinite_stamp(ctx);
 }
 
+void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
+{
+    nabto_coap_client_destroy(&ctx->client);
+    ctx->pl->buf.free(ctx->sendBuffer);
+}
+
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
                                   np_communication_buffer* buffer, uint16_t bufferSize)
 {
@@ -73,7 +79,7 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         size_t used = ptr - sendCtx->buffer;
         ctx->isSending = true;
         ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->dtls, 0, sendCtx->buffer, used, &nc_coap_client_send_to_callback, sendCtx);
-    }   
+    }
 }
 
 void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
