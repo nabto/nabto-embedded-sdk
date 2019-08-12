@@ -13,18 +13,7 @@
 #include <core/nc_client_connect.h>
 
 #include <modules/logging/api/nm_api_logging.h>
-
-#include "mbedtls/error.h"
-#include "mbedtls/pk.h"
-#include "mbedtls/ecdsa.h"
-#include "mbedtls/rsa.h"
-#include "mbedtls/error.h"
-#include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/platform.h"
-#include "mbedtls/x509_crt.h"
-#include "mbedtls/x509_csr.h"
-#include "mbedtls/sha256.h"
+#include <modules/dtls/nm_dtls_util.h>
 
 #include <stdlib.h>
 
@@ -159,19 +148,26 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* devic
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     free(dev->privateKey);
 
     dev->privateKey = strdup(str);
     if (dev->privateKey == NULL) {
-        ec = NABTO_DEVICE_EC_FAILED;
+        // TODO
+        ec = NABTO_EC_FAILED;
     } else {
-        ec = nabto_device_create_crt_from_private_key(dev);
+        char* crt;
+        ec = nm_dtls_create_crt_from_private_key(dev->privateKey, &crt);
+        if (dev->publicKey != NULL) {
+            free(dev->publicKey);
+            dev->publicKey = NULL;
+        }
+        dev->publicKey = crt;
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 
 }
 
@@ -217,107 +213,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_local_port(NabtoDevice* devic
     return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_create_crt_from_private_key(struct nabto_device_context* dev)
-{
-    // 1. load key from pem
-    // 2. create crt
-    // 3. write crt to pem string.
-    mbedtls_pk_context key;
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
-
-    mbedtls_x509write_cert crt;
-    mbedtls_mpi serial;
-
-    int ret;
-
-    mbedtls_pk_init(&key);
-    mbedtls_ctr_drbg_init(&ctr_drbg);
-    mbedtls_entropy_init(&entropy);
-    mbedtls_x509write_crt_init(&crt);
-    mbedtls_mpi_init(&serial);
-
-    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-
-    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)dev->privateKey, strlen(dev->privateKey)+1, NULL, 0 );
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-
-    // initialize crt
-    mbedtls_x509write_crt_set_subject_key( &crt, &key );
-    mbedtls_x509write_crt_set_issuer_key( &crt, &key );
-
-    ret = mbedtls_mpi_read_string( &serial, 10, "1");
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-
-    mbedtls_x509write_crt_set_serial( &crt, &serial );
-
-    ret = mbedtls_x509write_crt_set_subject_name( &crt, "CN=nabto" );
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-
-    ret = mbedtls_x509write_crt_set_issuer_name( &crt, "CN=nabto" );
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-
-    mbedtls_x509write_crt_set_version( &crt, 2 );
-    mbedtls_x509write_crt_set_md_alg( &crt, MBEDTLS_MD_SHA256 );
-
-    ret = mbedtls_x509write_crt_set_validity( &crt, "20010101000000", "20491231235959" );
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-
-    ret = mbedtls_x509write_crt_set_basic_constraints( &crt, 1, -1);
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-
-    {
-        // write crt
-        char buffer[1024];
-        memset(buffer, 0, 1024);
-        ret = mbedtls_x509write_crt_pem( &crt, (unsigned char*)buffer, 1024,
-                                         mbedtls_ctr_drbg_random, &ctr_drbg );
-
-        if (ret != 0) {
-            return false;
-        }
-        int len = strlen(buffer);
-        if (dev->publicKey != NULL) {
-            free(dev->publicKey);
-        }
-        dev->publicKey = (char*)malloc(len+1); // include trailing zero
-        if (dev->publicKey == NULL) {
-            return NABTO_DEVICE_EC_FAILED;
-        }
-        memcpy(dev->publicKey, buffer, len+1); // include trailing zero
-    }
-
-    // TODO cleanup in case of error
-    mbedtls_x509write_crt_free(&crt);
-    mbedtls_mpi_free(&serial);
-    mbedtls_ctr_drbg_free(&ctr_drbg);
-    mbedtls_entropy_free(&entropy);
-    mbedtls_pk_free(&key);
-    return NABTO_DEVICE_EC_OK;
-}
-
-
 uint16_t mdns_get_port(void* userData)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)userData;
     return nc_udp_dispatch_get_local_port(&dev->core.udp);
 }
-
 
 /**
  * Starting the device
@@ -381,41 +281,16 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
 {
     *fingerprint = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    if (dev->publicKey == NULL) {
-        return NABTO_DEVICE_EC_FAILED;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    if (dev->privateKey == NULL) {
+        // TODO better ec
+        ec = NABTO_EC_FAILED;
     }
-    mbedtls_pk_context key;
-    int ret;
+    ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, fingerprint);
 
-    mbedtls_pk_init(&key);
-    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)dev->privateKey, strlen(dev->privateKey)+1, NULL, 0 );
-    if (ret != 0) {
-        return NABTO_DEVICE_EC_FAILED;
-    }
-    {
-        // get fingerprint
-        uint8_t buffer[256];
-        uint8_t hash[32];
-        // !!! The key is written to the end of the buffer
-        int len = mbedtls_pk_write_pubkey_der( &key, buffer, sizeof(buffer));
-        if (len <= 0) {
-            return NABTO_DEVICE_EC_FAILED;
-        }
-
-        ret = mbedtls_sha256_ret(buffer+256 - len,  len, hash, false);
-        if (ret != 0) {
-            return NABTO_DEVICE_EC_FAILED;
-        }
-
-        *fingerprint = malloc(33);
-        memset(*fingerprint, 0, 33);
-        sprintf(*fingerprint, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-                hash[0], hash[1], hash[2],  hash[3],  hash[4],  hash[5],  hash[6],  hash[7],
-                hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
-
-    }
-    mbedtls_pk_free(&key);
-    return NABTO_DEVICE_EC_OK;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
 }
 
 /**

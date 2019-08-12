@@ -320,7 +320,6 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
 void nm_epoll_event_create(void* data)
 {
     np_udp_socket* us = (np_udp_socket*)data;
-    struct epoll_event* ev;
 
     us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (us->sock == -1) {
@@ -352,10 +351,10 @@ void nm_epoll_event_create(void* data)
             return;
         }
     }
-    ev = (struct epoll_event*)malloc(sizeof(struct epoll_event));
-    ev->events = EPOLLIN | EPOLLET;
-    ev->data.ptr = us;
-    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_ADD, us->sock, ev) == -1) {
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.ptr = us;
+    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
         NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
         close(us->sock);
         us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, NULL, us->created.data);
