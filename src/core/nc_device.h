@@ -23,7 +23,7 @@ struct nc_device_context {
     struct nc_attach_parameters attachParams;
     struct nc_attach_context attacher;
     struct nc_stream_manager_context streamManager;
-    struct nc_client_connect_dispatch_context clientConnect;
+    struct nc_client_connection_dispatch_context clientConnect;
     struct nc_stun_context stun;
     struct nc_coap_server_context coap;
     struct nc_rendezvous_context rendezvous;

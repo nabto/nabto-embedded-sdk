@@ -118,7 +118,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         int i;
         for (i = 0; i < NABTO_MAX_STREAMS; i++) {
             if (ctx->streams[i].active == false) {
-                nc_stream_init(ctx->pl, &ctx->streams[i], streamId, nc_client_connect_get_dtls_connection(conn), ctx);
+                nc_stream_init(ctx->pl, &ctx->streams[i], streamId, nc_client_connection_get_dtls_connection(conn), ctx);
                 ctx->streamConns[i] = conn;
                 return &ctx->streams[i];
             }
@@ -132,7 +132,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     uint8_t* start;
     uint8_t* ptr;
     size_t ret;
-    struct np_dtls_srv_connection* dtls = nc_client_connect_get_dtls_connection(conn);
+    struct np_dtls_srv_connection* dtls = nc_client_connection_get_dtls_connection(conn);
     NABTO_LOG_TRACE(LOG, "Sending RST to streamId: %u", streamId);
     ctx->rstBuf = ctx->pl->buf.allocate();
     start = ctx->pl->buf.start(ctx->rstBuf);

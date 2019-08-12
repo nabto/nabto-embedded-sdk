@@ -84,15 +84,15 @@ void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoin
     }  else if (ctx->dtls != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
         ctx->pl->dtlsC.handle_packet(ctx->pl, ctx->dtls, buffer, bufferSize);
     } else if (ctx->cliConn != NULL && (start[0] >= 240)) {
-        nc_client_connect_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
+        nc_client_connection_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
     } else {
         NABTO_LOG_ERROR(LOG, "Unable to dispatch packet with ID: %u", start[0]);
     }
     ctx->pl->udp.async_recv_from(ctx->sock, &nc_udp_dispatch_handle_packet, ctx);
 }
 
-void nc_udp_dispatch_set_client_connect_context(struct nc_udp_dispatch_context* ctx,
-                                                struct nc_client_connect_dispatch_context* cliConn)
+void nc_udp_dispatch_set_client_connection_context(struct nc_udp_dispatch_context* ctx,
+                                                   struct nc_client_connection_dispatch_context* cliConn)
 {
     NABTO_LOG_TRACE(LOG, "set cli Conn");
     ctx->cliConn = cliConn;
@@ -112,7 +112,7 @@ void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
     ctx->stun = stun;
 }
 
-void nc_udp_dispatch_clear_client_connect_context(struct nc_udp_dispatch_context* ctx)
+void nc_udp_dispatch_clear_client_connection_context(struct nc_udp_dispatch_context* ctx)
 {
     NABTO_LOG_TRACE(LOG, "clear cli Conn");
     ctx->cliConn = NULL;

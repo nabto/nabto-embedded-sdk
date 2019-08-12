@@ -92,7 +92,7 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
         nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
         return;
     }
-    nc_udp_dispatch_set_client_connect_context(&dev->udp, &dev->clientConnect);
+    nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
 
     ec2 = nc_attacher_register_detach_callback(&dev->attacher, &nc_device_detached_cb, dev);
     if ( ec2 != NABTO_EC_OK ) {
@@ -114,7 +114,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->stopping = false;
     dev->stunHost = stunHost;
     nc_stream_manager_init(&dev->streamManager, pl);
-    nc_client_connect_dispatch_init(&dev->clientConnect, pl, dev);
+    nc_client_connection_dispatch_init(&dev->clientConnect, pl, dev);
 
     dev->attachParams.appName = appName;
     dev->attachParams.appVersion = appVersion;
@@ -170,10 +170,10 @@ uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev,
 
 struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
 {
-    return nc_client_connect_dispatch_connection_from_ref(&dev->clientConnect, ref);
+    return nc_client_connection_dispatch_connection_from_ref(&dev->clientConnect, ref);
 }
 
 bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user)
 {
-    return nc_client_connect_dispatch_user_in_use(&dev->clientConnect, user);
+    return nc_client_connection_dispatch_user_in_use(&dev->clientConnect, user);
 }

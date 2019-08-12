@@ -13,7 +13,7 @@
 
 int nc_client_connect_test_recvState = 0;
 
-struct nc_client_connect_dispatch_context cliConnDisp;
+struct nc_client_connection_dispatch_context cliConnDisp;
 struct np_dtls_srv_connection* crypCtx;
 struct nc_udp_dispatch_context* sock;
 struct np_udp_socket* udpSock;
@@ -176,7 +176,7 @@ void nc_client_connect_test_connect()
     memcpy(ptr, "TEST_DATA", 10);
     ptr += 10;
 
-    nc_client_connect_dispatch_handle_packet(&cliConnDisp, sock, ep, buf, 26);
+    nc_client_connection_dispatch_handle_packet(&cliConnDisp, sock, ep, buf, 26);
 
     NABTO_TEST_CHECK(testRecvFromCalled);
 }

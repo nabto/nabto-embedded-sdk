@@ -9,22 +9,22 @@
 
 #include <string.h>
 
-#define LOG NABTO_LOG_MODULE_CLIENT_CONNECT
+#define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION
 
-void nc_client_connect_async_send_to_udp(bool channelId,
+void nc_client_connection_async_send_to_udp(bool channelId,
                                          np_communication_buffer* buffer, uint16_t bufferSize,
                                          np_dtls_srv_send_callback cb, void* data, void* listenerData);
-void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
+void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
-void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data);
-void nc_client_connect_handle_data(uint8_t channelId, uint64_t sequence,
+void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data);
+void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
                                       np_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
-np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_connection* conn,
-                                     struct nc_client_connect_dispatch_context* dispatch,
-                                     struct nc_device_context* device,
-                                     struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
-                                     np_communication_buffer* buffer, uint16_t bufferSize)
+np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
+                                        struct nc_client_connection_dispatch_context* dispatch,
+                                        struct nc_device_context* device,
+                                        struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
+                                        np_communication_buffer* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
     uint8_t* start = pl->buf.start(buffer);
@@ -43,9 +43,9 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     conn->device = device;
 
     ec = pl->dtlsS.create(pl, &conn->dtls,
-                          &nc_client_connect_async_send_to_udp,
-                          &nc_client_connect_handle_data,
-                          &nc_client_connect_handle_event, conn);
+                          &nc_client_connection_async_send_to_udp,
+                          &nc_client_connection_handle_data,
+                          &nc_client_connection_handle_event, conn);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
         return NABTO_EC_FAILED;
@@ -58,9 +58,9 @@ np_error_code nc_client_connect_open(struct np_platform* pl, struct nc_client_co
     return ec;
 }
 
-np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
-                                              struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
-                                              np_communication_buffer* buffer, uint16_t bufferSize)
+np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
+                                                 struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
+                                                 np_communication_buffer* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
     uint8_t* start = pl->buf.start(buffer);
@@ -91,28 +91,28 @@ np_error_code nc_client_connect_handle_packet(struct np_platform* pl, struct nc_
     return ec;
 }
 
-void nc_client_connect_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
+void nc_client_connection_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
 {
     nc_coap_server_remove_connection(conn->coap, conn);
     nc_stream_manager_remove_connection(conn->streamManager, conn);
-    nc_client_connect_dispatch_close_connection(conn->dispatch, conn);
+    nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
 
-void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data)
+void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
     if (event == NP_DTLS_SRV_EVENT_CLOSED) {
-        nc_client_connect_dtls_closed_cb(NABTO_EC_OK, data);
+        nc_client_connection_dtls_closed_cb(NABTO_EC_OK, data);
     } else if (event == NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE) {
         // test fingerprint and alpn
         // if ok try to assign user to connection.
         // if fail, reject the connection.
-        conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connect_mtu_discovered, conn);
+        conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connection_mtu_discovered, conn);
 
         if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
             NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connection_dtls_closed_cb, conn);
             return;
         }
 
@@ -121,14 +121,14 @@ void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data)
         ec2 = conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
         if (ec2 != NABTO_EC_OK) {
             NABTO_LOG_ERROR(LOG, "Failed to get fingerprint from DTLS connection");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connection_dtls_closed_cb, conn);
             return;
         }
 
         struct nc_iam_user* user = nc_iam_find_user_by_fingerprint(&conn->device->iam, fp);
         if (user == NULL && nc_iam_get_default_role(&conn->device->iam) == NULL) {
             NABTO_LOG_ERROR(LOG, "Client connect, cannot find a user and the system does not have a default role, closing the connection");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connect_dtls_closed_cb, conn);
+            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connection_dtls_closed_cb, conn);
             return;
         }
         conn->user = user;
@@ -136,7 +136,7 @@ void nc_client_connect_handle_event(enum np_dtls_srv_event event, void* data)
 }
 
 // handle data from the dtls module
-void nc_client_connect_handle_data(uint8_t channelId, uint64_t sequence,
+void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
                                    np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
@@ -158,18 +158,18 @@ void nc_client_connect_handle_data(uint8_t channelId, uint64_t sequence,
     }
 }
 
-void nc_client_connect_dtls_closed_cb(const np_error_code ec, void* data)
+void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
 {
     struct nc_client_connection* cc =  (struct nc_client_connection*)data;
-    nc_client_connect_close_connection(cc->pl, cc, NABTO_EC_CONNECTION_CLOSING);
+    nc_client_connection_close_connection(cc->pl, cc, NABTO_EC_CONNECTION_CLOSING);
 }
 
-struct np_dtls_srv_connection* nc_client_connect_get_dtls_connection(struct nc_client_connection* conn)
+struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn)
 {
     return conn->dtls;
 }
 
-void nc_client_connect_send_failed(void* data) {
+void nc_client_connection_send_failed(void* data) {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
     if (conn->sentCb == NULL) {
         return;
@@ -179,7 +179,7 @@ void nc_client_connect_send_failed(void* data) {
     cb(conn->ec, conn->sentData);
 }
 
-void nc_client_connect_send_to_udp_cb(const np_error_code ec, void* data)
+void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
     if (conn->sentCb == NULL) {
@@ -191,7 +191,7 @@ void nc_client_connect_send_to_udp_cb(const np_error_code ec, void* data)
 }
 
 
-void nc_client_connect_async_send_to_udp(bool activeChannel,
+void nc_client_connection_async_send_to_udp(bool activeChannel,
                                          np_communication_buffer* buffer, uint16_t bufferSize,
                                          np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
@@ -200,7 +200,7 @@ void nc_client_connect_async_send_to_udp(bool activeChannel,
     conn->sentData = data;
     if (bufferSize > conn->pl->buf.size(buffer)-16) {
         conn->ec = NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION;
-        np_event_queue_post(conn->pl, &conn->ev, &nc_client_connect_send_failed, conn);
+        np_event_queue_post(conn->pl, &conn->ev, &nc_client_connection_send_failed, conn);
         return;
     }
     uint8_t* start = conn->pl->buf.start(buffer);
@@ -213,16 +213,16 @@ void nc_client_connect_async_send_to_udp(bool activeChannel,
         *(start+15) = conn->currentChannel.channelId;
         nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->sendCtx, &conn->currentChannel.ep,
                                       buffer, bufferSize,
-                                      &nc_client_connect_send_to_udp_cb, conn);
+                                      &nc_client_connection_send_to_udp_cb, conn);
     } else {
         *(start+15) = conn->lastChannel.channelId;
         nc_udp_dispatch_async_send_to(conn->lastChannel.sock, &conn->sendCtx, &conn->lastChannel.ep,
                                       buffer, bufferSize,
-                                      &nc_client_connect_send_to_udp_cb, conn);
+                                      &nc_client_connection_send_to_udp_cb, conn);
     }
 }
 
-void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data)
+void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data)
 {
     // TODO: use the discovered MTU!
     if (ec != NABTO_EC_OK) {
@@ -232,7 +232,7 @@ void nc_client_connect_mtu_discovered(const np_error_code ec, uint16_t mtu, void
     }
 }
 
-np_error_code nc_client_connect_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp)
+np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp)
 {
     return conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
 }

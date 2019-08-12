@@ -13,7 +13,6 @@
 #include <platform/np_dns.h>
 #include <platform/np_dtls_cli.h>
 #include <platform/np_dtls_srv.h>
-#include <platform/np_access_control.h>
 
 struct np_platform {
     // Timestamp module
@@ -37,8 +36,6 @@ struct np_platform {
     // DTLS server module
     struct np_dtls_srv_module dtlsS;
 
-    // access control module
-    struct np_access_control_module accCtrl;
 };
 
 /**

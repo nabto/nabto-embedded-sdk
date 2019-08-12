@@ -26,7 +26,7 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
 
     struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
 
-    if (connection == NULL || nc_client_connect_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
+    if (connection == NULL || nc_client_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
         ec = NABTO_EC_INVALID_CONNECTION;
     } else {
 

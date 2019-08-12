@@ -2,8 +2,6 @@
 #define NP_CORE_TESTS_H
 
 void nc_attacher_tests(void);
-//void nc_client_connect_tests(void);
-//void nc_connection_tests(void);
 void nc_stream_tests(void);
 void nc_packet_tests(void);
 void nc_keep_alive_tests(void);
