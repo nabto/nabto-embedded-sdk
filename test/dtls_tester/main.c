@@ -77,7 +77,7 @@ void echo(const np_error_code ec, void* data)
     }
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     pl.dtlsC.async_send_to(&pl, ctx, 0xff, buffer, bufferSize, &sendCb, data);
-    pl.dtlsC.async_recv_from(&pl, ctx, AT_DEVICE_RELAY, &mainRecvCb, data);
+    pl.dtlsC.async_recv_from(&pl, ctx, &mainRecvCb, data);
     np_event_queue_post_timed_event(&pl, &ev, 1000, &echo, data);
 }
 
@@ -89,7 +89,7 @@ void echo2(const np_error_code ec, void* data)
     }
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     pl.dtlsC.async_send_to(&pl, ctx, 0xff, buffer, bufferSize, &sendCb, data);
-    pl.dtlsC.async_recv_from(&pl, ctx, AT_DEVICE_RELAY, &mainRecvCb, data);
+    pl.dtlsC.async_recv_from(&pl, ctx, &mainRecvCb, data);
     np_event_queue_post_timed_event(&pl, &ev2, 1000, &echo2, data);
 }
 

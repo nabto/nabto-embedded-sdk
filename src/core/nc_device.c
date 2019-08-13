@@ -20,6 +20,7 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 
 void nc_device_deinit(struct nc_device_context* device) {
     nc_attacher_deinit(&device->attacher);
+    nc_coap_client_deinit(&device->coapClient);
     nc_iam_deinit(&device->iam);
     nc_coap_server_deinit(&device->coapServer);
 }

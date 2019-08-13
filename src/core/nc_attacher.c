@@ -130,7 +130,7 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
     nabto_coap_client_request_set_payload(req, start, ptr - start);
     nabto_coap_client_request_send(req);
 
-    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, AT_DEVICE_RELAY, &nc_attacher_dtls_recv_cb, ctx);
+    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, &nc_attacher_dtls_recv_cb, ctx);
 }
 
 void nc_attacher_dtls_closed_cb(const np_error_code ec, void* data)
@@ -153,7 +153,7 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
     NABTO_LOG_TRACE(LOG, "recv cb from dtls, passing to coap");
     // TODO: if (!ctx->verified) { verify bs fingerprint }
     nc_coap_client_handle_packet(ctx->coapClient, buffer, bufferSize, ctx->dtls);
-    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, 42 /* unused */, &nc_attacher_dtls_recv_cb, ctx);
+    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, &nc_attacher_dtls_recv_cb, ctx);
 }
 
 void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request, void* data)

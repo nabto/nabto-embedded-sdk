@@ -253,6 +253,7 @@ void nm_dtls_event_do_one(void* data)
                 NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
                 ctx->connectCb(NABTO_EC_FAILED, NULL, ctx->connectData);
                 np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+                // TODO
                 nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
                 return;
             }
@@ -364,7 +365,7 @@ np_error_code nm_dtls_async_send_to(struct np_platform* pl, np_dtls_cli_context*
     return NABTO_EC_OK;
 }
 
-np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_context* ctx, enum application_data_type type,
+np_error_code nm_dtls_async_recv_from(struct np_platform* pl, np_dtls_cli_context* ctx,
                                       np_dtls_received_callback cb, void* data)
 {
     if (ctx->ctx.state == CLOSING) {
@@ -473,6 +474,7 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 //        NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
 //        NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
+        // TODO
         nc_udp_dispatch_async_send_to(ctx->udp,
                                       &ctx->sendCtx, &ctx->ep,
                                       ctx->ctx.sslSendBuffer, bufferSize,
@@ -555,6 +557,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
                                strlen( pers ) ) ) != 0 ) {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret );
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+        // TODO
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
         return NABTO_EC_FAILED;
     }
@@ -566,6 +569,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+        // TODO
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
         return NABTO_EC_FAILED;
     }
@@ -575,6 +579,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     if (ret != 0) {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_conf_own_cert returned %d", ret );
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+        // TODO
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
         return NABTO_EC_FAILED;
     }
@@ -587,6 +592,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+        // TODO
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
         return NABTO_EC_FAILED;
     }
@@ -595,6 +601,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+        // TODO
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
         return NABTO_EC_FAILED;
     }
