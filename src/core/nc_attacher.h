@@ -34,6 +34,7 @@ struct nc_attach_dr_endpoint {
 
 struct nc_attach_context {
     struct np_platform* pl;
+    struct nc_device_context* ctx;
     const struct nc_attach_parameters* params;
     uint32_t sessionId;
     nc_attached_callback cb;
@@ -48,7 +49,7 @@ struct nc_attach_context {
     uint8_t dnsLen;
     enum nc_attacher_state state;
     bool detaching;
-    struct nc_coap_client_context coap;
+    struct nc_coap_client_context* coapClient;
 };
 
 struct nc_attach_parameters {
@@ -57,6 +58,13 @@ struct nc_attach_parameters {
     const char* hostname;
     struct nc_udp_dispatch_context* udp;
 };
+
+void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_coap_client_context* coapClient);
+void nc_attacher_deinit(struct nc_attach_context* ctx);
+
+np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx,
+                                   const unsigned char* publicKeyL, size_t publicKeySize,
+                                   const unsigned char* privateKeyL, size_t privateKeySize);
 
 np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx,
                                        struct np_platform* pl,

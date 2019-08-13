@@ -25,7 +25,8 @@ struct nc_device_context {
     struct nc_stream_manager_context streamManager;
     struct nc_client_connection_dispatch_context clientConnect;
     struct nc_stun_context stun;
-    struct nc_coap_server_context coap;
+    struct nc_coap_server_context coapServer;
+    struct nc_coap_client_context coapClient;
     struct nc_rendezvous_context rendezvous;
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
@@ -45,6 +46,7 @@ struct nc_device_context {
 void nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
 void nc_device_deinit(struct nc_device_context* dev);
 
+void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize);
 
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,

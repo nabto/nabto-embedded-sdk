@@ -21,6 +21,23 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
                                  np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
 
+void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_coap_client_context* coapClient)
+{
+    memset(ctx, 0, sizeof(struct nc_attach_context));
+    ctx->pl = pl;
+    ctx->dtls = pl->dtlsC.create(pl);
+    ctx->coapClient = coapClient;
+}
+void nc_attacher_deinit(struct nc_attach_context* ctx)
+{
+    ctx->pl->dtlsC.destroy(ctx->dtls);
+    // cleanup/close dtls connections etc.
+}
+
+np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
+{
+    return ctx->pl->dtlsC.set_keys(ctx->dtls, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+}
 
 np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_platform* pl,
                                        const struct nc_attach_parameters* params,
@@ -36,8 +53,6 @@ np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_
 
     memcpy(ctx->dns, ctx->params->hostname, strlen(ctx->params->hostname)+1);
     ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_dns_cb, ctx);
-//    nc_udp_dispatch_async_create(&ctx->udp, pl, &nc_attacher_sock_created_cb, ctx);
-    //pl->udp.async_create(&nc_attacher_sock_created_cb, ctx);
     return NABTO_EC_OK;
 }
 
@@ -62,7 +77,7 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
     for (int i = 0; i < recSize; i++) {
     }
     memcpy(&ctx->ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx->pl->dtlsC.async_connect(ctx->pl, ctx->udp, ctx->ep, &nc_attacher_dtls_conn_cb, ctx);
+    ctx->pl->dtlsC.async_connect(ctx->pl, ctx->dtls, ctx->udp, ctx->ep, &nc_attacher_dtls_conn_cb, ctx);
 }
 
 
@@ -86,12 +101,11 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
     ctx->state = NC_ATTACHER_CONNECTED_TO_BS;
     ctx->dtls = crypCtx;
 
-    nc_coap_client_init(ctx->pl, &ctx->coap, crypCtx);
-    req = nabto_coap_client_request_new(nc_coap_client_get_client(&ctx->coap),
+    req = nabto_coap_client_request_new(nc_coap_client_get_client(ctx->coapClient),
                                         NABTO_COAP_METHOD_POST,
                                         2, attachPath,
                                         &nc_attacher_coap_request_handler,
-                                        ctx);
+                                        ctx, crypCtx);
     nabto_coap_client_request_set_content_format(req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
 
     ctx->buffer = ctx->pl->buf.allocate();
@@ -138,7 +152,7 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
     }
     NABTO_LOG_TRACE(LOG, "recv cb from dtls, passing to coap");
     // TODO: if (!ctx->verified) { verify bs fingerprint }
-    nc_coap_client_handle_packet(&ctx->coap, buffer, bufferSize);
+    nc_coap_client_handle_packet(ctx->coapClient, buffer, bufferSize, ctx->dtls);
     ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, 42 /* unused */, &nc_attacher_dtls_recv_cb, ctx);
 }
 

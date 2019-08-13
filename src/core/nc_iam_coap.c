@@ -24,7 +24,7 @@ static void ok_response(struct nabto_coap_server_request* request, nabto_coap_co
 
 void nc_iam_coap_register_handlers(struct nc_device_context* device)
 {
-    struct nabto_coap_server* server = nc_coap_server_get_server(&device->coap);
+    struct nabto_coap_server* server = nc_coap_server_get_server(&device->coapServer);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
                                    (const char*[]){"iam", "users", NULL},
                                    nc_iam_coap_users_list, device);

@@ -258,6 +258,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
     // Init platform
+    nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
     nabto_device_init_dtls_modules(&dev->pl, dev->publicKey, dev->privateKey);
     // start the core
     ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost, dev->port);

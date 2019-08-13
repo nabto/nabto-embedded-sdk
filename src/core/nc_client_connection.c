@@ -37,7 +37,6 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->pl = pl;
     conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
-    conn->coap = &device->coap;
     conn->rendezvous = &device->rendezvous;
     conn->connectionRef = nc_device_next_connection_ref(device);
     conn->device = device;
@@ -93,7 +92,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 
 void nc_client_connection_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
 {
-    nc_coap_server_remove_connection(conn->coap, conn);
+    nc_coap_server_remove_connection(&conn->device->coapServer, conn);
     nc_stream_manager_remove_connection(conn->streamManager, conn);
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
     memset(conn, 0, sizeof(struct nc_client_connection));
@@ -152,7 +151,7 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
         nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
     } else if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
         NABTO_LOG_TRACE(LOG, "Received COAP packet");
-        nc_coap_server_handle_packet(conn->coap, conn, buffer, bufferSize);
+        nc_coap_server_handle_packet(&conn->device->coapServer, conn, buffer, bufferSize);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
     }

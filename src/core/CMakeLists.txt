@@ -27,7 +27,7 @@ set(src
   )
 
 set(test_src
-  ${src_dir}/nc_attacher_test.c
+#  ${src_dir}/nc_attacher_test.c
   ${src_dir}/nc_client_connection_test.c
   ${src_dir}/nc_packet_test.c
   ${src_dir}/nc_keep_alive_test.c

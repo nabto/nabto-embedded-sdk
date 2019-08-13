@@ -37,6 +37,7 @@ struct test_context {
     int data;
     struct nc_udp_dispatch_context udp;
     struct nc_connection_id id;
+    np_dtls_cli_context* dtlsClient;
 };
 struct np_platform pl;
 uint8_t buffer[] = "Hello world";
@@ -107,7 +108,8 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     }
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
-    pl.dtlsC.async_connect(&pl, &ctx->udp, ep, connected, data);
+    nc_udp_dispatch_set_dtls_cli_context(&ctx->udp, ctx->dtlsClient);
+    pl.dtlsC.async_connect(&pl, ctx->dtlsClient, &ctx->udp, ep, connected, data);
 }
 
 void sockCreatedCb (const np_error_code ec, void* data)
@@ -128,13 +130,17 @@ int main() {
     np_platform_init(&pl);
     np_communication_buffer_init(&pl);
     np_udp_init(&pl);
-    np_dtls_cli_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+    np_dtls_cli_init(&pl);
     np_ts_init(&pl);
 
     np_log_init();
     struct test_context data;
     data.data = 42;
     nc_udp_dispatch_async_create(&data.udp, &pl, 0, sockCreatedCb, &data);
+
+    data.dtlsClient = pl.dtlsC.create(&pl);
+    pl.dtlsC.set_keys(data.dtlsClient, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
+
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));

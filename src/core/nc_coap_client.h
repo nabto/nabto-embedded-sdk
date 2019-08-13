@@ -16,13 +16,12 @@ struct nc_coap_client_context {
     struct np_timed_event timer;
     np_communication_buffer* sendBuffer;
     bool isSending;
-    np_dtls_cli_context* dtls;
 };
 
-void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx, np_dtls_cli_context* dtls);
+void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx);
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx);
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
-                                  np_communication_buffer* buffer, uint16_t bufferSize);
+                                  np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_cli_context* dtls);
 
 struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_context* ctx);
 

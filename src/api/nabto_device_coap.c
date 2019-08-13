@@ -27,7 +27,7 @@ nabto_device_coap_add_resource(NabtoDevice* device,
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coap), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, resource);
+    nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, resource);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 

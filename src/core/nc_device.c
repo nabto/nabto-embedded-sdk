@@ -12,13 +12,21 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
     device->pl = pl;
     nc_iam_init(&device->iam);
-    nc_coap_server_init(pl, &device->coap);
+    nc_coap_server_init(pl, &device->coapServer);
     nc_iam_coap_register_handlers(device);
+    nc_coap_client_init(pl, &device->coapClient);
+    nc_attacher_init(&device->attacher, pl, &device->coapClient);
 }
 
 void nc_device_deinit(struct nc_device_context* device) {
+    nc_attacher_deinit(&device->attacher);
     nc_iam_deinit(&device->iam);
-    nc_coap_server_deinit(&device->coap);
+    nc_coap_server_deinit(&device->coapServer);
+}
+
+void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
+{
+    nc_attacher_set_keys(&device->attacher, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
 void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
@@ -126,8 +134,8 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     nc_udp_dispatch_async_create(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
     nc_rendezvous_init(&dev->rendezvous, pl, &dev->udp);
 
-    nc_stun_coap_init(&dev->stunCoap, pl, &dev->coap, &dev->stun);
-    nc_rendezvous_coap_init(&dev->rendezvousCoap, &dev->coap, &dev->rendezvous);
+    nc_stun_coap_init(&dev->stunCoap, pl, &dev->coapServer, &dev->stun);
+    nc_rendezvous_coap_init(&dev->rendezvousCoap, &dev->coapServer, &dev->rendezvous);
 
     return NABTO_EC_OK;
 }

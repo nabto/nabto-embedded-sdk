@@ -17,10 +17,9 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
     return &ctx->client;
 }
 
-void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx, np_dtls_cli_context* dtls)
+void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
 {
     ctx->pl = pl;
-    ctx->dtls = dtls;
     ctx->sendBuffer = pl->buf.allocate();
     ctx->isSending = false;
     nabto_coap_client_init(&ctx->client, &nc_coap_client_notify_event, ctx);
@@ -34,12 +33,12 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 }
 
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
-                                  np_communication_buffer* buffer, uint16_t bufferSize)
+                                  np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_cli_context* dtls)
 {
     enum nabto_coap_client_status status = nabto_coap_client_handle_packet(&ctx->client,
                                                                            ctx->pl->ts.now_ms(),
                                                                            ctx->pl->buf.start(buffer),
-                                                                           bufferSize);
+                                                                           bufferSize, dtls);
     NABTO_LOG_TRACE(LOG, "coap handling packet with status %i: ", status);
     NABTO_LOG_BUF(LOG, ctx->pl->buf.start(buffer), bufferSize);
     if (status == NABTO_COAP_CLIENT_STATUS_DECODE_ERROR) {
@@ -72,13 +71,15 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
     uint8_t* end = sendCtx->buffer+1500;
     sendCtx->ctx = ctx;
 
-    uint8_t* ptr = nabto_coap_client_create_packet(&ctx->client, ctx->pl->ts.now_ms(), sendCtx->buffer, end);
-    if (ptr == NULL || ptr < sendCtx->buffer) {
+    void* connection;
+    uint8_t* ptr = nabto_coap_client_create_packet(&ctx->client, ctx->pl->ts.now_ms(), sendCtx->buffer, end, &connection);
+    if (ptr == NULL || ptr < sendCtx->buffer || connection == NULL) {
         // should not happen.
     } else {
         size_t used = ptr - sendCtx->buffer;
         ctx->isSending = true;
-        ctx->pl->dtlsC.async_send_to(ctx->pl, ctx->dtls, 0, sendCtx->buffer, used, &nc_coap_client_send_to_callback, sendCtx);
+        np_dtls_cli_context* dtls = (np_dtls_cli_context*)connection;
+        ctx->pl->dtlsC.async_send_to(ctx->pl, dtls, 0, sendCtx->buffer, used, &nc_coap_client_send_to_callback, sendCtx);
     }
 }
 
