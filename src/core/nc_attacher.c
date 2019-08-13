@@ -19,6 +19,7 @@ void nc_attacher_dtls_closed_cb(const np_error_code ec, void* data);
 void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request, void* userData);
 void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
                                  np_communication_buffer* buf, uint16_t bufferSize, void* data);
+static void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request, void* data);
 
 
 void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_coap_client_context* coapClient)
@@ -157,6 +158,12 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
 }
 
 void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request, void* data)
+{
+    nc_attacher_coap_request_handler2(request, data);
+    nabto_coap_client_request_free(request);
+}
+
+void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request, void* data)
 {
     NABTO_LOG_INFO(LOG, "Received CoAP response");
     uint8_t* ptr;

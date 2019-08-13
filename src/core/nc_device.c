@@ -21,8 +21,8 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 void nc_device_deinit(struct nc_device_context* device) {
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
-    nc_iam_deinit(&device->iam);
     nc_coap_server_deinit(&device->coapServer);
+    nc_iam_deinit(&device->iam);
 }
 
 void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
@@ -65,6 +65,12 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "Device is now attached");
         dev->attachAttempts = 0;
+        // wait for detach or quit.
+        np_error_code ec2;
+        ec2 = nc_attacher_register_detach_callback(&dev->attacher, &nc_device_detached_cb, dev);
+        if ( ec2 != NABTO_EC_OK ) {
+            // TODO: handle impossible error
+        }
     } else {
         NABTO_LOG_INFO(LOG, "Device failed to attached");
        if (dev->stopping) {
@@ -95,7 +101,6 @@ void nc_device_secondary_udp_created_cb(const np_error_code ec, void* data) {
 void nc_device_udp_created_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
-    np_error_code ec2;
     NABTO_LOG_TRACE(LOG, "nc_device_udp_created_cb");
     if (dev->stopping) {
         nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
@@ -103,10 +108,6 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     }
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
 
-    ec2 = nc_attacher_register_detach_callback(&dev->attacher, &nc_device_detached_cb, dev);
-    if ( ec2 != NABTO_EC_OK ) {
-        // TODO: handle impossible error
-    }
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
 
     nc_udp_dispatch_async_create(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_created_cb, dev);

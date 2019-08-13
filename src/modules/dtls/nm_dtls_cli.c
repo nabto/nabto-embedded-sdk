@@ -161,12 +161,25 @@ np_error_code np_dtls_cli_init(struct np_platform* pl)
 np_dtls_cli_context* nm_dtls_cli_create(struct np_platform* pl)
 {
     struct np_dtls_cli_context* ctx = calloc(1, sizeof(struct np_dtls_cli_context));
+    mbedtls_ssl_init( &ctx->ctx.ssl );
+    mbedtls_ssl_config_init( &ctx->conf );
+    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
+    mbedtls_entropy_init( &ctx->entropy );
+    mbedtls_x509_crt_init( &ctx->publicKey );
+    mbedtls_pk_init( &ctx->privateKey );
     return ctx;
 }
 
-void nm_dtls_cli_destroy(np_dtls_cli_context* connection)
+void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
 {
-    free(connection);
+    mbedtls_pk_free(&ctx->privateKey);
+    mbedtls_x509_crt_free(&ctx->publicKey );
+    mbedtls_entropy_free( &ctx->entropy );
+    mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
+    mbedtls_ssl_config_free( &ctx->conf );
+    mbedtls_ssl_free( &ctx->ctx.ssl );
+
+    free(ctx);
 }
 
 np_error_code nm_dtls_cli_set_keys(np_dtls_cli_context* ctx,
@@ -310,7 +323,6 @@ void nm_dtls_event_do_one(void* data)
         }
         return;
     }
-
 }
 
 void nm_dtls_event_send_to(void* data)
@@ -395,10 +407,6 @@ void nm_dtls_do_close(void* data, np_error_code ec){
         ctx->ctx.recvCb.cb = NULL;
         cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCb.data);
     }
-    mbedtls_ssl_free( &ctx->ctx.ssl );
-    mbedtls_ssl_config_free( &ctx->conf );
-    mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
-    mbedtls_entropy_free( &ctx->entropy );
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->connEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
@@ -544,10 +552,7 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
 {
     int ret;
     const char *pers = "dtls_client";
-    mbedtls_ssl_init( &ctx->ctx.ssl );
-    mbedtls_ssl_config_init( &ctx->conf );
-    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
-    mbedtls_entropy_init( &ctx->entropy );
+
 #if defined(MBEDTLS_DEBUG_C)
     mbedtls_debug_set_threshold( DEBUG_LEVEL );
 #endif
