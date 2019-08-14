@@ -41,10 +41,10 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->connectionRef = nc_device_next_connection_ref(device);
     conn->device = device;
 
-    ec = pl->dtlsS.create(pl, &conn->dtls,
-                          &nc_client_connection_async_send_to_udp,
-                          &nc_client_connection_handle_data,
-                          &nc_client_connection_handle_event, conn);
+    ec = pl->dtlsS.create_connection(device->dtlsServer, &conn->dtls,
+                                     &nc_client_connection_async_send_to_udp,
+                                     &nc_client_connection_handle_data,
+                                     &nc_client_connection_handle_event, conn);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
         return NABTO_EC_FAILED;

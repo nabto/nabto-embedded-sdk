@@ -31,6 +31,7 @@ struct nc_device_context {
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
     struct nc_iam iam;
+    struct np_dtls_srv* dtlsServer;
 
     // unique connectionReference for each connection
     uint64_t connectionRef;

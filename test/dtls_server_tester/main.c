@@ -1,5 +1,6 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
+#include <platform/np_dtls_srv.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_client_connection.h>
@@ -38,6 +39,7 @@ const char test_pub_key_crt[] =
 struct test_context {
     int data;
     np_udp_socket* sock;
+    struct np_dtls_srv* dtlsServer;
     struct np_dtls_srv_connection* dtls;
     struct nc_connection_id id;
 };
@@ -124,7 +126,7 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    np_error_code ec2 = pl.dtlsS.create(&pl, &ctx->dtls, &dtls_send_listener, &receivedCb, &eventCb, ctx);
+    np_error_code ec2 = pl.dtlsS.create_connection(ctx->dtlsServer, &ctx->dtls, &dtls_send_listener, &receivedCb, &eventCb, ctx);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
     if(ec2 != NABTO_EC_OK) {
         exit(1);
@@ -161,13 +163,19 @@ int main() {
     np_log_init();
     np_communication_buffer_init(&pl);
     np_udp_init(&pl);
-    np_dtls_srv_init(&pl, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
+    np_dtls_srv_init(&pl);
+
     np_ts_init(&pl);
 
     struct test_context data;
     memset(&data, 0, sizeof(data));
+    pl.dtlsS.create(&pl, &data.dtlsServer);
+    pl.dtlsS.set_keys(data.dtlsServer, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
+
     data.data = 42;
     pl.udp.async_bind_port(4439, sockCreatedCb, &data);
+
+
     while (true) {
         np_event_queue_execute_all(&pl);
         NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));

@@ -11,6 +11,7 @@ uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
     device->pl = pl;
+    pl->dtlsS.create(pl, &device->dtlsServer);
     nc_iam_init(&device->iam);
     nc_coap_server_init(pl, &device->coapServer);
     nc_iam_coap_register_handlers(device);
@@ -19,15 +20,19 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 }
 
 void nc_device_deinit(struct nc_device_context* device) {
+    struct np_platform* pl = device->pl;
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
     nc_iam_deinit(&device->iam);
+    pl->dtlsS.destroy(device->dtlsServer);
 }
 
 void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
 {
+    struct np_platform* pl = device->pl;
     nc_attacher_set_keys(&device->attacher, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+    pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
 void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
