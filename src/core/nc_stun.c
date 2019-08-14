@@ -61,22 +61,29 @@ bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 
 // init function
 void nc_stun_init(struct nc_stun_context* ctx,
-                  struct np_platform* pl,
-                  const char* hostname,
-                  struct nc_udp_dispatch_context* udp,
-                  struct nc_udp_dispatch_context* secondaryUdp)
+                  struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_stun_context));
     srand(pl->ts.now_ms());
     ctx->pl = pl;
-    ctx->priUdp = udp;
-    ctx->secUdp = secondaryUdp;
     ctx->state = NC_STUN_STATE_NONE;
-    ctx->hostname = hostname;
     ctx->sendBuf = pl->buf.allocate();
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
+}
+
+void nc_stun_deinit(struct nc_stun_context* ctx)
+{
+    struct np_platform* pl = ctx->pl;
+    pl->buf.free(ctx->sendBuf);
+}
+
+void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* hostname, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp)
+{
+    ctx->priUdp = udp;
+    ctx->secUdp = secondaryUdp;
+    ctx->hostname = hostname;
 }
 
 // analyze function

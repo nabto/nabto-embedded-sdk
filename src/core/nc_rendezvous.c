@@ -15,21 +15,24 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx);
 void nc_rendezvous_send_dev_req_cb(const np_error_code ec, void* data);
 
 void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
-                        struct np_platform* pl,
-                        struct nc_udp_dispatch_context* udpDispatch)
+                        struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_rendezvous_context));
     ctx->pl = pl;
-    ctx->udpDispatch = udpDispatch;
     ctx->priBuf = pl->buf.allocate();
     ctx->packetIndex = 0;
     ctx->sendingDevReqs = false;
 }
 
-void nc_rendezvous_destroy(struct nc_rendezvous_context* ctx)
+void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)
 {
 
     ctx->pl->buf.free(ctx->priBuf);
+}
+
+void nc_rendezvous_set_udp_dispatch(struct nc_rendezvous_context* ctx, struct nc_udp_dispatch_context* udpDispatch)
+{
+    ctx->udpDispatch = udpDispatch;
 }
 
 void nc_rendezvous_handle_client_request(struct nc_rendezvous_context* ctx,
@@ -95,6 +98,11 @@ void nc_rendezvous_send_rendezvous(struct nc_rendezvous_context* ctx, struct nc_
 {
     if (ctx->packetIndex >= NC_RENDEZVOUS_SEND_QUEUE_LENGTH) {
         // todo log queue full
+        return;
+    }
+
+    if (!ctx->udpDispatch) {
+        // No way to send packets
         return;
     }
 

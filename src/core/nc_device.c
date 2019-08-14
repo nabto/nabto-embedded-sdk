@@ -17,10 +17,14 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
     nc_iam_coap_register_handlers(device);
     nc_coap_client_init(pl, &device->coapClient);
     nc_attacher_init(&device->attacher, pl, &device->coapClient);
+    nc_rendezvous_init(&device->rendezvous, pl);
+    nc_stun_init(&device->stun, pl);
 }
 
 void nc_device_deinit(struct nc_device_context* device) {
     struct np_platform* pl = device->pl;
+    nc_stun_deinit(&device->stun);
+    nc_rendezvous_deinit(&device->rendezvous);
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
@@ -94,7 +98,7 @@ void nc_device_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_
 
 void nc_device_secondary_udp_created_cb(const np_error_code ec, void* data) {
     struct nc_device_context* dev = (struct nc_device_context*)data;
-    nc_stun_init(&dev->stun, dev->pl, dev->stunHost, &dev->udp, &dev->secondaryUdp);
+    nc_stun_init_config_and_sockets(&dev->stun, dev->stunHost, &dev->udp, &dev->secondaryUdp);
 
     nc_udp_dispatch_set_stun_context(&dev->udp, &dev->stun);
     nc_udp_dispatch_set_stun_context(&dev->secondaryUdp, &dev->stun);
@@ -139,7 +143,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->connectionRef = 0;
 
     nc_udp_dispatch_async_create(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
-    nc_rendezvous_init(&dev->rendezvous, pl, &dev->udp);
+    nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
 
     nc_stun_coap_init(&dev->stunCoap, pl, &dev->coapServer, &dev->stun);
     nc_rendezvous_coap_init(&dev->rendezvousCoap, &dev->coapServer, &dev->rendezvous);

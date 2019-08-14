@@ -52,10 +52,11 @@ struct nc_stun_context {
 };
 
 void nc_stun_init(struct nc_stun_context* ctx,
-                  struct np_platform* pl,
-                  const char* hostname,
-                  struct nc_udp_dispatch_context* udp,
-                  struct nc_udp_dispatch_context* secondaryUdp);
+                  struct np_platform* pl);
+
+void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* hostname, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp);
+
+void nc_stun_deinit(struct nc_stun_context* ctx);
 
 np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
                                     nc_stun_analyze_callback cb, void* data);
