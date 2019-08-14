@@ -57,8 +57,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
                                               struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
                                               np_communication_buffer* buffer, uint16_t bufferSize);
 
-void nc_client_connection_close_connection(struct np_platform* pl, struct nc_client_connection* conn,
-                                        np_error_code ec);
+void nc_client_connection_close_connection(struct nc_client_connection* conn);
 
 void nc_client_connection_dtls_recv_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
                                           np_communication_buffer* buffer, uint16_t bufferSize, void* data);

@@ -90,11 +90,13 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
     return ec;
 }
 
-void nc_client_connection_close_connection(struct np_platform* pl, struct nc_client_connection* conn, np_error_code ec)
+void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
+    struct np_platform* pl = conn->pl;
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);
     nc_stream_manager_remove_connection(conn->streamManager, conn);
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
+    pl->dtlsS.destroy_connection(conn->dtls);
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
 
@@ -160,7 +162,7 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
 void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
 {
     struct nc_client_connection* cc =  (struct nc_client_connection*)data;
-    nc_client_connection_close_connection(cc->pl, cc, NABTO_EC_CONNECTION_CLOSING);
+    nc_client_connection_close_connection(cc);
 }
 
 struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn)

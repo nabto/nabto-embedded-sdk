@@ -117,7 +117,7 @@ void nm_dtls_srv_mbedtls_timing_set_delay(void* ctx, uint32_t intermediateMillis
 int nm_dtls_srv_mbedtls_timing_get_delay(void* ctx);
 
 void nm_dtls_srv_event_send_to(void* data);
-
+void nm_dtls_srv_ka_cb(const np_error_code ec, void* data);
 
 
 // Get the packet counters for given dtls_cli_context
@@ -238,7 +238,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     (*dtls)->sendSentinel.prev = &(*dtls)->sendSentinel;
 
     NABTO_LOG_TRACE(LOG, "DTLS was allocated at: %u");
-
+    nc_keep_alive_init_srv(server->pl, &(*dtls)->ctx.keepAliveCtx, (*dtls), &nm_dtls_srv_ka_cb, (*dtls));
     //mbedtls connection initialization
     mbedtls_ssl_init( &((*dtls)->ctx.ssl) );
     if( ( ret = mbedtls_ssl_setup( &((*dtls)->ctx.ssl), &server->conf ) ) != 0 )
@@ -274,7 +274,11 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
 
 static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connection)
 {
-    // TODO
+    struct np_platform* pl = connection->pl;
+    pl->buf.free(connection->ctx.sslRecvBuf);
+    pl->buf.free(connection->ctx.sslSendBuffer);
+    mbedtls_ssl_free(&connection->ctx.ssl);
+    nc_keep_alive_deinit(&connection->ctx.keepAliveCtx);
     free(connection);
 }
 
@@ -310,7 +314,6 @@ void nm_dtls_srv_do_one(void* data)
             NABTO_LOG_TRACE(LOG, "Keeping CONNECTING state");
         } else if (ret == 0) {
             NABTO_LOG_INFO(LOG, "State changed to DATA");
-            nc_keep_alive_init_srv(ctx->pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_srv_ka_cb, ctx);
 
             ctx->ctx.state = DATA;
             ctx->eventHandler(NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE, ctx->senderData);

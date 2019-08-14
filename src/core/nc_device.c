@@ -19,10 +19,14 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
     nc_attacher_init(&device->attacher, pl, &device->coapClient);
     nc_rendezvous_init(&device->rendezvous, pl);
     nc_stun_init(&device->stun, pl);
+    nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
+
 }
 
 void nc_device_deinit(struct nc_device_context* device) {
     struct np_platform* pl = device->pl;
+
+    nc_client_connection_dispatch_deinit(&device->clientConnect);
     nc_stun_deinit(&device->stun);
     nc_rendezvous_deinit(&device->rendezvous);
     nc_attacher_deinit(&device->attacher);
@@ -133,7 +137,6 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->stopping = false;
     dev->stunHost = stunHost;
     nc_stream_manager_init(&dev->streamManager, pl);
-    nc_client_connection_dispatch_init(&dev->clientConnect, pl, dev);
 
     dev->attachParams.appName = appName;
     dev->attachParams.appVersion = appVersion;

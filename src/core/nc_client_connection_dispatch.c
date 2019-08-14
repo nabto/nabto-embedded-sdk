@@ -20,6 +20,17 @@ void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_con
     ctx->pl = pl;
 }
 
+void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_context* ctx)
+{
+    int i = 0;
+    for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
+        if (ctx->elms[i].active) {
+            nc_client_connection_close_connection(&ctx->elms[i].conn);
+            ctx->elms[i].active = false;
+        }
+    }
+}
+
 /*//void nc_client_connect_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
 //                                              np_communication_buffer* buffer, uint16_t bufferSize,
 //                                              void* data)*/
@@ -37,7 +48,7 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
             NABTO_LOG_TRACE(LOG, "Found existing connection for new packet");
             ec = nc_client_connection_handle_packet(ctx->pl, &ctx->elms[i].conn, sock, ep, buffer, bufferSize);
             if (ec != NABTO_EC_OK) {
-                nc_client_connection_dispatch_close_connection(ctx, &ctx->elms[i].conn);
+                nc_client_connection_close_connection(&ctx->elms[i].conn);
             }
             return;
         }
