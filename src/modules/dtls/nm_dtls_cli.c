@@ -167,11 +167,24 @@ np_dtls_cli_context* nm_dtls_cli_create(struct np_platform* pl)
     mbedtls_entropy_init( &ctx->entropy );
     mbedtls_x509_crt_init( &ctx->publicKey );
     mbedtls_pk_init( &ctx->privateKey );
+
+    ctx->ctx.sslRecvBuf = pl->buf.allocate();
+    ctx->ctx.sslSendBuffer = pl->buf.allocate();
+
+    nc_keep_alive_init_cli(pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
+
     return ctx;
 }
 
 void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
 {
+    struct np_platform* pl = ctx->pl;
+    nc_keep_alive_stop(pl, &ctx->ctx.keepAliveCtx);
+    nc_keep_alive_deinit(&ctx->ctx.keepAliveCtx);
+
+    pl->buf.free(ctx->ctx.sslRecvBuf);
+    pl->buf.free(ctx->ctx.sslSendBuffer);
+
     mbedtls_pk_free(&ctx->privateKey);
     mbedtls_x509_crt_free(&ctx->publicKey );
     mbedtls_entropy_free( &ctx->entropy );
@@ -233,14 +246,11 @@ np_error_code nm_dtls_async_connect(struct np_platform* pl, np_dtls_cli_context*
     nc_udp_dispatch_set_dtls_cli_context(udp, ctx);
     ctx->connectCb = cb;
     ctx->connectData = data;
-    ctx->ctx.sslRecvBuf = pl->buf.allocate();
-    ctx->ctx.sslSendBuffer = pl->buf.allocate();
 
     ec = nm_dtls_setup_dtls_ctx(ctx);
 
     if(ec == NABTO_EC_OK) {
         np_event_queue_post(pl, &ctx->connEv, &nm_dtls_event_do_one, ctx);
-        nc_keep_alive_init_cli(ctx->pl, &ctx->ctx.keepAliveCtx, ctx, &nm_dtls_cli_ka_cb, ctx);
         NABTO_LOG_ERROR(LOG, "DTLS cli connecting");
     }
     return ec;

@@ -44,7 +44,6 @@ struct nc_attach_context {
     void* cbData;
     np_udp_endpoint ep;
     np_dtls_cli_context* dtls;
-    np_communication_buffer* buffer;
     char dns[256];
     uint8_t dnsLen;
     enum nc_attacher_state state;

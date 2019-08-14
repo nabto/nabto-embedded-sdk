@@ -88,6 +88,7 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
     uint8_t* ptr;
     uint8_t* start;
     uint8_t extBuffer[34];
+    uint8_t tmpBuffer[512];
     struct nabto_coap_client_request* req;
     if( ec != NABTO_EC_OK ) {
         ctx->cb(ec, ctx->cbData);
@@ -109,8 +110,8 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
                                         ctx, crypCtx);
     nabto_coap_client_request_set_content_format(req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
 
-    ctx->buffer = ctx->pl->buf.allocate();
-    ptr = ctx->pl->buf.start(ctx->buffer);
+
+    ptr = tmpBuffer;
     start = ptr;
 
     extBuffer[0] = (uint8_t)strlen(NABTO_VERSION);

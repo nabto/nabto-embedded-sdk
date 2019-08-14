@@ -54,7 +54,7 @@ struct nc_keep_alive_context
 };
 
 /**
- * Initializes and starts keep alive for given DTLS client connection
+ * Initializes keep alive for given DTLS client connection
  * Callback is invoked if an error occurs while keeping the connection alive
  * Callback is invoked with NABTO_EC_OK if nc_keep_alive_stop is called
  */
@@ -62,12 +62,14 @@ void nc_keep_alive_init_cli(struct np_platform* pl, struct nc_keep_alive_context
                             np_dtls_cli_context* conn, keep_alive_callback cb, void* data);
 
 /**
- * Initializes and starts keep alive for given DTLS server connection
+ * Initializes keep alive for given DTLS server connection
  * Callback is invoked if an error occurs while keeping the connection alive
  * Callback is invoked with NABTO_EC_OK if nc_keep_alive_stop is called
  */
 void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                             struct np_dtls_srv_connection* conn, keep_alive_callback cb, void* data);
+
+void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx);
 
 /**
  * Starts keep alive with the given parameters
@@ -79,7 +81,7 @@ void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context
  */
 np_error_code nc_keep_alive_start(struct np_platform* pl, struct nc_keep_alive_context* ctx, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries);
 
-/** 
+/**
  * Stops keep alive and invokes callback provided when the context was initialized
  */
 void nc_keep_alive_stop(struct np_platform* pl,  struct nc_keep_alive_context* ctx);
@@ -91,7 +93,7 @@ void nc_keep_alive_stop(struct np_platform* pl,  struct nc_keep_alive_context* c
 np_error_code nc_keep_alive_async_probe(struct np_platform* pl, struct nc_keep_alive_context* ctx,
                                         uint8_t channelId, keep_alive_callback cb, void* data);
 
-/** 
+/**
  * Sets keep alive settings for a given context.
  * @param kaInterval      set the interval between successfull keep alive
  * @param kaRetryInterval set the interval between retransmissions for packet losses

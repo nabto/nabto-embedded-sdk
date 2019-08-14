@@ -56,6 +56,12 @@ void nc_keep_alive_init_srv(struct np_platform* pl, struct nc_keep_alive_context
     ctx->mtuSeq = 1;
 }
 
+void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
+{
+    struct np_platform* pl = ctx->pl;
+    pl->buf.free(ctx->buf);
+}
+
 np_error_code nc_keep_alive_start(struct np_platform* pl, struct nc_keep_alive_context* ctx, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries)
 {
     NABTO_LOG_TRACE(LOG, "starting keep alive with interval: %u, retryInt: %u, maxRetries: %u", interval, retryInterval, maxRetries);
