@@ -9,6 +9,7 @@ set(dtls_tester_src
 add_executable(dtls_tester "${dtls_tester_src}")
 
 target_link_libraries(dtls_tester
+  test_platform
   np_platform
   nm_logging
   nm_udp

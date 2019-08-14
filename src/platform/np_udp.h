@@ -106,13 +106,6 @@ struct np_udp_module {
     int (*inf_wait)(void);
 
     /**
-     * Wait a maximum of 'ms' milliseconds for incoming traffic from
-     * the network.
-     * @return The number of filedescriptors available for read
-     */
-    int (*timed_wait)(uint32_t ms);
-
-    /**
      * Read incoming traffic signalled by wait.
      * @param nfds  The number of filedescriptors ready for read
      */

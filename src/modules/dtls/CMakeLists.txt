@@ -22,8 +22,9 @@ add_library( nm_dtls_srv STATIC ${dtls_srv_src})
 
 #add_executable( nm_dtls_test ${dtls_test_src})
 
-target_link_libraries(nm_dtls_cli mbedtls)
-target_link_libraries(nm_dtls_srv mbedtls)
+# TODO remove core dependency!
+target_link_libraries(nm_dtls_cli mbedtls nc_core)
+target_link_libraries(nm_dtls_srv mbedtls nc_core)
 
 #target_link_libraries(nm_dtls_test
 #  np_platform

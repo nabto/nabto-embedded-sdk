@@ -14,6 +14,7 @@ add_executable(coap_udp_server_tester "${coap_udp_server_tester_src}")
 add_executable(coap_udp_client_tester "${coap_udp_client_tester_src}")
 
 target_link_libraries(coap_udp_server_tester
+  test_platform
   np_platform
   nm_logging
   nm_udp
@@ -22,6 +23,7 @@ target_link_libraries(coap_udp_server_tester
   )
 
 target_link_libraries(coap_udp_client_tester
+  test_platform
   np_platform
   nm_logging
   nm_udp

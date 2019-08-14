@@ -96,7 +96,6 @@ void nm_unix_udp_select_init(struct np_platform *pl_in)
     pl->udp.get_local_port   = &nm_select_unix_get_local_port;
     pl->udp.async_destroy    = &nm_select_unix_async_destroy;
     pl->udp.inf_wait         = &nm_select_unix_inf_wait;
-    pl->udp.timed_wait       = &nm_select_unix_timed_wait;
     pl->udp.read             = &nm_select_unix_read;
 
     recvBuf = pl->buf.allocate();

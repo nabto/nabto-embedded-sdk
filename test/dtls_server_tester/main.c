@@ -6,6 +6,7 @@
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_client_connection.h>
+#include <test_platform/test_platform.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +53,7 @@ struct udp_send_context {
     void* data;
 };
 
-struct np_platform pl;
+struct np_platform* pl;
 struct np_timed_event ev;
 struct np_timed_event closeEv;
 struct np_udp_endpoint ep;
@@ -81,15 +82,15 @@ void receivedCb(uint8_t channelId, uint64_t sequence,
 {
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Server Received data:");
-    NABTO_LOG_BUF(0, pl.buf.start(buffer), bufferSize);
+    NABTO_LOG_BUF(0, pl->buf.start(buffer), bufferSize);
     uint8_t* sendBuf = malloc(1500);
     struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
-    memcpy(sendBuf, pl.buf.start(buffer), bufferSize);
+    memcpy(sendBuf, pl->buf.start(buffer), bufferSize);
     sendCtx->buffer = sendBuf;
     sendCtx->bufferSize = bufferSize;
     sendCtx->cb = &dtlsSendCb;
     sendCtx->data = sendCtx;
-    pl.dtlsS.async_send_data(&pl, ctx->dtls, sendCtx);
+    pl->dtlsS.async_send_data(pl, ctx->dtls, sendCtx);
     //pl.dtlsS.async_close(&pl, ctx->dtls, closeCb, data);
 }
 
@@ -116,7 +117,7 @@ void dtls_send_listener(bool channelId, np_communication_buffer* buffer, uint16_
     udpSendCtx->cb = cb;
     udpSendCtx->data = data;
     np_udp_populate_send_context(&udpSendCtx->udpSendCtx, ctx->sock, ep, buffer, bufferSize, &udpSendCb, udpSendCtx);
-    pl.udp.async_send_to(&udpSendCtx->udpSendCtx);
+    pl->udp.async_send_to(&udpSendCtx->udpSendCtx);
 }
 
 void created(const np_error_code ec, uint8_t channelId, void* data)
@@ -128,7 +129,7 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    np_error_code ec2 = pl.dtlsS.create_connection(ctx->dtlsServer, &ctx->dtls, &dtls_send_listener, &receivedCb, &eventCb, ctx);
+    np_error_code ec2 = pl->dtlsS.create_connection(ctx->dtlsServer, &ctx->dtls, &dtls_send_listener, &receivedCb, &eventCb, ctx);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
     if(ec2 != NABTO_EC_OK) {
         exit(1);
@@ -141,54 +142,39 @@ void udpRecvCb(const np_error_code ec, struct np_udp_endpoint epLocal,
     struct test_context* ctx = (struct test_context*)data;
     ep = epLocal;
     NABTO_LOG_INFO(0, "UDP received:");
-    NABTO_LOG_BUF(0, pl.buf.start(buffer), bufferSize);
-    pl.dtlsS.handle_packet(&pl, ctx->dtls, 0, buffer, bufferSize);
-    pl.udp.async_recv_from(ctx->sock, udpRecvCb, data);
+    NABTO_LOG_BUF(0, pl->buf.start(buffer), bufferSize);
+    pl->dtlsS.handle_packet(pl, ctx->dtls, 0, buffer, bufferSize);
+    pl->udp.async_recv_from(ctx->sock, udpRecvCb, data);
 }
 
 void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
 {
     struct test_context* ctx = (struct test_context*)data;
     ctx->sock = sock;
-    pl.udp.async_recv_from(ctx->sock, udpRecvCb, data);
+    pl->udp.async_recv_from(ctx->sock, udpRecvCb, data);
     created(ec, 0, data);
     return;
 }
 
 
 int main() {
-    int nfds;
+    struct test_platform tp;
+
+    test_platform_init(&tp);
+    pl = &tp.pl;
+
     uint8_t fp[16];
     memset(fp, 0, 16);
 
-    np_platform_init(&pl);
-    np_log_init();
-    np_communication_buffer_init(&pl);
-    nm_unix_udp_epoll_init(&pl);
-    nm_dtls_srv_init(&pl);
-
-    nm_unix_ts_init(&pl);
-
     struct test_context data;
     memset(&data, 0, sizeof(data));
-    pl.dtlsS.create(&pl, &data.dtlsServer);
-    pl.dtlsS.set_keys(data.dtlsServer, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
+    pl->dtlsS.create(pl, &data.dtlsServer);
+    pl->dtlsS.set_keys(data.dtlsServer, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
 
     data.data = 42;
-    pl.udp.async_bind_port(4439, sockCreatedCb, &data);
+    pl->udp.async_bind_port(4439, sockCreatedCb, &data);
 
-
-    while (true) {
-        np_event_queue_execute_all(&pl);
-        NABTO_LOG_INFO(0, "before epoll wait %i", np_event_queue_has_ready_event(&pl));
-        if (np_event_queue_has_timed_event(&pl)) {
-            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
-            nfds = pl.udp.timed_wait(ms);
-        } else {
-            nfds = pl.udp.inf_wait();
-        }
-        pl.udp.read(nfds);
-    }
+    test_platform_run(&tp);
 
     exit(0);
 }

@@ -3,10 +3,11 @@
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <core/nc_coap_server.h>
+#include <test_platform/test_platform.h>
 
 #include <stdlib.h>
 
-struct np_platform pl;
+struct np_platform* pl;
 struct nc_coap_server_context coap;
 struct np_udp_send_context sendCtx;
 np_dtls_send_to_callback dtlsCb;
@@ -33,11 +34,11 @@ np_error_code dtlsSendTo(struct np_platform* plIn, struct np_dtls_srv_connection
 //                                   np_dtls_send_to_callback cb, void* data)
 {
     NABTO_LOG_INFO(0, "Send to UDP");
-    memcpy(pl.buf.start(sendCtx.buffer), send->buffer, send->bufferSize);
+    memcpy(pl->buf.start(sendCtx.buffer), send->buffer, send->bufferSize);
     sendCtx.bufferSize = send->bufferSize;
     dtlsCb = send->cb;
     dtlsData = send->data;
-    pl.udp.async_send_to(&sendCtx);
+    pl->udp.async_send_to(&sendCtx);
     return NABTO_EC_OK;
 }
 
@@ -48,13 +49,13 @@ void udpRecvCb(const np_error_code ec, struct np_udp_endpoint inEp,
     NABTO_LOG_INFO(0, "UDP receive");
     sendCtx.ep = inEp;
     nc_coap_server_handle_packet(&coap, NULL, buffer, bufferSize);
-    pl.udp.async_recv_from(sendCtx.sock, &udpRecvCb, NULL);
+    pl->udp.async_recv_from(sendCtx.sock, &udpRecvCb, NULL);
 }
 
 void udpCreatedCb(const np_error_code ec, np_udp_socket* socket, void* data)
 {
     sendCtx.sock = socket;
-    pl.udp.async_recv_from(socket, &udpRecvCb, NULL);
+    pl->udp.async_recv_from(socket, &udpRecvCb, NULL);
 }
 
 void handleHelloReq(struct nabto_coap_server_request* request, void* userData)
@@ -70,34 +71,21 @@ void handleHelloReq(struct nabto_coap_server_request* request, void* userData)
 
 int main()
 {
-    int nfds;
-    np_platform_init(&pl);
-    np_log_init();
-    np_communication_buffer_init(&pl);
-    nm_unix_ts_init(&pl);
-    nm_unix_udp_epoll_init(&pl);
+    struct test_platform tp;
+    test_platform_init(&tp);
+    pl = &tp.pl;
 
-    pl.dtlsS.async_send_data = &dtlsSendTo;
+    pl->dtlsS.async_send_data = &dtlsSendTo;
 
-    nc_coap_server_init(&pl, &coap);
+    nc_coap_server_init(pl, &coap);
 
-    sendCtx.buffer = pl.buf.allocate();
+    sendCtx.buffer = pl->buf.allocate();
     sendCtx.cb = &udpSendCb;
     sendCtx.cbData = NULL;
 
-    pl.udp.async_bind_port(4242, &udpCreatedCb, NULL);
+    pl->udp.async_bind_port(4242, &udpCreatedCb, NULL);
 
     nabto_coap_server_add_resource(nc_coap_server_get_server(&coap), NABTO_COAP_CODE_GET, (const char*[]){"helloworld", NULL}, &handleHelloReq, NULL);
 
-    while(true) {
-        np_event_queue_execute_all(&pl);
-        if (np_event_queue_has_timed_event(&pl)) {
-            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
-            nfds = pl.udp.timed_wait(ms);
-        } else {
-            nfds = pl.udp.inf_wait();
-        }
-        pl.udp.read(nfds);
-    }
-
+    test_platform_run(&tp);
 }

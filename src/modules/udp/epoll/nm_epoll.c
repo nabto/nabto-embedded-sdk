@@ -106,7 +106,6 @@ void nm_unix_udp_epoll_init(struct np_platform* pl_in) {
     pl->udp.get_local_port    = &nm_epoll_get_local_port;
     pl->udp.async_destroy     = &nm_epoll_async_destroy;
     pl->udp.inf_wait          = &nm_epoll_inf_wait;
-    pl->udp.timed_wait        = &nm_epoll_timed_wait;
     pl->udp.read              = &nm_epoll_read;
 
     nm_epoll_fd = epoll_create(42 /*unused*/);

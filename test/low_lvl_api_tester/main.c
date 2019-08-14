@@ -1,6 +1,7 @@
 
 #include <platform/np_logging.h>
 #include <core/nc_device.h>
+#include <test_platform/test_platform.h>
 
 #include <stdlib.h>
 
@@ -33,15 +34,9 @@ const char* deviceId = "a";
 //const char* hostname = "a.devices.dev.nabto.net";
 const char* stunHost = "stun.nabto.net";
 
-struct nc_device_context device;
-struct np_platform pl;
+
 struct nabto_stream* stream;
 uint8_t buffer[1500];
-
-void nabto_device_init_platform(struct np_platform* pl);
-void nabto_device_init_platform_modules(struct np_platform* pl,
-                                        const char* devicePublicKey,
-                                        const char* devicePrivateKey);
 
 void stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
 {
@@ -73,16 +68,19 @@ void stream_listener(struct nabto_stream* incStream, void* data)
 
 int main() {
     np_error_code ec;
-    int nfds;
+
+    struct test_platform tp;
+    struct nc_device_context device;
+
     const char* hostname = "localhost";
     const char* deviceLbHost = getenv("DEVICE_LB_HOST");
     if (deviceLbHost) {
         hostname = deviceLbHost;
     }
 
-    nabto_device_init_platform(&pl);
-    nabto_device_init_platform_modules(&pl, devicePublicKey, devicePrivateKey);
-    nc_device_init(&device, &pl);
+    test_platform_init(&tp);
+
+    nc_device_init(&device, &tp.pl);
     // start the core
     ec = nc_device_start(&device, appName, appVersion, productId, deviceId, hostname, stunHost,4242);
     if (ec != NABTO_EC_OK) {
@@ -90,17 +88,6 @@ int main() {
     }
     nc_stream_manager_set_listener(&device.streamManager, &stream_listener, NULL);
 
-    while (true) {
-        np_event_queue_execute_all(&pl);
-        if (np_event_queue_has_timed_event(&pl)) {
-            uint32_t ms = np_event_queue_next_timed_event_occurance(&pl);
-            nfds = pl.udp.timed_wait(ms);
-        } else {
-            nfds = pl.udp.inf_wait();
-        }
-        pl.udp.read(nfds);
-    }
-
+    test_platform_run(&tp);
     exit(0);
-
 }
