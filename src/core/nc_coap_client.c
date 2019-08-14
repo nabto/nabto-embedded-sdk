@@ -28,6 +28,7 @@ void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* 
 
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 {
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
     nabto_coap_client_destroy(&ctx->client);
     ctx->pl->buf.free(ctx->sendBuffer);
 }
