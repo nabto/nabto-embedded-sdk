@@ -36,8 +36,6 @@ typedef struct np_dtls_srv_connection np_dtls_srv_connection;
 
 struct np_dtls_srv;
 
-np_error_code np_dtls_srv_init(struct np_platform* pl);
-
 struct np_dtls_srv_module {
 
     np_error_code (*create)(struct np_platform* pl, struct np_dtls_srv** server);

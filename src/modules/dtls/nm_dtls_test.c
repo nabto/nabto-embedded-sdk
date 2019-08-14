@@ -38,7 +38,7 @@ const unsigned char devicePublicKey[] =
  *
  * openssl ec -in device.pem -pubout > devicepublickey.pem
  * openssl ec -pubin -in devicepublickey.pem -outform der > devicepublickey.der
- * sha256sum devicepublickey.der 
+ * sha256sum devicepublickey.der
  * dd5fec4f27b5657cb75e5e247fe792cc096adc3670897660946278d67d9d95f7  devicepublickey.der
  *
  * short form: openssl ec -in device.pem -pubout -outform der | sha256sum
@@ -61,18 +61,18 @@ int main() {
     uint8_t fp[16];
     mbedtls_x509_crt chain;
     mbedtls_x509_crt_init(&chain);
-    
+
     int status = mbedtls_x509_crt_parse(&chain, devicePublicKey, strlen((const char*)devicePublicKey)+1);
     NABTO_TEST_CHECK(status == 0);
 
     np_error_code ec = nm_dtls_util_fp_from_crt(&chain, fp);
-    
+
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
 
     NABTO_TEST_CHECK(memcmp(certFingerprint, fp, 16) == 0);
 
     test_dtls_connection();
-    
+
     printf("%i errors, %i ok checks\n", nts.fail, nts.ok);
     if (nts.fail > 0) {
         exit(1);
@@ -117,7 +117,7 @@ void test_async_send_to_client(void* data)
 void conn_async_create(struct np_platform* pl, np_connection* conn, struct np_connection_channel* channel,
                          struct np_connection_id* id, np_connection_created_callback cb, void* data)
 {
-    
+
 }
 
 struct np_connection_id* conn_get_id(struct np_platform* pl, np_connection* conn)
@@ -219,7 +219,7 @@ void test_dtls_connection()
 
     np_platform_init(&pl);
     np_communication_buffer_init(&pl);
-    np_ts_init(&pl);
+    nm_unix_ts_init(&pl);
 
     pl.conn.async_create = &conn_async_create;
     pl.conn.get_id = &conn_get_id;
@@ -227,7 +227,7 @@ void test_dtls_connection()
     pl.conn.async_recv_from = &conn_async_recv_from;
     pl.conn.cancel_async_recv = &conn_cancel_async_recv;
     pl.conn.cancel_async_send = &conn_cancel_async_send;
-    
+
 
     np_dtls_cli_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
     np_dtls_srv_init(&pl, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));

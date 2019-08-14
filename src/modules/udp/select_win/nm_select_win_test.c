@@ -123,8 +123,8 @@ int main()
     np_platform_init(&pl);
     np_log_init();
     np_communication_buffer_init(&pl);
-    np_ts_init(&pl);
-    np_udp_init(&pl);
+    nm_win_ts_init(&pl);
+    nm_win_udp_select_init(&pl);
     NABTO_LOG_INFO(0, "main");
 
     sendCtx1.buffer = pl.buf.allocate();

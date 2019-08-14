@@ -67,7 +67,7 @@ DWORD WINAPI resolver_thread(LPVOID data) {
     return 0;
 }
 
-void np_dns_init(struct np_platform* pl)
+void nm_win_dns_init(struct np_platform* pl)
 {
     pl->dns.async_resolve = &nm_win_dns_resolve;
 }
@@ -111,4 +111,3 @@ void nm_win_dns_check_resolved(const np_error_code ec, void* data) {
         return;
     }
 }
-    

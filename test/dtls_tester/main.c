@@ -1,6 +1,8 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
+#include <modules/dtls/nm_dtls_cli.h>
 #include <platform/np_ip_address.h>
 #include <core/nc_client_connection.h>
 #include <core/nc_udp_dispatch.h>
@@ -129,9 +131,9 @@ int main() {
     NABTO_LOG_INFO(0, "pl: %i", &pl);
     np_platform_init(&pl);
     np_communication_buffer_init(&pl);
-    np_udp_init(&pl);
-    np_dtls_cli_init(&pl);
-    np_ts_init(&pl);
+    nm_unix_udp_epoll_init(&pl);
+    nm_dtls_cli_init(&pl);
+    nm_unix_ts_init(&pl);
 
     np_log_init();
     struct test_context data;

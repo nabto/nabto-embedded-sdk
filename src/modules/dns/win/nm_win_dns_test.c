@@ -22,8 +22,8 @@ int main()
     struct np_platform pl;
     np_platform_init(&pl);
     np_log_init();
-    np_ts_init(&pl);
-    np_dns_init(&pl);
+    nm_win_ts_init(&pl);
+    nm_win_dns_init(&pl);
 
     np_error_code ec = nm_win_dns_resolve(&pl, host, &resolved, NULL);
     while(1) {

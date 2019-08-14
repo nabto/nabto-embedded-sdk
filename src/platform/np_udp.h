@@ -40,8 +40,6 @@ void np_udp_populate_send_context(struct np_udp_send_context* ctx, np_udp_socket
                                   struct np_udp_endpoint ep,
                                   np_communication_buffer* buffer, uint16_t bufferSize,
                                   np_udp_packet_sent_callback cb, void* data);
-void np_udp_init(struct np_platform* pl);
-
 struct np_udp_module {
     /**
      * Create a udp socket. The socket is bound to an ephemeral port.

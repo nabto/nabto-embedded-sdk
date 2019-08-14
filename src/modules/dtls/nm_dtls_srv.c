@@ -151,7 +151,7 @@ np_error_code nm_dtls_srv_async_discover_mtu(struct np_platform* pl, struct np_d
     return NABTO_EC_OK;
 }
 
-np_error_code np_dtls_srv_init(struct np_platform* pl)
+np_error_code nm_dtls_srv_init(struct np_platform* pl)
 {
     pl->dtlsS.create = &nm_dtls_srv_create;
     pl->dtlsS.destroy = &nm_dtls_srv_destroy;

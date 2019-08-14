@@ -80,7 +80,7 @@ void nm_select_win_free_socket(np_udp_socket* sock);
 /**
  * Api functions start
  */
-void np_udp_init(struct np_platform *pl_in)
+void nm_win_udp_select_init(struct np_platform *pl_in)
 {
     WORD wVerReq;
     WSADATA wsaData;

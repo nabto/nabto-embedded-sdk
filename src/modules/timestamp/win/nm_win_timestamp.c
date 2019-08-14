@@ -3,7 +3,7 @@
 
 #include <windows.h>
 
-void np_ts_init(struct np_platform* pl)
+void nm_win_ts_init(struct np_platform* pl)
 {
     pl->ts.passed_or_now        = &nm_win_ts_passed_or_now;
     pl->ts.less_or_equal        = &nm_win_ts_less_or_equal;

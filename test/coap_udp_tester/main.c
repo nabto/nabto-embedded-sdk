@@ -1,6 +1,7 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <core/nc_coap_server.h>
 
 #include <stdlib.h>
@@ -73,8 +74,8 @@ int main()
     np_platform_init(&pl);
     np_log_init();
     np_communication_buffer_init(&pl);
-    np_ts_init(&pl);
-    np_udp_init(&pl);
+    nm_unix_ts_init(&pl);
+    nm_unix_udp_epoll_init(&pl);
 
     pl.dtlsS.async_send_data = &dtlsSendTo;
 

@@ -8,7 +8,6 @@
 // e.g. typedef uint32_t np_timestamp;
 
 struct np_platform;
-void np_ts_init(struct np_platform* pl);
 
 struct np_timestamp_module {
     /**
@@ -25,17 +24,17 @@ struct np_timestamp_module {
      * Set  a timestamp to n milliseconds into the future.
      */
     void (*set_future_timestamp)(np_timestamp* ts, uint32_t milliseconds);
-    
+
     /**
      * Return current timestamp.
      */
     void (*now)(np_timestamp* timestamp);
 
     /**
-     * Return current timestamp as uint32_t 
+     * Return current timestamp as uint32_t
      */
     uint32_t (*now_ms)(void);
-    
+
     /**
      * Return the difference between timestamps in milliseconds,
      * returns 0 if ts2>ts1

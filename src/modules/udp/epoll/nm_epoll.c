@@ -89,7 +89,7 @@ void nm_epoll_free_socket(np_udp_socket* sock)
     }
 }
 
-void np_udp_init(struct np_platform* pl_in) {
+void nm_unix_udp_epoll_init(struct np_platform* pl_in) {
     if(!pl_in) {
         NABTO_LOG_FATAL(LOG, "No np_platform provided");
         return;

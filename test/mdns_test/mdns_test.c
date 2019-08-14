@@ -1,5 +1,6 @@
 #include <modules/mdns/nm_mdns.h>
-
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
+#include <modules/udp/epoll/nm_epoll.h>
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <platform/np_timestamp.h>
@@ -24,8 +25,8 @@ int main(int argc, char** argv)
     np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
     np_communication_buffer_init(&pl);
-    np_udp_init(&pl);
-    np_ts_init(&pl);
+    nm_unix_udp_epoll_init(&pl);
+    nm_unix_ts_init(&pl);
 
     np_log_init();
 

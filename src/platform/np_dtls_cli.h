@@ -14,8 +14,6 @@ typedef struct np_dtls_cli_context np_dtls_cli_context;
 
 typedef void (*np_dtls_cli_connect_callback)(const np_error_code ec, np_dtls_cli_context* ctx, void* data);
 
-np_error_code np_dtls_cli_init(struct np_platform* pl);
-
 struct np_dtls_cli_module {
 
     np_dtls_cli_context* (*create)(struct np_platform* pl);

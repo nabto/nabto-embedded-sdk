@@ -19,6 +19,7 @@ if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
     ${nabto_device_src}
     ${src_dir}/nabto_platform.c
     ${src_dir}/unix/nabto_device_threads_unix.c
+    ${src_dir}/unix/nabto_device_platform_modules_linux.c
     )
 
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
@@ -26,12 +27,14 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
     ${nabto_device_src}
     ${src_dir}/nabto_platform.c
     ${src_dir}/windows/nabto_device_threads_win.c
+    ${src_dir}/windows/nabto_device_platform_modules_win.c
     )
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   set(nabto_device_src
     ${nabto_device_src}
     ${src_dir}/nabto_platform.c
     ${src_dir}/unix/nabto_device_threads_unix.c
+    ${src_dir}/unix/nabto_device_platform_modules_mac.c
     )
 endif ()
 

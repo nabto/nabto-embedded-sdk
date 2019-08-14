@@ -84,7 +84,7 @@ void nm_select_unix_free_socket(np_udp_socket* sock);
 /**
  * Api functions start
  */
-void np_udp_init(struct np_platform *pl_in)
+void nm_unix_udp_select_init(struct np_platform *pl_in)
 {
     pl = pl_in;
     pl->udp.async_create     = &nm_select_unix_async_create;

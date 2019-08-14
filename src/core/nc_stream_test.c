@@ -7,6 +7,7 @@
 #include <core/nc_tests.h>
 
 #include <platform/np_logging.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 
 #include <stdlib.h>
 
@@ -143,7 +144,7 @@ void nc_stream_test_syn_ack()
     ctx.cliPl.dtlsS.async_send_data = &nc_stream_test_cli_dtls_srv_async_send_to;
 
     np_event_queue_init(&ctx.cliPl, NULL, NULL);
-    np_ts_init(&ctx.cliPl);
+    nm_unix_ts_init(&ctx.cliPl);
 
     ctx.devPl.buf.start = &nc_stream_test_start;
     ctx.devPl.buf.allocate = &nc_stream_test_allocate;
@@ -153,7 +154,7 @@ void nc_stream_test_syn_ack()
     ctx.devPl.dtlsS.async_send_data = &nc_stream_test_dev_dtls_srv_async_send_to;
 
     np_event_queue_init(&ctx.devPl, NULL, NULL);
-    np_ts_init(&ctx.devPl);
+    nm_unix_ts_init(&ctx.devPl);
 
 
     ctx.firstCliPacket = true;

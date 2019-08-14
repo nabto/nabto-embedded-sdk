@@ -2,6 +2,7 @@
 
 #include <platform/np_logging.h>
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 
 #include <platform/np_platform.h>
 
@@ -93,8 +94,8 @@ int main()
     np_platform_init(&pl);
     np_log_init();
     np_communication_buffer_init(&pl);
-    np_ts_init(&pl);
-    np_udp_init(&pl);
+    nm_unix_ts_init(&pl);
+    nm_unix_udp_epoll_init(&pl);
     NABTO_LOG_INFO(0, "main");
 
     sendCtx1.buffer = pl.buf.allocate();
@@ -111,7 +112,7 @@ int main()
             NABTO_LOG_BUF(0, localIps[i].v6.addr, 16);
         }
     }
-    
+
     while(true) {
         np_event_queue_execute_all(&pl);
         if (!np_event_queue_is_event_queue_empty(&pl)) {
