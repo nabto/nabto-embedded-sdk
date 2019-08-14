@@ -23,12 +23,6 @@ struct nm_epoll_created_ctx {
     uint16_t port;
 };
 
-struct nm_epoll_destroyed_ctx {
-    np_udp_socket_destroyed_callback cb;
-    void* data;
-    struct np_event event;
-};
-
 struct nm_epoll_received_ctx {
     np_udp_packet_received_callback cb;
     void* data;
@@ -39,7 +33,6 @@ struct np_udp_socket {
     int sock;
     bool isIpv6;
     struct nm_epoll_created_ctx created;
-    struct nm_epoll_destroyed_ctx des;
     struct nm_epoll_received_ctx recv;
 };
 
@@ -82,28 +75,7 @@ void nm_epoll_cancel_all_events(np_udp_socket* sock)
 {
     NABTO_LOG_TRACE(LOG, "Cancelling all events");
     np_event_queue_cancel_event(pl, &sock->created.event);
-    np_event_queue_cancel_event(pl, &sock->des.event);
     np_event_queue_cancel_event(pl, &sock->recv.event);
-}
-
-void nm_epoll_free_socket(np_udp_socket* sock)
-{
-    NABTO_LOG_TRACE(LOG, "shutdown with data: %u", sock->des.data);
-    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
-        NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
-    }
-    {
-        np_udp_socket_destroyed_callback cb;
-        void* cbData;
-        close(sock->sock);
-        nm_epoll_cancel_all_events(sock);
-        cb = sock->des.cb;
-        cbData = sock->des.data;
-        free(sock);
-        if (cb) {
-            cb(NABTO_EC_OK, cbData);
-        }
-    }
 }
 
 void nm_unix_udp_epoll_init(struct np_platform* pl_in) {
@@ -244,16 +216,6 @@ void nm_epoll_read(int nfds)
            (events[i].events & EPOLLHUP) ||
            (!(events[i].events & EPOLLIN))) {
             NABTO_LOG_TRACE(LOG, "epoll event with socket error %x", events[i].events);
-            {
-                np_udp_socket* sock = (np_udp_socket*)events[i].data.ptr;
-                np_udp_socket_destroyed_callback cb;
-                void* cbData;
-                cb = sock->des.cb;
-                cbData = sock->des.data;
-                if (cb != NULL) {
-                    cb(NABTO_EC_OK, cbData);
-                }
-            }
             continue;
         }
         np_udp_socket* sock = (np_udp_socket*)events[i].data.ptr;
@@ -319,7 +281,6 @@ void nm_epoll_handle_event(np_udp_socket* sock) {
                 sock->recv.cb = NULL;
                 cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recv.data);
             }
-            nm_epoll_free_socket(sock);
             return;
         }
     }
@@ -401,20 +362,13 @@ void nm_epoll_destroy(np_udp_socket* sock)
         return;
     }
     shutdown(sock->sock, SHUT_RDWR);
-    NABTO_LOG_TRACE(LOG, "shutdown with data: %u", sock->des.data);
-    free(sock);
-    return;
 
-/*    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
+    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
         NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
     close(sock->sock);
-    cb = sock->des.cb;
-    cbData = sock->des.data;
     nm_epoll_cancel_all_events(sock);
     free(sock);
-    cb(NABTO_EC_OK, cbData);
-*/
 }
 
 void nm_epoll_event_bind_port(void* data)
