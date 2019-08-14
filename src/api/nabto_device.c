@@ -365,10 +365,10 @@ void* nabto_device_network_thread(void* data)
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     int nfds;
     while(true) {
-        nfds = dev->pl.udp.inf_wait();
+        nfds = nabto_device_platform_inf_wait();
         nabto_device_threads_mutex_lock(dev->eventMutex);
         if (nfds > 0) {
-            dev->pl.udp.read(nfds);
+            nabto_device_platform_read(nfds);
         }
         NABTO_LOG_TRACE(LOG, "Network thread signalling core thread");
         nabto_device_threads_cond_signal(dev->eventCond);

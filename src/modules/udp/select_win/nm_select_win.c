@@ -95,8 +95,6 @@ void nm_win_udp_select_init(struct np_platform *pl_in)
     pl->udp.get_local_ip     = &nm_select_win_get_local_ip;
     pl->udp.get_local_port   = &nm_select_win_get_local_port;
     pl->udp.async_destroy    = &nm_select_win_async_destroy;
-    pl->udp.inf_wait         = &nm_select_win_inf_wait;
-    pl->udp.read             = &nm_select_win_read;
 
     recvBuf = pl->buf.allocate();
     // if(pipe(pipefd) == -1) {

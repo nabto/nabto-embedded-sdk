@@ -98,18 +98,6 @@ struct np_udp_module {
      * operation.
      */
     void (*async_destroy)(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
-
-    /**
-     * Wait for ever for incoming traffic from the network.
-     * @return The number of filedescriptors available for read
-     */
-    int (*inf_wait)(void);
-
-    /**
-     * Read incoming traffic signalled by wait.
-     * @param nfds  The number of filedescriptors ready for read
-     */
-    void (*read)(int nfds);
 };
 
 

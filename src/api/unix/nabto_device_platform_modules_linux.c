@@ -15,3 +15,13 @@ void nabto_device_init_platform_modules(struct np_platform* pl)
     nm_dtls_cli_init(pl);
     nm_dtls_srv_init(pl);
 }
+
+int nabto_device_platform_inf_wait()
+{
+    return nm_epoll_inf_wait();
+}
+
+void nabto_device_platform_read(int nfds)
+{
+    nm_epoll_read(nfds);
+}
