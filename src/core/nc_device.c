@@ -11,6 +11,9 @@ uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
     device->pl = pl;
+    nc_udp_dispatch_init(&device->udp, pl);
+    nc_udp_dispatch_init(&device->secondaryUdp, pl);
+
     pl->dtlsS.create(pl, &device->dtlsServer);
     nc_iam_init(&device->iam);
     nc_coap_server_init(pl, &device->coapServer);
@@ -34,6 +37,8 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_coap_server_deinit(&device->coapServer);
     nc_iam_deinit(&device->iam);
     pl->dtlsS.destroy(device->dtlsServer);
+    nc_udp_dispatch_deinit(&device->udp);
+    nc_udp_dispatch_deinit(&device->secondaryUdp);
 }
 
 void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
@@ -67,8 +72,6 @@ void nc_device_detached_cb(const np_error_code ec, void* data)
     NABTO_LOG_INFO(LOG, "Device detached callback");
     if (!dev->stopping) {
         np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
-    } else {
-        nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
     }
 }
 
@@ -86,9 +89,7 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
         }
     } else {
         NABTO_LOG_INFO(LOG, "Device failed to attached");
-       if (dev->stopping) {
-           nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
-       } else {
+       if (!dev->stopping) {
            NABTO_LOG_TRACE(LOG, "Not stopping, trying to reattach");
            np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
        }
@@ -115,10 +116,7 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     NABTO_LOG_TRACE(LOG, "nc_device_udp_created_cb");
-    if (dev->stopping) {
-        nc_udp_dispatch_async_destroy(&dev->udp, &nc_device_udp_destroyed_cb, dev);
-        return;
-    }
+
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
 
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);

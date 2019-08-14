@@ -52,10 +52,9 @@ void udpRecvCb(const np_error_code ec, struct np_udp_endpoint inEp,
     pl->udp.async_recv_from(sendCtx.sock, &udpRecvCb, NULL);
 }
 
-void udpCreatedCb(const np_error_code ec, np_udp_socket* socket, void* data)
+void udpCreatedCb(const np_error_code ec, void* data)
 {
-    sendCtx.sock = socket;
-    pl->udp.async_recv_from(socket, &udpRecvCb, NULL);
+    pl->udp.async_recv_from(sendCtx.sock, &udpRecvCb, NULL);
 }
 
 void handleHelloReq(struct nabto_coap_server_request* request, void* userData)
@@ -83,7 +82,8 @@ int main()
     sendCtx.cb = &udpSendCb;
     sendCtx.cbData = NULL;
 
-    pl->udp.async_bind_port(4242, &udpCreatedCb, NULL);
+    pl->udp.create(pl, &sendCtx.sock);
+    pl->udp.async_bind_port(sendCtx.sock, 4242, &udpCreatedCb, NULL);
 
     nabto_coap_server_add_resource(nc_coap_server_get_server(&coap), NABTO_COAP_CODE_GET, (const char*[]){"helloworld", NULL}, &handleHelloReq, NULL);
 

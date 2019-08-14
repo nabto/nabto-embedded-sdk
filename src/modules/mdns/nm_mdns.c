@@ -1,20 +1,19 @@
 #include "nm_mdns.h"
 
 void nm_mdns_start(struct nm_mdns* mdns);
-static void nm_mdns_socket_opened_v4(const np_error_code ec, np_udp_socket* socket, void* userData);
+static void nm_mdns_socket_opened_v4(const np_error_code ec, void* userData);
 static void nm_mdns_recv_packet_v4(struct nm_mdns* mdns);
 static void nm_mdns_packet_received_v4(const np_error_code ec, struct np_udp_endpoint ep,
                                     np_communication_buffer* buffer, uint16_t bufferSize, void* userData);
 static void nm_mdns_send_packet_v4(struct nm_mdns* mdns);
 static void nm_mdns_packet_sent_v4(const np_error_code ec, void* userData);
 
-static void nm_mdns_socket_opened_v6(const np_error_code ec, np_udp_socket* socket, void* userData);
+static void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData);
 static void nm_mdns_recv_packet_v6(struct nm_mdns* mdns);
 static void nm_mdns_packet_received_v6(const np_error_code ec, struct np_udp_endpoint ep,
                                     np_communication_buffer* buffer, uint16_t bufferSize, void* userData);
 static void nm_mdns_send_packet_v6(struct nm_mdns* mdns);
 static void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData);
-static void nm_mdns_socket_destroyed(const np_error_code ec, void* userData);
 
 void nm_mdns_init(struct nm_mdns* mdns, struct np_platform* pl, const char* productId, const char* deviceId, nm_mdns_get_port getPort, void* userData)
 {
@@ -26,6 +25,8 @@ void nm_mdns_init(struct nm_mdns* mdns, struct np_platform* pl, const char* prod
     mdns->sendBufferv6 = pl->buf.allocate();
     mdns->getPort = getPort;
     mdns->getPortUserData = userData;
+    pl->udp.create(pl, &mdns->socketv4);
+    pl->udp.create(pl, &mdns->socketv6);
 
     size_t ipsFound = pl->udp.get_local_ip(ips, 2);
 
@@ -56,8 +57,8 @@ void nm_mdns_deinit(struct nm_mdns* mdns)
     struct np_platform* pl = mdns->pl;
     mdns->stopped = true;
 
-    pl->udp.async_destroy(mdns->socketv4, nm_mdns_socket_destroyed, NULL);
-    pl->udp.async_destroy(mdns->socketv6, nm_mdns_socket_destroyed, NULL);
+    pl->udp.destroy(mdns->socketv4);
+    pl->udp.destroy(mdns->socketv6);
     pl->buf.free(mdns->sendBufferv4);
     pl->buf.free(mdns->sendBufferv6);
 }
@@ -65,29 +66,17 @@ void nm_mdns_deinit(struct nm_mdns* mdns)
 void nm_mdns_start(struct nm_mdns* mdns)
 {
     struct np_platform* pl = mdns->pl;
-    if (pl->udp.async_create_mdns_ipv4 != NULL) {
-        pl->udp.async_create_mdns_ipv4(nm_mdns_socket_opened_v4, mdns);
+    if (pl->udp.async_bind_mdns_ipv4 != NULL) {
+        pl->udp.async_bind_mdns_ipv4(mdns->socketv4, nm_mdns_socket_opened_v4, mdns);
     }
-    if (pl->udp.async_create_mdns_ipv6 != NULL) {
-        pl->udp.async_create_mdns_ipv6(nm_mdns_socket_opened_v6, mdns);
+    if (pl->udp.async_bind_mdns_ipv6 != NULL) {
+        pl->udp.async_bind_mdns_ipv6(mdns->socketv6, nm_mdns_socket_opened_v6, mdns);
     }
 }
 
-void nm_mdns_socket_destroyed(const np_error_code ec, void* userData)
-{
-
-}
-
-
-void nm_mdns_socket_opened_v4(const np_error_code ec, np_udp_socket* socket, void* userData)
+void nm_mdns_socket_opened_v4(const np_error_code ec, void* userData)
 {
     struct nm_mdns* mdns = userData;
-
-    if (socket == NULL) {
-        return;
-    }
-
-    mdns->socketv4 = socket;
     nm_mdns_recv_packet_v4(mdns);
 }
 
@@ -145,15 +134,9 @@ void nm_mdns_packet_sent_v4(const np_error_code ec, void* userData)
     nm_mdns_recv_packet_v4(mdns);
 }
 
-void nm_mdns_socket_opened_v6(const np_error_code ec, np_udp_socket* socket, void* userData)
+void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData)
 {
     struct nm_mdns* mdns = userData;
-
-    if (socket == NULL) {
-        return;
-    }
-
-    mdns->socketv6 = socket;
     nm_mdns_recv_packet_v6(mdns);
 }
 

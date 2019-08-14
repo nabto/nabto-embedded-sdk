@@ -9,47 +9,41 @@
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
 
-void nc_udp_dispatch_sock_created_cb(const np_error_code ec, np_udp_socket* socket, void* data);
+void nc_udp_dispatch_sock_created_cb(const np_error_code ec, void* data);
 void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
                                    np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+
+void nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl)
+{
+    memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
+    ctx->pl = pl;
+    pl->udp.create(pl, &ctx->sock);
+}
+
+void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
+{
+    struct np_platform* pl = ctx->pl;
+    pl->udp.destroy(ctx->sock);
+}
+
 
 void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
                                    nc_udp_dispatch_create_callback cb, void* data)
 {
     NABTO_LOG_TRACE(LOG, "Async create: %u", pl);
-    memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
-    ctx->pl = pl;
     ctx->createCb = cb;
     ctx->createCbData = data;
     if (port == 0) {
-        pl->udp.async_create(&nc_udp_dispatch_sock_created_cb, ctx);
+        pl->udp.async_bind(ctx->sock, &nc_udp_dispatch_sock_created_cb, ctx);
     } else {
-        pl->udp.async_bind_port(port, &nc_udp_dispatch_sock_created_cb, ctx);
+        pl->udp.async_bind_port(ctx->sock, port, &nc_udp_dispatch_sock_created_cb, ctx);
     }
 }
 
-void nc_udp_dispatch_sock_destroyed_cb(const np_error_code ec, void* data)
-{
-    struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*)data;
-    NABTO_LOG_TRACE(LOG, "Socket destroyed: %u", data);
-    ctx->sock = NULL;
-    ctx->destroyCb(ec, ctx->destroyCbData);
-}
-
-void nc_udp_dispatch_async_destroy(struct nc_udp_dispatch_context* ctx,
-                                   nc_udp_dispatch_destroy_callback cb, void* data)
-{
-    NABTO_LOG_TRACE(LOG, "Destroying socket: %u", ctx);
-    ctx->destroyCb = cb;
-    ctx->destroyCbData = data;
-    ctx->pl->udp.async_destroy(ctx->sock, &nc_udp_dispatch_sock_destroyed_cb, ctx);
-}
-
-void nc_udp_dispatch_sock_created_cb(const np_error_code ec, np_udp_socket* socket, void* data)
+void nc_udp_dispatch_sock_created_cb(const np_error_code ec, void* data)
 {
     NABTO_LOG_TRACE(LOG, "created cb");
     struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*) data;
-    ctx->sock = socket;
     ctx->pl->udp.async_recv_from(ctx->sock, &nc_udp_dispatch_handle_packet, ctx);
     ctx->createCb(NABTO_EC_OK, ctx->createCbData);
 }

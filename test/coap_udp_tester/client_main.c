@@ -46,10 +46,10 @@ void udpRecvCb(const np_error_code ec, struct np_udp_endpoint inEp,
     pl->udp.async_recv_from(sendCtx.sock, &udpRecvCb, NULL);
 }
 
-void udpCreatedCb(const np_error_code ec, np_udp_socket* socket, void* data)
+void udpCreatedCb(const np_error_code ec, void* data)
 {
-    sendCtx.sock = socket;
-    pl->udp.async_recv_from(socket, &udpRecvCb, NULL);
+
+    pl->udp.async_recv_from(sendCtx.sock, &udpRecvCb, NULL);
 }
 
 void requestEndHandler(struct nabto_coap_client_request* req, void* data)
@@ -90,7 +90,8 @@ int main()
     sendCtx.ep.ip.v4.addr[2] = 0;
     sendCtx.ep.ip.v4.addr[3] = 1;
 
-    pl->udp.async_create(&udpCreatedCb, NULL);
+    pl->udp.create(pl, &sendCtx.sock);
+    pl->udp.async_bind(sendCtx.sock, &udpCreatedCb, NULL);
 
     struct nabto_coap_client_request* req = nabto_coap_client_request_new(nc_coap_client_get_client(&coap),
                                                                           NABTO_COAP_CODE_GET,

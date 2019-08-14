@@ -147,10 +147,9 @@ void udpRecvCb(const np_error_code ec, struct np_udp_endpoint epLocal,
     pl->udp.async_recv_from(ctx->sock, udpRecvCb, data);
 }
 
-void sockCreatedCb (const np_error_code ec, np_udp_socket* sock, void* data)
+void sockCreatedCb (const np_error_code ec, void* data)
 {
     struct test_context* ctx = (struct test_context*)data;
-    ctx->sock = sock;
     pl->udp.async_recv_from(ctx->sock, udpRecvCb, data);
     created(ec, 0, data);
     return;
@@ -172,7 +171,8 @@ int main() {
     pl->dtlsS.set_keys(data.dtlsServer, (const unsigned char*)test_pub_key_crt, strlen(test_pub_key_crt), (const unsigned char*)test_priv_key, strlen(test_priv_key));
 
     data.data = 42;
-    pl->udp.async_bind_port(4439, sockCreatedCb, &data);
+    pl->udp.create(pl, &data.sock);
+    pl->udp.async_bind_port(data.sock, 4439, sockCreatedCb, &data);
 
     test_platform_run(&tp);
 
