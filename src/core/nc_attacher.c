@@ -196,8 +196,21 @@ void nc_attacher_dtls_data_handler(uint8_t channelId, uint64_t sequence,
                                    np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    // TODO: if (!ctx->verified) { verify bs fingerprint }
-    nc_coap_client_handle_packet(ctx->coapClient, buffer, bufferSize, ctx->dtls);
+
+    struct np_platform* pl = ctx->pl;
+    if (bufferSize < 1) {
+        return;
+    }
+
+    uint8_t applicationType = *(pl->buf.start(buffer));
+    if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
+        NABTO_LOG_TRACE(LOG, "Received COAP packet");
+        nc_coap_client_handle_packet(ctx->coapClient, buffer, bufferSize, ctx->dtls);
+    } else if (applicationType == AT_KEEP_ALIVE) {
+        nc_attacher_handle_keep_alive(ctx, buffer, bufferSize);
+    } else {
+        NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
+    }
 }
 
 

@@ -142,6 +142,7 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
             return;
         }
         conn->user = user;
+        nc_client_connection_keep_alive_start(conn);
     }
 }
 
@@ -187,9 +188,7 @@ void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, n
 
 void nc_client_connection_keep_alive_start(struct nc_client_connection* ctx)
 {
-    ctx->keepAlive.kaInterval = 30;
-    ctx->keepAlive.kaRetryInterval = 2;
-    ctx->keepAlive.kaMaxRetries = 15;
+    nc_keep_alive_init(&ctx->keepAlive, ctx->pl, 30, 2, 15);
     nc_keep_alive_wait(&ctx->keepAlive, &nc_client_connection_keep_alive_event, ctx);
 }
 
@@ -217,7 +216,9 @@ void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
                 break;
             case KA_TIMEOUT:
                 // TODO close connection
+                NABTO_LOG_INFO(LOG, "Closed connection because of keep alive timeout.");
 
+                nc_client_connection_close_connection(ctx);
                 break;
             case DTLS_ERROR:
                 return;

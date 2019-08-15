@@ -17,7 +17,7 @@ void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
 void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries)
 {
     NABTO_LOG_TRACE(LOG, "starting keep alive with interval: %u, retryInt: %u, maxRetries: %u", interval, retryInterval, maxRetries);
-
+    ctx->pl = pl;
     ctx->kaInterval = interval;
     ctx->kaRetryInterval = retryInterval;
     ctx->kaMaxRetries = maxRetries;
