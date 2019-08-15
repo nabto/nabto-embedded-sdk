@@ -78,8 +78,6 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
     dev->closing = true;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    // TODO: reintroduce this through the udp platform as to not leak buffers
-    //nm_epoll_close(&dev->pl);
 
     // Send a signal if a function is blocking the network thread.
     nabto_device_platform_signal(&dev->pl);
