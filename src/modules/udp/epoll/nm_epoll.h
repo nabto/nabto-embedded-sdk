@@ -18,6 +18,7 @@
 void nm_unix_udp_epoll_init(struct np_platform* pl_in);
 
 void nm_epoll_close(struct np_platform* pl);
+void nm_epoll_break_wait(struct np_platform* pl);
 
 int nm_epoll_timed_wait(uint32_t ms);
 int nm_epoll_inf_wait(void);

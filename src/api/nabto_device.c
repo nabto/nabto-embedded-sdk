@@ -81,6 +81,9 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     // TODO: reintroduce this through the udp platform as to not leak buffers
     //nm_epoll_close(&dev->pl);
 
+    // Send a signal if a function is blocking the network thread.
+    nabto_device_platform_signal(&dev->pl);
+
     nabto_device_threads_cond_signal(dev->eventCond);
 
     if (dev->networkThread != NULL) {
@@ -96,6 +99,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nabto_device_threads_free_cond(dev->eventCond);
     nabto_device_threads_free_mutex(dev->eventMutex);
 
+    nabto_device_platform_close(&dev->pl);
 
     free(dev->productId);
     free(dev->deviceId);

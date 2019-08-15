@@ -40,6 +40,7 @@ static int nm_epoll_fd = -1;
 static struct np_platform* pl = 0;
 static np_communication_buffer* recv_buf;
 struct epoll_event events[64];
+static int pipefd[2];
 
 /**
  * Handles events from epoll_wait
@@ -97,16 +98,40 @@ void nm_unix_udp_epoll_init(struct np_platform* pl_in) {
     pl->udp.get_local_port    = &nm_epoll_get_local_port;
 
     nm_epoll_fd = epoll_create(42 /*unused*/);
+    if(pipe(pipefd) == -1) {
+        NABTO_LOG_ERROR(LOG, "Failed to create pipe file descriptors");
+    }
+
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLHUP;
+    ev.data.ptr = NULL;
+    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_ADD, pipefd[0], &ev) == -1) {
+        NABTO_LOG_ERROR(LOG, "Cannot add fd to epoll");
+    }
+
     recv_buf = pl->buf.allocate();
     if (nm_epoll_fd == -1) {
         NABTO_LOG_FATAL(LOG, "Failed to create epoll socket: (%i) '%s'.", errno, strerror(errno));
     }
 }
 
+void nm_epoll_break_wait(struct np_platform* pl)
+{
+    // give some activity to epoll_wait.
+    write(pipefd[1], "1", 1);
+}
+
 void nm_epoll_close(struct np_platform* pl)
 {
+    if (epoll_ctl(nm_epoll_fd, EPOLL_CTL_DEL, pipefd[0], NULL) == -1) {
+        NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
+    }
+
+    close(pipefd[0]);
+    close(pipefd[1]);
     close(nm_epoll_fd);
     pl->buf.free(recv_buf);
+
 }
 
 enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket)
@@ -219,7 +244,9 @@ void nm_epoll_read(int nfds)
             continue;
         }
         np_udp_socket* sock = (np_udp_socket*)events[i].data.ptr;
-        nm_epoll_handle_event(sock);
+        if (sock != NULL) {
+            nm_epoll_handle_event(sock);
+        }
     }
 }
 
@@ -237,8 +264,8 @@ int nm_epoll_timed_wait(uint32_t ms)
 
 int nm_epoll_inf_wait()
 {
+
     int nfds;
-//        NABTO_LOG_TRACE(LOG, "epoll waits forever");
     nfds = epoll_wait(nm_epoll_fd, events, 64, -1);
     if (nfds < 0) {
         NABTO_LOG_ERROR(LOG, "Error in epoll wait: (%i) '%s'", errno, strerror(errno));

@@ -25,3 +25,13 @@ void nabto_device_platform_read(int nfds)
 {
     nm_epoll_read(nfds);
 }
+
+void nabto_device_platform_close(struct np_platform* pl)
+{
+    nm_epoll_close(pl);
+}
+
+void nabto_device_platform_signal(struct np_platform* pl)
+{
+    nm_epoll_break_wait(pl);
+}
