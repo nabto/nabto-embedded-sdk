@@ -5,6 +5,7 @@
 #include <api/nabto_device_coap.h>
 #include <api/nabto_api_future_queue.h>
 #include <api/nabto_platform.h>
+#include <api/nabto_device_coap.h>
 #include <platform/np_error_code.h>
 
 #include <platform/np_logging.h>
@@ -91,7 +92,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
         nabto_device_threads_join(dev->coreThread);
     }
 
-    nabto_device_coap_free_resources(device);
+    nabto_device_coap_free_resources(dev);
 
     nabto_device_threads_free_thread(dev->networkThread);
     nabto_device_threads_free_thread(dev->coreThread);
