@@ -34,6 +34,8 @@ NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev)
 void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    nabto_device_threads_free_cond(fut->cond);
+    nabto_device_threads_free_mutex(fut->mutex);
     free(fut);
 }
 
