@@ -275,6 +275,19 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
 static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connection)
 {
     struct np_platform* pl = connection->pl;
+    struct np_dtls_srv_connection* ctx = connection;
+    ctx->ctx.state = CLOSING;
+    // remove the first element until the list is empty
+    while(ctx->sendSentinel.next != &ctx->sendSentinel) {
+        struct np_dtls_srv_send_context* first = ctx->sendSentinel.next;
+        nm_dtls_srv_remove_send_data(first);
+        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
+    }
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.recvEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
     pl->buf.free(connection->ctx.sslRecvBuf);
     pl->buf.free(connection->ctx.sslSendBuffer);
     mbedtls_ssl_free(&connection->ctx.ssl);
