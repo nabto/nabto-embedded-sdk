@@ -23,24 +23,13 @@ enum sslState {
     CLOSING
 };
 
-struct nm_dtls_util_recv_cb_ctx {
-    np_dtls_received_callback cb;
-    void* data;
-};
-
 struct nm_dtls_util_connection_ctx {
     enum sslState state;
-    struct np_event sendEv;
-    struct np_event recvEv;
     struct np_event closeEv;
     struct np_timed_event tEv;
-    struct nc_keep_alive_context keepAliveCtx;
 
     np_dtls_close_callback closeCb;
     void* closeCbData;
-    np_dtls_send_to_callback sendCb;
-    void* sendCbData;
-    struct nm_dtls_util_recv_cb_ctx recvCb;
 
     uint32_t recvCount;
     uint32_t sentCount;
@@ -49,8 +38,6 @@ struct nm_dtls_util_connection_ctx {
 
     uint8_t recvBuffer[NABTO_SSL_RECV_BUFFER_SIZE];
     size_t recvBufferSize;
-    uint8_t* sendBuffer;
-    uint16_t sendBufferSize;
 
     np_communication_buffer* sslRecvBuf;
 //    size_t sslRecvBufSize;

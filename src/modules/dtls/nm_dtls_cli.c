@@ -80,13 +80,13 @@ int nm_dtls_mbedtls_timing_get_delay(void* ctx);
 // Function used to handle events during the connection phase
 void nm_dtls_event_do_one(void* data);
 
+void nm_dtls_cli_remove_send_data(struct np_dtls_cli_send_context* elm);
 // Handle packet from udp
 np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_cli_context* ctx,
                                    np_communication_buffer* buffer, uint16_t bufferSize);
 
 void nm_dtls_cli_start_send_deferred(void* data);
 
-void nm_dtls_event_send_to(void* data);
 void nm_dtls_do_close(void* data, np_error_code ec);
 
 // setup function for the mbedtls context
@@ -183,6 +183,14 @@ void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
 
     pl->buf.free(ctx->ctx.sslRecvBuf);
     pl->buf.free(ctx->ctx.sslSendBuffer);
+
+    ctx->ctx.state = CLOSING;
+    // remove the first element until the list is empty
+    while(ctx->sendSentinel.next != &ctx->sendSentinel) {
+        struct np_dtls_cli_send_context* first = ctx->sendSentinel.next;
+        nm_dtls_cli_remove_send_data(first);
+        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
+    }
 
     mbedtls_pk_free(&ctx->privateKey);
     mbedtls_x509_crt_free(&ctx->publicKey );
@@ -298,37 +306,6 @@ void nm_dtls_event_do_one(void* data)
     }
 }
 
-void nm_dtls_event_send_to(void* data)
-{
-    np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
-    NABTO_LOG_TRACE(LOG, "event_send_to with ctx->ctx.sendCb: %x", ctx->ctx.sendCb);
-    int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ctx->ctx.sendBuffer, ctx->ctx.sendBufferSize );
-    if (ctx->ctx.sendCb == NULL) {
-        ctx->ctx.sentCount++;
-        return;
-    }
-    np_dtls_send_to_callback cb = ctx->ctx.sendCb;
-    ctx->ctx.sendCb = NULL;
-    if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
-        // packet too large
-        cb(NABTO_EC_MALFORMED_PACKET, ctx->ctx.sendCbData);
-    } else if (ret == MBEDTLS_ERR_SSL_WANT_WRITE) {
-        // should not be possible.
-//        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_write returned with error: %i", ret);
-//        nm_dtls_event_do_one(ctx);
-//        np_event_queue_post(ctx->pl, &ctx->ctx.sendEv, &nm_dtls_event_send_to, ctx);
-//        return;
-        cb(NABTO_EC_FAILED, ctx->ctx.sendCbData);
-    } else if (ret < 0) {
-        // unknown error
-        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_write returned with error: %i", ret);
-        cb(NABTO_EC_FAILED, ctx->ctx.sendCbData);
-    } else {
-        ctx->ctx.sentCount++;
-        cb(NABTO_EC_OK, ctx->ctx.sendCbData);
-    }
-}
-
 // insert chunk into double linked list after elm.
 void nm_dtls_cli_insert_send_data(struct np_dtls_cli_send_context* chunk, struct np_dtls_cli_send_context* elm)
 {
@@ -409,16 +386,8 @@ void nm_dtls_do_close(void* data, np_error_code ec){
     void* cbData = ctx->ctx.closeCbData;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
 
-    if (ctx->ctx.recvCb.cb != NULL) {
-        NABTO_LOG_TRACE(LOG, "found Callback function");
-        np_dtls_received_callback cb = ctx->ctx.recvCb.cb;
-        ctx->ctx.recvCb.cb = NULL;
-        cb(NABTO_EC_CONNECTION_CLOSING, 0, 0, NULL, 0, ctx->ctx.recvCb.data);
-    }
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->connEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.recvEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
     if (cb == NULL) {
         NABTO_LOG_ERROR(LOG, "close callback was NULL");

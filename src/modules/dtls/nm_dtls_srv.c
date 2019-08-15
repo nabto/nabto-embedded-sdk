@@ -185,6 +185,7 @@ void nm_dtls_srv_destroy(struct np_dtls_srv* server)
     mbedtls_ctr_drbg_free( &server->ctr_drbg );
     mbedtls_x509_crt_free( &server->publicKey );
     mbedtls_pk_free( &server->privateKey );
+
     free(server);
 }
 
@@ -265,8 +266,6 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.recvEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
     pl->buf.free(connection->ctx.sslRecvBuf);
@@ -307,7 +306,6 @@ void nm_dtls_srv_do_one(void* data)
         } else {
             NABTO_LOG_ERROR(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
             np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
-            free(ctx);
             return;
         }
     } else if (ctx->ctx.state == DATA) {
@@ -320,7 +318,6 @@ void nm_dtls_srv_do_one(void* data)
         } else if (ret > 0) {
             uint64_t seq = *((uint64_t*)ctx->ctx.ssl.in_ctr);
             ctx->ctx.recvCount++;
-            NABTO_LOG_TRACE(LOG, "sending to callback: %u", ctx->ctx.recvCb.cb);
             ctx->dataHandler(ctx->ctx.currentChannelId, seq,
                              ctx->ctx.sslRecvBuf, ret, ctx->senderData);
             return;
@@ -345,8 +342,6 @@ void nm_dtls_srv_close_from_self(struct np_dtls_srv_connection* ctx)
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.recvEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
 
@@ -405,31 +400,22 @@ np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls
     return NABTO_EC_OK;
 }
 
-void nm_dtls_srv_do_close(struct np_dtls_srv_connection* ctx)
-{
-    mbedtls_ssl_free( &ctx->ctx.ssl );
-    np_dtls_close_callback cb = ctx->ctx.closeCb;
-    void* cbData = ctx->ctx.closeCbData;
-//    ctx->pl->conn.cancel_async_recv(ctx->pl, ctx->ctx.conn);
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.sendEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.recvEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
-    free(ctx);
-    ctx = NULL;
-    if(cb != NULL) {
-        cb(NABTO_EC_OK, cbData);
-    }
-}
-
 void nm_dtls_srv_event_close(void* data){
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->sending) {
         np_event_queue_post(ctx->pl, &ctx->ctx.closeEv, &nm_dtls_srv_event_close, ctx);
         return;
     }
-    nm_dtls_srv_do_close(ctx);
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
+    np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
+
+    np_dtls_close_callback cb = ctx->ctx.closeCb;
+    void* cbData = ctx->ctx.closeCbData;
+    ctx->ctx.closeCb = NULL;
+    if(cb != NULL) {
+        cb(NABTO_EC_OK, cbData);
+    }
 }
 
 np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
