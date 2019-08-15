@@ -138,7 +138,7 @@ int main() {
     data.data = 42;
     nc_udp_dispatch_async_create(&data.udp, pl, 0, sockCreatedCb, &data);
 
-    data.dtlsClient = pl->dtlsC.create(pl);
+    pl->dtlsC.create(pl, &data.dtlsClient);
     pl->dtlsC.set_keys(data.dtlsClient, devicePublicKey, strlen((const char*)devicePublicKey), devicePrivateKey, strlen((const char*)devicePrivateKey));
 
     test_platform_run(&tp);

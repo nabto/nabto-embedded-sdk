@@ -109,7 +109,6 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     free(dev->privateKey);
 
     free(dev);
-
 }
 
 /**

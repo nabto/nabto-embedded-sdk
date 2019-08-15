@@ -44,7 +44,6 @@ struct nm_dtls_util_connection_ctx {
 
     uint32_t recvCount;
     uint32_t sentCount;
-    uint8_t sendChannel;
     uint8_t currentChannelId;
     mbedtls_ssl_context ssl;
 

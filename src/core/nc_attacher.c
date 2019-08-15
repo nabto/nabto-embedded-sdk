@@ -14,7 +14,7 @@
 const char* attachPath[2] = {"device", "attach"};
 
 void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
-void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data);
+void nc_attacher_dtls_conn_ok(struct nc_attach_context* ctx);
 void nc_attacher_dtls_closed_cb(const np_error_code ec, void* data);
 void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request, void* userData);
 void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
@@ -22,16 +22,33 @@ void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_
 static void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request, void* data);
 
 
+void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, np_communication_buffer* buffer, uint16_t bufferSize);
+void nc_attacher_keep_alive_start(struct nc_attach_context* ctx);
+void nc_attacher_keep_alive_wait(struct nc_attach_context* ctx);
+void nc_attacher_keep_alive_event(const np_error_code ec, void* data);
+void nc_attacher_keep_alive_send_req(struct nc_attach_context* ctx);
+void nc_attacher_keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length);
+void nc_attacher_keep_alive_packet_sent(const np_error_code ec, void* data);
+
+void nc_attacher_dtls_sender(bool activeChannel,
+                             np_communication_buffer* buffer, uint16_t bufferSize,
+                             np_dtls_cli_send_callback cb, void* data,
+                             void* senderData);
+void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data);
+void nc_attacher_dtls_data_handler(uint8_t channelId, uint64_t sequence,
+                                   np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+
 void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_coap_client_context* coapClient)
 {
     memset(ctx, 0, sizeof(struct nc_attach_context));
     ctx->pl = pl;
-    ctx->dtls = pl->dtlsC.create(pl);
+    pl->dtlsC.create(pl, &ctx->dtls, &nc_attacher_dtls_sender, &nc_attacher_dtls_data_handler, &nc_attacher_dtls_event_handler, ctx);
     ctx->coapClient = coapClient;
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
     ctx->pl->dtlsC.destroy(ctx->dtls);
+    nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
     // cleanup/close dtls connections etc.
 }
 
@@ -39,6 +56,159 @@ np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx, const unsigned
 {
     return ctx->pl->dtlsC.set_keys(ctx->dtls, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
+
+void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, np_communication_buffer* buffer, uint16_t bufferSize)
+{
+    struct np_platform* pl = ctx->pl;
+    uint8_t* start = pl->buf.start(buffer);
+    if (bufferSize < 2) {
+        return;
+    }
+    uint8_t contentType = start[1];
+    if (contentType == CT_KEEP_ALIVE_REQUEST) {
+        nc_attacher_keep_alive_send_response(ctx, start, bufferSize);
+    } else if (contentType == CT_KEEP_ALIVE_RESPONSE) {
+        // Do nothing, the fact that we did get a packet increases the vital counters.
+    }
+}
+
+void nc_attacher_keep_alive_start(struct nc_attach_context* ctx)
+{
+    // TODO get ka settings from attach
+    ctx->keepAlive.kaInterval = 30;
+    ctx->keepAlive.kaRetryInterval = 2;
+    ctx->keepAlive.kaMaxRetries = 15;
+    nc_attacher_keep_alive_wait(ctx);
+}
+
+void nc_attacher_keep_alive_wait(struct nc_attach_context* ctx)
+{
+    np_event_queue_post_timed_event(ctx->pl, &ctx->keepAliveEvent, ctx->keepAlive.kaRetryInterval*1000, &nc_attacher_keep_alive_event, ctx);
+}
+
+void nc_attacher_keep_alive_event(const np_error_code ec, void* data)
+{
+    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    struct np_platform* pl = ctx->pl;
+
+    uint32_t recvCount;
+    uint32_t sentCount;
+    pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
+
+    if (ec != NABTO_EC_OK) {
+        // event probably cancelled
+        return;
+    } else {
+        enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
+        switch(action) {
+            case DO_NOTHING:
+                nc_attacher_keep_alive_wait(ctx);
+                break;
+            case SEND_KA:
+                nc_attacher_keep_alive_send_req(ctx);
+                nc_attacher_keep_alive_wait(ctx);
+                break;
+            case KA_TIMEOUT:
+                // TODO close connection
+
+                break;
+            case DTLS_ERROR:
+                return;
+        }
+    }
+}
+
+void nc_attacher_keep_alive_send_req(struct nc_attach_context* ctx)
+{
+    struct np_platform* pl = ctx->pl;
+    if (ctx->keepAliveIsSending) {
+        return;
+    }
+    uint8_t* begin = ctx->keepAliveBuffer;
+    uint8_t* ptr = begin;
+    *ptr = AT_KEEP_ALIVE; ptr++;
+    *ptr = CT_KEEP_ALIVE_REQUEST; ptr++;
+    memset(ptr, 0, 16); ptr += 16;
+
+    ctx->keepAliveIsSending = true;
+
+    struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    sendCtx->buffer = begin;
+    sendCtx->bufferSize = 18;
+    sendCtx->cb = &nc_attacher_keep_alive_packet_sent;
+    sendCtx->data = ctx;
+
+    pl->dtlsC.async_send_data(pl, ctx->dtls, sendCtx);
+}
+
+void nc_attacher_keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length)
+{
+    struct np_platform* pl = ctx->pl;
+    if (length < 18) {
+        return;
+    }
+    if (ctx->keepAliveIsSending) {
+        return;
+    }
+    uint8_t* begin = ctx->keepAliveBuffer;
+    uint8_t* ptr = begin;
+    *ptr = AT_KEEP_ALIVE; ptr++;
+    *ptr = CT_KEEP_ALIVE_RESPONSE; ptr++;
+    memcpy(ptr, buffer+2, 16);
+    ctx->keepAliveIsSending = true;
+
+    struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    sendCtx->buffer = begin;
+    sendCtx->bufferSize = 18;
+    sendCtx->cb = &nc_attacher_keep_alive_packet_sent;
+    sendCtx->data = ctx;
+
+    pl->dtlsC.async_send_data(pl, ctx->dtls, sendCtx);
+}
+
+void nc_attacher_keep_alive_packet_sent(const np_error_code ec, void* data)
+{
+    struct nc_client_connection* ctx = (struct nc_client_connection*)data;
+    ctx->keepAliveIsSending = false;
+}
+
+void nc_attacher_dtls_sender(bool activeChannel,
+                             np_communication_buffer* buffer, uint16_t bufferSize,
+                             np_dtls_cli_send_callback cb, void* data,
+                             void* senderData)
+{
+    struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
+    nc_udp_dispatch_async_send_to(ctx->udp,
+                                  &ctx->sendCtx, &ctx->ep,
+                                  buffer, bufferSize,
+                                  cb, data);
+}
+
+
+
+void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data)
+{
+    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
+        nc_attacher_dtls_conn_ok(ctx);
+        // start keep alive
+    } else if (event == NP_DTLS_CLI_EVENT_CLOSED) {
+        if (ctx->detachCb) {
+            nc_detached_callback cb = ctx->detachCb;
+            ctx->detachCb = NULL;
+            cb(NABTO_EC_FAILED, ctx->detachCbData);
+        }
+    }
+}
+
+void nc_attacher_dtls_data_handler(uint8_t channelId, uint64_t sequence,
+                                   np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+{
+    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    // TODO: if (!ctx->verified) { verify bs fingerprint }
+    nc_coap_client_handle_packet(ctx->coapClient, buffer, bufferSize, ctx->dtls);
+}
+
 
 np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_platform* pl,
                                        const struct nc_attach_parameters* params,
@@ -54,6 +224,7 @@ np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_
 
     memcpy(ctx->dns, ctx->params->hostname, strlen(ctx->params->hostname)+1);
     ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_dns_cb, ctx);
+    nc_udp_dispatch_set_dtls_cli_context(ctx->udp, ctx->dtls);
     return NABTO_EC_OK;
 }
 
@@ -78,36 +249,31 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
     for (int i = 0; i < recSize; i++) {
     }
     memcpy(&ctx->ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx->pl->dtlsC.async_connect(ctx->pl, ctx->dtls, ctx->udp, ctx->ep, &nc_attacher_dtls_conn_cb, ctx);
+    ctx->pl->dtlsC.connect(ctx->dtls);
 }
 
 
-void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypCtx, void* data)
+void nc_attacher_dtls_conn_ok(struct nc_attach_context* ctx)
 {
-    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     uint8_t* ptr;
     uint8_t* start;
     uint8_t extBuffer[34];
     uint8_t tmpBuffer[512];
     struct nabto_coap_client_request* req;
-    if( ec != NABTO_EC_OK ) {
-        ctx->cb(ec, ctx->cbData);
-        return;
-    }
-    if( ctx->pl->dtlsC.get_alpn_protocol(crypCtx) == NULL ) {
+
+    if( ctx->pl->dtlsC.get_alpn_protocol(ctx->dtls) == NULL ) {
         NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Basestation connection");
-        ctx->pl->dtlsC.async_close(ctx->pl, crypCtx, &nc_attacher_dtls_closed_cb, ctx);
+        ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
         ctx->cb(NABTO_EC_ALPN_FAILED, ctx->cbData);
         return;
     }
     ctx->state = NC_ATTACHER_CONNECTED_TO_BS;
-    ctx->dtls = crypCtx;
 
     req = nabto_coap_client_request_new(nc_coap_client_get_client(ctx->coapClient),
                                         NABTO_COAP_METHOD_POST,
                                         2, attachPath,
                                         &nc_attacher_coap_request_handler,
-                                        ctx, crypCtx);
+                                        ctx, ctx->dtls);
     nabto_coap_client_request_set_content_format(req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
 
 
@@ -131,31 +297,11 @@ void nc_attacher_dtls_conn_cb(const np_error_code ec, np_dtls_cli_context* crypC
 
     nabto_coap_client_request_set_payload(req, start, ptr - start);
     nabto_coap_client_request_send(req);
-
-    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, &nc_attacher_dtls_recv_cb, ctx);
 }
 
 void nc_attacher_dtls_closed_cb(const np_error_code ec, void* data)
 {
     NABTO_LOG_INFO(LOG, "Dtls connection closed callback");
-}
-
-void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                              np_communication_buffer* buffer, uint16_t bufferSize, void* data)
-{
-    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    if (ec != NABTO_EC_OK) {
-        if (ctx->detachCb) {
-            nc_detached_callback cb = ctx->detachCb;
-            ctx->detachCb = NULL;
-            cb(ec, ctx->detachCbData);
-        }
-        return;
-    }
-    NABTO_LOG_TRACE(LOG, "recv cb from dtls, passing to coap");
-    // TODO: if (!ctx->verified) { verify bs fingerprint }
-    nc_coap_client_handle_packet(ctx->coapClient, buffer, bufferSize, ctx->dtls);
-    ctx->pl->dtlsC.async_recv_from(ctx->pl, ctx->dtls, &nc_attacher_dtls_recv_cb, ctx);
 }
 
 void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request, void* data)
@@ -218,7 +364,8 @@ void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request
             ptr++;
             maxRetries = *ptr;
             NABTO_LOG_TRACE(LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u", interval, retryInt, maxRetries);
-            ctx->pl->dtlsC.start_keep_alive(ctx->dtls, interval, retryInt, maxRetries);
+            // TODO
+            //ctx->pl->dtlsC.start_keep_alive(ctx->dtls, interval, retryInt, maxRetries);
         } else if (uint16_read(ptr) == EX_ATTACH_STATUS) {
             uint8_t status;
             ptr += 4; // skip extension header

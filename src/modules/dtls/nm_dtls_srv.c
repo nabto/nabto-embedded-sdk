@@ -117,7 +117,6 @@ void nm_dtls_srv_mbedtls_timing_set_delay(void* ctx, uint32_t intermediateMillis
 int nm_dtls_srv_mbedtls_timing_get_delay(void* ctx);
 
 void nm_dtls_srv_event_send_to(void* data);
-void nm_dtls_srv_ka_cb(const np_error_code ec, void* data);
 
 
 // Get the packet counters for given dtls_cli_context
@@ -133,23 +132,8 @@ const char*  nm_dtls_srv_get_alpn_protocol(struct np_dtls_srv_connection* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ctx.ssl);
 }
 
-// Start keep alive on the dtls connection
-np_error_code nm_dtls_srv_start_keep_alive(struct np_dtls_srv_connection* ctx, uint32_t interval, uint8_t retryInt, uint8_t maxRetries)
-{
-    return nc_keep_alive_start(ctx->pl, &ctx->ctx.keepAliveCtx, interval, retryInt, maxRetries);
-}
-
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
-
-np_error_code nm_dtls_srv_async_discover_mtu(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                             np_dtls_srv_mtu_callback cb, void* data)
-{
-    // TODO: disover mtu
-    // mtu discovery currently segfaults.
-    // nc_keep_alive_async_discover_mtu(pl, &ctx->ctx.keepAliveCtx, cb, data);
-    return NABTO_EC_OK;
-}
 
 np_error_code nm_dtls_srv_init(struct np_platform* pl)
 {
@@ -164,9 +148,7 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl)
     pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;
     pl->dtlsS.get_alpn_protocol = &nm_dtls_srv_get_alpn_protocol;
     pl->dtlsS.get_packet_count = &nm_dtls_srv_get_packet_count;
-    pl->dtlsS.start_keep_alive = &nm_dtls_srv_start_keep_alive;
     pl->dtlsS.handle_packet = &nm_dtls_srv_handle_packet;
-    pl->dtlsS.async_discover_mtu = &nm_dtls_srv_async_discover_mtu;
     return NABTO_EC_OK;
 }
 
@@ -238,7 +220,6 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     (*dtls)->sendSentinel.prev = &(*dtls)->sendSentinel;
 
     NABTO_LOG_TRACE(LOG, "DTLS was allocated at: %u");
-    nc_keep_alive_init_srv(server->pl, &(*dtls)->ctx.keepAliveCtx, (*dtls), &nm_dtls_srv_ka_cb, (*dtls));
     //mbedtls connection initialization
     mbedtls_ssl_init( &((*dtls)->ctx.ssl) );
     if( ( ret = mbedtls_ssl_setup( &((*dtls)->ctx.ssl), &server->conf ) ) != 0 )
@@ -291,15 +272,8 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
     pl->buf.free(connection->ctx.sslRecvBuf);
     pl->buf.free(connection->ctx.sslSendBuffer);
     mbedtls_ssl_free(&connection->ctx.ssl);
-    nc_keep_alive_deinit(&connection->ctx.keepAliveCtx);
     free(connection);
 }
-
-void nm_dtls_srv_ka_cb(const np_error_code ec, void* data)
-{
-    NABTO_LOG_INFO(LOG,"DTLS SRV received keep alive callback with error code: %u", ec);
-}
-
 
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize)
@@ -345,27 +319,7 @@ void nm_dtls_srv_do_one(void* data)
             NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             uint64_t seq = *((uint64_t*)ctx->ctx.ssl.in_ctr);
-            uint8_t* ptr = ctx->pl->buf.start(ctx->ctx.sslRecvBuf);
             ctx->ctx.recvCount++;
-            if (ptr[0] == AT_KEEP_ALIVE) {
-                if (ptr[1] == CT_KEEP_ALIVE_REQUEST) {
-                    NABTO_LOG_INFO(LOG, "Keep alive request, responding immediately");
-                    ptr[1] = CT_KEEP_ALIVE_RESPONSE;
-                    ctx->kaSendCtx.cb = NULL;
-                    ctx->kaSendCtx.data = NULL;
-                    ctx->kaSendCtx.buffer = ptr;
-                    ctx->kaSendCtx.bufferSize = 16 + NABTO_PACKET_HEADER_SIZE;
-                    ctx->activeChannel = false;
-                    nm_dtls_srv_insert_send_data(&ctx->kaSendCtx, &ctx->sendSentinel);
-                    nm_dtls_srv_start_send(ctx);
-                    //int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) ptr, 16 + NABTO_PACKET_HEADER_SIZE );
-                    return;
-                } else {
-                    nc_keep_alive_handle_packet(NABTO_EC_OK, ctx->ctx.currentChannelId, seq,
-                                                ctx->ctx.sslRecvBuf, ret, &ctx->ctx.keepAliveCtx);
-                    return;
-                }
-            }
             NABTO_LOG_TRACE(LOG, "sending to callback: %u", ctx->ctx.recvCb.cb);
             ctx->dataHandler(ctx->ctx.currentChannelId, seq,
                              ctx->ctx.sslRecvBuf, ret, ctx->senderData);
@@ -380,8 +334,6 @@ void nm_dtls_srv_do_one(void* data)
         }
     }
 }
-
-
 
 void nm_dtls_srv_close_from_self(struct np_dtls_srv_connection* ctx)
 {
@@ -489,7 +441,6 @@ np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv
     ctx->ctx.closeCb = cb;
     ctx->ctx.closeCbData = data;
     ctx->ctx.state = CLOSING;
-    nc_keep_alive_stop(ctx->pl, &ctx->ctx.keepAliveCtx);
     mbedtls_ssl_close_notify(&ctx->ctx.ssl);
     np_event_queue_post(ctx->pl, &ctx->ctx.closeEv, &nm_dtls_srv_event_close, ctx);
     return NABTO_EC_OK;

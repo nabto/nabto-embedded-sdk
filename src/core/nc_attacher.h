@@ -41,6 +41,7 @@ struct nc_attach_context {
     nc_detached_callback detachCb;
     void* detachCbData;
     struct nc_udp_dispatch_context* udp;
+    struct np_udp_send_context sendCtx;
     void* cbData;
     np_udp_endpoint ep;
     np_dtls_cli_context* dtls;
@@ -49,6 +50,12 @@ struct nc_attach_context {
     enum nc_attacher_state state;
     bool detaching;
     struct nc_coap_client_context* coapClient;
+
+    struct nc_keep_alive_context keepAlive;
+    struct np_timed_event keepAliveEvent;
+    bool keepAliveIsSending;
+    struct np_dtls_cli_send_context keepAliveSendCtx;
+    uint8_t keepAliveBuffer[18];
 };
 
 struct nc_attach_parameters {

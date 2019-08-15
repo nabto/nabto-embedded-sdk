@@ -5,6 +5,7 @@
 #include <core/nc_rendezvous.h>
 #include <core/nc_stream_manager.h>
 #include <core/nc_coap_server.h>
+#include <core/nc_keep_alive.h>
 //#include <core/nc_device.h>
 
 #define NC_CLIENT_CONNECTION_MAX_CHANNELS 16
@@ -45,6 +46,12 @@ struct nc_client_connection {
     struct np_udp_send_context sendCtx;
     np_error_code ec;
     uint64_t connectionRef;
+
+    struct nc_keep_alive_context keepAlive;
+    struct np_timed_event keepAliveEvent;
+    bool keepAliveIsSending;
+    struct np_dtls_srv_send_context keepAliveSendCtx;
+    uint8_t keepAliveBuffer[18];
 };
 
 np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,

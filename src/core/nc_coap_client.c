@@ -22,8 +22,10 @@ void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* 
     ctx->pl = pl;
     ctx->sendBuffer = pl->buf.allocate();
     ctx->isSending = false;
+    ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
     nabto_coap_client_init(&ctx->client, &nc_coap_client_notify_event, ctx);
     nc_coap_client_set_infinite_stamp(ctx);
+
 }
 
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
@@ -50,27 +52,16 @@ void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
     nc_coap_client_event(ctx);
 }
 
-struct nc_coap_client_send_ctx {
-    uint8_t* buffer;
-    struct nc_coap_client_context* ctx;
-};
-
 void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
 {
+    struct np_platform* pl = ctx->pl;
     if (ctx->isSending) {
         return;
     }
-    // TODO: Using 1400 as it is assumed to fit with the network MTU use mtu discovery result
-    size_t bufferSize = 1400;
-    if (ctx->pl->buf.size(ctx->sendBuffer) < bufferSize) {
-        bufferSize = ctx->pl->buf.size(ctx->sendBuffer);
-    }
 
     // TODO: don't use malloc use new buffer manager
-    struct nc_coap_client_send_ctx* sendCtx = malloc(sizeof(struct nc_coap_client_send_ctx));
-    sendCtx->buffer = (uint8_t*)malloc(1500);
-    uint8_t* end = sendCtx->buffer+1500;
-    sendCtx->ctx = ctx;
+    struct np_dtls_cli_send_context* sendCtx = &ctx->sendCtx;
+    uint8_t* end = sendCtx->buffer+pl->buf.size(ctx->sendBuffer);
 
     void* connection;
     uint8_t* ptr = nabto_coap_client_create_packet(&ctx->client, ctx->pl->ts.now_ms(), sendCtx->buffer, end, &connection);
@@ -79,8 +70,12 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
     } else {
         size_t used = ptr - sendCtx->buffer;
         ctx->isSending = true;
+        sendCtx->cb = &nc_coap_client_send_to_callback;
+        sendCtx->data = ctx;
+        sendCtx->bufferSize = used;
+
         np_dtls_cli_context* dtls = (np_dtls_cli_context*)connection;
-        ctx->pl->dtlsC.async_send_to(ctx->pl, dtls, 0, sendCtx->buffer, used, &nc_coap_client_send_to_callback, sendCtx);
+        ctx->pl->dtlsC.async_send_data(ctx->pl, dtls, sendCtx);
     }
 }
 
@@ -136,12 +131,10 @@ void nc_coap_client_event(struct nc_coap_client_context* ctx)
 
 void nc_coap_client_send_to_callback(const np_error_code ec, void* data)
 {
-    struct nc_coap_client_send_ctx* sendCtx = (struct nc_coap_client_send_ctx*)data;
+    struct nc_coap_client_context* ctx = data;
     NABTO_LOG_TRACE(LOG, "coap_client_send_to_callback");
-    sendCtx->ctx->isSending = false;
-    nc_coap_client_event(sendCtx->ctx);
-    free(sendCtx->buffer);
-    free(sendCtx);
+    ctx->isSending = false;
+    nc_coap_client_event(ctx);
 }
 
 void nc_coap_client_notify_event_callback(void* userData)

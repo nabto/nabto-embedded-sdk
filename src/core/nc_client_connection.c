@@ -20,6 +20,15 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
 void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
                                       np_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
+void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, np_communication_buffer* buffer, uint16_t bufferSize);
+void nc_client_connection_keep_alive_start(struct nc_client_connection* conn);
+void nc_client_connection_keep_alive_wait(struct nc_client_connection* conn);
+void nc_client_connection_keep_alive_event(const np_error_code ec, void* data);
+void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx);
+void nc_client_connection_keep_alive_send_response(struct nc_client_connection* connection, uint8_t* buffer, size_t length);
+void nc_client_connection_keep_alive_packet_sent(const np_error_code ec, void* data);
+
+
 np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
                                         struct nc_client_connection_dispatch_context* dispatch,
                                         struct nc_device_context* device,
@@ -109,7 +118,7 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
         // test fingerprint and alpn
         // if ok try to assign user to connection.
         // if fail, reject the connection.
-        conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connection_mtu_discovered, conn);
+        //conn->pl->dtlsS.async_discover_mtu(conn->pl, conn->dtls, &nc_client_connection_mtu_discovered, conn);
 
         if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
             NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
@@ -138,7 +147,7 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
 
 // handle data from the dtls module
 void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
-                                   np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+                                      np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
     uint8_t applicationType;
@@ -154,9 +163,125 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
     } else if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
         NABTO_LOG_TRACE(LOG, "Received COAP packet");
         nc_coap_server_handle_packet(&conn->device->coapServer, conn, buffer, bufferSize);
+    } else if (applicationType == AT_KEEP_ALIVE) {
+        nc_client_connection_handle_keep_alive(conn, buffer, bufferSize);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
     }
+}
+
+void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, np_communication_buffer* buffer, uint16_t bufferSize)
+{
+    struct np_platform* pl = conn->pl;
+    uint8_t* start = pl->buf.start(buffer);
+    if (bufferSize < 2) {
+        return;
+    }
+    uint8_t contentType = start[1];
+    if (contentType == CT_KEEP_ALIVE_REQUEST) {
+        nc_client_connection_keep_alive_send_response(conn, start, bufferSize);
+    } else if (contentType == CT_KEEP_ALIVE_RESPONSE) {
+        // Do nothing, the fact that we did get a packet increases the vital counters.
+    }
+}
+
+void nc_client_connection_keep_alive_start(struct nc_client_connection* ctx)
+{
+    ctx->keepAlive.kaInterval = 30;
+    ctx->keepAlive.kaRetryInterval = 2;
+    ctx->keepAlive.kaMaxRetries = 15;
+    nc_client_connection_keep_alive_wait(ctx);
+}
+
+void nc_client_connection_keep_alive_wait(struct nc_client_connection* ctx)
+{
+    np_event_queue_post_timed_event(ctx->pl, &ctx->keepAliveEvent, ctx->keepAlive.kaRetryInterval*1000, &nc_client_connection_keep_alive_event, ctx);
+}
+
+void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
+{
+    struct nc_client_connection* ctx = (struct nc_client_connection*)data;
+    struct np_platform* pl = ctx->pl;
+
+    uint32_t recvCount;
+    uint32_t sentCount;
+    pl->dtlsS.get_packet_count(ctx->dtls, &recvCount, &sentCount);
+
+    if (ec != NABTO_EC_OK) {
+        // event probably cancelled
+        return;
+    } else {
+        enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
+        switch(action) {
+            case DO_NOTHING:
+                nc_client_connection_keep_alive_wait(ctx);
+                break;
+            case SEND_KA:
+                nc_client_connection_keep_alive_send_req(ctx);
+                nc_client_connection_keep_alive_wait(ctx);
+                break;
+            case KA_TIMEOUT:
+                // TODO close connection
+
+                break;
+            case DTLS_ERROR:
+                return;
+        }
+    }
+}
+
+void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx)
+{
+    struct np_platform* pl = ctx->pl;
+    if (ctx->keepAliveIsSending) {
+        return;
+    }
+    uint8_t* begin = ctx->keepAliveBuffer;
+    uint8_t* ptr = begin;
+    *ptr = AT_KEEP_ALIVE; ptr++;
+    *ptr = CT_KEEP_ALIVE_REQUEST; ptr++;
+    memset(ptr, 0, 16); ptr += 16;
+
+    ctx->keepAliveIsSending = true;
+
+    struct np_dtls_srv_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    sendCtx->buffer = begin;
+    sendCtx->bufferSize = 18;
+    sendCtx->cb = &nc_client_connection_keep_alive_packet_sent;
+    sendCtx->data = ctx;
+
+    pl->dtlsS.async_send_data(pl, ctx->dtls, sendCtx);
+}
+
+void nc_client_connection_keep_alive_send_response(struct nc_client_connection* ctx, uint8_t* buffer, size_t length)
+{
+    struct np_platform* pl = ctx->pl;
+    if (length < 18) {
+        return;
+    }
+    if (ctx->keepAliveIsSending) {
+        return;
+    }
+    uint8_t* begin = ctx->keepAliveBuffer;
+    uint8_t* ptr = begin;
+    *ptr = AT_KEEP_ALIVE; ptr++;
+    *ptr = CT_KEEP_ALIVE_RESPONSE; ptr++;
+    memcpy(ptr, buffer+2, 16);
+    ctx->keepAliveIsSending = true;
+
+    struct np_dtls_srv_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    sendCtx->buffer = begin;
+    sendCtx->bufferSize = 18;
+    sendCtx->cb = &nc_client_connection_keep_alive_packet_sent;
+    sendCtx->data = ctx;
+
+    pl->dtlsS.async_send_data(pl, ctx->dtls, sendCtx);
+}
+
+void nc_client_connection_keep_alive_packet_sent(const np_error_code ec, void* data)
+{
+    struct nc_client_connection* ctx = (struct nc_client_connection*)data;
+    ctx->keepAliveIsSending = false;
 }
 
 void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
