@@ -32,6 +32,11 @@ struct nc_keep_alive_context
     uint32_t lastSentCount;
     uint8_t lostKeepAlives;
     uint16_t n;
+
+    bool isSending;
+    uint8_t sendBuffer[18];
+    struct np_timed_event keepAliveEvent;
+
 };
 
 enum nc_keep_alive_action{
@@ -41,6 +46,8 @@ enum nc_keep_alive_action{
     DTLS_ERROR
 };
 
+typedef void (*keep_alive_wait_callback)(const np_error_code ec, void* data);
+
 /**
  * Init keep alive with the given parameters
  * @param pl            The platform to use
@@ -49,10 +56,13 @@ enum nc_keep_alive_action{
  * @param retryInterval The interval between retransmissions in case of packet loss
  * @param maxRetries    The maximum amount of retransmissions before a connection is considered dead
  */
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries);
+void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries);
 
 enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx, uint32_t recvCount, uint32_t sentCount);
 
+
+void nc_keep_alive_wait(struct nc_keep_alive_context* ctx, keep_alive_wait_callback cb, void* data);
+void nc_keep_alive_packet_sent(const np_error_code ec, void* data);
 
 /**
  * Sets keep alive settings for a given context.

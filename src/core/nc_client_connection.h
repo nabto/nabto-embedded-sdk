@@ -48,10 +48,7 @@ struct nc_client_connection {
     uint64_t connectionRef;
 
     struct nc_keep_alive_context keepAlive;
-    struct np_timed_event keepAliveEvent;
-    bool keepAliveIsSending;
     struct np_dtls_srv_send_context keepAliveSendCtx;
-    uint8_t keepAliveBuffer[18];
 };
 
 np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,

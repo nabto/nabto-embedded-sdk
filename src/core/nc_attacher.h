@@ -52,10 +52,7 @@ struct nc_attach_context {
     struct nc_coap_client_context* coapClient;
 
     struct nc_keep_alive_context keepAlive;
-    struct np_timed_event keepAliveEvent;
-    bool keepAliveIsSending;
     struct np_dtls_cli_send_context keepAliveSendCtx;
-    uint8_t keepAliveBuffer[18];
 };
 
 struct nc_attach_parameters {

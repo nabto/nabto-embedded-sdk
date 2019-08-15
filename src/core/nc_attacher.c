@@ -24,7 +24,6 @@ static void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* 
 
 void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, np_communication_buffer* buffer, uint16_t bufferSize);
 void nc_attacher_keep_alive_start(struct nc_attach_context* ctx);
-void nc_attacher_keep_alive_wait(struct nc_attach_context* ctx);
 void nc_attacher_keep_alive_event(const np_error_code ec, void* data);
 void nc_attacher_keep_alive_send_req(struct nc_attach_context* ctx);
 void nc_attacher_keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length);
@@ -44,6 +43,8 @@ void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, str
     ctx->pl = pl;
     pl->dtlsC.create(pl, &ctx->dtls, &nc_attacher_dtls_sender, &nc_attacher_dtls_data_handler, &nc_attacher_dtls_event_handler, ctx);
     ctx->coapClient = coapClient;
+
+    nc_keep_alive_init(&ctx->keepAlive, pl, 30, 2, 15);
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
@@ -78,12 +79,7 @@ void nc_attacher_keep_alive_start(struct nc_attach_context* ctx)
     ctx->keepAlive.kaInterval = 30;
     ctx->keepAlive.kaRetryInterval = 2;
     ctx->keepAlive.kaMaxRetries = 15;
-    nc_attacher_keep_alive_wait(ctx);
-}
-
-void nc_attacher_keep_alive_wait(struct nc_attach_context* ctx)
-{
-    np_event_queue_post_timed_event(ctx->pl, &ctx->keepAliveEvent, ctx->keepAlive.kaRetryInterval*1000, &nc_attacher_keep_alive_event, ctx);
+    nc_keep_alive_wait(&ctx->keepAlive, nc_attacher_keep_alive_event, ctx);
 }
 
 void nc_attacher_keep_alive_event(const np_error_code ec, void* data)
@@ -102,11 +98,11 @@ void nc_attacher_keep_alive_event(const np_error_code ec, void* data)
         enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
         switch(action) {
             case DO_NOTHING:
-                nc_attacher_keep_alive_wait(ctx);
+                nc_keep_alive_wait(&ctx->keepAlive, nc_attacher_keep_alive_event, ctx);
                 break;
             case SEND_KA:
                 nc_attacher_keep_alive_send_req(ctx);
-                nc_attacher_keep_alive_wait(ctx);
+                nc_keep_alive_wait(&ctx->keepAlive, nc_attacher_keep_alive_event, ctx);
                 break;
             case KA_TIMEOUT:
                 // TODO close connection
@@ -121,22 +117,22 @@ void nc_attacher_keep_alive_event(const np_error_code ec, void* data)
 void nc_attacher_keep_alive_send_req(struct nc_attach_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
-    if (ctx->keepAliveIsSending) {
+    if (ctx->keepAlive.isSending) {
         return;
     }
-    uint8_t* begin = ctx->keepAliveBuffer;
+    uint8_t* begin = ctx->keepAlive.sendBuffer;
     uint8_t* ptr = begin;
     *ptr = AT_KEEP_ALIVE; ptr++;
     *ptr = CT_KEEP_ALIVE_REQUEST; ptr++;
     memset(ptr, 0, 16); ptr += 16;
 
-    ctx->keepAliveIsSending = true;
+    ctx->keepAlive.isSending = true;
 
     struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
     sendCtx->buffer = begin;
     sendCtx->bufferSize = 18;
-    sendCtx->cb = &nc_attacher_keep_alive_packet_sent;
-    sendCtx->data = ctx;
+    sendCtx->cb = &nc_keep_alive_packet_sent;
+    sendCtx->data = &ctx->keepAlive;
 
     pl->dtlsC.async_send_data(pl, ctx->dtls, sendCtx);
 }
@@ -147,30 +143,25 @@ void nc_attacher_keep_alive_send_response(struct nc_attach_context* ctx, uint8_t
     if (length < 18) {
         return;
     }
-    if (ctx->keepAliveIsSending) {
+    if (ctx->keepAlive.isSending) {
         return;
     }
-    uint8_t* begin = ctx->keepAliveBuffer;
+    uint8_t* begin = ctx->keepAlive.sendBuffer;
     uint8_t* ptr = begin;
     *ptr = AT_KEEP_ALIVE; ptr++;
     *ptr = CT_KEEP_ALIVE_RESPONSE; ptr++;
     memcpy(ptr, buffer+2, 16);
-    ctx->keepAliveIsSending = true;
+    ctx->keepAlive.isSending = true;
 
     struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
     sendCtx->buffer = begin;
     sendCtx->bufferSize = 18;
-    sendCtx->cb = &nc_attacher_keep_alive_packet_sent;
-    sendCtx->data = ctx;
+    sendCtx->cb = &nc_keep_alive_packet_sent;
+    sendCtx->data = &ctx->keepAlive;
 
     pl->dtlsC.async_send_data(pl, ctx->dtls, sendCtx);
 }
 
-void nc_attacher_keep_alive_packet_sent(const np_error_code ec, void* data)
-{
-    struct nc_client_connection* ctx = (struct nc_client_connection*)data;
-    ctx->keepAliveIsSending = false;
-}
 
 void nc_attacher_dtls_sender(bool activeChannel,
                              np_communication_buffer* buffer, uint16_t bufferSize,

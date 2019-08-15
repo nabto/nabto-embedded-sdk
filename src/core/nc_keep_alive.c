@@ -7,7 +7,6 @@
 
 #define LOG NABTO_LOG_MODULE_KEEP_ALIVE
 
-void nc_keep_alive_wait(struct nc_keep_alive_context* ctx);
 void nc_keep_alive_event(const np_error_code ec, void* data);
 void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx);
 void nc_keep_alive_close(struct nc_keep_alive_context* ctx, const np_error_code ec);
@@ -15,7 +14,7 @@ void nc_keep_alive_send_cb(const np_error_code ec, void* data);
 void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
                         np_communication_buffer* buf, uint16_t bufferSize, void* data);
 
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries)
+void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries)
 {
     NABTO_LOG_TRACE(LOG, "starting keep alive with interval: %u, retryInt: %u, maxRetries: %u", interval, retryInterval, maxRetries);
 
@@ -45,4 +44,16 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
             return DO_NOTHING;
         }
     }
+}
+
+void nc_keep_alive_wait(struct nc_keep_alive_context* ctx, keep_alive_wait_callback cb, void* data)
+{
+    np_event_queue_post_timed_event(ctx->pl, &ctx->keepAliveEvent, ctx->kaRetryInterval*1000, cb, data);
+}
+
+
+void nc_keep_alive_packet_sent(const np_error_code ec, void* data)
+{
+    struct nc_keep_alive_context* ctx = data;
+    ctx->isSending = false;
 }

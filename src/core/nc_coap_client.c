@@ -20,6 +20,7 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
 void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
 {
     ctx->pl = pl;
+    // TODO allocate buffer for each send.
     ctx->sendBuffer = pl->buf.allocate();
     ctx->isSending = false;
     ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
