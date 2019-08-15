@@ -29,9 +29,23 @@ nabto_device_coap_add_resource(NabtoDevice* device,
 
     nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, resource);
 
+    resource->next = dev->coapResourceHead;
+    dev->coapResourceHead = resource;
+
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return NABTO_DEVICE_EC_OK;
+}
+
+void nabto_device_coap_free_resources(struct nabto_device_context* device)
+{
+    struct nabto_device_coap_resource* resource = device->coapResourceHead;
+    while(resource != NULL) {
+        struct nabto_device_coap_resource* current = resource;
+        resource = resource->next;
+        free(current);
+    }
+    device->coapResourceHead = NULL;
 }
 
 /* NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource) */

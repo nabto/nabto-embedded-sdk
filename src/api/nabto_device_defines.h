@@ -10,6 +10,8 @@
 void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const NabtoDeviceError ec);
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec);
 
+struct nabto_device_coap_resource;
+
 struct nabto_device_context {
     struct np_platform pl;
     struct nc_device_context core;
@@ -26,6 +28,7 @@ struct nabto_device_context {
     bool closing;
 
     NabtoDeviceFuture* queueHead;
+    struct nabto_device_coap_resource* coapResourceHead;
 
     char appName[33];
     char appVersion[33];

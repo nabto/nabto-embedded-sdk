@@ -93,6 +93,8 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
         nabto_device_threads_join(dev->coreThread);
     }
 
+    nabto_device_coap_free_resources(device);
+
     nabto_device_threads_free_thread(dev->networkThread);
     nabto_device_threads_free_thread(dev->coreThread);
 
