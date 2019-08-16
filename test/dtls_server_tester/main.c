@@ -109,7 +109,7 @@ void udpSendCb(const np_error_code ec, void* data)
     free(udpSendCtx);
 }
 
-void dtls_send_listener(bool channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
+void dtls_send_listener(uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
     struct test_context* ctx =  (struct test_context*) listenerData;
     NABTO_LOG_INFO(0, "Dtls wants to send to udp");
     // TODO: send the dtls data somewhere find a way to use the UDP socket without client_connect_dispatch

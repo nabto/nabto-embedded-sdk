@@ -45,7 +45,6 @@ struct nm_dtls_util_connection_ctx {
 
 };
 
-
 typedef struct nm_dtls_util_connection_ctx nm_dtls_util_connection_ctx;
 
 np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp);

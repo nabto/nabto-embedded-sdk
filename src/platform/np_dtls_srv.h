@@ -4,13 +4,15 @@
 #include <platform/np_error_code.h>
 #include <platform/np_dtls.h>
 
+#define NP_DTLS_SRV_DEFAULT_CHANNEL_ID 0xff
+
 enum np_dtls_srv_event {
     NP_DTLS_SRV_EVENT_CLOSED,
     NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE
 };
 
 typedef void (*np_dtls_srv_send_callback)(const np_error_code ec, void* data);
-typedef void (*np_dtls_srv_sender)(bool activeChannel,
+typedef void (*np_dtls_srv_sender)(uint8_t channelId,
                                    np_communication_buffer* buffer, uint16_t bufferSize,
                                    np_dtls_srv_send_callback cb, void* data,
                                    void* senderData);
@@ -21,6 +23,7 @@ typedef void (*np_dtls_srv_data_handler)(uint8_t channelId, uint64_t sequence,
 struct np_dtls_srv_send_context {
     uint8_t* buffer;
     uint16_t bufferSize;
+    uint8_t channelId;
     np_dtls_send_to_callback cb;
     void* data;
     struct np_dtls_srv_send_context* next;

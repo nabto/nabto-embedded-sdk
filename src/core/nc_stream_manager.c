@@ -148,6 +148,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     ctx->sendCtx.bufferSize = ptr-start+ret;
     ctx->sendCtx.cb = &nc_stream_manager_send_rst_callback;
     ctx->sendCtx.data = ctx;
+    ctx->sendCtx.channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     ctx->pl->dtlsS.async_send_data(ctx->pl, dtls, &ctx->sendCtx);
 }
 

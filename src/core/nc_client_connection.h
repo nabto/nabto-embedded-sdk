@@ -35,7 +35,8 @@ struct nc_client_connection {
     struct nc_rendezvous_context* rendezvous;
     struct nc_connection_id id;
     struct nc_connection_channel currentChannel;
-    struct nc_connection_channel lastChannel;
+    struct nc_connection_channel alternativeChannel;
+    uint64_t currentMaxSequence;
     struct nc_device_context* device;
     struct nc_iam_user* user;
 
@@ -46,6 +47,7 @@ struct nc_client_connection {
     struct np_udp_send_context sendCtx;
     np_error_code ec;
     uint64_t connectionRef;
+
 
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_srv_send_context keepAliveSendCtx;

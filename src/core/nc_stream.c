@@ -226,6 +226,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     sendCtx->bufferSize = ptr-start+packetSize;
     sendCtx->cb = &nc_stream_dtls_send_callback;
     sendCtx->data = sendCtx;
+    sendCtx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, sendCtx);
 }
 

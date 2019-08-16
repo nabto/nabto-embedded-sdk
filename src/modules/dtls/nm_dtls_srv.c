@@ -39,7 +39,7 @@ struct np_dtls_srv_connection {
     np_dtls_srv_event_handler eventHandler;
     void* senderData;
     bool sending;
-    bool activeChannel;
+    uint8_t channelId;
 };
 
 struct np_dtls_srv {
@@ -213,7 +213,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     (*dtls)->senderData = data;
     (*dtls)->ctx.sslRecvBuf = server->pl->buf.allocate();
     (*dtls)->ctx.sslSendBuffer = server->pl->buf.allocate();
-    (*dtls)->activeChannel = true;
+    (*dtls)->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     (*dtls)->sending = false;
 
     (*dtls)->sendSentinel.next = &(*dtls)->sendSentinel;
@@ -281,7 +281,9 @@ np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_s
     ctx->ctx.currentChannelId = channelId;
     ctx->ctx.recvBuffer = ctx->pl->buf.start(buffer);
     ctx->ctx.recvBufferSize = bufferSize;
+    ctx->channelId = channelId;
     nm_dtls_srv_do_one(ctx);
+    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     ctx->ctx.recvBuffer = NULL;
     ctx->ctx.recvBufferSize = 0;
     return NABTO_EC_OK;
@@ -369,7 +371,10 @@ void nm_dtls_srv_start_send_deferred(void* data)
     struct np_dtls_srv_send_context* next = ctx->sendSentinel.next;
     nm_dtls_srv_remove_send_data(next);
 
+    ctx->channelId = next->channelId;
+
     int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) next->buffer, next->bufferSize );
+    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     if (next->cb == NULL) {
         ctx->ctx.sentCount++;
     } else if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
@@ -523,14 +528,12 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
         NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         ctx->sending = true;
-        ctx->activeChannel = true;
-        ctx->sender(ctx->activeChannel, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
+        ctx->sender(ctx->channelId, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
 
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;
     }
-
 }
 
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data)
