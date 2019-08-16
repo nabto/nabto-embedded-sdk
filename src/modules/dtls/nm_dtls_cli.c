@@ -28,7 +28,6 @@
 struct np_dtls_cli_context {
     struct np_platform* pl;
     struct nm_dtls_util_connection_ctx ctx;
-    struct np_event connEv;
 
     struct np_dtls_cli_send_context sendSentinel;
     struct np_event startSendEvent;
@@ -388,7 +387,6 @@ void nm_dtls_do_close(void* data, np_error_code ec){
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
 
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->connEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
     if (cb == NULL) {
         NABTO_LOG_ERROR(LOG, "close callback was NULL");

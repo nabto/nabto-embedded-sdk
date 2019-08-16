@@ -26,15 +26,12 @@ const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
 struct np_dtls_srv_connection {
     struct np_platform* pl;
-    struct nc_client_connect* conn;
     struct nm_dtls_util_connection_ctx ctx;
-    struct np_dtls_srv_send_context kaSendCtx;
 
     struct np_dtls_srv_send_context sendSentinel;
     struct np_event startSendEvent;
     struct np_event deferredEventEvent;
     enum np_dtls_srv_event deferredEvent;
-
 
     np_dtls_srv_sender sender;
     np_dtls_srv_data_handler dataHandler;

@@ -84,10 +84,9 @@ void nc_rendezvous_handle_coap_p2p_stun(struct nabto_coap_server_request* reques
 {
     struct nc_stun_coap_context* ctx = (struct nc_stun_coap_context*)data;
 
-    // A bit magic but the coap server uses this connection.
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
 
-    if (connection == NULL || nc_iam_check_access(connection, "system:Rendezvous", NULL, 0) != NABTO_EC_OK) {
+    if (connection == NULL || nc_iam_check_access(connection, "P2P:Stun", NULL, 0) != NABTO_EC_OK) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE_FORBIDDEN, "Access denied");
         return;
     }

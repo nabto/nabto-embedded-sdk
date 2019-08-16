@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include <iostream>
 
 using json = nlohmann::json;
 
@@ -319,28 +320,29 @@ json addAllPolicy = R"(
 {
   "Version": 1,
   "Name": "AllowAll",
-  "Statement": {
-    "Action": [ "test:CoapGet", "test:CoapPost" ],
-    "Effect": "Allow",
-    "Condition": { "StringEqual": [ "${foo}", "bar" ] }
-  }
+  "Statements": [
+    {
+      "Actions": [ "Test:CoapGet", "Test:CoapPost", "P2P:Stun", "P2P:Rendezvous" ],
+      "Allow": true
+    }
+  ]
 }
 )"_json;
 
+#define CHECK_CALL(call) do { NabtoDeviceError ec; ec = call; if (ec != NABTO_DEVICE_EC_OK) { std::cout << "call failed " #call << " ec: " << nabto_device_error_get_message(ec) << std::endl; exit(1); } } while (0)
+
 void load_policies(NabtoDevice* device)
 {
-
     std::vector<uint8_t> cbor = json::to_cbor(addAllPolicy);
-    nabto_device_iam_policies_create(device, "All", cbor.data(), cbor.size());
-
+    CHECK_CALL(nabto_device_iam_policies_create(device, "All", cbor.data(), cbor.size()));
 }
 
 void init_iam(NabtoDevice* device)
 {
     load_policies(device);
-    nabto_device_iam_users_create(device, "admin");
-    nabto_device_iam_roles_create(device, "admin-role");
-    nabto_device_iam_users_add_role(device, "admin", "admin-role");
-    nabto_device_iam_roles_add_policy(device, "admin-role", "All");
-    nabto_device_iam_set_default_role(device, "admin-role");
+    CHECK_CALL(nabto_device_iam_users_create(device, "admin"));
+    CHECK_CALL(nabto_device_iam_roles_create(device, "admin-role"));
+    CHECK_CALL(nabto_device_iam_users_add_role(device, "admin", "admin-role"));
+    CHECK_CALL(nabto_device_iam_roles_add_policy(device, "admin-role", "All"));
+    CHECK_CALL(nabto_device_iam_set_default_role(device, "admin-role"));
 }
