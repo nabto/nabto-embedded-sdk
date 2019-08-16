@@ -280,9 +280,11 @@ np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_s
     NABTO_LOG_TRACE(LOG, "Handle packet called");
     // TODO: remove channel IDs from dtls srv
     ctx->ctx.currentChannelId = channelId;
-    memcpy(ctx->ctx.recvBuffer, ctx->pl->buf.start(buffer), bufferSize);
+    ctx->ctx.recvBuffer = ctx->pl->buf.start(buffer);
     ctx->ctx.recvBufferSize = bufferSize;
     nm_dtls_srv_do_one(ctx);
+    ctx->ctx.recvBuffer = NULL;
+    ctx->ctx.recvBufferSize = 0;
     return NABTO_EC_OK;
 }
 

@@ -36,7 +36,7 @@ struct nm_dtls_util_connection_ctx {
     uint8_t currentChannelId;
     mbedtls_ssl_context ssl;
 
-    uint8_t recvBuffer[NABTO_SSL_RECV_BUFFER_SIZE];
+    uint8_t* recvBuffer;
     size_t recvBufferSize;
 
     np_communication_buffer* sslRecvBuf;

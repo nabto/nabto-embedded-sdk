@@ -424,9 +424,11 @@ np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_c
                                    np_communication_buffer* buffer, uint16_t bufferSize)
 {
     NABTO_LOG_TRACE(LOG, "connection data received callback");
-    memcpy(ctx->ctx.recvBuffer, ctx->pl->buf.start(buffer), bufferSize);
+    ctx->ctx.recvBuffer = ctx->pl->buf.start(buffer);
     ctx->ctx.recvBufferSize = bufferSize;
     nm_dtls_event_do_one(ctx);
+    ctx->ctx.recvBuffer = NULL;
+    ctx->ctx.recvBufferSize = 0;
     return NABTO_EC_OK;
 }
 
