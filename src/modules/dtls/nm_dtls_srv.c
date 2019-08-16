@@ -18,7 +18,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#define NABTO_SSL_RECV_BUFFER_SIZE 4096
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 #define DEBUG_LEVEL 0

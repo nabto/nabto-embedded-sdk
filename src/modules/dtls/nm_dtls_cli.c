@@ -19,7 +19,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define NABTO_SSL_RECV_BUFFER_SIZE 4096
+
+// TODO we need to set the right server name
 #define SERVER_NAME "localhost"
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0

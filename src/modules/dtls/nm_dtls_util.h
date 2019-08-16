@@ -13,10 +13,6 @@
 #include <mbedtls/ssl.h>
 
 
-#define NABTO_SSL_RECV_BUFFER_SIZE 4096
-#define NABTO_DTLS_MAX_RECV_CBS 5
-#define SERVER_NAME "localhost"
-
 enum sslState {
     CONNECTING,
     DATA,
