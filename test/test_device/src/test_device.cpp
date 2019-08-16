@@ -280,10 +280,13 @@ void run_device()
         return;
     }
 
+    NabtoDeviceCoapResource* getResource;
+    NabtoDeviceCoapResource* postResource;
+
     const char* coapTestGet[]  = {"test", "get", NULL};
     const char* coapTestPost[] = {"test", "post", NULL};
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &handle_coap_get_request, dev);
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &handle_coap_post_request, dev);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &getResource);
+    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &postResource);
 
     // wait for ctrl-c
     while (true) {

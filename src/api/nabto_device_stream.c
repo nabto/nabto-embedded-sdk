@@ -16,7 +16,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* devi
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_stream* str = (struct nabto_device_stream*)malloc(sizeof(struct nabto_device_stream));
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    struct nabto_device_future* fut = nabto_device_future_new(dev);
     memset(str, 0, sizeof(struct nabto_device_stream));
     *stream = (NabtoDeviceStream*)str;
     str->listenFut = fut;
@@ -24,7 +24,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* devi
     nabto_device_threads_mutex_lock(dev->eventMutex);
     nc_stream_manager_set_listener(&dev->core.streamManager, &nabto_device_stream_listener_callback, str);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
@@ -42,18 +42,18 @@ void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
-    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    struct nabto_device_future* fut = nabto_device_future_new(str->dev);
     if (str->acceptFut) {
         nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
-        return fut;
+        return (NabtoDeviceFuture*)fut;
     }
     str->acceptFut = fut;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
     nabto_stream_set_application_event_callback(str->stream, &nabto_device_stream_application_event_callback, str);
     nabto_stream_accept(str->stream);
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream)
@@ -73,11 +73,11 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStre
                                                 size_t* readLength)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
-    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    struct nabto_device_future* fut = nabto_device_future_new(str->dev);
     if (str->readSomeFut || str->readAllFut) {
         nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
-        return fut;
+        return (NabtoDeviceFuture*)fut;
     }
     str->readAllFut = fut;
     str->readBuffer = buffer;
@@ -87,7 +87,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStre
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
     nabto_device_stream_do_read(str);
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStream* stream,
@@ -95,11 +95,11 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStr
                                                  size_t* readLength)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
-    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    struct nabto_device_future* fut = nabto_device_future_new(str->dev);
     if (str->readSomeFut || str->readAllFut) {
         nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
-        return fut;
+        return (NabtoDeviceFuture*)fut;
     }
     str->readSomeFut = fut;
     str->readBuffer = buffer;
@@ -109,18 +109,18 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStr
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
     nabto_device_stream_do_read(str);
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
                                              const void* buffer, size_t bufferLength)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
-    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    struct nabto_device_future* fut = nabto_device_future_new(str->dev);
     if (str->writeFut) {
         nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
-        return fut;
+        return (NabtoDeviceFuture*)fut;
     }
     str->writeFut = fut;
     str->writeBuffer = buffer;
@@ -128,21 +128,21 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream*
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
     nabto_device_stream_do_write_all(str);
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
-    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)str->dev);
+    struct nabto_device_future* fut = nabto_device_future_new(str->dev);
     if (str->closeFut) {
         nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
-        return fut;
+        return (NabtoDeviceFuture*)fut;
     }
     str->closeFut = fut;
     nabto_device_stream_handle_close(str);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 /*******************************************

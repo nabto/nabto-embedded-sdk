@@ -12,6 +12,38 @@
 
 using json = nlohmann::json;
 
+class HeatPump;
+
+typedef std::function<void (NabtoDeviceCoapRequest* request, HeatPump* application)> CoapHandler;
+
+class HeatPumpCoapRequestHandler {
+ public:
+    ~HeatPumpCoapRequestHandler() {}
+    HeatPumpCoapRequestHandler(HeatPump* hp, const char** pathSegments, CoapHandler handler);
+
+    void startListen();
+
+    static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
+    {
+        if (ec != NABTO_DEVICE_EC_OK) {
+            return;
+        }
+        nabto_device_future_free(fut);
+        HeatPumpCoapRequestHandler* handler = (HeatPumpCoapRequestHandler*)data;
+        handler->handler_(handler->request_, handler->heatPump_);
+        handler->startListen();
+    }
+
+    HeatPump* heatPump_;
+    //  wait for a request
+    NabtoDeviceFuture* future_;
+    NabtoDeviceCoapRequest* request_;
+    // on this resource
+    NabtoDeviceCoapResource* resource_;
+    // invoke this function if the resource is hit
+    CoapHandler handler_;
+};
+
 class HeatPump {
   public:
 
@@ -94,6 +126,13 @@ class HeatPump {
     }
 
     std::unique_ptr<std::thread> pairingThread_;
+
+    std::unique_ptr<HeatPumpCoapRequestHandler> coapGetState;
+    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPower;
+    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostMode;
+    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostTarget;
+    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPairingButton;
+
   private:
 
     static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);

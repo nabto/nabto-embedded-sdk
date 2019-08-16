@@ -15,25 +15,26 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_add_resource(NabtoDevice* device,
                                NabtoDeviceCoapMethod method,
                                const char** pathSegments,
-                               NabtoDeviceCoapResourceHandler handler,
-                               void* userData)
+                               NabtoDeviceCoapResource** resource)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)malloc(sizeof(struct nabto_device_coap_resource));
+    struct nabto_device_coap_resource* res = calloc(1,sizeof(struct nabto_device_coap_resource));
+    if (res == NULL) {
+        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
+    }
 
-    resource->dev = dev;
-    resource->handler = handler;
-    resource->userData = userData;
+    res->dev = dev;
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, resource);
+    nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res);
 
-    resource->next = dev->coapResourceHead;
-    dev->coapResourceHead = resource;
+    res->next = dev->coapResourceHead;
+    dev->coapResourceHead = res;
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
+    *resource = (NabtoDeviceCoapResource*)res;
     return NABTO_DEVICE_EC_OK;
 }
 
@@ -46,6 +47,27 @@ void nabto_device_coap_free_resources(struct nabto_device_context* device)
         free(current);
     }
     device->coapResourceHead = NULL;
+}
+
+NabtoDeviceFuture* NABTO_DEVICE_API
+nabto_device_coap_resource_listen(NabtoDeviceCoapResource* resource, NabtoDeviceCoapRequest** request)
+{
+    struct nabto_device_coap_resource* res = (struct nabto_device_coap_resource*)resource;
+    struct nabto_device_context* dev = res->dev;
+    struct nabto_device_future* fut = nabto_device_future_new(dev);
+    if (fut == NULL) {
+        return NULL;
+    }
+    if (res->fut) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_queue_post(&dev->queueHead, fut);
+        return (NabtoDeviceFuture*)fut;
+    }
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    res->fut = fut;
+    res->futureRequest = (struct nabto_device_coap_request**)request;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return (NabtoDeviceFuture*)fut;
 }
 
 /* NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource) */
@@ -193,24 +215,24 @@ nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method)
     return NABTO_COAP_CODE_GET;
 }
 
-void nabto_device_coap_resource_future_resolver(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
-{
-   struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)data;
-   req->handler((NabtoDeviceCoapRequest*)req, req->userData);
-}
 
 void nabto_device_coap_resource_handler(struct nabto_coap_server_request* request, void* userData)
 {
     struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)userData;
 
-    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)malloc(sizeof(struct nabto_device_coap_request));
-    req->dev = resource->dev;
-    req->req = request;
-    req->handler = resource->handler;
-    req->userData = resource->userData;
+    if (resource->fut == NULL) {
+        // return 500
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,03), "Handler busy");
+        return;
+    }
 
-    NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)resource->dev);
-    nabto_api_future_set_error_code(fut, NABTO_DEVICE_EC_OK);
-    nabto_device_future_set_callback(fut, &nabto_device_coap_resource_future_resolver, req);
-    nabto_api_future_queue_post(&resource->dev->queueHead, fut);
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)malloc(sizeof(struct nabto_device_coap_request));
+    struct nabto_device_context* dev = resource->dev;
+    req->dev = dev;
+    req->req = request;
+    *(resource->futureRequest) = req;
+
+    nabto_api_future_set_error_code(resource->fut, NABTO_DEVICE_EC_OK);
+    nabto_api_future_queue_post(&dev->queueHead, resource->fut);
+    resource->fut = NULL;
 }

@@ -3,8 +3,10 @@
 
 #include <nabto/nabto_device.h>
 
-void nabto_api_future_queue_execute_all(NabtoDeviceFuture** queue);
+struct nabto_device_future;
 
-void nabto_api_future_queue_post(NabtoDeviceFuture** head, NabtoDeviceFuture* future);
+void nabto_api_future_queue_execute_all(struct nabto_device_future** queue);
+
+void nabto_api_future_queue_post(struct nabto_device_future** head, struct nabto_device_future* future);
 
 #endif // NABTO_API_FUTURE_QUEUE_H

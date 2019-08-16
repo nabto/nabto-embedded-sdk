@@ -3,6 +3,7 @@
 #include <api/nabto_device_defines.h>
 #include <api/nabto_device_stream.h>
 #include <api/nabto_device_coap.h>
+#include <api/nabto_device_future.h>
 #include <api/nabto_api_future_queue.h>
 #include <api/nabto_platform.h>
 #include <api/nabto_device_coap.h>
@@ -26,7 +27,6 @@ const char* stunHost = "stun.nabto.net";
 void* nabto_device_network_thread(void* data);
 void* nabto_device_core_thread(void* data);
 void nabto_device_init_platform(struct np_platform* pl);
-NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev);
 void nabto_device_free_threads(struct nabto_device_context* dev);
 NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
 
@@ -324,11 +324,11 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_close(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    struct nabto_device_future* fut = nabto_device_future_new(dev);
     dev->closeFut = fut;
     nc_device_close(&dev->core, &nabto_device_close_cb, dev);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 
@@ -430,7 +430,7 @@ void* nabto_device_core_thread(void* data)
 /*
  * Posting futures for resolving on the future queue
  */
-void nabto_device_post_future(NabtoDevice* device, NabtoDeviceFuture* fut) {
+void nabto_device_post_future(NabtoDevice* device, struct nabto_device_future* fut) {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_api_future_queue_post(&dev->queueHead, fut);
 }

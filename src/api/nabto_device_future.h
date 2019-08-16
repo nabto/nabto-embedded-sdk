@@ -6,6 +6,8 @@
 
 #include <nabto_types.h>
 
+struct nabto_device_context;
+
 struct nabto_device_future {
     NabtoDevice* dev;
     NabtoDeviceFutureCallback cb;
@@ -18,11 +20,11 @@ struct nabto_device_future {
     struct nabto_device_future* next;
 };
 
-NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* dev);
+struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev);
 
-NabtoDeviceError nabto_device_future_resolve(NabtoDeviceFuture* future);
+NabtoDeviceError nabto_device_future_resolve(struct nabto_device_future* fut);
 
-void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const NabtoDeviceError ec);
+void nabto_api_future_set_error_code(struct nabto_device_future* fut, const NabtoDeviceError ec);
 
 
 #endif // NABTO_DEVICE_FUTURE_H

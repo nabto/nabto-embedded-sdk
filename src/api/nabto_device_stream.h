@@ -10,19 +10,19 @@ struct nabto_device_context;
 
 struct nabto_device_stream {
     struct nabto_stream* stream;
-    NabtoDeviceFuture* acceptFut;
-    NabtoDeviceFuture* listenFut;
-    NabtoDeviceFuture* readSomeFut;
-    NabtoDeviceFuture* readAllFut;
+    struct nabto_device_future* acceptFut;
+    struct nabto_device_future* listenFut;
+    struct nabto_device_future* readSomeFut;
+    struct nabto_device_future* readAllFut;
     uint8_t* readBuffer;
     size_t readBufferLength;
     size_t* readLength;
 
-    NabtoDeviceFuture* writeFut;
+    struct nabto_device_future* writeFut;
     const uint8_t* writeBuffer;
     size_t writeBufferLength;
 
-    NabtoDeviceFuture* closeFut;
+    struct nabto_device_future* closeFut;
     struct nabto_device_context* dev;
 
     // coordinate freeing of this context which can both be initiated by the user and by the system
