@@ -58,6 +58,8 @@ typedef void (*keep_alive_wait_callback)(const np_error_code ec, void* data);
  */
 void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries);
 
+void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx);
+
 enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx, uint32_t recvCount, uint32_t sentCount);
 
 

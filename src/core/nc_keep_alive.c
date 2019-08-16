@@ -25,6 +25,12 @@ void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* p
     return;
 }
 
+void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
+{
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->keepAliveEvent);
+}
+
+
 enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx, uint32_t recvCount, uint32_t sentCount)
 {
 //    NABTO_LOG_TRACE(LOG, "lastRecvCount: %u, recvCount: %u, LastSentCount: %u, sentCount: %u", ctx->lastRecvCount, recvCount, ctx->lastSentCount, sentCount);

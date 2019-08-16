@@ -113,6 +113,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
     struct np_platform* pl = conn->pl;
+    nc_keep_alive_deinit(&conn->keepAlive);
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);
     nc_stream_manager_remove_connection(conn->streamManager, conn);
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);

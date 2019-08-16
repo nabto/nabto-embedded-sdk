@@ -40,7 +40,6 @@ struct nc_stream_test_context {
     uint8_t devTestData[10];
     uint16_t devTestDataSize;
     struct nabto_stream* devStream;
-
 };
 
 struct nc_stream_test_context ctx;
