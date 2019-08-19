@@ -49,7 +49,9 @@ void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, str
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
     ctx->pl->dtlsC.destroy(ctx->dtls);
-    nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
+    if (ctx->udp != NULL) {
+        nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
+    }
     // cleanup/close dtls connections etc.
 }
 

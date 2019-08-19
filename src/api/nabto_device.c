@@ -60,6 +60,17 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         free(dev);
         return NULL;
     }
+    dev->eventCond = nabto_device_threads_create_condition();
+    if (dev->eventCond == NULL) {
+        NABTO_LOG_ERROR(LOG, "condition init has failed");
+        nabto_device_free_threads(dev);
+        return NULL;
+    }
+    dev->coreThread = nabto_device_threads_create_thread();
+    dev->networkThread = nabto_device_threads_create_thread();
+    if (dev->coreThread == NULL || dev->networkThread == NULL) {
+        nabto_device_free_threads(dev);
+    }
 
     return (NabtoDevice*)dev;
 }
@@ -250,17 +261,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
         NABTO_LOG_ERROR(LOG, "Missing deviceId or productdId");
         return NABTO_DEVICE_EC_FAILED;
     }
-    dev->eventCond = nabto_device_threads_create_condition();
-    if (dev->eventCond == NULL) {
-        NABTO_LOG_ERROR(LOG, "condition init has failed");
-        nabto_device_free_threads(dev);
-        return NABTO_DEVICE_EC_FAILED;
-    }
-    dev->coreThread = nabto_device_threads_create_thread();
-    dev->networkThread = nabto_device_threads_create_thread();
-    if (dev->coreThread == NULL || dev->networkThread == NULL) {
-        nabto_device_free_threads(dev);
-    }
+
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
     // Init platform
