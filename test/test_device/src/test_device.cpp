@@ -286,11 +286,19 @@ void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* da
     return;
 }
 
+void handle_stream_accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* data);
+
 void handle_new_stream(struct streamContext* streamContext)
 {
     NabtoDeviceFuture* fut = nabto_device_stream_accept(streamContext->stream);
-    nabto_device_future_wait(fut);
-    if (nabto_device_future_error_code(fut) != NABTO_DEVICE_EC_OK) {
+    nabto_device_future_set_callback(fut, handle_stream_accepted, streamContext);
+}
+
+void handle_stream_accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* data)
+{
+    nabto_device_future_free(future);
+    struct streamContext* streamContext = (struct streamContext*)data;
+    if (ec != NABTO_DEVICE_EC_OK) {
         printf("stream accept failed, dropping stream");
         nabto_device_stream_free(streamContext->stream);
         free(streamContext);
@@ -299,9 +307,10 @@ void handle_new_stream(struct streamContext* streamContext)
         NabtoDeviceConnectionRef connectionId = nabto_device_stream_get_connection_ref(streamContext->stream);
         printf("accepted new stream connectionId: %" PRIu64 "" NEWLINE, connectionId);
     }
-    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
+    NabtoDeviceFuture* fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
     nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
 }
+
 void init_iam(NabtoDevice* device);
 void run_device()
 {

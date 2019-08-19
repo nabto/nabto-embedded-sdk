@@ -333,11 +333,11 @@ void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data)
     cb(ec, conn->sentData);
 }
 
-
 void nc_client_connection_async_send_to_udp(uint8_t channel,
                                             np_communication_buffer* buffer, uint16_t bufferSize,
                                             np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
+    NABTO_LOG_TRACE(LOG, "nc_client_connection_async_send_to_udp");
     struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
     conn->sentCb = cb;
     conn->sentData = data;

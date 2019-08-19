@@ -50,11 +50,11 @@ struct np_dtls_srv {
     mbedtls_pk_context privateKey;
 };
 
-// insert chunk into double linked list after elm.
-void nm_dtls_srv_insert_send_data(struct np_dtls_srv_send_context* chunk, struct np_dtls_srv_send_context* elm)
+// insert chunk into end of double linked list.
+void nm_dtls_srv_insert_send_data(struct np_dtls_srv_connection* connection, struct np_dtls_srv_send_context* chunk)
 {
-    struct np_dtls_srv_send_context* before = elm;
-    struct np_dtls_srv_send_context* after = elm->next;
+    struct np_dtls_srv_send_context* before = connection->sendSentinel.prev;
+    struct np_dtls_srv_send_context* after = &connection->sendSentinel;
 
     before->next = chunk;
     chunk->next = after;
@@ -361,6 +361,7 @@ void nm_dtls_srv_start_send_deferred(void* data)
     }
 
     if (ctx->sendSentinel.next == &ctx->sendSentinel) {
+        NABTO_LOG_TRACE(LOG, "empty send queue");
         // empty send queue
         return;
     }
@@ -369,7 +370,7 @@ void nm_dtls_srv_start_send_deferred(void* data)
     nm_dtls_srv_remove_send_data(next);
 
     ctx->channelId = next->channelId;
-
+    NABTO_LOG_TRACE(LOG, "sending dtls data packet");
     int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) next->buffer, next->bufferSize );
     ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     if (next->cb == NULL) {
@@ -386,9 +387,6 @@ void nm_dtls_srv_start_send_deferred(void* data)
         ctx->ctx.sentCount++;
         next->cb(NABTO_EC_OK, next->data);
     }
-
-    // can we send more packets?
-    nm_dtls_srv_start_send(ctx);
 }
 
 np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
@@ -398,7 +396,7 @@ np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls
         return NABTO_EC_CONNECTION_CLOSING;
     }
     NABTO_LOG_TRACE(LOG, "enqueued dtls application data packet");
-    nm_dtls_srv_insert_send_data(sendCtx, &ctx->sendSentinel);
+    nm_dtls_srv_insert_send_data(ctx, sendCtx);
     nm_dtls_srv_start_send(ctx);
     return NABTO_EC_OK;
 }
@@ -535,7 +533,7 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
 
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data)
 {
-
+    NABTO_LOG_TRACE(LOG, "dtls sent packet to udp layer");
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (data == NULL) {
         return;
