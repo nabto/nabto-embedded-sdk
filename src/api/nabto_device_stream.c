@@ -14,15 +14,21 @@
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream)
 {
+    *stream = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    struct nabto_device_stream* str = (struct nabto_device_stream*)malloc(sizeof(struct nabto_device_stream));
-    struct nabto_device_future* fut = nabto_device_future_new(dev);
-    memset(str, 0, sizeof(struct nabto_device_stream));
-    *stream = (NabtoDeviceStream*)str;
-    str->listenFut = fut;
-    str->dev = dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_stream_manager_set_listener(&dev->core.streamManager, &nabto_device_stream_listener_callback, str);
+    struct nabto_device_future* fut = nabto_device_future_new(dev);
+    if (!fut) {
+        return NULL;
+    }
+    if (dev->streamListenFuture) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_queue_post(&dev->queueHead, fut);
+    } else {
+        dev->streamListenFuture = fut;
+        dev->streamListenStream = (struct nabto_device_stream**)stream;
+        nc_stream_manager_set_listener(&dev->core.streamManager, &nabto_device_stream_listener_callback, dev);
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
 }
@@ -43,15 +49,16 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     struct nabto_device_future* fut = nabto_device_future_new(str->dev);
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
     if (str->acceptFut) {
         nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
-        return (NabtoDeviceFuture*)fut;
+    } else {
+        str->acceptFut = fut;
+
+        nabto_stream_set_application_event_callback(str->stream, &nabto_device_stream_application_event_callback, str);
+        nabto_stream_accept(str->stream);
     }
-    str->acceptFut = fut;
-    nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    nabto_stream_set_application_event_callback(str->stream, &nabto_device_stream_application_event_callback, str);
-    nabto_stream_accept(str->stream);
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
 }
@@ -171,13 +178,22 @@ void nabto_device_stream_resolve_read(struct nabto_device_stream* str, np_error_
 
 void nabto_device_stream_listener_callback(np_error_code ec, struct nabto_stream* stream, void* data)
 {
-    struct nabto_device_stream* str = (struct nabto_device_stream*)data;
-    NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", str->listenFut);
-    str->stream = stream;
-    if (str->listenFut) {
-        nabto_api_future_set_error_code(str->listenFut, nabto_device_error_core_to_api(ec));
-        nabto_api_future_queue_post(&str->dev->queueHead, str->listenFut);
-        str->listenFut = NULL;
+    struct nabto_device_context* dev = (struct nabto_device_context*)data;
+    NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", dev->streamListenFuture);
+
+    if (dev->streamListenFuture) {
+
+        if (ec == NABTO_DEVICE_EC_OK) {
+            struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
+            str->stream = stream;
+            str->dev = dev;
+            *(dev->streamListenStream) = str;
+        }
+
+        nabto_api_future_set_error_code(dev->streamListenFuture, nabto_device_error_core_to_api(ec));
+        nabto_api_future_queue_post(&dev->queueHead, dev->streamListenFuture);
+
+        dev->streamListenFuture = NULL;
     } else {
         NABTO_LOG_INFO(LOG, "stream_listener had no listen future");
     }

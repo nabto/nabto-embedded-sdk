@@ -129,9 +129,9 @@ class StreamHandler {
     }
 
     void startListen() {
+        printf("StreamHandler::startListen\n");
         NabtoDeviceFuture* future = nabto_device_stream_listen(device_, &stream_);
         nabto_device_future_set_callback(future, &StreamHandler::gotStream, this);
-
     }
 
     static void gotStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData) {
@@ -377,8 +377,6 @@ void run_device()
 
     printf("closing\n");
     nabto_device_free(dev);
-
-    exit(0);
 }
 
 int main(int argc, const char** argv)

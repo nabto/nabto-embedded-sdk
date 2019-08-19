@@ -11,7 +11,6 @@ struct nabto_device_context;
 struct nabto_device_stream {
     struct nabto_stream* stream;
     struct nabto_device_future* acceptFut;
-    struct nabto_device_future* listenFut;
     struct nabto_device_future* readSomeFut;
     struct nabto_device_future* readAllFut;
     uint8_t* readBuffer;
