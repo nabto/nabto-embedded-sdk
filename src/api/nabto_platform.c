@@ -8,7 +8,7 @@
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
-#include <modules/udp/epoll/nm_epoll.h>
+
 
 #include <string.h>
 

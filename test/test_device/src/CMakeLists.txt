@@ -1,3 +1,5 @@
+set (CMAKE_CXX_STANDARD 14)
+
 set(src
   gopt/gopt.c
   test_device.cpp

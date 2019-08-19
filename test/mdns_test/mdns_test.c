@@ -1,6 +1,5 @@
 #include <modules/mdns/nm_mdns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
-#include <modules/udp/epoll/nm_epoll.h>
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <platform/np_timestamp.h>

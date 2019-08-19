@@ -54,14 +54,15 @@ static int pipefd[2];
 /**
  * Api function declarations
  */
-void nm_select_unix_async_create(np_udp_socket_created_callback cb, void* data);
-void nm_select_unix_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data);
+np_error_code nm_select_unix_create(struct np_platform* pl, np_udp_socket** sock);
+void nm_select_unix_async_bind(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
+void nm_select_unix_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data);
 void nm_select_unix_async_send_to(struct np_udp_send_context* ctx);
 void nm_select_unix_async_recv_from(np_udp_socket* socket,
                                     np_udp_packet_received_callback cb, void* data);
 enum np_ip_address_type nm_select_unix_get_protocol(np_udp_socket* socket);
 uint16_t nm_select_unix_get_local_port(np_udp_socket* socket);
-void nm_select_unix_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data);
+void nm_select_unix_destroy(np_udp_socket* socket);
 int nm_select_unix_inf_wait();
 int nm_select_unix_timed_wait(uint32_t ms);
 void nm_select_unix_read(int nfds);
@@ -87,14 +88,15 @@ void nm_select_unix_free_socket(np_udp_socket* sock);
 void nm_unix_udp_select_init(struct np_platform *pl_in)
 {
     pl = pl_in;
-    pl->udp.async_create     = &nm_select_unix_async_create;
+    pl->udp.create           = &nm_select_unix_create;
+    pl->udp.destroy          = &nm_select_unix_destroy;
+    pl->udp.async_bind       = &nm_select_unix_async_bind;
     pl->udp.async_bind_port  = &nm_select_unix_async_bind_port;
     pl->udp.async_send_to    = &nm_select_unix_async_send_to;
     pl->udp.async_recv_from  = &nm_select_unix_async_recv_from;
     pl->udp.get_protocol     = &nm_select_unix_get_protocol;
     pl->udp.get_local_ip     = &nm_select_unix_get_local_ip;
     pl->udp.get_local_port   = &nm_select_unix_get_local_port;
-    pl->udp.async_destroy    = &nm_select_unix_async_destroy;
 
     recvBuf = pl->buf.allocate();
     if(pipe(pipefd) == -1) {
@@ -103,24 +105,30 @@ void nm_unix_udp_select_init(struct np_platform *pl_in)
     nm_select_unix_build_fd_sets();
 }
 
-void nm_select_unix_async_create(np_udp_socket_created_callback cb, void* data)
+np_error_code nm_select_unix_create(struct np_platform* pl, np_udp_socket** sock)
 {
-    np_udp_socket* sock;
+    np_udp_socket* s = calloc(1, sizeof(np_udp_socket));
+    *sock = s;
+    return NABTO_EC_OK;
+}
 
-    sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
-    memset(sock, 0, sizeof(np_udp_socket));
+void nm_select_unix_destroy(np_udp_socket* sock)
+{
+
+}
+
+
+
+void nm_select_unix_async_bind(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+{
     sock->created.cb = cb;
     sock->created.data = data;
     sock->closing = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_event_create, sock);
 }
 
-void nm_select_unix_async_bind_port(uint16_t port, np_udp_socket_created_callback cb, void* data)
+void nm_select_unix_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data)
 {
-    np_udp_socket* sock;
-
-    sock = (np_udp_socket*)malloc(sizeof(np_udp_socket));
-    memset(sock, 0, sizeof(np_udp_socket));
     sock->created.cb = cb;
     sock->created.data = data;
     sock->created.port = port;
@@ -290,6 +298,17 @@ void nm_select_unix_read(int nfds)
     nm_select_unix_build_fd_sets();
 }
 
+void nm_select_unix_close(struct np_platform* pl)
+{
+    // TODO
+}
+
+void nm_select_unix_break_wait(struct np_platform* pl)
+{
+    // TODO break select
+}
+
+
 /**
  * Helper functions start
  */
@@ -315,10 +334,10 @@ void nm_select_unix_event_create(void* data)
         }
         head = sock;
         write(pipefd[1], "1", 1);
-        sock->created.cb(NABTO_EC_OK, sock, sock->created.data);
+        sock->created.cb(NABTO_EC_OK, sock->created.data);
         return;
     } else {
-        sock->created.cb(ec, NULL, sock->created.data);
+        sock->created.cb(ec, sock->created.data);
         free(sock);
         return;
     }
@@ -351,7 +370,7 @@ void nm_select_unix_event_bind_port(void* data)
             NABTO_LOG_ERROR(LOG,"Unable to bind to port %i: (%i) '%s'.", sock->created.port, errno, strerror(errno));
             ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
             close(sock->sock);
-            sock->created.cb(ec, NULL, sock->created.data);
+            sock->created.cb(ec, sock->created.data);
             free(sock);
             return;
         }
@@ -361,10 +380,10 @@ void nm_select_unix_event_bind_port(void* data)
         }
         head = sock;
         write(pipefd[1], "1", 1);
-        sock->created.cb(NABTO_EC_OK, sock, sock->created.data);
+        sock->created.cb(NABTO_EC_OK, sock->created.data);
         return;
     } else {
-        sock->created.cb(ec, NULL, sock->created.data);
+        sock->created.cb(ec, sock->created.data);
         free(sock);
         return;
     }

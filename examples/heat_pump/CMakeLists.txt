@@ -1,3 +1,5 @@
+set (CMAKE_CXX_STANDARD 14)
+
 set(src
   src/main.cpp
   src/heat_pump.cpp

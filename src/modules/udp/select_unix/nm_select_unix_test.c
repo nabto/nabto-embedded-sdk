@@ -1,6 +1,7 @@
 #include "nm_select_unix.h"
 
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
@@ -16,7 +17,7 @@ struct np_udp_send_context sendCtx1;
 struct np_udp_send_context sendCtx2;
 uint32_t counter = 0;
 void sockSendCtx1(np_udp_packet_sent_callback cb);
-void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data);
+void sock3Created(const np_error_code ec, void* data);
 
 void sendCb1(const np_error_code ec, void* data)
 {
@@ -54,35 +55,35 @@ void sock2Recv(const np_error_code ec, struct np_udp_endpoint ep,
     nm_select_unix_async_recv_from(sock2, &sock2Recv, NULL);
 }
 
-void sock2Created(const np_error_code ec, np_udp_socket* socket, void* data)
+void sock2Created(const np_error_code ec, void* data)
 {
     NABTO_LOG_INFO(0, "socket2 created");
-    sock2 = socket;
     sockSendCtx1(&sendCb1);
     nm_select_unix_async_recv_from(sock2, &sock2Recv, NULL);
 }
 
-void sockCreated(const np_error_code ec, np_udp_socket* socket, void* data)
+void sockCreated(const np_error_code ec, void* data)
 {
     NABTO_LOG_INFO(0, "socket created");
-    sock = socket;
-    nm_select_unix_async_bind_port(4242, &sock2Created, NULL);
+    nm_select_unix_create(&pl, &sock2);
+    nm_select_unix_async_bind_port(sock2, 4242, &sock2Created, NULL);
 }
 
-void sock3DestroyedCb(const np_error_code ec, void* data)
+void sock3DestroyedCb()
 {
     NABTO_LOG_INFO(0, "socket3 destroyed");
     if (counter >= 10) {
         return;
     }
-    nm_select_unix_async_create(&sock3Created, NULL);
+    nm_select_unix_create(&pl, &sock3);
+    nm_select_unix_async_bind(sock3, &sock3Created, NULL);
 }
 
-void sock3Created(const np_error_code ec, np_udp_socket* socket, void* data)
+void sock3Created(const np_error_code ec, void* data)
 {
     NABTO_LOG_INFO(0, "socket3 created");
-    sock3 = socket;
-    nm_select_unix_async_destroy(sock3, &sock3DestroyedCb, NULL);
+    nm_select_unix_destroy(sock3);
+    sock3DestroyedCb();
 }
 
 int main()
@@ -99,8 +100,11 @@ int main()
     sendCtx1.buffer = pl.buf.allocate();
     sendCtx2.buffer = pl.buf.allocate();
 
-    nm_select_unix_async_create(&sockCreated, NULL);
-    nm_select_unix_async_create(&sock3Created, NULL);
+    nm_select_unix_create(&pl, &sock);
+    nm_select_unix_create(&pl, &sock3);
+
+    nm_select_unix_async_bind(sock, &sockCreated, NULL);
+    nm_select_unix_async_bind(sock3, &sock3Created, NULL);
 
     size_t nIps = nm_select_unix_get_local_ip(localIps, 5);
     NABTO_LOG_INFO(0, "Found %u local IP's", nIps);
