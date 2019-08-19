@@ -178,7 +178,9 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
     char* fingerprint;
     nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
 
-    std::cout << "Allow client with fingerprint: " << std::string(fingerprint) << " [yn]" << std::endl;
+    std::string fp(fingerprint);
+    nabto_device_string_free(fingerprint);
+    std::cout << "Allow client with fingerprint: " << fp << " [yn]" << std::endl;
 
     std::thread t(readInput);
     t.detach();
@@ -191,7 +193,7 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
         result = answer;
     }
 
-    if (result == true && pairUser(application, std::string(fingerprint))) {
+    if (result == true && pairUser(application, fp)) {
         auto response = nabto_device_coap_create_response(request);
         nabto_device_coap_response_set_code(response, 205);
         nabto_device_coap_response_ready(response);
