@@ -23,12 +23,15 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
     nc_rendezvous_init(&device->rendezvous, pl);
     nc_stun_init(&device->stun, pl);
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
+    nc_stream_manager_init(&device->streamManager, pl);
+
 
 }
 
 void nc_device_deinit(struct nc_device_context* device) {
     struct np_platform* pl = device->pl;
 
+    nc_stream_manager_deinit(&device->streamManager);
     nc_client_connection_dispatch_deinit(&device->clientConnect);
     nc_stun_deinit(&device->stun);
     nc_rendezvous_deinit(&device->rendezvous);
@@ -134,7 +137,6 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->stopping = false;
     dev->stunHost = stunHost;
-    nc_stream_manager_init(&dev->streamManager, pl);
 
     dev->attachParams.appName = appName;
     dev->attachParams.appVersion = appVersion;

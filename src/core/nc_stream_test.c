@@ -119,7 +119,7 @@ void nc_stream_test_send_to_cli(void* data)
     nc_stream_manager_handle_packet(&ctx.cliCtx, &ctx.cliConn, &ctx.devBuffer, ctx.devBufferSize);
 }
 
-void nc_stream_test_listener_cb(struct nabto_stream* stream, void* data)
+void nc_stream_test_listener_cb(np_error_code ec, struct nabto_stream* stream, void* data)
 {
     NABTO_LOG_ERROR(0, "Test listener callback ");
     ctx.devStream = stream;

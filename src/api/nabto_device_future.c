@@ -7,7 +7,8 @@
 #define LOG NABTO_LOG_MODULE_API
 
 typedef uint32_t nabto_device_duration_t_;
-void nabto_device_post_future(NabtoDevice* device, struct nabto_device_future* fut);
+
+
 
 struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev)
 {
@@ -28,7 +29,7 @@ struct nabto_device_future* nabto_device_future_new(struct nabto_device_context*
         free(fut);
         return NULL;
     }
-    return (NabtoDeviceFuture*)fut;
+    return fut;
 }
 
 void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)

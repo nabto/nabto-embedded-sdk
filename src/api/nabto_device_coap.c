@@ -44,6 +44,11 @@ void nabto_device_coap_free_resources(struct nabto_device_context* device)
     while(resource != NULL) {
         struct nabto_device_coap_resource* current = resource;
         resource = resource->next;
+        if (current->fut != NULL) {
+            nabto_api_future_set_error_code(current->fut, nabto_device_error_core_to_api(NABTO_EC_ABORTED));
+            nabto_api_future_queue_post(&device->queueHead, current->fut);
+            current->fut = NULL;
+        }
         free(current);
     }
     device->coapResourceHead = NULL;

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <signal.h>
 
 #include <string>
 #include <vector>
@@ -41,7 +42,113 @@ struct streamContext {
 #define NEWLINE "\n"
 #endif
 
+void my_handler(int s){
+    printf("Caught signal %d\n",s);
+}
+
+void handle_new_stream(struct streamContext* streamContext);
 void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data);
+
+class AbstractCoapHandler {
+ public:
+    AbstractCoapHandler(NabtoDeviceCoapResource* resource) : resource_(resource)
+    {
+        start();
+    }
+    virtual ~AbstractCoapHandler() {}
+    void start() {
+        auto future = nabto_device_coap_resource_listen(resource_, &request_);
+        nabto_device_future_set_callback(future, &AbstractCoapHandler::called, this);
+    }
+
+    static void called(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        printf("AbstractCoapHandler::called\n");
+        if (ec == NABTO_DEVICE_EC_OK) {
+            AbstractCoapHandler* handler = (AbstractCoapHandler*)userData;
+            handler->handleRequest(handler->request_);
+            handler->start();
+        }
+        nabto_device_future_free(future);
+    }
+
+    virtual void handleRequest(NabtoDeviceCoapRequest* request) = 0;
+    NabtoDeviceCoapResource* resource_;
+    NabtoDeviceCoapRequest* request_;
+};
+
+class GetHandler : public AbstractCoapHandler {
+ public:
+    GetHandler(NabtoDeviceCoapResource* resource) : AbstractCoapHandler(resource) {}
+    void handleRequest(NabtoDeviceCoapRequest* request)
+    {
+        NabtoDeviceConnectionRef connectionId = nabto_device_coap_request_get_connection_ref(request);
+        printf("Received CoAP GET request, connectionId: %" PRIu64 "" NEWLINE, connectionId);
+        const char* responseData = "helloWorld";
+        NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
+        nabto_device_coap_response_set_code(response, 205);
+        nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
+        nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
+        nabto_device_coap_response_ready(response);
+    }
+};
+
+class PostHandler : public AbstractCoapHandler {
+ public:
+    PostHandler(NabtoDeviceCoapResource* resource) : AbstractCoapHandler(resource) {}
+    void handleRequest(NabtoDeviceCoapRequest* request)
+    {
+        const char* responseData = "helloWorld";
+        uint16_t contentFormat;
+        NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
+        nabto_device_coap_request_get_content_format(request, &contentFormat);
+        if (contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) {
+            const char* responseData = "Invalid content format";
+            printf("Received CoAP POST request with invalid content format" NEWLINE);
+            nabto_device_coap_response_set_code(response, 400);
+            nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
+            nabto_device_coap_response_ready(response);
+        } else {
+            char* payload = (char*)malloc(1500);
+            size_t payloadLength;
+            nabto_device_coap_request_get_payload(request, (void**)&payload, &payloadLength);
+            printf("Received CoAP POST request with a %li byte payload: " NEWLINE "%s", payloadLength, payload);
+            nabto_device_coap_response_set_code(response, 205);
+            nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
+            nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
+            nabto_device_coap_response_ready(response);
+        }
+    }
+};
+
+
+class StreamHandler {
+ public:
+    StreamHandler(NabtoDevice* device) : device_(device) {
+        startListen();
+    }
+
+    void startListen() {
+        NabtoDeviceFuture* future = nabto_device_stream_listen(device_, &stream_);
+        nabto_device_future_set_callback(future, &StreamHandler::gotStream, this);
+
+    }
+
+    static void gotStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData) {
+        StreamHandler* sh = (StreamHandler*)userData;
+        printf("StreamHandler::gotStream\n");
+        if (ec == NABTO_DEVICE_EC_OK) {
+            struct streamContext* strCtx = (struct streamContext*)malloc(sizeof(struct streamContext));
+            strCtx->stream = sh->stream_;
+            handle_new_stream(strCtx);
+            sh->startListen();
+        }
+        nabto_device_future_free(future);
+    }
+
+    NabtoDevice* device_;
+    NabtoDeviceStream* stream_;
+};
 
 void print_help(const char* message)
 {
@@ -110,6 +217,7 @@ bool parse_args(int argc, const char** argv)
         return false;
     }
 
+    gopt_free(options);
     return true;
 }
 
@@ -131,42 +239,6 @@ bool load_key_from_file(const char* filename)
 
     fclose(f);
     return true;
-}
-
-void handle_coap_get_request(NabtoDeviceCoapRequest* request, void* data)
-{
-    NabtoDeviceConnectionRef connectionId = nabto_device_coap_request_get_connection_ref(request);
-    printf("Received CoAP GET request, connectionId: %" PRIu64 "" NEWLINE, connectionId);
-    const char* responseData = "helloWorld";
-    NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-    nabto_device_coap_response_set_code(response, 205);
-    nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
-    nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
-    nabto_device_coap_response_ready(response);
-}
-
-void handle_coap_post_request(NabtoDeviceCoapRequest* request, void* data)
-{
-    const char* responseData = "helloWorld";
-    uint16_t contentFormat;
-    NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-    nabto_device_coap_request_get_content_format(request, &contentFormat);
-    if (contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) {
-        const char* responseData = "Invalid content format";
-        printf("Received CoAP POST request with invalid content format" NEWLINE);
-        nabto_device_coap_response_set_code(response, 400);
-        nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
-        nabto_device_coap_response_ready(response);
-    } else {
-        char* payload = (char*)malloc(1500);
-        size_t payloadLength;
-        nabto_device_coap_request_get_payload(request, (void**)&payload, &payloadLength);
-        printf("Received CoAP POST request with a %li byte payload: " NEWLINE "%s", payloadLength, payload);
-        nabto_device_coap_response_set_code(response, 205);
-        nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
-        nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
-        nabto_device_coap_response_ready(response);
-    }
 }
 
 void stream_closed_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
@@ -233,9 +305,9 @@ void handle_new_stream(struct streamContext* streamContext)
 void init_iam(NabtoDevice* device);
 void run_device()
 {
+    NabtoDevice* dev;
     NabtoDeviceError ec;
-    NabtoDeviceStream* stream;
-    NabtoDevice* dev = nabto_device_new();
+    dev = nabto_device_new();
     nabto_device_log_set_std_out_callback(dev);
     char* logLevel = getenv("NABTO_LOG_LEVEL");
     if (logLevel != NULL) {
@@ -288,19 +360,25 @@ void run_device()
     nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &getResource);
     nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &postResource);
 
-    // wait for ctrl-c
-    while (true) {
-        NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, &stream);
-        nabto_device_future_wait(fut);
-        if (nabto_device_future_error_code(fut) != NABTO_DEVICE_EC_OK) {
-            printf("Stream listen returned with an error");
-            return;
-        }
-        nabto_device_future_free(fut);
-        struct streamContext* strCtx = (struct streamContext*)malloc(sizeof(struct streamContext));
-        strCtx->stream = stream;
-        handle_new_stream(strCtx);
-    }
+    auto getHandler = std::make_unique<GetHandler>(getResource);
+    auto postHandler = std::make_unique<PostHandler>(postResource);
+
+    auto streamHandler = std::make_unique<StreamHandler>(dev);
+
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
+    pause();
+
+    printf("closing\n");
+    nabto_device_free(dev);
+
+    exit(0);
 }
 
 int main(int argc, const char** argv)

@@ -78,6 +78,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nc_device_deinit(&dev->core);
 
     dev->closing = true;
+    nabto_device_coap_free_resources(dev);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     // Send a signal if a function is blocking the network thread.
@@ -91,8 +92,6 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     if (dev->coreThread != NULL) {
         nabto_device_threads_join(dev->coreThread);
     }
-
-    nabto_device_coap_free_resources(dev);
 
     nabto_device_threads_free_thread(dev->networkThread);
     nabto_device_threads_free_thread(dev->coreThread);
@@ -430,8 +429,7 @@ void* nabto_device_core_thread(void* data)
 /*
  * Posting futures for resolving on the future queue
  */
-void nabto_device_post_future(NabtoDevice* device, struct nabto_device_future* fut) {
-    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+void nabto_device_post_future(struct nabto_device_context* dev, struct nabto_device_future* fut) {
     nabto_api_future_queue_post(&dev->queueHead, fut);
 }
 

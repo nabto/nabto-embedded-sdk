@@ -169,13 +169,13 @@ void nabto_device_stream_resolve_read(struct nabto_device_stream* str, np_error_
     }
 }
 
-void nabto_device_stream_listener_callback(struct nabto_stream* stream, void* data)
+void nabto_device_stream_listener_callback(np_error_code ec, struct nabto_stream* stream, void* data)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)data;
     NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", str->listenFut);
     str->stream = stream;
     if (str->listenFut) {
-        nabto_api_future_set_error_code(str->listenFut, NABTO_DEVICE_EC_OK);
+        nabto_api_future_set_error_code(str->listenFut, nabto_device_error_core_to_api(ec));
         nabto_api_future_queue_post(&str->dev->queueHead, str->listenFut);
         str->listenFut = NULL;
     } else {

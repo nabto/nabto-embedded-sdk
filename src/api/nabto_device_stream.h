@@ -29,7 +29,7 @@ struct nabto_device_stream {
     bool readyToFree;
 };
 
-void nabto_device_stream_listener_callback(struct nabto_stream* stream, void* data);
+void nabto_device_stream_listener_callback(np_error_code ec, struct nabto_stream* stream, void* data);
 void nabto_device_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
 void nabto_device_stream_do_read(struct nabto_device_stream* str);
 void nabto_device_stream_do_write_all(struct nabto_device_stream* str);

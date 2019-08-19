@@ -24,6 +24,14 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
     ctx->pl = pl;
 }
 
+void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
+{
+    if (ctx->cb != NULL) {
+        ctx->cb(NABTO_EC_ABORTED, NULL, ctx->cbData);
+        ctx->cb = NULL;
+    }
+}
+
 void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data)
 {
     ctx->cbData = data;
@@ -80,7 +88,7 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
 {
     NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
     if (ctx->cb != NULL) {
-        ctx->cb(&stream->stream, ctx->cbData);
+        ctx->cb(NABTO_EC_OK, &stream->stream, ctx->cbData);
     }
     NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
     return;
