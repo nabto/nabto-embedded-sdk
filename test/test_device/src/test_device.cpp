@@ -109,7 +109,7 @@ class PostHandler : public AbstractCoapHandler {
             nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
             nabto_device_coap_response_ready(response);
         } else {
-            char* payload = (char*)malloc(1500);
+            char* payload;
             size_t payloadLength;
             nabto_device_coap_request_get_payload(request, (void**)&payload, &payloadLength);
             printf("Received CoAP POST request with a %li byte payload: " NEWLINE "%s", payloadLength, payload);
