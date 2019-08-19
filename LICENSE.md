@@ -1,4 +1,3 @@
 ## Nabto Embedded SDK License
 
-// TODO
-The software is copyrighted by nabto, it can be used with a valid license use the nabto software.
+The software is copyrighted by nabto, it can be used with a valid license to use the nabto software.
