@@ -7,7 +7,6 @@
 #include <core/nc_device.h>
 #include <modules/mdns/nm_mdns.h>
 
-void nabto_api_future_set_error_code(NabtoDeviceFuture* future, const NabtoDeviceError ec);
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec);
 
 struct nabto_device_coap_resource;
@@ -20,15 +19,18 @@ struct nabto_device_context {
     struct nabto_device_thread* networkThread;
     struct nabto_device_mutex* eventMutex;
     struct nabto_device_condition* eventCond;
-    NabtoDeviceFuture* iamChangedFuture;
+    struct nabto_device_future* iamChangedFuture;
 
     bool enableMdns;
     struct nm_mdns mdns;
 
     bool closing;
 
-    NabtoDeviceFuture* queueHead;
+    struct nabto_device_future* queueHead;
     struct nabto_device_coap_resource* coapResourceHead;
+
+    struct nabto_device_future* streamListenFuture;
+    struct nabto_device_stream** streamListenStream;
 
     char appName[33];
     char appVersion[33];
@@ -40,7 +42,7 @@ struct nabto_device_context {
     char* privateKey;
     uint16_t port;
 
-    NabtoDeviceFuture* closeFut;
+    struct nabto_device_future* closeFut;
 };
 
 

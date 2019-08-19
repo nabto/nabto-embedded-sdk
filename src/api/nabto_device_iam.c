@@ -55,11 +55,11 @@ nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
-    NabtoDeviceFuture* fut = NULL;
+    struct nabto_device_future* fut = NULL;
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    fut = nabto_device_future_new(device);
+    fut = nabto_device_future_new(dev);
     if (fut) {
         if (dev->iamChangedFuture != NULL) {
             nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
@@ -76,7 +76,7 @@ nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version)
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return fut;
+    return (NabtoDeviceFuture*)fut;
 }
 
 NabtoDeviceError NABTO_DEVICE_API

@@ -11,7 +11,7 @@
 #endif
 
 //TODO: this should take an error code so callback can be resolved if device is closing
-typedef void (*nc_stream_manager_listen_callback)(struct nabto_stream* stream, void* data);
+typedef void (*nc_stream_manager_listen_callback)(np_error_code ec, struct nabto_stream* stream, void* data);
 
 struct nc_client_connection;
 
@@ -28,7 +28,7 @@ struct nc_stream_manager_context {
 
 
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl);
-
+void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx);
 void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data);
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,

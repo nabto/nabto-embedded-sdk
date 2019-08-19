@@ -53,6 +53,7 @@ void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx,
                                    np_communication_buffer* buffer, uint16_t bufferSize,
                                    nc_udp_dispatch_send_callback cb, void* data)
 {
+    NABTO_LOG_TRACE(LOG, "nc_udp_dispatch_async_send_to");
     np_udp_populate_send_context(sendCtx, ctx->sock, *ep, buffer, bufferSize, cb, data);
     ctx->pl->udp.async_send_to(sendCtx);
 }

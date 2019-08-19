@@ -341,7 +341,7 @@ typedef enum  {
 /**
  * The COAP resource is used when notifying observers of a specefic resource
  */
-// typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
+typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
 
 /**
  * Representing a COAP request received from the client
@@ -377,7 +377,13 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * @return A OK iff ok.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, NabtoDeviceCoapResourceHandler handler, void* userData);
+nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, NabtoDeviceCoapResource** resource);
+
+/**
+ * Listen for a new coap request on the given resource.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
+nabto_device_coap_resource_listen(NabtoDeviceCoapResource* resource, NabtoDeviceCoapRequest** request);
 
 /**
  * Notify observers of a resource retreived by calling

@@ -19,6 +19,21 @@ void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData);
 
+
+HeatPumpCoapRequestHandler::HeatPumpCoapRequestHandler(HeatPump* hp, const char** pathSegments, CoapHandler handler)
+    : heatPump_(hp), handler_(handler)
+{
+    nabto_device_coap_add_resource(hp->getDevice(), NABTO_DEVICE_COAP_GET, pathSegments, &resource_);
+    startListen();
+}
+
+void HeatPumpCoapRequestHandler::startListen() {
+    future_ = nabto_device_coap_resource_listen(resource_, &request_);
+    nabto_device_future_set_callback(future_, HeatPumpCoapRequestHandler::requestCallback, this);
+}
+
+
+
 void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
 {
     const char* getState[] = { "heat-pump", NULL };
@@ -26,13 +41,12 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
     const char* postMode[] = { "heat-pump", "mode", NULL };
     const char* postTarget[] = { "heat-pump", "target", NULL };
     const char* postPairingButton[] = { "pairing", "button", NULL };
-    nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_GET, getState, heat_pump_get, heatPump);
-    nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postPower, heat_pump_set_power, heatPump);
-    nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postMode, heat_pump_set_mode, heatPump);
-    nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postTarget, heat_pump_set_target, heatPump);
-    nabto_device_coap_add_resource(device, NABTO_DEVICE_COAP_POST, postPairingButton, heat_pump_pairing_button, heatPump);
+    heatPump->coapGetState = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, getState, &heat_pump_get);
+    heatPump->coapPostPower = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, postPower, &heat_pump_set_power);
+    heatPump->coapPostMode = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, postMode, &heat_pump_set_mode);
+    heatPump->coapPostTarget = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, postTarget, &heat_pump_set_target);
+    heatPump->coapPostPairingButton = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, postPairingButton, &heat_pump_pairing_button);
 }
-
 
 void heat_pump_coap_send_error(NabtoDeviceCoapRequest* request, uint16_t code, const char* message)
 {
