@@ -19,7 +19,7 @@ typedef std::function<void (NabtoDeviceCoapRequest* request, HeatPump* applicati
 class HeatPumpCoapRequestHandler {
  public:
     ~HeatPumpCoapRequestHandler() {}
-    HeatPumpCoapRequestHandler(HeatPump* hp, const char** pathSegments, CoapHandler handler);
+    HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDeviceCoapMethod methdod, const char** pathSegments, CoapHandler handler);
 
     void startListen();
 
