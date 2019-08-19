@@ -305,7 +305,7 @@ void nm_select_unix_close(struct np_platform* pl)
 
 void nm_select_unix_break_wait(struct np_platform* pl)
 {
-    // TODO break select
+    write(pipefd[1], "1", 1);
 }
 
 
