@@ -32,8 +32,6 @@ void HeatPumpCoapRequestHandler::startListen() {
     nabto_device_future_set_callback(future_, HeatPumpCoapRequestHandler::requestCallback, this);
 }
 
-
-
 void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
 {
     const char* getState[] = { "heat-pump", NULL };
@@ -48,18 +46,9 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
     heatPump->coapPostPairingButton = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPairingButton, &heat_pump_pairing_button);
 }
 
-void heat_pump_coap_send_error(NabtoDeviceCoapRequest* request, uint16_t code, const char* message)
-{
-     NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-     nabto_device_coap_response_set_code(response, code);
-     nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
-     nabto_device_coap_response_set_payload(response, message, strlen(message));
-     nabto_device_coap_response_ready(response);
-}
-
 void heat_pump_coap_send_bad_request(NabtoDeviceCoapRequest* request)
 {
-    heat_pump_coap_send_error(request, 400, "Bad request");
+    nabto_device_coap_error_response(request, 400, "Bad request");
 }
 
 void heat_pump_coap_send_ok(NabtoDeviceCoapRequest* request, uint16_t code)
@@ -89,13 +78,13 @@ bool heat_pump_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* par
     NabtoDeviceError ec;
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
-        heat_pump_coap_send_error(request, 400, "Invalid Content Format");
+        nabto_device_coap_error_response(request, 400, "Invalid Content Format");
         return false;
     }
     void* payload;
     size_t payloadSize;
     if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
-        heat_pump_coap_send_error(request, 400, "Missing payload");
+        nabto_device_coap_error_response(request, 400, "Missing payload");
         return false;
     }
     cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
@@ -125,6 +114,9 @@ void readInput()
 
 }
 
+/**
+ * Add a user with a given fingerprint to the system.
+ */
 bool pairUser( HeatPump* application, const std::string& fingerprint)
 {
     std::string userName;
@@ -168,6 +160,11 @@ bool pairUser( HeatPump* application, const std::string& fingerprint)
     return true;
 }
 
+/**
+ * Ask the user a question in the terminal whether the user wants the
+ * accept the client with the given fingerprint as a user on the
+ * system.
+ */
 void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, bool asOwner)
 {
     if (!application->beginPairing()) {
@@ -239,23 +236,6 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
     application->pairingThread_->detach();
 }
 
-void heat_pump_pairing_button_guest(NabtoDeviceCoapRequest* request, void* userData)
-{
-    HeatPump* application = (HeatPump*)userData;
-
-    NabtoDeviceError effect = nabto_device_iam_check_action(
-        application->getDevice(),
-        nabto_device_coap_request_get_connection_ref(request), "Pairing:ButtonGuest");
-
-    if (effect != NABTO_DEVICE_EC_OK) {
-        nabto_device_coap_error_response(request, 403, "Unauthorized");
-        return;
-    }
-
-    application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application, false);
-    application->pairingThread_->detach();
-}
-
 // Change heat_pump power state (turn it on or off)
 /**
  * Coap POST /heat_pump/power,
@@ -279,7 +259,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 
     bool powerState;
     if (!cbor_value_is_boolean(&value) || cbor_value_get_boolean(&value, &powerState) != CborNoError) {
-        heat_pump_coap_send_error(request, 400, "Invalid request");
+        nabto_device_coap_error_response(request, 400, "Invalid request");
         return;
     }
 
@@ -290,7 +270,6 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 // change heat_pump mode
 // CoAP post /heat_pump/mode
 // Data String: ("cool", "heat", "fan", "dry")
-
 void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;

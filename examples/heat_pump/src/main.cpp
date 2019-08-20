@@ -13,6 +13,12 @@
 #include <stdio.h>
 #include <unistd.h>
 
+/**
+ * The first time the heatpump is started init is called and writes a
+ * configuration file. The configuration file is used in subsequent
+ * runs of the heatpump.
+ */
+
 void my_handler(int s){
     printf("Caught signal %d\n",s);
 }
@@ -138,26 +144,50 @@ void run_heat_pump(const std::string& configFile)
     auto privateKey = config["PrivateKey"].get<std::string>();
     auto iam = config["Iam"];
 
-    nabto_device_set_product_id(device, productId.c_str());
-    nabto_device_set_device_id(device, deviceId.c_str());
-    nabto_device_set_server_url(device, server.c_str());
-    nabto_device_set_private_key(device, privateKey.c_str());
+
+    ec = nabto_device_set_product_id(device, productId.c_str());
+    if (ec) {
+        std::cerr << "Could not set product id" << std::endl;
+    }
+    ec = nabto_device_set_device_id(device, deviceId.c_str());
+    if (ec) {
+        std::cerr << "Could not set device id" << std::endl;
+    }
+    ec = nabto_device_set_server_url(device, server.c_str());
+    if (ec) {
+        std::cerr << "Could not set server url" << std::endl;
+    }
+    ec = nabto_device_set_private_key(device, privateKey.c_str());
+    if (ec) {
+        std::cerr << "Could not set private key" << std::endl;
+    }
     std::vector<uint8_t> iamCbor = json::to_cbor(iam);
 
-    if (nabto_device_iam_load(device, iamCbor.data(), iamCbor.size()) != NABTO_DEVICE_EC_OK) {
+    ec = nabto_device_iam_load(device, iamCbor.data(), iamCbor.size());
+    if (ec) {
         std::cerr << "failed to load iam" << std::endl;
     }
-    nabto_device_enable_mdns(device);
-    nabto_device_log_set_std_out_callback(device);
+    ec = nabto_device_enable_mdns(device);
+    if (ec) {
+        std::cerr << "Failed to enable mdns" << std::endl;
+    }
+    ec = nabto_device_log_set_std_out_callback(device);
+    if (ec) {
+        std::cerr << "Failed to enable stdour logging" << std::endl;
+    }
 
     // run application
     ec = nabto_device_start(device);
     if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to start device" << std::endl;
         return;
     }
 
     char* fpTemp;
-    nabto_device_get_device_fingerprint_hex(device, &fpTemp);
+    ec = nabto_device_get_device_fingerprint_hex(device, &fpTemp);
+    if (ec) {
+        std::cerr << "Could not get fingerprint of the device" << std::endl;
+    }
     std::string fp(fpTemp);
     nabto_device_string_free(fpTemp);
 
@@ -167,6 +197,8 @@ void run_heat_pump(const std::string& configFile)
     hp.init();
 
     heat_pump_coap_init(device, &hp);
+
+    // Wait for the user to press Ctrl-C
 
     struct sigaction sigIntHandler;
 

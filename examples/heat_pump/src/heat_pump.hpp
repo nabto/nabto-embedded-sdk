@@ -145,7 +145,6 @@ class HeatPump {
     const std::string& configFile_;
     bool pairing_ = false;
     uint64_t currentIamVersion_;
-
 };
 
 #endif
