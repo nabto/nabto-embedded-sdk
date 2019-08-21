@@ -13,6 +13,7 @@
 #include <platform/np_dns.h>
 #include <platform/np_dtls_cli.h>
 #include <platform/np_dtls_srv.h>
+#include <platform/np_tcp.h>
 
 struct np_platform {
     // Timestamp module
@@ -23,6 +24,8 @@ struct np_platform {
 
     // UDP Socket module
     struct np_udp_module udp;
+    // Data for the udp module object
+    void* udpData;
 
     // Communication buffer module
     struct np_communication_buffer_module buf;
@@ -36,6 +39,10 @@ struct np_platform {
     // DTLS server module
     struct np_dtls_srv_module dtlsS;
 
+    // Tcp socket module
+    struct np_tcp_module tcp;
+    // Data pointer set when tcp module is initialized.
+    void* tcpData;
 };
 
 /**
