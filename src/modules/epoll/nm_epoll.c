@@ -39,6 +39,7 @@ void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
 
 void nm_epoll_close(struct nm_epoll_context* epoll)
 {
+    struct np_platform* pl = epoll->pl;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_DEL, epoll->pipeFd[0], NULL) == -1) {
         NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
@@ -46,7 +47,7 @@ void nm_epoll_close(struct nm_epoll_context* epoll)
     close(epoll->pipeFd[0]);
     close(epoll->pipeFd[1]);
     close(epoll->fd);
-    //epoll->pl->buf.free(recv_buf);
+    pl->buf.free(epoll->recvBuffer);
 }
 void nm_epoll_break_wait(struct nm_epoll_context* epoll)
 {

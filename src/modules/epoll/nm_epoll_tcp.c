@@ -48,10 +48,12 @@ static np_error_code nm_tcp_epoll_create(struct np_platform* pl, np_tcp_socket**
 static void nm_tcp_epoll_destroy(np_tcp_socket* sock);
 static np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback, void* userData);
 static np_error_code nm_tcp_epoll_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
-static np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, const void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
+static np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
 static np_error_code nm_tcp_epoll_shutdown(np_tcp_socket* sock);
 static np_error_code nm_tcp_epoll_close(np_tcp_socket* sock);
 
+
+static void nm_tcp_epoll_is_connected(void* userData);
 
 void nm_tcp_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
 {
@@ -92,6 +94,7 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
     if (sock->connect.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
+    struct np_platform* pl = sock->pl;
     int s;
     if (address->type == NABTO_IPV4) {
         s = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -145,8 +148,6 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
             host.sin_family = AF_INET;
             memcpy((void*)&host.sin_addr, address->v4.addr, 4);
             host.sin_port = htons(port);
-            //NABTO_LOG_TRACE(LOG, "Connecting to ", PRIep, MAKE_EP_PRINTABLE(*ep));
-
             status = connect(sock->fd, (struct sockaddr*)&host, sizeof(struct sockaddr_in));
         } else { // Must be ipv6 (address->type == NABTO_IPV6) {
             struct sockaddr_in6 host;
@@ -155,37 +156,44 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
             host.sin6_family = AF_INET6;
             memcpy(host.sin6_addr.s6_addr, address->v6.addr, 16);
             host.sin6_port = htons(port);
-            //NABTO_LOG_TRACE(LOG, "Connecting to ", PRIep, MAKE_EP_PRINTABLE(*ep));
-
             status = connect(sock->fd, (struct sockaddr*)&host, sizeof(struct sockaddr_in6));
         }
-        if (status == 0) {
-            // TODO defer event that socket is connected
-        } else if (status == EINPROGRESS) {
-            // TODO save async callback
-            return NABTO_EC_OK;
-        } else {
-            NABTO_LOG_ERROR(LOG, "TODO");
-            return NABTO_EC_FAILED;
+
+        if (status != 0) {
+            NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
         }
+
+        sock->connect.callback = cb;
+        sock->connect.userData = userData;
+
+        np_event_queue_post(pl, &sock->connect.event, &nm_tcp_epoll_is_connected, sock);
     }
+    return NABTO_EC_OK;
 }
 
-void nm_tcp_epoll_is_connected(np_tcp_socket* sock) {
+void nm_tcp_epoll_is_connected(void* userData)
+{
+    np_tcp_socket* sock = userData;
+    if (sock->connect.callback == NULL)  {
+        return;
+    }
     int err;
     socklen_t len;
     len = sizeof(err);
     if (getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &err, &len) != 0) {
-        // TODO print error.
+        NABTO_LOG_ERROR(LOG, "getsockopt error %s",strerror(errno));
     } else {
         if (err == 0) {
-            // TODO invoke connect callback
-
+            np_tcp_connect_callback cb = sock->connect.callback;
+            sock->connect.callback = NULL;
+            cb(NABTO_EC_OK, sock->connect.userData);
         } else if ( err == EINPROGRESS) {
-            // TODO do nothing
-
+            // Wait for next event
         } else {
-            // TODO invoke connect callback with error.
+            NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
+            np_tcp_connect_callback cb = sock->connect.callback;
+            sock->connect.callback = NULL;
+            cb(NABTO_EC_FAILED, sock->connect.userData);
         }
     }
 }
@@ -238,8 +246,9 @@ np_error_code nm_tcp_epoll_async_write(np_tcp_socket* sock, const void* data, si
     return NABTO_EC_OK;
 }
 
-void nm_epoll_tcp_do_read(np_tcp_socket* sock)
+void nm_epoll_tcp_do_read(void* userData)
 {
+    np_tcp_socket* sock = userData;
     if (sock->read.callback == NULL) {
         return;
     }
@@ -267,7 +276,7 @@ void nm_epoll_tcp_do_read(np_tcp_socket* sock)
     }
 }
 
-np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, const void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
+np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
 {
     if (sock->read.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
@@ -283,9 +292,11 @@ np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, const void* buffer, s
 np_error_code nm_tcp_epoll_shutdown(np_tcp_socket* sock)
 {
     shutdown(sock->fd, SHUT_WR);
+    return NABTO_EC_OK;
 }
 
 np_error_code nm_tcp_epoll_close(np_tcp_socket* sock)
 {
     close(sock->fd);
+    return NABTO_EC_OK;
 }

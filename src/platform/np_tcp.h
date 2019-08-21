@@ -20,7 +20,7 @@ struct np_tcp_module {
 
 
     np_error_code (*async_write)(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
-    np_error_code (*async_read)(np_tcp_socket* sock, const void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
+    np_error_code (*async_read)(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
 
     np_error_code (*shutdown)(np_tcp_socket* sock);
     np_error_code (*close)(np_tcp_socket* sock);
