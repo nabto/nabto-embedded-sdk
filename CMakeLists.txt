@@ -70,6 +70,7 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
 endif()
 
 add_subdirectory(test)
+add_subdirectory(test_cpp)
 
 add_subdirectory(examples/heat_pump)
 

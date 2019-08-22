@@ -17,7 +17,6 @@ target_link_libraries(coap_udp_server_tester
   test_platform
   np_platform
   nm_logging
-  nm_udp
   nm_unix_communication_buffer
   nm_timestamp
   )
@@ -26,7 +25,6 @@ target_link_libraries(coap_udp_client_tester
   test_platform
   np_platform
   nm_logging
-  nm_udp
   nm_unix_communication_buffer
   nm_timestamp
   )
