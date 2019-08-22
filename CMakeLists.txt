@@ -65,7 +65,7 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_subdirectory(src/modules/dns/unix)
   add_subdirectory(src/modules/timestamp/unix)
 #  add_subdirectory(src/modules/udp/select_unix)
-  add_subdirectory(src/modules/udp/epoll)
+  add_subdirectory(src/modules/epoll)
 
 endif()
 
@@ -83,3 +83,6 @@ if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
     nc_core
     nm_logging)
 endif()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
+add_subdirectory(test_cpp)

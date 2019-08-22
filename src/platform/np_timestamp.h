@@ -3,6 +3,10 @@
 
 #include <platform/np_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // This module assumes a timestamp type is defined in types.h
 
 // e.g. typedef uint32_t np_timestamp;
@@ -41,5 +45,9 @@ struct np_timestamp_module {
      */
     uint32_t (*difference)(np_timestamp* ts1, np_timestamp* ts2);
 };
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

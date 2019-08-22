@@ -3,8 +3,13 @@
 
 #include <platform/np_platform.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct test_platform {
     struct np_platform pl;
+    bool stopped;
 };
 void test_platform_init(struct test_platform* tp);
 
@@ -28,5 +33,11 @@ void test_platform_init(struct test_platform* tp);
 /* void test_platform_read(struct test_platform* tp, int nfds); */
 
 void test_platform_run(struct test_platform* tp);
+
+void test_platform_stop(struct test_platform* tp);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

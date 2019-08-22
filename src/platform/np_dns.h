@@ -9,6 +9,10 @@
 #include <platform/np_ip_address.h>
 #include <nabto_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct np_platform;
 
 typedef void (*np_dns_resolve_callback)(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
@@ -20,5 +24,9 @@ struct np_dns_module {
      */
     np_error_code (*async_resolve)(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data);
 };
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif //_NP_DNS_H_

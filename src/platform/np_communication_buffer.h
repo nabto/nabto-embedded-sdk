@@ -3,6 +3,10 @@
 
 #include <nabto_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct np_communication_buffer np_communication_buffer;
 
 struct np_platform;
@@ -15,5 +19,9 @@ struct np_communication_buffer_module {
     uint8_t* (*start)(np_communication_buffer*);
     uint16_t (*size)(np_communication_buffer*);
 };
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

@@ -90,17 +90,20 @@ int main()
 {
     int nfds;
     struct np_platform p;
+    struct nm_epoll_context epoll;
     pl = &p;
     struct np_ip_address *localIps = malloc(5*sizeof(struct np_ip_address));
     np_platform_init(pl);
+    np_event_queue_init(pl, NULL, NULL);
     np_log_init();
     np_communication_buffer_init(pl);
     nm_unix_ts_init(pl);
-    nm_unix_udp_epoll_init(pl);
+    nm_epoll_init(&epoll, pl);
     NABTO_LOG_INFO(0, "main");
 
     sendCtx1.buffer = pl->buf.allocate();
     sendCtx2.buffer = pl->buf.allocate();
+    pl->udp.create(pl, &sock2);
     pl->udp.create(pl, &sock);
     pl->udp.async_bind(sock, &sockCreated, NULL);
     pl->udp.create(pl, &sock3);
@@ -127,10 +130,10 @@ int main()
                 NABTO_LOG_ERROR(0, "ms was 0 ");
                 ms = 1;
             }
-            nfds = nm_epoll_timed_wait(ms);
+            nfds = nm_epoll_timed_wait(&epoll, ms);
         } else {
-            nfds = nm_epoll_inf_wait();
+            nfds = nm_epoll_inf_wait(&epoll);
         }
-        nm_epoll_read(nfds);
+        nm_epoll_read(&epoll, nfds);
     }
 }

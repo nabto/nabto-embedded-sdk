@@ -15,18 +15,9 @@
  * function until the module is no longer needed.
  */
 
-void nm_unix_udp_epoll_init(struct np_platform* pl_in);
+void nm_epoll_udp_init(struct nm_epoll_context* epoll, struct np_platform* pl);
 
-void nm_epoll_close(struct np_platform* pl);
-void nm_epoll_break_wait(struct np_platform* pl);
-
-int nm_epoll_timed_wait(uint32_t ms);
-int nm_epoll_inf_wait(void);
-
-void nm_epoll_read(int nfds);
-
-
-
+void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events);
 
 
 #endif // _NP_UDP_EPOLL_MODULE_H_
