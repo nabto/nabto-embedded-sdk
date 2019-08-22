@@ -206,8 +206,6 @@ class TcpEchoClientTest {
         BOOST_TEST(pl_->tcp.async_connect(socket_, &address, port, &TcpEchoClientTest::connected, this) == NABTO_EC_OK);
 
         test_platform_run(&tp_);
-
-
     }
 
     static void connected(np_error_code ec, void* userData)
@@ -239,6 +237,7 @@ class TcpEchoClientTest {
     }
 
     void end() {
+        pl_->tcp.destroy(socket_);
         test_platform_stop(&tp_);
     }
  private:

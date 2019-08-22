@@ -333,7 +333,11 @@ np_error_code nm_tcp_epoll_close(np_tcp_socket* sock)
 
 void nm_epoll_tcp_handle_event(np_tcp_socket* sock, uint32_t events)
 {
-    nm_tcp_epoll_is_connected(sock);
-    nm_epoll_tcp_do_read(sock);
-    nm_epoll_tcp_do_write(sock);
+    if (events & EPOLLOUT) {
+        nm_tcp_epoll_is_connected(sock);
+        nm_epoll_tcp_do_write(sock);
+    }
+    if (events & EPOLLIN) {
+        nm_epoll_tcp_do_read(sock);
+    }
 }
