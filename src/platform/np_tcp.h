@@ -1,6 +1,12 @@
 #ifndef _NP_TCP_H_
 #define _NP_TCP_H_
 
+#include <platform/np_ip_address.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct np_platform;
 
 typedef void (*np_tcp_write_callback)(np_error_code ec, void* userData);
@@ -25,5 +31,9 @@ struct np_tcp_module {
     np_error_code (*shutdown)(np_tcp_socket* sock);
     np_error_code (*close)(np_tcp_socket* sock);
 };
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

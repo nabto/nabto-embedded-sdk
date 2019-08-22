@@ -4,6 +4,10 @@
 #include <platform/np_error_code.h>
 #include <platform/np_dtls.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NP_DTLS_SRV_DEFAULT_CHANNEL_ID 0xff
 
 enum np_dtls_srv_event {
@@ -66,5 +70,9 @@ struct np_dtls_srv_module {
 
     np_error_code (*get_packet_count)(struct np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount);
 };
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif // NP_DTLS_SRV_H

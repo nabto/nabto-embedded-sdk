@@ -10,6 +10,10 @@ typedef struct np_udp_socket np_udp_socket;
 #include <platform/np_communication_buffer.h>
 #include <platform/np_event_queue.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct np_platform;
 
 struct np_udp_endpoint {
@@ -103,5 +107,8 @@ struct np_udp_module {
     uint16_t (*get_local_port)(np_udp_socket* socket);
 };
 
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

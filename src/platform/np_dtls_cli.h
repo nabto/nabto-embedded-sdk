@@ -7,6 +7,10 @@
 #include <platform/np_dtls.h>
 #include <platform/np_udp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct np_platform;
 struct nc_udp_dispatch_context;
 
@@ -62,5 +66,9 @@ struct np_dtls_cli_module {
 
     np_error_code (*get_packet_count)(np_dtls_cli_context* ctx, uint32_t* recvCount, uint32_t* sentCount);
 };
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif // NP_DTLS_CLI_H

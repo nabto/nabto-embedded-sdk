@@ -22,6 +22,8 @@ void test_platform_init(struct test_platform* tp)
     nm_unix_dns_init(pl);
     nm_dtls_cli_init(pl);
     nm_dtls_srv_init(pl);
+
+    tp->stopped = false;
 }
 
 
@@ -29,6 +31,9 @@ void test_platform_run(struct test_platform* tp)
 {
     int nfds;
     while (true) {
+        if (tp->stopped) {
+            return;
+        }
         np_event_queue_execute_all(&tp->pl);
         if (np_event_queue_has_timed_event(&tp->pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&tp->pl);
@@ -39,4 +44,10 @@ void test_platform_run(struct test_platform* tp)
         }
         nm_epoll_read(&epoll, nfds);
     }
+}
+
+void test_platform_stop(struct test_platform* tp)
+{
+    tp->stopped = true;
+    nm_epoll_break_wait(&epoll);
 }

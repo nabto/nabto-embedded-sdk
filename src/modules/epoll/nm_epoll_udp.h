@@ -17,7 +17,7 @@
 
 void nm_epoll_udp_init(struct nm_epoll_context* epoll, struct np_platform* pl);
 
-void nm_epoll_udp_handle_event(np_udp_socket* sock);
+void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events);
 
 
 #endif // _NP_UDP_EPOLL_MODULE_H_

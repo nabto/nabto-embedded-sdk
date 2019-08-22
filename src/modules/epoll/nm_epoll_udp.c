@@ -30,6 +30,7 @@ struct nm_epoll_received_ctx {
 };
 
 struct np_udp_socket {
+    enum nm_epoll_type type;
     struct np_platform* pl;
     int sock;
     bool isIpv6;
@@ -184,7 +185,7 @@ uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
     return htons(addr.sin6_port);
 }
 
-void nm_epoll_udp_handle_event(np_udp_socket* sock) {
+void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events) {
     NABTO_LOG_TRACE(LOG, "handle event");
     struct np_udp_endpoint ep;
     struct np_platform* pl = sock->pl;
@@ -229,7 +230,7 @@ void nm_epoll_udp_handle_event(np_udp_socket* sock) {
         NABTO_LOG_TRACE(LOG, "received %i bytes of data data, invoking callback", recvLength);
         cb(NABTO_EC_OK, ep, epoll->recvBuffer, recvLength, sock->recv.data);
     }
-    nm_epoll_udp_handle_event(sock);
+    nm_epoll_udp_handle_event(sock, events);
 }
 
 void nm_epoll_event_bind(void* data)
@@ -284,6 +285,7 @@ void nm_epoll_event_bind(void* data)
 np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
 {
     *sock = calloc(1, sizeof(np_udp_socket));
+    (*sock)->type = NM_EPOLL_TYPE_UDP;
     (*sock)->pl = pl;
     return NABTO_EC_OK;
 }

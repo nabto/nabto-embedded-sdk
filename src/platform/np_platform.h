@@ -15,6 +15,10 @@
 #include <platform/np_dtls_srv.h>
 #include <platform/np_tcp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct np_platform {
     // Timestamp module
     struct np_timestamp_module ts;
@@ -49,5 +53,9 @@ struct np_platform {
  * Initialize the platform structure.
  */
 void np_platform_init(struct np_platform* pl);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

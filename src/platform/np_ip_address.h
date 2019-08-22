@@ -3,6 +3,10 @@
 
 #include <platform/np_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum np_ip_address_type {
     NABTO_IPV4,
     NABTO_IPV6
@@ -31,5 +35,9 @@ struct np_ip_address {
 bool np_ip_is_v4(struct np_ip_address* ip);
 
 bool np_ip_is_v6(struct np_ip_address* ip);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

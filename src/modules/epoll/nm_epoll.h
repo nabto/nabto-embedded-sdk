@@ -8,6 +8,15 @@
 
 #define NM_EPOLL_EVENTS_SIZE 64
 
+enum nm_epoll_type {
+    NM_EPOLL_TYPE_UDP,
+    NM_EPOLL_TYPE_TCP
+};
+
+struct nm_epoll_base {
+    enum nm_epoll_type type;
+};
+
 struct nm_epoll_context {
     int fd;
     struct np_platform* pl;

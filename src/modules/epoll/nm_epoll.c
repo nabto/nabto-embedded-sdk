@@ -1,5 +1,6 @@
 #include "nm_epoll.h"
 #include "nm_epoll_udp.h"
+#include "nm_epoll_tcp.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_communication_buffer.h>
@@ -34,6 +35,7 @@ void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
     epoll->recvBuffer = pl->buf.allocate();
 
     nm_epoll_udp_init(epoll, pl);
+    nm_epoll_tcp_init(epoll, pl);
 }
 
 
@@ -78,15 +80,13 @@ int nm_epoll_inf_wait(struct nm_epoll_context* epoll)
 void nm_epoll_read(struct nm_epoll_context* epoll, int nfds)
 {
     for (int i = 0; i < nfds; i++) {
-        if((epoll->events[i].events & EPOLLERR) ||
-           (epoll->events[i].events & EPOLLHUP) ||
-           (!(epoll->events[i].events & EPOLLIN))) {
-            NABTO_LOG_TRACE(LOG, "epoll event with socket error %x", epoll->events[i].events);
-            continue;
-        }
-        np_udp_socket* sock = (np_udp_socket*)epoll->events[i].data.ptr;
-        if (sock != NULL) {
-            nm_epoll_udp_handle_event(sock);
+        struct nm_epoll_base* base = (struct nm_epoll_base*)epoll->events[i].data.ptr;
+        if (base != NULL) {
+            if (base->type == NM_EPOLL_TYPE_UDP) {
+                nm_epoll_udp_handle_event((np_udp_socket*)base, epoll->events[i].events);
+            } else if (base->type == NM_EPOLL_TYPE_TCP) {
+                nm_epoll_tcp_handle_event((np_tcp_socket*)base, epoll->events[i].events);
+            }
         }
     }
 }

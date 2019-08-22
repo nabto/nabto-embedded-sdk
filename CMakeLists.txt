@@ -70,7 +70,6 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
 endif()
 
 add_subdirectory(test)
-add_subdirectory(test_cpp)
 
 add_subdirectory(examples/heat_pump)
 
@@ -84,3 +83,6 @@ if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
     nc_core
     nm_logging)
 endif()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
+add_subdirectory(test_cpp)

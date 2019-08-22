@@ -7,6 +7,10 @@
 
 #include <platform/np_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Event Queue.
  *
@@ -116,5 +120,8 @@ bool np_event_queue_is_event_enqueued(struct np_platform* pl, struct np_event* e
  */
 uint32_t np_event_queue_next_timed_event_occurance(struct np_platform* pl);
 
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif
