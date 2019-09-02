@@ -41,7 +41,7 @@ struct nm_tcptunnels {
     struct nm_tcptunnel tunnelsSentinel;
 };
 
-void nm_tcptunnel_init();
+void nm_tcptunnels_init(struct nm_tcptunnels* tunnels);
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels);
 

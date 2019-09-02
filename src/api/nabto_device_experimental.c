@@ -1,6 +1,8 @@
 #include <nabto/nabto_device_experimental.h>
 #include "nabto_device_defines.h"
 
+#include <modules/tcptunnel/nm_tcptunnel.h>
+
 #include <stdlib.h>
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_mdns(NabtoDevice* device)
@@ -37,6 +39,26 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
                 f[8], f[9], f[10], f[11], f[12], f[13], f[14], f[15]);
     }
 
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
+}
+
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_tcp_tunnelling(NabtoDevice* device)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    if (dev->tcptunnels != NULL) {
+        // already enabled.
+    } else {
+        dev->tcptunnels = calloc(1,sizeof(struct nm_tcptunnels));
+        if (dev->tcptunnels == NULL) {
+            ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+        } else {
+            nm_tcptunnels_init(dev->tcptunnels);
+        }
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ec;
 }

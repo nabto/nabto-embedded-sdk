@@ -10,6 +10,7 @@
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec);
 
 struct nabto_device_coap_resource;
+struct nm_tcptunnels;
 
 struct nabto_device_context {
     struct np_platform pl;
@@ -43,6 +44,8 @@ struct nabto_device_context {
     uint16_t port;
 
     struct nabto_device_future* closeFut;
+
+    struct nm_tcptunnels* tcptunnels;
 };
 
 

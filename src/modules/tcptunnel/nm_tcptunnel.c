@@ -19,7 +19,7 @@ void nm_tcptunnels_init(struct nm_tcptunnels* tunnels)
 
 void nm_tcptunnels_deinit()
 {
-
+    // TODO
 }
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels)
