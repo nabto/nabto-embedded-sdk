@@ -5,6 +5,12 @@
  */
 
 
+static void start_resolve(struct nm_tcptunnel_connection* connection);
+static void resolve_callback(np_error_code ec, struct np_ip_address* records, size_t recordsSize, void* userData);
+static void start_connect(struct nm_tcptunnel_connection* connection, struct np_ip_address* address, uint16_t port);
+static void connect_callback(np_error_code ec, void* userData);
+static void connected(struct nm_tcptunnel_connection* connection);
+
 static void start_tcp_read(struct nm_tcptunnel_connection* connection);
 static void tcp_readen(np_error_code ec, size_t transferred, void* userData);
 static void start_stream_write(struct nm_tcptunnel_connection* connection, size_t transferred);
@@ -16,25 +22,52 @@ static void start_tcp_write(struct nm_tcptunnel_connection* connection, size_t t
 static void tcp_written(np_error_code ec, void* userData);
 
 
-void start_resolve()
-{
 
+void nm_tcptunnel_connection_start(struct nm_tcptunnel_connection* connection)
+{
+    start_resolve(connection);
 }
 
-void resolved()
+void start_resolve(struct nm_tcptunnel_connection* connection)
 {
-
+    struct np_platform* pl = connection->pl;
 }
 
-void start_connect()
+void resolve_callback(np_error_code ec, struct np_ip_address* records, size_t recordsSize, void* userData)
 {
+    struct nm_tcptunnel_connection* connection = userData;
+    if (ec) {
+        // todo fail tunnel
+        return;
+    }
+    if (recordsSize < 1) {
+        // todo fail
+        return;
+    }
 
+    start_connect(connection, records, connection->port);
 }
 
-void connected()
+void start_connect(struct nm_tcptunnel_connection* connection, struct np_ip_address* address, uint16_t port)
 {
-    start_tcp_read();
-    start_stream_read();
+    struct np_platform* pl = connection->pl;
+    pl->tcp.async_connect(pl, address, port, &connect_callback, connection);
+}
+
+void connect_callback(np_error_code ec, void* userData)
+{
+    struct nm_tcptunnel_connection* connection = userData;
+    if (ec) {
+        // TODO fail tunnel
+        return;
+    }
+    connected(connection);
+}
+
+void connected(struct nm_tcptunnel_connection* connection)
+{
+    start_tcp_read(connection);
+    start_stream_read(connection);
 }
 
 
