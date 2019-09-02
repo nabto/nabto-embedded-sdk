@@ -36,6 +36,8 @@ bool np_ip_is_v4(struct np_ip_address* ip);
 
 bool np_ip_is_v6(struct np_ip_address* ip);
 
+const char* np_ip_address_to_string(struct np_ip_address* ip);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

@@ -49,6 +49,7 @@ add_subdirectory(nabto-common-cpp/src/mdns)
 
 add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)
+add_subdirectory(src/modules/tcptunnel)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_subdirectory(src/modules/dns/unix)

@@ -58,10 +58,10 @@ void stream_application_event_callback(nabto_stream_application_event_type event
     }
 }
 
-void stream_listener(np_error_code ec, struct nabto_stream* incStream, void* data)
+void stream_listener(np_error_code ec, struct nc_stream_context* incStream, void* data)
 {
     NABTO_LOG_INFO(0, "Test listener callback ");
-    stream = incStream;
+    stream = &incStream->stream;
     nabto_stream_set_application_event_callback(stream, &stream_application_event_callback, data);
     nabto_stream_accept(stream);
 }

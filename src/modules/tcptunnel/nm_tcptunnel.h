@@ -1,39 +1,49 @@
 #ifndef _NM_TCPTUNNEL_H_
 #define _NM_TCPTUNNEL_H_
 
-#define NM_TCPTUNNEL_MAX_HOST_LENGTH 39;
+#include <platform/np_platform.h>
+#include <platform/np_tcp.h>
+
+struct nabto_stream;
+
+#define NM_TCPTUNNEL_MAX_HOST_LENGTH 39
 
 struct nm_tcptunnel_connection {
+    struct nm_tcptunnel_connection* next;
+    struct nm_tcptunnel_connection* prev;
+    struct nm_tcptunnel* tunnel;
+    struct np_platform* pl;
     np_tcp_socket* socket;
-    nabto_stream* stream;
-};
+    struct nc_stream_context* stream;
 
-struct nm_tcptunnel_connection_list_entry {
-    struct nm_tcptunnel_connection_list_entry* next;
-    struct nm_tcptunnel_connection_list_entry* prev;
-    struct nm_tcptunnel_connection* connection;
+    void* tcpRecvBuffer;
+    size_t tcpRecvBufferSize;
+
+    void* streamRecvBuffer;
+    size_t streamRecvBufferSize;
+    size_t streamReadSize;
 };
 
 struct nm_tcptunnel {
-    char id[5]; // id to use in the CoAP api paths
-    char host[NM_TCPTUNNEL_MAX_HOST_LENGTH+1]; // an ipv6 address is 32+7 long
+    struct nm_tcptunnel* next;
+    struct nm_tcptunnel* prev;
+    struct nm_tcptunnels* tunnels;
+    int id; // id to use in the CoAP api paths
+    struct np_ip_address address;
     uint16_t port;
-    struct nm_tcptunnel_connection_list_entry connectionsSentinel;
-};
-
-struct nm_tcptunnel_list_entry {
-    struct nm_tcptunnel_list_entry* next;
-    struct nm_tcptunnel_list_entry* prev;
-    struct nm_tcptunnel* tunnel;
+    struct nm_tcptunnel_connection connectionsSentinel;
 };
 
 struct nm_tcptunnels {
     int idCounter;
-    char defaultHost[NM_TCPTUNNEL_MAX_HOST_LENGTH+1];
+    struct np_ip_address defaultHost;
     uint16_t defaultPort;
-    struct nm_tcptunnel_list_entry tunnelsSentinel;
+    struct nm_tcptunnel tunnelsSentinel;
 };
 
 void nm_tcptunnel_init();
+
+struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels);
+
 
 #endif

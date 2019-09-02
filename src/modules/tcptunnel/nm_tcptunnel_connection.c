@@ -1,13 +1,12 @@
 #include "nm_tcptunnel.h"
+#include <core/nc_stream.h>
 
 /**
  * Forward data from a nabto stream to a tcp connection
  */
 
 
-static void start_resolve(struct nm_tcptunnel_connection* connection);
-static void resolve_callback(np_error_code ec, struct np_ip_address* records, size_t recordsSize, void* userData);
-static void start_connect(struct nm_tcptunnel_connection* connection, struct np_ip_address* address, uint16_t port);
+static void start_connect(struct nm_tcptunnel_connection* connection);
 static void connect_callback(np_error_code ec, void* userData);
 static void connected(struct nm_tcptunnel_connection* connection);
 
@@ -17,41 +16,24 @@ static void start_stream_write(struct nm_tcptunnel_connection* connection, size_
 static void stream_written(np_error_code ec, void* userData);
 
 static void start_stream_read(struct nm_tcptunnel_connection* connection);
-static void stream_readen(np_error_code ec, size_t transferred, void* userData);
+static void stream_readen(np_error_code ec, void* userData);
 static void start_tcp_write(struct nm_tcptunnel_connection* connection, size_t transferred);
 static void tcp_written(np_error_code ec, void* userData);
 
-
-
 void nm_tcptunnel_connection_start(struct nm_tcptunnel_connection* connection)
 {
-    start_resolve(connection);
+    start_connect(connection);
 }
 
-void start_resolve(struct nm_tcptunnel_connection* connection)
+void start_connect(struct nm_tcptunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-}
-
-void resolve_callback(np_error_code ec, struct np_ip_address* records, size_t recordsSize, void* userData)
-{
-    struct nm_tcptunnel_connection* connection = userData;
+    struct nm_tcptunnel* tunnel = connection->tunnel;
+    np_error_code ec = pl->tcp.create(pl, &connection->socket);
     if (ec) {
-        // todo fail tunnel
-        return;
+        // TODO
     }
-    if (recordsSize < 1) {
-        // todo fail
-        return;
-    }
-
-    start_connect(connection, records, connection->port);
-}
-
-void start_connect(struct nm_tcptunnel_connection* connection, struct np_ip_address* address, uint16_t port)
-{
-    struct np_platform* pl = connection->pl;
-    pl->tcp.async_connect(pl, address, port, &connect_callback, connection);
+    pl->tcp.async_connect(connection->socket, &tunnel->address, tunnel->port, &connect_callback, connection);
 }
 
 void connect_callback(np_error_code ec, void* userData)
@@ -100,7 +82,7 @@ void stream_written(np_error_code ec, void* userData)
     struct nm_tcptunnel_connection* connection = userData;
     if (ec) {
         // TODO if stream write fails, close the tcp connection, the stream has already failed.
-        close_tcp_connection(connection);
+        //close_tcp_connection(connection);
         return;
     }
     start_tcp_read(connection);
@@ -108,26 +90,26 @@ void stream_written(np_error_code ec, void* userData)
 
 void start_stream_read(struct nm_tcptunnel_connection* connection)
 {
-    nc_stream_async_read(connection->stream, connection->streamRecvBuffer, connection->streamRecvBufferSize, &stream_readen, connection);
+    nc_stream_async_read_some(connection->stream, connection->streamRecvBuffer, connection->streamRecvBufferSize, &connection->streamReadSize, &stream_readen, connection);
 }
 
-void stream_readen(np_error_code ec, size_t transferred, void* userData)
+void stream_readen(np_error_code ec, void* userData)
 {
     struct nm_tcptunnel_connection* connection = userData;
     if (ec) {
         // TODO
     }
-    if (transferred == 0 || ec == NABTO_EC_EOF) {
+    if (connection->streamReadSize == 0 || ec == NABTO_EC_EOF) {
         // TODO close tcp connection, aka signal to the tcp connection
         // that we will not write more data.
     }
-    start_tcp_write(connection, transferred);
+    start_tcp_write(connection, connection->streamReadSize);
 }
 
 void start_tcp_write(struct nm_tcptunnel_connection* connection, size_t transferred)
 {
-    struct np_platform* pl;
-    pl->tcp.async_write(pl, connection->streamRecvBuffer, transferred, &tcp_written, connection);
+    struct np_platform* pl = connection->pl;
+    pl->tcp.async_write(connection->socket, connection->streamRecvBuffer, transferred, &tcp_written, connection);
 }
 
 void tcp_written(np_error_code ec, void* userData)
@@ -135,7 +117,7 @@ void tcp_written(np_error_code ec, void* userData)
     struct nm_tcptunnel_connection* connection = userData;
     if (ec) {
         // TODO if ec, we cannot write to the tcp connection, close the stream
-        nc_stream_close(connection->stream);
+        //nc_stream_close(connection->stream);
         return;
     }
     start_stream_read(connection);
