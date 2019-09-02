@@ -119,12 +119,12 @@ void nc_stream_test_send_to_cli(void* data)
     nc_stream_manager_handle_packet(&ctx.cliCtx, &ctx.cliConn, &ctx.devBuffer, ctx.devBufferSize);
 }
 
-void nc_stream_test_listener_cb(np_error_code ec, struct nabto_stream* stream, void* data)
+void nc_stream_test_listener_cb(np_error_code ec, struct nc_stream_context* stream, void* data)
 {
     NABTO_LOG_ERROR(0, "Test listener callback ");
-    ctx.devStream = stream;
-    nabto_stream_set_application_event_callback(stream, &nc_stream_test_dev_application_event_callback, &ctx);
-    nabto_stream_accept(stream);
+    ctx.devStream = &stream->stream;
+    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_test_dev_application_event_callback, &ctx);
+    nabto_stream_accept(&stream->stream);
 //    nabto_stream_write_buffer(stream, ctx.devTestData, ctx.devTestDataSize, &written);
 //    NABTO_LOG_ERROR(0, "Device wrote %u bytes", written);
 }

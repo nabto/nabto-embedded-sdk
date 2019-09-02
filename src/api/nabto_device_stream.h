@@ -9,17 +9,11 @@
 struct nabto_device_context;
 
 struct nabto_device_stream {
-    struct nabto_stream* stream;
+    struct nc_stream_context* stream;
     struct nabto_device_future* acceptFut;
-    struct nabto_device_future* readSomeFut;
-    struct nabto_device_future* readAllFut;
-    uint8_t* readBuffer;
-    size_t readBufferLength;
-    size_t* readLength;
+    struct nabto_device_future* readFut;
 
     struct nabto_device_future* writeFut;
-    const uint8_t* writeBuffer;
-    size_t writeBufferLength;
 
     struct nabto_device_future* closeFut;
     struct nabto_device_context* dev;
@@ -28,12 +22,7 @@ struct nabto_device_stream {
     bool readyToFree;
 };
 
-void nabto_device_stream_listener_callback(np_error_code ec, struct nabto_stream* stream, void* data);
-void nabto_device_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
-void nabto_device_stream_do_read(struct nabto_device_stream* str);
-void nabto_device_stream_do_write_all(struct nabto_device_stream* str);
-void nabto_device_stream_handle_close(struct nabto_device_stream* str);
-
+void nabto_device_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 
 
 #endif // NABTO_DEVICE_STREAM_H

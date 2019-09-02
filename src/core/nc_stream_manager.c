@@ -88,7 +88,7 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
 {
     NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
     if (ctx->cb != NULL) {
-        ctx->cb(NABTO_EC_OK, &stream->stream, ctx->cbData);
+        ctx->cb(NABTO_EC_OK, stream, ctx->cbData);
     }
     NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
     return;
