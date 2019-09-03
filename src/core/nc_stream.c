@@ -389,7 +389,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
                         // read more until 0 or error
                         nc_stream_do_read(stream);
                     }
-                } else if (stream->readAllCb) {
+                } else if (stream->readSomeCb) {
                     nc_stream_resolve_read(stream, NABTO_EC_OK);
                 } else {
                     // Still no future? we just checked this!
