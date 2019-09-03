@@ -121,35 +121,6 @@ class PostHandler : public AbstractCoapHandler {
     }
 };
 
-
-class StreamHandler {
- public:
-    StreamHandler(NabtoDevice* device) : device_(device) {
-        startListen();
-    }
-
-    void startListen() {
-        printf("StreamHandler::startListen\n");
-        NabtoDeviceFuture* future = nabto_device_stream_listen(device_, 42, &stream_);
-        nabto_device_future_set_callback(future, &StreamHandler::gotStream, this);
-    }
-
-    static void gotStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData) {
-        StreamHandler* sh = (StreamHandler*)userData;
-        printf("StreamHandler::gotStream\n");
-        if (ec == NABTO_DEVICE_EC_OK) {
-            struct streamContext* strCtx = (struct streamContext*)malloc(sizeof(struct streamContext));
-            strCtx->stream = sh->stream_;
-            handle_new_stream(strCtx);
-            sh->startListen();
-        }
-        nabto_device_future_free(future);
-    }
-
-    NabtoDevice* device_;
-    NabtoDeviceStream* stream_;
-};
-
 void print_help(const char* message)
 {
     if (message) {
@@ -241,75 +212,245 @@ bool load_key_from_file(const char* filename)
     return true;
 }
 
-void stream_closed_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
-{
-    struct streamContext* streamContext = (struct streamContext*)data;
-    nabto_device_future_free(fut);
-    nabto_device_stream_free(streamContext->stream);
-    free(streamContext);
-}
+/**
+ * Read all incoming data until the stream is closed.  Close the
+ * stream in the start to inform the other end that this handler will
+ * not send any data.
+ */
+class RecvHandler {
+ public:
+    RecvHandler(NabtoDeviceStream* stream)
+        : stream_(stream)
+    {
 
-void close_stream(struct streamContext* streamContext)
-{
-    NabtoDeviceFuture* fut = nabto_device_stream_close(streamContext->stream);
-    nabto_device_future_set_callback(fut, &stream_closed_callback, streamContext);
-}
-
-void stream_write_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
-{
-    struct streamContext* streamContext = (struct streamContext*)data;
-    nabto_device_future_free(fut);
-    if (err == NABTO_DEVICE_EC_FAILED) {
-        printf("stream closed or aborted");
-        close_stream(streamContext);
-        return;
     }
-    memset(streamContext->buffer, 0, 1500);
-    fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
-    nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
-}
 
-void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data)
-{
-    struct streamContext* streamContext = (struct streamContext*)data;
-    nabto_device_future_free(fut);
-    if (err == NABTO_DEVICE_EC_FAILED) {
-        printf("stream closed or aborted" NEWLINE);
-        close_stream(streamContext);
-        return;
+    void start()
+    {
+        accept();
     }
-    printf("read %lu bytes into buf: ", streamContext->read);
-    printf("%s" NEWLINE, streamContext->buffer);
 
-    fut = nabto_device_stream_write(streamContext->stream, streamContext->buffer, streamContext->read);
-    nabto_device_future_set_callback(fut, &stream_write_callback, streamContext);
-    return;
-}
-
-void handle_stream_accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* data);
-
-void handle_new_stream(struct streamContext* streamContext)
-{
-    NabtoDeviceFuture* fut = nabto_device_stream_accept(streamContext->stream);
-    nabto_device_future_set_callback(fut, handle_stream_accepted, streamContext);
-}
-
-void handle_stream_accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* data)
-{
-    nabto_device_future_free(future);
-    struct streamContext* streamContext = (struct streamContext*)data;
-    if (ec != NABTO_DEVICE_EC_OK) {
-        printf("stream accept failed, dropping stream");
-        nabto_device_stream_free(streamContext->stream);
-        free(streamContext);
-        return;
-    } else {
-        NabtoDeviceConnectionRef connectionId = nabto_device_stream_get_connection_ref(streamContext->stream);
-        printf("accepted new stream connectionId: %" PRIu64 "" NEWLINE, connectionId);
+    void accept()
+    {
+        future_ = nabto_device_stream_accept(stream_);
+        nabto_device_future_set_callback(future_, &RecvHandler::accepted, this);
     }
-    NabtoDeviceFuture* fut = nabto_device_stream_read_some(streamContext->stream, streamContext->buffer, 1500, &streamContext->read);
-    nabto_device_future_set_callback(fut, &stream_read_callback, streamContext);
-}
+
+    static void accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        RecvHandler* rh = (RecvHandler*)userData;
+        nabto_device_future_free(future);
+        if (ec) {
+            // Accept should not fail
+            return rh->end();
+        } else {
+            rh->close();
+        }
+    }
+
+    void close()
+    {
+        future_ = nabto_device_stream_close(stream_);
+        nabto_device_future_set_callback(future_, &RecvHandler::closed, this);
+    }
+
+    static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        nabto_device_future_free(future);
+        RecvHandler* rh = (RecvHandler*)userData;
+        if (ec) {
+            // this should not fail.
+            return rh->end();
+        }
+        rh->startRead();
+    }
+
+    void startRead()
+    {
+        future_ = nabto_device_stream_read_some(stream_, recvBuffer_.data(), recvBuffer_.size(), &transferred_);
+        nabto_device_future_set_callback(future_, &RecvHandler::read, this);
+    }
+
+    static void read(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        nabto_device_future_free(future);
+        RecvHandler* rh = (RecvHandler*)userData;
+        if (ec) {
+            // probably eof
+            return rh->end();
+        }
+        rh->totalTransferred_ += rh->transferred_;
+        rh->startRead();
+    }
+
+    void end() {
+        std::cout << "Recv stream end transferred: " << totalTransferred_ << std::endl;
+        nabto_device_stream_free(stream_);
+        free(this);
+    }
+
+ private:
+    NabtoDeviceStream* stream_;
+    std::array<uint8_t, 1024> recvBuffer_;
+    std::size_t transferred_;
+    std::size_t totalTransferred_ = 0;
+    NabtoDeviceFuture* future_;
+};
+
+class EchoHandler {
+ public:
+    EchoHandler(NabtoDeviceStream* stream)
+        : stream_(stream)
+    {
+
+    }
+
+    void start() {
+        accept();
+    }
+
+    void accept()
+    {
+        future_ = nabto_device_stream_accept(stream_);
+        nabto_device_future_set_callback(future_, &EchoHandler::accepted, this);
+    }
+
+    static void accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        EchoHandler* eh = (EchoHandler*)userData;
+        nabto_device_future_free(future);
+        if (ec) {
+            // Accept should not fail
+            return eh->end();
+        } else {
+            eh->startRead();
+        }
+    }
+
+    void startRead() {
+        future_ = nabto_device_stream_read_some(stream_, recvBuffer_.data(), recvBuffer_.size(), &transferred_);
+        nabto_device_future_set_callback(future_, &EchoHandler::read, this);
+    }
+
+    static void read(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        EchoHandler* eh = (EchoHandler*)userData;
+        nabto_device_future_free(future);
+        if (ec) {
+            // read failed probably eof, close stream
+            eh->close();
+        } else {
+            eh->startWrite();
+        }
+    }
+
+    void startWrite() {
+        future_ = nabto_device_stream_write(stream_, recvBuffer_.data(), transferred_);
+        nabto_device_future_set_callback(future_, &EchoHandler::written, this);
+    }
+
+    static void written(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        EchoHandler* eh = (EchoHandler*)userData;
+        nabto_device_future_free(future);
+        if (ec) {
+            // write should not fail, goto error
+            eh->error();
+            return;
+        } else {
+            eh->startRead();
+        }
+    }
+
+    void close() {
+        future_ = nabto_device_stream_close(stream_);
+        nabto_device_future_set_callback(future_, &EchoHandler::closed, this);
+    }
+
+    static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData) {
+        EchoHandler* eh = (EchoHandler*)userData;
+        nabto_device_future_free(future);
+        if (ec) {
+            // close should not fail
+        }
+        eh->end();
+    }
+
+    void error() {
+        end();
+    }
+
+    void end() {
+        nabto_device_stream_free(stream_);
+        free(this);
+    }
+
+ private:
+    NabtoDeviceStream* stream_;
+    std::array<uint8_t, 1024> recvBuffer_;
+    std::size_t transferred_;
+    NabtoDeviceFuture* future_;
+};
+
+class EchoListener {
+ public:
+    EchoListener(NabtoDevice* device)
+        : device_(device)
+    {
+    }
+    void startListen()
+    {
+        listenFuture_ = nabto_device_stream_listen(device_, 42, &listenStream_);
+        nabto_device_future_set_callback(listenFuture_, &EchoListener::newStream, this);
+    }
+
+    static void newStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        EchoListener* el = (EchoListener*)userData;
+        nabto_device_future_free(future);
+        if (ec) {
+            return;
+        }
+        EchoHandler* eh = new EchoHandler(el->listenStream_);
+        eh->start();
+        el->startListen();
+    }
+
+ private:
+    NabtoDeviceFuture* listenFuture_;
+    NabtoDeviceStream* listenStream_;
+    NabtoDevice* device_;
+};
+
+class RecvListener {
+ public:
+    RecvListener(NabtoDevice* device)
+        : device_(device)
+    {
+    }
+    void startListen()
+    {
+        listenFuture_ = nabto_device_stream_listen(device_, 43, &listenStream_);
+        nabto_device_future_set_callback(listenFuture_, &RecvListener::newStream, this);
+    }
+
+    static void newStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
+    {
+        RecvListener* rl = (RecvListener*)userData;
+        nabto_device_future_free(future);
+        if (ec) {
+            return;
+        }
+        RecvHandler* rh = new RecvHandler(rl->listenStream_);
+        rh->start();
+        rl->startListen();
+    }
+
+ private:
+    NabtoDeviceFuture* listenFuture_;
+    NabtoDeviceStream* listenStream_;
+    NabtoDevice* device_;
+};
 
 void init_iam(NabtoDevice* device);
 void run_device()
@@ -372,7 +513,10 @@ void run_device()
     auto getHandler = std::make_unique<GetHandler>(getResource);
     auto postHandler = std::make_unique<PostHandler>(postResource);
 
-    auto streamHandler = std::make_unique<StreamHandler>(dev);
+    auto echoListener = std::make_unique<EchoListener>(dev);
+    auto recvListener = std::make_unique<RecvListener>(dev);
+    echoListener->startListen();
+    recvListener->startListen();
 
     struct sigaction sigIntHandler;
 

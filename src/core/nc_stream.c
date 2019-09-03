@@ -108,7 +108,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
     nabto_stream_recv_segment_available(&ctx->stream);
     enum nabto_stream_next_event_type eventType = nabto_stream_next_event_to_handle(&ctx->stream);
 
-    NABTO_LOG_INFO(LOG, "next event to handle %s current state %s", nabto_stream_next_event_type_to_string(eventType), nabto_stream_state_as_string(ctx->stream.state));
+    NABTO_LOG_TRACE(LOG, "next event to handle %s current state %s", nabto_stream_next_event_type_to_string(eventType), nabto_stream_state_as_string(ctx->stream.state));
     switch(eventType) {
         case ET_ACCEPT:
             nc_stream_manager_ready_for_accept(ctx->streamManager, ctx);
@@ -371,7 +371,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
 {
     if (!stream->readAllCb && !stream->readSomeCb) {
         // data available but no one wants it
-        NABTO_LOG_INFO(LOG, "Stream do read with no read future");
+        NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
     } else {
         size_t readen;
         nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, stream->readBuffer, stream->readBufferLength, &readen);
