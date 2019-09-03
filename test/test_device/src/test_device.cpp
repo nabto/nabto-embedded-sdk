@@ -130,7 +130,7 @@ class StreamHandler {
 
     void startListen() {
         printf("StreamHandler::startListen\n");
-        NabtoDeviceFuture* future = nabto_device_stream_listen(device_, &stream_);
+        NabtoDeviceFuture* future = nabto_device_stream_listen(device_, 42, &stream_);
         nabto_device_future_set_callback(future, &StreamHandler::gotStream, this);
     }
 

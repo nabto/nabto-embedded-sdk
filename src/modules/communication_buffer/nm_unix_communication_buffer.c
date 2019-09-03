@@ -40,6 +40,9 @@ np_communication_buffer* nm_unix_comm_buf_allocate()
 
 void nm_unix_comm_buf_free(np_communication_buffer* buf)
 {
+    if (buf == NULL) {
+        return;
+    }
     free(buf->buf);
     free(buf);
 }

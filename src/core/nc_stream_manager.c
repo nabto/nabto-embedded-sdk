@@ -22,20 +22,44 @@ void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data);
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl)
 {
     ctx->pl = pl;
+
+    ctx->listenerSentinel.prev = &ctx->listenerSentinel;
+    ctx->listenerSentinel.next = &ctx->listenerSentinel;
+}
+
+void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)
+{
+    // remove listener from list
+    struct nc_stream_listener* before = listener->prev;
+    struct nc_stream_listener* after = listener->next;
+
+    before->next = after;
+    after->prev = before;
+
+    listener->cb(ec, stream, listener->cbData);
 }
 
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 {
-    if (ctx->cb != NULL) {
-        ctx->cb(NABTO_EC_ABORTED, NULL, ctx->cbData);
-        ctx->cb = NULL;
+    while (ctx->listenerSentinel.next != &ctx->listenerSentinel) {
+        struct nc_stream_listener* listener = ctx->listenerSentinel.next;
+        nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
     }
 }
 
-void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data)
+np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data)
 {
-    ctx->cbData = data;
-    ctx->cb = cb;
+    listener->cb = cb;
+    listener->cbData = data;
+    listener->type = type;
+    struct nc_stream_listener* before = ctx->listenerSentinel.prev;
+    struct nc_stream_listener* after = &ctx->listenerSentinel;
+
+    before->next = listener;
+    listener->next = after;
+    after->prev = listener;
+    listener->prev = before;
+    return NABTO_EC_OK;
 }
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
@@ -86,11 +110,17 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 
 void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream)
 {
-    NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
-    if (ctx->cb != NULL) {
-        ctx->cb(NABTO_EC_OK, stream, ctx->cbData);
+    uint32_t type = nabto_stream_get_content_type(&stream->stream);
+
+    struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
+    while (iterator != &ctx->listenerSentinel) {
+        if (iterator->type == type) {
+            nc_stream_manager_resolve_listener(iterator, stream, NABTO_EC_OK);
+            return;
+        }
+        iterator = iterator->next;
     }
-    NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
+    nabto_stream_release(&stream->stream);
     return;
 }
 

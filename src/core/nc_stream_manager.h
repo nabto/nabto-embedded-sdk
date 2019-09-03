@@ -15,21 +15,28 @@ typedef void (*nc_stream_manager_listen_callback)(np_error_code ec, struct nc_st
 
 struct nc_client_connection;
 
-struct nc_stream_manager_context {
-    struct np_platform* pl;
+struct nc_stream_listener;
+
+struct nc_stream_listener {
+    struct nc_stream_listener* next;
+    struct nc_stream_listener* prev;
+    uint32_t type;
     nc_stream_manager_listen_callback cb;
     void* cbData;
+};
+
+struct nc_stream_manager_context {
+    struct np_platform* pl;
+    struct nc_stream_listener listenerSentinel;
     np_communication_buffer* rstBuf;
     struct nc_stream_context streams[NABTO_MAX_STREAMS];
     struct nc_client_connection* streamConns[NABTO_MAX_STREAMS];
     struct np_dtls_srv_send_context sendCtx;
 };
 
-
-
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl);
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx);
-void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data);
+np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data);
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
                                      np_communication_buffer* buffer, uint16_t bufferSize);

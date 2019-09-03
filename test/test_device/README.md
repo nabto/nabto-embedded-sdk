@@ -8,6 +8,8 @@ different functionality.
 The test device has a stream echo server. When a client opens a stream
 it echoes all the received data back to the client.
 
+The echo server has the type 42.
+
 ### Coap Server
 
 The device has a coap server which have a POST and a GET endpoint.

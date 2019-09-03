@@ -163,7 +163,9 @@ void nc_stream_test_syn_ack()
     nc_stream_manager_init(&ctx.cliCtx, &ctx.cliPl);
     nc_stream_manager_init(&ctx.devCtx, &ctx.devPl);
 
-    nc_stream_manager_set_listener(&ctx.devCtx, &nc_stream_test_listener_cb, &ctx);
+    struct nc_stream_listener listener;
+
+    nc_stream_manager_add_listener(&ctx.devCtx, &listener, 42, &nc_stream_test_listener_cb, &ctx);
 
     ctx.cliStream = &ctx.cliCtx.streams[0].stream;
     nc_stream_init(&ctx.cliPl, &ctx.cliCtx.streams[0], 42, ctx.cliCtx.streams[0].dtls, &ctx.cliCtx);

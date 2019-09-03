@@ -11,6 +11,7 @@
 
 struct nabto_stream_module nc_stream_module;
 
+static void nc_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
 
 void event(struct nc_stream_context* ctx);
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType);
@@ -80,6 +81,7 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->currentExpiry = nabto_stream_stamp_infinite();
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
+    nabto_stream_set_application_event_callback(&ctx->stream, &nc_stream_application_event_callback, ctx);
 }
 
 void nc_stream_destroy(struct nc_stream_context* ctx)
@@ -87,6 +89,7 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     ctx->active = false;
     ctx->dtls = NULL;
     ctx->pl->buf.free(ctx->sendBuffer);
+    ctx->sendBuffer = NULL;
     ctx->streamId = 0;
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
 }
@@ -271,7 +274,6 @@ void nc_stream_free_recv_segment(struct nabto_stream_recv_segment* segment, void
  * Implementation of async user facing stream functions
  ************/
 
-static void nc_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
 static void nc_stream_do_read(struct nc_stream_context* stream);
 static void nc_stream_do_write_all(struct nc_stream_context* stream);
 static void nc_stream_handle_close(struct nc_stream_context* stream);

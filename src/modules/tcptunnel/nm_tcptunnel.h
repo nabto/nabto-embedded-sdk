@@ -45,5 +45,4 @@ void nm_tcptunnels_init(struct nm_tcptunnels* tunnels);
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels);
 
-
 #endif

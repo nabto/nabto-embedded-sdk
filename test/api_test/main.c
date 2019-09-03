@@ -51,7 +51,7 @@ int main()
     NabtoDeviceCoapResource* hwResource;
     nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"helloworld", NULL}, &hwResource);
 
-    NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, &stream);
+    NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, 42, &stream);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
 

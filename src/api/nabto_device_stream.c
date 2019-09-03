@@ -8,26 +8,35 @@
 #define LOG NABTO_LOG_MODULE_API
 
 
+struct nabto_device_stream_listener_context {
+    struct nabto_device_context* device;
+    struct nabto_device_future* future;
+    struct nc_stream_listener listener;
+    NabtoDeviceStream** stream;
+};
+
 /*******************************************
  * Streaming Api
  *******************************************/
 
-NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream)
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* device, uint32_t type, NabtoDeviceStream** stream)
 {
     *stream = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_future* fut = nabto_device_future_new(dev);
     if (!fut) {
         return NULL;
     }
-    if (dev->streamListenFuture) {
-        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nabto_device_stream_listener_context* listenerContext = calloc(1, sizeof(struct nabto_device_stream_listener_context));
+    listenerContext->device = dev;
+    listenerContext->future = fut;
+    listenerContext->stream = stream;
+    np_error_code ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->listener, type, &nabto_device_stream_listener_callback, listenerContext);
+    if (ec) {
+        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(ec));
         nabto_api_future_queue_post(&dev->queueHead, fut);
-    } else {
-        dev->streamListenFuture = fut;
-        dev->streamListenStream = (struct nabto_device_stream**)stream;
-        nc_stream_manager_set_listener(&dev->core.streamManager, &nabto_device_stream_listener_callback, dev);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
@@ -198,23 +207,19 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream*
 
 void nabto_device_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data)
 {
-    struct nabto_device_context* dev = (struct nabto_device_context*)data;
-    NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", dev->streamListenFuture);
+    struct nabto_device_stream_listener_context* listenerContext = data;
+    struct nabto_device_context* dev = listenerContext->device;
+    NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", listenerContext->future);
 
-    if (dev->streamListenFuture) {
-
-        if (ec == NABTO_DEVICE_EC_OK) {
-            struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
-            str->stream = stream;
-            str->dev = dev;
-            *(dev->streamListenStream) = str;
-        }
-
-        nabto_api_future_set_error_code(dev->streamListenFuture, nabto_device_error_core_to_api(ec));
-        nabto_api_future_queue_post(&dev->queueHead, dev->streamListenFuture);
-
-        dev->streamListenFuture = NULL;
-    } else {
-        NABTO_LOG_INFO(LOG, "stream_listener had no listen future");
+    if (ec == NABTO_EC_OK) {
+        struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
+        str->stream = stream;
+        str->dev = dev;
+        *(listenerContext->stream) = (NabtoDeviceStream*)str;
     }
+
+    nabto_api_future_set_error_code(listenerContext->future, nabto_device_error_core_to_api(ec));
+    nabto_api_future_queue_post(&dev->queueHead, listenerContext->future);
+
+    free(listenerContext);
 }

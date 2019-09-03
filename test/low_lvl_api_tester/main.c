@@ -86,7 +86,8 @@ int main() {
     if (ec != NABTO_EC_OK) {
         // fail
     }
-    nc_stream_manager_set_listener(&device.streamManager, &stream_listener, NULL);
+    struct nc_stream_listener listener;
+    nc_stream_manager_add_listener(&device.streamManager, &listener, 42, &stream_listener, NULL);
 
     test_platform_run(&tp);
     exit(0);
