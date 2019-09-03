@@ -72,7 +72,9 @@ endif()
 
 add_subdirectory(test)
 
+add_subdirectory(examples/common)
 add_subdirectory(examples/heat_pump)
+add_subdirectory(examples/tcptunnel)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_executable(unit_test "${test_runner_src}")

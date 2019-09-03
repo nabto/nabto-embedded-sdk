@@ -1,7 +1,5 @@
-#include "heat_pump.hpp"
+#include "tcptunnel.hpp"
 #include "json_config.hpp"
-#include "heat_pump_iam_policies.hpp"
-#include "heat_pump_coap.hpp"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -13,35 +11,27 @@
 #include <stdio.h>
 #include <unistd.h>
 
-/**
- * The first time the heatpump is started init is called and writes a
- * configuration file. The configuration file is used in subsequent
- * runs of the heatpump.
- */
+bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
+void run_tcptunnel(const std::string& configFile);
 
 void my_handler(int s){
     printf("Caught signal %d\n",s);
 }
 
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-void run_heat_pump(const std::string& configFile);
-
-int main(int argc, char** argv) {
-    cxxopts::Options options("Heat pump", "Nabto heat pump example.");
+int main(int argc, char** argv)
+{
+    cxxopts::Options options("TCP Tunnel", "Nabto tcp tunnel example.");
 
     options.add_options("General")
         ("h,help", "Show help")
         ("i,init", "Initialize configuration file")
-        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump_device.json"))
-        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"))
-        ("log-file", "File to log to", cxxopts::value<std::string>()->default_value("heat_pump_device_log.txt"));
-
-    options.add_options("Init Parameters")
+        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("tcptunnel_device.json"))
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"));
+     options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
         ("d,device", "Device id", cxxopts::value<std::string>())
         ("s,server", "hostname of the server", cxxopts::value<std::string>());
-
-    try {
+     try {
 
         auto result = options.parse(argc, argv);
 
@@ -56,12 +46,12 @@ int main(int argc, char** argv) {
             std::string productId = result["product"].as<std::string>();
             std::string deviceId = result["device"].as<std::string>();
             std::string server = result["server"].as<std::string>();
-            if (!init_heat_pump(configFile, productId, deviceId, server)) {
+            if (!init_tcptunnel(configFile, productId, deviceId, server)) {
                 std::cerr << "Initialization failed" << std::endl;
             }
         } else {
             std::string configFile = result["config"].as<std::string>();
-            run_heat_pump(configFile);
+            run_tcptunnel(configFile);
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -74,8 +64,37 @@ int main(int argc, char** argv) {
     }
     return 0;
 }
+const json defaultTcptunnelIam = R"(
+  "DefaultRole": "Unpaired",
+  "Policies": {
+    "PasswordPairing": {
+      "Statements": [
+        {
+          "Actions": [
+            "Pairing:Password"
+          ],
+          "Allow": true
+        }
+      ],
+      "Version": 1
+    }
+  },
+  "Roles": {
+    "Unpaired": [
+      "PasswordPairing"
+    ],
+    "Tunnelling": [
+    ],
+  },
+  "Users": {
+    "DefaultUser": {
+      "Roles": [ "Tunnelling" ]
+    }
+  }
+}
+)"_json;
 
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
+bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
 {
     if (json_config_exists(configFile)) {
         std::cerr << "The config already file exists, remove " << configFile << " and try again" << std::endl;
@@ -102,13 +121,9 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     config["ProductId"] = productId;
     config["DeviceId"] = deviceId;
     config["Server"] = server;
-    config["HeatPump"]["Mode"] = "COOL";
-    config["HeatPump"]["Power"] = false;
-    config["HeatPump"]["Target"] = 22.3;
-    config["HeatPump"]["Temperature"] = 21.2;
 
 
-    std::vector<uint8_t> iamCbor = json::to_cbor(defaultHeatPumpIam);
+    std::vector<uint8_t> iamCbor = json::to_cbor(defaultTcptunnelIam);
     std::cout << "iam size " << iamCbor.size() << std::endl;
 
     // test the iam config
@@ -117,7 +132,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
         return false;
     }
 
-    config["Iam"] = defaultHeatPumpIam;
+    config["Iam"] = defaultTcptunnelIam;
 
     json_config_save(configFile, config);
 
@@ -126,7 +141,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     return true;
 }
 
-void run_heat_pump(const std::string& configFile)
+void run_tcptunnel(const std::string& configFile)
 {
     NabtoDeviceError ec;
     json config;
@@ -170,6 +185,10 @@ void run_heat_pump(const std::string& configFile)
     if (ec) {
         std::cerr << "Failed to enable mdns" << std::endl;
     }
+    ec = nabto_device_enable_tcp_tunnelling(device);
+    if (ec) {
+        std::cerr << "Failed to enable tcp tunnelling" << std::endl;
+    }
     ec = nabto_device_log_set_std_out_callback(device);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
@@ -192,10 +211,6 @@ void run_heat_pump(const std::string& configFile)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
-    HeatPump hp(device, config, configFile);
-    hp.init();
-
-    heat_pump_coap_init(device, &hp);
 
     // Wait for the user to press Ctrl-C
 
