@@ -307,6 +307,13 @@ void nm_epoll_destroy(np_udp_socket* sock)
     struct nm_epoll_context* epoll = sock->pl->udpData;
     shutdown(sock->sock, SHUT_RDWR);
 
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.ptr = NULL;
+
+    // set data ptr to NULL such that we do not tri to use the ptr in the future.
+    epoll_ctl(epoll->fd, EPOLL_CTL_MOD, sock->sock, &ev);
+
     if (epoll_ctl(epoll->fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
         NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
