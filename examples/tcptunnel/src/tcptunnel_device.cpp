@@ -85,7 +85,8 @@ const json defaultTcptunnelIam = R"(
           "Actions": [ "TcpTunnel:Create" ],
           "Allow": true
         }
-      ]
+      ],
+      "Version": 1
     }
   },
   "Roles": {
@@ -98,7 +99,8 @@ const json defaultTcptunnelIam = R"(
   },
   "Users": {
     "DefaultUser": {
-      "Roles": [ "Tunnelling" ]
+      "Roles": [ "Tunnelling" ],
+      "Fingerprints": []
     }
   }
 }
@@ -222,6 +224,8 @@ void run_tcptunnel(const std::string& configFile)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
+    TcpTunnel tcpTunnel(device, config, configFile);
+    tcpTunnel.init();
 
     // Wait for the user to press Ctrl-C
 

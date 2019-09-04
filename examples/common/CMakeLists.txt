@@ -1,5 +1,6 @@
 set(src
   json_config.cpp
+  coap_request_handler.cpp
   )
 
 add_library(device_examples_common "${src}")

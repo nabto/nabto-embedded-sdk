@@ -1,6 +1,7 @@
 set(src
   src/tcptunnel_device.cpp
   src/tcptunnel.cpp
+  src/tcptunnel_coap.cpp
   )
 
 add_executable(tcptunnel_device "${src}")

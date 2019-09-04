@@ -1,4 +1,25 @@
 
+#include "tcptunnel_coap.hpp"
+#include "tcptunnel.hpp"
+
+#include <nabto/nabto_device_experimental.h>
+
+#include "coap_request_handler.hpp"
+
+#include <iostream>
+
+#include <cbor.h>
+
+void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData);
+
+
+
+void tcptunnel_coap_init(NabtoDevice* device, TcpTunnel* tcpTunnel)
+{
+    const char* postPairingPassword[] = { "pairing", "password", NULL };
+    tcpTunnel->coapPostPairingPassword = std::make_unique<nabto::common::CoapRequestHandler>(tcpTunnel, device, NABTO_DEVICE_COAP_POST, postPairingPassword, &tcptunnel_pairing_password);
+}
+
 bool tcptunnel_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
 {
     uint16_t contentFormat;
@@ -75,8 +96,13 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
         ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), "DefaultUser", fp.c_str());
         if (ec) {
             std::cout << "Could not add fingerprint to the default user" << std::endl;
-            return false;
+            nabto_device_coap_error_response(request, 500, "Server error");
+            return;
         }
         std::cout << "Added the fingerprint " << fingerprint << " to the DefaultUser" << std::endl;
+        // OK response
+        NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
+        nabto_device_coap_response_set_code(response, 205);
+        nabto_device_coap_response_ready(response);
     }
 }
