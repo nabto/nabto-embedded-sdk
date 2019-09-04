@@ -65,6 +65,7 @@ int main(int argc, char** argv)
     return 0;
 }
 const json defaultTcptunnelIam = R"(
+{
   "DefaultRole": "Unpaired",
   "Policies": {
     "PasswordPairing": {
@@ -77,6 +78,14 @@ const json defaultTcptunnelIam = R"(
         }
       ],
       "Version": 1
+    },
+    "TunnelAll": {
+      "Statements": [
+        {
+          "Actions": [ "TcpTunnel:Create" ],
+          "Allow": true
+        }
+      ]
     }
   },
   "Roles": {
@@ -84,7 +93,8 @@ const json defaultTcptunnelIam = R"(
       "PasswordPairing"
     ],
     "Tunnelling": [
-    ],
+      "TunnelAll"
+    ]
   },
   "Users": {
     "DefaultUser": {
@@ -127,8 +137,9 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
     std::cout << "iam size " << iamCbor.size() << std::endl;
 
     // test the iam config
-    if (nabto_device_iam_load(device, iamCbor.data(), iamCbor.size()) != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Error loading default iam" << std::endl;
+    ec = nabto_device_iam_load(device, iamCbor.data(), iamCbor.size());
+    if (ec) {
+        std::cerr << "Error loading default iam " << nabto_device_error_get_message(ec) << std::endl;
         return false;
     }
 
