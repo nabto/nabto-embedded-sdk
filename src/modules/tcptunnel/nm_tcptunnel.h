@@ -5,6 +5,7 @@
 #include <platform/np_tcp.h>
 
 struct nabto_stream;
+struct nc_device_context;
 
 #define NM_TCPTUNNEL_MAX_HOST_LENGTH 39
 
@@ -32,6 +33,8 @@ struct nm_tcptunnel {
     struct np_ip_address address;
     uint16_t port;
     struct nm_tcptunnel_connection connectionsSentinel;
+    uint32_t streamId;
+    char tunnelId[9];
 };
 
 struct nm_tcptunnels {
@@ -41,7 +44,7 @@ struct nm_tcptunnels {
     struct nm_tcptunnel tunnelsSentinel;
 };
 
-void nm_tcptunnels_init(struct nm_tcptunnels* tunnels);
+void nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device);
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels);
 

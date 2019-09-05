@@ -4,6 +4,8 @@
 #include <core/nc_coap_server.h>
 #include <core/nc_iam.h>
 
+#include <cbor.h>
+
 static void create_tunnel(struct nabto_coap_server_request* request, void* data);
 static void delete_tunnel(struct nabto_coap_server_request* request, void* data);
 static void get_tunnel(struct nabto_coap_server_request* request, void* data);
@@ -11,9 +13,9 @@ static void list_tunnels(struct nabto_coap_server_request* request, void* data);
 static void list_connections(struct nabto_coap_server_request* request, void* data);
 static void get_connection(struct nabto_coap_server_request* request, void* data);
 
-void nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nabto_coap_server* server)
+void nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server_context* server)
 {
-    nabto_coap_server_add_resource(server, NABTO_COAP_CODE_POST,
+    nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_POST,
                                    (const char*[]){"tcptunnels", NULL},
                                    create_tunnel, tunnels);
 }
@@ -67,10 +69,28 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     tunnel->address = address;
     tunnel->port = port;
 
-
-
+    uint8_t cborResponse[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborResponse, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "TunnelId");
+    cbor_encode_text_stringz(&map, tunnel->tunnelId);
+    cbor_encode_text_stringz(&map, "StreamId");
+    cbor_encode_uint(&map, tunnel->streamId);
+    cbor_encoder_close_container(&encoder, &map);
+    size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (extra != 0) {
+        // TODO send error 500
+    }
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborResponse);
 
     // Return 201 Created.
+    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
+    nabto_coap_server_response_set_code(response, NABTO_COAP_CODE(2,01));
+    nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    nabto_coap_server_response_set_payload(response, cborResponse, used);
+    nabto_coap_server_response_ready(response);
 }
 
 void delete_tunnel(struct nabto_coap_server_request* request, void* data)

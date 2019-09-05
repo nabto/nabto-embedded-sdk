@@ -56,7 +56,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_tcp_tunnelling(NabtoDevice
         if (dev->tcptunnels == NULL) {
             ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
         } else {
-            nm_tcptunnels_init(dev->tcptunnels);
+            nm_tcptunnels_init(dev->tcptunnels, &dev->core);
         }
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
