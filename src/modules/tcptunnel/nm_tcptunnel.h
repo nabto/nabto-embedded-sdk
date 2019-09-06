@@ -26,6 +26,9 @@ struct nm_tcptunnel_connection {
     uint8_t streamRecvBuffer[1024];
     size_t streamRecvBufferSize;
     size_t streamReadSize;
+
+    bool tcpReadEnded;
+    bool streamReadEnded;
 };
 
 struct nm_tcptunnel {
@@ -50,10 +53,13 @@ struct nm_tcptunnels {
 };
 
 void nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device);
+void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels);
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels);
 
 void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, struct np_ip_address* address, uint16_t port);
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel* tunnel);
+
+void nm_tcptunnel_remove_connection(struct nm_tcptunnel_connection* connection);
 
 #endif

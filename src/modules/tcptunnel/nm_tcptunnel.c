@@ -11,6 +11,7 @@
 #define LOG NABTO_LOG_MODULE_TUNNEL
 
 static void nm_tcptunnel_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
+static void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel);
 
 void nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
 {
@@ -29,9 +30,13 @@ void nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context*
 
 }
 
-void nm_tcptunnels_deinit()
+void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
 {
-    // TODO
+    while (tunnels->tunnelsSentinel.next != &tunnels->tunnelsSentinel) {
+        struct nm_tcptunnel* tunnel = tunnels->tunnelsSentinel.next;
+        // stop and remove tunnel from tunnels
+        nm_tcptunnel_deinit(tunnel);
+    }
 }
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels)
@@ -65,6 +70,11 @@ void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, struct np_ip_address* addres
     tunnel->port = port;
 }
 
+void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel)
+{
+    // TODO
+}
+
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel* tunnel)
 {
     struct nc_device_context* device = tunnel->tunnels->device;
@@ -94,4 +104,17 @@ void nm_tcptunnel_stream_listener_callback(np_error_code ec, struct nc_stream_co
         }
         nm_tcptunnel_init_stream_listener(tunnel);
     }
+}
+
+
+/**
+ * called from a connection when it detects that the connection is closed.
+ */
+void nm_tcptunnel_remove_connection(struct nm_tcptunnel_connection* connection)
+{
+    // remove connection from connections.
+    struct nm_tcptunnel_connection* before = connection->prev;
+    struct nm_tcptunnel_connection* after = connection->next;
+    before->next = after;
+    after->prev = before;
 }

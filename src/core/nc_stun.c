@@ -156,7 +156,6 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            NABTO_LOG_TRACE(LOG, "Sending stun packet on primary socket");
             nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
@@ -179,14 +178,12 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            NABTO_LOG_TRACE(LOG, "Sending stun packet on secondary socket");
             nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
         case STUN_ET_WAIT:
         {
             uint32_t to = nabto_stun_get_timeout_ms(&ctx->stun);
-            NABTO_LOG_TRACE(LOG, "event state: STUN_ET_WAIT waiting for %d ms", to);
             np_event_queue_post_timed_event(ctx->pl, &ctx->toEv, to, &nc_stun_handle_timeout, ctx);
         }
             break;

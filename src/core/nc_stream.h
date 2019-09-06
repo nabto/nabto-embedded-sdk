@@ -63,10 +63,24 @@ void nc_stream_remove_connection(struct nc_stream_context* ctx);
 np_error_code nc_stream_status_to_ec(nabto_stream_status status);
 
 
+void nc_stream_accept(struct nc_stream_context* stream);
 np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
+
+/**
+ * Abort a stream, means close all outstanding async operations. And
+ * if neccessary mark the stream as aborted. If not all data was read
+ * or wrote.
+ */
+void nc_stream_abort(struct nc_stream_context* stream);
+
+/**
+ * Release ownership of a streaming resource. The resource is then
+ * cleaned up by the stream manager module.
+ */
+void nc_stream_release(struct nc_stream_context* stream);
 
 #endif // NC_STREAM_H

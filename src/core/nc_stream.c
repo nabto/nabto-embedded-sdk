@@ -179,7 +179,6 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
 void nc_stream_handle_timeout(const np_error_code ec, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
-    NABTO_LOG_TRACE(LOG, "Handle timeout called");
     ctx->currentExpiry = nabto_stream_stamp_infinite();
     nc_stream_event(ctx);
 }
@@ -277,6 +276,12 @@ void nc_stream_free_recv_segment(struct nabto_stream_recv_segment* segment, void
 static void nc_stream_do_read(struct nc_stream_context* stream);
 static void nc_stream_do_write_all(struct nc_stream_context* stream);
 static void nc_stream_handle_close(struct nc_stream_context* stream);
+
+void nc_stream_accept(struct nc_stream_context* stream)
+{
+    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
+    nabto_stream_accept(&stream->stream);
+}
 
 np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
 {
@@ -496,4 +501,14 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
         default:
             NABTO_LOG_ERROR(LOG, "Unknown stream application event type %s", nabto_stream_application_event_type_to_string(eventType));
     }
+}
+
+void nc_stream_abort(struct nc_stream_context* stream)
+{
+    nabto_stream_release(&stream->stream);
+}
+
+void nc_stream_release(struct nc_stream_context* stream)
+{
+    nabto_stream_release(&stream->stream);
 }

@@ -82,7 +82,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     struct nc_stream_context* stream;
 
     NABTO_LOG_TRACE(LOG, "stream manager handling packet. AT: %u", *start);
-    NABTO_LOG_BUF(LOG, start, bufferSize);
+
     if (bufferSize < 4) {
         return;
     }

@@ -377,7 +377,6 @@ void* nabto_device_network_thread(void* data)
         if (nfds > 0) {
             nabto_device_platform_read(nfds);
         }
-        NABTO_LOG_TRACE(LOG, "Network thread signalling core thread");
         nabto_device_threads_cond_signal(dev->eventCond);
         if (dev->closing) {
             nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -410,9 +409,7 @@ void* nabto_device_core_thread(void* data)
             NABTO_LOG_TRACE(LOG, "future execution added events, not waiting");
         } else if (np_event_queue_has_timed_event(&dev->pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&dev->pl);
-            NABTO_LOG_TRACE(LOG, "Found timed events, waits %u ms for signals", ms);
             nabto_device_threads_cond_timed_wait(dev->eventCond, dev->eventMutex, ms);
-            NABTO_LOG_TRACE(LOG, "Core thread timed wait returned");
         } else {
 
             NABTO_LOG_TRACE(LOG, "no timed events, waits for signals forever");

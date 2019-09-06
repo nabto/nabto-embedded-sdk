@@ -257,13 +257,11 @@ void nm_dtls_event_do_one(void* data)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*)data;
     int ret;
-    NABTO_LOG_TRACE(LOG, "doing one");
     if(ctx->ctx.state == CONNECTING) {
         ret = mbedtls_ssl_handshake( &ctx->ctx.ssl );
         if( ret == MBEDTLS_ERR_SSL_WANT_READ ||
             ret == MBEDTLS_ERR_SSL_WANT_WRITE ) {
             //Keep State CONNECTING
-            NABTO_LOG_TRACE(LOG, "Keeping CONNECTING state");
         } else {
             if( ret != 0 )
             {
@@ -374,7 +372,6 @@ np_error_code nm_dtls_async_send_data(struct np_platform* pl, np_dtls_cli_contex
     if (ctx->ctx.state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
-    NABTO_LOG_TRACE(LOG, "enqueued dtls application data packet");
     nm_dtls_cli_insert_send_data(sendCtx, &ctx->sendSentinel);
     nm_dtls_cli_start_send(ctx);
     return NABTO_EC_OK;
@@ -422,7 +419,6 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
 np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_cli_context* ctx,
                                    np_communication_buffer* buffer, uint16_t bufferSize)
 {
-    NABTO_LOG_TRACE(LOG, "connection data received callback");
     ctx->ctx.recvBuffer = ctx->pl->buf.start(buffer);
     ctx->ctx.recvBufferSize = bufferSize;
     nm_dtls_event_do_one(ctx);
@@ -451,11 +447,8 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if (ctx->ctx.sslSendBufferSize == 0) {
-        NABTO_LOG_TRACE(LOG, "mbedtls wants send, sending state: %u", ctx->sending);
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
-//        NABTO_LOG_TRACE(LOG, "mbedtls wants write:");
-//        NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         // TODO
         ctx->sender(true, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->senderData);
@@ -469,14 +462,10 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if (ctx->ctx.recvBufferSize == 0) {
-        NABTO_LOG_TRACE(LOG, "Empty buffer, returning WANT_READ");
         return MBEDTLS_ERR_SSL_WANT_READ;
     } else {
-        NABTO_LOG_TRACE(LOG, "mbtls wants read %u bytes into buffersize: %u", ctx->ctx.recvBufferSize, bufferSize);
         size_t maxCp = bufferSize > ctx->ctx.recvBufferSize ? ctx->ctx.recvBufferSize : bufferSize;
         memcpy(buffer, ctx->ctx.recvBuffer, maxCp);
-        NABTO_LOG_TRACE(LOG, "returning %i bytes to mbedtls:", maxCp);
-//        NABTO_LOG_BUF(LOG, buffer, maxCp);
         ctx->ctx.recvBufferSize = 0;
         return maxCp;
     }

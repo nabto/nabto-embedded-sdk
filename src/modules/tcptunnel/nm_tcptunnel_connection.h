@@ -8,4 +8,6 @@ np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel* tunnel, struct n
 
 void nm_tcptunnel_connection_start(struct nm_tcptunnel_connection* connection);
 
+void nm_tcptunnel_connetion_stop_from_manager(struct nm_tcptunnel_connection* connection);
+
 #endif

@@ -101,7 +101,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
         conn->currentChannel.sock = sock;
     }
 
-    NABTO_LOG_TRACE(LOG, "handle packet for DTLS");
+    //NABTO_LOG_TRACE(LOG, "handle packet for DTLS");
 
     // Remove connection ID before passing packet to DTLS
     memmove(start, start+16, bufferSize-16);
@@ -183,13 +183,13 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
 
 
     if (applicationType == AT_STREAM) {
-        NABTO_LOG_TRACE(LOG, "Received stream packet");
+        //NABTO_LOG_TRACE(LOG, "Received stream packet");
         nc_stream_manager_handle_packet(conn->streamManager, conn, buffer, bufferSize);
     } else if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
-        NABTO_LOG_TRACE(LOG, "Received COAP packet");
+        //NABTO_LOG_TRACE(LOG, "Received COAP packet");
         nc_coap_server_handle_packet(&conn->device->coapServer, conn, buffer, bufferSize);
     } else if (applicationType == AT_KEEP_ALIVE) {
-        NABTO_LOG_TRACE(LOG, "Received KeepAlive packet");
+        //NABTO_LOG_TRACE(LOG, "Received KeepAlive packet");
         nc_client_connection_handle_keep_alive(conn, channelId, buffer, bufferSize);
     } else {
         NABTO_LOG_ERROR(LOG, "unknown application data type: %u", applicationType);
@@ -337,7 +337,6 @@ void nc_client_connection_async_send_to_udp(uint8_t channel,
                                             np_communication_buffer* buffer, uint16_t bufferSize,
                                             np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
-    NABTO_LOG_TRACE(LOG, "nc_client_connection_async_send_to_udp");
     struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
     conn->sentCb = cb;
     conn->sentData = data;
@@ -350,7 +349,6 @@ void nc_client_connection_async_send_to_udp(uint8_t channel,
     memmove(start+16, start, bufferSize);
     memcpy(start, conn->id.id, 15);
     bufferSize = bufferSize + 16;
-    NABTO_LOG_TRACE(LOG, "Connection sending %u bytes to UDP module", bufferSize);
 
     if (channel == conn->currentChannel.channelId || channel == NP_DTLS_SRV_DEFAULT_CHANNEL_ID) {
         *(start+15) = conn->currentChannel.channelId;

@@ -82,7 +82,6 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
 
 void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
 {
-    NABTO_LOG_TRACE(LOG, "handle wait");
     uint32_t nextStamp;
     nextStamp = nabto_coap_client_get_next_timeout(&ctx->client, ctx->pl->ts.now_ms());
     if (nabto_coap_is_stamp_less(nextStamp, ctx->currentExpiry)) {
@@ -99,7 +98,6 @@ void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
 void nc_coap_client_handle_timeout(const np_error_code ec, void* data)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*) data;
-    NABTO_LOG_TRACE(LOG, "Handle timeout called");
     nc_coap_client_set_infinite_stamp(ctx);
     nabto_coap_client_handle_timeout(&ctx->client, ctx->pl->ts.now_ms());
     nc_coap_client_event(ctx);
@@ -133,7 +131,6 @@ void nc_coap_client_event(struct nc_coap_client_context* ctx)
 void nc_coap_client_send_to_callback(const np_error_code ec, void* data)
 {
     struct nc_coap_client_context* ctx = data;
-    NABTO_LOG_TRACE(LOG, "coap_client_send_to_callback");
     ctx->isSending = false;
     nc_coap_client_event(ctx);
 }
@@ -147,7 +144,6 @@ void nc_coap_client_notify_event_callback(void* userData)
 void nc_coap_client_notify_event(void* userData)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*)userData;
-    NABTO_LOG_TRACE(LOG, "nc_coap_client_notify_event received");
     np_event_queue_post(ctx->pl, &ctx->ev, &nc_coap_client_notify_event_callback, ctx);
 }
 
