@@ -49,6 +49,15 @@ void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data)
 {
+    np_error_code ec;
+    if (type == 0) {
+        // get ephemeral port number
+        ec = nc_stream_manager_get_ephemeral_stream_port(ctx, &type);
+        if (ec) {
+            return ec;
+        }
+    }
+
     listener->cb = cb;
     listener->cbData = data;
     listener->type = type;
