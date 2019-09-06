@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-void run_tcptunnel(const std::string& configFile);
+void run_tcptunnel(const std::string& configFile, const std::string& logLevel);
 
 void my_handler(int s){
     printf("Caught signal %d\n",s);
@@ -51,7 +51,8 @@ int main(int argc, char** argv)
             }
         } else {
             std::string configFile = result["config"].as<std::string>();
-            run_tcptunnel(configFile);
+            std::string logLevel = result["log-level"].as<std::string>();
+            run_tcptunnel(configFile, logLevel);
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -154,7 +155,7 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
     return true;
 }
 
-void run_tcptunnel(const std::string& configFile)
+void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
 {
     NabtoDeviceError ec;
     json config;
@@ -202,10 +203,15 @@ void run_tcptunnel(const std::string& configFile)
     if (ec) {
         std::cerr << "Failed to enable tcp tunnelling" << std::endl;
     }
+    ec = nabto_device_log_set_level(device, logLevel.c_str());
+    if (ec) {
+        std::cerr << "Failed to set loglevel" << std::endl;
+    }
     ec = nabto_device_log_set_std_out_callback(device);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }
+
 
     // run application
     ec = nabto_device_start(device);

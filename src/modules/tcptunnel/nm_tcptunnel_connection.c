@@ -1,11 +1,13 @@
 #include "nm_tcptunnel.h"
 #include <core/nc_stream.h>
 
+#include <stdlib.h>
+
 /**
  * Forward data from a nabto stream to a tcp connection
  */
 
-
+static void stream_accepted(const np_error_code ec, void* userData);
 static void start_connect(struct nm_tcptunnel_connection* connection);
 static void connect_callback(np_error_code ec, void* userData);
 static void connected(struct nm_tcptunnel_connection* connection);
@@ -20,8 +22,66 @@ static void stream_readen(np_error_code ec, void* userData);
 static void start_tcp_write(struct nm_tcptunnel_connection* connection, size_t transferred);
 static void tcp_written(np_error_code ec, void* userData);
 
+
+struct nm_tcptunnel_connection* nm_tcptunnel_connection_new()
+{
+    struct nm_tcptunnel_connection* connection = calloc(1,sizeof(struct nm_tcptunnel_connection));
+    if (connection == NULL) {
+        return NULL;
+    }
+
+    connection->tcpRecvBufferSize = 1024;
+    connection->streamRecvBufferSize = 1024;
+    return connection;
+}
+
+void nm_tcptunnel_connection_free(struct nm_tcptunnel_connection* connection)
+{
+    // TODO
+    free(connection);
+}
+
+np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel* tunnel, struct nm_tcptunnel_connection* connection, struct nc_stream_context* stream)
+{
+    connection->tunnel = tunnel;
+    connection->pl = tunnel->tunnels->device->pl;
+    struct np_platform* pl = connection->pl;
+    np_error_code ec = pl->tcp.create(pl, &connection->socket);
+    if (ec) {
+        return ec;
+    }
+    connection->stream = stream;
+
+
+    // insert connection into back of connections list
+    struct nm_tcptunnel_connection* before = tunnel->connectionsSentinel.prev;
+    struct nm_tcptunnel_connection* after = &tunnel->connectionsSentinel;
+    before->next = connection;
+    connection->next = after;
+    after->prev = connection;
+    connection->prev = before;
+
+    connection->tcpRecvBufferSize = 1024;
+    connection->streamRecvBufferSize = 1024;
+
+    return NABTO_EC_OK;
+}
+
 void nm_tcptunnel_connection_start(struct nm_tcptunnel_connection* connection)
 {
+    // accept the stream
+    np_error_code ec = nc_stream_async_accept(connection->stream, &stream_accepted, connection);
+    if (ec) {
+        // handle accept failed
+    }
+}
+
+void stream_accepted(const np_error_code ec, void* userData)
+{
+    struct nm_tcptunnel_connection* connection = userData;
+    if (ec) {
+        // TODO handle accept failed
+    }
     start_connect(connection);
 }
 
@@ -29,10 +89,6 @@ void start_connect(struct nm_tcptunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
     struct nm_tcptunnel* tunnel = connection->tunnel;
-    np_error_code ec = pl->tcp.create(pl, &connection->socket);
-    if (ec) {
-        // TODO
-    }
     pl->tcp.async_connect(connection->socket, &tunnel->address, tunnel->port, &connect_callback, connection);
 }
 

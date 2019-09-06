@@ -10,7 +10,6 @@
 #define NABTO_MAX_STREAMS 10
 #endif
 
-//TODO: this should take an error code so callback can be resolved if device is closing
 typedef void (*nc_stream_manager_listen_callback)(np_error_code ec, struct nc_stream_context* stream, void* data);
 
 struct nc_client_connection;

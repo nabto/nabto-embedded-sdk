@@ -66,8 +66,8 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
 
     // Create tunnel resource.
     struct nm_tcptunnel* tunnel = nm_tcptunnel_create(tunnels);
-    tunnel->address = address;
-    tunnel->port = port;
+    nm_tcptunnel_init(tunnel, &address, port);
+    nm_tcptunnel_init_stream_listener(tunnel);
 
     uint8_t cborResponse[128];
     CborEncoder encoder;
@@ -76,12 +76,14 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
     cbor_encode_text_stringz(&map, "TunnelId");
     cbor_encode_text_stringz(&map, tunnel->tunnelId);
-    cbor_encode_text_stringz(&map, "StreamId");
-    cbor_encode_uint(&map, tunnel->streamId);
+    cbor_encode_text_stringz(&map, "StreamPort");
+    cbor_encode_uint(&map, tunnel->streamPort);
     cbor_encoder_close_container(&encoder, &map);
     size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
     if (extra != 0) {
+        // Not possible!
         // TODO send error 500
+        // TODO cleanup tunnel
     }
     size_t used = cbor_encoder_get_buffer_size(&encoder, cborResponse);
 
