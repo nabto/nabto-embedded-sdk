@@ -57,4 +57,5 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
 
 uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* stream);
 
+np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manager_context* ctx, uint32_t* port);
 #endif

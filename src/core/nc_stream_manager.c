@@ -267,3 +267,34 @@ uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* 
     }
     return 0;
 }
+
+/**
+ * An ephemeral stream port is defined as the stream port numbers >= 0x80000000
+ */
+np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manager_context* ctx, uint32_t* port)
+{
+    int i;
+    for (i = 0; i < 10; i++) {
+        uint32_t base = 0x80000000;
+
+        uint32_t r = rand();
+
+        r = r & 0x7FFFFFFF;
+
+        *port = base + r;
+
+        // check that the port is not in use.
+        bool found = false;
+        struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
+        while (iterator != &ctx->listenerSentinel) {
+            if (iterator->type == *port) {
+                found = true;
+            }
+            iterator = iterator->next;
+        }
+        if (!found) {
+            return NABTO_EC_OK;
+        }
+    }
+    return NABTO_EC_FAILED;
+}
