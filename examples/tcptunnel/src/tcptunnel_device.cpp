@@ -88,14 +88,23 @@ const json defaultTcptunnelIam = R"(
         }
       ],
       "Version": 1
+    },
+    "P2P": {
+      "Statements": [
+        {
+          "Actions": [ "P2P:Stun", "P2P:Rendezvous" ],
+          "Allow": true
+        }
+      ],
+      "Version": 1
     }
   },
   "Roles": {
     "Unpaired": [
-      "PasswordPairing"
+      "PasswordPairing", "P2P"
     ],
     "Tunnelling": [
-      "TunnelAll"
+      "TunnelAll", "P2P"
     ]
   },
   "Users": {
