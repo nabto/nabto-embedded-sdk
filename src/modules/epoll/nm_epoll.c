@@ -80,8 +80,8 @@ int nm_epoll_inf_wait(struct nm_epoll_context* epoll)
 void nm_epoll_read(struct nm_epoll_context* epoll, int nfds)
 {
     for (int i = 0; i < nfds; i++) {
-        if (epoll->events[i].events == EPOLLIN ||
-            epoll->events[i].events == EPOLLOUT)
+        if ((epoll->events[i].events & EPOLLIN) ||
+            (epoll->events[i].events & EPOLLOUT))
         {
             struct nm_epoll_base* base = (struct nm_epoll_base*)epoll->events[i].data.ptr;
             if (base != NULL) {
