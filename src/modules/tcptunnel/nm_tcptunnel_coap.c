@@ -3,8 +3,11 @@
 
 #include <core/nc_coap_server.h>
 #include <core/nc_iam.h>
+#include <platform/np_logging.h>
 
 #include <cbor.h>
+
+#define LOG NABTO_LOG_MODULE_TUNNEL
 
 static void create_tunnel(struct nabto_coap_server_request* request, void* data);
 static void delete_tunnel(struct nabto_coap_server_request* request, void* data);
@@ -79,8 +82,9 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
         if (cbor_value_get_uint64(&value, &p) != CborNoError)  {
             return false;
         }
+        *port = (uint16_t)p;
     }
-    *port = (uint16_t)p;
+
 
     return true;
 }
@@ -156,6 +160,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     }
     size_t used = cbor_encoder_get_buffer_size(&encoder, cborResponse);
 
+    NABTO_LOG_INFO(LOG, "Created tcp tunnel. destination %s:%" PRIu16, np_ip_address_to_string(&address), port);
     // Return 201 Created.
     struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
     nabto_coap_server_response_set_code(response, NABTO_COAP_CODE(2,01));
