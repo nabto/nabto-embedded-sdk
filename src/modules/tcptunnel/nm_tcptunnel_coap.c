@@ -20,6 +20,71 @@ void nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server
                                    create_tunnel, tunnels);
 }
 
+bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, struct np_ip_address* address, uint16_t* port)
+{
+    *address = tunnels->defaultHost;
+    *port = tunnels->defaultPort;
+
+    uint16_t contentFormat;
+    if (!nabto_coap_server_request_get_content_format(request, &contentFormat)) {
+        // we require the cbor content format
+        return false;
+    }
+    if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
+        return false;
+    }
+    void* payload;
+    size_t payloadLength;
+    if (!nabto_coap_server_request_get_payload(request,&payload, &payloadLength)) {
+        // no payload, ok
+        return true;
+    }
+
+    CborParser parser;
+    CborValue map;
+    if (cbor_parser_init(payload, payloadLength, 0, &parser, &map) != CborNoError) {
+        return false;
+    }
+
+    if (!cbor_value_is_map(&map)) {
+        return false;
+    }
+
+    CborValue value;
+    size_t length;
+    if (cbor_value_map_find_value(&map, "IpV4", &value) == CborNoError &&
+        cbor_value_is_byte_string(&value) &&
+        cbor_value_get_string_length(&value, &length) == CborNoError &&
+        length == 4)
+    {
+        address->type = NABTO_IPV4;
+        if (cbor_value_copy_byte_string(&value, address->v4.addr, &length, NULL) != CborNoError) {
+            return false;
+        }
+    } else if (cbor_value_map_find_value(&map, "IpV6", &value) == CborNoError &&
+               cbor_value_is_byte_string(&value) &&
+               cbor_value_get_string_length(&value, &length) == CborNoError &&
+               length == 16)
+    {
+        address->type = NABTO_IPV6;
+        if (cbor_value_copy_byte_string(&value, address->v6.addr, &length, NULL) != CborNoError) {
+            return false;
+        }
+    }
+
+    uint64_t p;
+    if (cbor_value_map_find_value(&map, "Port", &value) == CborNoError &&
+        cbor_value_is_unsigned_integer(&value))
+    {
+        if (cbor_value_get_uint64(&value, &p) != CborNoError)  {
+            return false;
+        }
+    }
+    *port = (uint16_t)p;
+
+    return true;
+}
+
 /**
  * Create a tunnel.
  *
@@ -37,8 +102,12 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
 
     // TODO implement read ip and port.
 
-    struct np_ip_address address = tunnels->defaultHost;
-    uint16_t port = tunnels->defaultPort;
+    struct np_ip_address address;
+    uint16_t port;
+
+    if (!parse_host_and_port(request, tunnels, &address, &port)) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,00), NULL);
+    }
 
     struct nc_iam_attributes attributes;
     memset(&attributes, 0, sizeof(struct nc_iam_attributes));
@@ -47,11 +116,11 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
 
     ec = nc_iam_attributes_add_number(&attributes, "TcpTunnel:Port", port);
     if (ec) {
-        // TODO send error 500
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,00), NULL);
     }
     ec = nc_iam_attributes_add_string(&attributes, "TcpTunnel:Host", np_ip_address_to_string(&address));
     if (ec) {
-        // TODO send error 500
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,00), NULL);
     }
 
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
@@ -59,7 +128,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     // Check IAM.
     ec = nc_iam_check_access_attributes(connection, "TcpTunnel:Create", &attributes);
     if (ec) {
-        // TODO return 403
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
     }
 
     // the user has access to create the tunnel
