@@ -58,7 +58,6 @@ void nm_tcptunnel_connection_free(struct nm_tcptunnel_connection* connection)
 
 np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel* tunnel, struct nm_tcptunnel_connection* connection, struct nc_stream_context* stream)
 {
-    connection->tunnel = tunnel;
     connection->pl = tunnel->tunnels->device->pl;
     struct np_platform* pl = connection->pl;
     np_error_code ec = pl->tcp.create(pl, &connection->socket);
@@ -67,6 +66,9 @@ np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel* tunnel, struct n
         return ec;
     }
     connection->stream = stream;
+
+    connection->address = tunnel->address;
+    connection->port = tunnel->port;
 
 
     // insert connection into back of connections list
@@ -96,25 +98,26 @@ void nm_tcptunnel_connection_start(struct nm_tcptunnel_connection* connection)
  * Called from manager when the tunnel is asked to close down.
  * Either because the underlying nabto connection is closed or the system is closing down.
  */
-void nm_tcptunnel_connetion_stop_from_manager(struct nm_tcptunnel_connection* connection)
+void nm_tcptunnel_connection_stop_from_manager(struct nm_tcptunnel_connection* connection)
 {
-    // make all async operations stop
-    // close socket
-    // close stream
-    // deregister stream from
+    // Reset the tunnel reference as the tunnel manager has removed
+    // the tunnel from its list of tunnels.
+    struct np_platform* pl = connection->pl;
+    // This will stop all async operations. That will lead to an error
+    // or clean stop and the tunnel is going to be stopped and cleaned
+    // up.
+    pl->tcp.close(connection->socket);
+    nc_stream_abort(connection->stream);
 }
 
 
 /**
  * Private functions
  */
-
-
 void start_connect(struct nm_tcptunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    struct nm_tcptunnel* tunnel = connection->tunnel;
-    pl->tcp.async_connect(connection->socket, &tunnel->address, tunnel->port, &connect_callback, connection);
+    pl->tcp.async_connect(connection->socket, &connection->address, connection->port, &connect_callback, connection);
 }
 
 void connect_callback(np_error_code ec, void* userData)
@@ -259,9 +262,9 @@ void is_ended(struct nm_tcptunnel_connection* connection)
  */
 void the_end(struct nm_tcptunnel_connection* connection)
 {
-    if (connection->tunnel == NULL) {
-        // the manager has stopped
-    } else {
+    if (connection->next != NULL &&
+        connection->prev != NULL)
+    {
         nm_tcptunnel_remove_connection(connection);
     }
     nm_tcptunnel_connection_free(connection);

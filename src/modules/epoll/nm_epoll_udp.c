@@ -34,6 +34,7 @@ struct np_udp_socket {
     struct np_platform* pl;
     int sock;
     bool isIpv6;
+    bool destroyed;
     struct nm_epoll_created_ctx created;
     struct nm_epoll_received_ctx recv;
 };
@@ -185,7 +186,14 @@ uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
     return htons(addr.sin6_port);
 }
 
-void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events) {
+void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events)
+{
+    // wait for last epoll event.
+    if (sock->destroyed) {
+        free(sock);
+        return;
+    }
+
     struct np_udp_endpoint ep;
     struct np_platform* pl = sock->pl;
     struct nm_epoll_context* epoll = pl->udpData;
@@ -317,7 +325,8 @@ void nm_epoll_destroy(np_udp_socket* sock)
     }
     close(sock->sock);
     nm_epoll_cancel_all_events(sock);
-    free(sock);
+    sock->destroyed = true;
+    //free(sock);
 }
 
 void nm_epoll_event_bind_port(void* data)

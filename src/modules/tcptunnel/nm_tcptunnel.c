@@ -13,8 +13,11 @@
 static void nm_tcptunnel_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 static void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel);
 
-void nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
+np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
 {
+    if (tunnels->device != NULL) {
+        return NABTO_EC_RESOURCE_EXISTS;
+    }
     tunnels->device = device;
     tunnels->tunnelsSentinel.next = &tunnels->tunnelsSentinel;
     tunnels->tunnelsSentinel.prev = &tunnels->tunnelsSentinel;
@@ -27,6 +30,7 @@ void nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context*
     tunnels->defaultHost.v4.addr[3] = 0x01;
 
     nm_tcptunnel_coap_init(tunnels, &device->coapServer);
+    return NABTO_EC_OK;
 
 }
 
@@ -72,7 +76,11 @@ void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, struct np_ip_address* addres
 
 void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel)
 {
-    // TODO
+    while(tunnel->connectionsSentinel.next != &tunnel->connectionsSentinel) {
+        struct nm_tcptunnel_connection* connection = tunnel->connectionsSentinel.next;
+        nm_tcptunnel_connection_stop_from_manager(connection);
+        nm_tcptunnel_remove_connection(connection);
+    }
 }
 
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel* tunnel)
@@ -117,4 +125,7 @@ void nm_tcptunnel_remove_connection(struct nm_tcptunnel_connection* connection)
     struct nm_tcptunnel_connection* after = connection->next;
     before->next = after;
     after->prev = before;
+
+    connection->next = NULL;
+    connection->prev = NULL;
 }

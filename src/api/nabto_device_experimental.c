@@ -47,18 +47,9 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
 NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_tcp_tunnelling(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (dev->tcptunnels != NULL) {
-        // already enabled.
-    } else {
-        dev->tcptunnels = calloc(1,sizeof(struct nm_tcptunnels));
-        if (dev->tcptunnels == NULL) {
-            ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
-        } else {
-            nm_tcptunnels_init(dev->tcptunnels, &dev->core);
-        }
-    }
+    ec = nm_tcptunnels_init(&dev->tcptunnels, &dev->core);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }

@@ -15,11 +15,11 @@ struct nc_device_context;
 struct nm_tcptunnel_connection {
     struct nm_tcptunnel_connection* next;
     struct nm_tcptunnel_connection* prev;
-    struct nm_tcptunnel* tunnel;
     struct np_platform* pl;
     np_tcp_socket* socket;
     struct nc_stream_context* stream;
-
+    struct np_ip_address address;
+    uint16_t port;
     uint8_t tcpRecvBuffer[1024];
     size_t tcpRecvBufferSize;
 
@@ -52,7 +52,7 @@ struct nm_tcptunnels {
     struct nm_tcptunnel tunnelsSentinel;
 };
 
-void nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device);
+np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device);
 void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels);
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels);
