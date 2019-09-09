@@ -11,7 +11,6 @@
 #define LOG NABTO_LOG_MODULE_TUNNEL
 
 static void nm_tcptunnel_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
-static void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel);
 
 np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
 {
@@ -81,6 +80,14 @@ void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel)
         nm_tcptunnel_connection_stop_from_manager(connection);
         nm_tcptunnel_remove_connection(connection);
     }
+
+    struct nm_tcptunnel* before = tunnel->prev;
+    struct nm_tcptunnel* after = tunnel->next;
+    before->next = after;
+    after->prev = before;
+
+    free(tunnel);
+
 }
 
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel* tunnel)
@@ -129,3 +136,10 @@ void nm_tcptunnel_remove_connection(struct nm_tcptunnel_connection* connection)
     connection->next = NULL;
     connection->prev = NULL;
 }
+
+
+/**
+ * TODO
+ *
+ * Remove tunnels for a connection when the connection dies.
+ */

@@ -12,15 +12,20 @@
 static void create_tunnel(struct nabto_coap_server_request* request, void* data);
 static void delete_tunnel(struct nabto_coap_server_request* request, void* data);
 static void get_tunnel(struct nabto_coap_server_request* request, void* data);
-static void list_tunnels(struct nabto_coap_server_request* request, void* data);
-static void list_connections(struct nabto_coap_server_request* request, void* data);
-static void get_connection(struct nabto_coap_server_request* request, void* data);
+
+static struct nm_tcptunnel* find_tunnel(struct nm_tcptunnels* tunnels, const char* tid);
 
 void nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server_context* server)
 {
     nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_POST,
                                    (const char*[]){"tcptunnels", NULL},
                                    create_tunnel, tunnels);
+    nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_DELETE,
+                                   (const char*[]){"tcptunnels", "{tid}", NULL},
+                                   delete_tunnel, tunnels);
+    nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_GET,
+                                   (const char*[]){"tcptunnels", "{tid}", NULL},
+                                   get_tunnel, tunnels);
 }
 
 bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, struct np_ip_address* address, uint16_t* port)
@@ -85,7 +90,6 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
         *port = (uint16_t)p;
     }
 
-
     return true;
 }
 
@@ -111,6 +115,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
 
     if (!parse_host_and_port(request, tunnels, &address, &port)) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,00), NULL);
+        return;
     }
 
     struct nc_iam_attributes attributes;
@@ -121,10 +126,12 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     ec = nc_iam_attributes_add_number(&attributes, "TcpTunnel:Port", port);
     if (ec) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+        return;
     }
     ec = nc_iam_attributes_add_string(&attributes, "TcpTunnel:Host", np_ip_address_to_string(&address));
     if (ec) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+        return;
     }
 
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
@@ -133,6 +140,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     ec = nc_iam_check_access_attributes(connection, "TcpTunnel:Create", &attributes);
     if (ec) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        return;
     }
 
     // the user has access to create the tunnel
@@ -141,6 +149,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     struct nm_tcptunnel* tunnel = nm_tcptunnel_create(tunnels);
     nm_tcptunnel_init(tunnel, &address, port);
     nm_tcptunnel_init_stream_listener(tunnel);
+    tunnel->connectionId = connection->connectionRef;
 
     uint8_t cborResponse[128];
     CborEncoder encoder;
@@ -169,27 +178,114 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     nabto_coap_server_response_ready(response);
 }
 
+/**
+ * CoAP DELETE /tunnels/:tid
+ */
 void delete_tunnel(struct nabto_coap_server_request* request, void* data)
 {
     struct nm_tcptunnels* tunnels = data;
+
+    struct nm_tcptunnel* tunnel = find_tunnel(tunnels, nabto_coap_server_request_get_parameter(request, "tid"));
+    if (tunnel == NULL) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,04), NULL);
+        return;
+    }
+
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+
+    np_error_code ec;
+
+
+
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+
+    if (tunnel->connectionId != connection->connectionRef) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        return;
+    }
+
+    // Check IAM.
+    ec = nc_iam_check_access_attributes(connection, "TcpTunnel:Delete", &attributes);
+    if (ec) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        return;
+    }
+
+    nm_tcptunnel_deinit(tunnel);
+
+    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
+    nabto_coap_server_response_set_code(response, NABTO_COAP_CODE(2,02));
+    nabto_coap_server_response_ready(response);
 }
 
 void get_tunnel(struct nabto_coap_server_request* request, void* data)
 {
     struct nm_tcptunnels* tunnels = data;
+    struct nm_tcptunnel* tunnel = find_tunnel(tunnels, nabto_coap_server_request_get_parameter(request, "tid"));
+    if (tunnel == NULL) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,04), NULL);
+        return;
+    }
+
+    struct nc_iam_attributes attributes;
+    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+
+    np_error_code ec;
+
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
+    if (tunnel->connectionId != connection->connectionRef) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        return;
+    }
+
+    // Check IAM.
+    ec = nc_iam_check_access_attributes(connection, "TcpTunnel:Get", &attributes);
+    if (ec) {
+        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        return;
+    }
+
+    uint8_t cborResponse[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborResponse, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "StreamPort");
+    cbor_encode_uint(&map, tunnel->streamPort);
+    cbor_encode_text_stringz(&map, "Ip");
+    cbor_encode_text_stringz(&map, np_ip_address_to_string(&tunnel->address));
+    cbor_encode_text_stringz(&map, "Port");
+    cbor_encode_uint(&map, tunnel->port);
+    cbor_encoder_close_container(&encoder, &map);
+    size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (extra != 0) {
+        // Not possible!
+        // TODO send error 500
+        // TODO cleanup tunnel
+    }
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborResponse);
+
+    // Return 201 Created.
+    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
+    nabto_coap_server_response_set_code(response, NABTO_COAP_CODE(2,05));
+    nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    nabto_coap_server_response_set_payload(response, cborResponse, used);
+    nabto_coap_server_response_ready(response);
+
 }
 
-void list_tunnels(struct nabto_coap_server_request* request, void* data)
+struct nm_tcptunnel* find_tunnel(struct nm_tcptunnels* tunnels, const char* tid)
 {
-    struct nm_tcptunnels* tunnels = data;
-}
-
-void list_connections(struct nabto_coap_server_request* request, void* data)
-{
-    struct nm_tcptunnels* tunnels = data;
-}
-
-void get_connection(struct nabto_coap_server_request* request, void* data)
-{
-    struct nm_tcptunnels* tunnels = data;
+    if (tid == NULL) {
+        return NULL;
+    }
+    struct nm_tcptunnel* iterator = tunnels->tunnelsSentinel.next;
+    while(iterator != &tunnels->tunnelsSentinel) {
+        if (strcmp(tid, iterator->tunnelId) == 0) {
+            return iterator;
+        }
+        iterator = iterator->next;
+    }
+    return NULL;
 }
