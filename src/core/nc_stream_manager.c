@@ -180,6 +180,10 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     size_t ret;
     struct np_dtls_srv_connection* dtls = nc_client_connection_get_dtls_connection(conn);
     NABTO_LOG_TRACE(LOG, "Sending RST to streamId: %u", streamId);
+    if (ctx->rstBuf != NULL) {
+        NABTO_LOG_INFO(LOG, "RST is sending dropping to send a new rst");
+        return;
+    }
     ctx->rstBuf = ctx->pl->buf.allocate();
     start = ctx->pl->buf.start(ctx->rstBuf);
     ptr = start;
@@ -202,15 +206,15 @@ void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)
 {
     struct nc_stream_manager_context* ctx = (struct nc_stream_manager_context*)data;
     ctx->pl->buf.free(ctx->rstBuf);
+    ctx->rstBuf = NULL;
 }
 
 struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
-    struct nabto_stream_send_segment* seg = (struct nabto_stream_send_segment*)malloc(sizeof(struct nabto_stream_send_segment));
+    struct nabto_stream_send_segment* seg = calloc(1, sizeof(struct nabto_stream_send_segment));
     if (seg == NULL) {
         return NULL;
     }
-    memset(seg, 0, sizeof(struct nabto_stream_send_segment));
     uint8_t* buf = (uint8_t*)malloc(bufferSize);
     if (buf == NULL) {
         free(seg);
@@ -229,11 +233,10 @@ void nc_stream_manager_free_send_segment(struct nc_stream_manager_context* ctx, 
 
 struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
-    struct nabto_stream_recv_segment* seg = (struct nabto_stream_recv_segment*)malloc(sizeof(struct nabto_stream_recv_segment));
+    struct nabto_stream_recv_segment* seg = calloc(1, sizeof(struct nabto_stream_recv_segment));
     if (seg == NULL) {
         return NULL;
     }
-    memset(seg, 0, sizeof(struct nabto_stream_recv_segment));
     uint8_t* buf = (uint8_t*)malloc(bufferSize);
     if (buf == NULL) {
         free(seg);
