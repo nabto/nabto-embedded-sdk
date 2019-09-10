@@ -6,9 +6,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/3rdparty/fmtlib
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/util common_util)
 
 INCLUDE(CheckIncludeFiles)
-CHECK_INCLUDE_FILES(sys/epoll.h HAVE_EPOLL_HEADERS)
+CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
 
-if (HAVE_EPOLL_HEADER)
+if (HAVE_EPOLL_HEADERS)
   add_definitions(-DHAVE_EPOLL)
 endif()
 
@@ -21,7 +21,7 @@ set(test_src
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test test_platform 3rdparty_boost_test 3rdparty_boost_asio common_util  nm_select_unix)
 
-if (HAVE_EPOLL_HEADER)
+if (HAVE_EPOLL_HEADERS)
   target_link_libraries(embedded_unit_test nm_epoll)
 endif()
 

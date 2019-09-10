@@ -56,7 +56,7 @@ add_subdirectory(src/modules/mdns)
 add_subdirectory(src/modules/tcptunnel)
 
 
-CHECK_INCLUDE_FILES(sys/epoll.h HAVE_EPOLL_HEADERS)
+CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
 
 if (HAVE_EPOLL_HEADERS)
   add_subdirectory(src/modules/epoll)
