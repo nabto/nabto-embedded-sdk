@@ -1,6 +1,10 @@
 #include <boost/test/unit_test.hpp>
 
-#include <test_platform/test_platform.h>
+#include <test_platform.hpp>
+#include <test_platform_epoll.hpp>
+#include <test_platform_select_unix.hpp>
+
+#include <platform/np_platform.h>
 
 #include <util/io_service.hpp>
 #include <lib/span.hpp>
@@ -95,16 +99,18 @@ class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
 
 class UdpEchoClientTest {
  public:
-    UdpEchoClientTest() {
-
+    UdpEchoClientTest(TestPlatform& tp)
+        : tp_(tp), pl_(tp.getPlatform())
+    {
     }
-    ~UdpEchoClientTest() {
 
+    ~UdpEchoClientTest()
+    {
     }
+
     void start(uint16_t port) {
-        test_platform_init(&tp_);
+        tp_.init();
 
-        pl_ = &tp_.pl;
         BOOST_TEST(pl_->udp.create(pl_, &socket_) == NABTO_EC_OK);
 
         uint8_t addr[] = { 0x00, 0x00, 0x00, 0x00,
@@ -127,7 +133,7 @@ class UdpEchoClientTest {
 
         pl_->udp.async_bind(socket_, &UdpEchoClientTest::created, this);
 
-        test_platform_run(&tp_);
+        tp_.run();
     }
 
     static void created(const np_error_code ec, void* data)
@@ -167,11 +173,11 @@ class UdpEchoClientTest {
 
     void end() {
         pl_->udp.destroy(socket_);
-        test_platform_stop(&tp_);
+        tp_.stop();
     }
 
  private:
-    struct test_platform tp_;
+    nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
     struct np_udp_send_context sendCtx_;
     np_udp_socket* socket_;
@@ -182,15 +188,28 @@ class UdpEchoClientTest {
 
 } } // namespace
 
-
 BOOST_AUTO_TEST_SUITE(udp)
 
-BOOST_AUTO_TEST_CASE(echo)
+BOOST_AUTO_TEST_CASE(echo_epoll)
 {
     auto ioService = nabto::IoService::create("test");
     auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
 
-    nabto::test::UdpEchoClientTest client;
+    nabto::test::TestPlatformEpoll epollPlatform;
+    nabto::test::UdpEchoClientTest client(epollPlatform);
+    client.start(udpServer->getPort());
+
+    BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
+    udpServer->stop();
+}
+
+BOOST_AUTO_TEST_CASE(echo_select_unix)
+{
+    auto ioService = nabto::IoService::create("test");
+    auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
+
+    nabto::test::TestPlatformSelectUnix platform;
+    nabto::test::UdpEchoClientTest client(platform);
     client.start(udpServer->getPort());
 
     BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);

@@ -5,6 +5,10 @@
 #include <platform/np_udp.h>
 #include <platform/np_platform.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void nm_unix_udp_select_init(struct np_platform *pl_in);
 
 /** defined here for testing purposes **/
@@ -24,5 +28,9 @@ void nm_select_unix_read(int nfds);
 
 void nm_select_unix_close(struct np_platform* pl);
 void nm_select_unix_break_wait(struct np_platform* pl);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif // NM_SELECT_UNIX_H
