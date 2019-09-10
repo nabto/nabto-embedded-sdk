@@ -2,7 +2,7 @@
 
 #include <test_platform.hpp>
 
-#ifdef HAVE_EPOLL_HEADERS
+#ifdef HAVE_EPOLL
 #include <test_platform_epoll.hpp>
 #endif
 
@@ -265,9 +265,9 @@ BOOST_AUTO_TEST_CASE(echo_epoll)
     auto ioService = IoService::create("test");
     test::TcpEchoServer tcpServer(ioService->getIoService());
 
-    TestPlatformEpoll platform;
+    test::TestPlatformEpoll platform;
 
-    auto client = test::TcpEchoClientTest(platform);
+    test::TcpEchoClientTest client(platform);
     client.start(tcpServer.getPort());
 
     BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);

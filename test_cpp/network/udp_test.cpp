@@ -2,7 +2,7 @@
 
 #include <test_platform.hpp>
 
-#ifdef HAVE_EPOLL_HEADERS
+#ifdef HAVE_EPOLL
 #include <test_platform_epoll.hpp>
 #endif
 
