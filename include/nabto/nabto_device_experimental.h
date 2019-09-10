@@ -380,7 +380,9 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_policies_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used);
 
 
-
+/***************
+ * MDNS Server *
+ ***************/
 
 /**
  * Enable the optional mdns server/responder. The server is started when the
@@ -389,6 +391,21 @@ nabto_device_iam_policies_list(NabtoDevice* device, void* buffer, size_t bufferL
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_mdns(NabtoDevice* device);
+
+
+/******************
+ * TCP Tunnelling *
+ ******************/
+
+/**
+ * Enable TCP tunnelling in the device.
+ *
+ * Tcp tunnelling is a feature which allows clients to tunnel tcp
+ * traffic over a nabto connection to the device. TCP tunnelling is
+ * stopped when the device is closed.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
 
 #ifdef __cplusplus
 } // extern c

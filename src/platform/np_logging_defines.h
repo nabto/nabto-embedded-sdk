@@ -24,7 +24,8 @@
 #define NABTO_LOG_MODULE_RENDEZVOUS              0x00010000ul
 #define NABTO_LOG_MODULE_COAP                    0x00020000ul
 #define NABTO_LOG_MODULE_TCP                     0x00040000ul
-#define NABTO_LOG_MODULE_NETWORK                 0x00040000ul
+#define NABTO_LOG_MODULE_NETWORK                 0x00080000ul
+#define NABTO_LOG_MODULE_TUNNEL                  0x00100000ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                  0x00000000ul

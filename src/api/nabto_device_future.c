@@ -96,7 +96,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_error_code(NabtoDeviceFutu
 NabtoDeviceError nabto_device_future_resolve(struct nabto_device_future* fut)
 {
     fut->ready = true;
-    NABTO_LOG_TRACE(LOG, "signalling future condition");
     if(fut->cb != NULL) {
         fut->cb((NabtoDeviceFuture*)fut, fut->ec, fut->cbData);
     } else {

@@ -22,20 +22,53 @@ void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data);
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl)
 {
     ctx->pl = pl;
+
+    ctx->listenerSentinel.prev = &ctx->listenerSentinel;
+    ctx->listenerSentinel.next = &ctx->listenerSentinel;
+}
+
+void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)
+{
+    // remove listener from list
+    struct nc_stream_listener* before = listener->prev;
+    struct nc_stream_listener* after = listener->next;
+
+    before->next = after;
+    after->prev = before;
+
+    listener->cb(ec, stream, listener->cbData);
 }
 
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 {
-    if (ctx->cb != NULL) {
-        ctx->cb(NABTO_EC_ABORTED, NULL, ctx->cbData);
-        ctx->cb = NULL;
+    while (ctx->listenerSentinel.next != &ctx->listenerSentinel) {
+        struct nc_stream_listener* listener = ctx->listenerSentinel.next;
+        nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
     }
 }
 
-void nc_stream_manager_set_listener(struct nc_stream_manager_context* ctx, nc_stream_manager_listen_callback cb, void* data)
+np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data)
 {
-    ctx->cbData = data;
-    ctx->cb = cb;
+    np_error_code ec;
+    if (type == 0) {
+        // get ephemeral port number
+        ec = nc_stream_manager_get_ephemeral_stream_port(ctx, &type);
+        if (ec) {
+            return ec;
+        }
+    }
+
+    listener->cb = cb;
+    listener->cbData = data;
+    listener->type = type;
+    struct nc_stream_listener* before = ctx->listenerSentinel.prev;
+    struct nc_stream_listener* after = &ctx->listenerSentinel;
+
+    before->next = listener;
+    listener->next = after;
+    after->prev = listener;
+    listener->prev = before;
+    return NABTO_EC_OK;
 }
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
@@ -48,15 +81,14 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     uint8_t flags = 0;
     struct nc_stream_context* stream;
 
-    NABTO_LOG_INFO(LOG, "stream manager handling packet. AT: %u", *start);
-    NABTO_LOG_BUF(LOG, start, bufferSize);
+    NABTO_LOG_TRACE(LOG, "stream manager handling packet. AT: %u", *start);
+
     if (bufferSize < 4) {
         return;
     }
     if(!var_uint_read(ptr, bufferSize-1, &streamId, &streamIdLen)) {
         return;
     }
-    NABTO_LOG_INFO(LOG, "streamId=%u", streamId);
 
     ptr += streamIdLen; // skip stream ID
     flags = *ptr;
@@ -66,7 +98,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     if (stream == NULL && flags == NABTO_STREAM_FLAG_SYN) {
         stream = nc_stream_manager_accept_stream(ctx, conn, streamId);
         if (stream == NULL) {
-            NABTO_LOG_INFO(LOG, "out of streaming resources, sending RST");
+            NABTO_LOG_ERROR(LOG, "out of streaming resources, sending RST");
         }
     }
 
@@ -86,11 +118,17 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 
 void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream)
 {
-    NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
-    if (ctx->cb != NULL) {
-        ctx->cb(NABTO_EC_OK, &stream->stream, ctx->cbData);
+    uint32_t type = nabto_stream_get_content_type(&stream->stream);
+
+    struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
+    while (iterator != &ctx->listenerSentinel) {
+        if (iterator->type == type) {
+            nc_stream_manager_resolve_listener(iterator, stream, NABTO_EC_OK);
+            return;
+        }
+        iterator = iterator->next;
     }
-    NABTO_LOG_INFO(LOG, "ready_for_accept cb: %u, stream: %u, cbData: %u", ctx->cb, stream->stream, ctx->cbData);
+    nabto_stream_release(&stream->stream);
     return;
 }
 
@@ -142,6 +180,10 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     size_t ret;
     struct np_dtls_srv_connection* dtls = nc_client_connection_get_dtls_connection(conn);
     NABTO_LOG_TRACE(LOG, "Sending RST to streamId: %u", streamId);
+    if (ctx->rstBuf != NULL) {
+        NABTO_LOG_INFO(LOG, "RST is sending dropping to send a new rst");
+        return;
+    }
     ctx->rstBuf = ctx->pl->buf.allocate();
     start = ctx->pl->buf.start(ctx->rstBuf);
     ptr = start;
@@ -164,15 +206,15 @@ void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)
 {
     struct nc_stream_manager_context* ctx = (struct nc_stream_manager_context*)data;
     ctx->pl->buf.free(ctx->rstBuf);
+    ctx->rstBuf = NULL;
 }
 
 struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
-    struct nabto_stream_send_segment* seg = (struct nabto_stream_send_segment*)malloc(sizeof(struct nabto_stream_send_segment));
+    struct nabto_stream_send_segment* seg = calloc(1, sizeof(struct nabto_stream_send_segment));
     if (seg == NULL) {
         return NULL;
     }
-    memset(seg, 0, sizeof(struct nabto_stream_send_segment));
     uint8_t* buf = (uint8_t*)malloc(bufferSize);
     if (buf == NULL) {
         free(seg);
@@ -191,11 +233,10 @@ void nc_stream_manager_free_send_segment(struct nc_stream_manager_context* ctx, 
 
 struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
-    struct nabto_stream_recv_segment* seg = (struct nabto_stream_recv_segment*)malloc(sizeof(struct nabto_stream_recv_segment));
+    struct nabto_stream_recv_segment* seg = calloc(1, sizeof(struct nabto_stream_recv_segment));
     if (seg == NULL) {
         return NULL;
     }
-    memset(seg, 0, sizeof(struct nabto_stream_recv_segment));
     uint8_t* buf = (uint8_t*)malloc(bufferSize);
     if (buf == NULL) {
         free(seg);
@@ -237,4 +278,35 @@ uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* 
         }
     }
     return 0;
+}
+
+/**
+ * An ephemeral stream port is defined as the stream port numbers >= 0x80000000
+ */
+np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manager_context* ctx, uint32_t* port)
+{
+    int i;
+    for (i = 0; i < 10; i++) {
+        uint32_t base = 0x80000000;
+
+        uint32_t r = rand();
+
+        r = r & 0x7FFFFFFF;
+
+        *port = base + r;
+
+        // check that the port is not in use.
+        bool found = false;
+        struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
+        while (iterator != &ctx->listenerSentinel) {
+            if (iterator->type == *port) {
+                found = true;
+            }
+            iterator = iterator->next;
+        }
+        if (!found) {
+            return NABTO_EC_OK;
+        }
+    }
+    return NABTO_EC_FAILED;
 }

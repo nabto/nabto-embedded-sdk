@@ -11,6 +11,7 @@
 
 struct nabto_stream_module nc_stream_module;
 
+static void nc_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
 
 void event(struct nc_stream_context* ctx);
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType);
@@ -80,6 +81,7 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->currentExpiry = nabto_stream_stamp_infinite();
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
+    nabto_stream_set_application_event_callback(&ctx->stream, &nc_stream_application_event_callback, ctx);
 }
 
 void nc_stream_destroy(struct nc_stream_context* ctx)
@@ -87,6 +89,7 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     ctx->active = false;
     ctx->dtls = NULL;
     ctx->pl->buf.free(ctx->sendBuffer);
+    ctx->sendBuffer = NULL;
     ctx->streamId = 0;
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
 }
@@ -105,7 +108,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
     nabto_stream_recv_segment_available(&ctx->stream);
     enum nabto_stream_next_event_type eventType = nabto_stream_next_event_to_handle(&ctx->stream);
 
-    NABTO_LOG_INFO(LOG, "next event to handle %s current state %s", nabto_stream_next_event_type_to_string(eventType), nabto_stream_state_as_string(ctx->stream.state));
+    NABTO_LOG_TRACE(LOG, "next event to handle %s current state %s", nabto_stream_next_event_type_to_string(eventType), nabto_stream_state_as_string(ctx->stream.state));
     switch(eventType) {
         case ET_ACCEPT:
             nc_stream_manager_ready_for_accept(ctx->streamManager, ctx);
@@ -176,7 +179,6 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
 void nc_stream_handle_timeout(const np_error_code ec, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
-    NABTO_LOG_TRACE(LOG, "Handle timeout called");
     ctx->currentExpiry = nabto_stream_stamp_infinite();
     nc_stream_event(ctx);
 }
@@ -263,4 +265,250 @@ void nc_stream_free_recv_segment(struct nabto_stream_recv_segment* segment, void
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
     nc_stream_manager_free_recv_segment(ctx->streamManager, segment);
+}
+
+
+
+/************
+ * Implementation of async user facing stream functions
+ ************/
+
+static void nc_stream_do_read(struct nc_stream_context* stream);
+static void nc_stream_do_write_all(struct nc_stream_context* stream);
+static void nc_stream_handle_close(struct nc_stream_context* stream);
+
+void nc_stream_accept(struct nc_stream_context* stream)
+{
+    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
+    nabto_stream_accept(&stream->stream);
+}
+
+np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
+{
+    if (stream->acceptCb != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    stream->acceptCb = callback;
+    stream->acceptUserData = userData;
+    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
+    nabto_stream_accept(&stream->stream);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
+{
+    if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    stream->readAllCb = callback;
+    stream->readUserData = userData;
+
+    stream->readBuffer = buffer;
+    stream->readBufferLength = bufferLength;
+    stream->readLength = readLength;
+    *stream->readLength = 0;
+    nc_stream_do_read(stream);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
+{
+    if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    stream->readSomeCb = callback;
+    stream->readUserData = userData;
+
+    stream->readBuffer = buffer;
+    stream->readBufferLength = bufferLength;
+    stream->readLength = readLength;
+    *stream->readLength = 0;
+    nc_stream_do_read(stream);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData)
+{
+    if (stream->writeCb != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    stream->writeCb = callback;
+    stream->writeUserData = userData;
+
+    stream->writeBuffer = buffer;
+    stream->writeBufferLength = bufferLength;
+
+    nc_stream_do_write_all(stream);
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
+{
+    if (stream->closeCb != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    stream->closeCb = callback;
+    stream->closeUserData = userData;
+    nc_stream_handle_close(stream);
+    return NABTO_EC_OK;
+}
+
+void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
+{
+    stream->readLength = NULL;
+    stream->readBuffer = NULL;
+    stream->readBufferLength = 0;
+
+    if (stream->readAllCb) {
+        nc_stream_callback cb = stream->readAllCb;
+        stream->readAllCb = NULL;
+        cb(ec, stream->readUserData);
+    } else if (stream->readSomeCb) {
+        nc_stream_callback cb = stream->readSomeCb;
+        stream->readSomeCb = NULL;
+        cb(ec, stream->readUserData);
+    } else {
+        NABTO_LOG_ERROR(LOG, "Tried to resolve read futures which does not exist");
+    }
+}
+
+void nc_stream_do_read(struct nc_stream_context* stream)
+{
+    if (!stream->readAllCb && !stream->readSomeCb) {
+        // data available but no one wants it
+        NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
+    } else {
+        size_t readen;
+        nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, stream->readBuffer, stream->readBufferLength, &readen);
+        if (status == NABTO_STREAM_STATUS_OK) {
+            if (readen == 0) {
+                // wait for a new event saying more data is ready.
+            } else {
+                *stream->readLength += readen;
+                stream->readBuffer += readen;
+                stream->readBufferLength -= readen;
+                if (stream->readAllCb) {
+                    if (stream->readBufferLength == 0) {
+                        nc_stream_resolve_read(stream, NABTO_EC_OK);
+                    } else {
+                        // read more until 0 or error
+                        nc_stream_do_read(stream);
+                    }
+                } else if (stream->readSomeCb) {
+                    nc_stream_resolve_read(stream, NABTO_EC_OK);
+                } else {
+                    // Still no future? we just checked this!
+                    NABTO_LOG_ERROR(LOG, "Reached imposible stream state. Futures exist but dont");
+                }
+            }
+        } else {
+            nc_stream_resolve_read(stream, nc_stream_status_to_ec(status));
+        }
+    }
+}
+void nc_stream_do_write_all(struct nc_stream_context* stream)
+{
+    size_t written;
+    nabto_stream_status status = nabto_stream_write_buffer(&stream->stream, stream->writeBuffer, stream->writeBufferLength, &written);
+    if (status == NABTO_STREAM_STATUS_OK) {
+        if (written == 0) {
+            // would block
+            return;
+        } else if (written == stream->writeBufferLength) {
+            nc_stream_callback cb = stream->writeCb;
+            stream->writeCb = NULL;
+            cb(NABTO_EC_OK, stream->writeUserData);
+        } else {
+            stream->writeBuffer += written;
+            stream->writeBufferLength -= written;
+            nc_stream_do_write_all(stream);
+        }
+    } else {
+        nc_stream_callback cb = stream->writeCb;
+        stream->writeCb = NULL;
+        cb(nc_stream_status_to_ec(status), stream->writeUserData);
+    }
+
+}
+
+void nc_stream_handle_close(struct nc_stream_context* stream)
+{
+    if (!stream->closeCb) {
+        return;
+    }
+    nabto_stream_status status = nabto_stream_close(&stream->stream);
+    if (status == NABTO_STREAM_STATUS_OK) {
+        return;
+    } else if (status == NABTO_STREAM_STATUS_CLOSED) {
+        nc_stream_callback cb = stream->closeCb;
+        stream->closeCb = NULL;
+        cb(NABTO_EC_OK, stream->closeUserData);
+    } else {
+        nc_stream_callback cb = stream->closeCb;
+        stream->closeCb = NULL;
+        cb(nc_stream_status_to_ec(status), stream->closeUserData);
+    }
+}
+
+void nc_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)
+{
+    struct nc_stream_context* stream = data;
+    switch(eventType) {
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_OPENED:
+            if (stream->acceptCb) {
+                nc_stream_callback cb = stream->acceptCb;
+                stream->acceptCb = NULL;
+                cb(NABTO_EC_OK, stream->acceptUserData);
+            }
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY:
+            nc_stream_do_read(stream);
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_WRITE:
+            if (stream->writeCb) {
+                nc_stream_do_write_all(stream);
+            }
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_READ_CLOSED:
+            nc_stream_do_read(stream);
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_WRITE_CLOSED:
+            if (stream->closeCb) {
+                nc_stream_callback cb = stream->closeCb;
+                stream->closeCb = NULL;
+                cb(NABTO_EC_OK, stream->closeUserData);
+            }
+            break;
+        case NABTO_STREAM_APPLICATION_EVENT_TYPE_CLOSED:
+            if (stream->writeCb) {
+                nc_stream_do_write_all(stream);
+            }
+            if (stream->acceptCb) {
+                nc_stream_callback cb = stream->acceptCb;
+                stream->acceptCb = NULL;
+                cb(NABTO_EC_ABORTED, stream->acceptUserData);
+            }
+            nc_stream_do_read(stream);
+            nc_stream_handle_close(stream);
+
+            // TODO
+            /* if (str->readyToFree) { */
+            /*     free(str); */
+            /* } else { */
+            /*     NABTO_LOG_ERROR(LOG, "ended in closed state but the stream has not been freed by the user yet"); */
+            /* } */
+            break;
+        default:
+            NABTO_LOG_ERROR(LOG, "Unknown stream application event type %s", nabto_stream_application_event_type_to_string(eventType));
+    }
+}
+
+void nc_stream_abort(struct nc_stream_context* stream)
+{
+    nabto_stream_release(&stream->stream);
+}
+
+void nc_stream_release(struct nc_stream_context* stream)
+{
+    nabto_stream_release(&stream->stream);
 }

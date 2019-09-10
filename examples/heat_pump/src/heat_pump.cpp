@@ -1,5 +1,5 @@
 #include "heat_pump.hpp"
-#include "heat_pump_config.hpp"
+#include "json_config.hpp"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -94,6 +94,6 @@ void HeatPump::saveConfig()
     currentIamVersion_ = version;
 
     std::string tmpFile = "tmp.json";
-    heat_pump_save_config(configFile_, tmpFile, config);
+    json_config_save(configFile_, config);
     std::cout << "Configuration saved to file" << std::endl;
 }

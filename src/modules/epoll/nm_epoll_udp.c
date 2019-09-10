@@ -34,6 +34,7 @@ struct np_udp_socket {
     struct np_platform* pl;
     int sock;
     bool isIpv6;
+    bool destroyed;
     struct nm_epoll_created_ctx created;
     struct nm_epoll_received_ctx recv;
 };
@@ -185,8 +186,14 @@ uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
     return htons(addr.sin6_port);
 }
 
-void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events) {
-    NABTO_LOG_TRACE(LOG, "handle event");
+void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events)
+{
+    // wait for last epoll event.
+    if (sock->destroyed) {
+        free(sock);
+        return;
+    }
+
     struct np_udp_endpoint ep;
     struct np_platform* pl = sock->pl;
     struct nm_epoll_context* epoll = pl->udpData;
@@ -227,7 +234,6 @@ void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events) {
     if (sock->recv.cb) {
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;
-        NABTO_LOG_TRACE(LOG, "received %i bytes of data data, invoking callback", recvLength);
         cb(NABTO_EC_OK, ep, epoll->recvBuffer, recvLength, sock->recv.data);
     }
     nm_epoll_udp_handle_event(sock, events);
@@ -307,12 +313,20 @@ void nm_epoll_destroy(np_udp_socket* sock)
     struct nm_epoll_context* epoll = sock->pl->udpData;
     shutdown(sock->sock, SHUT_RDWR);
 
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.ptr = NULL;
+
+    // set data ptr to NULL such that we do not tri to use the ptr in the future.
+    epoll_ctl(epoll->fd, EPOLL_CTL_MOD, sock->sock, &ev);
+
     if (epoll_ctl(epoll->fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
         NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
     }
     close(sock->sock);
     nm_epoll_cancel_all_events(sock);
-    free(sock);
+    sock->destroyed = true;
+    //free(sock);
 }
 
 void nm_epoll_event_bind_port(void* data)
@@ -595,7 +609,6 @@ void nm_epoll_event_send_to(void* data)
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
-        NABTO_LOG_TRACE(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
         res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6
         struct sockaddr_in6 srv_addr;

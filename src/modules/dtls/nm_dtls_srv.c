@@ -218,7 +218,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     (*dtls)->sendSentinel.next = &(*dtls)->sendSentinel;
     (*dtls)->sendSentinel.prev = &(*dtls)->sendSentinel;
 
-    NABTO_LOG_TRACE(LOG, "DTLS was allocated at: %u");
+    NABTO_LOG_TRACE(LOG, "New DTLS srv connection was allocated.");
     //mbedtls connection initialization
     mbedtls_ssl_init( &((*dtls)->ctx.ssl) );
     if( ( ret = mbedtls_ssl_setup( &((*dtls)->ctx.ssl), &server->conf ) ) != 0 )
@@ -275,7 +275,6 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize)
 {
-    NABTO_LOG_TRACE(LOG, "Handle packet called");
     // TODO: remove channel IDs from dtls srv
     ctx->ctx.currentChannelId = channelId;
     ctx->ctx.recvBuffer = ctx->pl->buf.start(buffer);
@@ -299,7 +298,6 @@ void nm_dtls_srv_do_one(void* data)
             ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             // keep state as CONNECTING
-            NABTO_LOG_TRACE(LOG, "Keeping CONNECTING state");
         } else if (ret == 0) {
             NABTO_LOG_INFO(LOG, "State changed to DATA");
 
@@ -361,7 +359,6 @@ void nm_dtls_srv_start_send_deferred(void* data)
     }
 
     if (ctx->sendSentinel.next == &ctx->sendSentinel) {
-        NABTO_LOG_TRACE(LOG, "empty send queue");
         // empty send queue
         return;
     }
@@ -370,7 +367,6 @@ void nm_dtls_srv_start_send_deferred(void* data)
     nm_dtls_srv_remove_send_data(next);
 
     ctx->channelId = next->channelId;
-    NABTO_LOG_TRACE(LOG, "sending dtls data packet");
     int ret = mbedtls_ssl_write( &ctx->ctx.ssl, (unsigned char *) next->buffer, next->bufferSize );
     ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     if (next->cb == NULL) {
@@ -395,7 +391,6 @@ np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls
     if (ctx->ctx.state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
-    NABTO_LOG_TRACE(LOG, "enqueued dtls application data packet");
     nm_dtls_srv_insert_send_data(ctx, sendCtx);
     nm_dtls_srv_start_send(ctx);
     return NABTO_EC_OK;
@@ -519,8 +514,6 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (!ctx->sending) {
         memcpy(ctx->pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
-        NABTO_LOG_TRACE(LOG, "mbedtls wants write %u bytes:", bufferSize);
-        NABTO_LOG_BUF(LOG, buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         ctx->sending = true;
         ctx->sender(ctx->channelId, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
@@ -533,7 +526,6 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
 
 void nm_dtls_srv_connection_send_callback(const np_error_code ec, void* data)
 {
-    NABTO_LOG_TRACE(LOG, "dtls sent packet to udp layer");
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (data == NULL) {
         return;
@@ -557,14 +549,10 @@ int nm_dtls_srv_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSiz
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->ctx.recvBufferSize == 0) {
-        NABTO_LOG_TRACE(LOG, "Empty buffer, returning WANT_READ");
         return MBEDTLS_ERR_SSL_WANT_READ;
     } else {
-        NABTO_LOG_TRACE(LOG, "mbtls wants read %u bytes into buffersize: %u", ctx->ctx.recvBufferSize, bufferSize);
         size_t maxCp = bufferSize > ctx->ctx.recvBufferSize ? ctx->ctx.recvBufferSize : bufferSize;
         memcpy(buffer, ctx->ctx.recvBuffer, maxCp);
-        NABTO_LOG_TRACE(LOG, "returning %i bytes to mbedtls:", maxCp);
-//        NABTO_LOG_BUF(LOG, buffer, maxCp);
         ctx->ctx.recvBufferSize = 0;
         return maxCp;
     }

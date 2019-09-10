@@ -80,12 +80,16 @@ int nm_epoll_inf_wait(struct nm_epoll_context* epoll)
 void nm_epoll_read(struct nm_epoll_context* epoll, int nfds)
 {
     for (int i = 0; i < nfds; i++) {
-        struct nm_epoll_base* base = (struct nm_epoll_base*)epoll->events[i].data.ptr;
-        if (base != NULL) {
-            if (base->type == NM_EPOLL_TYPE_UDP) {
-                nm_epoll_udp_handle_event((np_udp_socket*)base, epoll->events[i].events);
-            } else if (base->type == NM_EPOLL_TYPE_TCP) {
-                nm_epoll_tcp_handle_event((np_tcp_socket*)base, epoll->events[i].events);
+        if ((epoll->events[i].events & EPOLLIN) ||
+            (epoll->events[i].events & EPOLLOUT))
+        {
+            struct nm_epoll_base* base = (struct nm_epoll_base*)epoll->events[i].data.ptr;
+            if (base != NULL) {
+                if (base->type == NM_EPOLL_TYPE_UDP) {
+                    nm_epoll_udp_handle_event((np_udp_socket*)base, epoll->events[i].events);
+                } else if (base->type == NM_EPOLL_TYPE_TCP) {
+                    nm_epoll_tcp_handle_event((np_tcp_socket*)base, epoll->events[i].events);
+                }
             }
         }
     }

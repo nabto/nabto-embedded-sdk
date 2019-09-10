@@ -54,6 +54,7 @@
 
 /* mbed TLS modules */
 #define MBEDTLS_AES_C
+#define MBEDTLS_AESNI_C
 #define MBEDTLS_ASN1_PARSE_C
 #define MBEDTLS_ASN1_WRITE_C
 #define MBEDTLS_BIGNUM_C

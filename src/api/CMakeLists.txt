@@ -51,6 +51,7 @@ target_link_libraries( nabto_device
   nm_dns
   nc_core
   nm_mdns
+  nm_tcptunnel
   )
 
 if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")

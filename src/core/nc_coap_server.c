@@ -48,7 +48,6 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
 void nc_coap_server_event(struct nc_coap_server_context* ctx)
 {
     enum nabto_coap_server_next_event nextEvent = nabto_coap_server_next_event(&ctx->server);
-    NABTO_LOG_TRACE(LOG, "nc_coap_server_event: %u", nextEvent);
     switch (nextEvent) {
         case NABTO_COAP_SERVER_NEXT_EVENT_SEND:
             nc_coap_server_handle_send(ctx);
@@ -65,8 +64,9 @@ void nc_coap_server_event(struct nc_coap_server_context* ctx)
 void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
-    NABTO_LOG_TRACE(LOG, "handle send, isSending: %i", ctx->isSending );
+
     if (ctx->isSending) {
+        //NABTO_LOG_TRACE(LOG, "handle send, isSending: %i", ctx->isSending );
         return;
     }
 
@@ -103,7 +103,6 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
 {
-    NABTO_LOG_TRACE(LOG, "handle wait");
     uint32_t nextStamp;
     nabto_coap_server_get_next_timeout(&ctx->server, &nextStamp);
     if (nabto_coap_is_stamp_less(nextStamp, ctx->currentExpiry)) {
@@ -120,7 +119,7 @@ void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
 void nc_coap_server_handle_timeout(const np_error_code ec, void* data)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*) data;
-    NABTO_LOG_TRACE(LOG, "Handle timeout called");
+    //NABTO_LOG_TRACE(LOG, "Handle timeout called");
     nc_coap_server_set_infinite_stamp(ctx);
     nabto_coap_server_handle_timeout(&ctx->server);
     nc_coap_server_event(ctx);
@@ -152,7 +151,6 @@ void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data)
 {
     struct nc_coap_server_context* ctx = data;
-    NABTO_LOG_TRACE(LOG, "coap_server_send_to_callback");
     ctx->isSending = false;
     nc_coap_server_event(ctx);
 }
@@ -171,7 +169,6 @@ void nc_coap_server_notify_event_callback(void* userData)
 void nc_coap_server_notify_event(void* userData)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    NABTO_LOG_TRACE(LOG, "nc_coap_server_notify_event received");
     np_event_queue_post(ctx->pl, &ctx->ev, &nc_coap_server_notify_event_callback, ctx);
 }
 

@@ -203,9 +203,13 @@ nabto_device_close(NabtoDevice* device);
 /**
  * listen for a stream, the returned NabtoDeviceStream* should be
  * freed after use.
+ *
+ * @param device  device
+ * @param port    A number describing the id/port of the stream to listen for.
+ *                Think of it as a demultiplexing port number.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_stream_listen(NabtoDevice* device, NabtoDeviceStream** stream);
+nabto_device_stream_listen(NabtoDevice* device, uint32_t port, NabtoDeviceStream** stream);
 
 /**
  * Free a stream
