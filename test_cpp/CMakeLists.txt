@@ -7,7 +7,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/util common
 
 set(test_src
   unit_test.cpp
-  epoll/epoll_tcp_test.cpp
+  network/tcp_test.cpp
+  network/udp_test.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")

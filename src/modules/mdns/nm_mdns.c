@@ -21,14 +21,14 @@ void nm_mdns_start(struct np_mdns_context* mdns);
 static void nm_mdns_socket_opened_v4(const np_error_code ec, void* userData);
 static void nm_mdns_recv_packet_v4(struct np_mdns_context* mdns);
 static void nm_mdns_packet_received_v4(const np_error_code ec, struct np_udp_endpoint ep,
-                                    np_communication_buffer* buffer, uint16_t bufferSize, void* userData);
+                                    uint8_t* buffer, uint16_t bufferSize, void* userData);
 static void nm_mdns_send_packet_v4(struct np_mdns_context* mdns);
 static void nm_mdns_packet_sent_v4(const np_error_code ec, void* userData);
 
 static void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData);
 static void nm_mdns_recv_packet_v6(struct np_mdns_context* mdns);
 static void nm_mdns_packet_received_v6(const np_error_code ec, struct np_udp_endpoint ep,
-                                    np_communication_buffer* buffer, uint16_t bufferSize, void* userData);
+                                    uint8_t* buffer, uint16_t bufferSize, void* userData);
 static void nm_mdns_send_packet_v6(struct np_mdns_context* mdns);
 static void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData);
 
@@ -114,13 +114,12 @@ void nm_mdns_recv_packet_v4(struct np_mdns_context* mdns)
 }
 
 void nm_mdns_packet_received_v4(const np_error_code ec, struct np_udp_endpoint ep,
-                             np_communication_buffer* buffer, uint16_t bufferSize, void* userData)
+                                uint8_t* buffer, uint16_t bufferSize, void* userData)
 {
     struct np_mdns_context* mdns = userData;
-    struct np_platform* pl = mdns->pl;
     if (ec == NABTO_EC_OK) {
         if (nabto_mdns_server_handle_packet(&mdns->mdnsServer,
-                                            pl->buf.start(buffer), bufferSize))
+                                            buffer, bufferSize))
         {
             nm_mdns_send_packet_v4(mdns);
             return;
@@ -143,7 +142,7 @@ void nm_mdns_send_packet_v4(struct np_mdns_context* mdns)
     if (port > 0) {
         if (nabto_mdns_server_build_packet(&mdns->mdnsServer, port, pl->buf.start(mdns->sendBufferv4), pl->buf.size(mdns->sendBufferv4), &written)) {
             np_udp_populate_send_context(&mdns->sendContextv4, mdns->socketv4,
-                                         ep, mdns->sendBufferv4, (uint16_t)written,
+                                         ep, pl->buf.start(mdns->sendBufferv4), (uint16_t)written,
                                          nm_mdns_packet_sent_v4, mdns);
             NABTO_LOG_INFO(0, "mdns actual send");
             pl->udp.async_send_to(&mdns->sendContextv4);
@@ -177,13 +176,12 @@ void nm_mdns_recv_packet_v6(struct np_mdns_context* mdns)
 }
 
 void nm_mdns_packet_received_v6(const np_error_code ec, struct np_udp_endpoint ep,
-                                np_communication_buffer* buffer, uint16_t bufferSize, void* userData)
+                                uint8_t* buffer, uint16_t bufferSize, void* userData)
 {
     struct np_mdns_context* mdns = userData;
-    struct np_platform* pl = mdns->pl;
     if (ec == NABTO_EC_OK) {
         if (nabto_mdns_server_handle_packet(&mdns->mdnsServer,
-                                            pl->buf.start(buffer), bufferSize))
+                                            buffer, bufferSize))
         {
             nm_mdns_send_packet_v6(mdns);
             return;
@@ -207,7 +205,7 @@ void nm_mdns_send_packet_v6(struct np_mdns_context* mdns)
     if (port > 0) {
         if (nabto_mdns_server_build_packet(&mdns->mdnsServer, port, pl->buf.start(mdns->sendBufferv6), pl->buf.size(mdns->sendBufferv6), &written)) {
             np_udp_populate_send_context(&mdns->sendContextv6, mdns->socketv6,
-                                         ep, mdns->sendBufferv6, (uint16_t)written,
+                                         ep, pl->buf.start(mdns->sendBufferv6), (uint16_t)written,
                                          nm_mdns_packet_sent_v6, mdns);
             pl->udp.async_send_to(&mdns->sendContextv6);
             // the send handler starts a new recv in this case

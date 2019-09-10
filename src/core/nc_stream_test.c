@@ -25,7 +25,7 @@ struct nc_stream_test_context {
 
     struct nc_client_connection cliConn;
     struct nc_stream_manager_context cliCtx;
-    struct np_communication_buffer cliBuffer;
+    uint8_t cliBuffer[1500];
     uint16_t cliBufferSize;
     struct np_event cliEv;
     bool firstCliPacket;
@@ -34,7 +34,7 @@ struct nc_stream_test_context {
 
     struct nc_client_connection devConn;
     struct nc_stream_manager_context devCtx;
-    struct np_communication_buffer devBuffer;
+    uint8_t devBuffer[1500];
     uint16_t devBufferSize;
     struct np_event devEv;
     uint8_t devTestData[10];
@@ -65,7 +65,7 @@ np_error_code nc_stream_test_cli_dtls_srv_async_send_to(struct np_platform* pl, 
         ctx.firstCliPacket = false;
         return NABTO_EC_OK;
         }*/
-    memcpy(ctx.cliBuffer.buf, sendCtx->buffer, sendCtx->bufferSize);
+    memcpy(ctx.cliBuffer, sendCtx->buffer, sendCtx->bufferSize);
     ctx.cliBufferSize = sendCtx->bufferSize;
     np_event_queue_post(&ctx.cliPl, &ctx.cliEv, &nc_stream_test_send_to_dev, &ctx);
     return NABTO_EC_OK;
@@ -77,7 +77,7 @@ np_error_code nc_stream_test_dev_dtls_srv_async_send_to(struct np_platform* pl, 
 {
     NABTO_LOG_ERROR(0, "Dev wants send:");
     NABTO_LOG_BUF(0, sendCtx->buffer, sendCtx->bufferSize);
-    memcpy(ctx.devBuffer.buf, sendCtx->buffer, sendCtx->bufferSize);
+    memcpy(ctx.devBuffer, sendCtx->buffer, sendCtx->bufferSize);
     ctx.devBufferSize = sendCtx->bufferSize;
     np_event_queue_post(&ctx.devPl, &ctx.devEv, &nc_stream_test_send_to_cli, &ctx);
     return NABTO_EC_OK;
@@ -111,12 +111,12 @@ void nc_stream_test_dev_application_event_callback(nabto_stream_application_even
 
 void nc_stream_test_send_to_dev(void* data)
 {
-    nc_stream_manager_handle_packet(&ctx.devCtx, &ctx.devConn, &ctx.cliBuffer, ctx.cliBufferSize);
+    nc_stream_manager_handle_packet(&ctx.devCtx, &ctx.devConn, ctx.cliBuffer, ctx.cliBufferSize);
 }
 
 void nc_stream_test_send_to_cli(void* data)
 {
-    nc_stream_manager_handle_packet(&ctx.cliCtx, &ctx.cliConn, &ctx.devBuffer, ctx.devBufferSize);
+    nc_stream_manager_handle_packet(&ctx.cliCtx, &ctx.cliConn, ctx.devBuffer, ctx.devBufferSize);
 }
 
 void nc_stream_test_listener_cb(np_error_code ec, struct nc_stream_context* stream, void* data)

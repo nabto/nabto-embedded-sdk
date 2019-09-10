@@ -36,11 +36,11 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
 //                                              void* data)*/
 void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dispatch_context* ctx,
                                                  struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
-                                                 np_communication_buffer* buffer, uint16_t bufferSize)
+                                                 uint8_t* buffer, uint16_t bufferSize)
 {
     int i;
     uint8_t* id;
-    id = ctx->pl->buf.start(buffer);
+    id = buffer;
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         // compare middle 14 bytes, ignoring the channel ID and protocol prefix
         if (ctx->elms[i].active && memcmp(id+1, ctx->elms[i].conn.id.id+1, 14) == 0) {

@@ -12,15 +12,15 @@
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION
 
 void nc_client_connection_async_send_to_udp(uint8_t channelId,
-                                            np_communication_buffer* buffer, uint16_t bufferSize,
+                                            uint8_t* buffer, uint16_t bufferSize,
                                             np_dtls_srv_send_callback cb, void* data, void* listenerData);
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
 void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data);
 void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
-                                      np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+                                      uint8_t* buffer, uint16_t bufferSize, void* data);
 
-void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
+void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, uint8_t channelId, uint8_t* buffer, uint16_t bufferSize);
 void nc_client_connection_keep_alive_start(struct nc_client_connection* conn);
 void nc_client_connection_keep_alive_wait(struct nc_client_connection* conn);
 void nc_client_connection_keep_alive_event(const np_error_code ec, void* data);
@@ -33,12 +33,12 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
                                         struct nc_client_connection_dispatch_context* dispatch,
                                         struct nc_device_context* device,
                                         struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
-                                        np_communication_buffer* buffer, uint16_t bufferSize)
+                                        uint8_t* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
-    uint8_t* start = pl->buf.start(buffer);
+    uint8_t* start = buffer;
     memset(conn, 0, sizeof(struct nc_client_connection));
-    memcpy(conn->id.id, pl->buf.start(buffer), 16);
+    memcpy(conn->id.id, buffer, 16);
     conn->currentChannel.sock = sock;
     conn->currentChannel.ep = ep;
     conn->currentChannel.channelId = conn->id.id[15];
@@ -68,10 +68,10 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
 
 np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
                                                  struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
-                                                 np_communication_buffer* buffer, uint16_t bufferSize)
+                                                 uint8_t* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
-    uint8_t* start = pl->buf.start(buffer);
+    uint8_t* start = buffer;
 
 
     if (bufferSize >= 18 &&
@@ -160,12 +160,12 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
 
 // handle data from the dtls module
 void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
-                                      np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+                                      uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
     uint8_t applicationType;
 
-    applicationType = *(conn->pl->buf.start(buffer));
+    applicationType = *(buffer);
 
     // if the packet received is not a keep alive poacket and the
     // sequence number is larger than a previous seen sequence number
@@ -196,10 +196,9 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
     }
 }
 
-void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize)
+void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, uint8_t channelId, uint8_t* buffer, uint16_t bufferSize)
 {
-    struct np_platform* pl = conn->pl;
-    uint8_t* start = pl->buf.start(buffer);
+    uint8_t* start = buffer;
     if (bufferSize < 2) {
         return;
     }
@@ -334,18 +333,14 @@ void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data)
 }
 
 void nc_client_connection_async_send_to_udp(uint8_t channel,
-                                            np_communication_buffer* buffer, uint16_t bufferSize,
+                                            uint8_t* buffer, uint16_t bufferSize,
                                             np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
     conn->sentCb = cb;
     conn->sentData = data;
-    if (bufferSize > conn->pl->buf.size(buffer)-16) {
-        conn->ec = NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION;
-        np_event_queue_post(conn->pl, &conn->ev, &nc_client_connection_send_failed, conn);
-        return;
-    }
-    uint8_t* start = conn->pl->buf.start(buffer);
+
+    uint8_t* start = buffer;
     memmove(start+16, start, bufferSize);
     memcpy(start, conn->id.id, 15);
     bufferSize = bufferSize + 16;
@@ -353,12 +348,12 @@ void nc_client_connection_async_send_to_udp(uint8_t channel,
     if (channel == conn->currentChannel.channelId || channel == NP_DTLS_SRV_DEFAULT_CHANNEL_ID) {
         *(start+15) = conn->currentChannel.channelId;
         nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->sendCtx, &conn->currentChannel.ep,
-                                      buffer, bufferSize,
+                                      start, bufferSize,
                                       &nc_client_connection_send_to_udp_cb, conn);
     } else if (channel == conn->alternativeChannel.channelId) {
         *(start+15) = conn->alternativeChannel.channelId;
         nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->sendCtx, &conn->alternativeChannel.ep,
-                                      buffer, bufferSize,
+                                      start, bufferSize,
                                       &nc_client_connection_send_to_udp_cb, conn);
     }
 }

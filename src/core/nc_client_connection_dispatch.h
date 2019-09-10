@@ -29,7 +29,7 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
 
 void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dispatch_context* ctx,
                                               struct nc_udp_dispatch_context* udp, struct np_udp_endpoint ep,
-                                              np_communication_buffer* buffer, uint16_t bufferSize);
+                                              uint8_t* buffer, uint16_t bufferSize);
 
 np_error_code nc_client_connection_dispatch_close_connection(struct nc_client_connection_dispatch_context* ctx,
                                                           struct nc_client_connection* conn);

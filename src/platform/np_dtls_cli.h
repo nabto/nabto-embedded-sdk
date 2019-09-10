@@ -22,12 +22,12 @@ enum np_dtls_cli_event {
 typedef void (*np_dtls_cli_send_callback)(const np_error_code ec, void* data);
 
 typedef void (*np_dtls_cli_sender)(bool activeChannel,
-                                   np_communication_buffer* buffer, uint16_t bufferSize,
+                                   uint8_t* buffer, uint16_t bufferSize,
                                    np_dtls_cli_send_callback cb, void* data,
                                    void* senderData);
 typedef void (*np_dtls_cli_event_handler)(enum np_dtls_cli_event event, void* data);
 typedef void (*np_dtls_cli_data_handler)(uint8_t channelId, uint64_t sequence,
-                                         np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+                                         uint8_t* buffer, uint16_t bufferSize, void* data);
 
 typedef struct np_dtls_cli_context np_dtls_cli_context;
 
@@ -57,7 +57,7 @@ struct np_dtls_cli_module {
     np_error_code (*async_send_data)(struct np_platform* pl, np_dtls_cli_context* ctx,
                                      struct np_dtls_cli_send_context* sendCtx);
     np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_cli_context* ctx,
-                                   np_communication_buffer* buffer, uint16_t bufferSize);
+                                   uint8_t* buffer, uint16_t bufferSize);
     np_error_code (*async_close)(struct np_platform* pl, np_dtls_cli_context* ctx,
                                  np_dtls_close_callback cb, void* data);
     np_error_code (*get_fingerprint)(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp);

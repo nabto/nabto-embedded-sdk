@@ -38,10 +38,10 @@ void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
 }
 
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
-                                  np_communication_buffer* buffer, uint16_t bufferSize)
+                                  uint8_t* buffer, uint16_t bufferSize)
 {
-    nc_coap_packet_print("coap server handle packet", ctx->pl->buf.start(buffer), bufferSize);
-    nabto_coap_server_handle_packet(&ctx->server,(void*) conn, ctx->pl->buf.start(buffer), bufferSize);
+    nc_coap_packet_print("coap server handle packet", buffer, bufferSize);
+    nabto_coap_server_handle_packet(&ctx->server,(void*) conn, buffer, bufferSize);
     nc_coap_server_event(ctx);
 }
 

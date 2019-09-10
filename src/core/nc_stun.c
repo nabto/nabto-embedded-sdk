@@ -122,11 +122,11 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
 // Handle packet function
 void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            struct np_udp_endpoint ep,
-                           np_communication_buffer* buffer,
+                           uint8_t* buffer,
                            uint16_t bufferSize)
 {
     NABTO_LOG_TRACE(LOG, "Stun handling packet");
-    nabto_stun_handle_packet(&ctx->stun, ctx->pl->buf.start(buffer), bufferSize);
+    nabto_stun_handle_packet(&ctx->stun, buffer, bufferSize);
     nc_stun_event(ctx);
 
 }
@@ -135,6 +135,7 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
 void nc_stun_event(struct nc_stun_context* ctx)
 {
     enum nabto_stun_next_event_type event = nabto_stun_next_event_to_handle(&ctx->stun);
+    struct np_platform* pl = ctx->pl;
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
     switch(event) {
         case STUN_ET_SEND_PRIMARY:
@@ -156,7 +157,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
+            nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
         case STUN_ET_SEND_SECONDARY:
@@ -178,7 +179,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, ctx->sendBuf, wrote, &nc_stun_send_to_cb, ctx);
+            nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
         case STUN_ET_WAIT:

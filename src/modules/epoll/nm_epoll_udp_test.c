@@ -17,6 +17,9 @@ struct np_udp_send_context sendCtx1;
 struct np_udp_send_context sendCtx2;
 uint32_t counter = 0;
 
+uint8_t sendBuffer1[1500];
+uint8_t sendBuffer2[1500];
+
 void sockSendCtx1(np_udp_packet_sent_callback cb);
 void sock3Created(const np_error_code ec, void* data);
 
@@ -40,7 +43,7 @@ void sockSendCtx1(np_udp_packet_sent_callback cb)
     sendCtx1.ep.ip.v4.addr[1] = 0;
     sendCtx1.ep.ip.v4.addr[2] = 0;
     sendCtx1.ep.ip.v4.addr[3] = 1;
-    memcpy(pl->buf.start(sendCtx1.buffer), &counter, 4);
+    memcpy(sendBuffer1, &counter, 4);
     sendCtx1.bufferSize = 4;
     sendCtx1.cb = cb;
     counter++;
@@ -48,11 +51,9 @@ void sockSendCtx1(np_udp_packet_sent_callback cb)
 }
 
 void sock2Recv(const np_error_code ec, struct np_udp_endpoint ep,
-               np_communication_buffer* buffer, uint16_t bufferSize,
+               uint8_t* buffer, uint16_t bufferSize,
                void* data)
 {
-    NABTO_LOG_ERROR(0, "  recv from sock2: %u", *((uint32_t*)pl->buf.start(buffer)));
-//    NABTO_LOG_BUF(0, pl.buf.start(buffer), bufferSize);
     pl->udp.async_recv_from(sock2, &sock2Recv, NULL);
 }
 
@@ -101,8 +102,8 @@ int main()
     nm_epoll_init(&epoll, pl);
     NABTO_LOG_INFO(0, "main");
 
-    sendCtx1.buffer = pl->buf.allocate();
-    sendCtx2.buffer = pl->buf.allocate();
+    sendCtx1.buffer = sendBuffer1;
+    sendCtx2.buffer = sendBuffer2;
     pl->udp.create(pl, &sock2);
     pl->udp.create(pl, &sock);
     pl->udp.async_bind(sock, &sockCreated, NULL);
