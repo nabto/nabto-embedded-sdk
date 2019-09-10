@@ -4,6 +4,8 @@ project(nabto-embedded-sdk)
 # build all of nabto on linux, windows, mac
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+set(CMAKE_CXX_STANDARD 14)
+
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
