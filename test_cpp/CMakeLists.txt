@@ -12,4 +12,5 @@ set(test_src
   )
 
 add_executable(embedded_unit_test "${test_src}")
-target_link_libraries(embedded_unit_test test_platform nm_epoll 3rdparty_boost_test 3rdparty_boost_asio common_util)
+target_link_libraries(embedded_unit_test test_platform nm_epoll 3rdparty_boost_test 3rdparty_boost_asio common_util  nm_select_unix)
+target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

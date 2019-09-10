@@ -53,7 +53,7 @@ add_subdirectory(src/modules/tcptunnel)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_subdirectory(src/modules/dns/unix)
-  add_subdirectory(src/modules/udp/select_unix)
+  add_subdirectory(src/modules/select_unix)
   add_subdirectory(src/modules/timestamp/unix)
   add_subdirectory(src/modules/logging/unix)
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
@@ -65,8 +65,9 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_subdirectory(src/modules/logging/unix)
   add_subdirectory(src/modules/dns/unix)
   add_subdirectory(src/modules/timestamp/unix)
-#  add_subdirectory(src/modules/udp/select_unix)
+  add_subdirectory(src/modules/select_unix)
   add_subdirectory(src/modules/epoll)
+
 
 endif()
 

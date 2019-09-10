@@ -13,9 +13,6 @@ struct test_platform {
 };
 
 void test_platform_init(struct test_platform* tp);
-void test_platform_init_epoll(struct test_platform* tp);
-void test_platform_init_select_unix(struct test_platform* tp);
-void test_platform_init_select_win(struct test_platform* tp);
 
 /* /\** */
 /*  * Wait for ever for incoming traffic from the network. */
