@@ -63,7 +63,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
 
 void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            struct np_udp_endpoint ep,
-                           np_communication_buffer* buffer,
+                           uint8_t* buffer,
                            uint16_t bufferSize);
 
 uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx);

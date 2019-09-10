@@ -1,6 +1,5 @@
 #include <boost/test/unit_test.hpp>
 
-#include <modules/epoll/nm_epoll.h>
 #include <test_platform/test_platform.h>
 
 #include <platform/np_ip_address.h>
@@ -183,7 +182,6 @@ void TcpEchoConnection::start()
     startRead();
 }
 
-
 class TcpEchoClientTest {
  public:
     TcpEchoClientTest() {
@@ -250,7 +248,7 @@ class TcpEchoClientTest {
 
 } }
 
-BOOST_AUTO_TEST_SUITE(epoll_tcp)
+BOOST_AUTO_TEST_SUITE(tcp)
 
 BOOST_AUTO_TEST_CASE(echo)
 {

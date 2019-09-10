@@ -18,11 +18,11 @@ void nc_attacher_dtls_conn_ok(struct nc_attach_context* ctx);
 void nc_attacher_dtls_closed_cb(const np_error_code ec, void* data);
 void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request, void* userData);
 void nc_attacher_dtls_recv_cb(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                                 np_communication_buffer* buf, uint16_t bufferSize, void* data);
+                              uint8_t* buf, uint16_t bufferSize, void* data);
 static void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request, void* data);
 
 
-void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, np_communication_buffer* buffer, uint16_t bufferSize);
+void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 void nc_attacher_keep_alive_start(struct nc_attach_context* ctx);
 void nc_attacher_keep_alive_event(const np_error_code ec, void* data);
 void nc_attacher_keep_alive_send_req(struct nc_attach_context* ctx);
@@ -30,12 +30,12 @@ void nc_attacher_keep_alive_send_response(struct nc_attach_context* ctx, uint8_t
 void nc_attacher_keep_alive_packet_sent(const np_error_code ec, void* data);
 
 void nc_attacher_dtls_sender(bool activeChannel,
-                             np_communication_buffer* buffer, uint16_t bufferSize,
+                             uint8_t* buffer, uint16_t bufferSize,
                              np_dtls_cli_send_callback cb, void* data,
                              void* senderData);
 void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data);
 void nc_attacher_dtls_data_handler(uint8_t channelId, uint64_t sequence,
-                                   np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+                                   uint8_t* buffer, uint16_t bufferSize, void* data);
 
 void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_coap_client_context* coapClient)
 {
@@ -60,10 +60,9 @@ np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx, const unsigned
     return ctx->pl->dtlsC.set_keys(ctx->dtls, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
-void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, np_communication_buffer* buffer, uint16_t bufferSize)
+void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize)
 {
-    struct np_platform* pl = ctx->pl;
-    uint8_t* start = pl->buf.start(buffer);
+    uint8_t* start = buffer;
     if (bufferSize < 2) {
         return;
     }
@@ -166,7 +165,7 @@ void nc_attacher_keep_alive_send_response(struct nc_attach_context* ctx, uint8_t
 
 
 void nc_attacher_dtls_sender(bool activeChannel,
-                             np_communication_buffer* buffer, uint16_t bufferSize,
+                             uint8_t* buffer, uint16_t bufferSize,
                              np_dtls_cli_send_callback cb, void* data,
                              void* senderData)
 {
@@ -195,16 +194,15 @@ void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data)
 }
 
 void nc_attacher_dtls_data_handler(uint8_t channelId, uint64_t sequence,
-                                   np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+                                   uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
 
-    struct np_platform* pl = ctx->pl;
     if (bufferSize < 1) {
         return;
     }
 
-    uint8_t applicationType = *(pl->buf.start(buffer));
+    uint8_t applicationType = *buffer;
     if (applicationType >= AT_COAP_START && applicationType <= AT_COAP_END) {
         NABTO_LOG_TRACE(LOG, "Received COAP packet");
         nc_coap_client_handle_packet(ctx->coapClient, buffer, bufferSize, ctx->dtls);

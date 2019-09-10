@@ -26,14 +26,14 @@ typedef void (*np_udp_socket_created_callback)(const np_error_code ec, void* dat
 typedef void (*np_udp_packet_sent_callback)(const np_error_code ec, void* data);
 
 typedef void (*np_udp_packet_received_callback)(const np_error_code ec, struct np_udp_endpoint ep,
-                                                np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+                                                uint8_t* buffer, uint16_t bufferSize, void* data);
 
 typedef void (*np_udp_socket_destroyed_callback)(const np_error_code ec, void* data);
 
 struct np_udp_send_context {
     np_udp_socket* sock;
     struct np_udp_endpoint ep;
-    np_communication_buffer* buffer;
+    uint8_t* buffer;
     uint16_t bufferSize;
     np_udp_packet_sent_callback cb;
     void* cbData;
@@ -42,7 +42,7 @@ struct np_udp_send_context {
 
 void np_udp_populate_send_context(struct np_udp_send_context* ctx, np_udp_socket* sock,
                                   struct np_udp_endpoint ep,
-                                  np_communication_buffer* buffer, uint16_t bufferSize,
+                                  uint8_t* buffer, uint16_t bufferSize,
                                   np_udp_packet_sent_callback cb, void* data);
 struct np_udp_module {
 

@@ -131,7 +131,7 @@ const char*  nm_dtls_srv_get_alpn_protocol(struct np_dtls_srv_connection* ctx) {
 }
 
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
-                                        uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
+                                        uint8_t channelId, uint8_t* buffer, uint16_t bufferSize);
 
 np_error_code nm_dtls_srv_init(struct np_platform* pl)
 {
@@ -273,11 +273,11 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
 }
 
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
-                                        uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize)
+                                        uint8_t channelId, uint8_t* buffer, uint16_t bufferSize)
 {
     // TODO: remove channel IDs from dtls srv
     ctx->ctx.currentChannelId = channelId;
-    ctx->ctx.recvBuffer = ctx->pl->buf.start(buffer);
+    ctx->ctx.recvBuffer = buffer;
     ctx->ctx.recvBufferSize = bufferSize;
     ctx->channelId = channelId;
     nm_dtls_srv_do_one(ctx);
@@ -291,6 +291,7 @@ np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_s
 void nm_dtls_srv_do_one(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)data;
+    struct np_platform* pl = ctx->pl;
     if (ctx->ctx.state == CONNECTING) {
         int ret;
         ret = mbedtls_ssl_handshake( &ctx->ctx.ssl );
@@ -319,7 +320,7 @@ void nm_dtls_srv_do_one(void* data)
             uint64_t seq = *((uint64_t*)ctx->ctx.ssl.in_ctr);
             ctx->ctx.recvCount++;
             ctx->dataHandler(ctx->ctx.currentChannelId, seq,
-                             ctx->ctx.sslRecvBuf, ret, ctx->senderData);
+                             pl->buf.start(ctx->ctx.sslRecvBuf), ret, ctx->senderData);
             return;
         } else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                    ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -512,11 +513,12 @@ np_error_code nm_dtls_srv_init_config(struct np_dtls_srv* server,
 int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferSize)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
+    struct np_platform* pl = ctx->pl;
     if (!ctx->sending) {
         memcpy(ctx->pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         ctx->sending = true;
-        ctx->sender(ctx->channelId, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
+        ctx->sender(ctx->channelId, pl->buf.start(ctx->ctx.sslSendBuffer), bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
 
         return bufferSize;
     } else {

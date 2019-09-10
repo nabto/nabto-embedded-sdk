@@ -22,7 +22,7 @@ struct nc_coap_server_context {
 void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx);
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
-                           np_communication_buffer* buffer, uint16_t bufferSize);
+                                  uint8_t* buffer, uint16_t bufferSize);
 
 struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_context* ctx);
 
