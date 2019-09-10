@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(nabto-embedded-sdk)
 
+include(CheckIncludeFiles)
+
 # build all of nabto on linux, windows, mac
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -53,6 +55,13 @@ add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)
 add_subdirectory(src/modules/tcptunnel)
 
+
+CHECK_INCLUDE_FILES(sys/epoll.h HAVE_EPOLL_HEADERS)
+
+if (HAVE_EPOLL_HEADERS)
+  add_subdirectory(src/modules/epoll)
+endif()
+
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_subdirectory(src/modules/dns/unix)
   add_subdirectory(src/modules/select_unix)
@@ -68,9 +77,6 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_subdirectory(src/modules/dns/unix)
   add_subdirectory(src/modules/timestamp/unix)
   add_subdirectory(src/modules/select_unix)
-  add_subdirectory(src/modules/epoll)
-
-
 endif()
 
 add_subdirectory(test)

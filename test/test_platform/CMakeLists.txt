@@ -37,13 +37,7 @@ target_link_libraries( test_platform
 if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   target_link_libraries(test_platform nm_epoll)
 elseif("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
-  set(src
-    ${src}
-    test_platform_win.c
-    )
+  # TODOOOOOO
 elseif("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
-  set(src
-    ${src}
-    test_platform_mac.c
-    )
+  target_link_libraries(test_platform nm_select_unix)
 endif()

@@ -6,7 +6,9 @@
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
-#include <modules/udp/select_unix/nm_select_unix.h>
+#include <modules/select_unix/nm_select_unix.h>
+
+struct nm_select_unix ctx;
 
 void test_platform_init(struct test_platform* tp)
 {
@@ -15,7 +17,7 @@ void test_platform_init(struct test_platform* tp)
     np_event_queue_init(pl, NULL, NULL);
     np_log_init();
     np_communication_buffer_init(pl);
-    nm_unix_udp_select_init(pl);
+    nm_select_unix_init(&ctx, pl);
     nm_unix_ts_init(pl);
     nm_unix_dns_init(pl);
     nm_dtls_cli_init(pl);
@@ -31,10 +33,10 @@ void test_platform_run(struct test_platform* tp)
         if (np_event_queue_has_timed_event(&tp->pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&tp->pl);
 
-            nfds = nm_select_unix_timed_wait(ms);
+            nfds = nm_select_unix_timed_wait(&ctx, ms);
         } else {
-            nfds = nm_select_unix_inf_wait();
+            nfds = nm_select_unix_inf_wait(&ctx);
         }
-        nm_select_unix_read(nfds);
+        nm_select_unix_read(&ctx, nfds);
     }
 }
