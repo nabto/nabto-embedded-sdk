@@ -5,6 +5,6 @@ set(select_unix_src
   ${src_dir}/nm_select_unix_udp.c
   )
 
-add_library( nm_select_unix STATIC ${select_unix_src})
+add_library( nm_select_unix STATIC "${select_unix_src}")
 
 target_link_libraries(nm_select_unix np_platform nc_core nm_logging nm_unix_communication_buffer)

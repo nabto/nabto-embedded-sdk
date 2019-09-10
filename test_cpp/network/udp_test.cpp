@@ -1,7 +1,11 @@
 #include <boost/test/unit_test.hpp>
 
 #include <test_platform.hpp>
+
+#ifdef HAVE_EPOLL_HEADERS
 #include <test_platform_epoll.hpp>
+#endif
+
 #include <test_platform_select_unix.hpp>
 
 #include <platform/np_platform.h>
@@ -190,6 +194,8 @@ class UdpEchoClientTest {
 
 BOOST_AUTO_TEST_SUITE(udp)
 
+#ifdef HAVE_EPOLL
+
 BOOST_AUTO_TEST_CASE(echo_epoll)
 {
     auto ioService = nabto::IoService::create("test");
@@ -202,6 +208,8 @@ BOOST_AUTO_TEST_CASE(echo_epoll)
     BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
     udpServer->stop();
 }
+
+#endif
 
 BOOST_AUTO_TEST_CASE(echo_select_unix)
 {
