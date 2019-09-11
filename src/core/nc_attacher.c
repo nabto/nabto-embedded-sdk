@@ -236,6 +236,7 @@ np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx, struct np_
 void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    struct np_platform* pl = ctx->pl;
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to resolve attach dispatcher host");
         ctx->cb(ec, ctx->cbData);
@@ -253,7 +254,9 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
     for (int i = 0; i < recSize; i++) {
     }
     memcpy(&ctx->ep.ip, &rec[0], sizeof(struct np_ip_address));
-    ctx->pl->dtlsC.connect(ctx->dtls);
+
+    pl->dtlsC.set_sni(ctx->dtls, ctx->params->hostname);
+    pl->dtlsC.connect(ctx->dtls);
 }
 
 

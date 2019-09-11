@@ -46,9 +46,10 @@ struct np_dtls_cli_module {
 
     np_error_code (*create)(struct np_platform* pl, np_dtls_cli_context** client,
                             np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-                            np_dtls_cli_event_handler eventHandler, void* data
-        );
+                            np_dtls_cli_event_handler eventHandler, void* data);
     void (*destroy)(np_dtls_cli_context* client);
+
+    np_error_code (*set_sni)(np_dtls_cli_context* ctx, const char* sni);
 
     np_error_code (*set_keys)(np_dtls_cli_context* ctx,
                               const unsigned char* publicKeyL, size_t publicKeySize,
