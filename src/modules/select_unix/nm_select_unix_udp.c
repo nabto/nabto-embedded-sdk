@@ -477,8 +477,8 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx, struct nm_sele
         if (iterator->recv.cb) {
             FD_SET(iterator->sock, &ctx->readFds);
             ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->sock);
-            iterator = iterator->next;
         }
+        iterator = iterator->next;
     }
 }
 
