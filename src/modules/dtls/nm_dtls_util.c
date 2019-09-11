@@ -28,68 +28,86 @@ np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp)
     return NABTO_EC_OK;
 }
 
-np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
-{
-    // 1. load key from pem
-    // 2. create crt
-    // 3. write crt to pem string.
+struct crt_from_private_key {
     mbedtls_pk_context key;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
 
     mbedtls_x509write_cert crt;
     mbedtls_mpi serial;
+};
 
-    int ret;
+static np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey);
+
+np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
+{
+    // 1. load key from pem
+    // 2. create crt
+    // 3. write to pem string.
+    struct crt_from_private_key ctx;
 
     *publicKey = NULL;
 
-    mbedtls_pk_init(&key);
-    mbedtls_ctr_drbg_init(&ctr_drbg);
-    mbedtls_entropy_init(&entropy);
-    mbedtls_x509write_crt_init(&crt);
-    mbedtls_mpi_init(&serial);
+    mbedtls_pk_init(&ctx.key);
+    mbedtls_ctr_drbg_init(&ctx.ctr_drbg);
+    mbedtls_entropy_init(&ctx.entropy);
+    mbedtls_x509write_crt_init(&ctx.crt);
+    mbedtls_mpi_init(&ctx.serial);
 
-    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    np_error_code ec = nm_dtls_create_crt_from_private_key_inner(&ctx, privateKey, publicKey);
+
+    mbedtls_x509write_crt_free(&ctx.crt);
+    mbedtls_mpi_free(&ctx.serial);
+    mbedtls_ctr_drbg_free(&ctx.ctr_drbg);
+    mbedtls_entropy_free(&ctx.entropy);
+    mbedtls_pk_free(&ctx.key);
+
+    return ec;
+}
+
+np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey)
+{
+    int ret;
+    ret = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy, NULL, 0);
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
 
-    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
+    ret = mbedtls_pk_parse_key( &ctx->key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
 
     // initialize crt
-    mbedtls_x509write_crt_set_subject_key( &crt, &key );
-    mbedtls_x509write_crt_set_issuer_key( &crt, &key );
+    mbedtls_x509write_crt_set_subject_key( &ctx->crt, &ctx->key );
+    mbedtls_x509write_crt_set_issuer_key( &ctx->crt, &ctx->key );
 
-    ret = mbedtls_mpi_read_string( &serial, 10, "1");
+    ret = mbedtls_mpi_read_string( &ctx->serial, 10, "1");
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
 
-    mbedtls_x509write_crt_set_serial( &crt, &serial );
+    mbedtls_x509write_crt_set_serial( &ctx->crt, &ctx->serial );
 
-    ret = mbedtls_x509write_crt_set_subject_name( &crt, "CN=nabto" );
+    ret = mbedtls_x509write_crt_set_subject_name( &ctx->crt, "CN=nabto" );
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
 
-    ret = mbedtls_x509write_crt_set_issuer_name( &crt, "CN=nabto" );
+    ret = mbedtls_x509write_crt_set_issuer_name( &ctx->crt, "CN=nabto" );
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
 
-    mbedtls_x509write_crt_set_version( &crt, 2 );
-    mbedtls_x509write_crt_set_md_alg( &crt, MBEDTLS_MD_SHA256 );
+    mbedtls_x509write_crt_set_version( &ctx->crt, 2 );
+    mbedtls_x509write_crt_set_md_alg( &ctx->crt, MBEDTLS_MD_SHA256 );
 
-    ret = mbedtls_x509write_crt_set_validity( &crt, "20010101000000", "20491231235959" );
+    ret = mbedtls_x509write_crt_set_validity( &ctx->crt, "20010101000000", "20491231235959" );
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
 
-    ret = mbedtls_x509write_crt_set_basic_constraints( &crt, 1, -1);
+    ret = mbedtls_x509write_crt_set_basic_constraints( &ctx->crt, 1, -1);
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
@@ -98,26 +116,18 @@ np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char**
         // write crt
         char buffer[1024];
         memset(buffer, 0, 1024);
-        ret = mbedtls_x509write_crt_pem( &crt, (unsigned char*)buffer, 1024,
-                                         mbedtls_ctr_drbg_random, &ctr_drbg );
+        ret = mbedtls_x509write_crt_pem( &ctx->crt, (unsigned char*)buffer, 1024,
+                                         mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
         if (ret != 0) {
             return false;
         }
         *publicKey = strdup(buffer);
     }
-
-    // TODO cleanup in case of error
-    mbedtls_x509write_crt_free(&crt);
-    mbedtls_mpi_free(&serial);
-    mbedtls_ctr_drbg_free(&ctr_drbg);
-    mbedtls_entropy_free(&entropy);
-    mbedtls_pk_free(&key);
     if (*publicKey == NULL) {
         return NABTO_EC_FAILED;
     }
     return NABTO_EC_OK;
-
 }
 
 
