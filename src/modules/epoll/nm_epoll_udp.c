@@ -506,8 +506,9 @@ bool nm_epoll_init_mdns_ipv4_socket(int sock)
                     group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
                     struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
                     group.imr_interface = in->sin_addr;
-                    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group)) < 0) {
-                        // TODO log warning
+                    int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
+                    if (status < 0) {
+                        NABTO_LOG_ERROR(LOG, "Cannot add ip membership %d", errno);
                     }
 
                 }
@@ -597,8 +598,9 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
                     memset(&group, 0, sizeof(struct ipv6_mreq));
                     inet_pton(AF_INET6, "ff02::fb", &group.ipv6mr_multiaddr);
                     group.ipv6mr_interface = index;
-                    if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&group, sizeof(struct ipv6_mreq)) < 0) {
-                        // todo log warning.
+                    int status = setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&group, sizeof(struct ipv6_mreq));
+                    if (status < 0) {
+                        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 membership %d", errno);
                     }
                 }
                 iterator = iterator->ifa_next;

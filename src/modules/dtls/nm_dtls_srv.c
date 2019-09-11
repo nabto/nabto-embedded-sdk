@@ -275,7 +275,6 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
 np_error_code nm_dtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, uint8_t* buffer, uint16_t bufferSize)
 {
-    // TODO: remove channel IDs from dtls srv
     ctx->ctx.currentChannelId = channelId;
     ctx->ctx.recvBuffer = buffer;
     ctx->ctx.recvBufferSize = bufferSize;
