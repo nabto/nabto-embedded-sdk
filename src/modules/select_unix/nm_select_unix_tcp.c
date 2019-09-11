@@ -121,7 +121,8 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
     int s;
 
     int type = SOCK_STREAM;
-#ifndef __MACH__
+#ifdef SOCK_NONBLOCK
+    // Linux
     type |= SOCK_NONBLOCK;
 #endif
 
@@ -135,61 +136,70 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
     if (s < 0) {
         return NABTO_EC_FAILED;
     }
-    int flags;
-#ifdef __MACH__
-    {
-        flags = fcntl(sock->fd, F_GETFL, 0);
-        if (flags < 0) {
-            NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
-            return NABTO_EC_FAILED;
-        }
-        if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-            NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
-            return NABTO_EC_FAILED;
-        }
-    }
-#endif
 
     sock->fd = s;
 
-    {
-        flags = 1;
-        if (setsockopt(sock->fd, IPPROTO_TCP, TCP_NODELAY, (char *) &flags, sizeof(int)) != 0) {
-            NABTO_LOG_ERROR(LOG, "Could not set socket option TCP_NODELAY");
-        }
-
-        flags = 1;
-        if(setsockopt(sock->fd, SOL_SOCKET, SO_KEEPALIVE, &flags, sizeof(flags)) < 0) {
-            NABTO_LOG_ERROR(LOG, "could not enable KEEPALIVE");
-        }
-#ifndef __MACH__
-        flags = 9;
-        if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPCNT, &flags, sizeof(flags)) < 0) {
-            NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPCNT");
-        }
-
-        flags = 60;
-        if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPIDLE, &flags, sizeof(flags)) < 0) {
-            NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPIDLE");
-        }
-
-        flags = 60;
-        if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPINTVL, &flags, sizeof(flags)) < 0) {
-            NABTO_LOG_ERROR(LOG, "could not set TCP KEEPINTVL");
-        }
-#endif
-#ifdef __MACH__
-        flags = 1;
-        if (setsockopt(sock->fd, SOL_SOCKET, SO_NOSIGPIPE, (char *) &flags, sizeof(int)) != 0) {
-            NABTO_LOG_ERROR(LOG, "Could not set socket option SO_NOSIGPIPE");
-        }
-
-        flags = 60;
-        if(setsockopt(sock->fd, IPPROTO_TCP, TCP_KEEPALIVE, &flags, sizeof(flags)) < 0) {
-            NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPCNT");
-        }
-#endif
+    int flags;
+#ifndef SOCK_NONBLOCK
+    // Mac
+    flags = fcntl(sock->fd, F_GETFL, 0);
+    if (flags < 0) {
+        NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
+        return NABTO_EC_FAILED;
     }
+    if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+        NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
+        return NABTO_EC_FAILED;
+    }
+#endif
+
+
+    flags = 1;
+    if (setsockopt(sock->fd, IPPROTO_TCP, TCP_NODELAY, (char *) &flags, sizeof(int)) != 0) {
+        NABTO_LOG_ERROR(LOG, "Could not set socket option TCP_NODELAY");
+    }
+
+    flags = 1;
+    if(setsockopt(sock->fd, SOL_SOCKET, SO_KEEPALIVE, &flags, sizeof(flags)) < 0) {
+        NABTO_LOG_ERROR(LOG, "could not enable KEEPALIVE");
+    }
+
+
+#ifdef SOL_TCP
+    // Linux
+    flags = 9;
+    if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPCNT, &flags, sizeof(flags)) < 0) {
+        NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPCNT");
+    }
+
+    flags = 60;
+    if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPIDLE, &flags, sizeof(flags)) < 0) {
+        NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPIDLE");
+    }
+
+    flags = 60;
+    if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPINTVL, &flags, sizeof(flags)) < 0) {
+        NABTO_LOG_ERROR(LOG, "could not set TCP KEEPINTVL");
+    }
+#endif
+
+
+#if defined(SOL_SOCKET) && defined(SO_NOSIGPIPE)
+    // Mac
+    flags = 1;
+    if (setsockopt(sock->fd, SOL_SOCKET, SO_NOSIGPIPE, (char *) &flags, sizeof(int)) != 0) {
+        NABTO_LOG_ERROR(LOG, "Could not set socket option SO_NOSIGPIPE");
+    }
+#endif
+
+#if defined(IPPROTO_TCP) && defined(TCP_KEEPALIVE)
+    // Mac
+    flags = 60;
+    if(setsockopt(sock->fd, IPPROTO_TCP, TCP_KEEPALIVE, &flags, sizeof(flags)) < 0) {
+        NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPCNT");
+    }
+#endif
+
     {
         int status;
         if (address->type == NABTO_IPV4) {
