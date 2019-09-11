@@ -32,7 +32,7 @@ struct nm_select_unix_received_ctx {
 
 struct np_udp_socket {
     struct np_platform* pl;
-    struct nm_select_unix_udp_sockets* sockets;
+    struct nm_select_unix* selectCtx;
     int sock;
     bool isIpv6;
     struct nm_select_unix_created_ctx created;
