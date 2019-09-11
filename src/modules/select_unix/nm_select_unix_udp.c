@@ -1,6 +1,7 @@
 #include "nm_select_unix_udp.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_util.h>
 
 #include <stdlib.h>
 #include <stdlib.h>
@@ -13,7 +14,6 @@
 #include <arpa/inet.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
-#define MAX(a,b) (((a)>(b))?(a):(b))
 
 
 /**
@@ -82,7 +82,7 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_socket** 
     after->prev = s;
     s->prev = before;
     // add fd to select fd set.
-    write(selectCtx->pipefd[1], "1", 1);
+    nm_select_unix_notify(selectCtx);
 
     return NABTO_EC_OK;
 }
@@ -470,7 +470,7 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx, struct nm_sele
     while(iterator != &sockets->socketsSentinel)
     {
         FD_SET(iterator->sock, &ctx->readFds);
-        ctx->maxReadFd = MAX(ctx->maxReadFd, iterator->sock);
+        ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->sock);
         iterator = iterator->next;
     }
 }

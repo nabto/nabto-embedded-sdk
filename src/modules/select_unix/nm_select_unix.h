@@ -49,6 +49,44 @@ struct nm_select_unix_udp_sockets {
     np_communication_buffer* recvBuf;
 };
 
+struct nm_select_tcp_connect_context {
+    np_tcp_connect_callback callback;
+    void* userData;
+};
+
+struct nm_select_unix_tcp_write_context {
+    np_tcp_write_callback callback;
+    void* userData;
+    const void* data;
+    size_t dataLength;
+};
+
+struct nm_select_unix_tcp_read_context {
+    np_tcp_read_callback callback;
+    void* userData;
+    void* buffer;
+    size_t bufferSize;
+};
+
+struct np_tcp_socket {
+    struct np_tcp_socket* next;
+    struct np_tcp_socket* prev;
+    struct np_platform* pl;
+    struct nm_select_unix* selectCtx;
+    int fd;
+
+    struct nm_select_unix_tcp_write_context write;
+    struct nm_select_unix_tcp_read_context read;
+    np_tcp_connect_callback connectCb;
+    void* connectCbData;
+    struct np_event connectEvent;
+
+};
+
+struct nm_select_unix_tcp_sockets {
+    struct np_tcp_socket socketsSentinel;
+};
+
 struct nm_select_unix {
     struct np_platform* pl;
     fd_set readFds;
@@ -57,8 +95,8 @@ struct nm_select_unix {
     int maxWriteFd;
     int pipefd[2];
     struct nm_select_unix_udp_sockets udpSockets;
+    struct nm_select_unix_tcp_sockets tcpSockets;
 };
-
 
 void nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl);
 
@@ -69,6 +107,9 @@ void nm_select_unix_read(struct nm_select_unix* ctx, int nfds);
 
 void nm_select_unix_close(struct nm_select_unix* ctx);
 void nm_select_unix_break_wait(struct nm_select_unix* ctx);
+
+// notify select that something has changed in the filedescriptor sets
+void nm_select_unix_notify(struct nm_select_unix* ctx);
 
 #ifdef __cplusplus
 } //extern "C"
