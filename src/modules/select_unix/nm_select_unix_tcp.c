@@ -1,5 +1,6 @@
-#include "nm_epoll_tcp.h"
+#include "nm_select_unix_tcp.h"
 
+#include <platform/np_util.h>
 #include <platform/np_logging.h>
 
 #include <stdlib.h>
@@ -13,86 +14,103 @@
 
 #define LOG NABTO_LOG_MODULE_TCP
 
-struct nm_tcp_write_context {
-    const void* data;
-    size_t dataLength;
-    np_tcp_write_callback callback;
-    void* userData;
-    struct np_event event;
-};
+static np_error_code create(struct np_platform* pl, np_tcp_socket** sock);
+static void destroy(np_tcp_socket* sock);
+static np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData);
+static np_error_code async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
+static np_error_code async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
+static np_error_code tcp_shutdown(np_tcp_socket* sock);
+static np_error_code tcp_close(np_tcp_socket* sock);
 
-struct nm_tcp_read_context {
-    void* buffer;
-    size_t bufferSize;
-    np_tcp_read_callback callback;
-    void* userData;
-    struct np_event event;
-};
+static void is_connected(void* userData);
+static void tcp_do_write(np_tcp_socket* sock);
+static void tcp_do_read(np_tcp_socket* sock);
 
-struct nm_tcp_connect_context {
-    np_tcp_connect_callback callback;
-    void* userData;
-    struct np_event event;
-};
-
-struct np_tcp_socket {
-    enum nm_epoll_type type;
-    struct nm_epoll_context* epoll;
-    struct np_platform* pl;
-    int fd;
-    struct nm_tcp_write_context write;
-    struct nm_tcp_read_context read;
-    struct nm_tcp_connect_context connect;
-};
-
-static np_error_code nm_tcp_epoll_create(struct np_platform* pl, np_tcp_socket** sock);
-static void nm_tcp_epoll_destroy(np_tcp_socket* sock);
-static np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback, void* userData);
-static np_error_code nm_tcp_epoll_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
-static np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
-static np_error_code nm_tcp_epoll_shutdown(np_tcp_socket* sock);
-static np_error_code nm_tcp_epoll_close(np_tcp_socket* sock);
-
-
-static void nm_tcp_epoll_is_connected(void* userData);
-
-void nm_epoll_tcp_init(struct nm_epoll_context* epoll, struct np_platform* pl)
+void nm_select_unix_tcp_init(struct nm_select_unix* ctx)
 {
-    pl->tcp.create = &nm_tcp_epoll_create;
-    pl->tcp.destroy = &nm_tcp_epoll_destroy;
-    pl->tcp.async_connect = &nm_tcp_epoll_async_connect;
-    pl->tcp.async_write = &nm_tcp_epoll_async_write;
-    pl->tcp.async_read = &nm_tcp_epoll_async_read;
-    pl->tcp.shutdown = &nm_tcp_epoll_shutdown;
-    pl->tcp.close = &nm_tcp_epoll_close;
-    pl->tcpData = epoll;
+    struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
+    sockets->socketsSentinel.next = &sockets->socketsSentinel;
+    sockets->socketsSentinel.prev = &sockets->socketsSentinel;
+
+    struct np_platform* pl = ctx->pl;
+    pl->tcpData = ctx;
+    pl->tcp.create = &create;
+    pl->tcp.destroy = &destroy;
+    pl->tcp.async_connect = &async_connect;
+    pl->tcp.async_write = &async_write;
+    pl->tcp.async_read = &async_read;
+    pl->tcp.shutdown = &tcp_shutdown;
+    pl->tcp.close = &tcp_close;
 }
 
-np_error_code nm_tcp_epoll_create(struct np_platform* pl, np_tcp_socket** sock)
+void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
 {
+    struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
+    struct np_tcp_socket* iterator = sockets->socketsSentinel.next;
+    while (iterator != &sockets->socketsSentinel)
+    {
+        if (iterator->read.callback != NULL) {
+            FD_SET(iterator->fd, &ctx->readFds);
+            ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->fd);
+        }
+        if (iterator->write.callback != NULL || iterator->connectCb != NULL) {
+            FD_SET(iterator->fd, &ctx->writeFds);
+            ctx->maxWriteFd = NP_MAX(ctx->maxWriteFd, iterator->fd);
+        }
+        iterator = iterator->next;
+    }
+}
+
+void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
+{
+    struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
+    struct np_tcp_socket* iterator = sockets->socketsSentinel.next;
+    while (iterator != &sockets->socketsSentinel)
+    {
+        if (FD_ISSET(iterator->fd, &ctx->readFds)) {
+            tcp_do_read(iterator);
+        }
+        if (FD_ISSET(iterator->fd, &ctx->writeFds)) {
+            if (iterator->connectCb) {
+                is_connected(iterator);
+            }
+            if (iterator->write.callback) {
+                tcp_do_write(iterator);
+            }
+        }
+        iterator = iterator->next;
+    }
+}
+
+
+np_error_code create(struct np_platform* pl, np_tcp_socket** sock)
+{
+    struct nm_select_unix* selectCtx = pl->tcpData;
+    struct nm_select_unix_tcp_sockets* sockets = &selectCtx->tcpSockets;
     np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
-    s->type = NM_EPOLL_TYPE_TCP;
     s->pl = pl;
-    s->epoll = (struct nm_epoll_context*)pl->tcpData;
     s->fd = -1;
     *sock = s;
+    s->selectCtx = selectCtx;
+
+    np_tcp_socket* before = sockets->socketsSentinel.prev;
+    np_tcp_socket* after = before->next;
+    before->next = s;
+    s->next = after;
+    after->prev = s;
+    s->prev = before;
+
     return NABTO_EC_OK;
 }
 
-void nm_tcp_epoll_destroy(np_tcp_socket* sock)
+void destroy(np_tcp_socket* sock)
 {
-    if (sock->fd != -1) {
-        close(sock->fd);
-        shutdown(sock->fd, SHUT_RDWR);
-        epoll_ctl(sock->epoll->fd, EPOLL_CTL_DEL, sock->fd, NULL);
-        sock->fd = -1;
-    }
-    free(sock);
+    // TODO
 }
 
-np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
+np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
 {
-    if (sock->connect.callback != NULL) {
+    if (sock->connectCb) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
     struct np_platform* pl = sock->pl;
@@ -109,10 +127,6 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
     }
 
     sock->fd = s;
-    struct epoll_event ev;
-    ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
-    ev.data.ptr = sock;
-    epoll_ctl(sock->epoll->fd, EPOLL_CTL_ADD, sock->fd, &ev);
 
     {
         int flags = 1;
@@ -160,29 +174,30 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
             host.sin6_port = htons(port);
             status = connect(sock->fd, (struct sockaddr*)&host, sizeof(struct sockaddr_in6));
         }
-
         if (status == 0) {
             // connected
-            np_event_queue_post(pl, &sock->connect.event, &nm_tcp_epoll_is_connected, sock);
-        } else if (status != 0 && errno != EINPROGRESS) {
-            NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
-            return NABTO_EC_FAILED;
+            np_event_queue_post(pl, &sock->connectEvent, &is_connected, sock);
+        } else {
+            if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
+                // OK
+            } else {
+                NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
+                return NABTO_EC_FAILED;
+            }
+            nm_select_unix_notify(pl->tcpData);
         }
 
         // wait for the socket to be connected
-        sock->connect.callback = cb;
-        sock->connect.userData = userData;
+        sock->connectCb = cb;
+        sock->connectCbData = userData;
     }
     return NABTO_EC_OK;
 }
 
-/**
- * This function may only be called upon a EPOLLOUT event
- */
-void nm_tcp_epoll_is_connected(void* userData)
+void is_connected(void* userData)
 {
     np_tcp_socket* sock = userData;
-    if (sock->connect.callback == NULL)  {
+    if (sock->connectCb == NULL) {
         return;
     }
     int err;
@@ -192,23 +207,22 @@ void nm_tcp_epoll_is_connected(void* userData)
         NABTO_LOG_ERROR(LOG, "getsockopt error %s",strerror(errno));
     } else {
         if (err == 0) {
-            np_tcp_connect_callback cb = sock->connect.callback;
-            sock->connect.callback = NULL;
-            cb(NABTO_EC_OK, sock->connect.userData);
+            np_tcp_connect_callback cb = sock->connectCb;
+            sock->connectCb = NULL;
+            cb(NABTO_EC_OK, sock->connectCbData);
         } else if ( err == EINPROGRESS) {
             // Wait for next event
         } else {
             NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
-            np_tcp_connect_callback cb = sock->connect.callback;
-            sock->connect.callback = NULL;
-            cb(NABTO_EC_FAILED, sock->connect.userData);
+            np_tcp_connect_callback cb = sock->connectCb;
+            sock->connectCb = NULL;
+            cb(NABTO_EC_FAILED, sock->connectCbData);
         }
     }
 }
 
-void nm_epoll_tcp_do_write(void* data)
+void tcp_do_write(np_tcp_socket* sock)
 {
-    np_tcp_socket* sock = data;
     if (sock->write.callback == NULL) {
         // nothing to write
         return;
@@ -239,7 +253,7 @@ void nm_epoll_tcp_do_write(void* data)
     }
 }
 
-np_error_code nm_tcp_epoll_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData)
+np_error_code async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData)
 {
     if (sock->write.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
@@ -249,14 +263,12 @@ np_error_code nm_tcp_epoll_async_write(np_tcp_socket* sock, const void* data, si
     sock->write.callback = cb;
     sock->write.userData = userData;
 
-    np_event_queue_post(sock->pl, &sock->write.event, &nm_epoll_tcp_do_write, sock);
-
+    nm_select_unix_notify(sock->selectCtx);
     return NABTO_EC_OK;
 }
 
-void nm_epoll_tcp_do_read(void* userData)
+void tcp_do_read(np_tcp_socket* sock)
 {
-    np_tcp_socket* sock = userData;
     if (sock->read.callback == NULL) {
         return;
     }
@@ -285,7 +297,8 @@ void nm_epoll_tcp_do_read(void* userData)
     }
 }
 
-np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
+
+np_error_code async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
 {
     if (sock->read.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
@@ -294,30 +307,18 @@ np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t 
     sock->read.bufferSize = bufferSize;
     sock->read.callback = cb;
     sock->read.userData = userData;
-    np_event_queue_post(sock->pl, &sock->read.event, &nm_epoll_tcp_do_read, sock);
+    nm_select_unix_notify(sock->selectCtx);
     return NABTO_EC_OK;
 }
 
-np_error_code nm_tcp_epoll_shutdown(np_tcp_socket* sock)
+np_error_code tcp_shutdown(np_tcp_socket* sock)
 {
     shutdown(sock->fd, SHUT_WR);
     return NABTO_EC_OK;
 }
 
-np_error_code nm_tcp_epoll_close(np_tcp_socket* sock)
+np_error_code tcp_close(np_tcp_socket* sock)
 {
     close(sock->fd);
     return NABTO_EC_OK;
-}
-
-
-void nm_epoll_tcp_handle_event(np_tcp_socket* sock, uint32_t events)
-{
-    if (events & EPOLLOUT) {
-        nm_tcp_epoll_is_connected(sock);
-        nm_epoll_tcp_do_write(sock);
-    }
-    if (events & EPOLLIN) {
-        nm_epoll_tcp_do_read(sock);
-    }
 }
