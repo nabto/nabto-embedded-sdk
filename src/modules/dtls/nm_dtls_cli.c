@@ -20,7 +20,6 @@
 #include <stdio.h>
 
 
-// TODO we need to set the right server name
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0
 
@@ -461,7 +460,6 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
-        // TODO
         ctx->sender(true, pl->buf.start(ctx->ctx.sslSendBuffer), bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->senderData);
         return bufferSize;
     } else {

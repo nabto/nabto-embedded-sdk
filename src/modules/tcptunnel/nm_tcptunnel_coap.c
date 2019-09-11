@@ -108,9 +108,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     struct nm_tcptunnels* tunnels = data;
     // Read host and port, insert default if not exists.
 
-    // TODO implement read ip and port.
-
-    struct np_ip_address address;
+        struct np_ip_address address;
     uint16_t port;
 
     if (!parse_host_and_port(request, tunnels, &address, &port)) {
