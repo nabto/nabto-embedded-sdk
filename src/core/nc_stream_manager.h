@@ -38,7 +38,7 @@ void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx);
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data);
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
-                                     np_communication_buffer* buffer, uint16_t bufferSize);
+                                     uint8_t* buffer, uint16_t bufferSize);
 
 void nc_stream_manager_close_stream(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream);
 

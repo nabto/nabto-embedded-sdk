@@ -17,12 +17,12 @@ enum np_dtls_srv_event {
 
 typedef void (*np_dtls_srv_send_callback)(const np_error_code ec, void* data);
 typedef void (*np_dtls_srv_sender)(uint8_t channelId,
-                                   np_communication_buffer* buffer, uint16_t bufferSize,
+                                   uint8_t* buffer, uint16_t bufferSize,
                                    np_dtls_srv_send_callback cb, void* data,
                                    void* senderData);
 typedef void (*np_dtls_srv_event_handler)(enum np_dtls_srv_event event, void* data);
 typedef void (*np_dtls_srv_data_handler)(uint8_t channelId, uint64_t sequence,
-                                         np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+                                         uint8_t* buffer, uint16_t bufferSize, void* data);
 
 struct np_dtls_srv_send_context {
     uint8_t* buffer;
@@ -59,7 +59,7 @@ struct np_dtls_srv_module {
                                      struct np_dtls_srv_send_context* sendCtx);
 
     np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                   uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize);
+                                   uint8_t channelId, uint8_t* buffer, uint16_t bufferSize);
 
     np_error_code (*async_close)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                  np_dtls_close_callback cb, void* data);

@@ -55,7 +55,6 @@ static np_error_code nm_tcp_epoll_close(np_tcp_socket* sock);
 
 
 static void nm_tcp_epoll_is_connected(void* userData);
-static void nm_epoll_tcp_socket_connected(void* userData);
 
 void nm_epoll_tcp_init(struct nm_epoll_context* epoll, struct np_platform* pl)
 {
@@ -71,7 +70,6 @@ void nm_epoll_tcp_init(struct nm_epoll_context* epoll, struct np_platform* pl)
 
 np_error_code nm_tcp_epoll_create(struct np_platform* pl, np_tcp_socket** sock)
 {
-
     np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
     s->type = NM_EPOLL_TYPE_TCP;
     s->pl = pl;
@@ -165,14 +163,10 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
 
         if (status == 0) {
             // connected
-            np_event_queue_post(pl, &sock->connect.event, &nm_epoll_tcp_socket_connected, sock);
-            return NABTO_EC_OK;
-        }
-
-        if (status != 0 && errno != EINPROGRESS) {
+            np_event_queue_post(pl, &sock->connect.event, &nm_tcp_epoll_is_connected, sock);
+        } else if (status != 0 && errno != EINPROGRESS) {
             NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
             return NABTO_EC_FAILED;
-
         }
 
         // wait for the socket to be connected
@@ -180,20 +174,6 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
         sock->connect.userData = userData;
     }
     return NABTO_EC_OK;
-}
-
-/**
- * Deferred callback if the socket is connected imediately.
- */
-void nm_epoll_tcp_socket_connected(void* userData)
-{
-    np_tcp_socket* sock = userData;
-    if (sock->connect.callback == NULL)  {
-        return;
-    }
-    np_tcp_connect_callback cb = sock->connect.callback;
-    sock->connect.callback = NULL;
-    cb(NABTO_EC_OK, sock->connect.userData);
 }
 
 /**

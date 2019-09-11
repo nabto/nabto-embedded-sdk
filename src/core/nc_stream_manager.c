@@ -72,9 +72,9 @@ np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* c
 }
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
-                                     np_communication_buffer* buffer, uint16_t bufferSize)
+                                     uint8_t* buffer, uint16_t bufferSize)
 {
-    uint8_t* start = ctx->pl->buf.start(buffer);
+    uint8_t* start = buffer;
     uint8_t* ptr = start+1; // skip application type
     uint64_t streamId = 0;
     uint8_t streamIdLen = 0;

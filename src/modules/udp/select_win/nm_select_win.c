@@ -1,6 +1,7 @@
 #include "nm_select_win.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_util.h>
 #include <nabto_types.h>
 
 #include <winsock2.h>
@@ -8,7 +9,7 @@
 #include <Ws2tcpip.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
-#define MAX(a,b) (((a)>(b))?(a):(b))
+
 
 struct nm_select_win_created_ctx {
     np_udp_socket_created_callback cb;

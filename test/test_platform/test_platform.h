@@ -11,6 +11,7 @@ struct test_platform {
     struct np_platform pl;
     bool stopped;
 };
+
 void test_platform_init(struct test_platform* tp);
 
 /* /\** */

@@ -5,6 +5,10 @@
 #include <nabto_types.h>
 #include <stdarg.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void np_log_init(void);
 
 void np_default_log(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
@@ -92,7 +96,7 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #ifndef NABTO_LOG_RAW
 #  ifdef HAS_NO_VARADIC_MACROS
 // RAW logging requires varadic macros
-#    define NABTO_LOG_RAW 
+#    define NABTO_LOG_RAW
 #  else
 #    define NABTO_LOG_RAW(severity, module, line, file, fmt, ...) np_raw_adapter(severity, module, line, file, fmt VA_ARGS(__VA_ARGS__));
 #  endif
@@ -114,6 +118,8 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #define PRIip6 "%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x"
 #endif
 
-
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif//_NP_LOGGING_H_

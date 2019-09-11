@@ -1,7 +1,12 @@
 #include <boost/test/unit_test.hpp>
 
-#include <modules/epoll/nm_epoll.h>
-#include <test_platform/test_platform.h>
+#include <test_platform.hpp>
+
+#ifdef HAVE_EPOLL
+#include <test_platform_epoll.hpp>
+#endif
+
+#include <test_platform_select_unix.hpp>
 
 #include <platform/np_ip_address.h>
 
@@ -183,15 +188,16 @@ void TcpEchoConnection::start()
     startRead();
 }
 
-
 class TcpEchoClientTest {
  public:
-    TcpEchoClientTest() {
+    TcpEchoClientTest(TestPlatform& tp)
+        :tp_(tp), pl_(tp.getPlatform())
+    {
     }
-    void start(uint16_t port) {
-        test_platform_init(&tp_);
 
-        pl_ = &tp_.pl;
+    void start(uint16_t port) {
+        tp_.init();
+
         BOOST_TEST(pl_->tcp.create(pl_, &socket_) == NABTO_EC_OK);
 
         struct np_ip_address address;
@@ -205,7 +211,7 @@ class TcpEchoClientTest {
 
         BOOST_TEST(pl_->tcp.async_connect(socket_, &address, port, &TcpEchoClientTest::connected, this) == NABTO_EC_OK);
 
-        test_platform_run(&tp_);
+        tp_.run();
     }
 
     static void connected(np_error_code ec, void* userData)
@@ -238,10 +244,10 @@ class TcpEchoClientTest {
 
     void end() {
         pl_->tcp.destroy(socket_);
-        test_platform_stop(&tp_);
+        tp_.stop();
     }
  private:
-    struct test_platform tp_;
+    TestPlatform& tp_;
     struct np_platform* pl_;
     np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
@@ -250,17 +256,37 @@ class TcpEchoClientTest {
 
 } }
 
-BOOST_AUTO_TEST_SUITE(epoll_tcp)
+BOOST_AUTO_TEST_SUITE(tcp)
 
-BOOST_AUTO_TEST_CASE(echo)
+#ifdef HAVE_EPOLL
+
+BOOST_AUTO_TEST_CASE(echo_epoll)
 {
     auto ioService = IoService::create("test");
     test::TcpEchoServer tcpServer(ioService->getIoService());
 
-    test::TcpEchoClientTest client;
+    test::TestPlatformEpoll platform;
+
+    test::TcpEchoClientTest client(platform);
     client.start(tcpServer.getPort());
 
     BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
 }
+
+#endif
+
+BOOST_AUTO_TEST_CASE(echo_select)
+{
+    auto ioService = IoService::create("test");
+    test::TcpEchoServer tcpServer(ioService->getIoService());
+
+    test::TestPlatformSelectUnix platform;
+
+    test::TcpEchoClientTest client(platform);
+    client.start(tcpServer.getPort());
+
+    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

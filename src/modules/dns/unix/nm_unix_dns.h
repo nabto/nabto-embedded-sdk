@@ -5,8 +5,16 @@
 #include <platform/np_dns.h>
 #include <nabto_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void nm_unix_dns_init(struct np_platform* pl);
 
 np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif // _NP_UNIX_DNS_H_

@@ -37,6 +37,7 @@ struct np_udp_socket {
     bool destroyed;
     struct nm_epoll_created_ctx created;
     struct nm_epoll_received_ctx recv;
+    struct np_event asyncRecvFromEvent;
 };
 
 static np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock);
@@ -63,6 +64,7 @@ static void nm_epoll_async_recv_from(np_udp_socket* socket,
 static enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
 static size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
 static uint16_t nm_epoll_get_local_port(np_udp_socket* socket);
+static void nm_epoll_udp_try_read(void* userData);
 
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
 {
@@ -194,6 +196,15 @@ void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events)
         return;
     }
 
+    nm_epoll_udp_try_read(sock);
+}
+
+void nm_epoll_udp_try_read(void* userData)
+{
+    np_udp_socket* sock = userData;
+    if (sock->recv.cb == NULL) {
+        return;
+    }
     struct np_udp_endpoint ep;
     struct np_platform* pl = sock->pl;
     struct nm_epoll_context* epoll = pl->udpData;
@@ -234,9 +245,9 @@ void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events)
     if (sock->recv.cb) {
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;
-        cb(NABTO_EC_OK, ep, epoll->recvBuffer, recvLength, sock->recv.data);
+        cb(NABTO_EC_OK, ep, pl->buf.start(epoll->recvBuffer), recvLength, sock->recv.data);
     }
-    nm_epoll_udp_handle_event(sock, events);
+    nm_epoll_udp_try_read(sock);
 }
 
 void nm_epoll_event_bind(void* data)
@@ -602,14 +613,13 @@ void nm_epoll_event_send_to(void* data)
 {
     struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
     np_udp_socket* sock = ctx->sock;
-    struct np_platform* pl = sock->pl;
     ssize_t res;
     if (ctx->ep.ip.type == NABTO_IPV4) {
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
-        res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6
         struct sockaddr_in6 srv_addr;
         srv_addr.sin6_family = AF_INET6;
@@ -617,7 +627,7 @@ void nm_epoll_event_send_to(void* data)
         srv_addr.sin6_scope_id = 0;
         srv_addr.sin6_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, sizeof(srv_addr.sin6_addr));
-        res = sendto (sock->sock, pl->buf.start(ctx->buffer), ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     }
     if (res < 0) {
         int status = errno;
@@ -657,6 +667,10 @@ void nm_epoll_async_send_to(struct np_udp_send_context* ctx)
 void nm_epoll_async_recv_from(np_udp_socket* socket,
                               np_udp_packet_received_callback cb, void* data)
 {
+    struct np_platform* pl = socket->pl;
+
     socket->recv.cb = cb;
     socket->recv.data = data;
+
+    np_event_queue_post(pl, &socket->asyncRecvFromEvent, nm_epoll_udp_try_read, socket);
 }

@@ -12,7 +12,7 @@ void nc_keep_alive_send_req(struct nc_keep_alive_context* ctx);
 void nc_keep_alive_close(struct nc_keep_alive_context* ctx, const np_error_code ec);
 void nc_keep_alive_send_cb(const np_error_code ec, void* data);
 void nc_keep_alive_recv(const np_error_code ec, uint8_t channelId, uint64_t seq,
-                        np_communication_buffer* buf, uint16_t bufferSize, void* data);
+                        uint8_t* buf, uint16_t bufferSize, void* data);
 
 void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries)
 {

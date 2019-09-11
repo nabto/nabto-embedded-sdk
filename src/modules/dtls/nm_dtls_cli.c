@@ -83,7 +83,7 @@ void nm_dtls_event_do_one(void* data);
 void nm_dtls_cli_remove_send_data(struct np_dtls_cli_send_context* elm);
 // Handle packet from udp
 np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_cli_context* ctx,
-                                   np_communication_buffer* buffer, uint16_t bufferSize);
+                                   uint8_t* buffer, uint16_t bufferSize);
 
 void nm_dtls_cli_start_send_deferred(void* data);
 
@@ -256,6 +256,7 @@ np_error_code nm_dtls_connect(np_dtls_cli_context* ctx)
 void nm_dtls_event_do_one(void* data)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*)data;
+    struct np_platform* pl = ctx->pl;
     int ret;
     if(ctx->ctx.state == CONNECTING) {
         ret = mbedtls_ssl_handshake( &ctx->ctx.ssl );
@@ -285,7 +286,7 @@ void nm_dtls_event_do_one(void* data)
             uint64_t seq = *((uint64_t*)ctx->ctx.ssl.in_ctr);
             ctx->ctx.recvCount++;
 
-            ctx->dataHandler(ctx->ctx.currentChannelId, seq, ctx->ctx.sslRecvBuf, ret, ctx->senderData);
+            ctx->dataHandler(ctx->ctx.currentChannelId, seq, pl->buf.start(ctx->ctx.sslRecvBuf), ret, ctx->senderData);
             return;
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -417,9 +418,9 @@ np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* c
 }
 
 np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_cli_context* ctx,
-                                   np_communication_buffer* buffer, uint16_t bufferSize)
+                                        uint8_t* buffer, uint16_t bufferSize)
 {
-    ctx->ctx.recvBuffer = ctx->pl->buf.start(buffer);
+    ctx->ctx.recvBuffer = buffer;
     ctx->ctx.recvBufferSize = bufferSize;
     nm_dtls_event_do_one(ctx);
     ctx->ctx.recvBuffer = NULL;
@@ -446,12 +447,13 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
 int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferSize)
 {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
+    struct np_platform* pl = ctx->pl;
     if (ctx->ctx.sslSendBufferSize == 0) {
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->ctx.sslSendBuffer), buffer, bufferSize);
         ctx->ctx.sslSendBufferSize = bufferSize;
         // TODO
-        ctx->sender(true, ctx->ctx.sslSendBuffer, bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->senderData);
+        ctx->sender(true, pl->buf.start(ctx->ctx.sslSendBuffer), bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->senderData);
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;

@@ -78,14 +78,14 @@ void dtlsSendCb(const np_error_code ec, void* data)
 }
 
 void receivedCb(uint8_t channelId, uint64_t sequence,
-            np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+                uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Server Received data:");
-    NABTO_LOG_BUF(0, pl->buf.start(buffer), bufferSize);
+    NABTO_LOG_BUF(0, buffer, bufferSize);
     uint8_t* sendBuf = malloc(1500);
     struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
-    memcpy(sendBuf, pl->buf.start(buffer), bufferSize);
+    memcpy(sendBuf, buffer, bufferSize);
     sendCtx->buffer = sendBuf;
     sendCtx->bufferSize = bufferSize;
     sendCtx->cb = &dtlsSendCb;
@@ -109,7 +109,7 @@ void udpSendCb(const np_error_code ec, void* data)
     free(udpSendCtx);
 }
 
-void dtls_send_listener(uint8_t channelId, np_communication_buffer* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
+void dtls_send_listener(uint8_t channelId, uint8_t* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
     struct test_context* ctx =  (struct test_context*) listenerData;
     NABTO_LOG_INFO(0, "Dtls wants to send to udp");
     // TODO: send the dtls data somewhere find a way to use the UDP socket without client_connect_dispatch
@@ -137,12 +137,12 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
 }
 
 void udpRecvCb(const np_error_code ec, struct np_udp_endpoint epLocal,
-               np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+               uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct test_context* ctx = (struct test_context*)data;
     ep = epLocal;
     NABTO_LOG_INFO(0, "UDP received:");
-    NABTO_LOG_BUF(0, pl->buf.start(buffer), bufferSize);
+    NABTO_LOG_BUF(0, buffer, bufferSize);
     pl->dtlsS.handle_packet(pl, ctx->dtls, 0, buffer, bufferSize);
     pl->udp.async_recv_from(ctx->sock, udpRecvCb, data);
 }

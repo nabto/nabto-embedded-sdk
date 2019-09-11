@@ -6,6 +6,10 @@
 
 #include <sys/epoll.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NM_EPOLL_EVENTS_SIZE 64
 
 enum nm_epoll_type {
@@ -33,5 +37,9 @@ int nm_epoll_timed_wait(struct nm_epoll_context* epoll, uint32_t ms);
 int nm_epoll_inf_wait(struct nm_epoll_context* epoll);
 
 void nm_epoll_read(struct nm_epoll_context* epoll, int nfds);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif
