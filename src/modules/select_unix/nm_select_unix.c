@@ -28,6 +28,10 @@ void nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl)
     ctx->pl = pl;
     pl->udpData = ctx;
 
+    if (pipe(ctx->pipefd) == -1) {
+        NABTO_LOG_ERROR(LOG, "Failed to create pipe %s", errno);
+    }
+
     nm_select_unix_udp_init(ctx, pl);
 }
 
