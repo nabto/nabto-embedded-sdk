@@ -21,7 +21,6 @@
 
 
 // TODO we need to set the right server name
-#define SERVER_NAME "localhost"
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0
 
@@ -32,6 +31,7 @@ struct np_dtls_cli_context {
     struct np_dtls_cli_send_context sendSentinel;
     struct np_event startSendEvent;
 
+    const char* sniName;
     bool sending;
 
     np_dtls_cli_sender sender;
@@ -53,6 +53,8 @@ static np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_cont
                                         np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
                                         np_dtls_cli_event_handler eventHandler, void* data);
 static void nm_dtls_cli_destroy(np_dtls_cli_context* connection);
+
+static np_error_code nm_dtls_cli_set_sni(np_dtls_cli_context* ctx, const char* sniName);
 static np_error_code nm_dtls_cli_set_keys(np_dtls_cli_context* ctx,
                                           const unsigned char* publicKeyL, size_t publicKeySize,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
@@ -136,6 +138,7 @@ np_error_code nm_dtls_cli_init(struct np_platform* pl)
 {
     pl->dtlsC.create = &nm_dtls_cli_create;
     pl->dtlsC.destroy = &nm_dtls_cli_destroy;
+    pl->dtlsC.set_sni = &nm_dtls_cli_set_sni;
     pl->dtlsC.set_keys = &nm_dtls_cli_set_keys;
     pl->dtlsC.connect = &nm_dtls_connect;
     pl->dtlsC.async_send_data = &nm_dtls_async_send_data;
@@ -200,6 +203,12 @@ void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
     mbedtls_ssl_free( &ctx->ctx.ssl );
 
     free(ctx);
+}
+
+np_error_code nm_dtls_cli_set_sni(np_dtls_cli_context* ctx, const char* sniName)
+{
+    ctx->sniName = sniName;
+    return NABTO_EC_OK;
 }
 
 np_error_code nm_dtls_cli_set_keys(np_dtls_cli_context* ctx,
@@ -557,11 +566,13 @@ np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
         return NABTO_EC_FAILED;
     }
 
-    if( ( ret = mbedtls_ssl_set_hostname( &ctx->ctx.ssl, SERVER_NAME ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
-        np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
-        return NABTO_EC_FAILED;
+    if (ctx->sniName) {
+        if( ( ret = mbedtls_ssl_set_hostname( &ctx->ctx.ssl, ctx->sniName ) ) != 0 )
+        {
+            NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
+            np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+            return NABTO_EC_FAILED;
+        }
     }
 
     mbedtls_ssl_set_bio( &ctx->ctx.ssl, ctx,

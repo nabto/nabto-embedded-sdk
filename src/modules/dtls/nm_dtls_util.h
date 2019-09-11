@@ -3,8 +3,6 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_error_code.h>
-#include <core/nc_keep_alive.h>
-#include <core/nc_protocol_defines.h>
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
