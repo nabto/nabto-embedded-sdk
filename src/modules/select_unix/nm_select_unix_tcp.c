@@ -115,16 +115,36 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
     }
     struct np_platform* pl = sock->pl;
     int s;
+
+    int type = SOCK_STREAM;
+#ifndef __MACH__
+    type |= SOCK_NONBLOCK;
+#endif
+
     if (address->type == NABTO_IPV4) {
-        s = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        s = socket(AF_INET, type, 0);
     } else if (address->type == NABTO_IPV6) {
-        s = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        s = socket(AF_INET6, type, 0);
     } else {
         return NABTO_EC_NOT_SUPPORTED;
     }
     if (s < 0) {
         return NABTO_EC_FAILED;
     }
+
+#ifdef __MACH__
+    {
+        flags = fcntl(sock->socket, F_GETFL, 0);
+        if (flags < 0) {
+            NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
+            return NABTO_EC_FAILED;
+        }
+        if (fcntl(sock->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+            NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
+            return NABTO_EC_FAILED;
+        }
+    }
+#endif
 
     sock->fd = s;
 
@@ -138,7 +158,7 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
         if(setsockopt(sock->fd, SOL_SOCKET, SO_KEEPALIVE, &flags, sizeof(flags)) < 0) {
             NABTO_LOG_ERROR(LOG, "could not enable KEEPALIVE");
         }
-
+#ifndef __MACH__
         flags = 9;
         if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPCNT, &flags, sizeof(flags)) < 0) {
             NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPCNT");
@@ -153,7 +173,12 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
         if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPINTVL, &flags, sizeof(flags)) < 0) {
             NABTO_LOG_ERROR(LOG, "could not set TCP KEEPINTVL");
         }
-
+#else
+        flags = 60;
+        if(setsockopt(sock->socket, IPPROTO_TCP, TCP_KEEPALIVE, &flags, sizeof(flags)) < 0) {
+            NABTO_LOG_ERROR(("could not set TCP_KEEPCNT"));
+        }
+#endif
     }
     {
         int status;
