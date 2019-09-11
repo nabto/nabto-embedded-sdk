@@ -14,6 +14,10 @@
 
 #define LOG NABTO_LOG_MODULE_TCP
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 static np_error_code create(struct np_platform* pl, np_tcp_socket** sock);
 static void destroy(np_tcp_socket* sock);
 static np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData);
@@ -173,7 +177,13 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
         if(setsockopt(sock->fd, SOL_TCP, TCP_KEEPINTVL, &flags, sizeof(flags)) < 0) {
             NABTO_LOG_ERROR(LOG, "could not set TCP KEEPINTVL");
         }
-#else
+#endif
+#ifdef __MACH__
+        flags = 1;
+        if (setsockopt(sock->fd, SOL_SOCKET, SO_NOSIGPIPE, (char *) &flags, sizeof(int)) != 0) {
+            NABTO_LOG_ERROR(LOG, "Could not set socket option SO_NOSIGPIPE");
+        }
+
         flags = 60;
         if(setsockopt(sock->fd, IPPROTO_TCP, TCP_KEEPALIVE, &flags, sizeof(flags)) < 0) {
             NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPCNT");
