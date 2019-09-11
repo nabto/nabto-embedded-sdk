@@ -131,15 +131,15 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
     if (s < 0) {
         return NABTO_EC_FAILED;
     }
-
+    int flags;
 #ifdef __MACH__
     {
-        flags = fcntl(sock->socket, F_GETFL, 0);
+        flags = fcntl(sock->fd, F_GETFL, 0);
         if (flags < 0) {
             NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
             return NABTO_EC_FAILED;
         }
-        if (fcntl(sock->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+        if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) < 0) {
             NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
             return NABTO_EC_FAILED;
         }
@@ -149,7 +149,7 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
     sock->fd = s;
 
     {
-        int flags = 1;
+        flags = 1;
         if (setsockopt(sock->fd, IPPROTO_TCP, TCP_NODELAY, (char *) &flags, sizeof(int)) != 0) {
             NABTO_LOG_ERROR(LOG, "Could not set socket option TCP_NODELAY");
         }
@@ -175,8 +175,8 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
         }
 #else
         flags = 60;
-        if(setsockopt(sock->socket, IPPROTO_TCP, TCP_KEEPALIVE, &flags, sizeof(flags)) < 0) {
-            NABTO_LOG_ERROR(("could not set TCP_KEEPCNT"));
+        if(setsockopt(sock->fd, IPPROTO_TCP, TCP_KEEPALIVE, &flags, sizeof(flags)) < 0) {
+            NABTO_LOG_ERROR(LOG, "could not set TCP_KEEPCNT");
         }
 #endif
     }
