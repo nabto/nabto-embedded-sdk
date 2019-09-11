@@ -56,6 +56,7 @@ void nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
     pl->udp.get_protocol     = &nm_select_unix_udp_get_protocol;
     pl->udp.get_local_ip     = &nm_select_unix_udp_get_local_ip;
     pl->udp.get_local_port   = &nm_select_unix_udp_get_local_port;
+    pl->udpData = ctx;
 
     sockets->recvBuf = pl->buf.allocate();
     sockets->socketsSentinel.next = &sockets->socketsSentinel;
@@ -73,7 +74,7 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_socket** 
     struct nm_select_unix_udp_sockets* sockets = &selectCtx->udpSockets;
 
     s->pl = selectCtx->pl;
-    s->sockets = sockets;
+    s->selectCtx = pl->udpData;
 
     np_udp_socket* before = sockets->socketsSentinel.prev;
     np_udp_socket* after = &sockets->socketsSentinel;
@@ -123,7 +124,7 @@ void nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
 {
     socket->recv.cb = cb;
     socket->recv.data = data;
-    // TODO
+    nm_select_unix_notify(socket->selectCtx);
 }
 
 enum np_ip_address_type nm_select_unix_udp_get_protocol(np_udp_socket* socket)
@@ -383,14 +384,18 @@ np_error_code nm_select_unix_udp_create_socket(np_udp_socket* sock)
 
 void nm_select_unix_udp_handle_event(np_udp_socket* sock)
 {
+    if (!sock->recv.cb) {
+        return;
+    }
     NABTO_LOG_TRACE(LOG, "handle event");
     struct np_udp_endpoint ep;
     struct np_platform* pl = sock->pl;
     ssize_t recvLength;
     uint8_t* start;
-    size_t bufferLength = pl->buf.size(sock->sockets->recvBuf);
+    np_communication_buffer* buffer = sock->selectCtx->udpSockets.recvBuf;
+    size_t bufferLength = pl->buf.size(buffer);
 
-    start = pl->buf.start(sock->sockets->recvBuf);
+    start = pl->buf.start(buffer);
 
     if (sock->isIpv6) {
         struct sockaddr_in6 sa;
@@ -469,9 +474,11 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx, struct nm_sele
 
     while(iterator != &sockets->socketsSentinel)
     {
-        FD_SET(iterator->sock, &ctx->readFds);
-        ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->sock);
-        iterator = iterator->next;
+        if (iterator->recv.cb) {
+            FD_SET(iterator->sock, &ctx->readFds);
+            ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->sock);
+            iterator = iterator->next;
+        }
     }
 }
 
