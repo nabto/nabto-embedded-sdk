@@ -52,7 +52,7 @@ void nc_rendezvous_stun_completed(const np_error_code ec, const struct nabto_stu
         if (res->extEp.addr.type == NABTO_STUN_IPV4) {
             struct np_udp_endpoint ep;
             ep.port = res->extEp.port;
-            memcpy(ep.ip.v4.addr, res->extEp.addr.v4.addr, 4);
+            memcpy(ep.ip.ip.v4, res->extEp.addr.v4.addr, 4);
             ep.ip.type = NABTO_IPV4;
             ptr = udp_ep_ext_write_forward(ptr, &ep);
         }

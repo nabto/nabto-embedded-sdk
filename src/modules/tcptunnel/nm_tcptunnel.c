@@ -23,10 +23,10 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
     // TODO make it customizable.
     tunnels->defaultPort = 8080;
     tunnels->defaultHost.type = NABTO_IPV4;
-    tunnels->defaultHost.v4.addr[0] = 0x7f;
-    tunnels->defaultHost.v4.addr[1] = 0x00;
-    tunnels->defaultHost.v4.addr[2] = 0x00;
-    tunnels->defaultHost.v4.addr[3] = 0x01;
+    tunnels->defaultHost.ip.v4[0] = 0x7f;
+    tunnels->defaultHost.ip.v4[1] = 0x00;
+    tunnels->defaultHost.ip.v4[2] = 0x00;
+    tunnels->defaultHost.ip.v4[3] = 0x01;
 
     nm_tcptunnel_coap_init(tunnels, &device->coapServer);
     return NABTO_EC_OK;

@@ -27,9 +27,9 @@ struct np_ip_address {
     enum np_ip_address_type type;
     // TODO anonymous unions is not c89 or c99
     union {
-        struct np_ipv4_address v4;
-        struct np_ipv6_address v6;
-    };
+        uint8_t v4[4];
+        uint8_t v6[16];
+    } ip;
 };
 
 bool np_ip_is_v4(struct np_ip_address* ip);

@@ -151,10 +151,10 @@ void nc_stun_event(struct nc_stun_context* ctx)
             ctx->sendEp.port = stunEp.port;
             if (stunEp.addr.type == NABTO_STUN_IPV4) {
                 ctx->sendEp.ip.type = NABTO_IPV4;
-                memcpy(ctx->sendEp.ip.v4.addr, stunEp.addr.v4.addr, 4);
+                memcpy(ctx->sendEp.ip.ip.v4, stunEp.addr.v4.addr, 4);
             } else {
                 ctx->sendEp.ip.type = NABTO_IPV6;
-                memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
+                memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
             nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
@@ -173,10 +173,10 @@ void nc_stun_event(struct nc_stun_context* ctx)
             ctx->sendEp.port = stunEp.port;
             if (stunEp.addr.type == NABTO_STUN_IPV4) {
                 ctx->sendEp.ip.type = NABTO_IPV4;
-                memcpy(ctx->sendEp.ip.v4.addr, stunEp.addr.v4.addr, 4);
+                memcpy(ctx->sendEp.ip.ip.v4, stunEp.addr.v4.addr, 4);
             } else {
                 ctx->sendEp.ip.type = NABTO_IPV6;
-                memcpy(ctx->sendEp.ip.v6.addr, stunEp.addr.v6.addr, 16);
+                memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
             nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
@@ -284,10 +284,10 @@ size_t nc_stun_convert_ep_list(struct np_ip_address* rec, size_t recSize,
         eps[i].port = port;
         if (rec[i].type == NABTO_IPV4) {
             eps[i].addr.type = NABTO_STUN_IPV4;
-            memcpy(eps[i].addr.v4.addr, rec[i].v4.addr, 4);
+            memcpy(eps[i].addr.v4.addr, rec[i].ip.v4, 4);
         } else if (rec[i].type == NABTO_IPV6) {
             eps[i].addr.type = NABTO_STUN_IPV6;
-            memcpy(eps[i].addr.v6.addr, rec[i].v6.addr, 16);
+            memcpy(eps[i].addr.v6.addr, rec[i].ip.v6, 16);
         }
     }
     return end;

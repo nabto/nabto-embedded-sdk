@@ -207,7 +207,7 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
 
             memset(&host,0,sizeof(struct sockaddr_in));
             host.sin_family = AF_INET;
-            memcpy((void*)&host.sin_addr, address->v4.addr, 4);
+            memcpy((void*)&host.sin_addr, address->ip.v4, 4);
             host.sin_port = htons(port);
             status = connect(sock->fd, (struct sockaddr*)&host, sizeof(struct sockaddr_in));
         } else { // Must be ipv6 (address->type == NABTO_IPV6) {
@@ -215,7 +215,7 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
 
             memset(&host,0,sizeof(struct sockaddr_in6));
             host.sin6_family = AF_INET6;
-            memcpy(host.sin6_addr.s6_addr, address->v6.addr, 16);
+            memcpy(host.sin6_addr.s6_addr, address->ip.v6, 16);
             host.sin6_port = htons(port);
             status = connect(sock->fd, (struct sockaddr*)&host, sizeof(struct sockaddr_in6));
         }

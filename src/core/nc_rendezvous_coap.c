@@ -51,7 +51,7 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
             packet.ep.port = uint16_read(ptr);
             ptr += 2;
             packet.ep.ip.type = NABTO_IPV4;
-            memcpy(packet.ep.ip.v4.addr, ptr, 4);
+            memcpy(packet.ep.ip.ip.v4, ptr, 4);
             ptr += 4;
             nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
         } else if (uint16_read(ptr) == EX_UDP_IPV6_EP && ptr+22 <= payload+payloadLength) {// its IPV6 and theres space for IPV6 ext
@@ -59,7 +59,7 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
             packet.ep.port = uint16_read(ptr);
             ptr += 2;
             packet.ep.ip.type = NABTO_IPV6;
-            memcpy(packet.ep.ip.v6.addr, ptr, 16);
+            memcpy(packet.ep.ip.ip.v6, ptr, 16);
             ptr += 16;
             nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
         } else {
