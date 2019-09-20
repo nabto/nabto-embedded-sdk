@@ -43,6 +43,10 @@ struct np_udp_socket {
 static np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock);
 static void nm_epoll_destroy(np_udp_socket* sock);
 
+static void nm_epoll_event_bind_port(void* data);
+
+
+
 static void nm_epoll_event_bind_mdns_ipv4(void* data);
 static bool nm_epoll_init_mdns_ipv4_socket(int sock);
 static void nm_epoll_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
@@ -65,6 +69,8 @@ static enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
 static size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
 static uint16_t nm_epoll_get_local_port(np_udp_socket* socket);
 static void nm_epoll_udp_try_read(void* userData);
+
+
 
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
 {
@@ -250,55 +256,6 @@ void nm_epoll_udp_try_read(void* userData)
     nm_epoll_udp_try_read(sock);
 }
 
-void nm_epoll_event_bind(void* data)
-{
-    np_udp_socket* us = (np_udp_socket*)data;
-    struct nm_epoll_context* epoll = us->pl->udpData;
-    us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
-    if (us->sock == -1) {
-        us->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
-        if (us->sock == -1) {
-            np_error_code ec;
-            NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
-            ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-            us->created.cb(ec, us->created.data);
-            nm_epoll_cancel_all_events(us);
-            free(us);
-            return;
-        } else {
-            NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
-            us->isIpv6 = false;
-        }
-    } else {
-        int no = 0;
-        us->isIpv6 = true;
-        if (setsockopt(us->sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no)))
-        {
-            np_error_code ec;
-            NABTO_LOG_ERROR(LOG,"Unable to set option: (%i) '%s'.", errno, strerror(errno));
-            ec = NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-            close(us->sock);
-            us->created.cb(ec, us->created.data);
-            nm_epoll_cancel_all_events(us);
-            free(us);
-            return;
-        }
-    }
-    struct epoll_event ev;
-    ev.events = EPOLLIN | EPOLLET;
-    ev.data.ptr = us;
-    if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
-        NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
-        close(us->sock);
-        us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
-        nm_epoll_cancel_all_events(us);
-        free(us);
-        return;
-    }
-    us->created.cb(NABTO_EC_OK, us->created.data);
-    return;
-}
-
 np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
 {
     *sock = calloc(1, sizeof(np_udp_socket));
@@ -312,7 +269,8 @@ void nm_epoll_async_bind(np_udp_socket* sock, np_udp_socket_created_callback cb,
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
-    np_event_queue_post(pl, &sock->created.event, &nm_epoll_event_bind, sock);
+    sock->created.port = 0;
+    np_event_queue_post(pl, &sock->created.event, &nm_epoll_event_bind_port, sock);
 }
 
 
