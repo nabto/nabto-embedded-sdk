@@ -592,9 +592,6 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
         return false;
     }
 
-//    struct addrinfo* mdnsGroup;
-//    getaddrinfo("ff02::fb", NULL, NULL, &mdnsGroup);
-
     {
         struct ifaddrs* interfaces = NULL;
         if (getifaddrs(&interfaces) == 0) {
@@ -603,14 +600,19 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
             while (iterator != NULL) {
 
                 int index = if_nametoindex(iterator->ifa_name);
-                {
-                    struct ipv6_mreq group;
-                    memset(&group, 0, sizeof(struct ipv6_mreq));
-                    inet_pton(AF_INET6, "ff02::fb", &group.ipv6mr_multiaddr);
-                    group.ipv6mr_interface = index;
-                    int status = setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&group, sizeof(struct ipv6_mreq));
-                    if (status < 0) {
-                        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 membership %d", errno);
+
+                struct ipv6_mreq group;
+                memset(&group, 0, sizeof(struct ipv6_mreq));
+                inet_pton(AF_INET6, "ff02::fb", &group.ipv6mr_multiaddr);
+                group.ipv6mr_interface = index;
+                int status = setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&group, sizeof(struct ipv6_mreq));
+                if (status < 0) {
+                    if (errno == EADDRINUSE) {
+                        // some interface indexes occurs more than
+                        // once, the interface can only be joined for
+                        // a multicast group once for each socket.
+                    } else {
+                        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 membership %d interface name %s %d", errno, iterator->ifa_name, iterator->ifa_addr->sa_family);
                     }
                 }
                 iterator = iterator->ifa_next;
@@ -619,7 +621,6 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
         }
     }
 
-//    freeaddrinfo(mdnsGroup);
     return true;
 }
 
