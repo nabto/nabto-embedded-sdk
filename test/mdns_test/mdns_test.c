@@ -19,16 +19,16 @@ uint16_t getPort(void* userData)
 int main(int argc, char** argv)
 {
     struct test_platform tp;
-    struct nm_mdns mdns;
+    struct np_mdns_context* mdns;
 
     struct np_platform* pl;
 
     test_platform_init(&tp);
     pl = &tp.pl;
 
-    nm_mdns_init(&mdns, pl, productId, deviceId, getPort, NULL);
+    pl->mdns.start(&mdns, pl, productId, deviceId, getPort, NULL);
 
     test_platform_run(&tp);
 
-    nm_mdns_deinit(&mdns);
+    pl->mdns.stop(mdns);
 }

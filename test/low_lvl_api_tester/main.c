@@ -82,7 +82,7 @@ int main() {
 
     nc_device_init(&device, &tp.pl);
     // start the core
-    ec = nc_device_start(&device, appName, appVersion, productId, deviceId, hostname, stunHost,4242);
+    ec = nc_device_start(&device, appName, appVersion, productId, deviceId, hostname, stunHost,4242, true);
     if (ec != NABTO_EC_OK) {
         // fail
     }

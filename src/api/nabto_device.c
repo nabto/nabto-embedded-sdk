@@ -82,9 +82,6 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (dev->enableMdns) {
-        nm_mdns_deinit(&dev->mdns);
-    }
 
     nc_device_deinit(&dev->core);
 
@@ -240,12 +237,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_local_port(NabtoDevice* devic
     return NABTO_DEVICE_EC_OK;
 }
 
-uint16_t mdns_get_port(void* userData)
-{
-    struct nabto_device_context* dev = (struct nabto_device_context*)userData;
-    return nc_udp_dispatch_get_local_port(&dev->core.udp);
-}
-
 /**
  * Starting the device
  */
@@ -267,7 +258,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     // Init platform
     nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
     // start the core
-    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost, dev->port);
+    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost, dev->port, dev->enableMdns);
 
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");
@@ -283,10 +274,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
         NABTO_LOG_ERROR(LOG, "Failed to create thread");
         nabto_device_free_threads(dev);
         return NABTO_DEVICE_EC_FAILED;
-    }
-
-    if (dev->enableMdns) {
-        nm_mdns_init(&dev->mdns, &dev->pl, dev->productId, dev->deviceId, mdns_get_port, dev);
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);

@@ -44,6 +44,12 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_udp_dispatch_deinit(&device->secondaryUdp);
 }
 
+uint16_t nc_device_mdns_get_port(void* userData)
+{
+    struct nc_device_context* dev = (struct nc_device_context*)userData;
+    return nc_udp_dispatch_get_local_port(&dev->udp);
+}
+
 void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
 {
     struct np_platform* pl = device->pl;
@@ -125,18 +131,25 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
 
     nc_udp_dispatch_async_create(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_created_cb, dev);
+
+    if (dev->enableMdns) {
+        dev->pl->mdns.start(&dev->mdns, dev->pl, dev->productId, dev->deviceId, nc_device_mdns_get_port, dev);
+    }
 }
 
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
                               const char* hostname, const char* stunHost,
-                              const uint16_t port)
+                              const uint16_t port, bool enableMdns)
 {
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->stopping = false;
+    dev->enableMdns = enableMdns;
     dev->stunHost = stunHost;
+    dev->productId = productId;
+    dev->deviceId = deviceId;
 
     dev->attachParams.appName = appName;
     dev->attachParams.appVersion = appVersion;
@@ -160,6 +173,9 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     dev->closeCbData = data;
     dev->stopping = true;
     nc_attacher_detach(&dev->attacher);
+    if (dev->enableMdns) {
+        dev->pl->mdns.stop(dev->mdns);
+    }
     return NABTO_EC_OK;
 }
 
