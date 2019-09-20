@@ -58,10 +58,10 @@ void nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* pl, const
         struct nabto_mdns_ip_address* mdnsIp = &(*mdns)->mdnsIps[i];
         if (ip->type == NABTO_IPV4) {
             mdnsIp->type = NABTO_MDNS_IPV4;
-            memcpy(mdnsIp->v4.addr, ip->v4.addr, 4);
+            memcpy(mdnsIp->v4.addr, ip->ip.v4, 4);
         } else {
             mdnsIp->type = NABTO_MDNS_IPV6;
-            memcpy(mdnsIp->v6.addr, ip->v6.addr, 16);
+            memcpy(mdnsIp->v6.addr, ip->ip.v6, 16);
         }
     }
 
@@ -136,7 +136,7 @@ void nm_mdns_send_packet_v4(struct np_mdns_context* mdns)
     ep.ip.type = NABTO_IPV4;
     ep.port = 5353;
     uint8_t addr[] = { 0xe0, 0x00, 0x00, 0xfb };
-    memcpy(ep.ip.v4.addr,addr, 4);
+    memcpy(ep.ip.ip.v4, addr, 4);
     uint16_t port = mdns->getPort(mdns->getPortUserData);
     NABTO_LOG_INFO(0, "mdns want send on port: %d", port);
     if (port > 0) {
@@ -199,7 +199,7 @@ void nm_mdns_send_packet_v6(struct np_mdns_context* mdns)
     ep.port = 5353;
     uint8_t addr[] = { 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb };
-    memcpy(ep.ip.v6.addr,addr, 16);
+    memcpy(ep.ip.ip.v6, addr, 16);
 
     uint16_t port = mdns->getPort(mdns->getPortUserData);
     if (port > 0) {

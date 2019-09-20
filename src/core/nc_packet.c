@@ -56,7 +56,7 @@ bool var_uint_read(uint8_t* buf, uint16_t bufSize, uint64_t* val, uint8_t* len)
         *len = 8;
     }
     return true;
-    
+
 }
 
 uint8_t* var_uint_write_forward(uint8_t* buf, uint64_t val)
@@ -133,7 +133,7 @@ uint8_t* uint32_write_forward(uint8_t* buf, uint32_t val)
     buf++;
     *buf = d3;
     buf++;
-    return buf;    
+    return buf;
 }
 
 void uint16_write(uint8_t* buf, uint16_t val)
@@ -189,13 +189,13 @@ uint8_t* udp_ep_ext_write_forward(uint8_t* buf, struct np_udp_endpoint* ep)
         buf = uint16_write_forward(buf, EX_UDP_IPV4_EP);
         buf = uint16_write_forward(buf, 6);
         buf = uint16_write_forward(buf, ep->port);
-        memcpy(buf, ep->ip.v4.addr, 4);
+        memcpy(buf, ep->ip.ip.v4, 4);
         buf += 4;
     } else if (ep->ip.type == NABTO_IPV6) {
         buf = uint16_write_forward(buf, EX_UDP_IPV6_EP);
         buf = uint16_write_forward(buf, 18);
         buf = uint16_write_forward(buf, ep->port);
-        memcpy(buf, ep->ip.v6.addr, 16);
+        memcpy(buf, ep->ip.ip.v6, 16);
         buf += 16;
     }
     return buf;

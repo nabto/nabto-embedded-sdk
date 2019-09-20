@@ -203,7 +203,7 @@ class TcpEchoClientTest {
         struct np_ip_address address;
         address.type = NABTO_IPV4;
         uint8_t addr[] = { 0x7f, 0x00, 0x00, 0x01 };
-        memcpy(address.v4.addr, addr, 4);
+        memcpy(address.ip.v4, addr, 4);
 
         for (size_t i = 0; i < data_.size(); i++) {
             data_[i] = (uint8_t)i;

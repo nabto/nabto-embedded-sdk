@@ -136,7 +136,7 @@ size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
             } else {
                 if (memcmp(&my_addr.sin_addr, &v4any, 4) != 0) {
                     addrs[ind].type = NABTO_IPV4;
-                    memcpy(addrs[ind].v4.addr, &my_addr.sin_addr.s_addr, 4);
+                    memcpy(addrs[ind].ip.v4, &my_addr.sin_addr.s_addr, 4);
                     ind++;
                 }
             }
@@ -170,7 +170,7 @@ size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
             } else {
                 if (memcmp(&my_addr.sin6_addr, &v6any, 16) != 0) {
                     addrs[ind].type = NABTO_IPV6;
-                    memcpy(addrs[ind].v6.addr, my_addr.sin6_addr.s6_addr, 16);
+                    memcpy(addrs[ind].ip.v6, my_addr.sin6_addr.s6_addr, 16);
                     ind++;
                 }
             }
@@ -215,14 +215,14 @@ void nm_epoll_udp_try_read(void* userData)
         struct sockaddr_in6 sa;
         socklen_t addrlen = sizeof(sa);
         recvLength = recvfrom(sock->sock, start,  pl->buf.size(epoll->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.v6.addr,&sa.sin6_addr.s6_addr, sizeof(ep.ip.v6.addr));
+        memcpy(&ep.ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep.ip.ip.v6));
         ep.port = ntohs(sa.sin6_port);
         ep.ip.type = NABTO_IPV6;
     } else {
         struct sockaddr_in sa;
         socklen_t addrlen = sizeof(sa);
         recvLength = recvfrom(sock->sock, start, pl->buf.size(epoll->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.v4.addr,&sa.sin_addr.s_addr, sizeof(ep.ip.v4.addr));
+        memcpy(&ep.ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep.ip.ip.v4));
         ep.port = ntohs(sa.sin_port);
         ep.ip.type = NABTO_IPV4;
     }
@@ -508,7 +508,7 @@ bool nm_epoll_init_mdns_ipv4_socket(int sock)
                     group.imr_interface = in->sin_addr;
                     int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
                     if (status < 0) {
-                        NABTO_LOG_ERROR(LOG, "Cannot add ip membership %d", errno);
+                        NABTO_LOG_ERROR(LOG, "Cannot add ipv4 membership %d", errno);
                     }
 
                 }
@@ -539,6 +539,13 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
         free(us);
     }
     us->isIpv6 = true;
+
+    int no = 0;
+    int status = setsockopt(us->sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no));
+    if (status < 0)
+    {
+        NABTO_LOG_ERROR(LOG, "Cannot set IPV6_V6ONLY");
+    }
 
     // TODO test return value
     if (!nm_epoll_init_mdns_ipv6_socket(us->sock)) {
@@ -585,6 +592,9 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
         return false;
     }
 
+//    struct addrinfo* mdnsGroup;
+//    getaddrinfo("ff02::fb", NULL, NULL, &mdnsGroup);
+
     {
         struct ifaddrs* interfaces = NULL;
         if (getifaddrs(&interfaces) == 0) {
@@ -608,6 +618,8 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
             freeifaddrs(interfaces);
         }
     }
+
+//    freeaddrinfo(mdnsGroup);
     return true;
 }
 
@@ -620,7 +632,7 @@ void nm_epoll_event_send_to(void* data)
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
-        memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
+        memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.ip.v4, sizeof(srv_addr.sin_addr));
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6
         struct sockaddr_in6 srv_addr;
@@ -628,7 +640,7 @@ void nm_epoll_event_send_to(void* data)
         srv_addr.sin6_flowinfo = 0;
         srv_addr.sin6_scope_id = 0;
         srv_addr.sin6_port = htons (ctx->ep.port);
-        memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, sizeof(srv_addr.sin6_addr));
+        memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.ip.v6, sizeof(srv_addr.sin6_addr));
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     }
     if (res < 0) {

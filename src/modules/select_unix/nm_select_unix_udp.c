@@ -172,7 +172,7 @@ size_t nm_select_unix_udp_get_local_ip( struct np_ip_address *addrs, size_t addr
             } else {
                 if (memcmp(&my_addr.sin_addr, &v4any, 4) != 0) {
                     addrs[ind].type = NABTO_IPV4;
-                    memcpy(addrs[ind].v4.addr, &my_addr.sin_addr.s_addr, 4);
+                    memcpy(addrs[ind].ip.v4, &my_addr.sin_addr.s_addr, 4);
                     ind++;
                 }
             }
@@ -205,7 +205,7 @@ size_t nm_select_unix_udp_get_local_ip( struct np_ip_address *addrs, size_t addr
             } else {
                 if (memcmp(&my_addr.sin6_addr, &v6any, 16) != 0) {
                     addrs[ind].type = NABTO_IPV6;
-                    memcpy(addrs[ind].v6.addr, my_addr.sin6_addr.s6_addr, 16);
+                    memcpy(addrs[ind].ip.v6, my_addr.sin6_addr.s6_addr, 16);
                     ind++;
                 }
             }
@@ -297,8 +297,9 @@ void nm_select_unix_udp_event_send_to(void* data)
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ctx->ep.port);
-        memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.v4.addr, sizeof(srv_addr.sin_addr));
-        NABTO_LOG_TRACE(LOG, "Sending to v4: %u.%u.%u.%u:%u", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
+        memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.ip.v4, sizeof(srv_addr.sin_addr));
+
+        NABTO_LOG_TRACE(LOG, "Sending to: %s:%d", np_ip_address_to_string(&ctx->ep.ip), ctx->ep.port);
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6 addr or IPv4 addr on IPv6 socket
         struct sockaddr_in6 srv_addr;
@@ -309,16 +310,16 @@ void nm_select_unix_udp_event_send_to(void* data)
 
         if (ctx->ep.ip.type == NABTO_IPV4) { // IPv4 addr on IPv6 socket
             // Map ipv4 to ipv6
-            NABTO_LOG_TRACE(LOG, "mapping: %u.%u.%u.%u:%u to IPv6", ctx->ep.ip.v4.addr[0], ctx->ep.ip.v4.addr[1], ctx->ep.ip.v4.addr[2], ctx->ep.ip.v4.addr[3], ctx->ep.port);
+            NABTO_LOG_TRACE(LOG, "mapping: %s: to IPv6", np_ip_address_to_string(&ctx->ep.ip));
             uint8_t* ptr = (uint8_t*)&srv_addr.sin6_addr;
             memset(ptr, 0, 10); // 80  bits of 0
             ptr += 10;
             memset(ptr, 0xFF, 2); // 16 bits of 1
             ptr += 2;
-            memcpy(ptr,ctx->ep.ip.v4.addr, 4); // 32 bits of IPv4
+            memcpy(ptr,ctx->ep.ip.ip.v4, 4); // 32 bits of IPv4
         } else { // IPv6 addr copied directly
             NABTO_LOG_TRACE(LOG, "Sending to v6");
-            memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.v6.addr, 16);
+            memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.ip.v6, 16);
         }
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     }
@@ -401,14 +402,14 @@ void nm_select_unix_udp_handle_event(np_udp_socket* sock)
         struct sockaddr_in6 sa;
         socklen_t addrlen = sizeof(sa);
         recvLength = recvfrom(sock->sock, start, bufferLength, 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.v6.addr,&sa.sin6_addr.s6_addr, sizeof(ep.ip.v6.addr));
+        memcpy(&ep.ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep.ip.ip.v6));
         ep.port = ntohs(sa.sin6_port);
         ep.ip.type = NABTO_IPV6;
     } else {
         struct sockaddr_in sa;
         socklen_t addrlen = sizeof(sa);
         recvLength = recvfrom(sock->sock, start, bufferLength, 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.v4.addr,&sa.sin_addr.s_addr, sizeof(ep.ip.v4.addr));
+        memcpy(&ep.ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep.ip.ip.v4));
         ep.port = ntohs(sa.sin_port);
         ep.ip.type = NABTO_IPV4;
     }

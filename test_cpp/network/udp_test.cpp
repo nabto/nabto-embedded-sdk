@@ -128,7 +128,7 @@ class UdpEchoClientTest {
 
         sendCtx_.sock = socket_;
         sendCtx_.ep.ip.type = NABTO_IPV6;
-        memcpy(sendCtx_.ep.ip.v6.addr, addr, 16);
+        memcpy(sendCtx_.ep.ip.ip.v6, addr, 16);
         sendCtx_.ep.port = port;
         sendCtx_.buffer = data_.data();
         sendCtx_.bufferSize = data_.size();

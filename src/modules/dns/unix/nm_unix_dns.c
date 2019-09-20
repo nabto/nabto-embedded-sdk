@@ -61,13 +61,13 @@ void* resolver_thread(void* ctx) {
             state->ips[i].type = NABTO_IPV4;
             state->recSize++;
             struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
-            memcpy(state->ips[i].v4.addr, &addr->sin_addr, sizeof(addr->sin_addr));//p->ai_addrlen);
+            memcpy(state->ips[i].ip.v4, &addr->sin_addr, sizeof(addr->sin_addr));//p->ai_addrlen);
         } else if (p->ai_family == AF_INET6) {
             NABTO_LOG_TRACE(LOG, "Found IPv6 address");
             state->ips[i].type = NABTO_IPV6;
             state->recSize++;
             struct sockaddr_in6* addr = (struct sockaddr_in6*)p->ai_addr;
-            memcpy(state->ips[i].v6.addr, &addr->sin6_addr, sizeof(addr->sin6_addr));//p->ai_addrlen);
+            memcpy(state->ips[i].ip.v6, &addr->sin6_addr, sizeof(addr->sin6_addr));//p->ai_addrlen);
         } else {
             NABTO_LOG_ERROR(LOG, "Resolved hostname was neither IPv4 or IPv6");
         }

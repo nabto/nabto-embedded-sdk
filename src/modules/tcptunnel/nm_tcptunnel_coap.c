@@ -66,7 +66,7 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
         length == 4)
     {
         address->type = NABTO_IPV4;
-        if (cbor_value_copy_byte_string(&value, address->v4.addr, &length, NULL) != CborNoError) {
+        if (cbor_value_copy_byte_string(&value, address->ip.v4, &length, NULL) != CborNoError) {
             return false;
         }
     } else if (cbor_value_map_find_value(&map, "IpV6", &value) == CborNoError &&
@@ -75,7 +75,7 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
                length == 16)
     {
         address->type = NABTO_IPV6;
-        if (cbor_value_copy_byte_string(&value, address->v6.addr, &length, NULL) != CborNoError) {
+        if (cbor_value_copy_byte_string(&value, address->ip.v6, &length, NULL) != CborNoError) {
             return false;
         }
     }
@@ -108,7 +108,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     struct nm_tcptunnels* tunnels = data;
     // Read host and port, insert default if not exists.
 
-        struct np_ip_address address;
+    struct np_ip_address address;
     uint16_t port;
 
     if (!parse_host_and_port(request, tunnels, &address, &port)) {
