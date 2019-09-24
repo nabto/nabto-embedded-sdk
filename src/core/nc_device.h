@@ -37,6 +37,8 @@ struct nc_device_context {
     uint64_t connectionRef;
 
     const char* stunHost;
+    const char* productId;
+    const char* deviceId;
 
     struct np_timed_event tEv;
     uint8_t attachAttempts;

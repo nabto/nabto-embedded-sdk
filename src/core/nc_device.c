@@ -143,6 +143,10 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->attachParams.hostname = hostname;
     dev->attachParams.udp = &dev->udp;
 
+    dev->productId = productId;
+    dev->deviceId = deviceId;
+
+
     dev->connectionRef = 0;
 
     nc_udp_dispatch_async_create(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);

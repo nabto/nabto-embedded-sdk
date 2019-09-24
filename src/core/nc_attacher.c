@@ -4,8 +4,11 @@
 #include <core/nc_packet.h>
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
+#include <core/nc_device.h>
 
 #include <string.h>
+
+#include <cbor.h>
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
@@ -262,10 +265,7 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
 
 void nc_attacher_dtls_conn_ok(struct nc_attach_context* ctx)
 {
-    uint8_t* ptr;
-    uint8_t* start;
-    uint8_t extBuffer[34];
-    uint8_t tmpBuffer[512];
+    uint8_t buffer[512];
     struct nabto_coap_client_request* req;
 
     if( ctx->pl->dtlsC.get_alpn_protocol(ctx->dtls) == NULL ) {
@@ -281,28 +281,39 @@ void nc_attacher_dtls_conn_ok(struct nc_attach_context* ctx)
                                         2, attachPath,
                                         &nc_attacher_coap_request_handler,
                                         ctx, ctx->dtls);
-    nabto_coap_client_request_set_content_format(req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_N5);
+    nabto_coap_client_request_set_content_format(req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, buffer, 512, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
 
-    ptr = tmpBuffer;
-    start = ptr;
+    cbor_encode_text_stringz(&map, "NabtoVersion");
+    cbor_encode_text_stringz(&map, NABTO_VERSION);
 
-    extBuffer[0] = (uint8_t)strlen(NABTO_VERSION);
-    memcpy(&extBuffer[1], NABTO_VERSION, strlen(NABTO_VERSION));
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_NABTO_VERSION, extBuffer, strlen(NABTO_VERSION)+1);
+    cbor_encode_text_stringz(&map, "AppName");
+    cbor_encode_text_stringz(&map, ctx->params->appName);
 
-    extBuffer[0] = strlen(ctx->params->appVersion);
-    memcpy(&extBuffer[1], ctx->params->appVersion, strlen(ctx->params->appVersion));
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_VERSION, extBuffer, strlen(ctx->params->appVersion));
+    cbor_encode_text_stringz(&map, "AppVersion");
+    cbor_encode_text_stringz(&map, ctx->params->appVersion);
 
-    extBuffer[0] = strlen(ctx->params->appName);
-    memcpy(&extBuffer[1], ctx->params->appName, strlen(ctx->params->appName));
-    ptr = insert_packet_extension(ctx->pl, ptr, EX_APPLICATION_NAME, extBuffer, strlen(ctx->params->appName));
+    cbor_encode_text_stringz(&map, "ProductId");
+    cbor_encode_text_stringz(&map, ctx->ctx->productId);
+
+    cbor_encode_text_stringz(&map, "DeviceId");
+    cbor_encode_text_stringz(&map, ctx->ctx->deviceId);
+
+    cbor_encoder_close_container(&encoder, &map);
+
+    if (cbor_encoder_get_extra_bytes_needed(&encoder) != 0) {
+        // TODO impossible error
+    }
+
+    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
 
     NABTO_LOG_TRACE(LOG, "Sending attach CoAP Request:");
-    NABTO_LOG_BUF(LOG, start, ptr - start);
 
-    nabto_coap_client_request_set_payload(req, start, ptr - start);
+    nabto_coap_client_request_set_payload(req, buffer, used);
     nabto_coap_client_request_send(req);
 }
 
@@ -320,7 +331,6 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
 void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request, void* data)
 {
     NABTO_LOG_INFO(LOG, "Received CoAP response");
-    uint8_t* ptr;
     const uint8_t* start;
     size_t bufferSize;
 
@@ -358,64 +368,89 @@ void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request
         }
         return;
     }
-    ptr = (uint8_t*)start;
-    while(ptr + 4 < start+bufferSize) { // while still space for an extension header
-        if(uint16_read(ptr) == EX_KEEP_ALIVE_SETTINGS) {
-            uint32_t interval;
-            uint8_t retryInt, maxRetries;
-            NABTO_LOG_TRACE(LOG,"Found EX_KEEP_ALIVE_SETTINGS");
-            ptr += 4; // skip extension header
-            interval = uint32_read(ptr);
-            ptr += 4;
-            retryInt = *ptr;
-            ptr++;
-            maxRetries = *ptr;
-            NABTO_LOG_TRACE(LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u", interval, retryInt, maxRetries);
-            // TODO
-            //ctx->pl->dtlsC.start_keep_alive(ctx->dtls, interval, retryInt, maxRetries);
-        } else if (uint16_read(ptr) == EX_ATTACH_STATUS) {
-            uint8_t status;
-            ptr += 4; // skip extension header
-            status = *ptr;
-            ptr++;
-            if (status == ATTACH_STATUS_ATTACHED) {
-                // SUCCESS, just continue
-            } else if (status == ATTACH_STATUS_REDIRECT) {
-                uint8_t* dns = NULL;
-                while (true) {
-                    uint16_t extType = uint16_read(ptr);
-                    uint16_t extLen = uint16_read(ptr+2);
-                    if (extType == EX_DTLS_EP) {
-                        ctx->ep.port = uint16_read(ptr+4);
-                        // TODO: look at fingerprint as well
-                        ctx->dnsLen = *(ptr+23); // skip header + port + az + fp = 4+2+1+16 = 23
-                        dns = ptr+24;
-                        NABTO_LOG_TRACE(LOG, "Found DNS extension with port: %u, dns: %s",
-                                        ctx->ep.port, (char*)dns);
-                        memcpy(ctx->dns, dns, ctx->dnsLen);
-                        break;
-                    }
-                    ptr = ptr + extLen + 4;
-                    if (ptr - start >= bufferSize) {
-                        NABTO_LOG_ERROR(LOG, "Failed to find DNS extension in CT_DEVICE_LB_REDIRECT");
-                        ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
-                        ctx->cb(NABTO_EC_MALFORMED_PACKET, ctx->cbData);
-                        return;
-                    }
-                }
-                ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
-                ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_dns_cb, ctx);
-                return;
-            } else {
-                // Should not happen, lets just assume it means attached
-            }
-            ctx->state = NC_ATTACHER_ATTACHED;
-        } else {
-            ptr += uint16_read(ptr+2) + 4;
-        }
-    }
-    ctx->cb(NABTO_EC_OK, ctx->cbData);
 
+    CborParser parser;
+    CborValue root;
+    CborValue keepAlive;
+    CborValue status;
+
+    cbor_parser_init(start, bufferSize, 0, &parser, &root);
+
+    if (!cbor_value_is_map(&root)) {
+        // TODO fail
+    }
+
+    cbor_value_map_find_value(&root, "Status", &status);
+    cbor_value_map_find_value(&root, "KeepAlive", &keepAlive);
+
+    if (!cbor_value_is_unsigned_integer(&status)) {
+        // Todo fail missing required status
+    }
+
+    uint64_t s;
+    cbor_value_get_uint64(&status, &s);
+
+    if (s == ATTACH_STATUS_ATTACHED) {
+        if (cbor_value_is_map(&keepAlive)) {
+            CborValue interval;
+            CborValue retryInterval;
+            CborValue maxRetries;
+
+            cbor_value_map_find_value(&keepAlive, "Interval", &interval);
+            cbor_value_map_find_value(&keepAlive, "RetryInterval", &retryInterval);
+            cbor_value_map_find_value(&keepAlive, "MaxRetries", &maxRetries);
+
+            if (cbor_value_is_unsigned_integer(&interval) &&
+                cbor_value_is_unsigned_integer(&retryInterval) &&
+                cbor_value_is_unsigned_integer(&maxRetries))
+            {
+                uint64_t i;
+                uint64_t ri;
+                uint64_t mr;
+                cbor_value_get_uint64(&interval, &i);
+                cbor_value_get_uint64(&retryInterval, &ri);
+                cbor_value_get_uint64(&maxRetries, &mr);
+
+                NABTO_LOG_TRACE(LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u", i, ri, mr);
+                // TODO
+                //ctx->pl->dtlsC.start_keep_alive(ctx->dtls, interval, retryInt, maxRetries);
+            }
+        }
+    } else if (s == ATTACH_STATUS_REDIRECT) {
+        CborValue host;
+        CborValue port;
+        CborValue fingerprint;
+
+        cbor_value_map_find_value(&root, "Host", &host);
+        cbor_value_map_find_value(&root, "Port", &port);
+        cbor_value_map_find_value(&root, "Fingerprint", &fingerprint);
+
+
+        if (cbor_value_is_text_string(&host) &&
+            cbor_value_is_unsigned_integer(&port) &&
+            cbor_value_is_byte_string(&fingerprint))
+        {
+            uint64_t p;
+            size_t hostLength;
+            cbor_value_get_string_length(&host, &hostLength);
+            cbor_value_get_uint64(&port, &p);
+
+            // TODO if (hostLength < )
+
+            cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL);
+            ctx->ep.port = p;
+
+        } else {
+            // TODO fail
+        }
+        ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
+        ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_dns_cb, ctx);
+        return;
+    } else {
+        // Should not happen, lets just assume it means attached
+    }
+    ctx->state = NC_ATTACHER_ATTACHED;
+    ctx->cb(NABTO_EC_OK, ctx->cbData);
 }
 
 np_error_code nc_attacher_register_detach_callback(struct nc_attach_context* ctx, nc_detached_callback cb, void* data)

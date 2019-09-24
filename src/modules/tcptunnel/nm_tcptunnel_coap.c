@@ -33,8 +33,9 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
     *address = tunnels->defaultHost;
     *port = tunnels->defaultPort;
 
-    uint16_t contentFormat;
-    if (!nabto_coap_server_request_get_content_format(request, &contentFormat)) {
+    int32_t contentFormat;
+    contentFormat = nabto_coap_server_request_get_content_format(request);
+    if (contentFormat == -1) {
         // we require the cbor content format
         return false;
     }
