@@ -40,6 +40,8 @@ struct nc_device_context {
     const char* productId;
     const char* deviceId;
 
+    uint16_t serverPort;
+
     struct np_timed_event tEv;
     uint8_t attachAttempts;
     nc_device_close_callback closeCb;

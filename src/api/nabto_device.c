@@ -172,6 +172,16 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* devic
     return ec;
 }
 
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_port(NabtoDevice* device, uint16_t port)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    dev->core.serverPort = port;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
+}
+
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;

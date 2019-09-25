@@ -119,9 +119,12 @@ nabto_device_set_device_id(NabtoDevice* device, const char* deviceId);
 
 /**
  * Set the server url.
+ * e.g foo.bar.baz:4242
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
+
+
 
 /**
  * Set the private key from the device.

@@ -253,7 +253,7 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
     }
     ctx->state = NC_ATTACHER_CONNECTING_TO_BS;
     // TODO: get load_balancer_port from somewhere
-    ctx->ep.port = LOAD_BALANCER_PORT;
+    ctx->ep.port = ctx->device->serverPort;
     // TODO: Pick a record which matches the supported protocol IPv4/IPv6 ?
     for (int i = 0; i < recSize; i++) {
     }

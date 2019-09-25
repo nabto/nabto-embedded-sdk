@@ -25,6 +25,8 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     nc_stream_manager_init(&device->streamManager, pl);
 
+    device->serverPort = 4433;
+
 
 }
 
