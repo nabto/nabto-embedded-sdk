@@ -458,7 +458,7 @@ bool nm_epoll_init_mdns_ipv4_socket(int sock)
 
             struct ifaddrs* iterator = interfaces;
             while (iterator != NULL) {
-                if (iterator->ifa_addr->sa_family == AF_INET) {
+                if (iterator->ifa_addr != NULL && iterator->ifa_addr->sa_family == AF_INET) {
                     struct ip_mreq group;
                     memset(&group, 0, sizeof(struct ip_mreq));
                     group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
