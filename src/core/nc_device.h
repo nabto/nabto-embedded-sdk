@@ -9,6 +9,7 @@
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
 #include <core/nc_iam.h>
+#include <modules/mdns/nm_mdns.h>
 
 #include <platform/np_error_code.h>
 
@@ -32,6 +33,9 @@ struct nc_device_context {
     struct nc_rendezvous_coap_context rendezvousCoap;
     struct nc_iam iam;
     struct np_dtls_srv* dtlsServer;
+
+    bool enableMdns;
+    struct np_mdns_context* mdns;
 
     // unique connectionReference for each connection
     uint64_t connectionRef;
@@ -57,7 +61,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
                               const char* hostname, const char* stunHost,
-                              const uint16_t port);
+                              const uint16_t port, bool enableMdns);
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data);
 

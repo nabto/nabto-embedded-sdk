@@ -14,6 +14,7 @@
 #include <platform/np_dtls_cli.h>
 #include <platform/np_dtls_srv.h>
 #include <platform/np_tcp.h>
+#include <platform/np_mdns.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +48,9 @@ struct np_platform {
     struct np_tcp_module tcp;
     // Data pointer set when tcp module is initialized.
     void* tcpData;
+
+    // Mdns
+    struct np_mdns_module mdns;
 };
 
 /**

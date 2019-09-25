@@ -22,6 +22,7 @@ void test_platform_init(struct test_platform* tp)
     nm_unix_dns_init(pl);
     nm_dtls_cli_init(pl);
     nm_dtls_srv_init(pl);
+    nm_mdns_init(pl);
 }
 
 void test_platform_run(struct test_platform* tp)
