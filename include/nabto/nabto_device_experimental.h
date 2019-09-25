@@ -9,6 +9,12 @@
 extern "C" {
 #endif
 
+/**
+ * Set the server port.
+ * If not set it will default to 4433
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
 
 /**************
  * Connection *

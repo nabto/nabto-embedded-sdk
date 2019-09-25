@@ -160,43 +160,9 @@ uint32_t uint32_read(uint8_t* buf)
     return res;
 }
 
-uint8_t* init_packet_header(uint8_t* buf, enum application_data_type ad)
-{
-    *buf = (uint8_t)ad;
-    buf++;
-    *buf = 0;
-    return ++buf;
-}
-
-uint8_t* insert_packet_extension(struct np_platform* pl, uint8_t* buf, enum extension_type et, uint8_t* data, uint16_t dataLen)
-{
-    buf = uint16_write_forward(buf, et);
-    buf = uint16_write_forward(buf, dataLen);
-    memcpy(buf, data, dataLen);
-    return buf+dataLen;
-}
-
 uint8_t* write_uint16_length_data(uint8_t* buf, uint8_t* data, uint16_t size)
 {
     uint16_write(buf, size);
     memcpy(buf+2, data, size);
     return buf+2+size;
-}
-
-uint8_t* udp_ep_ext_write_forward(uint8_t* buf, struct np_udp_endpoint* ep)
-{
-    if (ep->ip.type == NABTO_IPV4) {
-        buf = uint16_write_forward(buf, EX_UDP_IPV4_EP);
-        buf = uint16_write_forward(buf, 6);
-        buf = uint16_write_forward(buf, ep->port);
-        memcpy(buf, ep->ip.ip.v4, 4);
-        buf += 4;
-    } else if (ep->ip.type == NABTO_IPV6) {
-        buf = uint16_write_forward(buf, EX_UDP_IPV6_EP);
-        buf = uint16_write_forward(buf, 18);
-        buf = uint16_write_forward(buf, ep->port);
-        memcpy(buf, ep->ip.ip.v6, 16);
-        buf += 16;
-    }
-    return buf;
 }

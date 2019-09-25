@@ -19,11 +19,13 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
     nc_coap_server_init(pl, &device->coapServer);
     nc_iam_coap_register_handlers(device);
     nc_coap_client_init(pl, &device->coapClient);
-    nc_attacher_init(&device->attacher, pl, &device->coapClient);
+    nc_attacher_init(&device->attacher, pl, device, &device->coapClient);
     nc_rendezvous_init(&device->rendezvous, pl);
     nc_stun_init(&device->stun, pl);
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     nc_stream_manager_init(&device->streamManager, pl);
+
+    device->serverPort = 4433;
 
 
 }
@@ -142,6 +144,10 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->attachParams.appVersion = appVersion;
     dev->attachParams.hostname = hostname;
     dev->attachParams.udp = &dev->udp;
+
+    dev->productId = productId;
+    dev->deviceId = deviceId;
+
 
     dev->connectionRef = 0;
 

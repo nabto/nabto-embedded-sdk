@@ -5,6 +5,8 @@
 #include <core/nc_iam.h>
 #include <platform/np_logging.h>
 
+#include <cbor.h>
+
 #define LOG NABTO_LOG_MODULE_COAP
 
 void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* request, void* data);
@@ -38,39 +40,51 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
         nabto_coap_server_response_ready(response);
         return;
     }
-    uint8_t* ptr = payload;
-    uint8_t* end = payload+payloadLength;
 
     struct nc_rendezvous_send_packet packet;
     packet.type = CT_RENDEZVOUS_DEVICE_REQUEST;
     nc_coap_server_context_request_get_connection_id(ctx->coap, request, packet.connectionId);
 
-    while (ptr+4 < end) {
-        if (uint16_read(ptr) == EX_UDP_IPV4_EP && ptr+10 <= payload+payloadLength) {// its IPV4 and theres space for IPV4 ext
-            ptr += 4; // skip extension header
-            packet.ep.port = uint16_read(ptr);
-            ptr += 2;
-            packet.ep.ip.type = NABTO_IPV4;
-            memcpy(packet.ep.ip.ip.v4, ptr, 4);
-            ptr += 4;
-            nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
-        } else if (uint16_read(ptr) == EX_UDP_IPV6_EP && ptr+22 <= payload+payloadLength) {// its IPV6 and theres space for IPV6 ext
-            ptr += 4; // skip extension header
-            packet.ep.port = uint16_read(ptr);
-            ptr += 2;
-            packet.ep.ip.type = NABTO_IPV6;
-            memcpy(packet.ep.ip.ip.v6, ptr, 16);
-            ptr += 16;
-            nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
-        } else {
-            // TODO: handle other extensions
-            NABTO_LOG_ERROR(LOG, "CTRL_REQ should only have EX_UDP_IPV4_EP extensions for now, this was: %u", uint16_read(ptr));
-            ptr += 2; // skip extension type
-            uint16_t len = uint16_read(ptr);
-            ptr += 2 + len;
+    CborParser parser;
+    CborValue array;
 
+    cbor_parser_init(payload, payloadLength, 0, &parser, &array);
+
+    CborValue ep;
+    cbor_value_enter_container(&array, &ep);
+
+    while (cbor_value_is_map(&ep)) {
+
+        CborValue ip;
+        CborValue port;
+        cbor_value_map_find_value(&ep, "Ip", &ip);
+        cbor_value_map_find_value(&ep, "Port", &port);
+
+        if (cbor_value_is_byte_string(&ip) &&
+            cbor_value_is_unsigned_integer(&port))
+        {
+
+            uint64_t p;
+            cbor_value_get_uint64(&port, &p);
+            packet.ep.port = p;
+
+            size_t ipLength;
+            cbor_value_get_string_length(&ip, &ipLength);
+            if (ipLength == 4) {
+                packet.ep.ip.type = NABTO_IPV4;
+                cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL);
+                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+            } else if (ipLength == 16) {
+                packet.ep.ip.type = NABTO_IPV6;
+                cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v6, &ipLength, NULL);
+                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+            }
         }
+        cbor_value_advance(&ep);
     }
+
+    cbor_value_leave_container(&array, &ep);
+
     nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,04));
     nabto_coap_server_response_ready(response);
 }

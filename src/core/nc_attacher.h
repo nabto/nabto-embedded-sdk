@@ -5,8 +5,6 @@
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
 
-#define LOAD_BALANCER_PORT 4433
-
 // TODO: implement multi attach
 
 // TODO: Move this definition to some configuration
@@ -34,7 +32,7 @@ struct nc_attach_dr_endpoint {
 
 struct nc_attach_context {
     struct np_platform* pl;
-    struct nc_device_context* ctx;
+    struct nc_device_context* device;
     const struct nc_attach_parameters* params;
     uint32_t sessionId;
     nc_attached_callback cb;
@@ -62,7 +60,7 @@ struct nc_attach_parameters {
     struct nc_udp_dispatch_context* udp;
 };
 
-void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_coap_client_context* coapClient);
+void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient);
 void nc_attacher_deinit(struct nc_attach_context* ctx);
 
 np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx,
