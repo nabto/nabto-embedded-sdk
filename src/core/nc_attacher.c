@@ -40,10 +40,11 @@ void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data);
 void nc_attacher_dtls_data_handler(uint8_t channelId, uint64_t sequence,
                                    uint8_t* buffer, uint16_t bufferSize, void* data);
 
-void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_coap_client_context* coapClient)
+void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient)
 {
     memset(ctx, 0, sizeof(struct nc_attach_context));
     ctx->pl = pl;
+    ctx->device = device;
     pl->dtlsC.create(pl, &ctx->dtls, &nc_attacher_dtls_sender, &nc_attacher_dtls_data_handler, &nc_attacher_dtls_event_handler, ctx);
     ctx->coapClient = coapClient;
 
@@ -298,10 +299,10 @@ void nc_attacher_dtls_conn_ok(struct nc_attach_context* ctx)
     cbor_encode_text_stringz(&map, ctx->params->appVersion);
 
     cbor_encode_text_stringz(&map, "ProductId");
-    cbor_encode_text_stringz(&map, ctx->ctx->productId);
+    cbor_encode_text_stringz(&map, ctx->device->productId);
 
     cbor_encode_text_stringz(&map, "DeviceId");
-    cbor_encode_text_stringz(&map, ctx->ctx->deviceId);
+    cbor_encode_text_stringz(&map, ctx->device->deviceId);
 
     cbor_encoder_close_container(&encoder, &map);
 

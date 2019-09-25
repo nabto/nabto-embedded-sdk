@@ -15,8 +15,6 @@ enum application_data_type {
 };
 
 enum keep_alive_content_type {
-    CT_KEEP_ALIVE_SETTINGS     = 0x01,
-    CT_KEEP_ALIVE_SETTINGS_ACK = 0x02,
     CT_KEEP_ALIVE_REQUEST      = 0x03,
     CT_KEEP_ALIVE_RESPONSE     = 0x04
 };
