@@ -35,16 +35,14 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
 
     int32_t contentFormat;
     contentFormat = nabto_coap_server_request_get_content_format(request);
-    if (contentFormat == -1) {
-        // we require the cbor content format
-        return false;
-    }
+
     if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
         return false;
     }
+
     void* payload;
     size_t payloadLength;
-    if (!nabto_coap_server_request_get_payload(request,&payload, &payloadLength)) {
+    if (!nabto_coap_server_request_get_payload(request, &payload, &payloadLength)) {
         // no payload, ok
         return true;
     }
@@ -59,28 +57,29 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
         return false;
     }
 
-    CborValue value;
-    size_t length;
-    if (cbor_value_map_find_value(&map, "IpV4", &value) == CborNoError &&
-        cbor_value_is_byte_string(&value) &&
-        cbor_value_get_string_length(&value, &length) == CborNoError &&
-        length == 4)
+    CborValue ip;
+    size_t length = 0;
+    if (cbor_value_map_find_value(&map, "Ip", &ip) == CborNoError &&
+        cbor_value_is_byte_string(&ip) &&
+        cbor_value_get_string_length(&ip, &length) == CborNoError)
     {
-        address->type = NABTO_IPV4;
-        if (cbor_value_copy_byte_string(&value, address->ip.v4, &length, NULL) != CborNoError) {
-            return false;
+        if (length == 4) {
+            address->type = NABTO_IPV4;
+            if (cbor_value_copy_byte_string(&ip, address->ip.v4, &length, NULL) != CborNoError) {
+                return false;
+            }
+        } else if(length == 16) {
+            address->type = NABTO_IPV6;
+            if (cbor_value_copy_byte_string(&ip, address->ip.v6, &length, NULL) != CborNoError) {
+                return false;
+            }
+        } else {
+            // ip not read
         }
-    } else if (cbor_value_map_find_value(&map, "IpV6", &value) == CborNoError &&
-               cbor_value_is_byte_string(&value) &&
-               cbor_value_get_string_length(&value, &length) == CborNoError &&
-               length == 16)
-    {
-        address->type = NABTO_IPV6;
-        if (cbor_value_copy_byte_string(&value, address->ip.v6, &length, NULL) != CborNoError) {
-            return false;
-        }
+
     }
 
+    CborValue value;
     uint64_t p;
     if (cbor_value_map_find_value(&map, "Port", &value) == CborNoError &&
         cbor_value_is_unsigned_integer(&value))
@@ -252,8 +251,14 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
     cbor_encode_text_stringz(&map, "StreamPort");
     cbor_encode_uint(&map, tunnel->streamPort);
-    cbor_encode_text_stringz(&map, "Ip");
-    cbor_encode_text_stringz(&map, np_ip_address_to_string(&tunnel->address));
+    if (tunnel->address.type == NABTO_IPV4 || tunnel->address.type == NABTO_IPV6) {
+        cbor_encode_text_stringz(&map, "Ip");
+        if (tunnel->address.type == NABTO_IPV4) {
+            cbor_encode_byte_string(&map, tunnel->address.ip.v4, 4);
+        } else {
+            cbor_encode_byte_string(&map, tunnel->address.ip.v6, 16);
+        }
+    }
     cbor_encode_text_stringz(&map, "Port");
     cbor_encode_uint(&map, tunnel->port);
     cbor_encoder_close_container(&encoder, &map);

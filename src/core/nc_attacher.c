@@ -425,8 +425,8 @@ void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request
         coap_response_failed(ctx);
         return;
     }
-    uint8_t resCode = nabto_coap_client_response_get_code(res);
-    if (resCode != NABTO_COAP_CODE_CREATED) {
+    uint16_t resCode = nabto_coap_client_response_get_code(res);
+    if (resCode != 201) {
         NABTO_LOG_ERROR(LOG, "BS returned CoAP error code: %d", resCode);
         coap_response_failed(ctx);
         return;
