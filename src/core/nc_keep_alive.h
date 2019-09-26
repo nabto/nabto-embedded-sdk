@@ -66,13 +66,4 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx, keep_alive_wait_callback cb, void* data);
 void nc_keep_alive_packet_sent(const np_error_code ec, void* data);
 
-/**
- * Sets keep alive settings for a given context.
- * @param kaInterval      set the interval between successfull keep alive
- * @param kaRetryInterval set the interval between retransmissions for packet losses
- * @param kaMaxRetries    set the number of retries before connection is assumed dead
- */
-np_error_code nc_keep_alive_set_settings(struct np_platform* pl, struct nc_keep_alive_context* ctx,
-                                         uint16_t kaInterval, uint8_t kaRetryInterval, uint8_t kaMaxRetries);
-
 #endif //NC_KEEP_ALIVE_H

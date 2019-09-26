@@ -362,6 +362,7 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
             //ctx->pl->dtlsC.start_keep_alive(ctx->dtls, interval, retryInt, maxRetries);
         }
     }
+    nc_attacher_keep_alive_start(ctx);
     ctx->state = NC_ATTACHER_ATTACHED;
     ctx->cb(NABTO_EC_OK, ctx->cbData);
 }
