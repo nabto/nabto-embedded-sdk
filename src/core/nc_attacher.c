@@ -40,6 +40,11 @@ void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data);
 void nc_attacher_dtls_data_handler(uint8_t channelId, uint64_t sequence,
                                    uint8_t* buffer, uint16_t bufferSize, void* data);
 
+static void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root);
+static void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root);
+static void coap_response_failed(struct nc_attach_context* ctx);
+
+
 void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient)
 {
     memset(ctx, 0, sizeof(struct nc_attach_context));
@@ -252,7 +257,6 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
         return;
     }
     ctx->state = NC_ATTACHER_CONNECTING_TO_BS;
-    // TODO: get load_balancer_port from somewhere
     ctx->ep.port = ctx->device->serverPort;
     // TODO: Pick a record which matches the supported protocol IPv4/IPv6 ?
     for (int i = 0; i < recSize; i++) {
@@ -329,6 +333,84 @@ void nc_attacher_coap_request_handler(struct nabto_coap_client_request* request,
     nabto_coap_client_request_free(request);
 }
 
+void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root)
+{
+    CborValue keepAlive;
+    cbor_value_map_find_value(root, "KeepAlive", &keepAlive);
+    if (cbor_value_is_map(&keepAlive)) {
+        CborValue interval;
+        CborValue retryInterval;
+        CborValue maxRetries;
+
+        cbor_value_map_find_value(&keepAlive, "Interval", &interval);
+        cbor_value_map_find_value(&keepAlive, "RetryInterval", &retryInterval);
+        cbor_value_map_find_value(&keepAlive, "MaxRetries", &maxRetries);
+
+        if (cbor_value_is_unsigned_integer(&interval) &&
+            cbor_value_is_unsigned_integer(&retryInterval) &&
+            cbor_value_is_unsigned_integer(&maxRetries))
+        {
+            uint64_t i;
+            uint64_t ri;
+            uint64_t mr;
+            cbor_value_get_uint64(&interval, &i);
+            cbor_value_get_uint64(&retryInterval, &ri);
+            cbor_value_get_uint64(&maxRetries, &mr);
+
+            NABTO_LOG_TRACE(LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u", i, ri, mr);
+            // TODO
+            //ctx->pl->dtlsC.start_keep_alive(ctx->dtls, interval, retryInt, maxRetries);
+        }
+    }
+    ctx->state = NC_ATTACHER_ATTACHED;
+    ctx->cb(NABTO_EC_OK, ctx->cbData);
+}
+
+void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root)
+{
+    CborValue host;
+    CborValue port;
+    CborValue fingerprint;
+
+    cbor_value_map_find_value(root, "Host", &host);
+    cbor_value_map_find_value(root, "Port", &port);
+    cbor_value_map_find_value(root, "Fingerprint", &fingerprint);
+
+
+    if (cbor_value_is_text_string(&host) &&
+        cbor_value_is_unsigned_integer(&port) &&
+        cbor_value_is_byte_string(&fingerprint))
+    {
+        uint64_t p;
+        size_t hostLength;
+        cbor_value_get_string_length(&host, &hostLength);
+        cbor_value_get_uint64(&port, &p);
+
+        // TODO if (hostLength < )
+
+        cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL);
+        ctx->ep.port = p;
+
+    } else {
+        NABTO_LOG_ERROR(LOG, "Redirect response not understood");
+        coap_response_failed(ctx);
+        return;
+    }
+    ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
+    ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_dns_cb, ctx);
+    return;
+}
+
+void coap_response_failed(struct nc_attach_context* ctx)
+{
+    ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
+    if (ctx->detachCb) {
+        nc_detached_callback cb = ctx->detachCb;
+        ctx->detachCb = NULL;
+        cb(NABTO_EC_FAILED, ctx->detachCbData);
+    }
+}
+
 void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request, void* data)
 {
     NABTO_LOG_INFO(LOG, "Received CoAP response");
@@ -340,33 +422,18 @@ void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request
     if (!res) {
         // Request failed
         NABTO_LOG_ERROR(LOG, "Coap request failed, no response");
-        ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
-        if (ctx->detachCb) {
-            nc_detached_callback cb = ctx->detachCb;
-            ctx->detachCb = NULL;
-            cb(NABTO_EC_FAILED, ctx->detachCbData);
-        }
+        coap_response_failed(ctx);
         return;
     }
     uint8_t resCode = nabto_coap_client_response_get_code(res);
     if (resCode != NABTO_COAP_CODE_CREATED) {
         NABTO_LOG_ERROR(LOG, "BS returned CoAP error code: %d", resCode);
-        ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
-        if (ctx->detachCb) {
-            nc_detached_callback cb = ctx->detachCb;
-            ctx->detachCb = NULL;
-            cb(NABTO_EC_FAILED, ctx->detachCbData);
-        }
+        coap_response_failed(ctx);
         return;
     }
     if (!nabto_coap_client_response_get_payload(res, &start, &bufferSize)) {
         NABTO_LOG_ERROR(LOG, "No payload in CoAP response");
-        ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
-        if (ctx->detachCb) {
-            nc_detached_callback cb = ctx->detachCb;
-            ctx->detachCb = NULL;
-            cb(NABTO_EC_FAILED, ctx->detachCbData);
-        }
+        coap_response_failed(ctx);
         return;
     }
 
@@ -378,80 +445,33 @@ void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request
     cbor_parser_init(start, bufferSize, 0, &parser, &root);
 
     if (!cbor_value_is_map(&root)) {
-        // TODO fail
+        NABTO_LOG_ERROR(LOG, "Invalid coap response format");
+        coap_response_failed(ctx);
     }
 
     cbor_value_map_find_value(&root, "Status", &status);
     cbor_value_map_find_value(&root, "KeepAlive", &keepAlive);
 
     if (!cbor_value_is_unsigned_integer(&status)) {
-        // Todo fail missing required status
+        NABTO_LOG_ERROR(LOG, "Status not an integer");
+        coap_response_failed(ctx);
+        return;
     }
 
     uint64_t s;
     cbor_value_get_uint64(&status, &s);
 
     if (s == ATTACH_STATUS_ATTACHED) {
-        if (cbor_value_is_map(&keepAlive)) {
-            CborValue interval;
-            CborValue retryInterval;
-            CborValue maxRetries;
-
-            cbor_value_map_find_value(&keepAlive, "Interval", &interval);
-            cbor_value_map_find_value(&keepAlive, "RetryInterval", &retryInterval);
-            cbor_value_map_find_value(&keepAlive, "MaxRetries", &maxRetries);
-
-            if (cbor_value_is_unsigned_integer(&interval) &&
-                cbor_value_is_unsigned_integer(&retryInterval) &&
-                cbor_value_is_unsigned_integer(&maxRetries))
-            {
-                uint64_t i;
-                uint64_t ri;
-                uint64_t mr;
-                cbor_value_get_uint64(&interval, &i);
-                cbor_value_get_uint64(&retryInterval, &ri);
-                cbor_value_get_uint64(&maxRetries, &mr);
-
-                NABTO_LOG_TRACE(LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u", i, ri, mr);
-                // TODO
-                //ctx->pl->dtlsC.start_keep_alive(ctx->dtls, interval, retryInt, maxRetries);
-            }
-        }
+        handle_device_attached_response(ctx, &root);
+        return;
     } else if (s == ATTACH_STATUS_REDIRECT) {
-        CborValue host;
-        CborValue port;
-        CborValue fingerprint;
-
-        cbor_value_map_find_value(&root, "Host", &host);
-        cbor_value_map_find_value(&root, "Port", &port);
-        cbor_value_map_find_value(&root, "Fingerprint", &fingerprint);
-
-
-        if (cbor_value_is_text_string(&host) &&
-            cbor_value_is_unsigned_integer(&port) &&
-            cbor_value_is_byte_string(&fingerprint))
-        {
-            uint64_t p;
-            size_t hostLength;
-            cbor_value_get_string_length(&host, &hostLength);
-            cbor_value_get_uint64(&port, &p);
-
-            // TODO if (hostLength < )
-
-            cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL);
-            ctx->ep.port = p;
-
-        } else {
-            // TODO fail
-        }
-        ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
-        ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &nc_attacher_dns_cb, ctx);
+        handle_device_redirect_response(ctx, &root);
         return;
     } else {
-        // Should not happen, lets just assume it means attached
+        NABTO_LOG_ERROR(LOG, "Status not recognized");
+        coap_response_failed(ctx);
+        return;
     }
-    ctx->state = NC_ATTACHER_ATTACHED;
-    ctx->cb(NABTO_EC_OK, ctx->cbData);
 }
 
 np_error_code nc_attacher_register_detach_callback(struct nc_attach_context* ctx, nc_detached_callback cb, void* data)
