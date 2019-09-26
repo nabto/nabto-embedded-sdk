@@ -73,8 +73,6 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
     *ptr = 0;
     ptr++;
 
-    *ptr = AT_RENDEZVOUS;
-    ptr++;
     *ptr = packet->type;
     ptr++;
 

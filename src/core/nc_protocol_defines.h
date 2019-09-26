@@ -9,7 +9,6 @@ enum np_protocol_prefix {
 enum application_data_type {
     AT_KEEP_ALIVE   = 0x04,
     AT_STREAM       = 0x05,
-    AT_RENDEZVOUS   = 0x07,
     AT_COAP_START   = 0b01000000,
     AT_COAP_END     = 0b01111111
 };

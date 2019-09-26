@@ -74,10 +74,9 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
     uint8_t* start = buffer;
 
 
-    if (bufferSize >= 18 &&
+    if (bufferSize >= 17 &&
         (start[0] == NABTO_PROTOCOL_PREFIX_RENDEZVOUS &&
-         start[16] == AT_RENDEZVOUS &&
-         start[17] == CT_RENDEZVOUS_CLIENT_REQUEST))
+         start[16] == CT_RENDEZVOUS_CLIENT_REQUEST))
     {
         NABTO_LOG_INFO(LOG, "handle packet with rendezvous prefix");
         uint8_t connectionId[14];
