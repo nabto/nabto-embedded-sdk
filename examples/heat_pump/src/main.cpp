@@ -175,6 +175,16 @@ void run_heat_pump(const std::string& configFile)
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }
 
+    try {
+        auto serverPort = config["ServerPort"].get<uint16_t>();
+        ec = nabto_device_set_server_port(device, serverPort);
+        if (ec) {
+            std::cerr << "Failed to set server port" << std::endl;
+        }
+    } catch (std::exception& e) {
+
+    }
+
     // run application
     ec = nabto_device_start(device);
     if (ec != NABTO_DEVICE_EC_OK) {

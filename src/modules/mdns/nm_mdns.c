@@ -138,13 +138,11 @@ void nm_mdns_send_packet_v4(struct np_mdns_context* mdns)
     uint8_t addr[] = { 0xe0, 0x00, 0x00, 0xfb };
     memcpy(ep.ip.ip.v4, addr, 4);
     uint16_t port = mdns->getPort(mdns->getPortUserData);
-    NABTO_LOG_INFO(0, "mdns want send on port: %d", port);
     if (port > 0) {
         if (nabto_mdns_server_build_packet(&mdns->mdnsServer, port, pl->buf.start(mdns->sendBufferv4), pl->buf.size(mdns->sendBufferv4), &written)) {
             np_udp_populate_send_context(&mdns->sendContextv4, mdns->socketv4,
                                          ep, pl->buf.start(mdns->sendBufferv4), (uint16_t)written,
                                          nm_mdns_packet_sent_v4, mdns);
-            NABTO_LOG_INFO(0, "mdns actual send");
             pl->udp.async_send_to(&mdns->sendContextv4);
             // the send handler starts a new recv in this case
             return;
