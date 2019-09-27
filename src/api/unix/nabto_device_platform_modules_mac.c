@@ -5,6 +5,7 @@
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
+#include <modules/mdns/nm_mdns.h>
 
 struct nm_select_unix selectCtx;
 

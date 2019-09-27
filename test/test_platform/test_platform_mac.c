@@ -7,6 +7,7 @@
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
+#include <modules/mdns/nm_mdns.h>
 
 struct nm_select_unix ctx;
 
@@ -23,12 +24,17 @@ void test_platform_init(struct test_platform* tp)
     nm_dtls_cli_init(pl);
     nm_dtls_srv_init(pl);
     nm_mdns_init(pl);
+
+    tp->stopped = false;
 }
 
 void test_platform_run(struct test_platform* tp)
 {
     int nfds;
     while (true) {
+        if (tp->stopped) {
+            return;
+        }
         np_event_queue_execute_all(&tp->pl);
         if (np_event_queue_has_timed_event(&tp->pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&tp->pl);
@@ -39,4 +45,10 @@ void test_platform_run(struct test_platform* tp)
         }
         nm_select_unix_read(&ctx, nfds);
     }
+}
+
+void test_platform_stop(struct test_platform* tp)
+{
+    tp->stopped = true;
+    nm_select_unix_break_wait(&ctx);
 }

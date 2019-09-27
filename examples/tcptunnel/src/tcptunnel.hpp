@@ -33,7 +33,6 @@ class TcpTunnel {
     NabtoDevice* device_;
     json config_;
     const std::string& configFile_;
-    bool pairing_ = false;
     uint64_t currentIamVersion_;
 
 };
