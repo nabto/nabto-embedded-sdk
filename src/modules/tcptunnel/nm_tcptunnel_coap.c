@@ -98,8 +98,7 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
  *
  * Request format
  * {
- *   "IpV4": hexstring
- *   "IpV6": hexstring
+ *   "Ip": bytes
  *   "Port": integer
  * }
  */

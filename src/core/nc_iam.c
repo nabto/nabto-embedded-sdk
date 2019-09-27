@@ -6,6 +6,7 @@
 
 #include "nc_device.h"
 #include "nc_coap_server.h"
+#include <platform/np_util.h>
 
 #include <cbor.h>
 
@@ -770,7 +771,7 @@ np_error_code nc_iam_user_add_fingerprint(struct nc_iam* iam, const char* user, 
 {
     uint8_t fingerprint[16];
 
-    if (!nc_iam_hex_to_data(fingerprintHex, fingerprint, 16)) {
+    if (!np_hex_to_data(fingerprintHex, fingerprint, 16)) {
         return NABTO_EC_INVALID_ARGUMENT;
     }
     struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);
@@ -796,7 +797,7 @@ np_error_code nc_iam_user_remove_fingerprint(struct nc_iam* iam, const char* use
 {
     uint8_t fingerprint[16];
 
-    if (!nc_iam_hex_to_data(fingerprintHex, fingerprint, 16)) {
+    if (!np_hex_to_data(fingerprintHex, fingerprint, 16)) {
         return NABTO_EC_INVALID_ARGUMENT;
     }
     struct nc_iam_user* u = nc_iam_find_user_by_name(iam, user);

@@ -62,7 +62,8 @@ struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels)
     after->prev = tunnel;
     tunnel->prev = before;
 
-    strcpy(tunnel->tunnelId, "12345678");
+    // TODO
+    np_data_to_hex((uint8_t*)&(tunnel->id), 8, tunnel->tunnelId);
     tunnel->streamPort = 0; // initially zero
     return tunnel;
 }

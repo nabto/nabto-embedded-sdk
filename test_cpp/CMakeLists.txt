@@ -16,6 +16,7 @@ set(test_src
   unit_test.cpp
   network/tcp_test.cpp
   network/udp_test.cpp
+  platform/hex_test.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")

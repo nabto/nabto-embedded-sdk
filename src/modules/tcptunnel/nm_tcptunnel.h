@@ -41,14 +41,14 @@ struct nm_tcptunnel {
     struct nm_tcptunnel_connection connectionsSentinel;
     uint32_t streamPort;
     struct nc_stream_listener streamListener;
-    char tunnelId[9];
+    char tunnelId[17]; // It has room for a 64 bit integer encoded in hex.
     // connectionId for the connection which created the tunnel.
     uint64_t connectionId;
 };
 
 struct nm_tcptunnels {
     struct nc_device_context* device;
-    int idCounter;
+    uint64_t idCounter;
     struct np_ip_address defaultHost;
     uint16_t defaultPort;
     struct nm_tcptunnel tunnelsSentinel;
