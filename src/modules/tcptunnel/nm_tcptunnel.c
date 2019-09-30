@@ -13,6 +13,8 @@
 
 static void nm_tcptunnel_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 
+static void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data);
+
 np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
 {
     if (tunnels->device != NULL) {
@@ -30,16 +32,39 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
     tunnels->defaultHost.ip.v4[3] = 0x01;
 
     nm_tcptunnel_coap_init(tunnels, &device->coapServer);
+
+    nc_device_add_connection_events_listener(device, &tunnels->connectionEventsListener, &connection_event, tunnels);
+
     return NABTO_EC_OK;
 
 }
 
 void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
 {
+    nc_device_remove_connection_events_listener(tunnels->device, &tunnels->connectionEventsListener);
+
     while (tunnels->tunnelsSentinel.next != &tunnels->tunnelsSentinel) {
         struct nm_tcptunnel* tunnel = tunnels->tunnelsSentinel.next;
         // stop and remove tunnel from tunnels
         nm_tcptunnel_deinit(tunnel);
+    }
+
+
+
+}
+
+void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data)
+{
+    struct nm_tcptunnels* tunnels = data;
+    if (event == NC_CONNECTION_EVENT_CLOSED) {
+        struct nm_tcptunnel* iterator = tunnels->tunnelsSentinel.next;
+        while (iterator != &tunnels->tunnelsSentinel) {
+            struct nm_tcptunnel* current = iterator;
+            iterator = iterator->next;
+            if (current->connectionRef == connectionRef) {
+                nm_tcptunnel_deinit(current);
+            }
+        }
     }
 }
 

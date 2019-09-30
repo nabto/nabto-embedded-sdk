@@ -146,7 +146,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     struct nm_tcptunnel* tunnel = nm_tcptunnel_create(tunnels);
     nm_tcptunnel_init(tunnel, &address, port);
     nm_tcptunnel_init_stream_listener(tunnel);
-    tunnel->connectionId = connection->connectionRef;
+    tunnel->connectionRef = connection->connectionRef;
 
     uint8_t cborResponse[128];
     CborEncoder encoder;
@@ -197,7 +197,7 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
 
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
 
-    if (tunnel->connectionId != connection->connectionRef) {
+    if (tunnel->connectionRef != connection->connectionRef) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
         return;
     }
@@ -231,7 +231,7 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     np_error_code ec;
 
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
-    if (tunnel->connectionId != connection->connectionRef) {
+    if (tunnel->connectionRef != connection->connectionRef) {
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), NULL);
         return;
     }

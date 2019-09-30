@@ -140,7 +140,6 @@ np_error_code nm_dtls_srv_init(struct np_platform* pl)
     pl->dtlsS.set_keys = &nm_dtls_srv_set_keys;
     pl->dtlsS.create_connection = &nm_dtls_srv_create_connection;
     pl->dtlsS.destroy_connection = &nm_dtls_srv_destroy_connection;
-    pl->dtlsS.destroy = &nm_dtls_srv_destroy;
     pl->dtlsS.async_send_data = &nm_dtls_srv_async_send_data;
     pl->dtlsS.async_close = &nm_dtls_srv_async_close;
     pl->dtlsS.get_fingerprint = &nm_dtls_srv_get_fingerprint;

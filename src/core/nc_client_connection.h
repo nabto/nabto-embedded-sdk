@@ -6,6 +6,8 @@
 #include <core/nc_stream_manager.h>
 #include <core/nc_coap_server.h>
 #include <core/nc_keep_alive.h>
+#include <core/nc_connection_event.h>
+
 //#include <core/nc_device.h>
 
 #define NC_CLIENT_CONNECTION_MAX_CHANNELS 16
@@ -53,6 +55,7 @@ struct nc_client_connection {
     struct np_dtls_srv_send_context keepAliveSendCtx;
 };
 
+
 np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
                                      struct nc_client_connection_dispatch_context* dispatch,
                                      struct nc_device_context* device,
@@ -73,5 +76,7 @@ void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data);
 struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn);
 
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
+
+void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event);
 
 #endif //_NC_CLIENT_CONNECTION_H_

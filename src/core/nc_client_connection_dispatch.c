@@ -47,7 +47,7 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
             np_error_code ec;
             ec = nc_client_connection_handle_packet(ctx->pl, &ctx->elms[i].conn, sock, ep, buffer, bufferSize);
             if (ec != NABTO_EC_OK) {
-                nc_client_connection_close_connection(&ctx->elms[i].conn);
+                //nc_client_connection_close_connection(&ctx->elms[i].conn);
             }
             return;
         }
