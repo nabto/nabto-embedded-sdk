@@ -22,13 +22,13 @@
 static void nm_select_unix_udp_cancel_all_events(np_udp_socket* sock);
 static void nm_select_unix_udp_event_create(void* data);
 static void nm_select_unix_udp_event_bind_port(void* data);
-static void nm_select_unix_udp_event_destroy(void* data);
 static void nm_select_unix_udp_event_bind_port(void* data);
 static void nm_select_unix_udp_event_send_to(void* data);
 static np_error_code nm_select_unix_udp_create_socket(np_udp_socket* sock);
 static void nm_select_unix_udp_handle_event(np_udp_socket* sock);
 static void nm_select_unix_udp_free_socket(np_udp_socket* sock);
-
+static void nm_select_unix_udp_event_bind_mdns_ipv4(void* data);
+static void nm_select_unix_udp_event_bind_mdns_ipv6(void* data);
 
 /**
  * Api function declarations
@@ -37,6 +37,8 @@ static np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_so
 static void nm_select_unix_udp_destroy(np_udp_socket* sock);
 static void nm_select_unix_udp_async_bind(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
 static void nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data);
+static void nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
+static void nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
 static void nm_select_unix_udp_async_send_to(struct np_udp_send_context* ctx);
 static void nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
                                            np_udp_packet_received_callback cb, void* data);
@@ -51,6 +53,8 @@ void nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
     pl->udp.destroy          = &nm_select_unix_udp_destroy;
     pl->udp.async_bind       = &nm_select_unix_udp_async_bind;
     pl->udp.async_bind_port  = &nm_select_unix_udp_async_bind_port;
+//    pl->udp.async_bind_mdns_ipv4 = &nm_select_unix_async_bind_mdns_ipv4;
+//    pl->udp.async_bind_mdns_ipv6 = &nm_select_unix_async_bind_mdns_ipv6;
     pl->udp.async_send_to    = &nm_select_unix_udp_async_send_to;
     pl->udp.async_recv_from  = &nm_select_unix_udp_async_recv_from;
     pl->udp.get_protocol     = &nm_select_unix_udp_get_protocol;
@@ -69,6 +73,7 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_socket** 
 {
     np_udp_socket* s = calloc(1, sizeof(np_udp_socket));
     *sock = s;
+    s->sock = -1;
 
     struct nm_select_unix* selectCtx = pl->udpData;
     struct nm_select_unix_udp_sockets* sockets = &selectCtx->udpSockets;
@@ -88,11 +93,6 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_socket** 
     return NABTO_EC_OK;
 }
 
-void nm_select_unix_udp_destroy(np_udp_socket* sock)
-{
-
-}
-
 void nm_select_unix_udp_async_bind(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
 {
     struct np_platform* pl = sock->pl;
@@ -110,6 +110,25 @@ void nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_u
     sock->created.port = port;
     sock->closing = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_port, sock);
+}
+
+void nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+{
+    struct np_platform* pl = sock->pl;
+    sock->created.cb = cb;
+    sock->created.data = data;
+    sock->closing = false;
+    np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv4, sock);
+}
+
+void nm_select_unix_udp_event_bind_mdns_ipv4(void* data) {
+    np_udp_socket* sock = (np_udp_socket*)data;
+    
+}
+
+void nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+{
+
 }
 
 void nm_select_unix_udp_async_send_to(struct np_udp_send_context* ctx)
@@ -223,14 +242,6 @@ uint16_t nm_select_unix_udp_get_local_port(np_udp_socket* socket)
     return htons(addr.sin6_port);
 }
 
-void nm_select_unix_udp_async_destroy(np_udp_socket* socket, np_udp_socket_destroyed_callback cb, void* data)
-{
-    struct np_platform* pl = socket->pl;
-    socket->des.cb = cb;
-    socket->des.data = data;
-    np_event_queue_post(pl, &socket->des.event, nm_select_unix_udp_event_destroy, socket);
-}
-
 void nm_select_unix_udp_event_create(void* data)
 {
     np_udp_socket* sock = (np_udp_socket*)data;
@@ -342,15 +353,17 @@ void nm_select_unix_udp_event_send_to(void* data)
     return;
 }
 
-void nm_select_unix_udp_event_destroy(void* data)
+void nm_select_unix_udp_destroy(np_udp_socket* sock)
 {
-    np_udp_socket* sock = (np_udp_socket*)data;
     if (sock == NULL) {
         return;
     }
     sock->closing = true;
     shutdown(sock->sock, SHUT_RDWR);
-    NABTO_LOG_TRACE(LOG, "shutdown with data: %u", sock->des.data);
+    if (!sock->recv.cb) {
+        // Sockets are only in the fd set when recv.cb is set
+        nm_select_unix_udp_free_socket(sock);
+    }
     return;
 }
 
@@ -441,23 +454,14 @@ void nm_select_unix_udp_handle_event(np_udp_socket* sock)
 
 void nm_select_unix_udp_free_socket(np_udp_socket* sock)
 {
-    NABTO_LOG_TRACE(LOG, "shutdown with data: %u", sock->des.data);
-
     np_udp_socket* before = sock->prev;
     np_udp_socket* after = sock->next;
     before->next = after;
     after->prev = before;
 
-    np_udp_socket_destroyed_callback cb;
-    void* cbData;
     close(sock->sock);
     nm_select_unix_udp_cancel_all_events(sock);
-    cb = sock->des.cb;
-    cbData = sock->des.data;
     free(sock);
-    if (cb) {
-        cb(NABTO_EC_OK, cbData);
-    }
 }
 
 void nm_select_unix_udp_cancel_all_events(np_udp_socket* sock)
@@ -465,7 +469,6 @@ void nm_select_unix_udp_cancel_all_events(np_udp_socket* sock)
     struct np_platform* pl = sock->pl;
     NABTO_LOG_TRACE(LOG, "Cancelling all events");
     np_event_queue_cancel_event(pl, &sock->created.event);
-    np_event_queue_cancel_event(pl, &sock->des.event);
     np_event_queue_cancel_event(pl, &sock->recv.event);
 }
 
@@ -475,7 +478,7 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx, struct nm_sele
 
     while(iterator != &sockets->socketsSentinel)
     {
-        if (iterator->recv.cb) {
+        if (iterator->recv.cb && iterator->sock != -1) {
             FD_SET(iterator->sock, &ctx->readFds);
             ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->sock);
         }
