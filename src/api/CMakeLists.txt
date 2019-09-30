@@ -1,5 +1,7 @@
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
+find_package( Threads )
+
 set(nabto_device_src
   ${src_dir}/nabto_device.c
   ${src_dir}/nabto_device_stream.c
@@ -40,6 +42,8 @@ endif ()
 
 add_definitions(-DNABTO_DEVICE_CLIENT_API_EXPORTS)
 add_library( nabto_device SHARED "${nabto_device_src}")
+
+target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
 
 target_link_libraries( nabto_device
   np_platform
