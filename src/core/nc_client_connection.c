@@ -118,6 +118,9 @@ void nc_client_connection_close_connection(struct nc_client_connection* conn)
     nc_stream_manager_remove_connection(conn->streamManager, conn);
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
     pl->dtlsS.destroy_connection(conn->dtls);
+
+    np_event_queue_cancel_event(pl, &conn->sendCtx.ev);
+
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
 

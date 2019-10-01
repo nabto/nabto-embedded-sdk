@@ -120,7 +120,7 @@ void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel)
         nm_tcptunnel_connection_stop_from_manager(connection);
         nm_tcptunnel_remove_connection(connection);
     }
-
+    nc_stream_manager_remove_listener(&tunnel->streamListener);
 }
 
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel* tunnel)

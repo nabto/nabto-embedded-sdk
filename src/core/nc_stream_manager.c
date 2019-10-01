@@ -71,6 +71,14 @@ np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* c
     return NABTO_EC_OK;
 }
 
+void nc_stream_manager_remove_listener(struct nc_stream_listener* listener)
+{
+    struct nc_stream_listener* before = listener->prev;
+    struct nc_stream_listener* after = listener->next;
+    before->next = after;
+    after->prev = before;
+}
+
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
                                      uint8_t* buffer, uint16_t bufferSize)
 {

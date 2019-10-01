@@ -42,8 +42,6 @@ struct nc_client_connection {
     struct nc_device_context* device;
     struct nc_iam_user* user;
 
-    struct np_event ev;
-
     np_dtls_srv_send_callback sentCb;
     void* sentData;
     struct np_udp_send_context sendCtx;
