@@ -9,9 +9,11 @@
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
 #include <core/nc_iam.h>
+#include <core/nc_connection_event.h>
 #include <modules/mdns/nm_mdns.h>
 
 #include <platform/np_error_code.h>
+
 
 typedef void (*nc_device_close_callback)(const np_error_code ec, void* data);
 
@@ -50,6 +52,8 @@ struct nc_device_context {
     uint8_t attachAttempts;
     nc_device_close_callback closeCb;
     void* closeCbData;
+
+    struct nc_connection_events_listener eventsListenerSentinel;
 };
 
 void nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
@@ -72,5 +76,10 @@ uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev,
 struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
 
 bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user);
+
+void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData);
+void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener);
+
+void nc_device_connection_events_listener_notify(struct nc_device_context* dev, uint64_t connectionRef, enum nc_connection_event event);
 
 #endif // NC_DEVICE_H

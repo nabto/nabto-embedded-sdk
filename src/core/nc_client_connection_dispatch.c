@@ -47,19 +47,25 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
             np_error_code ec;
             ec = nc_client_connection_handle_packet(ctx->pl, &ctx->elms[i].conn, sock, ep, buffer, bufferSize);
             if (ec != NABTO_EC_OK) {
-                nc_client_connection_close_connection(&ctx->elms[i].conn);
+                //nc_client_connection_close_connection(&ctx->elms[i].conn);
             }
             return;
         }
     }
-    NABTO_LOG_INFO(LOG, "Found packet for new connection");
-    for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
-        if(!ctx->elms[i].active) {
-            np_error_code ec = nc_client_connection_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->device, sock, ep, buffer, bufferSize);
-            if (ec == NABTO_EC_OK) {
-                ctx->elms[i].active = true;
+    // if the packet is a dtls handshake packet it can be for a new connection.
+    // 22 = handshake
+    // 1 = client hello on position x maybe ~14
+    // the first 16 bytes is the connection header
+    if (buffer[16] == 22) {
+        NABTO_LOG_INFO(LOG, "Found packet for new connection");
+        for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
+            if(!ctx->elms[i].active) {
+                np_error_code ec = nc_client_connection_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->device, sock, ep, buffer, bufferSize);
+                if (ec == NABTO_EC_OK) {
+                    ctx->elms[i].active = true;
+                }
+                return;
             }
-            return;
         }
     }
 }

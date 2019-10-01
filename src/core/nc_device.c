@@ -25,6 +25,9 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     nc_stream_manager_init(&device->streamManager, pl);
 
+    device->eventsListenerSentinel.next = &device->eventsListenerSentinel;
+    device->eventsListenerSentinel.prev = &device->eventsListenerSentinel;
+
     device->serverPort = 4433;
 
 
@@ -217,7 +220,49 @@ struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_cont
     return nc_client_connection_dispatch_connection_from_ref(&dev->clientConnect, ref);
 }
 
+/**
+ * return true if the iam user is used by a connection.
+ */
 bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user)
 {
     return nc_client_connection_dispatch_user_in_use(&dev->clientConnect, user);
+}
+
+
+void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData)
+{
+    listener->cb = cb;
+    listener->userData = userData;
+
+    struct nc_connection_events_listener* before = dev->eventsListenerSentinel.prev;
+    struct nc_connection_events_listener* after = before->next;
+
+    before->next = listener;
+    listener->next = after;
+    after->prev = listener;
+    listener->prev = before;
+
+}
+
+void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener)
+{
+    struct nc_connection_events_listener* before = listener->prev;
+    struct nc_connection_events_listener* after = listener->next;
+    before->next = after;
+    after->prev = before;
+}
+
+void nc_device_connection_events_listener_notify(struct nc_device_context* dev, uint64_t connectionRef, enum nc_connection_event event)
+{
+    struct nc_connection_events_listener* iterator = dev->eventsListenerSentinel.next;
+
+    while (iterator != &dev->eventsListenerSentinel)
+    {
+        // increment iterator now, such that it's allowed to remove
+        // the listener from the connection in from the event handler.
+        struct nc_connection_events_listener* current = iterator;
+        iterator = iterator->next;
+
+        current->cb(connectionRef, event, current->userData);
+    }
 }

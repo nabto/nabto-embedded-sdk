@@ -36,6 +36,7 @@ struct nc_stream_manager_context {
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl);
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx);
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data);
+void nc_stream_manager_remove_listener(struct nc_stream_listener* listener);
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
                                      uint8_t* buffer, uint16_t bufferSize);

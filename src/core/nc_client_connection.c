@@ -112,11 +112,15 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
     struct np_platform* pl = conn->pl;
+    nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_CLOSED);
     nc_keep_alive_deinit(&conn->keepAlive);
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);
     nc_stream_manager_remove_connection(conn->streamManager, conn);
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
     pl->dtlsS.destroy_connection(conn->dtls);
+
+    np_event_queue_cancel_event(pl, &conn->sendCtx.ev);
+
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
 
@@ -154,6 +158,7 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
         }
         conn->user = user;
         nc_client_connection_keep_alive_start(conn);
+        nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_OPENED);
     }
 }
 
@@ -176,6 +181,7 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
             conn->currentMaxSequence = sequence;
             if (conn->currentChannel.channelId != channelId && conn->alternativeChannel.channelId == channelId) {
                 conn->currentChannel = conn->alternativeChannel;
+                nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_CHANNEL_CHANGED);
             }
         }
     }
@@ -370,4 +376,10 @@ void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, v
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp)
 {
     return conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+}
+
+void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event)
+{
+    nc_device_connection_events_listener_notify(conn->device, conn->connectionRef, event);
+
 }

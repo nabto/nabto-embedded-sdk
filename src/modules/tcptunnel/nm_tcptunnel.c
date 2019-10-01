@@ -13,6 +13,10 @@
 
 static void nm_tcptunnel_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 
+static void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data);
+
+static void nm_tcptunnel_destroy(struct nm_tcptunnel* tunnel);
+
 np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
 {
     if (tunnels->device != NULL) {
@@ -30,16 +34,40 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
     tunnels->defaultHost.ip.v4[3] = 0x01;
 
     nm_tcptunnel_coap_init(tunnels, &device->coapServer);
+
+    nc_device_add_connection_events_listener(device, &tunnels->connectionEventsListener, &connection_event, tunnels);
+
     return NABTO_EC_OK;
 
 }
 
 void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
 {
+    nc_device_remove_connection_events_listener(tunnels->device, &tunnels->connectionEventsListener);
+
     while (tunnels->tunnelsSentinel.next != &tunnels->tunnelsSentinel) {
         struct nm_tcptunnel* tunnel = tunnels->tunnelsSentinel.next;
         // stop and remove tunnel from tunnels
         nm_tcptunnel_deinit(tunnel);
+    }
+
+
+
+}
+
+void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data)
+{
+    struct nm_tcptunnels* tunnels = data;
+    if (event == NC_CONNECTION_EVENT_CLOSED) {
+        struct nm_tcptunnel* iterator = tunnels->tunnelsSentinel.next;
+        while (iterator != &tunnels->tunnelsSentinel) {
+            struct nm_tcptunnel* current = iterator;
+            iterator = iterator->next;
+            if (current->connectionRef == connectionRef) {
+                nm_tcptunnel_deinit(current);
+                nm_tcptunnel_destroy(current);
+            }
+        }
     }
 }
 
@@ -69,6 +97,16 @@ struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels)
     return tunnel;
 }
 
+void nm_tcptunnel_destroy(struct nm_tcptunnel* tunnel)
+{
+    struct nm_tcptunnel* before = tunnel->prev;
+    struct nm_tcptunnel* after = tunnel->next;
+    before->next = after;
+    after->prev = before;
+
+    free(tunnel);
+}
+
 void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, struct np_ip_address* address, uint16_t port)
 {
     tunnel->address = *address;
@@ -82,14 +120,7 @@ void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel)
         nm_tcptunnel_connection_stop_from_manager(connection);
         nm_tcptunnel_remove_connection(connection);
     }
-
-    struct nm_tcptunnel* before = tunnel->prev;
-    struct nm_tcptunnel* after = tunnel->next;
-    before->next = after;
-    after->prev = before;
-
-    free(tunnel);
-
+    nc_stream_manager_remove_listener(&tunnel->streamListener);
 }
 
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel* tunnel)

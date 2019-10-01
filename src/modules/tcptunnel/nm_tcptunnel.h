@@ -42,8 +42,8 @@ struct nm_tcptunnel {
     uint32_t streamPort;
     struct nc_stream_listener streamListener;
     char tunnelId[17]; // It has room for a 64 bit integer encoded in hex.
-    // connectionId for the connection which created the tunnel.
-    uint64_t connectionId;
+    // connectionRef for the connection which created the tunnel.
+    uint64_t connectionRef;
 };
 
 struct nm_tcptunnels {
@@ -52,6 +52,7 @@ struct nm_tcptunnels {
     struct np_ip_address defaultHost;
     uint16_t defaultPort;
     struct nm_tcptunnel tunnelsSentinel;
+    struct nc_connection_events_listener connectionEventsListener;
 };
 
 np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device);
