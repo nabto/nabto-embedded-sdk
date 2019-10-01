@@ -419,6 +419,8 @@ void nm_select_unix_udp_event_bind_port(void* data)
             si_me6.sin6_family = AF_INET6;
             si_me6.sin6_port = htons(sock->created.port);
             si_me6.sin6_addr = in6addr_any;
+            si_me6.sin6_scope_id = 0;
+            si_me6.sin6_flowinfo = 0;
             i = bind(sock->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
             NABTO_LOG_TRACE(LOG, "bind returned %i", i);
         } else {
