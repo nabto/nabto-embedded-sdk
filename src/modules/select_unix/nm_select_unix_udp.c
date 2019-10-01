@@ -639,7 +639,8 @@ void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds)
     np_udp_socket* iterator = sockets->socketsSentinel.next;
     while(iterator != &sockets->socketsSentinel)
     {
-        if (FD_ISSET(iterator->sock, &ctx->readFds)) {
+        // TODO: determine what happens if sock = -1 might need to be freed
+        if (iterator->sock != -1 && FD_ISSET(iterator->sock, &ctx->readFds)) {
             nm_select_unix_udp_handle_event(iterator);
         }
         iterator = iterator->next;
