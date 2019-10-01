@@ -135,12 +135,16 @@ void nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_crea
 
 void nm_select_unix_udp_event_bind_mdns_ipv4(void* data) {
     np_udp_socket* us = (np_udp_socket*)data;
-    us->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    us->sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (us->sock < 0) {
         us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         free(us);
     }
     us->isIpv6 = false;
+
+    int flags = fcntl(us->sock, F_GETFL, 0);
+    if (flags == -1) flags = 0;
+    fcntl(us->sock, F_SETFL, flags | O_NONBLOCK);
 
     // TODO test return value
     if (!nm_select_unix_init_mdns_ipv4_socket(us->sock)) {
@@ -205,7 +209,7 @@ bool nm_select_unix_init_mdns_ipv4_socket(int sock)
 
 void nm_select_unix_udp_event_bind_mdns_ipv6(void* data) {
     np_udp_socket* us = (np_udp_socket*)data;
-    us->sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    us->sock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (us->sock < 0) {
         us->created.cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         free(us);
@@ -218,6 +222,10 @@ void nm_select_unix_udp_event_bind_mdns_ipv6(void* data) {
     {
         NABTO_LOG_ERROR(LOG, "Cannot set IPV6_V6ONLY");
     }
+
+    int flags = fcntl(us->sock, F_GETFL, 0);
+    if (flags == -1) flags = 0;
+    fcntl(us->sock, F_SETFL, flags | O_NONBLOCK);
 
     // TODO test return value
     if (!nm_select_unix_init_mdns_ipv6_socket(us->sock)) {
@@ -266,7 +274,7 @@ bool nm_select_unix_init_mdns_ipv6_socket(int sock)
                 memset(&group, 0, sizeof(struct ipv6_mreq));
                 inet_pton(AF_INET6, "ff02::fb", &group.ipv6mr_multiaddr);
                 group.ipv6mr_interface = index;
-                int status = setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&group, sizeof(struct ipv6_mreq));
+                int status = setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *)&group, sizeof(struct ipv6_mreq));
                 if (status < 0) {
                     if (errno == EADDRINUSE) {
                         // some interface indexes occurs more than
