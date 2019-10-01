@@ -18,12 +18,6 @@ struct nm_select_unix_created_ctx {
     uint16_t port;
 };
 
-struct nm_select_unix_destroyed_ctx {
-    np_udp_socket_destroyed_callback cb;
-    void* data;
-    struct np_event event;
-};
-
 struct nm_select_unix_received_ctx {
     np_udp_packet_received_callback cb;
     void* data;
@@ -36,7 +30,6 @@ struct np_udp_socket {
     int sock;
     bool isIpv6;
     struct nm_select_unix_created_ctx created;
-    struct nm_select_unix_destroyed_ctx des;
     struct nm_select_unix_received_ctx recv;
     struct np_udp_socket* next;
     struct np_udp_socket* prev;
