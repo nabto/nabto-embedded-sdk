@@ -8,6 +8,13 @@ ARTIFACTS_ROOT=$SANDBOX_DIR/artifacts/nabto-embedded-sdk
 
 cd $SCRIPT_DIR/linux
 
-UID=`id -u` GID=`id -g` docker-compose run build-armhf
+# cleanup
+rm -rf ${ARTIFACTS_ROOT}/armhf
+rm -rf ${ARTIFACTS_ROOT}/linux64
 
-UID=`id -u` GID=`id -g` docker-compose run build-linux64
+export USER_ID=`id -u`
+export GROUP_ID=`id -g`
+
+docker-compose run build-armhf
+
+docker-compose run build-linux64

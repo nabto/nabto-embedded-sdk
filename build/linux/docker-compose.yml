@@ -4,16 +4,17 @@ services:
     build:
       context: .
       dockerfile: armhf.dockerfile
-    user: "${UID}:${GID}"
+    user: "${USER_ID}:${GROUP_ID}"
     volumes:
       - ../..:/nabto/nabto-embedded-sdk
-      - ../../../artifacts/nabto-embedded-sdk:/nabto/artifacts
-    command: bash -c "mkdir /tmp/build && cd /tmp/build && CC=arm-linux-gnueabihf-gcc-8 CXX=arm-linux-gnueabihf-g++-8 cmake -DCMAKE_INSTALL_PREFIX=/nabto/artifacts/armhf -DCMAKE_BUILD_TYPE=release /nabto/nabto-embedded-sdk && make -j && make install"
+      - ../../../artifacts:/artifacts
+    command: bash -c "mkdir /tmp/build && cd /tmp/build && CC=arm-linux-gnueabihf-gcc-8 CXX=arm-linux-gnueabihf-g++-8 cmake -DCMAKE_INSTALL_PREFIX=/artifacts/nabto-embedded-sdk/armhf -DCMAKE_BUILD_TYPE=release /nabto/nabto-embedded-sdk && make -j && make install"
   build-linux64:
     build:
       context: .
       dockerfile: linux64.dockerfile
+    user: "${USER_ID}:${GROUP_ID}"
     volumes:
       - ../..:/nabto/nabto-embedded-sdk
-      - ../../../artifacts/nabto-embedded-sdk:/nabto/artifacts
-    command: bash -c "mkdir /tmp/build && cd /tmp/build && cmake -DCMAKE_INSTALL_PREFIX=/nabto/artifacts/linux64 -DCMAKE_BUILD_TYPE=release /nabto/nabto-embedded-sdk && make -j && make install"
+      - ../../../artifacts:/artifacts
+    command: bash -c "mkdir /tmp/build && cd /tmp/build && cmake -DCMAKE_INSTALL_PREFIX=/artifacts/nabto-embedded-sdk/linux64 -DCMAKE_BUILD_TYPE=release /nabto/nabto-embedded-sdk && make -j && make install"
