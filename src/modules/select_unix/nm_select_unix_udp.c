@@ -22,8 +22,6 @@
  * Helper function declarations
  */
 static void nm_select_unix_udp_cancel_all_events(np_udp_socket* sock);
-static void nm_select_unix_udp_event_create(void* data);
-static void nm_select_unix_udp_event_bind_port(void* data);
 static void nm_select_unix_udp_event_bind_port(void* data);
 static void nm_select_unix_udp_event_send_to(void* data);
 static np_error_code nm_select_unix_udp_create_socket(np_udp_socket* sock);
@@ -126,6 +124,15 @@ void nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_crea
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv4, sock);
 }
 
+void nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+{
+    struct np_platform* pl = sock->pl;
+    sock->created.cb = cb;
+    sock->created.data = data;
+    sock->closing = false;
+    np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv6, sock);
+}
+
 void nm_select_unix_udp_event_bind_mdns_ipv4(void* data) {
     np_udp_socket* us = (np_udp_socket*)data;
     us->sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
@@ -194,15 +201,6 @@ bool nm_select_unix_init_mdns_ipv4_socket(int sock)
         }
     }
     return true;
-}
-
-void nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
-{
-    struct np_platform* pl = sock->pl;
-    sock->created.cb = cb;
-    sock->created.data = data;
-    sock->closing = false;
-    np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv6, sock);
 }
 
 void nm_select_unix_udp_event_bind_mdns_ipv6(void* data) {
@@ -400,23 +398,6 @@ uint16_t nm_select_unix_udp_get_local_port(np_udp_socket* socket)
     return htons(addr.sin6_port);
 }
 
-void nm_select_unix_udp_event_create(void* data)
-{
-    np_udp_socket* sock = (np_udp_socket*)data;
-
-    np_error_code ec = nm_select_unix_udp_create_socket(sock);
-
-    if (ec == NABTO_EC_OK) {
-
-        sock->created.cb(NABTO_EC_OK, sock->created.data);
-        return;
-    } else {
-        sock->created.cb(ec, sock->created.data);
-        free(sock);
-        return;
-    }
-}
-
 void nm_select_unix_udp_event_bind_port(void* data)
 {
     np_udp_socket* sock = (np_udp_socket*)data;
@@ -549,8 +530,6 @@ np_error_code nm_select_unix_udp_create_socket(np_udp_socket* sock)
     int flags = fcntl(sock->sock, F_GETFL, 0);
     if (flags == -1) flags = 0;
     fcntl(sock->sock, F_SETFL, flags | O_NONBLOCK);
-
-
     return NABTO_EC_OK;
 }
 
