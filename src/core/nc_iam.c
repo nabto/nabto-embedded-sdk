@@ -7,11 +7,14 @@
 #include "nc_device.h"
 #include "nc_coap_server.h"
 #include <platform/np_util.h>
+#include <platform/np_logging.h>
 
 #include <cbor.h>
 
 #include <string.h>
 #include <stdlib.h>
+
+#define LOG NABTO_LOG_MODULE_CORE
 
 static np_error_code nc_iam_evaluate_policy(struct nc_iam_attributes* attributes, const char* action, struct nc_iam_policy* policy);
 static np_error_code nc_iam_evaluate_statement(struct nc_iam_attributes* attributes, const char* action, CborValue* statement);
@@ -227,17 +230,22 @@ np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connec
         // user == NULL
         // use the default role
         struct nc_iam_role* role = nc_iam_get_default_role(&connection->device->iam);
-        size_t j;
-        for (j = 0; j < NC_IAM_ROLE_MAX_POLICIES; j++) {
-            struct nc_iam_policy* policy = role->policies[j];
-            if (policy != NULL) {
-                ec = nc_iam_evaluate_policy(attributes, action, policy);
-                if (ec == NABTO_EC_IAM_NONE) {
-                    // no change
-                } else if (ec == NABTO_EC_OK || ec == NABTO_EC_IAM_DENY) {
-                    result = ec;
-                } else {
-                    return ec;
+        if (role == NULL) {
+            NABTO_LOG_ERROR(LOG, "No default role on the system denying the access request");
+            return NABTO_EC_IAM_DENY;
+        } else {
+            size_t j;
+            for (j = 0; j < NC_IAM_ROLE_MAX_POLICIES; j++) {
+                struct nc_iam_policy* policy = role->policies[j];
+                if (policy != NULL) {
+                    ec = nc_iam_evaluate_policy(attributes, action, policy);
+                    if (ec == NABTO_EC_IAM_NONE) {
+                        // no change
+                    } else if (ec == NABTO_EC_OK || ec == NABTO_EC_IAM_DENY) {
+                        result = ec;
+                    } else {
+                        return ec;
+                    }
                 }
             }
         }
