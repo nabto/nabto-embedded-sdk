@@ -51,7 +51,8 @@
         XX(INVALID_CONNECTION, "Invalid connection")                    \
         XX(INVALID_ARGUMENT, "Invalid argument")                        \
         XX(IN_USE, "In use")                                            \
-        XX(INVALID_LOG_LEVEL, "Invalid log level") \
+        XX(INVALID_LOG_LEVEL, "Invalid log level")                      \
+        XX(INVALID_STATE, "Invalid State")                              \
 
 
 #define XX_ERROR(name, _) NABTO_EC_##name,

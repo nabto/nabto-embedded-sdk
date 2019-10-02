@@ -92,6 +92,7 @@ extern const NabtoDeviceError NABTO_DEVICE_EC_STRING_TOO_LONG;
 extern const NabtoDeviceError NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
 extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
 extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
+extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
 
 /**********************
  * Device Api *
@@ -213,7 +214,7 @@ nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
  * @param device    The device instance to start
  * @return
  *  NABTO_DEVICE_EC_OK on success
- *  NABTO_DEVICE_EC_INVALID_ARGUMENT if device does not have public Key, 
+ *  NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
  *               private key, server URL, device ID, or Product ID.
  *  NABTO_DEVICE_EC_FAILED if device threads could not be started
  */
@@ -230,7 +231,7 @@ nabto_device_start(NabtoDevice* device);
  *
  * @return
  *  NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
- *  NABTO_DEVICE_EC_INVALID_ARGUMENT if the device provided did not contain a valid private key.
+ *  NABTO_DEVICE_EC_INVALID_STATE if the device provided did not contain a valid private key.
  *  NABTO_DEVICE_EC_FAILED on underlying DTLS module error
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API

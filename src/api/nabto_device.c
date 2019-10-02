@@ -256,12 +256,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     np_error_code ec;
     if (dev->publicKey == NULL || dev->privateKey == NULL || dev->serverUrl == NULL) {
         NABTO_LOG_ERROR(LOG, "Encryption key pair or server URL not set");
-        // TODO invalid state
-        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+        return NABTO_DEVICE_EC_INVALID_STATE;
     }
     if (dev->deviceId == NULL || dev->productId == NULL) {
         NABTO_LOG_ERROR(LOG, "Missing deviceId or productdId");
-        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+        return NABTO_DEVICE_EC_INVALID_STATE;
     }
 
 
@@ -299,7 +298,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
-        ec = NABTO_DEVICE_EC_INVALID_ARGUMENT;
+        ec = NABTO_DEVICE_EC_INVALID_STATE;
     }
     ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, fingerprint);
 
