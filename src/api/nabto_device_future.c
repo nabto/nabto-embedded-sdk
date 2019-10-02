@@ -8,8 +8,7 @@
 
 typedef uint32_t nabto_device_duration_t_;
 
-
-
+// TODO implement recurring future
 struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev)
 {
     struct nabto_device_future* fut = malloc(sizeof(struct nabto_device_future));
@@ -34,6 +33,7 @@ struct nabto_device_future* nabto_device_future_new(struct nabto_device_context*
 
 void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
 {
+    // TODO if future is unresolved this will cause seg fault
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_threads_free_cond(fut->cond);
     nabto_device_threads_free_mutex(fut->mutex);
@@ -44,9 +44,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_ready(NabtoDeviceFuture* f
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     if (fut->ready) {
-        return NABTO_EC_OK;
+        return NABTO_DEVICE_EC_OK;
     } else {
-        return NABTO_EC_API_FUTURE_NOT_READY;
+        return NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
     }
 }
 
@@ -60,7 +60,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFu
     if (fut->ready) {
         nabto_device_post_future(fut->dev, fut);
     }
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 
@@ -77,12 +77,12 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_timed_wait(NabtoDeviceFutu
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     if (fut->ready) {
-        return NABTO_EC_OK;
+        return NABTO_DEVICE_EC_OK;
     }
     nabto_device_threads_mutex_lock(fut->mutex);
     nabto_device_threads_cond_timed_wait(fut->cond, fut->mutex, ms);
     nabto_device_threads_mutex_unlock(fut->mutex);
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 
@@ -103,7 +103,7 @@ NabtoDeviceError nabto_device_future_resolve(struct nabto_device_future* fut)
         nabto_device_threads_cond_signal(fut->cond);
         nabto_device_threads_mutex_unlock(fut->mutex);
     }
-    return NABTO_EC_OK;
+    return NABTO_DEVICE_EC_OK;
 }
 
 void nabto_api_future_set_error_code(struct nabto_device_future* fut, const NabtoDeviceError ec)

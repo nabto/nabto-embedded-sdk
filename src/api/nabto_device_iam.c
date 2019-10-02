@@ -99,7 +99,7 @@ nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version)
     fut = nabto_device_future_new(dev);
     if (fut) {
         if (dev->iamChangedFuture != NULL) {
-            nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+            nabto_api_future_set_error_code(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
             nabto_api_future_queue_post(&dev->queueHead, fut);
         } else {
             ec = nc_iam_set_change_callback(&dev->core.iam, iamChanged, dev);

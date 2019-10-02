@@ -15,7 +15,6 @@
         XX(OUT_OF_CONNECTIONS, "Out of connections")                    \
         XX(INVALID_CHANNEL, "Invalid channel")                          \
         XX(INVALID_CONNECTION_ID, "Invalid connection id")              \
-        XX(INVALID_PACKET_TYPE, "Invalid packet type")                  \
         XX(INSUFFICIENT_BUFFER_ALLOCATION, "Insufficient buffer allocation") \
         XX(ALPN_FAILED, "Alpn failed")                                  \
         XX(INVALID_PEER_FINGERPRINT, "Invalid peer fingerprint")        \
@@ -28,7 +27,6 @@
         XX(ABORTED, "Aborted")                                          \
         XX(STOPPED, "Stopped")                                          \
         XX(STREAM_CLOSED, "Stream closed")                              \
-        XX(STREAM_EOF, "Stream end of file")                            \
         XX(RESOURCE_EXISTS, "Resource exists")                          \
         XX(NOT_FOUND, "Not Found")                                      \
         XX(OUT_OF_MEMORY, "Out of memory")                              \

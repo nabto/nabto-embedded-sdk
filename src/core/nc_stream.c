@@ -50,7 +50,7 @@ np_error_code nc_stream_status_to_ec(nabto_stream_status status)
     switch(status) {
         case NABTO_STREAM_STATUS_OK: return NABTO_EC_OK;
         case NABTO_STREAM_STATUS_CLOSED: return NABTO_EC_STREAM_CLOSED;
-        case NABTO_STREAM_STATUS_EOF: return NABTO_EC_STREAM_EOF;
+        case NABTO_STREAM_STATUS_EOF: return NABTO_EC_EOF;
         case NABTO_STREAM_STATUS_ABORTED: return NABTO_EC_ABORTED;
         default: return NABTO_EC_FAILED;
     }

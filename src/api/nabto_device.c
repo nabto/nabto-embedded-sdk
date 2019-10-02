@@ -182,14 +182,13 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_port(NabtoDevice* devi
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec = NABTO_EC_OK;
+    np_error_code ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     free(dev->privateKey);
 
     dev->privateKey = strdup(str);
     if (dev->privateKey == NULL) {
-        // TODO
-        ec = NABTO_EC_FAILED;
+        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {
         char* crt;
         ec = nm_dtls_create_crt_from_private_key(dev->privateKey, &crt);
@@ -209,7 +208,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_name(NabtoDevice* device,
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     if (strlen(name) > 32) {
-        return NABTO_DEVICE_EC_FAILED;
+        return NABTO_DEVICE_EC_STRING_TOO_LONG;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
     memcpy(dev->appName, name, strlen(name));
@@ -221,7 +220,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* devi
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     if (strlen(version) > 32) {
-        return NABTO_DEVICE_EC_FAILED;
+        return NABTO_DEVICE_EC_STRING_TOO_LONG;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
     memcpy(dev->appVersion, version, strlen(version));
@@ -240,6 +239,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_local_port(NabtoDevice* devic
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_get_local_port(NabtoDevice* device, uint16_t* port)
 {
+    // TODO return invalid state
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     *port = nc_udp_dispatch_get_local_port(&dev->core.udp);
@@ -256,11 +256,12 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     np_error_code ec;
     if (dev->publicKey == NULL || dev->privateKey == NULL || dev->serverUrl == NULL) {
         NABTO_LOG_ERROR(LOG, "Encryption key pair or server URL not set");
-        return NABTO_DEVICE_EC_FAILED;
+        // TODO invalid state
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     if (dev->deviceId == NULL || dev->productId == NULL) {
         NABTO_LOG_ERROR(LOG, "Missing deviceId or productdId");
-        return NABTO_DEVICE_EC_FAILED;
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
 
 
@@ -298,8 +299,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
-        // TODO better ec
-        ec = NABTO_EC_FAILED;
+        ec = NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, fingerprint);
 

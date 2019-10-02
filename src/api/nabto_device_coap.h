@@ -16,9 +16,11 @@ struct nabto_device_coap_resource {
     struct nabto_device_coap_request** futureRequest;
     struct nabto_device_future* fut;
 };
+struct nabto_device_coap_response;
 
 struct nabto_device_coap_request {
     struct nabto_coap_server_request* req;
+    struct nabto_device_coap_response* resp;
     struct nabto_device_context* dev;
 };
 

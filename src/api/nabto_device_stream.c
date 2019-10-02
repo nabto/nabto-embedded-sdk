@@ -113,7 +113,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStre
     str->readFut = fut;
     np_error_code ec = nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
     if (ec) {
-        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_set_error_code(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -131,7 +131,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStr
     str->readFut = fut;
     np_error_code ec = nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
     if (ec) {
-        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_set_error_code(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -157,7 +157,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream*
     str->writeFut = fut;
     np_error_code ec = nc_stream_async_write(str->stream, buffer, bufferLength, &nabto_device_stream_write_callback, str);
     if (ec) {
-        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_set_error_code(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -182,7 +182,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream*
     str->closeFut = fut;
     np_error_code ec = nc_stream_async_close(str->stream, &nabto_device_stream_close_callback, str);
     if (ec) {
-        nabto_api_future_set_error_code(fut, nabto_device_error_core_to_api(NABTO_EC_OPERATION_IN_PROGRESS));
+        nabto_api_future_set_error_code(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_api_future_queue_post(&str->dev->queueHead, fut);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
