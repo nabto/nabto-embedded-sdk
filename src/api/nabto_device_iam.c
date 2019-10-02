@@ -29,7 +29,7 @@ np_error_code nc_iam_check_access_function_override_adapter(uint64_t connectionR
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_override_check_access_function(NabtoDevice* device, NabtoDeviceIAMCheckAccessCallback cb, void* userData)
+nabto_device_iam_override_check_access_implementation(NabtoDevice* device, NabtoDeviceIAMCheckAccessCallback cb, void* userData)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec = NABTO_EC_OK;
