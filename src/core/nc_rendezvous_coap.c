@@ -23,13 +23,6 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
 {
     struct nc_rendezvous_coap_context* ctx = (struct nc_rendezvous_coap_context*)data;
 
-    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
-
-    if (connection == NULL || nc_iam_check_access(connection, "P2P:Rendezvous", NULL, 0) != NABTO_EC_OK) {
-        nabto_coap_server_create_error_response(request, NABTO_COAP_CODE_FORBIDDEN, "Access denied");
-        return;
-    }
-
     uint8_t* payload;
     size_t payloadLength;
     struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
