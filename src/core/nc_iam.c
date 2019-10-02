@@ -26,6 +26,8 @@ static np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes
 static void nc_iam_remove_all_fingerprints_user(struct nc_iam* iam, struct nc_iam_user* user);
 static struct nc_iam_role* nc_iam_find_role_by_name(struct nc_iam* iam, const char* name);
 
+static np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connection, const char* action, struct nc_iam_attributes* attributes);
+
 void nc_iam_init(struct nc_iam* iam)
 {
     iam->version = 0;
@@ -171,17 +173,22 @@ np_error_code nc_iam_attributes_add_number(struct nc_iam_attributes* attributes,
 
 np_error_code nc_iam_check_access(struct nc_client_connection* connection, const char* action, void* attributesCbor, size_t attributesCborLength)
 {
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    np_error_code ec;
+    struct nc_device_context* device = connection->device;
+    if (device->iam.checkAccessFunction != NULL) {
+        return device->iam.checkAccessFunction(connection->connectionRef, action, attributesCbor, attributesCborLength, device->iam.checkAccessFunctionUserData);
+    } else {
+        struct nc_iam_attributes attributes;
+        memset(&attributes, 0, sizeof(struct nc_iam_attributes));
+        np_error_code ec;
 
-    if (attributesCbor != NULL && attributesCborLength > 0) {
-        ec = nc_iam_load_attributes_from_cbor(&attributes, attributesCbor, attributesCborLength);
-        if (ec != NABTO_EC_OK) {
-            return ec;
+        if (attributesCbor != NULL && attributesCborLength > 0) {
+            ec = nc_iam_load_attributes_from_cbor(&attributes, attributesCbor, attributesCborLength);
+            if (ec != NABTO_EC_OK) {
+                return ec;
+            }
         }
+        return nc_iam_check_access_attributes(connection, action, &attributes);
     }
-    return nc_iam_check_access_attributes(connection, action, &attributes);
 }
 
 np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connection, const char* action, struct nc_iam_attributes* attributes)

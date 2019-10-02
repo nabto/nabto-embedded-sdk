@@ -3,6 +3,8 @@
 
 #include "nc_coap_server.h"
 
+#include <cbor.h>
+
 #include <stdlib.h>
 
 static void nc_iam_coap_users_list(struct nabto_coap_server_request* request, void* userData);
@@ -97,11 +99,18 @@ void nc_iam_coap_users_get(struct nabto_coap_server_request* request, void* user
 
     const char* user = nabto_coap_server_request_get_parameter(request, "user");
 
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+    uint8_t cborAttributes[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborAttributes, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "IAM:UserId");
+    cbor_encode_text_stringz(&map, user);
+    cbor_encoder_close_container(&encoder, &map);
 
-    ec = nc_iam_check_access_attributes(connection, "IAM:GetUser", &attributes);
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
+
+    ec = nc_iam_check_access(connection, "IAM:GetUser", &cborAttributes, used);
     if (ec == NABTO_EC_OK) {
         uint8_t cbor[128];
         size_t used;
@@ -129,11 +138,18 @@ void nc_iam_coap_users_create(struct nabto_coap_server_request* request, void* u
 
     const char* user = nabto_coap_server_request_get_parameter(request, "user");
 
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+    uint8_t cborAttributes[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborAttributes, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "IAM:UserId");
+    cbor_encode_text_stringz(&map, user);
+    cbor_encoder_close_container(&encoder, &map);
 
-    ec = nc_iam_check_access_attributes(connection, "IAM:CreateUser", &attributes);
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
+
+    ec = nc_iam_check_access(connection, "IAM:CreateUser", &cborAttributes, used);
     if (ec == NABTO_EC_OK) {
         ec = nc_iam_create_user(&device->iam, user);
         if (ec) {
@@ -158,11 +174,17 @@ void nc_iam_coap_users_delete(struct nabto_coap_server_request* request, void* u
 
     const char* user = nabto_coap_server_request_get_parameter(request, "user");
 
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+    uint8_t cborAttributes[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborAttributes, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "IAM:UserId");
+    cbor_encode_text_stringz(&map, user);
+    cbor_encoder_close_container(&encoder, &map);
 
-    ec = nc_iam_check_access_attributes(connection, "IAM:DeleteUser", &attributes);
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
+    ec = nc_iam_check_access(connection, "IAM:DeleteUser", &cborAttributes, used);
     if (ec == NABTO_EC_OK) {
         ec = nc_iam_delete_user(device, user);
         if (ec) {
@@ -185,11 +207,18 @@ void nc_iam_coap_users_add_fingerprint(struct nabto_coap_server_request* request
     const char* user = nabto_coap_server_request_get_parameter(request, "user");
     const char* fingerprint = nabto_coap_server_request_get_parameter(request, "fingerprint");
 
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+    uint8_t cborAttributes[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborAttributes, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "IAM:UserId");
+    cbor_encode_text_stringz(&map, user);
+    cbor_encoder_close_container(&encoder, &map);
 
-    ec = nc_iam_check_access_attributes(connection, "IAM:AddFingerprintUser", &attributes);
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
+
+    ec = nc_iam_check_access(connection, "IAM:AddFingerprintUser", &cborAttributes, used);
     if (ec == NABTO_EC_OK) {
         ec = nc_iam_user_add_fingerprint(&device->iam, user, fingerprint);
         if (ec) {
@@ -212,11 +241,18 @@ void nc_iam_coap_users_remove_fingerprint(struct nabto_coap_server_request* requ
     const char* user = nabto_coap_server_request_get_parameter(request, "user");
     const char* fingerprint = nabto_coap_server_request_get_parameter(request, "fingerprint");
 
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+    uint8_t cborAttributes[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborAttributes, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "IAM:UserId");
+    cbor_encode_text_stringz(&map, user);
+    cbor_encoder_close_container(&encoder, &map);
 
-    ec = nc_iam_check_access_attributes(connection, "IAM:RemoveFingerprintUser", &attributes);
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
+
+    ec = nc_iam_check_access(connection, "IAM:RemoveFingerprintUser", &cborAttributes, used);
     if (ec == NABTO_EC_OK) {
         ec = nc_iam_user_remove_fingerprint(&device->iam, user, fingerprint);
         if (ec) {
@@ -239,11 +275,18 @@ void nc_iam_coap_users_add_role(struct nabto_coap_server_request* request, void*
     const char* user = nabto_coap_server_request_get_parameter(request, "user");
     const char* role = nabto_coap_server_request_get_parameter(request, "role");
 
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+    uint8_t cborAttributes[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborAttributes, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "IAM:UserId");
+    cbor_encode_text_stringz(&map, user);
+    cbor_encoder_close_container(&encoder, &map);
 
-    ec = nc_iam_check_access_attributes(connection, "IAM:AddRoleUser", &attributes);
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
+
+    ec = nc_iam_check_access(connection, "IAM:AddRoleUser", &cborAttributes, used);
     if (ec == NABTO_EC_OK) {
         ec = nc_iam_user_add_role(&device->iam, user, role);
         if (ec) {
@@ -266,11 +309,18 @@ void nc_iam_coap_users_remove_role(struct nabto_coap_server_request* request, vo
     const char* user = nabto_coap_server_request_get_parameter(request, "user");
     const char* role = nabto_coap_server_request_get_parameter(request, "role");
 
-    struct nc_iam_attributes attributes;
-    memset(&attributes, 0, sizeof(struct nc_iam_attributes));
-    nc_iam_attributes_add_string(&attributes, "IAM:UserId", user);
+    uint8_t cborAttributes[128];
+    CborEncoder encoder;
+    CborEncoder map;
+    cbor_encoder_init(&encoder, cborAttributes, 128, 0);
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    cbor_encode_text_stringz(&map, "IAM:UserId");
+    cbor_encode_text_stringz(&map, user);
+    cbor_encoder_close_container(&encoder, &map);
 
-    ec = nc_iam_check_access_attributes(connection, "IAM:RemoveRoleUser", &attributes);
+    size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
+
+    ec = nc_iam_check_access(connection, "IAM:RemoveRoleUser", &cborAttributes, used);
     if (ec == NABTO_EC_OK) {
         ec = nc_iam_user_remove_role(&device->iam, user, role);
         if (ec) {
