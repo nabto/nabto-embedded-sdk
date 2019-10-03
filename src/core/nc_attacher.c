@@ -53,7 +53,7 @@ void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, str
     pl->dtlsC.create(pl, &ctx->dtls, &nc_attacher_dtls_sender, &nc_attacher_dtls_data_handler, &nc_attacher_dtls_event_handler, ctx);
     ctx->coapClient = coapClient;
 
-    nc_keep_alive_init(&ctx->keepAlive, pl, 30, 2, 15);
+    nc_keep_alive_init(&ctx->keepAlive, pl, 30000, 2000, 15);
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
@@ -86,8 +86,8 @@ void nc_attacher_handle_keep_alive(struct nc_attach_context* ctx, uint8_t* buffe
 void nc_attacher_keep_alive_start(struct nc_attach_context* ctx)
 {
     // TODO get ka settings from attach
-    ctx->keepAlive.kaInterval = 30;
-    ctx->keepAlive.kaRetryInterval = 2;
+    ctx->keepAlive.kaInterval = 30000;
+    ctx->keepAlive.kaRetryInterval = 2000;
     ctx->keepAlive.kaMaxRetries = 15;
     nc_keep_alive_wait(&ctx->keepAlive, nc_attacher_keep_alive_event, ctx);
 }

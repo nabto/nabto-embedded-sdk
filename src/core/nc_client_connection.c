@@ -212,7 +212,7 @@ void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, u
 
 void nc_client_connection_keep_alive_start(struct nc_client_connection* ctx)
 {
-    nc_keep_alive_init(&ctx->keepAlive, ctx->pl, 30, 2, 15);
+    nc_keep_alive_init(&ctx->keepAlive, ctx->pl, 30000, 2000, 15);
     nc_keep_alive_wait(&ctx->keepAlive, &nc_client_connection_keep_alive_event, ctx);
 }
 

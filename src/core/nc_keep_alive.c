@@ -7,14 +7,18 @@
 
 #define LOG NABTO_LOG_MODULE_KEEP_ALIVE
 
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries)
+void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint32_t retryInterval, uint32_t maxRetries)
 {
     NABTO_LOG_TRACE(LOG, "starting keep alive with interval: %u, retryInt: %u, maxRetries: %u", interval, retryInterval, maxRetries);
     ctx->pl = pl;
     ctx->kaInterval = interval;
     ctx->kaRetryInterval = retryInterval;
     ctx->kaMaxRetries = maxRetries;
-    ctx->n = ctx->kaInterval/ctx->kaRetryInterval/1000;
+    ctx->lastRecvCount = 0;
+    ctx->lastSentCount = 0;
+    ctx->lostKeepAlives = 0;
+
+    ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
     return;
 }
 
@@ -26,7 +30,8 @@ void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
 
 enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx, uint32_t recvCount, uint32_t sentCount)
 {
-//    NABTO_LOG_TRACE(LOG, "lastRecvCount: %u, recvCount: %u, LastSentCount: %u, sentCount: %u", ctx->lastRecvCount, recvCount, ctx->lastSentCount, sentCount);
+    //NABTO_LOG_TRACE(LOG, "lastRecvCount: %u, recvCount: %u, LastSentCount: %u, sentCount: %u, lostKeepAlives %u, n %u", ctx->lastRecvCount, recvCount, ctx->lastSentCount, sentCount, ctx->lostKeepAlives, ctx->n);
+
     if (ctx->lostKeepAlives > ctx->kaMaxRetries+ctx->n) {
         return KA_TIMEOUT;
     }
@@ -47,7 +52,7 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx, keep_alive_wait_callback cb, void* data)
 {
-    np_event_queue_post_timed_event(ctx->pl, &ctx->keepAliveEvent, ctx->kaRetryInterval*1000, cb, data);
+    np_event_queue_post_timed_event(ctx->pl, &ctx->keepAliveEvent, ctx->kaRetryInterval, cb, data);
 }
 
 

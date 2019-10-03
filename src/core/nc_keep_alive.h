@@ -25,13 +25,13 @@
 struct nc_keep_alive_context
 {
     struct np_platform* pl;
-    uint16_t kaInterval;
-    uint8_t kaRetryInterval;
-    uint8_t kaMaxRetries;
+    uint32_t kaInterval;
+    uint32_t kaRetryInterval;
+    uint32_t kaMaxRetries;
     uint32_t lastRecvCount;
     uint32_t lastSentCount;
-    uint8_t lostKeepAlives;
-    uint16_t n;
+    uint32_t lostKeepAlives;
+    uint32_t n;
 
     bool isSending;
     uint8_t sendBuffer[18];
@@ -56,7 +56,7 @@ typedef void (*keep_alive_wait_callback)(const np_error_code ec, void* data);
  * @param retryInterval The interval between retransmissions in case of packet loss
  * @param maxRetries    The maximum amount of retransmissions before a connection is considered dead
  */
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint8_t retryInterval, uint8_t maxRetries);
+void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, uint32_t interval, uint32_t retryInterval, uint32_t maxRetries);
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx);
 
