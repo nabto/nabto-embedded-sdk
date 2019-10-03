@@ -12,6 +12,8 @@ struct nc_device_context;
 
 #define NM_TCPTUNNEL_MAX_HOST_LENGTH 39
 
+#define NM_TCPTUNNEL_BUFFER_SIZE 8192
+
 struct nm_tcptunnel_connection {
     struct nm_tcptunnel_connection* next;
     struct nm_tcptunnel_connection* prev;
@@ -20,10 +22,10 @@ struct nm_tcptunnel_connection {
     struct nc_stream_context* stream;
     struct np_ip_address address;
     uint16_t port;
-    uint8_t tcpRecvBuffer[1024];
+    uint8_t tcpRecvBuffer[NM_TCPTUNNEL_BUFFER_SIZE];
     size_t tcpRecvBufferSize;
 
-    uint8_t streamRecvBuffer[1024];
+    uint8_t streamRecvBuffer[NM_TCPTUNNEL_BUFFER_SIZE];
     size_t streamRecvBufferSize;
     size_t streamReadSize;
 

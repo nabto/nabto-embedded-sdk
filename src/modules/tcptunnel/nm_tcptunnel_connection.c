@@ -41,8 +41,8 @@ struct nm_tcptunnel_connection* nm_tcptunnel_connection_new()
         return NULL;
     }
 
-    connection->tcpRecvBufferSize = 1024;
-    connection->streamRecvBufferSize = 1024;
+    connection->tcpRecvBufferSize = NM_TCPTUNNEL_BUFFER_SIZE;
+    connection->streamRecvBufferSize = NM_TCPTUNNEL_BUFFER_SIZE;
     return connection;
 }
 
@@ -79,8 +79,8 @@ np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel* tunnel, struct n
     after->prev = connection;
     connection->prev = before;
 
-    connection->tcpRecvBufferSize = 1024;
-    connection->streamRecvBufferSize = 1024;
+    connection->tcpRecvBufferSize = NM_TCPTUNNEL_BUFFER_SIZE;
+    connection->streamRecvBufferSize = NM_TCPTUNNEL_BUFFER_SIZE;
     connection->tcpReadEnded = false;
     connection->streamReadEnded = false;
 
