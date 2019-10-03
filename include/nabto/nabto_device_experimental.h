@@ -10,6 +10,17 @@ extern "C" {
 #endif
 
 /**
+ * Recurring future
+ */
+
+typedef struct NabtoDeviceEventHandler_ NabtoDeviceEventHandler;
+
+void nabto_device_event_handler_free(NabtoDeviceEventHandler* eventHandler);
+
+NabtoDeviceFuture* nabto_device_event_handler_create_future(NabtoDeviceEventHandler* eventHandler);
+
+
+/**
  * Set the server port.
  * If not set it will default to 4433
  */
@@ -29,7 +40,7 @@ enum NabtoDeviceConnectionEvent {
     NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED
 };
 
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture NABTO_DEVICE_API
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceEventHandler* NABTO_DEVICE_API
 nabto_device_listen_connection_event(NabtoDevice* device, NabtoDeviceConnectionRef* ref, enum NabtoDeviceConnectionEvent* event);
 
 /********
