@@ -291,6 +291,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
 }
 
 
+
 NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
 {
     *fingerprint = NULL;
@@ -304,6 +305,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
+}
+
+NabtoDeviceEventHandler* NABTO_DEVICE_API nabto_device_listen_connection_event(NabtoDevice* device, NabtoDeviceConnectionRef* ref, enum NabtoDeviceConnectionEvent* event)
+{
+    return NULL;
 }
 
 /**

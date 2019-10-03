@@ -266,13 +266,15 @@ nabto_device_close(NabtoDevice* device);
  * Streaming *
  *************/
 
+// TODO add possibility to get stream port if ephemeral
 /**
  * listen for a stream, the returned NabtoDeviceStream* should be
  * freed after use.
  *
  * @param device  device
  * @param port    A number describing the id/port of the stream to listen for.
- *                Think of it as a demultiplexing port number.
+ *                Think of it as a demultiplexing port number. port 0 creates
+ *                an ephemeral port.
  * @return Future which resolves once a new stream is available, or on error
  *
  * Future status:

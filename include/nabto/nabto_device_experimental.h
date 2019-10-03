@@ -9,16 +9,37 @@
 extern "C" {
 #endif
 
-/**
- * Recurring future
- */
+/*********************
+ * Event handler API *
+ *********************/
 
 typedef struct NabtoDeviceEventHandler_ NabtoDeviceEventHandler;
 
-void nabto_device_event_handler_free(NabtoDeviceEventHandler* eventHandler);
+/**
+ * Free an event handler, effectivly cancelling active listening on a
+ * resource
+ *
+ * @param eventHandler  Handler to be freed
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_event_handler_free(NabtoDeviceEventHandler* eventHandler);
 
-NabtoDeviceFuture* nabto_device_event_handler_create_future(NabtoDeviceEventHandler* eventHandler);
-
+// todo this returns error code and takes future ** as argument, do this all other places
+/**
+ * Create new future for event handler, called once ready to receive
+ * next event from event handler. (eg. with connection event listen
+ * handler: call this once ref and event arguments are ready to be
+ * overwritten by next event.)
+ *
+ * @param eventHandler   Handler to create future for
+ * @param future         The future resolved once the next event is available
+ * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if event handler already have a future
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *         NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_event_handler_create_future(NabtoDeviceEventHandler* eventHandler, NabtoDeviceFuture** future);
 
 /**
  * Set the server port.
