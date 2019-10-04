@@ -78,6 +78,7 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->streamManager = streamManager;
     ctx->pl = pl;
     ctx->currentExpiry = nabto_stream_stamp_infinite();
+    ctx->isSending = false;
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
     nabto_stream_set_application_event_callback(&ctx->stream, &nc_stream_application_event_callback, ctx);
@@ -210,6 +211,8 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         return;
     }
 
+    ctx->isSending = true;
+
     ctx->sendEventType = eventType;
 
     ctx->sendCtx.buffer = ctx->sendBuffer;
@@ -225,6 +228,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     size_t packetSize = nabto_stream_create_packet(&ctx->stream, ptr, NC_STREAM_SEND_BUFFER_SIZE+start-ptr, eventType);
     if (packetSize == 0) {
         // no packet to send
+        ctx->isSending = false;
         return;
     }
     ctx->sendCtx.bufferSize = ptr-start+packetSize;
