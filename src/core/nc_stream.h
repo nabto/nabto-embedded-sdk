@@ -17,22 +17,20 @@ struct nc_stream_manager_context;
 
 typedef void (*nc_stream_callback)(const np_error_code ec, void* userData);
 
+#define NC_STREAM_SEND_BUFFER_SIZE 1500
+
 struct nc_stream_context {
     struct np_platform* pl;
     struct nabto_stream stream;
     uint64_t streamId;
     struct np_dtls_srv_connection* dtls;
     struct nc_stream_manager_context* streamManager;
-    struct np_dtls_srv_send_context sendCtx;
     struct np_event ev;
     bool active;
 
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
     struct np_timed_event timer;
-
-    np_communication_buffer* sendBuffer;
-    uint16_t sendBufferSize;
 
     // user facing stream data
     nc_stream_callback acceptCb;
@@ -50,6 +48,11 @@ struct nc_stream_context {
     size_t writeBufferLength;
     nc_stream_callback closeCb;
     void* closeUserData;
+
+    bool isSending;
+    struct np_dtls_srv_send_context sendCtx;
+    uint8_t sendBuffer[NC_STREAM_SEND_BUFFER_SIZE];
+    enum nabto_stream_next_event_type sendEventType;
 };
 
 

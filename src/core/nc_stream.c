@@ -74,7 +74,6 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
 
     ctx->active = true;
     ctx->dtls = dtls;
-    ctx->sendBuffer = pl->buf.allocate();
     ctx->streamId = streamId;
     ctx->streamManager = streamManager;
     ctx->pl = pl;
@@ -88,8 +87,6 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
 {
     ctx->active = false;
     ctx->dtls = NULL;
-    ctx->pl->buf.free(ctx->sendBuffer);
-    ctx->sendBuffer = NULL;
     ctx->streamId = 0;
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
 }
@@ -119,7 +116,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
         case ET_DATA:
         case ET_RST:
             nc_stream_send_packet(ctx, eventType);
-            break;
+            return;
         case ET_TIMEOUT:
             nabto_stream_handle_timeout(&ctx->stream);
             break;
@@ -197,10 +194,10 @@ void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
 
 void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 {
-    struct np_dtls_srv_send_context* ctx = (struct np_dtls_srv_send_context*)data;
-    free(ctx->buffer);
-    free(ctx);
-    // TODO: possibly handle errors
+    struct nc_stream_context* ctx = data;
+    ctx->isSending = false;
+    nabto_stream_event_handled(&ctx->stream, ctx->sendEventType);
+    nc_stream_event(ctx);
 }
 
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType)
@@ -208,11 +205,16 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     if (ctx->dtls == NULL) {
         return;
     }
-    // TODO: Don't use malloc, get buffer from future buffer manager
-    struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
-    sendCtx->buffer = (uint8_t*)malloc(1500);
-    uint8_t* start = sendCtx->buffer;
-    //uint8_t* ptr = ctx->pl->buf.start(ctx->sendBuffer);
+
+    if (ctx->isSending) {
+        return;
+    }
+
+    ctx->sendEventType = eventType;
+
+    ctx->sendCtx.buffer = ctx->sendBuffer;
+
+    uint8_t* start = ctx->sendBuffer;
     uint8_t* ptr = start;
 
     *ptr = (uint8_t)AT_STREAM;
@@ -220,16 +222,16 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
 
     ptr = var_uint_write_forward(ptr, ctx->streamId);
 
-    size_t packetSize = nabto_stream_create_packet(&ctx->stream, ptr, 1500+start-ptr, eventType);
+    size_t packetSize = nabto_stream_create_packet(&ctx->stream, ptr, NC_STREAM_SEND_BUFFER_SIZE+start-ptr, eventType);
     if (packetSize == 0) {
         // no packet to send
         return;
     }
-    sendCtx->bufferSize = ptr-start+packetSize;
-    sendCtx->cb = &nc_stream_dtls_send_callback;
-    sendCtx->data = sendCtx;
-    sendCtx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, sendCtx);
+    ctx->sendCtx.bufferSize = ptr-start+packetSize;
+    ctx->sendCtx.cb = &nc_stream_dtls_send_callback;
+    ctx->sendCtx.data = ctx;
+    ctx->sendCtx.channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
+    ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, &ctx->sendCtx);
 }
 
 void nc_stream_event_queue_callback(void* data)
