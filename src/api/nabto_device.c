@@ -291,8 +291,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     return NABTO_DEVICE_EC_OK;
 }
 
-
-
 NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
 {
     *fingerprint = NULL;

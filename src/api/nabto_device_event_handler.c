@@ -3,6 +3,21 @@
 #include "nabto_api_future_queue.h"
 #include <stdlib.h>
 
+struct nabto_device_event {
+    struct nabto_device_event* next;
+    struct nabto_device_event* prev;
+    void* data;
+};
+
+struct nabto_device_event_handler {
+    struct nabto_device_context* dev;
+    struct nabto_device_event sentinel;
+    nabto_device_event_handler_resolve_event cb;
+    void* handlerData;
+    struct nabto_device_future* fut;
+    np_error_code ec;
+};
+
 void nabto_device_event_handler_resolve_error_state(struct nabto_device_event_handler* handler);
 void nabto_device_event_handler_try_resolve(struct nabto_device_event_handler* handler);
 void nabto_device_event_handler_pop_event(struct nabto_device_event_handler* handler, struct nabto_device_event* ev);
