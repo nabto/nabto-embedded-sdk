@@ -92,6 +92,7 @@ extern const NabtoDeviceError NABTO_DEVICE_EC_STRING_TOO_LONG;
 extern const NabtoDeviceError NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
 extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
 extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
+extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
 extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
 
 /**********************
@@ -503,7 +504,7 @@ nabto_device_coap_resource_listen(NabtoDeviceCoapResource* resource, NabtoDevice
  * constructed using a response.
  *
  * @param request  The request for which to create a response
- * @param code     The status code for the response in standard HTTP 
+ * @param code     The status code for the response in standard HTTP
  *                 status code format (eg. 200 for success)
  * @param message  zero terminated UTF8 string message
  * @return NABTO_DEVICE_EC_OK on success
@@ -520,7 +521,7 @@ nabto_device_coap_error_response(NabtoDeviceCoapRequest* request, uint16_t code,
  *
  * @param request  The COAP request assosiated with the response
  *
- * @return A representation of the created response. 
+ * @return A representation of the created response.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResponse* NABTO_DEVICE_API
 nabto_device_coap_create_response(NabtoDeviceCoapRequest* request);
