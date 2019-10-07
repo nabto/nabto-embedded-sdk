@@ -4,6 +4,7 @@
 #include <api/nabto_device_stream.h>
 #include <api/nabto_device_coap.h>
 #include <api/nabto_device_future.h>
+#include <api/nabto_device_event_handler.h>
 #include <api/nabto_api_future_queue.h>
 #include <api/nabto_platform.h>
 #include <api/nabto_device_coap.h>
@@ -290,7 +291,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     return NABTO_DEVICE_EC_OK;
 }
 
-
 NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
 {
     *fingerprint = NULL;
@@ -304,6 +304,76 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
+}
+
+/**
+ * Connection event listener
+ */
+
+struct nabto_device_listen_connection_event{
+    NabtoDeviceConnectionRef coreRef;
+    enum NabtoDeviceConnectionEvent coreEvent;
+};
+
+struct nabto_device_listen_connection_context {
+    struct nc_connection_events_listener listener;
+    struct nabto_device_context* dev;
+    struct nabto_device_event_handler* handler;
+    NabtoDeviceConnectionRef* userRef;
+    enum NabtoDeviceConnectionEvent* userEvent;
+};
+
+void nabto_device_listen_connection_event_handler_cb(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* handlerData)
+{
+    struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)handlerData;
+    if (ec == NABTO_EC_OK) {
+        struct nabto_device_listen_connection_event* ev = (struct nabto_device_listen_connection_event*)eventData;
+        nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+        *ctx->userRef = ev->coreRef;
+        *ctx->userEvent = ev->coreEvent;
+        free(ev);
+    } else if (ec == NABTO_EC_STOPPED) {
+        nc_device_remove_connection_events_listener(&ctx->dev->core, &ctx->listener);
+        free(ctx);
+    } else {
+        free(eventData);
+    }
+}
+
+void nabto_device_listen_connection_events_listener_cb(uint64_t connectionRef, enum nc_connection_event event, void* userData)
+{
+    struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)userData;
+    struct nabto_device_listen_connection_event* ev = (struct nabto_device_listen_connection_event*)calloc(1, sizeof(struct nabto_device_listen_connection_event));
+    if (ev == NULL) {
+        nabto_device_event_handler_set_error_code(ctx->handler, NABTO_EC_OUT_OF_MEMORY);
+        return;
+    }
+    ev->coreRef = connectionRef;
+    ev->coreEvent = event;
+    np_error_code ec = nabto_device_event_handler_add_event(ctx->handler, ev);
+    if (ec != NABTO_EC_OK) {
+        free(ev);
+    }
+}
+
+NabtoDeviceEventHandler* NABTO_DEVICE_API nabto_device_listen_connection_event(NabtoDevice* device, NabtoDeviceConnectionRef* ref, enum NabtoDeviceConnectionEvent* event)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)calloc(1, sizeof(struct nabto_device_listen_connection_context));
+    if (ctx == NULL) {
+        return NULL;
+    }
+    struct nabto_device_event_handler* handler = nabto_device_event_handler_new(dev, &nabto_device_listen_connection_event_handler_cb, ctx);
+    if (handler == NULL) {
+        free(ctx);
+        return NULL;
+    }
+    ctx->dev = dev;
+    ctx->handler = handler;
+    ctx->userRef = ref;
+    ctx->userEvent = event;
+    nc_device_add_connection_events_listener(&dev->core, &ctx->listener, &nabto_device_listen_connection_events_listener_cb, ctx);
+    return (NabtoDeviceEventHandler*)handler;
 }
 
 /**

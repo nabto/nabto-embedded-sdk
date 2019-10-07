@@ -7,6 +7,7 @@ set(nabto_device_src
   ${src_dir}/nabto_device_stream.c
   ${src_dir}/nabto_device_coap.c
   ${src_dir}/nabto_device_future.c
+  ${src_dir}/nabto_device_event_handler.c
   ${src_dir}/nabto_api_future_queue.c
   ${src_dir}/nabto_device_error.c
   ${src_dir}/nabto_device_util.c
@@ -40,8 +41,17 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
     )
 endif ()
 
-add_definitions(-DNABTO_DEVICE_CLIENT_API_EXPORTS)
-add_library( nabto_device SHARED "${nabto_device_src}")
+add_definitions(-DNABTO_DEVICE_API_EXPORTS)
+add_library( nabto_device_api "${nabto_device_src}")
+
+target_link_libraries( nabto_device_api
+  nm_dtls_cli
+  nc_core
+  )
+
+file(WRITE null.cpp "")
+add_library( nabto_device SHARED null.cpp)
+target_link_libraries( nabto_device nabto_device_api)
 
 target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
 
@@ -50,10 +60,8 @@ target_link_libraries( nabto_device
   nm_logging_api
   nm_unix_communication_buffer
   nm_timestamp
-  nm_dtls_cli
   nm_dtls_srv
   nm_dns
-  nc_core
   nm_mdns
   nm_tcptunnel
   )

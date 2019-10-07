@@ -17,10 +17,18 @@ set(test_src
   network/tcp_test.cpp
   network/udp_test.cpp
   platform/hex_test.cpp
+  api/event_handler_test.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")
-target_link_libraries(embedded_unit_test test_platform 3rdparty_boost_test 3rdparty_boost_asio common_util  nm_select_unix)
+target_link_libraries(embedded_unit_test
+  nabto_device_api
+  test_platform
+  3rdparty_boost_test
+  3rdparty_boost_asio
+  common_util
+  nm_select_unix
+)
 
 if (HAVE_EPOLL_HEADERS)
   target_link_libraries(embedded_unit_test nm_epoll)

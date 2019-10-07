@@ -30,6 +30,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* devi
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_stream_listener_context* listenerContext = calloc(1, sizeof(struct nabto_device_stream_listener_context));
+    // todo what if calloc fails
     listenerContext->device = dev;
     listenerContext->future = fut;
     listenerContext->stream = stream;
@@ -201,6 +202,7 @@ void nabto_device_stream_listener_callback(np_error_code ec, struct nc_stream_co
     NABTO_LOG_INFO(LOG, "stream_listener_callback with str->listenFut: %u", listenerContext->future);
 
     if (ec == NABTO_EC_OK) {
+        // TODO what if calloc fails
         struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
         str->stream = stream;
         str->dev = dev;

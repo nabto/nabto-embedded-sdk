@@ -38,7 +38,6 @@ set(test_runner_src
   )
 
 add_subdirectory(src/modules/communication_buffer)
-#add_subdirectory(src/modules/access_control)
 add_subdirectory(src/modules/dtls)
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)

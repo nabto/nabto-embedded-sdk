@@ -3,10 +3,18 @@
 
 #include <nabto/nabto_device.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nabto_device_future;
 
 void nabto_api_future_queue_execute_all(struct nabto_device_future** queue);
 
 void nabto_api_future_queue_post(struct nabto_device_future** head, struct nabto_device_future* future);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif // NABTO_API_FUTURE_QUEUE_H
