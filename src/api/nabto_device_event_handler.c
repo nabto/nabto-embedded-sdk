@@ -8,7 +8,8 @@ void nabto_device_event_handler_try_resolve(struct nabto_device_event_handler* h
 void nabto_device_event_handler_pop_event(struct nabto_device_event_handler* handler, struct nabto_device_event* ev);
 
 struct nabto_device_event_handler* nabto_device_event_handler_new(struct nabto_device_context* dev,
-                                                                  nabto_device_event_handler_resolve_event cb)
+                                                                  nabto_device_event_handler_resolve_event cb,
+                                                                  void* handlerData)
 {
     struct nabto_device_event_handler* handler = (struct nabto_device_event_handler*)calloc(1,sizeof(struct nabto_device_event_handler));
     if (handler == NULL) {
@@ -16,6 +17,7 @@ struct nabto_device_event_handler* nabto_device_event_handler_new(struct nabto_d
     }
     handler->dev = dev;
     handler->cb = cb;
+    handler->handlerData = handlerData;
     handler->sentinel.next = &handler->sentinel;
     handler->sentinel.prev = &handler->sentinel;
     handler->ec = NABTO_EC_OK;
@@ -49,6 +51,7 @@ void NABTO_DEVICE_API nabto_device_event_handler_free(NabtoDeviceEventHandler* e
     struct nabto_device_event_handler* handler = (struct nabto_device_event_handler*)eventHandler;
     handler->ec = NABTO_EC_ABORTED;
     nabto_device_event_handler_resolve_error_state(handler);
+    handler->cb(NABTO_EC_STOPPED, NULL, NULL, handler->handlerData);
     free(handler);
 }
 
@@ -67,10 +70,20 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_event_handler_create_future(Nabto
     return NABTO_DEVICE_EC_OK;
 }
 
+void nabto_device_event_handler_set_error_code(struct nabto_device_event_handler* handler, np_error_code ec)
+{
+    handler->ec = ec;
+    nabto_device_event_handler_resolve_error_state(handler);
+}
+
+
+/********************
+ * Helper Functions *
+ ********************/
 void nabto_device_event_handler_try_resolve(struct nabto_device_event_handler* handler)
 {
     if (handler->fut && handler->sentinel.next != &handler->sentinel) {
-        handler->cb(NABTO_EC_OK, handler->fut, handler->sentinel.next->data);
+        handler->cb(NABTO_EC_OK, handler->fut, handler->sentinel.next->data, handler->handlerData);
         nabto_api_future_queue_post(&handler->dev->queueHead, handler->fut);
         handler->fut = NULL;
         nabto_device_event_handler_pop_event(handler, handler->sentinel.next);
@@ -80,7 +93,7 @@ void nabto_device_event_handler_try_resolve(struct nabto_device_event_handler* h
 void nabto_device_event_handler_resolve_error_state(struct nabto_device_event_handler* handler)
 {
     while (handler->sentinel.next != &handler->sentinel) {
-        handler->cb(handler->ec, NULL, handler->sentinel.next->data);
+        handler->cb(handler->ec, NULL, handler->sentinel.next->data, handler->handlerData);
         nabto_device_event_handler_pop_event(handler, handler->sentinel.next);
     }
     if (handler->fut) {
