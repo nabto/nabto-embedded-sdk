@@ -137,6 +137,8 @@ class HeatPump {
 
     static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForIamChanges();
+    static void connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
+    void listenForConnectionEvents();
     void saveConfig();
 
     std::mutex mutex_;
@@ -145,6 +147,11 @@ class HeatPump {
     const std::string& configFile_;
     bool pairing_ = false;
     uint64_t currentIamVersion_;
+
+    NabtoDeviceEventHandler* connectionEventHandler_;
+    NabtoDeviceConnectionRef connectionRef_;
+    enum NabtoDeviceConnectionEvent connectionEvent_;
+
 };
 
 #endif

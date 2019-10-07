@@ -10,6 +10,7 @@
 
 void HeatPump::init() {
     listenForIamChanges();
+    listenForConnectionEvents();
 }
 
 bool validate_config(const json& config) {
@@ -96,4 +97,62 @@ void HeatPump::saveConfig()
     std::string tmpFile = "tmp.json";
     json_config_save(configFile_, config);
     std::cout << "Configuration saved to file" << std::endl;
+}
+
+void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
+{
+    NabtoDeviceFuture* future;
+    HeatPump* hp = (HeatPump*)userData;
+    nabto_device_future_free(fut);
+    if (err != NABTO_DEVICE_EC_OK) {
+        std::cout << "Connection event called back with error: " << err << std::endl;
+        nabto_device_event_handler_free(hp->connectionEventHandler_);
+        return;
+    } else {
+        if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
+            std::cout << "New connection opened with reference: " << hp->connectionRef_ << std::endl;
+        } else if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CLOSED) {
+            std::cout << "Connection with reference: " << hp->connectionRef_ << " was closed" << std::endl;
+        } else if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED) {
+            std::cout << "Connection with reference: " << hp->connectionRef_ << " changed channel" << std::endl;
+        } else {
+            std::cout << "Unknown connection event: " << hp->connectionEvent_ << " on connection reference: " << hp->connectionRef_ << std::endl;
+        }
+        NabtoDeviceError ec = nabto_device_event_handler_create_future(hp->connectionEventHandler_, &future);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
+            nabto_device_event_handler_free(hp->connectionEventHandler_);
+        }
+        ec = nabto_device_future_set_callback(future, &HeatPump::connectionEvent, hp);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            std::cerr << "Failed to set future callback with ec: " << ec << std::endl;
+            nabto_device_future_free(future);
+            nabto_device_event_handler_free(hp->connectionEventHandler_);
+            return;
+        }
+    }
+}
+
+void HeatPump::listenForConnectionEvents()
+{
+    NabtoDeviceFuture* future;
+    connectionEventHandler_ = nabto_device_listen_connection_event(device_, &connectionRef_, &connectionEvent_);
+    if (connectionEventHandler_ == NULL) {
+        std::cerr << "Failed to listen to connection events" << std::endl;
+        return;
+    }
+    NabtoDeviceError ec = nabto_device_event_handler_create_future(connectionEventHandler_, &future);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
+        nabto_device_event_handler_free(connectionEventHandler_);
+    }
+    ec = nabto_device_future_set_callback(future, &HeatPump::connectionEvent, this);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to set future callback with ec: " << ec << std::endl;
+        nabto_device_future_free(future);
+        nabto_device_event_handler_free(connectionEventHandler_);
+        return;
+    }
+
+
 }

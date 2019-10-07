@@ -313,23 +313,33 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
  */
 
 struct nabto_device_listen_connection_event{
-    NabtoDeviceConnectionRef* userRef;
-    enum NabtoDeviceConnectionEvent* userEvent;
     NabtoDeviceConnectionRef coreRef;
     enum NabtoDeviceConnectionEvent coreEvent;
 };
 
 struct nabto_device_listen_connection_context {
     struct nc_connection_events_listener listener;
+    struct nabto_device_context* dev;
     struct nabto_device_event_handler* handler;
     NabtoDeviceConnectionRef* userRef;
     enum NabtoDeviceConnectionEvent* userEvent;
-    bool running;
 };
 
 void nabto_device_listen_connection_event_handler_cb(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* handlerData)
 {
-    //todo handle
+    struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)handlerData;
+    if (ec == NABTO_EC_OK) {
+        struct nabto_device_listen_connection_event* ev = (struct nabto_device_listen_connection_event*)eventData;
+        nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+        *ctx->userRef = ev->coreRef;
+        *ctx->userEvent = ev->coreEvent;
+        free(ev);
+    } else if (ec == NABTO_EC_STOPPED) {
+        nc_device_remove_connection_events_listener(&ctx->dev->core, &ctx->listener);
+        free(ctx);
+    } else {
+        free(eventData);
+    }
 }
 
 void nabto_device_listen_connection_events_listener_cb(uint64_t connectionRef, enum nc_connection_event event, void* userData)
@@ -340,8 +350,6 @@ void nabto_device_listen_connection_events_listener_cb(uint64_t connectionRef, e
         nabto_device_event_handler_set_error_code(ctx->handler, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
-    ev->userRef = ctx->userRef;
-    ev->userEvent = ctx->userEvent;
     ev->coreRef = connectionRef;
     ev->coreEvent = event;
     np_error_code ec = nabto_device_event_handler_add_event(ctx->handler, ev);
@@ -362,8 +370,8 @@ NabtoDeviceEventHandler* NABTO_DEVICE_API nabto_device_listen_connection_event(N
         free(ctx);
         return NULL;
     }
+    ctx->dev = dev;
     ctx->handler = handler;
-    ctx->running = true;
     ctx->userRef = ref;
     ctx->userEvent = event;
     nc_device_add_connection_events_listener(&dev->core, &ctx->listener, &nabto_device_listen_connection_events_listener_cb, ctx);
