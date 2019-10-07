@@ -212,8 +212,6 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
-    NabtoDeviceFuture* fut = nabto_device_stream_listen(device, 42, &streamHandle);
-    nabto_device_future_set_callback(fut, newEchoStream, device);
     startListenForEchoStream(device);
 
     // Wait for the user to press Ctrl-C
@@ -252,7 +250,7 @@ void newEchoStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
     NabtoDevice* device = (NabtoDevice*)userData;
     NabtoDeviceFuture* acceptFuture = nabto_device_stream_accept(streamHandle);
 
-    nabto_device_future_set_callback(acceptFuture, streamAccepted, device);
+    nabto_device_future_set_callback(acceptFuture, streamAccepted, streamHandle);
 
     // listen for next stream
     startListenForEchoStream(device);
