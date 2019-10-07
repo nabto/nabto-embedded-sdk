@@ -140,6 +140,7 @@ class HeatPump {
     static void connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForConnectionEvents();
     void saveConfig();
+    void startWaitEvent();
 
     std::mutex mutex_;
     NabtoDevice* device_;
