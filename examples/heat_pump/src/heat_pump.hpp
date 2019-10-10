@@ -25,10 +25,10 @@ class HeatPumpCoapRequestHandler {
 
     static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
+        nabto_device_future_free(fut);
         if (ec != NABTO_DEVICE_EC_OK) {
             return;
         }
-        nabto_device_future_free(fut);
         HeatPumpCoapRequestHandler* handler = (HeatPumpCoapRequestHandler*)data;
         handler->handler_(handler->request_, handler->heatPump_);
         handler->startListen();
@@ -53,6 +53,12 @@ class HeatPump {
     }
 
     void init();
+
+    void deinit() {
+        if (connectionEventHandler_) {
+            nabto_device_event_handler_free(connectionEventHandler_);
+        }
+    }
 
     enum class Mode {
         COOL = 0,

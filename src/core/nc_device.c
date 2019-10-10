@@ -76,6 +76,11 @@ void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
 
 void nc_device_reattach(const np_error_code ec, void* data)
 {
+    if (ec != NABTO_EC_OK) {
+        // reattach probably cancelled due to stopping
+        // todo verify error handling
+        return;
+    }
     struct nc_device_context* dev = (struct nc_device_context*)data;
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
 }
@@ -86,6 +91,10 @@ void nc_device_detached_cb(const np_error_code ec, void* data)
     NABTO_LOG_INFO(LOG, "Device detached callback");
     if (!dev->stopping) {
         np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
+    } else {
+        nc_device_close_callback cb = dev->closeCb;
+        dev->closeCb = NULL;
+        cb(ec, dev->closeCbData);
     }
 }
 
@@ -116,6 +125,11 @@ void nc_device_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_
 }
 
 void nc_device_secondary_udp_created_cb(const np_error_code ec, void* data) {
+    if (ec != NABTO_EC_OK) {
+        // TODO how to fail properly
+        NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary UDP socket");
+        return;
+    }
     struct nc_device_context* dev = (struct nc_device_context*)data;
     nc_stun_init_config_and_sockets(&dev->stun, dev->stunHost, &dev->udp, &dev->secondaryUdp);
 
@@ -129,6 +143,12 @@ void nc_device_secondary_udp_created_cb(const np_error_code ec, void* data) {
 void nc_device_udp_created_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
+    if (ec != NABTO_EC_OK) {
+        // TODO how to fail properly
+        NABTO_LOG_ERROR(LOG, "nc_device failed to create primary UDP socket");
+        return;
+    }
+
     NABTO_LOG_TRACE(LOG, "nc_device_udp_created_cb");
 
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
@@ -181,10 +201,11 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     dev->closeCb = cb;
     dev->closeCbData = data;
     dev->stopping = true;
-    nc_attacher_detach(&dev->attacher);
+    np_event_queue_cancel_timed_event(dev->pl, &dev->tEv);
     if (dev->enableMdns) {
         dev->pl->mdns.stop(dev->mdns);
     }
+    nc_attacher_detach(&dev->attacher);
     return NABTO_EC_OK;
 }
 

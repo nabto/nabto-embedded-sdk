@@ -440,11 +440,9 @@ void* nabto_device_network_thread(void* data)
     while(true) {
         nfds = nabto_device_platform_inf_wait();
         nabto_device_threads_mutex_lock(dev->eventMutex);
-        if (nfds > 0) {
-            nabto_device_platform_read(nfds);
-        }
+        nabto_device_platform_read(nfds);
         nabto_device_threads_cond_signal(dev->eventCond);
-        if (dev->closing) {
+        if (dev->closing && nabto_device_platform_finished()) {
             nabto_device_threads_mutex_unlock(dev->eventMutex);
             return NULL;
         }

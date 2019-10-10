@@ -39,3 +39,7 @@ void nabto_device_platform_signal(struct np_platform* pl)
 {
     nm_epoll_break_wait(&epoll);
 }
+
+bool nabto_device_platform_finished() {
+    return nm_epoll_finished(&epoll);
+}

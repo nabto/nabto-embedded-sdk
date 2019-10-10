@@ -122,7 +122,6 @@ void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, voi
     nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
         std::cout << "Connection event called back with error: " << err << std::endl;
-        nabto_device_event_handler_free(hp->connectionEventHandler_);
         return;
     } else {
         if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {

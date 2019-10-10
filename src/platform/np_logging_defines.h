@@ -26,6 +26,7 @@
 #define NABTO_LOG_MODULE_TCP                     0x00040000ul
 #define NABTO_LOG_MODULE_NETWORK                 0x00080000ul
 #define NABTO_LOG_MODULE_TUNNEL                  0x00100000ul
+#define NABTO_LOG_MODULE_MDNS                    0x00200000ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                  0x00000000ul

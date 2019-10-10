@@ -99,12 +99,12 @@ void nc_attacher_keep_alive_event(const np_error_code ec, void* data)
 
     uint32_t recvCount;
     uint32_t sentCount;
-    pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
 
     if (ec != NABTO_EC_OK) {
         // event probably cancelled
         return;
     } else {
+        pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
         enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
         switch(action) {
             case DO_NOTHING:

@@ -17,6 +17,9 @@ void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
     memset(epoll, 0, sizeof(struct nm_epoll_context));
     epoll->pl = pl;
     epoll->fd = epoll_create(42 /*unused*/);
+    epoll->closeSentinel = &epoll->closeSentinelData;
+    epoll->closeSentinel->next = epoll->closeSentinel;
+    epoll->closeSentinel->prev = epoll->closeSentinel;
     if(pipe(epoll->pipeFd) == -1) {
         NABTO_LOG_ERROR(LOG, "Failed to create pipe file descriptors");
     }
@@ -93,4 +96,59 @@ void nm_epoll_read(struct nm_epoll_context* epoll, int nfds)
             }
         }
     }
+    struct nm_epoll_base* iterator = epoll->closeSentinel->next;
+    while (iterator != epoll->closeSentinel) {
+        struct nm_epoll_base* current = iterator;
+        iterator = iterator->next;
+        if (current->type == NM_EPOLL_TYPE_UDP) {
+            current->prev->next = current->next;
+            current->next->prev = current->prev;
+            nm_epoll_udp_free(current);
+        } else if (current->type == NM_EPOLL_TYPE_TCP) {
+            // TODO tcp
+            current->prev->next = current->next;
+            current->next->prev = current->prev;
+            //nm_epoll_tcp_free(current);
+        }
+    }
+}
+
+bool nm_epoll_finished(struct nm_epoll_context* epoll)
+{
+    if (epoll->openUdpSockets > 0 || epoll->openTcpSockets > 0 ) {
+        NABTO_LOG_TRACE(LOG, "Epoll not finished, UDP: %u, TCP: %u", epoll->openUdpSockets, epoll->openTcpSockets);
+        return false;
+    } else {
+        return true;
+    }
+}
+
+void nm_epoll_add_udp_socket(struct nm_epoll_context* epoll)
+{
+    epoll->openUdpSockets++;
+}
+
+void nm_epoll_add_tcp_socket(struct nm_epoll_context* epoll)
+{
+    epoll->openTcpSockets++;
+}
+
+void nm_epoll_remove_udp_socket(struct nm_epoll_context* epoll)
+{
+    epoll->openUdpSockets--;
+}
+
+void nm_epoll_remove_tcp_socket(struct nm_epoll_context* epoll)
+{
+    epoll->openTcpSockets--;
+}
+
+void nm_epoll_close_socket(struct nm_epoll_context* epoll, struct nm_epoll_base* base)
+{
+    struct nm_epoll_base* before = epoll->closeSentinel->prev;
+    struct nm_epoll_base* after = epoll->closeSentinel;
+    after->prev = base;
+    before->next = base;
+    base->next = after;
+    base->prev = before;
 }

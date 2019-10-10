@@ -37,6 +37,8 @@ struct nm_tcp_connect_context {
 
 struct np_tcp_socket {
     enum nm_epoll_type type;
+    struct nm_epoll_base* next;
+    struct nm_epoll_base* prev;
     struct nm_epoll_context* epoll;
     struct np_platform* pl;
     int fd;

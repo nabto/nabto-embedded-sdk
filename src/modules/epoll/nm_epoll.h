@@ -19,6 +19,8 @@ enum nm_epoll_type {
 
 struct nm_epoll_base {
     enum nm_epoll_type type;
+    struct nm_epoll_base* next;
+    struct nm_epoll_base* prev;
 };
 
 struct nm_epoll_context {
@@ -27,6 +29,10 @@ struct nm_epoll_context {
     np_communication_buffer* recvBuffer;
     struct epoll_event events[NM_EPOLL_EVENTS_SIZE];
     int pipeFd[2];
+    size_t openUdpSockets;
+    size_t openTcpSockets;
+    struct nm_epoll_base closeSentinelData;
+    struct nm_epoll_base* closeSentinel;
 };
 
 void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl);
@@ -37,6 +43,12 @@ int nm_epoll_timed_wait(struct nm_epoll_context* epoll, uint32_t ms);
 int nm_epoll_inf_wait(struct nm_epoll_context* epoll);
 
 void nm_epoll_read(struct nm_epoll_context* epoll, int nfds);
+void nm_epoll_close_socket(struct nm_epoll_context* epoll, struct nm_epoll_base* base);
+bool nm_epoll_finished(struct nm_epoll_context* epoll);
+void nm_epoll_add_udp_socket(struct nm_epoll_context* epoll);
+void nm_epoll_add_tcp_socket(struct nm_epoll_context* epoll);
+void nm_epoll_remove_udp_socket(struct nm_epoll_context* epoll);
+void nm_epoll_remove_tcp_socket(struct nm_epoll_context* epoll);
 
 #ifdef __cplusplus
 } //extern "C"

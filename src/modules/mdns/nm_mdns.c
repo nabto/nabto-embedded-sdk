@@ -2,6 +2,8 @@
 #include <platform/np_logging.h>
 #include <stdlib.h>
 
+#define LOG NABTO_LOG_MODULE_MDNS
+
 struct np_mdns_context {
     struct np_platform* pl;
     bool stopped;
@@ -74,20 +76,22 @@ void nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* pl, const
 
 void nm_mdns_stop(struct np_mdns_context* mdns)
 {
-    if (mdns->stopped) {
-        return;
-    }
     struct np_platform* pl = mdns->pl;
     mdns->stopped = true;
-
     pl->udp.destroy(mdns->socketv4);
     pl->udp.destroy(mdns->socketv6);
+
+    // UDP module should resolve all callback on destroy, so it should be okay to clean up here
     pl->buf.free(mdns->sendBufferv4);
     pl->buf.free(mdns->sendBufferv6);
+    free(mdns);
 }
 
 void nm_mdns_start(struct np_mdns_context* mdns)
 {
+    if (mdns->stopped) {
+        return;
+    }
     struct np_platform* pl = mdns->pl;
     if (pl->udp.async_bind_mdns_ipv4 != NULL) {
         pl->udp.async_bind_mdns_ipv4(mdns->socketv4, nm_mdns_socket_opened_v4, mdns);
@@ -100,8 +104,16 @@ void nm_mdns_start(struct np_mdns_context* mdns)
 void nm_mdns_socket_opened_v4(const np_error_code ec, void* userData)
 {
     struct np_mdns_context* mdns = userData;
-    nm_mdns_recv_packet_v4(mdns);
-    nm_mdns_send_packet_v4(mdns);
+    if (mdns->stopped) {
+        return;
+    }
+    if (ec == NABTO_EC_OK) {
+        // dont start receiving untill send callback returns to ensure send buffer is not overwritten
+        nm_mdns_send_packet_v4(mdns);
+    } else {
+        // todo how to fail?
+        NABTO_LOG_TRACE(LOG, "V4 socket open failed with (%u) %s", ec, np_error_code_to_string(ec));
+    }
 }
 
 void nm_mdns_recv_packet_v4(struct np_mdns_context* mdns)
@@ -118,14 +130,23 @@ void nm_mdns_packet_received_v4(const np_error_code ec, struct np_udp_endpoint e
 {
     struct np_mdns_context* mdns = userData;
     if (ec == NABTO_EC_OK) {
+        if (mdns->stopped) {
+            return;
+        }
         if (nabto_mdns_server_handle_packet(&mdns->mdnsServer,
                                             buffer, bufferSize))
         {
             nm_mdns_send_packet_v4(mdns);
+            // next receive is started by send
             return;
         }
+        nm_mdns_recv_packet_v4(mdns);
+    } else {
+        // TODO: consider if log message is enough to make the user aware of failures.
+        // On socket error we stop receiving, clean up will be done when stopped.
+        NABTO_LOG_TRACE(LOG, "UDP V4 receive callback with error code: (%i) %s", ec, np_error_code_to_string(ec));
+//        mdns->stopped = true;
     }
-    nm_mdns_recv_packet_v4(mdns);
 }
 
 void nm_mdns_send_packet_v4(struct np_mdns_context* mdns)
@@ -144,7 +165,7 @@ void nm_mdns_send_packet_v4(struct np_mdns_context* mdns)
                                          ep, pl->buf.start(mdns->sendBufferv4), (uint16_t)written,
                                          nm_mdns_packet_sent_v4, mdns);
             pl->udp.async_send_to(&mdns->sendContextv4);
-            // the send handler starts a new recv in this case
+            // the send callback starts a new recv to ensure send buffer is not overwritten
             return;
         }
     }
@@ -154,14 +175,28 @@ void nm_mdns_send_packet_v4(struct np_mdns_context* mdns)
 void nm_mdns_packet_sent_v4(const np_error_code ec, void* userData)
 {
     struct np_mdns_context* mdns = userData;
-    nm_mdns_recv_packet_v4(mdns);
+    if (ec == NABTO_EC_OK) {
+        if (mdns->stopped) {
+            return;
+        }
+        nm_mdns_recv_packet_v4(mdns);
+    } else {
+        NABTO_LOG_TRACE(LOG, "v4 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
+    }
 }
 
 void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData)
 {
     struct np_mdns_context* mdns = userData;
-    nm_mdns_recv_packet_v6(mdns);
-    nm_mdns_send_packet_v6(mdns);
+    if (mdns->stopped) {
+        return;
+    }
+    if (ec == NABTO_EC_OK) {
+        // dont start receiving untill send callback returns to ensure send buffer is not overwritten
+        nm_mdns_send_packet_v6(mdns);
+    } else {
+        NABTO_LOG_TRACE(LOG, "V6 socket open failed with (%u) %s", ec, np_error_code_to_string(ec));
+    }
 }
 
 void nm_mdns_recv_packet_v6(struct np_mdns_context* mdns)
@@ -178,14 +213,23 @@ void nm_mdns_packet_received_v6(const np_error_code ec, struct np_udp_endpoint e
 {
     struct np_mdns_context* mdns = userData;
     if (ec == NABTO_EC_OK) {
+        if (mdns->stopped) {
+            return;
+        }
         if (nabto_mdns_server_handle_packet(&mdns->mdnsServer,
                                             buffer, bufferSize))
         {
             nm_mdns_send_packet_v6(mdns);
+            // next receive is started by send
             return;
         }
+        nm_mdns_recv_packet_v6(mdns);
+    } else {
+        // TODO: consider if log message is enough to make the user aware of failures.
+        // On socket error we stop receiving, clean up will be done when stopped.
+        NABTO_LOG_TRACE(LOG, "UDP V6 receive callback with error code: (%i) %s", ec, np_error_code_to_string(ec));
+        //mdns->stopped = true;
     }
-    nm_mdns_recv_packet_v6(mdns);
 }
 
 void nm_mdns_send_packet_v6(struct np_mdns_context* mdns)
@@ -216,5 +260,9 @@ void nm_mdns_send_packet_v6(struct np_mdns_context* mdns)
 void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData)
 {
     struct np_mdns_context* mdns = userData;
-    nm_mdns_recv_packet_v6(mdns);
+    if (ec == NABTO_EC_OK) {
+        nm_mdns_recv_packet_v6(mdns);
+    } else {
+        NABTO_LOG_TRACE(LOG, "v6 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
+    }
 }
