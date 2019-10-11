@@ -324,6 +324,10 @@ void nm_dtls_srv_do_one(void* data)
                    ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             // OK
+        } else if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+            // expected to happen on a connection,
+            ctx->ctx.state = CLOSING;
+            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
         } else {
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
             ctx->ctx.state = CLOSING;

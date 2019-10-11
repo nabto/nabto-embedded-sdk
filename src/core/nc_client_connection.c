@@ -63,6 +63,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
     ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
+    NABTO_LOG_INFO(LOG, "Connection with reference: %" PRIu64 " created.", conn->connectionRef);
     return ec;
 }
 
@@ -78,7 +79,6 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
         (start[0] == NABTO_PROTOCOL_PREFIX_RENDEZVOUS &&
          start[16] == CT_RENDEZVOUS_CLIENT_REQUEST))
     {
-        NABTO_LOG_INFO(LOG, "handle packet with rendezvous prefix");
         uint8_t connectionId[14];
         memcpy(connectionId, conn->id.id+1, 14);
         nc_rendezvous_handle_client_request(conn->rendezvous, ep, connectionId);
@@ -112,6 +112,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
     struct np_platform* pl = conn->pl;
+    NABTO_LOG_INFO(LOG, "Connection with reference: %" PRIu64 " closed.", conn->connectionRef);
     nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_CLOSED);
     nc_keep_alive_deinit(&conn->keepAlive);
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);

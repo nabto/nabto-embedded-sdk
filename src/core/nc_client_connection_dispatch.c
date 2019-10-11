@@ -57,7 +57,6 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
     // 1 = client hello on position x maybe ~14
     // the first 16 bytes is the connection header
     if (buffer[16] == 22) {
-        NABTO_LOG_INFO(LOG, "Found packet for new connection");
         for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
             if(!ctx->elms[i].active) {
                 np_error_code ec = nc_client_connection_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->device, sock, ep, buffer, bufferSize);
