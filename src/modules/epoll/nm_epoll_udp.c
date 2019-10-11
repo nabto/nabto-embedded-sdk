@@ -352,7 +352,7 @@ void nm_epoll_event_bind_port(void* data)
         si_me6.sin6_port = htons(us->created.port);
         si_me6.sin6_addr = in6addr_any;
         i = bind(us->sock, (struct sockaddr*)&si_me6, sizeof(si_me6));
-        NABTO_LOG_INFO(LOG, "bind returned %i", i);
+        NABTO_LOG_TRACE(LOG, "bind returned %i", i);
     } else {
         struct sockaddr_in si_me;
         memset(&si_me, 0, sizeof(si_me));
@@ -360,7 +360,7 @@ void nm_epoll_event_bind_port(void* data)
         si_me.sin_port = htons(us->created.port);
         si_me.sin_addr.s_addr = INADDR_ANY;
         i = bind(us->sock, (struct sockaddr*)&si_me, sizeof(si_me));
-        NABTO_LOG_INFO(LOG, "bind returned %i", i);
+        NABTO_LOG_TRACE(LOG, "bind returned %i", i);
     }
     if (i != 0) {
         np_error_code ec;

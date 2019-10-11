@@ -298,7 +298,7 @@ void nm_dtls_srv_do_one(void* data)
         {
             // keep state as CONNECTING
         } else if (ret == 0) {
-            NABTO_LOG_INFO(LOG, "State changed to DATA");
+            NABTO_LOG_TRACE(LOG, "State changed to DATA");
 
             ctx->ctx.state = DATA;
             deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE);

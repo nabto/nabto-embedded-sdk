@@ -36,7 +36,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
 {
     struct nc_stun_coap_context* ctx = (struct nc_stun_coap_context*)data;
     uint8_t buffer[128];
-    NABTO_LOG_INFO(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
+    NABTO_LOG_TRACE(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
 
     struct nabto_coap_server_response* response = nabto_coap_server_create_response(ctx->stunRequest);
 

@@ -92,7 +92,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
 {
     int i;
     bool found = false;
-    NABTO_LOG_INFO(LOG, "Starting STUN analysis");
+    NABTO_LOG_TRACE(LOG, "Starting STUN analysis");
     for (i = 0; i < NC_STUN_MAX_CALLBACKS; i++) {
         if (ctx->cbs[i].cb == NULL) {
             ctx->cbs[i].cb = cb;

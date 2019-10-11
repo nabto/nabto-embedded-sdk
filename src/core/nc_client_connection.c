@@ -63,7 +63,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
     ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
-    NABTO_LOG_INFO(LOG, "Connection with reference: %" PRIu64 " created.", conn->connectionRef);
+    NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" PRIu64 " created.", conn->connectionRef);
     return ec;
 }
 
@@ -112,7 +112,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
     struct np_platform* pl = conn->pl;
-    NABTO_LOG_INFO(LOG, "Connection with reference: %" PRIu64 " closed.", conn->connectionRef);
+    NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" PRIu64 " closed.", conn->connectionRef);
     nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_CLOSED);
     nc_keep_alive_deinit(&conn->keepAlive);
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);

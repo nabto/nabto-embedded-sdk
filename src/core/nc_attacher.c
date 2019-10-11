@@ -414,7 +414,7 @@ void coap_response_failed(struct nc_attach_context* ctx)
 
 void nc_attacher_coap_request_handler2(struct nabto_coap_client_request* request, void* data)
 {
-    NABTO_LOG_INFO(LOG, "Received CoAP response");
+    NABTO_LOG_TRACE(LOG, "Received basestation CoAP attach response");
     const uint8_t* start;
     size_t bufferSize;
 

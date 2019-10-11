@@ -279,7 +279,7 @@ void nm_dtls_event_do_one(void* data)
                 np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
                 return;
             }
-            NABTO_LOG_INFO(LOG, "State changed to DATA");
+            NABTO_LOG_TRACE(LOG, "State changed to DATA");
             ctx->ctx.state = DATA;
             ctx->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, ctx->senderData);
         }
@@ -289,7 +289,7 @@ void nm_dtls_event_do_one(void* data)
         if (ret == 0) {
             // EOF
             ctx->ctx.state = CLOSING;
-            NABTO_LOG_INFO(LOG, "Received EOF, state = CLOSING");
+            NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             uint64_t seq = *((uint64_t*)ctx->ctx.ssl.in_ctr);
             ctx->ctx.recvCount++;
@@ -304,7 +304,7 @@ void nm_dtls_event_do_one(void* data)
 #if defined(MBEDTLS_ERROR_C)
             char buf[128];
             mbedtls_strerror(ret, buf, 128);
-            NABTO_LOG_INFO(LOG, "Received ERROR -0x%04x : %s ", -ret, buf);
+            NABTO_LOG_TRACE(LOG, "Received ERROR -0x%04x : %s ", -ret, buf);
 #endif
             ctx->ctx.state = CLOSING;
             nm_dtls_do_close(ctx, NABTO_EC_FAILED);
