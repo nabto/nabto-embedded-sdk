@@ -25,7 +25,6 @@ struct np_ipv6_address {
 
 struct np_ip_address {
     enum np_ip_address_type type;
-    // TODO anonymous unions is not c89 or c99
     union {
         uint8_t v4[4];
         uint8_t v6[16];

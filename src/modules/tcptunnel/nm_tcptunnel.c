@@ -169,10 +169,3 @@ void nm_tcptunnel_remove_connection(struct nm_tcptunnel_connection* connection)
     connection->next = NULL;
     connection->prev = NULL;
 }
-
-
-/**
- * TODO
- *
- * Remove tunnels for a connection when the connection dies.
- */
