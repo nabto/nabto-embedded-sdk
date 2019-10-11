@@ -99,7 +99,7 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
             nabto_device_coap_error_response(request, 500, "Server error");
             return;
         }
-        std::cout << "Added the fingerprint " << fingerprint << " to the DefaultUser" << std::endl;
+        std::cout << "Added the fingerprint " << fp << " to the DefaultUser" << std::endl;
         // OK response
         NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
         nabto_device_coap_response_set_code(response, 205);

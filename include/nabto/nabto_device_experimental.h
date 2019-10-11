@@ -55,14 +55,14 @@ nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
 
-enum NabtoDeviceConnectionEvent {
-    NABTO_DEVICE_CONNECTION_EVENT_OPENED,
-    NABTO_DEVICE_CONNECTION_EVENT_CLOSED,
-    NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED
-};
+typedef int NabtoDeviceConnectionEvent;
+
+extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
+extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
+extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceEventHandler* NABTO_DEVICE_API
-nabto_device_listen_connection_event(NabtoDevice* device, NabtoDeviceConnectionRef* ref, enum NabtoDeviceConnectionEvent* event);
+nabto_device_listen_connection_event(NabtoDevice* device, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
 
 /********
  * Util *

@@ -18,6 +18,7 @@ void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_con
     }
     ctx->device = dev;
     ctx->pl = pl;
+    ctx->closing = false;
 }
 
 void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_context* ctx)
@@ -25,9 +26,44 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
     int i = 0;
     for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
         if (ctx->elms[i].active) {
-            nc_client_connection_close_connection(&ctx->elms[i].conn);
+            nc_client_connection_destroy_connection(&ctx->elms[i].conn);
             ctx->elms[i].active = false;
         }
+    }
+}
+
+void nc_client_connection_dispatch_try_close(struct nc_client_connection_dispatch_context* ctx)
+{
+    bool allClosed = true;
+    int i = 0;
+    for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
+        if (ctx->elms[i].active) {
+            allClosed = false;
+            break;
+        }
+    }
+    if (allClosed && ctx->closeCb) {
+        ctx->closeCb(ctx->closeData);
+    }
+}
+
+np_error_code nc_client_connection_dispatch_async_close(struct nc_client_connection_dispatch_context* ctx, nc_client_connection_dispatch_close_callback cb, void* data)
+{
+    ctx->closing = true;
+    bool hasActive = false;
+    int i = 0;
+    for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
+        if (ctx->elms[i].active) {
+            nc_client_connection_close_connection(&ctx->elms[i].conn);
+            hasActive = true;
+        }
+    }
+    if (!hasActive) {
+        return NABTO_EC_STOPPED;
+    } else {
+        ctx->closeCb = cb;
+        ctx->closeData = data;
+        return NABTO_EC_OK;
     }
 }
 
@@ -77,6 +113,9 @@ np_error_code nc_client_connection_dispatch_close_connection(struct nc_client_co
         if (conn == &ctx->elms[i].conn) {
             ctx->elms[i].active = false;
         }
+    }
+    if (ctx->closing) {
+        nc_client_connection_dispatch_try_close(ctx);
     }
     return NABTO_EC_OK;
 }

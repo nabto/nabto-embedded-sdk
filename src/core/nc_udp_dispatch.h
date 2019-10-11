@@ -31,9 +31,6 @@ void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx);
 void nc_udp_dispatch_async_create(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
                                   nc_udp_dispatch_create_callback cb, void* data);
 
-void nc_udp_dispatch_async_destroy(struct nc_udp_dispatch_context* ctx,
-                                   nc_udp_dispatch_destroy_callback cb, void* data);
-
 void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx,
                                    struct np_udp_send_context* sender, struct np_udp_endpoint* ep,
                                    uint8_t* buffer, uint16_t bufferSize,

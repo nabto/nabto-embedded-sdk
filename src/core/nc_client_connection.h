@@ -66,6 +66,8 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 
 void nc_client_connection_close_connection(struct nc_client_connection* conn);
 
+void nc_client_connection_destroy_connection(struct nc_client_connection* conn);
+
 void nc_client_connection_dtls_recv_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
                                           uint8_t* buffer, uint16_t bufferSize, void* data);
 

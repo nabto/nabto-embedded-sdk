@@ -45,8 +45,6 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_coap_server_deinit(&device->coapServer);
     nc_iam_deinit(&device->iam);
     pl->dtlsS.destroy(device->dtlsServer);
-    nc_udp_dispatch_deinit(&device->udp);
-    nc_udp_dispatch_deinit(&device->secondaryUdp);
 }
 
 uint16_t nc_device_mdns_get_port(void* userData)
@@ -62,15 +60,18 @@ void nc_device_set_keys(struct nc_device_context* device, const unsigned char* p
     pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
-void nc_device_udp_destroyed_cb(const np_error_code ec, void* data)
+void nc_device_try_resolve_close(struct nc_device_context* dev)
 {
-    struct nc_device_context* dev = (struct nc_device_context*)data;
-    NABTO_LOG_INFO(LOG, "UDP dispatcher destroyed");
-    if (dev->closeCb) {
-        nc_device_close_callback cb = dev->closeCb;
-        dev->closeCb = NULL;
-        cb(ec, dev->closeCbData);
-        return;
+    if (dev->clientConnsClosed && dev->isDetached) {
+        np_event_queue_cancel_event(dev->pl, &dev->closeEvent);
+        nc_udp_dispatch_deinit(&dev->udp);
+        nc_udp_dispatch_deinit(&dev->secondaryUdp);
+        if (dev->closeCb) {
+            nc_device_close_callback cb = dev->closeCb;
+            dev->closeCb = NULL;
+            cb(NABTO_EC_OK, dev->closeCbData);
+            return;
+        }
     }
 }
 
@@ -89,12 +90,14 @@ void nc_device_detached_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     NABTO_LOG_INFO(LOG, "Device detached callback");
+    dev->isDetached = true;
     if (!dev->stopping) {
         np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
     } else {
-        nc_device_close_callback cb = dev->closeCb;
-        dev->closeCb = NULL;
-        cb(ec, dev->closeCbData);
+        nc_device_try_resolve_close(dev);
+        /* nc_device_close_callback cb = dev->closeCb; */
+        /* dev->closeCb = NULL; */
+        /* cb(ec, dev->closeCbData); */
     }
 }
 
@@ -103,6 +106,7 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
     struct nc_device_context* dev = (struct nc_device_context*)data;
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "Device is now attached");
+        dev->isDetached = false;
         dev->attachAttempts = 0;
         // wait for detach or quit.
         np_error_code ec2;
@@ -112,6 +116,7 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
         }
     } else {
         NABTO_LOG_INFO(LOG, "Device failed to attached");
+        dev->isDetached = true;
        if (!dev->stopping) {
            NABTO_LOG_TRACE(LOG, "Not stopping, trying to reattach");
            np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
@@ -171,6 +176,8 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->stopping = false;
+    dev->isDetached = true;
+    dev->clientConnsClosed = false;
     dev->enableMdns = enableMdns;
     dev->stunHost = stunHost;
     dev->productId = productId;
@@ -196,16 +203,40 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     return NABTO_EC_OK;
 }
 
+void nc_device_client_connections_closed_cb(void* data)
+{
+    struct nc_device_context* dev = (struct nc_device_context*)data;
+    dev->clientConnsClosed = true;
+    nc_device_try_resolve_close(dev);
+}
+
+void nc_device_event_close(void* data) {
+    struct nc_device_context* dev = (struct nc_device_context*)data;
+    nc_device_try_resolve_close(dev);
+}
+
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)
 {
     dev->closeCb = cb;
     dev->closeCbData = data;
     dev->stopping = true;
+    dev->clientConnsClosed = false;
+    np_error_code ec = nc_client_connection_dispatch_async_close(&dev->clientConnect, &nc_device_client_connections_closed_cb, dev);
+    if (ec == NABTO_EC_STOPPED) {
+        dev->clientConnsClosed = true;
+    }
+    nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
+    nc_stun_deinit_sockets(&dev->stun);
     np_event_queue_cancel_timed_event(dev->pl, &dev->tEv);
     if (dev->enableMdns) {
         dev->pl->mdns.stop(dev->mdns);
     }
-    nc_attacher_detach(&dev->attacher);
+    if (dev->isDetached) {
+        // async try_resolv_close
+        np_event_queue_post(dev->pl, &dev->closeEvent, &nc_device_event_close, dev);
+    } else {
+        nc_attacher_detach(&dev->attacher);
+    }
     return NABTO_EC_OK;
 }
 

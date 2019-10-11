@@ -35,6 +35,7 @@ void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
 void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx);
 
 void nc_rendezvous_set_udp_dispatch(struct nc_rendezvous_context* ctx, struct nc_udp_dispatch_context* udpDispatch);
+void nc_rendezvous_remove_udp_dispatch(struct nc_rendezvous_context* ctx);
 
 void nc_rendezvous_handle_client_request(struct nc_rendezvous_context* ctx,
                                          np_udp_endpoint ep,

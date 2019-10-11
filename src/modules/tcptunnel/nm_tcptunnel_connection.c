@@ -102,12 +102,11 @@ void nm_tcptunnel_connection_stop_from_manager(struct nm_tcptunnel_connection* c
 {
     // Reset the tunnel reference as the tunnel manager has removed
     // the tunnel from its list of tunnels.
-    struct np_platform* pl = connection->pl;
     // This will stop all async operations. That will lead to an error
     // or clean stop and the tunnel is going to be stopped and cleaned
     // up.
-    pl->tcp.close(connection->socket);
-    nc_stream_abort(connection->stream);
+    abort_connection(connection);
+//    nm_tcptunnel_connection_free(connection);
 }
 
 
@@ -188,7 +187,9 @@ void stream_written(np_error_code ec, void* userData)
         // need to fail the connection since we cannot guarantee the
         // data was delivered.
         connection->tcpReadEnded = true;
-        return abort_connection(connection);
+        abort_connection(connection);
+        is_ended(connection);
+        return;
     }
     start_tcp_read(connection);
 }
@@ -208,7 +209,9 @@ void stream_readen(np_error_code ec, void* userData)
     if (ec) {
         NABTO_LOG_ERROR(LOG, "tcp tunnel, stream read failed stopping the tcp tunnel connection");
         connection->streamReadEnded = true;
-        return abort_connection(connection);
+        abort_connection(connection);
+        is_ended(connection);
+        return;
     }
 
     start_tcp_write(connection, connection->streamReadSize);
@@ -236,7 +239,9 @@ void tcp_written(np_error_code ec, void* userData)
         NABTO_LOG_ERROR(LOG, "Could not write all the data to the tcp connection, closing the tcp tunnel connection");
         // unrecoverable error
         connection->streamReadEnded = true;
-        return abort_connection(connection);
+        abort_connection(connection);
+        is_ended(connection);
+        return;
     }
     start_stream_read(connection);
 }
@@ -246,7 +251,10 @@ void abort_connection(struct nm_tcptunnel_connection* connection)
     // close stream and tcp and end it all.
     struct np_platform* pl = connection->pl;
     pl->tcp.close(connection->socket);
-    nc_stream_abort(connection->stream);
+    if (connection->stream) {
+        nc_stream_abort(connection->stream);
+        connection->stream = NULL;
+    }
 }
 
 void is_ended(struct nm_tcptunnel_connection* connection)

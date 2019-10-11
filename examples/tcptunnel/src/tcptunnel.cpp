@@ -26,6 +26,58 @@ void TcpTunnel::listenForIamChanges()
     nabto_device_future_set_callback(future, TcpTunnel::iamChanged, this);
 }
 
+
+void TcpTunnel::startWaitEvent()
+{
+    NabtoDeviceFuture* future;
+    NabtoDeviceError ec = nabto_device_event_handler_create_future(connectionEventHandler_, &future);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
+        nabto_device_event_handler_free(connectionEventHandler_);
+        connectionEventHandler_ = NULL;
+    }
+    ec = nabto_device_future_set_callback(future, &TcpTunnel::connectionEvent, this);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to set future callback with ec: " << ec << std::endl;
+        nabto_device_future_free(future);
+        nabto_device_event_handler_free(connectionEventHandler_);
+        connectionEventHandler_ = NULL;
+        return;
+    }
+}
+
+void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
+{
+    TcpTunnel* tt = (TcpTunnel*)userData;
+    nabto_device_future_free(fut);
+    if (err != NABTO_DEVICE_EC_OK) {
+        std::cout << "Connection event called back with error: " << err << std::endl;
+        return;
+    } else {
+        if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
+            std::cout << "New connection opened with reference: " << tt->connectionRef_ << std::endl;
+        } else if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CLOSED) {
+            std::cout << "Connection with reference: " << tt->connectionRef_ << " was closed" << std::endl;
+        } else if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED) {
+            std::cout << "Connection with reference: " << tt->connectionRef_ << " changed channel" << std::endl;
+        } else {
+            std::cout << "Unknown connection event: " << tt->connectionEvent_ << " on connection reference: " << tt->connectionRef_ << std::endl;
+        }
+    }
+    tt->startWaitEvent();
+
+}
+
+void TcpTunnel::listenForConnectionEvents()
+{
+    connectionEventHandler_ = nabto_device_listen_connection_event(device_, &connectionRef_, &connectionEvent_);
+    if (connectionEventHandler_ == NULL) {
+        std::cerr << "Failed to listen to connection events" << std::endl;
+        return;
+    }
+    startWaitEvent();
+}
+
 void TcpTunnel::saveConfig()
 {
     json config = config_;

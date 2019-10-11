@@ -117,8 +117,8 @@ void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel)
 {
     while(tunnel->connectionsSentinel.next != &tunnel->connectionsSentinel) {
         struct nm_tcptunnel_connection* connection = tunnel->connectionsSentinel.next;
-        nm_tcptunnel_connection_stop_from_manager(connection);
         nm_tcptunnel_remove_connection(connection);
+        nm_tcptunnel_connection_stop_from_manager(connection);
     }
     nc_stream_manager_remove_listener(&tunnel->streamListener);
 }

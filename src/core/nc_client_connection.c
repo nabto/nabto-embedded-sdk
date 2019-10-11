@@ -111,6 +111,11 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 
 void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
+    conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connection_dtls_closed_cb, conn);
+}
+
+void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
+{
     struct np_platform* pl = conn->pl;
     NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" PRIu64 " closed.", conn->connectionRef);
     nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_CLOSED);
@@ -304,7 +309,7 @@ void nc_client_connection_keep_alive_send_response(struct nc_client_connection* 
 void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
 {
     struct nc_client_connection* cc =  (struct nc_client_connection*)data;
-    nc_client_connection_close_connection(cc);
+    nc_client_connection_destroy_connection(cc);
 }
 
 struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn)

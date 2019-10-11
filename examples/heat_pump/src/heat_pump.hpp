@@ -157,7 +157,7 @@ class HeatPump {
 
     NabtoDeviceEventHandler* connectionEventHandler_;
     NabtoDeviceConnectionRef connectionRef_;
-    enum NabtoDeviceConnectionEvent connectionEvent_;
+    NabtoDeviceConnectionEvent connectionEvent_;
 
 };
 

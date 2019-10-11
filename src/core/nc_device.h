@@ -20,6 +20,9 @@ typedef void (*nc_device_close_callback)(const np_error_code ec, void* data);
 struct nc_device_context {
     struct np_platform* pl;
     bool stopping;
+    bool clientConnsClosed;
+    bool isDetached;
+
     struct nc_udp_dispatch_context udp;
     // this socket is used for the secondary stun socket.
     struct nc_udp_dispatch_context secondaryUdp;
@@ -49,6 +52,7 @@ struct nc_device_context {
     uint16_t serverPort;
 
     struct np_timed_event tEv;
+    struct np_event closeEvent;
     uint8_t attachAttempts;
     nc_device_close_callback closeCb;
     void* closeCbData;

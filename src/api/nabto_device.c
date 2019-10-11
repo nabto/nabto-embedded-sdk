@@ -310,9 +310,13 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
  * Connection event listener
  */
 
+const int NABTO_DEVICE_CONNECTION_EVENT_OPENED = (int)NC_CONNECTION_EVENT_OPENED;
+const int NABTO_DEVICE_CONNECTION_EVENT_CLOSED = (int)NC_CONNECTION_EVENT_CLOSED;
+const int NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED = (int)NC_CONNECTION_EVENT_CHANNEL_CHANGED;
+
 struct nabto_device_listen_connection_event{
     NabtoDeviceConnectionRef coreRef;
-    enum NabtoDeviceConnectionEvent coreEvent;
+    NabtoDeviceConnectionEvent coreEvent;
 };
 
 struct nabto_device_listen_connection_context {
@@ -320,7 +324,7 @@ struct nabto_device_listen_connection_context {
     struct nabto_device_context* dev;
     struct nabto_device_event_handler* handler;
     NabtoDeviceConnectionRef* userRef;
-    enum NabtoDeviceConnectionEvent* userEvent;
+    NabtoDeviceConnectionEvent* userEvent;
 };
 
 void nabto_device_listen_connection_event_handler_cb(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* handlerData)
@@ -349,14 +353,14 @@ void nabto_device_listen_connection_events_listener_cb(uint64_t connectionRef, e
         return;
     }
     ev->coreRef = connectionRef;
-    ev->coreEvent = event;
+    ev->coreEvent = (int)event;
     np_error_code ec = nabto_device_event_handler_add_event(ctx->handler, ev);
     if (ec != NABTO_EC_OK) {
         free(ev);
     }
 }
 
-NabtoDeviceEventHandler* NABTO_DEVICE_API nabto_device_listen_connection_event(NabtoDevice* device, NabtoDeviceConnectionRef* ref, enum NabtoDeviceConnectionEvent* event)
+NabtoDeviceEventHandler* NABTO_DEVICE_API nabto_device_listen_connection_event(NabtoDevice* device, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)calloc(1, sizeof(struct nabto_device_listen_connection_context));

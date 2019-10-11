@@ -86,6 +86,12 @@ void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* ho
     ctx->hostname = hostname;
 }
 
+void nc_stun_deinit_sockets(struct nc_stun_context* ctx)
+{
+    ctx->priUdp = NULL;
+    ctx->secUdp = NULL;
+}
+
 // analyze function
 np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
                                     nc_stun_analyze_callback cb, void* data)
@@ -140,6 +146,12 @@ void nc_stun_event(struct nc_stun_context* ctx)
     switch(event) {
         case STUN_ET_SEND_PRIMARY:
         {
+            if(!ctx->priUdp) {
+                NABTO_LOG_ERROR(LOG, "No primary socket available");
+                ctx->ec = NABTO_EC_UDP_SOCKET_ERROR;
+                nc_stun_resolve_callbacks(ctx);
+                return;
+            }
             struct nabto_stun_endpoint stunEp;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
@@ -162,6 +174,12 @@ void nc_stun_event(struct nc_stun_context* ctx)
         }
         case STUN_ET_SEND_SECONDARY:
         {
+            if(!ctx->secUdp) {
+                NABTO_LOG_ERROR(LOG, "No secondary socket available");
+                ctx->ec = NABTO_EC_UDP_SOCKET_ERROR;
+                nc_stun_resolve_callbacks(ctx);
+                return;
+            }
             struct nabto_stun_endpoint stunEp;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
@@ -295,5 +313,9 @@ size_t nc_stun_convert_ep_list(struct np_ip_address* rec, size_t recSize,
 
 uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx)
 {
+    if(!ctx->priUdp) {
+        NABTO_LOG_ERROR(LOG, "No primary socket available");
+        return 0;
+    }
     return nc_udp_dispatch_get_local_port(ctx->priUdp);
 }

@@ -90,6 +90,7 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     ctx->dtls = NULL;
     ctx->streamId = 0;
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
+    nabto_stream_destroy(&ctx->stream);
 }
 
 
@@ -142,6 +143,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
 
     nabto_stream_event_handled(&ctx->stream, eventType);
 
+    // TODO make iterative instead of recursive
     // se if more events can be processed, until we reach ET_WAIT.
     nc_stream_event(ctx);
 }
@@ -204,6 +206,8 @@ void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType)
 {
     if (ctx->dtls == NULL) {
+        nabto_stream_event_handled(&ctx->stream, eventType);
+        nc_stream_event(ctx);
         return;
     }
 

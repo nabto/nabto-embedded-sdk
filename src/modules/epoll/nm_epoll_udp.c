@@ -262,6 +262,7 @@ void nm_epoll_udp_try_read(void* userData)
 
 np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
 {
+    // todo what if calloc fails, also fix wherever this is called from
     *sock = calloc(1, sizeof(np_udp_socket));
     (*sock)->type = NM_EPOLL_TYPE_UDP;
     (*sock)->pl = pl;

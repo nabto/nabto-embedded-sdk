@@ -35,6 +35,11 @@ void nc_rendezvous_set_udp_dispatch(struct nc_rendezvous_context* ctx, struct nc
     ctx->udpDispatch = udpDispatch;
 }
 
+void nc_rendezvous_remove_udp_dispatch(struct nc_rendezvous_context* ctx)
+{
+    ctx->udpDispatch = NULL;
+}
+
 void nc_rendezvous_handle_client_request(struct nc_rendezvous_context* ctx,
                                  np_udp_endpoint ep,
                                  uint8_t* connectionId)
@@ -55,7 +60,7 @@ void nc_rendezvous_packet_sent(const np_error_code ec, void* data)
 
 void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 {
-    if (ctx->sendingDevReqs) {
+    if (ctx->sendingDevReqs || !ctx->udpDispatch) {
         return;
     }
     uint8_t* start = ctx->pl->buf.start(ctx->priBuf);

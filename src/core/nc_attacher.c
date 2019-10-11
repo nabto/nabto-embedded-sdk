@@ -57,6 +57,7 @@ void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, str
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
+
     ctx->pl->dtlsC.destroy(ctx->dtls);
     if (ctx->udp != NULL) {
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
@@ -199,6 +200,11 @@ void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data)
             ctx->detachCb = NULL;
             cb(NABTO_EC_FAILED, ctx->detachCbData);
         }
+        if (ctx->cb) {
+            nc_attached_callback cb = ctx->cb;
+            ctx->cb = NULL;
+            cb(NABTO_EC_FAILED, ctx->cbData);
+        }
     }
 }
 
@@ -248,12 +254,16 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
     struct np_platform* pl = ctx->pl;
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to resolve attach dispatcher host");
-        ctx->cb(ec, ctx->cbData);
+        nc_attached_callback cb = ctx->cb;
+        ctx->cb = NULL;
+        cb(ec, ctx->cbData);
         return;
     }
     if (recSize == 0 || ctx->detaching) {
         NABTO_LOG_ERROR(LOG, "Empty record list or detaching");
-        ctx->cb(NABTO_EC_FAILED, ctx->cbData);
+        nc_attached_callback cb = ctx->cb;
+        ctx->cb = NULL;
+        cb(NABTO_EC_FAILED, ctx->cbData);
         return;
     }
     ctx->state = NC_ATTACHER_CONNECTING_TO_BS;
@@ -276,7 +286,9 @@ void nc_attacher_dtls_conn_ok(struct nc_attach_context* ctx)
     if( ctx->pl->dtlsC.get_alpn_protocol(ctx->dtls) == NULL ) {
         NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Basestation connection");
         ctx->pl->dtlsC.async_close(ctx->pl, ctx->dtls, &nc_attacher_dtls_closed_cb, ctx);
-        ctx->cb(NABTO_EC_ALPN_FAILED, ctx->cbData);
+        nc_attached_callback cb = ctx->cb;
+        ctx->cb = NULL;
+        cb(NABTO_EC_ALPN_FAILED, ctx->cbData);
         return;
     }
     ctx->state = NC_ATTACHER_CONNECTED_TO_BS;
@@ -364,7 +376,9 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
     }
     nc_attacher_keep_alive_start(ctx);
     ctx->state = NC_ATTACHER_ATTACHED;
-    ctx->cb(NABTO_EC_OK, ctx->cbData);
+    nc_attached_callback cb = ctx->cb;
+    ctx->cb = NULL;
+    cb(NABTO_EC_OK, ctx->cbData);
 }
 
 void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root)
@@ -409,6 +423,11 @@ void coap_response_failed(struct nc_attach_context* ctx)
         nc_detached_callback cb = ctx->detachCb;
         ctx->detachCb = NULL;
         cb(NABTO_EC_FAILED, ctx->detachCbData);
+    }
+    if (ctx->cb) {
+        nc_attached_callback cb = ctx->cb;
+        ctx->cb = NULL;
+        cb(NABTO_EC_FAILED, ctx->cbData);
     }
 }
 
@@ -484,6 +503,7 @@ np_error_code nc_attacher_register_detach_callback(struct nc_attach_context* ctx
 
 np_error_code nc_attacher_detach(struct nc_attach_context* ctx)
 {
+    nc_keep_alive_deinit(&ctx->keepAlive);
     switch (ctx->state) {
         case NC_ATTACHER_RESOLVING_DNS:
             ctx->detaching = true;
