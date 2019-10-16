@@ -28,7 +28,15 @@ struct np_tcp_module {
     np_error_code (*async_write)(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
     np_error_code (*async_read)(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
 
+    /**
+     * Shutdown further write to the socket.
+     */
     np_error_code (*shutdown)(np_tcp_socket* sock);
+
+    /**
+     * Close the socket, no further reads or writes are
+     * possible. Semantics similar to closing a filedescriptor.
+     */
     np_error_code (*close)(np_tcp_socket* sock);
 };
 
