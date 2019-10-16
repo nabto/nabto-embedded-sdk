@@ -43,12 +43,14 @@ int nm_epoll_timed_wait(struct nm_epoll_context* epoll, uint32_t ms);
 int nm_epoll_inf_wait(struct nm_epoll_context* epoll);
 
 void nm_epoll_read(struct nm_epoll_context* epoll, int nfds);
-void nm_epoll_close_socket(struct nm_epoll_context* epoll, struct nm_epoll_base* base);
 bool nm_epoll_finished(struct nm_epoll_context* epoll);
+
 void nm_epoll_add_udp_socket(struct nm_epoll_context* epoll);
 void nm_epoll_add_tcp_socket(struct nm_epoll_context* epoll);
 void nm_epoll_remove_udp_socket(struct nm_epoll_context* epoll);
 void nm_epoll_remove_tcp_socket(struct nm_epoll_context* epoll);
+
+void nm_epoll_close_socket(struct nm_epoll_context* epoll, struct nm_epoll_base* base);
 
 #ifdef __cplusplus
 } //extern "C"

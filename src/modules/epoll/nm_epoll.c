@@ -108,7 +108,7 @@ void nm_epoll_read(struct nm_epoll_context* epoll, int nfds)
             // TODO tcp
             current->prev->next = current->next;
             current->next->prev = current->prev;
-            //nm_epoll_tcp_free(current);
+            nm_epoll_tcp_resolve_close(current);
         }
     }
 }

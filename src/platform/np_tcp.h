@@ -34,10 +34,10 @@ struct np_tcp_module {
     np_error_code (*shutdown)(np_tcp_socket* sock);
 
     /**
-     * Close the socket, no further reads or writes are
-     * possible. Semantics similar to closing a filedescriptor.
+     * abort outstanding async operations on the socket, no further
+     * reads or writes are possible.
      */
-    np_error_code (*close)(np_tcp_socket* sock);
+    np_error_code (*abort)(np_tcp_socket* sock);
 };
 
 #ifdef __cplusplus

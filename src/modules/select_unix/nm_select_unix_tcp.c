@@ -44,7 +44,7 @@ void nm_select_unix_tcp_init(struct nm_select_unix* ctx)
     pl->tcp.async_write = &async_write;
     pl->tcp.async_read = &async_read;
     pl->tcp.shutdown = &tcp_shutdown;
-    pl->tcp.close = &tcp_close;
+    pl->tcp.abort = &tcp_close;
 }
 
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)

@@ -163,7 +163,13 @@ void tcp_readen(np_error_code ec, size_t transferred, void* userData)
 
 void close_stream(struct nm_tcptunnel_connection* connection)
 {
-    nc_stream_async_close(connection->stream, &stream_closed, connection);
+    if (connection->stream) {
+        nc_stream_async_close(connection->stream, &stream_closed, connection);
+    } else {
+        connection->tcpReadEnded = true;
+        NABTO_LOG_INFO(LOG, "is_ended from close_stream");
+        is_ended(connection);
+    }
 }
 
 void stream_closed(np_error_code ec, void* userData)
@@ -250,7 +256,7 @@ void abort_connection(struct nm_tcptunnel_connection* connection)
 {
     // close stream and tcp and end it all.
     struct np_platform* pl = connection->pl;
-    pl->tcp.close(connection->socket);
+    pl->tcp.abort(connection->socket);
     if (connection->stream) {
         nc_stream_abort(connection->stream);
         connection->stream = NULL;

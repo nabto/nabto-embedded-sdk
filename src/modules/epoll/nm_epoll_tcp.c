@@ -45,58 +45,60 @@ struct np_tcp_socket {
     struct nm_tcp_write_context write;
     struct nm_tcp_read_context read;
     struct nm_tcp_connect_context connect;
+    bool aborted;
+    struct np_event abortEv;
 };
 
-static np_error_code nm_tcp_epoll_create(struct np_platform* pl, np_tcp_socket** sock);
-static void nm_tcp_epoll_destroy(np_tcp_socket* sock);
-static np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback, void* userData);
-static np_error_code nm_tcp_epoll_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
-static np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
-static np_error_code nm_tcp_epoll_shutdown(np_tcp_socket* sock);
-static np_error_code nm_tcp_epoll_close(np_tcp_socket* sock);
+static np_error_code nm_epoll_tcp_create(struct np_platform* pl, np_tcp_socket** sock);
+static void nm_epoll_tcp_destroy(np_tcp_socket* sock);
+static np_error_code nm_epoll_tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback, void* userData);
+static np_error_code nm_epoll_tcp_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
+static np_error_code nm_epoll_tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
+static np_error_code nm_epoll_tcp_shutdown(np_tcp_socket* sock);
+static np_error_code nm_epoll_tcp_abort(np_tcp_socket* sock);
 
 
-static void nm_tcp_epoll_is_connected(void* userData);
+static void nm_epoll_tcp_is_connected(void* userData);
 
 void nm_epoll_tcp_init(struct nm_epoll_context* epoll, struct np_platform* pl)
 {
-    pl->tcp.create = &nm_tcp_epoll_create;
-    pl->tcp.destroy = &nm_tcp_epoll_destroy;
-    pl->tcp.async_connect = &nm_tcp_epoll_async_connect;
-    pl->tcp.async_write = &nm_tcp_epoll_async_write;
-    pl->tcp.async_read = &nm_tcp_epoll_async_read;
-    pl->tcp.shutdown = &nm_tcp_epoll_shutdown;
-    pl->tcp.close = &nm_tcp_epoll_close;
+    pl->tcp.create = &nm_epoll_tcp_create;
+    pl->tcp.destroy = &nm_epoll_tcp_destroy;
+    pl->tcp.async_connect = &nm_epoll_tcp_async_connect;
+    pl->tcp.async_write = &nm_epoll_tcp_async_write;
+    pl->tcp.async_read = &nm_epoll_tcp_async_read;
+    pl->tcp.shutdown = &nm_epoll_tcp_shutdown;
+    pl->tcp.abort = &nm_epoll_tcp_abort;
     pl->tcpData = epoll;
 }
 
-np_error_code nm_tcp_epoll_create(struct np_platform* pl, np_tcp_socket** sock)
+np_error_code nm_epoll_tcp_create(struct np_platform* pl, np_tcp_socket** sock)
 {
     np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
     s->type = NM_EPOLL_TYPE_TCP;
     s->pl = pl;
     s->epoll = (struct nm_epoll_context*)pl->tcpData;
     s->fd = -1;
+    s->aborted = false;
     *sock = s;
     return NABTO_EC_OK;
 }
 
-void nm_tcp_epoll_destroy(np_tcp_socket* sock)
+void nm_epoll_tcp_destroy(np_tcp_socket* sock)
 {
-    if (sock->fd != -1) {
-        close(sock->fd);
-        shutdown(sock->fd, SHUT_RDWR);
-        epoll_ctl(sock->epoll->fd, EPOLL_CTL_DEL, sock->fd, NULL);
-        sock->fd = -1;
-    }
-    free(sock);
+    nm_epoll_close_socket(sock->pl->tcpData, (struct nm_epoll_base*)sock);
+    nm_epoll_break_wait(sock->pl->tcpData);
 }
 
-np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
+np_error_code nm_epoll_tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
 {
     if (sock->connect.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
+    if (sock->aborted) {
+        return NABTO_EC_ABORTED;
+    }
+
     struct np_platform* pl = sock->pl;
     int s;
     if (address->type == NABTO_IPV4) {
@@ -165,7 +167,7 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
 
         if (status == 0) {
             // connected
-            np_event_queue_post(pl, &sock->connect.event, &nm_tcp_epoll_is_connected, sock);
+            np_event_queue_post(pl, &sock->connect.event, &nm_epoll_tcp_is_connected, sock);
         } else if (status != 0 && errno != EINPROGRESS) {
             NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
             return NABTO_EC_FAILED;
@@ -181,7 +183,7 @@ np_error_code nm_tcp_epoll_async_connect(np_tcp_socket* sock, struct np_ip_addre
 /**
  * This function may only be called upon a EPOLLOUT event
  */
-void nm_tcp_epoll_is_connected(void* userData)
+void nm_epoll_tcp_is_connected(void* userData)
 {
     np_tcp_socket* sock = userData;
     if (sock->connect.callback == NULL)  {
@@ -194,6 +196,7 @@ void nm_tcp_epoll_is_connected(void* userData)
         NABTO_LOG_ERROR(LOG, "getsockopt error %s",strerror(errno));
     } else {
         if (err == 0) {
+            nm_epoll_add_tcp_socket(sock->epoll);
             np_tcp_connect_callback cb = sock->connect.callback;
             sock->connect.callback = NULL;
             cb(NABTO_EC_OK, sock->connect.userData);
@@ -241,10 +244,13 @@ void nm_epoll_tcp_do_write(void* data)
     }
 }
 
-np_error_code nm_tcp_epoll_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData)
+np_error_code nm_epoll_tcp_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData)
 {
     if (sock->write.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    if (sock->aborted) {
+        return NABTO_EC_ABORTED;
     }
     sock->write.data = data;
     sock->write.dataLength = dataLength;
@@ -287,10 +293,13 @@ void nm_epoll_tcp_do_read(void* userData)
     }
 }
 
-np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
+np_error_code nm_epoll_tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
 {
     if (sock->read.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    if (sock->aborted) {
+        return NABTO_EC_ABORTED;
     }
     sock->read.buffer = buffer;
     sock->read.bufferSize = bufferSize;
@@ -300,15 +309,49 @@ np_error_code nm_tcp_epoll_async_read(np_tcp_socket* sock, void* buffer, size_t 
     return NABTO_EC_OK;
 }
 
-np_error_code nm_tcp_epoll_shutdown(np_tcp_socket* sock)
+np_error_code nm_epoll_tcp_shutdown(np_tcp_socket* sock)
 {
+    if (sock->aborted) {
+        return NABTO_EC_ABORTED;
+    }
     shutdown(sock->fd, SHUT_WR);
     return NABTO_EC_OK;
 }
 
-np_error_code nm_tcp_epoll_close(np_tcp_socket* sock)
+void nm_epoll_tcp_resolve_close(struct nm_epoll_base* base)
 {
+    np_tcp_socket* sock = (np_tcp_socket*)base;
     close(sock->fd);
+    shutdown(sock->fd, SHUT_RDWR);
+    epoll_ctl(sock->epoll->fd, EPOLL_CTL_DEL, sock->fd, NULL);
+    sock->fd = -1;
+    np_event_queue_cancel_event(sock->pl, &sock->abortEv);
+    nm_epoll_remove_tcp_socket(sock->epoll);
+    free(sock);
+}
+
+void nm_epoll_tcp_event_abort(void* userData)
+{
+    np_tcp_socket* sock = (np_tcp_socket*)userData;
+    if (sock->read.callback != NULL) {
+        np_tcp_read_callback cb = sock->read.callback;
+        sock->read.callback = NULL;
+        cb(NABTO_EC_ABORTED, 0, sock->read.userData);
+    }
+    if (sock->write.callback != NULL) {
+        np_tcp_write_callback cb = sock->write.callback;
+        sock->write.callback = NULL;
+        cb(NABTO_EC_ABORTED, sock->write.userData);
+    }
+}
+
+np_error_code nm_epoll_tcp_abort(np_tcp_socket* sock)
+{
+    if (sock->aborted) {
+        return NABTO_EC_OK;
+    }
+    sock->aborted = true;
+    np_event_queue_post(sock->pl, &sock->abortEv, &nm_epoll_tcp_event_abort, sock);
     return NABTO_EC_OK;
 }
 
@@ -316,7 +359,7 @@ np_error_code nm_tcp_epoll_close(np_tcp_socket* sock)
 void nm_epoll_tcp_handle_event(np_tcp_socket* sock, uint32_t events)
 {
     if (events & EPOLLOUT) {
-        nm_tcp_epoll_is_connected(sock);
+        nm_epoll_tcp_is_connected(sock);
         nm_epoll_tcp_do_write(sock);
     }
     if (events & EPOLLIN) {

@@ -238,7 +238,7 @@ class TcpEchoClientTest {
         auto sentData = lib::span<const uint8_t>(test->data_.data(), test->data_.size());
         auto receivedData = lib::span<const uint8_t>(test->recvBuffer_.data(), test->recvBuffer_.size());
         BOOST_TEST(sentData == receivedData);
-        BOOST_TEST(test->pl_->tcp.close(test->socket_) == NABTO_EC_OK);
+        BOOST_TEST(test->pl_->tcp.abort(test->socket_) == NABTO_EC_OK);
         test->end();
     }
 
@@ -252,6 +252,63 @@ class TcpEchoClientTest {
     np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
+};
+
+class TcpCloseClientTest {
+ public:
+    TcpCloseClientTest(TestPlatform& tp)
+        :tp_(tp), pl_(tp.getPlatform())
+    {
+    }
+
+    void createSock() {
+        BOOST_TEST(pl_->tcp.create(pl_, &socket_) == NABTO_EC_OK);
+
+        struct np_ip_address address;
+        address.type = NABTO_IPV4;
+        uint8_t addr[] = { 0x7f, 0x00, 0x00, 0x01 };
+        memcpy(address.ip.v4, addr, 4);
+
+        for (size_t i = 0; i < data_.size(); i++) {
+            data_[i] = (uint8_t)i;
+        }
+
+        BOOST_TEST(pl_->tcp.async_connect(socket_, &address, port_, &TcpCloseClientTest::connected, this) == NABTO_EC_OK);
+    }
+
+    void start(uint16_t port) {
+        tp_.init();
+        port_ = port;
+        createSock();
+        tp_.run();
+    }
+
+    static void connected(np_error_code ec, void* userData)
+    {
+        auto test = (TcpCloseClientTest*)userData;
+        BOOST_TEST(ec == NABTO_EC_OK);
+        BOOST_TEST(test->pl_->tcp.async_read(test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &TcpCloseClientTest::hasReaden, test) == NABTO_EC_OK);
+        BOOST_TEST(test->pl_->tcp.abort(test->socket_) == NABTO_EC_OK);
+    }
+
+    static void hasReaden(np_error_code ec, size_t readen, void* userData)
+    {
+        auto test = (TcpCloseClientTest*)userData;
+        BOOST_TEST(ec == NABTO_EC_ABORTED, "ec was not ABORTED: " << ec);
+        test->end();
+    }
+
+    void end() {
+        pl_->tcp.destroy(socket_);
+        tp_.stop();
+    }
+ private:
+    TestPlatform& tp_;
+    struct np_platform* pl_;
+    np_tcp_socket* socket_;
+    std::array<uint8_t, 42> data_;
+    std::vector<uint8_t> recvBuffer_;
+    uint16_t port_;
 };
 
 } }
@@ -268,6 +325,19 @@ BOOST_AUTO_TEST_CASE(echo_epoll)
     test::TestPlatformEpoll platform;
 
     test::TcpEchoClientTest client(platform);
+    client.start(tcpServer.getPort());
+
+    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
+}
+
+BOOST_AUTO_TEST_CASE(close_epoll)
+{
+    auto ioService = IoService::create("test");
+    test::TcpEchoServer tcpServer(ioService->getIoService());
+
+    test::TestPlatformEpoll platform;
+
+    test::TcpCloseClientTest client(platform);
     client.start(tcpServer.getPort());
 
     BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);

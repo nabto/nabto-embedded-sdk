@@ -29,11 +29,18 @@ class TestPlatformEpoll : public TestPlatform {
         nm_dtls_cli_init(&pl_);
         nm_dtls_srv_init(&pl_);
     }
+
+    void deinit()
+    {
+        nm_epoll_close(&epoll_);
+    }
+
     virtual void run()
     {
         int nfds;
         while (true) {
             if (stopped_) {
+                deinit();
                 return;
             }
             np_event_queue_execute_all(&pl_);
