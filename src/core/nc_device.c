@@ -58,6 +58,8 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_coap_server_deinit(&device->coapServer);
     nc_iam_deinit(&device->iam);
     pl->dtlsS.destroy(device->dtlsServer);
+    nc_udp_dispatch_deinit(&device->udp);
+    nc_udp_dispatch_deinit(&device->secondaryUdp);
 }
 
 uint16_t nc_device_mdns_get_port(void* userData)
@@ -77,8 +79,8 @@ void nc_device_try_resolve_close(struct nc_device_context* dev)
 {
     if (dev->clientConnsClosed && dev->isDetached) {
         np_event_queue_cancel_event(dev->pl, &dev->closeEvent);
-        nc_udp_dispatch_deinit(&dev->udp);
-        nc_udp_dispatch_deinit(&dev->secondaryUdp);
+        nc_udp_dispatch_abort(&dev->udp);
+        nc_udp_dispatch_abort(&dev->secondaryUdp);
         if (dev->closeCb) {
             nc_device_close_callback cb = dev->closeCb;
             dev->closeCb = NULL;
