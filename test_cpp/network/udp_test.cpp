@@ -126,16 +126,12 @@ class UdpEchoClientTest {
             data_[i] = (uint8_t)i;
         }
 
-        sendCtx_.sock = socket_;
-        sendCtx_.ep.ip.type = NABTO_IPV6;
-        memcpy(sendCtx_.ep.ip.ip.v6, addr, 16);
-        sendCtx_.ep.port = port;
-        sendCtx_.buffer = data_.data();
-        sendCtx_.bufferSize = data_.size();
-        sendCtx_.cb =  &UdpEchoClientTest::sent;
-        sendCtx_.cbData = this;
 
-        pl_->udp.async_bind(socket_, &UdpEchoClientTest::created, this);
+        ep_.ip.type = NABTO_IPV6;
+        memcpy(ep_.ip.ip.v6, addr, 16);
+        ep_.port = port;
+
+        pl_->udp.async_bind_port(socket_, 0, &UdpEchoClientTest::created, this);
 
         tp_.run();
     }
@@ -150,7 +146,7 @@ class UdpEchoClientTest {
     void startSend()
     {
 
-        pl_->udp.async_send_to(&sendCtx_);
+        pl_->udp.async_send_to(socket_, ep_, data_.data(), data_.size(), &UdpEchoClientTest::sent, this);
     }
 
     static void sent(np_error_code ec, void* data)
@@ -183,7 +179,7 @@ class UdpEchoClientTest {
  private:
     nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
-    struct np_udp_send_context sendCtx_;
+    struct np_udp_endpoint ep_;
     np_udp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;

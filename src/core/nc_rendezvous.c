@@ -83,7 +83,8 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 
     ctx->sendingDevReqs = true;
     size_t used = ptr - start;
-    nc_udp_dispatch_async_send_to(ctx->udpDispatch, &ctx->sendCtx, &packet->ep,
+    // TODO: handle error
+    nc_udp_dispatch_async_send_to(ctx->udpDispatch, &packet->ep,
                                   start, used,
                                   &nc_rendezvous_packet_sent, ctx);
 }

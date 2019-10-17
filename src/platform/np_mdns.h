@@ -2,6 +2,7 @@
 #define NP_MDNS_H
 
 #include <stdint.h>
+#include <platform/np_error_code.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,9 +17,9 @@ struct np_platform;
 typedef uint16_t (*np_mdns_get_port)(void* userData);
 
 struct np_mdns_module {
-    void (*start)(struct np_mdns_context** mdns, struct np_platform* pl,
-                  const char* productId, const char* deviceId,
-                  np_mdns_get_port getPort, void* userData);
+    np_error_code (*start)(struct np_mdns_context** mdns, struct np_platform* pl,
+                           const char* productId, const char* deviceId,
+                           np_mdns_get_port getPort, void* userData);
 
     void (*stop)(struct np_mdns_context* mdns);
 };

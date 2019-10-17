@@ -5,8 +5,6 @@
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION_DISPATCH
 
-//struct nc_client_connect_dispatch_context ctx;
-
 void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
                                         struct np_platform* pl,
                                         struct nc_device_context* dev)

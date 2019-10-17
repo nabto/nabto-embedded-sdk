@@ -8,13 +8,26 @@ void nc_device_attached_cb(const np_error_code ec, void* data);
 uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 
 
-void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
+np_error_code nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
     device->pl = pl;
-    nc_udp_dispatch_init(&device->udp, pl);
-    nc_udp_dispatch_init(&device->secondaryUdp, pl);
+    np_error_code ec;
+    ec = nc_udp_dispatch_init(&device->udp, pl);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = nc_udp_dispatch_init(&device->secondaryUdp, pl);
+    if (ec != NABTO_EC_OK) {
+        nc_udp_dispatch_deinit(&device->udp);
+        return ec;
+    }
 
-    pl->dtlsS.create(pl, &device->dtlsServer);
+    ec = pl->dtlsS.create(pl, &device->dtlsServer);
+    if (ec != NABTO_EC_OK) {
+        nc_udp_dispatch_deinit(&device->udp);
+        nc_udp_dispatch_deinit(&device->secondaryUdp);
+        return ec;
+    }
     nc_iam_init(&device->iam);
     nc_coap_server_init(pl, &device->coapServer);
     nc_iam_coap_register_handlers(device);
@@ -30,7 +43,7 @@ void nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 
     device->serverPort = 4433;
 
-
+    return NABTO_EC_OK;
 }
 
 void nc_device_deinit(struct nc_device_context* device) {
@@ -159,8 +172,8 @@ void nc_device_udp_created_cb(const np_error_code ec, void* data)
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
 
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
-
-    nc_udp_dispatch_async_create(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_created_cb, dev);
+    // todo check error code
+    nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_created_cb, dev);
 
     if (dev->enableMdns) {
         dev->pl->mdns.start(&dev->mdns, dev->pl, dev->productId, dev->deviceId, nc_device_mdns_get_port, dev);
@@ -194,7 +207,8 @@ np_error_code nc_device_start(struct nc_device_context* dev,
 
     dev->connectionRef = 0;
 
-    nc_udp_dispatch_async_create(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
+    // todo check error code
+    nc_udp_dispatch_async_bind(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
     nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
 
     nc_stun_coap_init(&dev->stunCoap, pl, &dev->coapServer, &dev->stun);

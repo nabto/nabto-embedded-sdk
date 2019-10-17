@@ -17,6 +17,23 @@
 
 #define LOG NABTO_LOG_MODULE_UDP
 
+struct nm_select_unix_udp_send_base {
+    struct nm_select_unix_udp_send_base* next;
+    struct nm_select_unix_udp_send_base* prev;
+};
+
+struct nm_select_unix_udp_send_context {
+    struct nm_select_unix_udp_send_base* next;
+    struct nm_select_unix_udp_send_base* prev;
+    np_udp_socket* sock;
+    struct np_udp_endpoint ep;
+    uint8_t* buffer;
+    uint16_t bufferSize;
+    np_udp_packet_sent_callback cb;
+    void* cbData;
+    struct np_event ev;
+};
+
 
 /**
  * Helper function declarations
@@ -37,13 +54,14 @@ static bool nm_select_unix_init_mdns_ipv6_socket(int sock);
  */
 static np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_socket** sock);
 static void nm_select_unix_udp_destroy(np_udp_socket* sock);
-static void nm_select_unix_udp_async_bind(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
-static void nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data);
-static void nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
-static void nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
-static void nm_select_unix_udp_async_send_to(struct np_udp_send_context* ctx);
-static void nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
-                                           np_udp_packet_received_callback cb, void* data);
+static np_error_code nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data);
+static np_error_code nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
+static np_error_code nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
+static np_error_code nm_select_unix_udp_async_send_to(np_udp_socket* sock, struct np_udp_endpoint ep,
+                                                      uint8_t* buffer, uint16_t bufferSize,
+                                                      np_udp_packet_sent_callback cb, void* userData);
+static np_error_code nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
+                                                        np_udp_packet_received_callback cb, void* data);
 static enum np_ip_address_type nm_select_unix_udp_get_protocol(np_udp_socket* socket);
 static uint16_t nm_select_unix_udp_get_local_port(np_udp_socket* socket);
 static size_t nm_select_unix_udp_get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
@@ -53,7 +71,6 @@ void nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
     struct nm_select_unix_udp_sockets* sockets = &ctx->udpSockets;
     pl->udp.create           = &nm_select_unix_udp_create;
     pl->udp.destroy          = &nm_select_unix_udp_destroy;
-    pl->udp.async_bind       = &nm_select_unix_udp_async_bind;
     pl->udp.async_bind_port  = &nm_select_unix_udp_async_bind_port;
     pl->udp.async_bind_mdns_ipv4 = &nm_select_unix_async_bind_mdns_ipv4;
     pl->udp.async_bind_mdns_ipv6 = &nm_select_unix_async_bind_mdns_ipv6;
@@ -95,17 +112,7 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_socket** 
     return NABTO_EC_OK;
 }
 
-void nm_select_unix_udp_async_bind(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
-{
-    struct np_platform* pl = sock->pl;
-    sock->created.cb = cb;
-    sock->created.data = data;
-    sock->created.port = 0;
-    sock->closing = false;
-    np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_port, sock);
-}
-
-void nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data)
+np_error_code nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data)
 {
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
@@ -113,24 +120,27 @@ void nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_u
     sock->created.port = port;
     sock->closing = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_port, sock);
+    return NABTO_EC_OK;
 }
 
-void nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+np_error_code nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
 {
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
     sock->closing = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv4, sock);
+    return NABTO_EC_OK;
 }
 
-void nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+np_error_code nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
 {
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
     sock->closing = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv6, sock);
+    return NABTO_EC_OK;
 }
 
 void nm_select_unix_udp_event_bind_mdns_ipv4(void* data) {
@@ -293,19 +303,33 @@ bool nm_select_unix_init_mdns_ipv6_socket(int sock)
     return true;
 }
 
-void nm_select_unix_udp_async_send_to(struct np_udp_send_context* ctx)
+static np_error_code nm_select_unix_udp_async_send_to(np_udp_socket* sock, struct np_udp_endpoint ep,
+                                                      uint8_t* buffer, uint16_t bufferSize,
+                                                      np_udp_packet_sent_callback cb, void* userData)
 {
-    struct np_platform* pl = ctx->sock->pl;
-    NABTO_LOG_TRACE(LOG, "Async_send_to");
-    np_event_queue_post(pl, &ctx->ev, nm_select_unix_udp_event_send_to, ctx);
+    struct nm_select_unix_udp_send_context* ctx = (struct nm_select_unix_udp_send_context*)calloc(1, sizeof(struct nm_select_unix_udp_send_context));
+    if (ctx == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    ctx->sock = sock;
+    ctx->ep = ep;
+    ctx->buffer = buffer;
+    ctx->bufferSize = bufferSize;
+    ctx->cb = cb;
+    ctx->cbData = userData;
+// TODO add send queue
+//    nm_epoll_select_unix_add_send_base(sock, (struct nm_epoll_udp_send_base*)ctx);
+    np_event_queue_post(sock->pl, &ctx->ev, nm_select_unix_udp_event_send_to, ctx);
+    return NABTO_EC_OK;
 }
 
-void nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
-                                        np_udp_packet_received_callback cb, void* data)
+np_error_code nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
+                                                 np_udp_packet_received_callback cb, void* data)
 {
     socket->recv.cb = cb;
     socket->recv.data = data;
     nm_select_unix_notify(socket->selectCtx);
+    return NABTO_EC_OK;
 }
 
 enum np_ip_address_type nm_select_unix_udp_get_protocol(np_udp_socket* socket)
@@ -450,7 +474,7 @@ void nm_select_unix_udp_event_bind_port(void* data)
 
 void nm_select_unix_udp_event_send_to(void* data)
 {
-    struct np_udp_send_context* ctx = (struct np_udp_send_context*)data;
+    struct nm_select_unix_udp_send_context* ctx = (struct nm_select_unix_udp_send_context*)data;
     np_udp_socket* sock = ctx->sock;
     ssize_t res;
     if (ctx->ep.ip.type == NABTO_IPV4 && !sock->isIpv6) { // IPv4 addr on IPv4 socket

@@ -39,7 +39,6 @@ struct nc_attach_context {
     nc_detached_callback detachCb;
     void* detachCbData;
     struct nc_udp_dispatch_context* udp;
-    struct np_udp_send_context sendCtx;
     void* cbData;
     np_udp_endpoint ep;
     np_dtls_cli_context* dtls;

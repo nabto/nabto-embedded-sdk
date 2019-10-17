@@ -166,6 +166,9 @@ np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls
 np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server)
 {
     *server = calloc(1, sizeof(struct np_dtls_srv));
+    if (*server == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     (*server)->pl = pl;
     mbedtls_ssl_config_init( &(*server)->conf );
     mbedtls_entropy_init( &(*server)->entropy );

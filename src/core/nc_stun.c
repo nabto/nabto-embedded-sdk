@@ -169,7 +169,8 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendCtx, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
+            // TODO handle error
+            nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
         case STUN_ET_SEND_SECONDARY:
@@ -197,7 +198,8 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendCtx, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
+            // TODO handle error
+            nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
             break;
         }
         case STUN_ET_WAIT:

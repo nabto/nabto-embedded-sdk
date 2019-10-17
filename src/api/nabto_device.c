@@ -48,22 +48,32 @@ void notify_event_queue_post(void* data)
 NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
+    if (dev == NULL) {
+        return NULL;
+    }
     memset(dev, 0, sizeof(struct nabto_device_context));
 
     nabto_device_init_platform(&dev->pl);
     nabto_device_init_platform_modules(&dev->pl);
-    nc_device_init(&dev->core, &dev->pl);
+    np_error_code ec = nc_device_init(&dev->core, &dev->pl);
+    if (ec != NABTO_EC_OK) {
+        // todo fail properly
+        free(dev);
+        return NULL;
+    }
     np_event_queue_init(&dev->pl, &notify_event_queue_post, dev);
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
     if (dev->eventMutex == NULL) {
         NABTO_LOG_ERROR(LOG, "mutex init has failed");
+        // todo fail properly
         free(dev);
         return NULL;
     }
     dev->eventCond = nabto_device_threads_create_condition();
     if (dev->eventCond == NULL) {
         NABTO_LOG_ERROR(LOG, "condition init has failed");
+        // todo fail properly
         nabto_device_free_threads(dev);
         return NULL;
     }
@@ -71,6 +81,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     dev->networkThread = nabto_device_threads_create_thread();
     if (dev->coreThread == NULL || dev->networkThread == NULL) {
         nabto_device_free_threads(dev);
+        // todo fail properly
     }
 
     return (NabtoDevice*)dev;

@@ -44,7 +44,6 @@ struct nc_client_connection {
 
     np_dtls_srv_send_callback sentCb;
     void* sentData;
-    struct np_udp_send_context sendCtx;
     np_error_code ec;
     uint64_t connectionRef;
 

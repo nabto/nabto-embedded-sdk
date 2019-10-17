@@ -48,7 +48,6 @@ struct test_context {
 };
 
 struct udp_send_context {
-    struct np_udp_send_context udpSendCtx;
     np_dtls_srv_send_callback cb;
     void* data;
 };
@@ -116,8 +115,7 @@ void dtls_send_listener(uint8_t channelId, uint8_t* buffer, uint16_t bufferSize,
     struct udp_send_context* udpSendCtx = malloc(sizeof(struct udp_send_context));
     udpSendCtx->cb = cb;
     udpSendCtx->data = data;
-    np_udp_populate_send_context(&udpSendCtx->udpSendCtx, ctx->sock, ep, buffer, bufferSize, &udpSendCb, udpSendCtx);
-    pl->udp.async_send_to(&udpSendCtx->udpSendCtx);
+    pl->udp.async_send_to(ctx->sock, ep, buffer, bufferSize, &udpSendCb, udpSendCtx);
 }
 
 void created(const np_error_code ec, uint8_t channelId, void* data)

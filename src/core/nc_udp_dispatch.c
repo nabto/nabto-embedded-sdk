@@ -8,16 +8,16 @@
 #include <core/nc_stun.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
-
-void nc_udp_dispatch_sock_created_cb(const np_error_code ec, void* data);
+// todo rename and restructure with new udp return values
+void nc_udp_dispatch_sock_bound_cb(const np_error_code ec, void* data);
 void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
                                    uint8_t* buffer, uint16_t bufferSize, void* data);
 
-void nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl)
+np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
     ctx->pl = pl;
-    pl->udp.create(pl, &ctx->sock);
+    return pl->udp.create(pl, &ctx->sock);
 }
 
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
@@ -27,32 +27,34 @@ void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
 }
 
 
-void nc_udp_dispatch_async_create (struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
-                                   nc_udp_dispatch_create_callback cb, void* data)
+np_error_code nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
+                                         nc_udp_dispatch_bind_callback cb, void* data)
 {
-    ctx->createCb = cb;
-    ctx->createCbData = data;
-    if (port == 0) {
-        pl->udp.async_bind(ctx->sock, &nc_udp_dispatch_sock_created_cb, ctx);
-    } else {
-        pl->udp.async_bind_port(ctx->sock, port, &nc_udp_dispatch_sock_created_cb, ctx);
-    }
+    ctx->bindCb = cb;
+    ctx->bindCbData = data;
+    return pl->udp.async_bind_port(ctx->sock, port, &nc_udp_dispatch_sock_bound_cb, ctx);
 }
 
-void nc_udp_dispatch_sock_created_cb(const np_error_code ec, void* data)
+void nc_udp_dispatch_sock_bound_cb(const np_error_code ec, void* data)
 {
     struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*) data;
-    ctx->pl->udp.async_recv_from(ctx->sock, &nc_udp_dispatch_handle_packet, ctx);
-    ctx->createCb(NABTO_EC_OK, ctx->createCbData);
+    if (ec == NABTO_EC_OK) {
+        ctx->pl->udp.async_recv_from(ctx->sock, &nc_udp_dispatch_handle_packet, ctx);
+    }
+    ctx->bindCb(ec, ctx->bindCbData);
+    ctx->bindCb = NULL;
 }
 
-void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx,
-                                   struct np_udp_send_context* sendCtx, struct np_udp_endpoint* ep,
-                                   uint8_t* buffer, uint16_t bufferSize,
-                                   nc_udp_dispatch_send_callback cb, void* data)
+np_error_code nc_udp_dispatch_abort(struct nc_udp_dispatch_context* ctx)
 {
-    np_udp_populate_send_context(sendCtx, ctx->sock, *ep, buffer, bufferSize, cb, data);
-    ctx->pl->udp.async_send_to(sendCtx);
+    return ctx->pl->udp.abort(ctx->sock);
+}
+
+np_error_code nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx,struct np_udp_endpoint* ep,
+                                            uint8_t* buffer, uint16_t bufferSize,
+                                            nc_udp_dispatch_send_callback cb, void* data)
+{
+    return ctx->pl->udp.async_send_to(ctx->sock, *ep, buffer, bufferSize, cb, data);
 }
 
 uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx)

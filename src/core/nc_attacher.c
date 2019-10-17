@@ -180,8 +180,8 @@ void nc_attacher_dtls_sender(bool activeChannel,
                              void* senderData)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
-    nc_udp_dispatch_async_send_to(ctx->udp,
-                                  &ctx->sendCtx, &ctx->ep,
+    // TODO handle error
+    nc_udp_dispatch_async_send_to(ctx->udp, &ctx->ep,
                                   buffer, bufferSize,
                                   cb, data);
 }

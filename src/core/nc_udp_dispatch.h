@@ -7,8 +7,7 @@ struct nc_stun_context;
 
 //typedef void (*nc_udp_dispatch_send_callback)(const np_error_code ec, void* data);
 typedef np_udp_packet_sent_callback nc_udp_dispatch_send_callback;
-typedef void (*nc_udp_dispatch_create_callback)(const np_error_code ec, void* data);
-typedef void (*nc_udp_dispatch_destroy_callback)(const np_error_code ec, void* data);
+typedef void (*nc_udp_dispatch_bind_callback)(const np_error_code ec, void* data);
 
 struct nc_udp_dispatch_context {
     struct np_platform* pl;
@@ -17,24 +16,21 @@ struct nc_udp_dispatch_context {
     struct np_dtls_cli_context* dtls;
     struct nc_stun_context* stun;
 
-    nc_udp_dispatch_destroy_callback destroyCb;
-    void* destroyCbData;
-
-    nc_udp_dispatch_create_callback createCb;
-    void* createCbData;
+    nc_udp_dispatch_bind_callback bindCb;
+    void* bindCbData;
 
 };
 
-void nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl);
+np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl);
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx);
 
-void nc_udp_dispatch_async_create(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
-                                  nc_udp_dispatch_create_callback cb, void* data);
+np_error_code nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
+                                         nc_udp_dispatch_bind_callback cb, void* data);
+np_error_code nc_udp_dispatch_abort(struct nc_udp_dispatch_context* ctx);
 
-void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx,
-                                   struct np_udp_send_context* sender, struct np_udp_endpoint* ep,
-                                   uint8_t* buffer, uint16_t bufferSize,
-                                   nc_udp_dispatch_send_callback cb, void* data);
+np_error_code nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct np_udp_endpoint* ep,
+                                            uint8_t* buffer, uint16_t bufferSize,
+                                            nc_udp_dispatch_send_callback cb, void* data);
 
 uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx);
 

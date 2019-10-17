@@ -125,8 +125,6 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
     pl->dtlsS.destroy_connection(conn->dtls);
 
-    np_event_queue_cancel_event(pl, &conn->sendCtx.ev);
-
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
 
@@ -353,12 +351,14 @@ void nc_client_connection_async_send_to_udp(uint8_t channel,
 
     if (channel == conn->currentChannel.channelId || channel == NP_DTLS_SRV_DEFAULT_CHANNEL_ID) {
         *(start+15) = conn->currentChannel.channelId;
-        nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->sendCtx, &conn->currentChannel.ep,
+        // TODO handle error
+        nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->currentChannel.ep,
                                       start, bufferSize,
                                       &nc_client_connection_send_to_udp_cb, conn);
     } else if (channel == conn->alternativeChannel.channelId) {
         *(start+15) = conn->alternativeChannel.channelId;
-        nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->sendCtx, &conn->alternativeChannel.ep,
+        // TODO handle error
+        nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->alternativeChannel.ep,
                                       start, bufferSize,
                                       &nc_client_connection_send_to_udp_cb, conn);
     }
