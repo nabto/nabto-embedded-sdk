@@ -189,6 +189,10 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     }
 
     NabtoDevice* device = nabto_device_new();
+    if (!device) {
+        std::cerr << "Could not create device" << std::endl;
+        return;
+    }
 
     auto productId = config["ProductId"].get<std::string>();
     auto deviceId  = config["DeviceId"].get<std::string>();
@@ -249,6 +253,7 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     // run application
     ec = nabto_device_start(device);
     if (ec != NABTO_DEVICE_EC_OK) {
+        nabto_device_free(device);
         std::cerr << "Failed to start device" << std::endl;
         return;
     }

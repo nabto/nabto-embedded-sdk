@@ -10,6 +10,7 @@ uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 
 np_error_code nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
+    memset(device, 0, sizeof(struct nc_device_context));
     device->pl = pl;
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
@@ -38,8 +39,15 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     nc_stream_manager_init(&device->streamManager, pl);
 
+    // TODO why are these not in init, where is deinit?
+    nc_stun_coap_init(&device->stunCoap, pl, &device->coapServer, &device->stun);
+    nc_rendezvous_coap_init(&device->rendezvousCoap, &device->coapServer, &device->rendezvous);
+
     device->eventsListenerSentinel.next = &device->eventsListenerSentinel;
     device->eventsListenerSentinel.prev = &device->eventsListenerSentinel;
+
+    device->deviceEventsSentinel.next = &device->deviceEventsSentinel;
+    device->deviceEventsSentinel.prev = &device->deviceEventsSentinel;
 
     device->serverPort = 4433;
 
@@ -105,14 +113,12 @@ void nc_device_detached_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     NABTO_LOG_INFO(LOG, "Device detached callback");
+    nc_device_events_listener_notify(dev, NC_DEVICE_EVENT_DETACHED);
     dev->isDetached = true;
     if (!dev->stopping) {
         np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
     } else {
         nc_device_try_resolve_close(dev);
-        /* nc_device_close_callback cb = dev->closeCb; */
-        /* dev->closeCb = NULL; */
-        /* cb(ec, dev->closeCbData); */
     }
 }
 
@@ -121,36 +127,44 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
     struct nc_device_context* dev = (struct nc_device_context*)data;
     if (ec == NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "Device is now attached");
+        nc_device_events_listener_notify(dev, NC_DEVICE_EVENT_ATTACHED);
         dev->isDetached = false;
         dev->attachAttempts = 0;
         // wait for detach or quit.
         np_error_code ec2;
         ec2 = nc_attacher_register_detach_callback(&dev->attacher, &nc_device_detached_cb, dev);
         if ( ec2 != NABTO_EC_OK ) {
-            // TODO: handle impossible error
+            NABTO_LOG_ERROR(LOG, "Failed to register detach callback. This should not be possible");
         }
     } else {
         NABTO_LOG_INFO(LOG, "Device failed to attached");
         dev->isDetached = true;
-       if (!dev->stopping) {
-           NABTO_LOG_TRACE(LOG, "Not stopping, trying to reattach");
-           np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
-       }
+        if (!dev->stopping) {
+            NABTO_LOG_TRACE(LOG, "Not stopping, trying to reattach");
+            np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
+        } else {
+            // stopping, trying to close
+            nc_device_try_resolve_close(dev);
+        }
     }
 }
 
 void nc_device_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data)
 {
+    // TODO fail if closed if used
     NABTO_LOG_INFO(LOG, "Stun analysis finished with ec: %s", np_error_code_to_string(ec));
 }
 
-void nc_device_secondary_udp_created_cb(const np_error_code ec, void* data) {
+void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
+    struct nc_device_context* dev = (struct nc_device_context*)data;
+    if (dev->stopping) {
+        dev->clientConnsClosed = true; // client conns cannot have started
+        nc_device_try_resolve_close(dev);
+    }
     if (ec != NABTO_EC_OK) {
-        // TODO how to fail properly
-        NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary UDP socket");
+        NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary UDP socket. Device continues without STUN");
         return;
     }
-    struct nc_device_context* dev = (struct nc_device_context*)data;
     nc_stun_init_config_and_sockets(&dev->stun, dev->stunHost, &dev->udp, &dev->secondaryUdp);
 
     nc_udp_dispatch_set_stun_context(&dev->udp, &dev->stun);
@@ -160,22 +174,28 @@ void nc_device_secondary_udp_created_cb(const np_error_code ec, void* data) {
     // ec2 = nc_stun_async_analyze(&dev->stun, &nc_device_stun_analysed_cb, dev);
 }
 
-void nc_device_udp_created_cb(const np_error_code ec, void* data)
+void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
+    if (dev->stopping) {
+        dev->clientConnsClosed = true; // client conns cannot have started
+        nc_device_try_resolve_close(dev);
+    }
     if (ec != NABTO_EC_OK) {
-        // TODO how to fail properly
-        NABTO_LOG_ERROR(LOG, "nc_device failed to create primary UDP socket");
+        NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket");
+        nc_device_events_listener_notify(dev, NC_DEVICE_EVENT_FAILURE);
         return;
     }
 
-    NABTO_LOG_TRACE(LOG, "nc_device_udp_created_cb");
-
+    np_error_code ec2 = nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_bound_cb, dev);
+    if (ec2 != NABTO_EC_OK) {
+        nc_udp_dispatch_abort(&dev->udp);
+        nc_device_events_listener_notify(dev, NC_DEVICE_EVENT_FAILURE);
+        return;
+    }
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
 
     nc_attacher_async_attach(&dev->attacher, dev->pl, &dev->attachParams, nc_device_attached_cb, dev);
-    // todo check error code
-    nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_created_cb, dev);
 
     if (dev->enableMdns) {
         dev->pl->mdns.start(&dev->mdns, dev->pl, dev->productId, dev->deviceId, nc_device_mdns_get_port, dev);
@@ -206,15 +226,13 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->productId = productId;
     dev->deviceId = deviceId;
 
-
     dev->connectionRef = 0;
 
-    // todo check error code
-    nc_udp_dispatch_async_bind(&dev->udp, pl, port, &nc_device_udp_created_cb, dev);
+    np_error_code ec = nc_udp_dispatch_async_bind(&dev->udp, pl, port, &nc_device_udp_bound_cb, dev);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
     nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
-
-    nc_stun_coap_init(&dev->stunCoap, pl, &dev->coapServer, &dev->stun);
-    nc_rendezvous_coap_init(&dev->rendezvousCoap, &dev->coapServer, &dev->rendezvous);
 
     return NABTO_EC_OK;
 }
@@ -244,7 +262,7 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
     nc_stun_deinit_sockets(&dev->stun);
     np_event_queue_cancel_timed_event(dev->pl, &dev->tEv);
-    if (dev->enableMdns) {
+    if (dev->enableMdns && dev->mdns) {
         dev->pl->mdns.stop(dev->mdns);
     }
     if (dev->isDetached) {
@@ -318,6 +336,8 @@ void nc_device_remove_connection_events_listener(struct nc_device_context* dev, 
     struct nc_connection_events_listener* after = listener->next;
     before->next = after;
     after->prev = before;
+    listener->prev = listener;
+    listener->next = listener;
 }
 
 void nc_device_connection_events_listener_notify(struct nc_device_context* dev, uint64_t connectionRef, enum nc_connection_event event)
@@ -332,5 +352,45 @@ void nc_device_connection_events_listener_notify(struct nc_device_context* dev, 
         iterator = iterator->next;
 
         current->cb(connectionRef, event, current->userData);
+    }
+}
+
+void nc_device_add_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener, nc_device_event_callback cb, void* userData)
+{
+    listener->cb = cb;
+    listener->userData = userData;
+
+    struct nc_device_events_listener* before = dev->deviceEventsSentinel.prev;
+    struct nc_device_events_listener* after = before->next;
+
+    before->next = listener;
+    listener->next = after;
+    after->prev = listener;
+    listener->prev = before;
+
+}
+
+void nc_device_remove_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener)
+{
+    struct nc_device_events_listener* before = listener->prev;
+    struct nc_device_events_listener* after = listener->next;
+    before->next = after;
+    after->prev = before;
+    listener->prev = listener;
+    listener->next = listener;
+}
+
+void nc_device_events_listener_notify(struct nc_device_context* dev, enum nc_device_event event)
+{
+    struct nc_device_events_listener* iterator = dev->deviceEventsSentinel.next;
+
+    while (iterator != &dev->deviceEventsSentinel)
+    {
+        // increment iterator now, such that it's allowed to remove
+        // the listener from the connection in from the event handler.
+        struct nc_device_events_listener* current = iterator;
+        iterator = iterator->next;
+
+        current->cb(event, current->userData);
     }
 }

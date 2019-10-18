@@ -9,115 +9,143 @@ struct nabto_device_event {
     void* data;
 };
 
-struct nabto_device_event_handler {
+struct nabto_device_listener {
     struct nabto_device_context* dev;
     struct nabto_device_event sentinel;
-    nabto_device_event_handler_resolve_event cb;
-    void* handlerData;
+    nabto_device_listener_resolve_event cb;
+    void* listenerData;
     struct nabto_device_future* fut;
     np_error_code ec;
 };
 
-void nabto_device_event_handler_resolve_error_state(struct nabto_device_event_handler* handler);
-void nabto_device_event_handler_try_resolve(struct nabto_device_event_handler* handler);
-void nabto_device_event_handler_pop_event(struct nabto_device_event_handler* handler, struct nabto_device_event* ev);
+void nabto_device_listener_resolve_error_state(struct nabto_device_listener* listener);
+void nabto_device_listener_try_resolve(struct nabto_device_listener* listener);
+void nabto_device_listener_pop_event(struct nabto_device_listener* listener, struct nabto_device_event* ev);
 
-struct nabto_device_event_handler* nabto_device_event_handler_new(struct nabto_device_context* dev,
-                                                                  nabto_device_event_handler_resolve_event cb,
-                                                                  void* handlerData)
+struct nabto_device_listener* nabto_device_listener_new(struct nabto_device_context* dev,
+                                                        nabto_device_listener_resolve_event cb,
+                                                        void* listenerData)
 {
-    struct nabto_device_event_handler* handler = (struct nabto_device_event_handler*)calloc(1,sizeof(struct nabto_device_event_handler));
-    if (handler == NULL) {
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)calloc(1,sizeof(struct nabto_device_listener));
+    if (listener == NULL) {
         return NULL;
     }
-    handler->dev = dev;
-    handler->cb = cb;
-    handler->handlerData = handlerData;
-    handler->sentinel.next = &handler->sentinel;
-    handler->sentinel.prev = &handler->sentinel;
-    handler->ec = NABTO_EC_OK;
-    return handler;
+    listener->dev = dev;
+    listener->cb = cb;
+    listener->listenerData = listenerData;
+    listener->sentinel.next = &listener->sentinel;
+    listener->sentinel.prev = &listener->sentinel;
+    listener->ec = NABTO_EC_OK;
+    return listener;
 }
 
-np_error_code nabto_device_event_handler_add_event(struct nabto_device_event_handler* handler, void* data)
+np_error_code nabto_device_listener_add_event(struct nabto_device_listener* listener, void* data)
 {
-    if (handler->ec != NABTO_EC_OK) {
-        return handler->ec;
+    if (listener->ec != NABTO_EC_OK) {
+        return listener->ec;
     }
     struct nabto_device_event* ev = (struct nabto_device_event*)calloc(1,sizeof(struct nabto_device_event));
     if (ev == NULL) {
-        handler->ec = NABTO_EC_OUT_OF_MEMORY;
-        nabto_device_event_handler_resolve_error_state(handler);
+        listener->ec = NABTO_EC_OUT_OF_MEMORY;
+        nabto_device_listener_resolve_error_state(listener);
         return NABTO_EC_OUT_OF_MEMORY;
     }
     ev->data = data;
-    struct nabto_device_event* before = handler->sentinel.prev;
-    struct nabto_device_event* after = &handler->sentinel;
+    struct nabto_device_event* before = listener->sentinel.prev;
+    struct nabto_device_event* after = &listener->sentinel;
     before->next = ev;
     ev->next = after;
     after->prev = ev;
     ev->prev = before;
-    nabto_device_event_handler_try_resolve(handler);
+    nabto_device_listener_try_resolve(listener);
     return NABTO_EC_OK;
 }
 
-void NABTO_DEVICE_API nabto_device_event_handler_free(NabtoDeviceEventHandler* eventHandler)
+void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceListener)
 {
-    struct nabto_device_event_handler* handler = (struct nabto_device_event_handler*)eventHandler;
-    handler->ec = NABTO_EC_ABORTED;
-    nabto_device_event_handler_resolve_error_state(handler);
-    handler->cb(NABTO_EC_STOPPED, NULL, NULL, handler->handlerData);
-    free(handler);
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
+    struct nabto_device_context* dev = listener->dev;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    listener->ec = NABTO_EC_ABORTED;
+    nabto_device_listener_resolve_error_state(listener);
+    free(listener);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_event_handler_create_future(NabtoDeviceEventHandler* eventHandler, NabtoDeviceFuture** future)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_listen(NabtoDeviceListener* DeviceListener, NabtoDeviceFuture** future)
 {
-    struct nabto_device_event_handler* handler = (struct nabto_device_event_handler*)eventHandler;
-    if (handler->ec != NABTO_EC_OK) {
-        return nabto_device_error_core_to_api(handler->ec);
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)DeviceListener;
+    nabto_device_threads_mutex_lock(listener->dev->eventMutex);
+    if (listener->ec != NABTO_EC_OK) {
+        nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
+        return nabto_device_error_core_to_api(listener->ec);
     }
-    handler->fut = nabto_device_future_new(handler->dev);
-    *future = (NabtoDeviceFuture*)handler->fut;
-    if (handler->fut == NULL) {
+    listener->fut = nabto_device_future_new(listener->dev);
+    if (listener->fut == NULL) {
+        nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
         return NABTO_DEVICE_EC_FAILED;
     }
-    nabto_device_event_handler_try_resolve(handler);
+    *future = (NabtoDeviceFuture*)listener->fut;
+    nabto_device_listener_try_resolve(listener);
+    nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
     return NABTO_DEVICE_EC_OK;
 }
 
-void nabto_device_event_handler_set_error_code(struct nabto_device_event_handler* handler, np_error_code ec)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_stop(NabtoDeviceListener* deviceListener)
 {
-    handler->ec = ec;
-    nabto_device_event_handler_resolve_error_state(handler);
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
+    nabto_device_threads_mutex_lock(listener->dev->eventMutex);
+    if (listener->ec == NABTO_EC_OK) {
+        nabto_device_listener_set_error_code(listener, NABTO_EC_STOPPED);
+        nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
+        return NABTO_DEVICE_EC_STOPPED;
+    }
+    nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
+    return nabto_device_error_core_to_api(listener->ec);
+}
+
+void nabto_device_listener_set_error_code(struct nabto_device_listener* listener, np_error_code ec)
+{
+    listener->ec = ec;
+    nabto_device_listener_resolve_error_state(listener);
 }
 
 
 /********************
  * Helper Functions *
  ********************/
-void nabto_device_event_handler_try_resolve(struct nabto_device_event_handler* handler)
+void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
 {
-    if (handler->fut && handler->sentinel.next != &handler->sentinel) {
-        handler->cb(NABTO_EC_OK, handler->fut, handler->sentinel.next->data, handler->handlerData);
-        nabto_api_future_queue_post(&handler->dev->queueHead, handler->fut);
-        handler->fut = NULL;
-        nabto_device_event_handler_pop_event(handler, handler->sentinel.next);
+    if (listener->fut && listener->sentinel.next != &listener->sentinel) {
+        if (listener->cb) {
+            listener->cb(NABTO_EC_OK, listener->fut, listener->sentinel.next->data, listener->listenerData);
+        }
+        nabto_api_future_queue_post(&listener->dev->queueHead, listener->fut);
+        listener->fut = NULL;
+        nabto_device_listener_pop_event(listener, listener->sentinel.next);
     }
 }
 
-void nabto_device_event_handler_resolve_error_state(struct nabto_device_event_handler* handler)
+void nabto_device_listener_resolve_error_state(struct nabto_device_listener* listener)
 {
-    while (handler->sentinel.next != &handler->sentinel) {
-        handler->cb(handler->ec, NULL, handler->sentinel.next->data, handler->handlerData);
-        nabto_device_event_handler_pop_event(handler, handler->sentinel.next);
+    while (listener->sentinel.next != &listener->sentinel) {
+        if (listener->cb) {
+            listener->cb(listener->ec, NULL, listener->sentinel.next->data, listener->listenerData);
+        }
+        nabto_device_listener_pop_event(listener, listener->sentinel.next);
     }
-    if (handler->fut) {
-        nabto_api_future_set_error_code(handler->fut, nabto_device_error_core_to_api(handler->ec));
-        nabto_api_future_queue_post(&handler->dev->queueHead, handler->fut);
+    if (listener->fut) {
+        nabto_api_future_set_error_code(listener->fut, nabto_device_error_core_to_api(listener->ec));
+        nabto_api_future_queue_post(&listener->dev->queueHead, listener->fut);
+        listener->fut = NULL;
     }
+    if (listener->cb) {
+        listener->cb(NABTO_EC_STOPPED, NULL, NULL, listener->listenerData);
+    }
+    listener->cb = NULL;
 }
 
-void nabto_device_event_handler_pop_event(struct nabto_device_event_handler* handler, struct nabto_device_event* ev)
+void nabto_device_listener_pop_event(struct nabto_device_listener* listener, struct nabto_device_event* ev)
 {
     struct nabto_device_event* before = ev->prev;
     struct nabto_device_event* after = ev->next;

@@ -23,6 +23,10 @@ struct nabto_device_context {
     struct nabto_device_condition* eventCond;
     struct nabto_device_future* iamChangedFuture;
 
+    struct nabto_device_mutex* futureQueueMutex;
+    struct nabto_device_condition* futureQueueCond;
+
+
     bool enableMdns;
 
     bool closing;

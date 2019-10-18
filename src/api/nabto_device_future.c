@@ -12,6 +12,9 @@ typedef uint32_t nabto_device_duration_t_;
 struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev)
 {
     struct nabto_device_future* fut = malloc(sizeof(struct nabto_device_future));
+    if (fut == NULL) {
+        return NULL;
+    }
     memset(fut, 0, sizeof(struct nabto_device_future));
     fut->ready = false;
     fut->dev = dev;

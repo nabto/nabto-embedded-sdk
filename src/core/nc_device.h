@@ -15,6 +15,23 @@
 #include <platform/np_error_code.h>
 
 
+enum nc_device_event {
+    NC_DEVICE_EVENT_ATTACHED,
+    NC_DEVICE_EVENT_DETACHED,
+    NC_DEVICE_EVENT_FAILURE
+};
+
+typedef void (*nc_device_event_callback)(enum nc_device_event event, void* userData);
+
+struct nc_device_events_listener;
+struct nc_device_events_listener {
+    struct nc_device_events_listener* next;
+    struct nc_device_events_listener* prev;
+
+    nc_device_event_callback cb;
+    void* userData;
+};
+
 typedef void (*nc_device_close_callback)(const np_error_code ec, void* data);
 
 struct nc_device_context {
@@ -58,6 +75,7 @@ struct nc_device_context {
     void* closeCbData;
 
     struct nc_connection_events_listener eventsListenerSentinel;
+    struct nc_device_events_listener deviceEventsSentinel;
 };
 
 np_error_code nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
@@ -83,7 +101,10 @@ bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* us
 
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData);
 void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener);
-
 void nc_device_connection_events_listener_notify(struct nc_device_context* dev, uint64_t connectionRef, enum nc_connection_event event);
+
+void nc_device_add_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener, nc_device_event_callback cb, void* userData);
+void nc_device_remove_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener);
+void nc_device_events_listener_notify(struct nc_device_context* dev, enum nc_device_event event);
 
 #endif // NC_DEVICE_H

@@ -4,6 +4,10 @@
 #include <platform/np_error_code.h>
 #include <nabto_types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nabto_device_thread;
 
 struct nabto_device_mutext;
@@ -32,5 +36,9 @@ void nabto_device_threads_cond_wait(struct nabto_device_condition* cond,
 void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
                                           struct nabto_device_mutex* mut,
                                           uint32_t ms);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif //NABTO_DEVICE_THREADS_H

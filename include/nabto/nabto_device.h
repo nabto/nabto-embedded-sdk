@@ -92,6 +92,7 @@ extern const NabtoDeviceError NABTO_DEVICE_EC_STRING_TOO_LONG;
 extern const NabtoDeviceError NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
 extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
 extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
+extern const NabtoDeviceError NABTO_DEVICE_EC_STOPPED;
 extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
 extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
 
@@ -203,7 +204,9 @@ nabto_device_set_local_port(NabtoDevice* device, uint16_t port);
  *
  * @param device    The device instance to perform action on
  * @param port      Reference port to set
- * @return NABTO_DEVICE_EC_OK on success
+ * @return
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);

@@ -55,8 +55,11 @@ class HeatPump {
     void init();
 
     void deinit() {
-        if (connectionEventHandler_) {
-            nabto_device_event_handler_free(connectionEventHandler_);
+        if (connectionEventListener_) {
+            nabto_device_listener_stop(connectionEventListener_);
+        }
+        if (deviceEventListener_) {
+            nabto_device_listener_stop(deviceEventListener_);
         }
     }
 
@@ -143,10 +146,16 @@ class HeatPump {
 
     static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForIamChanges();
+
     static void connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForConnectionEvents();
-    void saveConfig();
     void startWaitEvent();
+
+    static void deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
+    void listenForDeviceEvents();
+    void startWaitDevEvent();
+
+    void saveConfig();
 
     std::mutex mutex_;
     NabtoDevice* device_;
@@ -155,10 +164,12 @@ class HeatPump {
     bool pairing_ = false;
     uint64_t currentIamVersion_;
 
-    NabtoDeviceEventHandler* connectionEventHandler_;
+    NabtoDeviceListener* connectionEventListener_;
     NabtoDeviceConnectionRef connectionRef_;
     NabtoDeviceConnectionEvent connectionEvent_;
 
+    NabtoDeviceListener* deviceEventListener_;
+    NabtoDeviceEvent deviceEvent_;
 };
 
 #endif

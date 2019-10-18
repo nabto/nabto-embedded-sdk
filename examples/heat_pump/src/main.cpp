@@ -85,6 +85,10 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     json config;
 
     NabtoDevice* device = nabto_device_new();
+    if (device == NULL) {
+        std::cerr << "Could not create device" << std::endl;
+        return false;
+    }
     NabtoDeviceError ec;
 
     char* str;
@@ -206,6 +210,7 @@ void run_heat_pump(const std::string& configFile)
     ec = nabto_device_start(device);
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to start device" << std::endl;
+        nabto_device_free(device);
         return;
     }
 

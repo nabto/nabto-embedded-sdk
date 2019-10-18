@@ -20,12 +20,15 @@ class TcpTunnel {
         tcptunnel_coap_init(device_, this);
         listenForIamChanges();
         listenForConnectionEvents();
+        listenForDeviceEvents();
     }
 
     void deinit() {
-        if (connectionEventHandler_) {
-            nabto_device_event_handler_free(connectionEventHandler_);
-            connectionEventHandler_ = NULL;
+        if (connectionEventListener_) {
+            nabto_device_listener_stop(connectionEventListener_);
+        }
+        if (deviceEventListener_) {
+            nabto_device_listener_stop(deviceEventListener_);
         }
     }
 
@@ -37,9 +40,15 @@ class TcpTunnel {
  private:
     static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForIamChanges();
+
     static void connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForConnectionEvents();
     void startWaitEvent();
+
+    static void deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
+    void listenForDeviceEvents();
+    void startWaitDevEvent();
+
     void saveConfig();
 
     NabtoDevice* device_;
@@ -47,7 +56,10 @@ class TcpTunnel {
     const std::string& configFile_;
     uint64_t currentIamVersion_;
 
-    NabtoDeviceEventHandler* connectionEventHandler_;
+    NabtoDeviceListener* connectionEventListener_;
     NabtoDeviceConnectionRef connectionRef_;
     NabtoDeviceConnectionEvent connectionEvent_;
+
+    NabtoDeviceListener* deviceEventListener_;
+    NabtoDeviceEvent deviceEvent_;
 };

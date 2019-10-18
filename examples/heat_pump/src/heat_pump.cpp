@@ -11,6 +11,7 @@
 void HeatPump::init() {
     listenForIamChanges();
     listenForConnectionEvents();
+    listenForDeviceEvents();
 }
 
 bool validate_config(const json& config) {
@@ -102,16 +103,19 @@ void HeatPump::saveConfig()
 void HeatPump::startWaitEvent()
 {
     NabtoDeviceFuture* future;
-    NabtoDeviceError ec = nabto_device_event_handler_create_future(connectionEventHandler_, &future);
+    NabtoDeviceError ec = nabto_device_listener_listen(connectionEventListener_, &future);
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
-        nabto_device_event_handler_free(connectionEventHandler_);
+        nabto_device_listener_free(connectionEventListener_);
+        connectionEventListener_ = NULL;
+        return;
     }
     ec = nabto_device_future_set_callback(future, &HeatPump::connectionEvent, this);
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to set future callback with ec: " << ec << std::endl;
         nabto_device_future_free(future);
-        nabto_device_event_handler_free(connectionEventHandler_);
+        nabto_device_listener_free(connectionEventListener_);
+        connectionEventListener_ = NULL;
         return;
     }
 }
@@ -122,6 +126,7 @@ void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, voi
     nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
         std::cout << "Connection event called back with error: " << err << std::endl;
+        nabto_device_listener_free(hp->connectionEventListener_);
         return;
     } else {
         if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
@@ -140,10 +145,63 @@ void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, voi
 
 void HeatPump::listenForConnectionEvents()
 {
-    connectionEventHandler_ = nabto_device_listen_connection_event(device_, &connectionRef_, &connectionEvent_);
-    if (connectionEventHandler_ == NULL) {
+    connectionEventListener_ = nabto_device_connection_events_listener_new(device_, &connectionRef_, &connectionEvent_);
+    if (connectionEventListener_ == NULL) {
         std::cerr << "Failed to listen to connection events" << std::endl;
         return;
     }
     startWaitEvent();
+}
+
+void HeatPump::startWaitDevEvent()
+{
+    NabtoDeviceFuture* future;
+    NabtoDeviceError ec = nabto_device_listener_listen(deviceEventListener_, &future);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to create device event future with ec: " << ec << std::endl;
+        nabto_device_listener_free(deviceEventListener_);
+        deviceEventListener_ = NULL;
+        return;
+    }
+    ec = nabto_device_future_set_callback(future, &HeatPump::deviceEvent, this);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to set future callback with ec: " << ec << std::endl;
+        nabto_device_future_free(future);
+        nabto_device_listener_free(deviceEventListener_);
+        deviceEventListener_ = NULL;
+        return;
+    }
+}
+
+void HeatPump::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
+{
+    HeatPump* hp = (HeatPump*)userData;
+    nabto_device_future_free(fut);
+    if (err != NABTO_DEVICE_EC_OK) {
+        std::cout << "Device event called back with error: " << err << std::endl;
+        nabto_device_listener_free(hp->deviceEventListener_);
+        return;
+    } else {
+        if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_ATTACHED) {
+            std::cout << "Device is now attached" << std::endl;
+        } else if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_DETACHED) {
+            std::cout << "Device is now detached" << std::endl;
+        } else if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_FAILURE) {
+            std::cout << "Device is now in a failure state!" << std::endl;
+        } else {
+            std::cout << "Unknown device event: " << hp->deviceEvent_ << std::endl;
+        }
+    }
+    hp->startWaitDevEvent();
+
+}
+
+void HeatPump::listenForDeviceEvents()
+{
+    deviceEventListener_ = nabto_device_events_listener_new(device_, &deviceEvent_);
+    if (deviceEventListener_ == NULL) {
+        std::cerr << "Failed to listen to device events" << std::endl;
+        return;
+    }
+    startWaitDevEvent();
 }

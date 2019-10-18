@@ -345,7 +345,7 @@ void nm_epoll_udp_resolve_close(struct nm_epoll_base* base)
         shutdown(sock->sock, SHUT_RDWR);
 
         if (epoll_ctl(epoll->fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
-            NABTO_LOG_ERROR(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
+            NABTO_LOG_TRACE(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
         }
     }
     nm_epoll_cancel_all_events(sock);
@@ -748,16 +748,8 @@ void nm_epoll_udp_add_send_base(np_udp_socket* sock, struct nm_epoll_udp_send_ba
 
 void nm_epoll_udp_remove_send_base(np_udp_socket* sock, struct nm_epoll_udp_send_base* base)
 {
-    struct nm_epoll_udp_send_base* iterator = sock->sendSentinel->next;
-    while (iterator != sock->sendSentinel) {
-        if (iterator == base) {
-            base->prev->next = base->next;
-            base->next->prev = base->prev;
-            base->prev = NULL;
-            base->next = NULL;
-            return;
-        }
-        iterator = iterator->next;
-    }
-
+    base->prev->next = base->next;
+    base->next->prev = base->prev;
+    base->prev = base;
+    base->next = base;
 }
