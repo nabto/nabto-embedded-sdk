@@ -69,7 +69,9 @@ void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoin
     struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*) data;
     uint8_t* start = buffer;
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Socket returned error: (%u) %s", ec, np_error_code_to_string(ec));
+        if (ec != NABTO_EC_ABORTED) { // if aborted, we asked for the error so dont advertise it
+            NABTO_LOG_ERROR(LOG, "Socket returned error: (%u) %s", ec, np_error_code_to_string(ec));
+        }
         return;
     }
     if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {

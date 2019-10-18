@@ -318,6 +318,15 @@ np_error_code nm_epoll_tcp_shutdown(np_tcp_socket* sock)
     return NABTO_EC_OK;
 }
 
+void nm_epoll_tcp_cancel_all_events(np_tcp_socket* sock)
+{
+    NABTO_LOG_TRACE(LOG, "Cancelling all events");
+    np_event_queue_cancel_event(sock->pl, &sock->abortEv);
+    np_event_queue_cancel_event(sock->pl, &sock->write.event);
+    np_event_queue_cancel_event(sock->pl, &sock->read.event);
+    np_event_queue_cancel_event(sock->pl, &sock->connect.event);
+}
+
 void nm_epoll_tcp_resolve_close(struct nm_epoll_base* base)
 {
     np_tcp_socket* sock = (np_tcp_socket*)base;
@@ -325,7 +334,7 @@ void nm_epoll_tcp_resolve_close(struct nm_epoll_base* base)
     shutdown(sock->fd, SHUT_RDWR);
     epoll_ctl(sock->epoll->fd, EPOLL_CTL_DEL, sock->fd, NULL);
     sock->fd = -1;
-    np_event_queue_cancel_event(sock->pl, &sock->abortEv);
+    nm_epoll_tcp_cancel_all_events(sock);
     nm_epoll_remove_tcp_socket(sock->epoll);
     free(sock);
 }
@@ -342,6 +351,11 @@ void nm_epoll_tcp_event_abort(void* userData)
         np_tcp_write_callback cb = sock->write.callback;
         sock->write.callback = NULL;
         cb(NABTO_EC_ABORTED, sock->write.userData);
+    }
+    if (sock->connect.callback) {
+        np_tcp_connect_callback cb = sock->connect.callback;
+        sock->connect.callback = NULL;
+        cb(NABTO_EC_ABORTED, sock->connect.userData);
     }
 }
 

@@ -29,11 +29,18 @@ class TestPlatformSelectUnix : public TestPlatform {
         nm_dtls_cli_init(&pl_);
         nm_dtls_srv_init(&pl_);
     }
+
+    void deinit()
+    {
+        nm_select_unix_close(&selectCtx_);
+    }
+
     virtual void run()
     {
         int nfds;
         while (true) {
-            if (stopped_) {
+            if (stopped_ && nm_select_unix_finished(&selectCtx_)) {
+                deinit();
                 return;
             }
             np_event_queue_execute_all(&pl_);

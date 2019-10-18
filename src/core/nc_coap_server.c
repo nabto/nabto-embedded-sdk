@@ -33,6 +33,7 @@ void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* 
 
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
 {
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
     nabto_coap_server_destroy(&ctx->server);
     ctx->pl->buf.free(ctx->sendBuffer);
 }

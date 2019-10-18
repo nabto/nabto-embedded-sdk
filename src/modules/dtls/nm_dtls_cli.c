@@ -398,7 +398,7 @@ void nm_dtls_do_close(void* data, np_error_code ec){
         NABTO_LOG_ERROR(LOG, "close callback was NULL");
         return;
     }
-    NABTO_LOG_ERROR(LOG, "Calling close callback");
+    NABTO_LOG_TRACE(LOG, "Calling close callback");
     cb(NABTO_EC_OK, cbData);
 }
 

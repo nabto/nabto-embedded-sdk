@@ -167,7 +167,6 @@ void close_stream(struct nm_tcptunnel_connection* connection)
         nc_stream_async_close(connection->stream, &stream_closed, connection);
     } else {
         connection->tcpReadEnded = true;
-        NABTO_LOG_INFO(LOG, "is_ended from close_stream");
         is_ended(connection);
     }
 }

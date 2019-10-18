@@ -47,6 +47,16 @@ void nm_select_unix_tcp_init(struct nm_select_unix* ctx)
     pl->tcp.abort = &tcp_close;
 }
 
+void nm_select_unix_tcp_deinit(struct nm_select_unix* ctx)
+{
+    // nothing was allocated in init
+}
+
+bool nm_select_unix_tcp_has_sockets(struct nm_select_unix* ctx)
+{
+    return ctx->tcpSockets.socketsSentinel.next == &ctx->tcpSockets.socketsSentinel;
+}
+
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
 {
     struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
@@ -65,12 +75,40 @@ void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
     }
 }
 
+void nm_select_unix_tcp_cancel_all_events(np_tcp_socket* sock)
+{
+    struct np_platform* pl = sock->pl;
+    NABTO_LOG_TRACE(LOG, "Cancelling all events");
+    np_event_queue_cancel_event(pl, &sock->connectEvent);
+    np_event_queue_cancel_event(pl, &sock->abortEv);
+}
+
+void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
+{
+    np_tcp_socket* before = sock->prev;
+    np_tcp_socket* after = sock->next;
+    before->next = after;
+    after->prev = before;
+
+    shutdown(sock->fd, SHUT_RDWR);
+    close(sock->fd);
+    nm_select_unix_tcp_cancel_all_events(sock);
+    free(sock);
+
+}
+
 void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
     struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
     struct np_tcp_socket* iterator = sockets->socketsSentinel.next;
     while (iterator != &sockets->socketsSentinel)
     {
+        if (iterator->destroyed) {
+            np_tcp_socket* current = iterator;
+            iterator = iterator->next;
+            nm_select_unix_tcp_free_socket(current);
+            continue;
+        }
         if (FD_ISSET(iterator->fd, &ctx->readFds)) {
             tcp_do_read(iterator);
         }
@@ -104,16 +142,26 @@ np_error_code create(struct np_platform* pl, np_tcp_socket** sock)
     after->prev = s;
     s->prev = before;
 
+    s->destroyed = false;
+    s->aborted = false;
     return NABTO_EC_OK;
 }
 
 void destroy(np_tcp_socket* sock)
 {
-    // TODO
+    if (sock == NULL) {
+        return;
+    }
+    sock->destroyed = true;
+    nm_select_unix_notify(sock->selectCtx);
+    return;
 }
 
 np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
 {
+    if (sock->aborted) {
+        return NABTO_EC_ABORTED;
+    }
     if (sock->connectCb) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -300,6 +348,9 @@ void tcp_do_write(np_tcp_socket* sock)
 
 np_error_code async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData)
 {
+    if (sock->aborted) {
+        return NABTO_EC_ABORTED;
+    }
     if (sock->write.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -345,6 +396,9 @@ void tcp_do_read(np_tcp_socket* sock)
 
 np_error_code async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
 {
+    if (sock->aborted) {
+        return NABTO_EC_ABORTED;
+    }
     if (sock->read.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -362,8 +416,32 @@ np_error_code tcp_shutdown(np_tcp_socket* sock)
     return NABTO_EC_OK;
 }
 
+void nm_select_unix_tcp_event_abort(void* userData)
+{
+    np_tcp_socket* sock = (np_tcp_socket*)userData;
+    if (sock->read.callback != NULL) {
+        np_tcp_read_callback cb = sock->read.callback;
+        sock->read.callback = NULL;
+        cb(NABTO_EC_ABORTED, 0, sock->read.userData);
+    }
+    if (sock->write.callback != NULL) {
+        np_tcp_write_callback cb = sock->write.callback;
+        sock->write.callback = NULL;
+        cb(NABTO_EC_ABORTED, sock->write.userData);
+    }
+    if (sock->connectCb) {
+        np_tcp_connect_callback cb = sock->connectCb;
+        sock->connectCb = NULL;
+        cb(NABTO_EC_ABORTED, sock->connectCbData);
+    }
+}
+
 np_error_code tcp_close(np_tcp_socket* sock)
 {
-    close(sock->fd);
+    if (sock->aborted) {
+        return NABTO_EC_OK;
+    }
+    sock->aborted = true;
+    np_event_queue_post(sock->pl, &sock->abortEv, &nm_select_unix_tcp_event_abort, sock);
     return NABTO_EC_OK;
 }

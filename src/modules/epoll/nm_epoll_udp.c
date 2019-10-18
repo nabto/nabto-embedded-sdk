@@ -215,6 +215,10 @@ size_t nm_epoll_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
 
 uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
 {
+    if (socket->aborted) {
+        NABTO_LOG_ERROR(LOG, "get local port called on aborted socket");
+        return 0;
+    }
     struct sockaddr_in6 addr;
     addr.sin6_port = 0;
     socklen_t length = sizeof(struct sockaddr_in6);
@@ -440,6 +444,10 @@ void nm_epoll_event_bind_port(void* data)
 
 np_error_code nm_epoll_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data)
 {
+    if (sock->aborted) {
+        NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
+        return NABTO_EC_ABORTED;
+    }
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
@@ -451,6 +459,10 @@ np_error_code nm_epoll_async_bind_port(np_udp_socket* sock, uint16_t port, np_ud
 
 np_error_code nm_epoll_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
 {
+    if (sock->aborted) {
+        NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
+        return NABTO_EC_ABORTED;
+    }
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
@@ -549,6 +561,10 @@ bool nm_epoll_init_mdns_ipv4_socket(int sock)
 
 np_error_code nm_epoll_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
 {
+    if (sock->aborted) {
+        NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
+        return NABTO_EC_ABORTED;
+    }
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
@@ -687,6 +703,8 @@ void nm_epoll_event_send_to(void* data)
             if (ctx->cb) {
                 ctx->cb(NABTO_EC_FAILED_TO_SEND_PACKET, ctx->cbData);
             }
+            nm_epoll_udp_remove_send_base(sock, (struct nm_epoll_udp_send_base*)ctx);
+            free(ctx);
             return;
         }
     }
@@ -726,6 +744,10 @@ np_error_code nm_epoll_async_send_to(np_udp_socket* sock, struct np_udp_endpoint
 np_error_code nm_epoll_async_recv_from(np_udp_socket* socket,
                               np_udp_packet_received_callback cb, void* data)
 {
+    if (socket->aborted) {
+        NABTO_LOG_ERROR(LOG, "recv from called on aborted socket");
+        return NABTO_EC_ABORTED;
+    }
     struct np_platform* pl = socket->pl;
 
     socket->recv.cb = cb;

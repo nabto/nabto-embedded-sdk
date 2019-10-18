@@ -73,9 +73,11 @@ BOOST_AUTO_TEST_CASE(event_test)
     ec2 = nabto_device_future_error_code(fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
 
+    nabto_device_future_free(fut);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     BOOST_TEST(event == nabto::test::RESOLVED);
     BOOST_TEST(listener == NABTO_EC_STOPPED);
+    nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
 }
 
@@ -119,6 +121,7 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
     BOOST_TEST(event1 == nabto::test::RESOLVED);
     BOOST_TEST(event2 == nabto::test::RESOLVED);
     BOOST_TEST(listener == NABTO_EC_STOPPED);
+    nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
 }
 
@@ -136,6 +139,7 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_events)
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     BOOST_TEST(event == nabto::test::ABORTED);
     BOOST_TEST(listener == NABTO_EC_STOPPED);
+    nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
 }
 
@@ -155,6 +159,8 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(listener == NABTO_EC_STOPPED);
     BOOST_TEST(nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_ABORTED);
+    nabto_device_future_free(fut);
+    nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
 }
 

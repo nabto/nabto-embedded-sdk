@@ -11,6 +11,23 @@
 extern "C" {
 #endif
 
+struct nm_select_unix_udp_send_base {
+    struct nm_select_unix_udp_send_base* next;
+    struct nm_select_unix_udp_send_base* prev;
+};
+
+struct nm_select_unix_udp_send_context {
+    struct nm_select_unix_udp_send_base* next;
+    struct nm_select_unix_udp_send_base* prev;
+    np_udp_socket* sock;
+    struct np_udp_endpoint ep;
+    uint8_t* buffer;
+    uint16_t bufferSize;
+    np_udp_packet_sent_callback cb;
+    void* cbData;
+    struct np_event ev;
+};
+
 struct nm_select_unix_created_ctx {
     np_udp_socket_created_callback cb;
     void* data;
@@ -33,7 +50,11 @@ struct np_udp_socket {
     struct nm_select_unix_received_ctx recv;
     struct np_udp_socket* next;
     struct np_udp_socket* prev;
-    bool closing;
+    bool aborted;
+    bool destroyed;
+    struct np_event abortEv;
+    struct nm_select_unix_udp_send_base sendSentinelData;
+    struct nm_select_unix_udp_send_base* sendSentinel;
 };
 
 struct nm_select_unix_udp_sockets {
@@ -74,6 +95,9 @@ struct np_tcp_socket {
     void* connectCbData;
     struct np_event connectEvent;
 
+    bool destroyed;
+    bool aborted;
+    struct np_event abortEv;
 };
 
 struct nm_select_unix_tcp_sockets {
@@ -91,15 +115,22 @@ struct nm_select_unix {
     struct nm_select_unix_tcp_sockets tcpSockets;
 };
 
+/**
+ * Functions used from the API
+ */
 void nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl);
-
-/** defined here for testing purposes **/
-int nm_select_unix_inf_wait(struct nm_select_unix* ctx);
-int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms);
-void nm_select_unix_read(struct nm_select_unix* ctx, int nfds);
-
 void nm_select_unix_close(struct nm_select_unix* ctx);
 void nm_select_unix_break_wait(struct nm_select_unix* ctx);
+
+int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms);
+int nm_select_unix_inf_wait(struct nm_select_unix* ctx);
+
+void nm_select_unix_read(struct nm_select_unix* ctx, int nfds);
+bool nm_select_unix_finished(struct nm_select_unix* ctx);
+
+/**
+ * Functions only used internally in the module
+ */
 
 // notify select that something has changed in the filedescriptor sets
 void nm_select_unix_notify(struct nm_select_unix* ctx);

@@ -82,12 +82,20 @@ void nm_select_unix_read(struct nm_select_unix* ctx, int nfds)
 
 void nm_select_unix_close(struct nm_select_unix* ctx)
 {
-    // TODO
+    nm_select_unix_udp_deinit(ctx);
+    nm_select_unix_tcp_deinit(ctx);
+    close(ctx->pipefd[0]);
+    close(ctx->pipefd[1]);
 }
 
 void nm_select_unix_break_wait(struct nm_select_unix* ctx)
 {
     nm_select_unix_notify(ctx);
+}
+
+bool nm_select_unix_finished(struct nm_select_unix* ctx)
+{
+    return nm_select_unix_udp_has_sockets(ctx) && nm_select_unix_tcp_has_sockets(ctx);
 }
 
 

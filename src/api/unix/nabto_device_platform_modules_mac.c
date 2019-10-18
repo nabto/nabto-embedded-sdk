@@ -39,3 +39,7 @@ void nabto_device_platform_signal(struct np_platform* pl)
 {
     nm_select_unix_break_wait(&selectCtx);
 }
+
+bool nabto_device_platform_finished() {
+    return nm_select_unix_finished(&selectCtx);
+}
