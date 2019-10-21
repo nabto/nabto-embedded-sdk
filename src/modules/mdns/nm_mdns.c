@@ -130,19 +130,19 @@ np_error_code nm_mdns_start(struct np_mdns_context* mdns)
     if (pl->udp.async_bind_mdns_ipv4 != NULL) {
         ec = pl->udp.async_bind_mdns_ipv4(mdns->socketv4, nm_mdns_socket_opened_v4, mdns);
         if (ec != NABTO_EC_OK) {
-            NABTO_LOG_INFO(LOG, "Bind IPv4 socket failed with: %s", np_error_code_to_string(ec));
+            NABTO_LOG_TRACE(LOG, "mDNS unable to bind to IPv4: %s. Continueing with IPv6", np_error_code_to_string(ec));
             mdns->v4Done = true;
         }
     }
     if (pl->udp.async_bind_mdns_ipv6 != NULL) {
         ec = pl->udp.async_bind_mdns_ipv6(mdns->socketv6, nm_mdns_socket_opened_v6, mdns);
         if (ec != NABTO_EC_OK) {
-            NABTO_LOG_INFO(LOG, "Bind IPv6 socket failed with: %s", np_error_code_to_string(ec));
+            NABTO_LOG_TRACE(LOG, "mDNS unable to bind to IPv6: %s. Continueing with IPv4", np_error_code_to_string(ec));
             mdns->v6Done = true;
         }
     }
     if (mdns->v6Done && mdns->v4Done) {
-        NABTO_LOG_TRACE(LOG, "Both socket binds failed");
+        NABTO_LOG_INFO(LOG, "mDNS failed to bind both IPv4 and IPv6 sockets. This device will not be discoverable locally.");
         return ec;
     }
     return NABTO_EC_OK;
@@ -302,8 +302,8 @@ void nm_mdns_send_packet_v6(struct np_mdns_context* mdns)
     struct np_udp_endpoint ep;
     ep.ip.type = NABTO_IPV6;
     ep.port = 5353;
-    uint8_t addr[] = { 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb };
+    uint8_t addr[] = { 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb };
     memcpy(ep.ip.ip.v6, addr, 16);
 
     uint16_t port = mdns->getPort(mdns->getPortUserData);

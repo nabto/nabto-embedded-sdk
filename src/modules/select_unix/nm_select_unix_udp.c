@@ -17,6 +17,7 @@
 
 #define LOG NABTO_LOG_MODULE_UDP
 
+static const struct np_udp_endpoint emptyEp;
 
 /**
  * Helper function declarations
@@ -213,6 +214,7 @@ bool nm_select_unix_init_mdns_ipv4_socket(int sock)
     }
 
     {
+        bool foundIf = false;
         struct ifaddrs* interfaces = NULL;
         if (getifaddrs(&interfaces) == 0) {
 
@@ -227,6 +229,8 @@ bool nm_select_unix_init_mdns_ipv4_socket(int sock)
                     int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
                     if (status < 0) {
                         NABTO_LOG_ERROR(LOG, "Cannot add ipv4 membership %d", errno);
+                    } else {
+                        foundIf = true;
                     }
 
                 }
@@ -235,8 +239,8 @@ bool nm_select_unix_init_mdns_ipv4_socket(int sock)
             }
             freeifaddrs(interfaces);
         }
+        return foundIf;
     }
-    return true;
 }
 
 void nm_select_unix_udp_event_bind_mdns_ipv6(void* data) {
@@ -297,6 +301,7 @@ bool nm_select_unix_init_mdns_ipv6_socket(int sock)
     }
 
     {
+        bool foundIf = false;
         struct ifaddrs* interfaces = NULL;
         if (getifaddrs(&interfaces) == 0) {
 
@@ -316,16 +321,24 @@ bool nm_select_unix_init_mdns_ipv6_socket(int sock)
                         // once, the interface can only be joined for
                         // a multicast group once for each socket.
                     } else {
-                        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 membership %d interface name %s %d", errno, iterator->ifa_name, iterator->ifa_addr->sa_family);
+                        NABTO_LOG_TRACE(LOG, "Cannot add ipv6 membership %d interface name %s %d", errno, iterator->ifa_name, iterator->ifa_addr->sa_family);
                     }
+                } else {
+                    NABTO_LOG_TRACE(LOG, "Found suitable mDNS interface: %s", iterator->ifa_name);
+                    status = setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &index, sizeof(index));
+                    if (status < 0) {
+                        NABTO_LOG_INFO(LOG, "Could not set iterface as multicast interface: %d", errno);
+                    }
+
+                    foundIf = true;
                 }
 
                 iterator = iterator->ifa_next;
             }
             freeifaddrs(interfaces);
         }
+        return foundIf;
     }
-    return true;
 }
 
 np_error_code nm_select_unix_udp_async_send_to(np_udp_socket* sock, struct np_udp_endpoint ep,
@@ -544,8 +557,12 @@ void nm_select_unix_udp_event_send_to(void* data)
             ptr += 2;
             memcpy(ptr,ctx->ep.ip.ip.v4, 4); // 32 bits of IPv4
         } else { // IPv6 addr copied directly
-            NABTO_LOG_TRACE(LOG, "Sending to v6");
             memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.ip.v6, 16);
+            uint8_t* addr = (uint8_t*)&srv_addr.sin6_addr;
+            NABTO_LOG_TRACE(LOG,
+                            "Sending to v6: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+                            addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7],
+                            addr[8], addr[9], addr[10], addr[11], addr[12], addr[13], addr[14], addr[15]);
         }
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     }
@@ -576,7 +593,7 @@ void nm_select_unix_udp_event_abort(void* userData)
 {
     np_udp_socket* sock = (np_udp_socket*)userData;
     if (sock->recv.cb != NULL) {
-        struct np_udp_endpoint ep;
+        struct np_udp_endpoint ep = emptyEp;
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;
         cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->recv.data);
