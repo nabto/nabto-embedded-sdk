@@ -358,5 +358,17 @@ BOOST_AUTO_TEST_CASE(echo_select)
     BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
 }
 
+BOOST_AUTO_TEST_CASE(close_select)
+{
+    auto ioService = IoService::create("test");
+    test::TcpEchoServer tcpServer(ioService->getIoService());
+
+    test::TestPlatformSelectUnix platform;
+
+    test::TcpCloseClientTest client(platform);
+    client.start(tcpServer.getPort());
+
+//    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
