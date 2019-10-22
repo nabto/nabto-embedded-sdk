@@ -18,11 +18,10 @@ struct nabto_device_stream {
     struct nabto_device_future* closeFut;
     struct nabto_device_context* dev;
 
-    // coordinate freeing of this context which can both be initiated by the user and by the system
-    bool readyToFree;
 };
 
-void nabto_device_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
+void nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
+void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 
 
 #endif // NABTO_DEVICE_STREAM_H

@@ -9,53 +9,6 @@
 extern "C" {
 #endif
 
-/****************
- * Listener API *
- ****************/
-
-typedef struct NabtoDeviceListener_ NabtoDeviceListener;
-
-/**
- * Free a listener, effectivly cancelling active listening on a
- * resource. To ensure there is no concurrency issues, this should
- * always be called while resolving a future for this listener.
- *
- * @param listener  Listener to be freed
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_free(NabtoDeviceListener* listener);
-
-/**
- * Stop a listener, effectivly cancelling active listening on a
- * resource. This is concurrency safe, and can be called
- * anywhere. This will trigger an event with error code
- * NABTO_DEVICE_EC_STOPPED
- *
- * @param listener  Listener to be freed
- * @return NABTO_EC_OK on success
- *
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_stop(NabtoDeviceListener* listener);
-
-// todo this returns error code and takes future ** as argument, do this all other places
-/**
- * Create new future for Listener, called once ready to receive next
- * event from Listener. (eg. with connection event listener : call
- * this once ref and event arguments are ready to be overwritten by
- * next event.)
- *
- * @param listener       Listener to listen for
- * @param future         The future resolved once the next event is available
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *         NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *         NABTO_DEVICE_EC_STOPPED if the listener was stopped
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_listen(NabtoDeviceListener* listener, NabtoDeviceFuture** future);
-
 /**
  * Set the server port.
  * If not set it will default to 4433

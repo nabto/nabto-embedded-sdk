@@ -397,10 +397,14 @@ class EchoListener {
     EchoListener(NabtoDevice* device)
         : device_(device)
     {
+        listener_ = nabto_device_stream_listen(device_, 42, &listenStream_);
     }
     void startListen()
     {
-        listenFuture_ = nabto_device_stream_listen(device_, 42, &listenStream_);
+        NabtoDeviceError err = nabto_device_listener_listen(listener_, &listenFuture_);
+        if (err != NABTO_DEVICE_EC_OK) {
+            return;
+        }
         nabto_device_future_set_callback(listenFuture_, &EchoListener::newStream, this);
     }
 
@@ -409,6 +413,7 @@ class EchoListener {
         EchoListener* el = (EchoListener*)userData;
         nabto_device_future_free(future);
         if (ec) {
+            nabto_device_listener_free(el->listener_);
             return;
         }
         EchoHandler* eh = new EchoHandler(el->listenStream_);
@@ -417,6 +422,7 @@ class EchoListener {
     }
 
  private:
+    NabtoDeviceListener* listener_;
     NabtoDeviceFuture* listenFuture_;
     NabtoDeviceStream* listenStream_;
     NabtoDevice* device_;
@@ -427,10 +433,14 @@ class RecvListener {
     RecvListener(NabtoDevice* device)
         : device_(device)
     {
+        listener_ = nabto_device_stream_listen(device_, 43, &listenStream_);
     }
     void startListen()
     {
-        listenFuture_ = nabto_device_stream_listen(device_, 43, &listenStream_);
+        NabtoDeviceError err = nabto_device_listener_listen(listener_, &listenFuture_);
+        if (err != NABTO_DEVICE_EC_OK) {
+            return;
+        }
         nabto_device_future_set_callback(listenFuture_, &RecvListener::newStream, this);
     }
 
@@ -439,6 +449,7 @@ class RecvListener {
         RecvListener* rl = (RecvListener*)userData;
         nabto_device_future_free(future);
         if (ec) {
+            nabto_device_listener_free(rl->listener_);
             return;
         }
         RecvHandler* rh = new RecvHandler(rl->listenStream_);
@@ -447,6 +458,7 @@ class RecvListener {
     }
 
  private:
+    NabtoDeviceListener* listener_;
     NabtoDeviceFuture* listenFuture_;
     NabtoDeviceStream* listenStream_;
     NabtoDevice* device_;

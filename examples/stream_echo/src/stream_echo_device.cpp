@@ -136,12 +136,21 @@ bool init_stream_echo(const std::string& configFile, const std::string& productI
 
     json_config_save(configFile, config);
 
+    /**
+     * WARNING:
+     *
+     * nabto_device_close should be called before free. We don't here
+     * to show that nabto does not cause leaks or hanging threads to
+     * skip nabto_device_close(). Note that outstanding
+     * NabtoDeviceFutures may not be resolved.
+     */
     nabto_device_free(device);
 
     return true;
 }
 
 NabtoDeviceStream* streamHandle;
+NabtoDeviceListener* listener;
 
 void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 {
@@ -212,6 +221,12 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
+    listener = nabto_device_stream_listen(device, 42, &streamHandle);
+    if (listener == NULL) {
+        std::cerr << "could not listen for streams" << std::endl;
+        return;
+    }
+
     startListenForEchoStream(device);
 
     // Wait for the user to press Ctrl-C
@@ -226,8 +241,21 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 
     pause();
 
+    /**
+     * WARNING:
+     *
+     * nabto_device_close should be called before free. We don't here
+     * to show that nabto does not cause leaks or hanging threads to
+     * skip nabto_device_close(). Note that outstanding
+     * NabtoDeviceFutures may not be resolved. Any outstanding futures
+     * and listeners must be freed manually.
+     */
+    if (listener) {
+        nabto_device_listener_free(listener);
+        listener = NULL;
+    }
     nabto_device_free(device);
-    exit(0);
+    return;
 }
 
 NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionReference, const char* action, void* attributes, size_t attributesLength, void* userData)
@@ -237,7 +265,12 @@ NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionRefe
 
 // handle echo streams
 void startListenForEchoStream(NabtoDevice* device) {
-    NabtoDeviceFuture* fut = nabto_device_stream_listen(device, 42, &streamHandle);
+    NabtoDeviceFuture* fut;
+    NabtoDeviceError err = nabto_device_listener_listen(listener, &fut);
+    if (err != NABTO_DEVICE_EC_OK) {
+        nabto_device_listener_free(listener);
+        return;
+    }
     nabto_device_future_set_callback(fut, newEchoStream, device);
 }
 
@@ -245,6 +278,10 @@ void newEchoStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
 {
     nabto_device_future_free(future);
     if (ec != NABTO_DEVICE_EC_OK) {
+        if (listener) {
+            nabto_device_listener_free(listener);
+            listener = NULL;
+        }
         return;
     }
     NabtoDevice* device = (NabtoDevice*)userData;
@@ -282,7 +319,9 @@ void hasRead(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     struct StreamEchoState* state = (struct StreamEchoState*)userData;
     if (ec == NABTO_DEVICE_EC_EOF) {
         // make a nice shutdown
+        std::cout << "Read reached EOF closing nicely" << std::endl;
         startClose(state);
+        return;
     }
     if (ec != NABTO_DEVICE_EC_OK) {
         freeStream(state);
@@ -320,6 +359,7 @@ void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     nabto_device_future_free(future);
     struct StreamEchoState* state = (struct StreamEchoState*)userData;
 
+    std::cout << "Closed callback freeing stream" << std::endl;
     // ignore error code, just release the resources.
     freeStream(state);
 }

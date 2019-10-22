@@ -62,6 +62,12 @@ typedef struct NabtoDeviceConnection_ NabtoDeviceConnection;
 typedef struct NabtoDeviceStream_ NabtoDeviceStream;
 
 /**
+ * The NabtoDeviceListener is used for general listen functionallity
+ * throughout the API.
+ */
+typedef struct NabtoDeviceListener_ NabtoDeviceListener;
+
+/**
  * The NabtoDeviceFuture is used to resolve asyncronous function calls
  */
 typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
@@ -286,7 +292,7 @@ nabto_device_close(NabtoDevice* device);
  *   NABTO_DEVICE_EC_ABORTED if device is closed
  *   NABTO_DEVICE_EC_FAILED on failure
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
 nabto_device_stream_listen(NabtoDevice* device, uint32_t port, NabtoDeviceStream** stream);
 
 /**
@@ -625,6 +631,50 @@ nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request);
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName);
 
+/****************
+ * Listener API *
+ ****************/
+
+/**
+ * Free a listener, effectivly cancelling active listening on a
+ * resource. To ensure there is no concurrency issues, this should
+ * be called while resolving a future for this listener.
+ *
+ * @param listener  Listener to be freed
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_free(NabtoDeviceListener* listener);
+
+/**
+ * Stop a listener, effectivly cancelling active listening on a
+ * resource. This is concurrency safe, and can be called
+ * anywhere. This will trigger an event with error code
+ * NABTO_DEVICE_EC_STOPPED.
+ *
+ * @param listener  Listener to be stopped
+ * @return NABTO_EC_OK on success
+ *
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_listener_stop(NabtoDeviceListener* listener);
+
+/**
+ * Create new future for Listener, called once ready to receive next
+ * event from Listener. (eg. with connection event listener : call
+ * this once ref and event arguments are ready to be overwritten by
+ * next event.)
+ *
+ * @param listener       Listener to listen for
+ * @param future         The future resolved once the next event is available
+ * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *         NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *         NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_listener_listen(NabtoDeviceListener* listener, NabtoDeviceFuture** future);
+
 /**************
  * Future API *
  **************/
@@ -636,6 +686,13 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  * We could have implemented all the future functions for each async
  * function but that would lead to a lot of specialized functions
  * doing almost the same thing.
+ *
+ * Futures are resolved in two ways. 1) set a callback on the
+ * future. This callback will then be invoked when the future is
+ * resolved. This callback will be made from the Nabto core thread,
+ * and must therefore never block. 2) Wait for the future to
+ * resolve. Waiting will block until the future is resolved, and must
+ * therefore never be called from the callback of another future.
  */
 
 /**

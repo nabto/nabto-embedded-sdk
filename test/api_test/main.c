@@ -51,7 +51,13 @@ int main()
     NabtoDeviceCoapResource* hwResource;
     nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"helloworld", NULL}, &hwResource);
 
-    NabtoDeviceFuture* fut = nabto_device_stream_listen(dev, 42, &stream);
+    NabtoDeviceFuture* fut;
+    NabtoDeviceListener* listener = nabto_device_stream_listen(dev, 42, &stream);
+    NabtoDeviceError err = nabto_device_listener_listen(listener, &fut);
+    if (err != NABTO_DEVICE_EC_OK) {
+        NABTO_LOG_ERROR(0, "Failed to listen to listener: %d", err);
+        return 1;
+    }
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
 
