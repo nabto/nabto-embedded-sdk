@@ -668,7 +668,7 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
                         NABTO_LOG_ERROR(LOG, "Cannot add ipv6 membership %d interface name %s %d", errno, iterator->ifa_name, iterator->ifa_addr->sa_family);
                     }
                 } else {
-                    NABTO_LOG_INFO(LOG, "Found suitable mDNS interface: %s", iterator->ifa_name);
+                    NABTO_LOG_TRACE(LOG, "Found suitable mDNS interface: %s", iterator->ifa_name);
                     foundIf = true;
                 }
                 iterator = iterator->ifa_next;
@@ -699,7 +699,7 @@ void nm_epoll_event_send_to(void* data)
         memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.ip.v6, sizeof(srv_addr.sin6_addr));
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
         uint8_t* addr = (uint8_t*)&srv_addr.sin6_addr;
-        NABTO_LOG_INFO(LOG,
+        NABTO_LOG_TRACE(LOG,
                         "Sending to v6: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
                         addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7],
                         addr[8], addr[9], addr[10], addr[11], addr[12], addr[13], addr[14], addr[15]);
