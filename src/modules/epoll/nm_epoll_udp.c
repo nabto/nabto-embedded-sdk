@@ -294,6 +294,7 @@ np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
     (*sock)->sendSentinel = &(*sock)->sendSentinelData;
     (*sock)->sendSentinel->next = (*sock)->sendSentinel;
     (*sock)->sendSentinel->prev = (*sock)->sendSentinel;
+    nm_epoll_add_udp_socket(pl->udpData);
     return NABTO_EC_OK;
 }
 
@@ -434,7 +435,6 @@ void nm_epoll_event_bind_port(void* data)
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         return;
     }
-    nm_epoll_add_udp_socket(epoll);
     np_udp_socket_created_callback cb = us->created.cb;
     us->created.cb = NULL;
     cb(NABTO_EC_OK, us->created.data);
@@ -479,6 +479,7 @@ void nm_epoll_event_bind_mdns_ipv4(void* data)
         np_udp_socket_created_callback cb = us->created.cb;
         us->created.cb = NULL;
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
+        return;
     }
     us->isIpv6 = false;
 
@@ -489,6 +490,7 @@ void nm_epoll_event_bind_mdns_ipv4(void* data)
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         close(us->sock);
         us->sock = -1;
+        return;
     }
 
     struct epoll_event ev;
@@ -503,7 +505,6 @@ void nm_epoll_event_bind_mdns_ipv4(void* data)
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         return;
     }
-    nm_epoll_add_udp_socket(epoll);
     np_udp_socket_created_callback cb = us->created.cb;
     us->created.cb = NULL;
     cb(NABTO_EC_OK, us->created.data);
@@ -581,6 +582,7 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
         np_udp_socket_created_callback cb = us->created.cb;
         us->created.cb = NULL;
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
+        return;
     }
     us->isIpv6 = true;
 
@@ -598,6 +600,7 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         close(us->sock);
         us->sock = -1;
+        return;
     }
 
     struct epoll_event ev;
@@ -612,7 +615,6 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         return;
     }
-    nm_epoll_add_udp_socket(epoll);
     np_udp_socket_created_callback cb = us->created.cb;
     us->created.cb = NULL;
     cb(NABTO_EC_OK, us->created.data);
@@ -636,13 +638,16 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
     memset(&si_me, 0, sizeof(si_me));
     si_me.sin6_family = AF_INET6;
     si_me.sin6_port = htons(5353);
-    si_me.sin6_addr = in6addr_any;
+//    si_me.sin6_addr = in6addr_any;
+    inet_pton(AF_INET6, "ff02::fb", &si_me.sin6_addr);
     if (bind(sock, (struct sockaddr*)&si_me, sizeof(si_me)) < 0) {
+        NABTO_LOG_INFO(LOG, "bind mdns ipv6 failed (%d) %s", errno, strerror(errno));
         return false;
     }
 
     {
         struct ifaddrs* interfaces = NULL;
+        bool foundIf = false;
         if (getifaddrs(&interfaces) == 0) {
 
             struct ifaddrs* iterator = interfaces;
@@ -663,14 +668,16 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
                     } else {
                         NABTO_LOG_ERROR(LOG, "Cannot add ipv6 membership %d interface name %s %d", errno, iterator->ifa_name, iterator->ifa_addr->sa_family);
                     }
+                } else {
+                    NABTO_LOG_INFO(LOG, "Found suitable mDNS interface: %s", iterator->ifa_name);
+                    foundIf = true;
                 }
                 iterator = iterator->ifa_next;
             }
             freeifaddrs(interfaces);
         }
+        return foundIf;
     }
-
-    return true;
 }
 
 void nm_epoll_event_send_to(void* data)
@@ -692,6 +699,11 @@ void nm_epoll_event_send_to(void* data)
         srv_addr.sin6_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin6_addr,ctx->ep.ip.ip.v6, sizeof(srv_addr.sin6_addr));
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        uint8_t* addr = (uint8_t*)&srv_addr.sin6_addr;
+        NABTO_LOG_INFO(LOG,
+                        "Sending to v6: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+                        addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7],
+                        addr[8], addr[9], addr[10], addr[11], addr[12], addr[13], addr[14], addr[15]);
     }
     if (res < 0) {
         int status = errno;
