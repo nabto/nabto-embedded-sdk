@@ -101,6 +101,7 @@ extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
 extern const NabtoDeviceError NABTO_DEVICE_EC_STOPPED;
 extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
 extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
+extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LISTENER;
 
 /**********************
  * Device Api *

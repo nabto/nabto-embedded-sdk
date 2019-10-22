@@ -103,7 +103,8 @@ void HeatPump::saveConfig()
 void HeatPump::startWaitEvent()
 {
     NabtoDeviceFuture* future;
-    NabtoDeviceError ec = nabto_device_listener_listen(connectionEventListener_, &future);
+    //todo consider if the resources should be created dynamically for show
+    NabtoDeviceError ec = nabto_device_listener_connection_event(connectionEventListener_, &future, &connectionRef_, &connectionEvent_);
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
         nabto_device_listener_free(connectionEventListener_);
@@ -145,7 +146,7 @@ void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, voi
 
 void HeatPump::listenForConnectionEvents()
 {
-    connectionEventListener_ = nabto_device_connection_events_listener_new(device_, &connectionRef_, &connectionEvent_);
+    connectionEventListener_ = nabto_device_connection_events_listener_new(device_);
     if (connectionEventListener_ == NULL) {
         std::cerr << "Failed to listen to connection events" << std::endl;
         return;
@@ -156,7 +157,8 @@ void HeatPump::listenForConnectionEvents()
 void HeatPump::startWaitDevEvent()
 {
     NabtoDeviceFuture* future;
-    NabtoDeviceError ec = nabto_device_listener_listen(deviceEventListener_, &future);
+    // todo: consider if resource should be created dynamically for show
+    NabtoDeviceError ec = nabto_device_listener_device_event(deviceEventListener_, &future, &deviceEvent_);
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to create device event future with ec: " << ec << std::endl;
         nabto_device_listener_free(deviceEventListener_);
@@ -198,7 +200,7 @@ void HeatPump::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* u
 
 void HeatPump::listenForDeviceEvents()
 {
-    deviceEventListener_ = nabto_device_events_listener_new(device_, &deviceEvent_);
+    deviceEventListener_ = nabto_device_device_events_listener_new(device_);
     if (deviceEventListener_ == NULL) {
         std::cerr << "Failed to listen to device events" << std::endl;
         return;

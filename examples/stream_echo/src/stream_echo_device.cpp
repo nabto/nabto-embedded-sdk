@@ -221,7 +221,7 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
-    listener = nabto_device_stream_listen(device, 42, &streamHandle);
+    listener = nabto_device_stream_listener_new(device, 42);
     if (listener == NULL) {
         std::cerr << "could not listen for streams" << std::endl;
         return;
@@ -266,7 +266,7 @@ NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionRefe
 // handle echo streams
 void startListenForEchoStream(NabtoDevice* device) {
     NabtoDeviceFuture* fut;
-    NabtoDeviceError err = nabto_device_listener_listen(listener, &fut);
+    NabtoDeviceError err = nabto_device_listener_new_stream(listener, &fut, &streamHandle);
     if (err != NABTO_DEVICE_EC_OK) {
         nabto_device_listener_free(listener);
         return;
@@ -290,6 +290,7 @@ void newEchoStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
     nabto_device_future_set_callback(acceptFuture, streamAccepted, streamHandle);
 
     // listen for next stream
+    // todo We only have one stream reference, so new streams wil override the old one, fix to make stream resources dynamically. possibly extend the StreamEchoState struct to include this.
     startListenForEchoStream(device);
 }
 

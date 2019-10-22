@@ -651,7 +651,7 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
 
             struct ifaddrs* iterator = interfaces;
             while (iterator != NULL) {
-
+                // TODO check if IF has an address like with IPv4 also fix in select
                 int index = if_nametoindex(iterator->ifa_name);
 
                 struct ipv6_mreq group;

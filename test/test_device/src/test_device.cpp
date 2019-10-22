@@ -397,12 +397,14 @@ class EchoListener {
     EchoListener(NabtoDevice* device)
         : device_(device)
     {
-        listener_ = nabto_device_stream_listen(device_, 42, &listenStream_);
+        listener_ = nabto_device_stream_listener_new(device_, 42);
     }
     void startListen()
     {
-        NabtoDeviceError err = nabto_device_listener_listen(listener_, &listenFuture_);
+        // TODO: consider dynamical resource
+        NabtoDeviceError err = nabto_device_listener_new_stream(listener_, &listenFuture_, &listenStream_);
         if (err != NABTO_DEVICE_EC_OK) {
+            nabto_device_listener_free(listener_);
             return;
         }
         nabto_device_future_set_callback(listenFuture_, &EchoListener::newStream, this);
@@ -418,6 +420,7 @@ class EchoListener {
         }
         EchoHandler* eh = new EchoHandler(el->listenStream_);
         eh->start();
+        // TODO: this potentially overwrites listenStream_ resource
         el->startListen();
     }
 
@@ -433,12 +436,14 @@ class RecvListener {
     RecvListener(NabtoDevice* device)
         : device_(device)
     {
-        listener_ = nabto_device_stream_listen(device_, 43, &listenStream_);
+        listener_ = nabto_device_stream_listener_new(device_, 43);
     }
     void startListen()
     {
-        NabtoDeviceError err = nabto_device_listener_listen(listener_, &listenFuture_);
+        // TODO: consider dynamical resource
+        NabtoDeviceError err = nabto_device_listener_new_stream(listener_, &listenFuture_, &listenStream_);
         if (err != NABTO_DEVICE_EC_OK) {
+            nabto_device_listener_free(listener_);
             return;
         }
         nabto_device_future_set_callback(listenFuture_, &RecvListener::newStream, this);
@@ -454,6 +459,7 @@ class RecvListener {
         }
         RecvHandler* rh = new RecvHandler(rl->listenStream_);
         rh->start();
+        // TODO: this potentially overwrites listenStream_
         rl->startListen();
     }
 

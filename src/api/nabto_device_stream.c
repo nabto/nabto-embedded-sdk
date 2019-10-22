@@ -19,23 +19,21 @@ struct nabto_device_stream_listener_context {
  * Streaming Api
  *******************************************/
 
-NabtoDeviceListener* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* device, uint32_t type, NabtoDeviceStream** stream)
+NabtoDeviceListener* NABTO_DEVICE_API nabto_device_stream_listener_new(NabtoDevice* device, uint32_t type)
 {
-    *stream = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_stream_listener_context* listenerContext = calloc(1, sizeof(struct nabto_device_stream_listener_context));
     if (listenerContext == NULL) {
         return NULL;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nabto_device_listener* listener = nabto_device_listener_new(dev, &nabto_device_stream_listener_callback, listenerContext);
+    struct nabto_device_listener* listener = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
     if (listener == NULL) {
         free(listenerContext);
         return NULL;
     }
     listenerContext->device = dev;
     listenerContext->listener = listener;
-    listenerContext->stream = stream;
     np_error_code ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, type, &nabto_device_stream_core_callback, listenerContext);
     if (ec) {
         free(listenerContext);
@@ -44,6 +42,35 @@ NabtoDeviceListener* NABTO_DEVICE_API nabto_device_stream_listen(NabtoDevice* de
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceListener*)listener;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_new_stream(NabtoDeviceListener* deviceListener, NabtoDeviceFuture** future, NabtoDeviceStream** stream)
+{
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
+    struct nabto_device_context* dev = listener->dev;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_STREAMS) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_INVALID_LISTENER;
+    }
+    struct nabto_device_stream_listener_context* listenerContext = (struct nabto_device_stream_listener_context*)nabto_device_listener_get_listener_data(listener);
+    if (listenerContext->stream != NULL) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
+    }
+    *stream = NULL;
+    listenerContext->stream = stream;
+    struct nabto_device_future* fut;
+    // user reference must be set before as this call can resolve the future to the future queue
+    np_error_code ec = nabto_device_listener_create_future(listener, &fut);
+    if (ec != NABTO_EC_OK) {
+        // resetting user reference if future could not be created
+        listenerContext->stream = NULL;
+    } else {
+        *future = (NabtoDeviceFuture*)fut;
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
 }
 
 void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
@@ -171,6 +198,7 @@ void nabto_device_stream_close_callback(const np_error_code ec, void* userData)
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
 
+    NABTO_LOG_INFO(LOG, "stream async close core callback");
     nabto_api_future_set_error_code(str->closeFut, nabto_device_error_core_to_api(ec));
     nabto_api_future_queue_post(&str->dev->queueHead, str->closeFut);
 }
@@ -200,8 +228,14 @@ void nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_
     struct nabto_device_stream_listener_context* listenerContext = (struct nabto_device_stream_listener_context*)listenerData;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_stream* str = (struct nabto_device_stream*)eventData;
-        nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
-        *listenerContext->stream = (NabtoDeviceStream*)str;
+        if (listenerContext->stream != NULL) {
+            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+            *listenerContext->stream = (NabtoDeviceStream*)str;
+            listenerContext->stream = NULL;
+        } else {
+            NABTO_LOG_ERROR(LOG, "Tried to resolve new stream future, but stream reference was invalid");
+            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
+        }
         // using the stream structure as event structure means it will be freed when user calls stream_free
     } else if (ec == NABTO_EC_STOPPED) {
         nc_stream_manager_remove_listener(&listenerContext->coreListener);
