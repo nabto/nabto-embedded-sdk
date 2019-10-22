@@ -278,22 +278,38 @@ nabto_device_close(NabtoDevice* device);
 
 // TODO add possibility to get stream port if ephemeral
 /**
- * listen for a stream, the returned NabtoDeviceStream* should be
- * freed after use.
+ * Create a listener for new streams.
  *
  * @param device  device
  * @param port    A number describing the id/port of the stream to listen for.
  *                Think of it as a demultiplexing port number. port 0 creates
  *                an ephemeral port.
- * @return Future which resolves once a new stream is available, or on error
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if new stream is available
- *   NABTO_DEVICE_EC_ABORTED if device is closed
- *   NABTO_DEVICE_EC_FAILED on failure
+ * @return Listener on which nabto_device_listener_new_stream can be called to
+ *         listen for new streams. NULL on errors. The returned listener must
+ *         be freed by user.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_stream_listen(NabtoDevice* device, uint32_t port, NabtoDeviceStream** stream);
+nabto_device_stream_listener_new(NabtoDevice* device, uint32_t port);
+
+
+/**
+ * Start listening for new streams. The stream resource must be kept
+ * alive untill the returned future is resolved.
+ *
+ * @param listener Listener to get new streams from.
+ * @param future   Future which resolves when a new stream is ready, or an error occurs.
+ * @param stream   Where to put reference to a new stream. The new stream must be freed by user.
+ * @return NABTO_DEVICE_EC_OK on success.
+ *
+ * Future status:
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceStream** stream);
 
 /**
  * Free a stream
@@ -657,23 +673,6 @@ nabto_device_listener_free(NabtoDeviceListener* listener);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_listener_stop(NabtoDeviceListener* listener);
-
-/**
- * Create new future for Listener, called once ready to receive next
- * event from Listener. (eg. with connection event listener : call
- * this once ref and event arguments are ready to be overwritten by
- * next event.)
- *
- * @param listener       Listener to listen for
- * @param future         The future resolved once the next event is available
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *         NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *         NABTO_DEVICE_EC_STOPPED if the listener was stopped
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_listen(NabtoDeviceListener* listener, NabtoDeviceFuture** future);
 
 /**************
  * Future API *

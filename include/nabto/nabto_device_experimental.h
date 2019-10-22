@@ -29,8 +29,36 @@ extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
 extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
 extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
 
+/**
+ * Create a listener for connection events.
+ *
+ * @param device Device
+
+ * @return New listener on which nabto_device_listener_connection_event
+ *         can be called to listen for connection events. NULL on errors.
+ *         The returned listener must be freed by user.
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_connection_events_listener_new(NabtoDevice* device, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
+nabto_device_connection_events_listener_new(NabtoDevice* device);
+
+/**
+ * Start listening for next connection event.
+ *
+ * @param listener  Listener to get connection events from
+ * @param future    Future returned on success.
+ * @param ref       Where to put the connection reference when the future resolves.
+ * @param event     Where to put the connection event when the future resolves.
+ * @return NABTO_DEVICE_EC_OK on success
+ *
+ * Future status:
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
 
 /*****************
  * Device Events *
@@ -42,8 +70,36 @@ extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
 extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
 extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_FAILURE;
 
+/**
+ * Create a listener for device events.
+ *
+ * @param device Device
+
+ * @return New listener on which nabto_device_listener_device_event
+ *         can be called to listen for device events. NULL on errors.
+ *         The returned listener must be freed by user.
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_events_listener_new(NabtoDevice* device, NabtoDeviceEvent* event);
+nabto_device_device_events_listener_new(NabtoDevice* device);
+
+/**
+ * Start listening for next device event.
+ *
+ * @param listener  Listener to get device events from
+ * @param future    Future returned on success.
+ * @param event     Where to put the device event when the future resolves.
+ * @return NABTO_DEVICE_EC_OK on success
+ *
+ * Future status:
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceEvent* event);
+
 
 /********
  * Util *
