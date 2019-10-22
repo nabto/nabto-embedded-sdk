@@ -638,8 +638,7 @@ bool nm_epoll_init_mdns_ipv6_socket(int sock)
     memset(&si_me, 0, sizeof(si_me));
     si_me.sin6_family = AF_INET6;
     si_me.sin6_port = htons(5353);
-//    si_me.sin6_addr = in6addr_any;
-    inet_pton(AF_INET6, "ff02::fb", &si_me.sin6_addr);
+    si_me.sin6_addr = in6addr_any;
     if (bind(sock, (struct sockaddr*)&si_me, sizeof(si_me)) < 0) {
         NABTO_LOG_INFO(LOG, "bind mdns ipv6 failed (%d) %s", errno, strerror(errno));
         return false;
