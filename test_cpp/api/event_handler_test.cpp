@@ -59,18 +59,18 @@ BOOST_AUTO_TEST_CASE(event_test)
     nabto::test::eventState event = nabto::test::UNHANDLED;
     np_error_code listener = NABTO_EC_OK;
     NabtoDeviceFuture* fut;
-    struct nabto_device_listener* handler = nabto_device_listener_new(dev, nabto::test::eventHandlerCallback, &listener);
+    struct nabto_device_listener* handler = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
     BOOST_TEST(handler);
     np_error_code ec = nabto_device_listener_add_event(handler, &event);
     BOOST_TEST(ec == NABTO_EC_OK);
 
-    NabtoDeviceError ec2 = nabto_device_listener_listen((NabtoDeviceListener*)handler, &fut);
-    BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
+    ec = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
+    BOOST_TEST(ec == NABTO_EC_OK);
     nabto_api_future_queue_execute_all(&dev->queueHead);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(event == nabto::test::RESOLVED);
     BOOST_TEST(listener == NABTO_EC_OK);
-    ec2 = nabto_device_future_error_code(fut);
+    NabtoDeviceError ec2 = nabto_device_future_error_code(fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
 
     nabto_device_future_free(fut);
@@ -90,14 +90,14 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
     np_error_code listener = NABTO_EC_OK;
     NabtoDeviceFuture* fut;
     struct nabto_device_listener* handler =
-        nabto_device_listener_new(dev, nabto::test::eventHandlerCallback, &listener);
+        nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
     BOOST_TEST(handler);
     np_error_code ec = nabto_device_listener_add_event(handler, &event1);
     BOOST_TEST(ec == NABTO_EC_OK);
     ec = nabto_device_listener_add_event(handler, &event2);
     BOOST_TEST(ec == NABTO_EC_OK);
 
-    NabtoDeviceError ec2 = nabto_device_listener_listen((NabtoDeviceListener*)handler, &fut);
+    NabtoDeviceError ec2 = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(&dev->queueHead);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
     BOOST_TEST(listener == NABTO_EC_OK);
     nabto_device_future_free(fut);
 
-    ec2 = nabto_device_listener_listen((NabtoDeviceListener*)handler, &fut);
+    ec2 = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(&dev->queueHead);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_events)
     nabto::test::eventState event = nabto::test::UNHANDLED;
     np_error_code listener = NABTO_EC_OK;
     struct nabto_device_listener* handler =
-        nabto_device_listener_new(dev, nabto::test::eventHandlerCallback, &listener);
+        nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
     BOOST_TEST(handler);
     np_error_code ec = nabto_device_listener_add_event(handler, &event);
     BOOST_TEST(ec == NABTO_EC_OK);
@@ -150,9 +150,9 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
     np_error_code listener = NABTO_EC_OK;
     NabtoDeviceFuture* fut;
     struct nabto_device_listener* handler =
-        nabto_device_listener_new(dev, nabto::test::eventHandlerCallback, &listener);
+        nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
     BOOST_TEST(handler);
-    NabtoDeviceError ec2 = nabto_device_listener_listen((NabtoDeviceListener*)handler, &fut);
+    NabtoDeviceError ec2 = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     nabto_api_future_queue_execute_all(&dev->queueHead);

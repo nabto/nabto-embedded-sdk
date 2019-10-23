@@ -386,11 +386,18 @@ void nabto_device_connection_events_listener_cb(const np_error_code ec, struct n
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)listenerData;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_listen_connection_event* ev = (struct nabto_device_listen_connection_event*)eventData;
-        nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
-        *ctx->userRef = ev->coreRef;
-        *ctx->userEvent = ev->coreEvent;
+        if (ctx->userRef != NULL) {
+            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+            *ctx->userRef = ev->coreRef;
+            *ctx->userEvent = ev->coreEvent;
+            ctx->userRef = NULL;
+            ctx->userEvent = NULL;
+        } else {
+            NABTO_LOG_ERROR(LOG, "Tried to resolve connection event but reference was invalid");
+            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
+        }
         free(ev);
-    } else if (ec == NABTO_EC_STOPPED) {
+    } else if (ec == NABTO_EC_ABORTED) {
         nc_device_remove_connection_events_listener(&ctx->dev->core, &ctx->coreListener);
         free(ctx);
     } else {
@@ -414,25 +421,62 @@ void nabto_device_connection_events_core_cb(uint64_t connectionRef, enum nc_conn
     }
 }
 
-NabtoDeviceListener* NABTO_DEVICE_API nabto_device_connection_events_listener_new(NabtoDevice* device, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event)
+NabtoDeviceListener* NABTO_DEVICE_API nabto_device_connection_events_listener_new(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)calloc(1, sizeof(struct nabto_device_listen_connection_context));
     if (ctx == NULL) {
         return NULL;
     }
-    struct nabto_device_listener* listener = nabto_device_listener_new(dev, &nabto_device_connection_events_listener_cb, ctx);
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nabto_device_listener* listener = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS, &nabto_device_connection_events_listener_cb, ctx);
     if (listener == NULL) {
         free(ctx);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
         return NULL;
     }
     ctx->dev = dev;
     ctx->listener = listener;
-    ctx->userRef = ref;
-    ctx->userEvent = event;
     nc_device_add_connection_events_listener(&dev->core, &ctx->coreListener, &nabto_device_connection_events_core_cb, ctx);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceListener*)listener;
 }
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_connection_event(NabtoDeviceListener* deviceListener, NabtoDeviceFuture** future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event)
+{
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
+    struct nabto_device_context* dev = listener->dev;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    np_error_code ec = nabto_device_listener_get_status(listener);
+    if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_INVALID_LISTENER;
+    }
+    if (ec != NABTO_EC_OK) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return nabto_device_error_core_to_api(ec);
+    }
+    struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)nabto_device_listener_get_listener_data(listener);
+    if (ctx->userRef != NULL) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
+    }
+    ctx->userRef = ref;
+    ctx->userEvent = event;
+    struct nabto_device_future* fut;
+    // user references must be set before as this call can resolve the future to the future queue
+    ec = nabto_device_listener_create_future(listener, &fut);
+    if (ec != NABTO_EC_OK) {
+        // resetting user references if future could not be created
+        ctx->userRef = NULL;
+        ctx->userEvent = NULL;
+    } else {
+        *future = (NabtoDeviceFuture*)fut;
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
+
 
 /**
  * Device event listener
@@ -458,10 +502,16 @@ void nabto_device_events_listener_cb(const np_error_code ec, struct nabto_device
     struct nabto_device_listen_device_context* ctx = (struct nabto_device_listen_device_context*)listenerData;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_listen_device_event* ev = (struct nabto_device_listen_device_event*)eventData;
-        nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
-        *ctx->userEvent = ev->coreEvent;
+        if (ctx->userEvent != NULL) {
+            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+            *ctx->userEvent = ev->coreEvent;
+            ctx->userEvent = NULL;
+        } else {
+            NABTO_LOG_ERROR(LOG, "Tried to resolve device event but reference was invalid");
+            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
+        }
         free(ev);
-    } else if (ec == NABTO_EC_STOPPED) {
+    } else if (ec == NABTO_EC_ABORTED) {
         nc_device_remove_device_events_listener(&ctx->dev->core, &ctx->coreListener);
         free(ctx);
     } else {
@@ -484,23 +534,59 @@ void nabto_device_events_core_cb(enum nc_device_event event, void* userData)
     }
 }
 
-NabtoDeviceListener* NABTO_DEVICE_API nabto_device_events_listener_new(NabtoDevice* device, NabtoDeviceEvent* event)
+NabtoDeviceListener* NABTO_DEVICE_API nabto_device_device_events_listener_new(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listen_device_context* ctx = (struct nabto_device_listen_device_context*)calloc(1, sizeof(struct nabto_device_listen_device_context));
     if (ctx == NULL) {
         return NULL;
     }
-    struct nabto_device_listener* listener = nabto_device_listener_new(dev, &nabto_device_events_listener_cb, ctx);
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nabto_device_listener* listener = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, &nabto_device_events_listener_cb, ctx);
     if (listener == NULL) {
         free(ctx);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
         return NULL;
     }
     ctx->dev = dev;
     ctx->listener = listener;
-    ctx->userEvent = event;
     nc_device_add_device_events_listener(&dev->core, &ctx->coreListener, &nabto_device_events_core_cb, ctx);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceListener*)listener;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_device_event(NabtoDeviceListener* deviceListener, NabtoDeviceFuture** future, NabtoDeviceEvent* event)
+{
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
+    struct nabto_device_context* dev = listener->dev;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_INVALID_LISTENER;
+    }
+    np_error_code ec = nabto_device_listener_get_status(listener);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return nabto_device_error_core_to_api(ec);
+    }
+    struct nabto_device_listen_device_context* ctx = (struct nabto_device_listen_device_context*)nabto_device_listener_get_listener_data(listener);
+    if (ctx->userEvent != NULL) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
+    }
+    ctx->userEvent = event;
+    struct nabto_device_future* fut;
+    // user references must be set before as this call can resolve the future to the future queue
+    ec = nabto_device_listener_create_future(listener, &fut);
+    if (ec != NABTO_EC_OK) {
+        // resetting user references if future could not be created
+        ctx->userEvent = NULL;
+    } else {
+        *future = (NabtoDeviceFuture*)fut;
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
 }
 
 /**

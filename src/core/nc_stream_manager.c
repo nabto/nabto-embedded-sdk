@@ -29,13 +29,6 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
 
 void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)
 {
-    // remove listener from list
-    struct nc_stream_listener* before = listener->prev;
-    struct nc_stream_listener* after = listener->next;
-
-    before->next = after;
-    after->prev = before;
-
     listener->cb(ec, stream, listener->cbData);
 }
 
@@ -77,6 +70,8 @@ void nc_stream_manager_remove_listener(struct nc_stream_listener* listener)
     struct nc_stream_listener* after = listener->next;
     before->next = after;
     after->prev = before;
+    listener->prev = listener;
+    listener->next = listener;
 }
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
@@ -110,7 +105,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
         }
     }
 
-    if (stream == NULL && ((flags & NABTO_STREAM_FLAG_RST) != 0)) {
+    if (stream == NULL && ((flags & NABTO_STREAM_FLAG_RST) != NABTO_STREAM_FLAG_RST)) {
         // only send rst if it's not an rst packet
         nc_stream_manager_send_rst(ctx, conn, streamId);
         return;

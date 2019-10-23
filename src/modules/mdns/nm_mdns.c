@@ -256,7 +256,7 @@ void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData)
         // dont start receiving untill send callback returns to ensure send buffer is not overwritten
         nm_mdns_send_packet_v6(mdns);
     } else {
-        NABTO_LOG_TRACE(LOG, "V6 socket open failed with (%u) %s", ec, np_error_code_to_string(ec));
+        NABTO_LOG_INFO(LOG, "V6 socket open failed with (%u) %s", ec, np_error_code_to_string(ec));
         mdns->v6Done = true;
     }
 }

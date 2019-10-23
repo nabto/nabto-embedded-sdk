@@ -30,7 +30,8 @@ void TcpTunnel::listenForIamChanges()
 void TcpTunnel::startWaitEvent()
 {
     NabtoDeviceFuture* future;
-    NabtoDeviceError ec = nabto_device_listener_listen(connectionEventListener_, &future);
+    // TODO: consider dynamical resources
+    NabtoDeviceError ec = nabto_device_listener_connection_event(connectionEventListener_, &future, &connectionRef_, &connectionEvent_);
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
         nabto_device_listener_free(connectionEventListener_);
@@ -72,7 +73,7 @@ void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, vo
 
 void TcpTunnel::listenForConnectionEvents()
 {
-    connectionEventListener_ = nabto_device_connection_events_listener_new(device_, &connectionRef_, &connectionEvent_);
+    connectionEventListener_ = nabto_device_connection_events_listener_new(device_);
     if (connectionEventListener_ == NULL) {
         std::cerr << "Failed to listen to connection events" << std::endl;
         return;
@@ -83,9 +84,10 @@ void TcpTunnel::listenForConnectionEvents()
 void TcpTunnel::startWaitDevEvent()
 {
     NabtoDeviceFuture* future;
-    NabtoDeviceError ec = nabto_device_listener_listen(deviceEventListener_, &future);
+    // todo consider dynamical resource
+    NabtoDeviceError ec = nabto_device_listener_device_event(deviceEventListener_, &future, &deviceEvent_);
     if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to create device event future with ec: " << ec << std::endl;
+        std::cerr << "Failed to create device event future with ec: " << nabto_device_error_get_message(ec) << std::endl;
         nabto_device_listener_free(deviceEventListener_);
         deviceEventListener_ = NULL;
         return;
@@ -125,7 +127,7 @@ void TcpTunnel::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* 
 
 void TcpTunnel::listenForDeviceEvents()
 {
-    deviceEventListener_ = nabto_device_events_listener_new(device_, &deviceEvent_);
+    deviceEventListener_ = nabto_device_device_events_listener_new(device_);
     if (deviceEventListener_ == NULL) {
         std::cerr << "Failed to listen to device events" << std::endl;
         return;

@@ -57,6 +57,10 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 void nc_device_deinit(struct nc_device_context* device) {
     struct np_platform* pl = device->pl;
 
+    if (device->mdns) {
+        pl->mdns.stop(device->mdns);
+        device->mdns = NULL;
+    }
     nc_stream_manager_deinit(&device->streamManager);
     nc_client_connection_dispatch_deinit(&device->clientConnect);
     nc_stun_deinit(&device->stun);
@@ -264,6 +268,7 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     np_event_queue_cancel_timed_event(dev->pl, &dev->tEv);
     if (dev->enableMdns && dev->mdns) {
         dev->pl->mdns.stop(dev->mdns);
+        dev->mdns = NULL;
     }
     if (dev->isDetached) {
         // async try_resolv_close
