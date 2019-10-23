@@ -50,9 +50,6 @@ void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
         // stop and remove tunnel from tunnels
         nm_tcptunnel_deinit(tunnel);
     }
-
-
-
 }
 
 void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data)
@@ -150,7 +147,6 @@ void nm_tcptunnel_stream_listener_callback(np_error_code ec, struct nc_stream_co
         } else {
             nm_tcptunnel_connection_free(c);
         }
-        nm_tcptunnel_init_stream_listener(tunnel);
     }
 }
 

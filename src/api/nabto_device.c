@@ -397,7 +397,7 @@ void nabto_device_connection_events_listener_cb(const np_error_code ec, struct n
             nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
         }
         free(ev);
-    } else if (ec == NABTO_EC_STOPPED) {
+    } else if (ec == NABTO_EC_ABORTED) {
         nc_device_remove_connection_events_listener(&ctx->dev->core, &ctx->coreListener);
         free(ctx);
     } else {
@@ -447,9 +447,14 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_connection_event(NabtoDe
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+    np_error_code ec = nabto_device_listener_get_status(listener);
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
         return NABTO_DEVICE_EC_INVALID_LISTENER;
+    }
+    if (ec != NABTO_EC_OK) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return nabto_device_error_core_to_api(ec);
     }
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)nabto_device_listener_get_listener_data(listener);
     if (ctx->userRef != NULL) {
@@ -460,7 +465,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_connection_event(NabtoDe
     ctx->userEvent = event;
     struct nabto_device_future* fut;
     // user references must be set before as this call can resolve the future to the future queue
-    np_error_code ec = nabto_device_listener_create_future(listener, &fut);
+    ec = nabto_device_listener_create_future(listener, &fut);
     if (ec != NABTO_EC_OK) {
         // resetting user references if future could not be created
         ctx->userRef = NULL;
@@ -500,12 +505,13 @@ void nabto_device_events_listener_cb(const np_error_code ec, struct nabto_device
         if (ctx->userEvent != NULL) {
             nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
             *ctx->userEvent = ev->coreEvent;
+            ctx->userEvent = NULL;
         } else {
             NABTO_LOG_ERROR(LOG, "Tried to resolve device event but reference was invalid");
             nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
         }
         free(ev);
-    } else if (ec == NABTO_EC_STOPPED) {
+    } else if (ec == NABTO_EC_ABORTED) {
         nc_device_remove_device_events_listener(&ctx->dev->core, &ctx->coreListener);
         free(ctx);
     } else {
@@ -545,6 +551,7 @@ NabtoDeviceListener* NABTO_DEVICE_API nabto_device_device_events_listener_new(Na
     ctx->dev = dev;
     ctx->listener = listener;
     nc_device_add_device_events_listener(&dev->core, &ctx->coreListener, &nabto_device_events_core_cb, ctx);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceListener*)listener;
 }
 
@@ -553,9 +560,15 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_device_event(NabtoDevice
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
         return NABTO_DEVICE_EC_INVALID_LISTENER;
+    }
+    np_error_code ec = nabto_device_listener_get_status(listener);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return nabto_device_error_core_to_api(ec);
     }
     struct nabto_device_listen_device_context* ctx = (struct nabto_device_listen_device_context*)nabto_device_listener_get_listener_data(listener);
     if (ctx->userEvent != NULL) {
@@ -565,7 +578,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_device_event(NabtoDevice
     ctx->userEvent = event;
     struct nabto_device_future* fut;
     // user references must be set before as this call can resolve the future to the future queue
-    np_error_code ec = nabto_device_listener_create_future(listener, &fut);
+    ec = nabto_device_listener_create_future(listener, &fut);
     if (ec != NABTO_EC_OK) {
         // resetting user references if future could not be created
         ctx->userEvent = NULL;

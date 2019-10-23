@@ -53,7 +53,7 @@ void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceList
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    listener->ec = NABTO_EC_ABORTED;
+    listener->ec = NABTO_EC_STOPPED;
     nabto_device_listener_resolve_error_state(listener);
     free(listener);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -105,6 +105,11 @@ void nabto_device_listener_set_error_code(struct nabto_device_listener* listener
     nabto_device_listener_resolve_error_state(listener);
 }
 
+np_error_code nabto_device_listener_get_status(struct nabto_device_listener* listener)
+{
+    return listener->ec;
+}
+
 
 /********************
  * Helper Functions *
@@ -135,7 +140,7 @@ void nabto_device_listener_resolve_error_state(struct nabto_device_listener* lis
         listener->fut = NULL;
     }
     if (listener->cb) {
-        listener->cb(NABTO_EC_STOPPED, NULL, NULL, listener->listenerData);
+        listener->cb(NABTO_EC_ABORTED, NULL, NULL, listener->listenerData);
     }
     listener->cb = NULL;
 }

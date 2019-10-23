@@ -87,7 +87,7 @@ void TcpTunnel::startWaitDevEvent()
     // todo consider dynamical resource
     NabtoDeviceError ec = nabto_device_listener_device_event(deviceEventListener_, &future, &deviceEvent_);
     if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to create device event future with ec: " << ec << std::endl;
+        std::cerr << "Failed to create device event future with ec: " << nabto_device_error_get_message(ec) << std::endl;
         nabto_device_listener_free(deviceEventListener_);
         deviceEventListener_ = NULL;
         return;

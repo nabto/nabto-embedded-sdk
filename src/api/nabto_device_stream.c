@@ -53,6 +53,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_new_stream(NabtoDeviceLi
         nabto_device_threads_mutex_unlock(dev->eventMutex);
         return NABTO_DEVICE_EC_INVALID_LISTENER;
     }
+    np_error_code ec = nabto_device_listener_get_status(listener);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return nabto_device_error_core_to_api(ec);
+    }
     struct nabto_device_stream_listener_context* listenerContext = (struct nabto_device_stream_listener_context*)nabto_device_listener_get_listener_data(listener);
     if (listenerContext->stream != NULL) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -62,7 +67,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_new_stream(NabtoDeviceLi
     listenerContext->stream = stream;
     struct nabto_device_future* fut;
     // user reference must be set before as this call can resolve the future to the future queue
-    np_error_code ec = nabto_device_listener_create_future(listener, &fut);
+    ec = nabto_device_listener_create_future(listener, &fut);
     if (ec != NABTO_EC_OK) {
         // resetting user reference if future could not be created
         listenerContext->stream = NULL;
@@ -237,12 +242,14 @@ void nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_
             nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
         }
         // using the stream structure as event structure means it will be freed when user calls stream_free
-    } else if (ec == NABTO_EC_STOPPED) {
+    } else if (ec == NABTO_EC_ABORTED) {
         nc_stream_manager_remove_listener(&listenerContext->coreListener);
         free(listenerContext);
     } else {
         // In error state streams on the listener queue will not reach the user, so they cant call stream_free
-        free(eventData);
+        struct nabto_device_stream* str = (struct nabto_device_stream*)eventData;
+        nc_stream_release(str->stream);
+        free(str);
     }
 }
 
@@ -257,6 +264,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
         struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
         if (str == NULL) {
             nabto_device_listener_set_error_code(listenerContext->listener, NABTO_EC_OUT_OF_MEMORY);
+            nc_stream_release(str->stream);
             return;
         }
         str->stream = stream;
@@ -264,6 +272,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
         // using the stream structure directly as listener event, this means we dont free event untill user calls stream_free()
         np_error_code ec = nabto_device_listener_add_event(listenerContext->listener, str);
         if (ec != NABTO_EC_OK) {
+            nc_stream_release(str->stream);
             free(str);
         }
         return;
