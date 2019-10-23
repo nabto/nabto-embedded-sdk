@@ -30,8 +30,8 @@ class CoapRequestHandler {
     //  wait for a request
     NabtoDeviceFuture* future_;
     NabtoDeviceCoapRequest* request_;
-    // on this resource
-    NabtoDeviceCoapResource* resource_;
+    // on this listener
+    NabtoDeviceListener* listener_;
     // invoke this function if the resource is hit
     CoapHandler handler_;
 };

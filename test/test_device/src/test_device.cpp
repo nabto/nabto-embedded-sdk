@@ -51,13 +51,18 @@ void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* da
 
 class AbstractCoapHandler {
  public:
-    AbstractCoapHandler(NabtoDeviceCoapResource* resource) : resource_(resource)
+    AbstractCoapHandler(NabtoDeviceListener* listener) : listener_(listener)
     {
         start();
     }
     virtual ~AbstractCoapHandler() {}
     void start() {
-        auto future = nabto_device_coap_resource_listen(resource_, &request_);
+        NabtoDeviceFuture* future;
+        auto ec = nabto_device_listener_new_coap_request(listener_, &future, &request_);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            nabto_device_listener_free(listener_);
+            return;
+        }
         nabto_device_future_set_callback(future, &AbstractCoapHandler::called, this);
     }
 
@@ -73,13 +78,13 @@ class AbstractCoapHandler {
     }
 
     virtual void handleRequest(NabtoDeviceCoapRequest* request) = 0;
-    NabtoDeviceCoapResource* resource_;
+    NabtoDeviceListener* listener_;
     NabtoDeviceCoapRequest* request_;
 };
 
 class GetHandler : public AbstractCoapHandler {
  public:
-    GetHandler(NabtoDeviceCoapResource* resource) : AbstractCoapHandler(resource) {}
+    GetHandler(NabtoDeviceListener* listener) : AbstractCoapHandler(listener) {}
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
         NabtoDeviceConnectionRef connectionId = nabto_device_coap_request_get_connection_ref(request);
@@ -95,7 +100,7 @@ class GetHandler : public AbstractCoapHandler {
 
 class PostHandler : public AbstractCoapHandler {
  public:
-    PostHandler(NabtoDeviceCoapResource* resource) : AbstractCoapHandler(resource) {}
+    PostHandler(NabtoDeviceListener* listener) : AbstractCoapHandler(listener) {}
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
         const char* responseData = "helloWorld";
@@ -520,16 +525,16 @@ void run_device()
         return;
     }
 
-    NabtoDeviceCoapResource* getResource;
-    NabtoDeviceCoapResource* postResource;
+    NabtoDeviceListener* getListener;
+    NabtoDeviceListener* postListener;
 
     const char* coapTestGet[]  = {"test", "get", NULL};
     const char* coapTestPost[] = {"test", "post", NULL};
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &getResource);
-    nabto_device_coap_add_resource(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &postResource);
+    nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &getListener);
+    nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &postListener);
 
-    auto getHandler = std::make_unique<GetHandler>(getResource);
-    auto postHandler = std::make_unique<PostHandler>(postResource);
+    auto getHandler = std::make_unique<GetHandler>(getListener);
+    auto postHandler = std::make_unique<PostHandler>(postListener);
 
     auto echoListener = std::make_unique<EchoListener>(dev);
     auto recvListener = std::make_unique<RecvListener>(dev);

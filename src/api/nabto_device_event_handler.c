@@ -101,6 +101,10 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_stop(NabtoDeviceListener
 
 void nabto_device_listener_set_error_code(struct nabto_device_listener* listener, np_error_code ec)
 {
+    if (ec == NABTO_EC_ABORTED) {
+        // On aborted, we stop all events first, then resolve with ABORTED
+        ec = NABTO_EC_STOPPED;
+    }
     listener->ec = ec;
     nabto_device_listener_resolve_error_state(listener);
 }

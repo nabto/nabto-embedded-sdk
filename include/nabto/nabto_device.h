@@ -469,10 +469,12 @@ typedef struct NabtoDeviceCoapResponse_ NabtoDeviceCoapResponse;
 typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, void* userData);
 
 /**
- * Add a COAP resource. Once a COAP resource is added, incoming
- * requests will invoke the handler. The returned resource is alive
- * for the life time of the COAP server
+ * Create listener for a new COAP resource. Once a COAP resource is
+ * added, incoming requests will resolve futures retrieved through
+ * nabto_device_listener_new_coap_request. The returned listener must
+ * be freed by the user.
  *
+ * @param device     The device
  * @param method     The CoAP method for which to handle requests
  * @param pathSegments
  *
@@ -481,22 +483,19 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * notation for rest resources "/heatpump/state" becomes the array
  * {"heatpump", "state", NULL }
  *
- * @param resource  Resource where you can listen for COAP requests
- *
- * TODO more error handling on module errors
- * @return NABTO_DEVICE_EC_OK iff ok.
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the resource could not be allocated
+ * @param listener where you can listen for COAP requests.
+ * @return NABTO_DEVICE_EC_OK on success
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, NabtoDeviceCoapResource** resource);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
+nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, NabtoDeviceListener** listener);
 
-// TODO return recurring future
 /**
- * Listen for a new coap request on the given resource.
+ * Listen for a new coap request on the given listener.
  *
- * @param resource   Resource on which to listen
+ * @param listener   Listener on which to listen
+ * @param future     Future which resolves when a new request is available or an error occurs
  * @param request    Where to reference an incoming request
- * @return Future which resolves when a new request is available or an error occurs
+ * @return NABTO_DEVICE_EC_OK on success
  *
  * Future status:
  *   NABTO_DEVICE_EC_OK if request is ready
@@ -505,22 +504,8 @@ nabto_device_coap_add_resource(NabtoDevice* device, NabtoDeviceCoapMethod method
  *   NABTO_DEVICE_EC_OUT_OF_MEMORY if request was received but the
  *                                structure could not be allocated.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_coap_resource_listen(NabtoDeviceCoapResource* resource, NabtoDeviceCoapRequest** request);
-
-/**
- * Notify observers of a resource retreived by calling
- * nabto_device_coap_add_resource. Notifying observers will trigger an
- * invokation of the resource handler assosiated with the resource,
- * which should ensure a response is made ready.
- *
- * @param resource  The COAP resource to notify
- *
- * @return NABTO_DEVICE_EC_OK if notify was successful
- */
-// TODO
-//NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-//nabto_device_coap_notify_observers(NabtoDeviceCoapResource* resource);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceCoapRequest** request);
 
 /**
  * Send back an error.

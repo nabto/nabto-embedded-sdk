@@ -484,7 +484,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_connection_event(NabtoDe
 
 const int NABTO_DEVICE_EVENT_ATTACHED = (int)NC_DEVICE_EVENT_ATTACHED;
 const int NABTO_DEVICE_EVENT_DETACHED = (int)NC_DEVICE_EVENT_DETACHED;
-const int NABTO_DEVICE_EVENT_FAILURE = (int)NC_DEVICE_EVENT_FAILURE;
 
 struct nabto_device_listen_device_event{
     NabtoDeviceEvent coreEvent;

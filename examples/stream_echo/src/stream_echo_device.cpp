@@ -248,12 +248,18 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
      * to show that nabto does not cause leaks or hanging threads to
      * skip nabto_device_close(). Note that outstanding
      * NabtoDeviceFutures may not be resolved. Any outstanding futures
-     * and listeners must be freed manually.
+     * and listeners must be freed manually. Here we free the
+     * listener, but assumes that the stream has been closed nicely by
+     * the client before stopping. If the stream has not been closed
+     * nicely, this program will leak memory here.
      */
     if (listener) {
         nabto_device_listener_free(listener);
         listener = NULL;
     }
+    NabtoDeviceFuture* fut = nabto_device_close(device);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
     nabto_device_free(device);
     return;
 }

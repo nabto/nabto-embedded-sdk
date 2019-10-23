@@ -187,14 +187,12 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
     }
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket");
-        nc_device_events_listener_notify(dev, NC_DEVICE_EVENT_FAILURE);
         return;
     }
 
     np_error_code ec2 = nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_bound_cb, dev);
     if (ec2 != NABTO_EC_OK) {
         nc_udp_dispatch_abort(&dev->udp);
-        nc_device_events_listener_notify(dev, NC_DEVICE_EVENT_FAILURE);
         return;
     }
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);

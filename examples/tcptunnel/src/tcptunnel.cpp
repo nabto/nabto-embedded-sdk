@@ -115,8 +115,6 @@ void TcpTunnel::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* 
             std::cout << "Device is now attached" << std::endl;
         } else if (tt->deviceEvent_ == NABTO_DEVICE_EVENT_DETACHED) {
             std::cout << "Device is now detached" << std::endl;
-        } else if (tt->deviceEvent_ == NABTO_DEVICE_EVENT_FAILURE) {
-            std::cout << "Device is now in a failure state!" << std::endl;
         } else {
             std::cout << "Unknown device event: " << tt->deviceEvent_ << std::endl;
         }

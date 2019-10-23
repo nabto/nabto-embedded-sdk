@@ -26,10 +26,11 @@ class HeatPumpCoapRequestHandler {
     static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
         nabto_device_future_free(fut);
+        HeatPumpCoapRequestHandler* handler = (HeatPumpCoapRequestHandler*)data;
         if (ec != NABTO_DEVICE_EC_OK) {
+            nabto_device_listener_free(handler->listener_);
             return;
         }
-        HeatPumpCoapRequestHandler* handler = (HeatPumpCoapRequestHandler*)data;
         handler->handler_(handler->request_, handler->heatPump_);
         handler->startListen();
     }
@@ -38,8 +39,8 @@ class HeatPumpCoapRequestHandler {
     //  wait for a request
     NabtoDeviceFuture* future_;
     NabtoDeviceCoapRequest* request_;
-    // on this resource
-    NabtoDeviceCoapResource* resource_;
+    // on this listener
+    NabtoDeviceListener* listener_;
     // invoke this function if the resource is hit
     CoapHandler handler_;
 };

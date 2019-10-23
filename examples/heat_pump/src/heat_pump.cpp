@@ -188,8 +188,6 @@ void HeatPump::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* u
             std::cout << "Device is now attached" << std::endl;
         } else if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_DETACHED) {
             std::cout << "Device is now detached" << std::endl;
-        } else if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_FAILURE) {
-            std::cout << "Device is now in a failure state!" << std::endl;
         } else {
             std::cout << "Unknown device event: " << hp->deviceEvent_ << std::endl;
         }

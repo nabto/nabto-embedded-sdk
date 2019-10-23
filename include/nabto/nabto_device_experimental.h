@@ -68,7 +68,6 @@ typedef int NabtoDeviceEvent;
 
 extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
 extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
-extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_FAILURE;
 
 /**
  * Create a listener for device events.

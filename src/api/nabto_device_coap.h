@@ -9,12 +9,12 @@ struct nabto_device_coap_resource;
 
 struct nabto_device_coap_resource {
     struct nabto_coap_server_resource* res;
+    struct nabto_device_listener* listener;
     struct nabto_device_context* dev;
     NabtoDeviceCoapResourceHandler handler;
     void* userData;
     struct nabto_device_coap_resource* next;
     struct nabto_device_coap_request** futureRequest;
-    struct nabto_device_future* fut;
 };
 struct nabto_device_coap_response;
 
