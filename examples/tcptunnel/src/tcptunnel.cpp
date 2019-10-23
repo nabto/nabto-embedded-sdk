@@ -38,14 +38,7 @@ void TcpTunnel::startWaitEvent()
         connectionEventListener_ = NULL;
         return;
     }
-    ec = nabto_device_future_set_callback(future, &TcpTunnel::connectionEvent, this);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to set future callback with ec: " << ec << std::endl;
-        nabto_device_future_free(future);
-        nabto_device_listener_free(connectionEventListener_);
-        connectionEventListener_ = NULL;
-        return;
-    }
+    nabto_device_future_set_callback(future, &TcpTunnel::connectionEvent, this);
 }
 
 void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
@@ -53,7 +46,6 @@ void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, vo
     TcpTunnel* tt = (TcpTunnel*)userData;
     nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
-        std::cout << "Connection event called back with error: " << err << std::endl;
         nabto_device_listener_free(tt->connectionEventListener_);
         return;
     } else {
@@ -92,14 +84,7 @@ void TcpTunnel::startWaitDevEvent()
         deviceEventListener_ = NULL;
         return;
     }
-    ec = nabto_device_future_set_callback(future, &TcpTunnel::deviceEvent, this);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to set future callback with ec: " << ec << std::endl;
-        nabto_device_future_free(future);
-        nabto_device_listener_free(deviceEventListener_);
-        deviceEventListener_ = NULL;
-        return;
-    }
+    nabto_device_future_set_callback(future, &TcpTunnel::deviceEvent, this);
 }
 
 void TcpTunnel::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
@@ -107,7 +92,6 @@ void TcpTunnel::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* 
     TcpTunnel* tt = (TcpTunnel*)userData;
     nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
-        std::cout << "Device event called back with error: " << err << std::endl;
         nabto_device_listener_free(tt->deviceEventListener_);
         return;
     } else {

@@ -695,7 +695,7 @@ nabto_device_future_free(NabtoDeviceFuture* future);
  * Query if a future is ready.
  *
  * @param future, the future.
- * @return NABTO_DEVICE_EC_OK if the future is ready else NABTO_DEVICE_EC_API_FUTURE_NOT_READY
+ * @return NABTO_DEVICE_EC_API_FUTURE_NOT_READY if the future is not resolved yet, else the error code of the async operation.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_ready(NabtoDeviceFuture* future);
@@ -706,26 +706,32 @@ nabto_device_future_ready(NabtoDeviceFuture* future);
  * @param future   The future instance to set callback on
  * @param callback The function to be called when the future resolves
  * @param data     Void pointer passed to the callback once invoked
- * @return NABTO_DEVICE_EC_OK on success
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_future_set_callback(NabtoDeviceFuture* future,
                                  NabtoDeviceFutureCallback callback,
                                  void* data);
 /**
  * Wait until a future is resolved.
+ *
+ * @return the error code of the async operation.
  */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_wait(NabtoDeviceFuture* future);
 
 /**
  * Wait atmost duration milliseconds for the future to be resolved.
+ *
+ * If the future is not resolved the function returns
+ * NABTO_DEVICE_EC_API_FUTURE_NOT_READY, if the future is ready the
+ * return value is whatever the underlying function returned.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_timed_wait(NabtoDeviceFuture* future, nabto_device_duration_t duration);
 
 /**
- * Get the error code of resolved future
+ * Get the error code of the resolved future, if the future is not
+ * ready, NABTO_DEVICE_EC_API_FUTURE_NOT_READY is returned.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_error_code(NabtoDeviceFuture* future);

@@ -594,8 +594,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_device_event(NabtoDevice
 void nabto_device_close_cb(const np_error_code ec, void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
-    nabto_api_future_set_error_code(dev->closeFut, nabto_device_error_core_to_api(ec));
-    nabto_api_future_queue_post(&dev->queueHead, dev->closeFut);
+    nabto_api_future_queue_post(&dev->queueHead, dev->closeFut, nabto_device_error_core_to_api(ec));
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_close(NabtoDevice* device)
@@ -701,13 +700,6 @@ void* nabto_device_core_thread(void* data)
     }
 
     return NULL;
-}
-
-/*
- * Posting futures for resolving on the future queue
- */
-void nabto_device_post_future(struct nabto_device_context* dev, struct nabto_device_future* fut) {
-    nabto_api_future_queue_post(&dev->queueHead, fut);
 }
 
 void nabto_device_free_threads(struct nabto_device_context* dev)

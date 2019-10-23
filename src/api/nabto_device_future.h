@@ -26,11 +26,7 @@ struct nabto_device_future {
 
 struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev);
 
-NabtoDeviceError nabto_device_future_resolve(struct nabto_device_future* fut);
-
-void nabto_api_future_set_error_code(struct nabto_device_future* fut, const NabtoDeviceError ec);
-
-void nabto_device_post_future(struct nabto_device_context* dev, struct nabto_device_future* fut);
+void nabto_device_future_resolve(struct nabto_device_future* fut);
 
 #ifdef __cplusplus
 } //extern "C"

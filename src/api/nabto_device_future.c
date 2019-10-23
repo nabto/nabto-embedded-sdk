@@ -1,5 +1,7 @@
 #include "nabto_device_future.h"
 #include "nabto_device_threads.h"
+#include "nabto_device_defines.h"
+#include "nabto_api_future_queue.h"
 
 #include <platform/np_logging.h>
 
@@ -8,7 +10,6 @@
 
 typedef uint32_t nabto_device_duration_t_;
 
-// TODO implement recurring future
 struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev)
 {
     struct nabto_device_future* fut = malloc(sizeof(struct nabto_device_future));
@@ -36,8 +37,10 @@ struct nabto_device_future* nabto_device_future_new(struct nabto_device_context*
 
 void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
 {
-    // TODO if future is unresolved this will cause seg fault
+    // TODO if future is unresolved this will cause seg fault.
+    // E.g. the users creates a future and free it before it is resolved.
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
+
     nabto_device_threads_free_cond(fut->cond);
     nabto_device_threads_free_mutex(fut->mutex);
     free(fut);
@@ -45,47 +48,65 @@ void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_future_ready(NabtoDeviceFuture* future)
 {
-    struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    if (fut->ready) {
-        return NABTO_DEVICE_EC_OK;
-    } else {
-        return NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
-    }
+    return nabto_device_future_error_code(future);
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFuture* future,
-                                                                   NabtoDeviceFutureCallback callback,
-                                                                   void* data)
+void NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFuture* future,
+                                                       NabtoDeviceFutureCallback callback,
+                                                       void* data)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    struct nabto_device_context* dev = fut->dev;
+    bool ready;
+    nabto_device_threads_mutex_lock(fut->mutex);
     fut->cb = callback;
     fut->cbData = data;
-    if (fut->ready) {
-        nabto_device_post_future(fut->dev, fut);
+    ready = fut->ready;
+    nabto_device_threads_mutex_unlock(fut->mutex);
+    if (ready) {
+        nabto_device_threads_mutex_lock(dev->eventMutex);
+        nabto_api_future_queue_post_ec_set(&dev->queueHead, fut);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
     }
-    return NABTO_DEVICE_EC_OK;
+
+    return;
 }
 
 
-void NABTO_DEVICE_API nabto_device_future_wait(NabtoDeviceFuture* future)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_future_wait(NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
 
     nabto_device_threads_mutex_lock(fut->mutex);
     nabto_device_threads_cond_wait(fut->cond, fut->mutex);
     nabto_device_threads_mutex_unlock(fut->mutex);
+
+    NabtoDeviceError ec;
+    nabto_device_threads_mutex_lock(fut->mutex);
+    ec = fut->ec;
+    nabto_device_threads_mutex_unlock(fut->mutex);
+    return ec;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_future_timed_wait(NabtoDeviceFuture* future, nabto_device_duration_t ms)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    if (fut->ready) {
-        return NABTO_DEVICE_EC_OK;
-    }
+
+    NabtoDeviceError ec;
     nabto_device_threads_mutex_lock(fut->mutex);
-    nabto_device_threads_cond_timed_wait(fut->cond, fut->mutex, ms);
+    if (fut->ready) {
+        ec = fut->ec;
+    } else {
+        nabto_device_threads_cond_timed_wait(fut->cond, fut->mutex, ms);
+        if (fut->ready) {
+            ec = fut->ec;
+        } else {
+            ec = NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
+        }
+    }
     nabto_device_threads_mutex_unlock(fut->mutex);
-    return NABTO_DEVICE_EC_OK;
+
+    return ec;
 }
 
 
@@ -93,23 +114,31 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_error_code(NabtoDeviceFutu
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
 
-    return fut->ec;
+    NabtoDeviceError ec;
+    nabto_device_threads_mutex_lock(fut->mutex);
+    if (!fut->ready) {
+        ec = NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
+    } else {
+        ec = fut->ec;
+    }
+    nabto_device_threads_mutex_unlock(fut->mutex);
+
+    return ec;
 }
 
-NabtoDeviceError nabto_device_future_resolve(struct nabto_device_future* fut)
+
+void nabto_device_future_resolve(struct nabto_device_future* fut)
 {
+    nabto_device_threads_mutex_lock(fut->mutex);
     fut->ready = true;
-    if(fut->cb != NULL) {
-        fut->cb((NabtoDeviceFuture*)fut, fut->ec, fut->cbData);
+    NabtoDeviceFutureCallback cb = fut->cb;
+    fut->cb = NULL;
+    nabto_device_threads_mutex_unlock(fut->mutex);
+    if(cb != NULL) {
+        cb((NabtoDeviceFuture*)fut, fut->ec, fut->cbData);
     } else {
         nabto_device_threads_mutex_lock(fut->mutex);
         nabto_device_threads_cond_signal(fut->cond);
         nabto_device_threads_mutex_unlock(fut->mutex);
     }
-    return NABTO_DEVICE_EC_OK;
-}
-
-void nabto_api_future_set_error_code(struct nabto_device_future* fut, const NabtoDeviceError ec)
-{
-    fut->ec = ec;
 }
