@@ -265,7 +265,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
     struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)userData;
     struct nabto_device_context* dev = resource->dev;
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)malloc(sizeof(struct nabto_device_coap_request));
-    NabtoDeviceError ec;
+
     if (req == NULL) {
         nabto_device_listener_set_error_code(resource->listener, NABTO_EC_OUT_OF_MEMORY);
         nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(5,00), "Insufficient resources");
