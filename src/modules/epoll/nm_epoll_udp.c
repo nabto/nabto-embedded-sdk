@@ -687,6 +687,7 @@ void nm_epoll_event_send_to(void* data)
     struct nm_epoll_udp_send_context* ctx = (struct nm_epoll_udp_send_context*)data;
     np_udp_socket* sock = ctx->sock;
     ssize_t res;
+    np_error_code ec = NABTO_EC_OK;
     if (ctx->ep.ip.type == NABTO_IPV4) {
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
@@ -713,17 +714,16 @@ void nm_epoll_event_send_to(void* data)
         if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
         } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
-            if (ctx->cb) {
-                ctx->cb(NABTO_EC_FAILED_TO_SEND_PACKET, ctx->cbData);
+            if (status == EADDRNOTAVAIL) {
+                NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
+            } else {
+                NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
             }
-            nm_epoll_udp_remove_send_base(sock, (struct nm_epoll_udp_send_base*)ctx);
-            free(ctx);
-            return;
+            ec = NABTO_EC_FAILED_TO_SEND_PACKET;
         }
     }
     if (ctx->cb) {
-        ctx->cb(NABTO_EC_OK, ctx->cbData);
+        ctx->cb(ec, ctx->cbData);
     }
     nm_epoll_udp_remove_send_base(sock, (struct nm_epoll_udp_send_base*)ctx);
     free(ctx);
