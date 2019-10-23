@@ -105,7 +105,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
         }
     }
 
-    if (stream == NULL && ((flags & NABTO_STREAM_FLAG_RST) != 0)) {
+    if (stream == NULL && ((flags & NABTO_STREAM_FLAG_RST) != NABTO_STREAM_FLAG_RST)) {
         // only send rst if it's not an rst packet
         nc_stream_manager_send_rst(ctx, conn, streamId);
         return;
