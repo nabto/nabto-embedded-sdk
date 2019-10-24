@@ -25,17 +25,22 @@
 #define NABTO_DEVICE_API __stdcall
 #if defined(NABTO_DEVICE_WIN32_API_STATIC)
 #define NABTO_DEVICE_DECL_PREFIX extern
-#elif defined(NABTO_DEVICE_CLIENT_API_EXPORTS)
+#elif defined(NABTO_DEVICE_API_EXPORTS)
 #define NABTO_DEVICE_DECL_PREFIX __declspec(dllexport)
 #else
 #define NABTO_DEVICE_DECL_PREFIX __declspec(dllimport)
 #endif
 #else
 #define NABTO_DEVICE_API
-#define NABTO_DEVICE_DECL_PREFIX extern
+#if defined(NABTO_DEVICE_API_SHARED)
+#define NABTO_DEVICE_DECL_PREFIX __attribute__((visibility("default")))
+#endif
 #endif
 
-//#include <nabto_types.h>
+#ifndef NABTO_DEVICE_DECL_PREFIX
+#define NABTO_DEVICE_DECL_PREFIX
+#endif
+
 
 #include <stdint.h>
 #include <string.h>
@@ -89,19 +94,19 @@ typedef uint64_t NabtoDeviceConnectionRef;
 /**
  * The NabtoDeviceError represents error codes
  */
-extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
-extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
-extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_IMPLEMENTED;
-extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LOG_LEVEL;
-extern const NabtoDeviceError NABTO_DEVICE_EC_OUT_OF_MEMORY;
-extern const NabtoDeviceError NABTO_DEVICE_EC_STRING_TOO_LONG;
-extern const NabtoDeviceError NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
-extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
-extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
-extern const NabtoDeviceError NABTO_DEVICE_EC_STOPPED;
-extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
-extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
-extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LISTENER;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LOG_LEVEL;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OUT_OF_MEMORY;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_STRING_TOO_LONG;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_STOPPED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LISTENER;
 
 /**********************
  * Device Api *

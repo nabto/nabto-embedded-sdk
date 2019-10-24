@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.2)
 project(nabto-embedded-sdk)
 
+cmake_policy(SET CMP0063 NEW)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
 include(CheckIncludeFiles)
 
 # build all of nabto on linux, windows, mac

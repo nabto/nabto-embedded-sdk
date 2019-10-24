@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.0)
-
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(ll_api_test_src

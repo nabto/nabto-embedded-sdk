@@ -47,24 +47,33 @@ add_library( nabto_device_api "${nabto_device_src}")
 target_link_libraries( nabto_device_api
   nm_dtls_cli
   nc_core
-  )
-
-file(WRITE null.cpp "")
-add_library( nabto_device SHARED null.cpp)
-target_link_libraries( nabto_device nabto_device_api)
-
-target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
-
-target_link_libraries( nabto_device
-  np_platform
   nm_logging_api
-  nm_unix_communication_buffer
-  nm_timestamp
-  nm_dtls_srv
   nm_dns
   nm_mdns
+  nm_dtls_srv
+  np_platform
+  nm_timestamp
   nm_tcptunnel
   )
+
+add_library( nabto_device SHARED "${nabto_device_src}")
+
+target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
+target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
+
+target_link_libraries( nabto_device
+  nm_dtls_cli
+  nc_core
+  nm_logging_api
+  nm_dns
+  nm_mdns
+  nm_dtls_srv
+  np_platform
+  nm_timestamp
+  nm_tcptunnel)
+
+
+target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
 
 if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   target_link_libraries( nabto_device

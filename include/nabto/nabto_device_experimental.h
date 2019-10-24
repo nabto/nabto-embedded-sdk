@@ -25,9 +25,9 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
 
 typedef int NabtoDeviceConnectionEvent;
 
-extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
-extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
-extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
 
 /**
  * Create a listener for connection events.
@@ -66,8 +66,8 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDevic
 
 typedef int NabtoDeviceEvent;
 
-extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
-extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
 
 /**
  * Create a listener for device events.
@@ -115,10 +115,10 @@ nabto_device_experimental_util_free(void* data);
  * IAM *
  *******/
 
-extern const NabtoDeviceError NABTO_DEVICE_EC_IAM_DENY;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_IAM_DENY;
 
-extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_ARGUMENT;
-extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_FOUND;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_ARGUMENT;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_FOUND;
 
 /**
  * IAM decision context for a query, the environment contains all the

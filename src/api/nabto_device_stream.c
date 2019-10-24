@@ -1,6 +1,7 @@
 #include "nabto_device_stream.h"
 #include "nabto_device_future.h"
 #include "nabto_device_event_handler.h"
+
 #include <api/nabto_device_defines.h>
 #include <platform/np_logging.h>
 
