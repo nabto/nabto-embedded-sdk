@@ -13,6 +13,7 @@ extern "C" {
  * Set the server port.
  * If not set it will default to 4433
  */
+// TODO move out of experimental
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
 
@@ -20,9 +21,15 @@ nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
  * Connection *
  **************/
 
+// TODO move out of experimental
+/**
+ * free fp with nabto_device_string_free()
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
 
+
+// TODO move connection events out of experimental
 typedef int NabtoDeviceConnectionEvent;
 
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
@@ -103,11 +110,15 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFut
 /********
  * Util *
  ********/
+
+// TODO move out of experimental
+// rename to nabto_device_create_private_key
+// free the key afterwards with nabto_device_string_free
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_experimental_util_create_private_key(NabtoDevice* device, char** key);
 
 
-
+// TODO remove or decide if this is the string_free function.
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_experimental_util_free(void* data);
 
@@ -497,6 +508,7 @@ nabto_device_iam_policies_list(NabtoDevice* device, void* buffer, size_t bufferL
  * device is started. Mdns has to be enabled before the device is
  * started. The responder is stopped when the device is closed.
  */
+// TODO move out of experimental
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_mdns(NabtoDevice* device);
 
@@ -512,6 +524,7 @@ nabto_device_enable_mdns(NabtoDevice* device);
  * traffic over a nabto connection to the device. TCP tunnelling is
  * stopped when the device is closed.
  */
+// TODO move out of experimental
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
 

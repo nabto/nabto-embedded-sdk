@@ -101,7 +101,7 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_L
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OUT_OF_MEMORY;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_STRING_TOO_LONG;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY; // TODO rename to FUTURE_NOT_RESOLVED
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_STOPPED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
@@ -314,6 +314,7 @@ nabto_device_stream_listener_new(NabtoDevice* device, uint32_t port);
  *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
+// TODO take future as in arg
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceStream** stream);
 
@@ -806,6 +807,8 @@ typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
  * @param data     Void pointer passed to the callback when invoked
  * @return NABTO_DEVICE_EC_OK on success
  */
+
+// TODO set_log_callback
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data);
 
@@ -818,6 +821,7 @@ nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, vo
  * @return NABTO_DEVICE_EC_OK on success
  *         NABTO_DEVICE_EC_INVALID_LOG_LEVEL on invalid level string
  */
+// TODO rename to set_log_level
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_log_set_level(NabtoDevice* device, const char* level);
 
@@ -827,6 +831,7 @@ nabto_device_log_set_level(NabtoDevice* device, const char* level);
  * @param device  The device instance to set log callback
  * @return NABTO_DEVICE_EC_OK on success
  */
+// TODO rename to set_std...
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_log_set_std_out_callback(NabtoDevice* device);
 
