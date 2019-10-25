@@ -50,7 +50,7 @@ nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method
     }
     res->listener = listener;
 
-    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res);
+    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res, &res->resource);
     if (err != NABTO_COAP_ERROR_OK) {
         nabto_device_listener_free((NabtoDeviceListener*)listener);
         free(res);
@@ -65,13 +65,38 @@ nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method
     return NABTO_DEVICE_EC_OK;
 }
 
+void nabto_device_coap_remove_resource(struct nabto_device_coap_resource* res)
+{
+    nabto_coap_server_remove_resource(res->resource);
+    if (res->dev->coapResourceHead == res) {
+        res->dev->coapResourceHead = res->next;
+    } else {
+        struct nabto_device_coap_resource* iterator = res->dev->coapResourceHead;
+        if (iterator == NULL) {
+            NABTO_LOG_ERROR(LOG, "Tried to remove a resource from an empty queue");
+            free(res);
+            return;
+        }
+        while(iterator->next != res) {
+            if (iterator->next == NULL) {
+                NABTO_LOG_ERROR(LOG, "Tried to remove a resource not in queued");
+                free(res);
+                return;
+            }
+            iterator = iterator->next;
+        }
+        iterator->next = res->next;
+    }
+    free(res);
+}
+
 void nabto_device_coap_free_resources(struct nabto_device_context* device)
 {
     struct nabto_device_coap_resource* resource = device->coapResourceHead;
     while(resource != NULL) {
         struct nabto_device_coap_resource* current = resource;
         resource = resource->next;
-        nabto_device_listener_set_error_code(current->listener, NABTO_EC_STOPPED);
+        nabto_device_listener_set_error_code(current->listener, NABTO_EC_ABORTED);
     }
     device->coapResourceHead = NULL;
 }
@@ -259,8 +284,8 @@ void nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_de
         }
         // using the coap request structure as event structure means it will be freed when user sends the response
     } else if (ec == NABTO_EC_ABORTED) {
-        // todo figure out how to remove the resource from core
-        free(res);
+        res->listener = NULL;
+        nabto_device_coap_remove_resource(res);
     } else {
         // In error state requests on the listener queue will not reach the user, so they cant resolve the request
         struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)eventData;
@@ -280,7 +305,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
         nabto_device_listener_set_error_code(resource->listener, NABTO_EC_OUT_OF_MEMORY);
         // ignore errors, we cannot do more than set the listener error code which is already done
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Insufficient resources");
-        // todo remove the resource
+        nabto_coap_server_request_free(request);
     } else {
         req->dev = dev;
         req->req = request;
@@ -289,6 +314,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
         if (ec != NABTO_EC_OK) {
             // since we are out of resources, this probably fails. Either way we keep cleaning up
             nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Insufficient resources");
+            nabto_coap_server_request_free(request);
             free(req);
         }
     }

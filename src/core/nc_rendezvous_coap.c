@@ -15,9 +15,12 @@ void nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context, struct 
 {
     context->coap = coap;
     context->rendezvous = rendezvous;
+    // todo: make resource removable
+    struct nabto_coap_server_resource* resource;
+    // TODO: check if add fails
     nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
                                    (const char*[]){"p2p", "rendezvous", NULL},
-                                   &nc_rendezvous_handle_coap_p2p_rendezvous, context);
+                                   &nc_rendezvous_handle_coap_p2p_rendezvous, context, &resource);
 }
 void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* request, void* data)
 {

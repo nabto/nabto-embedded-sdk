@@ -149,10 +149,10 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
+    nabto_device_coap_free_resources(dev);
     nc_device_deinit(&dev->core);
 
     dev->closing = true;
-    nabto_device_coap_free_resources(dev);
     nabto_device_threads_mutex_unlock(dev->futureQueueMutex);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 

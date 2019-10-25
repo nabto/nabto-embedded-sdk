@@ -44,6 +44,11 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
 
 }
 
+// TODO: This function is never called. Currently the tunnel structure
+// can never be freed unless you are sure that anything which calls it
+// are shut down first (eg. coap). It is not currently a problem since
+// the structure is only freed with the device which ensures
+// everything else is stopped first.
 void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
 {
     nc_device_remove_connection_events_listener(tunnels->device, &tunnels->connectionEventsListener);
@@ -53,6 +58,7 @@ void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
         // stop and remove tunnel from tunnels
         nm_tcptunnel_deinit(tunnel);
     }
+    // TODO: implement and call nm_tcptunnel_coap_deinit.
 }
 
 void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data)

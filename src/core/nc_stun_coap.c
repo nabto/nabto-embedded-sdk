@@ -17,13 +17,16 @@ void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* r
 
 void nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_platform* platform, struct nc_coap_server_context* coap, struct nc_stun_context* stun)
 {
+    // TODO: make resource removable
+    struct nabto_coap_server_resource* resource;
     context->stun = stun;
     context->coap = coap;
     context->pl = platform;
     context->stunRequest = NULL;
+    // TODO: check if add fails
     nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_GET,
                                    (const char*[]){"p2p", "endpoints", NULL},
-                                   &nc_rendezvous_handle_coap_p2p_endpoints, context);
+                                   &nc_rendezvous_handle_coap_p2p_endpoints, context, &resource);
 }
 
 void nc_stun_coap_deinit(struct nc_stun_coap_context* context)

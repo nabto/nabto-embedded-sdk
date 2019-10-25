@@ -17,22 +17,23 @@ static struct nm_tcptunnel* find_tunnel(struct nm_tcptunnels* tunnels, const cha
 
 np_error_code nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server_context* server)
 {
-
+    // TODO: make the resources removable
+    struct nabto_coap_server_resource* resource;
     nabto_coap_error err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_POST,
                                                           (const char*[]){"tcptunnels", NULL},
-                                                          create_tunnel, tunnels);
+                                                          create_tunnel, tunnels, &resource);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_server_error_module_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_DELETE,
                                          (const char*[]){"tcptunnels", "{tid}", NULL},
-                                         delete_tunnel, tunnels);
+                                         delete_tunnel, tunnels, &resource);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_server_error_module_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_GET,
                                          (const char*[]){"tcptunnels", "{tid}", NULL},
-                                         get_tunnel, tunnels);
+                                         get_tunnel, tunnels, &resource);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_server_error_module_to_core(err);
     }

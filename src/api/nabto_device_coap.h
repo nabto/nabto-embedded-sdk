@@ -14,6 +14,7 @@ struct nabto_device_coap_resource {
     void* userData;
     struct nabto_device_coap_resource* next;
     struct nabto_device_coap_request** futureRequest;
+    struct nabto_coap_server_resource* resource;
 };
 
 struct nabto_device_coap_request {

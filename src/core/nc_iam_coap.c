@@ -26,31 +26,34 @@ static void ok_response(struct nabto_coap_server_request* request, nabto_coap_co
 
 void nc_iam_coap_register_handlers(struct nc_device_context* device)
 {
+    // TODO: make coap resources removable
+    struct nabto_coap_server_resource* resource;
     struct nabto_coap_server* server = nc_coap_server_get_server(&device->coapServer);
-    nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
+    // TODO: check if add fails
+nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
                                    (const char*[]){"iam", "users", NULL},
-                                   nc_iam_coap_users_list, device);
+                                   nc_iam_coap_users_list, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
                                    (const char*[]){"iam", "users", "{user}", NULL},
-                                   nc_iam_coap_users_get, device);
+                                   nc_iam_coap_users_get, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_PUT,
                                    (const char*[]){"iam", "users", "{user}", NULL },
-                                   nc_iam_coap_users_create, device);
+                                   nc_iam_coap_users_create, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_DELETE,
                                    (const char*[]){"iam", "users", "{user}", NULL },
-                                   nc_iam_coap_users_delete, device);
+                                   nc_iam_coap_users_delete, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_PUT,
                                    (const char*[]){"iam", "users", "{user}", "fingerprints", "{fingerprint}", NULL },
-                                   nc_iam_coap_users_add_fingerprint, device);
+                                   nc_iam_coap_users_add_fingerprint, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_DELETE,
                                    (const char*[]){"iam", "users", "{user}", "fingerprints", "{fingerprint}", NULL },
-                                   nc_iam_coap_users_remove_fingerprint, device);
+                                   nc_iam_coap_users_remove_fingerprint, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_PUT,
                                    (const char*[]){"iam", "users", "{user}", "roles", "{role}", NULL },
-                                   nc_iam_coap_users_add_role, device);
+                                   nc_iam_coap_users_add_role, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_DELETE,
                                    (const char*[]){"iam", "users", "{user}", "roles", "{role}", NULL },
-                                   nc_iam_coap_users_remove_role, device);
+                                   nc_iam_coap_users_remove_role, device, &resource);
 }
 
 
