@@ -27,12 +27,14 @@ bool tcptunnel_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* par
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
         nabto_device_coap_error_response(request, 400, "Invalid Content Format");
+        nabto_device_coap_request_free(request);
         return false;
     }
     void* payload;
     size_t payloadSize;
     if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 400, "Missing payload");
+        nabto_device_coap_request_free(request);
         return false;
     }
     cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
@@ -67,6 +69,7 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
 
     if (!cbor_value_is_text_string(&value)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        nabto_device_coap_request_free(request);
         return;
     }
 
@@ -74,11 +77,13 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
     // TODO make random password
     if (cbor_value_text_string_equals(&value, "secret123", &equal) != CborNoError) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        nabto_device_coap_request_free(request);
         return;
     }
 
     if (!equal) {
         nabto_device_coap_error_response(request, 403, "Access denied");
+        nabto_device_coap_request_free(request);
         return;
     } else {
         NabtoDeviceError ec;
@@ -87,6 +92,7 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
         ec = nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
         if (ec) {
             nabto_device_coap_error_response(request, 500, "Server error");
+            nabto_device_coap_request_free(request);
             return;
         }
 
@@ -97,12 +103,13 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
         if (ec) {
             std::cout << "Could not add fingerprint to the default user" << std::endl;
             nabto_device_coap_error_response(request, 500, "Server error");
+            nabto_device_coap_request_free(request);
             return;
         }
         std::cout << "Added the fingerprint " << fp << " to the DefaultUser" << std::endl;
         // OK response
-        NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-        nabto_device_coap_response_set_code(response, 205);
-        nabto_device_coap_response_ready(response);
+        nabto_device_coap_response_set_code(request, 205);
+        nabto_device_coap_response_ready(request);
+        nabto_device_coap_request_free(request);
     }
 }

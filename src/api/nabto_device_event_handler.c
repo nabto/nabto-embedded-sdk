@@ -53,7 +53,7 @@ void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceList
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    listener->ec = NABTO_EC_STOPPED;
+    listener->ec = NABTO_EC_ABORTED;
     nabto_device_listener_resolve_error_state(listener);
     free(listener);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -101,10 +101,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_stop(NabtoDeviceListener
 
 void nabto_device_listener_set_error_code(struct nabto_device_listener* listener, np_error_code ec)
 {
-    if (ec == NABTO_EC_ABORTED) {
-        // On aborted, we stop all events first, then resolve with ABORTED
-        ec = NABTO_EC_STOPPED;
-    }
     listener->ec = ec;
     nabto_device_listener_resolve_error_state(listener);
 }
@@ -132,9 +128,14 @@ void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
 
 void nabto_device_listener_resolve_error_state(struct nabto_device_listener* listener)
 {
+    np_error_code ec = listener->ec;
+    if (listener->ec == NABTO_EC_ABORTED) {
+        // On aborted, we stop all events first, then resolve with ABORTED
+        ec = NABTO_EC_STOPPED;
+    }
     while (listener->sentinel.next != &listener->sentinel) {
         if (listener->cb) {
-            listener->cb(listener->ec, NULL, listener->sentinel.next->data, listener->listenerData);
+            listener->cb(ec, NULL, listener->sentinel.next->data, listener->listenerData);
         }
         nabto_device_listener_pop_event(listener, listener->sentinel.next);
     }

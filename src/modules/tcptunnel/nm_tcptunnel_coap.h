@@ -4,6 +4,6 @@
 struct nm_tcptunnels;
 struct nc_coap_server_context;
 
-void nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server_context* server);
+np_error_code nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server_context* server);
 
 #endif

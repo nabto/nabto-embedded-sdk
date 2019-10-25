@@ -53,13 +53,14 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
 void heat_pump_coap_send_bad_request(NabtoDeviceCoapRequest* request)
 {
     nabto_device_coap_error_response(request, 400, "Bad request");
+    nabto_device_coap_request_free(request);
 }
 
 void heat_pump_coap_send_ok(NabtoDeviceCoapRequest* request, uint16_t code)
 {
-     NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-     nabto_device_coap_response_set_code(response, code);
-     nabto_device_coap_response_ready(response);
+     nabto_device_coap_response_set_code(request, code);
+     nabto_device_coap_response_ready(request);
+     nabto_device_coap_request_free(request);
 }
 
 // return true if action was allowed
@@ -71,6 +72,7 @@ bool heat_pump_coap_check_action(NabtoDevice* device, NabtoDeviceCoapRequest* re
 
     if (effect != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 403, "Unauthorized");
+        nabto_device_coap_request_free(request);
         return false;
     }
     return true;
@@ -83,12 +85,14 @@ bool heat_pump_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* par
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
         nabto_device_coap_error_response(request, 400, "Invalid Content Format");
+        nabto_device_coap_request_free(request);
         return false;
     }
     void* payload;
     size_t payloadSize;
     if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 400, "Missing payload");
+        nabto_device_coap_request_free(request);
         return false;
     }
     cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
@@ -173,6 +177,7 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
 {
     if (!application->beginPairing()) {
         nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
+        nabto_device_coap_request_free(request);
         return;
     }
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
@@ -195,12 +200,12 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
     }
 
     if (result == true && pairUser(application, fp)) {
-        auto response = nabto_device_coap_create_response(request);
-        nabto_device_coap_response_set_code(response, 205);
-        nabto_device_coap_response_ready(response);
+        nabto_device_coap_response_set_code(request, 205);
+        nabto_device_coap_response_ready(request);
     } else {
         nabto_device_coap_error_response(request, 403, "Rejected");
     }
+    nabto_device_coap_request_free(request);
     application->pairingEnded();
 }
 
@@ -219,6 +224,7 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
     NabtoDeviceError ec = application->userCount(userCount);
     if (ec) {
         nabto_device_coap_error_response(request, 500, "");
+        nabto_device_coap_request_free(request);
         return;
     }
 
@@ -233,6 +239,7 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
 
     if (effect != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 403, "Unauthorized");
+        nabto_device_coap_request_free(request);
         return;
     }
 
@@ -264,6 +271,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
     bool powerState;
     if (!cbor_value_is_boolean(&value) || cbor_value_get_boolean(&value, &powerState) != CborNoError) {
         nabto_device_coap_error_response(request, 400, "Invalid request");
+        nabto_device_coap_request_free(request);
         return;
     }
 
@@ -350,9 +358,13 @@ void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
 
     auto d = json::to_cbor(application->getState());
 
-    NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-    nabto_device_coap_response_set_code(response, 205);
-    nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    nabto_device_coap_response_set_payload(response, d.data(), d.size());
-    nabto_device_coap_response_ready(response);
+    nabto_device_coap_response_set_code(request, 205);
+    nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    NabtoDeviceError ec = nabto_device_coap_response_set_payload(request, d.data(), d.size());
+    if (ec != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+    } else {
+        nabto_device_coap_response_ready(request);
+    }
+    nabto_device_coap_request_free(request);
 }

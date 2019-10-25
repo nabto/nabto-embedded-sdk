@@ -25,12 +25,13 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
 
     uint8_t* payload;
     size_t payloadLength;
-    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
     NABTO_LOG_BUF(LOG, payload, payloadLength);
     if (payload == NULL) {
-        nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(4,00));
-        nabto_coap_server_response_ready(response);
+        nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(4,00));
+        // On errors we should still cleanup the request
+        nabto_coap_server_response_ready(request);
+        nabto_coap_server_request_free(request);
         return;
     }
 
@@ -78,6 +79,7 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
 
     cbor_value_leave_container(&array, &ep);
 
-    nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,04));
-    nabto_coap_server_response_ready(response);
+    nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,04));
+    nabto_coap_server_response_ready(request);
+    nabto_coap_server_request_free(request);
 }

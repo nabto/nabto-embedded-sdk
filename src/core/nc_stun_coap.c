@@ -38,8 +38,6 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     uint8_t buffer[128];
     NABTO_LOG_TRACE(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
 
-    struct nabto_coap_server_response* response = nabto_coap_server_create_response(ctx->stunRequest);
-
     if (ec != NABTO_EC_OK) {
         // TODO;
 
@@ -82,11 +80,14 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
 
     size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
 
-    nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,05));
-    nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    nabto_coap_server_response_set_payload(response, buffer, used);
-
-    nabto_coap_server_response_ready(response);
+    struct nabto_coap_server_request* request = ctx->stunRequest;
+    nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
+    nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    // TODO: handle OOM
+    nabto_coap_server_response_set_payload(request, buffer, used);
+    // On errors we should still cleanup the request
+    nabto_coap_server_response_ready(request);
+    nabto_coap_server_request_free(request);
     ctx->stunRequest = NULL;
 }
 
@@ -96,9 +97,10 @@ void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* r
 
     if (ctx->stunRequest != NULL) {
         NABTO_LOG_ERROR(LOG, "Received stun request while one is already active");
-        struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
-        nabto_coap_server_response_set_code(response, NABTO_COAP_CODE_PRECONDITION_FAILED);
-        nabto_coap_server_response_ready(response);
+        nabto_coap_server_response_set_code(request, NABTO_COAP_CODE_PRECONDITION_FAILED);
+        // on errors we should still cleanup the request
+        nabto_coap_server_response_ready(request);
+        nabto_coap_server_request_free(request);
         return;
     }
     ctx->stunRequest = request;

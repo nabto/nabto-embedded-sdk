@@ -90,11 +90,13 @@ class GetHandler : public AbstractCoapHandler {
         NabtoDeviceConnectionRef connectionId = nabto_device_coap_request_get_connection_ref(request);
         printf("Received CoAP GET request, connectionId: %" PRIu64 "" NEWLINE, connectionId);
         const char* responseData = "helloWorld";
-        NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
-        nabto_device_coap_response_set_code(response, 205);
-        nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
-        nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
-        nabto_device_coap_response_ready(response);
+        nabto_device_coap_response_set_code(request, 205);
+        nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
+        // TODO: handle OOM
+        nabto_device_coap_response_set_payload(request, responseData, strlen(responseData));
+        // if underlying connection is gone we ignore it and free request anyway
+        nabto_device_coap_response_ready(request);
+        nabto_device_coap_request_free(request);
     }
 };
 
@@ -105,23 +107,28 @@ class PostHandler : public AbstractCoapHandler {
     {
         const char* responseData = "helloWorld";
         uint16_t contentFormat;
-        NabtoDeviceCoapResponse* response = nabto_device_coap_create_response(request);
         nabto_device_coap_request_get_content_format(request, &contentFormat);
         if (contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) {
             const char* responseData = "Invalid content format";
             printf("Received CoAP POST request with invalid content format" NEWLINE);
-            nabto_device_coap_response_set_code(response, 400);
-            nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
-            nabto_device_coap_response_ready(response);
+            nabto_device_coap_response_set_code(request, 400);
+            // TODO: handle OOM
+            nabto_device_coap_response_set_payload(request, responseData, strlen(responseData));
+            // if underlying connection is gone we cleanup anyway
+            nabto_device_coap_response_ready(request);
+            nabto_device_coap_request_free(request);
         } else {
             char* payload;
             size_t payloadLength;
             nabto_device_coap_request_get_payload(request, (void**)&payload, &payloadLength);
             printf("Received CoAP POST request with a %li byte payload: " NEWLINE "%s", payloadLength, payload);
-            nabto_device_coap_response_set_code(response, 205);
-            nabto_device_coap_response_set_payload(response, responseData, strlen(responseData));
-            nabto_device_coap_response_set_content_format(response, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
-            nabto_device_coap_response_ready(response);
+            nabto_device_coap_response_set_code(request, 205);
+            // todo handle OOM
+            nabto_device_coap_response_set_payload(request, responseData, strlen(responseData));
+            nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
+            // if underlying connection is gone we cleanup anyway
+            nabto_device_coap_response_ready(request);
+            nabto_device_coap_request_free(request);
         }
     }
 };

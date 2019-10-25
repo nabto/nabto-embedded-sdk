@@ -19,7 +19,8 @@ struct nc_coap_server_context {
     bool isSending;
 };
 
-void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx);
+np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec);
+np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx);
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
                                   uint8_t* buffer, uint16_t bufferSize);

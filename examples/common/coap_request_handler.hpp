@@ -18,10 +18,11 @@ class CoapRequestHandler {
     static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
         nabto_device_future_free(fut);
+        CoapRequestHandler* handler = (CoapRequestHandler*)data;
         if (ec != NABTO_DEVICE_EC_OK) {
+            nabto_device_listener_free(handler->listener_);
             return;
         }
-        CoapRequestHandler* handler = (CoapRequestHandler*)data;
         handler->handler_(handler->request_, handler->application_);
         handler->startListen();
     }

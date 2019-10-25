@@ -61,11 +61,16 @@ void handleHelloReq(struct nabto_coap_server_request* request, void* userData)
 {
     NABTO_LOG_INFO(0, "COAP hello world");
     static const char* helloWorld = "hello world";
-    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
-    nabto_coap_server_response_set_code(response, (nabto_coap_code)NABTO_COAP_CODE(2,05));
-    nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
-    nabto_coap_server_response_set_payload(response, (uint8_t*)helloWorld, strlen(helloWorld));
-    nabto_coap_server_response_ready(response);
+    nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
+    nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
+    nabto_coap_error err = nabto_coap_server_response_set_payload(request, (uint8_t*)helloWorld, strlen(helloWorld));
+    if (err != NABTO_COAP_ERROR_OK) {
+        NABTO_LOG_ERROR(0, "could not set response payload with: %u, only possible should be OOM: %u", err, NABTO_COAP_ERROR_OUT_OF_MEMORY);
+        exit(1);
+    }
+    // On errors we should still clean up the request
+    nabto_coap_server_response_ready(request);
+    nabto_coap_server_request_free(request);
 }
 
 int main()
@@ -85,7 +90,11 @@ int main()
     pl->udp.create(pl, &sendCtx.sock);
     pl->udp.async_bind_port(sendCtx.sock, 4242, &udpCreatedCb, NULL);
 
-    nabto_coap_server_add_resource(nc_coap_server_get_server(&coap), NABTO_COAP_CODE_GET, (const char*[]){"helloworld", NULL}, &handleHelloReq, NULL);
+    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(&coap), NABTO_COAP_CODE_GET, (const char*[]){"helloworld", NULL}, &handleHelloReq, NULL);
+    if (err != NABTO_COAP_ERROR_OK) {
+        NABTO_LOG_ERROR(0, "Failed to add resource with: %d", err);
+        exit(1);
+    }
 
     test_platform_run(&tp);
 }

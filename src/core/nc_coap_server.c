@@ -16,19 +16,34 @@ void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx);
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data);
 void nc_coap_server_handle_timeout(const np_error_code ec, void* data);
 
+np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec) {
+    switch(ec) {
+        case NABTO_COAP_ERROR_OK: return NABTO_EC_OK;
+        case NABTO_COAP_ERROR_OUT_OF_MEMORY: return NABTO_EC_OUT_OF_MEMORY;
+        case NABTO_COAP_ERROR_NO_CONNECTION: return NABTO_EC_ABORTED;
+        case NABTO_COAP_ERROR_INVALID_PARAMETER: return NABTO_EC_INVALID_PARAMETER;
+        default: return NABTO_EC_FAILED;
+    }
+}
+
 // TODO: Dummy function since this is not yet used
 void nc_coap_server_event_handler(void* hest, enum nabto_coap_server_event event, ...)
 {
 
 }
 
-void nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
+np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
 {
     ctx->pl = pl;
     ctx->sendBuffer = pl->buf.allocate();
     ctx->isSending = false;
-    nabto_coap_server_init(&ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, &nc_coap_server_event_handler, ctx);
+    nabto_coap_error err = nabto_coap_server_init(&ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, &nc_coap_server_event_handler, ctx);
+    if (err != NABTO_COAP_ERROR_OK) {
+        pl->buf.free(ctx->sendBuffer);
+        return nc_coap_server_error_module_to_core(err);
+    }
     nc_coap_server_set_infinite_stamp(ctx);
+    return NABTO_EC_OK;
 }
 
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx)

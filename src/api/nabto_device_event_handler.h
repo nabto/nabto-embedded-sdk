@@ -28,7 +28,10 @@ struct nabto_device_event;
  * function is called once with error code NABTO_EC_ABORTED to signal
  * that the listener has been aborted and no further actions will be
  * made on provided references and it is okay to cleanup any remaining
- * resources.
+ * resources. If the listener goes into the error state
+ * NABTO_EC_ABORTED, it will be changed to NABTO_EC_STOPPED while
+ * cleaning up events. Therefore, NABTO_EC_ABORTED is ALWAYS the last
+ * error code this function will receive.
  *
  * This is called with ec:
  *      NABTO_EC_OK when future should be resolved

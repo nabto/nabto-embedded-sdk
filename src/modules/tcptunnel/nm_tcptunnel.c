@@ -33,7 +33,10 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
     tunnels->defaultHost.ip.v4[2] = 0x00;
     tunnels->defaultHost.ip.v4[3] = 0x01;
 
-    nm_tcptunnel_coap_init(tunnels, &device->coapServer);
+    np_error_code ec = nm_tcptunnel_coap_init(tunnels, &device->coapServer);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     nc_device_add_connection_events_listener(device, &tunnels->connectionEventsListener, &connection_event, tunnels);
 

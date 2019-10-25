@@ -54,6 +54,7 @@
         XX(INVALID_LOG_LEVEL, "Invalid log level")                      \
         XX(INVALID_STATE, "Invalid State")                              \
         XX(INVALID_LISTENER, "Invalid listener type")                   \
+        XX(INVALID_PARAMETER, "Invalid parameter supplied")             \
 
 
 #define XX_ERROR(name, _) NABTO_EC_##name,

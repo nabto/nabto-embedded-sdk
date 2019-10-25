@@ -8,7 +8,6 @@
 struct nabto_device_coap_resource;
 
 struct nabto_device_coap_resource {
-    struct nabto_coap_server_resource* res;
     struct nabto_device_listener* listener;
     struct nabto_device_context* dev;
     NabtoDeviceCoapResourceHandler handler;
@@ -16,17 +15,9 @@ struct nabto_device_coap_resource {
     struct nabto_device_coap_resource* next;
     struct nabto_device_coap_request** futureRequest;
 };
-struct nabto_device_coap_response;
 
 struct nabto_device_coap_request {
     struct nabto_coap_server_request* req;
-    struct nabto_device_coap_response* resp;
-    struct nabto_device_context* dev;
-};
-
-struct nabto_device_coap_response {
-    struct nabto_coap_server_response* resp;
-    struct nabto_device_coap_request* req;
     struct nabto_device_context* dev;
 };
 

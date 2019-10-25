@@ -31,10 +31,12 @@ const char* buf = "helloworld";
 void handler(NabtoDeviceCoapRequest* req, void* data)
 {
     NABTO_LOG_TRACE(0, "Handler called!!");
-    NabtoDeviceCoapResponse* resp = nabto_device_coap_create_response(req);
-    nabto_device_coap_response_set_code(resp, 205);
-    nabto_device_coap_response_set_payload(resp, buf, strlen(buf));
-    nabto_device_coap_response_ready(resp);
+    nabto_device_coap_response_set_code(req, 205);
+    // TODO handle OOM
+    nabto_device_coap_response_set_payload(req, buf, strlen(buf));
+    // if underlying connection is dead we cleanup anyway
+    nabto_device_coap_response_ready(req);
+    nabto_device_coap_request_free(req);
 }
 
 int main()

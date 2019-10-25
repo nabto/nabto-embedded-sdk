@@ -56,11 +56,13 @@ void nc_iam_coap_register_handlers(struct nc_device_context* device)
 
 static void create_cbor_response(struct nabto_coap_server_request* request, void* cbor, size_t cborLength)
 {
-    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
-    nabto_coap_server_response_set_code(response, NABTO_COAP_CODE(2,05));
-    nabto_coap_server_response_set_content_format(response, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    nabto_coap_server_response_set_payload(response, cbor, cborLength);
-    nabto_coap_server_response_ready(response);
+    nabto_coap_server_response_set_code(request, NABTO_COAP_CODE(2,05));
+    nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    // TODO: handle OOM
+    nabto_coap_server_response_set_payload(request, cbor, cborLength);
+    // On errors we should still cleanup the request
+    nabto_coap_server_response_ready(request);
+    nabto_coap_server_request_free(request);
 }
 
 /**
@@ -336,7 +338,8 @@ void nc_iam_coap_users_remove_role(struct nabto_coap_server_request* request, vo
 
 void access_denied(struct nabto_coap_server_request* request)
 {
-    nabto_coap_server_create_error_response(request, NABTO_COAP_CODE(4,03), "Access Denied");
+    // todo: handle oom
+    nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), "Access Denied");
 }
 
 nabto_coap_code ec_to_coap_code(np_error_code ec)
@@ -351,12 +354,14 @@ nabto_coap_code ec_to_coap_code(np_error_code ec)
 
 void error_response(struct nabto_coap_server_request* request, np_error_code ec)
 {
-    nabto_coap_server_create_error_response(request, ec_to_coap_code(ec), np_error_code_to_string(ec));
+    // todo: handle oom
+    nabto_coap_server_send_error_response(request, ec_to_coap_code(ec), np_error_code_to_string(ec));
 }
 
 void ok_response(struct nabto_coap_server_request* request, nabto_coap_code code)
 {
-    struct nabto_coap_server_response* response = nabto_coap_server_create_response(request);
-    nabto_coap_server_response_set_code(response, code);
-    nabto_coap_server_response_ready(response);
+    nabto_coap_server_response_set_code(request, code);
+    // on errors we should still cleanup the request
+    nabto_coap_server_response_ready(request);
+    nabto_coap_server_request_free(request);
 }

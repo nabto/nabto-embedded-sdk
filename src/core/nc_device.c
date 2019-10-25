@@ -30,7 +30,13 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
     nc_iam_init(&device->iam);
-    nc_coap_server_init(pl, &device->coapServer);
+    ec = nc_coap_server_init(pl, &device->coapServer);
+    if (ec != NABTO_EC_OK) {
+        pl->dtlsS.destroy(device->dtlsServer);
+        nc_udp_dispatch_deinit(&device->udp);
+        nc_udp_dispatch_deinit(&device->secondaryUdp);
+        return ec;
+    }
     nc_iam_coap_register_handlers(device);
     nc_coap_client_init(pl, &device->coapClient);
     nc_attacher_init(&device->attacher, pl, device, &device->coapClient);

@@ -35,12 +35,12 @@ static void eventHandlerCallback(const np_error_code ec, struct nabto_device_fut
         nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
         nabto::test::eventState* d = (nabto::test::eventState*)eventData;
         *d = nabto::test::RESOLVED;
-    } else if (ec == NABTO_EC_ABORTED) {
+    } else if (ec == NABTO_EC_STOPPED) {
         BOOST_TEST(!future);
         BOOST_TEST(eventData);
         nabto::test::eventState* e = (nabto::test::eventState*)eventData;
         *e = nabto::test::ABORTED;
-    } else if (ec == NABTO_EC_STOPPED) {
+    } else if (ec == NABTO_EC_ABORTED) {
         BOOST_TEST(!future);
         BOOST_TEST(!eventData);
     } else {
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(event_test)
     nabto_device_future_free(fut);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     BOOST_TEST(event == nabto::test::RESOLVED);
-    BOOST_TEST(listener == NABTO_EC_STOPPED);
+    BOOST_TEST(listener == NABTO_EC_ABORTED);
     nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
 }
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     BOOST_TEST(event1 == nabto::test::RESOLVED);
     BOOST_TEST(event2 == nabto::test::RESOLVED);
-    BOOST_TEST(listener == NABTO_EC_STOPPED);
+    BOOST_TEST(listener == NABTO_EC_ABORTED);
     nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
 }
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_events)
     BOOST_TEST(ec == NABTO_EC_OK);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     BOOST_TEST(event == nabto::test::ABORTED);
-    BOOST_TEST(listener == NABTO_EC_STOPPED);
+    BOOST_TEST(listener == NABTO_EC_ABORTED);
     nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
 }
@@ -156,8 +156,8 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     nabto_api_future_queue_execute_all(&dev->queueHead);
-    BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(listener == NABTO_EC_STOPPED);
+    BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_ABORTED);
+    BOOST_TEST(listener == NABTO_EC_ABORTED);
     BOOST_TEST(nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_ABORTED);
     nabto_device_future_free(fut);
     nabto_device_threads_free_mutex(dev->eventMutex);

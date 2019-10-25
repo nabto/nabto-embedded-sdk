@@ -107,6 +107,7 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_STOPPED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LISTENER;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_PARAMETER;
 
 /**********************
  * Device Api *
@@ -455,19 +456,9 @@ typedef enum  {
 } nabto_device_coap_content_format;
 
 /**
- * The COAP resource is used when notifying observers of a specefic resource
- */
-typedef struct NabtoDeviceCoapResource_ NabtoDeviceCoapResource;
-
-/**
  * Representing a COAP request received from the client
  */
 typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
-
-/**
- * Representing a COAP response for a specific request
- */
-typedef struct NabtoDeviceCoapResponse_ NabtoDeviceCoapResponse;
 
 /**
  * Resource handling callback invoked when a request is available for the resource
@@ -513,6 +504,15 @@ nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceCoapRequest** request);
 
+
+/**
+ * Free a COAP request when done handling it
+ *
+ * @param request  Request to be freed
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_coap_request_free(NabtoDeviceCoapRequest* request);
+
 /**
  * Send back an error.
  *
@@ -529,20 +529,6 @@ nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDevic
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_error_response(NabtoDeviceCoapRequest* request, uint16_t code, const char* message);
 
-
-/**
- * Create a COAP response for a given request. This MUST only be
- * called once per resource handler invokation. That is, for
- * non-observable requests ONLY once per request, and for observable
- * requests ONLY once per notification.
- *
- * @param request  The COAP request assosiated with the response
- *
- * @return A representation of the created response.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceCoapResponse* NABTO_DEVICE_API
-nabto_device_coap_create_response(NabtoDeviceCoapRequest* request);
-
 /**
  * Set the response code of a given response. This code should follow
  * the standard HTTP status codes (eg. 200 for success).
@@ -553,7 +539,7 @@ nabto_device_coap_create_response(NabtoDeviceCoapRequest* request);
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t code);
+nabto_device_coap_response_set_code(NabtoDeviceCoapRequest* request, uint16_t code);
 
 /**
  * Set the payload of a given response.
@@ -565,7 +551,7 @@ nabto_device_coap_response_set_code(NabtoDeviceCoapResponse* response, uint16_t 
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response, const void* data, size_t dataSize);
+nabto_device_coap_response_set_payload(NabtoDeviceCoapRequest* request, const void* data, size_t dataSize);
 
 /**
  * Set the content format of a given response. This should follow the
@@ -577,19 +563,18 @@ nabto_device_coap_response_set_payload(NabtoDeviceCoapResponse* response, const 
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_response_set_content_format(NabtoDeviceCoapResponse* response, uint16_t format);
+nabto_device_coap_response_set_content_format(NabtoDeviceCoapRequest* request, uint16_t format);
 
 /**
  * Mark a response as ready. Once ready, the response will be sent to
- * the client. After this call, both the request and the response will
- * be cleaned up.
+ * the client.
  *
  * @param response  The response to be sent
  *
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_response_ready(NabtoDeviceCoapResponse* response);
+nabto_device_coap_response_ready(NabtoDeviceCoapRequest* request);
 
 /**
  * Get the content format of a given request.
