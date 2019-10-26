@@ -18,7 +18,10 @@ typedef std::function<void (NabtoDeviceCoapRequest* request, HeatPump* applicati
 
 class HeatPumpCoapRequestHandler {
  public:
-    ~HeatPumpCoapRequestHandler() {}
+    ~HeatPumpCoapRequestHandler() {
+        nabto_device_listener_free(listener_);
+        nabto_device_future_free(future_);
+    }
     HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDeviceCoapMethod methdod, const char** pathSegments, CoapHandler handler);
 
     void startListen();
@@ -29,10 +32,8 @@ class HeatPumpCoapRequestHandler {
 
     static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
-        nabto_device_future_free(fut);
         HeatPumpCoapRequestHandler* handler = (HeatPumpCoapRequestHandler*)data;
         if (ec != NABTO_DEVICE_EC_OK) {
-            nabto_device_listener_free(handler->listener_);
             return;
         }
         handler->handler_(handler->request_, handler->heatPump_);
@@ -55,6 +56,12 @@ class HeatPump {
     HeatPump(NabtoDevice* device, json config, const std::string& configFile)
         : device_(device), config_(config), configFile_(configFile)
     {
+
+    }
+
+    ~HeatPump() {
+        nabto_device_future_free(connectionEventFuture_);
+        nabto_device_listener_free(connectionEventListener_);
     }
 
     void init();
@@ -170,6 +177,7 @@ class HeatPump {
     uint64_t currentIamVersion_;
 
     NabtoDeviceListener* connectionEventListener_;
+    NabtoDeviceFuture* connectionEventFuture_;
     NabtoDeviceConnectionRef connectionRef_;
     NabtoDeviceConnectionEvent connectionEvent_;
 

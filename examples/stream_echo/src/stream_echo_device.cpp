@@ -155,6 +155,7 @@ bool init_stream_echo(const std::string& configFile, const std::string& productI
 }
 
 NabtoDeviceListener* listener;
+NabtoDeviceFuture* listenerFuture;
 bool closing = false;
 
 void run_stream_echo(const std::string& configFile, const std::string& logLevel)
@@ -231,6 +232,11 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
         std::cerr << "could not listen for streams" << std::endl;
         return;
     }
+    listenerFuture = nabto_device_future_new(device);
+    if (!listenerFuture) {
+        std::cerr << "could not allocate future" << std::endl;
+        return;
+    }
 
     startListenForEchoStream(device);
 
@@ -293,22 +299,13 @@ NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionRefe
 
 // handle echo streams
 void startListenForEchoStream(NabtoDevice* device) {
-    NabtoDeviceFuture* fut;
-    NabtoDeviceError err = nabto_device_listener_new_stream(listener, &fut, &head.stream);
-    if (err != NABTO_DEVICE_EC_OK) {
-        nabto_device_listener_free(listener);
-        listener = NULL;
-        return;
-    }
-    nabto_device_future_set_callback(fut, newEchoStream, device);
+    nabto_device_listener_new_stream(listener, listenerFuture, &head.stream);
+    nabto_device_future_set_callback(listenerFuture, newEchoStream, device);
 }
 
 void newEchoStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
-    nabto_device_future_free(future);
     if (ec != NABTO_DEVICE_EC_OK) {
-        nabto_device_listener_free(listener);
-        listener = NULL;
         return;
     }
     NabtoDevice* device = (NabtoDevice*)userData;
@@ -319,7 +316,8 @@ void newEchoStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
     head.stream = NULL; // ready for next stream
     state->active = true;
     state->dev = device;
-    NabtoDeviceFuture* acceptFuture = nabto_device_stream_accept(state->stream);
+    NabtoDeviceFuture* acceptFuture = nabto_device_future_new(device);
+    nabto_device_stream_accept(state->stream, acceptFuture);
 
     nabto_device_future_set_callback(acceptFuture, streamAccepted, state);
 
@@ -340,7 +338,8 @@ void streamAccepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDa
 
 void startRead(struct StreamEchoState* state)
 {
-    NabtoDeviceFuture* readFuture = nabto_device_stream_read_some(state->stream, state->readBuffer, READ_BUFFER_SIZE, &state->readLength);
+    NabtoDeviceFuture* readFuture = nabto_device_future_new(state->dev);
+    nabto_device_stream_read_some(state->stream, readFuture, state->readBuffer, READ_BUFFER_SIZE, &state->readLength);
     nabto_device_future_set_callback(readFuture, hasRead, state);
 }
 
@@ -363,7 +362,8 @@ void hasRead(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 
 void startWrite(struct StreamEchoState* state)
 {
-    NabtoDeviceFuture* writeFuture = nabto_device_stream_write(state->stream, state->readBuffer, state->readLength);
+    NabtoDeviceFuture* writeFuture = nabto_device_future_new(state->dev);
+    nabto_device_stream_write(state->stream, writeFuture, state->readBuffer, state->readLength);
     nabto_device_future_set_callback(writeFuture, wrote, state);
 }
 
@@ -381,7 +381,8 @@ void wrote(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 
 void startClose(struct StreamEchoState* state)
 {
-    NabtoDeviceFuture* closeFuture = nabto_device_stream_close(state->stream);
+    NabtoDeviceFuture* closeFuture = nabto_device_future_new(state->dev);
+    nabto_device_stream_close(state->stream, closeFuture);
     nabto_device_future_set_callback(closeFuture, closed, state);
 }
 
@@ -405,6 +406,7 @@ void tryExit(NabtoDevice* device)
         return;
     }
     head.next = NULL;
-    NabtoDeviceFuture* fut = nabto_device_close(device);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
     nabto_device_future_set_callback(fut, deviceClosed, device);
 }

@@ -86,31 +86,28 @@ void iamChanged(const np_error_code ec, void* userData)
     }
 }
 
-NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version)
+void NABTO_DEVICE_API
+nabto_device_iam_listen_for_changes(NabtoDevice* device, NabtoDeviceFuture* future, uint64_t version)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
-    struct nabto_device_future* fut = NULL;
+    struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    nabto_device_future_reset(fut);
+
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
-
-    fut = nabto_device_future_new(dev);
-    if (fut) {
-        if (dev->iamChangedFuture != NULL) {
-            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    if (dev->iamChangedFuture != NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    } else {
+        ec = nc_iam_set_change_callback(&dev->core.iam, iamChanged, dev);
+        if (ec) {
+            nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
         } else {
-            ec = nc_iam_set_change_callback(&dev->core.iam, iamChanged, dev);
-            if (ec) {
-                nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
-            } else {
-                dev->iamChangedFuture = fut;
-            }
+            dev->iamChangedFuture = fut;
         }
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return (NabtoDeviceFuture*)fut;
 }
 
 NabtoDeviceError NABTO_DEVICE_API

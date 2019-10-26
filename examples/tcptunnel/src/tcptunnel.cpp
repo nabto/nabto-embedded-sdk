@@ -8,7 +8,6 @@
 
 void TcpTunnel::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
 {
-    nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
         return;
     }
@@ -19,34 +18,21 @@ void TcpTunnel::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* u
 
 void TcpTunnel::listenForIamChanges()
 {
-    NabtoDeviceFuture* future = nabto_device_iam_listen_for_changes(device_, currentIamVersion_);
-    if (!future) {
-        return;
-    }
-    nabto_device_future_set_callback(future, TcpTunnel::iamChanged, this);
+    nabto_device_iam_listen_for_changes(device_, iamChangedFuture_, currentIamVersion_);
+    nabto_device_future_set_callback(iamChangedFuture_, TcpTunnel::iamChanged, this);
 }
 
 
 void TcpTunnel::startWaitEvent()
 {
-    NabtoDeviceFuture* future;
-    // TODO: consider dynamical resources
-    NabtoDeviceError ec = nabto_device_listener_connection_event(connectionEventListener_, &future, &connectionRef_, &connectionEvent_);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
-        nabto_device_listener_free(connectionEventListener_);
-        connectionEventListener_ = NULL;
-        return;
-    }
-    nabto_device_future_set_callback(future, &TcpTunnel::connectionEvent, this);
+    nabto_device_listener_connection_event(connectionEventListener_, connectionEventFuture_, &connectionRef_, &connectionEvent_);
+    nabto_device_future_set_callback(connectionEventFuture_, &TcpTunnel::connectionEvent, this);
 }
 
 void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
 {
     TcpTunnel* tt = (TcpTunnel*)userData;
-    nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
-        nabto_device_listener_free(tt->connectionEventListener_);
         return;
     } else {
         if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
@@ -75,24 +61,14 @@ void TcpTunnel::listenForConnectionEvents()
 
 void TcpTunnel::startWaitDevEvent()
 {
-    NabtoDeviceFuture* future;
-    // todo consider dynamical resource
-    NabtoDeviceError ec = nabto_device_listener_device_event(deviceEventListener_, &future, &deviceEvent_);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to create device event future with ec: " << nabto_device_error_get_message(ec) << std::endl;
-        nabto_device_listener_free(deviceEventListener_);
-        deviceEventListener_ = NULL;
-        return;
-    }
-    nabto_device_future_set_callback(future, &TcpTunnel::deviceEvent, this);
+    nabto_device_listener_device_event(deviceEventListener_, deviceEventFuture_, &deviceEvent_);
+    nabto_device_future_set_callback(deviceEventFuture_, &TcpTunnel::deviceEvent, this);
 }
 
 void TcpTunnel::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
 {
     TcpTunnel* tt = (TcpTunnel*)userData;
-    nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
-        nabto_device_listener_free(tt->deviceEventListener_);
         return;
     } else {
         if (tt->deviceEvent_ == NABTO_DEVICE_EVENT_ATTACHED) {

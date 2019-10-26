@@ -71,7 +71,8 @@ void HeatPump::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* us
 
 void HeatPump::listenForIamChanges()
 {
-    NabtoDeviceFuture* future = nabto_device_iam_listen_for_changes(device_, currentIamVersion_);
+    NabtoDeviceFuture* future = nabto_device_future_new(device_);
+    nabto_device_iam_listen_for_changes(device_, future, currentIamVersion_);
     if (!future) {
         return;
     }
@@ -102,25 +103,15 @@ void HeatPump::saveConfig()
 
 void HeatPump::startWaitEvent()
 {
-    NabtoDeviceFuture* future;
-    //todo consider if the resources should be created dynamically for show
-    NabtoDeviceError ec = nabto_device_listener_connection_event(connectionEventListener_, &future, &connectionRef_, &connectionEvent_);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to create connection event future with ec: " << ec << std::endl;
-        nabto_device_listener_free(connectionEventListener_);
-        connectionEventListener_ = NULL;
-        return;
-    }
-    nabto_device_future_set_callback(future, &HeatPump::connectionEvent, this);
+    nabto_device_listener_connection_event(connectionEventListener_, connectionEventFuture_, &connectionRef_, &connectionEvent_);
+    nabto_device_future_set_callback(connectionEventFuture_, &HeatPump::connectionEvent, this);
 }
 
 void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
 {
     HeatPump* hp = (HeatPump*)userData;
-    nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
         std::cout << "Connection event called back with error: " << err << std::endl;
-        nabto_device_listener_free(hp->connectionEventListener_);
         return;
     } else {
         if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
@@ -149,15 +140,9 @@ void HeatPump::listenForConnectionEvents()
 
 void HeatPump::startWaitDevEvent()
 {
-    NabtoDeviceFuture* future;
+    NabtoDeviceFuture* future = nabto_device_future_new(device_);
     // todo: consider if resource should be created dynamically for show
-    NabtoDeviceError ec = nabto_device_listener_device_event(deviceEventListener_, &future, &deviceEvent_);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to create device event future with ec: " << ec << std::endl;
-        nabto_device_listener_free(deviceEventListener_);
-        deviceEventListener_ = NULL;
-        return;
-    }
+    nabto_device_listener_device_event(deviceEventListener_, future, &deviceEvent_);
     nabto_device_future_set_callback(future, &HeatPump::deviceEvent, this);
 }
 

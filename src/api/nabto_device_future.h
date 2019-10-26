@@ -24,7 +24,7 @@ struct nabto_device_future {
     struct nabto_device_future* next;
 };
 
-struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev);
+void nabto_device_future_reset(struct nabto_device_future* fut);
 void nabto_device_future_popped(struct nabto_device_future* fut);
 void nabto_device_future_resolve(struct nabto_device_future* fut, NabtoDeviceError ec);
 

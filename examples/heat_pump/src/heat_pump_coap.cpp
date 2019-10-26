@@ -23,16 +23,17 @@ void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData);
 HeatPumpCoapRequestHandler::HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDeviceCoapMethod method, const char** pathSegments, CoapHandler handler)
     : heatPump_(hp), handler_(handler)
 {
+    future_ = nabto_device_future_new(hp->getDevice());
     nabto_device_coap_listener_new(hp->getDevice(), method, pathSegments, &listener_);
+    if (!future_ || !listener_) {
+        return;
+    }
     startListen();
 }
 
-void HeatPumpCoapRequestHandler::startListen() {
-    auto ec = nabto_device_listener_new_coap_request(listener_, &future_, &request_);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        nabto_device_listener_free(listener_);
-        return;
-    }
+void HeatPumpCoapRequestHandler::startListen()
+{
+    nabto_device_listener_new_coap_request(listener_, future_, &request_);
     nabto_device_future_set_callback(future_, HeatPumpCoapRequestHandler::requestCallback, this);
 }
 

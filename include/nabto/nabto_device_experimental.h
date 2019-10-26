@@ -52,10 +52,9 @@ nabto_device_connection_events_listener_new(NabtoDevice* device);
  * Start listening for next connection event.
  *
  * @param listener  Listener to get connection events from
- * @param future    Future returned on success.
+ * @param future    Future returned with status of the operation.
  * @param ref       Where to put the connection reference when the future resolves.
  * @param event     Where to put the connection event when the future resolves.
- * @return NABTO_DEVICE_EC_OK on success
  *
  * Future status:
  *   NABTO_DEVICE_EC_OK on success
@@ -64,8 +63,8 @@ nabto_device_connection_events_listener_new(NabtoDevice* device);
  *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
 
 /*****************
  * Device Events *
@@ -92,9 +91,8 @@ nabto_device_device_events_listener_new(NabtoDevice* device);
  * Start listening for next device event.
  *
  * @param listener  Listener to get device events from
- * @param future    Future returned on success.
+ * @param future    Future returned with status of the operation.
  * @param event     Where to put the device event when the future resolves.
- * @return NABTO_DEVICE_EC_OK on success
  *
  * Future status:
  *   NABTO_DEVICE_EC_OK on success
@@ -103,8 +101,8 @@ nabto_device_device_events_listener_new(NabtoDevice* device);
  *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceEvent* event);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceEvent* event);
 
 
 /********
@@ -211,8 +209,8 @@ nabto_device_iam_load(NabtoDevice* device, void* cbor, size_t cborLength);
  * Listen for changes in the iam module. If version is different from
  * the current version, it will resolve as soon as possible.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_iam_listen_for_changes(NabtoDevice* device, NabtoDeviceFuture* future, uint64_t version);
 
 /**
  * Decide if action is allowed given the decision context.

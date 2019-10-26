@@ -139,7 +139,8 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
 
     json_config_save(configFile, config);
 
-    NabtoDeviceFuture* fut = nabto_device_close(device);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
     nabto_device_free(device);
@@ -243,7 +244,8 @@ void run_heat_pump(const std::string& configFile)
 
     heat_pump_coap_deinit(&hp);
     hp.deinit();
-    NabtoDeviceFuture* fut = nabto_device_close(device);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
     nabto_device_free(device);

@@ -14,13 +14,28 @@ class TcpTunnel {
  public:
     TcpTunnel(NabtoDevice* device, json config, const std::string& configFile)
         : device_(device), config_(config), configFile_(configFile)
-    {}
+    {
+        iamChangedFuture_ = nabto_device_future_new(device);
+        connectionEventFuture_ = nabto_device_future_new(device);
+        deviceEventFuture_ = nabto_device_future_new(device);
+    }
 
+    ~TcpTunnel() {
+        nabto_device_listener_free(connectionEventListener_);
+        nabto_device_listener_free(deviceEventListener_);
+        nabto_device_future_free(connectionEventFuture_);
+        nabto_device_future_free(deviceEventFuture_);
+    }
     void init() {
         tcptunnel_coap_init(device_, this);
         listenForIamChanges();
         listenForConnectionEvents();
         listenForDeviceEvents();
+    }
+
+    void stop() {
+        nabto_device_listener_stop(connectionEventListener_);
+        nabto_device_listener_stop(deviceEventListener_);
     }
 
     void deinit() {
@@ -57,10 +72,14 @@ class TcpTunnel {
     const std::string& configFile_;
     uint64_t currentIamVersion_;
 
+    NabtoDeviceFuture* connectionEventFuture_;
     NabtoDeviceListener* connectionEventListener_;
     NabtoDeviceConnectionRef connectionRef_;
     NabtoDeviceConnectionEvent connectionEvent_;
 
+    NabtoDeviceFuture* deviceEventFuture_;
     NabtoDeviceListener* deviceEventListener_;
     NabtoDeviceEvent deviceEvent_;
+
+    NabtoDeviceFuture* iamChangedFuture_;
 };

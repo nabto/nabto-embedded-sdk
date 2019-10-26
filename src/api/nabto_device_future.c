@@ -10,8 +10,9 @@
 
 typedef uint32_t nabto_device_duration_t_;
 
-struct nabto_device_future* nabto_device_future_new(struct nabto_device_context* dev)
+NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* device)
 {
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_future* fut = malloc(sizeof(struct nabto_device_future));
     if (fut == NULL) {
         return NULL;
@@ -32,8 +33,10 @@ struct nabto_device_future* nabto_device_future_new(struct nabto_device_context*
         free(fut);
         return NULL;
     }
-    return fut;
+    return (NabtoDeviceFuture*)fut;
+
 }
+
 
 void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
 {
@@ -122,6 +125,17 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_error_code(NabtoDeviceFutu
 
     return ec;
 }
+
+void nabto_device_future_reset(struct nabto_device_future* fut)
+{
+    nabto_device_threads_mutex_lock(fut->mutex);
+    fut->ec = 0;
+    fut->ready = false;
+    fut->cb = NULL;
+    fut->cbData = NULL;
+    nabto_device_threads_mutex_unlock(fut->mutex);
+}
+
 
 void nabto_device_future_popped(struct nabto_device_future* fut)
 {

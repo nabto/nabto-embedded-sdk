@@ -6,17 +6,20 @@ namespace common {
 CoapRequestHandler::CoapRequestHandler(void* application, NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, CoapHandler handler)
     : application_(application), handler_(handler)
 {
+    future_ = nabto_device_future_new(device);
     nabto_device_coap_listener_new(device, method, pathSegments, &listener_);
+    if (!future_) {
+        return;
+    }
+    if (!listener_) {
+        return;
+    }
     startListen();
 }
 
 void CoapRequestHandler::startListen()
 {
-    NabtoDeviceError ec = nabto_device_listener_new_coap_request(listener_, &future_, &request_);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        nabto_device_listener_free(listener_);
-        return;
-    }
+    nabto_device_listener_new_coap_request(listener_, future_, &request_);
     nabto_device_future_set_callback(future_, CoapRequestHandler::requestCallback, this);
 }
 

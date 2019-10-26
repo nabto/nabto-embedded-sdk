@@ -258,10 +258,9 @@ nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
  * Close a context.
  *
  * @param device   The device instance to close
- * @return a future, when resolved the device is closed and can be freed
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_close(NabtoDevice* device);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
 
 /**************
  * Connection *
@@ -306,7 +305,6 @@ nabto_device_stream_listener_new(NabtoDevice* device, uint32_t port);
  * @param listener Listener to get new streams from.
  * @param future   Future which resolves when a new stream is ready, or an error occurs.
  * @param stream   Where to put reference to a new stream. The new stream must be freed by user.
- * @return NABTO_DEVICE_EC_OK on success.
  *
  * Future status:
  *   NABTO_DEVICE_EC_OK on success
@@ -316,8 +314,8 @@ nabto_device_stream_listener_new(NabtoDevice* device, uint32_t port);
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 // TODO take future as in arg
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceStream** stream);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceStream** stream);
 
 /**
  * Free a stream. If a stream has unresolved futures when freed, they
@@ -334,16 +332,16 @@ nabto_device_stream_free(NabtoDeviceStream* stream);
  * Accept a stream. After a stream is returned from listen, if the
  * stream is accepted this function is called.
  *
- * @param stream, the stream to accept
- * @return a future when resolved the stream is either established or failed.
+ * @param stream  the stream to accept
+ * @param future  future which resolved when the stream is accepted
  *
  * Future status:
  *   NABTO_DEVICE_EC_OK if opening went ok.
  *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if other accept is in progress
  *   NABTO_DEVICE_EC_ABORTED if device is closed
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_stream_accept(NabtoDeviceStream* stream);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_stream_accept(NabtoDeviceStream* stream, NabtoDeviceFuture* future);
 
 /**
  * Get the id for the underlying connection
@@ -358,10 +356,10 @@ nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
  * where no more bytes can be read.
  *
  * @param stream, the stream to read bytes from.
+ * @param future, the future with the result of the operation.
  * @param buffer, the buffer to put data into.
  * @param bufferLength, the length of the output buffer.
  * @param readLength, the actual number of bytes read.
- * @return  a future which resolves with ok or an error.
  *
  * Future status:
  *  NABTO_DEVICE_EC_OK   if all data was read.
@@ -369,8 +367,8 @@ nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
  *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_stream_read_all(NabtoDeviceStream* stream, void* buffer, size_t bufferLength, size_t* readLength);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_stream_read_all(NabtoDeviceStream* stream, NabtoDeviceFuture* future, void* buffer, size_t bufferLength, size_t* readLength);
 
 /**
  * Read some bytes from a stream.
@@ -379,10 +377,10 @@ nabto_device_stream_read_all(NabtoDeviceStream* stream, void* buffer, size_t buf
  * stream is eof.
  *
  * @param stream        The stream to read bytes from
+ * @param future        The future with the result of the operation.
  * @param buffer        The buffer where bytes is copied to,
  * @param bufferLenght  The length of the output buffer
  * @param readLength    The actual number of read bytes.
- * @return  a future which resolves to ok or a stream error.
  *
  * Future status:
  *  NABTO_DEVICE_EC_OK if some bytes was read.
@@ -390,8 +388,8 @@ nabto_device_stream_read_all(NabtoDeviceStream* stream, void* buffer, size_t buf
  *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_stream_read_some(NabtoDeviceStream* stream, void* buffer, size_t bufferLength, size_t* readLength);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_stream_read_some(NabtoDeviceStream* stream, NabtoDeviceFuture* future, void* buffer, size_t bufferLength, size_t* readLength);
 
 /**
  * Write bytes to a stream.
@@ -405,9 +403,9 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream, void* buffer, size_t bu
  * nabto_device_stream_write.
  *
  * @param stream, the stream to write data to.
+ * @param future, the future with the result of the operation
  * @param buffer, the input buffer with data to write to the stream.
  * @param bufferLenth, length of the input data.
- * @return a future when resolved the data is written to the stream.
  *
  * Future status:
  *  NABTO_DEVICE_EC_OK if write was ok.
@@ -415,8 +413,8 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream, void* buffer, size_t bu
  *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being written to
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_stream_write(NabtoDeviceStream* stream, const void* buffer, size_t bufferLength);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_stream_write(NabtoDeviceStream* stream, NabtoDeviceFuture* future, const void* buffer, size_t bufferLength);
 
 /**
  * Close a stream. When a stream has been closed no further data can
@@ -427,7 +425,7 @@ nabto_device_stream_write(NabtoDeviceStream* stream, const void* buffer, size_t 
  * other peer.
  *
  * @param stream, the stream to close.
- * @return future which resolves when stream is closed or on error
+ * @param future, future which resolves when stream is closed or on error
  *
  * Future status:
  *  NABTO_DEVICE_OK if the stream is closed for writing.
@@ -435,8 +433,8 @@ nabto_device_stream_write(NabtoDeviceStream* stream, const void* buffer, size_t 
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being closed
  */
 
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
-nabto_device_stream_close(NabtoDeviceStream* stream);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_stream_close(NabtoDeviceStream* stream, NabtoDeviceFuture* future);
 
 /**
  * Abort a stream. When a stream is aborted, all unresolved futures
@@ -505,7 +503,6 @@ nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method
  * @param listener   Listener on which to listen
  * @param future     Future which resolves when a new request is available or an error occurs
  * @param request    Where to reference an incoming request
- * @return NABTO_DEVICE_EC_OK on success
  *
  * Future status:
  *   NABTO_DEVICE_EC_OK if request is ready
@@ -514,8 +511,8 @@ nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method
  *   NABTO_DEVICE_EC_OUT_OF_MEMORY if request was received but the
  *                                structure could not be allocated.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceCoapRequest** request);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceCoapRequest** request);
 
 
 /**
@@ -690,6 +687,21 @@ nabto_device_listener_stop(NabtoDeviceListener* listener);
 typedef void (*NabtoDeviceFutureCallback)(NabtoDeviceFuture* fut, NabtoDeviceError err, void* data);
 
 /**
+ * Create a new future.
+ *
+ * A future can be reused for multiple async operation calls. But it
+ * may never be reused before the previous usage has
+ * resolved. E.g. wait or the callback has returned or the future is
+ * polled to not being in the state
+ * NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED.
+ *
+ * @param device  the device.
+ * @return Non null if the future was created appropriately.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
+nabto_device_future_new(NabtoDevice* device);
+
+/**
  * Free a future.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
@@ -707,6 +719,17 @@ nabto_device_future_ready(NabtoDeviceFuture* future);
 /**
  * Set a callback to be called when the future resolves
  *
+ * The callback needs to be set after the async operation has been
+ * started.
+ *
+ * Valid example:
+ * nabto_device_stream_read_some(stream, future, ....);
+ * nabto_device_future_set_callback(future, ...);
+ *
+ * INVALID USAGE:
+ * nabto_device_future_set_callback(future, ...);
+ * nabto_device_stream_read_some(stream, future, ....);
+ *
  * @param future   The future instance to set callback on
  * @param callback The function to be called when the future resolves
  * @param data     Void pointer passed to the callback once invoked
@@ -718,6 +741,12 @@ nabto_device_future_set_callback(NabtoDeviceFuture* future,
 /**
  * Wait until a future is resolved.
  *
+ * This function must not be called before the async operation has been started.
+ *
+ * Valid example:
+ * nabto_device_stream_read_some(stream, future, ....);
+ * nabto_device_future_wait(future);
+ *
  * @return the error code of the async operation.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
@@ -725,6 +754,13 @@ nabto_device_future_wait(NabtoDeviceFuture* future);
 
 /**
  * Wait atmost duration milliseconds for the future to be resolved.
+ *
+ * This function must not be called before the async operation has
+ * been started.
+ *
+ * Valid example:
+ * nabto_device_stream_read_some(stream, future, ....);
+ * nabto_device_future_timed_wait(future, 42);
  *
  * If the future is not resolved the function returns
  * NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED, if the future is ready the

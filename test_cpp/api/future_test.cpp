@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(resolve_a_future)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)calloc(1, sizeof(struct nabto_device_context));
     dev->eventMutex = nabto_device_threads_create_mutex();
-    struct nabto_device_future* fut = nabto_device_future_new(dev);
+    struct nabto_device_future* fut = (struct nabto_device_future*)nabto_device_future_new((NabtoDevice*)dev);
     BOOST_TEST(nabto_device_future_ready((NabtoDeviceFuture*)fut) == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED);
     nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OK);
     BOOST_TEST(nabto_device_future_ready((NabtoDeviceFuture*)fut) == NABTO_DEVICE_EC_OK);
@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(resolve_a_future_with_cb)
     bool called = false;
     struct nabto_device_context* dev = (struct nabto_device_context*)calloc(1, sizeof(struct nabto_device_context));
     dev->eventMutex = nabto_device_threads_create_mutex();
-    struct nabto_device_future* fut = nabto_device_future_new(dev);
+    struct nabto_device_future* fut = (struct nabto_device_future*)nabto_device_future_new((NabtoDevice*)dev);
     BOOST_TEST(nabto_device_future_ready((NabtoDeviceFuture*)fut) == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED);
     nabto_device_future_set_callback((NabtoDeviceFuture*)fut, [](NabtoDeviceFuture* fut, NabtoDeviceError ec, void* userData){
                                                                   *((bool*)userData) = true;
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(set_cb_after_resolved)
     bool called = false;
     struct nabto_device_context* dev = (struct nabto_device_context*)calloc(1, sizeof(struct nabto_device_context));
     dev->eventMutex = nabto_device_threads_create_mutex();
-    struct nabto_device_future* fut = nabto_device_future_new(dev);
+    struct nabto_device_future* fut = (struct nabto_device_future*)nabto_device_future_new((NabtoDevice*)dev);
     nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(dev);
     nabto_device_future_set_callback((NabtoDeviceFuture*)fut, [](NabtoDeviceFuture* fut, NabtoDeviceError ec, void* userData){
@@ -66,8 +66,8 @@ BOOST_AUTO_TEST_CASE(resolve_multiple_callbacks)
     bool called2 = false;
     struct nabto_device_context* dev = (struct nabto_device_context*)calloc(1, sizeof(struct nabto_device_context));
     dev->eventMutex = nabto_device_threads_create_mutex();
-    struct nabto_device_future* fut1 = nabto_device_future_new(dev);
-    struct nabto_device_future* fut2 = nabto_device_future_new(dev);
+    struct nabto_device_future* fut1 = (struct nabto_device_future*)nabto_device_future_new((NabtoDevice*)dev);
+    struct nabto_device_future* fut2 = (struct nabto_device_future*)nabto_device_future_new((NabtoDevice*)dev);
     nabto_device_future_resolve(fut1, NABTO_DEVICE_EC_OK);
     nabto_device_future_resolve(fut2, NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(dev);
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE(future_queue_empty_after_resolving)
     bool called2 = false;
     struct nabto_device_context* dev = (struct nabto_device_context*)calloc(1, sizeof(struct nabto_device_context));
     dev->eventMutex = nabto_device_threads_create_mutex();
-    struct nabto_device_future* fut1 = nabto_device_future_new(dev);
-    struct nabto_device_future* fut2 = nabto_device_future_new(dev);
+    struct nabto_device_future* fut1 = (struct nabto_device_future*)nabto_device_future_new((NabtoDevice*)dev);
+    struct nabto_device_future* fut2 = (struct nabto_device_future*)nabto_device_future_new((NabtoDevice*)dev);
     nabto_device_future_resolve(fut1, NABTO_DEVICE_EC_OK);
     nabto_device_future_resolve(fut2, NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(dev);

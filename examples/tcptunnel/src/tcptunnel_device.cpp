@@ -171,7 +171,8 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
 
     json_config_save(configFile, config);
 
-    NabtoDeviceFuture* fut = nabto_device_close(device);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
     nabto_device_free(device);
@@ -283,7 +284,8 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
 
     pause();
 
-    NabtoDeviceFuture* fut = nabto_device_close(device);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
     tcpTunnel.deinit();

@@ -51,18 +51,14 @@ void stream_read_callback(NabtoDeviceFuture* fut, NabtoDeviceError err, void* da
 
 class AbstractCoapHandler {
  public:
-    AbstractCoapHandler(NabtoDeviceListener* listener) : listener_(listener)
+    AbstractCoapHandler(NabtoDevice* device, NabtoDeviceListener* listener) : listener_(listener), device_(device)
     {
         start();
     }
     virtual ~AbstractCoapHandler() {}
     void start() {
-        NabtoDeviceFuture* future;
-        auto ec = nabto_device_listener_new_coap_request(listener_, &future, &request_);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            nabto_device_listener_free(listener_);
-            return;
-        }
+        NabtoDeviceFuture* future = nabto_device_future_new(device_);
+        nabto_device_listener_new_coap_request(listener_, future, &request_);
         nabto_device_future_set_callback(future, &AbstractCoapHandler::called, this);
     }
 
@@ -80,11 +76,12 @@ class AbstractCoapHandler {
     virtual void handleRequest(NabtoDeviceCoapRequest* request) = 0;
     NabtoDeviceListener* listener_;
     NabtoDeviceCoapRequest* request_;
+    NabtoDevice* device_;
 };
 
 class GetHandler : public AbstractCoapHandler {
  public:
-    GetHandler(NabtoDeviceListener* listener) : AbstractCoapHandler(listener) {}
+    GetHandler(NabtoDevice* device, NabtoDeviceListener* listener) : AbstractCoapHandler(device, listener) {}
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
         NabtoDeviceConnectionRef connectionId = nabto_device_coap_request_get_connection_ref(request);
@@ -102,7 +99,7 @@ class GetHandler : public AbstractCoapHandler {
 
 class PostHandler : public AbstractCoapHandler {
  public:
-    PostHandler(NabtoDeviceListener* listener) : AbstractCoapHandler(listener) {}
+    PostHandler(NabtoDevice* device, NabtoDeviceListener* listener) : AbstractCoapHandler(device, listener) {}
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
         const char* responseData = "helloWorld";
@@ -231,27 +228,32 @@ bool load_key_from_file(const char* filename)
  */
 class RecvHandler {
  public:
-    RecvHandler(NabtoDeviceStream* stream)
+    RecvHandler(NabtoDevice* device, NabtoDeviceStream* stream)
         : stream_(stream)
     {
-
+        future_ = nabto_device_future_new(device);
     }
-
+    ~RecvHandler() {
+        nabto_device_future_free(future_);
+    }
     void start()
     {
+        if (future_ == NULL) {
+            end();
+            return;
+        }
         accept();
     }
 
     void accept()
     {
-        future_ = nabto_device_stream_accept(stream_);
+        nabto_device_stream_accept(stream_, future_);
         nabto_device_future_set_callback(future_, &RecvHandler::accepted, this);
     }
 
     static void accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
         RecvHandler* rh = (RecvHandler*)userData;
-        nabto_device_future_free(future);
         if (ec) {
             // Accept should not fail
             return rh->end();
@@ -262,13 +264,12 @@ class RecvHandler {
 
     void close()
     {
-        future_ = nabto_device_stream_close(stream_);
+        nabto_device_stream_close(stream_, future_);
         nabto_device_future_set_callback(future_, &RecvHandler::closed, this);
     }
 
     static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
-        nabto_device_future_free(future);
         RecvHandler* rh = (RecvHandler*)userData;
         if (ec) {
             // this should not fail.
@@ -279,13 +280,12 @@ class RecvHandler {
 
     void startRead()
     {
-        future_ = nabto_device_stream_read_some(stream_, recvBuffer_.data(), recvBuffer_.size(), &transferred_);
+        nabto_device_stream_read_some(stream_, future_, recvBuffer_.data(), recvBuffer_.size(), &transferred_);
         nabto_device_future_set_callback(future_, &RecvHandler::read, this);
     }
 
     static void read(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
-        nabto_device_future_free(future);
         RecvHandler* rh = (RecvHandler*)userData;
         if (ec) {
             // probably eof
@@ -311,26 +311,33 @@ class RecvHandler {
 
 class EchoHandler {
  public:
-    EchoHandler(NabtoDeviceStream* stream)
+    EchoHandler(NabtoDevice* device, NabtoDeviceStream* stream)
         : stream_(stream)
     {
-
+        future_ = nabto_device_future_new(device);
     }
 
+    ~EchoHandler() {
+        nabto_device_future_free(future_);
+    }
     void start() {
+        if (future_ == NULL) {
+            end();
+            return;
+        }
+
         accept();
     }
 
     void accept()
     {
-        future_ = nabto_device_stream_accept(stream_);
+        nabto_device_stream_accept(stream_, future_);
         nabto_device_future_set_callback(future_, &EchoHandler::accepted, this);
     }
 
     static void accepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
         EchoHandler* eh = (EchoHandler*)userData;
-        nabto_device_future_free(future);
         if (ec) {
             // Accept should not fail
             return eh->end();
@@ -340,14 +347,13 @@ class EchoHandler {
     }
 
     void startRead() {
-        future_ = nabto_device_stream_read_some(stream_, recvBuffer_.data(), recvBuffer_.size(), &transferred_);
+        nabto_device_stream_read_some(stream_, future_, recvBuffer_.data(), recvBuffer_.size(), &transferred_);
         nabto_device_future_set_callback(future_, &EchoHandler::read, this);
     }
 
     static void read(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
         EchoHandler* eh = (EchoHandler*)userData;
-        nabto_device_future_free(future);
         if (ec) {
             // read failed probably eof, close stream
             eh->close();
@@ -357,14 +363,13 @@ class EchoHandler {
     }
 
     void startWrite() {
-        future_ = nabto_device_stream_write(stream_, recvBuffer_.data(), transferred_);
+        nabto_device_stream_write(stream_, future_, recvBuffer_.data(), transferred_);
         nabto_device_future_set_callback(future_, &EchoHandler::written, this);
     }
 
     static void written(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
         EchoHandler* eh = (EchoHandler*)userData;
-        nabto_device_future_free(future);
         if (ec) {
             // write should not fail, goto error
             eh->error();
@@ -375,13 +380,12 @@ class EchoHandler {
     }
 
     void close() {
-        future_ = nabto_device_stream_close(stream_);
+        nabto_device_stream_close(stream_, future_);
         nabto_device_future_set_callback(future_, &EchoHandler::closed, this);
     }
 
     static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData) {
         EchoHandler* eh = (EchoHandler*)userData;
-        nabto_device_future_free(future);
         if (ec) {
             // close should not fail
         }
@@ -410,27 +414,25 @@ class EchoListener {
         : device_(device)
     {
         listener_ = nabto_device_stream_listener_new(device_, 42);
+        listenFuture_ = nabto_device_future_new(device_);
+    }
+    ~EchoListener() {
+        nabto_device_listener_free(listener_);
+        nabto_device_future_free(listenFuture_);
     }
     void startListen()
     {
-        // TODO: consider dynamical resource
-        NabtoDeviceError err = nabto_device_listener_new_stream(listener_, &listenFuture_, &listenStream_);
-        if (err != NABTO_DEVICE_EC_OK) {
-            nabto_device_listener_free(listener_);
-            return;
-        }
+        nabto_device_listener_new_stream(listener_, listenFuture_, &listenStream_);
         nabto_device_future_set_callback(listenFuture_, &EchoListener::newStream, this);
     }
 
     static void newStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
         EchoListener* el = (EchoListener*)userData;
-        nabto_device_future_free(future);
         if (ec) {
-            nabto_device_listener_free(el->listener_);
             return;
         }
-        EchoHandler* eh = new EchoHandler(el->listenStream_);
+        EchoHandler* eh = new EchoHandler(el->device_, el->listenStream_);
         eh->start();
         // TODO: this potentially overwrites listenStream_ resource
         el->startListen();
@@ -449,27 +451,25 @@ class RecvListener {
         : device_(device)
     {
         listener_ = nabto_device_stream_listener_new(device_, 43);
+        listenFuture_ = nabto_device_future_new(device_);
+    }
+    ~RecvListener() {
+        nabto_device_listener_free(listener_);
+        nabto_device_future_free(listenFuture_);
     }
     void startListen()
     {
-        // TODO: consider dynamical resource
-        NabtoDeviceError err = nabto_device_listener_new_stream(listener_, &listenFuture_, &listenStream_);
-        if (err != NABTO_DEVICE_EC_OK) {
-            nabto_device_listener_free(listener_);
-            return;
-        }
+        nabto_device_listener_new_stream(listener_, listenFuture_, &listenStream_);
         nabto_device_future_set_callback(listenFuture_, &RecvListener::newStream, this);
     }
 
     static void newStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
         RecvListener* rl = (RecvListener*)userData;
-        nabto_device_future_free(future);
         if (ec) {
-            nabto_device_listener_free(rl->listener_);
             return;
         }
-        RecvHandler* rh = new RecvHandler(rl->listenStream_);
+        RecvHandler* rh = new RecvHandler(rl->device_, rl->listenStream_);
         rh->start();
         // TODO: this potentially overwrites listenStream_
         rl->startListen();
@@ -540,8 +540,8 @@ void run_device()
     nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &getListener);
     nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &postListener);
 
-    auto getHandler = std::make_unique<GetHandler>(getListener);
-    auto postHandler = std::make_unique<PostHandler>(postListener);
+    auto getHandler = std::make_unique<GetHandler>(dev, getListener);
+    auto postHandler = std::make_unique<PostHandler>(dev, postListener);
 
     auto echoListener = std::make_unique<EchoListener>(dev);
     auto recvListener = std::make_unique<RecvListener>(dev);

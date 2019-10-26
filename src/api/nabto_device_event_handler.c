@@ -69,7 +69,7 @@ enum nabto_device_listener_type nabto_device_listener_get_type(struct nabto_devi
     return listener->type;
 }
 
-np_error_code nabto_device_listener_create_future(struct nabto_device_listener* listener, struct nabto_device_future** future)
+np_error_code nabto_device_listener_init_future(struct nabto_device_listener* listener, struct nabto_device_future* future)
 {
     if (listener->ec != NABTO_EC_OK) {
         return listener->ec;
@@ -77,13 +77,10 @@ np_error_code nabto_device_listener_create_future(struct nabto_device_listener* 
     if (listener->fut != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
-    listener->fut = nabto_device_future_new(listener->dev);
-    if (listener->fut == NULL) {
-        return NABTO_EC_UNKNOWN;
-    }
-    *future = listener->fut;
+
+    listener->fut = future;
     nabto_device_listener_try_resolve(listener);
-    return NABTO_DEVICE_EC_OK;
+    return NABTO_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_stop(NabtoDeviceListener* deviceListener)

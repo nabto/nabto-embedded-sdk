@@ -80,7 +80,7 @@ struct nabto_device_listener* nabto_device_listener_new(struct nabto_device_cont
                                                         void* listenerData);
 
 enum nabto_device_listener_type nabto_device_listener_get_type(struct nabto_device_listener* listener);
-np_error_code nabto_device_listener_create_future(struct nabto_device_listener* listener, struct nabto_device_future** future);
+np_error_code nabto_device_listener_init_future(struct nabto_device_listener* listener, struct nabto_device_future* future);
 np_error_code nabto_device_listener_get_status(struct nabto_device_listener* listener);
 
 void* nabto_device_listener_get_listener_data(struct nabto_device_listener* listener);

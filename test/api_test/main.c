@@ -53,43 +53,30 @@ int main()
     NabtoDeviceListener* hwListener;
     nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"helloworld", NULL}, &hwListener);
 
-    NabtoDeviceFuture* fut;
+    NabtoDeviceFuture* fut= nabto_device_future_new(dev);
     NabtoDeviceListener* listener = nabto_device_stream_listener_new(dev, 42);
     if (listener == NULL) {
         NABTO_LOG_ERROR(0, "Failed to create stream listener");
         return 1;
     }
-    NabtoDeviceError err = nabto_device_listener_new_stream(listener, &fut, &stream);
-    if (err != NABTO_DEVICE_EC_OK) {
-        NABTO_LOG_ERROR(0, "Failed to listen to listener: %d", err);
-        return 1;
-    }
+    nabto_device_listener_new_stream(listener, fut, &stream);
     nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
 
-    fut = nabto_device_stream_accept(stream);
+    nabto_device_stream_accept(stream, fut);
     nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
 
-    fut = nabto_device_stream_read_some(stream, buf, 1500, &readen);
+    nabto_device_stream_read_some(stream, fut, buf, 1500, &readen);
     nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
     NABTO_LOG_INFO(0, "read %u bytes into buf:", readen);
     NABTO_LOG_BUF(0, buf, readen);
 
-    fut = nabto_device_stream_write(stream, buf, readen);
-    if (fut == NULL) {
-        NABTO_LOG_ERROR(0, "Write returned NULL future");
-    } else {
-        nabto_device_future_wait(fut);
-        nabto_device_future_free(fut);
-    }
-
-    fut = nabto_device_stream_close(stream);
+    nabto_device_stream_write(stream, fut, buf, readen);
     nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
 
-    fut = nabto_device_close(dev);
+    nabto_device_stream_close(stream, fut);
+    nabto_device_future_wait(fut);
+
+    nabto_device_close(dev, fut);
     nabto_device_future_wait(fut);
     if (nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_OK) {
         NABTO_LOG_INFO(0, "Close OK");
