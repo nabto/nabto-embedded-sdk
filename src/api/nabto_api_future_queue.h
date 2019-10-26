@@ -10,6 +10,7 @@ extern "C" {
 
 struct nabto_device_future;
 
+bool nabto_api_future_queue_is_empty(struct nabto_device_context* device);
 void nabto_api_future_queue_execute_all(struct nabto_device_context* device);
 
 void nabto_api_future_queue_post(struct nabto_device_context* device, struct nabto_device_future* future);

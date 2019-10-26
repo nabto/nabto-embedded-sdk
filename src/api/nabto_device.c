@@ -134,25 +134,15 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 }
 
 /**
- * free device when closed
+ * block until no further work is done.
  */
-void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
+void nabto_device_stop(struct nabto_device_context* dev)
 {
-    struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    nabto_device_threads_mutex_lock(dev->futureQueueMutex);
-    if (dev->queueHead != NULL) {
-        // future queue not empty, waiting for it to finish
-        // Since we got the lock, the core thread must be waiting so we signal before we wait
-        NABTO_LOG_TRACE(LOG, "got future mutex but futures are still left");
-        nabto_device_threads_cond_signal(dev->eventCond);
-        nabto_device_threads_cond_wait(dev->futureQueueCond, dev->futureQueueMutex);
-    }
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     nc_device_deinit(&dev->core);
 
     dev->closing = true;
-    nabto_device_threads_mutex_unlock(dev->futureQueueMutex);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     // Send a signal if a function is blocking the network thread.
@@ -166,6 +156,17 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     if (dev->coreThread != NULL) {
         nabto_device_threads_join(dev->coreThread);
     }
+
+}
+
+/**
+ * free device when closed
+ */
+void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+
+    nabto_device_stop(dev);
 
     nabto_device_free_threads(dev);
     nabto_device_platform_close(&dev->pl);
@@ -678,6 +679,7 @@ void* nabto_device_core_thread(void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     while (true) {
+        bool end = false;
         nabto_device_threads_mutex_lock(dev->futureQueueMutex);
         nabto_device_threads_mutex_lock(dev->eventMutex);
         np_event_queue_execute_all(&dev->pl);
@@ -686,9 +688,6 @@ void* nabto_device_core_thread(void* data)
         nabto_api_future_queue_execute_all(dev);
         nabto_device_threads_cond_signal(dev->futureQueueCond);
         nabto_device_threads_mutex_unlock(dev->futureQueueMutex);
-        if (dev->closing) {
-            return NULL;
-        }
 
         nabto_device_threads_mutex_lock(dev->eventMutex);
 //        np_event_queue_execute_all(&dev->pl);
@@ -697,15 +696,22 @@ void* nabto_device_core_thread(void* data)
         } else if (np_event_queue_has_timed_event(&dev->pl)) {
             uint32_t ms = np_event_queue_next_timed_event_occurance(&dev->pl);
             nabto_device_threads_cond_timed_wait(dev->eventCond, dev->eventMutex, ms);
+        } else if (dev->closing &&
+                   np_event_queue_is_event_queue_empty(&dev->pl) &&
+                   !np_event_queue_has_timed_event(&dev->pl) &&
+                   nabto_api_future_queue_is_empty(dev))
+        {
+            end = true;
         } else {
-
             NABTO_LOG_TRACE(LOG, "no timed events, waits for signals forever");
             nabto_device_threads_cond_wait(dev->eventCond, dev->eventMutex);
         }
+
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        /* if (dev->closing) { */
-        /*     return NULL; */
-        /* } */
+
+        if (end) {
+            return NULL;
+        }
     }
 
     return NULL;
