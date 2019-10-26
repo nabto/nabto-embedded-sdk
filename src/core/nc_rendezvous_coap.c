@@ -22,31 +22,20 @@ void nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context, struct 
                                    (const char*[]){"p2p", "rendezvous", NULL},
                                    &nc_rendezvous_handle_coap_p2p_rendezvous, context, &resource);
 }
-void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* request, void* data)
+
+static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nabto_coap_server_request* request, uint8_t* payload, size_t payloadLength)
 {
-    struct nc_rendezvous_coap_context* ctx = (struct nc_rendezvous_coap_context*)data;
-
-    uint8_t* payload;
-    size_t payloadLength;
-    nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
-    NABTO_LOG_BUF(LOG, payload, payloadLength);
-    if (payload == NULL) {
-        nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(4,00));
-        // On errors we should still cleanup the request
-        nabto_coap_server_response_ready(request);
-        nabto_coap_server_request_free(request);
-        return;
-    }
-
     struct nc_rendezvous_send_packet packet;
     packet.type = CT_RENDEZVOUS_DEVICE_REQUEST;
     nc_coap_server_context_request_get_connection_id(ctx->coap, request, packet.connectionId);
-
     CborParser parser;
     CborValue array;
 
     cbor_parser_init(payload, payloadLength, 0, &parser, &array);
 
+    if (!cbor_value_is_array(&array)) {
+        return false;
+    }
     CborValue ep;
     cbor_value_enter_container(&array, &ep);
 
@@ -81,8 +70,26 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
     }
 
     cbor_value_leave_container(&array, &ep);
+    return true;
+}
 
-    nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,04));
-    nabto_coap_server_response_ready(request);
+void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* request, void* data)
+{
+    struct nc_rendezvous_coap_context* ctx = (struct nc_rendezvous_coap_context*)data;
+
+    uint8_t* payload;
+    size_t payloadLength;
+    nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
+    NABTO_LOG_BUF(LOG, payload, payloadLength);
+    if (payload == NULL) {
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
+    } else {
+        if (handle_rendezvous_payload(ctx, request, payload, payloadLength)) {
+            nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,04));
+            nabto_coap_server_response_ready(request);
+        } else {
+            nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
+        }
+    }
     nabto_coap_server_request_free(request);
 }
