@@ -14,6 +14,10 @@ class CoapRequestHandler {
     CoapRequestHandler(void* application, NabtoDevice* device, NabtoDeviceCoapMethod methdod, const char** pathSegments, CoapHandler handler);
 
     void startListen();
+    void stopListen()
+    {
+        nabto_device_listener_stop(listener_);
+    }
 
     static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {

@@ -84,8 +84,18 @@ void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     struct nabto_device_context* dev = str->dev;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    // TODO resolve all futures!
     nc_stream_release(str->stream);
     free(str);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+}
+
+void NABTO_DEVICE_API nabto_device_stream_abort(NabtoDeviceStream* stream)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+    struct nabto_device_context* dev = str->dev;
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    nc_stream_abort(str->stream);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
@@ -94,7 +104,7 @@ void nabto_device_stream_accept_callback(const np_error_code ec, void* userData)
 {
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
-    nabto_api_future_queue_post(&str->dev->queueHead, str->acceptFut, nabto_device_error_core_to_api(ec));
+    nabto_device_future_resolve(str->acceptFut, nabto_device_error_core_to_api(ec));
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream)
@@ -102,10 +112,14 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     struct nabto_device_future* fut = nabto_device_future_new(str->dev);
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    str->acceptFut = fut;
-    np_error_code ec = nc_stream_async_accept(str->stream, nabto_device_stream_accept_callback, str);
-    if (ec != NABTO_EC_OK) {
-        nabto_api_future_queue_post(&str->dev->queueHead, fut, nabto_device_error_core_to_api(ec));
+    if (str->acceptFut != NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    } else {
+        str->acceptFut = fut;
+        np_error_code ec = nc_stream_async_accept(str->stream, nabto_device_stream_accept_callback, str);
+        if (ec != NABTO_EC_OK) {
+            nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        }
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
@@ -131,7 +145,8 @@ void nabto_device_stream_read_callback(const np_error_code ec, void* userData)
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
 
-    nabto_api_future_queue_post(&str->dev->queueHead, str->readFut, nabto_device_error_core_to_api(ec));
+    nabto_device_future_resolve(str->readFut, nabto_device_error_core_to_api(ec));
+    str->readFut = NULL;
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
@@ -142,10 +157,15 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStre
     struct nabto_device_future* fut = nabto_device_future_new(str->dev);
 
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    str->readFut = fut;
-    np_error_code ec = nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
-    if (ec) {
-        nabto_api_future_queue_post(&str->dev->queueHead, fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    if (str->readFut != NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    } else {
+        str->readFut = fut;
+        np_error_code ec = nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
+        if (ec) {
+            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+            str->readFut = NULL;
+        }
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
@@ -159,10 +179,14 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStr
     struct nabto_device_future* fut = nabto_device_future_new(str->dev);
 
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    str->readFut = fut;
-    np_error_code ec = nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
-    if (ec) {
-        nabto_api_future_queue_post(&str->dev->queueHead, fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    if (str->readFut != NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    } else {
+        str->readFut = fut;
+        np_error_code ec = nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
+        if (ec) {
+            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        }
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
@@ -173,7 +197,8 @@ void nabto_device_stream_write_callback(const np_error_code ec, void* userData)
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
 
-    nabto_api_future_queue_post(&str->dev->queueHead, str->writeFut, nabto_device_error_core_to_api(ec));
+    nabto_device_future_resolve(str->writeFut, nabto_device_error_core_to_api(ec));
+    str->writeFut = NULL;
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
@@ -183,10 +208,15 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream*
     struct nabto_device_future* fut = nabto_device_future_new(str->dev);
 
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    str->writeFut = fut;
-    np_error_code ec = nc_stream_async_write(str->stream, buffer, bufferLength, &nabto_device_stream_write_callback, str);
-    if (ec) {
-        nabto_api_future_queue_post(&str->dev->queueHead, fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    if (str->writeFut) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    } else {
+        str->writeFut = fut;
+        np_error_code ec = nc_stream_async_write(str->stream, buffer, bufferLength, &nabto_device_stream_write_callback, str);
+        if (ec) {
+            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        } else {
+        }
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
@@ -198,7 +228,7 @@ void nabto_device_stream_close_callback(const np_error_code ec, void* userData)
     struct nabto_device_stream* str = userData;
 
     NABTO_LOG_INFO(LOG, "stream async close core callback");
-    nabto_api_future_queue_post(&str->dev->queueHead, str->closeFut, nabto_device_error_core_to_api(ec));
+    nabto_device_future_resolve(str->closeFut, nabto_device_error_core_to_api(ec));
 }
 
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream)
@@ -210,7 +240,7 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream*
     str->closeFut = fut;
     np_error_code ec = nc_stream_async_close(str->stream, &nabto_device_stream_close_callback, str);
     if (ec) {
-        nabto_api_future_queue_post(&str->dev->queueHead, fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
     return (NabtoDeviceFuture*)fut;
@@ -220,29 +250,33 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream*
  * Streaming Api End
  *******************************************/
 
-void nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
+np_error_code nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
     struct nabto_device_stream_listener_context* listenerContext = (struct nabto_device_stream_listener_context*)listenerData;
+    np_error_code retEc;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_stream* str = (struct nabto_device_stream*)eventData;
         if (listenerContext->stream != NULL) {
-            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+            retEc = NABTO_EC_OK;
             *listenerContext->stream = (NabtoDeviceStream*)str;
             listenerContext->stream = NULL;
         } else {
             NABTO_LOG_ERROR(LOG, "Tried to resolve new stream future, but stream reference was invalid");
-            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
+            retEc = NABTO_EC_FAILED;
         }
         // using the stream structure as event structure means it will be freed when user calls stream_free
     } else if (ec == NABTO_EC_ABORTED) {
         nc_stream_manager_remove_listener(&listenerContext->coreListener);
         free(listenerContext);
+        retEc = ec;
     } else {
         // In error state streams on the listener queue will not reach the user, so they cant call stream_free
         struct nabto_device_stream* str = (struct nabto_device_stream*)eventData;
         nc_stream_release(str->stream);
         free(str);
+        retEc = ec;
     }
+    return retEc;
 }
 
 

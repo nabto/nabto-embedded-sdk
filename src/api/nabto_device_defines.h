@@ -32,7 +32,6 @@ struct nabto_device_context {
     bool closing;
 
     struct nabto_device_future* queueHead;
-    struct nabto_device_coap_resource* coapResourceHead;
 
     struct nabto_device_future* streamListenFuture;
     struct nabto_device_stream** streamListenStream;

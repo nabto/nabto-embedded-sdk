@@ -57,17 +57,15 @@ void NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFuture* future
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct nabto_device_context* dev = fut->dev;
-    bool ready;
     nabto_device_threads_mutex_lock(fut->mutex);
     fut->cb = callback;
     fut->cbData = data;
-    ready = fut->ready;
-    nabto_device_threads_mutex_unlock(fut->mutex);
-    if (ready) {
+    if (fut->ready) {
         nabto_device_threads_mutex_lock(dev->eventMutex);
-        nabto_api_future_queue_post_ec_set(&dev->queueHead, fut);
+        nabto_api_future_queue_post(dev, fut);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
     }
+    nabto_device_threads_mutex_unlock(fut->mutex);
 
     return;
 }
@@ -76,13 +74,12 @@ void NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFuture* future
 NabtoDeviceError NABTO_DEVICE_API nabto_device_future_wait(NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-
-    nabto_device_threads_mutex_lock(fut->mutex);
-    nabto_device_threads_cond_wait(fut->cond, fut->mutex);
-    nabto_device_threads_mutex_unlock(fut->mutex);
-
     NabtoDeviceError ec;
+
     nabto_device_threads_mutex_lock(fut->mutex);
+    if (!fut->ready) {
+        nabto_device_threads_cond_wait(fut->cond, fut->mutex);
+    }
     ec = fut->ec;
     nabto_device_threads_mutex_unlock(fut->mutex);
     return ec;
@@ -126,19 +123,26 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_error_code(NabtoDeviceFutu
     return ec;
 }
 
-
-void nabto_device_future_resolve(struct nabto_device_future* fut)
+void nabto_device_future_popped(struct nabto_device_future* fut)
 {
     nabto_device_threads_mutex_lock(fut->mutex);
-    fut->ready = true;
     NabtoDeviceFutureCallback cb = fut->cb;
     fut->cb = NULL;
     nabto_device_threads_mutex_unlock(fut->mutex);
     if(cb != NULL) {
         cb((NabtoDeviceFuture*)fut, fut->ec, fut->cbData);
-    } else {
-        nabto_device_threads_mutex_lock(fut->mutex);
-        nabto_device_threads_cond_signal(fut->cond);
-        nabto_device_threads_mutex_unlock(fut->mutex);
     }
+}
+
+void nabto_device_future_resolve(struct nabto_device_future* fut, NabtoDeviceError ec)
+{
+    nabto_device_threads_mutex_lock(fut->mutex);
+    fut->ec = ec;
+    fut->ready = true;
+    if (fut->cb != NULL) {
+        nabto_api_future_queue_post(fut->dev, fut);
+    } else {
+        nabto_device_threads_cond_signal(fut->cond);
+    }
+    nabto_device_threads_mutex_unlock(fut->mutex);
 }

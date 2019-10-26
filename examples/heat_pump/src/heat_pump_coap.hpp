@@ -6,5 +6,6 @@
 #include <nabto/nabto_device.h>
 
 void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatpump);
+void heat_pump_coap_deinit(HeatPump* heatPump);
 
 #endif

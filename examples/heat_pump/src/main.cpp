@@ -241,6 +241,7 @@ void run_heat_pump(const std::string& configFile)
 
     pause();
 
+    heat_pump_coap_deinit(&hp);
     hp.deinit();
     NabtoDeviceFuture* fut = nabto_device_close(device);
     nabto_device_future_wait(fut);

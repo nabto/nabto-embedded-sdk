@@ -86,6 +86,21 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
 
 void nc_stream_destroy(struct nc_stream_context* ctx)
 {
+    if (ctx->acceptCb) {
+        ctx->acceptCb(NABTO_EC_ABORTED, ctx->acceptUserData);
+    }
+    if (ctx->readAllCb) {
+        ctx->readAllCb(NABTO_EC_ABORTED, ctx->readUserData);
+    }
+    if (ctx->readSomeCb) {
+        ctx->readSomeCb(NABTO_EC_ABORTED, ctx->readUserData);
+    }
+    if (ctx->writeCb) {
+        ctx->writeCb(NABTO_EC_ABORTED, ctx->writeUserData);
+    }
+    if (ctx->closeCb) {
+        ctx->closeCb(NABTO_EC_ABORTED, ctx->closeUserData);
+    }
     ctx->active = false;
     ctx->dtls = NULL;
     ctx->streamId = 0;

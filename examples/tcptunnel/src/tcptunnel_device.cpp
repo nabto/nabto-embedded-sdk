@@ -283,7 +283,6 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
 
     pause();
 
-
     NabtoDeviceFuture* fut = nabto_device_close(device);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);

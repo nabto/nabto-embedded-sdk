@@ -20,6 +20,11 @@ void tcptunnel_coap_init(NabtoDevice* device, TcpTunnel* tcpTunnel)
     tcpTunnel->coapPostPairingPassword = std::make_unique<nabto::common::CoapRequestHandler>(tcpTunnel, device, NABTO_DEVICE_COAP_POST, postPairingPassword, &tcptunnel_pairing_password);
 }
 
+void tcptunnel_coap_deinit(TcpTunnel* tcpTunnel)
+{
+    tcpTunnel->coapPostPairingPassword->stopListen();
+}
+
 bool tcptunnel_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
 {
     uint16_t contentFormat;

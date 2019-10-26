@@ -2,6 +2,7 @@
 #define NABTO_API_FUTURE_QUEUE_H
 
 #include <nabto/nabto_device.h>
+#include <api/nabto_device_defines.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,13 +10,9 @@ extern "C" {
 
 struct nabto_device_future;
 
-void nabto_api_future_queue_execute_all(struct nabto_device_future** queue);
+void nabto_api_future_queue_execute_all(struct nabto_device_context* device);
 
-void nabto_api_future_set_error_code(struct nabto_device_future* future, const NabtoDeviceError ec);
-
-void nabto_api_future_queue_post(struct nabto_device_future** head, struct nabto_device_future* future, const NabtoDeviceError ec);
-
-void nabto_api_future_queue_post_ec_set(struct nabto_device_future** head, struct nabto_device_future* future);
+void nabto_api_future_queue_post(struct nabto_device_context* device, struct nabto_device_future* future);
 
 #ifdef __cplusplus
 } //extern "C"

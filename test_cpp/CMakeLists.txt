@@ -18,6 +18,7 @@ set(test_src
   network/udp_test.cpp
   platform/hex_test.cpp
   api/event_handler_test.cpp
+  api/future_test.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")

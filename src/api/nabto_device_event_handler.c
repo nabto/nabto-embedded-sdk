@@ -117,10 +117,11 @@ np_error_code nabto_device_listener_get_status(struct nabto_device_listener* lis
 void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
 {
     if (listener->fut && listener->sentinel.next != &listener->sentinel) {
+        np_error_code ec = NABTO_DEVICE_EC_FAILED;
         if (listener->cb) {
-            listener->cb(NABTO_EC_OK, listener->fut, listener->sentinel.next->data, listener->listenerData);
+            ec = listener->cb(NABTO_EC_OK, listener->fut, listener->sentinel.next->data, listener->listenerData);
         }
-        nabto_api_future_queue_post_ec_set(&listener->dev->queueHead, listener->fut);
+        nabto_device_future_resolve(listener->fut, nabto_device_error_core_to_api(ec));
         listener->fut = NULL;
         nabto_device_listener_pop_event(listener, listener->sentinel.next);
     }
@@ -140,7 +141,7 @@ void nabto_device_listener_resolve_error_state(struct nabto_device_listener* lis
         nabto_device_listener_pop_event(listener, listener->sentinel.next);
     }
     if (listener->fut) {
-        nabto_api_future_queue_post(&listener->dev->queueHead, listener->fut, nabto_device_error_core_to_api(listener->ec));
+        nabto_device_future_resolve(listener->fut, nabto_device_error_core_to_api(listener->ec));
         listener->fut = NULL;
     }
     if (listener->cb) {

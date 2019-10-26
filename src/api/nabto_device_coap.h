@@ -25,5 +25,4 @@ struct nabto_device_coap_request {
 nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method);
 void nabto_device_coap_resource_handler(struct nabto_coap_server_request* request, void* userData);
 
-void nabto_device_coap_free_resources(struct nabto_device_context* device);
 #endif //NABTO_DEVICE_COAP_H

@@ -27,15 +27,20 @@ static void startWrite(struct StreamEchoState* state);
 static void wrote(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 static void startClose(struct StreamEchoState* state);
 static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
-static void freeStream(struct StreamEchoState* state);
 
+static void tryExit(NabtoDevice* device);
 #define READ_BUFFER_SIZE 1024
 
 struct StreamEchoState {
-    NabtoDeviceStream* handle;
+    NabtoDeviceStream* stream;
     uint8_t readBuffer[1024];
     size_t readLength;
+    struct StreamEchoState* next;
+    bool active;
+    NabtoDevice* dev;
 };
+
+struct StreamEchoState head;
 
 void ctrlCHandler(int s){
     printf("Caught signal %d\n",s);
@@ -149,8 +154,8 @@ bool init_stream_echo(const std::string& configFile, const std::string& productI
     return true;
 }
 
-NabtoDeviceStream* streamHandle;
 NabtoDeviceListener* listener;
+bool closing = false;
 
 void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 {
@@ -160,7 +165,7 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
         std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
         exit(-1);
     }
-
+    head.next = NULL;
     NabtoDevice* device = nabto_device_new();
 
     auto productId = config["ProductId"].get<std::string>();
@@ -240,6 +245,7 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
     sigaction(SIGINT, &sigIntHandler, NULL);
 
     pause();
+    closing = true;
 
     /**
      * WARNING:
@@ -253,15 +259,31 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
      * the client before stopping. If the stream has not been closed
      * nicely, this program will leak memory here.
      */
-    if (listener) {
-        nabto_device_listener_free(listener);
-        listener = NULL;
+    struct StreamEchoState* iterator = head.next;
+    if (listener != NULL) {
+        nabto_device_listener_stop(listener);
     }
-    NabtoDeviceFuture* fut = nabto_device_close(device);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
+    while (iterator != NULL) {
+        struct StreamEchoState* current = iterator;
+        iterator = iterator->next;
+        nabto_device_stream_abort(current->stream);
+    }
+    // nabto_device_free will block until all internal events are handled. Since nabto_device_listener_stop and nabto_device_stream_abort has triggered events, these will be resolved before free actually occurs.
     nabto_device_free(device);
     return;
+}
+
+void removeState(struct StreamEchoState* state) {
+    NabtoDevice* device = state->dev;
+    nabto_device_stream_free(state->stream);
+    struct StreamEchoState* iterator = &head;
+    while(iterator->next != state) {
+        iterator = iterator->next;
+    }
+    iterator->next = state->next;
+    state->next = NULL;
+    free(state);
+    tryExit(device);
 }
 
 NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionReference, const char* action, void* attributes, size_t attributesLength, void* userData)
@@ -272,9 +294,10 @@ NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionRefe
 // handle echo streams
 void startListenForEchoStream(NabtoDevice* device) {
     NabtoDeviceFuture* fut;
-    NabtoDeviceError err = nabto_device_listener_new_stream(listener, &fut, &streamHandle);
+    NabtoDeviceError err = nabto_device_listener_new_stream(listener, &fut, &head.stream);
     if (err != NABTO_DEVICE_EC_OK) {
         nabto_device_listener_free(listener);
+        listener = NULL;
         return;
     }
     nabto_device_future_set_callback(fut, newEchoStream, device);
@@ -284,39 +307,40 @@ void newEchoStream(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
 {
     nabto_device_future_free(future);
     if (ec != NABTO_DEVICE_EC_OK) {
-        if (listener) {
-            nabto_device_listener_free(listener);
-            listener = NULL;
-        }
+        nabto_device_listener_free(listener);
+        listener = NULL;
         return;
     }
     NabtoDevice* device = (NabtoDevice*)userData;
-    NabtoDeviceFuture* acceptFuture = nabto_device_stream_accept(streamHandle);
+    struct StreamEchoState* state = (struct StreamEchoState*)calloc(1, sizeof(struct StreamEchoState));
+    state->stream = head.stream;
+    state->next = head.next;
+    head.next = state;
+    head.stream = NULL; // ready for next stream
+    state->active = true;
+    state->dev = device;
+    NabtoDeviceFuture* acceptFuture = nabto_device_stream_accept(state->stream);
 
-    nabto_device_future_set_callback(acceptFuture, streamAccepted, streamHandle);
+    nabto_device_future_set_callback(acceptFuture, streamAccepted, state);
 
     // listen for next stream
-    // todo We only have one stream reference, so new streams wil override the old one, fix to make stream resources dynamically. possibly extend the StreamEchoState struct to include this.
     startListenForEchoStream(device);
 }
 
 void streamAccepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
     nabto_device_future_free(future);
-    NabtoDeviceStream* handle = (NabtoDeviceStream*)userData;
+    struct StreamEchoState* state = (struct StreamEchoState*)userData;
     if (ec) {
-        nabto_device_stream_free(handle);
+        removeState(state);
         return;
     }
-
-    struct StreamEchoState* state = (struct StreamEchoState*)calloc(1, sizeof(struct StreamEchoState));
-    state->handle = handle;
     startRead(state);
 }
 
 void startRead(struct StreamEchoState* state)
 {
-    NabtoDeviceFuture* readFuture = nabto_device_stream_read_some(state->handle, state->readBuffer, READ_BUFFER_SIZE, &state->readLength);
+    NabtoDeviceFuture* readFuture = nabto_device_stream_read_some(state->stream, state->readBuffer, READ_BUFFER_SIZE, &state->readLength);
     nabto_device_future_set_callback(readFuture, hasRead, state);
 }
 
@@ -331,7 +355,7 @@ void hasRead(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
         return;
     }
     if (ec != NABTO_DEVICE_EC_OK) {
-        freeStream(state);
+        removeState(state);
         return;
     }
     startWrite(state);
@@ -339,7 +363,7 @@ void hasRead(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 
 void startWrite(struct StreamEchoState* state)
 {
-    NabtoDeviceFuture* writeFuture = nabto_device_stream_write(state->handle, state->readBuffer, state->readLength);
+    NabtoDeviceFuture* writeFuture = nabto_device_stream_write(state->stream, state->readBuffer, state->readLength);
     nabto_device_future_set_callback(writeFuture, wrote, state);
 }
 
@@ -349,7 +373,7 @@ void wrote(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     struct StreamEchoState* state = (struct StreamEchoState*)userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         // just free the stream, there's no hope for it.
-        freeStream(state);
+        removeState(state);
         return;
     }
     startRead(state);
@@ -357,7 +381,7 @@ void wrote(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 
 void startClose(struct StreamEchoState* state)
 {
-    NabtoDeviceFuture* closeFuture = nabto_device_stream_close(state->handle);
+    NabtoDeviceFuture* closeFuture = nabto_device_stream_close(state->stream);
     nabto_device_future_set_callback(closeFuture, closed, state);
 }
 
@@ -366,13 +390,21 @@ void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     nabto_device_future_free(future);
     struct StreamEchoState* state = (struct StreamEchoState*)userData;
 
-    std::cout << "Closed callback freeing stream" << std::endl;
     // ignore error code, just release the resources.
-    freeStream(state);
+    removeState(state);
 }
 
-void freeStream(struct StreamEchoState* state)
+void deviceClosed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
-    nabto_device_stream_free(state->handle);
-    free(state);
+    nabto_device_future_free(future);
+}
+
+void tryExit(NabtoDevice* device)
+{
+    if (head.next != NULL || !closing) {
+        return;
+    }
+    head.next = NULL;
+    NabtoDeviceFuture* fut = nabto_device_close(device);
+    nabto_device_future_set_callback(fut, deviceClosed, device);
 }

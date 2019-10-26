@@ -320,7 +320,10 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFuture** future, NabtoDeviceStream** stream);
 
 /**
- * Free a stream
+ * Free a stream. If a stream has unresolved futures when freed, they
+ * are may not be resolved. For streams with outstanding futures, call
+ * nabto_device_stream_abort(), and free the stream when all futures
+ * are resolved.
  *
  * @param stream, the stream to free
  */
@@ -434,6 +437,16 @@ nabto_device_stream_write(NabtoDeviceStream* stream, const void* buffer, size_t 
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
 nabto_device_stream_close(NabtoDeviceStream* stream);
+
+/**
+ * Abort a stream. When a stream is aborted, all unresolved futures
+ * will be resolved. Once all futures are resolved
+ * nabto_device_stream_free can be called.
+ *
+ * @param stream   The stream to close
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_stream_abort(NabtoDeviceStream* stream);
 
 /************
  * Coap API *

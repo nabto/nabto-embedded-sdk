@@ -1,4 +1,3 @@
-#ifdef HAVE_EPOLL
 #include <boost/test/unit_test.hpp>
 
 #include <api/nabto_device_event_handler.h>
@@ -6,8 +5,6 @@
 
 #include <platform/np_platform.h>
 #include <test_platform.hpp>
-
-#include <test_platform_epoll.hpp>
 
 #include <platform/np_platform.h>
 #include <api/nabto_device_defines.h>
@@ -25,14 +22,15 @@ enum eventState {
     ABORTED
 };
 
-static void eventHandlerCallback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* handlerData) {
+static np_error_code eventHandlerCallback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* handlerData) {
     BOOST_TEST(handlerData);
     np_error_code* d = (np_error_code*)handlerData;
     *d = ec;
+    np_error_code err;
     if (ec == NABTO_EC_OK) {
         BOOST_TEST(future);
         BOOST_TEST(eventData);
-        nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+        err = NABTO_EC_OK;
         nabto::test::eventState* d = (nabto::test::eventState*)eventData;
         *d = nabto::test::RESOLVED;
     } else if (ec == NABTO_EC_STOPPED) {
@@ -40,12 +38,16 @@ static void eventHandlerCallback(const np_error_code ec, struct nabto_device_fut
         BOOST_TEST(eventData);
         nabto::test::eventState* e = (nabto::test::eventState*)eventData;
         *e = nabto::test::ABORTED;
+        err = ec;
     } else if (ec == NABTO_EC_ABORTED) {
         BOOST_TEST(!future);
         BOOST_TEST(!eventData);
+        err = ec;
     } else {
+        err = ec;
         BOOST_TEST(false, "event handler called back with invalid error code: " << ec);
     }
+    return err;
 }
 
 } } // namespace
@@ -66,7 +68,7 @@ BOOST_AUTO_TEST_CASE(event_test)
 
     ec = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
     BOOST_TEST(ec == NABTO_EC_OK);
-    nabto_api_future_queue_execute_all(&dev->queueHead);
+    nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(event == nabto::test::RESOLVED);
     BOOST_TEST(listener == NABTO_EC_OK);
@@ -99,7 +101,7 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
 
     NabtoDeviceError ec2 = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
-    nabto_api_future_queue_execute_all(&dev->queueHead);
+    nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(event1 == nabto::test::RESOLVED);
@@ -109,7 +111,7 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
 
     ec2 = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
-    nabto_api_future_queue_execute_all(&dev->queueHead);
+    nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(event1 == nabto::test::RESOLVED);
@@ -155,7 +157,7 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
     NabtoDeviceError ec2 = nabto_device_listener_create_future(handler, (struct nabto_device_future**)&fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
-    nabto_api_future_queue_execute_all(&dev->queueHead);
+    nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_ABORTED);
     BOOST_TEST(listener == NABTO_EC_ABORTED);
     BOOST_TEST(nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_ABORTED);
@@ -165,5 +167,3 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-#endif // HAVE_EPOLL

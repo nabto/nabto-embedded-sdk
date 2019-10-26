@@ -14,7 +14,7 @@
 #define LOG NABTO_LOG_MODULE_API
 
 // TODO serveral coap module functions does not return errors on failures, when fixed, add error handling here as well
-void nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
+np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
 
 NabtoDeviceError nabto_device_coap_error_module_to_api(nabto_coap_error ec) {
     switch(ec) {
@@ -56,49 +56,11 @@ nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method
         free(res);
         return nabto_device_coap_error_module_to_api(err);
     }
-    res->next = dev->coapResourceHead;
-    dev->coapResourceHead = res;
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     *deviceListener = (NabtoDeviceListener*)listener;
     return NABTO_DEVICE_EC_OK;
-}
-
-void nabto_device_coap_remove_resource(struct nabto_device_coap_resource* res)
-{
-    nabto_coap_server_remove_resource(res->resource);
-    if (res->dev->coapResourceHead == res) {
-        res->dev->coapResourceHead = res->next;
-    } else {
-        struct nabto_device_coap_resource* iterator = res->dev->coapResourceHead;
-        if (iterator == NULL) {
-            NABTO_LOG_ERROR(LOG, "Tried to remove a resource from an empty queue");
-            free(res);
-            return;
-        }
-        while(iterator->next != res) {
-            if (iterator->next == NULL) {
-                NABTO_LOG_ERROR(LOG, "Tried to remove a resource not in queued");
-                free(res);
-                return;
-            }
-            iterator = iterator->next;
-        }
-        iterator->next = res->next;
-    }
-    free(res);
-}
-
-void nabto_device_coap_free_resources(struct nabto_device_context* device)
-{
-    struct nabto_device_coap_resource* resource = device->coapResourceHead;
-    while(resource != NULL) {
-        struct nabto_device_coap_resource* current = resource;
-        resource = resource->next;
-        nabto_device_listener_set_error_code(current->listener, NABTO_EC_ABORTED);
-    }
-    device->coapResourceHead = NULL;
 }
 
 NabtoDeviceError NABTO_DEVICE_API
@@ -266,33 +228,36 @@ nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method)
     return NABTO_COAP_CODE_GET;
 }
 
-void nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
+np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
     struct nabto_device_coap_resource* res = (struct nabto_device_coap_resource*)listenerData;
+    np_error_code retEc;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)eventData;
         if (res->futureRequest != NULL) {
-            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_OK);
+            retEc = NABTO_EC_OK;
             *res->futureRequest = req;
             res->futureRequest = NULL;
         } else {
             NABTO_LOG_ERROR(LOG, "Tried to resolve new COAP request future, but request reference was invalid");
-            nabto_api_future_set_error_code(future, NABTO_DEVICE_EC_FAILED);
+            retEc = NABTO_EC_FAILED;
             // If this fails we should just keep cleaning up
             nabto_coap_server_send_error_response(req->req, NABTO_COAP_CODE(5,03), "Handler unavailable");
             free(req);
         }
         // using the coap request structure as event structure means it will be freed when user sends the response
     } else if (ec == NABTO_EC_ABORTED) {
-        res->listener = NULL;
-        nabto_device_coap_remove_resource(res);
+        retEc = ec;
+        free(res);
     } else {
         // In error state requests on the listener queue will not reach the user, so they cant resolve the request
         struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)eventData;
         // if this fails we should just keep cleaning up
         nabto_coap_server_send_error_response(req->req, NABTO_COAP_CODE(5,03), "Handler unavailable");
         free(req);
+        retEc = ec;
     }
+    return retEc;
 }
 
 void nabto_device_coap_resource_handler(struct nabto_coap_server_request* request, void* userData)

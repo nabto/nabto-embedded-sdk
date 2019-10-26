@@ -18,7 +18,7 @@ struct nabto_device_event;
 /**
  * Function called by the listener when an event is ready to be
  * resolved, once the call returns, the listener will resolve the
- * future with whatever code is set during this call. The listener
+ * future with whatever code is returned by this call. The listener
  * deems a future ready to be resolved if
  * nabto_device_listener_create_future has been called, and the
  * sentinel does not point to itself. (ie.
@@ -31,16 +31,16 @@ struct nabto_device_event;
  * resources. If the listener goes into the error state
  * NABTO_EC_ABORTED, it will be changed to NABTO_EC_STOPPED while
  * cleaning up events. Therefore, NABTO_EC_ABORTED is ALWAYS the last
- * error code this function will receive.
+ * error code this function will receive. When resolving error states,
+ * the return value is ignored.
  *
  * This is called with ec:
- *      NABTO_EC_OK when future should be resolved
- *      NABTO_EC_OUT_OF_MEMORY if new event could not be allocated
- *      NABTO_EC_ABORTED if listener is completely finished
- *      NABTO_EC_STOPPED if resolving events if the listener was stopped
- * if ec != NABTO_EC_OK then future = NULL
+ *      NABTO_EC_OK when future should be resolved. All arguments are set.
+ *      NABTO_EC_OUT_OF_MEMORY if new event could not be allocated. future argument is NULL.
+ *      NABTO_EC_ABORTED if listener is completely finished. future and eventData arguments are NULL.
+ *      NABTO_EC_STOPPED if resolving events if the listener was stopped. future argument is NULL.
  */
-typedef void (*nabto_device_listener_resolve_event)(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
+typedef np_error_code (*nabto_device_listener_resolve_event)(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
 
 enum nabto_device_listener_type {
     NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS,

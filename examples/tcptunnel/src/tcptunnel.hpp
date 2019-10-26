@@ -24,6 +24,7 @@ class TcpTunnel {
     }
 
     void deinit() {
+        tcptunnel_coap_deinit(this);
         if (connectionEventListener_) {
             nabto_device_listener_stop(connectionEventListener_);
         }

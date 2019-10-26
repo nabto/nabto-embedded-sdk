@@ -20,7 +20,7 @@ struct nabto_device_stream {
 
 };
 
-void nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
+np_error_code nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
 void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 
 

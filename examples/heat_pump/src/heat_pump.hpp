@@ -23,6 +23,10 @@ class HeatPumpCoapRequestHandler {
 
     void startListen();
 
+    void stopListen() {
+        nabto_device_listener_stop(listener_);
+    }
+
     static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
         nabto_device_future_free(fut);

@@ -81,7 +81,7 @@ void iamChanged(const np_error_code ec, void* userData)
 
     struct nabto_device_context* dev = (struct nabto_device_context*)userData;
     if (dev->iamChangedFuture) {
-        nabto_api_future_queue_post(&dev->queueHead, dev->iamChangedFuture, nabto_device_error_core_to_api(ec));
+        nabto_device_future_resolve(dev->iamChangedFuture, nabto_device_error_core_to_api(ec));
         dev->iamChangedFuture = NULL;
     }
 }
@@ -98,11 +98,11 @@ nabto_device_iam_listen_for_changes(NabtoDevice* device, uint64_t version)
     fut = nabto_device_future_new(dev);
     if (fut) {
         if (dev->iamChangedFuture != NULL) {
-            nabto_api_future_queue_post(&dev->queueHead, fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         } else {
             ec = nc_iam_set_change_callback(&dev->core.iam, iamChanged, dev);
             if (ec) {
-                nabto_api_future_queue_post(&dev->queueHead, fut, nabto_device_error_core_to_api(ec));
+                nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
             } else {
                 dev->iamChangedFuture = fut;
             }
