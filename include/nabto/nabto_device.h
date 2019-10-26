@@ -121,7 +121,10 @@ NABTO_DEVICE_DECL_PREFIX NabtoDevice* NABTO_DEVICE_API
 nabto_device_new();
 
 /**
- * Free a device instance
+ * Free a device instance, this function blocks until some finishing
+ * work has been done such that it's possible to make a clean shutdown
+ * even if the application has some callbacks which are not resolved
+ * when free is called.
  *
  * @param device   The device instance to free
  */
@@ -329,8 +332,12 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_free(NabtoDeviceStream* stream);
 
 /**
- * Accept a stream. After a stream is returned from listen, if the
- * stream is accepted this function is called.
+ * Accept a stream.
+ *
+ * When a stream new stream is coming from the listener the stream is
+ * not accepted yet. If the application does not want to handle the
+ * stream it can just free it, else it has to call accept to finish
+ * the handshake. The future returns the status of the handshake.
  *
  * @param stream  the stream to accept
  * @param future  future which resolved when the stream is accepted
@@ -346,6 +353,8 @@ nabto_device_stream_accept(NabtoDeviceStream* stream, NabtoDeviceFuture* future)
 /**
  * Get the id for the underlying connection
  */
+// TODO use an error code?, for when the connection is closed and the
+// stream does not have a connection
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
 nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
 
@@ -619,6 +628,7 @@ nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** pa
  * @return Reference to the connection on success
  *         0 on error
  */
+// TODO use an error code instead of overloading with 0?
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
 nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request);
 
