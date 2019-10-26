@@ -75,7 +75,7 @@ np_error_code nc_keep_alive_test_cryp_send(struct np_platform* pl, np_dtls_cli_c
 
     } else {
         nc_keep_alive_test_recvState = 0;
-        cb(NABTO_EC_FAILED, data);
+        cb(NABTO_EC_UNKNOWN, data);
     }
     return NABTO_EC_OK;
 }

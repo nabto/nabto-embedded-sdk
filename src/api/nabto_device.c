@@ -394,7 +394,7 @@ np_error_code nabto_device_connection_events_listener_cb(const np_error_code ec,
             ctx->userEvent = NULL;
         } else {
             NABTO_LOG_ERROR(LOG, "Tried to resolve connection event but reference was invalid");
-            retEc = NABTO_EC_FAILED;
+            retEc = NABTO_EC_UNKNOWN;
         }
         free(ev);
     } else if (ec == NABTO_EC_ABORTED) {
@@ -453,7 +453,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_connection_event(NabtoDe
     np_error_code ec = nabto_device_listener_get_status(listener);
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return NABTO_DEVICE_EC_INVALID_LISTENER;
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     if (ec != NABTO_EC_OK) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -511,7 +511,7 @@ np_error_code nabto_device_events_listener_cb(const np_error_code ec, struct nab
             ctx->userEvent = NULL;
         } else {
             NABTO_LOG_ERROR(LOG, "Tried to resolve device event but reference was invalid");
-            retEc = NABTO_EC_FAILED;
+            retEc = NABTO_EC_UNKNOWN;
         }
         free(ev);
     } else if (ec == NABTO_EC_ABORTED) {
@@ -569,7 +569,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_device_event(NabtoDevice
 
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return NABTO_DEVICE_EC_INVALID_LISTENER;
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     np_error_code ec = nabto_device_listener_get_status(listener);
     if (ec != NABTO_EC_OK) {
@@ -634,7 +634,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_level(NabtoDevice* device
     } else if (strcmp(level, "trace") == 0) {
         l = NABTO_LOG_SEVERITY_LEVEL_TRACE;
     } else {
-        return NABTO_DEVICE_EC_INVALID_LOG_LEVEL;
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     nm_api_logging_set_level(l);
     return NABTO_DEVICE_EC_OK;

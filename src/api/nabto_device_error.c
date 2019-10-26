@@ -22,6 +22,6 @@ NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec)
 #define XX_ERROR(name, message) case NABTO_EC_##name: return NABTO_DEVICE_EC_##name;
     NP_ERROR_CODE_MAPPING(XX_ERROR)
 #undef XX_ERROR
-        default: return NABTO_DEVICE_EC_FAILED;
+        default: return NABTO_DEVICE_EC_UNKNOWN;
     }
 }

@@ -43,7 +43,7 @@ np_error_code nc_iam_dump(struct nc_iam* iam, uint64_t* version, void* buffer, s
         *used = bufferLength + cbor_encoder_get_extra_bytes_needed(&encoder);
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    return NABTO_EC_FAILED;
+    return NABTO_EC_UNKNOWN;
 }
 
 void nc_iam_dump_default_role(struct nc_iam* iam, CborEncoder* encoder)

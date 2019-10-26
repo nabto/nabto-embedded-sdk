@@ -198,12 +198,12 @@ void nc_attacher_dtls_event_handler(enum np_dtls_cli_event event, void* data)
         if (ctx->detachCb) {
             nc_detached_callback cb = ctx->detachCb;
             ctx->detachCb = NULL;
-            cb(NABTO_EC_FAILED, ctx->detachCbData);
+            cb(NABTO_EC_UNKNOWN, ctx->detachCbData);
         }
         if (ctx->cb) {
             nc_attached_callback cb = ctx->cb;
             ctx->cb = NULL;
-            cb(NABTO_EC_FAILED, ctx->cbData);
+            cb(NABTO_EC_UNKNOWN, ctx->cbData);
         }
     }
 }
@@ -263,7 +263,7 @@ void nc_attacher_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_
         NABTO_LOG_ERROR(LOG, "Empty record list or detaching");
         nc_attached_callback cb = ctx->cb;
         ctx->cb = NULL;
-        cb(NABTO_EC_FAILED, ctx->cbData);
+        cb(NABTO_EC_UNKNOWN, ctx->cbData);
         return;
     }
     ctx->state = NC_ATTACHER_CONNECTING_TO_BS;
@@ -422,12 +422,12 @@ void coap_response_failed(struct nc_attach_context* ctx)
     if (ctx->detachCb) {
         nc_detached_callback cb = ctx->detachCb;
         ctx->detachCb = NULL;
-        cb(NABTO_EC_FAILED, ctx->detachCbData);
+        cb(NABTO_EC_UNKNOWN, ctx->detachCbData);
     }
     if (ctx->cb) {
         nc_attached_callback cb = ctx->cb;
         ctx->cb = NULL;
-        cb(NABTO_EC_FAILED, ctx->cbData);
+        cb(NABTO_EC_UNKNOWN, ctx->cbData);
     }
 }
 

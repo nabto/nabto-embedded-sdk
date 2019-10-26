@@ -109,7 +109,7 @@ np_error_code nm_epoll_tcp_async_connect(np_tcp_socket* sock, struct np_ip_addre
         return NABTO_EC_NOT_SUPPORTED;
     }
     if (s < 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     sock->fd = s;
@@ -170,7 +170,7 @@ np_error_code nm_epoll_tcp_async_connect(np_tcp_socket* sock, struct np_ip_addre
             np_event_queue_post(pl, &sock->connect.event, &nm_epoll_tcp_is_connected, sock);
         } else if (status != 0 && errno != EINPROGRESS) {
             NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
-            return NABTO_EC_FAILED;
+            return NABTO_EC_UNKNOWN;
         }
 
         // wait for the socket to be connected
@@ -206,7 +206,7 @@ void nm_epoll_tcp_is_connected(void* userData)
             NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
             np_tcp_connect_callback cb = sock->connect.callback;
             sock->connect.callback = NULL;
-            cb(NABTO_EC_FAILED, sock->connect.userData);
+            cb(NABTO_EC_UNKNOWN, sock->connect.userData);
         }
     }
 }
@@ -226,7 +226,7 @@ void nm_epoll_tcp_do_write(void* data)
         } else {
             np_tcp_write_callback cb = sock->write.callback;
             sock->write.callback = NULL;
-            cb(NABTO_EC_FAILED, sock->write.userData);
+            cb(NABTO_EC_UNKNOWN, sock->write.userData);
             return;
         }
     } else {
@@ -277,7 +277,7 @@ void nm_epoll_tcp_do_read(void* userData)
             NABTO_LOG_ERROR(LOG, "recv error %s", strerror(errno));
             np_tcp_read_callback cb = sock->read.callback;
             sock->read.callback = NULL;
-            cb(NABTO_EC_FAILED, 0, sock->read.userData);
+            cb(NABTO_EC_UNKNOWN, 0, sock->read.userData);
             return;
         }
     } else if (readen == 0) {

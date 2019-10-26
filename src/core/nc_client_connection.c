@@ -56,7 +56,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
                                      &nc_client_connection_handle_event, conn);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     // Remove connection ID before passing packet to DTLS

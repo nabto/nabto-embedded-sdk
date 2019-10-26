@@ -21,8 +21,8 @@ np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec) {
         case NABTO_COAP_ERROR_OK: return NABTO_EC_OK;
         case NABTO_COAP_ERROR_OUT_OF_MEMORY: return NABTO_EC_OUT_OF_MEMORY;
         case NABTO_COAP_ERROR_NO_CONNECTION: return NABTO_EC_ABORTED;
-        case NABTO_COAP_ERROR_INVALID_PARAMETER: return NABTO_EC_INVALID_PARAMETER;
-        default: return NABTO_EC_FAILED;
+        case NABTO_COAP_ERROR_INVALID_PARAMETER: return NABTO_EC_INVALID_ARGUMENT;
+        default: return NABTO_EC_UNKNOWN;
     }
 }
 

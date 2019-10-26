@@ -3,7 +3,7 @@
 
 #define NP_ERROR_CODE_MAPPING(XX)                                       \
     XX(OK, "Ok")                                                        \
-        XX(FAILED, "Failed")                                            \
+        XX(UNKNOWN, "Unknown")                                            \
         XX(NOT_SUPPORTED, "Not supported")                              \
         XX(UDP_SOCKET_CREATION_ERROR, "Udp socket creation error")      \
         XX(UDP_SOCKET_ERROR, "Udp socket error")                        \
@@ -21,12 +21,12 @@
         XX(CONNECTION_CLOSING, "Connection closing")                    \
         XX(KEEP_ALIVE_TIMEOUT, "Keep alive timeout")                    \
         XX(SEND_IN_PROGRESS, "Send in progress")                        \
-        XX(API_FUTURE_NOT_READY, "Future not ready")                    \
+        XX(FUTURE_NOT_RESOLVED, "Future is not resolved yet")           \
         XX(NO_VALID_ENDPOINTS, "No valid endpoints")                    \
         XX(OPERATION_IN_PROGRESS, "Operation in progress")              \
         XX(ABORTED, "Aborted")                                          \
         XX(STOPPED, "Stopped")                                          \
-        XX(STREAM_CLOSED, "Stream closed")                              \
+        XX(CLOSED, "Stream closed")                              \
         XX(RESOURCE_EXISTS, "Resource exists")                          \
         XX(NOT_FOUND, "Not Found")                                      \
         XX(OUT_OF_MEMORY, "Out of memory")                              \
@@ -51,10 +51,8 @@
         XX(INVALID_CONNECTION, "Invalid connection")                    \
         XX(INVALID_ARGUMENT, "Invalid argument")                        \
         XX(IN_USE, "In use")                                            \
-        XX(INVALID_LOG_LEVEL, "Invalid log level")                      \
         XX(INVALID_STATE, "Invalid State")                              \
-        XX(INVALID_LISTENER, "Invalid listener type")                   \
-        XX(INVALID_PARAMETER, "Invalid parameter supplied")             \
+        XX(NO_DATA, "No data")                                          \
 
 
 #define XX_ERROR(name, _) NABTO_EC_##name,
@@ -63,62 +61,6 @@ typedef enum {
 //    NABTO_EC_LAST_ERROR
 } np_error_code;
 #undef XX_ERROR
-
-/* typedef enum { */
-/*     NABTO_EC_OK = 0, */
-/*     NABTO_EC_FAILED, */
-/*     NABTO_EC_NOT_SUPPORTED, */
-
-/*     NABTO_EC_UDP_SOCKET_CREATION_ERROR, */
-/*     NABTO_EC_UDP_SOCKET_ERROR, */
-/*     NABTO_EC_INVALID_SOCKET, */
-
-/*     NABTO_EC_EOF, */
-/*     NABTO_EC_FAILED_TO_SEND_PACKET, */
-/*     NABTO_EC_MALFORMED_PACKET, */
-/*     NABTO_EC_OUT_OF_CHANNELS, */
-/*     NABTO_EC_OUT_OF_CONNECTIONS, */
-/*     NABTO_EC_INVALID_CHANNEL, */
-/*     NABTO_EC_INVALID_CONNECTION_ID, */
-/*     NABTO_EC_INVALID_PACKET_TYPE, */
-/*     NABTO_EC_INSUFFICIENT_BUFFER_ALLOCATION, */
-/*     NABTO_EC_ALPN_FAILED, */
-/*     NABTO_EC_INVALID_PEER_FINGERPRINT, */
-/*     NABTO_EC_CONNECTION_CLOSING, */
-/*     NABTO_EC_KEEP_ALIVE_TIMEOUT, */
-/*     NABTO_EC_SEND_IN_PROGRESS, */
-/*     NABTO_EC_API_FUTURE_NOT_READY, */
-/*     NABTO_EC_NO_VALID_ENDPOINTS, */
-/*     NABTO_EC_OPERATION_IN_PROGRESS, */
-/*     NABTO_EC_ABORTED, */
-/*     NABTO_EC_STOPPED, */
-/*     NABTO_EC_STREAM_CLOSED, */
-/*     NABTO_EC_STREAM_EOF, */
-/*     NABTO_EC_RESOURCE_EXISTS, */
-/*     NABTO_EC_NOT_FOUND, */
-/*     NABTO_EC_OUT_OF_MEMORY, */
-/*     NABTO_EC_NOT_IMPLEMENTED, */
-/*     NABTO_EC_IAM_INVALID_POLICY, */
-/*     NABTO_EC_IAM_TOO_MANY_ATTRIBUTES, */
-/*     NABTO_EC_IAM_STRING_TOO_LONG, */
-/*     NABTO_EC_IAM_INVALID_STRING, */
-/*     NABTO_EC_IAM_INVALID_ATTRIBUTES, */
-/*     NABTO_EC_IAM_INVALID_CONDITIONS, */
-/*     NABTO_EC_IAM_INVALID_USERS, */
-/*     NABTO_EC_IAM_INVALID_ROLES, */
-/*     NABTO_EC_IAM_INVALID_POLICIES, */
-/*     NABTO_EC_IAM_INVALID_STATEMENTS, */
-/*     NABTO_EC_IAM_INVALID_ACTIONS, */
-/*     NABTO_EC_IAM_INVALID_PREDICATES, */
-/*     NABTO_EC_IAM_DENY, */
-/*     NABTO_EC_IAM_NONE, */
-/*     NABTO_EC_STRING_TOO_LONG, */
-/*     NABTO_EC_NOT_A_STRING, */
-/*     NABTO_EC_NOT_A_NUMBER, */
-/*     NABTO_EC_INVALID_CONNECTION, */
-/*     NABTO_EC_INVALID_ARGUMENT, */
-/*     NABTO_EC_IN_USE */
-/* } np_error_code; */
 
 const char* np_error_code_to_string(np_error_code ec);
 

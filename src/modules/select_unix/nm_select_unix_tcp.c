@@ -182,7 +182,7 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
         return NABTO_EC_NOT_SUPPORTED;
     }
     if (s < 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     sock->fd = s;
@@ -193,11 +193,11 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
     flags = fcntl(sock->fd, F_GETFL, 0);
     if (flags < 0) {
         NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) < 0) {
         NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 #endif
 
@@ -275,7 +275,7 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
                 // OK
             } else {
                 NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
-                return NABTO_EC_FAILED;
+                return NABTO_EC_UNKNOWN;
             }
             nm_select_unix_notify(pl->tcpData);
         }
@@ -309,7 +309,7 @@ void is_connected(void* userData)
             NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
             np_tcp_connect_callback cb = sock->connectCb;
             sock->connectCb = NULL;
-            cb(NABTO_EC_FAILED, sock->connectCbData);
+            cb(NABTO_EC_UNKNOWN, sock->connectCbData);
         }
     }
 }
@@ -328,7 +328,7 @@ void tcp_do_write(np_tcp_socket* sock)
         } else {
             np_tcp_write_callback cb = sock->write.callback;
             sock->write.callback = NULL;
-            cb(NABTO_EC_FAILED, sock->write.userData);
+            cb(NABTO_EC_UNKNOWN, sock->write.userData);
             return;
         }
     } else {
@@ -377,7 +377,7 @@ void tcp_do_read(np_tcp_socket* sock)
             NABTO_LOG_ERROR(LOG, "recv error %s", strerror(errno));
             np_tcp_read_callback cb = sock->read.callback;
             sock->read.callback = NULL;
-            cb(NABTO_EC_FAILED, 0, sock->read.userData);
+            cb(NABTO_EC_UNKNOWN, 0, sock->read.userData);
             return;
         }
     } else if (readen == 0) {

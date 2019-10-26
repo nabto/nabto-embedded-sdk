@@ -21,8 +21,8 @@ NabtoDeviceError nabto_device_coap_error_module_to_api(nabto_coap_error ec) {
         case NABTO_COAP_ERROR_OK: return NABTO_DEVICE_EC_OK;
         case NABTO_COAP_ERROR_OUT_OF_MEMORY: return NABTO_DEVICE_EC_OUT_OF_MEMORY;
         case NABTO_COAP_ERROR_NO_CONNECTION: return NABTO_DEVICE_EC_ABORTED;
-        case NABTO_COAP_ERROR_INVALID_PARAMETER: return NABTO_DEVICE_EC_INVALID_PARAMETER;
-        default: return NABTO_DEVICE_EC_FAILED;
+        case NABTO_COAP_ERROR_INVALID_PARAMETER: return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+        default: return NABTO_DEVICE_EC_UNKNOWN;
     }
 }
 
@@ -71,7 +71,7 @@ nabto_device_listener_new_coap_request(NabtoDeviceListener* deviceListener, Nabt
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_COAP) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return NABTO_DEVICE_EC_INVALID_LISTENER;
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     np_error_code ec = nabto_device_listener_get_status(listener);
     if (ec != NABTO_EC_OK) {
@@ -168,7 +168,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(N
         *contentFormat = cf;
         return NABTO_DEVICE_EC_OK;
     } else {
-        return NABTO_DEVICE_EC_FAILED;
+        return NABTO_DEVICE_EC_UNKNOWN;
     }
 }
 
@@ -180,7 +180,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     nabto_coap_server_request_get_payload(req->req, payload, payloadLength);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
     if(*payload == NULL) {
-        return NABTO_DEVICE_EC_FAILED;
+        return NABTO_DEVICE_EC_UNKNOWN;
     } else {
         return NABTO_DEVICE_EC_OK;
     }
@@ -240,7 +240,7 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
             res->futureRequest = NULL;
         } else {
             NABTO_LOG_ERROR(LOG, "Tried to resolve new COAP request future, but request reference was invalid");
-            retEc = NABTO_EC_FAILED;
+            retEc = NABTO_EC_UNKNOWN;
             // If this fails we should just keep cleaning up
             nabto_coap_server_send_error_response(req->req, NABTO_COAP_CODE(5,03), "Handler unavailable");
             free(req);

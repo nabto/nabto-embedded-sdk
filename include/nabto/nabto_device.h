@@ -95,19 +95,19 @@ typedef uint64_t NabtoDeviceConnectionRef;
  * The NabtoDeviceError represents error codes
  */
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_UNKNOWN;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_IMPLEMENTED;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LOG_LEVEL;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OUT_OF_MEMORY;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_STRING_TOO_LONG;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OPERATION_IN_PROGRESS;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_API_FUTURE_NOT_READY; // TODO rename to FUTURE_NOT_RESOLVED
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_ABORTED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_STOPPED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_EOF;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_STATE;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_LISTENER;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_PARAMETER;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_ARGUMENT;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NO_DATA;
+
 
 /**********************
  * Device Api *
@@ -233,7 +233,7 @@ nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
  *  NABTO_DEVICE_EC_OK on success
  *  NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
  *               private key, server URL, device ID, or Product ID.
- *  NABTO_DEVICE_EC_FAILED if device threads could not be started
+ *  NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device);
@@ -249,7 +249,7 @@ nabto_device_start(NabtoDevice* device);
  * @return
  *  NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
  *  NABTO_DEVICE_EC_INVALID_STATE if the device provided did not contain a valid private key.
- *  NABTO_DEVICE_EC_FAILED on underlying DTLS module error
+ *  NABTO_DEVICE_EC_UNKNOWN on underlying DTLS module error
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint);
@@ -385,9 +385,9 @@ nabto_device_stream_read_all(NabtoDeviceStream* stream, void* buffer, size_t buf
  * @return  a future which resolves to ok or a stream error.
  *
  * Future status:
- *  NABTO_DEVICE_OK if some bytes was read.
- *  NABTO_DEVICE_EOF if stream is eof.
- *  NABTO_DEVICE_ABORTED if the stream is aborted.
+ *  NABTO_DEVICE_EC_OK if some bytes was read.
+ *  NABTO_DEVICE_EC_EOF if stream is eof.
+ *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
@@ -410,9 +410,9 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream, void* buffer, size_t bu
  * @return a future when resolved the data is written to the stream.
  *
  * Future status:
- *  NABTO_DEVICE_OK if write was ok.
- *  NABTO_DEVICE_STREAM_CLOSED if the stream is closed for writing.
- *  NABTO_DEVICE_ABORTED if the stream is aborted.
+ *  NABTO_DEVICE_EC_OK if write was ok.
+ *  NABTO_DEVICE_EC_CLOSED if the stream is closed for writing.
+ *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being written to
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
@@ -596,7 +596,7 @@ nabto_device_coap_response_ready(NabtoDeviceCoapRequest* request);
  * @param contentFormat A reference to where to put the content format
  *
  * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_FAILED on failure
+ *         NABTO_DEVICE_EC_NO_DATA if the content format is not available
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request, uint16_t* contentFormat);
@@ -609,7 +609,7 @@ nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request, ui
  * @param payloadLength A reference to where to put the length of the payload
  *
  * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_FAILED on failure
+ *         NABTO_DEVICE_EC_NO_DATA if the request does not contain a payload.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** payload, size_t* payloadLength);
@@ -699,7 +699,7 @@ nabto_device_future_free(NabtoDeviceFuture* future);
  * Query if a future is ready.
  *
  * @param future, the future.
- * @return NABTO_DEVICE_EC_API_FUTURE_NOT_READY if the future is not resolved yet, else the error code of the async operation.
+ * @return NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED if the future is not resolved yet, else the error code of the async operation.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_ready(NabtoDeviceFuture* future);
@@ -727,7 +727,7 @@ nabto_device_future_wait(NabtoDeviceFuture* future);
  * Wait atmost duration milliseconds for the future to be resolved.
  *
  * If the future is not resolved the function returns
- * NABTO_DEVICE_EC_API_FUTURE_NOT_READY, if the future is ready the
+ * NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED, if the future is ready the
  * return value is whatever the underlying function returned.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
@@ -735,7 +735,7 @@ nabto_device_future_timed_wait(NabtoDeviceFuture* future, nabto_device_duration_
 
 /**
  * Get the error code of the resolved future, if the future is not
- * ready, NABTO_DEVICE_EC_API_FUTURE_NOT_READY is returned.
+ * ready, NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED is returned.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_error_code(NabtoDeviceFuture* future);
@@ -817,7 +817,7 @@ nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, vo
  * @param level    The log level to set, available levels are:
  *                 error, warn, info, trace
  * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_INVALID_LOG_LEVEL on invalid level string
+ *         NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid level string
  */
 // TODO rename to set_log_level
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API

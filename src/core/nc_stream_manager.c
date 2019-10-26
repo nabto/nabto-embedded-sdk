@@ -311,5 +311,5 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
             return NABTO_EC_OK;
         }
     }
-    return NABTO_EC_FAILED;
+    return NABTO_EC_UNKNOWN;
 }

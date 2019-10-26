@@ -79,7 +79,7 @@ np_error_code nc_attacher_test_cryp_send(struct np_platform* pl, np_dtls_cli_con
         }
     } else {
         nc_attacher_test_recvState = 0;
-        cb(NABTO_EC_FAILED, data);
+        cb(NABTO_EC_UNKNOWN, data);
     }
     return NABTO_EC_OK;
 }
@@ -123,7 +123,7 @@ np_error_code nc_attacher_test_cryp_recv(struct np_platform* pl, np_dtls_cli_con
         cb(NABTO_EC_OK, 0, 0, &resp, 12, data);
         crypAnRecvCalled = true;
     } else {
-        //cb(NABTO_EC_FAILED, 0, 0, NULL, 0, data);
+        //cb(NABTO_EC_UNKNOWN, 0, 0, NULL, 0, data);
         nc_attacher_test_recvState = 0;
     }
     return NABTO_EC_OK;
@@ -165,7 +165,7 @@ np_error_code nc_attacher_test_start_keep_alive(np_dtls_cli_context* ctx, uint32
         kaStarted = true;
         return NABTO_EC_OK;
     }
-    return NABTO_EC_FAILED;
+    return NABTO_EC_UNKNOWN;
 }
 
 // dns impl

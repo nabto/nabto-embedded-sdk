@@ -101,7 +101,7 @@ np_error_code nabto_device_threads_run(struct nabto_device_thread* thread,
     thread->data = data;
     thread->thread = CreateThread(NULL, 0, nabto_device_threads_func, thread, 0, NULL);
     if (!thread->thread) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;
 }

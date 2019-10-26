@@ -32,7 +32,7 @@ DWORD WINAPI resolver_thread(LPVOID data) {
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     int res = getaddrinfo(ctx->host, "80" , &hints, &infoptr); //  GetAddrInfoW
-    ctx->ec = NABTO_EC_FAILED; // in case we dont find suitable addresses
+    ctx->ec = NABTO_EC_UNKNOWN; // in case we dont find suitable addresses
     if (res) {
         NABTO_LOG_ERROR(LOG, "getaddrinfo: %s\n", gai_strerror(res));
     } else {
@@ -77,7 +77,7 @@ np_error_code nm_win_dns_resolve(struct  np_platform* pl, const char* host, np_d
     struct nm_win_dns_ctx* ctx = (struct nm_win_dns_ctx*)malloc(sizeof(struct nm_win_dns_ctx));
     if (!ctx) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate context");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     memset(ctx, 0, sizeof(struct nm_win_dns_ctx));
     ctx->resolverIsRunning = true;
@@ -92,7 +92,7 @@ np_error_code nm_win_dns_resolve(struct  np_platform* pl, const char* host, np_d
     if (!thread) {
         NABTO_LOG_ERROR(LOG, "Failed to create resolver thread");
         free(ctx);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_win_dns_check_resolved, ctx);
     return NABTO_EC_OK;

@@ -198,7 +198,7 @@ np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connec
 {
     np_error_code ec;
     if (connection == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     struct nc_iam_user* user = connection->user;
@@ -417,7 +417,7 @@ np_error_code nc_iam_string_equal(struct nc_iam_attributes* attributes, CborValu
     if (cbor_value_text_string_equals(&parameter, attribute->value.data.string, &matches) && matches) {
         return NABTO_EC_OK;
     } else {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 }
 
@@ -446,7 +446,7 @@ np_error_code nc_iam_number_equal(struct nc_iam_attributes* attributes, CborValu
         (cbor_value_get_int64(&parameter, &value) != CborNoError) ||
         attribute->value.data.number != value)
     {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;
 }
@@ -484,7 +484,7 @@ np_error_code nc_iam_attribute_equal(struct nc_iam_attributes* attributes, CborV
     if (result) {
         return NABTO_EC_OK;
     } else {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 }
 

@@ -97,7 +97,7 @@ np_error_code nabto_device_threads_run(struct nabto_device_thread* thread, void 
 {
     if (pthread_create(&thread->thread, NULL, run_routine, data) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create pthread");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;
 }

@@ -21,7 +21,7 @@ np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp)
     mbedtls_pk_context *ctx = (mbedtls_pk_context*)(&crt->pk);
     int len = mbedtls_pk_write_pubkey_der( ctx, buffer, sizeof(buffer));
     if (len <= 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     mbedtls_sha256_ret(buffer+sizeof(buffer)-len, len, fullSha, 0);
     memcpy(fp, fullSha, 16);
@@ -70,12 +70,12 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
     int ret;
     ret = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy, NULL, 0);
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     ret = mbedtls_pk_parse_key( &ctx->key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     // initialize crt
@@ -84,19 +84,19 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
 
     ret = mbedtls_mpi_read_string( &ctx->serial, 10, "1");
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     mbedtls_x509write_crt_set_serial( &ctx->crt, &ctx->serial );
 
     ret = mbedtls_x509write_crt_set_subject_name( &ctx->crt, "CN=nabto" );
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     ret = mbedtls_x509write_crt_set_issuer_name( &ctx->crt, "CN=nabto" );
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     mbedtls_x509write_crt_set_version( &ctx->crt, 2 );
@@ -104,12 +104,12 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
 
     ret = mbedtls_x509write_crt_set_validity( &ctx->crt, "20010101000000", "20491231235959" );
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     ret = mbedtls_x509write_crt_set_basic_constraints( &ctx->crt, 1, -1);
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     {
@@ -125,7 +125,7 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
         *publicKey = strdup(buffer);
     }
     if (*publicKey == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;
 }
@@ -140,7 +140,7 @@ np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, c
     mbedtls_pk_init(&key);
     ret = mbedtls_pk_parse_key( &key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
     if (ret != 0) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     {
         // get fingerprint
@@ -149,12 +149,12 @@ np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, c
         // !!! The key is written to the end of the buffer
         int len = mbedtls_pk_write_pubkey_der( &key, buffer, sizeof(buffer));
         if (len <= 0) {
-            return NABTO_EC_FAILED;
+            return NABTO_EC_UNKNOWN;
         }
 
         ret = mbedtls_sha256_ret(buffer+256 - len,  len, hash, false);
         if (ret != 0) {
-            return NABTO_EC_FAILED;
+            return NABTO_EC_UNKNOWN;
         }
 
         *fingerprint = malloc(33);

@@ -52,7 +52,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_new_stream(NabtoDeviceLi
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_STREAMS) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return NABTO_DEVICE_EC_INVALID_LISTENER;
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     np_error_code ec = nabto_device_listener_get_status(listener);
     if (ec != NABTO_EC_OK) {
@@ -262,7 +262,7 @@ np_error_code nabto_device_stream_listener_callback(const np_error_code ec, stru
             listenerContext->stream = NULL;
         } else {
             NABTO_LOG_ERROR(LOG, "Tried to resolve new stream future, but stream reference was invalid");
-            retEc = NABTO_EC_FAILED;
+            retEc = NABTO_EC_UNKNOWN;
         }
         // using the stream structure as event structure means it will be freed when user calls stream_free
     } else if (ec == NABTO_EC_ABORTED) {

@@ -98,7 +98,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_timed_wait(NabtoDeviceFutu
         if (fut->ready) {
             ec = fut->ec;
         } else {
-            ec = NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
+            ec = NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED;
         }
     }
     nabto_device_threads_mutex_unlock(fut->mutex);
@@ -114,7 +114,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_error_code(NabtoDeviceFutu
     NabtoDeviceError ec;
     nabto_device_threads_mutex_lock(fut->mutex);
     if (!fut->ready) {
-        ec = NABTO_DEVICE_EC_API_FUTURE_NOT_READY;
+        ec = NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED;
     } else {
         ec = fut->ec;
     }

@@ -110,7 +110,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
     }
     if (!found) {
         NABTO_LOG_ERROR(LOG, "Out of callbacks");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     if (ctx->state == NC_STUN_STATE_RUNNING) {
         NABTO_LOG_INFO(LOG, "Stun already running, adding callback");
@@ -219,7 +219,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
             nc_stun_resolve_callbacks(ctx);
             break;
         case STUN_ET_FAILED:
-            ctx->ec = NABTO_EC_FAILED;
+            ctx->ec = NABTO_EC_UNKNOWN;
             nc_stun_resolve_callbacks(ctx);
             break;
         default:

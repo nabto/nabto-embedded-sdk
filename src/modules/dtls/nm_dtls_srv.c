@@ -158,7 +158,7 @@ np_error_code nm_dtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls
     if (crt == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to get peer cert from mbedtls");
         NABTO_LOG_ERROR(LOG, "Verification returned %u", mbedtls_ssl_get_verify_result(&ctx->ctx.ssl));
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     return nm_dtls_util_fp_from_crt(crt, fp);
 }
@@ -205,7 +205,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     int ret;
     *dtls = (struct np_dtls_srv_connection*)calloc(1, sizeof(struct np_dtls_srv_connection));
     if(!dtls) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     (*dtls)->pl = server->pl;
     (*dtls)->sender = sender;
@@ -226,7 +226,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     if( ( ret = mbedtls_ssl_setup( &((*dtls)->ctx.ssl), &server->conf ) ) != 0 )
     {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_setup returned %d", ret );
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     mbedtls_ssl_set_timer_cb( &((*dtls)->ctx.ssl), (*dtls), &nm_dtls_srv_mbedtls_timing_set_delay,
@@ -237,7 +237,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
 //    ret = mbedtls_ssl_set_client_transport_id(&((*dtls)->ssl), (const unsigned char*)conn, sizeof(np_connection));
 //    if (ret != 0) {
 //        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_set_client_transport_id() returned -0x%x\n\n", -ret);
-//        return NABTO_EC_FAILED;
+//        return NABTO_EC_UNKNOWN;
 //    }
 
     mbedtls_ssl_set_hs_authmode( &((*dtls)->ctx.ssl), MBEDTLS_SSL_VERIFY_OPTIONAL );
@@ -245,7 +245,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     ret = mbedtls_ssl_set_hs_own_cert(&((*dtls)->ctx.ssl), &server->publicKey, &server->privateKey);
     if (ret != 0) {
         NABTO_LOG_ERROR(LOG, "failed ! mbedtls_ssl_set_hs_own_cert returned %d", ret);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     mbedtls_ssl_set_bio( &((*dtls)->ctx.ssl), (*dtls),
@@ -384,7 +384,7 @@ void nm_dtls_srv_start_send_deferred(void* data)
     } else if (ret < 0) {
         // unknown error
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
-        next->cb(NABTO_EC_FAILED, next->data);
+        next->cb(NABTO_EC_UNKNOWN, next->data);
     } else {
         ctx->ctx.sentCount++;
         next->cb(NABTO_EC_OK, next->data);
@@ -474,7 +474,7 @@ np_error_code nm_dtls_srv_init_config(struct np_dtls_srv* server,
                                              MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
     {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_config_defaults returned %i", ret);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     mbedtls_ssl_conf_alpn_protocols(&server->conf, nm_dtls_srv_alpnList );
@@ -484,7 +484,7 @@ np_error_code nm_dtls_srv_init_config(struct np_dtls_srv* server,
                                        strlen( pers ) ) ) != 0 )
     {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ctr_drbg_seed returned %d", ret );
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     mbedtls_ssl_conf_rng( &server->conf, mbedtls_ctr_drbg_random, &server->ctr_drbg );
 
@@ -496,20 +496,20 @@ np_error_code nm_dtls_srv_init_config(struct np_dtls_srv* server,
     if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG, "mbedtls_x509_crt_parse returned %d ", ret);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     ret =  mbedtls_pk_parse_key( &server->privateKey, (const unsigned char*)privateKeyL, privateKeySize+1, NULL, 0 );
     if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG,"mbedtls_pk_parse_key returned %d", ret);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     if( ( ret = mbedtls_ssl_conf_own_cert( &server->conf, &server->publicKey, &server->privateKey ) ) != 0 )
     {
         NABTO_LOG_ERROR(LOG,"mbedtls_ssl_conf_own_cert returned %d", ret);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;
 }

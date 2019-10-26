@@ -564,7 +564,7 @@ np_error_code nm_select_win_create_socket(np_udp_socket* sock)
     ret = ioctlsocket(sock->sock, FIONBIO, &iMode);
     if (ret != NO_ERROR) {
         NABTO_LOG_ERROR(LOG, "Failed to set socket non-blocking");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
 
     return NABTO_EC_OK;

@@ -45,7 +45,7 @@ void* resolver_thread(void* ctx) {
         } else {
             NABTO_LOG_ERROR(LOG, "Failed to get address info: (%i) '%s'", res, gai_strerror(res));
         }
-        state->ec = NABTO_EC_FAILED;
+        state->ec = NABTO_EC_UNKNOWN;
         state->resolver_is_running = false;
         return NULL;
     }
@@ -90,17 +90,17 @@ np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_
     struct nm_unix_dns_ctx* ctx;
     if (pthread_attr_init(&attr) !=0) {
         NABTO_LOG_ERROR(LOG, "Failed to initialize pthread_attr");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to set detach state for pthread_attr");
         pthread_attr_destroy(&attr);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     ctx = (struct nm_unix_dns_ctx*)malloc(sizeof(struct nm_unix_dns_ctx));
     if (!ctx) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate DNS context");
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     ctx->data = data;
     ctx->host = host;
@@ -112,7 +112,7 @@ np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_
     if (pthread_create(&thread, &attr, resolver_thread, ctx) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to create pthread");
         pthread_attr_destroy(&attr);
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     pthread_attr_destroy(&attr);
     np_event_queue_post_timed_event(pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, ctx);

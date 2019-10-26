@@ -79,7 +79,7 @@ np_error_code nabto_device_listener_create_future(struct nabto_device_listener* 
     }
     listener->fut = nabto_device_future_new(listener->dev);
     if (listener->fut == NULL) {
-        return NABTO_EC_FAILED;
+        return NABTO_EC_UNKNOWN;
     }
     *future = listener->fut;
     nabto_device_listener_try_resolve(listener);
@@ -117,7 +117,7 @@ np_error_code nabto_device_listener_get_status(struct nabto_device_listener* lis
 void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
 {
     if (listener->fut && listener->sentinel.next != &listener->sentinel) {
-        np_error_code ec = NABTO_DEVICE_EC_FAILED;
+        np_error_code ec = NABTO_DEVICE_EC_UNKNOWN;
         if (listener->cb) {
             ec = listener->cb(NABTO_EC_OK, listener->fut, listener->sentinel.next->data, listener->listenerData);
         }

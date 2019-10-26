@@ -119,10 +119,13 @@ class TcpEchoServerImpl : public std::enable_shared_from_this<TcpEchoServerImpl>
     }
 
     void stop() {
-        acceptor_.close();
-        for (auto c : connections_) {
-            io_.post([c](){ c->stopFromManager(); });
-        }
+        auto self = shared_from_this();
+        io_.post([self](){
+                self->acceptor_.close();
+                for (auto c : self->connections_) {
+                    self->io_.post([c](){ c->stopFromManager(); });
+                }
+            });
     }
 
     uint16_t getPort() {
