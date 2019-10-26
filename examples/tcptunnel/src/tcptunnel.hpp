@@ -33,11 +33,6 @@ class TcpTunnel {
         listenForDeviceEvents();
     }
 
-    void stop() {
-        nabto_device_listener_stop(connectionEventListener_);
-        nabto_device_listener_stop(deviceEventListener_);
-    }
-
     void deinit() {
         tcptunnel_coap_deinit(this);
         if (connectionEventListener_) {

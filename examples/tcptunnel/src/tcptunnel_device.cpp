@@ -268,26 +268,27 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     nabto_device_string_free(fpTemp);
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
+    {
+        TcpTunnel tcpTunnel(device, config, configFile);
+        tcpTunnel.init();
 
-    TcpTunnel tcpTunnel(device, config, configFile);
-    tcpTunnel.init();
+        // Wait for the user to press Ctrl-C
 
-    // Wait for the user to press Ctrl-C
+        struct sigaction sigIntHandler;
 
-    struct sigaction sigIntHandler;
+        sigIntHandler.sa_handler = my_handler;
+        sigemptyset(&sigIntHandler.sa_mask);
+        sigIntHandler.sa_flags = 0;
 
-    sigIntHandler.sa_handler = my_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
+        sigaction(SIGINT, &sigIntHandler, NULL);
 
-    sigaction(SIGINT, &sigIntHandler, NULL);
+        pause();
 
-    pause();
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
-    tcpTunnel.deinit();
+        NabtoDeviceFuture* fut = nabto_device_future_new(device);
+        nabto_device_close(device, fut);
+        nabto_device_future_wait(fut);
+        nabto_device_future_free(fut);
+        tcpTunnel.deinit();
+    }
     nabto_device_free(device);
 }
