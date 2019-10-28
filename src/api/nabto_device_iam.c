@@ -10,7 +10,11 @@
 #include <core/nc_iam.h>
 #include <core/nc_iam_dump.h>
 
+#include <platform/np_logging.h>
+
 #include <stdlib.h>
+
+#define LOG NABTO_LOG_MODULE_API
 
 np_error_code nc_iam_check_access_function_override_adapter(uint64_t connectionRef,const char* action, void* attributes, size_t attributesLength, void* userData)
 {
@@ -23,7 +27,7 @@ np_error_code nc_iam_check_access_function_override_adapter(uint64_t connectionR
     } else if (ec == NABTO_DEVICE_EC_IAM_DENY) {
         return NABTO_EC_IAM_DENY;
     } else {
-        // TODO print log
+        NABTO_LOG_ERROR(LOG, "IAM override function returned invalid error code: (%u) %s", ec, nabto_device_error_get_message(ec));
         return NABTO_EC_IAM_DENY;
     }
 }
