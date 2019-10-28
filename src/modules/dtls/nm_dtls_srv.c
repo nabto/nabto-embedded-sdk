@@ -349,7 +349,11 @@ void deferred_event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_sr
 void nm_dtls_srv_do_event_callback(void* data)
 {
     struct np_dtls_srv_connection* ctx = data;
-    ctx->eventHandler(ctx->deferredEvent, ctx->senderData);
+    if (ctx->ctx.state == CLOSING && ctx->sending) {
+        np_event_queue_post(ctx->pl, &ctx->deferredEventEvent, &nm_dtls_srv_do_event_callback, ctx);
+    } else {
+        ctx->eventHandler(ctx->deferredEvent, ctx->senderData);
+    }
 }
 
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
@@ -411,6 +415,7 @@ void nm_dtls_srv_event_close(void* data){
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
+    np_event_queue_cancel_event(ctx->pl, &ctx->deferredEventEvent);
 
     np_dtls_close_callback cb = ctx->ctx.closeCb;
     void* cbData = ctx->ctx.closeCbData;

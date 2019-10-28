@@ -315,16 +315,6 @@ struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct n
     return conn->dtls;
 }
 
-void nc_client_connection_send_failed(void* data) {
-    struct nc_client_connection* conn = (struct nc_client_connection*)data;
-    if (conn->sentCb == NULL) {
-        return;
-    }
-    np_dtls_srv_send_callback cb = conn->sentCb;
-    conn->sentCb = NULL;
-    cb(conn->ec, conn->sentData);
-}
-
 void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
