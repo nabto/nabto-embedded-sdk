@@ -483,7 +483,6 @@ void nm_epoll_event_bind_mdns_ipv4(void* data)
     }
     us->isIpv6 = false;
 
-    // TODO test return value
     if (!nm_unix_init_mdns_ipv4_socket(us->sock)) {
         np_udp_socket_created_callback cb = us->created.cb;
         us->created.cb = NULL;
@@ -544,7 +543,6 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
         NABTO_LOG_ERROR(LOG, "Cannot set IPV6_V6ONLY");
     }
 
-    // TODO test return value
     if (!nm_unix_init_mdns_ipv6_socket(us->sock)) {
         np_udp_socket_created_callback cb = us->created.cb;
         us->created.cb = NULL;

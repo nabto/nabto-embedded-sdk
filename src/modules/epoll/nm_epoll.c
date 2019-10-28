@@ -105,7 +105,6 @@ void nm_epoll_read(struct nm_epoll_context* epoll, int nfds)
             current->next->prev = current->prev;
             nm_epoll_udp_resolve_close(current);
         } else if (current->type == NM_EPOLL_TYPE_TCP) {
-            // TODO tcp
             current->prev->next = current->next;
             current->next->prev = current->prev;
             nm_epoll_tcp_resolve_close(current);

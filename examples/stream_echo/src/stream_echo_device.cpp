@@ -282,6 +282,8 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
     nabto_device_future_free(fut);
 
     nabto_device_stop(device);
+    nabto_device_future_free(listenerFuture);
+    nabto_device_listener_free(listener);
     nabto_device_free(device);
     return;
 }

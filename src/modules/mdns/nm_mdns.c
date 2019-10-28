@@ -160,7 +160,6 @@ void nm_mdns_socket_opened_v4(const np_error_code ec, void* userData)
         // dont start receiving until send callback returns to ensure send buffer is not overwritten
         nm_mdns_send_packet_v4(mdns);
     } else {
-        // todo how to fail?
         NABTO_LOG_TRACE(LOG, "V4 socket open failed with (%u) %s", ec, np_error_code_to_string(ec));
         mdns->v4Done = true;
     }
@@ -309,7 +308,6 @@ void nm_mdns_send_packet_v6(struct np_mdns_context* mdns)
     uint16_t port = mdns->getPort(mdns->getPortUserData);
     if (port > 0) {
         if (nabto_mdns_server_build_packet(&mdns->mdnsServer, port, pl->buf.start(mdns->sendBufferv6), pl->buf.size(mdns->sendBufferv6), &written)) {
-            // todo check return value
             np_error_code ec = pl->udp.async_send_to(mdns->socketv6,
                                                      ep, pl->buf.start(mdns->sendBufferv6), (uint16_t)written,
                                                      nm_mdns_packet_sent_v6, mdns);

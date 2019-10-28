@@ -19,8 +19,6 @@ void nabto_api_future_queue_execute_all(struct nabto_device_context* device)
         elm = device->queueHead;
         device->queueHead = device->queueHead->next;
         nabto_device_future_popped(elm);
-        NABTO_LOG_ERROR(0, "future POP");
-        //elm->cb(elm->ec, elm->cbData);
     }
 
 }
