@@ -178,6 +178,15 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
 
 /**
+ * Set the server port. If not set it will default to 4433.
+ *
+ * @param device  The device
+ * @param port    The port number to set.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
+
+/**
  * Set the private key from the device.
  *
  * @param device    The device instance to perform action on
@@ -189,9 +198,10 @@ nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
 
-// TODO: distinguish different applications in bs / console / device
 /**
- * Set the application name of the device.
+ * Set the application name of the device. This is used to identify a
+ * group of devices in the basestation and the Nabto Cloud Console to
+ * ease debugging after deployment.
  *
  * @param device    The device instance to perform action on
  * @param name      The application name to set
@@ -251,13 +261,26 @@ nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device);
 
+/**
+ * Utilitiy function to create a private key for a device. Once
+ * created, the key should be set on the device using
+ * nabto_device_set_private_key(), and freed with
+ * nabto_device_string_free() when no longer used.
+ *
+ * @param device  The device
+ * @param key     Where to put the created key
+ * @return NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_create_private_key(NabtoDevice* device, char** key);
+
 
 /**
  * Get the public key fingerprint of the device.
  *
  * @param fingerprint  the fingerprint is stored as hex in the
  * parameter. The fingerprint should be freed by calling
- * nabto_device_string_free afterwards.
+ * nabto_device_string_free() afterwards.
  *
  * @return
  *  NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
@@ -279,17 +302,53 @@ nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
  * Connection *
  **************/
 
-/* /\** */
-/*  * Listen for new connections. */
-/*  *\/ */
-/* NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API */
-/* nabto_device_connection_listen(NabtoDevice* device, NabtoDeviceConnection** connection); */
+/**
+ * Get the fingerprint of the client assosiated with a given
+ * connection. Free fp with nabto_device_string_free().
+ *
+ * @param device  The device
+ * @param ref     The connection reference for which to get finterprint
+ * @param fp      Where to put the fingerprint.
+ * @return NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
 
-/* nabto_device_connection_free(NabtoDeviceConnection* connection); */
+typedef int NabtoDeviceConnectionEvent;
 
-/* nabto_device_connection_close(NabtoDeviceConnection* connection); */
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
 
-/* nabto_device_connection_get_client_fingerprint(NabtoDeviceConnection* connection); */
+/**
+ * Create a listener for connection events.
+ *
+ * @param device Device
+
+ * @return New listener on which nabto_device_listener_connection_event
+ *         can be called to listen for connection events. NULL on errors.
+ *         The returned listener must be freed by user.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
+nabto_device_connection_events_listener_new(NabtoDevice* device);
+
+/**
+ * Start listening for next connection event.
+ *
+ * @param listener  Listener to get connection events from
+ * @param future    Future returned with status of the operation.
+ * @param ref       Where to put the connection reference when the future resolves.
+ * @param event     Where to put the connection event when the future resolves.
+ *
+ * Future status:
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
 
 /*************
  * Streaming *
@@ -653,6 +712,22 @@ nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request);
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName);
+
+/***************
+ * MDNS Server *
+ ***************/
+
+/**
+ * Enable the optional mdns server/responder. The server is started when the
+ * device is started. Mdns has to be enabled before the device is
+ * started. The responder is stopped when the device is closed.
+ *
+ * @param device  The device
+ * @return NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_enable_mdns(NabtoDevice* device);
+
 
 /****************
  * Listener API *

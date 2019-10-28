@@ -9,63 +9,6 @@
 extern "C" {
 #endif
 
-/**
- * Set the server port.
- * If not set it will default to 4433
- */
-// TODO move out of experimental
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
-
-/**************
- * Connection *
- **************/
-
-// TODO move out of experimental
-/**
- * free fp with nabto_device_string_free()
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
-
-
-// TODO move connection events out of experimental
-typedef int NabtoDeviceConnectionEvent;
-
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
-
-/**
- * Create a listener for connection events.
- *
- * @param device Device
-
- * @return New listener on which nabto_device_listener_connection_event
- *         can be called to listen for connection events. NULL on errors.
- *         The returned listener must be freed by user.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_connection_events_listener_new(NabtoDevice* device);
-
-/**
- * Start listening for next connection event.
- *
- * @param listener  Listener to get connection events from
- * @param future    Future returned with status of the operation.
- * @param ref       Where to put the connection reference when the future resolves.
- * @param event     Where to put the connection event when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
-
 /*****************
  * Device Events *
  *****************/
@@ -104,21 +47,6 @@ nabto_device_device_events_listener_new(NabtoDevice* device);
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceEvent* event);
 
-
-/********
- * Util *
- ********/
-
-// TODO move out of experimental
-// rename to nabto_device_create_private_key
-// free the key afterwards with nabto_device_string_free
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_experimental_util_create_private_key(NabtoDevice* device, char** key);
-
-
-// TODO remove or decide if this is the string_free function.
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_experimental_util_free(void* data);
 
 /*******
  * IAM *
@@ -497,20 +425,6 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_policies_list(NabtoDevice* device, void* buffer, size_t bufferLength, size_t* used);
 
 
-/***************
- * MDNS Server *
- ***************/
-
-/**
- * Enable the optional mdns server/responder. The server is started when the
- * device is started. Mdns has to be enabled before the device is
- * started. The responder is stopped when the device is closed.
- */
-// TODO move out of experimental
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_enable_mdns(NabtoDevice* device);
-
-
 /******************
  * TCP Tunnelling *
  ******************/
@@ -521,8 +435,11 @@ nabto_device_enable_mdns(NabtoDevice* device);
  * Tcp tunnelling is a feature which allows clients to tunnel tcp
  * traffic over a nabto connection to the device. TCP tunnelling is
  * stopped when the device is closed.
+ *
+ * @param device   The device
+ * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_RESOURCE_EXISTS if already enabled
  */
-// TODO move out of experimental
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
 

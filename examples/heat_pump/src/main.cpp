@@ -93,7 +93,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
 
     char* str;
     char* fp;
-    ec = nabto_device_experimental_util_create_private_key(device, &str);
+    ec = nabto_device_create_private_key(device, &str);
     std::string privateKey(str);
 
     if (ec) {

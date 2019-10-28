@@ -15,7 +15,7 @@ void NABTO_DEVICE_API nabto_device_string_free(char* str)
     free(str);
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_experimental_util_create_private_key(NabtoDevice* device, char** privateKey)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_create_private_key(NabtoDevice* device, char** privateKey)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
