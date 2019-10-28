@@ -143,6 +143,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
+    nabto_device_stop(device);
     nabto_device_free(device);
 
     return true;
@@ -225,28 +226,31 @@ void run_heat_pump(const std::string& configFile)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
-    HeatPump hp(device, config, configFile);
-    hp.init();
+    {
+        HeatPump hp(device, config, configFile);
+        hp.init();
 
-    heat_pump_coap_init(device, &hp);
+        heat_pump_coap_init(device, &hp);
 
-    // Wait for the user to press Ctrl-C
+        // Wait for the user to press Ctrl-C
 
-    struct sigaction sigIntHandler;
+        struct sigaction sigIntHandler;
 
-    sigIntHandler.sa_handler = my_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
+        sigIntHandler.sa_handler = my_handler;
+        sigemptyset(&sigIntHandler.sa_mask);
+        sigIntHandler.sa_flags = 0;
 
-    sigaction(SIGINT, &sigIntHandler, NULL);
+        sigaction(SIGINT, &sigIntHandler, NULL);
 
-    pause();
+        pause();
 
-    heat_pump_coap_deinit(&hp);
-    hp.deinit();
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
+        heat_pump_coap_deinit(&hp);
+        hp.deinit();
+        NabtoDeviceFuture* fut = nabto_device_future_new(device);
+        nabto_device_close(device, fut);
+        nabto_device_future_wait(fut);
+        nabto_device_future_free(fut);
+        nabto_device_stop(device);
+    }
     nabto_device_free(device);
 }

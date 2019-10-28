@@ -28,7 +28,6 @@ static void wrote(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData
 static void startClose(struct StreamEchoState* state);
 static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 
-static void tryExit(NabtoDevice* device);
 #define READ_BUFFER_SIZE 1024
 
 struct StreamEchoState {
@@ -149,6 +148,7 @@ bool init_stream_echo(const std::string& configFile, const std::string& productI
      * skip nabto_device_close(). Note that outstanding
      * NabtoDeviceFutures may not be resolved.
      */
+    nabto_device_stop(device);
     nabto_device_free(device);
 
     return true;
@@ -274,13 +274,19 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
         iterator = iterator->next;
         nabto_device_stream_abort(current->stream);
     }
-    // nabto_device_free will block until all internal events are handled. Since nabto_device_listener_stop and nabto_device_stream_abort has triggered events, these will be resolved before free actually occurs.
+    // nabto_device_stop will block until all internal events are handled. Since nabto_device_listener_stop and nabto_device_stream_abort has triggered events, these will be resolved before free actually occurs.
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+
+    nabto_device_stop(device);
     nabto_device_free(device);
     return;
 }
 
 void removeState(struct StreamEchoState* state) {
-    NabtoDevice* device = state->dev;
     nabto_device_stream_free(state->stream);
     struct StreamEchoState* iterator = &head;
     while(iterator->next != state) {
@@ -289,7 +295,6 @@ void removeState(struct StreamEchoState* state) {
     iterator->next = state->next;
     state->next = NULL;
     free(state);
-    tryExit(device);
 }
 
 NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionReference, const char* action, void* attributes, size_t attributesLength, void* userData)
@@ -393,20 +398,4 @@ void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 
     // ignore error code, just release the resources.
     removeState(state);
-}
-
-void deviceClosed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
-{
-    nabto_device_future_free(future);
-}
-
-void tryExit(NabtoDevice* device)
-{
-    if (head.next != NULL || !closing) {
-        return;
-    }
-    head.next = NULL;
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_set_callback(fut, deviceClosed, device);
 }

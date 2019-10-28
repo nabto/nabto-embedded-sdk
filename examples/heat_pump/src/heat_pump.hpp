@@ -56,12 +56,19 @@ class HeatPump {
     HeatPump(NabtoDevice* device, json config, const std::string& configFile)
         : device_(device), config_(config), configFile_(configFile)
     {
+        connectionEventFuture_ = nabto_device_future_new(device);
+        deviceEventFuture_ = nabto_device_future_new(device);
+        iamChangedFuture_ = nabto_device_future_new(device_);
 
     }
 
     ~HeatPump() {
         nabto_device_future_free(connectionEventFuture_);
+        nabto_device_future_free(deviceEventFuture_);
+        nabto_device_future_free(iamChangedFuture_);
+
         nabto_device_listener_free(connectionEventListener_);
+        nabto_device_listener_free(deviceEventListener_);
     }
 
     void init();
@@ -182,7 +189,10 @@ class HeatPump {
     NabtoDeviceConnectionEvent connectionEvent_;
 
     NabtoDeviceListener* deviceEventListener_;
+    NabtoDeviceFuture* deviceEventFuture_;
     NabtoDeviceEvent deviceEvent_;
+
+    NabtoDeviceFuture* iamChangedFuture_;
 };
 
 #endif

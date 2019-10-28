@@ -60,7 +60,6 @@ const char* HeatPump::modeToString(HeatPump::Mode mode)
 
 void HeatPump::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
 {
-    nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
         return;
     }
@@ -71,12 +70,8 @@ void HeatPump::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* us
 
 void HeatPump::listenForIamChanges()
 {
-    NabtoDeviceFuture* future = nabto_device_future_new(device_);
-    nabto_device_iam_listen_for_changes(device_, future, currentIamVersion_);
-    if (!future) {
-        return;
-    }
-    nabto_device_future_set_callback(future, HeatPump::iamChanged, this);
+    nabto_device_iam_listen_for_changes(device_, iamChangedFuture_, currentIamVersion_);
+    nabto_device_future_set_callback(iamChangedFuture_, HeatPump::iamChanged, this);
 }
 
 void HeatPump::saveConfig()
@@ -140,19 +135,16 @@ void HeatPump::listenForConnectionEvents()
 
 void HeatPump::startWaitDevEvent()
 {
-    NabtoDeviceFuture* future = nabto_device_future_new(device_);
-    // todo: consider if resource should be created dynamically for show
-    nabto_device_listener_device_event(deviceEventListener_, future, &deviceEvent_);
-    nabto_device_future_set_callback(future, &HeatPump::deviceEvent, this);
+    nabto_device_listener_device_event(deviceEventListener_, deviceEventFuture_, &deviceEvent_);
+    nabto_device_future_set_callback(deviceEventFuture_, &HeatPump::deviceEvent, this);
 }
 
 void HeatPump::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
 {
     HeatPump* hp = (HeatPump*)userData;
-    nabto_device_future_free(fut);
     if (err != NABTO_DEVICE_EC_OK) {
         std::cout << "Device event called back with error: " << err << std::endl;
-        nabto_device_listener_free(hp->deviceEventListener_);
+
         return;
     } else {
         if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_ATTACHED) {
