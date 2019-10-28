@@ -45,7 +45,6 @@ void notify_event_queue_post(void* data)
 /**
  * Allocate new device
  */
-// TODO consider returning NabtoDeviceError and take NabtoDevice**
 NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));

@@ -40,10 +40,7 @@ NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* device)
 
 void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
 {
-    // TODO if future is unresolved this will cause seg fault.
-    // E.g. the users creates a future and free it before it is resolved.
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-
     nabto_device_threads_free_cond(fut->cond);
     nabto_device_threads_free_mutex(fut->mutex);
     free(fut);

@@ -13,7 +13,6 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
-// TODO serveral coap module functions does not return errors on failures, when fixed, add error handling here as well
 np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
 
 NabtoDeviceError nabto_device_coap_error_module_to_api(nabto_coap_error ec) {

@@ -43,6 +43,7 @@ struct nabto_device_event;
 typedef np_error_code (*nabto_device_listener_resolve_event)(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
 
 enum nabto_device_listener_type {
+    NABTO_DEVICE_LISTENER_TYPE_NONE,
     NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS,
     NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS,
     NABTO_DEVICE_LISTENER_TYPE_STREAMS,
@@ -64,6 +65,7 @@ struct nabto_device_listener {
     struct nabto_device_future* fut;
     np_error_code ec;
     enum nabto_device_listener_type type;
+    bool isInitialized;
 };
 
 /**

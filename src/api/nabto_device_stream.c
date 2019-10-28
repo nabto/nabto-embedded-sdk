@@ -111,7 +111,6 @@ void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     struct nabto_device_context* dev = str->dev;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    // TODO resolve all futures!
     nc_stream_release(str->stream);
     free(str);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
