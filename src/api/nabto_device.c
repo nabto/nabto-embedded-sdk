@@ -136,6 +136,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 /**
  * block until no further work is done.
  */
+// TODO make it possible to stop a device which is not properly closed.
 void nabto_device_stop(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
