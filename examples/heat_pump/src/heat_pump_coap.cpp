@@ -24,10 +24,11 @@ HeatPumpCoapRequestHandler::HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDevice
     : heatPump_(hp), handler_(handler)
 {
     future_ = nabto_device_future_new(hp->getDevice());
-    nabto_device_coap_listener_new(hp->getDevice(), method, pathSegments, &listener_);
+    listener_ = nabto_device_listener_new(hp->getDevice());
     if (!future_ || !listener_) {
         return;
     }
+    nabto_device_coap_init_listener(hp->getDevice(), listener_, method, pathSegments);
     startListen();
 }
 

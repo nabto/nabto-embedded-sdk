@@ -193,7 +193,7 @@ void run_heat_pump(const std::string& configFile)
     if (ec) {
         std::cerr << "Failed to enable mdns" << std::endl;
     }
-    ec = nabto_device_log_set_std_out_callback(device);
+    ec = nabto_device_set_log_std_out_callback(device);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }

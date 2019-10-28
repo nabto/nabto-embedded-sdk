@@ -10,7 +10,10 @@ typedef std::function<void (NabtoDeviceCoapRequest* request, void* application)>
 
 class CoapRequestHandler {
  public:
-    ~CoapRequestHandler() {}
+    ~CoapRequestHandler() {
+        nabto_device_listener_free(listener_);
+        nabto_device_future_free(future_);
+    }
     CoapRequestHandler(void* application, NabtoDevice* device, NabtoDeviceCoapMethod methdod, const char** pathSegments, CoapHandler handler);
 
     void startListen();
@@ -21,10 +24,8 @@ class CoapRequestHandler {
 
     static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
-        nabto_device_future_free(fut);
         CoapRequestHandler* handler = (CoapRequestHandler*)data;
         if (ec != NABTO_DEVICE_EC_OK) {
-            nabto_device_listener_free(handler->listener_);
             return;
         }
         handler->handler_(handler->request_, handler->application_);

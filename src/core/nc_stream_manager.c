@@ -167,7 +167,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         int i;
         for (i = 0; i < NABTO_MAX_STREAMS; i++) {
             if (ctx->streams[i].active == false) {
-                nc_stream_init(ctx->pl, &ctx->streams[i], streamId, nc_client_connection_get_dtls_connection(conn), ctx);
+                nc_stream_init(ctx->pl, &ctx->streams[i], streamId, nc_client_connection_get_dtls_connection(conn), ctx, conn->connectionRef);
                 ctx->streamConns[i] = conn;
                 return &ctx->streams[i];
             }

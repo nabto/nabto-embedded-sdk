@@ -67,17 +67,19 @@ struct nabto_device_listener {
 };
 
 /**
- * allocate new listener
+ * initialize new listener
  *
  * @param dev          Device
+ * @param listener     Listener
  * @param cb           Callback called as detailed above
  * @param listenerData Void data included in every callback
  * @return allocated listener or NULL on errors
  */
-struct nabto_device_listener* nabto_device_listener_new(struct nabto_device_context* dev,
-                                                        enum nabto_device_listener_type type,
-                                                        nabto_device_listener_resolve_event cb,
-                                                        void* listenerData);
+np_error_code nabto_device_listener_init(struct nabto_device_context* dev,
+                                         struct nabto_device_listener* listener,
+                                         enum nabto_device_listener_type type,
+                                         nabto_device_listener_resolve_event cb,
+                                         void* listenerData);
 
 enum nabto_device_listener_type nabto_device_listener_get_type(struct nabto_device_listener* listener);
 np_error_code nabto_device_listener_init_future(struct nabto_device_listener* listener, struct nabto_device_future* future);

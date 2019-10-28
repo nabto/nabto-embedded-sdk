@@ -168,7 +168,7 @@ void nc_stream_test_syn_ack()
     nc_stream_manager_add_listener(&ctx.devCtx, &listener, 42, &nc_stream_test_listener_cb, &ctx);
 
     ctx.cliStream = &ctx.cliCtx.streams[0].stream;
-    nc_stream_init(&ctx.cliPl, &ctx.cliCtx.streams[0], 42, ctx.cliCtx.streams[0].dtls, &ctx.cliCtx);
+    nc_stream_init(&ctx.cliPl, &ctx.cliCtx.streams[0], 42, ctx.cliCtx.streams[0].dtls, &ctx.cliCtx, 42);
     nabto_stream_set_application_event_callback(ctx.cliStream, &nc_stream_test_cli_application_event_callback, &ctx);
     nabto_stream_open(ctx.cliStream, 4242);
 

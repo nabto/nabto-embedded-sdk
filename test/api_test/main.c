@@ -45,18 +45,23 @@ int main()
     NabtoDeviceStream* stream;
     uint8_t buf[1500];
     size_t readen;
-    nabto_device_log_set_std_out_callback(dev);
+    nabto_device_set_log_std_out_callback(dev);
     nabto_device_set_private_key(dev, (const char*)devicePrivateKey);
     nabto_device_set_server_url(dev, hostname);
     nabto_device_start(dev);
 
-    NabtoDeviceListener* hwListener;
-    nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_GET, (const char*[]){"helloworld", NULL}, &hwListener);
+    NabtoDeviceListener* hwListener = nabto_device_listener_new(dev);
+    nabto_device_coap_init_listener(dev, hwListener, NABTO_DEVICE_COAP_GET, (const char*[]){"helloworld", NULL});
 
     NabtoDeviceFuture* fut= nabto_device_future_new(dev);
-    NabtoDeviceListener* listener = nabto_device_stream_listener_new(dev, 42);
+    NabtoDeviceListener* listener = nabto_device_listener_new(dev);
     if (listener == NULL) {
         NABTO_LOG_ERROR(0, "Failed to create stream listener");
+        return 1;
+    }
+    NabtoDeviceError ec = nabto_device_stream_init_listener(dev, listener, 42);
+    if (ec) {
+        NABTO_LOG_ERROR(0, "Failed to initialize stream listener");
         return 1;
     }
     nabto_device_listener_new_stream(listener, fut, &stream);

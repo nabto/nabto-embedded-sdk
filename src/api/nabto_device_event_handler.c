@@ -7,15 +7,18 @@ void nabto_device_listener_resolve_error_state(struct nabto_device_listener* lis
 void nabto_device_listener_try_resolve(struct nabto_device_listener* listener);
 void nabto_device_listener_pop_event(struct nabto_device_listener* listener, struct nabto_device_event* ev);
 
-struct nabto_device_listener* nabto_device_listener_new(struct nabto_device_context* dev,
-                                                        enum nabto_device_listener_type type,
-                                                        nabto_device_listener_resolve_event cb,
-                                                        void* listenerData)
+NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* device)
 {
     struct nabto_device_listener* listener = (struct nabto_device_listener*)calloc(1,sizeof(struct nabto_device_listener));
-    if (listener == NULL) {
-        return NULL;
-    }
+    return (NabtoDeviceListener*)listener;
+}
+
+np_error_code nabto_device_listener_init(struct nabto_device_context* dev,
+                                         struct nabto_device_listener* listener,
+                                         enum nabto_device_listener_type type,
+                                         nabto_device_listener_resolve_event cb,
+                                         void* listenerData)
+{
     listener->dev = dev;
     listener->cb = cb;
     listener->listenerData = listenerData;
@@ -23,7 +26,7 @@ struct nabto_device_listener* nabto_device_listener_new(struct nabto_device_cont
     listener->sentinel.prev = &listener->sentinel;
     listener->ec = NABTO_EC_OK;
     listener->type = type;
-    return listener;
+    return NABTO_EC_OK;
 }
 
 np_error_code nabto_device_listener_add_event(struct nabto_device_listener* listener, void* data)

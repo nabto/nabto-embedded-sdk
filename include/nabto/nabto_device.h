@@ -320,17 +320,16 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CO
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
 
+// TODO verify error codes
 /**
- * Create a listener for connection events.
+ * Initialize a listener for connection events.
  *
- * @param device Device
-
- * @return New listener on which nabto_device_listener_connection_event
- *         can be called to listen for connection events. NULL on errors.
- *         The returned listener must be freed by user.
+ * @param device   Device
+ * @param listener Listener to initialize for connection events
+ * @return NABTO_DEVICE_EC_OK on success
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_connection_events_listener_new(NabtoDevice* device);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
 
 /**
  * Start listening for next connection event.
@@ -354,21 +353,29 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDevic
  * Streaming *
  *************/
 
-// TODO add possibility to get stream port if ephemeral
+// TODO verify error codes
 /**
- * Create a listener for new streams.
+ * Initialize a listener for new streams.
  *
- * @param device  device
- * @param port    A number describing the id/port of the stream to listen for.
- *                Think of it as a demultiplexing port number. port 0 creates
- *                an ephemeral port.
- * @return Listener on which nabto_device_listener_new_stream can be called to
- *         listen for new streams. NULL on errors. The returned listener must
- *         be freed by user.
+ * @param device    device
+ * @param listener  Listener to initialize for streaming
+ * @param port      A number describing the id/port of the stream to listen for.
+ *                  Think of it as a demultiplexing port number.
+ * @return NABTO_DEVICE_EC_OK on success
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_stream_listener_new(NabtoDevice* device, uint32_t port);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* listener, uint32_t port);
 
+/**
+ * Initialize a listener for new streams with ephemeral port number.
+ *
+ * @param device    device
+ * @param listener  Listener to initialize for streaming
+ * @param port      Where to put the chosen port number
+ * @return NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_stream_init_listener_ephemeral(NabtoDevice* device, NabtoDeviceListener* listener, uint32_t* port);
 
 /**
  * Start listening for new streams. The stream resource must be kept
@@ -385,7 +392,6 @@ nabto_device_stream_listener_new(NabtoDevice* device, uint32_t port);
  *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
-// TODO take future as in arg
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceStream** stream);
 
@@ -422,8 +428,6 @@ nabto_device_stream_accept(NabtoDeviceStream* stream, NabtoDeviceFuture* future)
 /**
  * Get the id for the underlying connection
  */
-// TODO use an error code?, for when the connection is closed and the
-// stream does not have a connection
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
 nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
 
@@ -554,13 +558,14 @@ typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
  */
 typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, void* userData);
 
+// TODO verify error codes
 /**
- * Create listener for a new COAP resource. Once a COAP resource is
+ * Initialize listener for a new COAP resource. Once a COAP resource is
  * added, incoming requests will resolve futures retrieved through
- * nabto_device_listener_new_coap_request. The returned listener must
- * be freed by the user.
+ * nabto_device_listener_new_coap_request.
  *
  * @param device     The device
+ * @param listener   The listener to initialize as COAP.
  * @param method     The CoAP method for which to handle requests
  * @param pathSegments
  *
@@ -569,11 +574,10 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * notation for rest resources "/heatpump/state" becomes the array
  * {"heatpump", "state", NULL }
  *
- * @param listener where you can listen for COAP requests.
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
-nabto_device_coap_listener_new(NabtoDevice* device, NabtoDeviceCoapMethod method, const char** pathSegments, NabtoDeviceListener** listener);
+nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* listener, NabtoDeviceCoapMethod method, const char** pathSegments);
 
 /**
  * Listen for a new coap request on the given listener.
@@ -637,6 +641,7 @@ nabto_device_coap_response_set_code(NabtoDeviceCoapRequest* request, uint16_t co
  * @param dataSize  The length of the payload in bytes
  *
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_set_payload(NabtoDeviceCoapRequest* request, const void* data, size_t dataSize);
@@ -660,6 +665,7 @@ nabto_device_coap_response_set_content_format(NabtoDeviceCoapRequest* request, u
  * @param response  The response to be sent
  *
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_ABORTED if underlying connection was closed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_ready(NabtoDeviceCoapRequest* request);
@@ -697,7 +703,6 @@ nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** pa
  * @return Reference to the connection on success
  *         0 on error
  */
-// TODO use an error code instead of overloading with 0?
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
 nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request);
 
@@ -732,6 +737,18 @@ nabto_device_enable_mdns(NabtoDevice* device);
 /****************
  * Listener API *
  ****************/
+
+/**
+ * Create a new listener. After creation, a listener should be
+ * initialized for a purpose (e.g. as a stream listener through
+ * nabto_device_stream_init_listener()). Once initialized, a listener
+ * can only be used for the purpose for which it was initialized.
+ *
+ * @param device The device
+ * @return The created listener, NULL on allocation errors.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
+nabto_device_listener_new(NabtoDevice* device);
 
 /**
  * Free a listener, effectivly cancelling active listening on a
@@ -937,9 +954,8 @@ typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
  * @return NABTO_DEVICE_EC_OK on success
  */
 
-// TODO set_log_callback
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data);
+nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data);
 
 /**
  * Set log level of device
@@ -950,9 +966,8 @@ nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, vo
  * @return NABTO_DEVICE_EC_OK on success
  *         NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid level string
  */
-// TODO rename to set_log_level
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_log_set_level(NabtoDevice* device, const char* level);
+nabto_device_set_log_level(NabtoDevice* device, const char* level);
 
 /**
  * Set log callback to write logging directly to std out
@@ -960,9 +975,8 @@ nabto_device_log_set_level(NabtoDevice* device, const char* level);
  * @param device  The device instance to set log callback
  * @return NABTO_DEVICE_EC_OK on success
  */
-// TODO rename to set_std...
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_log_set_std_out_callback(NabtoDevice* device);
+nabto_device_set_log_std_out_callback(NabtoDevice* device);
 
 /********
  * Util *

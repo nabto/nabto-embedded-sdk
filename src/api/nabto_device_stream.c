@@ -20,29 +20,29 @@ struct nabto_device_stream_listener_context {
  * Streaming Api
  *******************************************/
 
-NabtoDeviceListener* NABTO_DEVICE_API nabto_device_stream_listener_new(NabtoDevice* device, uint32_t type)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* deviceListener, uint32_t type)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_stream_listener_context* listenerContext = calloc(1, sizeof(struct nabto_device_stream_listener_context));
     if (listenerContext == NULL) {
-        return NULL;
+        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nabto_device_listener* listener = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
-    if (listener == NULL) {
+    np_error_code ec  = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
+    if (ec) {
         free(listenerContext);
-        return NULL;
+        return nabto_device_error_core_to_api(ec);
     }
     listenerContext->device = dev;
     listenerContext->listener = listener;
-    np_error_code ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, type, &nabto_device_stream_core_callback, listenerContext);
+    ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, type, &nabto_device_stream_core_callback, listenerContext);
     if (ec) {
         free(listenerContext);
-        nabto_device_listener_free((NabtoDeviceListener*)listener);
-        return NULL;
+        return nabto_device_error_core_to_api(ec);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return (NabtoDeviceListener*)listener;
+    return NABTO_DEVICE_EC_OK;
 }
 
 void NABTO_DEVICE_API nabto_device_listener_new_stream(NabtoDeviceListener* deviceListener, NabtoDeviceFuture* future, NabtoDeviceStream** stream)
@@ -127,16 +127,13 @@ void NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream, Nabt
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }
 
-
-
-
 NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream)
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+
     NabtoDeviceConnectionRef ref;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-
-    ref = nc_device_get_connection_ref_from_stream(&str->dev->core, &str->stream->stream);
+    ref = str->stream->connectionRef;
 
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
     return ref;

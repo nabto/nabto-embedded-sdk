@@ -18,17 +18,16 @@ typedef int NabtoDeviceEvent;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
 
+// todo verify error codes
 /**
  * Create a listener for device events.
  *
- * @param device Device
-
- * @return New listener on which nabto_device_listener_device_event
- *         can be called to listen for device events. NULL on errors.
- *         The returned listener must be freed by user.
+ * @param device   Device
+ * @param listener The listener to initialize for device events
+ * @return NABTO_DEVICE_EC_OK on success
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_device_events_listener_new(NabtoDevice* device);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_device_events_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
 
 /**
  * Start listening for next device event.

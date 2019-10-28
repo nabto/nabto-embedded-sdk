@@ -125,9 +125,9 @@ void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, voi
 
 void HeatPump::listenForConnectionEvents()
 {
-    connectionEventListener_ = nabto_device_connection_events_listener_new(device_);
-    if (connectionEventListener_ == NULL) {
-        std::cerr << "Failed to listen to connection events" << std::endl;
+    NabtoDeviceError ec = nabto_device_connection_events_init_listener(device_, connectionEventListener_);
+    if (ec) {
+        std::cerr << "Failed to init connection events listener" << std::endl;
         return;
     }
     startWaitEvent();
@@ -161,9 +161,9 @@ void HeatPump::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* u
 
 void HeatPump::listenForDeviceEvents()
 {
-    deviceEventListener_ = nabto_device_device_events_listener_new(device_);
-    if (deviceEventListener_ == NULL) {
-        std::cerr << "Failed to listen to device events" << std::endl;
+    NabtoDeviceError ec = nabto_device_device_events_init_listener(device_, deviceEventListener_);
+    if (ec) {
+        std::cerr << "Failed to initialize device events listener" << std::endl;
         return;
     }
     startWaitDevEvent();

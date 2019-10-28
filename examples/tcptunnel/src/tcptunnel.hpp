@@ -15,6 +15,9 @@ class TcpTunnel {
     TcpTunnel(NabtoDevice* device, json config, const std::string& configFile)
         : device_(device), config_(config), configFile_(configFile)
     {
+        connectionEventListener_ = nabto_device_listener_new(device);
+        deviceEventListener_ = nabto_device_listener_new(device);
+
         iamChangedFuture_ = nabto_device_future_new(device);
         connectionEventFuture_ = nabto_device_future_new(device);
         deviceEventFuture_ = nabto_device_future_new(device);

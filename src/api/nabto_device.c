@@ -475,25 +475,26 @@ void nabto_device_connection_events_core_cb(uint64_t connectionRef, enum nc_conn
     }
 }
 
-NabtoDeviceListener* NABTO_DEVICE_API nabto_device_connection_events_listener_new(NabtoDevice* device)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceListener* deviceListener)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)calloc(1, sizeof(struct nabto_device_listen_connection_context));
     if (ctx == NULL) {
-        return NULL;
+        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nabto_device_listener* listener = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS, &nabto_device_connection_events_listener_cb, ctx);
-    if (listener == NULL) {
+    np_error_code ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS, &nabto_device_connection_events_listener_cb, ctx);
+    if (ec) {
         free(ctx);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return NULL;
+        return nabto_device_error_core_to_api(ec);
     }
     ctx->dev = dev;
     ctx->listener = listener;
     nc_device_add_connection_events_listener(&dev->core, &ctx->coreListener, &nabto_device_connection_events_core_cb, ctx);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return (NabtoDeviceListener*)listener;
+    return NABTO_DEVICE_EC_OK;
 }
 
 void NABTO_DEVICE_API nabto_device_listener_connection_event(NabtoDeviceListener* deviceListener, NabtoDeviceFuture* future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event)
@@ -591,25 +592,26 @@ void nabto_device_events_core_cb(enum nc_device_event event, void* userData)
     }
 }
 
-NabtoDeviceListener* NABTO_DEVICE_API nabto_device_device_events_listener_new(NabtoDevice* device)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_device_events_init_listener(NabtoDevice* device, NabtoDeviceListener* deviceListener)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_listen_device_context* ctx = (struct nabto_device_listen_device_context*)calloc(1, sizeof(struct nabto_device_listen_device_context));
     if (ctx == NULL) {
-        return NULL;
+        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nabto_device_listener* listener = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, &nabto_device_events_listener_cb, ctx);
-    if (listener == NULL) {
+    np_error_code ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, &nabto_device_events_listener_cb, ctx);
+    if (ec) {
         free(ctx);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return NULL;
+        return nabto_device_error_core_to_api(ec);
     }
     ctx->dev = dev;
     ctx->listener = listener;
     nc_device_add_device_events_listener(&dev->core, &ctx->coreListener, &nabto_device_events_core_cb, ctx);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return (NabtoDeviceListener*)listener;
+    return NABTO_DEVICE_EC_OK;
 }
 
 void NABTO_DEVICE_API nabto_device_listener_device_event(NabtoDeviceListener* deviceListener, NabtoDeviceFuture* future, NabtoDeviceEvent* event)
@@ -669,13 +671,13 @@ void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture*
 }
 
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data)
 {
     nm_api_logging_set_callback(cb, data);
     return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_level(NabtoDevice* device, const char* level)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_level(NabtoDevice* device, const char* level)
 {
     uint32_t l = 0;
     if (strcmp(level, "error") == 0) {
@@ -693,7 +695,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_level(NabtoDevice* device
     return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_log_set_std_out_callback(NabtoDevice* device)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_std_out_callback(NabtoDevice* device)
 {
     nm_api_logging_set_callback(&nm_api_logging_std_out_callback, NULL);
     return NABTO_DEVICE_EC_OK;

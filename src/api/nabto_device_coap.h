@@ -20,6 +20,7 @@ struct nabto_device_coap_resource {
 struct nabto_device_coap_request {
     struct nabto_coap_server_request* req;
     struct nabto_device_context* dev;
+    uint64_t connectionRef;
 };
 
 nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method);

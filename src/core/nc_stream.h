@@ -27,6 +27,7 @@ struct nc_stream_context {
     struct nc_stream_manager_context* streamManager;
     struct np_event ev;
     bool active;
+    uint64_t connectionRef;
 
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
@@ -57,7 +58,7 @@ struct nc_stream_context {
 
 
 
-void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager);
+void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager, uint64_t connectionRef);
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 

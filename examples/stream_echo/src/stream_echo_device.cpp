@@ -196,11 +196,11 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
         std::cerr << "Failed to enable mdns" << std::endl;
     }
 
-    ec = nabto_device_log_set_level(device, logLevel.c_str());
+    ec = nabto_device_set_log_level(device, logLevel.c_str());
     if (ec) {
         std::cerr << "Failed to set loglevel" << std::endl;
     }
-    ec = nabto_device_log_set_std_out_callback(device);
+    ec = nabto_device_set_log_std_out_callback(device);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }
@@ -227,9 +227,14 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
-    listener = nabto_device_stream_listener_new(device, 42);
+    listener = nabto_device_listener_new(device);
     if (listener == NULL) {
         std::cerr << "could not listen for streams" << std::endl;
+        return;
+    }
+    ec = nabto_device_stream_init_listener(device, listener, 42);
+    if (ec) {
+        std::cerr << "could not init listener for streams" << std::endl;
         return;
     }
     listenerFuture = nabto_device_future_new(device);

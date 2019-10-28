@@ -62,7 +62,7 @@ uint32_t nc_stream_get_stamp(void* userData)
     return ctx->pl->ts.now_ms();
 }
 
-void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager)
+void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager, uint64_t connectionRef)
 {
     nc_stream_module.get_stamp = &nc_stream_get_stamp;
     nc_stream_module.log = &nc_stream_log;
@@ -79,6 +79,7 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->pl = pl;
     ctx->currentExpiry = nabto_stream_stamp_infinite();
     ctx->isSending = false;
+    ctx->connectionRef = connectionRef;
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
     nabto_stream_set_application_event_callback(&ctx->stream, &nc_stream_application_event_callback, ctx);

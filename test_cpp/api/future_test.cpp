@@ -27,6 +27,9 @@ BOOST_AUTO_TEST_CASE(resolve_a_future)
     BOOST_TEST(nabto_device_future_ready((NabtoDeviceFuture*)fut) == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED);
     nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OK);
     BOOST_TEST(nabto_device_future_ready((NabtoDeviceFuture*)fut) == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free((NabtoDeviceFuture*)fut);
+    nabto_device_threads_free_mutex(dev->eventMutex);
+    free(dev);
 }
 
 BOOST_AUTO_TEST_CASE(resolve_a_future_with_cb)
@@ -42,6 +45,9 @@ BOOST_AUTO_TEST_CASE(resolve_a_future_with_cb)
     nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(called);
+    nabto_device_future_free((NabtoDeviceFuture*)fut);
+    nabto_device_threads_free_mutex(dev->eventMutex);
+    free(dev);
 }
 
 BOOST_AUTO_TEST_CASE(set_cb_after_resolved)
@@ -58,6 +64,9 @@ BOOST_AUTO_TEST_CASE(set_cb_after_resolved)
     BOOST_TEST(!called);
     nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(called);
+    nabto_device_future_free((NabtoDeviceFuture*)fut);
+    nabto_device_threads_free_mutex(dev->eventMutex);
+    free(dev);
 }
 
 BOOST_AUTO_TEST_CASE(resolve_multiple_callbacks)
@@ -82,6 +91,10 @@ BOOST_AUTO_TEST_CASE(resolve_multiple_callbacks)
     nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(called2);
     BOOST_TEST(called1);
+    nabto_device_future_free((NabtoDeviceFuture*)fut1);
+    nabto_device_future_free((NabtoDeviceFuture*)fut2);
+    nabto_device_threads_free_mutex(dev->eventMutex);
+    free(dev);
 }
 
 BOOST_AUTO_TEST_CASE(future_queue_empty_after_resolving)
@@ -108,6 +121,10 @@ BOOST_AUTO_TEST_CASE(future_queue_empty_after_resolving)
     BOOST_TEST(called1);
     BOOST_TEST((dev->queueHead == NULL));
     nabto_api_future_queue_execute_all(dev);
+    nabto_device_future_free((NabtoDeviceFuture*)fut1);
+    nabto_device_future_free((NabtoDeviceFuture*)fut2);
+    nabto_device_threads_free_mutex(dev->eventMutex);
+    free(dev);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

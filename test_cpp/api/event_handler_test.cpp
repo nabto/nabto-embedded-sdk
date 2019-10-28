@@ -61,9 +61,12 @@ BOOST_AUTO_TEST_CASE(event_test)
     nabto::test::eventState event = nabto::test::UNHANDLED;
     np_error_code listener = NABTO_EC_OK;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)dev);
-    struct nabto_device_listener* handler = nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    struct nabto_device_listener* handler = (struct nabto_device_listener*)nabto_device_listener_new((NabtoDevice*)dev);
     BOOST_TEST(handler);
-    np_error_code ec = nabto_device_listener_add_event(handler, &event);
+    np_error_code ec = nabto_device_listener_init(dev, handler, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    BOOST_TEST(ec == NABTO_EC_OK);
+
+    ec = nabto_device_listener_add_event(handler, &event);
     BOOST_TEST(ec == NABTO_EC_OK);
 
     ec = nabto_device_listener_init_future(handler, (struct nabto_device_future*)fut);
@@ -91,10 +94,11 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
     nabto::test::eventState event2 = nabto::test::UNHANDLED;
     np_error_code listener = NABTO_EC_OK;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)dev);
-    struct nabto_device_listener* handler =
-        nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    struct nabto_device_listener* handler = (struct nabto_device_listener*)nabto_device_listener_new((NabtoDevice*)dev);
     BOOST_TEST(handler);
-    np_error_code ec = nabto_device_listener_add_event(handler, &event1);
+
+    np_error_code ec = nabto_device_listener_init(dev, handler, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    ec = nabto_device_listener_add_event(handler, &event1);
     BOOST_TEST(ec == NABTO_EC_OK);
     ec = nabto_device_listener_add_event(handler, &event2);
     BOOST_TEST(ec == NABTO_EC_OK);
@@ -134,10 +138,11 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_events)
     dev->eventMutex = nabto_device_threads_create_mutex();
     nabto::test::eventState event = nabto::test::UNHANDLED;
     np_error_code listener = NABTO_EC_OK;
-    struct nabto_device_listener* handler =
-        nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    struct nabto_device_listener* handler = (struct nabto_device_listener*)nabto_device_listener_new((NabtoDevice*)dev);
     BOOST_TEST(handler);
-    np_error_code ec = nabto_device_listener_add_event(handler, &event);
+    np_error_code ec = nabto_device_listener_init(dev, handler, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    BOOST_TEST(ec == NABTO_EC_OK);
+    ec = nabto_device_listener_add_event(handler, &event);
     BOOST_TEST(ec == NABTO_EC_OK);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     BOOST_TEST(event == nabto::test::ABORTED);
@@ -152,9 +157,10 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
     dev->eventMutex = nabto_device_threads_create_mutex();
     np_error_code listener = NABTO_EC_OK;
     NabtoDeviceFuture* fut = nabto_device_future_new((NabtoDevice*)dev);
-    struct nabto_device_listener* handler =
-        nabto_device_listener_new(dev, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    struct nabto_device_listener* handler = (struct nabto_device_listener*)nabto_device_listener_new((NabtoDevice*)dev);
     BOOST_TEST(handler);
+    np_error_code ec = nabto_device_listener_init(dev, handler, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+    BOOST_TEST(ec == NABTO_EC_OK);
     NabtoDeviceError ec2 = nabto_device_listener_init_future(handler, (struct nabto_device_future*)fut);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_device_listener_free((NabtoDeviceListener*)handler);

@@ -232,11 +232,11 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     if (ec) {
         std::cerr << "Failed to enable tcp tunnelling" << std::endl;
     }
-    ec = nabto_device_log_set_level(device, logLevel.c_str());
+    ec = nabto_device_set_log_level(device, logLevel.c_str());
     if (ec) {
         std::cerr << "Failed to set loglevel" << std::endl;
     }
-    ec = nabto_device_log_set_std_out_callback(device);
+    ec = nabto_device_set_log_std_out_callback(device);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }

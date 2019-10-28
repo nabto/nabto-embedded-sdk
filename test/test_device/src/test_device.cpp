@@ -413,7 +413,8 @@ class EchoListener {
     EchoListener(NabtoDevice* device)
         : device_(device)
     {
-        listener_ = nabto_device_stream_listener_new(device_, 42);
+        listener_ = nabto_device_listener_new(device_);
+        nabto_device_stream_init_listener(device_, listener_, 42);
         listenFuture_ = nabto_device_future_new(device_);
     }
     ~EchoListener() {
@@ -450,7 +451,8 @@ class RecvListener {
     RecvListener(NabtoDevice* device)
         : device_(device)
     {
-        listener_ = nabto_device_stream_listener_new(device_, 43);
+        listener_ = nabto_device_listener_new(device_);
+        nabto_device_stream_init_listener(device_, listener_, 43);
         listenFuture_ = nabto_device_future_new(device_);
     }
     ~RecvListener() {
@@ -488,10 +490,10 @@ void run_device()
     NabtoDevice* dev;
     NabtoDeviceError ec;
     dev = nabto_device_new();
-    nabto_device_log_set_std_out_callback(dev);
+    nabto_device_set_log_std_out_callback(dev);
     char* logLevel = getenv("NABTO_LOG_LEVEL");
     if (logLevel != NULL) {
-        ec = nabto_device_log_set_level(dev, logLevel);
+        ec = nabto_device_set_log_level(dev, logLevel);
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Could not set log level: %s , %s" NEWLINE, logLevel, nabto_device_error_get_message(ec));
         } else {
@@ -532,13 +534,13 @@ void run_device()
         return;
     }
 
-    NabtoDeviceListener* getListener;
-    NabtoDeviceListener* postListener;
+    NabtoDeviceListener* getListener = nabto_device_listener_new(dev);
+    NabtoDeviceListener* postListener = nabto_device_listener_new(dev);
 
     const char* coapTestGet[]  = {"test", "get", NULL};
     const char* coapTestPost[] = {"test", "post", NULL};
-    nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_GET, coapTestGet, &getListener);
-    nabto_device_coap_listener_new(dev, NABTO_DEVICE_COAP_POST, coapTestPost, &postListener);
+    nabto_device_coap_init_listener(dev, getListener, NABTO_DEVICE_COAP_GET, coapTestGet);
+    nabto_device_coap_init_listener(dev, postListener, NABTO_DEVICE_COAP_POST, coapTestPost);
 
     auto getHandler = std::make_unique<GetHandler>(dev, getListener);
     auto postHandler = std::make_unique<PostHandler>(dev, postListener);
