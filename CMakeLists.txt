@@ -11,6 +11,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_STANDARD 14)
 
+option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
+option(DEVICE_BUILD_TESTS "build device tests" ON)
+
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
@@ -28,6 +31,7 @@ endif()
 
 include_directories(src)
 include_directories(include)
+
 include_directories(nabto-common-cpp/src)
 
 add_subdirectory(src/platform)
@@ -83,23 +87,27 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_subdirectory(src/modules/unix)
 endif()
 
-add_subdirectory(test)
+if (DEVICE_BUILD_TESTS)
+  add_subdirectory(test)
 
-add_subdirectory(examples/common)
-add_subdirectory(examples/heat_pump)
-add_subdirectory(examples/tcptunnel)
-add_subdirectory(examples/stream_echo)
+  if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
+    add_executable(unit_test "${test_runner_src}")
 
-if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
-  add_executable(unit_test "${test_runner_src}")
+    target_link_libraries(unit_test
+      np_platform_test
+      nc_core_test
+      np_platform
+      nc_core
+      nm_logging)
+  endif()
 
-  target_link_libraries(unit_test
-    np_platform_test
-    nc_core_test
-    np_platform
-    nc_core
-    nm_logging)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
+  add_subdirectory(test_cpp)
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
-add_subdirectory(test_cpp)
+if (DEVICE_BUILD_EXAMPLES)
+  add_subdirectory(examples/common)
+  add_subdirectory(examples/heat_pump)
+  add_subdirectory(examples/tcptunnel)
+  add_subdirectory(examples/stream_echo)
+endif()
