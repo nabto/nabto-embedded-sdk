@@ -289,6 +289,9 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
         nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
         tcpTunnel.deinit();
+
+        nabto_device_stop(device);
     }
+
     nabto_device_free(device);
 }

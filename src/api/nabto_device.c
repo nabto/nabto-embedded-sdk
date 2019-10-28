@@ -136,8 +136,10 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 /**
  * block until no further work is done.
  */
-void nabto_device_stop(struct nabto_device_context* dev)
+void nabto_device_stop(NabtoDevice* device)
 {
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     nc_device_deinit(&dev->core);
@@ -157,6 +159,8 @@ void nabto_device_stop(struct nabto_device_context* dev)
         nabto_device_threads_join(dev->coreThread);
     }
 
+    nabto_device_platform_close(&dev->pl);
+
 }
 
 /**
@@ -166,10 +170,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
-    nabto_device_stop(dev);
-
     nabto_device_free_threads(dev);
-    nabto_device_platform_close(&dev->pl);
 
     free(dev->productId);
     free(dev->deviceId);

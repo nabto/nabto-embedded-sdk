@@ -21,10 +21,13 @@ class TcpTunnel {
     }
 
     ~TcpTunnel() {
+
         nabto_device_listener_free(connectionEventListener_);
         nabto_device_listener_free(deviceEventListener_);
+
         nabto_device_future_free(connectionEventFuture_);
         nabto_device_future_free(deviceEventFuture_);
+        nabto_device_future_free(iamChangedFuture_);
     }
     void init() {
         tcptunnel_coap_init(device_, this);

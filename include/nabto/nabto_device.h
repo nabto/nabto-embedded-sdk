@@ -132,6 +132,16 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_free(NabtoDevice* device);
 
 /**
+ * Stop a device
+ *
+ * This function blocks until all futures, events and timed events has
+ * been handled.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_stop(NabtoDevice* device);
+
+
+/**
  * Set the product id
  *
  * @param device    The device instance to perform action on
