@@ -320,13 +320,13 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CO
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
 
-// TODO verify error codes
 /**
  * Initialize a listener for connection events.
  *
  * @param device   Device
  * @param listener Listener to initialize for connection events
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
@@ -353,7 +353,6 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDevic
  * Streaming *
  *************/
 
-// TODO verify error codes
 /**
  * Initialize a listener for new streams.
  *
@@ -362,6 +361,8 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDevic
  * @param port      A number describing the id/port of the stream to listen for.
  *                  Think of it as a demultiplexing port number.
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the port number has an active listener
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* listener, uint32_t port);
@@ -374,6 +375,7 @@ nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* list
  * @param port      Where to put the chosen port number
  * @return NABTO_DEVICE_EC_OK on success
  */
+// TODO
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_stream_init_listener_ephemeral(NabtoDevice* device, NabtoDeviceListener* listener, uint32_t* port);
 
@@ -558,7 +560,7 @@ typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
  */
 typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, void* userData);
 
-// TODO verify error codes
+
 /**
  * Initialize listener for a new COAP resource. Once a COAP resource is
  * added, incoming requests will resolve futures retrieved through
@@ -575,6 +577,8 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * {"heatpump", "state", NULL }
  *
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ *         NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid pathSegment parameter
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
 nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* listener, NabtoDeviceCoapMethod method, const char** pathSegments);

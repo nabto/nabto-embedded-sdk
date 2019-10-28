@@ -40,6 +40,18 @@ void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
     }
 }
 
+bool nc_stream_manager_port_in_use(struct nc_stream_manager_context* ctx, uint32_t type)
+{
+    struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
+    while (iterator != &ctx->listenerSentinel) {
+        if (iterator->type == type) {
+            return true;
+        }
+        iterator = iterator->next;
+    }
+    return false;
+}
+
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data)
 {
     np_error_code ec;
@@ -49,6 +61,10 @@ np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* c
         if (ec) {
             return ec;
         }
+    }
+
+    if (nc_stream_manager_port_in_use(ctx, type)) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
     }
 
     listener->cb = cb;
@@ -299,15 +315,7 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
         *port = base + r;
 
         // check that the port is not in use.
-        bool found = false;
-        struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
-        while (iterator != &ctx->listenerSentinel) {
-            if (iterator->type == *port) {
-                found = true;
-            }
-            iterator = iterator->next;
-        }
-        if (!found) {
+        if (!nc_stream_manager_port_in_use(ctx, *port)) {
             return NABTO_EC_OK;
         }
     }
