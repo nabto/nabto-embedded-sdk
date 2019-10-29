@@ -63,8 +63,8 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 void nc_device_deinit(struct nc_device_context* device) {
     struct np_platform* pl = device->pl;
 
-    np_event_queue_cancel_event(dev->pl, &dev->closeEvent);
-    np_event_queue_cancel_event(dev->pl, &dev->tEv);
+    np_event_queue_cancel_event(device->pl, &device->closeEvent);
+    np_event_queue_cancel_timed_event(device->pl, &device->tEv);
     if (device->mdns) {
         pl->mdns.stop(device->mdns);
         device->mdns = NULL;
@@ -99,7 +99,7 @@ void nc_device_try_resolve_close(struct nc_device_context* dev)
 {
     if (dev->clientConnsClosed && dev->isDetached) {
         np_event_queue_cancel_event(dev->pl, &dev->closeEvent);
-        np_event_queue_cancel_event(dev->pl, &dev->tEv);
+        np_event_queue_cancel_timed_event(dev->pl, &dev->tEv);
         nc_udp_dispatch_abort(&dev->udp);
         nc_udp_dispatch_abort(&dev->secondaryUdp);
         if (dev->closeCb) {
