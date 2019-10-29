@@ -14,6 +14,11 @@
 
 #include <platform/np_error_code.h>
 
+enum nc_device_state {
+    NC_DEVICE_STATE_SETUP,
+    NC_DEVICE_STATE_RUNNING,
+    NC_DEVICE_STATE_STOPPED
+};
 
 enum nc_device_event {
     NC_DEVICE_EVENT_ATTACHED,
@@ -36,7 +41,7 @@ typedef void (*nc_device_close_callback)(const np_error_code ec, void* data);
 
 struct nc_device_context {
     struct np_platform* pl;
-    bool stopping;
+    enum nc_device_state state;
     bool clientConnsClosed;
     bool isDetached;
 

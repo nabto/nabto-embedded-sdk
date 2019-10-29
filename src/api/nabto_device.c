@@ -665,7 +665,10 @@ void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture*
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
     dev->closeFut = fut;
-    nc_device_close(&dev->core, &nabto_device_close_cb, dev);
+    np_error_code ec = nc_device_close(&dev->core, &nabto_device_close_cb, dev);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_future_resolve(fut, ec);
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 

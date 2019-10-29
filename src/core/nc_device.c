@@ -12,6 +12,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 {
     memset(device, 0, sizeof(struct nc_device_context));
     device->pl = pl;
+    device->state = NC_DEVICE_STATE_SETUP;
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
     if (ec != NABTO_EC_OK) {
@@ -128,7 +129,7 @@ void nc_device_detached_cb(const np_error_code ec, void* data)
     NABTO_LOG_INFO(LOG, "Device detached callback");
     nc_device_events_listener_notify(dev, NC_DEVICE_EVENT_DETACHED);
     dev->isDetached = true;
-    if (!dev->stopping) {
+    if (dev->state == NC_DEVICE_STATE_RUNNING) {
         np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
     } else {
         nc_device_try_resolve_close(dev);
@@ -152,7 +153,7 @@ void nc_device_attached_cb(const np_error_code ec, void* data)
     } else {
         NABTO_LOG_INFO(LOG, "Device failed to attached");
         dev->isDetached = true;
-        if (!dev->stopping) {
+        if (dev->state == NC_DEVICE_STATE_RUNNING) {
             NABTO_LOG_TRACE(LOG, "Not stopping, trying to reattach");
             np_event_queue_post_timed_event(dev->pl, &dev->tEv, nc_device_get_reattach_time(dev), &nc_device_reattach, data);
         } else {
@@ -170,7 +171,7 @@ void nc_device_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_
 
 void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
     struct nc_device_context* dev = (struct nc_device_context*)data;
-    if (dev->stopping) {
+    if (dev->state == NC_DEVICE_STATE_STOPPED) {
         dev->clientConnsClosed = true; // client conns cannot have started
         nc_device_try_resolve_close(dev);
     }
@@ -190,7 +191,7 @@ void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
 void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
-    if (dev->stopping) {
+    if (dev->state == NC_DEVICE_STATE_STOPPED) {
         dev->clientConnsClosed = true; // client conns cannot have started
         nc_device_try_resolve_close(dev);
     }
@@ -221,7 +222,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
 {
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
-    dev->stopping = false;
+    dev->state = NC_DEVICE_STATE_RUNNING;
     dev->isDetached = true;
     dev->clientConnsClosed = false;
     dev->enableMdns = enableMdns;
@@ -262,9 +263,12 @@ void nc_device_event_close(void* data) {
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)
 {
+    if (dev->state != NC_DEVICE_STATE_RUNNING) {
+        return NABTO_EC_INVALID_STATE;
+    }
     dev->closeCb = cb;
     dev->closeCbData = data;
-    dev->stopping = true;
+    dev->state = NC_DEVICE_STATE_STOPPED;
     dev->clientConnsClosed = false;
     np_error_code ec = nc_client_connection_dispatch_async_close(&dev->clientConnect, &nc_device_client_connections_closed_cb, dev);
     if (ec == NABTO_EC_STOPPED) {
