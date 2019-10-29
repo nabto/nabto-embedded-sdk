@@ -97,6 +97,7 @@ void nc_device_try_resolve_close(struct nc_device_context* dev)
 {
     if (dev->clientConnsClosed && dev->isDetached) {
         np_event_queue_cancel_event(dev->pl, &dev->closeEvent);
+        np_event_queue_cancel_event(dev->pl, &dev->tEv);
         nc_udp_dispatch_abort(&dev->udp);
         nc_udp_dispatch_abort(&dev->secondaryUdp);
         if (dev->closeCb) {
