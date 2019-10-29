@@ -63,6 +63,8 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 void nc_device_deinit(struct nc_device_context* device) {
     struct np_platform* pl = device->pl;
 
+    np_event_queue_cancel_event(dev->pl, &dev->closeEvent);
+    np_event_queue_cancel_event(dev->pl, &dev->tEv);
     if (device->mdns) {
         pl->mdns.stop(device->mdns);
         device->mdns = NULL;
