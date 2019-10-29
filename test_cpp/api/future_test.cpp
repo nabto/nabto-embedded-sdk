@@ -6,8 +6,6 @@
 #include <platform/np_platform.h>
 #include <test_platform.hpp>
 
-#include <test_platform_epoll.hpp>
-
 #include <platform/np_platform.h>
 #include <api/nabto_device_defines.h>
 
