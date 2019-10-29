@@ -375,7 +375,6 @@ nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* list
  * @param port      Where to put the chosen port number
  * @return NABTO_DEVICE_EC_OK on success
  */
-// TODO
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_stream_init_listener_ephemeral(NabtoDevice* device, NabtoDeviceListener* listener, uint32_t* port);
 

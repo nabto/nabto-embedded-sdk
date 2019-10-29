@@ -243,9 +243,7 @@ void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
                 nc_keep_alive_wait(&ctx->keepAlive, &nc_client_connection_keep_alive_event, ctx);
                 break;
             case KA_TIMEOUT:
-                // TODO close connection
                 NABTO_LOG_INFO(LOG, "Closed connection because of keep alive timeout.");
-
                 nc_client_connection_close_connection(ctx);
                 break;
             case DTLS_ERROR:
