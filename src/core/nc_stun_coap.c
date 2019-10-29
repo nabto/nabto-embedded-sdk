@@ -75,21 +75,24 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
             cbor_encode_text_stringz(&map, "Port");
             cbor_encode_uint(&map, ep.port);
         }
+        cbor_encoder_close_container(&array, &map);
     }
 
-    if (cbor_encoder_get_extra_bytes_needed(&encoder) != 0) {
-        // TODO impossible error
-    }
-
-    size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
+    cbor_encoder_close_container(&encoder, &array);
 
     struct nabto_coap_server_request* request = ctx->stunRequest;
-    nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
-    nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    // TODO: handle OOM
-    nabto_coap_server_response_set_payload(request, buffer, used);
-    // On errors we should still cleanup the request
-    nabto_coap_server_response_ready(request);
+    if (cbor_encoder_get_extra_bytes_needed(&encoder) != 0) {
+        // buffer was too small, this should not happen.
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
+    } else {
+        size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
+        nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
+        nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+        // TODO: handle OOM
+        nabto_coap_server_response_set_payload(request, buffer, used);
+        // On errors we should still cleanup the request
+        nabto_coap_server_response_ready(request);
+    }
     nabto_coap_server_request_free(request);
     ctx->stunRequest = NULL;
 }
