@@ -125,6 +125,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     if (!parse_host_and_port(request, tunnels, &address, &port)) {
         // todo: handle oom
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), NULL);
+        nabto_coap_server_request_free(request);
         return;
     }
 
@@ -150,6 +151,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
         if (ec) {
             // todo: handle oom
             nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+            nabto_coap_server_request_free(request);
             return;
         }
     }
@@ -204,6 +206,7 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
     if (tunnel == NULL) {
         // todo: handle oom
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
+        nabto_coap_server_request_free(request);
         return;
     }
 
@@ -214,6 +217,7 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
     if (tunnel->connectionRef != connection->connectionRef) {
         // todo: handle oom
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_request_free(request);
         return;
     }
 
@@ -222,6 +226,7 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
     if (ec) {
         // todo: handle oom
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_request_free(request);
         return;
     }
 
@@ -240,6 +245,7 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     if (tunnel == NULL) {
         // todo: handle oom
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
+        nabto_coap_server_request_free(request);
         return;
     }
 
@@ -252,6 +258,7 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     if (tunnel->connectionRef != connection->connectionRef) {
         // todo: handle oom
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_request_free(request);
         return;
     }
 
@@ -260,6 +267,7 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     if (ec) {
         // todo: handle oom
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_request_free(request);
         return;
     }
 
