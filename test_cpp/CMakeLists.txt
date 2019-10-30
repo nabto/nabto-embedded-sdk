@@ -4,6 +4,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/3rdparty/boost 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/3rdparty/fmtlib 3rdparty_fmtlib)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/util common_util)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/dtls common_dtls)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/coap_cpp common_coap_cpp)
 
 INCLUDE(CheckIncludeFiles)
 CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
@@ -19,6 +21,7 @@ set(test_src
   platform/hex_test.cpp
   api/event_handler_test.cpp
   api/future_test.cpp
+  attach/attach_test.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")
@@ -29,6 +32,7 @@ target_link_libraries(embedded_unit_test
   3rdparty_boost_asio
   common_util
   nm_select_unix
+  dtls
 )
 
 if (HAVE_EPOLL_HEADERS)
