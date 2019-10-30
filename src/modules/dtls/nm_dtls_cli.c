@@ -156,6 +156,7 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
 {
     *client = NULL;
     np_dtls_cli_context* ctx = calloc(1, sizeof(struct np_dtls_cli_context));
+    // todo handle oom
     *client = ctx;
     ctx->pl = pl;
     mbedtls_ssl_init( &ctx->ctx.ssl );

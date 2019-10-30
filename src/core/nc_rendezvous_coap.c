@@ -39,32 +39,36 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
     CborValue ep;
     cbor_value_enter_container(&array, &ep);
 
-    while (cbor_value_is_map(&ep)) {
+    while (!cbor_value_at_end(&ep)) {
 
-        CborValue ip;
-        CborValue port;
-        cbor_value_map_find_value(&ep, "Ip", &ip);
-        cbor_value_map_find_value(&ep, "Port", &port);
+        if (cbor_value_is_map(&ep)) {
+            CborValue ip;
+            CborValue port;
+            cbor_value_map_find_value(&ep, "Ip", &ip);
+            cbor_value_map_find_value(&ep, "Port", &port);
 
-        if (cbor_value_is_byte_string(&ip) &&
-            cbor_value_is_unsigned_integer(&port))
-        {
+            if (cbor_value_is_byte_string(&ip) &&
+                cbor_value_is_unsigned_integer(&port))
+            {
 
-            uint64_t p;
-            cbor_value_get_uint64(&port, &p);
-            packet.ep.port = p;
+                uint64_t p;
+                cbor_value_get_uint64(&port, &p);
+                packet.ep.port = p;
 
-            size_t ipLength;
-            cbor_value_get_string_length(&ip, &ipLength);
-            if (ipLength == 4) {
-                packet.ep.ip.type = NABTO_IPV4;
-                cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL);
-                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
-            } else if (ipLength == 16) {
-                packet.ep.ip.type = NABTO_IPV6;
-                cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v6, &ipLength, NULL);
-                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+                size_t ipLength;
+                cbor_value_get_string_length(&ip, &ipLength);
+                if (ipLength == 4) {
+                    packet.ep.ip.type = NABTO_IPV4;
+                    cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL);
+                    nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+                } else if (ipLength == 16) {
+                    packet.ep.ip.type = NABTO_IPV6;
+                    cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v6, &ipLength, NULL);
+                    nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+                }
             }
+        } else {
+            return false;
         }
         cbor_value_advance(&ep);
     }
