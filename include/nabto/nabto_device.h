@@ -1,7 +1,7 @@
 #ifndef _NABTO_DEVICE_H_
 #define _NABTO_DEVICE_H_
 
-/**
+/*
  * Nabto Device High Level C Api.
  *
  * Nabto provides a platform for connecting applications with
@@ -91,7 +91,7 @@ typedef int NabtoDeviceError;
  */
 typedef uint64_t NabtoDeviceConnectionRef;
 
-/**
+/*
  * The NabtoDeviceError represents error codes
  */
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
@@ -234,15 +234,14 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_local_port(NabtoDevice* device, uint16_t port);
 
 /**
- * Get the local port used by the device if empemeral port is used by
+ * Get the local port used by the device if ephemeral port is used by
  * the device. If set_local_port was used, the port set will be
  * returned.
  *
  * @param device    The device instance to perform action on
  * @param port      Reference port to set
- * @return
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
+ * @return  NABTO_DEVICE_EC_OK on success
+ *          NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
@@ -252,11 +251,10 @@ nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
  * client connections.
  *
  * @param device    The device instance to start
- * @return
- *  NABTO_DEVICE_EC_OK on success
- *  NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
- *               private key, server URL, device ID, or Product ID.
- *  NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
+ * @return  NABTO_DEVICE_EC_OK on success
+ *          NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
+ *             private key, server URL, device ID, or Product ID.
+ *          NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device);
@@ -282,10 +280,9 @@ nabto_device_create_private_key(NabtoDevice* device, char** key);
  * parameter. The fingerprint should be freed by calling
  * nabto_device_string_free() afterwards.
  *
- * @return
- *  NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
- *  NABTO_DEVICE_EC_INVALID_STATE if the device provided did not contain a valid private key.
- *  NABTO_DEVICE_EC_UNKNOWN on underlying DTLS module error
+ * @return NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
+ *         NABTO_DEVICE_EC_INVALID_STATE if the device provided did not contain a valid private key.
+ *         NABTO_DEVICE_EC_UNKNOWN on underlying DTLS module error
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint);
@@ -780,7 +777,7 @@ nabto_device_listener_stop(NabtoDeviceListener* listener);
  * Future API *
  **************/
 
-/**
+/*
  * We have made a future api such that it's easier to get all the
  * different async models from a simple standard api.
  *
