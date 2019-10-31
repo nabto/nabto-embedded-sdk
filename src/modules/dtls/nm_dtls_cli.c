@@ -61,8 +61,7 @@ static np_error_code nm_dtls_cli_set_keys(np_dtls_cli_context* ctx,
 np_error_code nm_dtls_async_send_data(struct np_platform* pl, np_dtls_cli_context* ctx,
                                       struct np_dtls_cli_send_context* sendCtx);
 
-np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                  np_dtls_close_callback cb, void* data);
+np_error_code nm_dtls_cli_close(struct np_platform* pl, np_dtls_cli_context* ctx);
 
 np_error_code nm_dtls_get_fingerprint(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp);
 
@@ -141,7 +140,7 @@ np_error_code nm_dtls_cli_init(struct np_platform* pl)
     pl->dtlsC.set_keys = &nm_dtls_cli_set_keys;
     pl->dtlsC.connect = &nm_dtls_connect;
     pl->dtlsC.async_send_data = &nm_dtls_async_send_data;
-    pl->dtlsC.async_close = &nm_dtls_async_close;
+    pl->dtlsC.close = &nm_dtls_cli_close;
     pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &nm_dtls_get_alpn_protocol;
     pl->dtlsC.get_packet_count = &nm_dtls_get_packet_count;
@@ -182,6 +181,7 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
 
 void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
 {
+    // TODO if DTLS is sending destroy should be deferred
     struct np_platform* pl = ctx->pl;
 
     pl->buf.free(ctx->ctx.sslRecvBuf);
@@ -412,17 +412,16 @@ void nm_dtls_event_close(void* data) {
     nm_dtls_do_close(data, NABTO_EC_CONNECTION_CLOSING);
 }
 
-np_error_code nm_dtls_async_close(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                  np_dtls_close_callback cb, void* data)
+np_error_code nm_dtls_cli_close(struct np_platform* pl, np_dtls_cli_context* ctx)
 {
-    if (!ctx || ctx->ctx.state == CLOSING) {
-        return NABTO_EC_OK;
+    if (!ctx ) {
+        return NABTO_EC_INVALID_ARGUMENT;
     }
-    ctx->ctx.closeCb = cb;
-    ctx->ctx.closeCbData = data;
-    ctx->ctx.state = CLOSING;
-    mbedtls_ssl_close_notify(&ctx->ctx.ssl);
-    np_event_queue_post(ctx->pl, &ctx->ctx.closeEv, &nm_dtls_event_close, ctx);
+    if ( ctx->ctx.state != CLOSING) {
+        ctx->ctx.state = CLOSING;
+        mbedtls_ssl_close_notify(&ctx->ctx.ssl);
+        np_event_queue_post(ctx->pl, &ctx->ctx.closeEv, &nm_dtls_event_close, ctx);
+    }
     return NABTO_EC_OK;
 }
 

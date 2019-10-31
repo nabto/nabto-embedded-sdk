@@ -83,7 +83,7 @@ void nm_unix_dns_init(struct np_platform* pl)
     pl->dns.async_resolve = &nm_unix_dns_resolve;
 }
 
-np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
+np_error_code nm_unix_dns_resolve(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
 {
     pthread_t thread;
     pthread_attr_t attr;

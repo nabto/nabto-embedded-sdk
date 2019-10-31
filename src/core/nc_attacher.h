@@ -13,73 +13,110 @@ extern "C" {
 // TODO: implement multi attach
 
 // TODO: Move this definition to some configuration
-#define NABTO_MAX_DR_EPS 2
+#define NABTO_MAX_BASESTATION_EPS 2
 
-typedef void (*nc_attached_callback)(const np_error_code ec, void* data);
-
-// This should possibly use nc_attached_state instead of np_error_code
-typedef void (*nc_detached_callback)(const np_error_code ec, void* data);
-
-enum nc_attacher_state {
-    NC_ATTACHER_RESOLVING_DNS,
-    NC_ATTACHER_CONNECTING_TO_BS,
-    NC_ATTACHER_CONNECTED_TO_BS,
-    NC_ATTACHER_ATTACHED
+enum nc_device_event {
+    NC_DEVICE_EVENT_ATTACHED,
+    NC_DEVICE_EVENT_DETACHED,
+    NC_DEVICE_EVENT_FAILURE
 };
 
-struct nc_attach_dr_endpoint {
-    uint16_t port;
-    uint8_t az;
-    uint8_t fp[16];
-    char dns[256];
-    uint8_t dnsLen;
+typedef void (*nc_attacher_closed_callback)(void* data);
+typedef void (*nc_attacher_event_listener)(enum nc_device_event event, void* data);
+
+enum nc_attacher_attach_state {
+    NC_ATTACHER_STATE_DNS,
+    NC_ATTACHER_STATE_DTLS_CONNECT,
+    NC_ATTACHER_STATE_COAP_ATTACH_REQUEST,
+    NC_ATTACHER_STATE_PREPARE_RETRY,
+    NC_ATTACHER_STATE_RETRY_WAIT,
+    NC_ATTACHER_STATE_REDIRECT,
+    NC_ATTACHER_STATE_ATTACHED,
+    NC_ATTACHER_STATE_CLOSED
+};
+
+enum nc_attacher_module_state {
+    NC_ATTACHER_MODULE_SETUP,
+    NC_ATTACHER_MODULE_RUNNING,
+    NC_ATTACHER_MODULE_CLOSED
 };
 
 struct nc_attach_context {
+    // External references
     struct np_platform* pl;
     struct nc_device_context* device;
-    const struct nc_attach_parameters* params;
-    uint32_t sessionId;
-    nc_attached_callback cb;
-    nc_detached_callback detachCb;
-    void* detachCbData;
-    struct nc_udp_dispatch_context* udp;
-    void* cbData;
-    np_udp_endpoint ep;
-    np_dtls_cli_context* dtls;
-    char dns[256];
-    uint8_t dnsLen;
-    enum nc_attacher_state state;
-    bool detaching;
-    struct nc_coap_client_context* coapClient;
 
-    struct nc_keep_alive_context keepAlive;
-    struct np_dtls_cli_send_context keepAliveSendCtx;
-};
-
-struct nc_attach_parameters {
     const char* appName;
     const char* appVersion;
+    const char* productId;
+    const char* deviceId;
     const char* hostname;
+    uint16_t defaultPort;
+
+    nc_attacher_event_listener listener;
+    void* listenerData;
+    struct nc_coap_client_context* coapClient;
     struct nc_udp_dispatch_context* udp;
+    np_dtls_cli_context* dtls;
+
+    // Internal state
+    enum nc_attacher_attach_state state;
+    enum nc_attacher_module_state moduleState;
+
+    uint32_t sessionId;
+    np_udp_endpoint bsEps[NABTO_MAX_BASESTATION_EPS];
+    uint16_t currentPort;
+    char dns[256];
+    uint8_t dnsLen;
+
+    uint8_t attachAttempts;
+    struct np_timed_event reattachTimer;
+    struct np_event closeEv;
+
+    // Keep alive
+    struct nc_keep_alive_context keepAlive;
+    struct np_dtls_cli_send_context keepAliveSendCtx;
+
+    // external callbacks
+    nc_attacher_closed_callback closedCb;
+    void* closedCbData;
 };
 
-void nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient);
+// Init attacher module, always first function to be called
+np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl,
+                               struct nc_device_context* device, struct nc_coap_client_context* coapClient,
+                               nc_attacher_event_listener listener, void* listenerData);
+
+// deinit attacher module, always last function to be called, called after stop
 void nc_attacher_deinit(struct nc_attach_context* ctx);
 
+// set keys before start
 np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx,
                                    const unsigned char* publicKeyL, size_t publicKeySize,
                                    const unsigned char* privateKeyL, size_t privateKeySize);
 
-np_error_code nc_attacher_async_attach(struct nc_attach_context* ctx,
-                                       struct np_platform* pl,
-                                       const struct nc_attach_parameters* params,
-                                       nc_attached_callback cb, void* data);
+// set app info before start
+np_error_code nc_attacher_set_app_info(struct nc_attach_context* ctx,
+                                       const char* appName,
+                                       const char* appVersion);
 
-np_error_code nc_attacher_register_detach_callback(struct nc_attach_context* ctx,
-                                                   nc_detached_callback cb, void* data);
+np_error_code nc_attacher_set_device_info(struct nc_attach_context* ctx,
+                                          const char* productId,
+                                          const char* deviceId);
 
-np_error_code nc_attacher_detach(struct nc_attach_context* ctx);
+// Start the attach module
+np_error_code nc_attacher_start(struct nc_attach_context* ctx,
+                                const char* hostname,
+                                uint16_t serverPort,
+                                struct nc_udp_dispatch_context* udp);
+
+// Close the module nicely
+np_error_code nc_attacher_async_close(struct nc_attach_context* ctx,
+                                      nc_attacher_closed_callback callback,
+                                      void* userData);
+
+// Stop the module forcefully
+np_error_code nc_attacher_stop(struct nc_attach_context* ctx);
 
 #ifdef __cplusplus
 } // extern c

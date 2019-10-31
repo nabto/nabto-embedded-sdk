@@ -216,7 +216,7 @@ void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, u
 
 void nc_client_connection_keep_alive_start(struct nc_client_connection* ctx)
 {
-    nc_keep_alive_init(&ctx->keepAlive, ctx->pl, 30000, 2000, 15);
+    nc_keep_alive_init(&ctx->keepAlive, ctx->pl);
     nc_keep_alive_wait(&ctx->keepAlive, &nc_client_connection_keep_alive_event, ctx);
 }
 
@@ -227,12 +227,12 @@ void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
 
     uint32_t recvCount;
     uint32_t sentCount;
-    pl->dtlsS.get_packet_count(ctx->dtls, &recvCount, &sentCount);
 
     if (ec != NABTO_EC_OK) {
         // event probably cancelled
         return;
     } else {
+        pl->dtlsS.get_packet_count(ctx->dtls, &recvCount, &sentCount);
         enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
         switch(action) {
             case DO_NOTHING:
@@ -246,8 +246,6 @@ void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
                 NABTO_LOG_INFO(LOG, "Closed connection because of keep alive timeout.");
                 nc_client_connection_close_connection(ctx);
                 break;
-            case DTLS_ERROR:
-                return;
         }
     }
 }
@@ -255,51 +253,25 @@ void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
 void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx)
 {
     struct np_platform* pl = ctx->pl;
-    if (ctx->keepAlive.isSending) {
-        return;
-    }
-    uint8_t* begin = ctx->keepAlive.sendBuffer;
-    uint8_t* ptr = begin;
-    *ptr = AT_KEEP_ALIVE; ptr++;
-    *ptr = CT_KEEP_ALIVE_REQUEST; ptr++;
-    memset(ptr, 0, 16); ptr += 16;
-
-    ctx->keepAlive.isSending = true;
-
     struct np_dtls_srv_send_context* sendCtx = &ctx->keepAliveSendCtx;
-    sendCtx->buffer = begin;
-    sendCtx->bufferSize = 18;
+
+    nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize);
     sendCtx->cb = &nc_keep_alive_packet_sent;
     sendCtx->data = &ctx->keepAlive;
     sendCtx->channelId = ctx->currentChannel.channelId;
-
     pl->dtlsS.async_send_data(pl, ctx->dtls, sendCtx);
 }
 
 void nc_client_connection_keep_alive_send_response(struct nc_client_connection* ctx, uint8_t channelId, uint8_t* buffer, size_t length)
 {
     struct np_platform* pl = ctx->pl;
-    if (length < 18) {
-        return;
-    }
-    if (ctx->keepAlive.isSending) {
-        return;
-    }
-    uint8_t* begin = ctx->keepAlive.sendBuffer;
-    uint8_t* ptr = begin;
-    *ptr = AT_KEEP_ALIVE; ptr++;
-    *ptr = CT_KEEP_ALIVE_RESPONSE; ptr++;
-    memcpy(ptr, buffer+2, 16);
-    ctx->keepAlive.isSending = true;
-
     struct np_dtls_srv_send_context* sendCtx = &ctx->keepAliveSendCtx;
-    sendCtx->buffer = begin;
-    sendCtx->bufferSize = 18;
-    sendCtx->cb = &nc_keep_alive_packet_sent;
-    sendCtx->data = &ctx->keepAlive;
-    sendCtx->channelId = channelId;
-
-    pl->dtlsS.async_send_data(pl, ctx->dtls, sendCtx);
+    if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
+        sendCtx->cb = &nc_keep_alive_packet_sent;
+        sendCtx->data = &ctx->keepAlive;
+        sendCtx->channelId = channelId;
+        pl->dtlsS.async_send_data(pl, ctx->dtls, sendCtx);
+    }
 }
 
 void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)

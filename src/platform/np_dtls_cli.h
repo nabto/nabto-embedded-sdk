@@ -59,8 +59,7 @@ struct np_dtls_cli_module {
                                      struct np_dtls_cli_send_context* sendCtx);
     np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_cli_context* ctx,
                                    uint8_t* buffer, uint16_t bufferSize);
-    np_error_code (*async_close)(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                 np_dtls_close_callback cb, void* data);
+    np_error_code (*close)(struct np_platform* pl, np_dtls_cli_context* ctx);
     np_error_code (*get_fingerprint)(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp);
 
     const char* (*get_alpn_protocol)(np_dtls_cli_context* ctx);

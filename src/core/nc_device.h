@@ -20,12 +20,6 @@ enum nc_device_state {
     NC_DEVICE_STATE_STOPPED
 };
 
-enum nc_device_event {
-    NC_DEVICE_EVENT_ATTACHED,
-    NC_DEVICE_EVENT_DETACHED,
-    NC_DEVICE_EVENT_FAILURE
-};
-
 typedef void (*nc_device_event_callback)(enum nc_device_event event, void* userData);
 
 struct nc_device_events_listener;
@@ -48,7 +42,6 @@ struct nc_device_context {
     struct nc_udp_dispatch_context udp;
     // this socket is used for the secondary stun socket.
     struct nc_udp_dispatch_context secondaryUdp;
-    struct nc_attach_parameters attachParams;
     struct nc_attach_context attacher;
     struct nc_stream_manager_context streamManager;
     struct nc_client_connection_dispatch_context clientConnect;
@@ -70,10 +63,10 @@ struct nc_device_context {
     const char* stunHost;
     const char* productId;
     const char* deviceId;
+    const char* hostname;
 
     uint16_t serverPort;
 
-    struct np_timed_event tEv;
     struct np_event closeEvent;
     uint8_t attachAttempts;
     nc_device_close_callback closeCb;
@@ -110,6 +103,6 @@ void nc_device_connection_events_listener_notify(struct nc_device_context* dev, 
 
 void nc_device_add_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener, nc_device_event_callback cb, void* userData);
 void nc_device_remove_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener);
-void nc_device_events_listener_notify(struct nc_device_context* dev, enum nc_device_event event);
+void nc_device_events_listener_notify(enum nc_device_event event, void* data);
 
 #endif // NC_DEVICE_H
