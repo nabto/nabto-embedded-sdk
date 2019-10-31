@@ -5,6 +5,11 @@
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 // TODO: implement multi attach
 
 // TODO: Move this definition to some configuration
@@ -75,5 +80,9 @@ np_error_code nc_attacher_register_detach_callback(struct nc_attach_context* ctx
                                                    nc_detached_callback cb, void* data);
 
 np_error_code nc_attacher_detach(struct nc_attach_context* ctx);
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif //NC_ATTACHER_H

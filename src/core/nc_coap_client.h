@@ -8,6 +8,10 @@
 
 #include <coap/nabto_coap_client.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nc_coap_client_context {
     struct np_platform* pl;
     struct nabto_coap_client client;
@@ -25,5 +29,11 @@ void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
                                   uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_context* dtls);
 
 struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_context* ctx);
+
+
+#ifdef __cplusplus
+} // extern c
+#endif
+
 
 #endif // NC_COAP_CLIENT_H

@@ -3,6 +3,10 @@
 
 #include <platform/np_platform.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nc_stun_context;
 
 //typedef void (*nc_udp_dispatch_send_callback)(const np_error_code ec, void* data);
@@ -47,4 +51,10 @@ void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
 void nc_udp_dispatch_clear_client_connection_context(struct nc_udp_dispatch_context* ctx);
 void nc_udp_dispatch_clear_dtls_cli_context(struct nc_udp_dispatch_context* ctx);
 void nc_udp_dispatch_clear_stun_context(struct nc_udp_dispatch_context* ctx);
+
+#ifdef __cplusplus
+} // extern c
+#endif
+
+
 #endif // NC_UDP_DISPATCH_H

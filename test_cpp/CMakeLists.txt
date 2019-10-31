@@ -22,6 +22,7 @@ set(test_src
   api/event_handler_test.cpp
   api/future_test.cpp
   attach/attach_test.cpp
+  test_platform.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")
@@ -32,6 +33,7 @@ target_link_libraries(embedded_unit_test
   3rdparty_boost_asio
   common_util
   nm_select_unix
+  nc_core
   dtls
 )
 
