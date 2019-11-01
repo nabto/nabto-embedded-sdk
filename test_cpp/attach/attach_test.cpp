@@ -43,6 +43,11 @@ class AttachTest {
         BOOST_TEST(nc_attacher_start(&attach_, hostname_, serverPort_, &udpDispatch_) == NABTO_EC_OK);
     }
 
+    void setDtlsPort(uint16_t port)
+    {
+        attach_.defaultPort = port;
+    }
+
     static void listener(enum nc_device_event event, void* data)
     {
         AttachTest* at = (AttachTest*)data;
@@ -154,9 +159,32 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     BOOST_TEST(redirectServer->redirectCount_ == (uint64_t)1);
 }
 
-BOOST_AUTO_TEST_CASE(reattach_after_detach)
+BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
 {
-    // TODO
+    auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+
+    // means device detaches after ~200ms
+    attachServer->setKeepAliveSettings(100, 50, 2);
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
+            if (at.attachCount_ == 1 && at.detachCount_ == 0) {
+                attachServer->stop();
+                attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+                at.setDtlsPort(attachServer->getPort());
+            }
+            if (at.attachCount_ == 2 &&
+                at.detachCount_ == 1)
+            {
+                at.end();
+            }
+        });
+
+    attachServer->stop();
+    BOOST_TEST(at.attachCount_ == (uint64_t)2);
 }
 
 BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
