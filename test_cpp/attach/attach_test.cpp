@@ -89,7 +89,6 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
 
     auto tp = nabto::test::TestPlatform::create();
-    // TODO 2019 31/10 it cannot close down without segmentation fault at the moment, but attach works.
     nabto::test::AttachTest at(*tp, attachServer->getPort());
     at.start();
 
