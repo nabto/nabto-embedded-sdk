@@ -584,8 +584,7 @@ void keep_alive_event(const np_error_code ec, void* data)
                 nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
                 break;
             case KA_TIMEOUT:
-                ctx->state = NC_ATTACHER_STATE_PREPARE_RETRY;
-                handle_state_change(ctx);
+                ctx->pl->dtlsC.close(ctx->pl, ctx->dtls);
                 break;
         }
     }

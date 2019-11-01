@@ -205,19 +205,19 @@ np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx)
 void nm_dtls_cli_do_free(np_dtls_cli_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
-    pl->buf.free(ctx->ctx.sslRecvBuf);
-    pl->buf.free(ctx->ctx.sslSendBuffer);
-
-    np_event_queue_cancel_timed_event(pl, &ctx->ctx.tEv);
-    np_event_queue_cancel_event(pl, &ctx->startSendEvent);
-    np_event_queue_cancel_event(pl, &ctx->ctx.closeEv);
-
     // remove the first element until the list is empty
     while(ctx->sendSentinel.next != &ctx->sendSentinel) {
         struct np_dtls_cli_send_context* first = ctx->sendSentinel.next;
         nm_dtls_cli_remove_send_data(first);
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
+
+    np_event_queue_cancel_timed_event(pl, &ctx->ctx.tEv);
+    np_event_queue_cancel_event(pl, &ctx->startSendEvent);
+    np_event_queue_cancel_event(pl, &ctx->ctx.closeEv);
+
+    pl->buf.free(ctx->ctx.sslRecvBuf);
+    pl->buf.free(ctx->ctx.sslSendBuffer);
 
     mbedtls_pk_free(&ctx->privateKey);
     mbedtls_x509_crt_free(&ctx->publicKey );
@@ -428,10 +428,9 @@ np_error_code nm_dtls_async_send_data(struct np_platform* pl, np_dtls_cli_contex
 void nm_dtls_do_close(void* data, np_error_code ec){
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
-
-    ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->senderData);
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
+    ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->senderData);
 }
 
 void nm_dtls_event_close(void* data) {
