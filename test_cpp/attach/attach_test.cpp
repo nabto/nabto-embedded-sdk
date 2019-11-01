@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     auto testLogger = nabto::test::TestLogger::create();
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
-    redirectServer->setRedirect("127.0.0.1", attachServer->getPort(), attachServer->getFingerprint());
+    redirectServer->setRedirect("localhost", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
     at.start([](nabto::test::AttachTest& at){
