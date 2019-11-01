@@ -107,6 +107,12 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         keepAliveMaxRetries_ = maxRetries;
     }
 
+    void niceClose() {
+        dtlsServer_.asyncNiceClose([](const lib::error_code& ec){
+                // all current connections is closed nicely.
+            });
+    }
+
     uint64_t keepAliveInterval_ = 30000;
     uint64_t keepAliveRetryInterval_ = 2000;
     uint64_t keepAliveMaxRetries_ = 15;

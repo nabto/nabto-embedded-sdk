@@ -189,7 +189,25 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
 
 BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
 {
-    // TODO
+        auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
+            if (at.attachCount_ == 1 && at.detachCount_ == 0) {
+                attachServer->niceClose();
+            }
+            if (at.attachCount_ == 2 &&
+                at.detachCount_ == 1)
+            {
+                at.end();
+            }
+        });
+
+    attachServer->stop();
+    BOOST_TEST(at.attachCount_ == (uint64_t)2);
 }
 
 BOOST_AUTO_TEST_CASE(retry_after_invalid_coap_response)
