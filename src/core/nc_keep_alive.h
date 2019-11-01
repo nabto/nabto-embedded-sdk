@@ -65,6 +65,8 @@ void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* p
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx);
 
+void nc_keep_alive_reset(struct nc_keep_alive_context* ctx);
+
 void nc_keep_alive_set_settings(struct nc_keep_alive_context* ctx, uint32_t interval, uint32_t retryInterval, uint32_t maxRetries);
 
 void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, size_t* length);

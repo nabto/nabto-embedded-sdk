@@ -27,6 +27,17 @@ void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->keepAliveEvent);
 }
 
+void nc_keep_alive_reset(struct nc_keep_alive_context* ctx)
+{
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->keepAliveEvent);
+    ctx->kaInterval = NC_KEEP_ALIVE_DEFAULT_INTERVAL;
+    ctx->kaRetryInterval = NC_KEEP_ALIVE_DEFAULT_RETRY_INTERVAL;
+    ctx->kaMaxRetries = NC_KEEP_ALIVE_DEFAULT_MAX_RETRIES;
+    ctx->lastRecvCount = 0;
+    ctx->lastSentCount = 0;
+    ctx->lostKeepAlives = 0;
+}
+
 void nc_keep_alive_set_settings(struct nc_keep_alive_context* ctx, uint32_t interval, uint32_t retryInterval, uint32_t maxRetries)
 {
     ctx->kaInterval = interval;

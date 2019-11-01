@@ -69,8 +69,9 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
-
+    nc_keep_alive_deinit(&ctx->keepAlive);
     ctx->pl->dtlsC.destroy(ctx->dtls);
+
     if (ctx->udp != NULL) {
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
     }
@@ -269,6 +270,7 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
     if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
         handle_dtls_connected(ctx);
     } else if (event == NP_DTLS_CLI_EVENT_CLOSED) {
+        nc_keep_alive_reset(&ctx->keepAlive);
         if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
             ctx->state = NC_ATTACHER_STATE_CLOSED;
             handle_state_change(ctx);

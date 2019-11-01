@@ -32,6 +32,7 @@ struct np_dtls_cli_context {
 
     const char* sniName;
     bool sending;
+    bool destroyed;
 
     np_dtls_cli_sender sender;
     np_dtls_cli_data_handler dataHandler;
@@ -177,6 +178,7 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
 
     ctx->sendSentinel.next = &ctx->sendSentinel;
     ctx->sendSentinel.prev = &ctx->sendSentinel;
+    ctx->destroyed = false;
 
     return NABTO_EC_OK;
 }
@@ -212,6 +214,7 @@ void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
 {
     // TODO if DTLS is sending destroy should be deferred
     ctx->ctx.state = CLOSING;
+    ctx->destroyed = true;
 
     if (!ctx->sending) {
         nm_dtls_cli_do_free(ctx);
@@ -405,18 +408,11 @@ np_error_code nm_dtls_async_send_data(struct np_platform* pl, np_dtls_cli_contex
 
 void nm_dtls_do_close(void* data, np_error_code ec){
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
-    np_dtls_close_callback cb = ctx->ctx.closeCb;
-    void* cbData = ctx->ctx.closeCbData;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
 
+    ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->senderData);
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
     np_event_queue_cancel_event(ctx->pl, &ctx->ctx.closeEv);
-    if (cb == NULL) {
-        NABTO_LOG_ERROR(LOG, "close callback was NULL");
-        return;
-    }
-    NABTO_LOG_TRACE(LOG, "Calling close callback");
-    cb(NABTO_EC_OK, cbData);
 }
 
 void nm_dtls_event_close(void* data) {
@@ -461,7 +457,9 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     ctx->sending = false;
     ctx->ctx.sslSendBufferSize = 0;
     if(ctx->ctx.state == CLOSING) {
-        nm_dtls_cli_do_free(ctx);
+        if (ctx->destroyed) {
+            nm_dtls_cli_do_free(ctx);
+        }
 //        nm_dtls_event_close(ctx);
 //        np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
         return;
