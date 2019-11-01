@@ -154,4 +154,35 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     BOOST_TEST(redirectServer->redirectCount_ == (uint64_t)1);
 }
 
+BOOST_AUTO_TEST_CASE(reattach_after_detach)
+{
+    // TODO
+}
+
+BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
+{
+    // TODO
+}
+
+BOOST_AUTO_TEST_CASE(retry_after_invalid_coap_response)
+{
+    // TODO
+}
+
+BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
+{
+    // TODO
+}
+
+BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
+{
+    // TODO
+}
+
+BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
+{
+    // TODO
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
