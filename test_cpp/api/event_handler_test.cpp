@@ -169,9 +169,9 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
     nabto_device_listener_stop((NabtoDeviceListener*)handler);
     nabto_device_listener_free((NabtoDeviceListener*)handler);
     nabto_api_future_queue_execute_all(dev);
-    BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_ABORTED);
+    BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_STOPPED);
     BOOST_TEST(listener == NABTO_EC_ABORTED);
-    BOOST_TEST(nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_ABORTED);
+    BOOST_TEST(nabto_device_future_error_code(fut) == NABTO_DEVICE_EC_STOPPED);
     nabto_device_future_free(fut);
     nabto_device_threads_free_mutex(dev->eventMutex);
     free(dev);
