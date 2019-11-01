@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
 
 BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
 {
-        auto ioService = nabto::IoService::create("test");
+    auto ioService = nabto::IoService::create("test");
     auto testLogger = nabto::test::TestLogger::create();
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
 
@@ -217,7 +217,27 @@ BOOST_AUTO_TEST_CASE(retry_after_invalid_coap_response)
 
 BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
 {
-    // TODO
+    auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+    std::shared_ptr<nabto::test::AttachServer> attachServer;
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, 4242);
+    std::thread t([&ioService, &testLogger, &attachServer, &at](){
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+            at.setDtlsPort(attachServer->getPort());
+        });
+    at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
+            if (at.attachCount_ == 1)
+            {
+                at.end();
+            }
+        });
+
+    attachServer->stop();
+    BOOST_TEST(at.attachCount_ == (uint64_t)1);
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
 }
 
 BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
