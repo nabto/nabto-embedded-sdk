@@ -31,6 +31,7 @@ void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* 
 
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 {
+    np_event_queue_cancel_event(ctx->pl, &ctx->ev);
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
     nabto_coap_client_destroy(&ctx->client);
     ctx->pl->buf.free(ctx->sendBuffer);
@@ -105,8 +106,13 @@ void nc_coap_client_handle_timeout(const np_error_code ec, void* data)
 
 void nc_coap_client_handle_callback(struct nc_coap_client_context* ctx)
 {
+    // after nabto_coap_client_handle_callback() we want to call
+    // nc_coap_client_event(). However, the handle_callback can
+    // resolve a coap request, and the user may alter the state, so we
+    // defer calling nc_coap_client_event()
+    nc_coap_client_notify_event(ctx);
     nabto_coap_client_handle_callback(&ctx->client);
-    nc_coap_client_event(ctx);
+//    nc_coap_client_event(ctx);
 }
 
 void nc_coap_client_event(struct nc_coap_client_context* ctx)

@@ -92,6 +92,8 @@ void nm_dtls_do_close(void* data, np_error_code ec);
 // setup function for the mbedtls context
 np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx);
 
+void nm_dtls_cli_do_free(np_dtls_cli_context* ctx);
+
 // Get the packet counters for given dtls_cli_context
 np_error_code nm_dtls_get_packet_count(np_dtls_cli_context* ctx, uint32_t* recvCount, uint32_t* sentCount)
 {
@@ -179,15 +181,16 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
     return NABTO_EC_OK;
 }
 
-void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
+void nm_dtls_cli_do_free(np_dtls_cli_context* ctx)
 {
-    // TODO if DTLS is sending destroy should be deferred
     struct np_platform* pl = ctx->pl;
-
     pl->buf.free(ctx->ctx.sslRecvBuf);
     pl->buf.free(ctx->ctx.sslSendBuffer);
 
-    ctx->ctx.state = CLOSING;
+    np_event_queue_cancel_timed_event(pl, &ctx->ctx.tEv);
+    np_event_queue_cancel_event(pl, &ctx->startSendEvent);
+    np_event_queue_cancel_event(pl, &ctx->ctx.closeEv);
+
     // remove the first element until the list is empty
     while(ctx->sendSentinel.next != &ctx->sendSentinel) {
         struct np_dtls_cli_send_context* first = ctx->sendSentinel.next;
@@ -203,6 +206,16 @@ void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
     mbedtls_ssl_free( &ctx->ctx.ssl );
 
     free(ctx);
+}
+
+void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
+{
+    // TODO if DTLS is sending destroy should be deferred
+    ctx->ctx.state = CLOSING;
+
+    if (!ctx->sending) {
+        nm_dtls_cli_do_free(ctx);
+    }
 }
 
 np_error_code nm_dtls_cli_set_sni(np_dtls_cli_context* ctx, const char* sniName)
@@ -342,6 +355,9 @@ void nm_dtls_cli_start_send(struct np_dtls_cli_context* ctx)
 void nm_dtls_cli_start_send_deferred(void* data)
 {
     struct np_dtls_cli_context* ctx = data;
+    if (ctx->ctx.state == CLOSING) {
+        return;
+    }
     if (ctx->sending) {
         return;
     }
@@ -445,6 +461,7 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     ctx->sending = false;
     ctx->ctx.sslSendBufferSize = 0;
     if(ctx->ctx.state == CLOSING) {
+        nm_dtls_cli_do_free(ctx);
 //        nm_dtls_event_close(ctx);
 //        np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
         return;

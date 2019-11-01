@@ -26,7 +26,7 @@ static void send_attach_request(struct nc_attach_context* ctx);
 static void handle_state_change(struct nc_attach_context* ctx);
 static void handle_dtls_closed(struct nc_attach_context* ctx);
 static void handle_dtls_connected(struct nc_attach_context* ctx);
-static void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root);
+static void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root, struct nabto_coap_client_request* request);
 static void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root);
 static void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 
@@ -421,16 +421,17 @@ void coap_request_handler(struct nabto_coap_client_request* request, void* data)
     cbor_value_get_uint64(&status, &s);
 
     if (s == ATTACH_STATUS_ATTACHED) {
-        handle_device_attached_response(ctx, &root);
+        // this will free the request
+        handle_device_attached_response(ctx, &root, request);
     } else if (s == ATTACH_STATUS_REDIRECT) {
         handle_device_redirect_response(ctx, &root);
+        // coap_response_failed() will free req if we return before this
+        nabto_coap_client_request_free(request);
     } else {
         NABTO_LOG_ERROR(LOG, "Status not recognized");
         coap_response_failed(ctx, request);
         return;
     }
-    // coap_response_failed() will free req if we return before this
-    nabto_coap_client_request_free(request);
 }
 
 void coap_response_failed(struct nc_attach_context* ctx, struct nabto_coap_client_request* request)
@@ -440,7 +441,7 @@ void coap_response_failed(struct nc_attach_context* ctx, struct nabto_coap_clien
     handle_state_change(ctx);
 }
 
-void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root)
+void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root, struct nabto_coap_client_request* request)
 {
     CborValue keepAlive;
     cbor_value_map_find_value(root, "KeepAlive", &keepAlive);
@@ -468,13 +469,15 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
             nc_keep_alive_set_settings(&ctx->keepAlive, i, ri, mr);
         }
     }
+    // free the request before calling listener in case the listener deinits coap
+    nabto_coap_client_request_free(request);
     // start keep alive with default values if above failed
     nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
+    ctx->state = NC_ATTACHER_STATE_ATTACHED;
+    handle_state_change(ctx);
     if (ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_ATTACHED, ctx->listenerData);
     }
-    ctx->state = NC_ATTACHER_STATE_ATTACHED;
-    handle_state_change(ctx);
 }
 
 void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root)
