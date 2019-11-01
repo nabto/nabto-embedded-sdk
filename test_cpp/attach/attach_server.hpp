@@ -83,10 +83,11 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     {
         nlohmann::json root;
         root["Status"] = 0;
-        auto ka = root["KeepAlive"];
-        ka["Interval"] = 30000;
-        ka["RetryInterval"] = 2000;
-        ka["MaxRetries"] = 15;
+        nlohmann::json ka;
+        ka["Interval"] = keepAliveInterval_;
+        ka["RetryInterval"] = keepAliveRetryInterval_;
+        ka["MaxRetries"] = keepAliveMaxRetries_;
+        root["KeepAlive"] = ka;
 
         std::vector<uint8_t> cbor = nlohmann::json::to_cbor(root);
 
@@ -98,6 +99,17 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
 
         attachCount_ += 1;
     }
+
+    void setKeepAliveSettings(uint64_t interval, uint64_t retryInterval, uint64_t maxRetries)
+    {
+        keepAliveInterval_ = interval;
+        keepAliveRetryInterval_ = retryInterval;
+        keepAliveMaxRetries_ = maxRetries;
+    }
+
+    uint64_t keepAliveInterval_ = 30000;
+    uint64_t keepAliveRetryInterval_ = 2000;
+    uint64_t keepAliveMaxRetries_ = 15;
 
     std::atomic<uint64_t> attachCount_ = { 0 };
 };

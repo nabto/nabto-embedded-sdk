@@ -20,7 +20,8 @@ class AttachTest {
         serverPort_ = port;
     }
 
-    void start() {
+    void start(std::function<void (AttachTest& at)> stuff) {
+        stuff_ = stuff;
         tp_.init();
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
         BOOST_TEST(nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
@@ -44,10 +45,13 @@ class AttachTest {
 
     static void listener(enum nc_device_event event, void* data)
     {
-        // TODO handle attach events
-        BOOST_TEST(event == NC_DEVICE_EVENT_ATTACHED);
         AttachTest* at = (AttachTest*)data;
-        at->end();
+        if (event == NC_DEVICE_EVENT_ATTACHED) {
+            at->attachCount_++;
+        } else if (event == NC_DEVICE_EVENT_DETACHED) {
+            at->detachCount_++;
+        }
+        at->stuff_(*at);
     }
 
     static void udpDispatchCb(const np_error_code ec, void* data) {
@@ -76,6 +80,10 @@ class AttachTest {
     const char* appVersion_ = "bar";
     const char* productId_ = "test";
     const char* deviceId_ = "devTest";
+    std::function<void (AttachTest& at)> stuff_;
+ public:
+    std::atomic<uint64_t> attachCount_ = { 0 };
+    std::atomic<uint64_t> detachCount_ = { 0 };
 };
 
 } }
@@ -90,7 +98,36 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getPort());
-    at.start();
+    at.start([](nabto::test::AttachTest& at){
+            BOOST_TEST(at.attachCount_ == (uint64_t)1);
+            at.end();
+        });
+
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
+
+BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+
+    // means device detaches after ~200ms
+    attachServer->setKeepAliveSettings(100, 50, 2);
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    at.start([&attachServer](nabto::test::AttachTest& at){
+            if (at.attachCount_ == 1 && at.detachCount_ == 0) {
+                attachServer->stop();
+            }
+            if (at.attachCount_ == 1 &&
+                at.detachCount_ == 1)
+            {
+                at.end();
+            }
+        });
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
@@ -105,7 +142,10 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     redirectServer->setRedirect("127.0.0.1", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
-    at.start();
+    at.start([](nabto::test::AttachTest& at){
+            BOOST_TEST(at.attachCount_ == (uint64_t)1);
+            at.end();
+        });
 
     attachServer->stop();
     redirectServer->stop();
