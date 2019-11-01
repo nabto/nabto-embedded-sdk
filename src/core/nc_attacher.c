@@ -282,6 +282,10 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
 
 void handle_dtls_closed(struct nc_attach_context* ctx)
 {
+    np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
+    }
     // dtls_event_handler() only calls this after moduleState has been check so we dont need to here
     switch(ctx->state) {
         case NC_ATTACHER_STATE_ATTACHED:

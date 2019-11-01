@@ -68,6 +68,7 @@ np_error_code nm_dtls_get_fingerprint(struct np_platform* pl, np_dtls_cli_contex
 
 
 
+np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx);
 np_error_code nm_dtls_connect(np_dtls_cli_context* ctx);
 
 // Function called by mbedtls when data should be sent to the network
@@ -142,6 +143,7 @@ np_error_code nm_dtls_cli_init(struct np_platform* pl)
     pl->dtlsC.set_sni = &nm_dtls_cli_set_sni;
     pl->dtlsC.set_keys = &nm_dtls_cli_set_keys;
     pl->dtlsC.connect = &nm_dtls_connect;
+    pl->dtlsC.reset = &nm_dtls_cli_reset;
     pl->dtlsC.async_send_data = &nm_dtls_async_send_data;
     pl->dtlsC.close = &nm_dtls_cli_close;
     pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
@@ -180,6 +182,23 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
     ctx->sendSentinel.prev = &ctx->sendSentinel;
     ctx->destroyed = false;
 
+    return NABTO_EC_OK;
+}
+
+np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx)
+{
+    if (ctx->ctx.state != CLOSING) {
+        return NABTO_EC_INVALID_STATE;
+    }
+    mbedtls_entropy_free( &ctx->entropy );
+    mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
+    mbedtls_ssl_config_free( &ctx->conf );
+    mbedtls_ssl_free( &ctx->ctx.ssl );
+
+    mbedtls_ssl_init( &ctx->ctx.ssl );
+    mbedtls_ssl_config_init( &ctx->conf );
+    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
+    mbedtls_entropy_init( &ctx->entropy );
     return NABTO_EC_OK;
 }
 
