@@ -516,7 +516,7 @@ np_error_code nm_dtls_srv_init_config(struct np_dtls_srv* server,
         NABTO_LOG_ERROR(LOG,"mbedtls_ssl_conf_own_cert returned %d", ret);
         return NABTO_EC_UNKNOWN;
     }
-#if MBEDTLS_SSL_DTLS_HELLO_VERIFY
+#if defined(MBEDTLS_SSL_DTLS_HELLO_VERIFY)
     mbedtls_ssl_conf_dtls_cookies(&server->conf, NULL, NULL, NULL);
 #endif
 
