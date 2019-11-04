@@ -46,6 +46,7 @@ class AttachTest {
     void setDtlsPort(uint16_t port)
     {
         attach_.defaultPort = port;
+        attach_.bsEps[0].port = port;
     }
 
     static void listener(enum nc_device_event event, void* data)
@@ -223,11 +224,12 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, 4242);
-    std::thread t([&ioService, &testLogger, &attachServer, &at](){
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
-            at.setDtlsPort(attachServer->getPort());
-        });
+
+    ioService->getIoService().post([&ioService, &testLogger, &attachServer, &at](){
+                                       std::this_thread::sleep_for(std::chrono::seconds(1));
+                                       attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+                                       at.setDtlsPort(attachServer->getPort());
+                                   });
     at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1)
             {
