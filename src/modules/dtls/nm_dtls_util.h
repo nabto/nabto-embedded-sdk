@@ -17,32 +17,6 @@ enum sslState {
     CLOSING
 };
 
-struct nm_dtls_util_connection_ctx {
-    enum sslState state;
-    struct np_event closeEv;
-    struct np_timed_event tEv;
-
-    np_dtls_close_callback closeCb;
-    void* closeCbData;
-
-    uint32_t recvCount;
-    uint32_t sentCount;
-    uint8_t currentChannelId;
-    mbedtls_ssl_context ssl;
-
-    uint8_t* recvBuffer;
-    size_t recvBufferSize;
-
-    np_communication_buffer* sslRecvBuf;
-//    size_t sslRecvBufSize;
-    np_communication_buffer* sslSendBuffer;
-    size_t sslSendBufferSize;
-
-    np_timestamp intermediateTp;
-    np_timestamp finalTp;
-
-};
-
 typedef struct nm_dtls_util_connection_ctx nm_dtls_util_connection_ctx;
 
 np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp);

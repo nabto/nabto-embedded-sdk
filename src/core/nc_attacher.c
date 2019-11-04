@@ -30,8 +30,8 @@ static void handle_device_attached_response(struct nc_attach_context* ctx, CborV
 static void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root);
 static void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 
-static void dtls_packet_sender(bool activeChannel, uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_callback cb, void* data, void* senderData);
-static void dtls_data_handler(uint8_t channelId, uint64_t sequence, uint8_t* buffer, uint16_t bufferSize, void* data);
+static void dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_callback cb, void* data, void* senderData);
+static void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
 
 static void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
@@ -540,8 +540,7 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
     return;
 }
 
-void dtls_packet_sender(bool activeChannel,
-                        uint8_t* buffer, uint16_t bufferSize,
+void dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
                         np_dtls_cli_send_callback cb, void* data,
                         void* senderData)
 {
@@ -553,8 +552,7 @@ void dtls_packet_sender(bool activeChannel,
                                   cb, data);
 }
 
-void dtls_data_handler(uint8_t channelId, uint64_t sequence,
-                       uint8_t* buffer, uint16_t bufferSize, void* data)
+void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
 
