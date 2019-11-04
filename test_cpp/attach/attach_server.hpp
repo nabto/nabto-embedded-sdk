@@ -79,7 +79,13 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     void initCoapHandlers() {
         auto self = shared_from_this();
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach", [self](DtlsConnectionPtr connection, struct nabto_coap_server_request* request) {
-                self->handleDeviceAttach(connection, request);
+                if (self->attachCount_ == self->invalidAttach_) {
+                    self->handleDeviceAttachWrongResponse(connection, request);
+                } else {
+                    self->handleDeviceAttach(connection, request);
+                }
+
+                self->attachCount_ += 1;
             });
     }
 
@@ -101,7 +107,21 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         nabto_coap_server_response_ready(request);
         nabto_coap_server_request_free(request);
 
-        attachCount_ += 1;
+
+    }
+
+    void handleDeviceAttachWrongResponse(DtlsConnectionPtr connection, struct nabto_coap_server_request* request)
+    {
+        nlohmann::json root;
+        root["FOOBAR"] = "BAZ";
+
+        std::vector<uint8_t> cbor = nlohmann::json::to_cbor(root);
+
+        nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+        nabto_coap_server_response_set_payload(request, cbor.data(), cbor.size());
+        nabto_coap_server_response_set_code(request, NABTO_COAP_CODE_CREATED);
+        nabto_coap_server_response_ready(request);
+        nabto_coap_server_request_free(request);
     }
 
     void setKeepAliveSettings(uint64_t interval, uint64_t retryInterval, uint64_t maxRetries)
@@ -122,6 +142,7 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     uint64_t keepAliveMaxRetries_ = 15;
 
     std::atomic<uint64_t> attachCount_ = { 0 };
+    uint64_t invalidAttach_ = 42;
 };
 
 

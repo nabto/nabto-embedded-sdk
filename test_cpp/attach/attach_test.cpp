@@ -251,7 +251,6 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
 
 BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
 {
-    // TODO
     // The redirect is invalid, go to retry
     auto ioService = nabto::IoService::create("test");
     auto testLogger = nabto::test::TestLogger::create();
@@ -276,8 +275,23 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
 
 BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
 {
-    // TODO
     // The attach did not succeeed, go to retry
+    auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getPort());
+
+    attachServer->invalidAttach_ = 0;
+
+    at.start([](nabto::test::AttachTest& at){
+            BOOST_TEST(at.attachCount_ == (uint64_t)1);
+            at.end();
+        });
+
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)2);
 }
 
 
