@@ -81,6 +81,10 @@ np_error_code nm_epoll_tcp_create(struct np_platform* pl, np_tcp_socket** sock)
     s->fd = -1;
     s->aborted = false;
     *sock = s;
+
+    np_event_queue_init_event(&s->write.event);
+    np_event_queue_init_event(&s->read.event);
+    np_event_queue_init_event(&s->connect.event);
     return NABTO_EC_OK;
 }
 
@@ -238,6 +242,7 @@ void nm_epoll_tcp_do_write(void* data)
         } else {
             np_tcp_write_callback cb = sock->write.callback;
             sock->write.callback = NULL;
+            np_event_queue_cancel_event(sock->pl, &sock->write.event); // just an optimization
             cb(NABTO_EC_OK, sock->write.userData);
             return;
         }
@@ -257,7 +262,8 @@ np_error_code nm_epoll_tcp_async_write(np_tcp_socket* sock, const void* data, si
     sock->write.callback = cb;
     sock->write.userData = userData;
 
-    np_event_queue_post(sock->pl, &sock->write.event, &nm_epoll_tcp_do_write, sock);
+    // the event can be completed by epoll or by the event queue
+    np_event_queue_post_maybe_double(sock->pl, &sock->write.event, &nm_epoll_tcp_do_write, sock);
 
     return NABTO_EC_OK;
 }
@@ -288,6 +294,7 @@ void nm_epoll_tcp_do_read(void* userData)
     } else {
         np_tcp_read_callback cb = sock->read.callback;
         sock->read.callback = NULL;
+        np_event_queue_cancel_event(sock->pl, &sock->read.event); // just an optimization
         cb(NABTO_EC_OK, readen, sock->read.userData);
         return;
     }

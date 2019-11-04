@@ -83,7 +83,7 @@ bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
 
 /**
  * Enqueue an event which maybe already is in the queue. If it is on
- * the queue it is not reposted.
+ * the queue it is not requeued. These events needs to be initialized with np_event_queue_init_event
  */
 void np_event_queue_post_maybe_double(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
 
