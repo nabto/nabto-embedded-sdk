@@ -602,8 +602,12 @@ void nm_epoll_event_send_to(void* data)
         NABTO_LOG_TRACE(LOG, "UDP returned error status %i", status);
         if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
+            // just drop the packet and the upper layers will take care of retransmissions.
         } else {
-            if (status == EADDRNOTAVAIL) {
+
+            if (status == EADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
+                status == ENETUNREACH) // if we send ipv6 on a system without it.
+            {
                 NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
             } else {
                 NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
