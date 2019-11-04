@@ -3,6 +3,7 @@
 #include <dtls/dtls_server.hpp>
 #include <boost/asio/io_service.hpp>
 #include <util/logger.hpp>
+#include <util/test_future.hpp>
 #include <dtls/mbedtls_util.hpp>
 
 #include <nlohmann/json.hpp>
@@ -32,7 +33,10 @@ class AttachCoapServer {
     }
 
     void stop() {
-        dtlsServer_.stop();
+        nabto::TestFuture tf;
+        io_.post([tf, this](){
+            dtlsServer_.stop();
+        });
     }
 
     virtual void initCoapHandlers() = 0;
@@ -140,8 +144,21 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
     void initCoapHandlers() {
         auto self = shared_from_this();
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach", [self](DtlsConnectionPtr connection, struct nabto_coap_server_request* request) {
-                self->handleDeviceRedirect(connection, request);
+                if (self->invalidRedirect_ == self->redirectCount_) {
+                    self->handleDeviceRedirectInvalidResponse(connection, request);
+                } else {
+                    self->handleDeviceRedirect(connection, request);
+                }
+                self->redirectCount_++;
             });
+    }
+
+    void handleDeviceRedirectInvalidResponse(DtlsConnectionPtr connection, struct nabto_coap_server_request* request)
+    {
+        nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+        nabto_coap_server_response_set_code(request, NABTO_COAP_CODE_CREATED);
+        nabto_coap_server_response_ready(request);
+        nabto_coap_server_request_free(request);
     }
 
     void handleDeviceRedirect(DtlsConnectionPtr connection, struct nabto_coap_server_request* request)
@@ -177,8 +194,6 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
         nabto_coap_server_response_set_code(request, NABTO_COAP_CODE_CREATED);
         nabto_coap_server_response_ready(request);
         nabto_coap_server_request_free(request);
-
-        redirectCount_ += 1;
     }
 
     void setRedirect(const std::string& host, uint16_t port, std::array<uint8_t, 16> fingerprint)
@@ -190,10 +205,13 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
 
     std::atomic<uint64_t> redirectCount_ = { 0 };
 
+    // if the count matches this number send an invalid redirect
+    uint64_t invalidRedirect_ = 42;
  private:
     std::string host_;
     uint16_t port_;
     std::array<uint8_t, 16> fingerprint_;
+
 
 };
 } }
