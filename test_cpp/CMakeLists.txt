@@ -21,6 +21,7 @@ set(test_src
   platform/hex_test.cpp
   api/event_handler_test.cpp
   api/future_test.cpp
+  api/device_api.cpp
   attach/attach_test.cpp
   test_platform.cpp
   )

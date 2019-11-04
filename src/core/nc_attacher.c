@@ -69,12 +69,20 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
+    ctx->moduleState = NC_ATTACHER_MODULE_CLOSED;
+    if (ctx->state == NC_ATTACHER_STATE_DNS) {
+        // ensure that returning DNS resolver will not continue attacher
+        do_close(ctx);
+    }
     nc_keep_alive_deinit(&ctx->keepAlive);
     ctx->pl->dtlsC.destroy(ctx->dtls);
 
     if (ctx->udp != NULL) {
         nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
     }
+
+    np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
+    np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
     // cleanup/close dtls connections etc.
 }
 
@@ -108,6 +116,9 @@ np_error_code nc_attacher_set_device_info(struct nc_attach_context* ctx, const c
 
 np_error_code nc_attacher_start(struct nc_attach_context* ctx, const char* hostname, uint16_t serverPort, struct nc_udp_dispatch_context* udp)
 {
+    if (ctx->moduleState != NC_ATTACHER_MODULE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
     ctx->udp = udp;
     ctx->state = NC_ATTACHER_STATE_DNS;
     ctx->moduleState = NC_ATTACHER_MODULE_RUNNING;
@@ -289,7 +300,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
     // dtls_event_handler() only calls this after moduleState has been check so we dont need to here
     switch(ctx->state) {
         case NC_ATTACHER_STATE_ATTACHED:
-            // DTLS was closed while attached, most likely closed by peer, wait to retry
+            // DTLS was closed while attached, closed by peer or keep alive timeout, wait to retry
             if (ctx->listener) {
                 ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
             }
