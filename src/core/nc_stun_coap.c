@@ -116,5 +116,4 @@ void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* r
         // TODO: handle error
         NABTO_LOG_ERROR(LOG, "Failed to start stun analysis");
     }
-    nabto_coap_server_request_free(request);
 }
