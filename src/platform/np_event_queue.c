@@ -23,6 +23,12 @@ void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify 
 
 }
 
+void np_event_queue_init_event(struct np_event* event)
+{
+    event->next = event;
+    event->prev = event;
+}
+
 void np_event_queue_execute_one(struct np_platform* pl)
 {
     if(!np_event_queue_is_event_queue_empty(pl)) {
@@ -58,6 +64,9 @@ static void remove_event(struct np_event* event)
     struct np_event* after = event->next;
     before->next = after;
     after->prev = before;
+
+    event->next = event;
+    event->prev = event;
 }
 
 static void remove_timed_event(struct np_timed_event* event)
@@ -66,6 +75,9 @@ static void remove_timed_event(struct np_timed_event* event)
     struct np_timed_event* after = event->next;
     before->next = after;
     after->prev = before;
+
+    event->next = event;
+    event->prev = event;
 }
 
 bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
@@ -92,6 +104,26 @@ bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
         pl->eq.notify(pl->eq.notifyData);
     }
     return canceledEvent;
+}
+
+void np_event_queue_post_maybe_double(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
+{
+    if (event->next == event && event->prev == event)
+    {
+        // the event is not posted on the queue.
+
+        event->cb = cb;
+        event->data = data;
+
+        struct np_event* before = pl->eq.events.sentinel->prev;
+        struct np_event* after = pl->eq.events.sentinel;
+
+        insert_event_between_nodes(event, before, after);
+
+        if (pl->eq.notify) {
+            pl->eq.notify(pl->eq.notifyData);
+        }
+    }
 }
 
 void np_event_queue_poll_one(struct np_platform* pl)

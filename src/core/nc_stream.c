@@ -13,6 +13,8 @@ struct nabto_stream_module nc_stream_module;
 
 static void nc_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
 
+static void nc_stream_event_queue_callback(void* data);
+
 void event(struct nc_stream_context* ctx);
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType);
 void nc_stream_handle_wait(struct nc_stream_context* ctx);
@@ -80,6 +82,8 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->currentExpiry = nabto_stream_stamp_infinite();
     ctx->isSending = false;
     ctx->connectionRef = connectionRef;
+
+    np_event_queue_init_event(&ctx->ev);
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
     nabto_stream_set_application_event_callback(&ctx->stream, &nc_stream_application_event_callback, ctx);
@@ -159,9 +163,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
 
     nabto_stream_event_handled(&ctx->stream, eventType);
 
-    // TODO make iterative instead of recursive
-    // se if more events can be processed, until we reach ET_WAIT.
-    nc_stream_event(ctx);
+    np_event_queue_post_maybe_double(ctx->pl, &ctx->ev, &nc_stream_event_queue_callback, ctx);
 }
 
 void nc_stream_handle_wait(struct nc_stream_context* ctx)
@@ -266,7 +268,7 @@ void nc_stream_event_queue_callback(void* data)
 void nc_stream_event_callback(enum nabto_stream_module_event event, void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
-    np_event_queue_post(ctx->pl, &ctx->ev, &nc_stream_event_queue_callback, ctx);
+    np_event_queue_post_maybe_double(ctx->pl, &ctx->ev, &nc_stream_event_queue_callback, ctx);
 }
 
 struct nabto_stream_send_segment* nc_stream_alloc_send_segment(size_t bufferSize, void* data)

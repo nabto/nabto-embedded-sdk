@@ -73,11 +73,19 @@ struct np_event_queue {
 
 void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify notify, void* notifyData);
 
+void np_event_queue_init_event(struct np_event* event);
+
 bool np_event_queue_has_ready_event(struct np_platform* pl);
 /**
  * Enqueue an event to the event queue.
  */
 bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
+
+/**
+ * Enqueue an event which maybe already is in the queue. If it is on
+ * the queue it is not reposted.
+ */
+void np_event_queue_post_maybe_double(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
 
 void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data);
 
