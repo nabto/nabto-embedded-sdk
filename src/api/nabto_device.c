@@ -30,6 +30,7 @@ void* nabto_device_core_thread(void* data);
 void nabto_device_init_platform(struct np_platform* pl);
 void nabto_device_free_threads(struct nabto_device_context* dev);
 NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
+void nabto_device_do_stop(struct nabto_device_context* dev);
 
 const char* nabto_device_version()
 {
@@ -40,6 +41,13 @@ void notify_event_queue_post(void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     nabto_device_threads_cond_signal(dev->eventCond);
+}
+
+void nabto_device_new_resolve_failure(struct nabto_device_context* dev)
+{
+    dev->closing = true;
+    nabto_device_do_stop(dev);
+    nabto_device_free((NabtoDevice*)dev);
 }
 
 /**
@@ -58,35 +66,27 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
     if (dev->eventMutex == NULL) {
-        // todo make better cleanup
         NABTO_LOG_ERROR(LOG, "mutex init has failed");
-        nabto_device_platform_close(&dev->pl);
-        free(dev);
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
     dev->eventCond = nabto_device_threads_create_condition();
     if (dev->eventCond == NULL) {
         NABTO_LOG_ERROR(LOG, "condition init has failed");
-        nabto_device_free_threads(dev);
-        nabto_device_platform_close(&dev->pl);
-        free(dev);
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
     dev->futureQueueMutex = nabto_device_threads_create_mutex();
     if (dev->futureQueueMutex == NULL) {
         NABTO_LOG_ERROR(LOG, "future queue mutex init has failed");
-        nabto_device_free_threads(dev);
-        nabto_device_platform_close(&dev->pl);
-        free(dev);
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
 
     dev->coreThread = nabto_device_threads_create_thread();
     dev->networkThread = nabto_device_threads_create_thread();
     if (dev->coreThread == NULL || dev->networkThread == NULL) {
-        nabto_device_free_threads(dev);
-        nabto_device_platform_close(&dev->pl);
-        free(dev);
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
 
@@ -94,31 +94,17 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 
     if (nabto_device_threads_run(dev->coreThread, nabto_device_core_thread, dev) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to run core thread");
-        nabto_device_free_threads(dev);
-        nabto_device_platform_close(&dev->pl);
-        free(dev);
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
     if (nabto_device_threads_run(dev->networkThread, nabto_device_network_thread, dev) != 0) {
         NABTO_LOG_ERROR(LOG, "Failed to run network thread");
-        dev->closing = true;
-        nabto_device_threads_cond_signal(dev->eventCond);
-        nabto_device_threads_join(dev->coreThread);
-        nabto_device_free_threads(dev);
-        nabto_device_platform_close(&dev->pl);
-        free(dev);
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
     np_error_code ec = nc_device_init(&dev->core, &dev->pl);
     if (ec != NABTO_EC_OK) {
-        dev->closing = true;
-        nabto_device_threads_cond_signal(dev->eventCond);
-        nabto_device_platform_signal(&dev->pl);
-        nabto_device_threads_join(dev->coreThread);
-        nabto_device_threads_join(dev->networkThread);
-        nabto_device_free_threads(dev);
-        nabto_device_platform_close(&dev->pl);
-        free(dev);
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
 
@@ -138,11 +124,17 @@ void nabto_device_stop(NabtoDevice* device)
 
     dev->closing = true;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
+    nabto_device_do_stop(dev);
+}
 
+void nabto_device_do_stop(struct nabto_device_context* dev)
+{
     // Send a signal if a function is blocking the network thread.
     nabto_device_platform_signal(&dev->pl);
 
-    nabto_device_threads_cond_signal(dev->eventCond);
+    if (dev->eventCond != NULL) {
+        nabto_device_threads_cond_signal(dev->eventCond);
+    }
 
     if (dev->networkThread != NULL) {
         nabto_device_threads_join(dev->networkThread);
@@ -152,7 +144,6 @@ void nabto_device_stop(NabtoDevice* device)
     }
 
     nabto_device_platform_close(&dev->pl);
-
 }
 
 /**
