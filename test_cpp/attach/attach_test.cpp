@@ -46,7 +46,6 @@ class AttachTest {
     void setDtlsPort(uint16_t port)
     {
         attach_.defaultPort = port;
-        attach_.bsEps[0].port = port;
     }
 
     static void listener(enum nc_device_event event, void* data)
@@ -220,6 +219,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
 
 BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
 {
+    // the device waits for dtls to timeout and retry again.
     auto ioService = nabto::IoService::create("test");
     auto testLogger = nabto::test::TestLogger::create();
     std::shared_ptr<nabto::test::AttachServer> attachServer;

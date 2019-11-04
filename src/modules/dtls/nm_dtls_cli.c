@@ -59,12 +59,14 @@ static np_error_code nm_dtls_cli_set_keys(np_dtls_cli_context* ctx,
                                           const unsigned char* publicKeyL, size_t publicKeySize,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
 
-np_error_code nm_dtls_async_send_data(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                      struct np_dtls_cli_send_context* sendCtx);
+static np_error_code async_send_data(np_dtls_cli_context* ctx,
+                                     struct np_dtls_cli_send_context* sendCtx);
 
-np_error_code nm_dtls_cli_close(struct np_platform* pl, np_dtls_cli_context* ctx);
+static np_error_code dtls_cli_close(np_dtls_cli_context* ctx);
 
 np_error_code nm_dtls_get_fingerprint(struct np_platform* pl, np_dtls_cli_context* ctx, uint8_t* fp);
+
+np_error_code nm_dtls_set_handshake_timeout(np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout);
 
 
 
@@ -83,8 +85,9 @@ int nm_dtls_mbedtls_timing_get_delay(void* ctx);
 void nm_dtls_event_do_one(void* data);
 
 void nm_dtls_cli_remove_send_data(struct np_dtls_cli_send_context* elm);
+
 // Handle packet from udp
-np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_cli_context* ctx,
+static np_error_code handle_packet(struct np_dtls_cli_context* ctx,
                                    uint8_t* buffer, uint16_t bufferSize);
 
 void nm_dtls_cli_start_send_deferred(void* data);
@@ -144,12 +147,13 @@ np_error_code nm_dtls_cli_init(struct np_platform* pl)
     pl->dtlsC.set_keys = &nm_dtls_cli_set_keys;
     pl->dtlsC.connect = &nm_dtls_connect;
     pl->dtlsC.reset = &nm_dtls_cli_reset;
-    pl->dtlsC.async_send_data = &nm_dtls_async_send_data;
-    pl->dtlsC.close = &nm_dtls_cli_close;
+    pl->dtlsC.async_send_data = &async_send_data;
+    pl->dtlsC.close = &dtls_cli_close;
     pl->dtlsC.get_fingerprint = &nm_dtls_get_fingerprint;
+    pl->dtlsC.set_handshake_timeout = &nm_dtls_set_handshake_timeout;
     pl->dtlsC.get_alpn_protocol = &nm_dtls_get_alpn_protocol;
     pl->dtlsC.get_packet_count = &nm_dtls_get_packet_count;
-    pl->dtlsC.handle_packet = &nm_dtls_cli_handle_packet;
+    pl->dtlsC.handle_packet = &handle_packet;
 
     return NABTO_EC_OK;
 }
@@ -189,18 +193,7 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
 
 np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx)
 {
-    if (ctx->ctx.state != CLOSING) {
-        return NABTO_EC_INVALID_STATE;
-    }
-    mbedtls_entropy_free( &ctx->entropy );
-    mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
-    mbedtls_ssl_config_free( &ctx->conf );
-    mbedtls_ssl_free( &ctx->ctx.ssl );
-
-    mbedtls_ssl_init( &ctx->ctx.ssl );
-    mbedtls_ssl_config_init( &ctx->conf );
-    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
-    mbedtls_entropy_init( &ctx->entropy );
+    mbedtls_ssl_session_reset( &ctx->ctx.ssl );
     return NABTO_EC_OK;
 }
 
@@ -280,6 +273,11 @@ np_error_code nm_dtls_get_fingerprint(struct np_platform* pl, np_dtls_cli_contex
     return nm_dtls_util_fp_from_crt(crt, fp);
 }
 
+np_error_code nm_dtls_set_handshake_timeout(np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)
+{
+    mbedtls_ssl_conf_handshake_timeout(&ctx->conf, minTimeout, maxTimeout);
+    return NABTO_EC_OK;
+}
 
 /*
  * asyncroniously start a dtls connection
@@ -414,10 +412,11 @@ void nm_dtls_cli_start_send_deferred(void* data)
 }
 
 
-np_error_code nm_dtls_async_send_data(struct np_platform* pl, np_dtls_cli_context* ctx,
-                                      struct np_dtls_cli_send_context* sendCtx)
+np_error_code async_send_data(np_dtls_cli_context* ctx,
+                              struct np_dtls_cli_send_context* sendCtx)
 {
 
+    struct np_platform* pl = ctx->pl;
     if (ctx->ctx.state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
@@ -443,7 +442,7 @@ void nm_dtls_event_close(void* data) {
     nm_dtls_do_close(data, NABTO_EC_CONNECTION_CLOSING);
 }
 
-np_error_code nm_dtls_cli_close(struct np_platform* pl, np_dtls_cli_context* ctx)
+np_error_code dtls_cli_close(np_dtls_cli_context* ctx)
 {
     if (!ctx ) {
         return NABTO_EC_INVALID_ARGUMENT;
@@ -456,8 +455,8 @@ np_error_code nm_dtls_cli_close(struct np_platform* pl, np_dtls_cli_context* ctx
     return NABTO_EC_OK;
 }
 
-np_error_code nm_dtls_cli_handle_packet(struct np_platform* pl, struct np_dtls_cli_context* ctx,
-                                        uint8_t* buffer, uint16_t bufferSize)
+np_error_code handle_packet(struct np_dtls_cli_context* ctx,
+                            uint8_t* buffer, uint16_t bufferSize)
 {
     ctx->ctx.recvBuffer = buffer;
     ctx->ctx.recvBufferSize = bufferSize;

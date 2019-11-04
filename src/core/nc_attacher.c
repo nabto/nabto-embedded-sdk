@@ -174,7 +174,7 @@ void do_close(struct nc_attach_context* ctx)
         case NC_ATTACHER_STATE_DTLS_CONNECT:
         case NC_ATTACHER_STATE_COAP_ATTACH_REQUEST:
         case NC_ATTACHER_STATE_ATTACHED:
-            ctx->pl->dtlsC.close(ctx->pl, ctx->dtls);
+            ctx->pl->dtlsC.close(ctx->dtls);
             break;
         case NC_ATTACHER_STATE_DNS:
             // dns resolvers can currently not be stopped, for now we just wait for it to finish.
@@ -210,7 +210,7 @@ void handle_state_change(struct nc_attach_context* ctx)
             break;
         case NC_ATTACHER_STATE_REDIRECT:
         case NC_ATTACHER_STATE_PREPARE_RETRY:
-            ctx->pl->dtlsC.close(ctx->pl, ctx->dtls);
+            ctx->pl->dtlsC.close(ctx->dtls);
             break;
         case NC_ATTACHER_STATE_RETRY_WAIT:
             np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, get_reattach_time(ctx), &reattach, ctx);
@@ -596,7 +596,7 @@ void keep_alive_event(const np_error_code ec, void* data)
                 nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
                 break;
             case KA_TIMEOUT:
-                ctx->pl->dtlsC.close(ctx->pl, ctx->dtls);
+                ctx->pl->dtlsC.close(ctx->dtls);
                 break;
         }
     }
@@ -639,7 +639,7 @@ void keep_alive_send_req(struct nc_attach_context* ctx)
     sendCtx->cb = &nc_keep_alive_packet_sent;
     sendCtx->data = &ctx->keepAlive;
 
-    pl->dtlsC.async_send_data(pl, ctx->dtls, sendCtx);
+    pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
 }
 
 void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length)
@@ -649,6 +649,6 @@ void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, si
     if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
         sendCtx->cb = &nc_keep_alive_packet_sent;
         sendCtx->data = &ctx->keepAlive;
-        pl->dtlsC.async_send_data(pl, ctx->dtls, sendCtx);
+        pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
     }
 }

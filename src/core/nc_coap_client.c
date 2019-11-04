@@ -79,7 +79,7 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         sendCtx->bufferSize = used;
 
         np_dtls_cli_context* dtls = (np_dtls_cli_context*)connection;
-        ctx->pl->dtlsC.async_send_data(ctx->pl, dtls, sendCtx);
+        ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
     }
 }
 

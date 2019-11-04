@@ -79,7 +79,7 @@ void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoin
     if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
         nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
     }  else if (ctx->dtls != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
-        ctx->pl->dtlsC.handle_packet(ctx->pl, ctx->dtls, buffer, bufferSize);
+        ctx->pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
     } else if (ctx->cliConn != NULL && (start[0] >= 240)) {
         nc_client_connection_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
     } else {
