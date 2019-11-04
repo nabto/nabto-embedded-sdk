@@ -10,8 +10,8 @@ static NabtoDevice* createTestDevice()
     NabtoDeviceError ec;
     NabtoDevice* dev = nabto_device_new();
     BOOST_TEST(dev);
-    ec = nabto_device_set_log_std_out_callback(dev);
-    ec = nabto_device_set_log_level(dev, "trace");
+//    ec = nabto_device_set_log_std_out_callback(dev);
+//    ec = nabto_device_set_log_level(dev, "trace");
 
     ec = nabto_device_set_server_url(dev, "server.foo.bar");
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
