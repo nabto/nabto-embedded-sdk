@@ -91,6 +91,8 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
         // TODO: handle OOM
         nabto_coap_server_response_set_payload(request, buffer, used);
+        // On errors we should still cleanup the request
+        nabto_coap_server_response_ready(request);
     }
     nabto_coap_server_request_free(request);
     ctx->stunRequest = NULL;
