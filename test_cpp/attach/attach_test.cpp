@@ -39,6 +39,8 @@ class AttachTest {
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str()), nabto::test::devicePrivateKey.size());
         nc_attacher_set_app_info(&attach_, appName_, appVersion_);
         nc_attacher_set_device_info(&attach_, productId_, deviceId_);
+        // set timeout to approximately one seconds for the dtls handshake
+        nc_attacher_set_handshake_timeout(&attach_, 50, 500);
 
         BOOST_TEST(nc_attacher_start(&attach_, hostname_, serverPort_, &udpDispatch_) == NABTO_EC_OK);
     }
@@ -89,6 +91,7 @@ class AttachTest {
  public:
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };
+
 };
 
 } }

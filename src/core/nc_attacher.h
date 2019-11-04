@@ -104,6 +104,9 @@ np_error_code nc_attacher_set_device_info(struct nc_attach_context* ctx,
                                           const char* productId,
                                           const char* deviceId);
 
+np_error_code nc_attacher_set_handshake_timeout(struct nc_attach_context* ctx,
+                                                uint32_t minTimeoutMilliseconds, uint32_t maxTimeoutMilliseconds);
+
 // Start the attach module
 np_error_code nc_attacher_start(struct nc_attach_context* ctx,
                                 const char* hostname,

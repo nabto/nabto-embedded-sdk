@@ -115,6 +115,15 @@ np_error_code nc_attacher_set_device_info(struct nc_attach_context* ctx, const c
     return NABTO_EC_OK;
 }
 
+np_error_code nc_attacher_set_handshake_timeout(struct nc_attach_context* ctx,
+                                                uint32_t minTimeoutMilliseconds, uint32_t maxTimeoutMilliseconds)
+{
+    struct np_platform* pl = ctx->pl;
+    pl->dtlsC.set_handshake_timeout(ctx->dtls, minTimeoutMilliseconds, maxTimeoutMilliseconds);
+    return NABTO_EC_OK;
+}
+
+
 np_error_code nc_attacher_start(struct nc_attach_context* ctx, const char* hostname, uint16_t serverPort, struct nc_udp_dispatch_context* udp)
 {
     if (ctx->moduleState != NC_ATTACHER_MODULE_SETUP) {

@@ -43,7 +43,6 @@ struct np_dtls_cli_context {
     struct np_dtls_cli_send_context sendSentinel;
     struct np_event startSendEvent;
 
-    const char* sniName;
     bool sending;
     bool destroyed;
 
@@ -83,18 +82,14 @@ static np_error_code get_fingerprint(np_dtls_cli_context* ctx, uint8_t* fp);
 static np_error_code set_handshake_timeout(np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout);
 
 static void nm_dtls_timed_event_do_one(const np_error_code ec, void* data);
-
-np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx);
-np_error_code nm_dtls_connect(np_dtls_cli_context* ctx);
+static np_error_code dtls_cli_init_connection(np_dtls_cli_context* ctx);
+static np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx);
+static np_error_code nm_dtls_connect(np_dtls_cli_context* ctx);
 
 // Function called by mbedtls when data should be sent to the network
 int nm_dtls_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
 // Function called by mbedtls when it wants data from the network
 int nm_dtls_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferSize);
-// Function called by mbedtls which creates timeout events
-void nm_dtls_mbedtls_timing_set_delay(void* ctx, uint32_t intermediateMilliseconds, uint32_t finalMilliseconds);
-// Function called by mbedtls to determine when the next timeout event occurs
-int nm_dtls_mbedtls_timing_get_delay(void* ctx);
 // Function used to handle events during the connection phase
 void nm_dtls_event_do_one(void* data);
 
@@ -181,7 +176,6 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
     if (ctx == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    *client = ctx;
     ctx->pl = pl;
     mbedtls_ssl_init( &ctx->ssl );
     mbedtls_ssl_config_init( &ctx->conf );
@@ -202,8 +196,61 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
     ctx->sendSentinel.prev = &ctx->sendSentinel;
     ctx->destroyed = false;
 
+    np_error_code ec = dtls_cli_init_connection(ctx);
+    if (ec != NABTO_EC_OK) {
+        nm_dtls_cli_do_free(ctx);
+    }
+    *client = ctx;
+    return ec;
+}
+
+np_error_code dtls_cli_init_connection(np_dtls_cli_context* ctx)
+{
     nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_timed_event_do_one, ctx);
 
+    int ret;
+    const char *pers = "dtls_client";
+
+#if defined(MBEDTLS_DEBUG_C)
+    mbedtls_debug_set_threshold( DEBUG_LEVEL );
+#endif
+
+    if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
+                               (const unsigned char *) pers,
+                               strlen( pers ) ) ) != 0 ) {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
+    if( ( ret = mbedtls_ssl_config_defaults( &ctx->conf,
+                   MBEDTLS_SSL_IS_CLIENT,
+                   MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+                   MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
+    mbedtls_ssl_conf_alpn_protocols(&ctx->conf, nm_dtls_cli_alpnList );
+    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
+
+    mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
+#if defined(MBEDTLS_DEBUG_C)
+    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
+#endif
+
+
+#if defined(MBEDTLS_DEBUG_C)
+    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
+#endif
+
+    mbedtls_ssl_set_bio( &ctx->ssl, ctx,
+                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
+
+    mbedtls_ssl_set_timer_cb( &ctx->ssl,
+                              &ctx->timer,
+                              &nm_dtls_timer_set_delay,
+                              &nm_dtls_timer_get_delay );
     return NABTO_EC_OK;
 }
 
@@ -252,7 +299,12 @@ void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
 
 np_error_code nm_dtls_cli_set_sni(np_dtls_cli_context* ctx, const char* sniName)
 {
-    ctx->sniName = sniName;
+    int ret;
+    if( ( ret = mbedtls_ssl_set_hostname( &ctx->ssl, sniName ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
     return NABTO_EC_OK;
 }
 
@@ -273,6 +325,13 @@ np_error_code nm_dtls_cli_set_keys(np_dtls_cli_context* ctx,
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_pk_parse_key returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
+
+    ret = mbedtls_ssl_conf_own_cert(&ctx->conf, &ctx->publicKey, &ctx->privateKey);
+    if (ret != 0) {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_conf_own_cert returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
     return NABTO_EC_OK;
 }
 
@@ -300,13 +359,18 @@ np_error_code set_handshake_timeout(np_dtls_cli_context* ctx, uint32_t minTimeou
  */
 np_error_code nm_dtls_connect(np_dtls_cli_context* ctx)
 {
-    np_error_code ec;
     ctx->state = CONNECTING;
     ctx->sending = false;
 
-    ec = nm_dtls_setup_dtls_ctx(ctx);
+    int ret;
+    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &ctx->conf ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
     nm_dtls_event_do_one(ctx);
-    return ec;
+    return NABTO_EC_OK;
 }
 
 /*
@@ -533,69 +597,4 @@ void nm_dtls_timed_event_do_one(const np_error_code ec, void* data) {
         return;
     }
     nm_dtls_event_do_one(data);
-}
-
-np_error_code nm_dtls_setup_dtls_ctx(np_dtls_cli_context* ctx)
-{
-    int ret;
-    const char *pers = "dtls_client";
-
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_debug_set_threshold( DEBUG_LEVEL );
-#endif
-
-    if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
-                               (const unsigned char *) pers,
-                               strlen( pers ) ) ) != 0 ) {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret );
-        nm_dtls_timer_cancel(&ctx->timer);
-        return NABTO_EC_UNKNOWN;
-    }
-
-    if( ( ret = mbedtls_ssl_config_defaults( &ctx->conf,
-                   MBEDTLS_SSL_IS_CLIENT,
-                   MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-                   MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
-        nm_dtls_timer_cancel(&ctx->timer);
-        return NABTO_EC_UNKNOWN;
-    }
-    mbedtls_ssl_conf_alpn_protocols(&ctx->conf, nm_dtls_cli_alpnList );
-    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
-    ret = mbedtls_ssl_conf_own_cert(&ctx->conf, &ctx->publicKey, &ctx->privateKey);
-    if (ret != 0) {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_conf_own_cert returned %d", ret );
-        nm_dtls_timer_cancel(&ctx->timer);
-        return NABTO_EC_UNKNOWN;
-    }
-
-    mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
-#endif
-    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &ctx->conf ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
-        nm_dtls_timer_cancel(&ctx->timer);
-        return NABTO_EC_UNKNOWN;
-    }
-
-    if (ctx->sniName) {
-        if( ( ret = mbedtls_ssl_set_hostname( &ctx->ssl, ctx->sniName ) ) != 0 )
-        {
-            NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
-            nm_dtls_timer_cancel(&ctx->timer);
-            return NABTO_EC_UNKNOWN;
-        }
-    }
-
-    mbedtls_ssl_set_bio( &ctx->ssl, ctx,
-                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
-
-    mbedtls_ssl_set_timer_cb( &ctx->ssl,
-                              &ctx->timer,
-                              &nm_dtls_timer_set_delay,
-                              &nm_dtls_timer_get_delay );
-    return NABTO_EC_OK;
 }
