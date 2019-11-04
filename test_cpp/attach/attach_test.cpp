@@ -200,6 +200,13 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
                 attachServer->niceClose();
             }
+            if (at.attachCount_ == 1 &&
+                at.detachCount_ == 1)
+            {
+                attachServer->stop();
+                attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+                at.setDtlsPort(attachServer->getPort());
+            }
             if (at.attachCount_ == 2 &&
                 at.detachCount_ == 1)
             {
