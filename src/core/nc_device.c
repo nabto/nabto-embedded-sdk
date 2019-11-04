@@ -16,31 +16,33 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
     if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
         return ec;
     }
     ec = nc_udp_dispatch_init(&device->secondaryUdp, pl);
     if (ec != NABTO_EC_OK) {
-        nc_udp_dispatch_deinit(&device->udp);
+        nc_device_deinit(device);
         return ec;
     }
 
     ec = pl->dtlsS.create(pl, &device->dtlsServer);
     if (ec != NABTO_EC_OK) {
-        nc_udp_dispatch_deinit(&device->udp);
-        nc_udp_dispatch_deinit(&device->secondaryUdp);
+        nc_device_deinit(device);
         return ec;
     }
     nc_iam_init(&device->iam);
     ec = nc_coap_server_init(pl, &device->coapServer);
     if (ec != NABTO_EC_OK) {
-        pl->dtlsS.destroy(device->dtlsServer);
-        nc_udp_dispatch_deinit(&device->udp);
-        nc_udp_dispatch_deinit(&device->secondaryUdp);
+        nc_device_deinit(device);
         return ec;
     }
     nc_iam_coap_register_handlers(device);
     nc_coap_client_init(pl, &device->coapClient);
-    nc_attacher_init(&device->attacher, pl, device, &device->coapClient, &nc_device_events_listener_notify, device);
+    ec = nc_attacher_init(&device->attacher, pl, device, &device->coapClient, &nc_device_events_listener_notify, device);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
     nc_rendezvous_init(&device->rendezvous, pl);
     nc_stun_init(&device->stun, pl);
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
@@ -61,7 +63,9 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     return NABTO_EC_OK;
 }
 
+// nc_device_deinit must NEVER be called without init
 void nc_device_deinit(struct nc_device_context* device) {
+
     struct np_platform* pl = device->pl;
 
     np_event_queue_cancel_event(device->pl, &device->closeEvent);
@@ -77,7 +81,9 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
     nc_iam_deinit(&device->iam);
-    pl->dtlsS.destroy(device->dtlsServer);
+    if (device->dtlsServer != NULL) { // was created
+        pl->dtlsS.destroy(device->dtlsServer);
+    }
     nc_udp_dispatch_deinit(&device->udp);
     nc_udp_dispatch_deinit(&device->secondaryUdp);
 }

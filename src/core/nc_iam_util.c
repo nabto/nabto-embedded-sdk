@@ -12,6 +12,9 @@ void nc_iam_list_init(struct nc_iam_list* list) {
 void nc_iam_list_clear(struct nc_iam_list* list)
 {
     struct nc_iam_list_entry* iterator = list->sentinel.next;
+    if (iterator == NULL) { // sentinel not initialized
+        return;
+    }
     while (iterator != &list->sentinel) {
         struct nc_iam_list_entry* entry = iterator;
         iterator = iterator->next;
@@ -25,6 +28,9 @@ void nc_iam_list_clear(struct nc_iam_list* list)
 void nc_iam_list_clear_and_free_items(struct nc_iam_list* list)
 {
     struct nc_iam_list_entry* iterator = list->sentinel.next;
+    if (iterator == NULL) { // sentinel not initialized
+        return;
+    }
     while (iterator != &list->sentinel) {
         struct nc_iam_list_entry* entry = iterator;
         iterator = iterator->next;

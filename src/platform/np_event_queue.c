@@ -76,6 +76,7 @@ bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
         // since we are not calling the completion handler exactly
         // once.
         if (np_event_queue_cancel_event(pl, event)) {
+            NABTO_LOG_ERROR(LOG, "Double posted event had to be cancelled");
             canceledEvent = true;
         }
     }
@@ -146,6 +147,7 @@ void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_eve
         // TODO this is not good since we should call the completion
         // handler exactly once.
         if (np_event_queue_cancel_timed_event(pl, event)) {
+            NABTO_LOG_ERROR(LOG, "Double posted timed event had to be cancelled");
             //NABTO_LOG_TRACE(LOG, "cancelling queued timed event");
         }
     }
@@ -262,7 +264,6 @@ uint32_t np_event_queue_next_timed_event_occurance(struct np_platform* pl)
         return 0;
     }
     pl->ts.now(&now);
-    // TODO this could be 0 or negative, which violates the api.
     return pl->ts.difference(&ev->sentinel->next->timestamp, &now);
 }
 

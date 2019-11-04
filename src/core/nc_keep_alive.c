@@ -24,7 +24,9 @@ void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* p
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->keepAliveEvent);
+    if (ctx->pl != NULL) { // if init called
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->keepAliveEvent);
+    }
 }
 
 void nc_keep_alive_reset(struct nc_keep_alive_context* ctx)

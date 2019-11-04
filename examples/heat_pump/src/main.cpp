@@ -159,6 +159,10 @@ void run_heat_pump(const std::string& configFile)
     }
 
     NabtoDevice* device = nabto_device_new();
+    if (device == NULL) {
+        std::cerr << "Device New Failed" << std::endl;
+        return;
+    }
 
     auto productId = config["ProductId"].get<std::string>();
     auto deviceId  = config["DeviceId"].get<std::string>();

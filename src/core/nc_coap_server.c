@@ -40,6 +40,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
     nabto_coap_error err = nabto_coap_server_init(&ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, &nc_coap_server_event_handler, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);
+        ctx->sendBuffer = NULL;
         return nc_coap_server_error_module_to_core(err);
     }
     nc_coap_server_set_infinite_stamp(ctx);
@@ -48,9 +49,11 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
 
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
 {
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
-    nabto_coap_server_destroy(&ctx->server);
-    ctx->pl->buf.free(ctx->sendBuffer);
+    if (ctx->pl != NULL) { // if init was called
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
+        nabto_coap_server_destroy(&ctx->server);
+        ctx->pl->buf.free(ctx->sendBuffer);
+    }
 }
 
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,

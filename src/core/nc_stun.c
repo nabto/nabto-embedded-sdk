@@ -75,9 +75,11 @@ void nc_stun_init(struct nc_stun_context* ctx,
 
 void nc_stun_deinit(struct nc_stun_context* ctx)
 {
-    struct np_platform* pl = ctx->pl;
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
-    pl->buf.free(ctx->sendBuf);
+    if (ctx->pl != NULL) { // if init called
+        struct np_platform* pl = ctx->pl;
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
+        pl->buf.free(ctx->sendBuf);
+    }
 }
 
 void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* hostname, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp)

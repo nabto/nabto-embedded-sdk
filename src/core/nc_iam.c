@@ -43,6 +43,7 @@ void nc_iam_init(struct nc_iam* iam)
     iam->defaultRole = NULL;
 }
 
+// todo verify this doesn't break if init was never called
 void nc_iam_deinit(struct nc_iam* iam)
 {
     if (iam->changeCallback) {
@@ -53,6 +54,9 @@ void nc_iam_deinit(struct nc_iam* iam)
     nc_iam_list_clear_and_free_items(&iam->users);
     nc_iam_list_clear_and_free_items(&iam->roles);
     struct nc_iam_list_entry* iterator = iam->policies.sentinel.next;
+    if (iterator == NULL) { // sentinel not initialized
+        return;
+    }
     while (iterator != &iam->policies.sentinel) {
         struct nc_iam_policy* item = iterator->item;
         nc_iam_policy_free(item);

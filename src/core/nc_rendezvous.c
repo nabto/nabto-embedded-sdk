@@ -26,8 +26,9 @@ void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
 
 void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)
 {
-
-    ctx->pl->buf.free(ctx->priBuf);
+    if (ctx->pl != NULL) { // if init called
+        ctx->pl->buf.free(ctx->priBuf);
+    }
 }
 
 void nc_rendezvous_set_udp_dispatch(struct nc_rendezvous_context* ctx, struct nc_udp_dispatch_context* udpDispatch)

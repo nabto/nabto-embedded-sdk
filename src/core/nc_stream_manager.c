@@ -34,9 +34,11 @@ void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, str
 
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 {
-    while (ctx->listenerSentinel.next != &ctx->listenerSentinel) {
-        struct nc_stream_listener* listener = ctx->listenerSentinel.next;
-        nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
+    if (ctx->pl != NULL) { // if init was called
+        while (ctx->listenerSentinel.next != &ctx->listenerSentinel) {
+            struct nc_stream_listener* listener = ctx->listenerSentinel.next;
+            nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
+        }
     }
 }
 

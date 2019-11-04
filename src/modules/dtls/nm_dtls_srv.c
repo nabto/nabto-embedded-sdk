@@ -358,6 +358,9 @@ void nm_dtls_srv_do_event_callback(void* data)
 
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 {
+    // we call this several places to ensure the send queue is
+    // running, if already running we need to cancel before posting
+    np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
     np_event_queue_post(ctx->pl, &ctx->startSendEvent, &nm_dtls_srv_start_send_deferred, ctx);
 }
 
@@ -457,7 +460,6 @@ static void nm_dtls_srv_tls_logger( void *ctx, int level,
             severity = NABTO_LOG_SEVERITY_TRACE;
             break;
     }
-    // TODO: fix this ugly hack to remove \n after all mbedtls log strings
     NABTO_LOG_RAW(severity, LOG, line, file, str );
 }
 #endif
@@ -589,6 +591,7 @@ void nm_dtls_srv_mbedtls_timing_set_delay(void* data, uint32_t intermediateMilli
     } else {
         ctx->pl->ts.set_future_timestamp(&ctx->ctx.intermediateTp, intermediateMilliseconds);
         ctx->pl->ts.set_future_timestamp(&ctx->ctx.finalTp, finalMilliseconds);
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
         np_event_queue_post_timed_event(ctx->pl, &ctx->ctx.tEv, finalMilliseconds, &nm_dtls_srv_timed_event_do_one, ctx);
     }
 }

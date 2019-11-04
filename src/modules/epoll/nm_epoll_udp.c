@@ -651,11 +651,17 @@ np_error_code nm_epoll_async_recv_from(np_udp_socket* socket,
         NABTO_LOG_ERROR(LOG, "recv from called on aborted socket");
         return NABTO_EC_ABORTED;
     }
+    if (socket->recv.cb != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
     struct np_platform* pl = socket->pl;
 
     socket->recv.cb = cb;
     socket->recv.data = data;
 
+    // if we received multiple packets in one epoll_wait the event
+    // will not be triggered between recv callbacks
+    np_event_queue_cancel_event(pl, &socket->recv.event);
     np_event_queue_post(pl, &socket->recv.event, nm_epoll_udp_try_read, socket);
     return NABTO_EC_OK;
 }

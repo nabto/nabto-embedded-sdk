@@ -160,7 +160,9 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
 {
     *client = NULL;
     np_dtls_cli_context* ctx = calloc(1, sizeof(struct np_dtls_cli_context));
-    // todo handle oom
+    if (ctx == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     *client = ctx;
     ctx->pl = pl;
     mbedtls_ssl_init( &ctx->ctx.ssl );
@@ -231,7 +233,6 @@ void nm_dtls_cli_do_free(np_dtls_cli_context* ctx)
 
 void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
 {
-    // TODO if DTLS is sending destroy should be deferred
     ctx->ctx.state = CLOSING;
     ctx->destroyed = true;
 
@@ -531,6 +532,7 @@ void nm_dtls_mbedtls_timing_set_delay(void* data, uint32_t intermediateMilliseco
     } else {
         ctx->pl->ts.set_future_timestamp(&ctx->ctx.intermediateTp, intermediateMilliseconds);
         ctx->pl->ts.set_future_timestamp(&ctx->ctx.finalTp, finalMilliseconds);
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->ctx.tEv);
         np_event_queue_post_timed_event(ctx->pl, &ctx->ctx.tEv, finalMilliseconds, &nm_dtls_timed_event_do_one, ctx);
     }
 }

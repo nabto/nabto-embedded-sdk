@@ -69,21 +69,22 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
-    ctx->moduleState = NC_ATTACHER_MODULE_CLOSED;
-    if (ctx->state == NC_ATTACHER_STATE_DNS) {
-        // ensure that returning DNS resolver will not continue attacher
-        do_close(ctx);
-    }
-    nc_keep_alive_deinit(&ctx->keepAlive);
-    ctx->pl->dtlsC.destroy(ctx->dtls);
+    if (ctx->pl != NULL) { // if init was called
+        ctx->moduleState = NC_ATTACHER_MODULE_CLOSED;
+        if (ctx->state == NC_ATTACHER_STATE_DNS) {
+            // ensure that returning DNS resolver will not continue attacher
+            do_close(ctx);
+        }
+        nc_keep_alive_deinit(&ctx->keepAlive);
+        ctx->pl->dtlsC.destroy(ctx->dtls);
 
-    if (ctx->udp != NULL) {
-        nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
-    }
+        if (ctx->udp != NULL) {
+            nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
+        }
 
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
-    np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
-    // cleanup/close dtls connections etc.
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
+        np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
+    }
 }
 
 np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)

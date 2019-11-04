@@ -21,11 +21,13 @@ void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_con
 
 void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_context* ctx)
 {
-    int i = 0;
-    for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
-        if (ctx->elms[i].active) {
-            nc_client_connection_destroy_connection(&ctx->elms[i].conn);
-            ctx->elms[i].active = false;
+    if (ctx->pl != NULL) { // if init called
+        int i = 0;
+        for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
+            if (ctx->elms[i].active) {
+                nc_client_connection_destroy_connection(&ctx->elms[i].conn);
+                ctx->elms[i].active = false;
+            }
         }
     }
 }
