@@ -96,7 +96,7 @@ void nc_stun_deinit_sockets(struct nc_stun_context* ctx)
 }
 
 // analyze function
-np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
+np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
                                     nc_stun_analyze_callback cb, void* data)
 {
     int i;
@@ -122,6 +122,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
         np_event_queue_post(ctx->pl, &ctx->resultEv, &nc_stun_resolve_callbacks, ctx);
         return NABTO_EC_OK;
         }*/
+    ctx->simple = simple;
     ctx->state = NC_STUN_STATE_RUNNING;
     ctx->pl->dns.async_resolve(ctx->pl, ctx->hostname, &nc_stun_dns_cb, ctx);
 
@@ -138,6 +139,18 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
     nabto_stun_handle_packet(&ctx->stun, buffer, bufferSize);
     nc_stun_event(ctx);
 
+}
+
+void nc_stun_convert_ep(const struct nabto_stun_endpoint* stunEp, struct np_udp_endpoint* npEp )
+{
+    npEp->port = stunEp->port;
+    if (stunEp->addr.type == NABTO_STUN_IPV4) {
+        npEp->ip.type = NABTO_IPV4;
+        memcpy(npEp->ip.ip.v4, stunEp->addr.v4.addr, 4);
+    } else {
+        npEp->ip.type = NABTO_IPV6;
+        memcpy(npEp->ip.ip.v6, stunEp->addr.v6.addr, 16);
+    }
 }
 
 // event function
@@ -241,7 +254,7 @@ void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t re
     }
     ctx->numEps = nc_stun_convert_ep_list(rec, recSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, NC_STUN_PORT);
     nabto_stun_init(&ctx->stun, &ctx->stunModule, ctx, ctx->eps, ctx->numEps);
-    nabto_stun_async_analyze(&ctx->stun);
+    nabto_stun_async_analyze(&ctx->stun, ctx->simple);
     nc_stun_event(ctx);
 }
 

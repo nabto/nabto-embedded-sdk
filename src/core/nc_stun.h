@@ -48,6 +48,7 @@ struct nc_stun_context {
 
     np_communication_buffer* sendBuf;
     struct np_udp_endpoint sendEp;
+    bool simple;
 };
 
 void nc_stun_init(struct nc_stun_context* ctx,
@@ -58,7 +59,7 @@ void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* ho
 void nc_stun_deinit_sockets(struct nc_stun_context* ctx);
 void nc_stun_deinit(struct nc_stun_context* ctx);
 
-np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx,
+np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
                                     nc_stun_analyze_callback cb, void* data);
 
 void nc_stun_handle_packet(struct nc_stun_context* ctx,
@@ -67,5 +68,7 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            uint16_t bufferSize);
 
 uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx);
+
+void nc_stun_convert_ep(const struct nabto_stun_endpoint* stunEp, struct np_udp_endpoint* npEp );
 
 #endif // NC_STUN_H

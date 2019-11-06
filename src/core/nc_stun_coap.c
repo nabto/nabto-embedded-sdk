@@ -33,7 +33,23 @@ void nc_stun_coap_deinit(struct nc_stun_coap_context* context)
 {
     // todo
 }
+static void encode_ep(CborEncoder* encoder, const struct np_udp_endpoint* ep)
+{
+    CborEncoder map;
+    if (ep->ip.type == NABTO_IPV4 || ep->ip.type == NABTO_IPV6) {
+        cbor_encoder_create_map(encoder, &map, CborIndefiniteLength);
 
+        cbor_encode_text_stringz(&map, "Ip");
+        if (ep->ip.type == NABTO_IPV4) {
+            cbor_encode_byte_string(&map, ep->ip.ip.v4, 4);
+        } else {
+            cbor_encode_byte_string(&map, ep->ip.ip.v6, 16);
+        }
+        cbor_encode_text_stringz(&map, "Port");
+        cbor_encode_uint(&map, ep->port);
+        cbor_encoder_close_container(encoder, &map);
+    }
+}
 
 void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabto_stun_result* res, void* data)
 {
@@ -51,7 +67,6 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     cbor_encoder_init(&encoder, buffer, 128, 0);
 
     CborEncoder array;
-    CborEncoder map;
     cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
 
     struct np_ip_address localAddrs[2];
@@ -64,19 +79,14 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         uint16_t localPort = nc_stun_get_local_port(ctx->stun);
         ep.port = localPort;
 
-        cbor_encoder_create_map(&array, &map, CborIndefiniteLength);
+        encode_ep(&array, &ep);
+    }
 
-        if (ep.ip.type == NABTO_IPV4 || ep.ip.type == NABTO_IPV6) {
-            cbor_encode_text_stringz(&map, "Ip");
-            if (ep.ip.type == NABTO_IPV4) {
-                cbor_encode_byte_string(&map, ep.ip.ip.v4, 4);
-            } else if (ep.ip.type == NABTO_IPV6) {
-                cbor_encode_byte_string(&map, ep.ip.ip.v6, 16);
-            }
-            cbor_encode_text_stringz(&map, "Port");
-            cbor_encode_uint(&map, ep.port);
-        }
-        cbor_encoder_close_container(&array, &map);
+    // encode the global ep
+    {
+        struct np_udp_endpoint ep;
+        nc_stun_convert_ep(&res->extEp, &ep);
+        encode_ep(&array, &ep);
     }
 
     cbor_encoder_close_container(&encoder, &array);
@@ -111,7 +121,7 @@ void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* r
         return;
     }
     ctx->stunRequest = request;
-    np_error_code ec = nc_stun_async_analyze(ctx->stun, &nc_rendezvous_endpoints_completed, ctx);
+    np_error_code ec = nc_stun_async_analyze(ctx->stun, true, &nc_rendezvous_endpoints_completed, ctx);
     if (ec != NABTO_EC_OK) {
         // TODO: handle error
         NABTO_LOG_ERROR(LOG, "Failed to start stun analysis");
