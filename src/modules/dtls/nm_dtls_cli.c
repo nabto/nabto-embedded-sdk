@@ -390,6 +390,7 @@ void nm_dtls_event_do_one(void* data)
             if( ret != 0 )
             {
                 NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
+                ctx->state = CLOSING;
                 ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
                 nm_dtls_timer_cancel(&ctx->timer);
                 return;
