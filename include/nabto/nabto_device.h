@@ -598,7 +598,10 @@ nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDevic
 
 
 /**
- * Free a COAP request when done handling it
+ * Free a COAP request when done handling it. If called without prior
+ * call to nabto_device_coap_error_response() or
+ * nabto_device_coap_response_ready(), an error response with code 500
+ * is returned to the client.
  *
  * @param request  Request to be freed
  */
@@ -615,8 +618,14 @@ nabto_device_coap_request_free(NabtoDeviceCoapRequest* request);
  * @param request  The request for which to create a response
  * @param code     The status code for the response in standard HTTP
  *                 status code format (eg. 200 for success)
- * @param message  zero terminated UTF8 string message
+ * @param message  zero terminated UTF8 string message. If Nabto
+ *                 failed to allocated memory for the message, an
+ *                 error is returned and no response is sent. If NULL
+ *                 is provided as this argument, no memory allocations
+ *                 are required.
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
+ *         NABTO_DEVICE_EC_ABORTED if the underlying connection was closed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_error_response(NabtoDeviceCoapRequest* request, uint16_t code, const char* message);
@@ -660,7 +669,10 @@ nabto_device_coap_response_set_content_format(NabtoDeviceCoapRequest* request, u
 
 /**
  * Mark a response as ready. Once ready, the response will be sent to
- * the client.
+ * the client. If a previous call to
+ * nabto_device_coap_response_set_payload() returned with an error,
+ * setting the response ready will send the response to the client
+ * with an empty payload.
  *
  * @param response  The response to be sent
  *
