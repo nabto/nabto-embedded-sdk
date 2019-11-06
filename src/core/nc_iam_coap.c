@@ -59,13 +59,18 @@ nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
 
 static void create_cbor_response(struct nabto_coap_server_request* request, void* cbor, size_t cborLength)
 {
+    nabto_coap_error ec;
     nabto_coap_server_response_set_code(request, NABTO_COAP_CODE(2,05));
     nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    // TODO: handle OOM
-    nabto_coap_server_response_set_payload(request, cbor, cborLength);
-    // On errors we should still cleanup the request
-    nabto_coap_server_response_ready(request);
-    nabto_coap_server_request_free(request);
+
+    ec = nabto_coap_server_response_set_payload(request, cbor, cborLength);
+    if (ec != NABTO_COAP_ERROR_OK) {
+        error_response(request, nc_coap_server_error_module_to_core(ec));
+    } else {
+        // On errors we should still cleanup the request
+        nabto_coap_server_response_ready(request);
+        nabto_coap_server_request_free(request);
+    }
 }
 
 /**
@@ -341,8 +346,9 @@ void nc_iam_coap_users_remove_role(struct nabto_coap_server_request* request, vo
 
 void access_denied(struct nabto_coap_server_request* request)
 {
-    // todo: handle oom
+    // If we cannot send error response, we cannot fail nicely, ignoring errors
     nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), "Access Denied");
+    nabto_coap_server_request_free(request);
 }
 
 nabto_coap_code ec_to_coap_code(np_error_code ec)
@@ -357,8 +363,9 @@ nabto_coap_code ec_to_coap_code(np_error_code ec)
 
 void error_response(struct nabto_coap_server_request* request, np_error_code ec)
 {
-    // todo: handle oom
+    // If we cannot send error response, we cannot fail nicely, ignoring errors
     nabto_coap_server_send_error_response(request, ec_to_coap_code(ec), np_error_code_to_string(ec));
+    nabto_coap_server_request_free(request);
 }
 
 void ok_response(struct nabto_coap_server_request* request, nabto_coap_code code)

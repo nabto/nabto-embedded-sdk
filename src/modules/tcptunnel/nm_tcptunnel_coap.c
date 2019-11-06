@@ -123,7 +123,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     uint16_t port;
 
     if (!parse_host_and_port(request, tunnels, &address, &port)) {
-        // todo: handle oom
+        // if we cant send error response, we cant fail nicely
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), NULL);
         nabto_coap_server_request_free(request);
         return;
@@ -149,7 +149,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
         // Check IAM.
         ec = nc_iam_check_access(connection, "TcpTunnel:Create", cborAttributes, used);
         if (ec) {
-            // todo: handle oom
+            // if we cant send error response, we cant fail nicely
             nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
             nabto_coap_server_request_free(request);
             return;

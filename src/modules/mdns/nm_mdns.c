@@ -194,7 +194,6 @@ void nm_mdns_packet_received_v4(const np_error_code ec, struct np_udp_endpoint e
         }
         nm_mdns_recv_packet_v4(mdns);
     } else {
-        // TODO: consider if log message is enough to make the user aware of failures.
         // On socket error we stop receiving, clean up will be done when stopped.
         NABTO_LOG_TRACE(LOG, "UDP V4 receive callback with error code: (%i) %s", ec, np_error_code_to_string(ec));
         mdns->v4Done = true;

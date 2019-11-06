@@ -309,11 +309,6 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
     }
     // dtls_event_handler() only calls this after moduleState has been check so we dont need to here
     switch(ctx->state) {
-        case NC_ATTACHER_STATE_ATTACHED:
-            // DTLS was closed while attached, closed by peer or keep alive timeout, wait to retry
-            if (ctx->listener) {
-                ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
-            }
         case NC_ATTACHER_STATE_DTLS_CONNECT:
             // DTLS connect failed and dtls was closed, wait to retry
         case NC_ATTACHER_STATE_COAP_ATTACH_REQUEST:
@@ -321,6 +316,13 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
         case NC_ATTACHER_STATE_PREPARE_RETRY:
             // Previous DTLS is now closed, wait to retry
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+            break;
+        case NC_ATTACHER_STATE_ATTACHED:
+            // DTLS was closed while attached, closed by peer or keep alive timeout. Try reattach
+            if (ctx->listener) {
+                ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
+            }
+            reattach(NABTO_EC_OK, ctx);
             break;
         case NC_ATTACHER_STATE_REDIRECT:
             // DTLS closed since BS redirected us, resolve new BS.
@@ -500,6 +502,7 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
     nabto_coap_client_request_free(request);
     // start keep alive with default values if above failed
     nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
+    ctx->attachAttempts = 0;
     ctx->state = NC_ATTACHER_STATE_ATTACHED;
     handle_state_change(ctx);
     if (ctx->listener) {
