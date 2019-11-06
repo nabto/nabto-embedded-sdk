@@ -16,7 +16,8 @@ struct nc_udp_dispatch_context;
 
 enum np_dtls_cli_event {
     NP_DTLS_CLI_EVENT_CLOSED,
-    NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE
+    NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE,
+    NP_DTLS_CLI_EVENT_ACCESS_DENIED
 };
 
 typedef void (*np_dtls_cli_send_callback)(const np_error_code ec, void* data);

@@ -386,13 +386,19 @@ void nm_dtls_event_do_one(void* data)
         if( ret == MBEDTLS_ERR_SSL_WANT_READ ||
             ret == MBEDTLS_ERR_SSL_WANT_WRITE ) {
             //Keep State CONNECTING
+        } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
+                   ctx->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
+        {
+            nm_dtls_timer_cancel(&ctx->timer);
+            ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
+            return;
         } else {
             if( ret != 0 )
             {
                 NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
                 ctx->state = CLOSING;
-                ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
                 nm_dtls_timer_cancel(&ctx->timer);
+                ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
                 return;
             }
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
@@ -415,6 +421,12 @@ void nm_dtls_event_do_one(void* data)
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             // OK
+        } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
+                   ctx->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
+        {
+            nm_dtls_timer_cancel(&ctx->timer);
+            ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
+            return;
         } else {
 #if defined(MBEDTLS_ERROR_C)
             char buf[128];

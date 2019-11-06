@@ -106,8 +106,6 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         nabto_coap_server_response_set_code(request, NABTO_COAP_CODE_CREATED);
         nabto_coap_server_response_ready(request);
         nabto_coap_server_request_free(request);
-
-
     }
 
     void handleDeviceAttachWrongResponse(DtlsConnectionPtr connection, struct nabto_coap_server_request* request)
@@ -235,4 +233,34 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
 
 
 };
+
+class AccessDeniedServer : public AttachCoapServer, public std::enable_shared_from_this<AccessDeniedServer>
+{
+ public:
+
+    AccessDeniedServer(boost::asio::io_context& io, log::LoggerPtr logger)
+        : AttachCoapServer(io, logger)
+    {
+    }
+
+    static std::shared_ptr<AccessDeniedServer> create(boost::asio::io_context& io, log::LoggerPtr logger)
+    {
+        auto ptr = std::make_shared<AccessDeniedServer>(io, logger);
+        ptr->init();
+        return ptr;
+    }
+
+    void initCoapHandlers() {
+        auto self = shared_from_this();
+        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach", [self](DtlsConnectionPtr connection, struct nabto_coap_server_request* request) {
+                connection->accessDenied();
+                nabto_coap_server_request_free(request);
+                self->coapRequestCount_++;
+
+            });
+    }
+
+    std::atomic<uint64_t> coapRequestCount_ = { 0 };
+};
+
 } }

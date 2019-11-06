@@ -14,12 +14,14 @@
 
 const char* attachPath[2] = {"device", "attach"};
 
+static const uint32_t ACCESS_DENIED_WAIT_TIME = 3600000; // one hour
+static const uint32_t RETRY_WAIT_TIME = 10000; // 10 seconds
+
 /******************************
  * local function definitions *
  ******************************/
 static void do_close(struct nc_attach_context* ctx);
 static void reattach(const np_error_code ec, void* data);
-static uint32_t get_reattach_time(struct nc_attach_context* ctx);
 static void resolve_close(void* data);
 static void send_attach_request(struct nc_attach_context* ctx);
 
@@ -29,7 +31,7 @@ static void handle_dtls_connected(struct nc_attach_context* ctx);
 static void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root, struct nabto_coap_client_request* request);
 static void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root);
 static void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize);
-
+static void handle_dtls_access_denied(struct nc_attach_context* ctx);
 static void dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_callback cb, void* data, void* senderData);
 static void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
@@ -173,6 +175,7 @@ void do_close(struct nc_attach_context* ctx)
     ctx->moduleState = NC_ATTACHER_MODULE_CLOSED;
     switch(ctx->state) {
         case NC_ATTACHER_STATE_RETRY_WAIT:
+        case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
             np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
             ctx->state = NC_ATTACHER_STATE_CLOSED;
             handle_state_change(ctx);
@@ -180,19 +183,17 @@ void do_close(struct nc_attach_context* ctx)
         case NC_ATTACHER_STATE_CLOSED:
             np_event_queue_post(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
             break;
-        case NC_ATTACHER_STATE_DTLS_CONNECT:
-        case NC_ATTACHER_STATE_COAP_ATTACH_REQUEST:
+        case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
         case NC_ATTACHER_STATE_ATTACHED:
             ctx->pl->dtlsC.close(ctx->dtls);
             break;
         case NC_ATTACHER_STATE_DNS:
             // dns resolvers can currently not be stopped, for now we just wait for it to finish.
-        case NC_ATTACHER_STATE_PREPARE_RETRY:
-            // we are already closing the DTLS connection, just wait for it to finish
         case NC_ATTACHER_STATE_REDIRECT:
             // When redirecting, we are waiting for DTLS to close before moving to DNS state.
             // Wait for DTLS close to finish
             break;
+
     }
 }
 
@@ -218,24 +219,23 @@ void handle_state_change(struct nc_attach_context* ctx)
             np_event_queue_post(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
             break;
         case NC_ATTACHER_STATE_REDIRECT:
-        case NC_ATTACHER_STATE_PREPARE_RETRY:
-            ctx->pl->dtlsC.close(ctx->dtls);
             break;
         case NC_ATTACHER_STATE_RETRY_WAIT:
-            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, get_reattach_time(ctx), &reattach, ctx);
+            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, RETRY_WAIT_TIME, &reattach, ctx);
             break;
-        case NC_ATTACHER_STATE_DTLS_CONNECT:
+        case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
+            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, ACCESS_DENIED_WAIT_TIME, &reattach, ctx);
+            break;
+        case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
             ctx->pl->dtlsC.set_sni(ctx->dtls, ctx->hostname);
             ctx->pl->dtlsC.connect(ctx->dtls);
-            break;
-        case NC_ATTACHER_STATE_COAP_ATTACH_REQUEST:
-            send_attach_request(ctx);
             break;
         case NC_ATTACHER_STATE_ATTACHED:
             // Nothing to do when attached
             break;
     }
 }
+
 
 void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
 {
@@ -268,7 +268,7 @@ void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, si
         i++;
     }
 
-    ctx->state = NC_ATTACHER_STATE_DTLS_CONNECT;
+    ctx->state = NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST;
     handle_state_change(ctx);
 }
 
@@ -298,6 +298,8 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
         } else {
             handle_dtls_closed(ctx);
         }
+    } else if (event == NP_DTLS_CLI_EVENT_ACCESS_DENIED) {
+        handle_dtls_access_denied(ctx);
     }
 }
 
@@ -309,12 +311,9 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
     }
     // dtls_event_handler() only calls this after moduleState has been check so we dont need to here
     switch(ctx->state) {
-        case NC_ATTACHER_STATE_DTLS_CONNECT:
+        case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
             // DTLS connect failed and dtls was closed, wait to retry
-        case NC_ATTACHER_STATE_COAP_ATTACH_REQUEST:
             // DTLS was closed while waiting for coap response, most likely closed by peer, wait to retry
-        case NC_ATTACHER_STATE_PREPARE_RETRY:
-            // Previous DTLS is now closed, wait to retry
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
             break;
         case NC_ATTACHER_STATE_ATTACHED:
@@ -322,7 +321,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             if (ctx->listener) {
                 ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
             }
-            reattach(NABTO_EC_OK, ctx);
+            ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
             break;
         case NC_ATTACHER_STATE_REDIRECT:
             // DTLS closed since BS redirected us, resolve new BS.
@@ -341,11 +340,20 @@ void handle_dtls_connected(struct nc_attach_context* ctx)
 {
     if( ctx->pl->dtlsC.get_alpn_protocol(ctx->dtls) == NULL ) {
         NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Basestation connection");
-        ctx->state = NC_ATTACHER_STATE_PREPARE_RETRY;
-        handle_state_change(ctx);
+        ctx->pl->dtlsC.close(ctx->dtls);
         return;
     }
-    ctx->state = NC_ATTACHER_STATE_COAP_ATTACH_REQUEST;
+    send_attach_request(ctx);
+}
+
+void handle_dtls_access_denied(struct nc_attach_context* ctx)
+{
+    np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
+    }
+
+    ctx->state = NC_ATTACHER_STATE_ACCESS_DENIED_WAIT;
     handle_state_change(ctx);
 }
 
@@ -466,8 +474,7 @@ void coap_request_handler(struct nabto_coap_client_request* request, void* data)
 void coap_response_failed(struct nc_attach_context* ctx, struct nabto_coap_client_request* request)
 {
     nabto_coap_client_request_free(request);
-    ctx->state = NC_ATTACHER_STATE_PREPARE_RETRY;
-    handle_state_change(ctx);
+    ctx->pl->dtlsC.close(ctx->dtls);
 }
 
 void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* root, struct nabto_coap_client_request* request)
@@ -533,8 +540,7 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
         // TODO how small can valid hostname be ?
         if (hostLength < 1 || hostLength > 256) {
             NABTO_LOG_ERROR(LOG, "Redirect response had invalid hostname length: %u", hostLength);
-            ctx->state = NC_ATTACHER_STATE_PREPARE_RETRY;
-            handle_state_change(ctx);
+            ctx->pl->dtlsC.close(ctx->dtls);
             return;
         }
 
@@ -543,12 +549,11 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
 
     } else {
         NABTO_LOG_ERROR(LOG, "Redirect response not understood");
-        ctx->state = NC_ATTACHER_STATE_PREPARE_RETRY;
-        handle_state_change(ctx);
+        ctx->pl->dtlsC.close(ctx->dtls);
         return;
     }
     ctx->state = NC_ATTACHER_STATE_REDIRECT;
-    handle_state_change(ctx);
+    ctx->pl->dtlsC.close(ctx->dtls);
     return;
 }
 
@@ -610,20 +615,6 @@ void keep_alive_event(const np_error_code ec, void* data)
                 break;
         }
     }
-}
-
-uint32_t get_reattach_time(struct nc_attach_context* ctx)
-{
-    uint32_t ms;
-    if (ctx->attachAttempts >= 19) { // 2^19s > 12h
-        ms = 43200000; // 12h
-    } else {
-        ms = 2 << ctx->attachAttempts; // 2sec^n
-        ms = ms * 1000; // s to ms
-        ctx->attachAttempts++;
-    }
-    NABTO_LOG_INFO(LOG, "returning reattach time: %i, attachAttempts: %i", ms, ctx->attachAttempts);
-    return ms;
 }
 
 void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize)

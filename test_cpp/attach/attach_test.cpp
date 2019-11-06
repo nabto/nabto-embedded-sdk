@@ -74,7 +74,7 @@ class AttachTest {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         tp_.stop();
     }
- private:
+
     nabto::test::TestPlatform& tp_;
     struct nc_attach_context attach_;
     struct nc_device_context device_;
@@ -88,7 +88,7 @@ class AttachTest {
     const char* productId_ = "test";
     const char* deviceId_ = "devTest";
     std::function<void (AttachTest& at)> stuff_;
- public:
+
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };
 
@@ -292,6 +292,30 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)2);
+}
+
+BOOST_AUTO_TEST_CASE(access_denied)
+{
+    // The attach did not succeeed, go to retry
+    auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+    auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService(), testLogger);
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
+
+    std::thread t([&at](){
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            BOOST_TEST(at.attachCount_ == (uint64_t)0);
+            BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT);
+            at.end();
+        });
+
+    at.start([](nabto::test::AttachTest& at){
+        });
+
+    t.join();
+    accessDeniedServer->stop();
 }
 
 
