@@ -102,7 +102,7 @@ void nc_rendezvous_send_dev_req_cb(const np_error_code ec, void* data)
 void nc_rendezvous_send_rendezvous(struct nc_rendezvous_context* ctx, struct nc_rendezvous_send_packet* packet)
 {
     if (ctx->packetIndex >= NC_RENDEZVOUS_SEND_QUEUE_LENGTH) {
-        // todo log queue full
+        // Queue is full, it's ok.
         return;
     }
 

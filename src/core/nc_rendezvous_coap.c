@@ -60,7 +60,6 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
                 if (ipLength == 4) {
                     packet.ep.ip.type = NABTO_IPV4;
                     cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL);
-                    // todo: test that this is failing, send_rendezvous puts the packet structure into a queue if it is already sending, so overwriting it in this while should cause problems
                     nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
                 } else if (ipLength == 16) {
                     packet.ep.ip.type = NABTO_IPV6;

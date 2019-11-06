@@ -57,7 +57,6 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     uint8_t buffer[128];
     NABTO_LOG_TRACE(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
 
-    // TODO: fix to use stun result. Here we get_local_ip and glues it with nc_stun_get_local_port to make endpoints
     if (ec != NABTO_EC_OK) {
         // TODO;
 
