@@ -65,7 +65,7 @@ struct nc_attach_context {
     char dns[256];
     uint8_t dnsLen;
 
-    uint8_t attachAttempts;
+    uint8_t redirectAttempts;
     struct np_timed_event reattachTimer;
     struct np_event closeEv;
 

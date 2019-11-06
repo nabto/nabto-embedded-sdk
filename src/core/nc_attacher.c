@@ -16,6 +16,7 @@ const char* attachPath[2] = {"device", "attach"};
 
 static const uint32_t ACCESS_DENIED_WAIT_TIME = 3600000; // one hour
 static const uint32_t RETRY_WAIT_TIME = 10000; // 10 seconds
+static const uint8_t MAX_REDIRECT_FOLLOW = 5;
 
 /******************************
  * local function definitions *
@@ -281,6 +282,7 @@ void reattach(const np_error_code ec, void* data)
         memcpy(ctx->dns, ctx->hostname, strlen(ctx->hostname)+1);
         ctx->currentPort = ctx->defaultPort;
         ctx->state = NC_ATTACHER_STATE_DNS;
+        ctx->redirectAttempts = 0;
     }
     handle_state_change(ctx);
 }
@@ -324,8 +326,12 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
             break;
         case NC_ATTACHER_STATE_REDIRECT:
-            // DTLS closed since BS redirected us, resolve new BS.
-            ctx->state = NC_ATTACHER_STATE_DNS;
+            if (ctx->redirectAttempts >= MAX_REDIRECT_FOLLOW) {
+                ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+            } else {
+                // DTLS closed since BS redirected us, resolve new BS.
+                ctx->state = NC_ATTACHER_STATE_DNS;
+            }
             break;
 
         default:
@@ -509,7 +515,6 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
     nabto_coap_client_request_free(request);
     // start keep alive with default values if above failed
     nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
-    ctx->attachAttempts = 0;
     ctx->state = NC_ATTACHER_STATE_ATTACHED;
     handle_state_change(ctx);
     if (ctx->listener) {
@@ -553,6 +558,7 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
         return;
     }
     ctx->state = NC_ATTACHER_STATE_REDIRECT;
+    ctx->redirectAttempts++;
     ctx->pl->dtlsC.close(ctx->dtls);
     return;
 }

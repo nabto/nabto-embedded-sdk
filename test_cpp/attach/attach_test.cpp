@@ -305,7 +305,12 @@ BOOST_AUTO_TEST_CASE(access_denied)
     nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
 
     std::thread t([&at](){
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            for (int i = 0; i < 50; i++) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT) {
+                    break;
+                }
+            }
             BOOST_TEST(at.attachCount_ == (uint64_t)0);
             BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT);
             at.end();
@@ -317,6 +322,38 @@ BOOST_AUTO_TEST_CASE(access_denied)
     t.join();
     accessDeniedServer->stop();
 }
+
+BOOST_AUTO_TEST_CASE(redirect_loop_break)
+{
+    // The attach did not succeeed, go to retry
+    auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+
+    auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
+    redirectServer->setRedirect("localhost", redirectServer->getPort(), redirectServer->getFingerprint());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, redirectServer->getPort());
+    std::thread t([&at](){
+            for (int i = 0; i < 50; i++) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
+                    break;
+                }
+            }
+            BOOST_TEST(at.attachCount_ == (uint64_t)0);
+            BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT);
+            at.end();
+        });
+
+    at.start([](nabto::test::AttachTest& at){
+        });
+
+    t.join();
+    redirectServer->stop();
+    BOOST_TEST(redirectServer->redirectCount_ <= (uint64_t)5);
+}
+
 
 
 BOOST_AUTO_TEST_SUITE_END()
