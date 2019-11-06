@@ -256,7 +256,18 @@ np_error_code dtls_cli_init_connection(np_dtls_cli_context* ctx)
 
 np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx)
 {
+    struct np_platform* pl = ctx->pl;
     mbedtls_ssl_session_reset( &ctx->ssl );
+    // remove the first element until the list is empty
+    while(ctx->sendSentinel.next != &ctx->sendSentinel) {
+        struct np_dtls_cli_send_context* first = ctx->sendSentinel.next;
+        nm_dtls_cli_remove_send_data(first);
+        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
+    }
+
+    nm_dtls_timer_cancel(&ctx->timer);
+    np_event_queue_cancel_event(pl, &ctx->startSendEvent);
+    np_event_queue_cancel_event(pl, &ctx->closeEv);
     return NABTO_EC_OK;
 }
 

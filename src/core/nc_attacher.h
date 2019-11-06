@@ -76,6 +76,10 @@ struct nc_attach_context {
     // external callbacks
     nc_attacher_closed_callback closedCb;
     void* closedCbData;
+
+    // configurable for testing purposes.
+    uint32_t retryWaitTime;
+    uint32_t accessDeniedWaitTime;
 };
 
 // Init attacher module, always first function to be called

@@ -41,6 +41,8 @@ class AttachTest {
         nc_attacher_set_device_info(&attach_, productId_, deviceId_);
         // set timeout to approximately one seconds for the dtls handshake
         nc_attacher_set_handshake_timeout(&attach_, 50, 500);
+        attach_.retryWaitTime = 100;
+        attach_.accessDeniedWaitTime = 1000;
 
         BOOST_TEST(nc_attacher_start(&attach_, hostname_, serverPort_, &udpDispatch_) == NABTO_EC_OK);
     }
@@ -175,6 +177,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
     nabto::test::AttachTest at(*tp, attachServer->getPort());
     at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
+                at.attach_.retryWaitTime = 10;
                 attachServer->stop();
                 attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
                 at.setDtlsPort(attachServer->getPort());
@@ -305,14 +308,45 @@ BOOST_AUTO_TEST_CASE(access_denied)
     nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
 
     std::thread t([&at](){
-            for (int i = 0; i < 50; i++) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            for (int i = 0; i < 500; i++) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT) {
                     break;
                 }
             }
+            BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT);
+            at.end();
+        });
+
+    at.start([](nabto::test::AttachTest& at){
+        });
+
+    t.join();
+    accessDeniedServer->stop();
+}
+
+BOOST_AUTO_TEST_CASE(access_denied_reattach)
+{
+    // The attach did not succeeed, go to retry
+    auto ioService = nabto::IoService::create("test");
+    auto testLogger = nabto::test::TestLogger::create();
+    auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService(), testLogger);
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
+
+    std::thread t([&at, accessDeniedServer](){
+            for (int i = 0; i < 500; i++) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT &&
+                    accessDeniedServer->coapRequestCount_ == 2) {
+                    break;
+                }
+            }
+
             BOOST_TEST(at.attachCount_ == (uint64_t)0);
             BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT);
+            BOOST_TEST(accessDeniedServer->coapRequestCount_ == (uint64_t)2);
             at.end();
         });
 

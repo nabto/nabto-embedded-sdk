@@ -62,6 +62,8 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     ctx->moduleState = NC_ATTACHER_MODULE_SETUP;
     ctx->listener = listener;
     ctx->listenerData = listenerData;
+    ctx->retryWaitTime = RETRY_WAIT_TIME;
+    ctx->accessDeniedWaitTime = ACCESS_DENIED_WAIT_TIME;
     np_error_code ec = pl->dtlsC.create(pl, &ctx->dtls, &dtls_packet_sender, &dtls_data_handler, &dtls_event_handler, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
@@ -222,10 +224,10 @@ void handle_state_change(struct nc_attach_context* ctx)
         case NC_ATTACHER_STATE_REDIRECT:
             break;
         case NC_ATTACHER_STATE_RETRY_WAIT:
-            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, RETRY_WAIT_TIME, &reattach, ctx);
+            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, ctx->retryWaitTime, &reattach, ctx);
             break;
         case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
-            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, ACCESS_DENIED_WAIT_TIME, &reattach, ctx);
+            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, ctx->accessDeniedWaitTime, &reattach, ctx);
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
             ctx->pl->dtlsC.set_sni(ctx->dtls, ctx->hostname);
@@ -333,7 +335,10 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
                 ctx->state = NC_ATTACHER_STATE_DNS;
             }
             break;
+        case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
 
+            // we have reset the dtls context
+            break;
         default:
             // states DNS, RETRY_WAIT, CLOSED does not have a DTLS connection which can be closed
             // If this impossible error happens, simply try reattach
@@ -354,11 +359,7 @@ void handle_dtls_connected(struct nc_attach_context* ctx)
 
 void handle_dtls_access_denied(struct nc_attach_context* ctx)
 {
-    np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
-    }
-
+    ctx->pl->dtlsC.close(ctx->dtls);
     ctx->state = NC_ATTACHER_STATE_ACCESS_DENIED_WAIT;
     handle_state_change(ctx);
 }
