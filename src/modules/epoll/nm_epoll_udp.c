@@ -294,6 +294,7 @@ np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
     (*sock)->sendSentinel = &(*sock)->sendSentinelData;
     (*sock)->sendSentinel->next = (*sock)->sendSentinel;
     (*sock)->sendSentinel->prev = (*sock)->sendSentinel;
+    np_event_queue_init_event(&(*sock)->recv.event);
     nm_epoll_add_udp_socket(pl->udpData);
     return NABTO_EC_OK;
 }
@@ -665,8 +666,7 @@ np_error_code nm_epoll_async_recv_from(np_udp_socket* socket,
 
     // if we received multiple packets in one epoll_wait the event
     // will not be triggered between recv callbacks
-    np_event_queue_cancel_event(pl, &socket->recv.event);
-    np_event_queue_post(pl, &socket->recv.event, nm_epoll_udp_try_read, socket);
+    np_event_queue_post_maybe_double(pl, &socket->recv.event, nm_epoll_udp_try_read, socket);
     return NABTO_EC_OK;
 }
 

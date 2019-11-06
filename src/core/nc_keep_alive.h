@@ -52,7 +52,6 @@ enum nc_keep_alive_action{
 
 typedef void (*keep_alive_wait_callback)(const np_error_code ec, void* data);
 
-//TODO add ability to change keep alive settings
 /**
  * Init keep alive with the given parameters
  * @param pl            The platform to use

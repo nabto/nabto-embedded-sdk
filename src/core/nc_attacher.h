@@ -9,9 +9,6 @@
 extern "C" {
 #endif
 
-
-// TODO: implement multi attach
-
 // TODO: Move this definition to some configuration
 #define NABTO_MAX_BASESTATION_EPS 2
 

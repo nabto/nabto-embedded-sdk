@@ -1,8 +1,6 @@
 #include "nc_coap_client.h"
 
 #include <platform/np_logging.h>
-// TODO: remove with malloc
-#include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
 
@@ -49,7 +47,6 @@ void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
     NABTO_LOG_TRACE(LOG, "coap handling packet with status %i: ", status);
     NABTO_LOG_BUF(LOG, buffer, bufferSize);
     if (status == NABTO_COAP_CLIENT_STATUS_DECODE_ERROR) {
-        // TODO log error
         NABTO_LOG_ERROR(LOG, "nabto_coap_client_handle_packet failed with status: %d", status);
     }
 

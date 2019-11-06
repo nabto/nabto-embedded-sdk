@@ -257,7 +257,12 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     ctx->sendCtx.cb = &nc_stream_dtls_send_callback;
     ctx->sendCtx.data = ctx;
     ctx->sendCtx.channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, &ctx->sendCtx);
+    np_error_code ec = ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, &ctx->sendCtx);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "dtls send returned ec: %u", ec);
+        nabto_stream_event_handled(&ctx->stream, eventType);
+        np_event_queue_post_maybe_double(ctx->pl, &ctx->ev, &nc_stream_event_queue_callback, ctx);
+    }
 }
 
 void nc_stream_event_queue_callback(void* data)

@@ -84,11 +84,14 @@ bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_even
 {
     bool canceledEvent = false;
     {
-        // remove event if already present in queue TODO this is bad
-        // since we are not calling the completion handler exactly
-        // once.
+        // remove event if already present in queue as it would break
+        // the queue to have double enqueued events. Cancelling an
+        // existing event means the completion handler is not called
+        // exactly once. However, enqueuing an event twice is against
+        // the API, and will trigger a log error to let user know the
+        // API is being misused.
         if (np_event_queue_cancel_event(pl, event)) {
-            NABTO_LOG_ERROR(LOG, "Double posted event had to be cancelled");
+            NABTO_LOG_ERROR(LOG, "Double posted event had to be cancelled, use post_maybe_double if intended");
             canceledEvent = true;
         }
     }
@@ -175,9 +178,12 @@ static void insert_timed_event_between_nodes(struct np_timed_event* event, struc
 void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data)
 {
     {
-        // if the event is already in the timed queue cancel it first
-        // TODO this is not good since we should call the completion
-        // handler exactly once.
+        // remove event if already present in queue as it would break
+        // the queue to have double enqueued events. Cancelling an
+        // existing event means the completion handler is not called
+        // exactly once. However, enqueuing an event twice is against
+        // the API, and will trigger a log error to let user know the
+        // API is being misused.
         if (np_event_queue_cancel_timed_event(pl, event)) {
             NABTO_LOG_ERROR(LOG, "Double posted timed event had to be cancelled");
             //NABTO_LOG_TRACE(LOG, "cancelling queued timed event");

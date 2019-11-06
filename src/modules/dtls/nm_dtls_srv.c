@@ -237,6 +237,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
 
     (*dtls)->sendSentinel.next = &(*dtls)->sendSentinel;
     (*dtls)->sendSentinel.prev = &(*dtls)->sendSentinel;
+    np_event_queue_init_event(&(*dtls)->startSendEvent);
 
     nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_srv_timed_event_do_one, ctx);
 
@@ -380,10 +381,7 @@ void nm_dtls_srv_do_event_callback(void* data)
 
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 {
-    // we call this several places to ensure the send queue is
-    // running, if already running we need to cancel before posting
-    np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
-    np_event_queue_post(ctx->pl, &ctx->startSendEvent, &nm_dtls_srv_start_send_deferred, ctx);
+    np_event_queue_post_maybe_double(ctx->pl, &ctx->startSendEvent, &nm_dtls_srv_start_send_deferred, ctx);
 }
 
 void nm_dtls_srv_start_send_deferred(void* data)

@@ -43,7 +43,6 @@ void nc_iam_init(struct nc_iam* iam)
     iam->defaultRole = NULL;
 }
 
-// todo verify this doesn't break if init was never called
 void nc_iam_deinit(struct nc_iam* iam)
 {
     if (iam->changeCallback) {
