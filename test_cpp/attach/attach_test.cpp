@@ -177,7 +177,6 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
     nabto::test::AttachTest at(*tp, attachServer->getPort());
     at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
-                at.attach_.retryWaitTime = 10;
                 attachServer->stop();
                 attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
                 at.setDtlsPort(attachServer->getPort());
