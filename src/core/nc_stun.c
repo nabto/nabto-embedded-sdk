@@ -71,12 +71,14 @@ void nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
+    np_event_queue_init_event(&ctx->event);
 }
 
 void nc_stun_deinit(struct nc_stun_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
         struct np_platform* pl = ctx->pl;
+        np_event_queue_cancel_event(ctx->pl, &ctx->event);
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
         pl->buf.free(ctx->sendBuf);
     }
@@ -153,11 +155,18 @@ void nc_stun_convert_ep(const struct nabto_stun_endpoint* stunEp, struct np_udp_
     }
 }
 
+void nc_stun_event_deferred(void* data)
+{
+    struct nc_stun_context* ctx = (struct nc_stun_context*)data;
+    nc_stun_event(ctx);
+}
+
 // event function
 void nc_stun_event(struct nc_stun_context* ctx)
 {
     enum nabto_stun_next_event_type event = nabto_stun_next_event_to_handle(&ctx->stun);
     struct np_platform* pl = ctx->pl;
+    np_event_queue_cancel_event(ctx->pl, &ctx->event);
     np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
     switch(event) {
         case STUN_ET_SEND_PRIMARY:
@@ -185,8 +194,11 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            // TODO handle error
-            nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
+            np_error_code ec = nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
+            if (ec != NABTO_EC_OK) {
+                // send errors is ok in stun context
+                np_event_queue_post_maybe_double(pl, &ctx->event, &nc_stun_event_deferred, ctx);
+            }
             break;
         }
         case STUN_ET_SEND_SECONDARY:
@@ -214,8 +226,11 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            // TODO handle error
-            nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
+            np_error_code ec = nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
+            if (ec != NABTO_EC_OK) {
+                // send errors is ok in stun context
+                np_event_queue_post_maybe_double(pl, &ctx->event, &nc_stun_event_deferred, ctx);
+            }
             break;
         }
         case STUN_ET_WAIT:
