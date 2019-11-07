@@ -265,7 +265,7 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     struct nm_tcptunnels* tunnels = data;
     struct nm_tcptunnel* tunnel = find_tunnel(tunnels, nabto_coap_server_request_get_parameter(request, "tid"));
     if (tunnel == NULL) {
-        // todo: handle oom
+        // OOM impossible with NULL message
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
         nabto_coap_server_request_free(request);
         return;

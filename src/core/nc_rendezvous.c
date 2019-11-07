@@ -12,7 +12,6 @@
 #define LOG NABTO_LOG_MODULE_RENDEZVOUS
 
 void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx);
-void nc_rendezvous_send_dev_req_cb(const np_error_code ec, void* data);
 
 void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
                         struct np_platform* pl)
@@ -84,19 +83,12 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 
     ctx->sendingDevReqs = true;
     size_t used = ptr - start;
-    // TODO: handle error
-    nc_udp_dispatch_async_send_to(ctx->udpDispatch, &packet->ep,
-                                  start, used,
-                                  &nc_rendezvous_packet_sent, ctx);
-}
-
-void nc_rendezvous_send_dev_req_cb(const np_error_code ec, void* data)
-{
+    np_error_code ec = nc_udp_dispatch_async_send_to(ctx->udpDispatch, &packet->ep,
+                                                     start, used,
+                                                     &nc_rendezvous_packet_sent, ctx);
     if (ec != NABTO_EC_OK) {
-        // TODO: handle error
-        NABTO_LOG_ERROR(LOG, "Error sending device request, trying next request");
+        nc_rendezvous_packet_sent(ec, ctx);
     }
-    nc_rendezvous_send_device_request((struct nc_rendezvous_context*)data);
 }
 
 void nc_rendezvous_send_rendezvous(struct nc_rendezvous_context* ctx, struct nc_rendezvous_send_packet* packet)

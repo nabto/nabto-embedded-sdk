@@ -44,11 +44,6 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
 
 }
 
-// TODO: This function is never called. Currently the tunnel structure
-// can never be freed unless you are sure that anything which calls it
-// are shut down first (eg. coap). It is not currently a problem since
-// the structure is only freed with the device which ensures
-// everything else is stopped first.
 void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
 {
     if (tunnels->device != NULL) { // if init was called

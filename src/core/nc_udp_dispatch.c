@@ -8,7 +8,7 @@
 #include <core/nc_stun.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
-// todo rename and restructure with new udp return values
+
 void nc_udp_dispatch_sock_bound_cb(const np_error_code ec, void* data);
 void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
                                    uint8_t* buffer, uint16_t bufferSize, void* data);

@@ -44,13 +44,21 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
     nc_rendezvous_init(&device->rendezvous, pl);
+    ec = nc_rendezvous_coap_init(&device->rendezvousCoap, &device->coapServer, &device->rendezvous);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
+
     nc_stun_init(&device->stun, pl);
+    ec = nc_stun_coap_init(&device->stunCoap, pl, &device->coapServer, &device->stun);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
+
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     nc_stream_manager_init(&device->streamManager, pl);
-
-    // TODO why are these not in init, where is deinit?
-    nc_stun_coap_init(&device->stunCoap, pl, &device->coapServer, &device->stun);
-    nc_rendezvous_coap_init(&device->rendezvousCoap, &device->coapServer, &device->rendezvous);
 
     device->eventsListenerSentinel.next = &device->eventsListenerSentinel;
     device->eventsListenerSentinel.prev = &device->eventsListenerSentinel;
@@ -63,7 +71,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     return NABTO_EC_OK;
 }
 
-// nc_device_deinit must NEVER be called without init
+// nc_device_deinit must NEVER be called without successfull init
 void nc_device_deinit(struct nc_device_context* device) {
 
     struct np_platform* pl = device->pl;
@@ -75,7 +83,9 @@ void nc_device_deinit(struct nc_device_context* device) {
     }
     nc_stream_manager_deinit(&device->streamManager);
     nc_client_connection_dispatch_deinit(&device->clientConnect);
+    nc_stun_coap_deinit(&device->stunCoap);
     nc_stun_deinit(&device->stun);
+    nc_rendezvous_coap_deinit(&device->rendezvousCoap);
     nc_rendezvous_deinit(&device->rendezvous);
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);

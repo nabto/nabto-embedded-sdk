@@ -15,23 +15,29 @@
 void nc_rendezvous_handle_coap_p2p_stun(struct nabto_coap_server_request* request, void* data);
 void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* request, void* data);
 
-void nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_platform* platform, struct nc_coap_server_context* coap, struct nc_stun_context* stun)
+np_error_code nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_platform* platform, struct nc_coap_server_context* coap, struct nc_stun_context* stun)
 {
-    // TODO: make resource removable
-    struct nabto_coap_server_resource* resource;
     context->stun = stun;
     context->coap = coap;
     context->pl = platform;
     context->stunRequest = NULL;
-    // TODO: check if add fails
-    nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_GET,
-                                   (const char*[]){"p2p", "endpoints", NULL},
-                                   &nc_rendezvous_handle_coap_p2p_endpoints, context, &resource);
+    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_GET,
+                                                          (const char*[]){"p2p", "endpoints", NULL},
+                                                          &nc_rendezvous_handle_coap_p2p_endpoints, context,
+                                                          &context->resource);
+    if (err != NABTO_COAP_ERROR_OK) {
+        nc_stun_coap_deinit(context);
+        return nc_coap_server_error_module_to_core(err);
+    }
+    return NABTO_EC_OK;
 }
 
 void nc_stun_coap_deinit(struct nc_stun_coap_context* context)
 {
-    // todo
+    if (context->resource) {
+        nabto_coap_server_remove_resource(context->resource);
+        context->resource = NULL;
+    }
 }
 static void encode_ep(CborEncoder* encoder, const struct np_udp_endpoint* ep)
 {

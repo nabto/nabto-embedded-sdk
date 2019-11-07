@@ -11,16 +11,28 @@
 
 void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* request, void* data);
 
-void nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context, struct nc_coap_server_context* coap, struct nc_rendezvous_context* rendezvous)
+np_error_code nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context, struct nc_coap_server_context* coap, struct nc_rendezvous_context* rendezvous)
 {
+    memset(context, 0, sizeof(struct nc_rendezvous_coap_context));
     context->coap = coap;
     context->rendezvous = rendezvous;
-    // todo: make resource removable
-    struct nabto_coap_server_resource* resource;
-    // TODO: check if add fails
-    nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
-                                   (const char*[]){"p2p", "rendezvous", NULL},
-                                   &nc_rendezvous_handle_coap_p2p_rendezvous, context, &resource);
+    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
+                                                          (const char*[]){"p2p", "rendezvous", NULL},
+                                                          &nc_rendezvous_handle_coap_p2p_rendezvous, context,
+                                                          &context->resource);
+    if (err != NABTO_COAP_ERROR_OK) {
+        nc_rendezvous_coap_deinit(context);
+        return nc_coap_server_error_module_to_core(err);
+    }
+    return NABTO_EC_OK;
+}
+
+void nc_rendezvous_coap_deinit(struct nc_rendezvous_coap_context* context)
+{
+    if (context->resource) {
+        nabto_coap_server_remove_resource(context->resource);
+        context->resource = NULL;
+    }
 }
 
 static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nabto_coap_server_request* request, uint8_t* payload, size_t payloadLength)
