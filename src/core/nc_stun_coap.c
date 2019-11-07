@@ -64,8 +64,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     NABTO_LOG_TRACE(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
 
     if (ec != NABTO_EC_OK) {
-        // TODO;
-
+        NABTO_LOG_ERROR(LOG, "Stun analysis failed with error: %s. Resolving rendezvous request with local endpoints only", np_error_code_to_string(ec));
     }
 
     CborEncoder encoder;
@@ -87,8 +86,8 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         encode_ep(&array, &ep);
     }
 
-    // encode the global ep
-    {
+    // encode the global ep if stun succeeded
+    if (ec == NABTO_EC_OK) {
         struct np_udp_endpoint ep;
         nc_stun_convert_ep(&res->extEp, &ep);
         encode_ep(&array, &ep);
@@ -104,10 +103,14 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
         nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
         nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-        // TODO: handle OOM
-        nabto_coap_server_response_set_payload(request, buffer, used);
-        // On errors we should still cleanup the request
-        nabto_coap_server_response_ready(request);
+        nabto_coap_error err = nabto_coap_server_response_set_payload(request, buffer, used);
+        if (err != NABTO_COAP_ERROR_OK) {
+            // Dont try to add a payload on OOM it would propably fail
+            nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
+        } else {
+            // On errors we should still cleanup the request
+            nabto_coap_server_response_ready(request);
+        }
     }
     nabto_coap_server_request_free(request);
     ctx->stunRequest = NULL;
@@ -128,7 +131,9 @@ void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* r
     ctx->stunRequest = request;
     np_error_code ec = nc_stun_async_analyze(ctx->stun, true, &nc_rendezvous_endpoints_completed, ctx);
     if (ec != NABTO_EC_OK) {
-        // TODO: handle error
-        NABTO_LOG_ERROR(LOG, "Failed to start stun analysis");
+        NABTO_LOG_ERROR(LOG, "Failed to start stun analysis: %s", np_error_code_to_string(ec));
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE_SERVICE_UNAVAILABLE, "Stun resource busy");
+        nabto_coap_server_request_free(request);
+        ctx->stunRequest = NULL;
     }
 }

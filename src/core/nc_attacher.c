@@ -33,7 +33,7 @@ static void handle_device_attached_response(struct nc_attach_context* ctx, CborV
 static void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root);
 static void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 static void handle_dtls_access_denied(struct nc_attach_context* ctx);
-static void dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_callback cb, void* data, void* senderData);
+static np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_callback cb, void* data, void* senderData);
 static void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
 
@@ -399,7 +399,7 @@ void send_attach_request(struct nc_attach_context* ctx)
     cbor_encoder_close_container(&encoder, &map);
 
     if (cbor_encoder_get_extra_bytes_needed(&encoder) != 0) {
-        // TODO impossible error
+        NABTO_LOG_ERROR(LOG, "Cbor did not have sufficient buffer allocation. This should not be possible");
     }
 
     size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
@@ -543,7 +543,6 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
         cbor_value_get_string_length(&host, &hostLength);
         cbor_value_get_uint64(&port, &p);
 
-        // TODO how small can valid hostname be ?
         if (hostLength < 1 || hostLength > 256) {
             NABTO_LOG_ERROR(LOG, "Redirect response had invalid hostname length: %u", hostLength);
             ctx->pl->dtlsC.close(ctx->dtls);
@@ -564,16 +563,15 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
     return;
 }
 
-void dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
-                        np_dtls_cli_send_callback cb, void* data,
-                        void* senderData)
+np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
+                                 np_dtls_cli_send_callback cb, void* data,
+                                 void* senderData)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
-    // TODO handle error
     // TODO if connecting try all endpoints
-    nc_udp_dispatch_async_send_to(ctx->udp, &ctx->bsEps[0],
-                                  buffer, bufferSize,
-                                  cb, data);
+    return nc_udp_dispatch_async_send_to(ctx->udp, &ctx->bsEps[0],
+                                         buffer, bufferSize,
+                                         cb, data);
 }
 
 void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data)

@@ -595,7 +595,12 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
         ctx->sslSendBufferSize = bufferSize;
-        ctx->sender(pl->buf.start(ctx->sslSendBuffer), bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
+        np_error_code ec = ctx->sender(pl->buf.start(ctx->sslSendBuffer), bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
+        if (ec != NABTO_EC_OK) {
+            ctx->sending = false;
+            ctx->sslSendBufferSize = 0;
+            return MBEDTLS_ERR_SSL_WANT_WRITE;
+        }
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;

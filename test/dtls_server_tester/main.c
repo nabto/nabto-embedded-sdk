@@ -108,14 +108,14 @@ void udpSendCb(const np_error_code ec, void* data)
     free(udpSendCtx);
 }
 
-void dtls_send_listener(uint8_t channelId, uint8_t* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
+np_error_code dtls_send_listener(uint8_t channelId, uint8_t* buffer, uint16_t bufferSize, np_dtls_srv_send_callback cb, void* data, void* listenerData){
     struct test_context* ctx =  (struct test_context*) listenerData;
     NABTO_LOG_INFO(0, "Dtls wants to send to udp");
     // TODO: send the dtls data somewhere find a way to use the UDP socket without client_connect_dispatch
     struct udp_send_context* udpSendCtx = malloc(sizeof(struct udp_send_context));
     udpSendCtx->cb = cb;
     udpSendCtx->data = data;
-    pl->udp.async_send_to(ctx->sock, ep, buffer, bufferSize, &udpSendCb, udpSendCtx);
+    return pl->udp.async_send_to(ctx->sock, ep, buffer, bufferSize, &udpSendCb, udpSendCtx);
 }
 
 void created(const np_error_code ec, uint8_t channelId, void* data)

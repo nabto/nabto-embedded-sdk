@@ -558,8 +558,12 @@ int nm_dtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t buf
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
         ctx->sslSendBufferSize = bufferSize;
         ctx->sending = true;
-        ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
-
+        np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), bufferSize, &nm_dtls_srv_connection_send_callback, ctx, ctx->senderData);
+        if (ec != NABTO_EC_OK) {
+            ctx->sending = false;
+            ctx->sslSendBufferSize = 0;
+            return MBEDTLS_ERR_SSL_WANT_WRITE;
+        }
         return bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;

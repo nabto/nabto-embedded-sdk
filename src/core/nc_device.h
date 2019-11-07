@@ -88,7 +88,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data);
 
-uint64_t nc_device_next_connection_ref(struct nc_device_context* dev);
+np_error_code nc_device_next_connection_ref(struct nc_device_context* dev, uint64_t* ref);
 
 uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream);
 

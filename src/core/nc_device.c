@@ -135,9 +135,8 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
         return;
     }
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket");
+        NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket, Nabto device not started!");
         dev->state = NC_DEVICE_STATE_STOPPED;
-        // TODO how to inform the user, or should we keep retrying ?
         return;
     }
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
@@ -152,6 +151,7 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
     np_error_code ec2 = nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_bound_cb, dev);
     if (ec2 != NABTO_EC_OK) {
         // TODO what to do without secondary port
+        NABTO_LOG_ERROR(LOG, "nc_device failed to bind secondary UDP socket");
     }
 }
 
@@ -221,11 +221,16 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     return NABTO_EC_OK;
 }
 
-uint64_t nc_device_next_connection_ref(struct nc_device_context* dev)
+np_error_code nc_device_next_connection_ref(struct nc_device_context* dev, uint64_t* ref)
 {
-    // TODO fail if we wrap around, highly unlikely!
+    uint64_t prev = dev->connectionRef;
     dev->connectionRef += 1;
-    return dev->connectionRef;
+    if (prev > dev->connectionRef ) {
+        NABTO_LOG_ERROR(LOG, "Connection reference counter wrapped. This should not happen");
+        return NABTO_EC_UNKNOWN;
+    }
+    *ref = dev->connectionRef;
+    return NABTO_EC_OK;
 }
 
 uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream)

@@ -523,13 +523,6 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
             }
             nc_stream_do_read(stream);
             nc_stream_handle_close(stream);
-
-            // TODO
-            /* if (str->readyToFree) { */
-            /*     free(str); */
-            /* } else { */
-            /*     NABTO_LOG_ERROR(LOG, "ended in closed state but the stream has not been freed by the user yet"); */
-            /* } */
             break;
         default:
             NABTO_LOG_ERROR(LOG, "Unknown stream application event type %s", nabto_stream_application_event_type_to_string(eventType));

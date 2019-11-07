@@ -8,8 +8,6 @@
 #include <core/nc_keep_alive.h>
 #include <core/nc_connection_event.h>
 
-//#include <core/nc_device.h>
-
 #define NC_CLIENT_CONNECTION_MAX_CHANNELS 16
 
 struct nc_stream_manager_context;
@@ -44,7 +42,6 @@ struct nc_client_connection {
 
     np_dtls_srv_send_callback sentCb;
     void* sentData;
-    np_error_code ec;
     uint64_t connectionRef;
 
 

@@ -26,7 +26,7 @@ np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec) {
     }
 }
 
-// TODO: Dummy function since this is not yet used
+// Dummy function since this is not yet used
 void nc_coap_server_event_handler(void* hest, enum nabto_coap_server_event event, ...)
 {
 

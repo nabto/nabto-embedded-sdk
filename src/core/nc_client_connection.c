@@ -11,9 +11,9 @@
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION
 
-void nc_client_connection_async_send_to_udp(uint8_t channelId,
-                                            uint8_t* buffer, uint16_t bufferSize,
-                                            np_dtls_srv_send_callback cb, void* data, void* listenerData);
+np_error_code nc_client_connection_async_send_to_udp(uint8_t channelId,
+                                                     uint8_t* buffer, uint16_t bufferSize,
+                                                     np_dtls_srv_send_callback cb, void* data, void* listenerData);
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
 void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data);
@@ -47,7 +47,10 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
     conn->rendezvous = &device->rendezvous;
-    conn->connectionRef = nc_device_next_connection_ref(device);
+    ec = nc_device_next_connection_ref(device, &conn->connectionRef);
+    if (ec != NABTO_EC_OK) {
+        return NABTO_EC_UNKNOWN;
+    }
     conn->device = device;
 
     nc_keep_alive_init(&conn->keepAlive, conn->pl);
@@ -296,11 +299,15 @@ void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data)
     cb(ec, conn->sentData);
 }
 
-void nc_client_connection_async_send_to_udp(uint8_t channel,
-                                            uint8_t* buffer, uint16_t bufferSize,
-                                            np_dtls_srv_send_callback cb, void* data, void* listenerData)
+np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
+                                                     uint8_t* buffer, uint16_t bufferSize,
+                                                     np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
+    np_error_code ec = NABTO_EC_UNKNOWN;
+    if (conn->sentCb != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
     conn->sentCb = cb;
     conn->sentData = data;
 
@@ -311,22 +318,20 @@ void nc_client_connection_async_send_to_udp(uint8_t channel,
 
     if (channel == conn->currentChannel.channelId || channel == NP_DTLS_SRV_DEFAULT_CHANNEL_ID) {
         *(start+15) = conn->currentChannel.channelId;
-        // TODO handle error
-        nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->currentChannel.ep,
-                                      start, bufferSize,
-                                      &nc_client_connection_send_to_udp_cb, conn);
+        ec = nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->currentChannel.ep,
+                                           start, bufferSize,
+                                           &nc_client_connection_send_to_udp_cb, conn);
     } else if (channel == conn->alternativeChannel.channelId) {
         *(start+15) = conn->alternativeChannel.channelId;
-        // TODO handle error
-        nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->alternativeChannel.ep,
+        ec = nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->alternativeChannel.ep,
                                       start, bufferSize,
                                       &nc_client_connection_send_to_udp_cb, conn);
     }
+    return ec;
 }
 
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data)
 {
-    // TODO: use the discovered MTU!
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "MTU discovery failed with %s. mtu is %u", np_error_code_to_string(ec), mtu);
     } else {
