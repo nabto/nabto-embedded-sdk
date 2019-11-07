@@ -17,27 +17,45 @@ static struct nm_tcptunnel* find_tunnel(struct nm_tcptunnels* tunnels, const cha
 
 np_error_code nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server_context* server)
 {
-    // TODO: make the resources removable
-    struct nabto_coap_server_resource* resource;
     nabto_coap_error err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_POST,
                                                           (const char*[]){"tcptunnels", NULL},
-                                                          create_tunnel, tunnels, &resource);
+                                                          create_tunnel, tunnels, &tunnels->coapPostRes);
     if (err != NABTO_COAP_ERROR_OK) {
+        nm_tcptunnel_coap_deinit(tunnels);
         return nc_coap_server_error_module_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_DELETE,
                                          (const char*[]){"tcptunnels", "{tid}", NULL},
-                                         delete_tunnel, tunnels, &resource);
+                                         delete_tunnel, tunnels, &tunnels->coapDelRes);
     if (err != NABTO_COAP_ERROR_OK) {
+        nm_tcptunnel_coap_deinit(tunnels);
         return nc_coap_server_error_module_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_GET,
                                          (const char*[]){"tcptunnels", "{tid}", NULL},
-                                         get_tunnel, tunnels, &resource);
+                                         get_tunnel, tunnels, &tunnels->coapGetRes);
     if (err != NABTO_COAP_ERROR_OK) {
+        nm_tcptunnel_coap_deinit(tunnels);
         return nc_coap_server_error_module_to_core(err);
     }
     return NABTO_EC_OK;
+}
+
+void nm_tcptunnel_coap_deinit(struct nm_tcptunnels* tunnels)
+{
+    if (tunnels->coapPostRes) {
+        nabto_coap_server_remove_resource(tunnels->coapPostRes);
+        tunnels->coapPostRes = NULL;
+    }
+    if (tunnels->coapDelRes) {
+        nabto_coap_server_remove_resource(tunnels->coapDelRes);
+        tunnels->coapDelRes = NULL;
+    }
+    if (tunnels->coapGetRes) {
+    nabto_coap_server_remove_resource(tunnels->coapGetRes);
+        tunnels->coapGetRes = NULL;
+    }
+
 }
 
 bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, struct np_ip_address* address, uint16_t* port)
@@ -177,9 +195,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
         cbor_encoder_close_container(&encoder, &map);
         size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
         if (extra != 0) {
-            // Not possible!
-            // TODO send error 500
-            // TODO cleanup tunnel
+            NABTO_LOG_ERROR(LOG, "Create tunnel CBOR response buffer too small. Should be impossible.");
         }
         size_t used = cbor_encoder_get_buffer_size(&encoder, cborResponse);
 
@@ -187,10 +203,16 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
         // Return 201 Created.
         nabto_coap_server_response_set_code(request, NABTO_COAP_CODE(2,01));
         nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-        // todo: handle OOM
-        nabto_coap_server_response_set_payload(request, cborResponse, used);
-        // On errors we should still cleanup the request
-        nabto_coap_server_response_ready(request);
+
+        nabto_coap_error err = nabto_coap_server_response_set_payload(request, cborResponse, used);
+        if (err != NABTO_COAP_ERROR_OK) {
+            nm_tcptunnel_deinit(tunnel);
+            // Dont try to add a payload on OOM it would propably fail
+            nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+        } else {
+            // On errors we should still cleanup the request
+            nabto_coap_server_response_ready(request);
+        }
         nabto_coap_server_request_free(request);
     }
 }
@@ -204,7 +226,7 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
 
     struct nm_tcptunnel* tunnel = find_tunnel(tunnels, nabto_coap_server_request_get_parameter(request, "tid"));
     if (tunnel == NULL) {
-        // todo: handle oom
+        // OOM impossible with NULL message
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
         nabto_coap_server_request_free(request);
         return;
@@ -215,7 +237,7 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
 
     if (tunnel->connectionRef != connection->connectionRef) {
-        // todo: handle oom
+        // OOM impossible with NULL message
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
         nabto_coap_server_request_free(request);
         return;
@@ -224,7 +246,7 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
     // Check IAM.
     ec = nc_iam_check_access(connection, "TcpTunnel:Delete", NULL, 0);
     if (ec) {
-        // todo: handle oom
+        // OOM impossible with NULL message
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
         nabto_coap_server_request_free(request);
         return;
@@ -256,7 +278,7 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
 
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
     if (tunnel->connectionRef != connection->connectionRef) {
-        // todo: handle oom
+        // OOM impossible with NULL message
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
         nabto_coap_server_request_free(request);
         return;
@@ -265,7 +287,7 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     // Check IAM.
     ec = nc_iam_check_access(connection, "TcpTunnel:Get", NULL, 0);
     if (ec) {
-        // todo: handle oom
+        // OOM impossible with NULL message
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
         nabto_coap_server_request_free(request);
         return;
@@ -291,19 +313,22 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
     cbor_encoder_close_container(&encoder, &map);
     size_t extra = cbor_encoder_get_extra_bytes_needed(&encoder);
     if (extra != 0) {
-        // Not possible!
-        // TODO send error 500
-        // TODO cleanup tunnel
+        NABTO_LOG_ERROR(LOG, "Create tunnel CBOR response buffer too small. Should be impossible.");
     }
     size_t used = cbor_encoder_get_buffer_size(&encoder, cborResponse);
 
     // Return 201 Created.
     nabto_coap_server_response_set_code(request, NABTO_COAP_CODE(2,05));
     nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    // todo: handle OOM
-    nabto_coap_server_response_set_payload(request, cborResponse, used);
-    // On errors we should still cleanup the request
-    nabto_coap_server_response_ready(request);
+
+    nabto_coap_error err = nabto_coap_server_response_set_payload(request, cborResponse, used);
+    if (err != NABTO_COAP_ERROR_OK) {
+        // Dont try to add a payload on OOM it would propably fail
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+    } else {
+        // On errors we should still cleanup the request
+        nabto_coap_server_response_ready(request);
+    }
     nabto_coap_server_request_free(request);
 }
 

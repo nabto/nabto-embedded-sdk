@@ -18,7 +18,6 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
 void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
 {
     ctx->pl = pl;
-    // TODO allocate buffer for each send.
     ctx->sendBuffer = pl->buf.allocate();
     ctx->isSending = false;
     ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
@@ -60,7 +59,6 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         return;
     }
 
-    // TODO: don't use malloc use new buffer manager
     struct np_dtls_cli_send_context* sendCtx = &ctx->sendCtx;
     uint8_t* end = sendCtx->buffer+pl->buf.size(ctx->sendBuffer);
 

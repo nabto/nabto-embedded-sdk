@@ -51,14 +51,16 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
 // everything else is stopped first.
 void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
 {
-    nc_device_remove_connection_events_listener(tunnels->device, &tunnels->connectionEventsListener);
+    if (tunnels->device != NULL) { // if init was called
+        nc_device_remove_connection_events_listener(tunnels->device, &tunnels->connectionEventsListener);
 
-    while (tunnels->tunnelsSentinel.next != &tunnels->tunnelsSentinel) {
-        struct nm_tcptunnel* tunnel = tunnels->tunnelsSentinel.next;
-        // stop and remove tunnel from tunnels
-        nm_tcptunnel_deinit(tunnel);
+        while (tunnels->tunnelsSentinel.next != &tunnels->tunnelsSentinel) {
+            struct nm_tcptunnel* tunnel = tunnels->tunnelsSentinel.next;
+            // stop and remove tunnel from tunnels
+            nm_tcptunnel_deinit(tunnel);
+        }
+        nm_tcptunnel_coap_deinit(tunnels);
     }
-    // TODO: implement and call nm_tcptunnel_coap_deinit.
 }
 
 void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data)

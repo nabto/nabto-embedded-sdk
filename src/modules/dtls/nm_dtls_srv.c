@@ -220,31 +220,34 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
                                             np_dtls_srv_event_handler eventHandler, void* data)
 {
     int ret;
-    *dtls = (struct np_dtls_srv_connection*)calloc(1, sizeof(struct np_dtls_srv_connection));
-    struct np_dtls_srv_connection* ctx = *dtls;
-    if(!dtls) {
-        return NABTO_EC_UNKNOWN;
+    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)calloc(1, sizeof(struct np_dtls_srv_connection));
+    if(!ctx) {
+        return NABTO_EC_OUT_OF_MEMORY;
     }
-    (*dtls)->pl = server->pl;
-    (*dtls)->sender = sender;
-    (*dtls)->dataHandler = dataHandler;
-    (*dtls)->eventHandler = eventHandler;
-    (*dtls)->senderData = data;
-    (*dtls)->sslRecvBuf = server->pl->buf.allocate();
-    (*dtls)->sslSendBuffer = server->pl->buf.allocate();
-    (*dtls)->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    (*dtls)->sending = false;
+    ctx->sslRecvBuf = server->pl->buf.allocate();
+    ctx->sslSendBuffer = server->pl->buf.allocate();
+    if (!ctx->sslRecvBuf || !ctx->sslSendBuffer) {
+        free(ctx);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    ctx->pl = server->pl;
+    ctx->sender = sender;
+    ctx->dataHandler = dataHandler;
+    ctx->eventHandler = eventHandler;
+    ctx->senderData = data;
+    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
+    ctx->sending = false;
 
-    (*dtls)->sendSentinel.next = &(*dtls)->sendSentinel;
-    (*dtls)->sendSentinel.prev = &(*dtls)->sendSentinel;
-    np_event_queue_init_event(&(*dtls)->startSendEvent);
+    ctx->sendSentinel.next = &ctx->sendSentinel;
+    ctx->sendSentinel.prev = &ctx->sendSentinel;
+    np_event_queue_init_event(&ctx->startSendEvent);
 
     nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_srv_timed_event_do_one, ctx);
 
     NABTO_LOG_TRACE(LOG, "New DTLS srv connection was allocated.");
     //mbedtls connection initialization
-    mbedtls_ssl_init( &((*dtls)->ssl) );
-    if( ( ret = mbedtls_ssl_setup( &((*dtls)->ssl), &server->conf ) ) != 0 )
+    mbedtls_ssl_init( &ctx->ssl );
+    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &server->conf ) ) != 0 )
     {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_setup returned %d", ret );
         return NABTO_EC_UNKNOWN;
@@ -255,25 +258,26 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     mbedtls_ssl_set_timer_cb(&ctx->ssl, &ctx->timer, &nm_dtls_timer_set_delay,
                               &nm_dtls_timer_get_delay );
 
-    mbedtls_ssl_session_reset( &((*dtls)->ssl) );
+    mbedtls_ssl_session_reset( &ctx->ssl );
 
-//    ret = mbedtls_ssl_set_client_transport_id(&((*dtls)->ssl), (const unsigned char*)conn, sizeof(np_connection));
+//    ret = mbedtls_ssl_set_client_transport_id(&ctx->ssl, (const unsigned char*)conn, sizeof(np_connection));
 //    if (ret != 0) {
 //        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_set_client_transport_id() returned -0x%x\n\n", -ret);
 //        return NABTO_EC_UNKNOWN;
 //    }
 
-    mbedtls_ssl_set_hs_authmode( &((*dtls)->ssl), MBEDTLS_SSL_VERIFY_OPTIONAL );
+    mbedtls_ssl_set_hs_authmode( &ctx->ssl, MBEDTLS_SSL_VERIFY_OPTIONAL );
 
-    ret = mbedtls_ssl_set_hs_own_cert(&((*dtls)->ssl), &server->publicKey, &server->privateKey);
+    ret = mbedtls_ssl_set_hs_own_cert(&ctx->ssl, &server->publicKey, &server->privateKey);
     if (ret != 0) {
         NABTO_LOG_ERROR(LOG, "failed ! mbedtls_ssl_set_hs_own_cert returned %d", ret);
         return NABTO_EC_UNKNOWN;
     }
 
-    mbedtls_ssl_set_bio( &((*dtls)->ssl), (*dtls),
+    mbedtls_ssl_set_bio( &ctx->ssl, ctx,
                          &nm_dtls_srv_mbedtls_send, &nm_dtls_srv_mbedtls_recv, NULL );
 
+    *dtls = ctx;
     return NABTO_EC_OK;
 }
 

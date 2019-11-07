@@ -120,6 +120,7 @@ void nabto_device_stop(NabtoDevice* device)
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
+    nm_tcptunnels_deinit(&dev->tcptunnels);
     nc_device_deinit(&dev->core);
 
     dev->closing = true;

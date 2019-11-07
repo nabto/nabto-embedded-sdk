@@ -55,6 +55,10 @@ struct nm_tcptunnels {
     uint16_t defaultPort;
     struct nm_tcptunnel tunnelsSentinel;
     struct nc_connection_events_listener connectionEventsListener;
+
+    struct nabto_coap_server_resource* coapPostRes;
+    struct nabto_coap_server_resource* coapDelRes;
+    struct nabto_coap_server_resource* coapGetRes;
 };
 
 np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device);
