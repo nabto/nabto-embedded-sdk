@@ -37,6 +37,11 @@ enum nc_attacher_module_state {
     NC_ATTACHER_MODULE_CLOSED
 };
 
+struct nc_attach_endpoint_context {
+    struct nc_attach_context* ctx;
+    struct np_udp_endpoint ep;
+};
+
 struct nc_attach_context {
     // External references
     struct np_platform* pl;
@@ -60,7 +65,8 @@ struct nc_attach_context {
     enum nc_attacher_module_state moduleState;
 
     uint32_t sessionId;
-    np_udp_endpoint bsEps[NABTO_MAX_BASESTATION_EPS];
+    struct nc_attach_endpoint_context bsEps[NABTO_MAX_BASESTATION_EPS];
+    struct nc_attach_endpoint_context* activeEp;
     uint16_t currentPort;
     char dns[256];
     uint8_t dnsLen;
@@ -76,6 +82,9 @@ struct nc_attach_context {
     // external callbacks
     nc_attacher_closed_callback closedCb;
     void* closedCbData;
+
+    np_dtls_cli_send_callback senderCb;
+    void* senderCbData;
 
     // configurable for testing purposes.
     uint32_t retryWaitTime;

@@ -263,11 +263,16 @@ void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, si
         handle_state_change(ctx);
         return;
     }
+
+    memset(ctx->bsEps, 0, sizeof(struct nc_attach_endpoint_context[NABTO_MAX_BASESTATION_EPS]));
+
     int i = 0;
     // TODO: If recSize > MAX_BS_EPS, consider picking records which matches the supported protocol IPv4/IPv6
+    ctx->activeEp = NULL;
     while ( i < recSize && i < NABTO_MAX_BASESTATION_EPS) {
-        ctx->bsEps[i].port = ctx->currentPort;
-        memcpy(&ctx->bsEps[i].ip, &rec[i], sizeof(struct np_ip_address));
+        ctx->bsEps[i].ctx = ctx;
+        ctx->bsEps[i].ep.port = ctx->currentPort;
+        memcpy(&ctx->bsEps[i].ep.ip, &rec[i], sizeof(struct np_ip_address));
         i++;
     }
 
@@ -563,15 +568,51 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
     return;
 }
 
+
+void udp_send_callback(const np_error_code ec, void* data)
+{
+    struct nc_attach_endpoint_context* ep = (struct nc_attach_endpoint_context*)data;
+    if (ep->ctx->activeEp == NULL && ec == NABTO_EC_OK) {
+        // First successful responder
+        ep->ctx->activeEp = ep;
+        if (ep->ctx->senderCb) {
+            ep->ctx->senderCb(ec, ep->ctx->senderCbData);
+            ep->ctx->senderCb = NULL;
+        }
+    }
+}
+
 np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
                                  np_dtls_cli_send_callback cb, void* data,
                                  void* senderData)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
-    // TODO if connecting try all endpoints
-    return nc_udp_dispatch_async_send_to(ctx->udp, &ctx->bsEps[0],
-                                         buffer, bufferSize,
-                                         cb, data);
+    if (ctx->activeEp == NULL) {
+        // We have yet to find suitable endpoint
+        if (ctx->senderCb != NULL) {
+            return NABTO_EC_OPERATION_IN_PROGRESS;
+        }
+        ctx->senderCb = cb;
+        ctx->senderCbData = data;
+        np_error_code ec = NABTO_EC_UNKNOWN;
+        for (int i = 0; i < NABTO_MAX_BASESTATION_EPS; i++) {
+            if (ctx->bsEps[i].ctx == NULL) {
+                // no further endpoints initialized hopefully we are ok
+                return ec;
+            }
+            ec = nc_udp_dispatch_async_send_to(ctx->udp, &ctx->bsEps[i].ep,
+                                               buffer, bufferSize,
+                                               udp_send_callback, &ctx->bsEps[i]);
+            if (ec != NABTO_EC_OK) {
+                return ec;
+            }
+        }
+        return NABTO_EC_OK;
+    } else {
+        return nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp->ep,
+                                             buffer, bufferSize,
+                                             cb, data);
+    }
 }
 
 void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data)
