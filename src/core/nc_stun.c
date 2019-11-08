@@ -11,13 +11,14 @@
 
 // util functions
 void nc_stun_resolve_callbacks(void* data);
-size_t nc_stun_convert_ep_list(struct np_ip_address* rec, size_t recSize,
-                             struct nabto_stun_endpoint* eps, size_t epsSize,
-                             uint16_t port);
+size_t nc_stun_convert_ep_list(struct np_ip_address* v4Rrec, size_t v4RecSize,
+                               struct np_ip_address* v6Rrec, size_t v6RecSize,
+                               struct nabto_stun_endpoint* eps, size_t epsSize,
+                               uint16_t port);
 void nc_stun_event(struct nc_stun_context* ctx);
 
 // Async callback functions
-void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
+void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4ecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data);
 void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data);
 void nc_stun_send_to_cb(const np_error_code ec, void* data);
 void nc_stun_handle_timeout(const np_error_code ec, void* data);
@@ -258,7 +259,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
     }
 }
 
-void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
+void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
     if (ec != NABTO_EC_OK) {
@@ -267,7 +268,7 @@ void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* rec, size_t re
         nc_stun_resolve_callbacks(ctx);
         return;
     }
-    ctx->numEps = nc_stun_convert_ep_list(rec, recSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, NC_STUN_PORT);
+    ctx->numEps = nc_stun_convert_ep_list(v4Rec, v4RecSize, v6Rec, v6RecSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, NC_STUN_PORT);
     nabto_stun_init(&ctx->stun, &ctx->stunModule, ctx, ctx->eps, ctx->numEps);
     nabto_stun_async_analyze(&ctx->stun, ctx->simple);
     nc_stun_event(ctx);
@@ -320,28 +321,55 @@ void nc_stun_resolve_callbacks(void* data)
     }
 }
 
-size_t nc_stun_convert_ep_list(struct np_ip_address* rec, size_t recSize,
-                             struct nabto_stun_endpoint* eps, size_t epsSize,
-                             uint16_t port)
+void nc_stun_set_endpoint(struct nabto_stun_endpoint* ep, struct np_ip_address* ip, uint16_t port)
 {
-    size_t end;
-    int i;
-    if (recSize > epsSize) {
-        end = epsSize;
-    } else {
-        end = recSize;
+    if (ip->type == NABTO_IPV4) {
+        ep->addr.type = NABTO_STUN_IPV4;
+        memcpy(ep->addr.v4.addr, ip->ip.v6, 4);
+    } else if (ip->type == NABTO_IPV6) {
+        ep->addr.type = NABTO_STUN_IPV6;
+        memcpy(ep->addr.v6.addr, ip->ip.v6, 16);
     }
-    for (i = 0; i < end; i++) {
-        eps[i].port = port;
-        if (rec[i].type == NABTO_IPV4) {
-            eps[i].addr.type = NABTO_STUN_IPV4;
-            memcpy(eps[i].addr.v4.addr, rec[i].ip.v4, 4);
-        } else if (rec[i].type == NABTO_IPV6) {
-            eps[i].addr.type = NABTO_STUN_IPV6;
-            memcpy(eps[i].addr.v6.addr, rec[i].ip.v6, 16);
+    ep->port = port;
+}
+
+size_t nc_stun_convert_ep_list(struct np_ip_address* v4Rec, size_t v4RecSize,
+                               struct np_ip_address* v6Rec, size_t v6RecSize,
+                               struct nabto_stun_endpoint* eps, size_t epsSize,
+                               uint16_t port)
+{
+    size_t v4Used = 0;
+    size_t v6Used = 0;
+    int i = 0;
+    for (i = 0; i < epsSize; i++) {
+        if (i % 2) { // try add IPv6 on odd indexes
+            if (v6Used < v6RecSize) {
+                nc_stun_set_endpoint(&eps[i], &v6Rec[v6Used], port);
+                v6Used++;
+                continue;
+            }
+        } else { // try add IPv4 on even indexes
+            if (v4Used < v4RecSize) {
+                nc_stun_set_endpoint(&eps[i], &v4Rec[v4Used], port);
+                v4Used++;
+                continue;
+            }
         }
+        // if current record list is empty fill with whatever
+        if (v4Used < v4RecSize) {
+            nc_stun_set_endpoint(&eps[i], &v4Rec[v4Used], port);
+            v4Used++;
+            continue;
+        }
+        if (v6Used < v6RecSize) {
+            nc_stun_set_endpoint(&eps[i], &v6Rec[v6Used], port);
+            v6Used++;
+            continue;
+        }
+        // if continue not called yet no more endpoints are available
+        return i+1; // return index+1 to get count
     }
-    return end;
+    return i; // for increased index to count
 }
 
 uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx)

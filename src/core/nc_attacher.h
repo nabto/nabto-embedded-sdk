@@ -65,8 +65,11 @@ struct nc_attach_context {
     enum nc_attacher_module_state moduleState;
 
     uint32_t sessionId;
-    struct nc_attach_endpoint_context bsEps[NABTO_MAX_BASESTATION_EPS];
+    struct nc_attach_endpoint_context v4BsEps[NABTO_MAX_BASESTATION_EPS];
+    struct nc_attach_endpoint_context v6BsEps[NABTO_MAX_BASESTATION_EPS];
     struct nc_attach_endpoint_context* activeEp;
+    uint8_t bsEpsTried;
+
     uint16_t currentPort;
     char dns[256];
     uint8_t dnsLen;

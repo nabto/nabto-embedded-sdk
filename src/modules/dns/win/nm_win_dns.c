@@ -106,7 +106,8 @@ void nm_win_dns_check_resolved(const np_error_code ec, void* data) {
         return;
     } else {
         NABTO_LOG_TRACE(LOG, "dns is resolved");
-        ctx->cb(ctx->ec, ctx->ips, ctx->recSize, ctx->data);
+        // TODO: resolve ipv6
+        ctx->cb(ctx->ec, ctx->ips, ctx->recSize, NULL, 0, ctx->data);
         free(ctx);
         return;
     }

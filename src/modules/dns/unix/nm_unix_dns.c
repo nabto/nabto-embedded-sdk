@@ -15,66 +15,87 @@
 struct nm_unix_dns_ctx {
     struct np_timed_event ev;
     const char* host;
-    size_t recSize;
     np_dns_resolve_callback cb;
     np_error_code ec;
     void* data;
     bool resolver_is_running;
     struct np_platform* pl;
-    struct np_ip_address ips[NP_DNS_RESOLVED_IPS_MAX];
+
+    struct np_ip_address v4Ips[NP_DNS_RESOLVED_IPS_MAX];
+    size_t v4IpsSize;
+    struct np_ip_address v6Ips[NP_DNS_RESOLVED_IPS_MAX];
+    size_t v6IpsSize;
 };
 
 void nm_unix_dns_check_resolved(const np_error_code ec, void* data);
 
-void* resolver_thread(void* ctx) {
-    struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
 
+bool resolve_dns(const char* host, int family, struct np_ip_address* list, size_t* size)
+{
+    struct np_ip_address* ips = list;
     struct addrinfo hints;
     struct addrinfo *infoptr;
     memset(&hints, 0, sizeof (struct addrinfo));
 
     hints.ai_socktype = SOCK_DGRAM;
 
-    NABTO_LOG_TRACE(LOG, "Resolving host: %s", state->host);
+    NABTO_LOG_TRACE(LOG, "Resolving host: %s", host);
 
-    hints.ai_family = AF_UNSPEC;
-    int res =  getaddrinfo(state->host, NULL, &hints, &infoptr);
+    hints.ai_family = family;
+    int res =  getaddrinfo(host, NULL, &hints, &infoptr);
     if (res != 0) {
         if (res == EAI_SYSTEM) {
             NABTO_LOG_ERROR(LOG, "Failed to get address info: (%i) '%s'", errno, strerror(errno));
         } else {
             NABTO_LOG_ERROR(LOG, "Failed to get address info: (%i) '%s'", res, gai_strerror(res));
         }
-        state->ec = NABTO_EC_UNKNOWN;
-        state->resolver_is_running = false;
-        return NULL;
+        return false;
     }
     struct addrinfo *p = infoptr;
     int i = 0;
-    state->recSize = 0;
+    *size = 0;
     for (i = 0; i < NP_DNS_RESOLVED_IPS_MAX; i++) {
         if (p == NULL) {
             break;
         }
-        if (p->ai_family == AF_INET) {
-            NABTO_LOG_TRACE(LOG, "Found IPv4 address");
-            state->ips[i].type = NABTO_IPV4;
-            state->recSize++;
+        NABTO_LOG_TRACE(LOG, "Found IPv4 address");
+
+        if (family == AF_INET && p->ai_family == AF_INET) {
+            ips[i].type = NABTO_IPV4;
             struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
-            memcpy(state->ips[i].ip.v4, &addr->sin_addr, sizeof(addr->sin_addr));//p->ai_addrlen);
-        } else if (p->ai_family == AF_INET6) {
-            NABTO_LOG_TRACE(LOG, "Found IPv6 address");
-            state->ips[i].type = NABTO_IPV6;
-            state->recSize++;
+            memcpy(ips[i].ip.v4, &addr->sin_addr, sizeof(addr->sin_addr));//p->ai_addrlen);
+        } else if (family == AF_INET6 && p->ai_family == AF_INET6) {
+            ips[i].type = NABTO_IPV6;
             struct sockaddr_in6* addr = (struct sockaddr_in6*)p->ai_addr;
-            memcpy(state->ips[i].ip.v6, &addr->sin6_addr, sizeof(addr->sin6_addr));//p->ai_addrlen);
+            memcpy(ips[i].ip.v6, &addr->sin6_addr, sizeof(addr->sin6_addr));//p->ai_addrlen);
         } else {
             NABTO_LOG_ERROR(LOG, "Resolved hostname was neither IPv4 or IPv6");
+            *size -= 1; // negate the ++ below
+            i--; // dont advance array index if it was not used
         }
+        *size += 1;
         p = p->ai_next;
     }
-    state->resolver_is_running = false;
     freeaddrinfo(infoptr);
+    return true;
+}
+
+void* resolver_thread(void* ctx)
+{
+    struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
+    if (!resolve_dns(state->host, AF_INET, state->v4Ips, &state->v4IpsSize)) {
+        // FAIL
+        state->ec = NABTO_EC_UNKNOWN;
+        state->resolver_is_running = false;
+        return NULL;
+    }
+    if (!resolve_dns(state->host, AF_INET6, state->v6Ips, &state->v6IpsSize)) {
+        // FAIL
+        state->ec = NABTO_EC_UNKNOWN;
+        state->resolver_is_running = false;
+        return NULL;
+    }
+    state->resolver_is_running = false;
     return NULL;
 }
 
@@ -126,7 +147,7 @@ void nm_unix_dns_check_resolved(const np_error_code ec, void* data)
         np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, data);
         return;
     } else {
-        ctx->cb(ctx->ec, ctx->ips, ctx->recSize, ctx->data);
+        ctx->cb(ctx->ec, ctx->v4Ips, ctx->v4IpsSize, ctx->v6Ips, ctx->v6IpsSize, ctx->data);
         free(ctx);
     }
 }

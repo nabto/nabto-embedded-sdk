@@ -37,7 +37,7 @@ static np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np
 static void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
 
-static void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
+static void dns_resolved_callback(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data);
 
 static void coap_response_failed(struct nc_attach_context* ctx, struct nabto_coap_client_request* request);
 static void coap_request_handler(struct nabto_coap_client_request* request, void* data);
@@ -240,7 +240,7 @@ void handle_state_change(struct nc_attach_context* ctx)
 }
 
 
-void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data)
+void dns_resolved_callback(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
@@ -256,7 +256,7 @@ void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, si
         handle_state_change(ctx);
         return;
     }
-    if (recSize == 0) {
+    if (v4RecSize == 0 && v6RecSize == 0) {
         NABTO_LOG_ERROR(LOG, "Empty record list");
         // No DTLS to close so we go directly to RETRY WAIT
         ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
@@ -264,15 +264,22 @@ void dns_resolved_callback(const np_error_code ec, struct np_ip_address* rec, si
         return;
     }
 
-    memset(ctx->bsEps, 0, sizeof(struct nc_attach_endpoint_context[NABTO_MAX_BASESTATION_EPS]));
-
+    memset(ctx->v4BsEps, 0, sizeof(struct nc_attach_endpoint_context[NABTO_MAX_BASESTATION_EPS]));
+    memset(ctx->v6BsEps, 0, sizeof(struct nc_attach_endpoint_context[NABTO_MAX_BASESTATION_EPS]));
+    ctx->bsEpsTried = 0;
     int i = 0;
-    // TODO: If recSize > MAX_BS_EPS, consider picking records which matches the supported protocol IPv4/IPv6
     ctx->activeEp = NULL;
-    while ( i < recSize && i < NABTO_MAX_BASESTATION_EPS) {
-        ctx->bsEps[i].ctx = ctx;
-        ctx->bsEps[i].ep.port = ctx->currentPort;
-        memcpy(&ctx->bsEps[i].ep.ip, &rec[i], sizeof(struct np_ip_address));
+    while ( i < v4RecSize && i < NABTO_MAX_BASESTATION_EPS) {
+        ctx->v4BsEps[i].ctx = ctx;
+        ctx->v4BsEps[i].ep.port = ctx->currentPort;
+        memcpy(&ctx->v4BsEps[i].ep.ip, &v4Rec[i], sizeof(struct np_ip_address));
+        i++;
+    }
+    i = 0;
+    while ( i < v6RecSize && i < NABTO_MAX_BASESTATION_EPS) {
+        ctx->v6BsEps[i].ctx = ctx;
+        ctx->v6BsEps[i].ep.port = ctx->currentPort;
+        memcpy(&ctx->v6BsEps[i].ep.ip, &v6Rec[i], sizeof(struct np_ip_address));
         i++;
     }
 
@@ -572,13 +579,17 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
 void udp_send_callback(const np_error_code ec, void* data)
 {
     struct nc_attach_endpoint_context* ep = (struct nc_attach_endpoint_context*)data;
+    ep->ctx->bsEpsTried--;
     if (ep->ctx->activeEp == NULL && ec == NABTO_EC_OK) {
         // First successful responder
         ep->ctx->activeEp = ep;
-        if (ep->ctx->senderCb) {
-            ep->ctx->senderCb(ec, ep->ctx->senderCbData);
-            ep->ctx->senderCb = NULL;
-        }
+    }
+    if (ep->ctx->senderCb && ep->ctx->bsEpsTried == 0 && ep->ctx->activeEp != NULL) {
+        ep->ctx->senderCb(NABTO_EC_OK, ep->ctx->senderCbData);
+        ep->ctx->senderCb = NULL;
+    } else if (ep->ctx->senderCb && ep->ctx->bsEpsTried == 0) {
+        ep->ctx->senderCb(NABTO_EC_UNKNOWN, ep->ctx->senderCbData);
+        ep->ctx->senderCb = NULL;
     }
 }
 
@@ -595,19 +606,29 @@ np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
         ctx->senderCb = cb;
         ctx->senderCbData = data;
         np_error_code ec = NABTO_EC_UNKNOWN;
+        np_error_code ec2 = NABTO_EC_UNKNOWN;
         for (int i = 0; i < NABTO_MAX_BASESTATION_EPS; i++) {
-            if (ctx->bsEps[i].ctx == NULL) {
-                // no further endpoints initialized hopefully we are ok
-                return ec;
+            if (ctx->v4BsEps[i].ctx != NULL) {
+                 ec2 = nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v4BsEps[i].ep,
+                                                     buffer, bufferSize,
+                                                     udp_send_callback, &ctx->v4BsEps[i]);
+                 if (ec2 == NABTO_EC_OK) {
+                     ctx->bsEpsTried++;
+                     ec = ec2;
+                 }
             }
-            ec = nc_udp_dispatch_async_send_to(ctx->udp, &ctx->bsEps[i].ep,
-                                               buffer, bufferSize,
-                                               udp_send_callback, &ctx->bsEps[i]);
-            if (ec != NABTO_EC_OK) {
-                return ec;
+            if (ctx->v6BsEps[i].ctx != NULL) {
+                 ec2 = nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v6BsEps[i].ep,
+                                                     buffer, bufferSize,
+                                                     udp_send_callback, &ctx->v6BsEps[i]);
+                 if (ec2 == NABTO_EC_OK) {
+                     ctx->bsEpsTried++;
+                     ec = ec2;
+                 }
             }
         }
-        return NABTO_EC_OK;
+        // OK if at least one send succeeded UNKNOWN otherwise
+        return ec;
     } else {
         return nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp->ep,
                                              buffer, bufferSize,

@@ -30,7 +30,7 @@ void nc_iam_coap_register_handlers(struct nc_device_context* device)
     struct nabto_coap_server_resource* resource;
     struct nabto_coap_server* server = nc_coap_server_get_server(&device->coapServer);
     // TODO: check if add fails
-nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
+    nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
                                    (const char*[]){"iam", "users", NULL},
                                    nc_iam_coap_users_list, device, &resource);
     nabto_coap_server_add_resource(server, NABTO_COAP_CODE_GET,

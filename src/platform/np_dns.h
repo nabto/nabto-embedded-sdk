@@ -15,7 +15,7 @@ extern "C" {
 
 struct np_platform;
 
-typedef void (*np_dns_resolve_callback)(const np_error_code ec, struct np_ip_address* rec, size_t recSize, void* data);
+typedef void (*np_dns_resolve_callback)(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data);
 
 struct np_dns_module {
     /**
