@@ -584,6 +584,7 @@ void nm_epoll_event_send_to(void* data)
         srv_addr.sin_port = htons (ctx->ep.port);
         memcpy((void*)&srv_addr.sin_addr, ctx->ep.ip.ip.v4, sizeof(srv_addr.sin_addr));
         res = sendto (sock->sock, ctx->buffer, ctx->bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        NABTO_LOG_TRACE(LOG, "Send to v4: %u.%u.%u.%u", ctx->ep.ip.ip.v4[0], ctx->ep.ip.ip.v4[1], ctx->ep.ip.ip.v4[2], ctx->ep.ip.ip.v4[3]);
     } else { // IPv6
         struct sockaddr_in6 srv_addr;
         srv_addr.sin6_family = AF_INET6;

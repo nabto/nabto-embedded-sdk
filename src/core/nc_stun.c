@@ -367,7 +367,7 @@ size_t nc_stun_convert_ep_list(struct np_ip_address* v4Rec, size_t v4RecSize,
             continue;
         }
         // if continue not called yet no more endpoints are available
-        return i+1; // return index+1 to get count
+        return i; // we did not use this index so index == count
     }
     return i; // for increased index to count
 }

@@ -44,10 +44,11 @@ bool resolve_dns(const char* host, int family, struct np_ip_address* list, size_
     hints.ai_family = family;
     int res =  getaddrinfo(host, NULL, &hints, &infoptr);
     if (res != 0) {
+        // Errors may be protocol specific, and not significant. If everything fails, the user will get an error
         if (res == EAI_SYSTEM) {
-            NABTO_LOG_ERROR(LOG, "Failed to get address info: (%i) '%s'", errno, strerror(errno));
+            NABTO_LOG_TRACE(LOG, "Failed to get address info for family %d: (%i) '%s'", family, errno, strerror(errno));
         } else {
-            NABTO_LOG_ERROR(LOG, "Failed to get address info: (%i) '%s'", res, gai_strerror(res));
+            NABTO_LOG_TRACE(LOG, "Failed to get address info for family %d: (%i) '%s'", family, res, gai_strerror(res));
         }
         return false;
     }
@@ -58,16 +59,20 @@ bool resolve_dns(const char* host, int family, struct np_ip_address* list, size_
         if (p == NULL) {
             break;
         }
-        NABTO_LOG_TRACE(LOG, "Found IPv4 address");
 
         if (family == AF_INET && p->ai_family == AF_INET) {
             ips[i].type = NABTO_IPV4;
             struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
             memcpy(ips[i].ip.v4, &addr->sin_addr, sizeof(addr->sin_addr));//p->ai_addrlen);
+            NABTO_LOG_TRACE(LOG, "Found v4 address: %u.%u.%u.%u", ips[i].ip.v4[0], ips[i].ip.v4[1], ips[i].ip.v4[2], ips[i].ip.v4[3]);
         } else if (family == AF_INET6 && p->ai_family == AF_INET6) {
             ips[i].type = NABTO_IPV6;
             struct sockaddr_in6* addr = (struct sockaddr_in6*)p->ai_addr;
             memcpy(ips[i].ip.v6, &addr->sin6_addr, sizeof(addr->sin6_addr));//p->ai_addrlen);
+            NABTO_LOG_TRACE(LOG,
+                        "Found v6 address: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+                        ips[i].ip.v6[0], ips[i].ip.v6[1], ips[i].ip.v6[2], ips[i].ip.v6[3], ips[i].ip.v6[4], ips[i].ip.v6[5], ips[i].ip.v6[6], ips[i].ip.v6[7],
+                        ips[i].ip.v6[8], ips[i].ip.v6[9], ips[i].ip.v6[10], ips[i].ip.v6[11], ips[i].ip.v6[12], ips[i].ip.v6[13], ips[i].ip.v6[14], ips[i].ip.v6[15]);
         } else {
             NABTO_LOG_ERROR(LOG, "Resolved hostname was neither IPv4 or IPv6");
             *size -= 1; // negate the ++ below
@@ -83,18 +88,16 @@ bool resolve_dns(const char* host, int family, struct np_ip_address* list, size_
 void* resolver_thread(void* ctx)
 {
     struct nm_unix_dns_ctx* state = (struct nm_unix_dns_ctx*)ctx;
-    if (!resolve_dns(state->host, AF_INET, state->v4Ips, &state->v4IpsSize)) {
+    bool v4State = resolve_dns(state->host, AF_INET, state->v4Ips, &state->v4IpsSize);
+    bool v6State = resolve_dns(state->host, AF_INET6, state->v6Ips, &state->v6IpsSize);
+
+    if (!v4State && !v6State) {
         // FAIL
         state->ec = NABTO_EC_UNKNOWN;
         state->resolver_is_running = false;
         return NULL;
     }
-    if (!resolve_dns(state->host, AF_INET6, state->v6Ips, &state->v6IpsSize)) {
-        // FAIL
-        state->ec = NABTO_EC_UNKNOWN;
-        state->resolver_is_running = false;
-        return NULL;
-    }
+    state->ec = NABTO_EC_OK;
     state->resolver_is_running = false;
     return NULL;
 }
@@ -118,7 +121,7 @@ np_error_code nm_unix_dns_resolve(struct np_platform* pl, const char* host, np_d
         pthread_attr_destroy(&attr);
         return NABTO_EC_UNKNOWN;
     }
-    ctx = (struct nm_unix_dns_ctx*)malloc(sizeof(struct nm_unix_dns_ctx));
+    ctx = (struct nm_unix_dns_ctx*)calloc(1,sizeof(struct nm_unix_dns_ctx));
     if (!ctx) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate DNS context");
         return NABTO_EC_UNKNOWN;
