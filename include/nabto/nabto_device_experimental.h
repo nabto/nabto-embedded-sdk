@@ -9,44 +9,6 @@
 extern "C" {
 #endif
 
-/*****************
- * Device Events *
- *****************/
-
-typedef int NabtoDeviceEvent;
-
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
-
-// todo verify error codes
-/**
- * Create a listener for device events.
- *
- * @param device   Device
- * @param listener The listener to initialize for device events
- * @return NABTO_DEVICE_EC_OK on success
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_device_events_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
-
-/**
- * Start listening for next device event.
- *
- * @param listener  Listener to get device events from
- * @param future    Future returned with status of the operation.
- * @param event     Where to put the device event when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceEvent* event);
-
-
 /*******
  * IAM *
  *******/
