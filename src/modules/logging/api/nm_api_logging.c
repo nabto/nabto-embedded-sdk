@@ -46,9 +46,6 @@ void nm_api_log(uint32_t severity, uint32_t module,
         }
 
         switch(severity) {
-            case NABTO_LOG_SEVERITY_FATAL:
-                msg.severity = NABTO_DEVICE_LOG_FATAL;
-                break;
             case NABTO_LOG_SEVERITY_ERROR:
                 msg.severity = NABTO_DEVICE_LOG_ERROR;
                 break;
@@ -89,9 +86,6 @@ void nm_api_log_buf_line(uint32_t severity, uint32_t module,
         }
 
         switch(severity) {
-            case NABTO_LOG_SEVERITY_FATAL:
-                msg.severity = NABTO_DEVICE_LOG_FATAL;
-                break;
             case NABTO_LOG_SEVERITY_ERROR:
                 msg.severity = NABTO_DEVICE_LOG_ERROR;
                 break;

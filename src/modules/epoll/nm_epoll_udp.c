@@ -428,7 +428,7 @@ void nm_epoll_event_bind_port(void* data)
     ev.events = EPOLLIN | EPOLLET;
     ev.data.ptr = us;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
-        NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
+        NABTO_LOG_ERROR(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
         close(us->sock);
         us->sock = -1;
         np_udp_socket_created_callback cb = us->created.cb;
@@ -497,7 +497,7 @@ void nm_epoll_event_bind_mdns_ipv4(void* data)
     ev.events = EPOLLIN | EPOLLET;
     ev.data.ptr = us;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
-        NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
+        NABTO_LOG_ERROR(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
         close(us->sock);
         us->sock = -1;
         np_udp_socket_created_callback cb = us->created.cb;
@@ -557,7 +557,7 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
     ev.events = EPOLLIN | EPOLLET;
     ev.data.ptr = us;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
-        NABTO_LOG_FATAL(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
+        NABTO_LOG_ERROR(LOG,"could not add file descriptor to epoll set: (%i) '%s'", errno, strerror(errno));
         close(us->sock);
         us->sock = -1;
         np_udp_socket_created_callback cb = us->created.cb;

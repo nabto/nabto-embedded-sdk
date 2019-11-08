@@ -22,7 +22,7 @@ void nm_win_log_buf(uint32_t severity, uint32_t module, uint32_t line, const cha
     size_t i, n;
     int ret = 0;
     va_list list = NULL;
-    
+
     for (i = 0; i < chunks; i++) {
         ret = sprintf(str, "%04lx: ", i*16);
         ptr = str + ret;
@@ -32,7 +32,7 @@ void nm_win_log_buf(uint32_t severity, uint32_t module, uint32_t line, const cha
         }
         ret = sprintf(ptr, ": ");
         ptr = ptr + ret;
-        
+
         for (n = 0; n < 16; n++) {
             if(buf[i*16+n] > 0x1F && buf[i*16+n] < 0x7F && buf[i*16+n] != 0x25) {
                 ret = sprintf(ptr, "%c", (char)buf[i*16+n]);
@@ -56,7 +56,7 @@ void nm_win_log_buf(uint32_t severity, uint32_t module, uint32_t line, const cha
     }
     ret = sprintf(ptr, ": ");
     ptr = ptr + ret;
-        
+
     for (n = chunks*16; n < len; n++) {
         if(buf[n] > 0x1F && buf[n] < 0x7F) {
             ret = sprintf(ptr, "%c", (char)buf[n]);
@@ -85,9 +85,7 @@ void nm_win_log (uint32_t severity, uint32_t module, uint32_t line, const char* 
         }
         char level[6];
         switch(severity) {
-            case NABTO_LOG_SEVERITY_FATAL:
-                strcpy(level, "FATAL");
-                break;
+
             case NABTO_LOG_SEVERITY_ERROR:
                 strcpy(level, "ERROR");
                 break;

@@ -22,14 +22,12 @@ struct np_logging {
 extern struct np_logging np_log;
 
 #ifdef HAS_NO_VARIADIC_MACROS
-void np_fatal_adapter(uint32_t module, const char* fmt, ...);
 void np_error_adapter(uint32_t module, const char* fmt, ...);
 void np_warn_adapter(uint32_t module, const char* fmt, ...);
 void np_info_adapter(uint32_t module, const char* fmt, ...);
 void np_trace_adapter(uint32_t module, const char* fmt, ...);
 #else
 #define VA_ARGS(...) , ##__VA_ARGS__
-void np_fatal_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_error_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_warn_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
 void np_info_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, ...);
@@ -47,14 +45,6 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 
 #ifndef NABTO_LOG_MODULE_FILTER
 #define NABTO_LOG_MODULE_FILTER       NABTO_LOG_MODULE_ALL
-#endif
-
-#ifndef NABTO_LOG_FATAL
-#  ifdef HAS_NO_VARADIC_MACROS
-#    define NABTO_LOG_FATAL np_fatal_adapter
-#  else
-#    define NABTO_LOG_FATAL(module, fmt, ...) np_fatal_adapter(NABTO_LOG_SEVERITY_FATAL, module, __LINE__, __FILE__, fmt VA_ARGS(__VA_ARGS__));
-#  endif
 #endif
 
 #ifndef NABTO_LOG_ERROR

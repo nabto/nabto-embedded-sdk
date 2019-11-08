@@ -34,8 +34,7 @@ np_error_code nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* 
     }
 
     if (epoll->fd == -1) {
-        // todo: kill fatal log level
-        NABTO_LOG_FATAL(LOG, "Failed to create epoll socket: (%i) '%s'.", errno, strerror(errno));
+        NABTO_LOG_ERROR(LOG, "Failed to create epoll socket: (%i) '%s'.", errno, strerror(errno));
         return NABTO_EC_UNKNOWN;
     }
 

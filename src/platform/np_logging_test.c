@@ -58,9 +58,6 @@ void np_logging_test()
 {
     reset_pnt();
     np_log.log=&test_log;
-    NABTO_LOG_FATAL(42, "%d:%c", 19, 'f');
-    NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_FATAL, 42, "%d:%c", 19 , 'f'));
-    reset_pnt();
     NABTO_LOG_ERROR(43, "%d:%c", 20, 'e');
     NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_ERROR, 43, "%d:%c", 20 , 'e'));
     reset_pnt();

@@ -30,9 +30,6 @@ void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
     }
     const char* level;
     switch(msg->severity) {
-        case NABTO_DEVICE_LOG_FATAL:
-            level = "FATAL";
-            break;
         case NABTO_DEVICE_LOG_ERROR:
             level = "ERROR";
             break;

@@ -19,9 +19,6 @@ void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
         }
         char level[6];
         switch(msg->severity) {
-            case NABTO_DEVICE_LOG_FATAL:
-                strcpy(level, "FATAL");
-                break;
             case NABTO_DEVICE_LOG_ERROR:
                 strcpy(level, "ERROR");
                 break;
@@ -40,5 +37,5 @@ void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
                st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
                fileTmp, msg->line, level, msg->message);
     }
- 
+
 }
