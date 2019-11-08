@@ -56,13 +56,18 @@ void nabto_device_new_resolve_failure(struct nabto_device_context* dev)
 NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
+    np_error_code ec;
     if (dev == NULL) {
         return NULL;
     }
     memset(dev, 0, sizeof(struct nabto_device_context));
 
     nabto_device_init_platform(&dev->pl);
-    nabto_device_init_platform_modules(&dev->pl);
+    ec = nabto_device_init_platform_modules(&dev->pl);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");
+        return NULL;
+    }
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
     if (dev->eventMutex == NULL) {
@@ -102,7 +107,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         nabto_device_new_resolve_failure(dev);
         return NULL;
     }
-    np_error_code ec = nc_device_init(&dev->core, &dev->pl);
+    ec = nc_device_init(&dev->core, &dev->pl);
     if (ec != NABTO_EC_OK) {
         nabto_device_new_resolve_failure(dev);
         return NULL;

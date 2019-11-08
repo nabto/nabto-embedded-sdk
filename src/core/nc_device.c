@@ -37,20 +37,32 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
     nc_iam_coap_register_handlers(device);
-    nc_coap_client_init(pl, &device->coapClient);
+    ec = nc_coap_client_init(pl, &device->coapClient);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
     ec = nc_attacher_init(&device->attacher, pl, device, &device->coapClient, &nc_device_events_listener_notify, device);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
-    nc_rendezvous_init(&device->rendezvous, pl);
+    ec = nc_rendezvous_init(&device->rendezvous, pl);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
     ec = nc_rendezvous_coap_init(&device->rendezvousCoap, &device->coapServer, &device->rendezvous);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
 
-    nc_stun_init(&device->stun, pl);
+    ec = nc_stun_init(&device->stun, pl);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
     ec = nc_stun_coap_init(&device->stunCoap, pl, &device->coapServer, &device->stun);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);

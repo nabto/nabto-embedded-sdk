@@ -12,7 +12,7 @@
 
 #define LOG NABTO_LOG_MODULE_NETWORK
 
-void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
+np_error_code nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
 {
     memset(epoll, 0, sizeof(struct nm_epoll_context));
     epoll->pl = pl;
@@ -22,6 +22,7 @@ void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
     epoll->closeSentinel->prev = epoll->closeSentinel;
     if(pipe(epoll->pipeFd) == -1) {
         NABTO_LOG_ERROR(LOG, "Failed to create pipe file descriptors");
+        return NABTO_EC_UNKNOWN;
     }
 
     struct epoll_event ev;
@@ -29,16 +30,23 @@ void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl)
     ev.data.ptr = NULL;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, epoll->pipeFd[0], &ev) == -1) {
         NABTO_LOG_ERROR(LOG, "Cannot add fd to epoll");
+        return NABTO_EC_UNKNOWN;
     }
 
     if (epoll->fd == -1) {
+        // todo: kill fatal log level
         NABTO_LOG_FATAL(LOG, "Failed to create epoll socket: (%i) '%s'.", errno, strerror(errno));
+        return NABTO_EC_UNKNOWN;
     }
 
     epoll->recvBuffer = pl->buf.allocate();
+    if (!epoll->recvBuffer) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
 
     nm_epoll_udp_init(epoll, pl);
     nm_epoll_tcp_init(epoll, pl);
+    return NABTO_EC_OK;
 }
 
 

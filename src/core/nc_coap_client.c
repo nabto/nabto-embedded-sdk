@@ -15,15 +15,18 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
     return &ctx->client;
 }
 
-void nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
+np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
 {
-    ctx->pl = pl;
     ctx->sendBuffer = pl->buf.allocate();
+    if (!ctx->sendBuffer) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    ctx->pl = pl;
     ctx->isSending = false;
     ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
     nabto_coap_client_init(&ctx->client, &nc_coap_client_notify_event, ctx);
     nc_coap_client_set_infinite_stamp(ctx);
-
+    return NABTO_EC_OK;
 }
 
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx)

@@ -9,15 +9,20 @@
 
 struct nm_epoll_context epoll;
 
-void nabto_device_init_platform_modules(struct np_platform* pl)
+np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
 {
+    np_error_code ec;
     np_communication_buffer_init(pl);
-    nm_epoll_init(&epoll, pl);
+    ec = nm_epoll_init(&epoll, pl);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
     nm_unix_ts_init(pl);
     nm_unix_dns_init(pl);
     nm_dtls_cli_init(pl);
     nm_dtls_srv_init(pl);
     nm_mdns_init(pl);
+    return NABTO_EC_OK;
 }
 
 int nabto_device_platform_inf_wait()

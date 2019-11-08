@@ -61,18 +61,22 @@ bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 }
 
 // init function
-void nc_stun_init(struct nc_stun_context* ctx,
-                  struct np_platform* pl)
+np_error_code nc_stun_init(struct nc_stun_context* ctx,
+                           struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_stun_context));
     srand(pl->ts.now_ms());
+    ctx->sendBuf = pl->buf.allocate();
+    if (!ctx->sendBuf) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     ctx->pl = pl;
     ctx->state = NC_STUN_STATE_NONE;
-    ctx->sendBuf = pl->buf.allocate();
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
     np_event_queue_init_event(&ctx->event);
+    return NABTO_EC_OK;
 }
 
 void nc_stun_deinit(struct nc_stun_context* ctx)

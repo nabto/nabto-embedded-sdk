@@ -34,8 +34,10 @@ void nc_coap_server_event_handler(void* hest, enum nabto_coap_server_event event
 
 np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
 {
-    ctx->pl = pl;
     ctx->sendBuffer = pl->buf.allocate();
+    if (!ctx->sendBuffer) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     ctx->isSending = false;
     nabto_coap_error err = nabto_coap_server_init(&ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, &nc_coap_server_event_handler, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
@@ -43,6 +45,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
         ctx->sendBuffer = NULL;
         return nc_coap_server_error_module_to_core(err);
     }
+    ctx->pl = pl;
     nc_coap_server_set_infinite_stamp(ctx);
     return NABTO_EC_OK;
 }

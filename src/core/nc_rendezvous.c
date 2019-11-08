@@ -13,14 +13,18 @@
 
 void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx);
 
-void nc_rendezvous_init(struct nc_rendezvous_context* ctx,
-                        struct np_platform* pl)
+np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
+                                 struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_rendezvous_context));
-    ctx->pl = pl;
     ctx->priBuf = pl->buf.allocate();
+    if (!ctx->priBuf) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    ctx->pl = pl;
     ctx->packetIndex = 0;
     ctx->sendingDevReqs = false;
+    return NABTO_EC_OK;
 }
 
 void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)

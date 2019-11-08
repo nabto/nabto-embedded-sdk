@@ -51,8 +51,8 @@ struct nc_stun_context {
     bool simple;
 };
 
-void nc_stun_init(struct nc_stun_context* ctx,
-                  struct np_platform* pl);
+np_error_code nc_stun_init(struct nc_stun_context* ctx,
+                           struct np_platform* pl);
 
 void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* hostname, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp);
 

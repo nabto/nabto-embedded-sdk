@@ -2,6 +2,7 @@
 #define _NM_EPOLL_H_
 
 #include <platform/np_communication_buffer.h>
+#include <platform/np_error_code.h>
 
 
 #include <sys/epoll.h>
@@ -35,7 +36,7 @@ struct nm_epoll_context {
     struct nm_epoll_base* closeSentinel;
 };
 
-void nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl);
+np_error_code nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* pl);
 void nm_epoll_close(struct nm_epoll_context* epoll);
 void nm_epoll_break_wait(struct nm_epoll_context* epoll);
 

@@ -53,7 +53,7 @@ static enum np_ip_address_type nm_select_unix_udp_get_protocol(np_udp_socket* so
 static uint16_t nm_select_unix_udp_get_local_port(np_udp_socket* socket);
 static size_t nm_select_unix_udp_get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
 
-void nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
+np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
 {
     struct nm_select_unix_udp_sockets* sockets = &ctx->udpSockets;
     pl->udp.create           = &nm_select_unix_udp_create;
@@ -70,9 +70,12 @@ void nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
     pl->udpData = ctx;
 
     sockets->recvBuf = pl->buf.allocate();
+    if (!sockets->recvBuf) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     sockets->socketsSentinel.next = &sockets->socketsSentinel;
     sockets->socketsSentinel.prev = &sockets->socketsSentinel;
-
+    return NABTO_EC_OK;
 }
 
 void nm_select_unix_udp_deinit(struct nm_select_unix* ctx)

@@ -191,7 +191,10 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
 
     ctx->sslRecvBuf = pl->buf.allocate();
     ctx->sslSendBuffer = pl->buf.allocate();
-
+    if (!ctx->sslRecvBuf || !ctx->sslSendBuffer) {
+        nm_dtls_cli_do_free(ctx);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     ctx->sendSentinel.next = &ctx->sendSentinel;
     ctx->sendSentinel.prev = &ctx->sendSentinel;
     ctx->destroyed = false;

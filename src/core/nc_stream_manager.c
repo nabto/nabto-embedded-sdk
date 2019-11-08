@@ -206,6 +206,10 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
         return;
     }
     ctx->rstBuf = ctx->pl->buf.allocate();
+    if (!ctx->rstBuf) {
+        NABTO_LOG_ERROR(LOG, "Tried to send RST, but no memory left for packet");
+        return;
+    }
     start = ctx->pl->buf.start(ctx->rstBuf);
     ptr = start;
     *ptr = AT_STREAM;

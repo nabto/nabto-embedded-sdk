@@ -43,12 +43,24 @@ void nm_mdns_init(struct np_platform* pl)
 void nm_mdns_try_done(struct np_mdns_context* mdns)
 {
     if (mdns->v4Done && mdns->v6Done) {
-        mdns->pl->udp.destroy(mdns->socketv4);
-        mdns->pl->udp.destroy(mdns->socketv6);
+        if (mdns->socketv4) {
+            mdns->pl->udp.destroy(mdns->socketv4);
+            mdns->socketv4 = NULL;
+        }
+        if (mdns->socketv6) {
+            mdns->pl->udp.destroy(mdns->socketv6);
+            mdns->socketv6 = NULL;
+        }
 
         // UDP module should resolve all callback on destroy, so it should be okay to clean up here
-        mdns->pl->buf.free(mdns->sendBufferv4);
-        mdns->pl->buf.free(mdns->sendBufferv6);
+        if (mdns->sendBufferv4) {
+            mdns->pl->buf.free(mdns->sendBufferv4);
+            mdns->sendBufferv4 = NULL;
+        }
+        if (mdns->sendBufferv6) {
+            mdns->pl->buf.free(mdns->sendBufferv6);
+            mdns->sendBufferv6 = NULL;
+        }
         free(mdns);
     }
 }
@@ -59,6 +71,13 @@ void nm_mdns_stop(struct np_mdns_context* mdns)
     mdns->stopped = true;
     pl->udp.abort(mdns->socketv4);
     pl->udp.abort(mdns->socketv6);
+    nm_mdns_try_done(mdns);
+}
+
+void nm_mdns_force_free(struct np_mdns_context* mdns)
+{
+    mdns->v4Done = true;
+    mdns->v6Done = true;
     nm_mdns_try_done(mdns);
 }
 
@@ -74,23 +93,27 @@ np_error_code nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* 
     (*mdns)->v6Done = false;
     (*mdns)->pl = pl;
     (*mdns)->sendBufferv4 = pl->buf.allocate();
+    if (!(*mdns)->sendBufferv4) {
+        nm_mdns_force_free(*mdns);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     (*mdns)->sendBufferv6 = pl->buf.allocate();
+    if (!(*mdns)->sendBufferv4) {
+        nm_mdns_force_free(*mdns);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     (*mdns)->getPort = getPort;
     (*mdns)->getPortUserData = userData;
     np_error_code ec;
     ec = pl->udp.create(pl, &(*mdns)->socketv4);
     if (ec != NABTO_EC_OK) {
-        pl->buf.free((*mdns)->sendBufferv4);
-        pl->buf.free((*mdns)->sendBufferv6);
-        free(*mdns);
-        return ec;
+        nm_mdns_force_free(*mdns);
+        return NABTO_EC_OUT_OF_MEMORY;
     }
     ec = pl->udp.create(pl, &(*mdns)->socketv6);
     if (ec != NABTO_EC_OK) {
-        pl->buf.free((*mdns)->sendBufferv4);
-        pl->buf.free((*mdns)->sendBufferv6);
-        free(*mdns);
-        return ec;
+        nm_mdns_force_free(*mdns);
+        return NABTO_EC_OUT_OF_MEMORY;
     }
 
     size_t ipsFound = pl->udp.get_local_ip(ips, 2);

@@ -118,7 +118,7 @@ struct nm_select_unix {
 /**
  * Functions used from the API
  */
-void nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl);
+np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl);
 void nm_select_unix_close(struct nm_select_unix* ctx);
 void nm_select_unix_break_wait(struct nm_select_unix* ctx);
 

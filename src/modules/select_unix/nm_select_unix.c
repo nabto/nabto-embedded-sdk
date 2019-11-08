@@ -24,17 +24,22 @@ void nm_select_unix_build_fd_sets();
 /**
  * Api functions start
  */
-void nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl)
+np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl)
 {
     ctx->pl = pl;
     pl->udpData = ctx;
 
     if (pipe(ctx->pipefd) == -1) {
         NABTO_LOG_ERROR(LOG, "Failed to create pipe %s", errno);
+        return NABTO_EC_UNKNOWN;
     }
 
-    nm_select_unix_udp_init(ctx, pl);
+    np_error_code ec = nm_select_unix_udp_init(ctx, pl);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
     nm_select_unix_tcp_init(ctx);
+    return NABTO_EC_OK;
 }
 
 int nm_select_unix_inf_wait(struct nm_select_unix* ctx)
