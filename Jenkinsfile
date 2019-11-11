@@ -14,11 +14,11 @@ node('linux') {
 
         stage('unit_test') {
             sh "./build/unit_test"
+            sh "./build/test_cpp/embedded_unit_test"
         }
-        
+
     } catch (err) {
         currentBuild.result = 'FAILED'
         throw err
     }
 }
-
