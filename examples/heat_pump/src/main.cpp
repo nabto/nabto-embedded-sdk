@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
 
     options.add_options("General")
         ("h,help", "Show help")
+        ("version", "Show version")
         ("i,init", "Initialize configuration file")
         ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump_device.json"))
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"))
@@ -51,6 +52,11 @@ int main(int argc, char** argv) {
             exit(0);
         }
 
+        if (result.count("version"))
+        {
+            std::cout << "nabto_embedded_sdk: " << nabto_device_version() << std::endl;
+            exit(0);
+        }
         if (result.count("init") > 0) {
             std::string configFile = result["config"].as<std::string>();
             std::string productId = result["product"].as<std::string>();

@@ -41,7 +41,7 @@ set(VERSION_NUMBER "5.0.0")
 if (GIT_TAG)
   # string v4.5.6 -> 4.5.6
   string(SUBSTRING GIT_TAG 1 -1 VERSION)
-elseif (GIT_BRANCH EQUAL "master")
+elseif (GIT_BRANCH STREQUAL "master")
   set(VERSION "${VERSION_NUMBER}-${GIT_BRANCH}.${GIT_COUNT}+${GIT_HASH}${GIT_DIRTY}")
 elseif (GIT_BRANCH MATCHES "^[0-9].*$")
   # This is a release branch e.g 5.1 or 5.1.1

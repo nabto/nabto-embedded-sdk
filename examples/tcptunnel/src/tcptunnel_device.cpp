@@ -24,6 +24,7 @@ int main(int argc, char** argv)
 
     options.add_options("General")
         ("h,help", "Show help")
+        ("version", "Show version")
         ("i,init", "Initialize configuration file")
         ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("tcptunnel_device.json"))
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"));
@@ -38,6 +39,12 @@ int main(int argc, char** argv)
         if (result.count("help"))
         {
             std::cout << options.help() << std::endl;
+            exit(0);
+        }
+
+        if (result.count("version"))
+        {
+            std::cout << "nabto_embedded_sdk: " << nabto_device_version() << std::endl;
             exit(0);
         }
 
