@@ -85,7 +85,12 @@ pipeline {
                         dir ('test-dir') {
                             unstash "linux-release"
                             sh "./linux-release/bin/unit_test"
-                            sh "./linux-release/bin/embedded_unit_test"
+                            sh "./linux-release/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_linux.xml"
+                        }
+                    }
+                    post {
+                        always {
+                            junit "test-dir/*.xml"
                         }
                     }
                 }
@@ -96,7 +101,12 @@ pipeline {
                     steps {
                         dir ('test-dir') {
                             unstash "mac-release"
-                            sh "./mac-release/bin/embedded_unit_test"
+                            sh "./mac-release/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_mac.xml"
+                        }
+                    }
+                    post {
+                        always {
+                            junit "test-dir/*.xml"
                         }
                     }
                 }
@@ -114,6 +124,13 @@ pipeline {
                     unstash "mac-release"
                 }
             }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'files/**', onlyIfSuccessful: true
+                }
+            }
+
+
         }
     }
 }
