@@ -8,6 +8,7 @@
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/mdns/nm_mdns.h>
+#include <modules/logging/test/nm_logging_test.h>
 
 struct nm_select_unix ctx;
 
@@ -16,7 +17,7 @@ void test_platform_init(struct test_platform* tp)
     struct np_platform* pl = &tp->pl;
     np_platform_init(pl);
     np_event_queue_init(pl, NULL, NULL);
-    nm_unix_logging_init();
+    nm_logging_test_init();
     np_communication_buffer_init(pl);
     nm_select_unix_init(&ctx, pl);
     nm_unix_ts_init(pl);
