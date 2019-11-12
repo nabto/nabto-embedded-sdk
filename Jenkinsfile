@@ -1,7 +1,7 @@
 
 pipeline {
     agent none
-
+    options { disableConcurrentBuilds() }
     stages {
         stage('Build') {
             parallel {
@@ -24,7 +24,7 @@ pipeline {
                             sh "make -j"
                             sh "make install"
                         }
-                        stash name: "linux-release", includes: "linux-release/**"
+                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
                 }
                 stage('Build linux armhf') {
