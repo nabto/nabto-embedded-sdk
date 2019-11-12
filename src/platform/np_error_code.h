@@ -1,6 +1,10 @@
 #ifndef NP_ERROR_CODE_H
 #define NP_ERROR_CODE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NP_ERROR_CODE_MAPPING(XX)                                       \
     XX(OK, "Ok")                                                        \
         XX(UNKNOWN, "Unknown")                                            \
@@ -63,5 +67,9 @@ typedef enum {
 #undef XX_ERROR
 
 const char* np_error_code_to_string(np_error_code ec);
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif

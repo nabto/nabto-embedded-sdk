@@ -412,7 +412,7 @@ void send_attach_request(struct nc_attach_context* ctx)
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
 
     cbor_encode_text_stringz(&map, "NabtoVersion");
-    cbor_encode_text_stringz(&map, NABTO_VERSION);
+    cbor_encode_text_stringz(&map, nc_version());
 
     cbor_encode_text_stringz(&map, "AppName");
     cbor_encode_text_stringz(&map, ctx->appName);

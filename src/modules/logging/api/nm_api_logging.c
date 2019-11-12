@@ -17,7 +17,7 @@ void nm_api_log_buf(uint32_t severity, uint32_t module,
                     uint32_t line, const char* file,
                     const uint8_t* buf, size_t len);
 
-void np_log_init()
+void nm_api_log_init()
 {
     np_log.log = &nm_api_log;
     np_log.log_buf = &nm_api_log_buf;

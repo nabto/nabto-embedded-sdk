@@ -9,7 +9,7 @@
 
 struct nm_select_unix selectCtx;
 
-void nabto_device_init_platform_modules(struct np_platform* pl)
+np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
 {
     np_error_code ec;
     np_communication_buffer_init(pl);

@@ -1,3 +1,5 @@
+include(version.cmake)
+
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(src
@@ -24,6 +26,7 @@ set(src
   ${src_dir}/nc_iam_coap.c
   ${src_dir}/nc_iam_dump.c
   ${src_dir}/nc_iam_load.c
+  ${src_dir}/nc_version.c
   )
 
 set(test_src
@@ -32,6 +35,8 @@ set(test_src
   ${src_dir}/nc_stream_test.c
   ${src_dir}/nc_tests.c
   )
+
+
 
 add_library( nc_core STATIC "${src}")
 

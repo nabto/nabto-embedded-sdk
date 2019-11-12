@@ -99,6 +99,11 @@ if (DEVICE_BUILD_TESTS)
       np_platform
       nc_core
       nm_logging)
+
+    install(TARGETS unit_test
+      RUNTIME DESTINATION bin
+      )
+
   endif()
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)

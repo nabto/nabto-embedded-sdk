@@ -43,3 +43,7 @@ if (HAVE_EPOLL_HEADERS)
 endif()
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+install(TARGETS embedded_unit_test
+  RUNTIME DESTINATION bin
+  )

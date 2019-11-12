@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
             attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
             at.setDtlsPort(attachServer->getPort());
         });
-    at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
+    at.start([](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1)
             {
                 at.end();

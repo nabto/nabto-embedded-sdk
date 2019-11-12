@@ -34,7 +34,7 @@ void nabto_device_do_stop(struct nabto_device_context* dev);
 
 const char* nabto_device_version()
 {
-    return NABTO_VERSION;
+    return nc_version();
 }
 
 void notify_event_queue_post(void* data)

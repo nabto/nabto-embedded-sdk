@@ -19,7 +19,7 @@ class AttachCoapServer {
         : io_(io), logger_(logger), dtlsServer_(io, logger)
     {
     }
-
+    virtual ~AttachCoapServer() {}
     void init() {
         lib::error_code ec;
         dtlsServer_.setPort(0);

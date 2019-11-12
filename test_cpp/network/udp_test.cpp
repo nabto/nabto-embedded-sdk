@@ -35,18 +35,15 @@ class UdpEchoClientTest {
 
         BOOST_TEST(pl_->udp.create(pl_, &socket_) == NABTO_EC_OK);
 
-        uint8_t addr[] = { 0x00, 0x00, 0x00, 0x00,
-                           0x00, 0x00, 0x00, 0x00,
-                           0x00, 0x00, 0x00, 0x00,
-                           0x00, 0x00, 0x00, 0x01 };
+        uint8_t addr[] = { 0x7F, 0x00, 0x00, 0x01 };
 
         for (size_t i = 0; i < data_.size(); i++) {
             data_[i] = (uint8_t)i;
         }
 
 
-        ep_.ip.type = NABTO_IPV6;
-        memcpy(ep_.ip.ip.v6, addr, 16);
+        ep_.ip.type = NABTO_IPV4;
+        memcpy(ep_.ip.ip.v6, addr, 4);
         ep_.port = port;
 
         pl_->udp.async_bind_port(socket_, 0, &UdpEchoClientTest::created, this);
@@ -70,7 +67,7 @@ class UdpEchoClientTest {
     static void sent(np_error_code ec, void* data)
     {
         UdpEchoClientTest* client = (UdpEchoClientTest*)data;
-        BOOST_TEST(ec == NABTO_EC_OK);
+        BOOST_TEST(ec == NABTO_EC_OK, np_error_code_to_string(ec));
         client->startRecv();
     }
 
@@ -110,7 +107,7 @@ BOOST_AUTO_TEST_SUITE(udp)
 
 #ifdef HAVE_EPOLL
 
-BOOST_AUTO_TEST_CASE(echo_epoll)
+BOOST_AUTO_TEST_CASE(echo_epoll, * boost::unit_test::timeout(120))
 {
     auto ioService = nabto::IoService::create("test");
     auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
@@ -125,7 +122,7 @@ BOOST_AUTO_TEST_CASE(echo_epoll)
 
 #endif
 
-BOOST_AUTO_TEST_CASE(echo_select_unix)
+BOOST_AUTO_TEST_CASE(echo_select_unix, * boost::unit_test::timeout(120))
 {
     auto ioService = nabto::IoService::create("test");
     auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
