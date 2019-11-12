@@ -9,7 +9,6 @@
 extern "C" {
 #endif
 
-// TODO: Move this definition to some configuration
 #define NABTO_MAX_BASESTATION_EPS 2
 
 enum nc_device_event {
@@ -30,6 +29,8 @@ enum nc_attacher_attach_state {
     NC_ATTACHER_STATE_ATTACHED,
     NC_ATTACHER_STATE_CLOSED
 };
+
+typedef void (*nc_attacher_state_listener)(enum nc_attacher_attach_state state, void* data);
 
 enum nc_attacher_module_state {
     NC_ATTACHER_MODULE_SETUP,
@@ -60,6 +61,9 @@ struct nc_attach_context {
     struct nc_udp_dispatch_context* udp;
     np_dtls_cli_context* dtls;
 
+    nc_attacher_state_listener stateListener;
+    void* stateListenerData;
+
     // Internal state
     enum nc_attacher_attach_state state;
     enum nc_attacher_module_state moduleState;
@@ -77,6 +81,8 @@ struct nc_attach_context {
     uint8_t redirectAttempts;
     struct np_timed_event reattachTimer;
     struct np_event closeEv;
+
+    struct nabto_coap_client_request* request;
 
     // Keep alive
     struct nc_keep_alive_context keepAlive;
@@ -101,6 +107,9 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 
 // deinit attacher module, always last function to be called, called after stop
 void nc_attacher_deinit(struct nc_attach_context* ctx);
+
+// Set callback for every state change in the module. This is meant for testing purposes only!
+void nc_attacher_set_state_listener(struct nc_attach_context* ctx, nc_attacher_state_listener cb, void* data);
 
 // set keys before start
 np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx,

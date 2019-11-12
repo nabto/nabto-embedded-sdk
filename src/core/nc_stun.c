@@ -46,7 +46,7 @@ void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
     }
 }
 
-// TODO: DONT USE RAND
+// TODO: DONT USE RAND, use mbedtls rand func
 #include <stdlib.h>
 
 bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)

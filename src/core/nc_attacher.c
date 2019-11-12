@@ -81,15 +81,25 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
             do_close(ctx);
         }
         nc_keep_alive_deinit(&ctx->keepAlive);
+        if (ctx->udp) {
+            nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
+        }
         ctx->pl->dtlsC.destroy(ctx->dtls);
 
-        if (ctx->udp != NULL) {
-            nc_udp_dispatch_clear_dtls_cli_context(ctx->udp);
+
+        if (ctx->request != NULL) {
+            nabto_coap_client_request_free(ctx->request);
         }
 
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
         np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
     }
+}
+
+void nc_attacher_set_state_listener(struct nc_attach_context* ctx, nc_attacher_state_listener cb, void* data)
+{
+    ctx->stateListener = cb;
+    ctx->stateListenerData = data;
 }
 
 np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
@@ -214,6 +224,7 @@ void resolve_close(void* data)
 
 void handle_state_change(struct nc_attach_context* ctx)
 {
+    NABTO_LOG_TRACE(LOG, "State change to: %u", ctx->state);
     switch(ctx->state) {
         case NC_ATTACHER_STATE_DNS:
             ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &dns_resolved_callback, ctx);
@@ -236,6 +247,9 @@ void handle_state_change(struct nc_attach_context* ctx)
         case NC_ATTACHER_STATE_ATTACHED:
             // Nothing to do when attached
             break;
+    }
+    if (ctx->stateListener != NULL) {
+        ctx->stateListener(ctx->state, ctx->stateListenerData);
     }
 }
 
@@ -371,7 +385,11 @@ void handle_dtls_connected(struct nc_attach_context* ctx)
 
 void handle_dtls_access_denied(struct nc_attach_context* ctx)
 {
-    ctx->pl->dtlsC.close(ctx->dtls);
+    NABTO_LOG_TRACE(LOG, "Received access denied from state: %u", ctx->state);
+    if (ctx->request != NULL) {
+        nabto_coap_client_request_free(ctx->request);
+        ctx->request = NULL;
+    }
     ctx->state = NC_ATTACHER_STATE_ACCESS_DENIED_WAIT;
     handle_state_change(ctx);
 }
@@ -419,6 +437,7 @@ void send_attach_request(struct nc_attach_context* ctx)
     NABTO_LOG_TRACE(LOG, "Sending attach CoAP Request:");
 
     nabto_coap_client_request_set_payload(req, buffer, used);
+    ctx->request = req;
     nabto_coap_client_request_send(req);
 }
 
@@ -483,6 +502,7 @@ void coap_request_handler(struct nabto_coap_client_request* request, void* data)
         handle_device_redirect_response(ctx, &root);
         // coap_response_failed() will free req if we return before this
         nabto_coap_client_request_free(request);
+        ctx->request = NULL;
     } else {
         NABTO_LOG_ERROR(LOG, "Status not recognized");
         coap_response_failed(ctx, request);
@@ -493,6 +513,7 @@ void coap_request_handler(struct nabto_coap_client_request* request, void* data)
 void coap_response_failed(struct nc_attach_context* ctx, struct nabto_coap_client_request* request)
 {
     nabto_coap_client_request_free(request);
+    ctx->request = NULL;
     ctx->pl->dtlsC.close(ctx->dtls);
 }
 
@@ -526,6 +547,7 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
     }
     // free the request before calling listener in case the listener deinits coap
     nabto_coap_client_request_free(request);
+    ctx->request = NULL;
     // start keep alive with default values if above failed
     nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
     ctx->state = NC_ATTACHER_STATE_ATTACHED;

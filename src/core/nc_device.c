@@ -162,7 +162,6 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 
     np_error_code ec2 = nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_bound_cb, dev);
     if (ec2 != NABTO_EC_OK) {
-        // TODO what to do without secondary port
         NABTO_LOG_ERROR(LOG, "nc_device failed to bind secondary UDP socket");
     }
 }

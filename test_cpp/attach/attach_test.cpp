@@ -20,8 +20,9 @@ class AttachTest {
         serverPort_ = port;
     }
 
-    void start(std::function<void (AttachTest& at)> stuff) {
-        stuff_ = stuff;
+    void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
+        event_ = event;
+        state_ = state;
         tp_.init();
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
         BOOST_TEST(nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
@@ -34,6 +35,7 @@ class AttachTest {
     void startAttach() {
         nc_coap_client_init(tp_.getPlatform(), &coapClient_);
         nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, &AttachTest::listener, this);
+        nc_attacher_set_state_listener(&attach_, &AttachTest::stateListener, this);
         nc_attacher_set_keys(&attach_,
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str()), nabto::test::devicePublicKey.size(),
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str()), nabto::test::devicePrivateKey.size());
@@ -52,6 +54,14 @@ class AttachTest {
         attach_.defaultPort = port;
     }
 
+    static void stateListener(enum nc_attacher_attach_state state, void* data)
+    {
+        AttachTest* at = (AttachTest*)data;
+        if (!at->ended_) {
+            at->state_(*at);
+        }
+    }
+
     static void listener(enum nc_device_event event, void* data)
     {
         AttachTest* at = (AttachTest*)data;
@@ -60,7 +70,9 @@ class AttachTest {
         } else if (event == NC_DEVICE_EVENT_DETACHED) {
             at->detachCount_++;
         }
-        at->stuff_(*at);
+        if (!at->ended_) {
+            at->event_(*at);
+        }
     }
 
     static void udpDispatchCb(const np_error_code ec, void* data) {
@@ -70,6 +82,7 @@ class AttachTest {
     }
 
     void end() {
+        ended_ = true;
         nc_attacher_deinit(&attach_);
         nc_coap_client_deinit(&coapClient_);
         nc_udp_dispatch_deinit(&udpDispatch_);
@@ -89,7 +102,9 @@ class AttachTest {
     const char* appVersion_ = "bar";
     const char* productId_ = "test";
     const char* deviceId_ = "devTest";
-    std::function<void (AttachTest& at)> stuff_;
+    std::function<void (AttachTest& at)> event_;
+    std::function<void (AttachTest& at)> state_;
+    bool ended_ = false;
 
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };
@@ -109,9 +124,10 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getPort());
     at.start([](nabto::test::AttachTest& at){
-            BOOST_TEST(at.attachCount_ == (uint64_t)1);
-            at.end();
-        });
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.end();
+                 }
+             },[](nabto::test::AttachTest& at){ });
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
@@ -137,7 +153,7 @@ BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
             {
                 at.end();
             }
-        });
+        },[](nabto::test::AttachTest& at){ });
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
@@ -153,9 +169,10 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
     at.start([](nabto::test::AttachTest& at){
-            BOOST_TEST(at.attachCount_ == (uint64_t)1);
-            at.end();
-        });
+                 if (at.attachCount_ == 1) {
+                     at.end();
+                 }
+        },[](nabto::test::AttachTest& at){ });
 
     attachServer->stop();
     redirectServer->stop();
@@ -186,7 +203,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
             {
                 at.end();
             }
-        });
+        },[](nabto::test::AttachTest& at){ });
 
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
@@ -216,7 +233,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
             {
                 at.end();
             }
-        });
+        },[](nabto::test::AttachTest& at){ });
 
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
@@ -242,7 +259,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
             {
                 at.end();
             }
-        });
+        },[](nabto::test::AttachTest& at){ });
 
     t.join();
     attachServer->stop();
@@ -265,9 +282,11 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
     redirectServer->invalidRedirect_ = 0;
 
     at.start([](nabto::test::AttachTest& at){
-            BOOST_TEST(at.attachCount_ == (uint64_t)1);
-            at.end();
-        });
+            if (at.attachCount_ == 1)
+            {
+                at.end();
+            }
+        },[](nabto::test::AttachTest& at){ });
 
     attachServer->stop();
     redirectServer->stop();
@@ -288,9 +307,11 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
     attachServer->invalidAttach_ = 0;
 
     at.start([](nabto::test::AttachTest& at){
-            BOOST_TEST(at.attachCount_ == (uint64_t)1);
-            at.end();
-        });
+            if (at.attachCount_ == 1)
+            {
+                at.end();
+            }
+        },[](nabto::test::AttachTest& at){ });
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)2);
@@ -306,21 +327,12 @@ BOOST_AUTO_TEST_CASE(access_denied)
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
 
-    std::thread t([&at](){
-            for (int i = 0; i < 500; i++) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT) {
-                    break;
-                }
-            }
-            BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT);
-            at.end();
-        });
+    at.start([](nabto::test::AttachTest& at){ }, [](nabto::test::AttachTest& at){
+                 if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT) {
+                     at.end();
+                 }
+             });
 
-    at.start([](nabto::test::AttachTest& at){
-        });
-
-    t.join();
     accessDeniedServer->stop();
 }
 
@@ -334,25 +346,15 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach)
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
 
-    std::thread t([&at, accessDeniedServer](){
-            for (int i = 0; i < 500; i++) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT &&
-                    accessDeniedServer->coapRequestCount_ == 2) {
-                    break;
-                }
-            }
+    at.start([](nabto::test::AttachTest& at){ }, [&accessDeniedServer](nabto::test::AttachTest& at){
+                 if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT &&
+                     accessDeniedServer->coapRequestCount_ == 2) {
+                     BOOST_TEST(at.attachCount_ == (uint64_t)0);
+                     BOOST_TEST(accessDeniedServer->coapRequestCount_ == (uint64_t)2);
+                     at.end();
+                 }
+             });
 
-            BOOST_TEST(at.attachCount_ == (uint64_t)0);
-            BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT);
-            BOOST_TEST(accessDeniedServer->coapRequestCount_ == (uint64_t)2);
-            at.end();
-        });
-
-    at.start([](nabto::test::AttachTest& at){
-        });
-
-    t.join();
     accessDeniedServer->stop();
 }
 
@@ -367,22 +369,15 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break)
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
-    std::thread t([&at](){
-            for (int i = 0; i < 50; i++) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    at.start([](nabto::test::AttachTest& at){ }, [](nabto::test::AttachTest& at){
                 if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
-                    break;
+                    BOOST_TEST(at.attachCount_ == (uint64_t)0);
+                    BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT);
+                    at.end();
                 }
-            }
-            BOOST_TEST(at.attachCount_ == (uint64_t)0);
-            BOOST_TEST(at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT);
-            at.end();
-        });
+             });
 
-    at.start([](nabto::test::AttachTest& at){
-        });
-
-    t.join();
     redirectServer->stop();
     BOOST_TEST(redirectServer->redirectCount_ <= (uint64_t)5);
 }

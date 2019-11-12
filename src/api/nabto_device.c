@@ -22,7 +22,7 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
-// TODO: Take though api or something
+// TODO: configured through attach response
 const char* stunHost = "stun.nabto.net";
 
 void* nabto_device_network_thread(void* data);

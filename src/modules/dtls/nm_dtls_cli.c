@@ -44,6 +44,7 @@ struct np_dtls_cli_context {
     struct np_event startSendEvent;
 
     bool sending;
+    bool receiving;
     bool destroyed;
 
     np_dtls_cli_sender sender;
@@ -202,9 +203,19 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
     np_error_code ec = dtls_cli_init_connection(ctx);
     if (ec != NABTO_EC_OK) {
         nm_dtls_cli_do_free(ctx);
+        return ec;
     }
+    int ret;
+    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &ctx->conf ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
+        nm_dtls_cli_do_free(ctx);
+        return NABTO_EC_UNKNOWN;
+    }
+
+
     *client = ctx;
-    return ec;
+    return NABTO_EC_OK;
 }
 
 np_error_code dtls_cli_init_connection(np_dtls_cli_context* ctx)
@@ -267,6 +278,8 @@ np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx)
         nm_dtls_cli_remove_send_data(first);
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
+    ctx->sslSendBufferSize = 0;
+    ctx->recvBufferSize = 0;
 
     nm_dtls_timer_cancel(&ctx->timer);
     np_event_queue_cancel_event(pl, &ctx->startSendEvent);
@@ -306,7 +319,7 @@ void nm_dtls_cli_destroy(np_dtls_cli_context* ctx)
     ctx->state = CLOSING;
     ctx->destroyed = true;
 
-    if (!ctx->sending) {
+    if (!ctx->sending && !ctx->receiving) {
         nm_dtls_cli_do_free(ctx);
     }
 }
@@ -376,13 +389,6 @@ np_error_code nm_dtls_connect(np_dtls_cli_context* ctx)
     ctx->state = CONNECTING;
     ctx->sending = false;
 
-    int ret;
-    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &ctx->conf ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
-        return NABTO_EC_UNKNOWN;
-    }
-
     nm_dtls_event_do_one(ctx);
     return NABTO_EC_OK;
 }
@@ -403,6 +409,7 @@ void nm_dtls_event_do_one(void* data)
         } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
                    ctx->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
         {
+            ctx->state = CLOSING;
             nm_dtls_timer_cancel(&ctx->timer);
             ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
             return;
@@ -565,9 +572,14 @@ np_error_code handle_packet(struct np_dtls_cli_context* ctx,
 {
     ctx->recvBuffer = buffer;
     ctx->recvBufferSize = bufferSize;
+    ctx->receiving = true;
     nm_dtls_event_do_one(ctx);
     ctx->recvBuffer = NULL;
     ctx->recvBufferSize = 0;
+    ctx->receiving = false;
+    if (ctx->destroyed && !ctx->sending) {
+        nm_dtls_cli_do_free(ctx);
+    }
     return NABTO_EC_OK;
 }
 
