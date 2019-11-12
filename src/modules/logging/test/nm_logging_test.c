@@ -1,25 +1,54 @@
+#include "nm_logging_test.h"
 
-#include "nm_unix_logging.h"
-#include <nabto_types.h>
-#include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
+#include <platform/np_logging.h>
+
 #include <string.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <sys/time.h>
+#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define NM_UNIX_LOGGING_FILE_LENGTH 24
 
+static void nm_test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
+static void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
 
-static void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
-static void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
+static uint32_t logLevel = NABTO_LOG_SEVERITY_LEVEL_INFO;
 
-
-void nm_logging_unix_init()
+void nm_logging_test_init()
 {
-    np_log.log = &nm_unix_log;
-    np_log.log_buf = &nm_unix_log_buf;
+    np_log.log = &nm_test_log;
+    np_log.log_buf = &nm_test_log_buf;
+
+    char* logLevelStr = getenv("NABTO_LOG_LEVEL");
+    if (logLevelStr) {
+
+        if (strcasecmp(logLevelStr, "trace") == 0) {
+            logLevel = NABTO_LOG_SEVERITY_LEVEL_TRACE;
+        } else if (strcasecmp(logLevelStr, "info") == 0) {
+            logLevel = NABTO_LOG_SEVERITY_LEVEL_INFO;
+        } else if (strcasecmp(logLevelStr, "warn") == 0) {
+            logLevel = NABTO_LOG_SEVERITY_LEVEL_WARN;
+        } else if (strcasecmp(logLevelStr, "error") == 0) {
+            logLevel = NABTO_LOG_SEVERITY_LEVEL_ERROR;
+        } else {
+            // invalid log level
+        }
+
+    }
 }
 
-void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len){
+
+void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len){
+    if(!((logLevel & severity) &&
+         ((NABTO_LOG_MODULE_FILTER & module) ||
+          module == 0)))
+    {
+        return;
+    }
+
     char str[128];
     char* ptr;
     size_t chunks = len/16;
@@ -46,7 +75,7 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
                 ptr = ptr + ret;
             }
         }
-        nm_unix_log(severity, module, line, file, str, list);
+        nm_test_log(severity, module, line, file, str, list);
     }
     ret = sprintf(str, "%04lx: ", chunks*16);
     ptr = str + ret;
@@ -70,12 +99,12 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
             ptr = ptr + ret;
         }
     }
-    nm_unix_log(severity, module, line, file, str, list);
+    nm_test_log(severity, module, line, file, str, list);
 }
 
-void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
+void nm_test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
-    if(((NABTO_LOG_SEVERITY_FILTER & severity) && ((NABTO_LOG_MODULE_FILTER & module) || module == 0))) {
+    if(((logLevel & severity) && ((NABTO_LOG_MODULE_FILTER & module) || module == 0))) {
         time_t sec;
         unsigned int ms;
         struct timeval tv;

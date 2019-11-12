@@ -133,7 +133,7 @@ int main() {
     ep.ip.type = NABTO_IPV6;
     NABTO_LOG_INFO(0, "pl: %i", pl);
 
-    np_log_init();
+    nm_unix_logging_init();
     struct test_context data;
     data.data = 42;
     nc_udp_dispatch_async_create(&data.udp, pl, 0, sockCreatedCb, &data);

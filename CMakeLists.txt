@@ -60,6 +60,7 @@ add_subdirectory(nabto-common-cpp/src/mdns)
 add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)
 add_subdirectory(src/modules/tcptunnel)
+add_subdirectory(src/modules/logging/test)
 
 
 CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
@@ -97,7 +98,7 @@ if (DEVICE_BUILD_TESTS)
       np_platform_test
       np_platform
       nc_core
-      nm_logging)
+      nm_logging_unix)
 
     install(TARGETS unit_test
       RUNTIME DESTINATION bin

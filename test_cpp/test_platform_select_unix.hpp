@@ -9,6 +9,7 @@
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
+#include <modules/logging/test/nm_logging_test.h>
 
 
 namespace nabto {
@@ -21,7 +22,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     {
         np_platform_init(&pl_);
         np_event_queue_init(&pl_, NULL, NULL);
-        np_log_init();
+        nm_logging_test_init();
         np_communication_buffer_init(&pl_);
         nm_select_unix_init(&selectCtx_, &pl_);
         nm_unix_ts_init(&pl_);

@@ -9,7 +9,7 @@
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/epoll/nm_epoll.h>
-
+#include <modules/logging/test/nm_logging_test.h>
 #include <modules/logging/api/nm_api_logging.h>
 
 namespace nabto {
@@ -21,7 +21,7 @@ class TestPlatformEpoll : public TestPlatform {
     {
         np_platform_init(&pl_);
         np_event_queue_init(&pl_, NULL, NULL);
-        np_log_init();
+        nm_logging_test_init();
         np_communication_buffer_init(&pl_);
         nm_epoll_init(&epoll_, &pl_);
         nm_unix_ts_init(&pl_);

@@ -16,7 +16,7 @@ void test_platform_init(struct test_platform* tp)
     struct np_platform* pl = &tp->pl;
     np_platform_init(pl);
     np_event_queue_init(pl, NULL, NULL);
-    np_log_init();
+    nm_unix_logging_init();
     np_communication_buffer_init(pl);
     nm_select_unix_init(&ctx, pl);
     nm_unix_ts_init(pl);

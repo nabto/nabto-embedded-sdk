@@ -36,6 +36,7 @@ target_link_libraries(embedded_unit_test
   nm_select_unix
   nc_core
   dtls
+  nm_logging_test
 )
 
 if (HAVE_EPOLL_HEADERS)

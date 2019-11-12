@@ -8,6 +8,7 @@
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/epoll/nm_epoll.h>
 #include <modules/mdns/nm_mdns.h>
+#include <modules/logging/test/nm_logging_test.h>
 
 struct nm_epoll_context epoll;
 
@@ -16,7 +17,7 @@ void test_platform_init(struct test_platform* tp)
     struct np_platform* pl = &tp->pl;
     np_platform_init(pl);
     np_event_queue_init(pl, NULL, NULL);
-    np_log_init();
+    nm_logging_test_init();
     np_communication_buffer_init(pl);
     nm_epoll_init(&epoll, pl);
     nm_unix_ts_init(pl);
