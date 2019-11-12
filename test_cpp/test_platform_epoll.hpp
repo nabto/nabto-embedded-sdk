@@ -29,7 +29,7 @@ class TestPlatformEpoll : public TestPlatform {
         nm_dtls_cli_init(&pl_);
         nm_dtls_srv_init(&pl_);
 
-        // nm_api_logging_set_level(NABTO_LOG_SEVERITY_LEVEL_INFO);
+        // nm_api_logging_set_level(NABTO_LOG_SEVERITY_LEVEL_TRACE);
         // nm_api_logging_set_callback(&nm_api_logging_std_out_callback, NULL);
     }
 

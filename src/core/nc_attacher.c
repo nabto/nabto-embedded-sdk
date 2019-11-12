@@ -318,17 +318,23 @@ void reattach(const np_error_code ec, void* data)
 void dtls_event_handler(enum np_dtls_cli_event event, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
+        if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
+            ctx->pl->dtlsC.close(ctx->dtls);
+        } else {
+            ctx->state = NC_ATTACHER_STATE_CLOSED;
+            handle_state_change(ctx);
+        }
+        return;
+    }
+
     if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
         handle_dtls_connected(ctx);
     } else if (event == NP_DTLS_CLI_EVENT_CLOSED) {
         nc_keep_alive_reset(&ctx->keepAlive);
-        if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
-            ctx->state = NC_ATTACHER_STATE_CLOSED;
-            handle_state_change(ctx);
-        } else {
-            handle_dtls_closed(ctx);
-        }
+        handle_dtls_closed(ctx);
     } else if (event == NP_DTLS_CLI_EVENT_ACCESS_DENIED) {
+        nc_keep_alive_reset(&ctx->keepAlive);
         handle_dtls_access_denied(ctx);
     }
 }
@@ -343,6 +349,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
     switch(ctx->state) {
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
             // DTLS connect failed and dtls was closed, wait to retry
+            // Coap request payload could not be set maybe OOM
             // DTLS was closed while waiting for coap response, most likely closed by peer, wait to retry
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
             break;
@@ -386,6 +393,10 @@ void handle_dtls_connected(struct nc_attach_context* ctx)
 void handle_dtls_access_denied(struct nc_attach_context* ctx)
 {
     NABTO_LOG_TRACE(LOG, "Received access denied from state: %u", ctx->state);
+    np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
+    }
     if (ctx->request != NULL) {
         nabto_coap_client_request_free(ctx->request);
         ctx->request = NULL;
@@ -436,7 +447,13 @@ void send_attach_request(struct nc_attach_context* ctx)
 
     NABTO_LOG_TRACE(LOG, "Sending attach CoAP Request:");
 
-    nabto_coap_client_request_set_payload(req, buffer, used);
+    nabto_coap_error err = nabto_coap_client_request_set_payload(req, buffer, used);
+    if (err != NABTO_COAP_ERROR_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to set payload for attach request with error: (%u) %s", err, np_error_code_to_string(nc_coap_server_error_module_to_core(err)));
+        nabto_coap_client_request_free(req);
+        ctx->pl->dtlsC.close(ctx->dtls);
+        return;
+    }
     ctx->request = req;
     nabto_coap_client_request_send(req);
 }

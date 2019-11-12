@@ -19,6 +19,9 @@ struct nc_coap_server_context {
     bool isSending;
 };
 
+// translate nabto_coap_error to np_error_code, coap errors are common
+// for server and client, nc_coap_server_ prefix refers to the fact
+// the function happens to be defined in nc_coap_server.c
 np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec);
 np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx);
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx);
