@@ -227,8 +227,14 @@ void handle_state_change(struct nc_attach_context* ctx)
     NABTO_LOG_TRACE(LOG, "State change to: %u", ctx->state);
     switch(ctx->state) {
         case NC_ATTACHER_STATE_DNS:
-            ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &dns_resolved_callback, ctx);
-            break;
+        {
+            np_error_code ec = ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &dns_resolved_callback, ctx);
+            if (ec) {
+                ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+                handle_state_change(ctx);
+            }
+        }
+        break;
         case NC_ATTACHER_STATE_CLOSED:
             np_event_queue_post(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
             break;
