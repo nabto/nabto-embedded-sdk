@@ -95,7 +95,6 @@ if (DEVICE_BUILD_TESTS)
 
     target_link_libraries(unit_test
       np_platform_test
-      nc_core_test
       np_platform
       nc_core
       nm_logging)
