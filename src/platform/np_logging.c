@@ -9,6 +9,7 @@ void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const
 struct np_logging np_log = { &np_default_log, &np_default_log_buf };
 
 #ifdef HAS_NO_VARIADIC_MACROS
+// TODO the np_log.log function has changed definition, see #else
 void np_error_adapter(uint32_t module, const char* fmt, ...)
 {
     va_list args;
