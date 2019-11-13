@@ -41,6 +41,7 @@ struct nc_stun_context {
     np_error_code ec;
     const struct nabto_stun_result* res;
     const char* hostname;
+    uint16_t priPort;
     struct nabto_stun_endpoint eps[NC_STUN_MAX_ENDPOINTS];
     size_t numEps;
     struct np_event event;
@@ -54,9 +55,11 @@ struct nc_stun_context {
 np_error_code nc_stun_init(struct nc_stun_context* ctx,
                            struct np_platform* pl);
 
-void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* hostname, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp);
+void nc_stun_set_sockets(struct nc_stun_context* ctx, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp);
+void nc_stun_set_host(struct nc_stun_context* ctx, const char* hostname, uint16_t port);
 
-void nc_stun_deinit_sockets(struct nc_stun_context* ctx);
+void nc_stun_remove_sockets(struct nc_stun_context* ctx);
+
 void nc_stun_deinit(struct nc_stun_context* ctx);
 
 np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,

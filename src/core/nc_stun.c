@@ -89,14 +89,18 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
     }
 }
 
-void nc_stun_init_config_and_sockets(struct nc_stun_context* ctx, const char* hostname, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp)
+void nc_stun_set_sockets(struct nc_stun_context* ctx, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp)
 {
     ctx->priUdp = udp;
     ctx->secUdp = secondaryUdp;
+}
+void nc_stun_set_host(struct nc_stun_context* ctx, const char* hostname, uint16_t port)
+{
     ctx->hostname = hostname;
+    ctx->priPort = port;
 }
 
-void nc_stun_deinit_sockets(struct nc_stun_context* ctx)
+void nc_stun_remove_sockets(struct nc_stun_context* ctx)
 {
     ctx->priUdp = NULL;
     ctx->secUdp = NULL;
@@ -109,6 +113,10 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
     int i;
     bool found = false;
     NABTO_LOG_TRACE(LOG, "Starting STUN analysis");
+    if (ctx->hostname == NULL) {
+        NABTO_LOG_ERROR(LOG, "Stun analysis started before host was configured");
+        return NABTO_EC_INVALID_STATE;
+    }
     for (i = 0; i < NC_STUN_MAX_CALLBACKS; i++) {
         if (ctx->cbs[i].cb == NULL) {
             ctx->cbs[i].cb = cb;
@@ -272,7 +280,7 @@ void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* v4Rec, size_t 
         nc_stun_resolve_callbacks(ctx);
         return;
     }
-    ctx->numEps = nc_stun_convert_ep_list(v4Rec, v4RecSize, v6Rec, v6RecSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, NC_STUN_PORT);
+    ctx->numEps = nc_stun_convert_ep_list(v4Rec, v4RecSize, v6Rec, v6RecSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, ctx->priPort);
     nabto_stun_init(&ctx->stun, &ctx->stunModule, ctx, ctx->eps, ctx->numEps);
     nabto_stun_async_analyze(&ctx->stun, ctx->simple);
     nc_stun_event(ctx);

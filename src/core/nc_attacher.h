@@ -84,6 +84,9 @@ struct nc_attach_context {
 
     struct nabto_coap_client_request* request;
 
+    char stunHost[256];
+    uint16_t stunPort;
+
     // Keep alive
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_cli_send_context keepAliveSendCtx;

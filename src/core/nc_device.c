@@ -4,6 +4,9 @@
 
 #define LOG NABTO_LOG_MODULE_CORE
 
+const char* defaultStunHost = "stun.nabto.net";
+const uint16_t defaultStunPort = 3478;
+
 void nc_device_attached_cb(const np_error_code ec, void* data);
 uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 
@@ -133,7 +136,7 @@ void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
         NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary UDP socket. Device continues without STUN");
         return;
     }
-    nc_stun_init_config_and_sockets(&dev->stun, dev->stunHost, &dev->udp, &dev->secondaryUdp);
+    nc_stun_set_sockets(&dev->stun, &dev->udp, &dev->secondaryUdp);
 
     nc_udp_dispatch_set_stun_context(&dev->udp, &dev->stun);
     nc_udp_dispatch_set_stun_context(&dev->secondaryUdp, &dev->stun);
@@ -169,19 +172,20 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname, const char* stunHost,
-                              const uint16_t port, bool enableMdns)
+                              const char* hostname, const uint16_t port, bool enableMdns)
 {
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->state = NC_DEVICE_STATE_RUNNING;
     dev->enableMdns = enableMdns;
-    dev->stunHost = stunHost;
+    dev->stunHost = defaultStunHost;
+    dev->stunPort = defaultStunPort;
     dev->productId = productId;
     dev->deviceId = deviceId;
     dev->hostname = hostname;
     dev->connectionRef = 0;
 
+    nc_stun_set_host(&dev->stun, dev->stunHost, dev->stunPort);
     nc_attacher_set_app_info(&dev->attacher, appName, appVersion);
     nc_attacher_set_device_info(&dev->attacher, productId, deviceId);
 
@@ -219,7 +223,7 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     dev->closeCbData = data;
     dev->state = NC_DEVICE_STATE_STOPPED;
     nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
-    nc_stun_deinit_sockets(&dev->stun);
+    nc_stun_remove_sockets(&dev->stun);
     if (dev->enableMdns && dev->mdns) {
         dev->pl->mdns.stop(dev->mdns);
         dev->mdns = NULL;
@@ -333,6 +337,11 @@ void nc_device_events_listener_notify(enum nc_device_event event, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     struct nc_device_events_listener* iterator = dev->deviceEventsSentinel.next;
+
+    if (event == NC_DEVICE_EVENT_ATTACHED) {
+        dev->stunHost = dev->attacher.stunHost;
+        dev->stunPort = dev->attacher.stunPort;
+    }
 
     while (iterator != &dev->deviceEventsSentinel)
     {

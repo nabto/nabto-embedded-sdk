@@ -568,6 +568,31 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
             nc_keep_alive_set_settings(&ctx->keepAlive, i, ri, mr);
         }
     }
+
+    CborValue stun;
+    cbor_value_map_find_value(root, "Stun", &stun);
+    if (cbor_value_is_map(&stun)) {
+        CborValue host;
+        CborValue port;
+        cbor_value_map_find_value(&stun, "Host", &host);
+        cbor_value_map_find_value(&stun, "Port", &port);
+
+        if (cbor_value_is_text_string(&host) &&
+            cbor_value_is_unsigned_integer(&port)) {
+            uint64_t p;
+            size_t stringLength;
+            if(cbor_value_calculate_string_length(&host, &stringLength) != CborNoError || stringLength > sizeof(ctx->stunHost)-1) {
+                // todo handle invalid string length
+            }
+            size_t len = sizeof(ctx->stunHost);
+            memset(ctx->stunHost, 0, sizeof(ctx->stunHost));
+            cbor_value_copy_text_string(&host, ctx->stunHost, &len, NULL);
+            cbor_value_get_uint64(&port, &p);
+            ctx->stunPort = (uint16_t)p;
+        }
+        // todo handle request not containing stun info
+    }
+
     // free the request before calling listener in case the listener deinits coap
     nabto_coap_client_request_free(request);
     ctx->request = NULL;

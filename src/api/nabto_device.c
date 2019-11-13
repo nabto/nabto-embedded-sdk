@@ -346,7 +346,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
 
     // start the core
-    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, stunHost, dev->port, dev->enableMdns);
+    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, dev->port, dev->enableMdns);
 
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");
