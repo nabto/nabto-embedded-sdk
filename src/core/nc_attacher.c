@@ -589,8 +589,11 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
             cbor_value_copy_text_string(&host, ctx->stunHost, &len, NULL);
             cbor_value_get_uint64(&port, &p);
             ctx->stunPort = (uint16_t)p;
+        } else {
+            NABTO_LOG_ERROR(LOG, "Basestation reported invalid STUN information, STUN will be impossible");
         }
-        // todo handle request not containing stun info
+    } else {
+        NABTO_LOG_ERROR(LOG, "Basestation did not report STUN information, STUN will be impossible");
     }
 
     // free the request before calling listener in case the listener deinits coap
