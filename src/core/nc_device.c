@@ -4,9 +4,6 @@
 
 #define LOG NABTO_LOG_MODULE_CORE
 
-const char* defaultStunHost = "stun.nabto.net";
-const uint16_t defaultStunPort = 3478;
-
 void nc_device_attached_cb(const np_error_code ec, void* data);
 uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
 
@@ -178,14 +175,11 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->state = NC_DEVICE_STATE_RUNNING;
     dev->enableMdns = enableMdns;
-    dev->stunHost = defaultStunHost;
-    dev->stunPort = defaultStunPort;
     dev->productId = productId;
     dev->deviceId = deviceId;
     dev->hostname = hostname;
     dev->connectionRef = 0;
 
-    nc_stun_set_host(&dev->stun, dev->stunHost, dev->stunPort);
     nc_attacher_set_app_info(&dev->attacher, appName, appVersion);
     nc_attacher_set_device_info(&dev->attacher, productId, deviceId);
 
@@ -338,9 +332,10 @@ void nc_device_events_listener_notify(enum nc_device_event event, void* data)
     struct nc_device_context* dev = (struct nc_device_context*)data;
     struct nc_device_events_listener* iterator = dev->deviceEventsSentinel.next;
 
-    if (event == NC_DEVICE_EVENT_ATTACHED) {
+    if (event == NC_DEVICE_EVENT_ATTACHED && dev->attacher.stunPort != 0) {
         dev->stunHost = dev->attacher.stunHost;
         dev->stunPort = dev->attacher.stunPort;
+        nc_stun_set_host(&dev->stun, dev->stunHost, dev->stunPort);
     }
 
     while (iterator != &dev->deviceEventsSentinel)

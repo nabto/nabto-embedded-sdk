@@ -112,7 +112,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
 {
     int i;
     bool found = false;
-    NABTO_LOG_TRACE(LOG, "Starting STUN analysis");
+    NABTO_LOG_TRACE(LOG, "Starting STUN analysis for host: %s", ctx->hostname);
     if (ctx->hostname == NULL) {
         NABTO_LOG_ERROR(LOG, "Stun analysis started before host was configured");
         return NABTO_EC_INVALID_STATE;
