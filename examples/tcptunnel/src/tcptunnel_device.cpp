@@ -10,9 +10,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <random>
 
-bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-void run_tcptunnel(const std::string& configFile, const std::string& logLevel);
+static bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
+static void run_tcptunnel(const std::string& configFile, const std::string& logLevel);
+
+static std::string randomString(size_t n);
 
 void my_handler(int s){
     printf("Caught signal %d\n",s);
@@ -175,6 +178,7 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
     config["DeviceId"] = deviceId;
     config["Server"] = server;
 
+    config["PairingPassword"] = randomString(16);
 
     std::vector<uint8_t> iamCbor = json::to_cbor(defaultTcptunnelIam);
     std::cout << "iam size " << iamCbor.size() << std::endl;
@@ -218,6 +222,7 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     auto deviceId  = config["DeviceId"].get<std::string>();
     auto server = config["Server"].get<std::string>();
     auto privateKey = config["PrivateKey"].get<std::string>();
+    auto pairingPassword = config["PairingPassword"].get<std::string>();
     auto iam = config["Iam"];
 
 
@@ -287,6 +292,7 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     nabto_device_string_free(fpTemp);
 
     std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
+    std::cout << "The password for pairing is " << pairingPassword << std::endl;
     {
         TcpTunnel tcpTunnel(device, config, configFile);
         tcpTunnel.init();
@@ -313,4 +319,21 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     }
 
     nabto_device_free(device);
+}
+
+std::string randomString(size_t n) {
+    const std::string characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<> distribution(0, characters.size() - 1);
+
+    std::string randomString;
+
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        randomString += characters[distribution(generator)];
+    }
+
+    return randomString;
 }

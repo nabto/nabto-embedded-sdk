@@ -84,7 +84,7 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
 
     bool equal;
     // TODO make random password
-    if (cbor_value_text_string_equals(&value, "secret123", &equal) != CborNoError) {
+    if (cbor_value_text_string_equals(&value, application->getPairingPassword().c_str(), &equal) != CborNoError) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         nabto_device_coap_request_free(request);
         return;

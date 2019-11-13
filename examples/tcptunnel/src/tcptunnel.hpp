@@ -53,6 +53,10 @@ class TcpTunnel {
         return device_;
     }
 
+    std::string getPairingPassword() {
+        return config_["PairingPassword"].get<std::string>();
+    }
+
     std::unique_ptr<nabto::common::CoapRequestHandler> coapPostPairingPassword;
     std::unique_ptr<nabto::common::CoapRequestHandler> coapGetPairingState;
  private:
