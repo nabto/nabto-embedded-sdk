@@ -9,33 +9,32 @@ void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const
 struct np_logging np_log = { &np_default_log, &np_default_log_buf };
 
 #ifdef HAS_NO_VARIADIC_MACROS
-// TODO the np_log.log function has changed definition, see #else
 void np_error_adapter(uint32_t module, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    np_log.log(NABTO_LOG_SEVERITY_ERROR, "", 0, "", fmt, args);
+    np_log.log(NABTO_LOG_SEVERITY_ERROR, NABTO_LOG_MODULE_ALL, 0, "", fmt, args);
     va_end(args);
 }
 void np_warn_adapter(uint32_t module, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    np_log.log(NABTO_LOG_SEVERITY_WARN, "", 0, "", fmt, args);
+    np_log.log(NABTO_LOG_SEVERITY_WARN, NABTO_LOG_MODULE_ALL, 0, "", fmt, args);
     va_end(args);
 }
 void np_info_adapter(uint32_t module, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    np_log.log(NABTO_LOG_SEVERITY_INFO, "", 0, "", fmt, args);
+    np_log.log(NABTO_LOG_SEVERITY_INFO, NABTO_LOG_MODULE_ALL, 0, "", fmt, args);
     va_end(args);
 }
 void np_trace_adapter(uint32_t module, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    np_log.log(NABTO_LOG_SEVERITY_TRACE, "", 0, "", fmt, args);
+    np_log.log(NABTO_LOG_SEVERITY_TRACE, NABTO_LOG_MODULE_ALL, 0, "", fmt, args);
     va_end(args);
 }
 #else

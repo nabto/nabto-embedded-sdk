@@ -98,6 +98,10 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         ka["RetryInterval"] = keepAliveRetryInterval_;
         ka["MaxRetries"] = keepAliveMaxRetries_;
         root["KeepAlive"] = ka;
+        nlohmann::json stun;
+        stun["Host"] = "stun.nabto.net";
+        stun["Port"] = 3478;
+        root["Stun"] = stun;
 
         std::vector<uint8_t> cbor = nlohmann::json::to_cbor(root);
 

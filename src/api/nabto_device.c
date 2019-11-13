@@ -22,9 +22,6 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
-// TODO: configured through attach response
-const char* stunHost = "stun.nabto.net";
-
 void* nabto_device_network_thread(void* data);
 void* nabto_device_core_thread(void* data);
 void nabto_device_init_platform(struct np_platform* pl);

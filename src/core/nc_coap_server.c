@@ -47,6 +47,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
     }
     ctx->pl = pl;
     nc_coap_server_set_infinite_stamp(ctx);
+    np_event_queue_init_event(&ctx->ev);
     return NABTO_EC_OK;
 }
 
@@ -191,7 +192,7 @@ void nc_coap_server_notify_event_callback(void* userData)
 void nc_coap_server_notify_event(void* userData)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    np_event_queue_post(ctx->pl, &ctx->ev, &nc_coap_server_notify_event_callback, ctx);
+    np_event_queue_post_maybe_double(ctx->pl, &ctx->ev, &nc_coap_server_notify_event_callback, ctx);
 }
 
 void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx)

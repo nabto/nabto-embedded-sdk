@@ -582,13 +582,14 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
             uint64_t p;
             size_t stringLength;
             if(cbor_value_calculate_string_length(&host, &stringLength) != CborNoError || stringLength > sizeof(ctx->stunHost)-1) {
-                // todo handle invalid string length
+                NABTO_LOG_ERROR(LOG, "Basestation reported invalid STUN host, STUN will be impossible");
+            } else {
+                size_t len = sizeof(ctx->stunHost);
+                memset(ctx->stunHost, 0, sizeof(ctx->stunHost));
+                cbor_value_copy_text_string(&host, ctx->stunHost, &len, NULL);
+                cbor_value_get_uint64(&port, &p);
+                ctx->stunPort = (uint16_t)p;
             }
-            size_t len = sizeof(ctx->stunHost);
-            memset(ctx->stunHost, 0, sizeof(ctx->stunHost));
-            cbor_value_copy_text_string(&host, ctx->stunHost, &len, NULL);
-            cbor_value_get_uint64(&port, &p);
-            ctx->stunPort = (uint16_t)p;
         } else {
             NABTO_LOG_ERROR(LOG, "Basestation reported invalid STUN information, STUN will be impossible");
         }

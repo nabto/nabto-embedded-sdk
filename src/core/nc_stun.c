@@ -1,4 +1,5 @@
 #include "nc_stun.h"
+
 #include <platform/np_logging.h>
 
 #include <string.h>
@@ -46,18 +47,15 @@ void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
     }
 }
 
-// TODO: DONT USE RAND, use mbedtls rand func
-#include <stdlib.h>
-
 bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 {
-//    struct nc_stun_context* ctx = (struct nc_stun_context*)data;
-    int i;
-    for ( i = 0; i < size; i++) {
-        *buf = (uint8_t)rand();
-        buf++;
+    struct nc_stun_context* ctx = (struct nc_stun_context*)data;
+    int i = mbedtls_ctr_drbg_random(&ctx->ctr_drbg, buf, size);
+    if (i == 0) {
+        return true;
+    } else {
+        return false;
     }
-    return true;
 }
 
 // init function
@@ -65,11 +63,20 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
                            struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_stun_context));
-    srand(pl->ts.now_ms());
     ctx->sendBuf = pl->buf.allocate();
     if (!ctx->sendBuf) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
+
+    mbedtls_ctr_drbg_init(&ctx->ctr_drbg);
+    mbedtls_entropy_init(&ctx->entropy);
+    int ret;
+    ret = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy, NULL, 0);
+    if (ret != 0) {
+        pl->buf.free(ctx->sendBuf);
+        return NABTO_EC_UNKNOWN;
+    }
+
     ctx->pl = pl;
     ctx->state = NC_STUN_STATE_NONE;
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
@@ -85,6 +92,8 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
         struct np_platform* pl = ctx->pl;
         np_event_queue_cancel_event(ctx->pl, &ctx->event);
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
+        mbedtls_ctr_drbg_free(&ctx->ctr_drbg);
+        mbedtls_entropy_free(&ctx->entropy);
         pl->buf.free(ctx->sendBuf);
     }
 }

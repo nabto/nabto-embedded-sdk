@@ -31,4 +31,4 @@ set(src
 
 add_library( nc_core STATIC "${src}")
 
-target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap 3rdparty_tinycbor)
+target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap 3rdparty_tinycbor 3rdparty_mbedtls)
