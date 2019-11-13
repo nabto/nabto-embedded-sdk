@@ -61,7 +61,6 @@ void nm_tcptunnel_coap_deinit(struct nm_tcptunnels* tunnels)
 bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, struct np_ip_address* address, uint16_t* port)
 {
     *address = tunnels->defaultHost;
-    *port = tunnels->defaultPort;
 
     int32_t contentFormat;
     contentFormat = nabto_coap_server_request_get_content_format(request);
@@ -104,7 +103,7 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
                 return false;
             }
         } else {
-            // ip not read
+            // ip not read, using default
         }
 
     }
@@ -118,6 +117,8 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
             return false;
         }
         *port = (uint16_t)p;
+    } else {
+        return false;
     }
 
     return true;

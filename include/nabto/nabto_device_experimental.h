@@ -395,7 +395,9 @@ nabto_device_iam_policies_list(NabtoDevice* device, void* buffer, size_t bufferL
  *
  * Tcp tunnelling is a feature which allows clients to tunnel tcp
  * traffic over a nabto connection to the device. TCP tunnelling is
- * stopped when the device is closed.
+ * stopped when the device is closed. TCP tunnelling will default
+ * incoming tunnel requests to 127.0.0.1 if the IP is not provided in
+ * the request. The port number has not default value.
  *
  * @param device   The device
  * @return NABTO_DEVICE_EC_OK on success

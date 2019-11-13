@@ -25,8 +25,6 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
     tunnels->device = device;
     tunnels->tunnelsSentinel.next = &tunnels->tunnelsSentinel;
     tunnels->tunnelsSentinel.prev = &tunnels->tunnelsSentinel;
-    // TODO make it customizable. Add API function(s) to set this
-    tunnels->defaultPort = 8080;
     tunnels->defaultHost.type = NABTO_IPV4;
     tunnels->defaultHost.ip.v4[0] = 0x7f;
     tunnels->defaultHost.ip.v4[1] = 0x00;

@@ -52,7 +52,6 @@ struct nm_tcptunnels {
     struct nc_device_context* device;
     uint64_t idCounter;
     struct np_ip_address defaultHost;
-    uint16_t defaultPort;
     struct nm_tcptunnel tunnelsSentinel;
     struct nc_connection_events_listener connectionEventsListener;
 
