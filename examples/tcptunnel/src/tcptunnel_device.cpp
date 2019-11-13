@@ -104,6 +104,15 @@ const json defaultTcptunnelIam = R"(
         }
       ],
       "Version": 1
+    },
+    "Paired": {
+      "Statements": [
+        {
+          "Actions": [ "Pairing:IsPaired" ],
+          "Allow": true
+        }
+      ],
+      "Version": 1
     }
   },
   "Roles": {
@@ -112,11 +121,14 @@ const json defaultTcptunnelIam = R"(
     ],
     "Tunnelling": [
       "TunnelAll", "P2P"
+    ],
+    "Paired": [
+      "Paired"
     ]
   },
   "Users": {
     "DefaultUser": {
-      "Roles": [ "Tunnelling" ],
+      "Roles": [ "Tunnelling", "Paired" ],
       "Fingerprints": []
     }
   }

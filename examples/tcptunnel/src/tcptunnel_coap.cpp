@@ -11,6 +11,7 @@
 #include <cbor.h>
 
 void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData);
+void tcptunnel_get_is_paired(NabtoDeviceCoapRequest* request, void* userData);
 
 
 
@@ -18,6 +19,9 @@ void tcptunnel_coap_init(NabtoDevice* device, TcpTunnel* tcpTunnel)
 {
     const char* postPairingPassword[] = { "pairing", "password", NULL };
     tcpTunnel->coapPostPairingPassword = std::make_unique<nabto::common::CoapRequestHandler>(tcpTunnel, device, NABTO_DEVICE_COAP_POST, postPairingPassword, &tcptunnel_pairing_password);
+
+    const char* getPairingState[] = { "pairing", "is-paired", NULL };
+    tcpTunnel->coapGetPairingState = std::make_unique<nabto::common::CoapRequestHandler>(tcpTunnel, device, NABTO_DEVICE_COAP_GET, getPairingState, &tcptunnel_get_is_paired);
 }
 
 void tcptunnel_coap_deinit(TcpTunnel* tcpTunnel)
@@ -113,8 +117,27 @@ void tcptunnel_pairing_password(NabtoDeviceCoapRequest* request, void* userData)
         }
         std::cout << "Added the fingerprint " << fp << " to the DefaultUser" << std::endl;
         // OK response
-        nabto_device_coap_response_set_code(request, 205);
+        nabto_device_coap_response_set_code(request, 201);
         nabto_device_coap_response_ready(request);
         nabto_device_coap_request_free(request);
     }
+}
+
+/**
+ * Return 205 if paired, else return 403
+ */
+void tcptunnel_get_is_paired(NabtoDeviceCoapRequest* request, void* userData)
+{
+    TcpTunnel* application = (TcpTunnel*)userData;
+
+    NabtoDeviceConnectionRef connectionRef = nabto_device_coap_request_get_connection_ref(request);
+    NabtoDeviceError isPaired = nabto_device_iam_check_action(application->getDevice(), connectionRef, "Pairing:IsPaired");
+    if (isPaired == NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_response_set_code(request, 205);
+    } else {
+        nabto_device_coap_response_set_code(request, 403);
+    }
+
+    nabto_device_coap_response_ready(request);
+    nabto_device_coap_request_free(request);
 }

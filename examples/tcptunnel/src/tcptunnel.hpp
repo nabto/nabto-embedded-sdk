@@ -54,6 +54,7 @@ class TcpTunnel {
     }
 
     std::unique_ptr<nabto::common::CoapRequestHandler> coapPostPairingPassword;
+    std::unique_ptr<nabto::common::CoapRequestHandler> coapGetPairingState;
  private:
     static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForIamChanges();
