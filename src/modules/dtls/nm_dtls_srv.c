@@ -327,6 +327,10 @@ void nm_dtls_srv_do_one(void* data)
             ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             // keep state as CONNECTING
+        } else if (ret == MBEDTLS_ERR_SSL_TIMEOUT) {
+            nm_dtls_timer_cancel(&ctx->timer);
+            ctx->state = CLOSING;
+            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
         } else if (ret == 0) {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
 
@@ -335,6 +339,8 @@ void nm_dtls_srv_do_one(void* data)
         } else {
             NABTO_LOG_ERROR(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
             nm_dtls_timer_cancel(&ctx->timer);
+            ctx->state = CLOSING;
+            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
             return;
         }
     } else if (ctx->state == DATA) {
@@ -545,6 +551,8 @@ np_error_code nm_dtls_srv_init_config(struct np_dtls_srv* server,
 #if defined(MBEDTLS_SSL_DTLS_HELLO_VERIFY)
     mbedtls_ssl_conf_dtls_cookies(&server->conf, NULL, NULL, NULL);
 #endif
+
+    mbedtls_ssl_conf_handshake_timeout(&server->conf, 1000, 16000);
 
     return NABTO_EC_OK;
 }
