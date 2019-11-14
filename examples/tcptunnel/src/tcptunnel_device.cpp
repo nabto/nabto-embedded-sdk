@@ -306,13 +306,13 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     std::string fp(fpTemp);
     nabto_device_string_free(fpTemp);
 
-    std::cout << "######## Started Nabto tcptunnel device ########" << std::endl;
-    std::cout << "# Product ID: " << productId << std::endl;
-    std::cout << "# Device ID: " << deviceId << std::endl;
-    std::cout << "# Fingerprint: " << std::string(fp) << std::endl;
+    std::cout << "######## Nabto tcptunnel device ########" << std::endl;
+    std::cout << "# Product ID:      " << productId << std::endl;
+    std::cout << "# Device ID:       " << deviceId << std::endl;
+    std::cout << "# Fingerprint:     " << std::string(fp) << std::endl;
     std::cout << "# Paring Password: " << pairingPassword << std::endl;
-    std::cout << "# Version: " << nabto_device_version() << std::endl;
-    std::cout << "################################################" << std::endl;
+    std::cout << "# Version:         " << nabto_device_version() << std::endl;
+    std::cout << "######## " << std::endl;
 
     {
         TcpTunnel tcpTunnel(device, config, configFile);

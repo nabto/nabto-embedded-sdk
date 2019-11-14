@@ -1,4 +1,12 @@
-include(version.cmake)
+
+add_custom_target(GENERATE_VERSION ALL
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/nc_version.c
+  COMMAND ${CMAKE_COMMAND} -P
+  ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake
+  DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/nc_version.c.in
+  )
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
