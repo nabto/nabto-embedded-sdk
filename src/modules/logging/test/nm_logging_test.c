@@ -15,7 +15,7 @@
 static void nm_test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
 static void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len);
 
-static uint32_t logLevel = NABTO_LOG_SEVERITY_LEVEL_INFO;
+static uint32_t logLevel = NABTO_LOG_SEVERITY_LEVEL_NONE;
 
 void nm_logging_test_init()
 {
