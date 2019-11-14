@@ -339,7 +339,6 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     }
 
     nabto_device_free(device);
-    std::cout << "Device is stopped" << std::endl;
     return true;
 }
 
