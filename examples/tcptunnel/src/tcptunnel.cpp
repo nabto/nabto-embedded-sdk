@@ -36,11 +36,11 @@ void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, vo
         return;
     } else {
         if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
-            std::cout << "New connection opened with reference: " << tt->connectionRef_ << std::endl;
+            std::cout << "Connection: " << tt->connectionRef_ << ", opened." << std::endl;
         } else if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CLOSED) {
-            std::cout << "Connection with reference: " << tt->connectionRef_ << " was closed" << std::endl;
+            std::cout << "Connection: " << tt->connectionRef_ << ", closed" << std::endl;
         } else if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED) {
-            std::cout << "Connection with reference: " << tt->connectionRef_ << " changed channel" << std::endl;
+            std::cout << "Connection: " << tt->connectionRef_ << ", changed channel" << std::endl;
         } else {
             std::cout << "Unknown connection event: " << tt->connectionEvent_ << " on connection reference: " << tt->connectionRef_ << std::endl;
         }

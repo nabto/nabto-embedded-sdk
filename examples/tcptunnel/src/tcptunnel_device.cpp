@@ -30,7 +30,7 @@ int main(int argc, char** argv)
         ("version", "Show version")
         ("i,init", "Initialize configuration file")
         ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("tcptunnel_device.json"))
-        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"));
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"));
      options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
         ("d,device", "Device id", cxxopts::value<std::string>())
