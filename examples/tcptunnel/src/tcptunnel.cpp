@@ -41,8 +41,6 @@ void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, vo
             std::cout << "Connection: " << tt->connectionRef_ << ", closed" << std::endl;
         } else if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED) {
             std::cout << "Connection: " << tt->connectionRef_ << ", changed channel" << std::endl;
-        } else {
-            std::cout << "Unknown connection event: " << tt->connectionEvent_ << " on connection reference: " << tt->connectionRef_ << std::endl;
         }
     }
     tt->startWaitEvent();
@@ -72,11 +70,9 @@ void TcpTunnel::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* 
         return;
     } else {
         if (tt->deviceEvent_ == NABTO_DEVICE_EVENT_ATTACHED) {
-            std::cout << "Device is now attached" << std::endl;
+            std::cout << "Device is attached to the basestation" << std::endl;
         } else if (tt->deviceEvent_ == NABTO_DEVICE_EVENT_DETACHED) {
-            std::cout << "Device is now detached" << std::endl;
-        } else {
-            std::cout << "Unknown device event: " << tt->deviceEvent_ << std::endl;
+            std::cout << "Device is detached from the basestation" << std::endl;
         }
     }
     tt->startWaitDevEvent();

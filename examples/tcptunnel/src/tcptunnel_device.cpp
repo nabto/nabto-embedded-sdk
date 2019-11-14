@@ -18,7 +18,6 @@ static bool run_tcptunnel(const std::string& configFile, const std::string& logL
 static std::string randomString(size_t n);
 
 void my_handler(int s){
-    printf("Caught signal %d\n",s);
 }
 
 int main(int argc, char** argv)
@@ -63,7 +62,7 @@ int main(int argc, char** argv)
         } else {
             std::string configFile = result["config"].as<std::string>();
             std::string logLevel = result["log-level"].as<std::string>();
-            if (run_tcptunnel(configFile, logLevel)) {
+            if (!run_tcptunnel(configFile, logLevel)) {
                 std::cerr << "Failed to run TCP tunnel" << std::endl;
                 return 3;
             }
@@ -234,40 +233,49 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     ec = nabto_device_set_product_id(device, productId.c_str());
     if (ec) {
         std::cerr << "Could not set product id" << std::endl;
+        return false;
     }
     ec = nabto_device_set_device_id(device, deviceId.c_str());
     if (ec) {
         std::cerr << "Could not set device id" << std::endl;
+        return false;
     }
     ec = nabto_device_set_server_url(device, server.c_str());
     if (ec) {
         std::cerr << "Could not set server url" << std::endl;
+        return false;
     }
     ec = nabto_device_set_private_key(device, privateKey.c_str());
     if (ec) {
         std::cerr << "Could not set private key" << std::endl;
+        return false;
     }
     std::vector<uint8_t> iamCbor = json::to_cbor(iam);
 
     ec = nabto_device_iam_load(device, iamCbor.data(), iamCbor.size());
     if (ec) {
         std::cerr << "failed to load iam" << std::endl;
+        return false;
     }
     ec = nabto_device_enable_mdns(device);
     if (ec) {
         std::cerr << "Failed to enable mdns" << std::endl;
+        return false;
     }
     ec = nabto_device_enable_tcp_tunnelling(device);
     if (ec) {
         std::cerr << "Failed to enable tcp tunnelling" << std::endl;
+        return false;
     }
     ec = nabto_device_set_log_level(device, logLevel.c_str());
     if (ec) {
         std::cerr << "Failed to set loglevel" << std::endl;
+        return false;
     }
     ec = nabto_device_set_log_std_out_callback(device);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
+        return false;
     }
 
     try {
@@ -275,6 +283,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
         ec = nabto_device_set_server_port(device, serverPort);
         if (ec) {
             std::cerr << "Failed to set server port" << std::endl;
+            return false;
         }
     } catch (std::exception& e) {
         // ServerPort not in config, just ignore and use default port
@@ -292,6 +301,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     ec = nabto_device_get_device_fingerprint_hex(device, &fpTemp);
     if (ec) {
         std::cerr << "Could not get fingerprint of the device" << std::endl;
+        return false;
     }
     std::string fp(fpTemp);
     nabto_device_string_free(fpTemp);
@@ -329,6 +339,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     }
 
     nabto_device_free(device);
+    std::cout << "Device is stopped" << std::endl;
     return true;
 }
 
