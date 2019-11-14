@@ -198,6 +198,7 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
     nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
+    nabto_device_stop(device);
     nabto_device_free(device);
 
     return true;
