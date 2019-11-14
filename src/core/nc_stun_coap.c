@@ -131,9 +131,7 @@ void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* r
     ctx->stunRequest = request;
     np_error_code ec = nc_stun_async_analyze(ctx->stun, true, &nc_rendezvous_endpoints_completed, ctx);
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Failed to start stun analysis: %s", np_error_code_to_string(ec));
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE_SERVICE_UNAVAILABLE, "Stun resource busy");
-        nabto_coap_server_request_free(request);
-        ctx->stunRequest = NULL;
+        NABTO_LOG_INFO(LOG, "Failed to start stun analysis with: %s. Responing with local addresses only.", np_error_code_to_string(ec));
+        nc_rendezvous_endpoints_completed(ec, NULL, ctx);
     }
 }
