@@ -610,6 +610,7 @@ void nm_select_unix_udp_free_socket(np_udp_socket* sock)
     before->next = after;
     after->prev = before;
 
+    struct nm_select_unix_udp_send_base* iterator = sock->sendSentinel->next;
     while (iterator != sock->sendSentinel) {
         struct nm_select_unix_udp_send_context* current = (struct nm_select_unix_udp_send_context*)iterator;
         iterator = iterator->next;
