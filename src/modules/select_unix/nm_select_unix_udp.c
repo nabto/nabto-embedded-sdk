@@ -475,7 +475,6 @@ void nm_select_unix_udp_event_send_to(void* data)
         ctx->cb(ec, ctx->cbData);
     }
     nm_select_unix_udp_remove_send_base(sock, (struct nm_select_unix_udp_send_base*)ctx);
-    free(ctx);
     return;
 }
 
@@ -611,6 +610,15 @@ void nm_select_unix_udp_free_socket(np_udp_socket* sock)
     before->next = after;
     after->prev = before;
 
+    while (iterator != sock->sendSentinel) {
+        struct nm_select_unix_udp_send_context* current = (struct nm_select_unix_udp_send_context*)iterator;
+        iterator = iterator->next;
+        if (current->cb != NULL) {
+            current->cb(NABTO_EC_ABORTED, current->cbData);
+        }
+        nm_select_unix_udp_remove_send_base(sock, (struct nm_select_unix_udp_send_base*)current);
+    }
+
     shutdown(sock->sock, SHUT_RDWR);
     close(sock->sock);
     nm_select_unix_udp_cancel_all_events(sock);
@@ -675,4 +683,5 @@ void nm_select_unix_udp_remove_send_base(np_udp_socket* sock, struct nm_select_u
     base->next->prev = base->prev;
     base->prev = base;
     base->next = base;
+    free(base);
 }
