@@ -29,7 +29,8 @@ struct nc_stun_callback {
 enum nc_stun_state {
     NC_STUN_STATE_NONE = 0,
     NC_STUN_STATE_RUNNING,
-    NC_STUN_STATE_DONE
+    NC_STUN_STATE_DONE,
+    NC_STUN_STATE_ABORTED
 };
 
 

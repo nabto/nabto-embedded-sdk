@@ -24,7 +24,7 @@ void my_handler(int s){
 }
 
 bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-void run_heat_pump(const std::string& configFile);
+bool run_heat_pump(const std::string& configFile);
 
 int main(int argc, char** argv) {
     cxxopts::Options options("Heat pump", "Nabto heat pump example.");
@@ -49,13 +49,13 @@ int main(int argc, char** argv) {
         if (result.count("help"))
         {
             std::cout << options.help() << std::endl;
-            exit(0);
+            return 0;
         }
 
         if (result.count("version"))
         {
             std::cout << "nabto_embedded_sdk: " << nabto_device_version() << std::endl;
-            exit(0);
+            return 0;
         }
         if (result.count("init") > 0) {
             std::string configFile = result["config"].as<std::string>();
@@ -64,19 +64,23 @@ int main(int argc, char** argv) {
             std::string server = result["server"].as<std::string>();
             if (!init_heat_pump(configFile, productId, deviceId, server)) {
                 std::cerr << "Initialization failed" << std::endl;
+                return 2;
             }
         } else {
             std::string configFile = result["config"].as<std::string>();
-            run_heat_pump(configFile);
+            if (!run_heat_pump(configFile)) {
+                std::cerr << "Failed to run heatpump" << std::endl;
+                return 3;
+            }
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
         std::cout << options.help() << std::endl;
-        exit(-1);
+        return -1;
     } catch (const std::domain_error& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
         std::cout << options.help() << std::endl;
-        exit(-1);
+        return -1;
     }
     return 0;
 }
@@ -155,19 +159,19 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     return true;
 }
 
-void run_heat_pump(const std::string& configFile)
+bool run_heat_pump(const std::string& configFile)
 {
     NabtoDeviceError ec;
     json config;
     if (!json_config_load(configFile, config)) {
         std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
-        exit(-1);
+        return false;
     }
 
     NabtoDevice* device = nabto_device_new();
     if (device == NULL) {
         std::cerr << "Device New Failed" << std::endl;
-        return;
+        return false;
     }
 
     auto productId = config["ProductId"].get<std::string>();
@@ -215,7 +219,7 @@ void run_heat_pump(const std::string& configFile)
             std::cerr << "Failed to set server port" << std::endl;
         }
     } catch (std::exception& e) {
-
+        // ServerPort was not in config file, just use defualt
     }
 
     // run application
@@ -223,18 +227,19 @@ void run_heat_pump(const std::string& configFile)
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to start device" << std::endl;
         nabto_device_free(device);
-        return;
+        return false;
     }
 
     char* fpTemp;
     ec = nabto_device_get_device_fingerprint_hex(device, &fpTemp);
     if (ec) {
         std::cerr << "Could not get fingerprint of the device" << std::endl;
+        std::cout << "Device " << productId << "." << deviceId << " Started with unknown fingerprint" << std::endl;
+    } else {
+        std::string fp(fpTemp);
+        nabto_device_string_free(fpTemp);
+        std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
     }
-    std::string fp(fpTemp);
-    nabto_device_string_free(fpTemp);
-
-    std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
 
     {
         HeatPump hp(device, config, configFile);
@@ -263,4 +268,5 @@ void run_heat_pump(const std::string& configFile)
         nabto_device_stop(device);
     }
     nabto_device_free(device);
+    return true;
 }

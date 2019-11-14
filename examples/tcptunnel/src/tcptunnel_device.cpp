@@ -13,7 +13,7 @@
 #include <random>
 
 static bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-static void run_tcptunnel(const std::string& configFile, const std::string& logLevel);
+static bool run_tcptunnel(const std::string& configFile, const std::string& logLevel);
 
 static std::string randomString(size_t n);
 
@@ -42,13 +42,13 @@ int main(int argc, char** argv)
         if (result.count("help"))
         {
             std::cout << options.help() << std::endl;
-            exit(0);
+            return 0;
         }
 
         if (result.count("version"))
         {
             std::cout << "nabto_embedded_sdk: " << nabto_device_version() << std::endl;
-            exit(0);
+            return 0;
         }
 
         if (result.count("init") > 0) {
@@ -58,20 +58,24 @@ int main(int argc, char** argv)
             std::string server = result["server"].as<std::string>();
             if (!init_tcptunnel(configFile, productId, deviceId, server)) {
                 std::cerr << "Initialization failed" << std::endl;
+                return 2;
             }
         } else {
             std::string configFile = result["config"].as<std::string>();
             std::string logLevel = result["log-level"].as<std::string>();
-            run_tcptunnel(configFile, logLevel);
+            if (run_tcptunnel(configFile, logLevel)) {
+                std::cerr << "Failed to run TCP tunnel" << std::endl;
+                return 3;
+            }
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
         std::cout << options.help() << std::endl;
-        exit(-1);
+        return -1;
     } catch (const std::domain_error& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
         std::cout << options.help() << std::endl;
-        exit(-1);
+        return -1;
     }
     return 0;
 }
@@ -142,7 +146,7 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
 {
     if (json_config_exists(configFile)) {
         std::cerr << "The config already file exists, remove " << configFile << " and try again" << std::endl;
-        exit(2);
+        return false;
     }
 
     json config;
@@ -204,19 +208,19 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
     return true;
 }
 
-void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
+bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
 {
     NabtoDeviceError ec;
     json config;
     if (!json_config_load(configFile, config)) {
         std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
-        exit(-1);
+        return false;
     }
 
     NabtoDevice* device = nabto_device_new();
     if (!device) {
         std::cerr << "Could not create device" << std::endl;
-        return;
+        return false;
     }
 
     auto productId = config["ProductId"].get<std::string>();
@@ -273,7 +277,7 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
             std::cerr << "Failed to set server port" << std::endl;
         }
     } catch (std::exception& e) {
-
+        // ServerPort not in config, just ignore and use default port
     }
 
     // run application
@@ -281,7 +285,7 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     if (ec != NABTO_DEVICE_EC_OK) {
         nabto_device_free(device);
         std::cerr << "Failed to start device" << std::endl;
-        return;
+        return false;
     }
 
     char* fpTemp;
@@ -320,6 +324,7 @@ void run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     }
 
     nabto_device_free(device);
+    return true;
 }
 
 std::string randomString(size_t n) {

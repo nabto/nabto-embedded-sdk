@@ -27,6 +27,7 @@ void tcptunnel_coap_init(NabtoDevice* device, TcpTunnel* tcpTunnel)
 void tcptunnel_coap_deinit(TcpTunnel* tcpTunnel)
 {
     tcpTunnel->coapPostPairingPassword->stopListen();
+    tcpTunnel->coapGetPairingState->stopListen();
 }
 
 bool tcptunnel_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)

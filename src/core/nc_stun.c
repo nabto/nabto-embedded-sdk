@@ -89,6 +89,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
 void nc_stun_deinit(struct nc_stun_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
+        ctx->state = NC_STUN_STATE_ABORTED;
         struct np_platform* pl = ctx->pl;
         np_event_queue_cancel_event(ctx->pl, &ctx->event);
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
@@ -121,6 +122,9 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
 {
     int i;
     bool found = false;
+    if (ctx->state == NC_STUN_STATE_ABORTED) {
+        return NABTO_EC_ABORTED;
+    }
     NABTO_LOG_TRACE(LOG, "Starting STUN analysis for host: %s", ctx->hostname);
     if (ctx->hostname == NULL) {
         NABTO_LOG_ERROR(LOG, "Stun analysis started before host was configured");
@@ -159,6 +163,10 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            uint8_t* buffer,
                            uint16_t bufferSize)
 {
+    if (ctx->state == NC_STUN_STATE_ABORTED) {
+        NABTO_LOG_ERROR(LOG, "Stun packet received for deinitialized stun context");
+        return;
+    }
     NABTO_LOG_TRACE(LOG, "Stun handling packet");
     nabto_stun_handle_packet(&ctx->stun, buffer, bufferSize);
     nc_stun_event(ctx);
@@ -283,6 +291,11 @@ void nc_stun_event(struct nc_stun_context* ctx)
 void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
+    if (ctx->state == NC_STUN_STATE_ABORTED) {
+        ctx->ec = NABTO_EC_ABORTED;
+        nc_stun_resolve_callbacks(ctx);
+        return;
+    }
     if (ec != NABTO_EC_OK) {
         ctx->state = NC_STUN_STATE_DONE;
         ctx->ec = ec;
@@ -319,9 +332,13 @@ void nc_stun_handle_timeout(const np_error_code ec, void* data)
 void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
-    ctx->state = NC_STUN_STATE_DONE;
-    ctx->ec = ec;
-    ctx->res = res;
+    if (ctx->state == NC_STUN_STATE_ABORTED) {
+        ctx->ec = NABTO_EC_ABORTED;
+    } else {
+        ctx->state = NC_STUN_STATE_DONE;
+        ctx->ec = ec;
+        ctx->res = res;
+    }
     nc_stun_resolve_callbacks(ctx);
     return;
 }
