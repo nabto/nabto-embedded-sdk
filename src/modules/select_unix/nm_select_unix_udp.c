@@ -103,6 +103,8 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, np_udp_socket** 
 
     s->pl = selectCtx->pl;
     s->selectCtx = pl->udpData;
+    s->destroyed = false;
+    s->aborted = false;
 
     np_udp_socket* before = sockets->socketsSentinel.prev;
     np_udp_socket* after = &sockets->socketsSentinel;
@@ -131,8 +133,6 @@ np_error_code nm_select_unix_udp_async_bind_port(np_udp_socket* sock, uint16_t p
     sock->created.cb = cb;
     sock->created.data = data;
     sock->created.port = port;
-    sock->destroyed = false;
-    sock->aborted = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_port, sock);
     return NABTO_EC_OK;
 }
@@ -146,8 +146,6 @@ np_error_code nm_select_unix_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_so
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
-    sock->destroyed = false;
-    sock->aborted = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv4, sock);
     return NABTO_EC_OK;
 }
@@ -161,8 +159,6 @@ np_error_code nm_select_unix_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_so
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
     sock->created.data = data;
-    sock->destroyed = false;
-    sock->aborted = false;
     np_event_queue_post(pl, &sock->created.event, &nm_select_unix_udp_event_bind_mdns_ipv6, sock);
     return NABTO_EC_OK;
 }
