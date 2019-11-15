@@ -66,23 +66,30 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
     contentFormat = nabto_coap_server_request_get_content_format(request);
 
     if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
+        // if we cant send error response, free will auto-reply with 500
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), "Content format not CBOR");
         return false;
     }
 
     void* payload;
     size_t payloadLength;
     if (!nabto_coap_server_request_get_payload(request, &payload, &payloadLength)) {
-        // no payload, ok
-        return true;
+        // if we cant send error response, free will auto-reply with 500
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), "No payload, Port is required");
+        return false;
     }
 
     CborParser parser;
     CborValue map;
     if (cbor_parser_init(payload, payloadLength, 0, &parser, &map) != CborNoError) {
+        // if we cant send error response, free will auto-reply with 500
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Internal CBOR error");
         return false;
     }
 
     if (!cbor_value_is_map(&map)) {
+        // if we cant send error response, free will auto-reply with 500
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), "Invalid payload, not CBOR map");
         return false;
     }
 
@@ -95,11 +102,15 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
         if (length == 4) {
             address->type = NABTO_IPV4;
             if (cbor_value_copy_byte_string(&ip, address->ip.v4, &length, NULL) != CborNoError) {
+                // if we cant send error response, free will auto-reply with 500
+                nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Internal CBOR error");
                 return false;
             }
         } else if(length == 16) {
             address->type = NABTO_IPV6;
             if (cbor_value_copy_byte_string(&ip, address->ip.v6, &length, NULL) != CborNoError) {
+                // if we cant send error response, free will auto-reply with 500
+                nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Internal CBOR error");
                 return false;
             }
         } else {
@@ -114,10 +125,14 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
         cbor_value_is_unsigned_integer(&value))
     {
         if (cbor_value_get_uint64(&value, &p) != CborNoError)  {
+            // if we cant send error response, free will auto-reply with 500
+            nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Internal CBOR error");
             return false;
         }
         *port = (uint16_t)p;
     } else {
+        // if we cant send error response, free will auto-reply with 500
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), "Port missing");
         return false;
     }
 
@@ -142,8 +157,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     uint16_t port;
 
     if (!parse_host_and_port(request, tunnels, &address, &port)) {
-        // if we cant send error response, we cant fail nicely
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), NULL);
+        // If parse failed, the function has send an error response
         nabto_coap_server_request_free(request);
         return;
     }
