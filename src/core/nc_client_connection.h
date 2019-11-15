@@ -38,7 +38,6 @@ struct nc_client_connection {
     struct nc_connection_channel alternativeChannel;
     uint64_t currentMaxSequence;
     struct nc_device_context* device;
-    struct nc_iam_user* user;
 
     np_dtls_srv_send_callback sentCb;
     void* sentData;

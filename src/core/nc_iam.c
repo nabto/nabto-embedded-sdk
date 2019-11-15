@@ -204,11 +204,18 @@ np_error_code nc_iam_check_access_attributes(struct nc_client_connection* connec
         return NABTO_EC_UNKNOWN;
     }
 
-    struct nc_iam_user* user = connection->user;
+    uint8_t fp[16];
+    ec = nc_client_connection_get_client_fingerprint(connection, fp);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    struct nc_iam_user* user = nc_iam_find_user_by_fingerprint(&connection->device->iam, fp);
+
     np_error_code result = NABTO_EC_IAM_DENY;
     if (user != NULL) {
         size_t i;
-        nc_iam_attributes_add_string(attributes, "Connection:UserId", connection->user->id);
+        nc_iam_attributes_add_string(attributes, "Connection:UserId", user->id);
 
         for (i = 0; i < NC_IAM_USER_MAX_ROLES; i++) {
             struct nc_iam_role* role = user->roles[i];
@@ -686,11 +693,6 @@ np_error_code nc_iam_delete_user(struct nc_device_context* device, const char* n
     struct nc_iam_user* user = nc_iam_find_user_by_name(&device->iam, name);
     if (!user) {
         return NABTO_EC_NOT_FOUND;
-    }
-
-    // check that user is not used by a connection
-    if (nc_device_user_in_use(device, user)) {
-        return NABTO_EC_IN_USE;
     }
 
     // remove all fingerprints the user has

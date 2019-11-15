@@ -131,15 +131,3 @@ struct nc_client_connection* nc_client_connection_dispatch_connection_from_ref(s
     }
     return NULL;
 }
-
-
-bool nc_client_connection_dispatch_user_in_use(struct nc_client_connection_dispatch_context* ctx, struct nc_iam_user* user)
-{
-    int i;
-    for (i = 0; i<NABTO_MAX_CLIENT_CONNECTIONS; i++) {
-        if (ctx->elms[i].active && ctx->elms[i].conn.user == user) {
-            return true;
-        }
-    }
-    return false;
-}

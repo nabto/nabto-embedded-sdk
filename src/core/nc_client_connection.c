@@ -158,8 +158,6 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
             return;
         }
 
-        struct nc_iam_user* user = nc_iam_find_user_by_fingerprint(&conn->device->iam, fp);
-        conn->user = user;
         nc_client_connection_keep_alive_start(conn);
         nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_OPENED);
     }

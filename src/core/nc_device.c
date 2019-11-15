@@ -253,15 +253,6 @@ struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_cont
     return nc_client_connection_dispatch_connection_from_ref(&dev->clientConnect, ref);
 }
 
-/**
- * return true if the iam user is used by a connection.
- */
-bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user)
-{
-    return nc_client_connection_dispatch_user_in_use(&dev->clientConnect, user);
-}
-
-
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData)
 {
     listener->cb = cb;
