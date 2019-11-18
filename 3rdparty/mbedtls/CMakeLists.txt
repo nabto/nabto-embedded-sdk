@@ -86,7 +86,9 @@ set(src_tls
     ${src_dir}/ssl_tls.c
 )
 
-add_library(3rdparty_mbedtls "${src_tls}" "${src_x509}" "${src_crypto}")
+set(config_file config/nabto_mbedtls_config.h)
+
+add_library(3rdparty_mbedtls "${src_tls}" "${src_x509}" "${src_crypto}" "${config_file}")
 
 target_include_directories(3rdparty_mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories(3rdparty_mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include)
