@@ -2,13 +2,14 @@
 #define _NC_STUN_COAP_H_
 
 #include <platform/np_error_code.h>
-
+#include <nabto_types.h>
 struct nc_stun_contex;
 struct nc_coap_server_context;
 struct np_platform;
 struct nabto_coap_server_request;
 
 struct nc_stun_coap_context {
+    bool deinitialized;
     struct nc_stun_context* stun;
     struct nc_coap_server_context* coap;
     struct nc_device_context* device;

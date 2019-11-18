@@ -21,6 +21,7 @@ np_error_code nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_
     context->coap = coap;
     context->pl = platform;
     context->stunRequest = NULL;
+    context->deinitialized = false;
     nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_GET,
                                                           (const char*[]){"p2p", "endpoints", NULL},
                                                           &nc_rendezvous_handle_coap_p2p_endpoints, context,
@@ -38,6 +39,11 @@ void nc_stun_coap_deinit(struct nc_stun_coap_context* context)
         nabto_coap_server_remove_resource(context->resource);
         context->resource = NULL;
     }
+    if (context->stunRequest) {
+        nabto_coap_server_request_free(context->stunRequest);
+        context->stunRequest = NULL;
+    }
+    context->deinitialized = true;
 }
 static void encode_ep(CborEncoder* encoder, const struct np_udp_endpoint* ep)
 {
@@ -61,6 +67,10 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
 {
     struct nc_stun_coap_context* ctx = (struct nc_stun_coap_context*)data;
     uint8_t buffer[128];
+    if (ctx->deinitialized) {
+        // deinit will have freed the request
+        return;
+    }
     NABTO_LOG_TRACE(LOG, "Stun analysis completed with status: %s", np_error_code_to_string(ec));
 
     if (ec != NABTO_EC_OK) {
