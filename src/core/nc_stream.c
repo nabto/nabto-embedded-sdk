@@ -189,6 +189,7 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
                 ctx->negativeCount = 0;
             }
 //            np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
+            diff += 2; // make sure that we have passed the timestamp inside the module.
             np_event_queue_post_timed_event(ctx->pl, &ctx->timer, diff, &nc_stream_handle_timeout, ctx);
         }
     }
