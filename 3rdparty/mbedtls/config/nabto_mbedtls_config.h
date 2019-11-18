@@ -89,6 +89,7 @@
 #define MBEDTLS_SSL_SERVER_NAME_INDICATION
 #define MBEDTLS_DEBUG_C
 #define MBEDTLS_ERROR_C
+#define MBEDTLS_SSL_DTLS_ANTI_REPLAY
 
 /* For test certificates */
 #define MBEDTLS_BASE64_C
