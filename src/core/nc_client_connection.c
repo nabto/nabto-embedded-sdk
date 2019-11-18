@@ -99,12 +99,12 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
     } else {
         // not changed but update if we for whatever reason has a
         // changed view of the clients ip and socket on this channel
-        // id.
+        // id.  If this was a keep alive on another channel the
+        // channel id would not match and hence a keep alive would not
+        // alter the current ep and socket.
         conn->currentChannel.ep = ep;
         conn->currentChannel.sock = sock;
     }
-
-    //NABTO_LOG_TRACE(LOG, "handle packet for DTLS");
 
     // Remove connection ID before passing packet to DTLS
     memmove(start, start+16, bufferSize-16);
