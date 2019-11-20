@@ -26,11 +26,6 @@ np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec) {
     }
 }
 
-// Dummy function since this is not yet used
-void nc_coap_server_event_handler(void* hest, enum nabto_coap_server_event event, ...)
-{
-
-}
 
 np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
 {
@@ -39,7 +34,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
         return NABTO_EC_OUT_OF_MEMORY;
     }
     ctx->isSending = false;
-    nabto_coap_error err = nabto_coap_server_init(&ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, &nc_coap_server_event_handler, ctx);
+    nabto_coap_error err = nabto_coap_server_init(&ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);
         ctx->sendBuffer = NULL;
