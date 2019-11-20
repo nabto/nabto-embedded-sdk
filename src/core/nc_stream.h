@@ -17,7 +17,7 @@ struct nc_stream_manager_context;
 
 typedef void (*nc_stream_callback)(const np_error_code ec, void* userData);
 
-#define NC_STREAM_SEND_BUFFER_SIZE 1500
+#define NC_STREAM_SEND_BUFFER_SIZE 1150
 
 struct nc_stream_context {
     struct np_platform* pl;
