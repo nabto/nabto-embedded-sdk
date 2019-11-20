@@ -75,6 +75,9 @@ void nm_epoll_tcp_init(struct nm_epoll_context* epoll, struct np_platform* pl)
 np_error_code nm_epoll_tcp_create(struct np_platform* pl, np_tcp_socket** sock)
 {
     np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
+    if (s == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     s->type = NM_EPOLL_TYPE_TCP;
     s->pl = pl;
     s->epoll = (struct nm_epoll_context*)pl->tcpData;
@@ -82,6 +85,7 @@ np_error_code nm_epoll_tcp_create(struct np_platform* pl, np_tcp_socket** sock)
     s->aborted = false;
     *sock = s;
 
+    nm_epoll_add_tcp_socket(s->epoll);
     np_event_queue_init_event(&s->write.event);
     np_event_queue_init_event(&s->read.event);
     np_event_queue_init_event(&s->connect.event);
@@ -200,7 +204,6 @@ void nm_epoll_tcp_is_connected(void* userData)
         NABTO_LOG_ERROR(LOG, "getsockopt error %s",strerror(errno));
     } else {
         if (err == 0) {
-            nm_epoll_add_tcp_socket(sock->epoll);
             np_tcp_connect_callback cb = sock->connect.callback;
             sock->connect.callback = NULL;
             cb(NABTO_EC_OK, sock->connect.userData);

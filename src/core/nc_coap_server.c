@@ -135,6 +135,7 @@ void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
         if (diff < 0) {
             diff = 0;
         }
+        np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
         np_event_queue_post_timed_event(ctx->pl, &ctx->timer, diff, &nc_coap_server_handle_timeout, ctx);
     }
 }
