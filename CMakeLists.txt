@@ -10,6 +10,7 @@ include(CheckIncludeFiles)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_C_STANDARD 99)
 
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
 option(DEVICE_BUILD_TESTS "build device tests" ON)
