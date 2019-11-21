@@ -458,7 +458,8 @@ void nm_select_unix_udp_event_send_to(void* data)
             // expected
         } else {
             if (status == EADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
-                status == ENETUNREACH) // if we send ipv6 on a system without it.
+                status == ENETUNREACH || // if we send ipv6 on a system without it.
+                status == EHOSTUNREACH) // IPv6 multicasting where multiple interfaces are available can cause this error on Mac
             {
                 NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in nm_select_unix_udp_event_send_to", (int) status, strerror(status));
             } else {
