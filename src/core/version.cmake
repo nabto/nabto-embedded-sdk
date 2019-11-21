@@ -22,10 +22,6 @@ execute_process(
   OUTPUT_VARIABLE GIT_COUNT ERROR_QUIET)
 execute_process(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  COMMAND git rev-list --count master..
-  OUTPUT_VARIABLE GIT_BRANCH_COUNT ERROR_QUIET)
-execute_process(
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMAND git rev-parse --short HEAD
   OUTPUT_VARIABLE GIT_HASH ERROR_QUIET)
 
@@ -41,14 +37,12 @@ set(VERSION_NUMBER "5.0.0")
 if (GIT_TAG)
   # string v4.5.6 -> 4.5.6
   string(SUBSTRING ${GIT_TAG} 1 -1 VERSION)
-elseif (GIT_BRANCH STREQUAL "master")
-  set(VERSION "${VERSION_NUMBER}-${GIT_BRANCH}.${GIT_COUNT}+${GIT_HASH}${GIT_DIRTY}")
 elseif (GIT_BRANCH MATCHES "^[0-9].*$")
   # This is a release branch e.g 5.1 or 5.1.1
-  set(VERSION "${VERSION_NUMBER}-rc.${GIT_BRANCH_COUNT}+${GIT_HASH}${GIT_DIRTY}")
+  set(VERSION "${VERSION_NUMBER}-rc.${GIT_COUNT}+${GIT_HASH}${GIT_DIRTY}")
 else()
   # A feature branch
-  set(VERSION "${VERSION_NUMBER}-${GIT_BRANCH}.${GIT_BRANCH_COUNT}+${GIT_HASH}${GIT_DIRTY}")
+  set(VERSION "${VERSION_NUMBER}-${GIT_BRANCH}.${GIT_COUNT}+${GIT_HASH}${GIT_DIRTY}")
 endif()
 
 set(VERSION "#include \"nc_version.h\"\n
