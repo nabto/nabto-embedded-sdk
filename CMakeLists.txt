@@ -90,6 +90,7 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
 endif()
 
 if (DEVICE_BUILD_TESTS)
+  add_subdirectory(nabto-common-cpp/src/http_server)
   add_subdirectory(test)
 
   if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")

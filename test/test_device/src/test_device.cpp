@@ -46,9 +46,9 @@ void run_device(const std::string& configFile, const std::string& logLevel)
 
     tda.init(productId, deviceId, server, privateKey);
 
-    std::cout << "Initialized device " << productId << "." << deviceId << " fingerprint: " << tda.getDeviceFingerprint() << std::endl;
-
     tda.start();
+
+    tda.describe();
 
     struct sigaction sigIntHandler;
 

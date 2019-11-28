@@ -16,3 +16,9 @@ The device has a coap server which have a POST and a GET endpoint.
 
 CoAP POST /test/post
 CoAP GET /test/get
+
+### Tcp Echo server
+
+The device includes a tcp echo server which listens on port 58165
+
+The device includes a tcp http server which listens on port 29281

@@ -7,6 +7,11 @@
 #include "stream_echo.hpp"
 #include "stream_recv.hpp"
 
+#include <util/io_service.hpp>
+#include <util/tcp_echo_server.hpp>
+#include <util/test_logger.hpp>
+#include <http_server/http_server.hpp>
+
 #include <iostream>
 
 namespace nabto {
@@ -21,9 +26,14 @@ NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionRefe
 class TestDeviceApplication {
  public:
     TestDeviceApplication()
-        : device_(nabto_device_new()),
+        : ioService_(IoService::create("test_device")),
+          device_(nabto_device_new()),
+          logger_(TestLogger::create()),
           getListener_(nabto_device_listener_new(device_.get())),
-          postListener_(nabto_device_listener_new(device_.get()))
+          postListener_(nabto_device_listener_new(device_.get())),
+          tcpEchoServer_(ioService_->getIoService(),58165 /*chosen randomly*/),
+
+          httpServer_(ioService_->getIoService(), logger_)
     {
     }
 
@@ -32,6 +42,8 @@ class TestDeviceApplication {
     }
     void init(const std::string& productId, const std::string& deviceId, const std::string& server, const std::string& privateKey)
     {
+        productId_ = productId;
+        deviceId_ = deviceId;
         nabto_device_set_log_std_out_callback(device_.get());
         NabtoDeviceError ec;
 
@@ -74,6 +86,21 @@ class TestDeviceApplication {
         recvListener_ = std::make_unique<RecvListener>(device_.get());
         echoListener_->startListen();
         recvListener_->startListen();
+
+        initHttpServer();
+    }
+
+    void initHttpServer() {
+        httpServer_.setPort(29281);
+        lib::error_code ec = httpServer_.init();
+        if (ec) {
+            std::cout << "failed to init http server" << ec.message() << std::endl;
+        }
+        httpServer_.addResourceHandler(boost::beast::http::verb::get, "/hello-world", [](nabto::http_server::RequestPtr request, nabto::http_server::ResponsePtr response){
+                response->setContentType("text/plain");
+                response->setBody("Hello World");
+                response->setStatusCode(200);
+            });
     }
 
     void start() {
@@ -103,8 +130,19 @@ class TestDeviceApplication {
         return std::string(str.get());
     }
 
+    void describe()
+    {
+        std::cout << "Test Device Application" << std::endl;
+        std::cout << "  product id: " << productId_ << ", device id: " << deviceId_ << std::endl;
+        std::cout << "  fingerprint: " << getDeviceFingerprint() << std::endl;
+        std::cout << "  http server port: " << httpServer_.getPort() << ", tcp echo server port: " << tcpEchoServer_.getPort() << std::endl;
+
+    }
+
  private:
+    IoServicePtr ioService_;
     NabtoDevicePtr device_;
+    log::LoggerPtr logger_;
 
     NabtoDeviceListenerPtr getListener_;
     NabtoDeviceListenerPtr postListener_;
@@ -114,6 +152,11 @@ class TestDeviceApplication {
 
     std::unique_ptr<EchoListener> echoListener_;
     std::unique_ptr<RecvListener> recvListener_;
+
+    TcpEchoServer tcpEchoServer_;
+    http_server::HttpServer httpServer_;
+    std::string productId_;
+    std::string deviceId_;
 
 };
 
