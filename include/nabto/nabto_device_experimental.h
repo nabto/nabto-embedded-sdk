@@ -9,6 +9,36 @@
 extern "C" {
 #endif
 
+/**
+ * Iam take 2,
+ */
+typedef struct NabtoDeviceIamRequest_ NabtoDeviceIamRequest;
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_iam_request_free(NabtoDeviceIamRequest* request);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_iam_request_allow(NabtoDeviceIamRequest* request);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_iam_request_deny(NabtoDeviceIamRequest* request);
+
+
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_iam_request_get_action(NabtoDeviceIamRequest* request);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
+nabto_device_iam_request_get_connection_ref(NabtoDeviceIamRequest* request);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
+nabto_device_iam_request_get_attributes(NabtoDeviceIamRequest* request, void** cbor, size_t* cborLength);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
+nabto_device_iam_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
+
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_new_iam_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceIamRequest** request);
+
 /*******
  * IAM *
  *******/
@@ -54,6 +84,8 @@ typedef NabtoDeviceError (*NabtoDeviceIAMCheckAccessCallback)(NabtoDeviceConnect
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_iam_override_check_access_implementation(NabtoDevice* device, NabtoDeviceIAMCheckAccessCallback cb, void* userData);
+
+
 
 /**
  * Dump all iam state in a single cbor object such that it can be
