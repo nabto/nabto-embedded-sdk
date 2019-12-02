@@ -2,6 +2,8 @@
 
 #include <nabto/nabto_device.h>
 
+#include <array>
+
 namespace nabto {
 namespace test {
 
