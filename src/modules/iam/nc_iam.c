@@ -4,8 +4,8 @@
 #include "nc_iam_dump.h"
 #include "nc_iam_util.h"
 
-#include "nc_device.h"
-#include "nc_coap_server.h"
+#include <core/nc_device.h>
+#include <core/nc_coap_server.h>
 #include <platform/np_util.h>
 #include <platform/np_logging.h>
 

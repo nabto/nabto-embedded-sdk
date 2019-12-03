@@ -54,6 +54,7 @@ target_link_libraries( nabto_device_api
   np_platform
   nm_timestamp
   nm_tcptunnel
+  nm_iam
   )
 
 add_library( nabto_device SHARED "${nabto_device_src}")
@@ -70,7 +71,8 @@ target_link_libraries( nabto_device
   nm_dtls_srv
   np_platform
   nm_timestamp
-  nm_tcptunnel)
+  nm_tcptunnel
+  nm_iam)
 
 
 target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )

@@ -8,7 +8,7 @@
 #include <core/nc_coap_server.h>
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
-#include <core/nc_iam.h>
+#include <modules/iam/nc_iam.h>
 #include <core/nc_connection_event.h>
 #include <modules/mdns/nm_mdns.h>
 

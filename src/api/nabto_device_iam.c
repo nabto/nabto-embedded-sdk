@@ -6,9 +6,9 @@
 #include "nabto_device_coap.h"
 #include "nabto_device_future.h"
 #include "nabto_api_future_queue.h"
-#include <core/nc_iam_policy.h>
-#include <core/nc_iam.h>
-#include <core/nc_iam_dump.h>
+#include <modules/iam/nc_iam_policy.h>
+#include <modules/iam/nc_iam.h>
+#include <modules/iam/nc_iam_dump.h>
 
 #include <platform/np_logging.h>
 

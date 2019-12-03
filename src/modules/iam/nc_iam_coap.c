@@ -1,7 +1,8 @@
 #include "nc_iam_coap.h"
 #include "nc_iam.h"
 
-#include "nc_coap_server.h"
+#include <core/nc_device.h>
+#include <core/nc_coap_server.h>
 
 #include <cbor.h>
 

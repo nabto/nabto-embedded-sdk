@@ -1,5 +1,5 @@
 #include "nc_iam_policy.h"
-#include "nc_device.h"
+#include <core/nc_device.h>
 
 #include <cbor.h>
 #include <stdlib.h>

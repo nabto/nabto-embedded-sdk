@@ -1,7 +1,7 @@
 #ifndef _NC_IAM_CBOR_H_
 #define _NC_IAM_CBOR_H_
 
-#include "nc_device.h"
+#include <core/nc_device.h>
 
 #include "cbor.h"
 
