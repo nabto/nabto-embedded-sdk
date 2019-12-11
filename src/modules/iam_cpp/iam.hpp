@@ -8,16 +8,6 @@ enum class AttributeType {
     NUMBER
 };
 
-class AttributeValue {
- public:
- private:
-    AttributeType type_;
-    union {
-        std::string string_;
-        int64_t number_;
-    } value_;
-};
-
 class Attribute {
  public:
     Attribute(const std::string& string)
@@ -237,7 +227,8 @@ class Statement {
 
 class Policy {
  public:
-    Effect eval(const std::string& action, std::set<Attribute> attributes)
+    Effect eval(const std::string& action, std::set<Attribute> attributes);
+    np_error_code loadPolicy(const uint8_t* cbor, size_t cborLength);
  private:
     std::vector<Statement> statements_;
 };
