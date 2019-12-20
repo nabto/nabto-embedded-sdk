@@ -1,5 +1,4 @@
 #include <nabto/nabto_device.h>
-//#include <nabto/nabto_device_experimental.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -9,23 +8,37 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+// Configuration parameters
+
+// The product ID, device ID, and server URL picked here are not
+// configured in the Nabto Basestation. Therefore, the basestation
+// will reject the device when it attempts to attach to the
+// basestation. This example will still work if the client is able to
+// discover the device on the local network. Alternatively, replace
+// these values with valid values from the Nabto Cloud Console. The
+// private Key is set to NULL, this causes this code to generate a new
+// private key (see line: 241). If the device should be able to attach
+// to the basestation, the private key here should be set to a valid
+// private key, and the fingerprint of the key must be configured in
+// the Nabto Cloud Console.
 const char* productId = "pr-abcd1234";
 const char* deviceId = "de-efgh5678";
 const char* serverUrl = "pr-abcd1234.devices.dev.nabto.net";
+char* privateKey = NULL;
+
+// CoAP endpoint data
 const char* coapPath[] = { "hello-world", NULL };
 const char* helloWorld = "Hello world";
-char* privateKey = NULL;
+
+// State variable
 bool readyToStop = false;
 
+// Helper functions
 bool start_device(NabtoDevice* device);
 void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, NabtoDeviceFuture* f, char* msg);
 void do_important_work();
 void handle_coap_request(NabtoDeviceCoapRequest* request);
 void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
-NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionReference, const char* action, void* attributes, size_t attributesLength, void* userData)
-{
-    return NABTO_DEVICE_EC_OK;
-}
 
 int main(int argc, char** argv)
 {
@@ -269,10 +282,6 @@ bool start_device(NabtoDevice* device)
         return false;
     }
     ec = nabto_device_set_log_std_out_callback(device);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-//    ec = nabto_device_iam_override_check_access_implementation(device, allow_anyone_to_connect, NULL);
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
