@@ -76,6 +76,18 @@ const json defaultHeatPumpIam = R"(
         }
       ],
       "Version": 1
+    },
+    "ClientSettings": {
+      "Name": "ClientSettings",
+      "Statements": [
+        {
+          "Actions": [
+            "Beta:GetClientSettings"
+          ],
+          "Allow": true
+        }
+      ],
+      "Version": 1
     }
   },
   "Roles": {
@@ -85,15 +97,18 @@ const json defaultHeatPumpIam = R"(
     "Owner": [
       "HeatPumpWrite",
       "HeatPumpRead",
-      "IAMFullAccess"
+      "IAMFullAccess",
+      "ClientSettings"
     ],
     "User": [
       "HeatPumpRead",
       "HeatPumpWrite",
-      "ModifyOwnUser"
+      "ModifyOwnUser",
+      "ClientSettings"
     ],
     "Guest": [
-      "HeatPumpRead"
+      "HeatPumpRead",
+      "ClientSettings"
     ]
   },
   "Users": {

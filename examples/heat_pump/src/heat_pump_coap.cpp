@@ -18,6 +18,7 @@ void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData);
+void heat_pump_get_client_settings(NabtoDeviceCoapRequest* request, void* userData);
 
 
 HeatPumpCoapRequestHandler::HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDeviceCoapMethod method, const char** pathSegments, CoapHandler handler)
@@ -45,11 +46,15 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
     const char* postMode[] = { "heat-pump", "mode", NULL };
     const char* postTarget[] = { "heat-pump", "target", NULL };
     const char* postPairingButton[] = { "pairing", "button", NULL };
+    const char* getClientSettings[] = { "beta", "client-settings", NULL };
+
     heatPump->coapGetState = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_GET, getState, &heat_pump_get);
     heatPump->coapPostPower = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPower, &heat_pump_set_power);
     heatPump->coapPostMode = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postMode, &heat_pump_set_mode);
     heatPump->coapPostTarget = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postTarget, &heat_pump_set_target);
     heatPump->coapPostPairingButton = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPairingButton, &heat_pump_pairing_button);
+
+    heatPump->coapGetClientSettings = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_GET, getClientSettings, &heat_pump_get_client_settings);
 }
 
 void heat_pump_coap_deinit(HeatPump* heatPump)
@@ -211,7 +216,7 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
     }
 
     if (result == true && pairUser(application, fp)) {
-        nabto_device_coap_response_set_code(request, 205);
+        nabto_device_coap_response_set_code(request, 201);
         nabto_device_coap_response_ready(request);
     } else {
         nabto_device_coap_error_response(request, 403, "Rejected");
@@ -368,6 +373,34 @@ void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
     }
 
     auto d = json::to_cbor(application->getState());
+
+    nabto_device_coap_response_set_code(request, 205);
+    nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    NabtoDeviceError ec = nabto_device_coap_response_set_payload(request, d.data(), d.size());
+    if (ec != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+    } else {
+        nabto_device_coap_response_ready(request);
+    }
+    nabto_device_coap_request_free(request);
+}
+
+
+// Get heat_pump client settings
+// CoAP GET /beta/client-settings
+// return ServerKey and ServerUrl
+void heat_pump_get_client_settings(NabtoDeviceCoapRequest* request, void* userData)
+{
+    HeatPump* application = (HeatPump*)userData;
+    if (!heat_pump_coap_check_action(application->getDevice(), request, "Beta:GetClientSettings")) {
+        return;
+    }
+
+    json root;
+    root["ServerKey"] = application->getClientServerKey();
+    root["ServerUrl"] = application->getClientServerUrl();
+
+    auto d = json::to_cbor(root);
 
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
