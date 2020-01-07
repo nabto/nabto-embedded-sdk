@@ -3,74 +3,47 @@
 namespace nabto {
 namespace iam {
 
-enum class AttributeType {
-    STRING,
-    NUMBER
-};
-
-class Attribute {
- public:
-    Attribute(const std::string& string)
-        : type_(AttributeType::STRING), value_.string_(string)
-    {
-    }
-    Attribute(int64_t number)
-        : type_(AttributeType::NUMBER), value_.number_(number)
-    {
-    }
-
-    virtual ~Attribute() {}
-
-    bool isString()
-    {
-        return type_ == AttributeType::STRING;
-    }
-
-    bool isNumber()
-    {
-        return type_ == AttributeType::NUMBER;
-    }
-
-    std::string getString()
-    {
-        return value_.string_;
-    }
-
-    std::string getNumber()
-    {
-        return value_.number_;
-    }
-
- private:
-    AttributeType type_;
-    union {
-        std::string string_;
-        int64_t number_;
-    } value_;
-};
-
 typedef std::map<std::string, Attribute> Attributes;
 
-class User {
+/**
+ * A subject is e.g. a User.
+ */
+class Subject {
+ public:
+    virtual std::set<std::string> policies() = 0;
+    virtual Attributes& attributes() = 0;
+};
+
+class User : public Subject {
  public:
  private:
     std::string id_;
     std::set<std::string> roles_;
     Attributes attributes_;
-
 };
 
-class Session {
+
+/**
+ * An action describes an action. The action is a string like
+ * HeatPump:Read HeatPump:WriteTarget.
+ */
+class Action {
  public:
- private:
-    std::set<std::string> roles_;
-    Attributes attributes_;
+    std::string action();
+};
+
+/**
+ * A resource describes attributes for a resource. A resource could be
+ * a HeatPump write target endpoint. A resource attribute could be
+ * current target temperature.
+ */
+class Resource {
+ public:
+    Attributes& attributes();
 };
 
 class Role {
  public:
-    static std::unique_ptr<
-    std::vector<uint8_t> asCbor();
  private:
     std::set<Policy> policies_;
 };
@@ -83,134 +56,13 @@ enum class Effect {
 
 class Condition {
  public:
-};
-
-class StringArgument {
- public:
-    virtual ~StringArgument() {}
-    virtual bool resolve(const std::map<std::string, Attribute>& attributes, std::string& result) = 0;
-};
-
-class ConstantStringArgument : public StringArgument {
- public:
-    ConstantStringArgument(const std::string& constant)
-        : constant_(constant)
-    {
-    }
-    virtual bool resolve(const std::map<std::string, Attribute>& attributes, std::string& result)
-    {
-        result = constant_;
-        return true;
-    }
- private:
-    std::string constant_;
-};
-
-class VariableStringArgument : public StringArgument {
- public:
-    VariableStringArgument(const std::string& variableName)
-        : variableName_(variableName)
-    {
-    }
-    virtual bool resolve(const std::map<std::string, Attribute>& attributes, std::string& result)
-    {
-        auto it = attributes.find(variableName_);
-        if (it == std::end(attributes)) {
-            return false;
-        } else if (!it->second.isString()) {
-            return false;
-        } else {
-            result = it->second.getString();
-            return true;
-        }
-    }
- private:
-    std::string variableName_;
-};
-
-class NumberArgument {
- public:
-    virtual ~NumberArgument() {}
-    virtual bool resolve(const std::map<std::string, Attribute>& attributes, int64_t& result) = 0;
-};
-
-class ConstantNumberArgument : public NumberArgument {
- public:
-    ConstantNumberArgument(int64_t number)
-        : number_(number)
-    {
-    }
-    virtual bool resolve(const std::map<std::string, Attribute>& attributes, int64_t& result)
-    {
-        result = number_;
-        return true;
-    }
- private:
-    int64_t number_;
-
-};
-
-class VariableNumberArgument : public NumberArgument {
- public:
-    VariableNumberArgument(const std::string& variable)
-        : variable_(variable)
-    {
-    }
-    virtual bool resolve(const std::map<std::string, Attribute>& attributes, int64_t& result)
-    {
-        auto it = attributes.find(variable_);
-        if (it == std::end(attributes)) {
-            return false;
-        } else if (!it->second.isNumber()) {
-            return false;
-        } else {
-            result = it->second.getNumber();
-            return true;
-        }
-    }
- private:
-    std::string variable_;
-};
-
-
-class Condition {
- public:
     virtual ~Condition() {}
-    virtual bool matches(const std::map<std::string, Attribute>& attributes) = 0;
+    virtual bool matches(const Attributes& attributes) = 0;
 };
 
-class StringEqualCondition {
+class Context {
  public:
-    bool matches(const std::map<std::string, Attribute>& attributes)
-    {
-        std::string lhs;
-        std::string rhs;
-        if (lhs_.resolve(attributes, lhs) && rhs_.resolve(attributes, rhs)) {
-            return lhs == rhs;
-        } else {
-            return false;
-        }
-    }
- private:
-    StringArgument lhs_;
-    StringArgument rhs_;
-};
-
-class NumberEqualCondition {
- public:
-    bool matches(const std::map<std::string, Attribute>& attributes)
-    {
-        int64_t lhs;
-        int64_t rhs;
-        if (lhs_.resolve(attributes, lhs) == rhs_.resolve(attributes, rhs)) {
-            return lhs == rhs;
-        } else {
-            return false;
-        }
-    }
- private:
-    NumberArgument lhs_;
-    NumberArgument rhs_;
+    Attributes& attributes();
 };
 
 class Statement {
@@ -219,16 +71,25 @@ class Statement {
      * return true if actions and conditions is met.
      */
     bool matches();
+    Effect eval(const std::string& action, const Attributes& attributes);
  private:
-    bool allow_;
+
+    bool matchActions(const std::string& action);
+
+    bool matchCondition(const Condition& condition, const Attributes& attributes);
+    bool matchConditions(const Attributes& attributes);
+
+    Effect effect_;
+    /**
+     * List of actions this statement matches
+     */
     std::set<std::string> actions_;
-    std::set<Condition> conditions_;
+    std::vector<Condition> conditions_;
 };
 
 class Policy {
  public:
-    Effect eval(const std::string& action, std::set<Attribute> attributes);
-    np_error_code loadPolicy(const uint8_t* cbor, size_t cborLength);
+    Effect eval(const std::string& action, const Attributes& attributes);
  private:
     std::vector<Statement> statements_;
 };
