@@ -63,6 +63,7 @@ add_subdirectory(src/modules/mdns)
 add_subdirectory(src/modules/iam)
 add_subdirectory(src/modules/tcptunnel)
 add_subdirectory(src/modules/logging/test)
+add_subdirectory(src/modules/iam_cpp)
 
 
 CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)

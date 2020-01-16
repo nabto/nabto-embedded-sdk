@@ -110,3 +110,57 @@ open for anyone become administrator of. A button requires the person
 to have physical access to the device. In this case access can also
 often be obtained by doing a factory reset of the device. A password
 requires the person wanting access to know some secret.
+
+
+
+### WIP IAM 2.0
+IAM configuration
+
+Users can pair with the device, it requires either a pairing password
+or a press on a button on the device.
+
+Roles:
+
+Unknown,
+Admin,
+guest.
+
+If a user is locally with the heatpump, the app can scan for the
+heatpump and the user can pair with the heatpump using a button press
+on the heatpump.
+
+If a user is remote from the heatpump, the app can use the passowrd
+pairing approach.
+
+### Invite a user to the heatpump.
+
+    1. Create a new pairing token
+    3. create a pairing link and send it to the person which is invited.
+    4. The user password pairs with the heatpump providing a password and a username.
+
+This needs an attribute on the newly created user which is a pairing password.
+
+${user.PairingPassword}
+
+### Pair with a local heatpump.
+
+    1. Scan and connect to the heatpump locally.
+    2. Use button pairing and wait for a press on a button before allowing the new connection.
+
+If this is the first user the user gets admin rights. If this is not
+the first user the user gets the role as guest.
+
+### Remote pair with a heatpump.
+
+    1. Use the pairing token provided by the heatpump.
+    2. Password pair with the heatpump, without specifying a username.
+
+This could use a password which us stored in the environment for the iam system.
+
+${env.PairingPassword}
+
+### Storage
+
+The heatpump iam policies and roles is static and should be stored statically inside the system.
+
+The users is stored dynamically in a file as e.g. json.

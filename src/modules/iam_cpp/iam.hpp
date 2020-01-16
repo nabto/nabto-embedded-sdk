@@ -1,5 +1,8 @@
 #pragma once
 
+#include "attribute.hpp"
+#include <set>
+
 namespace nabto {
 namespace iam {
 
@@ -16,10 +19,36 @@ class Subject {
 
 class User : public Subject {
  public:
+    std::set<std::string> policies() {
+        return std::set<std::string>();
+    }
+    Attributes& attributes() {
+        return attributes_;
+    }
+
+    void addRole(const std::string& role) {
+        roles_.insert(role);
+    }
+
+    void removeRole(const std::string& role) {
+        roles_.erase(role);
+    }
+
+    void addAttribute(const std::string& key, const Attribute& value) {
+        attributes_[key] = value;
+    }
+
+    void removeAttribute(const std::string& key) {
+        attributes_.erase(key);
+    }
  private:
     std::string id_;
     std::set<std::string> roles_;
     Attributes attributes_;
+};
+
+class Session : public Subject {
+
 };
 
 
@@ -45,7 +74,7 @@ class Resource {
 class Role {
  public:
  private:
-    std::set<Policy> policies_;
+    std::set<std::string> policies_;
 };
 
 enum class Effect {
@@ -102,3 +131,5 @@ class IAM {
     std::map<std::string, Role> roles_;
     std::map<std::string, Policy> policies_;
 };
+
+} } // namespace

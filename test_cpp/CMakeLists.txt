@@ -24,6 +24,7 @@ set(test_src
   api/device_api.cpp
   attach/attach_test.cpp
   test_platform.cpp
+  iam/load_users.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")
@@ -37,6 +38,7 @@ target_link_libraries(embedded_unit_test
   nc_core
   dtls
   nm_logging_test
+  iam_cpp
 )
 
 if (HAVE_EPOLL_HEADERS)

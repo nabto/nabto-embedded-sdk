@@ -11,13 +11,15 @@ enum class AttributeType {
 
 class Attribute {
  public:
-    Attribute(const std::string& string)
-        : type_(AttributeType::STRING), value_.string_(string)
+    Attribute(const std::string& str)
+        : type_(AttributeType::STRING)
     {
+        string_ = str;
     }
     Attribute(int64_t number)
-        : type_(AttributeType::NUMBER), value_.number_(number)
+        : type_(AttributeType::NUMBER)
     {
+        number_ = number;
     }
 
     virtual ~Attribute() {}
@@ -34,20 +36,18 @@ class Attribute {
 
     std::string getString()
     {
-        return value_.string_;
+        return string_;
     }
 
-    std::string getNumber()
+    int64_t getNumber()
     {
-        return value_.number_;
+        return number_;
     }
 
  private:
     AttributeType type_;
-    union {
-        std::string string_;
-        int64_t number_;
-    } value_;
+    std::string string_;
+    int64_t number_;
 };
 
 } }
