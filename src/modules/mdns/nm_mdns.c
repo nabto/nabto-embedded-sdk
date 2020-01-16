@@ -4,6 +4,8 @@
 
 #define LOG NABTO_LOG_MODULE_MDNS
 
+#define MAX_LOCAL_IPS 2
+
 struct np_mdns_context {
     struct np_platform* pl;
     bool stopped;
@@ -14,7 +16,8 @@ struct np_mdns_context {
     struct nabto_mdns_server_context mdnsServer;
     np_udp_socket* socketv4;
     np_udp_socket* socketv6;
-    struct nabto_mdns_ip_address mdnsIps[2];
+    struct nabto_mdns_ip_address localIps[MAX_LOCAL_IPS];
+    size_t localIpsSize;
     struct np_communication_buffer* sendBufferv4;
     struct np_communication_buffer* sendBufferv6;
 };
@@ -33,6 +36,8 @@ static void nm_mdns_packet_received_v6(const np_error_code ec, struct np_udp_end
                                     uint8_t* buffer, uint16_t bufferSize, void* userData);
 static void nm_mdns_send_packet_v6(struct np_mdns_context* mdns);
 static void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData);
+
+static void nm_mdns_update_local_ips(struct np_mdns_context* mdns);
 
 void nm_mdns_init(struct np_platform* pl)
 {
@@ -83,7 +88,7 @@ void nm_mdns_force_free(struct np_mdns_context* mdns)
 
 np_error_code nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* pl, const char* productId, const char* deviceId, np_mdns_get_port getPort, void* userData)
 {
-    struct np_ip_address ips[2];
+
     *mdns = calloc(1, sizeof(struct np_mdns_context));
     if (*mdns == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -116,24 +121,9 @@ np_error_code nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* 
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    size_t ipsFound = pl->udp.get_local_ip(ips, 2);
-
-    for(int i = 0; i < ipsFound; i++) {
-        struct np_ip_address* ip = &ips[i];
-        struct nabto_mdns_ip_address* mdnsIp = &(*mdns)->mdnsIps[i];
-        if (ip->type == NABTO_IPV4) {
-            mdnsIp->type = NABTO_MDNS_IPV4;
-            memcpy(mdnsIp->v4.addr, ip->ip.v4, 4);
-        } else {
-            mdnsIp->type = NABTO_MDNS_IPV6;
-            memcpy(mdnsIp->v6.addr, ip->ip.v6, 16);
-        }
-    }
-
     nabto_mdns_server_init(&(*mdns)->mdnsServer, deviceId, productId,
                            deviceId /*serviceName must be unique*/,
-                           deviceId /*hostname must be unique*/,
-                           (*mdns)->mdnsIps, ipsFound);
+                           deviceId /*hostname must be unique*/);
     ec = nm_mdns_start(*mdns);
     if (ec != NABTO_EC_OK) {
         pl->udp.destroy((*mdns)->socketv4);
@@ -169,6 +159,26 @@ np_error_code nm_mdns_start(struct np_mdns_context* mdns)
         return ec;
     }
     return NABTO_EC_OK;
+}
+
+void nm_mdns_update_local_ips(struct np_mdns_context* mdns)
+{
+    struct np_platform* pl = mdns->pl;
+    struct np_ip_address ips[MAX_LOCAL_IPS];
+    size_t ipsFound = pl->udp.get_local_ip(ips, MAX_LOCAL_IPS);
+
+    mdns->localIpsSize = ipsFound;
+    for(int i = 0; i < ipsFound; i++) {
+        struct np_ip_address* ip = &ips[i];
+        struct nabto_mdns_ip_address* mdnsIp = &mdns->localIps[i];
+        if (ip->type == NABTO_IPV4) {
+            mdnsIp->type = NABTO_MDNS_IPV4;
+            memcpy(mdnsIp->v4.addr, ip->ip.v4, 4);
+        } else {
+            mdnsIp->type = NABTO_MDNS_IPV6;
+            memcpy(mdnsIp->v6.addr, ip->ip.v6, 16);
+        }
+    }
 }
 
 void nm_mdns_socket_opened_v4(const np_error_code ec, void* userData)
@@ -233,8 +243,9 @@ void nm_mdns_send_packet_v4(struct np_mdns_context* mdns)
     uint8_t addr[] = { 0xe0, 0x00, 0x00, 0xfb };
     memcpy(ep.ip.ip.v4, addr, 4);
     uint16_t port = mdns->getPort(mdns->getPortUserData);
+    nm_mdns_update_local_ips(mdns);
     if (port > 0) {
-        if (nabto_mdns_server_build_packet(&mdns->mdnsServer, port, pl->buf.start(mdns->sendBufferv4), pl->buf.size(mdns->sendBufferv4), &written)) {
+        if (nabto_mdns_server_build_packet(&mdns->mdnsServer, mdns->localIps, mdns->localIpsSize, port, pl->buf.start(mdns->sendBufferv4), pl->buf.size(mdns->sendBufferv4), &written)) {
             np_error_code ec = pl->udp.async_send_to(mdns->socketv4,
                                                      ep, pl->buf.start(mdns->sendBufferv4), (uint16_t)written,
                                                      nm_mdns_packet_sent_v4, mdns);
@@ -324,12 +335,13 @@ void nm_mdns_send_packet_v6(struct np_mdns_context* mdns)
     ep.ip.type = NABTO_IPV6;
     ep.port = 5353;
     uint8_t addr[] = { 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb };
+                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb };
     memcpy(ep.ip.ip.v6, addr, 16);
 
     uint16_t port = mdns->getPort(mdns->getPortUserData);
+    nm_mdns_update_local_ips(mdns);
     if (port > 0) {
-        if (nabto_mdns_server_build_packet(&mdns->mdnsServer, port, pl->buf.start(mdns->sendBufferv6), pl->buf.size(mdns->sendBufferv6), &written)) {
+        if (nabto_mdns_server_build_packet(&mdns->mdnsServer, mdns->localIps, mdns->localIpsSize, port, pl->buf.start(mdns->sendBufferv6), pl->buf.size(mdns->sendBufferv6), &written)) {
             np_error_code ec = pl->udp.async_send_to(mdns->socketv6,
                                                      ep, pl->buf.start(mdns->sendBufferv6), (uint16_t)written,
                                                      nm_mdns_packet_sent_v6, mdns);
