@@ -11,6 +11,11 @@ enum class AttributeType {
 
 class Attribute {
  public:
+    Attribute(const Attribute& attribute)
+        : type_(attribute.type_), string_(attribute.string_), number_(attribute.number_)
+    {
+    }
+
     Attribute(const std::string& str)
         : type_(AttributeType::STRING)
     {

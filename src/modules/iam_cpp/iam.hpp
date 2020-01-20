@@ -19,6 +19,9 @@ class Subject {
 
 class User : public Subject {
  public:
+
+    User(const std::string& id) : id_(id) {}
+
     std::set<std::string> policies() {
         return std::set<std::string>();
     }
@@ -35,7 +38,7 @@ class User : public Subject {
     }
 
     void addAttribute(const std::string& key, const Attribute& value) {
-        attributes_[key] = value;
+        attributes_.insert(std::make_pair(key,value));
     }
 
     void removeAttribute(const std::string& key) {
@@ -73,7 +76,13 @@ class Resource {
 
 class Role {
  public:
+    Role(const std::string& name) : name_(name) {}
+
+    void addPolicy(const std::string& policy) {
+        policies_.insert(policy);
+    }
  private:
+    std::string name_;
     std::set<std::string> policies_;
 };
 
@@ -95,14 +104,19 @@ class Context {
 };
 
 class Statement {
- private:
+ public:
     /**
      * return true if actions and conditions is met.
      */
     bool matches();
     Effect eval(const std::string& action, const Attributes& attributes);
- private:
 
+    Statement(Effect effect, std::set<std::string> actions)
+        : effect_(effect), actions_(actions)
+    {
+    }
+
+ private:
     bool matchActions(const std::string& action);
 
     bool matchCondition(const Condition& condition, const Attributes& attributes);
