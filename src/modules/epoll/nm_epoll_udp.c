@@ -17,6 +17,8 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
+static const int MDNS_UPDATE_INTERVAL = 10000;
+
 #define LOG NABTO_LOG_MODULE_UDP
 
 struct nm_epoll_udp_send_base {
@@ -62,6 +64,8 @@ struct np_udp_socket {
     struct np_event abortEv;
     struct nm_epoll_udp_send_base sendSentinelData;
     struct nm_epoll_udp_send_base* sendSentinel;
+
+    struct np_timed_event updateMdns;
 };
 
 static np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock);
@@ -96,6 +100,11 @@ static void nm_epoll_udp_try_read(void* userData);
 static void nm_epoll_udp_add_send_base(np_udp_socket* sock, struct nm_epoll_udp_send_base* base);
 static void nm_epoll_udp_remove_send_base(np_udp_socket* sock, struct nm_epoll_udp_send_base* base);
 
+static void async_update_mdns_ipv4(const np_error_code ec, void* data);
+static void async_update_mdns_ipv6(const np_error_code ec, void* data);
+
+static void start_update_mdns_ipv4(np_udp_socket* sock);
+static void start_update_mdns_ipv6(np_udp_socket* sock);
 
 
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
@@ -104,6 +113,7 @@ void nm_epoll_cancel_all_events(np_udp_socket* sock)
     np_event_queue_cancel_event(sock->pl, &sock->created.event);
     np_event_queue_cancel_event(sock->pl, &sock->recv.event);
     np_event_queue_cancel_event(sock->pl, &sock->abortEv);
+    np_event_queue_cancel_timed_event(sock->pl, &sock->updateMdns);
 }
 
 void nm_epoll_udp_init(struct nm_epoll_context* epoll, struct np_platform* pl)
@@ -376,6 +386,37 @@ np_error_code nm_epoll_async_bind_port(np_udp_socket* sock, uint16_t port, np_ud
     return NABTO_EC_OK;
 }
 
+void start_update_mdns_ipv4(np_udp_socket* sock)
+{
+    struct np_platform* pl = sock->pl;
+    np_event_queue_post_timed_event(pl, &sock->updateMdns, MDNS_UPDATE_INTERVAL, &async_update_mdns_ipv4, sock);
+}
+
+void async_update_mdns_ipv4(const np_error_code ec, void* data)
+{
+    if (ec != NABTO_EC_OK) {
+        return;
+    }
+    np_udp_socket* sock = (np_udp_socket*)data;
+    nm_unix_mdns_update_ipv4_socket_registration(sock->sock);
+    start_update_mdns_ipv4(sock);
+}
+
+void start_update_mdns_ipv6(np_udp_socket* sock)
+{
+    struct np_platform* pl = sock->pl;
+    np_event_queue_post_timed_event(pl, &sock->updateMdns, MDNS_UPDATE_INTERVAL, &async_update_mdns_ipv6, sock);
+}
+
+void async_update_mdns_ipv6(const np_error_code ec, void* data)
+{
+    if (ec != NABTO_EC_OK) {
+        return;
+    }
+    np_udp_socket* sock = (np_udp_socket*)data;
+    nm_unix_mdns_update_ipv6_socket_registration(sock->sock);
+    start_update_mdns_ipv6(sock);
+}
 
 np_error_code nm_epoll_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
 {
@@ -383,9 +424,6 @@ np_error_code nm_epoll_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_c
         NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
         return NABTO_EC_ABORTED;
     }
-
-
-
 
     struct np_platform* pl = sock->pl;
     sock->created.cb = cb;
@@ -428,6 +466,10 @@ void nm_epoll_event_bind_mdns_ipv4(void* data)
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         return;
     }
+
+    nm_unix_mdns_update_ipv4_socket_registration(us->sock);
+    start_update_mdns_ipv4(us);
+
     np_udp_socket_created_callback cb = us->created.cb;
     us->created.cb = NULL;
     cb(NABTO_EC_OK, us->created.data);
@@ -488,6 +530,10 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         return;
     }
+
+    nm_unix_mdns_update_ipv6_socket_registration(us->sock);
+    start_update_mdns_ipv6(us);
+
     np_udp_socket_created_callback cb = us->created.cb;
     us->created.cb = NULL;
     cb(NABTO_EC_OK, us->created.data);
