@@ -91,20 +91,22 @@ void nm_unix_mdns_update_ipv4_socket_registration(int sock)
 
         struct ifaddrs* iterator = interfaces;
         while (iterator != NULL) {
-            if (iterator->ifa_addr != NULL && iterator->ifa_addr->sa_family == AF_INET) {
-                struct ip_mreq group;
+            if (iterator->ifa_addr != NULL) {
+                struct ip_mreqn group;
                 memset(&group, 0, sizeof(struct ip_mreq));
                 group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
-                struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
-                group.imr_interface = in->sin_addr;
+                //struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
+                int index = if_nametoindex(iterator->ifa_name);
+                group.imr_ifindex = index;
                 int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
                 if (status < 0) {
                     if (errno == EADDRINUSE) {
                         // ok probable already registered
                     } else {
-                        NABTO_LOG_TRACE(LOG, "Cannot add ipv4 membership %d", errno);
+                        NABTO_LOG_TRACE(LOG, "Cannot add ipv4 membership %d interface %s", errno, iterator->ifa_name);
                     }
                 }
+
             }
 
             iterator = iterator->ifa_next;
