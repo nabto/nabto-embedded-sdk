@@ -20,6 +20,8 @@ struct np_mdns_context {
     size_t localIpsSize;
     struct np_communication_buffer* sendBufferv4;
     struct np_communication_buffer* sendBufferv6;
+
+    struct np_timed_event recureringRegistration;
 };
 
 np_error_code nm_mdns_start(struct np_mdns_context* mdns);
@@ -134,6 +136,11 @@ np_error_code nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* 
         return ec;
     }
     return NABTO_EC_OK;
+}
+
+void nm_mdns_update_multicast_registration(struct np_mdns_context* mdns)
+{
+
 }
 
 np_error_code nm_mdns_start(struct np_mdns_context* mdns)
@@ -268,12 +275,10 @@ void nm_mdns_packet_sent_v4(const np_error_code ec, void* userData)
         nm_mdns_try_done(mdns);
         return;
     }
-    if (ec == NABTO_EC_OK) {
-        nm_mdns_recv_packet_v4(mdns);
-    } else {
+    if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(LOG, "v4 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
-        mdns->v4Done = true;
     }
+    nm_mdns_recv_packet_v4(mdns);
 }
 
 void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData)
@@ -364,10 +369,8 @@ void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData)
         nm_mdns_try_done(mdns);
         return;
     }
-    if (ec == NABTO_EC_OK) {
-        nm_mdns_recv_packet_v6(mdns);
-    } else {
+    if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(LOG, "v6 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
-        mdns->v6Done = true;
     }
+    nm_mdns_recv_packet_v6(mdns);
 }

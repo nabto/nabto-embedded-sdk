@@ -23,8 +23,8 @@ void my_handler(int s){
     printf("Caught signal %d\n",s);
 }
 
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server, const std::string& clientServerUrl, const std::string& clientServerKey);
-bool run_heat_pump(const std::string& configFile);
+bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
+bool run_heat_pump(const std::string& configFile, const std::string& logLevel);
 bool reset_iam(const std::string& configFile);
 
 int main(int argc, char** argv) {
@@ -81,7 +81,8 @@ int main(int argc, char** argv) {
             }
         } else {
             std::string configFile = result["config"].as<std::string>();
-            if (!run_heat_pump(configFile)) {
+            std::string logLevel = result["log-level"].as<std::string>();
+            if (!run_heat_pump(configFile, logLevel)) {
                 std::cerr << "Failed to run heatpump" << std::endl;
                 return 3;
             }
@@ -183,7 +184,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     return true;
 }
 
-bool run_heat_pump(const std::string& configFile)
+bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
 {
     NabtoDeviceError ec;
     json config;
@@ -236,6 +237,10 @@ bool run_heat_pump(const std::string& configFile)
     ec = nabto_device_set_log_std_out_callback(device);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
+    }
+    ec = nabto_device_set_log_level(device, logLevel.c_str());
+    if (ec) {
+        std::cerr << "Failed to set log level to " << logLevel << std::endl;
     }
 
     try {

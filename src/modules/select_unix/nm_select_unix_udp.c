@@ -184,6 +184,7 @@ void nm_select_unix_udp_event_bind_mdns_ipv4(void* data) {
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         return;
     }
+    nm_unix_mdns_update_ipv4_socket_registration(us->sock);
     np_udp_socket_created_callback cb = us->created.cb;
     us->created.cb = NULL;
     cb(NABTO_EC_OK, us->created.data);
@@ -218,7 +219,7 @@ void nm_select_unix_udp_event_bind_mdns_ipv6(void* data) {
         cb(NABTO_EC_UDP_SOCKET_CREATION_ERROR, us->created.data);
         return;
     }
-
+    nm_unix_mdns_update_ipv6_socket_registration(us->sock);
     np_udp_socket_created_callback cb = us->created.cb;
     us->created.cb = NULL;
     cb(NABTO_EC_OK, us->created.data);
