@@ -25,6 +25,7 @@ void my_handler(int s){
 
 bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
 bool run_heat_pump(const std::string& configFile, const std::string& logLevel);
+bool reset_iam(const std::string& configFile);
 
 int main(int argc, char** argv) {
     cxxopts::Options options("Heat pump", "Nabto heat pump example.");
@@ -33,6 +34,7 @@ int main(int argc, char** argv) {
         ("h,help", "Show help")
         ("version", "Show version")
         ("i,init", "Initialize configuration file")
+        ("reset-iam", "Remove paired users and custom iam changed.")
         ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump_device.json"))
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"))
         ("log-file", "File to log to", cxxopts::value<std::string>()->default_value("heat_pump_device_log.txt"));
@@ -40,7 +42,10 @@ int main(int argc, char** argv) {
     options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
         ("d,device", "Device id", cxxopts::value<std::string>())
-        ("s,server", "hostname of the server", cxxopts::value<std::string>());
+        ("s,server", "hostname of the server", cxxopts::value<std::string>())
+        ("client-server", "the server the client can use to connect to the device.", cxxopts::value<std::string>())
+        ("client-server-key", "the server key the client can use to connect to the device.", cxxopts::value<std::string>())
+        ;
 
     try {
 
@@ -62,9 +67,17 @@ int main(int argc, char** argv) {
             std::string productId = result["product"].as<std::string>();
             std::string deviceId = result["device"].as<std::string>();
             std::string server = result["server"].as<std::string>();
-            if (!init_heat_pump(configFile, productId, deviceId, server)) {
+            std::string clientServerUrl = result["client-server-url"].as<std::string>();
+            std::string clientServerKey = result["client-server-key"].as<std::string>();
+            if (!init_heat_pump(configFile, productId, deviceId, server, clientServerUrl, clientServerKey)) {
                 std::cerr << "Initialization failed" << std::endl;
                 return 2;
+            }
+        } else if (result.count("reset-iam") > 0) {
+            std::string configFile = result["config"].as<std::string>();
+            if (!reset_iam(configFile)) {
+                std::cerr << "Reset of IAM failed" << std::endl;
+                return 4;
             }
         } else {
             std::string configFile = result["config"].as<std::string>();
@@ -86,7 +99,18 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
+bool reset_iam(const std::string& configFile) {
+    json config;
+    if (!json_config_load(configFile, config)) {
+        std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
+        return false;
+    }
+    config["Iam"] = defaultHeatPumpIam;
+    json_config_save(configFile, config);
+    return true;
+}
+
+bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server, const std::string& clientServerUrl, const std::string& clientServerKey)
 {
     if (json_config_exists(configFile)) {
         std::cerr << "The config already file exists, remove " << configFile << " and try again" << std::endl;
@@ -179,6 +203,8 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
     auto deviceId  = config["DeviceId"].get<std::string>();
     auto server = config["Server"].get<std::string>();
     auto privateKey = config["PrivateKey"].get<std::string>();
+    auto clientServerUrl = config["ClientServerUrl"].get<std::string>();
+    auto clientServerKey = config["ClientServerKey"].get<std::string>();
     auto iam = config["Iam"];
 
 
@@ -244,6 +270,7 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         std::string fp(fpTemp);
         nabto_device_string_free(fpTemp);
         std::cout << "Device " << productId << "." << deviceId << " Started with fingerprint " << std::string(fp) << std::endl;
+        std::cout << " client server url " << clientServerUrl << " client server key " << clientServerKey << std::endl;
     }
 
     {

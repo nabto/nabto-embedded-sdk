@@ -156,6 +156,14 @@ class HeatPump {
         }
     }
 
+    std::string getClientServerUrl() {
+        return config_["ClientServerUrl"].get<std::string>();
+    }
+
+    std::string getClientServerKey() {
+        return config_["ClientServerKey"].get<std::string>();
+    }
+
     std::unique_ptr<std::thread> pairingThread_;
 
     std::unique_ptr<HeatPumpCoapRequestHandler> coapGetState;
@@ -163,6 +171,8 @@ class HeatPump {
     std::unique_ptr<HeatPumpCoapRequestHandler> coapPostMode;
     std::unique_ptr<HeatPumpCoapRequestHandler> coapPostTarget;
     std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPairingButton;
+
+    std::unique_ptr<HeatPumpCoapRequestHandler> coapGetClientSettings;
 
   private:
 
