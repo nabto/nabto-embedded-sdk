@@ -122,8 +122,7 @@ void nm_unix_mdns_update_ipv6_socket_registration(int sock)
 
         struct ifaddrs* iterator = interfaces;
         while (iterator != NULL) {
-            if (iterator->ifa_addr != NULL &&
-                iterator->ifa_addr->sa_family == AF_INET6)
+            if (iterator->ifa_addr != NULL)
             {
                 int index = if_nametoindex(iterator->ifa_name);
 
@@ -138,11 +137,9 @@ void nm_unix_mdns_update_ipv6_socket_registration(int sock)
                         // once, the interface can only be joined for
                         // a multicast group once for each socket.
                     } else {
-                        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 membership %d interface name %s %d", errno, iterator->ifa_name, iterator->ifa_addr->sa_family);
+                        NABTO_LOG_TRACE(LOG, "Cannot add ipv6 membership %d interface name %s", errno, iterator->ifa_name);
                     }
                 }
-            } else {
-                NABTO_LOG_TRACE(LOG, "Found suitable mDNS interface: %s", iterator->ifa_name);
             }
             iterator = iterator->ifa_next;
         }
