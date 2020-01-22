@@ -20,8 +20,6 @@ struct np_mdns_context {
     size_t localIpsSize;
     struct np_communication_buffer* sendBufferv4;
     struct np_communication_buffer* sendBufferv6;
-
-    struct np_timed_event recureringRegistration;
 };
 
 np_error_code nm_mdns_start(struct np_mdns_context* mdns);
@@ -136,11 +134,6 @@ np_error_code nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* 
         return ec;
     }
     return NABTO_EC_OK;
-}
-
-void nm_mdns_update_multicast_registration(struct np_mdns_context* mdns)
-{
-
 }
 
 np_error_code nm_mdns_start(struct np_mdns_context* mdns)

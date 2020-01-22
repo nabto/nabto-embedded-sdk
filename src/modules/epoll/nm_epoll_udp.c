@@ -62,8 +62,6 @@ struct np_udp_socket {
     struct np_event abortEv;
     struct nm_epoll_udp_send_base sendSentinelData;
     struct nm_epoll_udp_send_base* sendSentinel;
-
-    struct np_timed_event updateMdns;
 };
 
 static np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock);
@@ -104,7 +102,6 @@ void nm_epoll_cancel_all_events(np_udp_socket* sock)
     np_event_queue_cancel_event(sock->pl, &sock->created.event);
     np_event_queue_cancel_event(sock->pl, &sock->recv.event);
     np_event_queue_cancel_event(sock->pl, &sock->abortEv);
-    np_event_queue_cancel_timed_event(sock->pl, &sock->updateMdns);
 }
 
 void nm_epoll_udp_init(struct nm_epoll_context* epoll, struct np_platform* pl)
