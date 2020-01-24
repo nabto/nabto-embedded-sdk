@@ -95,7 +95,10 @@ enum class Effect {
 class Condition {
  public:
     virtual ~Condition() {}
-    virtual bool matches(const Attributes& attributes) = 0;
+    virtual bool matches(const Attributes& attributes)
+    {
+        return false;
+    }
 };
 
 class Context {
@@ -132,8 +135,31 @@ class Statement {
 
 class Policy {
  public:
+
+    Policy(const std::string& name, std::vector<Statement> statements)
+        : name_(name), statements_(statements)
+    {
+    }
+
     Effect eval(const std::string& action, const Attributes& attributes);
+
+    void addStatement(Statement statement)
+    {
+        statements_.push_back(statement);
+    }
+
+    void setVersion(int version)
+    {
+        version_ = version;
+    }
+
+    void setName(const std::string& name)
+    {
+        name_ = name;
+    }
  private:
+    int version_;
+    std::string name_;
     std::vector<Statement> statements_;
 };
 

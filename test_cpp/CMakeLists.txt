@@ -26,6 +26,7 @@ set(test_src
   test_platform.cpp
   iam/load_users.cpp
   iam/load_roles.cpp
+  iam/load_policies.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")

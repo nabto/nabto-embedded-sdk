@@ -2,6 +2,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <memory>
+
 namespace nabto {
 namespace iam {
 
@@ -81,7 +83,7 @@ bool loadEffect(const nlohmann::json& statement, Effect& effect)
 
 bool loadActions(const nlohmann::json& statement, std::set<std::string>& actions)
 {
-    if (statement.find("Actions") != statement.end()) {
+    if (statement.find("Actions") == statement.end()) {
         return false;
     }
     nlohmann::json a = statement["Actions"];
@@ -96,23 +98,35 @@ bool loadActions(const nlohmann::json& statement, std::set<std::string>& actions
     return true;
 }
 
-bool loadStatement(const nlohmann::json& json, Statement& statement)
+std::unique_ptr<Statement> loadStatement(const nlohmann::json& json)
 {
     Effect effect;
     std::set<std::string> actions;
     if (!loadEffect(json, effect)) {
-        return false;
+        return nullptr;
     }
     if (!loadActions(json, actions)) {
-        return false;
+        return nullptr;
     }
-    statement = Statement(effect, actions);
-    return true;
+    return std::make_unique<Statement>(effect, actions);
 }
 
-bool IAMToJson::policiesFromJson(const std::string& json, std::vector<Policy>& policies)
+
+
+
+std::unique_ptr<Policy> IAMToJson::policyFromJson(const std::string& json)
 {
-    return false;
+    auto parsed = nlohmann::json::parse(json);
+    std::string name = parsed["Name"].get<std::string>();
+    std::vector<Statement> statements;
+    for (auto stmt : parsed["Statement"]) {
+        auto s = loadStatement(stmt);
+        if (!s) {
+            return nullptr;
+        }
+        statements.push_back(*s);
+    }
+    return std::make_unique<Policy>(name, statements);
 }
 
 static bool toRole(const nlohmann::json& json, Role& role)

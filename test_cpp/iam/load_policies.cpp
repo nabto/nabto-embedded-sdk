@@ -19,8 +19,9 @@ std::string testPolicy = R"(
 
 BOOST_AUTO_TEST_CASE(load_policies)
 {
-    nabto::iam::
-    BOOST_TEST(nabto::iam::IAMToJson::policyFromJson(testPolicy, ));
+    std::unique_ptr<nabto::iam::Policy> policy = nabto::iam::IAMToJson::policyFromJson(testPolicy);
+    BOOST_TEST((policy != nullptr));
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
