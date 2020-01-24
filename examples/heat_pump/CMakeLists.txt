@@ -6,6 +6,7 @@ set(src
   src/main.cpp
   src/heat_pump.cpp
   src/heat_pump_coap.cpp
+  src/heat_pump_iam_persisting.cpp
   )
 
 add_executable(heat_pump_device ${src})

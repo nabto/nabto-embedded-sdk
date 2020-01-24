@@ -47,9 +47,8 @@ static bool toUser(const nlohmann::json& json, User& user)
     return true;
 }
 
-bool IAMToJson::usersFromJson(const std::string& json, std::vector<User>& users)
+bool IAMToJson::usersFromJson(const nlohmann::json& parsed, std::vector<User>& users)
 {
-    auto parsed = nlohmann::json::parse(json);
     for (auto it = parsed.begin(); it != parsed.end(); it++) {
         User user(it.key());
         if (!toUser(it.value(), user)) {
@@ -58,6 +57,12 @@ bool IAMToJson::usersFromJson(const std::string& json, std::vector<User>& users)
         users.push_back(user);
     }
     return true;
+}
+
+bool IAMToJson::usersFromJson(const std::string& json, std::vector<User>& users)
+{
+    auto parsed = nlohmann::json::parse(json);
+    return usersFromJson(parsed, users);
 }
 
 bool loadEffect(const nlohmann::json& statement, Effect& effect)

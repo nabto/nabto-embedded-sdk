@@ -1,36 +1,55 @@
 #include "heat_pump_iam_persisting.hpp"
+#include "json_config.hpp"
+
+#include <modules/iam_cpp/iam_builder.hpp>
+#include <modules/iam_cpp/iam_to_json.hpp>
+#include <modules/iam_cpp/iam_builder.hpp>
 
 namespace nabto {
 
-HeatPumpIAMPersisting::HeatPumpIAMPersisting(iam::Iam& iam, const std::string& configFile)
+HeatPumpIAMPersisting::HeatPumpIAMPersisting(iam::IAM& iam, const std::string& configFile)
     : configFile_(configFile), iam_(iam)
 {
 
 }
 
+bool HeatPumpIAMPersisting::loadUsersFromConfig()
+{
+    if (!json_config_load(configFile_, config_)) {
+        return false;
+    }
+
+    auto users = config_["Users"];
+
+    std::vector<iam::User> us;
+    iam::IAMToJson::usersFromJson(users, us);
+
+}
+
+
 void HeatPumpIAMPersisting::loadIAM()
 {
     // load static iam
 
-    auto buttonPairingPolicy = PolicyBuilder()
+    auto buttonPairingPolicy = iam::PolicyBuilder()
         .name("ButtonPairing")
-        .addStatement(StatementBuilder()
+        .addStatement(iam::StatementBuilder()
                       .allow()
                       .addAction("Pairing:Button")
                       .build())
         .build();
 
-    auto readPolicy = PolicyBuilder()
+    auto readPolicy = iam::PolicyBuilder()
         .name("HeatPumpRead")
-        .addStatement(StatementBuilder()
+        .addStatement(iam::StatementBuilder()
                       .allow()
                       .addAction("HeatPump:Get")
                       .build())
         .build();
 
-    auto writePolicy = PolicyBuilder()
+    auto writePolicy = iam::PolicyBuilder()
         .name("HeatPumpWrite")
-        .addStatement(StatementBuilder()
+        .addStatement(iam::StatementBuilder()
                       .allow()
                       .addAction("IAM:AddUser")
                       .addAction("IAM:GetUser")
@@ -40,15 +59,15 @@ void HeatPumpIAMPersisting::loadIAM()
                       .build())
         .build();
 
-    auto modifyOwnUserPolicy = PolicyBuilder()
+    auto modifyOwnUserPolicy = iam::PolicyBuilder()
         .name("ModifyOwnUser")
-        .addStatement(StatementBuilder()
+        .addStatement(iam::StatementBuilder()
                       .allow()
                       .addAction("IAM:GetUser")
                       .addAction("IAM:ListUsers")
                       .addAction("IAM:AddFingerprint")
                       .addAction("IAM:RemoveFingerprint")
-                      .addCondition(ConditionBuilder()
+                      .addCondition(iam::ConditionBuilder()
                                     .attributeEqual("Connection:UserId", "IAM:UserId")
                                     .build())
                       .build())
@@ -59,9 +78,29 @@ void HeatPumpIAMPersisting::loadIAM()
     iam.addPolicy(writePolicy);
     iam.addPolicy(modifyOwnUserPolicy);
 
-
+    iam.addRole(RoleBuilder().name("Unpaired").addPolicy("ButtonPairing").build());
+    iam.addRole(RoleBuilder()
+                .name("Owner")
+                .addPolicy("HeatPumpWrite")
+                .addPolicy("HeatPumpRead")
+                .addPolicy("IAMFullAccess")
+                .build());
+    iam.addRole(RoleBuilder()
+                .name("User")
+                .addPolicy("HeatPumpRead")
+                .addPolicy("HeatPumpWrite")
+                .addPolicy("ModifyOwnUser")
+                .build());
+    iam.addRole(RoleBuilder()
+                .name("Guest")
+                .addPolicy("HeatPumpRead")
+                .build());
 
     // load dynamic users
+
+    loadUsersFromConfig();
+
+    iam.enablePersisting();
 }
 
 void HeatPumpIAMPersisting::upsertUser(const iam::User& user)

@@ -2,6 +2,8 @@
 
 #include "attribute.hpp"
 #include <set>
+#include <map>
+#include <vector>
 
 namespace nabto {
 namespace iam {
@@ -51,7 +53,17 @@ class User : public Subject {
 };
 
 class Session : public Subject {
-
+ public:
+    virtual std::set<std::string> policies()
+    {
+        return std::set<std::string>();
+    };
+    virtual Attributes& attributes()
+    {
+        return attributes_;
+    };
+ private:
+    Attributes attributes_;
 };
 
 
@@ -165,6 +177,18 @@ class Policy {
 
 class IAM {
  public:
+    IAM() {}
+
+    void addUser(const User& user);
+    void removeUser(const std::string& userId);
+    void updateUser(const User& user);
+
+    void addRole(const Role& role);
+    void removeRole(const std::string& roleName);
+    void updateRole(const Role& role);
+
+    void addPolicy(const Policy& policy);
+    void removePolicy(const std::string& policyName);
  private:
     std::map<std::string, User> users_;
     std::map<std::string, Session> sessions_;
