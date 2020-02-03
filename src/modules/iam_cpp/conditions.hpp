@@ -2,43 +2,32 @@
 
 #include "iam.hpp"
 
+
 namespace nabto {
 namespace iam {
 
 
-class StringEqualCondition {
+class AttributeEqualCondition : public Condition {
  public:
+    AttributeEqualCondition(const std::string& lhs, const std::string& rhs)
+        : lhs_(lhs), rhs_(rhs)
+    {}
+
     bool matches(const std::map<std::string, Attribute>& attributes)
     {
-        std::string lhs;
-        std::string rhs;
-        if (lhs_.resolve(attributes, lhs) && rhs_.resolve(attributes, rhs)) {
-            return lhs == rhs;
-        } else {
+        auto lhs = attributes.find(lhs_);
+        auto rhs = attributes.find(rhs_);
+        if (lhs == attributes.end() || rhs == attributes.end()) {
+            // at least one of the attributes is missing in the attributes map.
             return false;
         }
-    }
- private:
-    StringArgument lhs_;
-    StringArgument rhs_;
-};
 
-class NumberEqualCondition {
- public:
-    bool matches(const std::map<std::string, Attribute>& attributes)
-    {
-        int64_t lhs;
-        int64_t rhs;
-        if (lhs_.resolve(attributes, lhs) == rhs_.resolve(attributes, rhs)) {
-            return lhs == rhs;
-        } else {
-            return false;
-        }
+        return (lhs->second) == (rhs->second);
     }
- private:
-    NumberArgument lhs_;
-    NumberArgument rhs_;
-};
 
+ private:
+    std::string lhs_;
+    std::string rhs_;
+};
 
 } }

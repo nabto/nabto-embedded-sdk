@@ -1,6 +1,7 @@
 #pragma once
 
 #include "attribute.hpp"
+#include "iam_persisting.hpp"
 #include <set>
 #include <map>
 #include <vector>
@@ -21,6 +22,8 @@ class Subject {
 
 class User : public Subject {
  public:
+
+    User() {}
 
     User(const std::string& id) : id_(id) {}
 
@@ -45,6 +48,18 @@ class User : public Subject {
 
     void removeAttribute(const std::string& key) {
         attributes_.erase(key);
+    }
+
+    std::set<std::string> getRoles() const {
+        return roles_;
+    }
+
+    Attributes getAttributes() const {
+        return attributes_;
+    }
+
+    std::string getName() const {
+        return id_;
     }
  private:
     std::string id_;
@@ -88,10 +103,17 @@ class Resource {
 
 class Role {
  public:
+    Role() {}
     Role(const std::string& name) : name_(name) {}
+    Role(const std::string& name, const std::set<std::string>& policies) : name_(name), policies_(policies) {}
 
-    void addPolicy(const std::string& policy) {
+    void addPolicy(const std::string& policy)
+    {
         policies_.insert(policy);
+    }
+    std::string getName() const
+    {
+        return name_;
     }
  private:
     std::string name_;
@@ -126,8 +148,8 @@ class Statement {
     bool matches();
     Effect eval(const std::string& action, const Attributes& attributes);
 
-    Statement(Effect effect, std::set<std::string> actions)
-        : effect_(effect), actions_(actions)
+    Statement(Effect effect, std::set<std::string> actions, std::vector<Condition> conditions)
+        : effect_(effect), actions_(actions), conditions_(conditions)
     {
     }
 
@@ -147,6 +169,8 @@ class Statement {
 
 class Policy {
  public:
+
+    Policy() {}
 
     Policy(const std::string& name, std::vector<Statement> statements)
         : name_(name), statements_(statements)
@@ -169,6 +193,11 @@ class Policy {
     {
         name_ = name;
     }
+
+    std::string getName() const
+    {
+        return name_;
+    }
  private:
     int version_;
     std::string name_;
@@ -179,21 +208,90 @@ class IAM {
  public:
     IAM() {}
 
-    void addUser(const User& user);
-    void removeUser(const std::string& userId);
-    void updateUser(const User& user);
+    void addUser(const User& user)
+    {
+        users_[user.getName()] = user;
+        if (persisting_) {
+            persisting_->upsertUser(user);
+        }
+    }
 
-    void addRole(const Role& role);
-    void removeRole(const std::string& roleName);
-    void updateRole(const Role& role);
+    void removeUser(const std::string& userId)
+    {
+        users_.erase(userId);
+        if (persisting_) {
+            persisting_->deleteUser(userId);
+        }
+    }
 
-    void addPolicy(const Policy& policy);
-    void removePolicy(const std::string& policyName);
+    void updateUser(const User& user)
+    {
+        users_[user.getName()] = user;
+        if (persisting_) {
+            persisting_->upsertUser(user);
+        }
+    }
+
+    void addRole(const Role& role)
+    {
+        roles_[role.getName()] = role;
+        if (persisting_) {
+            persisting_->upsertRole(role);
+        }
+    }
+
+    void removeRole(const std::string& roleName)
+    {
+        roles_.erase(roleName);
+        if (persisting_) {
+            persisting_->deleteRole(roleName);
+        }
+    }
+
+    void updateRole(const Role& role)
+    {
+        roles_[role.getName()] = role;
+        if (persisting_) {
+            persisting_->upsertRole(role);
+        }
+    }
+
+    void addPolicy(const Policy& policy)
+    {
+        policies_[policy.getName()] = policy;
+        if (persisting_) {
+            persisting_->upsertPolicy(policy);
+        }
+    }
+
+    void removePolicy(const std::string& policyName)
+    {
+        policies_.erase(policyName);
+        if (persisting_) {
+            persisting_->deletePolicy(policyName);
+        }
+    }
+
+    void updatePolicy(const Policy& policy)
+    {
+        policies_[policy.getName()] = policy;
+        if (persisting_) {
+            persisting_->upsertPolicy(policy);
+        }
+    }
+
+    void setPersistingAdapter(IAMPersisting* persisting)
+    {
+        persisting_ = persisting;
+    }
+
  private:
     std::map<std::string, User> users_;
     std::map<std::string, Session> sessions_;
     std::map<std::string, Role> roles_;
     std::map<std::string, Policy> policies_;
+
+    IAMPersisting* persisting_ = NULL;
 };
 
 } } // namespace

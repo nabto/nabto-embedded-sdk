@@ -51,6 +51,21 @@ class Attribute {
         return number_;
     }
 
+    AttributeType getType()
+    {
+        return type_;
+    }
+
+    bool operator==(const Attribute& rhs) const {
+        if (type_ == AttributeType::STRING && rhs.type_ == AttributeType::STRING) {
+            return string_ == rhs.string_;
+        } else if (type_ == AttributeType::NUMBER && rhs.type_ == AttributeType::NUMBER) {
+            return number_ == rhs.number_;
+        } else {
+            return false;
+        }
+    }
+
  private:
     AttributeType type_;
     std::string string_;

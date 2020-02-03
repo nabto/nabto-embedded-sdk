@@ -7,11 +7,36 @@
 namespace nabto {
 namespace iam {
 
-std::string IAMToJson::usersToJson(const IAM& iam)
+nlohmann::json IAMToJson::userToJson(const User& user)
 {
-    nlohmann::json users;
-    return "";
+    nlohmann::json jsonUser;
+
+    nlohmann::json rolesArray = nlohmann::json::array();
+
+    auto rs = user.getRoles();
+    for (auto r : rs) {
+        rolesArray.push_back(r);
+    }
+
+    jsonUser["Roles"] = rolesArray;
+
+    nlohmann::json attributes;
+
+    auto as = user.getAttributes();
+    for (auto a : as) {
+        if (a.second.getType() == AttributeType::STRING) {
+            attributes[a.first] = a.second.getString();
+        } else if (a.second.getType() == AttributeType::NUMBER) {
+            attributes[a.first] == a.second.getNumber();
+        }
+    }
+
+    jsonUser["Attributes"] = attributes;
+
+    return jsonUser;
 }
+
+
 
 static bool toUser(const nlohmann::json& json, User& user)
 {
@@ -107,13 +132,14 @@ std::unique_ptr<Statement> loadStatement(const nlohmann::json& json)
 {
     Effect effect;
     std::set<std::string> actions;
+    std::vector<Condition> conditions;
     if (!loadEffect(json, effect)) {
         return nullptr;
     }
     if (!loadActions(json, actions)) {
         return nullptr;
     }
-    return std::make_unique<Statement>(effect, actions);
+    return std::make_unique<Statement>(effect, actions, conditions);
 }
 
 

@@ -1,6 +1,7 @@
 #include "heat_pump_iam_persisting.hpp"
 #include "json_config.hpp"
 
+#include <modules/iam_cpp/iam.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
 #include <modules/iam_cpp/iam_to_json.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
@@ -24,6 +25,7 @@ bool HeatPumpIAMPersisting::loadUsersFromConfig()
     std::vector<iam::User> us;
     iam::IAMToJson::usersFromJson(users, us);
 
+    return true;
 }
 
 
@@ -67,50 +69,47 @@ void HeatPumpIAMPersisting::loadIAM()
                       .addAction("IAM:ListUsers")
                       .addAction("IAM:AddFingerprint")
                       .addAction("IAM:RemoveFingerprint")
-                      .addCondition(iam::ConditionBuilder()
-                                    .attributeEqual("Connection:UserId", "IAM:UserId")
-                                    .build())
+                      .addAttributeEqualCondition("Connection:UserId", "IAM:UserId")
                       .build())
         .build();
+
+    nabto::iam::IAM iam;
 
     iam.addPolicy(buttonPairingPolicy);
     iam.addPolicy(readPolicy);
     iam.addPolicy(writePolicy);
     iam.addPolicy(modifyOwnUserPolicy);
 
-    iam.addRole(RoleBuilder().name("Unpaired").addPolicy("ButtonPairing").build());
-    iam.addRole(RoleBuilder()
-                .name("Owner")
+    iam.addRole(iam::RoleBuilder().name("Unpaired").addPolicy("ButtonPairing").build());
+    iam.addRole(iam::RoleBuilder().name("Owner")
                 .addPolicy("HeatPumpWrite")
                 .addPolicy("HeatPumpRead")
                 .addPolicy("IAMFullAccess")
                 .build());
-    iam.addRole(RoleBuilder()
-                .name("User")
+    iam.addRole(iam::RoleBuilder().name("User")
                 .addPolicy("HeatPumpRead")
                 .addPolicy("HeatPumpWrite")
                 .addPolicy("ModifyOwnUser")
                 .build());
-    iam.addRole(RoleBuilder()
-                .name("Guest")
+    iam.addRole(iam::RoleBuilder().name("Guest")
                 .addPolicy("HeatPumpRead")
                 .build());
 
     // load dynamic users
 
     loadUsersFromConfig();
-
-    iam.enablePersisting();
 }
 
 void HeatPumpIAMPersisting::upsertUser(const iam::User& user)
 {
-
+    config_["Users"][user.getName()] = nabto::iam::IAMToJson::userToJson(user);
+    json_config_save(configFile_, config_);
 }
 
 void HeatPumpIAMPersisting::deleteUser(const std::string& userId)
 {
-
+    config_["Users"].erase(userId);
+    json_config_save(configFile_, config_);
 }
 
 
