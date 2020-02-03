@@ -9,7 +9,6 @@
 #include <iostream>
 
 void HeatPump::init() {
-    listenForIamChanges();
     listenForConnectionEvents();
     listenForDeviceEvents();
 }
@@ -20,9 +19,6 @@ bool validate_config(const json& config) {
         config["DeviceId"].get<std::string>();
         config["Server"].get<std::string>();
         config["PrivateKey"].get<std::string>();
-        config["Iam"]["Users"];
-        config["Iam"]["Roles"];
-        config["Iam"]["Policies"];
     } catch (std::exception& e) {
         return false;
     }
@@ -31,19 +27,19 @@ bool validate_config(const json& config) {
 
 void HeatPump::setMode(Mode mode)
 {
-    config_["HeatPump"]["Mode"] = modeToString(mode);
-    saveConfig();
+    persisting_.setHeatPumpMode(modeToString(mode));
+    persisting_.save();
 }
 void HeatPump::setTarget(double target)
 {
-    config_["HeatPump"]["Target"] = target;
-    saveConfig();
+    persisting_.setHeatPumpTarget(target);
+    persisting_.save();
 }
 
 void HeatPump::setPower(bool power)
 {
-    config_["HeatPump"]["Power"] = power;
-    saveConfig();
+    persisting_.setHeatPumpPower(power);
+    persisting_.save();
 }
 
 const char* HeatPump::modeToString(HeatPump::Mode mode)
@@ -55,45 +51,6 @@ const char* HeatPump::modeToString(HeatPump::Mode mode)
         case HeatPump::Mode::DRY: return "DRY";
         default: return "UNKNOWN";
     }
-}
-
-
-void HeatPump::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
-{
-    if (err != NABTO_DEVICE_EC_OK) {
-        return;
-    }
-    HeatPump* hp = (HeatPump*)userData;
-    hp->saveConfig();
-    hp->listenForIamChanges();
-}
-
-void HeatPump::listenForIamChanges()
-{
-    nabto_device_iam_listen_for_changes(device_, iamChangedFuture_, currentIamVersion_);
-    nabto_device_future_set_callback(iamChangedFuture_, HeatPump::iamChanged, this);
-}
-
-void HeatPump::saveConfig()
-{
-    json config = config_;
-
-    uint64_t version;
-    size_t used;
-    if (nabto_device_iam_dump(device_, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OUT_OF_MEMORY) {
-        return;
-    }
-
-    std::vector<uint8_t> buffer(used);
-    if(nabto_device_iam_dump(device_, &version, buffer.data(), buffer.size(), &used) != NABTO_DEVICE_EC_OK) {
-        return;
-    }
-    config["Iam"] = json::from_cbor(buffer);
-    currentIamVersion_ = version;
-
-    std::string tmpFile = "tmp.json";
-    json_config_save(configFile_, config);
-    std::cout << "Configuration saved to file" << std::endl;
 }
 
 void HeatPump::startWaitEvent()

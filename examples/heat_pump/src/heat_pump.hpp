@@ -4,6 +4,8 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
+#include "heat_pump_persisting.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <mutex>
@@ -11,6 +13,7 @@
 #include <sstream>
 
 using json = nlohmann::json;
+
 
 class HeatPump;
 
@@ -53,8 +56,8 @@ class HeatPumpCoapRequestHandler {
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, json config, const std::string& configFile)
-        : device_(device), config_(config), configFile_(configFile)
+    HeatPump(NabtoDevice* device, nabto::HeatPumpPersisting& persisting)
+        : device_(device), persisting_(persisting)
     {
         connectionEventListener_ = nabto_device_listener_new(device);
         deviceEventListener_ = nabto_device_listener_new(device);
@@ -102,8 +105,15 @@ class HeatPump {
     void setPower(bool on);
     const char* modeToString(HeatPump::Mode mode);
     const char* getModeString();
+
+
     json getState() {
-        return config_["HeatPump"];
+        nlohmann::json state;
+        state["Mode"] = persisting_.getHeatPumpMode();
+        state["Target"] = persisting_.getHeatPumpTarget();
+        state["Power"] = persisting_.getHeatPumpPower();
+        state["Temperature"] = 22.3;
+        return state;
     }
 
     bool beginPairing() {
@@ -166,9 +176,6 @@ class HeatPump {
 
   private:
 
-    static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
-    void listenForIamChanges();
-
     static void connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForConnectionEvents();
     void startWaitEvent();
@@ -181,8 +188,9 @@ class HeatPump {
 
     std::mutex mutex_;
     NabtoDevice* device_;
-    json config_;
-    const std::string& configFile_;
+
+    nabto::HeatPumpPersisting& persisting_;
+
     bool pairing_ = false;
     uint64_t currentIamVersion_;
 
