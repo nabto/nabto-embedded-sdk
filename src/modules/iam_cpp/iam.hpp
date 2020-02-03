@@ -285,6 +285,8 @@ class IAM {
         persisting_ = persisting;
     }
 
+    bool checkIamAccess(const Subject& subject, const std::string& action, const Attributes& attributes);
+
  private:
     std::map<std::string, User> users_;
     std::map<std::string, Session> sessions_;

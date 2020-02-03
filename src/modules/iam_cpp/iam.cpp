@@ -59,4 +59,9 @@ Effect Statement::eval(const std::string& action, const Attributes& attributes)
     return effect_;
 }
 
+bool IAM::checkIamAccess(const Subject& subject, const std::string& action, const Attributes& attributes)
+{
+
+}
+
 } } // namespace

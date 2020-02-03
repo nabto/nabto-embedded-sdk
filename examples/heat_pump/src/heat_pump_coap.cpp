@@ -138,18 +138,12 @@ void readInput()
  */
 bool pairUser( HeatPump* application, const std::string& fingerprint)
 {
-    std::string userName;
-    size_t userCount;
+    // TODO
+    std::string userName = "User-42";
+    // TOOD
+    size_t userCount = 42;
     NabtoDeviceError ec;
-    ec = application->nextUserName(userName);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
 
-    ec = application->userCount(userCount);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
 
     ec = nabto_device_iam_users_create(application->getDevice(), userName.c_str());
     if (ec) {

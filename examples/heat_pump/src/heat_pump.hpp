@@ -129,43 +129,6 @@ class HeatPump {
         pairing_ = false;
     }
 
-    NabtoDeviceError userCount(size_t& count)
-    {
-        std::vector<uint8_t> cbor(1024);
-        size_t used;
-
-        NabtoDeviceError ec = nabto_device_iam_users_list(device_, cbor.data(), cbor.size(), &used);
-        if (ec) {
-            return ec;
-        }
-        cbor.resize(used);
-
-        json users = json::from_cbor(cbor);
-        count = users.size();
-        return NABTO_DEVICE_EC_OK;
-    }
-
-    NabtoDeviceError nextUserName(std::string& name)
-    {
-        for (int i = 0;; i++) {
-            std::stringstream ss;
-            ss << "User-" << i;
-            auto str = ss.str();
-            size_t used;
-            NabtoDeviceError ec = nabto_device_iam_users_get(device_, str.c_str(), NULL, 0, &used);
-            if (ec == NABTO_DEVICE_EC_OUT_OF_MEMORY) {
-                // user was found but buffer was too small
-                continue;
-            } else if (ec == NABTO_DEVICE_EC_NOT_FOUND) {
-                // user was not found use this for the next user
-                name = str;
-                return NABTO_DEVICE_EC_OK;
-            } else {
-                return ec;
-            }
-        }
-    }
-
     std::unique_ptr<std::thread> pairingThread_;
 
     std::unique_ptr<HeatPumpCoapRequestHandler> coapGetState;
@@ -183,8 +146,6 @@ class HeatPump {
     static void deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
     void listenForDeviceEvents();
     void startWaitDevEvent();
-
-    void saveConfig();
 
     std::mutex mutex_;
     NabtoDevice* device_;
