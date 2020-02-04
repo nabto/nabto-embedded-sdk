@@ -3,6 +3,8 @@
 #include "nabto/nabto_device.h"
 #include "nabto/nabto_device_experimental.h"
 
+#include <modules/fingerprint_iam/fingerprint_iam.hpp>
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <cbor.h>
@@ -44,12 +46,12 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
     const char* postPower[] = { "heat-pump", "power", NULL };
     const char* postMode[] = { "heat-pump", "mode", NULL };
     const char* postTarget[] = { "heat-pump", "target", NULL };
-    const char* postPairingButton[] = { "pairing", "button", NULL };
+    //const char* postPairingButton[] = { "pairing", "button", NULL };
     heatPump->coapGetState = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_GET, getState, &heat_pump_get);
     heatPump->coapPostPower = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPower, &heat_pump_set_power);
     heatPump->coapPostMode = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postMode, &heat_pump_set_mode);
     heatPump->coapPostTarget = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postTarget, &heat_pump_set_target);
-    heatPump->coapPostPairingButton = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPairingButton, &heat_pump_pairing_button);
+    //heatPump->coapPostPairingButton = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPairingButton, &heat_pump_pairing_button);
 }
 
 void heat_pump_coap_deinit(HeatPump* heatPump)
@@ -75,13 +77,10 @@ void heat_pump_coap_send_ok(NabtoDeviceCoapRequest* request, uint16_t code)
 }
 
 // return true if action was allowed
-bool heat_pump_coap_check_action(NabtoDevice* device, NabtoDeviceCoapRequest* request, const char* action)
+bool heat_pump_coap_check_action(nabto::FingerprintIAM* fingerprintIAM, NabtoDeviceCoapRequest* request, const char* action)
 {
-    NabtoDeviceError effect = nabto_device_iam_check_action_attributes(
-        device,
-        nabto_device_coap_request_get_connection_ref(request), action, NULL, 0);
-
-    if (effect != NABTO_DEVICE_EC_OK) {
+    nabto::iam::Attributes attributes;
+    if (!fingerprintIAM->checkAccess(nabto_device_coap_request_get_connection_ref(request), std::string(action), attributes)) {
         nabto_device_coap_error_response(request, 403, "Unauthorized");
         nabto_device_coap_request_free(request);
         return false;
@@ -136,83 +135,83 @@ void readInput()
 /**
  * Add a user with a given fingerprint to the system.
  */
-bool pairUser( HeatPump* application, const std::string& fingerprint)
-{
-    // TODO
-    std::string userName = "User-42";
-    // TOOD
-    size_t userCount = 42;
-    NabtoDeviceError ec;
+// bool pairUser( HeatPump* application, const std::string& fingerprint)
+// {
+//     // TODO
+//     std::string userName = "User-42";
+//     // TOOD
+//     size_t userCount = 42;
+//     NabtoDeviceError ec;
 
 
-    ec = nabto_device_iam_users_create(application->getDevice(), userName.c_str());
-    if (ec) {
-        return false;
-    }
+//     ec = nabto_device_iam_users_create(application->getDevice(), userName.c_str());
+//     if (ec) {
+//         return false;
+//     }
 
-    ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), userName.c_str(), fingerprint.c_str());
-    if (ec) {
-        nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
-        std::cout << "Could not add fingerprint to the heat pump" << std::endl;
-        return false;
-    }
+//     ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), userName.c_str(), fingerprint.c_str());
+//     if (ec) {
+//         nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
+//         std::cout << "Could not add fingerprint to the heat pump" << std::endl;
+//         return false;
+//     }
 
-    std::string role;
-    if (userCount == 0) {
-        role = "Owner";
-    } else {
-        role = "User";
-    }
-    ec = nabto_device_iam_users_add_role(application->getDevice(), userName.c_str(), role.c_str());
-    if (ec) {
-        nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
-        std::cout << "Could not add the role " << role.c_str() << " to the user " << userName << std::endl;
-        return false;
-    }
-    std::cout << "Added the fingerprint " << fingerprint << " to the user " << userName << " with the role " << role<< std::endl;
-    return true;
-}
+//     std::string role;
+//     if (userCount == 0) {
+//         role = "Owner";
+//     } else {
+//         role = "User";
+//     }
+//     ec = nabto_device_iam_users_add_role(application->getDevice(), userName.c_str(), role.c_str());
+//     if (ec) {
+//         nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
+//         std::cout << "Could not add the role " << role.c_str() << " to the user " << userName << std::endl;
+//         return false;
+//     }
+//     std::cout << "Added the fingerprint " << fingerprint << " to the user " << userName << " with the role " << role<< std::endl;
+//     return true;
+// }
 
 /**
  * Ask the user a question in the terminal whether the user wants the
  * accept the client with the given fingerprint as a user on the
  * system.
  */
-void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, bool asOwner)
-{
-    if (!application->beginPairing()) {
-        nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
-        nabto_device_coap_request_free(request);
-        return;
-    }
-    NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    char* fingerprint;
-    nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
+// void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, bool asOwner)
+// {
+//     if (!application->beginPairing()) {
+//         nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
+//         nabto_device_coap_request_free(request);
+//         return;
+//     }
+//     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
+//     char* fingerprint;
+//     nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
 
-    std::string fp(fingerprint);
-    nabto_device_string_free(fingerprint);
-    std::cout << "Allow client with fingerprint: " << fp << " [yn]" << std::endl;
+//     std::string fp(fingerprint);
+//     nabto_device_string_free(fingerprint);
+//     std::cout << "Allow client with fingerprint: " << fp << " [yn]" << std::endl;
 
-    std::thread t(readInput);
-    t.detach();
-    std::mutex mtx;
-    std::unique_lock<std::mutex> lock(mtx);
-    bool result = false;
-    if (cv.wait_for(lock, std::chrono::seconds(60)) == std::cv_status::timeout) {
-        std::cout << "No input given defaulting to n" << std::endl;
-    } else {
-        result = answer;
-    }
+//     std::thread t(readInput);
+//     t.detach();
+//     std::mutex mtx;
+//     std::unique_lock<std::mutex> lock(mtx);
+//     bool result = false;
+//     if (cv.wait_for(lock, std::chrono::seconds(60)) == std::cv_status::timeout) {
+//         std::cout << "No input given defaulting to n" << std::endl;
+//     } else {
+//         result = answer;
+//     }
 
-    if (result == true && pairUser(application, fp)) {
-        nabto_device_coap_response_set_code(request, 205);
-        nabto_device_coap_response_ready(request);
-    } else {
-        nabto_device_coap_error_response(request, 403, "Rejected");
-    }
-    nabto_device_coap_request_free(request);
-    application->pairingEnded();
-}
+//     if (result == true && pairUser(application, fp)) {
+//         nabto_device_coap_response_set_code(request, 205);
+//         nabto_device_coap_response_ready(request);
+//     } else {
+//         nabto_device_coap_error_response(request, 403, "Rejected");
+//     }
+//     nabto_device_coap_request_free(request);
+//     application->pairingEnded();
+// }
 
 /**
  * Pair with a device.
@@ -221,36 +220,36 @@ void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, boo
  * question is allowed to pair with the device. This simulates a
  * button on the device.
  */
-void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
-{
-    HeatPump* application = (HeatPump*)userData;
+// void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
+// {
+//     HeatPump* application = (HeatPump*)userData;
 
-    size_t userCount;
-    NabtoDeviceError ec = application->userCount(userCount);
-    if (ec) {
-        nabto_device_coap_error_response(request, 500, "");
-        nabto_device_coap_request_free(request);
-        return;
-    }
+//     size_t userCount;
+//     NabtoDeviceError ec = application->userCount(userCount);
+//     if (ec) {
+//         nabto_device_coap_error_response(request, 500, "");
+//         nabto_device_coap_request_free(request);
+//         return;
+//     }
 
-    json attributes;
-    attributes["Pairing:UserCount"] = userCount;
+//     json attributes;
+//     attributes["Pairing:UserCount"] = userCount;
 
-    std::vector<uint8_t> cbor = json::to_cbor(attributes);
+//     std::vector<uint8_t> cbor = json::to_cbor(attributes);
 
-    NabtoDeviceError effect = nabto_device_iam_check_action_attributes(
-        application->getDevice(),
-        nabto_device_coap_request_get_connection_ref(request), "Pairing:Button", cbor.data(), cbor.size());
+//     NabtoDeviceError effect = nabto_device_iam_check_action_attributes(
+//         application->getDevice(),
+//         nabto_device_coap_request_get_connection_ref(request), "Pairing:Button", cbor.data(), cbor.size());
 
-    if (effect != NABTO_DEVICE_EC_OK) {
-        nabto_device_coap_error_response(request, 403, "Unauthorized");
-        nabto_device_coap_request_free(request);
-        return;
-    }
+//     if (effect != NABTO_DEVICE_EC_OK) {
+//         nabto_device_coap_error_response(request, 403, "Unauthorized");
+//         nabto_device_coap_request_free(request);
+//         return;
+//     }
 
-    application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application, true);
-    application->pairingThread_->detach();
-}
+//     application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application, true);
+//     application->pairingThread_->detach();
+// }
 
 // Change heat_pump power state (turn it on or off)
 /**
@@ -263,7 +262,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
 
-    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Set")) {
+    if (!heat_pump_coap_check_action(application->getFPIAM(), request, "HeatPump:Set")) {
         return;
     }
 
@@ -290,7 +289,7 @@ void heat_pump_set_power(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Set")) {
+    if (!heat_pump_coap_check_action(application->getFPIAM(), request, "HeatPump:Set")) {
         return;
     }
 
@@ -330,7 +329,7 @@ void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Set")) {
+    if (!heat_pump_coap_check_action(application->getFPIAM(), request, "HeatPump:Set")) {
         return;
     }
 
@@ -357,7 +356,7 @@ void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData)
 void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
 {
     HeatPump* application = (HeatPump*)userData;
-    if (!heat_pump_coap_check_action(application->getDevice(), request, "HeatPump:Get")) {
+    if (!heat_pump_coap_check_action(application->getFPIAM(), request, "HeatPump:Get")) {
         return;
     }
 

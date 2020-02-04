@@ -6,119 +6,98 @@
 #include <map>
 #include <vector>
 
+#include <memory>
+
 namespace nabto {
 namespace iam {
 
-typedef std::map<std::string, Attribute> Attributes;
+class Attributes {
+ public:
+    std::unique_ptr<Attribute> get(const std::string& key);
+    void merge(const Attributes& attributes);
+ private:
+    std::map<std::string, Attribute> Attributes_;
+};
+
+class Policy;
 
 /**
  * A subject is e.g. a User.
  */
 class Subject {
  public:
-    virtual std::set<std::string> policies() = 0;
-    virtual Attributes& attributes() = 0;
+    virtual ~Subject() {}
+    virtual std::set<std::shared_ptr<Policy> > policies() = 0;
+    virtual Attributes attributes() = 0;
 };
 
-class User : public Subject {
- public:
+// class User : public Subject {
+//  public:
 
-    User() {}
+//     User() {}
 
-    User(const std::string& id) : id_(id) {}
+//     User(const std::string& id) : id_(id) {}
 
-    std::set<std::string> policies() {
-        return std::set<std::string>();
-    }
-    Attributes& attributes() {
-        return attributes_;
-    }
+//     std::set<std::string> policies() {
+//         return std::set<std::string>();
+//     }
+//     Attributes& attributes() {
+//         return attributes_;
+//     }
 
-    void addRole(const std::string& role) {
-        roles_.insert(role);
-    }
+//     void addRole(const std::string& role) {
+//         roles_.insert(role);
+//     }
 
-    void removeRole(const std::string& role) {
-        roles_.erase(role);
-    }
+//     void removeRole(const std::string& role) {
+//         roles_.erase(role);
+//     }
 
-    void addAttribute(const std::string& key, const Attribute& value) {
-        attributes_.insert(std::make_pair(key,value));
-    }
+//     void addAttribute(const std::string& key, const Attribute& value) {
+//         attributes_.insert(std::make_pair(key,value));
+//     }
 
-    void removeAttribute(const std::string& key) {
-        attributes_.erase(key);
-    }
+//     void removeAttribute(const std::string& key) {
+//         attributes_.erase(key);
+//     }
 
-    std::set<std::string> getRoles() const {
-        return roles_;
-    }
-
-    Attributes getAttributes() const {
-        return attributes_;
-    }
-
-    std::string getName() const {
-        return id_;
-    }
- private:
-    std::string id_;
-    std::set<std::string> roles_;
-    Attributes attributes_;
-};
-
-class Session : public Subject {
- public:
-    virtual std::set<std::string> policies()
-    {
-        return std::set<std::string>();
-    };
-    virtual Attributes& attributes()
-    {
-        return attributes_;
-    };
- private:
-    Attributes attributes_;
-};
+//     std::set<std::string> getRoles() const {
+//         return roles_;
+//     }
 
 
-/**
- * An action describes an action. The action is a string like
- * HeatPump:Read HeatPump:WriteTarget.
- */
-class Action {
- public:
-    std::string action();
-};
 
-/**
- * A resource describes attributes for a resource. A resource could be
- * a HeatPump write target endpoint. A resource attribute could be
- * current target temperature.
- */
-class Resource {
- public:
-    Attributes& attributes();
-};
+//     Attributes getAttributes() const {
+//         return attributes_;
+//     }
 
-class Role {
- public:
-    Role() {}
-    Role(const std::string& name) : name_(name) {}
-    Role(const std::string& name, const std::set<std::string>& policies) : name_(name), policies_(policies) {}
+//     std::string getName() const {
+//         return id_;
+//     }
+//  private:
+//     std::string id_;
+//     std::set<std::string> roles_;
+//     Attributes attributes_;
+// };
 
-    void addPolicy(const std::string& policy)
-    {
-        policies_.insert(policy);
-    }
-    std::string getName() const
-    {
-        return name_;
-    }
- private:
-    std::string name_;
-    std::set<std::string> policies_;
-};
+// class Role {
+//  public:
+//     Role() {}
+//     Role(const std::string& name) : name_(name) {}
+//     Role(const std::string& name, const std::set<std::string>& policies) : name_(name), policies_(policies) {}
+
+//     void addPolicy(const std::string& policy)
+//     {
+//         policies_.insert(policy);
+//     }
+//     std::string getName() const
+//     {
+//         return name_;
+//     }
+//  private:
+//     std::string name_;
+//     std::set<std::string> policies_;
+// };
 
 enum class Effect {
     ALLOW,
@@ -133,11 +112,6 @@ class Condition {
     {
         return false;
     }
-};
-
-class Context {
- public:
-    Attributes& attributes();
 };
 
 class Statement {
@@ -204,96 +178,100 @@ class Policy {
     std::vector<Statement> statements_;
 };
 
-class IAM {
+class IamPdp {
  public:
-    IAM() {}
-
-    void addUser(const User& user)
-    {
-        users_[user.getName()] = user;
-        if (persisting_) {
-            persisting_->upsertUser(user);
-        }
-    }
-
-    void removeUser(const std::string& userId)
-    {
-        users_.erase(userId);
-        if (persisting_) {
-            persisting_->deleteUser(userId);
-        }
-    }
-
-    void updateUser(const User& user)
-    {
-        users_[user.getName()] = user;
-        if (persisting_) {
-            persisting_->upsertUser(user);
-        }
-    }
-
-    void addRole(const Role& role)
-    {
-        roles_[role.getName()] = role;
-        if (persisting_) {
-            persisting_->upsertRole(role);
-        }
-    }
-
-    void removeRole(const std::string& roleName)
-    {
-        roles_.erase(roleName);
-        if (persisting_) {
-            persisting_->deleteRole(roleName);
-        }
-    }
-
-    void updateRole(const Role& role)
-    {
-        roles_[role.getName()] = role;
-        if (persisting_) {
-            persisting_->upsertRole(role);
-        }
-    }
-
-    void addPolicy(const Policy& policy)
-    {
-        policies_[policy.getName()] = policy;
-        if (persisting_) {
-            persisting_->upsertPolicy(policy);
-        }
-    }
-
-    void removePolicy(const std::string& policyName)
-    {
-        policies_.erase(policyName);
-        if (persisting_) {
-            persisting_->deletePolicy(policyName);
-        }
-    }
-
-    void updatePolicy(const Policy& policy)
-    {
-        policies_[policy.getName()] = policy;
-        if (persisting_) {
-            persisting_->upsertPolicy(policy);
-        }
-    }
-
-    void setPersistingAdapter(IAMPersisting* persisting)
-    {
-        persisting_ = persisting;
-    }
-
-    bool checkIamAccess(const Subject& subject, const std::string& action, const Attributes& attributes);
-
- private:
-    std::map<std::string, User> users_;
-    std::map<std::string, Session> sessions_;
-    std::map<std::string, Role> roles_;
-    std::map<std::string, Policy> policies_;
-
-    IAMPersisting* persisting_ = NULL;
+    static bool checkAccess(const Subject& subject, const std::string& action, const Attributes& attributes);
 };
+
+// class IAM {
+//  public:
+//     IAM() {}
+
+//     void addUser(const User& user)
+//     {
+//         users_[user.getName()] = user;
+//         if (persisting_) {
+//             persisting_->upsertUser(user);
+//         }
+//     }
+
+//     void removeUser(const std::string& userId)
+//     {
+//         users_.erase(userId);
+//         if (persisting_) {
+//             persisting_->deleteUser(userId);
+//         }
+//     }
+
+//     void updateUser(const User& user)
+//     {
+//         users_[user.getName()] = user;
+//         if (persisting_) {
+//             persisting_->upsertUser(user);
+//         }
+//     }
+
+//     void addRole(const Role& role)
+//     {
+//         roles_[role.getName()] = role;
+//         if (persisting_) {
+//             persisting_->upsertRole(role);
+//         }
+//     }
+
+//     void removeRole(const std::string& roleName)
+//     {
+//         roles_.erase(roleName);
+//         if (persisting_) {
+//             persisting_->deleteRole(roleName);
+//         }
+//     }
+
+//     void updateRole(const Role& role)
+//     {
+//         roles_[role.getName()] = role;
+//         if (persisting_) {
+//             persisting_->upsertRole(role);
+//         }
+//     }
+
+//     void addPolicy(const Policy& policy)
+//     {
+//         policies_[policy.getName()] = policy;
+//         if (persisting_) {
+//             persisting_->upsertPolicy(policy);
+//         }
+//     }
+
+//     void removePolicy(const std::string& policyName)
+//     {
+//         policies_.erase(policyName);
+//         if (persisting_) {
+//             persisting_->deletePolicy(policyName);
+//         }
+//     }
+
+//     void updatePolicy(const Policy& policy)
+//     {
+//         policies_[policy.getName()] = policy;
+//         if (persisting_) {
+//             persisting_->upsertPolicy(policy);
+//         }
+//     }
+
+//     void setPersistingAdapter(IAMPersisting* persisting)
+//     {
+//         persisting_ = persisting;
+//     }
+
+//     bool checkIamAccess(const Subject& subject, const std::string& action, const Attributes& attributes);
+
+//  private:
+//     std::map<std::string, User> users_;
+//     std::map<std::string, Role> roles_;
+//     std::map<std::string, Policy> policies_;
+
+//     IAMPersisting* persisting_ = NULL;
+// };
 
 } } // namespace

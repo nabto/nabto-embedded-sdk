@@ -1,7 +1,25 @@
 #pragma once
 
+#include "iam.hpp"
+
 namespace nabto {
 namespace iam {
+
+std::unique_ptr<Attribute> Attributes::get(const std::string& key)
+{
+    auto it = attributes_.find(key);
+    if (it == attributes_.end()) {
+        return nullptr;
+    }
+    return std::make_unique<Attribute>(attributes_.get(it));
+}
+
+void Attributes::merge(const Attributes& attributes)
+{
+    for (auto a : attributes.attributes_) {
+        attributes_[a.first] = a.second;
+    }
+}
 
 Statement::matches()
 {
@@ -59,9 +77,33 @@ Effect Statement::eval(const std::string& action, const Attributes& attributes)
     return effect_;
 }
 
-bool IAM::checkIamAccess(const Subject& subject, const std::string& action, const Attributes& attributes)
+bool IAM::checkIamAccess(const Subject& subject, const std::string& action, const Attributes& objectAttributes, const Attributes& environmentAttributes)
 {
 
+}
+
+bool IamPdp::checkAccess(const Subject& subject, const std::string& action, const Attributes& attributes)
+{
+
+    Attributes attrs;
+    attrs.merge(attributes);
+    attrs.merge(subject.getAttributes());
+
+    nabto::iam::Effect result = nabto::iam::Effect::NO_MATCH;
+
+    for (auto policy : subject.policies()) {
+        nabto::iam::Effect effect = policy.eval(action, attrs);
+        if (effect == Effect::DENY) {
+            return false;
+        }
+        if (effect == Effect::ALLOW) {
+            result = allow;
+        }
+    }
+    if (result == Effect::ALLOW) {
+        return true;
+    }
+    return false;
 }
 
 } } // namespace

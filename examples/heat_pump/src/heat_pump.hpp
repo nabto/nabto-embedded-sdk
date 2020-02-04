@@ -5,6 +5,7 @@
 #include <nabto/nabto_device_experimental.h>
 
 #include "heat_pump_persisting.hpp"
+#include <modules/fingerprint_iam/fingerprint_iam.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -56,8 +57,8 @@ class HeatPumpCoapRequestHandler {
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, nabto::HeatPumpPersisting& persisting)
-        : device_(device), persisting_(persisting)
+    HeatPump(NabtoDevice* device, nabto::FingerprintIAM& iam, nabto::HeatPumpPersisting& persisting)
+        : device_(device), persisting_(persisting), fingerprintIAM_(iam)
     {
         connectionEventListener_ = nabto_device_listener_new(device);
         deviceEventListener_ = nabto_device_listener_new(device);
@@ -98,6 +99,10 @@ class HeatPump {
 
     NabtoDevice* getDevice() {
         return device_;
+    }
+
+    nabto::FingerprintIAM* getFPIAM() {
+        return &fingerprintIAM_;
     }
 
     void setMode(Mode mode);
@@ -165,6 +170,8 @@ class HeatPump {
     NabtoDeviceEvent deviceEvent_;
 
     NabtoDeviceFuture* iamChangedFuture_;
+
+    nabto::FingerprintIAM& fingerprintIAM_;
 };
 
 #endif

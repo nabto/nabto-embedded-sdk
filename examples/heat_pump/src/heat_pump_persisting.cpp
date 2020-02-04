@@ -8,29 +8,30 @@
 
 namespace nabto {
 
-HeatPumpPersisting::HeatPumpPersisting(iam::IAM& iam, const std::string& configFile)
-    : configFile_(configFile), iam_(iam)
+HeatPumpPersisting::HeatPumpPersisting(const std::string& configFile)
+    : configFile_(configFile)
 {
 
 }
 
 bool HeatPumpPersisting::loadUsersIntoIAM()
 {
-    if (!json_config_load(configFile_, config_)) {
-        return false;
-    }
+    // if (!json_config_load(configFile_, config_)) {
+    //     return false;
+    // }
 
-    auto users = config_["Users"];
+    // auto users = config_["Users"];
 
-    std::vector<iam::User> us;
-    iam::IAMToJson::usersFromJson(users, us);
+    // std::vector<iam::User> us;
+    // iam::IAMToJson::usersFromJson(users, us);
 
-    return true;
+    // return true;
 }
 
-void HeatPumpPersisting::upsertUser(const iam::User& user)
+void HeatPumpPersisting::upsertUser(const User& user)
 {
-    config_["Users"][user.getName()] = nabto::iam::IAMToJson::userToJson(user);
+    // TODO
+    //config_["Users"][user.getName()] = nabto::iam::IAMToJson::userToJson(user);
     save();
 }
 

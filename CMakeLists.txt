@@ -64,6 +64,7 @@ add_subdirectory(src/modules/iam)
 add_subdirectory(src/modules/tcptunnel)
 add_subdirectory(src/modules/logging/test)
 add_subdirectory(src/modules/iam_cpp)
+add_subdirectory(src/modules/fingerprint_iam)
 
 
 CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)

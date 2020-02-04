@@ -1,20 +1,20 @@
 #pragma once
 
-#include <modules/iam_cpp/iam_persisting.hpp>
+#include <modules/fingerprint_iam/fingerprint_iam.hpp>
 #include <modules/iam_cpp/iam.hpp>
 
 #include <nlohmann/json.hpp>
 
 namespace nabto {
 
-class HeatPumpPersisting : public iam::AbstractIAMPersisting
+class HeatPumpPersisting : public FingerprintIAMPersisting
 {
  public:
-    HeatPumpPersisting(iam::IAM& iam, const std::string& configFile);
+    HeatPumpPersisting(const std::string& configFile);
 
     bool loadUsersIntoIAM();
 
-    virtual void upsertUser(const iam::User& user);
+    virtual void upsertUser(const User& user);
     virtual void deleteUser(const std::string& userId);
 
     void save();
@@ -87,7 +87,6 @@ class HeatPumpPersisting : public iam::AbstractIAMPersisting
 
  private:
     std::string configFile_;
-    iam::IAM& iam_;
     nlohmann::json config_;
 };
 

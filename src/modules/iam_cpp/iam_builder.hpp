@@ -70,29 +70,29 @@ class StatementBuilder {
 
 };
 
-class RoleBuilder {
- public:
-    RoleBuilder() {}
-    RoleBuilder name(const std::string& name)
-    {
-        name_ = name;
-        return *this;
-    }
+// class RoleBuilder {
+//  public:
+//     RoleBuilder() {}
+//     RoleBuilder name(const std::string& name)
+//     {
+//         name_ = name;
+//         return *this;
+//     }
 
-    RoleBuilder addPolicy(const std::string& policyName)
-    {
-        policies_.insert(policyName);
-        return *this;
-    }
+//     RoleBuilder addPolicy(const std::string& policyName)
+//     {
+//         policies_.insert(policyName);
+//         return *this;
+//     }
 
-    Role build()
-    {
-        return Role(name_, policies_);
-    }
+//     Role build()
+//     {
+//         return Role(name_, policies_);
+//     }
 
- private:
-    std::string name_;
-    std::set<std::string> policies_;
-};
+//  private:
+//     std::string name_;
+//     std::set<std::string> policies_;
+// };
 
 } } // namespace

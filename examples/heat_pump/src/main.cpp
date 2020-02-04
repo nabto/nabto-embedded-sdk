@@ -29,7 +29,7 @@ void my_handler(int s){
 bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
 bool run_heat_pump(const std::string& configFile);
 
-static void loadStaticIamPolicy(nabto::iam::IAM& iam);
+static void loadStaticIamPolicy(nabto::FingerprintIAM& iam);
 
 int main(int argc, char** argv) {
     cxxopts::Options options("Heat pump", "Nabto heat pump example.");
@@ -130,9 +130,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     nabto_device_string_free(fp);
     nabto_device_string_free(str);
 
-    nabto::iam::IAM iam;
-
-    nabto::HeatPumpPersisting hpp(iam, configFile);
+    nabto::HeatPumpPersisting hpp(configFile);
 
     hpp.setPrivateKey(privateKey);
     hpp.setProductId(productId);
@@ -155,12 +153,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
 
 bool run_heat_pump(const std::string& configFile)
 {
-    nabto::iam::IAM iam;
-
-    nabto::HeatPumpPersisting hpp(iam, configFile);
-
-    hpp.loadUsersIntoIAM();
-    loadStaticIamPolicy(iam);
+    nabto::HeatPumpPersisting hpp(configFile);
 
     NabtoDeviceError ec;
 
@@ -169,6 +162,13 @@ bool run_heat_pump(const std::string& configFile)
         std::cerr << "Device New Failed" << std::endl;
         return false;
     }
+
+    nabto::FingerprintIAM iam(device, hpp);
+
+    // TODO
+    //hpp.loadUsersIntoIAM();
+    loadStaticIamPolicy(iam);
+
 
     ec = nabto_device_set_product_id(device, hpp.getProductId().c_str());
     if (ec) {
@@ -216,7 +216,7 @@ bool run_heat_pump(const std::string& configFile)
     }
 
     {
-        HeatPump hp(device, hpp);
+        HeatPump hp(device, iam, hpp);
         hp.init();
 
         heat_pump_coap_init(device, &hp);
@@ -245,7 +245,7 @@ bool run_heat_pump(const std::string& configFile)
     return true;
 }
 
-void loadStaticIamPolicy(nabto::iam::IAM& iam)
+void loadStaticIamPolicy(nabto::FingerprintIAM& iam)
 {
     auto buttonPairingPolicy = nabto::iam::PolicyBuilder()
         .name("ButtonPairing")
@@ -292,19 +292,16 @@ void loadStaticIamPolicy(nabto::iam::IAM& iam)
     iam.addPolicy(writePolicy);
     iam.addPolicy(modifyOwnUserPolicy);
 
-    iam.addRole(nabto::iam::RoleBuilder().name("Unpaired").addPolicy("ButtonPairing").build());
-    iam.addRole(nabto::iam::RoleBuilder().name("Owner")
+    iam.addRole(nabto::RoleBuilder().name("Unpaired").addPolicy("ButtonPairing"));
+    iam.addRole(nabto::RoleBuilder().name("Owner")
                 .addPolicy("HeatPumpWrite")
                 .addPolicy("HeatPumpRead")
-                .addPolicy("IAMFullAccess")
-                .build());
-    iam.addRole(nabto::iam::RoleBuilder().name("User")
+                .addPolicy("IAMFullAccess"));
+    iam.addRole(nabto::RoleBuilder().name("User")
                 .addPolicy("HeatPumpRead")
                 .addPolicy("HeatPumpWrite")
-                .addPolicy("ModifyOwnUser")
-                .build());
-    iam.addRole(nabto::iam::RoleBuilder().name("Guest")
-                .addPolicy("HeatPumpRead")
-                .build());
+                .addPolicy("ModifyOwnUser"));
+    iam.addRole(nabto::RoleBuilder().name("Guest")
+                .addPolicy("HeatPumpRead"));
 
 }
