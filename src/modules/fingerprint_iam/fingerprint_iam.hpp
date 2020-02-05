@@ -36,11 +36,11 @@ class FingerprintIAMSubject : public nabto::iam::Subject {
         : policies_(policies), attributes_(attributes)
     {
     }
-    virtual std::set<std::shared_ptr<nabto::iam::Policy> > policies()
+    virtual std::set<std::shared_ptr<nabto::iam::Policy> > getPolicies() const
     {
         return policies_;
     }
-    virtual nabto::iam::Attributes attributes()
+    virtual nabto::iam::Attributes getAttributes() const
     {
         return attributes_;
     }

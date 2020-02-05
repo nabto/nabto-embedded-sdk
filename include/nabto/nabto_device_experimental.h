@@ -9,82 +9,94 @@
 extern "C" {
 #endif
 
+typedef enum {
+    NABTO_DEVICE_AUTORIZATION_ATTRIBUTE_TYPE_NUMBER,
+    NABTO_DEVICE_AUTORIZATION_ATTRIBUTE_TYPE_STRING
+} NabtoDeviceAutorizationAttributeType;
+
 /**
  * Iam take 2,
  */
-typedef struct NabtoDeviceIamRequest_ NabtoDeviceIamRequest;
+typedef struct NabtoDeviceAuthorizationRequest_ NabtoDeviceAuthorizationRequest;
 
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_iam_request_free(NabtoDeviceIamRequest* request);
-
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_iam_request_allow(NabtoDeviceIamRequest* request);
-
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_iam_request_deny(NabtoDeviceIamRequest* request);
-
-
-NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_iam_request_get_action(NabtoDeviceIamRequest* request);
-
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
-nabto_device_iam_request_get_connection_ref(NabtoDeviceIamRequest* request);
-
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
-nabto_device_iam_request_get_attributes(NabtoDeviceIamRequest* request, void** cbor, size_t* cborLength);
-
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
-nabto_device_iam_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
-
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_new_iam_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceIamRequest** request);
-
-/*******
- * IAM *
- *******/
-
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_IAM_DENY;
-
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_ARGUMENT;
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_FOUND;
+nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * IAM decision context for a query, the environment contains all the
- * neccessary attributes and user information to decide if the given
- * action is allowed.
+ * Call this function to inform the application that the authorization
+ * request has been allowed.
  */
-typedef struct NabtoDeviceIamEnv_ NabtoDeviceIamEnv;
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_authorization_request_allow(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * Callback when the iam system has been modified. The application can choose to persist the changes.
+ * Call this function to inform the application that the authorization
+ * request was denied.
  */
-typedef void (*NabtoDeviceIamChangedCallback)(void* userData);
-
-
-/**
- * Override iam check function This function is synchroniously called
- * from the code, It's not allowed to call NabtoDevice api functions
- * from this function.
- */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_authorization_request_deny(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * IAM check access callback function.
+ * Get the action associated with the request.
  *
- * @param attributes  cbor encoded attributes, if NULL no attributes is provided.
- * @return NABTO_DEVICE_EC_OK if access is allowed.
- *         NABTO_DEVICE_EC_IAM_DENY if access is not allowed.
+ * The string should not be freed and the lifetime is limited by the
+ * call to nabto_device_authorization_request_free
  */
-typedef NabtoDeviceError (*NabtoDeviceIAMCheckAccessCallback)(NabtoDeviceConnectionRef connectionReference, const char* action, void* attributes, size_t attributesLength, void* userData);
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_authorization_request_get_action(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * Override iam check function This function is synchroniously called
- * from the core, It's not allowed to call other NabtoDevice api
- * functions from this function. Since the caller will have a lock on
- * the system.
+ * Get the connection reference this authorization request originates from.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
+nabto_device_authorization_request_get_connection_ref(NabtoDeviceAuthorizationRequest* request);
+
+/**
+ * Get the amount of attributes this authorization request contains.
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationRequest* request);
+
+/**
+ * Get the type of the attribute with the given index.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceAutorizationAttributeType NABTO_DEVICE_API
+nabto_device_authorization_request_get_attribute_type(NabtoDeviceAuthorizationRequest* request, size_t index);
+
+/**
+ * Get an index of the attribute with a given key
+ *
+ * @return NABTO_DEVICE_EC_OK if the key exists
+ *         NABTO_DEVICE_EC_NOT_FOUND if the key does not exists.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_iam_override_check_access_implementation(NabtoDevice* device, NabtoDeviceIAMCheckAccessCallback cb, void* userData);
+nabto_device_authorization_request_get_attribute_by_name(NabtoDeviceAuthorizationRequest* request, const char* name, size_t* index);
 
+/**
+ * Retrieve a string value for a key, if the key is not a string the behavior is undefined.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_authorization_request_get_attribute_string(NabtoDeviceAuthorizationRequest* request, size_t index);
+
+/**
+ * Retrieve a number value for a key, if the key is not a number, the behavior is undefined.
+ */
+NABTO_DEVICE_DECL_PREFIX int64_t NABTO_DEVICE_API
+nabto_device_authorization_request_get_attribute_number(NabtoDeviceAuthorizationRequest* request, size_t index);
+
+/**
+ * Init an authorization request listener.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
+nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
+
+/**
+ * Wait for a new Authorization request.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceAuthorizationRequest** request);
+
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_ACCESS_DENIED;
 
 /******************
  * TCP Tunnelling *

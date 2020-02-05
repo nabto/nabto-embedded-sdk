@@ -48,9 +48,6 @@ struct nabto_device_context {
 
     struct nm_tcptunnels tcptunnels;
 
-    NabtoDeviceIAMCheckAccessCallback checkAccessFunctionOverride;
-    void* checkAccessFunctionOverrideUserData;
-
 };
 
 

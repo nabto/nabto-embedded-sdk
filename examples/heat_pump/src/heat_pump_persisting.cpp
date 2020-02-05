@@ -26,6 +26,7 @@ bool HeatPumpPersisting::loadUsersIntoIAM()
     // iam::IAMToJson::usersFromJson(users, us);
 
     // return true;
+    return false;
 }
 
 void HeatPumpPersisting::upsertUser(const User& user)

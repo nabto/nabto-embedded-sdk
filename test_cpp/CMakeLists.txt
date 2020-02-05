@@ -22,6 +22,7 @@ set(test_src
   api/event_handler_test.cpp
   api/future_test.cpp
   api/device_api.cpp
+  api/authorization_test.cpp
   attach/attach_test.cpp
   test_platform.cpp
   iam/load_users.cpp

@@ -1,5 +1,6 @@
 set(src
   iam_to_json.cpp
+  iam.cpp
   )
 
 add_library(iam_cpp "${src}")

@@ -47,7 +47,7 @@ extern "C" {
         XX(IAM_INVALID_STATEMENTS, "IAM invalid statements")            \
         XX(IAM_INVALID_ACTIONS, "IAM invalid actions")                  \
         XX(IAM_INVALID_PREDICATES, "IAM invalid predicates")            \
-        XX(IAM_DENY, "IAM deny")                                        \
+        XX(ACCESS_DENIED, "Access denied")                                        \
         XX(IAM_NONE, "IAM none")                                        \
         XX(STRING_TOO_LONG, "String too long")                          \
         XX(NOT_A_STRING, "Not a string")                                \

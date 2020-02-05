@@ -15,6 +15,7 @@
 #include <platform/np_dtls_srv.h>
 #include <platform/np_tcp.h>
 #include <platform/np_mdns.h>
+#include <platform/np_authorization.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,6 +52,9 @@ struct np_platform {
 
     // Mdns
     struct np_mdns_module mdns;
+
+    // Access control module
+    struct np_authorization authorization;
 };
 
 /**

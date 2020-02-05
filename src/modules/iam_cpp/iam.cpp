@@ -1,17 +1,15 @@
-#pragma once
-
 #include "iam.hpp"
 
 namespace nabto {
 namespace iam {
 
-std::unique_ptr<Attribute> Attributes::get(const std::string& key)
+std::unique_ptr<Attribute> Attributes::get(const std::string& key) const
 {
     auto it = attributes_.find(key);
     if (it == attributes_.end()) {
         return nullptr;
     }
-    return std::make_unique<Attribute>(attributes_.get(it));
+    return std::make_unique<Attribute>(it->second);
 }
 
 void Attributes::merge(const Attributes& attributes)
@@ -21,14 +19,9 @@ void Attributes::merge(const Attributes& attributes)
     }
 }
 
-Statement::matches()
+Effect Policy::eval(const std::string& action, const Attributes& attributes) const
 {
-
-}
-
-Effect Policy::eval(const std::string& action, const Attributes& attributes)
-{
-    Effect decistion = Effect::NO_MATCH;
+    Effect decision = Effect::NO_MATCH;
     for (auto stmt : statements_) {
         Effect effect = stmt.eval(action, attributes);
         if (effect != Effect::NO_MATCH) {
@@ -38,7 +31,7 @@ Effect Policy::eval(const std::string& action, const Attributes& attributes)
     return decision;
 }
 
-bool Statement::matchActions(const std::string& action)
+bool Statement::matchActions(const std::string& action) const
 {
     for (auto a : actions_) {
         if (action == a) {
@@ -48,12 +41,12 @@ bool Statement::matchActions(const std::string& action)
     return false;
 }
 
-bool Statement::matchCondition(const Condition& condition, const Attributes& attributes)
+bool Statement::matchCondition(const Condition& condition, const Attributes& attributes) const
 {
     return condition.matches(attributes);
 }
 
-bool Statement::matchConditions(const Attributes& attributes)
+bool Statement::matchConditions(const Attributes& attributes) const
 {
     for (auto condition : conditions_) {
         // All conditions has to match else it is a no match.
@@ -63,7 +56,7 @@ bool Statement::matchConditions(const Attributes& attributes)
     }
 }
 
-Effect Statement::eval(const std::string& action, const Attributes& attributes)
+Effect Statement::eval(const std::string& action, const Attributes& attributes) const
 {
     if (!matchActions(action)) {
         return Effect::NO_MATCH;
@@ -77,11 +70,6 @@ Effect Statement::eval(const std::string& action, const Attributes& attributes)
     return effect_;
 }
 
-bool IAM::checkIamAccess(const Subject& subject, const std::string& action, const Attributes& objectAttributes, const Attributes& environmentAttributes)
-{
-
-}
-
 bool IamPdp::checkAccess(const Subject& subject, const std::string& action, const Attributes& attributes)
 {
 
@@ -91,13 +79,13 @@ bool IamPdp::checkAccess(const Subject& subject, const std::string& action, cons
 
     nabto::iam::Effect result = nabto::iam::Effect::NO_MATCH;
 
-    for (auto policy : subject.policies()) {
-        nabto::iam::Effect effect = policy.eval(action, attrs);
+    for (auto policy : subject.getPolicies()) {
+        nabto::iam::Effect effect = policy->eval(action, attrs);
         if (effect == Effect::DENY) {
             return false;
         }
         if (effect == Effect::ALLOW) {
-            result = allow;
+            result = Effect::ALLOW;
         }
     }
     if (result == Effect::ALLOW) {

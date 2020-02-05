@@ -13,10 +13,10 @@ namespace iam {
 
 class Attributes {
  public:
-    std::unique_ptr<Attribute> get(const std::string& key);
+    std::unique_ptr<Attribute> get(const std::string& key) const;
     void merge(const Attributes& attributes);
  private:
-    std::map<std::string, Attribute> Attributes_;
+    std::map<std::string, Attribute> attributes_;
 };
 
 class Policy;
@@ -27,8 +27,8 @@ class Policy;
 class Subject {
  public:
     virtual ~Subject() {}
-    virtual std::set<std::shared_ptr<Policy> > policies() = 0;
-    virtual Attributes attributes() = 0;
+    virtual std::set<std::shared_ptr<Policy> > getPolicies() const = 0;
+    virtual Attributes getAttributes() const = 0;
 };
 
 // class User : public Subject {
@@ -108,7 +108,7 @@ enum class Effect {
 class Condition {
  public:
     virtual ~Condition() {}
-    virtual bool matches(const Attributes& attributes)
+    virtual bool matches(const Attributes& attributes) const
     {
         return false;
     }
@@ -116,22 +116,20 @@ class Condition {
 
 class Statement {
  public:
-    /**
-     * return true if actions and conditions is met.
-     */
-    bool matches();
-    Effect eval(const std::string& action, const Attributes& attributes);
+
 
     Statement(Effect effect, std::set<std::string> actions, std::vector<Condition> conditions)
         : effect_(effect), actions_(actions), conditions_(conditions)
     {
     }
 
- private:
-    bool matchActions(const std::string& action);
+    Effect eval(const std::string& action, const Attributes& attributes) const;
 
-    bool matchCondition(const Condition& condition, const Attributes& attributes);
-    bool matchConditions(const Attributes& attributes);
+ private:
+    bool matchActions(const std::string& action) const;
+
+    bool matchCondition(const Condition& condition, const Attributes& attributes) const;
+    bool matchConditions(const Attributes& attributes) const;
 
     Effect effect_;
     /**
@@ -151,7 +149,7 @@ class Policy {
     {
     }
 
-    Effect eval(const std::string& action, const Attributes& attributes);
+    Effect eval(const std::string& action, const Attributes& attributes) const;
 
     void addStatement(Statement statement)
     {
