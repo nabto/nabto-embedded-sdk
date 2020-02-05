@@ -55,6 +55,7 @@ struct np_platform {
 
     // Access control module
     struct np_authorization authorization;
+    void* authorizationData;
 };
 
 /**

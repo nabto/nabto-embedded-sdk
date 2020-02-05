@@ -1,45 +1,77 @@
-#ifndef _NABTO_DEVICE_EXPERIMENTAL_H_
-#define _NABTO_DEVICE_EXPERIMENTAL_H_
 
-#include "nabto_device.h"
 
-#include <stdbool.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * Authorization.
- *
- * The authorization functionality in the Nabto Device SDK is made
- * such that an application built on top of the Nabto Device SDK can
- * take authorization decision for the core.
- */
-
-typedef enum {
-    NABTO_DEVICE_AUTORIZATION_ATTRIBUTE_TYPE_NUMBER,
-    NABTO_DEVICE_AUTORIZATION_ATTRIBUTE_TYPE_STRING
-} NabtoDeviceAutorizationAttributeType;
-
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_ACCESS_DENIED;
-
-typedef struct NabtoDeviceAuthorizationRequest_ NabtoDeviceAuthorizationRequest;
+#icnlude "nabto_device_authorization.h"
 
 
 /**
- * Init an authorization request listener.
+ * Functions implementing the np_authorization platform module.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
-nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
+static struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action);
+static void free_request(struct np_authorization_request* request);
+static np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value);
+static np_erorr_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value);
+
+static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData);
 
 /**
- * Wait for a new Authorization request.
+ * Helper functions
  */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceAuthorizationRequest** request);
+static void free_request_when_unused(struct nabto_device_authorization_request* request);
 
 
+void nabto_device_authorization_init_platform(struct np_platform* pl)
+{
+    pl->authorization.create_request = create_request;
+    pl->authorization.free_request = free_request;
+    pl->authorization.add_number_attribute = add_number_attribute;
+    pl->authorization.add_string_attribute = add_string_attribute;
+    pl->authorization.check_access = check_access;
+}
+
+
+struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action)
+{
+    struct nabto_device_authorization_request* request = calloc(1, sizeof(struct nabto_device_authorization_request));
+    request->connectionReferece = connectionRef;
+    request->action = action;
+    request->attributes = NULL;
+    request->apiFreed = true;
+    request->platformFreed = false;
+
+    return (struct np_authorization_request*)request;
+}
+
+void free_request(struct np_authorization_request* request)
+{
+    struct nabto_device_authorization_request* r = (struct nabto_device_authorization_request*)request;
+    if (r->sdkDone) {
+
+        free_authorization_request(r)
+        free(r);
+    } else {
+        r->platformDone = true;
+    }
+}
+
+np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value)
+{
+    // TODO
+}
+
+np_erorr_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value)
+{
+    // TODO
+}
+
+void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData)
+{
+
+}
+
+
+/**
+ * Implementation of functions exposed throud the SDK
+ */
 
 
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
@@ -107,28 +139,8 @@ nabto_device_authorization_request_get_attribute_string(NabtoDeviceAuthorization
 NABTO_DEVICE_DECL_PREFIX int64_t NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_number(NabtoDeviceAuthorizationRequest* request, size_t index);
 
-/******************
- * TCP Tunnelling *
- ******************/
 
-/**
- * Enable TCP tunnelling in the device.
- *
- * Tcp tunnelling is a feature which allows clients to tunnel tcp
- * traffic over a nabto connection to the device. TCP tunnelling is
- * stopped when the device is closed. TCP tunnelling will default
- * incoming tunnel requests to 127.0.0.1 if the IP is not provided in
- * the request. The port number has not default value.
- *
- * @param device   The device
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_RESOURCE_EXISTS if already enabled
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
-
-#ifdef __cplusplus
-} // extern c
-#endif
-
-#endif
+static void free_request_when_unused(struct nabto_device_authorization_request* request)
+{
+    // TODO
+}
