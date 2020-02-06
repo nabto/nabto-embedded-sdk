@@ -22,11 +22,13 @@ static np_error_code add_string_attribute(struct np_authorization_request* reque
 
 static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2);
 
+
+
 /**
  * Helper functions
  */
 static void free_request_when_unused(struct nabto_device_authorization_request* request);
-
+static void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict);
 
 void nabto_device_authorization_init_platform(struct np_platform* pl)
 {
@@ -97,13 +99,12 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     }
 
     // if we end here the request is not added to the listener.
-    authReq->verdict = false;
-    np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
-
+    authReq->apiDone = true;
+    do_verdict(authReq, false);
 }
 
 
-static void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict)
+void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict)
 {
     if (authReq->verdictDone == false) {
         struct np_platform* pl = authReq->module->pl;

@@ -127,4 +127,24 @@ BOOST_AUTO_TEST_CASE(allow_and_deny)
     nabto_device_free(device);
 }
 
+BOOST_AUTO_TEST_CASE(no_listener)
+{
+    NabtoDevice* device = nabto_device_new();
+
+    {
+        struct nabto_device_context* internalDevice = (struct nabto_device_context*)device;
+        struct np_platform* pl = &internalDevice->pl;
+
+        {
+            AuthCallback authCallback;
+            struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:AllowThis");
+            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL);
+            BOOST_TEST(authCallback.waitForCallback() == false);
+        }
+    }
+
+    nabto_device_stop(device);
+    nabto_device_free(device);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
