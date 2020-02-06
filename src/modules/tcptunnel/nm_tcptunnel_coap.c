@@ -178,17 +178,15 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
 
     struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:Create");
-    if (authReq) {
-        if (pl->authorization.add_number_attribute(authReq, "TcpTunnel:Port", port) == NABTO_EC_OK &&
-            pl->authorization.add_string_attribute(authReq, "TcpTunnel:Host", np_ip_address_to_string(&address)) == NABTO_EC_OK)
-        {
-            pl->authorization.check_access(authReq, create_tunnel_iam, tunnels, request);
-            return;
-        }
+    if (authReq != NULL &&
+        pl->authorization.add_number_attribute(authReq, "TcpTunnel:Port", port) == NABTO_EC_OK &&
+        pl->authorization.add_string_attribute(authReq, "TcpTunnel:Host", np_ip_address_to_string(&address)) == NABTO_EC_OK)
+    {
+        pl->authorization.check_access(authReq, create_tunnel_iam, tunnels, request);
+        return;
     }
 
     // Could not make the iam request
-
     pl->authorization.discard_request(authReq);
     nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Out of resources");
     nabto_coap_server_request_free(request);
@@ -341,6 +339,8 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
         return;
     }
 
+    // Could not make the iam request
+    pl->authorization.discard_request(authReq);
     nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
     nabto_coap_server_request_free(request);
 }

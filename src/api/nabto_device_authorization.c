@@ -22,8 +22,6 @@ static np_error_code add_string_attribute(struct np_authorization_request* reque
 
 static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2);
 
-
-
 /**
  * Helper functions
  */
@@ -186,6 +184,10 @@ static void free_attribute(struct nabto_device_authorization_request_attribute* 
 
 np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value)
 {
+    if (request == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
 
     struct nabto_device_authorization_request_attribute* attribute = calloc(1, sizeof(struct nabto_device_authorization_request_attribute));
@@ -213,6 +215,10 @@ np_error_code add_number_attribute(struct np_authorization_request* request, con
 
 np_error_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value)
 {
+    if (request == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
 
     struct nabto_device_authorization_request_attribute* attribute = calloc(1, sizeof(struct nabto_device_authorization_request_attribute));

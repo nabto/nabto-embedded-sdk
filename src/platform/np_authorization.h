@@ -12,15 +12,27 @@ typedef void (*np_authorization_request_callback)(bool allowed, void* userData1,
 
 struct np_authorization {
 
+    /**
+     * Create an authorization request, if the request cannot be made, the function returns NULL.
+     */
     struct np_authorization_request* (*create_request)(struct np_platform* pl, uint64_t connectionRef, const char* action);
 
+    /**
+     * @param authorizationRequest if NULL the function returns OUT_OF_MEMORY.
+     */
     np_error_code (*add_number_attribute)(struct np_authorization_request* authorizationRequest, const char* key, int64_t value);
+
+    /**
+     * @param authorizationRequest if NULL the function returns OUT_OF_MEMORY.
+     */
     np_error_code (*add_string_attribute)(struct np_authorization_request* authorizationRequest, const char* key, const char* value);
 
     /**
      * Discard an authorization request. This should only be called if
      * check_access is not called, if the request could not be
      * prepared or is not used.
+     *
+     * @param authorizationRequest  if NULL nothing happens.
      */
     void (*discard_request)(struct np_authorization_request* authorizationRequest);
 
