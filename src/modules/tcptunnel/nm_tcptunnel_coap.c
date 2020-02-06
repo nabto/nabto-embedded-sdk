@@ -44,16 +44,6 @@ np_error_code nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_co
     return NABTO_EC_OK;
 }
 
-typedef void (*nm_tcptunnel_access_control_ok)(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request);
-
-void nm_tcptunnel_coap_check_access(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request, const char* action, void* attributes, size_t attributesSize, nm_tcptunnel_access_control_ok cb)
-{
-    nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), "Access Denied");
-    nabto_coap_server_request_free(request);
-    // TODO
-    //cb(tunnels, request);
-}
-
 void nm_tcptunnel_coap_deinit(struct nm_tcptunnels* tunnels)
 {
     if (tunnels->coapPostRes) {

@@ -29,6 +29,14 @@ bool HeatPumpPersisting::loadUsersIntoIAM()
     return false;
 }
 
+bool HeatPumpPersisting::load()
+{
+    if (!json_config_load(configFile_, config_)) {
+        return false;
+    }
+    return true;
+}
+
 void HeatPumpPersisting::upsertUser(const User& user)
 {
     // TODO

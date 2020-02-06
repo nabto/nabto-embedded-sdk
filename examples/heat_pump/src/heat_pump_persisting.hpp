@@ -18,6 +18,7 @@ class HeatPumpPersisting : public FingerprintIAMPersisting
     virtual void deleteUser(const std::string& userId);
 
     void save();
+    bool load();
 
     void setProductId(const std::string& productId) {
         config_["ProductId"] = productId;

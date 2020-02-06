@@ -112,6 +112,4 @@ void FingerprintIamCoap::handleIsPaired(NabtoDeviceCoapRequest* request)
     nabto_device_coap_request_free(request);
 }
 
-void FingerprintIam
-
 } // namespace

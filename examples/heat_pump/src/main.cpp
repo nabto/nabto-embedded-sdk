@@ -153,7 +153,14 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
 
 bool run_heat_pump(const std::string& configFile)
 {
+    if (!json_config_exists(configFile)) {
+        std::cerr << "The config does not exists, create it with --init first" << std::endl;
+        exit(2);
+    }
+
     nabto::HeatPumpPersisting hpp(configFile);
+
+    hpp.load();
 
     NabtoDeviceError ec;
 

@@ -41,11 +41,6 @@ bool Statement::matchActions(const std::string& action) const
     return false;
 }
 
-bool Statement::matchCondition(const Condition& condition, const Attributes& attributes) const
-{
-    return condition.matches(attributes);
-}
-
 bool Statement::matchConditions(const Attributes& attributes) const
 {
     for (auto condition : conditions_) {
@@ -54,6 +49,7 @@ bool Statement::matchConditions(const Attributes& attributes) const
             return false;
         }
     }
+    return true;
 }
 
 Effect Statement::eval(const std::string& action, const Attributes& attributes) const
