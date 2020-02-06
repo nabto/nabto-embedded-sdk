@@ -78,18 +78,13 @@ nabto_device_listener_new_coap_request(NabtoDeviceListener* deviceListener, Nabt
         return nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
     }
     struct nabto_device_coap_resource* res = (struct nabto_device_coap_resource*)nabto_device_listener_get_listener_data(listener);
-    if (res->futureRequest != NULL) {
-        nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
-    }
-    *request = NULL;
-    res->futureRequest = (struct nabto_device_coap_request**)request;
-    // user reference must be set before as this call can resolve the future to the future queue
     ec = nabto_device_listener_init_future(listener, fut);
     if (ec != NABTO_EC_OK) {
-        // resetting user reference if future could not be created
-        res->futureRequest = NULL;
         nabto_device_future_resolve(fut, ec);
+    } else {
+        *request = NULL;
+        res->futureRequest = (struct nabto_device_coap_request**)request;
+        nabto_device_listener_try_resolve(listener);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }

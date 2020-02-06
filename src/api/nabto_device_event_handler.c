@@ -9,7 +9,7 @@
 #define LOG NABTO_LOG_MODULE_API
 
 void nabto_device_listener_resolve_error_state(struct nabto_device_listener* listener);
-void nabto_device_listener_try_resolve(struct nabto_device_listener* listener);
+
 void nabto_device_listener_pop_event(struct nabto_device_listener* listener, struct nabto_device_event* ev);
 
 NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* device)
@@ -97,7 +97,6 @@ np_error_code nabto_device_listener_init_future(struct nabto_device_listener* li
     }
 
     listener->fut = future;
-    nabto_device_listener_try_resolve(listener);
     return NABTO_EC_OK;
 }
 

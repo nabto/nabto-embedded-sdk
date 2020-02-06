@@ -18,8 +18,8 @@ extern "C" {
  */
 
 typedef enum {
-    NABTO_DEVICE_AUTORIZATION_ATTRIBUTE_TYPE_NUMBER,
-    NABTO_DEVICE_AUTORIZATION_ATTRIBUTE_TYPE_STRING
+    NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_NUMBER,
+    NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING
 } NabtoDeviceAutorizationAttributeType;
 
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_ACCESS_DENIED;
@@ -90,7 +90,7 @@ nabto_device_authorization_request_get_attribute_type(NabtoDeviceAuthorizationRe
  * Get an index of the attribute with a given key
  *
  * @return NABTO_DEVICE_EC_OK if the key exists
- *         NABTO_DEVICE_EC_NOT_FOUND if the key does not exists.
+ *         NABTO_DEVICE_EC_NO_DATA if the key does not exists.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_by_name(NabtoDeviceAuthorizationRequest* request, const char* name, size_t* index);

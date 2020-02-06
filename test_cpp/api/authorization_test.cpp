@@ -75,27 +75,24 @@ class AuthorizationDecider {
 class AuthCallback {
  public:
 
-    AuthCallback(struct np_platform* pl)
-        : pl_(pl)
+    AuthCallback()
     {
 
     }
 
-    static void callback(struct np_authorization_request* authorizationRequest, const np_error_code ec, void* userData)
+    static void callback(bool verdict, void* userData)
     {
         AuthCallback* cb = (AuthCallback*)userData;
-        cb->ec_.set_value(ec);
-        cb->pl_->authorization.free_request(authorizationRequest);
+        cb->ec_.set_value(verdict);
     }
 
-    NabtoDeviceError waitForCallback() {
+    bool waitForCallback() {
         auto fut = ec_.get_future();
         return fut.get();
     }
 
  private:
-    std::promise<np_error_code> ec_;
-    struct np_platform* pl_;
+    std::promise<bool> ec_;
 };
 
 }
@@ -115,13 +112,13 @@ BOOST_AUTO_TEST_CASE(allow_and_deny)
         struct np_platform* pl = &internalDevice->pl;
 
         {
-            AuthCallback authCallback(pl);
+            AuthCallback authCallback;
             struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:AllowThis");
             pl->authorization.check_access(req, &AuthCallback::callback, &authCallback);
             BOOST_TEST(authCallback.waitForCallback() == NABTO_DEVICE_EC_OK);
         }
         {
-            AuthCallback authCallback(pl);
+            AuthCallback authCallback;
             struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:DenyThis");
             pl->authorization.check_access(req, &AuthCallback::callback, &authCallback);
             BOOST_TEST(authCallback.waitForCallback() == NABTO_DEVICE_EC_ACCESS_DENIED);
