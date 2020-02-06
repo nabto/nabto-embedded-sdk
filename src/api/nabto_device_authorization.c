@@ -62,18 +62,6 @@ void discard_request(struct np_authorization_request* request)
     }
 }
 
-np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value)
-{
-    // TODO
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
-}
-
-np_error_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value)
-{
-    // TODO
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
-}
-
 static void handle_verdict(void* userData)
 {
     struct nabto_device_authorization_request* authReq = userData;
@@ -172,6 +160,91 @@ nabto_device_authorization_request_get_connection_ref(NabtoDeviceAuthorizationRe
     struct nabto_device_authorization_request* r = (struct nabto_device_authorization_request*)request;
     return r->connectionReference;
 }
+static void free_attribute(struct nabto_device_authorization_request_attribute* attribute)
+{
+    if(attribute == NULL) {
+        return;
+    }
+    if (attribute->type == NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING) {
+        free(attribute->value.string);
+    }
+    free(attribute);
+}
+
+
+np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value)
+{
+    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
+
+    struct nabto_device_authorization_request_attribute* attribute = calloc(1, sizeof(struct nabto_device_authorization_request_attribute));
+
+    if (attribute == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    attribute->type = NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_NUMBER;
+
+    attribute->key = strdup(key);
+    if (attribute->key == NULL) {
+        free_attribute(attribute);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    attribute->value.number = value;
+
+    struct nabto_device_authorization_request_attribute* old = authReq->attributes;
+
+    authReq->attributes = attribute;
+    attribute->next = old;
+    return NABTO_EC_OK;
+}
+
+np_error_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value)
+{
+    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
+
+    struct nabto_device_authorization_request_attribute* attribute = calloc(1, sizeof(struct nabto_device_authorization_request_attribute));
+
+    if (attribute == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    attribute->type = NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING;
+
+    attribute->key = strdup(key);
+    attribute->value.string = strdup(value);
+    if (attribute->key == NULL || attribute->value.string == NULL) {
+        free_attribute(attribute);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    struct nabto_device_authorization_request_attribute* old = authReq->attributes;
+
+    authReq->attributes = attribute;
+    attribute->next = old;
+    return NABTO_EC_OK;
+}
+
+struct nabto_device_authorization_request_attribute* get_attribute(struct nabto_device_authorization_request* authReq, size_t index)
+{
+    struct nabto_device_authorization_request_attribute* param = authReq->attributes;
+
+    for (size_t i = 0; i < index && param != NULL; i++) {
+        param = param->next;
+    }
+    return param;
+}
+
+size_t get_attributes_size(struct nabto_device_authorization_request* authReq)
+{
+    size_t i = 0;
+    struct nabto_device_authorization_request_attribute* param = authReq->attributes;
+
+    for (i = 0; param != NULL; i++) {
+        param = param->next;
+    }
+    return i;
+}
 
 /**
  * Get the amount of attributes this authorization request contains.
@@ -181,11 +254,11 @@ nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationR
 {
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
+    size_t attributesSize;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-
+    attributesSize = get_attributes_size(authReq);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    // TODO
-    return 0;
+    return attributesSize;
 }
 
 /**
@@ -194,8 +267,17 @@ nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationR
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceAutorizationAttributeType NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_type(NabtoDeviceAuthorizationRequest* request, size_t index)
 {
-    // TODO
-    return NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING;
+    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
+    struct nabto_device_context* dev = authReq->module->device;
+
+    NabtoDeviceAutorizationAttributeType type = NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_NUMBER;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
+
+    type = attribute->type;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return type;
 }
 
 /**
@@ -207,13 +289,8 @@ nabto_device_authorization_request_get_attribute_type(NabtoDeviceAuthorizationRe
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_by_name(NabtoDeviceAuthorizationRequest* request, const char* name, size_t* index)
 {
-    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
-    struct nabto_device_context* dev = authReq->module->device;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
     // TODO
-    return NABTO_DEVICE_EC_NO_DATA;
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
 }
 
 /**
@@ -224,11 +301,16 @@ nabto_device_authorization_request_get_attribute_string(NabtoDeviceAuthorization
 {
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
+
+    const char* ret;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
+    struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
+    ret = attribute->value.string;
+
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    // TODO
-    return "";
+
+    return ret;
 }
 
 /**
@@ -239,17 +321,28 @@ nabto_device_authorization_request_get_attribute_number(NabtoDeviceAuthorization
 {
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
+    int64_t ret;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
+    struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
+    ret = attribute->value.number;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    // TODO
-    return 0;
+
+    return ret;
 }
 
 
-static void free_request_when_unused(struct nabto_device_authorization_request* request)
+static void free_request_when_unused(struct nabto_device_authorization_request* authReq)
 {
-    // TODO
+    struct nabto_device_authorization_request_attribute* param = authReq->attributes;
+
+    for (size_t i = 0; param != NULL; i++) {
+        struct nabto_device_authorization_request_attribute* old = param;
+        param = param->next;
+        free_attribute(old);
+    }
+
+    free(authReq);
 }
 
 

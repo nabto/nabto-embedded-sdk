@@ -11,7 +11,7 @@ struct nabto_device_authorization_request_attribute {
     const char* key;
     NabtoDeviceAutorizationAttributeType type;
     union {
-        const char* str;
+        char* string;
         int64_t number;
     } value;
 };
