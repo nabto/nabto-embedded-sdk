@@ -20,7 +20,7 @@ static void discard_request(struct np_authorization_request* request);
 static np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value);
 static np_error_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value);
 
-static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData);
+static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2);
 
 /**
  * Helper functions
@@ -65,10 +65,10 @@ void discard_request(struct np_authorization_request* request)
 static void handle_verdict(void* userData)
 {
     struct nabto_device_authorization_request* authReq = userData;
-    authReq->verdictCallback(authReq->verdict, authReq->verdictCallbackUserData);
+    authReq->verdictCallback(authReq->verdict, authReq->verdictCallbackUserData1, authReq->verdictCallbackUserData2);
 }
 
-void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData)
+void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2)
 {
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)authorizationRequest;
     authReq->apiDone = false;
@@ -78,7 +78,8 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     struct nabto_device_listener* listener = module->listener;
 
     authReq->verdictCallback = callback;
-    authReq->verdictCallbackUserData = userData;
+    authReq->verdictCallbackUserData1 = userData1;
+    authReq->verdictCallbackUserData2 = userData2;
 
 
     if (listener) {

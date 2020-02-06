@@ -37,7 +37,8 @@ struct nabto_device_authorization_request {
     bool verdict;
 
     np_authorization_request_callback verdictCallback;
-    void* verdictCallbackUserData;
+    void* verdictCallbackUserData1;
+    void* verdictCallbackUserData2;
 };
 
 struct nabto_device_authorization_module {

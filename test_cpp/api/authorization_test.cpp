@@ -80,7 +80,7 @@ class AuthCallback {
 
     }
 
-    static void callback(bool verdict, void* userData)
+    static void callback(bool verdict, void* userData, void*)
     {
         AuthCallback* cb = (AuthCallback*)userData;
         cb->ec_.set_value(verdict);
@@ -112,13 +112,13 @@ BOOST_AUTO_TEST_CASE(allow_and_deny)
         {
             AuthCallback authCallback;
             struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:AllowThis");
-            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback);
+            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL);
             BOOST_TEST(authCallback.waitForCallback() == true);
         }
         {
             AuthCallback authCallback;
             struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:DenyThis");
-            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback);
+            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL);
             BOOST_TEST(authCallback.waitForCallback() == false);
         }
     }

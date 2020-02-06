@@ -12,9 +12,9 @@
 static void create_tunnel(struct nabto_coap_server_request* request, void* data);
 static void delete_tunnel(struct nabto_coap_server_request* request, void* data);
 static void get_tunnel(struct nabto_coap_server_request* request, void* data);
-static void create_tunnel_iam_ok(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request);
-static void delete_tunnel_iam_ok(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request);
-static void get_tunnel_iam_ok(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request);
+static void create_tunnel_iam(bool allow, void* userData1, void* userData2);
+static void delete_tunnel_iam(bool allow, void* userData1, void* userData2);
+static void get_tunnel_iam(bool allow, void* userData1, void* userData2);
 
 static struct nm_tcptunnel* find_tunnel(struct nm_tcptunnels* tunnels, const char* tid);
 
@@ -174,28 +174,36 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
         return;
     }
 
-    {
-        uint8_t cborAttributes[128];
-        CborEncoder encoder;
-        CborEncoder map;
-        cbor_encoder_init(&encoder, cborAttributes, 128, 0);
-        cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    struct np_platform* pl = tunnels->device->pl;
+    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
 
-        cbor_encode_text_stringz(&map, "TcpTunnel:Port");
-        cbor_encode_int(&map, port);
-        cbor_encode_text_stringz(&map, "TcpTunnel:Host");
-        cbor_encode_text_stringz(&map, np_ip_address_to_string(&address));
-        cbor_encoder_close_container(&encoder, &map);
-
-        size_t used = cbor_encoder_get_buffer_size(&encoder, cborAttributes);
-
-        // Check IAM.
-        nm_tcptunnel_coap_check_access(tunnels, request, "TcpTunnel:Create", cborAttributes, used, &create_tunnel_iam_ok);
+    struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:Create");
+    if (authReq) {
+        if (pl->authorization.add_number_attribute(authReq, "TcpTunnel:Port", port) == NABTO_EC_OK &&
+            pl->authorization.add_string_attribute(authReq, "TcpTunnel:Host", np_ip_address_to_string(&address)) == NABTO_EC_OK)
+        {
+            pl->authorization.check_access(authReq, create_tunnel_iam, tunnels, request);
+            return;
+        }
     }
+
+    // Could not make the iam request
+
+    pl->authorization.discard_request(authReq);
+    nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Out of resources");
+    nabto_coap_server_request_free(request);
 }
 
-void create_tunnel_iam_ok(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request)
+void create_tunnel_iam(bool allow, void* userData1, void* userData2)
 {
+    struct nm_tcptunnels* tunnels = userData1;
+    struct nabto_coap_server_request* request = userData2;
+
+    if (!allow) {
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_request_free(request);
+        return;
+    }
     // Read host and port, insert default if not exists.
     struct np_ip_address address;
     uint16_t port;
@@ -267,11 +275,31 @@ void delete_tunnel(struct nabto_coap_server_request* request, void* data)
         return;
     }
 
-    // Check IAM.
-    nm_tcptunnel_coap_check_access(tunnels, request, "TcpTunnel:Delete", NULL, 0, &delete_tunnel_iam_ok);
+    struct np_platform* pl = tunnels->device->pl;
+
+    struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:Delete");
+    if (authReq) {
+        pl->authorization.check_access(authReq, delete_tunnel_iam, tunnels, request);
+        return;
+    }
+
+    // Could not make the iam request
+    pl->authorization.discard_request(authReq);
+    nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Out of resources");
+    nabto_coap_server_request_free(request);
 }
-void delete_tunnel_iam_ok(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request)
+
+void delete_tunnel_iam(bool allow, void* userData1, void* userData2)
 {
+    struct nm_tcptunnels* tunnels = userData1;
+    struct nabto_coap_server_request* request = userData2;
+
+    if (!allow) {
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_request_free(request);
+        return;
+    }
+
     struct nm_tcptunnel* tunnel = find_tunnel(tunnels, nabto_coap_server_request_get_parameter(request, "tid"));
     if (tunnel == NULL) {
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
@@ -305,12 +333,22 @@ void get_tunnel(struct nabto_coap_server_request* request, void* data)
         return;
     }
 
-    // Check IAM.
-    nm_tcptunnel_coap_check_access(tunnels, request, "TcpTunnel:Get", NULL, 0, &get_tunnel_iam_ok);
+
+    struct np_platform* pl = tunnels->device->pl;
+    struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:Get");
+    if (authReq) {
+        pl->authorization.check_access(authReq, get_tunnel_iam, tunnels, request);
+        return;
+    }
+
+    nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+    nabto_coap_server_request_free(request);
 }
 
-void get_tunnel_iam_ok(struct nm_tcptunnels* tunnels, struct nabto_coap_server_request* request)
+void get_tunnel_iam(bool allow, void* userData1, void* userData2)
 {
+    struct nm_tcptunnels* tunnels = userData1;
+    struct nabto_coap_server_request* request = userData2;
     struct nm_tcptunnel* tunnel = find_tunnel(tunnels, nabto_coap_server_request_get_parameter(request, "tid"));
     if (tunnel == NULL) {
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
