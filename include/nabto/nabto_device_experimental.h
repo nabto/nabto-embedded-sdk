@@ -47,17 +47,10 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
 
 /**
  * Call this function to inform the application that the authorization
- * request has been allowed.
+ * request has been allowed or denied.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_authorization_request_allow(NabtoDeviceAuthorizationRequest* request);
-
-/**
- * Call this function to inform the application that the authorization
- * request was denied.
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_authorization_request_deny(NabtoDeviceAuthorizationRequest* request);
+nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool verdict);
 
 /**
  * Get the action associated with the request.

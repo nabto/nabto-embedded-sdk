@@ -58,9 +58,9 @@ class AuthorizationDecider {
         const char* action = nabto_device_authorization_request_get_action(authReq);
         std::string a(action);
         if (a == "Custom:AllowThis") {
-            nabto_device_authorization_request_allow(authReq);
+            nabto_device_authorization_request_verdict(authReq, true);
         } else {
-            nabto_device_authorization_request_deny(authReq);
+            nabto_device_authorization_request_verdict(authReq, false);
         }
     }
 
@@ -96,8 +96,6 @@ class AuthCallback {
 };
 
 }
-
-
 
 BOOST_AUTO_TEST_SUITE(authorization)
 

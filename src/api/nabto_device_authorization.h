@@ -44,6 +44,7 @@ struct nabto_device_authorization_module {
     struct np_platform* pl;
     NabtoDeviceAuthorizationRequest** request;
     struct nabto_device_listener* listener;
+    struct nabto_device_context* device;
 };
 
 void nabto_device_authorization_init_module(struct nabto_device_context* context);
