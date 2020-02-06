@@ -4,6 +4,8 @@
 #include <platform/np_event_queue.h>
 #include <platform/np_authorization.h>
 
+struct nabto_device_context;
+
 struct nabto_device_authorization_request_attribute {
     struct nabto_device_authorization_request_attribute* next;
     const char* key;
@@ -43,5 +45,7 @@ struct nabto_device_authorization_module {
     NabtoDeviceAuthorizationRequest** request;
     struct nabto_device_listener* listener;
 };
+
+void nabto_device_authorization_init_module(struct nabto_device_context* context);
 
 #endif

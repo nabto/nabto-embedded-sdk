@@ -5,6 +5,8 @@
 #include <platform/np_logging.h>
 
 #include "nabto_device_authorization.h"
+#include "nabto_device_defines.h"
+#include "nabto_device_event_handler.h"
 
 #include <stdlib.h>
 
@@ -44,6 +46,7 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     request->attributes = NULL;
     request->apiDone = true;
     request->platformDone = false;
+    request->module = pl->authorizationData;
 
     return (struct np_authorization_request*)request;
 }
@@ -84,19 +87,26 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
 
     struct np_platform* pl = authReq->module->pl;
     struct nabto_device_authorization_module* module = pl->authorizationData;
+    struct nabto_device_listener* listener = module->listener;
 
     authReq->verdictCallback = callback;
     authReq->verdictCallbackUserData = userData;
 
-    if (!module->listener) {
-        // no listener set.
 
+    if (listener) {
+        if (nabto_device_listener_add_event(listener, authReq) == NABTO_EC_OK) {
+            return;
+        } else {
+            NABTO_LOG_ERROR(LOG, "Authorization request could not be added to listener queue.");
+        }
+    } else {
         NABTO_LOG_ERROR(LOG, "No Authorization listener is set for the device, denying the authorization request");
-        np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
-
     }
 
-    // TODO add request to auth listener queue
+    // if we end here the request is not added to the listener.
+    authReq->verdict = false;
+    np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
+
 }
 
 
@@ -119,8 +129,11 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_allow(NabtoDeviceAuthorizationRequest* request)
 {
-// TODO
-    // Add an event to the event queue that the request was allowed.
+    // TODO synchronize
+    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
+    struct np_platform* pl = authReq->module->pl;
+    authReq->verdict = true;
+    np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
 }
 
 /**
@@ -130,8 +143,11 @@ nabto_device_authorization_request_allow(NabtoDeviceAuthorizationRequest* reques
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_deny(NabtoDeviceAuthorizationRequest* request)
 {
-// TODO
-    // add an deny event to the event queue.
+    // TODO synchronize
+    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
+    struct np_platform* pl = authReq->module->pl;
+    authReq->verdict = false;
+    np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
 }
 
 /**
@@ -216,4 +232,26 @@ nabto_device_authorization_request_get_attribute_number(NabtoDeviceAuthorization
 static void free_request_when_unused(struct nabto_device_authorization_request* request)
 {
     // TODO
+}
+
+
+void nabto_device_authorization_init_module(struct nabto_device_context* context)
+{
+    struct np_platform* pl = &context->pl;
+
+    struct nabto_device_authorization_module* module = &context->authorization;
+
+    pl->authorizationData = module;
+
+    module->pl = pl;
+    module->request = NULL;
+    module->listener = NULL;
+
+    pl->authorization.create_request = create_request;
+    pl->authorization.discard_request = discard_request;
+    pl->authorization.add_number_attribute = add_number_attribute;
+    pl->authorization.add_string_attribute = add_string_attribute;
+    pl->authorization.check_access = check_access;
+
+
 }

@@ -15,6 +15,7 @@ if (HAVE_EPOLL_HEADERS)
 endif()
 
 set(test_src
+  helper.cpp
   unit_test.cpp
   network/tcp_test.cpp
   network/udp_test.cpp

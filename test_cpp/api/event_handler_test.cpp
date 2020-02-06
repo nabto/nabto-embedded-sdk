@@ -1,5 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
+#include "../helper.hpp"
+
 #include <api/nabto_device_event_handler.h>
 #include <api/nabto_api_future_queue.h>
 
@@ -72,9 +74,10 @@ BOOST_AUTO_TEST_CASE(event_test)
     BOOST_TEST(ec == NABTO_EC_OK);
 
     ec = nabto_device_listener_init_future(handler, (struct nabto_device_future*)fut);
+    nabto_device_listener_try_resolve(handler);
     BOOST_TEST(ec == NABTO_EC_OK);
     nabto_api_future_queue_execute_all(dev);
-    BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(EC(nabto_device_future_ready(fut)) == EC(NABTO_DEVICE_EC_OK));
     BOOST_TEST(event == nabto::test::RESOLVED);
     BOOST_TEST(listener == NABTO_EC_OK);
     NabtoDeviceError ec2 = nabto_device_future_error_code(fut);
@@ -105,12 +108,14 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
     BOOST_TEST(handler);
 
     np_error_code ec = nabto_device_listener_init(dev, handler, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
+
     ec = nabto_device_listener_add_event(handler, &event1);
     BOOST_TEST(ec == NABTO_EC_OK);
     ec = nabto_device_listener_add_event(handler, &event2);
     BOOST_TEST(ec == NABTO_EC_OK);
 
     NabtoDeviceError ec2 = nabto_device_listener_init_future(handler, (struct nabto_device_future*)fut);
+    nabto_device_listener_try_resolve(handler);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
@@ -122,6 +127,7 @@ BOOST_AUTO_TEST_CASE(event_test_multi_events)
 
     fut = nabto_device_future_new((NabtoDevice*)dev);
     ec2 = nabto_device_listener_init_future(handler, (struct nabto_device_future*)fut);
+    nabto_device_listener_try_resolve(handler);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_api_future_queue_execute_all(dev);
     BOOST_TEST(nabto_device_future_ready(fut) == NABTO_DEVICE_EC_OK);
@@ -179,6 +185,7 @@ BOOST_AUTO_TEST_CASE(event_test_free_with_future)
     np_error_code ec = nabto_device_listener_init(dev, handler, NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS, nabto::test::eventHandlerCallback, &listener);
     BOOST_TEST(ec == NABTO_EC_OK);
     NabtoDeviceError ec2 = nabto_device_listener_init_future(handler, (struct nabto_device_future*)fut);
+    nabto_device_listener_try_resolve(handler);
     BOOST_TEST(ec2 == NABTO_DEVICE_EC_OK);
     nabto_device_listener_stop((NabtoDeviceListener*)handler);
     nabto_device_listener_free((NabtoDeviceListener*)handler);

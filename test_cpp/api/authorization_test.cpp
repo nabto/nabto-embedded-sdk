@@ -21,8 +21,6 @@ class AuthorizationDecider {
 
     ~AuthorizationDecider() {
         stop();
-        nabto_device_future_free(future_);
-        nabto_device_listener_free(listener_);
     }
 
     void stop()
@@ -44,6 +42,8 @@ class AuthorizationDecider {
     void handleCallback(NabtoDeviceError ec)
     {
         if (ec == NABTO_DEVICE_EC_STOPPED) {
+            nabto_device_listener_free(listener_);
+            nabto_device_future_free(future_);
             return;
         }
 
@@ -115,13 +115,13 @@ BOOST_AUTO_TEST_CASE(allow_and_deny)
             AuthCallback authCallback;
             struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:AllowThis");
             pl->authorization.check_access(req, &AuthCallback::callback, &authCallback);
-            BOOST_TEST(authCallback.waitForCallback() == NABTO_DEVICE_EC_OK);
+            BOOST_TEST(authCallback.waitForCallback() == true);
         }
         {
             AuthCallback authCallback;
             struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:DenyThis");
             pl->authorization.check_access(req, &AuthCallback::callback, &authCallback);
-            BOOST_TEST(authCallback.waitForCallback() == NABTO_DEVICE_EC_ACCESS_DENIED);
+            BOOST_TEST(authCallback.waitForCallback() == false);
         }
     }
 

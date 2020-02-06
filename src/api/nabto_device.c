@@ -8,6 +8,7 @@
 #include <api/nabto_api_future_queue.h>
 #include <api/nabto_platform.h>
 #include <api/nabto_device_coap.h>
+#include <api/nabto_device_authorization.h>
 #include <platform/np_error_code.h>
 
 #include <platform/np_logging.h>
@@ -104,6 +105,9 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         nabto_device_new_resolve_failure(dev);
         return NULL;
     }
+
+    nabto_device_authorization_init_module(dev);
+
     ec = nc_device_init(&dev->core, &dev->pl);
     if (ec != NABTO_EC_OK) {
         nabto_device_new_resolve_failure(dev);
