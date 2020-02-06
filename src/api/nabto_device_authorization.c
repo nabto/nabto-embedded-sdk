@@ -87,7 +87,6 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     authReq->verdictCallbackUserData1 = userData1;
     authReq->verdictCallbackUserData2 = userData2;
 
-
     if (listener) {
         if (nabto_device_listener_add_event(listener, authReq) == NABTO_EC_OK) {
             return;
@@ -294,16 +293,20 @@ nabto_device_authorization_request_get_attribute_type(NabtoDeviceAuthorizationRe
 }
 
 /**
- * Get an index of the attribute with a given key
- *
- * @return NABTO_DEVICE_EC_OK if the key exists
- *         NABTO_DEVICE_EC_NOT_FOUND if the key does not exists.
+ * Get a name for an attribute
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_by_name(NabtoDeviceAuthorizationRequest* request, const char* name, size_t* index)
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRequest* request, size_t index)
 {
-    // TODO
-    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
+    struct nabto_device_context* dev = authReq->module->device;
+
+    const char* ret;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
+    ret = attribute->key;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ret;
 }
 
 /**
