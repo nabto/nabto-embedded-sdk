@@ -54,11 +54,10 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
 void discard_request(struct np_authorization_request* request)
 {
     struct nabto_device_authorization_request* r = (struct nabto_device_authorization_request*)request;
+    r->platformDone = true;
     if (r->apiDone) {
 
         free_request_when_unused(r);
-    } else {
-        r->platformDone = true;
     }
 }
 
@@ -66,6 +65,10 @@ static void handle_verdict(void* userData)
 {
     struct nabto_device_authorization_request* authReq = userData;
     authReq->verdictCallback(authReq->verdict, authReq->verdictCallbackUserData1, authReq->verdictCallbackUserData2);
+    authReq->platformDone = true;
+    if (authReq->apiDone) {
+         free_request_when_unused(authReq);
+    }
 }
 
 void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2)
