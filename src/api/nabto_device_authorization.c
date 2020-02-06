@@ -46,6 +46,7 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     request->attributes = NULL;
     request->apiDone = true;
     request->platformDone = false;
+    request->verdictDone = false;
     request->module = pl->authorizationData;
 
     return (struct np_authorization_request*)request;
@@ -102,21 +103,33 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
 }
 
 
+static void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict)
+{
+    if (authReq->verdictDone == false) {
+        struct np_platform* pl = authReq->module->pl;
+        authReq->verdict = verdict;
+        authReq->verdictDone = true;
+        np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
+    }
+}
+
 /**
  * Implementation of functions exposed throud the SDK
  */
-
-
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request)
 {
-    // TODO synchronize
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    authReq->apiDone = true;
-    if (authReq->platformDone) {
 
+    if (authReq->verdictDone == false) {
+        do_verdict(authReq, false);
+    }
+
+    authReq->apiDone = true;
+
+    if (authReq->platformDone) {
         free_request_when_unused(authReq);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -129,16 +142,11 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool verdict)
 {
-    // TODO synchronize
-
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
 
-
-    struct np_platform* pl = authReq->module->pl;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    authReq->verdict = verdict;
-    np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
+    do_verdict(authReq, verdict);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
