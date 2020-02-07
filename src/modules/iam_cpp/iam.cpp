@@ -12,6 +12,11 @@ std::unique_ptr<Attribute> Attributes::get(const std::string& key) const
     return std::make_unique<Attribute>(it->second);
 }
 
+AttributeMap Attributes::getMap() const
+{
+    return attributes_;
+}
+
 void Attributes::merge(const Attributes& attributes)
 {
     for (auto a : attributes.attributes_) {

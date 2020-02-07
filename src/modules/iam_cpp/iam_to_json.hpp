@@ -10,6 +10,8 @@ namespace iam {
 
 class IAMToJson {
  public:
+    static nlohmann::json attributesToJson(const Attributes& attributes);
+    static Attributes attributesFromJson(const nlohmann::json& json);
     static nlohmann::json userToJson(const User& user);
     static bool usersFromJson(const std::string& json, std::vector<User>& users);
     static bool usersFromJson(const nlohmann::json& json, std::vector<User>& users);

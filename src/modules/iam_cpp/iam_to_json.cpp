@@ -7,6 +7,52 @@
 namespace nabto {
 namespace iam {
 
+/**
+ * Output
+{
+  "Foo": "Bar",
+  "Baz": 42
+}
+*/
+nlohmann::json IAMToJson::attributesToJson(const iam::Attributes& attributes)
+{
+    nlohmann::json json;
+    iam::AttributeMap map = attributes.getMap();
+    for (auto a : map) {
+        if (a.second.getType() == AttributeType::STRING) {
+            json[a.first] = a.second.getString();
+        } else if (a.second.getType() == AttributeType::NUMBER) {
+            json[a.first] == a.second.getNumber();
+        }
+    }
+    return json;
+}
+
+/**
+ * Input format
+{
+  "Foo": "Bar",
+  "Baz": 42
+}
+ */
+Attributes IAMToJson::attributesFromJson(const nlohmann::json& json)
+{
+    AttributeMap map;
+    if (json.is_object()) {
+        for (auto it = json.begin(); it != json.end(); it++) {
+            std::string key = it.key();
+            const nlohmann::json& value = it.value();
+            if (value.is_string()) {
+                map[key] = Attribute(value.get<std::string>());
+            }
+            if (value.is_number()) {
+                map[key] = Attribute(value.get<int64_t>());
+            }
+        }
+    }
+    return Attributes(map);
+}
+
 // nlohmann::json IAMToJson::userToJson(const User& user)
 // {
 //     nlohmann::json jsonUser;

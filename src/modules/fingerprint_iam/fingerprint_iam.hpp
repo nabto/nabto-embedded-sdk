@@ -71,11 +71,13 @@ class User {
     }
     std::set<std::shared_ptr<Role> > getRoles() const { return roles_; }
     nabto::iam::Attributes getAttributes() const { return attributes_; }
-    std::string getUserID() const { return userId_; }
+    std::string getUserId() const { return userId_; }
+    std::set<std::string> getFingerprints() const { return fingerprints_; }
  private:
     std::string userId_;
     nabto::iam::Attributes attributes_;
     std::set<std::shared_ptr<Role> > roles_;
+    std::set<std::string> fingerprints_;
 };
 
 class FingerprintIAMPersisting {
@@ -170,7 +172,7 @@ class FingerprintIAM {
 
     void addUser(std::shared_ptr<User> user)
     {
-        users_[user->getUserID()] = user;
+        users_[user->getUserId()] = user;
     }
 
     void addFingerprintToUser(std::shared_ptr<User> user, const std::string& fingerprint)
