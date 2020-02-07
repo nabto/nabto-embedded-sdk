@@ -121,6 +121,14 @@ class HeatPump {
         return state;
     }
 
+    std::string getClientServerUrl() {
+        return persisting_.getClientServerUrl();
+    }
+
+    std::string getClientServerKey() {
+        return persisting_.getClientServerKey();
+    }
+
     bool beginPairing() {
         std::unique_lock<std::mutex> lock(mutex_);
         if (pairing_) {
@@ -141,6 +149,8 @@ class HeatPump {
     std::unique_ptr<HeatPumpCoapRequestHandler> coapPostMode;
     std::unique_ptr<HeatPumpCoapRequestHandler> coapPostTarget;
     std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPairingButton;
+
+    std::unique_ptr<HeatPumpCoapRequestHandler> coapGetClientSettings;
 
   private:
 

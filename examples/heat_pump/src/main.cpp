@@ -26,8 +26,9 @@ void my_handler(int s){
     printf("Caught signal %d\n",s);
 }
 
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-bool run_heat_pump(const std::string& configFile);
+bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server, const std::string& clientServerUrl, const std::string& clientServerKey);
+bool run_heat_pump(const std::string& configFile, const std::string& logLevel);
+bool reset_iam(const std::string& configFile);
 
 static void loadStaticIamPolicy(nabto::FingerprintIAM& iam);
 
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
         ("h,help", "Show help")
         ("version", "Show version")
         ("i,init", "Initialize configuration file")
+        ("reset-iam", "Remove paired users and custom iam changed.")
         ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump_device.json"))
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"))
         ("log-file", "File to log to", cxxopts::value<std::string>()->default_value("heat_pump_device_log.txt"));
@@ -45,7 +47,10 @@ int main(int argc, char** argv) {
     options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
         ("d,device", "Device id", cxxopts::value<std::string>())
-        ("s,server", "hostname of the server", cxxopts::value<std::string>());
+        ("s,server", "hostname of the server", cxxopts::value<std::string>())
+        ("client-server-url", "the server the client can use to connect to the device.", cxxopts::value<std::string>())
+        ("client-server-key", "the server key the client can use to connect to the device.", cxxopts::value<std::string>())
+        ;
 
     try {
 
@@ -67,13 +72,22 @@ int main(int argc, char** argv) {
             std::string productId = result["product"].as<std::string>();
             std::string deviceId = result["device"].as<std::string>();
             std::string server = result["server"].as<std::string>();
-            if (!init_heat_pump(configFile, productId, deviceId, server)) {
+            std::string clientServerUrl = result["client-server-url"].as<std::string>();
+            std::string clientServerKey = result["client-server-key"].as<std::string>();
+            if (!init_heat_pump(configFile, productId, deviceId, server, clientServerUrl, clientServerKey)) {
                 std::cerr << "Initialization failed" << std::endl;
                 return 2;
             }
+        } else if (result.count("reset-iam") > 0) {
+            std::string configFile = result["config"].as<std::string>();
+            if (!reset_iam(configFile)) {
+                std::cerr << "Reset of IAM failed" << std::endl;
+                return 4;
+            }
         } else {
             std::string configFile = result["config"].as<std::string>();
-            if (!run_heat_pump(configFile)) {
+            std::string logLevel = result["log-level"].as<std::string>();
+            if (!run_heat_pump(configFile, logLevel)) {
                 std::cerr << "Failed to run heatpump" << std::endl;
                 return 3;
             }
@@ -90,7 +104,22 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
+bool reset_iam(const std::string& configFile) {
+    json config;
+    if (!json_config_load(configFile, config)) {
+        std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
+        return false;
+    }
+    nabto::HeatPumpPersisting hpp(configFile);
+    if (!hpp.load()) {
+        return false;
+    }
+    hpp.deleteAllUsers();
+    hpp.save();
+    return true;
+}
+
+bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server, const std::string& clientServerUrl, const std::string& clientServerKey)
 {
     if (json_config_exists(configFile)) {
         std::cerr << "The config already file exists, remove " << configFile << " and try again" << std::endl;
@@ -136,6 +165,8 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     hpp.setProductId(productId);
     hpp.setDeviceId(deviceId);
     hpp.setServer(server);
+    hpp.setClientServerUrl(clientServerUrl);
+    hpp.setClientServerKey(clientServerKey);
     hpp.setHeatPumpMode("COOL");
     hpp.setHeatPumpPower(false);
     hpp.setHeatPumpTarget(22.3);
@@ -151,7 +182,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     return true;
 }
 
-bool run_heat_pump(const std::string& configFile)
+bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
 {
     if (!json_config_exists(configFile)) {
         std::cerr << "The config does not exists, create it with --init first" << std::endl;
@@ -175,7 +206,6 @@ bool run_heat_pump(const std::string& configFile)
     // TODO
     //hpp.loadUsersIntoIAM();
     loadStaticIamPolicy(iam);
-
 
     ec = nabto_device_set_product_id(device, hpp.getProductId().c_str());
     if (ec) {
@@ -202,6 +232,10 @@ bool run_heat_pump(const std::string& configFile)
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }
+    ec = nabto_device_set_log_level(device, logLevel.c_str());
+    if (ec) {
+        std::cerr << "Failed to set log level to " << logLevel << std::endl;
+    }
 
     // run application
     ec = nabto_device_start(device);
@@ -219,7 +253,9 @@ bool run_heat_pump(const std::string& configFile)
     } else {
         std::string fp(fpTemp);
         nabto_device_string_free(fpTemp);
+
         std::cout << "Device " << hpp.getProductId() << "." << hpp.getDeviceId() << " Started with fingerprint " << std::string(fp) << std::endl;
+        std::cout << " client server url " << hpp.getClientServerUrl() << " client server key " << hpp.getClientServerKey() << std::endl;
     }
 
     {

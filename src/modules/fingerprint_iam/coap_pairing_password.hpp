@@ -1,3 +1,4 @@
+#pragma once
 #include <nabto/nabto_device.h>
 
 #include "coap_request_handler.hpp"

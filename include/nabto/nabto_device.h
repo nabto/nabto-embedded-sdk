@@ -631,6 +631,7 @@ nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* listen
  *   NABTO_DEVICE_EC_OK if request is ready
  *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the resource already has an active listener
  *   NABTO_DEVICE_EC_ABORTED if device is being freed
+ *   NABTO_DEVICE_EC_STOPPED if the listener has been stopped
  *   NABTO_DEVICE_EC_OUT_OF_MEMORY if request was received but the
  *                                structure could not be allocated.
  */

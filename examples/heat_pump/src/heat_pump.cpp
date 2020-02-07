@@ -8,9 +8,16 @@
 #include <stdlib.h>
 #include <iostream>
 
+#include "button_press.hpp"
+
 void HeatPump::init() {
     listenForConnectionEvents();
     listenForDeviceEvents();
+
+    fingerprintIAM_.enableButtonPairing([](std::string fingerprint, std::function<void (bool accepted)> cb) {
+            std::cout << "Allow the client with the fingerprint " << fingerprint << " to pair with the device? [y/n]" << std::endl;
+            nabto::ButtonPress::wait(std::chrono::seconds(60), cb);
+        });
 }
 
 bool validate_config(const json& config) {

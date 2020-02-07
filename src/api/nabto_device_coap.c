@@ -230,6 +230,7 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
         // using the coap request structure as event structure means it will be freed when user sends the response
     } else if (ec == NABTO_EC_ABORTED) {
         retEc = ec;
+        nabto_coap_server_remove_resource(res->resource);
         free(res);
     } else {
         // In error state requests on the listener queue will not reach the user, so they cant resolve the request

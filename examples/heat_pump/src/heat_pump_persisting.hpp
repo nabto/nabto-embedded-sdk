@@ -16,6 +16,7 @@ class HeatPumpPersisting : public FingerprintIAMPersisting
 
     virtual void upsertUser(const User& user);
     virtual void deleteUser(const std::string& userId);
+    virtual void deleteAllUsers();
 
     void save();
     bool load();
@@ -84,6 +85,24 @@ class HeatPumpPersisting : public FingerprintIAMPersisting
     double getHeatPumpTarget()
     {
         return config_["HeatPump"]["Target"].get<double>();
+    }
+
+    void setClientServerUrl(const std::string serverUrl)
+    {
+        config_["Client"]["ServerUrl"] = serverUrl;
+    }
+
+    void setClientServerKey(const std::string serverKey)
+    {
+        config_["Client"]["ServerKey"] = serverKey;
+    }
+
+    std::string getClientServerUrl() {
+        return config_["Client"]["ServerUrl"].get<std::string>();
+    }
+
+    std::string getClientServerKey() {
+        return config_["Client"]["ServerKey"].get<std::string>();
     }
 
  private:

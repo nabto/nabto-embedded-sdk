@@ -268,12 +268,10 @@ void nm_mdns_packet_sent_v4(const np_error_code ec, void* userData)
         nm_mdns_try_done(mdns);
         return;
     }
-    if (ec == NABTO_EC_OK) {
-        nm_mdns_recv_packet_v4(mdns);
-    } else {
+    if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(LOG, "v4 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
-        mdns->v4Done = true;
     }
+    nm_mdns_recv_packet_v4(mdns);
 }
 
 void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData)
@@ -364,10 +362,8 @@ void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData)
         nm_mdns_try_done(mdns);
         return;
     }
-    if (ec == NABTO_EC_OK) {
-        nm_mdns_recv_packet_v6(mdns);
-    } else {
+    if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(LOG, "v6 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
-        mdns->v6Done = true;
     }
+    nm_mdns_recv_packet_v6(mdns);
 }

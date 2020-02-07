@@ -2,6 +2,7 @@
 
 #include "coap_is_paired.hpp"
 #include "coap_pairing_password.hpp"
+#include "coap_pairing_button.hpp"
 
 #include <modules/iam_cpp/iam.hpp>
 
@@ -81,6 +82,12 @@ nabto::FingerprintIAMSubject FingerprintIAM::createSubjectFromUser(const User& u
         }
     }
     return FingerprintIAMSubject(policies, user.getAttributes());
+}
+
+void FingerprintIAM::enableButtonPairing(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback)
+{
+    coapPairingButton_ = std::make_unique<CoapPairingButton>(*this, device_);
+    coapPairingButton_->init(callback);
 }
 
 } // namespace

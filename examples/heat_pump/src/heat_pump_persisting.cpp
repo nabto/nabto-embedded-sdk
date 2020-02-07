@@ -40,6 +40,12 @@ void HeatPumpPersisting::deleteUser(const std::string& userId)
     save();
 }
 
+void HeatPumpPersisting::deleteAllUsers()
+{
+    config_["Users"].clear();
+    save();
+}
+
 void HeatPumpPersisting::save()
 {
     json_config_save(configFile_, config_);

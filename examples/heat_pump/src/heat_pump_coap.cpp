@@ -20,6 +20,7 @@ void heat_pump_set_mode(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_set_target(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData);
 void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData);
+void heat_pump_get_client_settings(NabtoDeviceCoapRequest* request, void* userData);
 
 
 HeatPumpCoapRequestHandler::HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDeviceCoapMethod method, const char** pathSegments, CoapHandler handler)
@@ -46,12 +47,13 @@ void heat_pump_coap_init(NabtoDevice* device, HeatPump* heatPump)
     const char* postPower[] = { "heat-pump", "power", NULL };
     const char* postMode[] = { "heat-pump", "mode", NULL };
     const char* postTarget[] = { "heat-pump", "target", NULL };
-    //const char* postPairingButton[] = { "pairing", "button", NULL };
+    const char* getClientSettings[] = { "beta", "client-settings", NULL };
+
     heatPump->coapGetState = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_GET, getState, &heat_pump_get);
     heatPump->coapPostPower = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPower, &heat_pump_set_power);
     heatPump->coapPostMode = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postMode, &heat_pump_set_mode);
     heatPump->coapPostTarget = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postTarget, &heat_pump_set_target);
-    //heatPump->coapPostPairingButton = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_POST, postPairingButton, &heat_pump_pairing_button);
+    heatPump->coapGetClientSettings = std::make_unique<HeatPumpCoapRequestHandler>(heatPump, NABTO_DEVICE_COAP_GET, getClientSettings, &heat_pump_get_client_settings);
 }
 
 void heat_pump_coap_deinit(HeatPump* heatPump)
@@ -60,7 +62,7 @@ void heat_pump_coap_deinit(HeatPump* heatPump)
     heatPump->coapPostPower->stopListen();
     heatPump->coapPostMode->stopListen();
     heatPump->coapPostTarget->stopListen();
-    heatPump->coapPostPairingButton->stopListen();
+    heatPump->coapGetClientSettings->stopListen();
 }
 
 void heat_pump_coap_send_bad_request(NabtoDeviceCoapRequest* request)
@@ -108,148 +110,6 @@ bool heat_pump_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* par
     cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
     return true;
 }
-
-std::condition_variable cv;
-bool answer;
-
-void readInput()
-{
-    for(;;) {
-        char c;
-        std::cin >> c;
-        if (c == 'n') {
-            answer = false;
-            cv.notify_one();
-            return;
-        } else if (c == 'y') {
-            answer = true;
-            cv.notify_one();
-            return;
-        } else {
-            std::cout << "valid answers y or n" << std::endl;
-        }
-    }
-
-}
-
-/**
- * Add a user with a given fingerprint to the system.
- */
-// bool pairUser( HeatPump* application, const std::string& fingerprint)
-// {
-//     // TODO
-//     std::string userName = "User-42";
-//     // TOOD
-//     size_t userCount = 42;
-//     NabtoDeviceError ec;
-
-
-//     ec = nabto_device_iam_users_create(application->getDevice(), userName.c_str());
-//     if (ec) {
-//         return false;
-//     }
-
-//     ec = nabto_device_iam_users_add_fingerprint(application->getDevice(), userName.c_str(), fingerprint.c_str());
-//     if (ec) {
-//         nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
-//         std::cout << "Could not add fingerprint to the heat pump" << std::endl;
-//         return false;
-//     }
-
-//     std::string role;
-//     if (userCount == 0) {
-//         role = "Owner";
-//     } else {
-//         role = "User";
-//     }
-//     ec = nabto_device_iam_users_add_role(application->getDevice(), userName.c_str(), role.c_str());
-//     if (ec) {
-//         nabto_device_iam_users_delete(application->getDevice(), userName.c_str());
-//         std::cout << "Could not add the role " << role.c_str() << " to the user " << userName << std::endl;
-//         return false;
-//     }
-//     std::cout << "Added the fingerprint " << fingerprint << " to the user " << userName << " with the role " << role<< std::endl;
-//     return true;
-// }
-
-/**
- * Ask the user a question in the terminal whether the user wants the
- * accept the client with the given fingerprint as a user on the
- * system.
- */
-// void questionHandler(NabtoDeviceCoapRequest* request, HeatPump* application, bool asOwner)
-// {
-//     if (!application->beginPairing()) {
-//         nabto_device_coap_error_response(request, 403, "Already Pairing or paired");
-//         nabto_device_coap_request_free(request);
-//         return;
-//     }
-//     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-//     char* fingerprint;
-//     nabto_device_connection_get_client_fingerprint_hex(application->getDevice(), ref, &fingerprint);
-
-//     std::string fp(fingerprint);
-//     nabto_device_string_free(fingerprint);
-//     std::cout << "Allow client with fingerprint: " << fp << " [yn]" << std::endl;
-
-//     std::thread t(readInput);
-//     t.detach();
-//     std::mutex mtx;
-//     std::unique_lock<std::mutex> lock(mtx);
-//     bool result = false;
-//     if (cv.wait_for(lock, std::chrono::seconds(60)) == std::cv_status::timeout) {
-//         std::cout << "No input given defaulting to n" << std::endl;
-//     } else {
-//         result = answer;
-//     }
-
-//     if (result == true && pairUser(application, fp)) {
-//         nabto_device_coap_response_set_code(request, 205);
-//         nabto_device_coap_response_ready(request);
-//     } else {
-//         nabto_device_coap_error_response(request, 403, "Rejected");
-//     }
-//     nabto_device_coap_request_free(request);
-//     application->pairingEnded();
-// }
-
-/**
- * Pair with a device.
- *
- * The pairing asks the user for a confirmation that the client in
- * question is allowed to pair with the device. This simulates a
- * button on the device.
- */
-// void heat_pump_pairing_button(NabtoDeviceCoapRequest* request, void* userData)
-// {
-//     HeatPump* application = (HeatPump*)userData;
-
-//     size_t userCount;
-//     NabtoDeviceError ec = application->userCount(userCount);
-//     if (ec) {
-//         nabto_device_coap_error_response(request, 500, "");
-//         nabto_device_coap_request_free(request);
-//         return;
-//     }
-
-//     json attributes;
-//     attributes["Pairing:UserCount"] = userCount;
-
-//     std::vector<uint8_t> cbor = json::to_cbor(attributes);
-
-//     NabtoDeviceError effect = nabto_device_iam_check_action_attributes(
-//         application->getDevice(),
-//         nabto_device_coap_request_get_connection_ref(request), "Pairing:Button", cbor.data(), cbor.size());
-
-//     if (effect != NABTO_DEVICE_EC_OK) {
-//         nabto_device_coap_error_response(request, 403, "Unauthorized");
-//         nabto_device_coap_request_free(request);
-//         return;
-//     }
-
-//     application->pairingThread_ = std::make_unique<std::thread>(questionHandler, request, application, true);
-//     application->pairingThread_->detach();
-// }
 
 // Change heat_pump power state (turn it on or off)
 /**
@@ -361,6 +221,34 @@ void heat_pump_get(NabtoDeviceCoapRequest* request, void* userData)
     }
 
     auto d = json::to_cbor(application->getState());
+
+    nabto_device_coap_response_set_code(request, 205);
+    nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    NabtoDeviceError ec = nabto_device_coap_response_set_payload(request, d.data(), d.size());
+    if (ec != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+    } else {
+        nabto_device_coap_response_ready(request);
+    }
+    nabto_device_coap_request_free(request);
+}
+
+
+// Get heat_pump client settings
+// CoAP GET /beta/client-settings
+// return ServerKey and ServerUrl
+void heat_pump_get_client_settings(NabtoDeviceCoapRequest* request, void* userData)
+{
+    HeatPump* application = (HeatPump*)userData;
+    if (!heat_pump_coap_check_action(application->getFPIAM(), request, "Beta:GetClientSettings")) {
+        return;
+    }
+
+    json root;
+    root["ServerKey"] = application->getClientServerKey();
+    root["ServerUrl"] = application->getClientServerUrl();
+
+    auto d = json::to_cbor(root);
 
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);

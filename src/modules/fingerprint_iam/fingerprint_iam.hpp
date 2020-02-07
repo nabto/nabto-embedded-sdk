@@ -6,11 +6,13 @@
 #include <modules/iam_cpp/iam.hpp>
 
 #include <sstream>
+#include <functional>
 
 namespace nabto {
 
 class CoapIsPaired;
 class CoapPairingPassword;
+class CoapPairingButton;
 
 class RoleBuilder {
  public:
@@ -276,6 +278,8 @@ class FingerprintIAM {
         return "secret123";
     }
 
+    void enableButtonPairing(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback);
+
  private:
     std::map<std::string, std::shared_ptr<User> > fingerprintToUser_;
     std::map<std::string, std::shared_ptr<User> > users_;
@@ -291,6 +295,7 @@ class FingerprintIAM {
 
     std::unique_ptr<CoapIsPaired> coapIsPaired_;
     std::unique_ptr<CoapPairingPassword> coapPairingPassword_;
+    std::unique_ptr<CoapPairingButton> coapPairingButton_;
 };
 
 } // namespace
