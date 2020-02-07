@@ -7,6 +7,7 @@
 #include <modules/iam_cpp/iam.hpp>
 
 #include <cbor.h>
+#include <iostream>
 
 namespace nabto {
 
@@ -51,14 +52,21 @@ bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string
     nabto_device_string_free(fingerprint);
 
     std::shared_ptr<User> user = findUserByFingerprint(clientFingerprint);
+    bool verdict;
     if (user) {
         auto subject = createSubjectFromUser(*user);
-        return nabto::iam::IamPdp::checkAccess(subject, action, attributes);
+        verdict = nabto::iam::IamPdp::checkAccess(subject, action, attributes);
     } else {
         auto subject = unpairedSubject();
-        return nabto::iam::IamPdp::checkAccess(subject, action, attributes);
+        verdict = nabto::iam::IamPdp::checkAccess(subject, action, attributes);
     }
-    // Find paired user or use the unpaired role.
+
+    if (verdict) {
+        std::cout << "Access granted to action: " << action << " For connection with reference: " << ref << std::endl;
+    } else {
+        std::cout << "Access denied to action: " << action << " For connection with reference: " << ref << std::endl;
+    }
+    return verdict;
 }
 
 nabto::FingerprintIAMSubject FingerprintIAM::unpairedSubject()

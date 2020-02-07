@@ -18,7 +18,7 @@ class CoapPairingButton : public CoapRequestHandler {
     bool init(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback)
     {
         callback_ = callback;
-        return CoapRequestHandler::init(NABTO_DEVICE_COAP_GET, {"pairing", "button"});
+        return CoapRequestHandler::init(NABTO_DEVICE_COAP_POST, {"pairing", "button"});
     }
 
     virtual void handleRequest(NabtoDeviceCoapRequest* request)

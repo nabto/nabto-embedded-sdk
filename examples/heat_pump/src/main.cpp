@@ -310,6 +310,7 @@ void loadStaticIamPolicy(nabto::FingerprintIAM& iam)
         .name("HeatPumpWrite")
         .addStatement(nabto::iam::StatementBuilder()
                       .allow()
+                      .addAction("HeatPump:Set")
                       .addAction("IAM:AddUser")
                       .addAction("IAM:GetUser")
                       .addAction("IAM:ListUsers")
@@ -338,8 +339,7 @@ void loadStaticIamPolicy(nabto::FingerprintIAM& iam)
     iam.addRole(nabto::RoleBuilder().name("Unpaired").addPolicy("ButtonPairing"));
     iam.addRole(nabto::RoleBuilder().name("Owner")
                 .addPolicy("HeatPumpWrite")
-                .addPolicy("HeatPumpRead")
-                .addPolicy("IAMFullAccess"));
+                .addPolicy("HeatPumpRead"));
     iam.addRole(nabto::RoleBuilder().name("User")
                 .addPolicy("HeatPumpRead")
                 .addPolicy("HeatPumpWrite")

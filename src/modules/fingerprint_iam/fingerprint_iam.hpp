@@ -229,10 +229,10 @@ class FingerprintIAM {
         }
 
         if (users_.size() == 0) {
-            if (!adminRole_) {
+            if (!ownerRole_) {
                 return false;
             }
-            auto user = std::make_shared<User>("admin", adminRole_);
+            auto user = std::make_shared<User>("owner", ownerRole_);
             addUser(user);
             addFingerprintToUser(user, fingerprint);
             return true;
@@ -280,6 +280,33 @@ class FingerprintIAM {
 
     void enableButtonPairing(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback);
 
+    std::shared_ptr<Role> getRole(const std::string& role)
+    {
+        auto it = roles_.find(role);
+        if (it == roles_.end()) {
+            return nullptr;
+        }
+        return it->second;
+    }
+
+    bool setUnpairedRole(const std::string& role)
+    {
+        unpairedRole_ = getRole(role);
+        return (unpairedRole_ != nullptr);
+    }
+
+    bool setOwnerRole(const std::string& role)
+    {
+        ownerRole_ = getRole(role);
+        return (ownerRole_ != nullptr);
+    }
+
+    bool setGuestRole(const std::string& role)
+    {
+        guestRole_ = getRole(role);
+        return (guestRole_ != nullptr);
+    }
+
  private:
     std::map<std::string, std::shared_ptr<User> > fingerprintToUser_;
     std::map<std::string, std::shared_ptr<User> > users_;
@@ -287,7 +314,7 @@ class FingerprintIAM {
     std::map<std::string, std::shared_ptr<nabto::iam::Policy> > policies_;
 
     std::shared_ptr<Role> unpairedRole_;
-    std::shared_ptr<Role> adminRole_;
+    std::shared_ptr<Role> ownerRole_;
     std::shared_ptr<Role> guestRole_;
 
     NabtoDevice* device_;

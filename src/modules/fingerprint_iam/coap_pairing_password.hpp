@@ -16,7 +16,7 @@ class CoapPairingPassword : public CoapRequestHandler {
 
     bool init()
     {
-        return CoapRequestHandler::init(NABTO_DEVICE_COAP_GET, {"pairing", "password"});
+        return CoapRequestHandler::init(NABTO_DEVICE_COAP_POST, {"pairing", "password"});
     }
 
     virtual void handleRequest(NabtoDeviceCoapRequest* request)

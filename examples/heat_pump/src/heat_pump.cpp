@@ -14,10 +14,16 @@ void HeatPump::init() {
     listenForConnectionEvents();
     listenForDeviceEvents();
 
+    persisting_.loadUsersIntoIAM(fingerprintIAM_);
+
     fingerprintIAM_.enableButtonPairing([](std::string fingerprint, std::function<void (bool accepted)> cb) {
             std::cout << "Allow the client with the fingerprint " << fingerprint << " to pair with the device? [y/n]" << std::endl;
             nabto::ButtonPress::wait(std::chrono::seconds(60), cb);
         });
+
+    fingerprintIAM_.setUnpairedRole("Unpaired");
+    fingerprintIAM_.setOwnerRole("Owner");
+    fingerprintIAM_.setGuestRole("Guest");
 }
 
 bool validate_config(const json& config) {
