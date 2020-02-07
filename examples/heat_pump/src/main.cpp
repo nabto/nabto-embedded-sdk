@@ -189,78 +189,25 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         exit(2);
     }
 
-    nabto::HeatPumpPersisting hpp(configFile);
-
-    hpp.load();
-
-    NabtoDeviceError ec;
-
     NabtoDevice* device = nabto_device_new();
     if (device == NULL) {
         std::cerr << "Device New Failed" << std::endl;
         return false;
     }
 
-    nabto::FingerprintIAM iam(device, hpp);
+    nabto::HeatPumpPersisting hpp(configFile);
 
-    // TODO
-    //hpp.loadUsersIntoIAM();
-    loadStaticIamPolicy(iam);
+    hpp.load();
 
-    ec = nabto_device_set_product_id(device, hpp.getProductId().c_str());
-    if (ec) {
-        std::cerr << "Could not set product id" << std::endl;
-    }
-    ec = nabto_device_set_device_id(device, hpp.getDeviceId().c_str());
-    if (ec) {
-        std::cerr << "Could not set device id" << std::endl;
-    }
-    ec = nabto_device_set_server_url(device, hpp.getServer().c_str());
-    if (ec) {
-        std::cerr << "Could not set server url" << std::endl;
-    }
-    ec = nabto_device_set_private_key(device, hpp.getPrivateKey().c_str());
-    if (ec) {
-        std::cerr << "Could not set private key" << std::endl;
-    }
-
-    ec = nabto_device_enable_mdns(device);
-    if (ec) {
-        std::cerr << "Failed to enable mdns" << std::endl;
-    }
-    ec = nabto_device_set_log_std_out_callback(device);
-    if (ec) {
-        std::cerr << "Failed to enable stdour logging" << std::endl;
-    }
-    ec = nabto_device_set_log_level(device, logLevel.c_str());
-    if (ec) {
-        std::cerr << "Failed to set log level to " << logLevel << std::endl;
-    }
-
-    // run application
-    ec = nabto_device_start(device);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        std::cerr << "Failed to start device" << std::endl;
-        nabto_device_free(device);
-        return false;
-    }
-
-    char* fpTemp;
-    ec = nabto_device_get_device_fingerprint_hex(device, &fpTemp);
-    if (ec) {
-        std::cerr << "Could not get fingerprint of the device" << std::endl;
-        std::cout << "Device " << hpp.getProductId() << "." << hpp.getDeviceId() << " Started with unknown fingerprint" << std::endl;
-    } else {
-        std::string fp(fpTemp);
-        nabto_device_string_free(fpTemp);
-
-        std::cout << "Device " << hpp.getProductId() << "." << hpp.getDeviceId() << " Started with fingerprint " << std::string(fp) << std::endl;
-        std::cout << " client server url " << hpp.getClientServerUrl() << " client server key " << hpp.getClientServerKey() << std::endl;
-    }
 
     {
+        nabto::FingerprintIAM iam(device, hpp);
+        loadStaticIamPolicy(iam);
+
         HeatPump hp(device, iam, hpp);
+        hp.initDevice();
         hp.init();
+        hp.setLogLevel(logLevel);
 
         heat_pump_coap_init(device, &hp);
 
@@ -284,6 +231,7 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         nabto_device_future_free(fut);
         nabto_device_stop(device);
     }
+
     nabto_device_free(device);
     return true;
 }

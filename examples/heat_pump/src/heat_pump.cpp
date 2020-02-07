@@ -26,6 +26,60 @@ void HeatPump::init() {
     fingerprintIAM_.setGuestRole("Guest");
 }
 
+NabtoDeviceError HeatPump::initDevice()
+{
+    NabtoDeviceError ec;
+    ec = nabto_device_set_product_id(device_, persisting_.getProductId().c_str());
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_device_id(device_, persisting_.getDeviceId().c_str());
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_server_url(device_, persisting_.getServer().c_str());
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_private_key(device_, persisting_.getPrivateKey().c_str());
+    if (ec) {
+        return ec;
+    }
+
+    ec = nabto_device_enable_mdns(device_);
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_log_std_out_callback(device_);
+    if (ec) {
+        return ec;
+    }
+
+    // run application
+    ec = nabto_device_start(device_);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to start device" << std::endl;
+        return ec;
+    }
+    return NABTO_DEVICE_EC_OK;
+}
+
+void HeatPump::setLogLevel(const std::string& logLevel)
+{
+    nabto_device_set_log_level(device_, logLevel.c_str());
+}
+
+void HeatPump::printHeatpumpInfo()
+{
+    char* fpTemp = NULL;
+    nabto_device_get_device_fingerprint_hex(device_, &fpTemp);
+    std::string fingerprint(fpTemp);
+    nabto_device_string_free(fpTemp);
+
+    std::cout << "Device " << persisting_.getProductId() << "." << persisting_.getDeviceId() << " Started with fingerprint " << fingerprint << std::endl;
+    std::cout << " client server url " << persisting_.getClientServerUrl() << " client server key " << persisting_.getClientServerKey() << std::endl;
+}
+
 bool validate_config(const json& config) {
     try {
         config["ProductId"].get<std::string>();

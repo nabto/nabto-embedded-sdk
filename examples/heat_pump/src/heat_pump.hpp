@@ -80,6 +80,11 @@ class HeatPump {
 
     void init();
 
+    void printHeatpumpInfo();
+    void setLogLevel(const std::string& logLevel);
+
+    NabtoDeviceError initDevice();
+
     void deinit() {
         if (connectionEventListener_) {
             nabto_device_listener_stop(connectionEventListener_);
