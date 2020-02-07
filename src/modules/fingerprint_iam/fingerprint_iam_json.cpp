@@ -10,9 +10,6 @@ namespace nabto {
   }
 }
 */
-
-
-
 bool FingerprintIAMJson::loadRoles(FingerprintIAM& iam, const nlohmann::json& roles)
 {
     for (auto it = roles.begin(); it != roles.end(); it++) {
@@ -59,7 +56,7 @@ nlohmann::json FingerprintIAMJson::fingerprintsToJson(const User& user)
     return fingerprints;
 }
 
-nlohmann::json FingerprintIAMJson::saveUser(const User& user)
+nlohmann::json FingerprintIAMJson::userToJson(const User& user)
 {
     nlohmann::json json;
     json["Roles"] = rolesToJson(user);
@@ -69,9 +66,69 @@ nlohmann::json FingerprintIAMJson::saveUser(const User& user)
     return json;
 }
 
-bool FingerprintIAMJson::usersFromJson(FingerprintIAM& iam, const nlohmann::json& json)
+/**
+ * Load user from json
 {
-    return false;
+  "UserId1": {
+    "Roles": ...,
+    "Fingerprints": ....,
+    "Attributes": ...,
+    "Id": ...
+  },
+  "UserId2": {
+    ...
+  }
+}
+*/
+
+static UserBuilder loadUserRoles(const nlohmann::json& roles, UserBuilder ub)
+{
+    if (roles.is_array()) {
+        for (auto r : roles) {
+            ub = ub.addRole(r);
+        }
+    }
+    return ub;
+}
+
+static UserBuilder loadFingerprints(const nlohmann::json& fingerprints, UserBuilder ub)
+{
+    if (fingerprints.is_array()) {
+        for (auto f : fingerprints) {
+            ub = ub.addFingerprint(f);
+        }
+    }
+    return ub;
+}
+
+static UserBuilder loadAttributes(const nlohmann::json& attributes, UserBuilder ub)
+{
+    if (attributes.is_object()) {
+        ub.attributes(iam::IAMToJson::attributesFromJson(attributes));
+    }
+    return ub;
+}
+
+bool FingerprintIAMJson::loadUsersFromJson(FingerprintIAM& iam, const nlohmann::json& json)
+{
+    if (!json.is_object()) {
+        return false;
+    }
+
+    for (auto it = json.begin(); it != json.end(); it++) {
+        UserBuilder ub;
+        ub = ub.id(it.key());
+        nlohmann::json jsonUser = it.value();
+
+        ub = loadUserRoles(jsonUser["Roles"], ub);
+        ub = loadFingerprints(jsonUser["Fingerprints"], ub);
+        ub = loadAttributes(jsonUser["Attributes"], ub);
+
+        if (!iam.buildUser(ub)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace

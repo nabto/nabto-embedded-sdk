@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <nabto/nabto_device.h>
 
 #include <modules/iam_cpp/iam.hpp>
@@ -7,6 +8,9 @@
 #include <sstream>
 
 namespace nabto {
+
+class CoapIsPaired;
+class CoapPairingPassword;
 
 class RoleBuilder {
  public:
@@ -29,6 +33,48 @@ class RoleBuilder {
     std::set<std::string> policies_;
     std::string name_;
 };
+
+class UserBuilder
+{
+ public:
+    UserBuilder() {}
+
+    UserBuilder id(const std::string& id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    UserBuilder addFingerprint(const std::string& fingerprint)
+    {
+        fingerprints_.insert(fingerprint);
+        return *this;
+    }
+
+    UserBuilder attributes(const iam::Attributes& attributes)
+    {
+        attributes_ = attributes;
+        return *this;
+    }
+
+    UserBuilder addRole(const std::string& role)
+    {
+        roles_.insert(role);
+        return *this;
+    }
+
+    std::string getId() const { return id_; }
+    std::set<std::string> getFingerprints() const { return fingerprints_; }
+    std::set<std::string> getRoles() const { return roles_; }
+    iam::Attributes getAttributes() const { return attributes_; }
+
+ private:
+    std::set<std::string> fingerprints_;
+    std::set<std::string> roles_;
+    iam::Attributes attributes_;
+    std::string id_;
+};
+
 
 class FingerprintIAMSubject : public nabto::iam::Subject {
  public:
@@ -65,19 +111,30 @@ class Role {
 
 class User {
  public:
-    User(const std::string& userId, std::shared_ptr<Role> role)
+    User(const std::string& userId, const std::set<std::shared_ptr<Role> >& roles, const std::set<std::string>& fingerprints, const iam::Attributes& attributes)
+        : userId_(userId), roles_(roles), fingerprints_(fingerprints), attributes_(attributes)
     {
-
     }
+    User(const std::string& userId, std::shared_ptr<Role> role)
+        : userId_(userId)
+    {
+        roles_.insert(role);
+    }
+
+    void addFingerprint(const std::string& fingerprint)
+    {
+        fingerprints_.insert(fingerprint);
+    }
+
     std::set<std::shared_ptr<Role> > getRoles() const { return roles_; }
     nabto::iam::Attributes getAttributes() const { return attributes_; }
     std::string getUserId() const { return userId_; }
     std::set<std::string> getFingerprints() const { return fingerprints_; }
  private:
     std::string userId_;
-    nabto::iam::Attributes attributes_;
     std::set<std::shared_ptr<Role> > roles_;
     std::set<std::string> fingerprints_;
+    nabto::iam::Attributes attributes_;
 };
 
 class FingerprintIAMPersisting {
@@ -88,6 +145,7 @@ class FingerprintIAMPersisting {
 
 class FingerprintIAM {
  public:
+    ~FingerprintIAM();
     FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting);
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action);
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action, const nabto::iam::Attributes& attributes);
@@ -110,14 +168,34 @@ class FingerprintIAM {
         }
         std::set<std::shared_ptr<nabto::iam::Policy> > policies;
         for (auto policyString : roleBuilder.getPolicies()) {
-            auto p = policies_[policyString];
-            if (p) {
-                policies.insert(p);
+            auto it = policies_.find(policyString);
+            if (it != policies_.end()) {
+                policies.insert(it->second);
             } else {
                 return false;
             }
         }
         roles_[roleBuilder.getName()] = std::make_shared<Role>(roleBuilder.getName(), policies);
+        return true;
+    }
+
+    bool buildUser(const UserBuilder& ub)
+    {
+        if (users_.find(ub.getId()) != users_.end()) {
+            return false;
+        }
+
+        std::set<std::shared_ptr<Role> > roles;
+        for (auto roleString : ub.getRoles()) {
+            auto it = roles_.find(roleString);
+            if (it != roles_.end()) {
+                roles.insert(it->second);
+            } else {
+                return false;
+            }
+        }
+
+        addUser(std::make_shared<User>(ub.getId(), roles, ub.getFingerprints(), ub.getAttributes()));
         return true;
     }
 
@@ -173,11 +251,18 @@ class FingerprintIAM {
     void addUser(std::shared_ptr<User> user)
     {
         users_[user->getUserId()] = user;
+        for (auto fp : user->getFingerprints()) {
+            fingerprintToUser_[fp] = user;
+        }
+        persisting_.upsertUser(*user);
     }
 
     void addFingerprintToUser(std::shared_ptr<User> user, const std::string& fingerprint)
     {
         fingerprintToUser_[fingerprint] = user;
+
+        user->addFingerprint(fingerprint);
+        persisting_.upsertUser(*user);
     }
 
     bool isPaired(const std::string& fingerprint)
@@ -186,6 +271,10 @@ class FingerprintIAM {
         return (user != nullptr);
     }
 
+    std::string getPairingPassword()
+    {
+        return "secret123";
+    }
 
  private:
     std::map<std::string, std::shared_ptr<User> > fingerprintToUser_;
@@ -199,6 +288,9 @@ class FingerprintIAM {
 
     NabtoDevice* device_;
     FingerprintIAMPersisting& persisting_;
+
+    std::unique_ptr<CoapIsPaired> coapIsPaired_;
+    std::unique_ptr<CoapPairingPassword> coapPairingPassword_;
 };
 
 } // namespace

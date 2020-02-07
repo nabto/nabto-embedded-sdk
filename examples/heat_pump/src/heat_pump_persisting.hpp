@@ -12,7 +12,7 @@ class HeatPumpPersisting : public FingerprintIAMPersisting
  public:
     HeatPumpPersisting(const std::string& configFile);
 
-    bool loadUsersIntoIAM();
+    bool loadUsersIntoIAM(FingerprintIAM& iam);
 
     virtual void upsertUser(const User& user);
     virtual void deleteUser(const std::string& userId);

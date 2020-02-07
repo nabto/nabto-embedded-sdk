@@ -10,10 +10,9 @@ class FingerprintIAMJson {
  public:
 
 
-    static bool loadUsers(FingerprintIAM& iam, const nlohmann::json& users);
-    static nlohmann::json saveUser(const User& user);
+    static bool loadUsersFromJson(FingerprintIAM& iam, const nlohmann::json& users);
+    static nlohmann::json userToJson(const User& user);
     static bool usersFromJson(FingerprintIAM& iam, const nlohmann::json& json);
-
     static bool loadRoles(FingerprintIAM& iam, const nlohmann::json& roles);
 
 

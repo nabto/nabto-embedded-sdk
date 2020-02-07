@@ -1,15 +1,34 @@
 #include "fingerprint_iam.hpp"
 
+#include "coap_is_paired.hpp"
+#include "coap_pairing_password.hpp"
+
 #include <modules/iam_cpp/iam.hpp>
 
 #include <cbor.h>
 
 namespace nabto {
 
+
+
+FingerprintIAM::~FingerprintIAM()
+{
+
+}
+
 FingerprintIAM::FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting)
     : device_(device), persisting_(persisting)
 {
 
+}
+
+void FingerprintIAM::initCoapHandlers()
+{
+    coapIsPaired_ = std::make_unique<CoapIsPaired>(*this, device_);
+    coapPairingPassword_ = std::make_unique<CoapPairingPassword>(*this, device_);
+
+    coapIsPaired_->init();
+    coapPairingPassword_->init();
 }
 
 bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action)
@@ -62,11 +81,6 @@ nabto::FingerprintIAMSubject FingerprintIAM::createSubjectFromUser(const User& u
         }
     }
     return FingerprintIAMSubject(policies, user.getAttributes());
-}
-
-void FingerprintIAM::initCoapHandlers()
-{
-
 }
 
 } // namespace

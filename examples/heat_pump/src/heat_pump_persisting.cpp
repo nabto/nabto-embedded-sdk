@@ -5,6 +5,7 @@
 #include <modules/iam_cpp/iam_builder.hpp>
 #include <modules/iam_cpp/iam_to_json.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
+#include <modules/fingerprint_iam/fingerprint_iam_json.hpp>
 
 namespace nabto {
 
@@ -14,19 +15,9 @@ HeatPumpPersisting::HeatPumpPersisting(const std::string& configFile)
 
 }
 
-bool HeatPumpPersisting::loadUsersIntoIAM()
+bool HeatPumpPersisting::loadUsersIntoIAM(FingerprintIAM& iam)
 {
-    // if (!json_config_load(configFile_, config_)) {
-    //     return false;
-    // }
-
-    // auto users = config_["Users"];
-
-    // std::vector<iam::User> us;
-    // iam::IAMToJson::usersFromJson(users, us);
-
-    // return true;
-    return false;
+    return FingerprintIAMJson::loadUsersFromJson(iam, config_["Users"]);
 }
 
 bool HeatPumpPersisting::load()
@@ -39,8 +30,7 @@ bool HeatPumpPersisting::load()
 
 void HeatPumpPersisting::upsertUser(const User& user)
 {
-    // TODO
-    //config_["Users"][user.getName()] = nabto::iam::IAMToJson::userToJson(user);
+    config_["Users"][user.getUserId()] = nabto::FingerprintIAMJson::userToJson(user);
     save();
 }
 
