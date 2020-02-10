@@ -17,6 +17,13 @@ class CoapIsPaired : public CoapRequestHandler {
         return CoapRequestHandler::init(NABTO_DEVICE_COAP_GET, {"pairing", "is-paired"} );
     }
 
+    static std::unique_ptr<CoapIsPaired> create(FingerprintIAM& iam, NabtoDevice* device)
+    {
+        auto ptr = std::make_unique<CoapIsPaired>(iam, device);
+        ptr->init();
+        return std::move(ptr);
+    }
+
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
         NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);

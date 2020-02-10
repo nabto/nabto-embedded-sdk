@@ -16,6 +16,7 @@ namespace nabto {
 namespace fingerprint_iam {
 
 class CoapIsPaired;
+class CoapPairing;
 class CoapPairingPassword;
 class CoapPairingButton;
 
@@ -149,6 +150,8 @@ class FingerprintIAM {
         return (guestRole_ != nullptr);
     }
 
+    std::vector<std::string> getPairingModes();
+
  private:
 
     Subject createUnpairedSubject();
@@ -167,6 +170,7 @@ class FingerprintIAM {
     FingerprintIAMPersisting& persisting_;
 
     std::unique_ptr<CoapIsPaired> coapIsPaired_;
+    std::unique_ptr<CoapPairing> coapPairing_;
     std::unique_ptr<CoapPairingPassword> coapPairingPassword_;
     std::unique_ptr<CoapPairingButton> coapPairingButton_;
 };

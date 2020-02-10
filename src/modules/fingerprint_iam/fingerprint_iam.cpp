@@ -2,6 +2,7 @@
 #include "subject.hpp"
 
 #include "coap_is_paired.hpp"
+#include "coap_pairing.hpp"
 #include "coap_pairing_password.hpp"
 #include "coap_pairing_button.hpp"
 #include "role_builder.hpp"
@@ -31,8 +32,8 @@ FingerprintIAM::FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& pe
 
 void FingerprintIAM::initCoapHandlers()
 {
-    coapIsPaired_ = std::make_unique<CoapIsPaired>(*this, device_);
-    coapIsPaired_->init();
+    coapIsPaired_ = CoapIsPaired::create(*this, device_);
+    coapPairing_ = CoapPairing::create(*this, device_);
 }
 
 bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action)
@@ -142,6 +143,18 @@ bool FingerprintIAM::buildUser(const UserBuilder& ub)
 
     addUser(std::make_shared<User>(ub.getId(), roles, ub.getFingerprints(), ub.getAttributes()));
     return true;
+}
+
+std::vector<std::string> FingerprintIAM::getPairingModes()
+{
+    std::vector<std::string> modes;
+    if (coapPairingPassword_) {
+        modes.push_back("Password");
+    }
+    if (coapPairingButton_) {
+        modes.push_back("Button");
+    }
+    return modes;
 }
 
 } } // namespace
