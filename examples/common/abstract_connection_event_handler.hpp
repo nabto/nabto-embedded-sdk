@@ -43,18 +43,20 @@ class AbstractConnectionEventHandler {
         if (ec == NABTO_DEVICE_EC_OK) {
             self->handleConnectionEvent(self->ref_, self->event_);
             self->startListen();
+        } else {
+            self->promise_.set_value();
         }
     }
 
  protected:
  private:
     void stop() {
+        std::future<void> future = promise_.get_future();
         nabto_device_listener_stop(listener_);
-        // wait until the future is no longer in use, such that we can
-        // free the listener and future safely.
-        nabto_device_future_wait(future_);
+        // wait for the callback to be resolved.
+        future.get();
     }
-
+    std::promise<void> promise_;
     NabtoDevice* device_;
     NabtoDeviceListener* listener_;
     NabtoDeviceFuture* future_;

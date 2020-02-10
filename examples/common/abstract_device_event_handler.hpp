@@ -12,8 +12,8 @@ class AbstractDeviceEventHandler {
     AbstractDeviceEventHandler(NabtoDevice* device)
         : device_(device), listener_(nabto_device_listener_new(device)), future_(nabto_device_future_new(device))
     {
-
     }
+
     ~AbstractDeviceEventHandler()
     {
         stop();
@@ -43,18 +43,22 @@ class AbstractDeviceEventHandler {
         if (ec == NABTO_DEVICE_EC_OK) {
             self->handleDeviceEvent(self->event_);
             self->startListen();
+        } else {
+            self->promise_.set_value();
         }
     }
 
  protected:
  private:
     void stop() {
+        std::future<void> future = promise_.get_future();
         nabto_device_listener_stop(listener_);
-        // wait until the future is no longer in use, such that we can
-        // free the listener and future safely.
-        nabto_device_future_wait(future_);
+
+        // wait for listener to be stopped
+        future.get();
     }
 
+    std::promise<void> promise_;
     NabtoDevice* device_;
     NabtoDeviceListener* listener_;
     NabtoDeviceFuture* future_;

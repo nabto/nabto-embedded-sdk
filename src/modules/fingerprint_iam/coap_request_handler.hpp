@@ -4,6 +4,8 @@
 
 #include <cbor.h>
 
+#include <future>
+
 namespace nabto {
 
 class CoapRequestHandler {
@@ -49,6 +51,8 @@ class CoapRequestHandler {
         if (ec == NABTO_DEVICE_EC_OK) {
             self->handleRequest(self->request_);
             self->startListen();
+        } else {
+            self->promise_.set_value();
         }
     }
     virtual void handleRequest(NabtoDeviceCoapRequest* request) = 0;
@@ -82,11 +86,14 @@ class CoapRequestHandler {
 
     void stop()
     {
+        std::future<void> future = promise_.get_future();
         nabto_device_listener_stop(listener_);
-        // wait until the future is no longer in use, such that we can
-        // free the listener and future safely.
-        nabto_device_future_wait(future_);
+
+        // wait for the listener to be stopped
+        future.get();
     }
+
+    std::promise<void> promise_;
 
     FingerprintIAM& iam_;
     NabtoDevice* device_;

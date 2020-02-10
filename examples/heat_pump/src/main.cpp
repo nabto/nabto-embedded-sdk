@@ -225,9 +225,8 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         nabto_device_close(device, fut);
         nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
-        nabto_device_stop(device);
     }
-
+    nabto_device_stop(device);
     nabto_device_free(device);
     return true;
 }

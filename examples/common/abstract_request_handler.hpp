@@ -3,6 +3,7 @@
 #include <nabto/nabto_device.h>
 
 #include <cbor.h>
+#include <future>
 
 namespace nabto {
 namespace examples {
@@ -20,14 +21,15 @@ class AbstractRequestHandler {
     AbstractRequestHandler(NabtoDevice* device)
         : device_(device), listener_(nabto_device_listener_new(device)), future_(nabto_device_future_new(device))
     {
-
     }
+
     virtual ~AbstractRequestHandler()
     {
         stop();
         nabto_device_future_free(future_);
         nabto_device_listener_free(listener_);
     }
+
     bool init(NabtoDeviceCoapMethod method, const std::vector<std::string>& segments)
     {
         std::vector<const char*> paths;
@@ -56,6 +58,8 @@ class AbstractRequestHandler {
         if (ec == NABTO_DEVICE_EC_OK) {
             self->handleRequest(self->request_);
             self->startListen();
+        } else {
+            self->promise_.set_value();
         }
     }
 
@@ -87,11 +91,13 @@ class AbstractRequestHandler {
  protected:
     void stop()
     {
+        std::future<void> future = promise_.get_future();
         nabto_device_listener_stop(listener_);
-        // wait until the future is no longer in use, such that we can
-        // free the listener and future safely.
-        nabto_device_future_wait(future_);
+
+        // wait for the callback to be resolved.
+        future.get();
     }
+    std::promise<void> promise_;
     NabtoDevice* device_;
     NabtoDeviceListener* listener_;
     NabtoDeviceFuture* future_;
