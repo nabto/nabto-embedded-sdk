@@ -1,7 +1,13 @@
 #include "fingerprint_iam_json.hpp"
 #include <modules/iam_cpp/iam_to_json.hpp>
 
+#include "user.hpp"
+#include "role_builder.hpp"
+#include "user_builder.hpp"
+#include "fingerprint_iam.hpp"
+
 namespace nabto {
+namespace fingerprint_iam {
 
 /**
 "Roles": {
@@ -131,4 +137,4 @@ bool FingerprintIAMJson::loadUsersFromJson(FingerprintIAM& iam, const nlohmann::
     return true;
 }
 
-} // namespace
+} } // namespace

@@ -6,15 +6,17 @@
 #include <nlohmann/json.hpp>
 
 namespace nabto {
+namespace examples {
+namespace heat_pump {
 
-class HeatPumpPersisting : public FingerprintIAMPersisting
+class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMPersisting
 {
  public:
     HeatPumpPersisting(const std::string& configFile);
 
-    bool loadUsersIntoIAM(FingerprintIAM& iam);
+    bool loadUsersIntoIAM(fingerprint_iam::FingerprintIAM& iam);
 
-    virtual void upsertUser(const User& user);
+    virtual void upsertUser(const fingerprint_iam::User& user);
     virtual void deleteUser(const std::string& userId);
     virtual void deleteAllUsers();
 
@@ -110,4 +112,4 @@ class HeatPumpPersisting : public FingerprintIAMPersisting
     nlohmann::json config_;
 };
 
-} // namespace
+} } } // namespace

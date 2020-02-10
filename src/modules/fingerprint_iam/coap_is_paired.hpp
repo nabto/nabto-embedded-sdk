@@ -3,6 +3,7 @@
 #include "coap_request_handler.hpp"
 
 namespace nabto {
+namespace fingerprint_iam {
 
 class CoapIsPaired : public CoapRequestHandler {
  public:
@@ -48,4 +49,4 @@ class CoapIsPaired : public CoapRequestHandler {
     }
 };
 
-} // namespace
+} } // namespace

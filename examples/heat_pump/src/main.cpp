@@ -6,6 +6,7 @@
 
 #include <modules/iam_cpp/iam.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
+#include <modules/fingerprint_iam/role_builder.hpp>
 
 
 #include <cxxopts.hpp>
@@ -29,7 +30,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
 bool run_heat_pump(const std::string& configFile, const std::string& logLevel);
 bool reset_iam(const std::string& configFile);
 
-static void loadStaticIamPolicy(nabto::FingerprintIAM& iam);
+static void loadStaticIamPolicy(nabto::fingerprint_iam::FingerprintIAM& iam);
 
 int main(int argc, char** argv) {
     cxxopts::Options options("Heat pump", "Nabto heat pump example.");
@@ -109,7 +110,7 @@ bool reset_iam(const std::string& configFile) {
         std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
         return false;
     }
-    nabto::HeatPumpPersisting hpp(configFile);
+    nabto::examples::heat_pump::HeatPumpPersisting hpp(configFile);
     if (!hpp.load()) {
         return false;
     }
@@ -158,7 +159,7 @@ bool init_heat_pump(const std::string& configFile, const std::string& productId,
     nabto_device_string_free(fp);
     nabto_device_string_free(str);
 
-    nabto::HeatPumpPersisting hpp(configFile);
+    nabto::examples::heat_pump::HeatPumpPersisting hpp(configFile);
 
     hpp.setPrivateKey(privateKey);
     hpp.setProductId(productId);
@@ -194,16 +195,16 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         return false;
     }
 
-    nabto::HeatPumpPersisting hpp(configFile);
+    nabto::examples::heat_pump::HeatPumpPersisting hpp(configFile);
 
     hpp.load();
 
 
     {
-        nabto::FingerprintIAM iam(device, hpp);
+        nabto::fingerprint_iam::FingerprintIAM iam(device, hpp);
         loadStaticIamPolicy(iam);
 
-        HeatPump hp(device, iam, hpp);
+        nabto::examples::heat_pump::HeatPump hp(device, iam, hpp);
         hp.initDevice();
         hp.init();
         hp.setLogLevel(logLevel);
@@ -231,7 +232,7 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
     return true;
 }
 
-void loadStaticIamPolicy(nabto::FingerprintIAM& iam)
+void loadStaticIamPolicy(nabto::fingerprint_iam::FingerprintIAM& iam)
 {
     auto buttonPairingPolicy = nabto::iam::PolicyBuilder()
         .name("ButtonPairing")
@@ -279,15 +280,15 @@ void loadStaticIamPolicy(nabto::FingerprintIAM& iam)
     iam.addPolicy(writePolicy);
     iam.addPolicy(modifyOwnUserPolicy);
 
-    iam.addRole(nabto::RoleBuilder().name("Unpaired").addPolicy("ButtonPairing"));
-    iam.addRole(nabto::RoleBuilder().name("Owner")
+    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("Unpaired").addPolicy("ButtonPairing"));
+    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("Owner")
                 .addPolicy("HeatPumpWrite")
                 .addPolicy("HeatPumpRead"));
-    iam.addRole(nabto::RoleBuilder().name("User")
+    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("User")
                 .addPolicy("HeatPumpRead")
                 .addPolicy("HeatPumpWrite")
                 .addPolicy("ModifyOwnUser"));
-    iam.addRole(nabto::RoleBuilder().name("Guest")
+    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("Guest")
                 .addPolicy("HeatPumpRead"));
 
 }

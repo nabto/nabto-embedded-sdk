@@ -6,6 +6,7 @@
 #include <iostream>
 
 namespace nabto {
+namespace fingerprint_iam {
 
 class CoapPairingPassword : public CoapRequestHandler {
  public:
@@ -14,8 +15,9 @@ class CoapPairingPassword : public CoapRequestHandler {
     {
     }
 
-    bool init()
+    bool init(const std::string& password)
     {
+        password_ = password;
         return CoapRequestHandler::init(NABTO_DEVICE_COAP_POST, {"pairing", "password"});
     }
 
@@ -50,7 +52,7 @@ class CoapPairingPassword : public CoapRequestHandler {
             return;
         }
         bool equal;
-        if (cbor_value_text_string_equals(&value, iam_.getPairingPassword().c_str(), &equal) != CborNoError) {
+        if (cbor_value_text_string_equals(&value, password_.c_str(), &equal) != CborNoError) {
             nabto_device_coap_error_response(request, 400, "Bad request");
             nabto_device_coap_request_free(request);
             return;
@@ -75,6 +77,8 @@ class CoapPairingPassword : public CoapRequestHandler {
         nabto_device_coap_response_ready(request);
         nabto_device_coap_request_free(request);
     }
+ private:
+    std::string password_;
 };
 
-} // namespace
+} } // namespace

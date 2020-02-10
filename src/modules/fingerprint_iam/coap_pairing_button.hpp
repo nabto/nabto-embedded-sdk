@@ -7,6 +7,7 @@
 #include <functional>
 
 namespace nabto {
+namespace fingerprint_iam {
 
 class CoapPairingButton : public CoapRequestHandler {
  public:
@@ -65,4 +66,4 @@ class CoapPairingButton : public CoapRequestHandler {
     std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback_;
 };
 
-} // namespace
+} } // namespace

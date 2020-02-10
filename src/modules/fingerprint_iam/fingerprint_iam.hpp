@@ -1,6 +1,10 @@
 #pragma once
 
 
+#include "user.hpp"
+#include "subject.hpp"
+#include "role.hpp"
+
 #include <nabto/nabto_device.h>
 
 #include <modules/iam_cpp/iam.hpp>
@@ -9,135 +13,14 @@
 #include <functional>
 
 namespace nabto {
+namespace fingerprint_iam {
 
 class CoapIsPaired;
 class CoapPairingPassword;
 class CoapPairingButton;
 
-class RoleBuilder {
- public:
-    RoleBuilder() {}
-    RoleBuilder name(const std::string& name)
-    {
-        name_ = name;
-        return *this;
-    }
-
-    RoleBuilder addPolicy(const std::string& policy)
-    {
-        policies_.insert(policy);
-        return *this;
-    }
-
-    std::string getName() const { return name_; }
-    std::set<std::string> getPolicies() const { return policies_; }
- private:
-    std::set<std::string> policies_;
-    std::string name_;
-};
-
-class UserBuilder
-{
- public:
-    UserBuilder() {}
-
-    UserBuilder id(const std::string& id)
-    {
-        id_ = id;
-        return *this;
-    }
-
-    UserBuilder addFingerprint(const std::string& fingerprint)
-    {
-        fingerprints_.insert(fingerprint);
-        return *this;
-    }
-
-    UserBuilder attributes(const iam::Attributes& attributes)
-    {
-        attributes_ = attributes;
-        return *this;
-    }
-
-    UserBuilder addRole(const std::string& role)
-    {
-        roles_.insert(role);
-        return *this;
-    }
-
-    std::string getId() const { return id_; }
-    std::set<std::string> getFingerprints() const { return fingerprints_; }
-    std::set<std::string> getRoles() const { return roles_; }
-    iam::Attributes getAttributes() const { return attributes_; }
-
- private:
-    std::set<std::string> fingerprints_;
-    std::set<std::string> roles_;
-    iam::Attributes attributes_;
-    std::string id_;
-};
-
-
-class FingerprintIAMSubject : public nabto::iam::Subject {
- public:
-    FingerprintIAMSubject(const std::set<std::shared_ptr<nabto::iam::Policy> >& policies, const nabto::iam::Attributes& attributes)
-        : policies_(policies), attributes_(attributes)
-    {
-    }
-    virtual std::set<std::shared_ptr<nabto::iam::Policy> > getPolicies() const
-    {
-        return policies_;
-    }
-    virtual nabto::iam::Attributes getAttributes() const
-    {
-        return attributes_;
-    }
- private:
-    std::set<std::shared_ptr<nabto::iam::Policy> > policies_;
-    nabto::iam::Attributes attributes_;
-};
-
-class Role {
- public:
-    Role(const std::string& name, const std::set<std::shared_ptr<nabto::iam::Policy> >&  policies)
-        : name_(name), policies_(policies)
-    {
-    }
-
-    std::set<std::shared_ptr<nabto::iam::Policy> > getPolicies() const { return policies_; }
-    std::string getName() const { return name_; }
- private:
-    std::string name_;
-    std::set<std::shared_ptr<nabto::iam::Policy> > policies_;
-};
-
-class User {
- public:
-    User(const std::string& userId, const std::set<std::shared_ptr<Role> >& roles, const std::set<std::string>& fingerprints, const iam::Attributes& attributes)
-        : userId_(userId), roles_(roles), fingerprints_(fingerprints), attributes_(attributes)
-    {
-    }
-    User(const std::string& userId, std::shared_ptr<Role> role)
-        : userId_(userId)
-    {
-        roles_.insert(role);
-    }
-
-    void addFingerprint(const std::string& fingerprint)
-    {
-        fingerprints_.insert(fingerprint);
-    }
-
-    std::set<std::shared_ptr<Role> > getRoles() const { return roles_; }
-    nabto::iam::Attributes getAttributes() const { return attributes_; }
-    std::string getUserId() const { return userId_; }
-    std::set<std::string> getFingerprints() const { return fingerprints_; }
- private:
-    std::string userId_;
-    std::set<std::shared_ptr<Role> > roles_;
-    std::set<std::string> fingerprints_;
-    nabto::iam::Attributes attributes_;
-};
+class RoleBuilder;
+class UserBuilder;
 
 class FingerprintIAMPersisting {
  public:
@@ -154,52 +37,15 @@ class FingerprintIAM {
 
     void initCoapHandlers();
 
-    FingerprintIAMSubject unpairedSubject();
-
-    FingerprintIAMSubject createSubjectFromUser(const User& user);
 
     void addPolicy(const nabto::iam::Policy& policy)
     {
         policies_[policy.getName()] = std::make_shared<nabto::iam::Policy>(policy);
     }
 
-    bool addRole(const RoleBuilder& roleBuilder)
-    {
-        if (roles_.find(roleBuilder.getName()) != roles_.end()) {
-            return false;
-        }
-        std::set<std::shared_ptr<nabto::iam::Policy> > policies;
-        for (auto policyString : roleBuilder.getPolicies()) {
-            auto it = policies_.find(policyString);
-            if (it != policies_.end()) {
-                policies.insert(it->second);
-            } else {
-                return false;
-            }
-        }
-        roles_[roleBuilder.getName()] = std::make_shared<Role>(roleBuilder.getName(), policies);
-        return true;
-    }
+    bool addRole(const RoleBuilder& roleBuilder);
 
-    bool buildUser(const UserBuilder& ub)
-    {
-        if (users_.find(ub.getId()) != users_.end()) {
-            return false;
-        }
-
-        std::set<std::shared_ptr<Role> > roles;
-        for (auto roleString : ub.getRoles()) {
-            auto it = roles_.find(roleString);
-            if (it != roles_.end()) {
-                roles.insert(it->second);
-            } else {
-                return false;
-            }
-        }
-
-        addUser(std::make_shared<User>(ub.getId(), roles, ub.getFingerprints(), ub.getAttributes()));
-        return true;
-    }
+    bool buildUser(const UserBuilder& ub);
 
     std::shared_ptr<User> findUserByFingerprint(const std::string& fingerprint)
     {
@@ -273,12 +119,8 @@ class FingerprintIAM {
         return (user != nullptr);
     }
 
-    std::string getPairingPassword()
-    {
-        return "secret123";
-    }
-
     void enableButtonPairing(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback);
+    void enablePasswordPairing(const std::string& password);
 
     std::shared_ptr<Role> getRole(const std::string& role)
     {
@@ -308,6 +150,10 @@ class FingerprintIAM {
     }
 
  private:
+
+    Subject createUnpairedSubject();
+    Subject createSubjectFromUser(const User& user);
+
     std::map<std::string, std::shared_ptr<User> > fingerprintToUser_;
     std::map<std::string, std::shared_ptr<User> > users_;
     std::map<std::string, std::shared_ptr<Role> > roles_;
@@ -325,4 +171,4 @@ class FingerprintIAM {
     std::unique_ptr<CoapPairingButton> coapPairingButton_;
 };
 
-} // namespace
+} } // namespace

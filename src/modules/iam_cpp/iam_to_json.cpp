@@ -1,8 +1,14 @@
 #include "iam_to_json.hpp"
 
+
+#include "attributes.hpp"
+#include "policy.hpp"
+#include "statement.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <memory>
+#include <set>
 
 namespace nabto {
 namespace iam {
@@ -52,89 +58,6 @@ Attributes IAMToJson::attributesFromJson(const nlohmann::json& json)
     }
     return Attributes(map);
 }
-
-// nlohmann::json IAMToJson::userToJson(const User& user)
-// {
-//     nlohmann::json jsonUser;
-
-//     nlohmann::json rolesArray = nlohmann::json::array();
-
-//     auto rs = user.getRoles();
-//     for (auto r : rs) {
-//         rolesArray.push_back(r);
-//     }
-
-//     jsonUser["Roles"] = rolesArray;
-
-//     nlohmann::json attributes;
-
-//     auto as = user.getAttributes();
-//     for (auto a : as) {
-//         if (a.second.getType() == AttributeType::STRING) {
-//             attributes[a.first] = a.second.getString();
-//         } else if (a.second.getType() == AttributeType::NUMBER) {
-//             attributes[a.first] == a.second.getNumber();
-//         }
-//     }
-
-//     jsonUser["Attributes"] = attributes;
-
-//     return jsonUser;
-// }
-
-
-
-// static bool toUser(const nlohmann::json& json, User& user)
-// {
-//     if (json.find("Roles") != json.end()) {
-//         auto roles = json["Roles"];
-
-//         if (roles.is_array()) {
-//             for (auto role : roles) {
-//                 if (role.is_string()) {
-//                     user.addRole(role);
-//                 }
-//             }
-//         }
-//     }
-
-//     if (json.find("Attributes") != json.end()) {
-//         auto attributes = json["Attributes"];
-//         if (attributes.is_object()) {
-//             for (auto it = attributes.begin(); it != attributes.end(); it++) {
-//                 std::string key = it.key();
-//                 const nlohmann::json& value = it.value();
-
-//                 if (value.is_string()) {
-//                     user.addAttribute(key, Attribute(value.get<std::string>()));
-//                 }
-//                 if (value.is_number()) {
-//                     user.addAttribute(key, Attribute(value.get<int64_t>()));
-//                 }
-//             }
-//         }
-//     }
-
-//     return true;
-// }
-
-// bool IAMToJson::usersFromJson(const nlohmann::json& parsed, std::vector<User>& users)
-// {
-//     for (auto it = parsed.begin(); it != parsed.end(); it++) {
-//         User user(it.key());
-//         if (!toUser(it.value(), user)) {
-//             return false;
-//         }
-//         users.push_back(user);
-//     }
-//     return true;
-// }
-
-// bool IAMToJson::usersFromJson(const std::string& json, std::vector<User>& users)
-// {
-//     auto parsed = nlohmann::json::parse(json);
-//     return usersFromJson(parsed, users);
-// }
 
 bool loadEffect(const nlohmann::json& statement, Effect& effect)
 {
@@ -205,34 +128,5 @@ std::unique_ptr<Policy> IAMToJson::policyFromJson(const std::string& json)
     }
     return std::make_unique<Policy>(name, statements);
 }
-
-// static bool toRole(const nlohmann::json& json, Role& role)
-// {
-//     if (json.find("Policies") != json.end()) {
-//         nlohmann::json policies = json["Policies"];
-//         if (policies.is_array()) {
-//             for (auto policy : policies) {
-//                 if (policy.is_string()) {
-//                     role.addPolicy(policy.get<std::string>());
-//                 }
-//             }
-//         }
-//     }
-//     return true;
-// }
-
-// bool IAMToJson::rolesFromJson(const std::string& json, std::vector<Role>& roles)
-// {
-//     auto parsed = nlohmann::json::parse(json);
-//     for (auto it = parsed.begin(); it != parsed.end(); it++) {
-//         Role role(it.key());
-//         if (!toRole(it.value(), role)) {
-//             return false;
-//         }
-//         roles.push_back(role);
-//     }
-//     return true;
-// }
-
 
 } } // namespace

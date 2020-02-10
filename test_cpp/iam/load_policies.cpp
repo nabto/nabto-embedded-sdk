@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <modules/iam_cpp/iam_to_json.hpp>
+#include <modules/iam_cpp/policy.hpp>
 
 BOOST_AUTO_TEST_SUITE(iam)
 

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "fingerprint_iam.hpp"
-
 #include <nlohmann/json.hpp>
 
 namespace nabto {
+namespace fingerprint_iam {
+
+class FingerprintIAM;
+class User;
 
 class FingerprintIAMJson {
  public:
-
-
     static bool loadUsersFromJson(FingerprintIAM& iam, const nlohmann::json& users);
     static nlohmann::json userToJson(const User& user);
     static bool usersFromJson(FingerprintIAM& iam, const nlohmann::json& json);
@@ -21,4 +21,4 @@ class FingerprintIAMJson {
 
 };
 
-} // namespace
+} } // namespace

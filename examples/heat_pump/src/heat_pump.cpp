@@ -18,7 +18,12 @@
 #include <iostream>
 
 #include "button_press.hpp"
-HeatPump::HeatPump(NabtoDevice* device, nabto::FingerprintIAM& iam, nabto::HeatPumpPersisting& persisting)
+
+namespace nabto {
+namespace examples {
+namespace heat_pump {
+
+HeatPump::HeatPump(NabtoDevice* device, nabto::fingerprint_iam::FingerprintIAM& iam, HeatPumpPersisting& persisting)
     : device_(device), persisting_(persisting), fingerprintIAM_(iam)
 {
 }
@@ -147,3 +152,5 @@ bool HeatPump::checkAccess(NabtoDeviceCoapRequest* request, const std::string& a
     }
     return true;
 }
+
+} } } // namespace

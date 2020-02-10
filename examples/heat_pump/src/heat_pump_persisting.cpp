@@ -8,6 +8,8 @@
 #include <modules/fingerprint_iam/fingerprint_iam_json.hpp>
 
 namespace nabto {
+namespace examples {
+namespace heat_pump {
 
 HeatPumpPersisting::HeatPumpPersisting(const std::string& configFile)
     : configFile_(configFile)
@@ -15,9 +17,9 @@ HeatPumpPersisting::HeatPumpPersisting(const std::string& configFile)
 
 }
 
-bool HeatPumpPersisting::loadUsersIntoIAM(FingerprintIAM& iam)
+bool HeatPumpPersisting::loadUsersIntoIAM(fingerprint_iam::FingerprintIAM& iam)
 {
-    return FingerprintIAMJson::loadUsersFromJson(iam, config_["Users"]);
+    return fingerprint_iam::FingerprintIAMJson::loadUsersFromJson(iam, config_["Users"]);
 }
 
 bool HeatPumpPersisting::load()
@@ -28,9 +30,9 @@ bool HeatPumpPersisting::load()
     return true;
 }
 
-void HeatPumpPersisting::upsertUser(const User& user)
+void HeatPumpPersisting::upsertUser(const fingerprint_iam::User& user)
 {
-    config_["Users"][user.getUserId()] = nabto::FingerprintIAMJson::userToJson(user);
+    config_["Users"][user.getUserId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
     save();
 }
 
@@ -52,4 +54,4 @@ void HeatPumpPersisting::save()
 }
 
 
-} // namespace
+} } } // namespace

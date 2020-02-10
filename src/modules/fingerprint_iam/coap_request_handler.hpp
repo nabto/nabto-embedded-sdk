@@ -7,6 +7,7 @@
 #include <future>
 
 namespace nabto {
+namespace fingerprint_iam {
 
 class CoapRequestHandler {
  public:
@@ -102,4 +103,4 @@ class CoapRequestHandler {
     NabtoDeviceCoapRequest* request_;
 };
 
-} // namespace
+} } // namespace

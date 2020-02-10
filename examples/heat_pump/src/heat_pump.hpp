@@ -28,13 +28,10 @@ class HeatPumpGetClientSettings;
 class HeatPumpConnectionEventHandler;
 class HeatPumpDeviceEventHandler;
 
-} } } // namespace
-
-
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, nabto::FingerprintIAM& iam, nabto::HeatPumpPersisting& persisting);
+    HeatPump(NabtoDevice* device, nabto::fingerprint_iam::FingerprintIAM& iam, HeatPumpPersisting& persisting);
 
     ~HeatPump();
 
@@ -97,8 +94,8 @@ class HeatPump {
 
     NabtoDevice* device_;
 
-    nabto::HeatPumpPersisting& persisting_;
-    nabto::FingerprintIAM& fingerprintIAM_;
+    HeatPumpPersisting& persisting_;
+    fingerprint_iam::FingerprintIAM& fingerprintIAM_;
 
     std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetPower> coapSetPower_;
     std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetTarget> coapSetTarget_;
@@ -111,5 +108,7 @@ class HeatPump {
 
 
 };
+
+} } } // namespace
 
 #endif

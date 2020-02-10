@@ -1,12 +1,15 @@
 #pragma once
 #include <nlohmann/json.hpp>
 
-#include "iam.hpp"
-
 #include <memory>
+#include <vector>
 
 namespace nabto {
 namespace iam {
+
+class Attributes;
+class User;
+class Policy;
 
 class IAMToJson {
  public:
@@ -17,7 +20,6 @@ class IAMToJson {
     static bool usersFromJson(const nlohmann::json& json, std::vector<User>& users);
 
     static std::unique_ptr<Policy> policyFromJson(const std::string& json);
-    static bool rolesFromJson(const std::string& json, std::vector<Role>& roles);
 };
 
 } } // namespace
