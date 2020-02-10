@@ -1,6 +1,15 @@
 #include "heat_pump.hpp"
 #include "json_config.hpp"
 
+#include "heat_pump_set_power.hpp"
+#include "heat_pump_set_target.hpp"
+#include "heat_pump_set_mode.hpp"
+#include "heat_pump_get.hpp"
+#include "heat_pump_get_client_settings.hpp"
+
+#include "heat_pump_connection_event_handler.hpp"
+#include "heat_pump_device_event_handler.hpp"
+
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
@@ -9,11 +18,17 @@
 #include <iostream>
 
 #include "button_press.hpp"
+HeatPump::HeatPump(NabtoDevice* device, nabto::FingerprintIAM& iam, nabto::HeatPumpPersisting& persisting)
+    : device_(device), persisting_(persisting), fingerprintIAM_(iam)
+{
+}
 
-void HeatPump::init() {
-    listenForConnectionEvents();
-    listenForDeviceEvents();
+HeatPump::~HeatPump()
+{
+}
 
+void HeatPump::init()
+{
     persisting_.loadUsersIntoIAM(fingerprintIAM_);
 
     fingerprintIAM_.enableButtonPairing([](std::string fingerprint, std::function<void (bool accepted)> cb) {
@@ -24,6 +39,21 @@ void HeatPump::init() {
     fingerprintIAM_.setUnpairedRole("Unpaired");
     fingerprintIAM_.setOwnerRole("Owner");
     fingerprintIAM_.setGuestRole("Guest");
+
+    initCoapHandlers();
+
+    heatPumpConnectionEventHandler_ = nabto::examples::heat_pump::HeatPumpConnectionEventHandler::create(device_);
+    heatPumpDeviceEventHandler_ = nabto::examples::heat_pump::HeatPumpDeviceEventHandler::create(device_);
+
+}
+
+void HeatPump::initCoapHandlers()
+{
+    coapSetPower_ = nabto::examples::heat_pump::HeatPumpSetPower::create(*this, device_);
+    coapSetTarget_ = nabto::examples::heat_pump::HeatPumpSetTarget::create(*this, device_);
+    coapSetMode_ = nabto::examples::heat_pump::HeatPumpSetMode::create(*this, device_);
+    coapGet_ = nabto::examples::heat_pump::HeatPumpGet::create(*this, device_);
+    coapGetClientSettings_ = nabto::examples::heat_pump::HeatPumpGetClientSettings::create(*this, device_);
 }
 
 NabtoDeviceError HeatPump::initDevice()
@@ -80,18 +110,6 @@ void HeatPump::printHeatpumpInfo()
     std::cout << " client server url " << persisting_.getClientServerUrl() << " client server key " << persisting_.getClientServerKey() << std::endl;
 }
 
-bool validate_config(const json& config) {
-    try {
-        config["ProductId"].get<std::string>();
-        config["DeviceId"].get<std::string>();
-        config["Server"].get<std::string>();
-        config["PrivateKey"].get<std::string>();
-    } catch (std::exception& e) {
-        return false;
-    }
-    return true;
-}
-
 void HeatPump::setMode(Mode mode)
 {
     persisting_.setHeatPumpMode(modeToString(mode));
@@ -120,75 +138,12 @@ const char* HeatPump::modeToString(HeatPump::Mode mode)
     }
 }
 
-void HeatPump::startWaitEvent()
+bool HeatPump::checkAccess(NabtoDeviceCoapRequest* request, const std::string& action)
 {
-    nabto_device_listener_connection_event(connectionEventListener_, connectionEventFuture_, &connectionRef_, &connectionEvent_);
-    nabto_device_future_set_callback(connectionEventFuture_, &HeatPump::connectionEvent, this);
-}
-
-void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
-{
-    HeatPump* hp = (HeatPump*)userData;
-    if (err != NABTO_DEVICE_EC_OK) {
-        std::cout << "Connection event called back with error: " << err << std::endl;
-        return;
-    } else {
-        if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
-            std::cout << "New connection opened with reference: " << hp->connectionRef_ << std::endl;
-        } else if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CLOSED) {
-            std::cout << "Connection with reference: " << hp->connectionRef_ << " was closed" << std::endl;
-        } else if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED) {
-            std::cout << "Connection with reference: " << hp->connectionRef_ << " changed channel" << std::endl;
-        } else {
-            std::cout << "Unknown connection event: " << hp->connectionEvent_ << " on connection reference: " << hp->connectionRef_ << std::endl;
-        }
+    if (!fingerprintIAM_.checkAccess(nabto_device_coap_request_get_connection_ref(request), action)) {
+        nabto_device_coap_error_response(request, 403, "Unauthorized");
+        nabto_device_coap_request_free(request);
+        return false;
     }
-    hp->startWaitEvent();
-
-}
-
-void HeatPump::listenForConnectionEvents()
-{
-    NabtoDeviceError ec = nabto_device_connection_events_init_listener(device_, connectionEventListener_);
-    if (ec) {
-        std::cerr << "Failed to init connection events listener" << std::endl;
-        return;
-    }
-    startWaitEvent();
-}
-
-void HeatPump::startWaitDevEvent()
-{
-    nabto_device_listener_device_event(deviceEventListener_, deviceEventFuture_, &deviceEvent_);
-    nabto_device_future_set_callback(deviceEventFuture_, &HeatPump::deviceEvent, this);
-}
-
-void HeatPump::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
-{
-    HeatPump* hp = (HeatPump*)userData;
-    if (err != NABTO_DEVICE_EC_OK) {
-        std::cout << "Device event called back with error: " << err << std::endl;
-
-        return;
-    } else {
-        if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_ATTACHED) {
-            std::cout << "Device is now attached" << std::endl;
-        } else if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_DETACHED) {
-            std::cout << "Device is now detached" << std::endl;
-        } else {
-            std::cout << "Unknown device event: " << hp->deviceEvent_ << std::endl;
-        }
-    }
-    hp->startWaitDevEvent();
-
-}
-
-void HeatPump::listenForDeviceEvents()
-{
-    NabtoDeviceError ec = nabto_device_device_events_init_listener(device_, deviceEventListener_);
-    if (ec) {
-        std::cerr << "Failed to initialize device events listener" << std::endl;
-        return;
-    }
-    startWaitDevEvent();
+    return true;
 }

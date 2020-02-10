@@ -1,6 +1,5 @@
 #include "heat_pump.hpp"
 #include "json_config.hpp"
-#include "heat_pump_coap.hpp"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -209,8 +208,6 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         hp.init();
         hp.setLogLevel(logLevel);
 
-        heat_pump_coap_init(device, &hp);
-
         // Wait for the user to press Ctrl-C
 
         struct sigaction sigIntHandler;
@@ -223,7 +220,6 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
 
         pause();
 
-        heat_pump_coap_deinit(&hp);
         hp.deinit();
         NabtoDeviceFuture* fut = nabto_device_future_new(device);
         nabto_device_close(device, fut);

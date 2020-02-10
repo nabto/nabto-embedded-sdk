@@ -116,6 +116,7 @@ if (DEVICE_BUILD_TESTS)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   add_subdirectory(examples/common)
   add_subdirectory(examples/heat_pump)
   #add_subdirectory(examples/tcptunnel)

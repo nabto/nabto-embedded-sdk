@@ -5,7 +5,6 @@ find_package( Threads )
 set(src
   src/main.cpp
   src/heat_pump.cpp
-  src/heat_pump_coap.cpp
   src/heat_pump_persisting.cpp
   )
 

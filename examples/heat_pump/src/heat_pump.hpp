@@ -15,68 +15,28 @@
 
 using json = nlohmann::json;
 
+namespace nabto {
+namespace examples {
+namespace heat_pump {
 
-class HeatPump;
+class HeatPumpSetPower;
+class HeatPumpSetTarget;
+class HeatPumpSetMode;
+class HeatPumpGet;
+class HeatPumpGetClientSettings;
 
-typedef std::function<void (NabtoDeviceCoapRequest* request, HeatPump* application)> CoapHandler;
+class HeatPumpConnectionEventHandler;
+class HeatPumpDeviceEventHandler;
 
-class HeatPumpCoapRequestHandler {
- public:
-    ~HeatPumpCoapRequestHandler() {
-        nabto_device_listener_free(listener_);
-        nabto_device_future_free(future_);
-    }
-    HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDeviceCoapMethod methdod, const char** pathSegments, CoapHandler handler);
+} } } // namespace
 
-    void startListen();
-
-    void stopListen() {
-        nabto_device_listener_stop(listener_);
-    }
-
-    static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
-    {
-        HeatPumpCoapRequestHandler* handler = (HeatPumpCoapRequestHandler*)data;
-        if (ec != NABTO_DEVICE_EC_OK) {
-            return;
-        }
-        handler->handler_(handler->request_, handler->heatPump_);
-        handler->startListen();
-    }
-
-    HeatPump* heatPump_;
-    //  wait for a request
-    NabtoDeviceFuture* future_;
-    NabtoDeviceCoapRequest* request_;
-    // on this listener
-    NabtoDeviceListener* listener_;
-    // invoke this function if the resource is hit
-    CoapHandler handler_;
-};
 
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, nabto::FingerprintIAM& iam, nabto::HeatPumpPersisting& persisting)
-        : device_(device), persisting_(persisting), fingerprintIAM_(iam)
-    {
-        connectionEventListener_ = nabto_device_listener_new(device);
-        deviceEventListener_ = nabto_device_listener_new(device);
+    HeatPump(NabtoDevice* device, nabto::FingerprintIAM& iam, nabto::HeatPumpPersisting& persisting);
 
-        connectionEventFuture_ = nabto_device_future_new(device);
-        deviceEventFuture_ = nabto_device_future_new(device);
-        iamChangedFuture_ = nabto_device_future_new(device_);
-
-    }
-
-    ~HeatPump() {
-        nabto_device_future_free(connectionEventFuture_);
-        nabto_device_future_free(deviceEventFuture_);
-        nabto_device_future_free(iamChangedFuture_);
-
-        nabto_device_listener_free(connectionEventListener_);
-        nabto_device_listener_free(deviceEventListener_);
-    }
+    ~HeatPump();
 
     void init();
 
@@ -85,13 +45,8 @@ class HeatPump {
 
     NabtoDeviceError initDevice();
 
-    void deinit() {
-        if (connectionEventListener_) {
-            nabto_device_listener_stop(connectionEventListener_);
-        }
-        if (deviceEventListener_) {
-            nabto_device_listener_stop(deviceEventListener_);
-        }
+    void deinit()
+    {
     }
 
     enum class Mode {
@@ -99,15 +54,11 @@ class HeatPump {
         HEAT = 1,
         FAN = 2,
         DRY = 3,
-
     };
 
-    NabtoDevice* getDevice() {
+    NabtoDevice* getDevice()
+    {
         return device_;
-    }
-
-    nabto::FingerprintIAM* getFPIAM() {
-        return &fingerprintIAM_;
     }
 
     void setMode(Mode mode);
@@ -117,7 +68,8 @@ class HeatPump {
     const char* getModeString();
 
 
-    json getState() {
+    json getState()
+    {
         nlohmann::json state;
         state["Mode"] = persisting_.getHeatPumpMode();
         state["Target"] = persisting_.getHeatPumpTarget();
@@ -126,67 +78,38 @@ class HeatPump {
         return state;
     }
 
-    std::string getClientServerUrl() {
+    std::string getClientServerUrl()
+    {
         return persisting_.getClientServerUrl();
     }
 
-    std::string getClientServerKey() {
+    std::string getClientServerKey()
+    {
         return persisting_.getClientServerKey();
     }
 
-    bool beginPairing() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (pairing_) {
-            return false;
-        }
-        pairing_ = true;
-        return true;
-    }
-    void pairingEnded() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        pairing_ = false;
-    }
+    bool checkAccess(NabtoDeviceCoapRequest* request, const std::string& action);
 
-    std::unique_ptr<std::thread> pairingThread_;
 
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapGetState;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPower;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostMode;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostTarget;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPairingButton;
+ private:
 
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapGetClientSettings;
+    void initCoapHandlers();
 
-  private:
-
-    static void connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
-    void listenForConnectionEvents();
-    void startWaitEvent();
-
-    static void deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
-    void listenForDeviceEvents();
-    void startWaitDevEvent();
-
-    std::mutex mutex_;
     NabtoDevice* device_;
 
     nabto::HeatPumpPersisting& persisting_;
-
-    bool pairing_ = false;
-    uint64_t currentIamVersion_;
-
-    NabtoDeviceListener* connectionEventListener_;
-    NabtoDeviceFuture* connectionEventFuture_;
-    NabtoDeviceConnectionRef connectionRef_;
-    NabtoDeviceConnectionEvent connectionEvent_;
-
-    NabtoDeviceListener* deviceEventListener_;
-    NabtoDeviceFuture* deviceEventFuture_;
-    NabtoDeviceEvent deviceEvent_;
-
-    NabtoDeviceFuture* iamChangedFuture_;
-
     nabto::FingerprintIAM& fingerprintIAM_;
+
+    std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetPower> coapSetPower_;
+    std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetTarget> coapSetTarget_;
+    std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetMode> coapSetMode_;
+    std::unique_ptr<nabto::examples::heat_pump::HeatPumpGet> coapGet_;
+    std::unique_ptr<nabto::examples::heat_pump::HeatPumpGetClientSettings> coapGetClientSettings_;
+
+    std::unique_ptr<nabto::examples::heat_pump::HeatPumpConnectionEventHandler> heatPumpConnectionEventHandler_;
+    std::unique_ptr<nabto::examples::heat_pump::HeatPumpDeviceEventHandler> heatPumpDeviceEventHandler_;
+
+
 };
 
 #endif
