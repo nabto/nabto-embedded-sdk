@@ -311,7 +311,6 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
     if (ec == NABTO_EC_OK) {
         struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
         if (str == NULL) {
-            nabto_device_listener_set_error_code(listenerContext->listener, NABTO_EC_OUT_OF_MEMORY);
             nc_stream_release(str->stream);
             return;
         }
