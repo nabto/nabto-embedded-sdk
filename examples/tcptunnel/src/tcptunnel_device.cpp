@@ -2,6 +2,10 @@
 #include "json_config.hpp"
 
 #include "tcptunnel_default_policies.hpp"
+#include "tcptunnel_private_key.hpp"
+#include "tcptunnel_persisting.hpp"
+
+#include <examples/common/random_string.hpp>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -14,10 +18,25 @@
 #include <unistd.h>
 #include <random>
 
-static bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
-static bool run_tcptunnel(const std::string& configFile, const std::string& logLevel);
+std::string exampleDeviceConfig = R"(
+{
+  "ProductId": "...",
+  "DeviceId": "...",
+  "Server": "...",
+  "Client": {
+    "ServerKey": "...",
+    "ServerUrl": "..."
+  }
+}
+)";
 
-static std::string randomString(size_t n);
+static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel);
+
+void print_missing_device_config_help(const std::string& filename)
+{
+    std::cout << "The device config is missing (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
+    std::cout << exampleDeviceConfig << std::endl;
+}
 
 void my_handler(int s){
 }
@@ -29,16 +48,14 @@ int main(int argc, char** argv)
     options.add_options("General")
         ("h,help", "Show help")
         ("version", "Show version")
-        ("i,init", "Initialize configuration file")
-        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("tcptunnel_device.json"))
-        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
-        ("p,policies", "Policies configuration file", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
-        ("create-default-policies", "Create default policies file");
-     options.add_options("Init Parameters")
-        ("p,product", "Product id", cxxopts::value<std::string>())
-        ("d,device", "Device id", cxxopts::value<std::string>())
-        ("s,server", "hostname of the server", cxxopts::value<std::string>());
-     try {
+
+        ("config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
+        ("policies", "Configuration file containing the policies if it does not exists it's created", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
+        ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("tcptunnel_state.json"))
+
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"));
+
+    try {
 
         auto result = options.parse(argc, argv);
 
@@ -54,27 +71,13 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        if (result.count("create-default-policies")) {
-            std::string policiesFile = result["policies"].as<std::string>();
-            if (!init_default_policies(policiesFile)) {
-                std::cerr << "Initialization of default policies file failed" << std::endl;
-            }
-        } else if (result.count("init") > 0) {
-            std::string configFile = result["config"].as<std::string>();
-            std::string productId = result["product"].as<std::string>();
-            std::string deviceId = result["device"].as<std::string>();
-            std::string server = result["server"].as<std::string>();
-            if (!init_tcptunnel(configFile, productId, deviceId, server)) {
-                std::cerr << "Initialization failed" << std::endl;
-                return 2;
-            }
-        } else {
-            std::string configFile = result["config"].as<std::string>();
-            std::string logLevel = result["log-level"].as<std::string>();
-            if (!run_tcptunnel(configFile, logLevel)) {
-                std::cerr << "Failed to run TCP tunnel" << std::endl;
-                return 3;
-            }
+        std::string configFile = result["config"].as<std::string>();
+        std::string policiesFile = result["policies"].as<std::string>();
+        std::string stateFile = result["state"].as<std::string>();
+        std::string logLevel = result["log-level"].as<std::string>();
+        if (!run_tcptunnel(configFile, policiesFile, stateFile, logLevel)) {
+            std::cerr << "Failed to run TCP tunnel" << std::endl;
+            return 3;
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -88,69 +91,31 @@ int main(int argc, char** argv)
     return 0;
 }
 
-bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
+bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel)
 {
-    if (json_config_exists(configFile)) {
-        std::cerr << "The config already file exists, remove " << configFile << " and try again" << std::endl;
-        return false;
-    }
-
-    nlohmann::json config;
-
-    NabtoDevice* device = nabto_device_new();
-    NabtoDeviceError ec;
-
-    char* str;
-    char* fp;
-    ec = nabto_device_create_private_key(device, &str);
-    std::string privateKey(str);
-    if (ec) {
-        std::cerr << "Error creating private key" << std::endl;
-        return false;
-    }
-    ec = nabto_device_set_private_key(device, str);
-    if (ec) {
-        std::cerr << "Error setting private key" << std::endl;
-        return false;
-    }
-    ec = nabto_device_get_device_fingerprint_hex(device, &fp);
-    if (ec) {
-        std::cerr << "Error getting Fingerprint" << std::endl;
-        return false;
-    }
-
-    std::cout << "Created new private key with fingerprint: " << fp << std::endl;
-    nabto_device_string_free(fp);
-    nabto_device_string_free(str);
-
-    config["PrivateKey"] = privateKey;
-    config["ProductId"] = productId;
-    config["DeviceId"] = deviceId;
-    config["Server"] = server;
-
-    config["PairingPassword"] = randomString(16);
-
-    json_config_save(configFile, config);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
-    nabto_device_stop(device);
-    nabto_device_free(device);
-
-    return true;
-}
-
-bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
-{
-    NabtoDeviceError ec;
     nlohmann::json config;
     if (!json_config_load(configFile, config)) {
-        std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
+        print_missing_device_config_help(configFile);
         return false;
     }
 
+    if (!json_config_exists(policiesFile)) {
+        std::cout << "The policies file is not found, creating a new file with default policies" << std::endl;
+        init_default_policies(policiesFile);
+    }
+
+    std::stringstream keyFileName;
+    keyFileName << config["DeviceId"].get<std::string>() << "_" << config["ProductId"] << ".key";
+
+    std::string privateKey;
+    if (!load_private_key(keyFileName.str(), privateKey)) {
+        return false;
+    }
+
+    nabto::examples::tcptunnel::TcpTunnelPersisting ttp(stateFile);
+    ttp.load();
+
+    NabtoDeviceError ec;
     NabtoDevice* device = nabto_device_new();
     if (!device) {
         std::cerr << "Could not create device" << std::endl;
@@ -160,8 +125,6 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     auto productId = config["ProductId"].get<std::string>();
     auto deviceId  = config["DeviceId"].get<std::string>();
     auto server = config["Server"].get<std::string>();
-    auto privateKey = config["PrivateKey"].get<std::string>();
-    auto pairingPassword = config["PairingPassword"].get<std::string>();
 
     ec = nabto_device_set_product_id(device, productId.c_str());
     if (ec) {
@@ -237,7 +200,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     std::cout << "# Product ID:      " << productId << std::endl;
     std::cout << "# Device ID:       " << deviceId << std::endl;
     std::cout << "# Fingerprint:     " << std::string(fp) << std::endl;
-    std::cout << "# Paring Password: " << pairingPassword << std::endl;
+    std::cout << "# Paring Password: " << ttp.getPairingPassword() << std::endl;
     std::cout << "# Version:         " << nabto_device_version() << std::endl;
     std::cout << "######## " << std::endl;
 
@@ -268,21 +231,4 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
 
     nabto_device_free(device);
     return true;
-}
-
-std::string randomString(size_t n) {
-    const std::string characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::uniform_int_distribution<> distribution(0, characters.size() - 1);
-
-    std::string randomString;
-
-    for (std::size_t i = 0; i < n; ++i)
-    {
-        randomString += characters[distribution(generator)];
-    }
-
-    return randomString;
 }
