@@ -105,7 +105,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
     }
 
     std::stringstream keyFileName;
-    keyFileName << config["DeviceId"].get<std::string>() << "_" << config["ProductId"] << ".key";
+    keyFileName << config["DeviceId"].get<std::string>() << "_" << config["ProductId"].get<std::string>() << ".key.json";
 
     std::string privateKey;
     if (!load_private_key(keyFileName.str(), privateKey)) {

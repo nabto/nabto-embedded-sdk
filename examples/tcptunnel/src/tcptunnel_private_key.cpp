@@ -5,6 +5,7 @@
 #include <examples/common/json_config.hpp>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <iostream>
 
 static bool try_load_private_key(const std::string& keyfileName, std::string& privateKey);
 static bool create_private_key(const std::string& keyfileName);
@@ -27,6 +28,7 @@ bool try_load_private_key(const std::string& keyFileName, std::string& privateKe
 
 bool create_private_key(const std::string& keyFileName)
 {
+    std::cout << "creating a new private key with the filename " << keyFileName << std::endl;
     NabtoDevice* device = nabto_device_new();
 
     char* privateKey;
