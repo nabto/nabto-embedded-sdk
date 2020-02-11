@@ -124,6 +124,10 @@ void nabto_device_stop(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
+    if (dev->closing) {
+        return;
+    }
+
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     nm_tcptunnels_deinit(&dev->tcptunnels);
@@ -160,6 +164,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
+    nabto_device_stop(device);
     nabto_device_free_threads(dev);
 
     free(dev->productId);

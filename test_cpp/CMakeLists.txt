@@ -24,6 +24,7 @@ set(test_src
   api/future_test.cpp
   api/device_api.cpp
   api/authorization_test.cpp
+  api/new_free.cpp
   attach/attach_test.cpp
   test_platform.cpp
   iam/load_users.cpp
