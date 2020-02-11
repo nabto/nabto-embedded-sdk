@@ -129,4 +129,84 @@ std::unique_ptr<Policy> IAMToJson::policyFromJson(const std::string& json)
     return std::make_unique<Policy>(name, statements);
 }
 
+/**
+ * Load roles in the format
+"Roles" {
+  "Role1": {
+    "Name": "Role1",
+    "Policies": ["p1", "p2"]
+  },
+  "Role2": {
+   ...
+  }
+}
+*/
+std::vector<RoleBuilder> IAMToJson::loadRoles(const nlohmann::json& roles)
+{
+    std::vector<RoleBuilder> out;
+    for (auto it = roles.begin(); it != roles.end(); it++) {
+
+        RoleBuilder rb(it.key());
+
+        nlohmann::json json = it.value();
+        if (json.find("Policies") != json.end()) {
+            nlohmann::json policies = json["Policies"];
+            if (policies.is_array()) {
+                for (auto policy : policies) {
+                    if (policy.is_string()) {
+                        rb = rb.addPolicy(policy.get<std::string>());
+                    }
+                }
+            }
+        }
+
+        out.push_back(rb);
+    }
+    return out;
+}
+
+nlohmann::json IAMToJson::roleAsJson(const RoleBuilder& roleBuilder)
+{
+    nlohmann::json root;
+    root["Name"] = roleBuilder.getName();
+    root["Policies"] = roleBuilder.getPolicies();
+    return root;
+}
+
+static nlohmann::json statementAsJson(const Statement& statement)
+{
+    nlohmann::json root;
+    if (statement.getEffect() == iam::Effect::ALLOW) {
+        root["Effect"] = "Allow";
+    } else {
+        root["Effect"] = "Deny";
+    }
+
+    root["Actions"] = statement.getActions();
+
+    nlohmann::json conditions = nlohmann::json::array();
+
+    root["Conditions"] = conditions;
+    return root;
+}
+
+static nlohmann::json statementsAsJson(const std::vector<Statement>& statements)
+{
+    nlohmann::json out = nlohmann::json::array();
+    for (auto s : statements) {
+        out.push_back(statementAsJson(s));
+    }
+    return out;
+}
+
+nlohmann::json IAMToJson::policyAsJson(const PolicyBuilder& policyBuilder)
+{
+    nlohmann::json root;
+
+    root["Name"] = policyBuilder.getName();
+    root["Statements"] = statementsAsJson(policyBuilder.getStatements());
+
+    return root;
+}
+
 } } // namespace

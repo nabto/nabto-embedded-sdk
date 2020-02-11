@@ -1,24 +1,24 @@
 #pragma once
 
-#include <examples/common/abstract_connection_event_handler.hpp>
+#include "abstract_connection_event_handler.hpp"
 
 #include <iostream>
 
 namespace nabto {
 namespace examples {
-namespace heat_pump {
+namespace common {
 
-class HeatPumpConnectionEventHandler : public common::AbstractConnectionEventHandler
+class StdoutConnectionEventHandler : public AbstractConnectionEventHandler
 {
  public:
-    HeatPumpConnectionEventHandler(NabtoDevice* device)
-        : common::AbstractConnectionEventHandler(device)
+     StdoutConnectionEventHandler(NabtoDevice* device)
+        : AbstractConnectionEventHandler(device)
     {
     }
 
-    static std::unique_ptr<HeatPumpConnectionEventHandler> create(NabtoDevice* device)
+    static std::unique_ptr<StdoutConnectionEventHandler> create(NabtoDevice* device)
     {
-        auto ptr = std::make_unique<HeatPumpConnectionEventHandler>(device);
+        auto ptr = std::make_unique<StdoutConnectionEventHandler>(device);
         ptr->init();
         return std::move(ptr);
     }
@@ -37,4 +37,4 @@ class HeatPumpConnectionEventHandler : public common::AbstractConnectionEventHan
     }
 };
 
-} } }
+} } } // namespace

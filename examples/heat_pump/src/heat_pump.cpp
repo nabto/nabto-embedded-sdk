@@ -7,8 +7,8 @@
 #include "heat_pump_get.hpp"
 #include "heat_pump_get_client_settings.hpp"
 
-#include "heat_pump_connection_event_handler.hpp"
-#include "heat_pump_device_event_handler.hpp"
+#include <examples/common/stdout_connection_event_handler.hpp>
+#include <examples/common/stdout_device_event_handler.hpp>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -47,8 +47,8 @@ void HeatPump::init()
 
     initCoapHandlers();
 
-    heatPumpConnectionEventHandler_ = nabto::examples::heat_pump::HeatPumpConnectionEventHandler::create(device_);
-    heatPumpDeviceEventHandler_ = nabto::examples::heat_pump::HeatPumpDeviceEventHandler::create(device_);
+    stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device_);
+    stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device_);
 
 }
 

@@ -1,6 +1,11 @@
 #pragma once
 
 #include "iam.hpp"
+#include "attribute.hpp"
+#include "condition.hpp"
+
+#include <string>
+#include <map>
 
 
 namespace nabto {

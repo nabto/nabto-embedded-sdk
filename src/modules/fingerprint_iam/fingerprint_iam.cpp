@@ -5,7 +5,6 @@
 #include "coap_pairing.hpp"
 #include "coap_pairing_password.hpp"
 #include "coap_pairing_button.hpp"
-#include "role_builder.hpp"
 #include "user_builder.hpp"
 
 
@@ -18,11 +17,8 @@
 namespace nabto {
 namespace fingerprint_iam {
 
-
-
 FingerprintIAM::~FingerprintIAM()
 {
-
 }
 
 FingerprintIAM::FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting)
@@ -107,7 +103,7 @@ void FingerprintIAM::enablePasswordPairing(const std::string& password)
     coapPairingPassword_->init(password);
 }
 
-bool FingerprintIAM::addRole(const RoleBuilder& roleBuilder)
+bool FingerprintIAM::addRole(const iam::RoleBuilder& roleBuilder)
 {
     if (roles_.find(roleBuilder.getName()) != roles_.end()) {
         return false;

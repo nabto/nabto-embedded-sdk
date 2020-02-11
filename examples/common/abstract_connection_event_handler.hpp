@@ -1,5 +1,9 @@
 #pragma once
 
+#include <nabto/nabto_device.h>
+
+#include <future>
+
 namespace nabto {
 namespace examples {
 namespace common {

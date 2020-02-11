@@ -1,6 +1,8 @@
 #include "tcptunnel.hpp"
 #include "json_config.hpp"
 
+#include "tcptunnel_default_policies.hpp"
+
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
@@ -29,7 +31,9 @@ int main(int argc, char** argv)
         ("version", "Show version")
         ("i,init", "Initialize configuration file")
         ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("tcptunnel_device.json"))
-        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"));
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
+        ("p,policies", "Policies configuration file", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
+        ("create-default-policies", "Create default policies file");
      options.add_options("Init Parameters")
         ("p,product", "Product id", cxxopts::value<std::string>())
         ("d,device", "Device id", cxxopts::value<std::string>())
@@ -50,7 +54,12 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        if (result.count("init") > 0) {
+        if (result.count("create-default-policies")) {
+            std::string policiesFile = result["policies"].as<std::string>();
+            if (!init_default_policies(policiesFile)) {
+                std::cerr << "Initialization of default policies file failed" << std::endl;
+            }
+        } else if (result.count("init") > 0) {
             std::string configFile = result["config"].as<std::string>();
             std::string productId = result["product"].as<std::string>();
             std::string deviceId = result["device"].as<std::string>();
@@ -78,68 +87,6 @@ int main(int argc, char** argv)
     }
     return 0;
 }
-const json defaultTcptunnelIam = R"(
-{
-  "DefaultRole": "Unpaired",
-  "Policies": {
-    "PasswordPairing": {
-      "Statements": [
-        {
-          "Actions": [
-            "Pairing:Password"
-          ],
-          "Allow": true
-        }
-      ],
-      "Version": 1
-    },
-    "TunnelAll": {
-      "Statements": [
-        {
-          "Actions": [ "TcpTunnel:Create" ],
-          "Allow": true
-        }
-      ],
-      "Version": 1
-    },
-    "P2P": {
-      "Statements": [
-        {
-          "Actions": [ "P2P:Stun", "P2P:Rendezvous" ],
-          "Allow": true
-        }
-      ],
-      "Version": 1
-    },
-    "Paired": {
-      "Statements": [
-        {
-          "Actions": [ "Pairing:IsPaired" ],
-          "Allow": true
-        }
-      ],
-      "Version": 1
-    }
-  },
-  "Roles": {
-    "Unpaired": [
-      "PasswordPairing", "P2P"
-    ],
-    "Tunnelling": [
-      "TunnelAll", "P2P"
-    ],
-    "Paired": [
-      "Paired"
-    ]
-  },
-  "Users": {
-    "DefaultUser": {
-      "Roles": [ "Tunnelling", "Paired" ],
-      "Fingerprints": []
-    }
-  }
-}
-)"_json;
 
 bool init_tcptunnel(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server)
 {
@@ -148,7 +95,7 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
         return false;
     }
 
-    json config;
+    nlohmann::json config;
 
     NabtoDevice* device = nabto_device_new();
     NabtoDeviceError ec;
@@ -183,18 +130,6 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
 
     config["PairingPassword"] = randomString(16);
 
-    std::vector<uint8_t> iamCbor = json::to_cbor(defaultTcptunnelIam);
-    std::cout << "iam size " << iamCbor.size() << std::endl;
-
-    // test the iam config
-    ec = nabto_device_iam_load(device, iamCbor.data(), iamCbor.size());
-    if (ec) {
-        std::cerr << "Error loading default iam " << nabto_device_error_get_message(ec) << std::endl;
-        return false;
-    }
-
-    config["Iam"] = defaultTcptunnelIam;
-
     json_config_save(configFile, config);
 
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
@@ -210,7 +145,7 @@ bool init_tcptunnel(const std::string& configFile, const std::string& productId,
 bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
 {
     NabtoDeviceError ec;
-    json config;
+    nlohmann::json config;
     if (!json_config_load(configFile, config)) {
         std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
         return false;
@@ -227,8 +162,6 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
     auto server = config["Server"].get<std::string>();
     auto privateKey = config["PrivateKey"].get<std::string>();
     auto pairingPassword = config["PairingPassword"].get<std::string>();
-    auto iam = config["Iam"];
-
 
     ec = nabto_device_set_product_id(device, productId.c_str());
     if (ec) {
@@ -250,13 +183,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& logLevel)
         std::cerr << "Could not set private key" << std::endl;
         return false;
     }
-    std::vector<uint8_t> iamCbor = json::to_cbor(iam);
 
-    ec = nabto_device_iam_load(device, iamCbor.data(), iamCbor.size());
-    if (ec) {
-        std::cerr << "failed to load iam" << std::endl;
-        return false;
-    }
     ec = nabto_device_enable_mdns(device);
     if (ec) {
         std::cerr << "Failed to enable mdns" << std::endl;

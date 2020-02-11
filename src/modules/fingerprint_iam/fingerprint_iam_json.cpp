@@ -2,7 +2,6 @@
 #include <modules/iam_cpp/iam_to_json.hpp>
 
 #include "user.hpp"
-#include "role_builder.hpp"
 #include "user_builder.hpp"
 #include "fingerprint_iam.hpp"
 
@@ -18,23 +17,8 @@ namespace fingerprint_iam {
 */
 bool FingerprintIAMJson::loadRoles(FingerprintIAM& iam, const nlohmann::json& roles)
 {
-    for (auto it = roles.begin(); it != roles.end(); it++) {
-
-        RoleBuilder rb;
-        rb = rb.name(it.key());
-
-        nlohmann::json json = it.value();
-        if (json.find("Policies") != json.end()) {
-            nlohmann::json policies = json["Policies"];
-            if (policies.is_array()) {
-                for (auto policy : policies) {
-                    if (policy.is_string()) {
-                        rb = rb.addPolicy(policy.get<std::string>());
-                    }
-                }
-            }
-        }
-
+    std::vector<iam::RoleBuilder> rbs = iam::IAMToJson::loadRoles(roles);
+    for (auto& rb : rbs) {
         if (!iam.addRole(rb)) {
             return false;
         }

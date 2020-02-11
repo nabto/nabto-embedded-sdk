@@ -1,21 +1,23 @@
 #pragma once
 
-#include <examples/common/abstract_device_event_handler.hpp>
+#include "abstract_device_event_handler.hpp"
+
+#include <iostream>
 
 namespace nabto {
 namespace examples {
-namespace heat_pump {
+namespace common {
 
-class HeatPumpDeviceEventHandler : public common::AbstractDeviceEventHandler
+class StdoutDeviceEventHandler : public AbstractDeviceEventHandler
 {
  public:
-    HeatPumpDeviceEventHandler(NabtoDevice* device)
-        : common::AbstractDeviceEventHandler(device)
+    StdoutDeviceEventHandler(NabtoDevice* device)
+        : AbstractDeviceEventHandler(device)
     {
     }
-    static std::unique_ptr<HeatPumpDeviceEventHandler> create(NabtoDevice* device)
+    static std::unique_ptr<StdoutDeviceEventHandler> create(NabtoDevice* device)
     {
-        auto ptr = std::make_unique<HeatPumpDeviceEventHandler>(device);
+        auto ptr = std::make_unique<StdoutDeviceEventHandler>(device);
         ptr->init();
         return std::move(ptr);
     }

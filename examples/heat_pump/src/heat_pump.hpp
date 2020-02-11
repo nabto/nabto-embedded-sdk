@@ -17,6 +17,15 @@ using json = nlohmann::json;
 
 namespace nabto {
 namespace examples {
+namespace common {
+
+class StdoutConnectionEventHandler;
+class StdoutDeviceEventHandler;
+
+} } }  // namespace
+
+namespace nabto {
+namespace examples {
 namespace heat_pump {
 
 class HeatPumpSetPower;
@@ -24,9 +33,6 @@ class HeatPumpSetTarget;
 class HeatPumpSetMode;
 class HeatPumpGet;
 class HeatPumpGetClientSettings;
-
-class HeatPumpConnectionEventHandler;
-class HeatPumpDeviceEventHandler;
 
 class HeatPump {
   public:
@@ -97,14 +103,14 @@ class HeatPump {
     HeatPumpPersisting& persisting_;
     fingerprint_iam::FingerprintIAM& fingerprintIAM_;
 
-    std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetPower> coapSetPower_;
-    std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetTarget> coapSetTarget_;
-    std::unique_ptr<nabto::examples::heat_pump::HeatPumpSetMode> coapSetMode_;
-    std::unique_ptr<nabto::examples::heat_pump::HeatPumpGet> coapGet_;
-    std::unique_ptr<nabto::examples::heat_pump::HeatPumpGetClientSettings> coapGetClientSettings_;
+    std::unique_ptr<HeatPumpSetPower> coapSetPower_;
+    std::unique_ptr<HeatPumpSetTarget> coapSetTarget_;
+    std::unique_ptr<HeatPumpSetMode> coapSetMode_;
+    std::unique_ptr<HeatPumpGet> coapGet_;
+    std::unique_ptr<HeatPumpGetClientSettings> coapGetClientSettings_;
 
-    std::unique_ptr<nabto::examples::heat_pump::HeatPumpConnectionEventHandler> heatPumpConnectionEventHandler_;
-    std::unique_ptr<nabto::examples::heat_pump::HeatPumpDeviceEventHandler> heatPumpDeviceEventHandler_;
+    std::unique_ptr<nabto::examples::common::StdoutConnectionEventHandler> stdoutConnectionEventHandler_;
+    std::unique_ptr<nabto::examples::common::StdoutDeviceEventHandler> stdoutDeviceEventHandler_;
 
 
 };

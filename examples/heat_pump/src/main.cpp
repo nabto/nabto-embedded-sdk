@@ -6,8 +6,6 @@
 
 #include <modules/iam_cpp/iam.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
-#include <modules/fingerprint_iam/role_builder.hpp>
-
 
 #include <cxxopts.hpp>
 
@@ -234,45 +232,33 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
 
 void loadStaticIamPolicy(nabto::fingerprint_iam::FingerprintIAM& iam)
 {
-    auto buttonPairingPolicy = nabto::iam::PolicyBuilder()
-        .name("ButtonPairing")
-        .addStatement(nabto::iam::StatementBuilder()
-                      .allow()
-                      .addAction("Pairing:Button")
-                      .build())
+    auto buttonPairingPolicy = nabto::iam::PolicyBuilder("ButtonPairing")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("Pairing:Button"))
         .build();
 
-    auto readPolicy = nabto::iam::PolicyBuilder()
-        .name("HeatPumpRead")
-        .addStatement(nabto::iam::StatementBuilder()
-                      .allow()
-                      .addAction("HeatPump:Get")
-                      .build())
+    auto readPolicy = nabto::iam::PolicyBuilder("HeatPumpRead")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("HeatPump:Get"))
         .build();
 
-    auto writePolicy = nabto::iam::PolicyBuilder()
-        .name("HeatPumpWrite")
-        .addStatement(nabto::iam::StatementBuilder()
-                      .allow()
+    auto writePolicy = nabto::iam::PolicyBuilder("HeatPumpWrite")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
                       .addAction("HeatPump:Set")
                       .addAction("IAM:AddUser")
                       .addAction("IAM:GetUser")
                       .addAction("IAM:ListUsers")
                       .addAction("IAM:AddRoleToUser")
-                      .addAction("IAM:RemoveRoleFromUser")
-                      .build())
+                      .addAction("IAM:RemoveRoleFromUser"))
         .build();
 
-    auto modifyOwnUserPolicy = nabto::iam::PolicyBuilder()
-        .name("ModifyOwnUser")
-        .addStatement(nabto::iam::StatementBuilder()
-                      .allow()
+    auto modifyOwnUserPolicy = nabto::iam::PolicyBuilder("ModifyOwnUser")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
                       .addAction("IAM:GetUser")
                       .addAction("IAM:ListUsers")
                       .addAction("IAM:AddFingerprint")
                       .addAction("IAM:RemoveFingerprint")
-                      .addAttributeEqualCondition("Connection:UserId", "IAM:UserId")
-                      .build())
+                      .addAttributeEqualCondition("Connection:UserId", "IAM:UserId"))
         .build();
 
     iam.addPolicy(buttonPairingPolicy);
@@ -280,15 +266,15 @@ void loadStaticIamPolicy(nabto::fingerprint_iam::FingerprintIAM& iam)
     iam.addPolicy(writePolicy);
     iam.addPolicy(modifyOwnUserPolicy);
 
-    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("Unpaired").addPolicy("ButtonPairing"));
-    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("Owner")
+    iam.addRole(nabto::iam::RoleBuilder("Unpaired").addPolicy("ButtonPairing"));
+    iam.addRole(nabto::iam::RoleBuilder("Owner")
                 .addPolicy("HeatPumpWrite")
                 .addPolicy("HeatPumpRead"));
-    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("User")
+    iam.addRole(nabto::iam::RoleBuilder("User")
                 .addPolicy("HeatPumpRead")
                 .addPolicy("HeatPumpWrite")
                 .addPolicy("ModifyOwnUser"));
-    iam.addRole(nabto::fingerprint_iam::RoleBuilder().name("Guest")
+    iam.addRole(nabto::iam::RoleBuilder("Guest")
                 .addPolicy("HeatPumpRead"));
 
 }

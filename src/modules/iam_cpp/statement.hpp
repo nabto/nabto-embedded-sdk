@@ -19,6 +19,21 @@ class Statement {
 
     Effect eval(const std::string& action, const Attributes& attributes) const;
 
+    std::set<std::string> getActions() const
+    {
+        return actions_;
+    }
+
+    std::vector<Condition> getConditions() const
+    {
+        return conditions_;
+    }
+
+    Effect getEffect() const
+    {
+        return effect_;
+    }
+
  private:
     bool matchActions(const std::string& action) const;
 

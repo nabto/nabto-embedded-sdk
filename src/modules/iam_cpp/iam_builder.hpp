@@ -1,34 +1,21 @@
 #pragma once
 
 #include "conditions.hpp"
+#include "statement.hpp"
+#include "effect.hpp"
+#include "policy.hpp"
+
+#include <string>
+#include <set>
+#include <vector>
 
 namespace nabto {
 namespace iam {
 
-class PolicyBuilder {
- public:
-    PolicyBuilder() {}
-    PolicyBuilder name(const std::string& name)
-    {
-        name_ = name;
-        return *this;
-    }
-    PolicyBuilder addStatement(const Statement& statement)
-    {
-        statements_.push_back(statement);
-        return *this;
-    }
-    Policy build() {
-        return Policy(name_, statements_);
-    }
- private:
-    std::string name_;
-    std::vector<Statement> statements_;
-};
 
 class StatementBuilder {
  public:
-    StatementBuilder() {}
+    StatementBuilder(Effect effect) : effect_(effect) {}
     StatementBuilder allow()
     {
         effect_ = Effect::ALLOW;
@@ -59,7 +46,7 @@ class StatementBuilder {
         return *this;
     }
 
-    Statement build() {
+    Statement build() const {
         return Statement(effect_, actions_, conditions_);
     }
 
@@ -70,29 +57,66 @@ class StatementBuilder {
 
 };
 
-// class RoleBuilder {
-//  public:
-//     RoleBuilder() {}
-//     RoleBuilder name(const std::string& name)
-//     {
-//         name_ = name;
-//         return *this;
-//     }
+class PolicyBuilder {
+ public:
+    PolicyBuilder(const std::string& name) : name_(name) {}
+    PolicyBuilder name(const std::string& name)
+    {
+        name_ = name;
+        return *this;
+    }
+    PolicyBuilder addStatement(const Statement& statement)
+    {
+        statements_.push_back(statement);
+        return *this;
+    }
 
-//     RoleBuilder addPolicy(const std::string& policyName)
-//     {
-//         policies_.insert(policyName);
-//         return *this;
-//     }
+    PolicyBuilder addStatement(const StatementBuilder& statement)
+    {
+        statements_.push_back(statement.build());
+        return *this;
+    }
 
-//     Role build()
-//     {
-//         return Role(name_, policies_);
-//     }
+    Policy build() {
+        return Policy(name_, statements_);
+    }
 
-//  private:
-//     std::string name_;
-//     std::set<std::string> policies_;
-// };
+    std::string getName() const { return name_; }
+
+    std::vector<Statement> getStatements() const { return statements_; }
+ private:
+    std::string name_;
+    std::vector<Statement> statements_;
+};
+
+
+class RoleBuilder {
+ public:
+    RoleBuilder(const std::string& name) : name_(name) {}
+    RoleBuilder name(const std::string& name)
+    {
+        name_ = name;
+        return *this;
+    }
+
+    RoleBuilder addPolicy(const std::string& policyName)
+    {
+        policies_.insert(policyName);
+        return *this;
+    }
+
+    std::string getName() const
+    {
+        return name_;
+    }
+
+    std::set<std::string> getPolicies() const
+    {
+        return policies_;
+    }
+ private:
+    std::string name_;
+    std::set<std::string> policies_;
+};
 
 } } // namespace

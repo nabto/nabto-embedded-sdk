@@ -8,6 +8,7 @@
 #include <nabto/nabto_device.h>
 
 #include <modules/iam_cpp/iam.hpp>
+#include <modules/iam_cpp/iam_builder.hpp>
 
 #include <sstream>
 #include <functional>
@@ -20,7 +21,6 @@ class CoapPairing;
 class CoapPairingPassword;
 class CoapPairingButton;
 
-class RoleBuilder;
 class UserBuilder;
 
 class FingerprintIAMPersisting {
@@ -44,7 +44,7 @@ class FingerprintIAM {
         policies_[policy.getName()] = std::make_shared<nabto::iam::Policy>(policy);
     }
 
-    bool addRole(const RoleBuilder& roleBuilder);
+    bool addRole(const iam::RoleBuilder& roleBuilder);
 
     bool buildUser(const UserBuilder& ub);
 
