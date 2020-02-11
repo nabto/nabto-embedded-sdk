@@ -114,17 +114,21 @@ std::unique_ptr<Statement> loadStatement(const nlohmann::json& json)
 
 
 
-std::unique_ptr<Policy> IAMToJson::policyFromJson(const std::string& json)
+std::unique_ptr<Policy> IAMToJson::policyFromJson(const nlohmann::json& policy)
 {
-    auto parsed = nlohmann::json::parse(json);
-    std::string name = parsed["Name"].get<std::string>();
+    if (!policy["Name"].is_string()) {
+        return nullptr;
+    }
+    std::string name = policy["Name"].get<std::string>();
     std::vector<Statement> statements;
-    for (auto stmt : parsed["Statement"]) {
-        auto s = loadStatement(stmt);
-        if (!s) {
-            return nullptr;
+    if (policy["Statements"].is_array()) {
+        for (auto stmt : policy["Statements"]) {
+            auto s = loadStatement(stmt);
+            if (!s) {
+                return nullptr;
+            }
+            statements.push_back(*s);
         }
-        statements.push_back(*s);
     }
     return std::make_unique<Policy>(name, statements);
 }

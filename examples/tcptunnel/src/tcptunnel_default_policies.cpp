@@ -73,8 +73,13 @@ bool load_policies(const std::string& policiesFile, nabto::fingerprint_iam::Fing
     nlohmann::json roles = root["Roles"];
     nlohmann::json policies = root["Policies"];
 
-    for (auto p : policies) {
-        auto parsed = nabto::iam::IAMToJson::policyFromJson(p);
+    if (!policies.is_object()) {
+        return false;
+    }
+
+    for (auto it = policies.begin(); it != policies.end(); it++)
+    {
+        auto parsed = nabto::iam::IAMToJson::policyFromJson(*it);
         if (parsed != nullptr) {
             iam.addPolicy(*parsed);
         }

@@ -3,18 +3,29 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
-#include "tcptunnel_coap.hpp"
-#include "coap_request_handler.hpp"
+#include "tcptunnel_persisting.hpp"
 
 #include <examples/common/stdout_connection_event_handler.hpp>
 #include <examples/common/stdout_device_event_handler.hpp>
+#include <examples/common/device_config.hpp>
 
 #include <nlohmann/json.hpp>
 
+#include <iostream>
+
+namespace nabto {
+namespace examples {
+namespace tcptunnel {
+
 class TcpTunnel {
  public:
-    TcpTunnel(NabtoDevice* device, nlohmann::json config, const std::string& configFile)
-        : device_(device), config_(config), configFile_(configFile)
+    TcpTunnel(NabtoDevice* device, const std::string& privateKey, const std::string& policiesFile, nabto::examples::common::DeviceConfig& dc, TcpTunnelPersisting& state)
+        : device_(device),
+          privateKey_(privateKey),
+          policiesFile_(policiesFile),
+          deviceConfig_(dc),
+          state_(state),
+          fingerprintIAM_(device, state)
     {
         stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device);
         stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device);
@@ -22,30 +33,62 @@ class TcpTunnel {
 
     ~TcpTunnel()
     {
-    }
-    void init() {
-        tcptunnel_coap_init(device_, this);
+
     }
 
-    void deinit() {
-        tcptunnel_coap_deinit(this);
+    bool init()
+    {
+        if (!initDevice()) {
+            return false;
+        }
+        if (!loadIamConfig()) {
+            return false;
+        }
+        return initAccessControl();
     }
 
-    NabtoDevice* getDevice() {
-        return device_;
+    void setLogLevel(const std::string& logLevel)
+    {
+        NabtoDeviceError ec;
+        ec = nabto_device_set_log_level(device_, logLevel.c_str());
+        if (ec) {
+            std::cerr << "Failed to set loglevel" << std::endl;
+        }
     }
 
-    std::string getPairingPassword() {
-        return config_["PairingPassword"].get<std::string>();
-    }
+    void printTunnelInfo()
+    {
+        char* fpTemp;
+        nabto_device_get_device_fingerprint_hex(device_, &fpTemp);
+        std::string fp(fpTemp);
+        nabto_device_string_free(fpTemp);
 
-    std::unique_ptr<nabto::common::CoapRequestHandler> coapPostPairingPassword;
-    std::unique_ptr<nabto::common::CoapRequestHandler> coapGetPairingState;
+        std::cout << "######## Nabto tcptunnel device ########" << std::endl;
+        std::cout << "# Product ID:      " << deviceConfig_.getProductId() << std::endl;
+        std::cout << "# Device ID:       " << deviceConfig_.getDeviceId() << std::endl;
+        std::cout << "# Fingerprint:     " << fp << std::endl;
+        std::cout << "# Paring Password: " << state_.getPairingPassword() << std::endl;
+        std::cout << "# Version:         " << nabto_device_version() << std::endl;
+        std::cout << "######## " << std::endl;
+    }
  private:
+    bool loadIamConfig();
+    bool initAccessControl();
+
+
+    bool initDevice();
+
+
     NabtoDevice* device_;
-    nlohmann::json config_;
-    const std::string& configFile_;
+    std::string privateKey_;
+    std::string policiesFile_;
+    nabto::examples::common::DeviceConfig& deviceConfig_;
+    TcpTunnelPersisting& state_;
+    nabto::fingerprint_iam::FingerprintIAM fingerprintIAM_;
+
 
     std::unique_ptr<nabto::examples::common::StdoutConnectionEventHandler> stdoutConnectionEventHandler_;
     std::unique_ptr<nabto::examples::common::StdoutDeviceEventHandler> stdoutDeviceEventHandler_;
 };
+
+} } } // namespace

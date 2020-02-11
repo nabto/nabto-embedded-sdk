@@ -22,7 +22,7 @@ class IAMToJson {
     static bool usersFromJson(const std::string& json, std::vector<User>& users);
     static bool usersFromJson(const nlohmann::json& json, std::vector<User>& users);
 
-    static std::unique_ptr<Policy> policyFromJson(const std::string& json);
+    static std::unique_ptr<Policy> policyFromJson(const nlohmann::json& policy);
 
     static nlohmann::json policyAsJson(const PolicyBuilder& policyBuilder);
     static nlohmann::json roleAsJson(const RoleBuilder& roleBuilder);

@@ -6,6 +6,7 @@
 #include "tcptunnel_persisting.hpp"
 
 #include <examples/common/random_string.hpp>
+#include <examples/common/device_config.hpp>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -37,6 +38,13 @@ void print_missing_device_config_help(const std::string& filename)
     std::cout << "The device config is missing (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
     std::cout << exampleDeviceConfig << std::endl;
 }
+
+void print_invalid_device_config_help(const std::string& filename)
+{
+    std::cout << "The device config is invalid (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
+    std::cout << exampleDeviceConfig << std::endl;
+}
+
 
 void my_handler(int s){
 }
@@ -93,10 +101,14 @@ int main(int argc, char** argv)
 
 bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel)
 {
-    nlohmann::json config;
-    if (!json_config_load(configFile, config)) {
+    nabto::examples::common::DeviceConfig dc(configFile);
+    if (!dc.load()) {
         print_missing_device_config_help(configFile);
         return false;
+    }
+
+    if (!dc.isValid()) {
+        print_invalid_device_config_help(configFile);
     }
 
     if (!json_config_exists(policiesFile)) {
@@ -105,7 +117,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
     }
 
     std::stringstream keyFileName;
-    keyFileName << config["DeviceId"].get<std::string>() << "_" << config["ProductId"].get<std::string>() << ".key.json";
+    keyFileName << dc.getProductId() << "_" << dc.getDeviceId() << ".key.json";
 
     std::string privateKey;
     if (!load_private_key(keyFileName.str(), privateKey)) {
@@ -115,98 +127,17 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
     nabto::examples::tcptunnel::TcpTunnelPersisting ttp(stateFile);
     ttp.load();
 
-    NabtoDeviceError ec;
     NabtoDevice* device = nabto_device_new();
     if (!device) {
         std::cerr << "Could not create device" << std::endl;
         return false;
     }
 
-    auto productId = config["ProductId"].get<std::string>();
-    auto deviceId  = config["DeviceId"].get<std::string>();
-    auto server = config["Server"].get<std::string>();
-
-    ec = nabto_device_set_product_id(device, productId.c_str());
-    if (ec) {
-        std::cerr << "Could not set product id" << std::endl;
-        return false;
-    }
-    ec = nabto_device_set_device_id(device, deviceId.c_str());
-    if (ec) {
-        std::cerr << "Could not set device id" << std::endl;
-        return false;
-    }
-    ec = nabto_device_set_server_url(device, server.c_str());
-    if (ec) {
-        std::cerr << "Could not set server url" << std::endl;
-        return false;
-    }
-    ec = nabto_device_set_private_key(device, privateKey.c_str());
-    if (ec) {
-        std::cerr << "Could not set private key" << std::endl;
-        return false;
-    }
-
-    ec = nabto_device_enable_mdns(device);
-    if (ec) {
-        std::cerr << "Failed to enable mdns" << std::endl;
-        return false;
-    }
-    ec = nabto_device_enable_tcp_tunnelling(device);
-    if (ec) {
-        std::cerr << "Failed to enable tcp tunnelling" << std::endl;
-        return false;
-    }
-    ec = nabto_device_set_log_level(device, logLevel.c_str());
-    if (ec) {
-        std::cerr << "Failed to set loglevel" << std::endl;
-        return false;
-    }
-    ec = nabto_device_set_log_std_out_callback(device);
-    if (ec) {
-        std::cerr << "Failed to enable stdour logging" << std::endl;
-        return false;
-    }
-
-    try {
-        auto serverPort = config["ServerPort"].get<uint16_t>();
-        ec = nabto_device_set_server_port(device, serverPort);
-        if (ec) {
-            std::cerr << "Failed to set server port" << std::endl;
-            return false;
-        }
-    } catch (std::exception& e) {
-        // ServerPort not in config, just ignore and use default port
-    }
-
-    // run application
-    ec = nabto_device_start(device);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        nabto_device_free(device);
-        std::cerr << "Failed to start device" << std::endl;
-        return false;
-    }
-
-    char* fpTemp;
-    ec = nabto_device_get_device_fingerprint_hex(device, &fpTemp);
-    if (ec) {
-        std::cerr << "Could not get fingerprint of the device" << std::endl;
-        return false;
-    }
-    std::string fp(fpTemp);
-    nabto_device_string_free(fpTemp);
-
-    std::cout << "######## Nabto tcptunnel device ########" << std::endl;
-    std::cout << "# Product ID:      " << productId << std::endl;
-    std::cout << "# Device ID:       " << deviceId << std::endl;
-    std::cout << "# Fingerprint:     " << std::string(fp) << std::endl;
-    std::cout << "# Paring Password: " << ttp.getPairingPassword() << std::endl;
-    std::cout << "# Version:         " << nabto_device_version() << std::endl;
-    std::cout << "######## " << std::endl;
-
     {
-        TcpTunnel tcpTunnel(device, config, configFile);
+        nabto::examples::tcptunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, ttp);
         tcpTunnel.init();
+
+        tcpTunnel.printTunnelInfo();
 
         // Wait for the user to press Ctrl-C
 
@@ -224,10 +155,8 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
         nabto_device_close(device, fut);
         nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
-        tcpTunnel.deinit();
-
-        nabto_device_stop(device);
     }
+    nabto_device_stop(device);
 
     nabto_device_free(device);
     return true;

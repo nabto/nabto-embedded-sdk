@@ -1,7 +1,6 @@
 set(src
   src/tcptunnel_device.cpp
   src/tcptunnel.cpp
-  src/tcptunnel_coap.cpp
   src/tcptunnel_default_policies.cpp
   src/tcptunnel_persisting.cpp
   src/tcptunnel_private_key.cpp
