@@ -58,6 +58,22 @@ class DeviceConfig
         }
     }
 
+    static std::string example()
+    {
+        std::string exampleDeviceConfig = R"(
+{
+  "ProductId": "...",
+  "DeviceId": "...",
+  "Server": "...",
+  "Client": {
+    "ServerKey": "...",
+    "ServerUrl": "..."
+  }
+}
+)";
+        return exampleDeviceConfig;
+
+    }
 
  private:
     std::string filename_;

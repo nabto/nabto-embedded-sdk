@@ -2,11 +2,11 @@
 #include "json_config.hpp"
 
 #include "tcptunnel_default_policies.hpp"
-#include "tcptunnel_private_key.hpp"
 #include "tcptunnel_persisting.hpp"
 
 #include <examples/common/random_string.hpp>
 #include <examples/common/device_config.hpp>
+#include <examples/common/private_key.hpp>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>

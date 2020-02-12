@@ -1,4 +1,4 @@
-#include "tcptunnel_private_key.hpp"
+#include "private_key.hpp"
 
 #include <nabto/nabto_device.h>
 

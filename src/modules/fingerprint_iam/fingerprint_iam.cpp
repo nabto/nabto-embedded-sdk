@@ -5,6 +5,7 @@
 #include "coap_pairing.hpp"
 #include "coap_pairing_password.hpp"
 #include "coap_pairing_button.hpp"
+#include "coap_client_settings.hpp"
 #include "user_builder.hpp"
 #include "fingerprint_iam_json.hpp"
 #include "authorization_request_handler.hpp"
@@ -105,6 +106,12 @@ void FingerprintIAM::enablePasswordPairing(const std::string& password)
 {
     coapPairingPassword_ = std::make_unique<CoapPairingPassword>(*this, device_);
     coapPairingPassword_->init(password);
+}
+
+void FingerprintIAM::enableClientSettings(const std::string& clientServerUrl, const std::string& clientServerKey)
+{
+    coapClientSettings_ =  CoapClientSettings::create(*this, device_, clientServerUrl, clientServerKey);
+
 }
 
 bool FingerprintIAM::addRole(const iam::RoleBuilder& roleBuilder)

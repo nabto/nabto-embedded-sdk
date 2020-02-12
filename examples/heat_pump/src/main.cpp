@@ -1,11 +1,16 @@
 #include "heat_pump.hpp"
 #include "json_config.hpp"
 
+#include <examples/common/device_config.hpp>
+#include <examples/common/private_key.hpp>
+
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
 #include <modules/iam_cpp/iam.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
+
+
 
 #include <cxxopts.hpp>
 
@@ -24,11 +29,20 @@ void my_handler(int s){
     printf("Caught signal %d\n",s);
 }
 
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server, const std::string& clientServerUrl, const std::string& clientServerKey);
-bool run_heat_pump(const std::string& configFile, const std::string& logLevel);
-bool reset_iam(const std::string& configFile);
+bool run_heat_pump(const std::string& configFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam);
 
-static void loadStaticIamPolicy(nabto::fingerprint_iam::FingerprintIAM& iam);
+void print_missing_device_config_help(const std::string& filename)
+{
+    std::cout << "The device config is missing (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
+    std::cout << nabto::examples::common::DeviceConfig::example() << std::endl;
+}
+
+void print_invalid_device_config_help(const std::string& filename)
+{
+    std::cout << "The device config is invalid (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
+    std::cout << nabto::examples::common::DeviceConfig::example() << std::endl;
+}
+
 
 int main(int argc, char** argv) {
     cxxopts::Options options("Heat pump", "Nabto heat pump example.");
@@ -36,19 +50,10 @@ int main(int argc, char** argv) {
     options.add_options("General")
         ("h,help", "Show help")
         ("version", "Show version")
-        ("i,init", "Initialize configuration file")
-        ("reset-iam", "Remove paired users and custom iam changed.")
-        ("c,config", "Configuration file", cxxopts::value<std::string>()->default_value("heat_pump_device.json"))
-        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("info"))
-        ("log-file", "File to log to", cxxopts::value<std::string>()->default_value("heat_pump_device_log.txt"));
-
-    options.add_options("Init Parameters")
-        ("p,product", "Product id", cxxopts::value<std::string>())
-        ("d,device", "Device id", cxxopts::value<std::string>())
-        ("s,server", "hostname of the server", cxxopts::value<std::string>())
-        ("client-server-url", "the server the client can use to connect to the device.", cxxopts::value<std::string>())
-        ("client-server-key", "the server key the client can use to connect to the device.", cxxopts::value<std::string>())
-        ;
+        ("config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
+        ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("heat_pump_state.json"))
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
+        ("dump-iam", "Print the iam configuration when the device is started, Policies, Roles Users");
 
     try {
 
@@ -65,30 +70,14 @@ int main(int argc, char** argv) {
             std::cout << "nabto_embedded_sdk: " << nabto_device_version() << std::endl;
             return 0;
         }
-        if (result.count("init") > 0) {
-            std::string configFile = result["config"].as<std::string>();
-            std::string productId = result["product"].as<std::string>();
-            std::string deviceId = result["device"].as<std::string>();
-            std::string server = result["server"].as<std::string>();
-            std::string clientServerUrl = result["client-server-url"].as<std::string>();
-            std::string clientServerKey = result["client-server-key"].as<std::string>();
-            if (!init_heat_pump(configFile, productId, deviceId, server, clientServerUrl, clientServerKey)) {
-                std::cerr << "Initialization failed" << std::endl;
-                return 2;
-            }
-        } else if (result.count("reset-iam") > 0) {
-            std::string configFile = result["config"].as<std::string>();
-            if (!reset_iam(configFile)) {
-                std::cerr << "Reset of IAM failed" << std::endl;
-                return 4;
-            }
-        } else {
-            std::string configFile = result["config"].as<std::string>();
-            std::string logLevel = result["log-level"].as<std::string>();
-            if (!run_heat_pump(configFile, logLevel)) {
-                std::cerr << "Failed to run heatpump" << std::endl;
-                return 3;
-            }
+
+        std::string configFile = result["config"].as<std::string>();
+        std::string stateFile = result["state"].as<std::string>();
+        std::string logLevel = result["log-level"].as<std::string>();
+        bool dumpIam = (result.count("dump-iam") > 0);
+        if (!run_heat_pump(configFile, stateFile, logLevel, dumpIam)) {
+            std::cerr << "Failed to run Heat Pump" << std::endl;
+            return 3;
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -102,90 +91,28 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-bool reset_iam(const std::string& configFile) {
-    json config;
-    if (!json_config_load(configFile, config)) {
-        std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
-        return false;
-    }
-    nabto::examples::heat_pump::HeatPumpPersisting hpp(configFile);
-    if (!hpp.load()) {
-        return false;
-    }
-    hpp.deleteAllUsers();
-    hpp.save();
-    return true;
-}
-
-bool init_heat_pump(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server, const std::string& clientServerUrl, const std::string& clientServerKey)
+bool run_heat_pump(const std::string& configFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam)
 {
-    if (json_config_exists(configFile)) {
-        std::cerr << "The config already file exists, remove " << configFile << " and try again" << std::endl;
-        exit(2);
-    }
-
-    json config;
-
-    NabtoDevice* device = nabto_device_new();
-    if (device == NULL) {
-        std::cerr << "Could not create device" << std::endl;
-        return false;
-    }
-    NabtoDeviceError ec;
-
-    char* str;
-    char* fp;
-    ec = nabto_device_create_private_key(device, &str);
-    std::string privateKey(str);
-
-    if (ec) {
-        std::cerr << "Error creating private key" << std::endl;
-        return false;
-    }
-    ec = nabto_device_set_private_key(device, str);
-    if (ec) {
-        std::cerr << "Error setting private key" << std::endl;
-        return false;
-    }
-    ec = nabto_device_get_device_fingerprint_hex(device, &fp);
-    if (ec) {
-        std::cerr << "Error getting Fingerprint" << std::endl;
+    nabto::examples::common::DeviceConfig dc(configFile);
+    if (!dc.load()) {
+        print_missing_device_config_help(configFile);
         return false;
     }
 
-    std::cout << "Created new private key with fingerprint: " << fp << std::endl;
-    nabto_device_string_free(fp);
-    nabto_device_string_free(str);
-
-    nabto::examples::heat_pump::HeatPumpPersisting hpp(configFile);
-
-    hpp.setPrivateKey(privateKey);
-    hpp.setProductId(productId);
-    hpp.setDeviceId(deviceId);
-    hpp.setServer(server);
-    hpp.setClientServerUrl(clientServerUrl);
-    hpp.setClientServerKey(clientServerKey);
-    hpp.setHeatPumpMode("COOL");
-    hpp.setHeatPumpPower(false);
-    hpp.setHeatPumpTarget(22.3);
-    hpp.save();
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
-    nabto_device_stop(device);
-    nabto_device_free(device);
-
-    return true;
-}
-
-bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
-{
-    if (!json_config_exists(configFile)) {
-        std::cerr << "The config does not exists, create it with --init first" << std::endl;
-        exit(2);
+    if (!dc.isValid()) {
+        print_invalid_device_config_help(configFile);
     }
+
+    std::stringstream keyFileName;
+    keyFileName << dc.getProductId() << "_" << dc.getDeviceId() << ".key.json";
+
+    std::string privateKey;
+    if (!load_private_key(keyFileName.str(), privateKey)) {
+        return false;
+    }
+
+    nabto::examples::heat_pump::HeatPumpPersisting hpp(stateFile);
+    hpp.load();
 
     NabtoDevice* device = nabto_device_new();
     if (device == NULL) {
@@ -193,19 +120,16 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         return false;
     }
 
-    nabto::examples::heat_pump::HeatPumpPersisting hpp(configFile);
-
-    hpp.load();
-
-
     {
-        nabto::fingerprint_iam::FingerprintIAM iam(device, hpp);
-        loadStaticIamPolicy(iam);
 
-        nabto::examples::heat_pump::HeatPump hp(device, iam, hpp);
-        hp.initDevice();
+        nabto::examples::heat_pump::HeatPump hp(device, privateKey, dc, hpp);
         hp.init();
         hp.setLogLevel(logLevel);
+        if (dumpIam) {
+            hp.dumpIam();
+        }
+        hp.printHeatpumpInfo();
+
 
         // Wait for the user to press Ctrl-C
 
@@ -218,8 +142,6 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
         sigaction(SIGINT, &sigIntHandler, NULL);
 
         pause();
-
-        hp.deinit();
         NabtoDeviceFuture* fut = nabto_device_future_new(device);
         nabto_device_close(device, fut);
         nabto_device_future_wait(fut);
@@ -228,53 +150,4 @@ bool run_heat_pump(const std::string& configFile, const std::string& logLevel)
     nabto_device_stop(device);
     nabto_device_free(device);
     return true;
-}
-
-void loadStaticIamPolicy(nabto::fingerprint_iam::FingerprintIAM& iam)
-{
-    auto buttonPairingPolicy = nabto::iam::PolicyBuilder("ButtonPairing")
-        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
-                      .addAction("Pairing:Button"))
-        .build();
-
-    auto readPolicy = nabto::iam::PolicyBuilder("HeatPumpRead")
-        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
-                      .addAction("HeatPump:Get"))
-        .build();
-
-    auto writePolicy = nabto::iam::PolicyBuilder("HeatPumpWrite")
-        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
-                      .addAction("HeatPump:Set")
-                      .addAction("IAM:AddUser")
-                      .addAction("IAM:GetUser")
-                      .addAction("IAM:ListUsers")
-                      .addAction("IAM:AddRoleToUser")
-                      .addAction("IAM:RemoveRoleFromUser"))
-        .build();
-
-    auto modifyOwnUserPolicy = nabto::iam::PolicyBuilder("ModifyOwnUser")
-        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
-                      .addAction("IAM:GetUser")
-                      .addAction("IAM:ListUsers")
-                      .addAction("IAM:AddFingerprint")
-                      .addAction("IAM:RemoveFingerprint")
-                      .addCondition(nabto::iam::ConditionBuilder(nabto::iam::Condition::Operator::StringEquals, "Connection:UserId").addValue("${IAM:UserId}").build()))
-        .build();
-
-    iam.addPolicy(buttonPairingPolicy);
-    iam.addPolicy(readPolicy);
-    iam.addPolicy(writePolicy);
-    iam.addPolicy(modifyOwnUserPolicy);
-
-    iam.addRole(nabto::iam::RoleBuilder("Unpaired").addPolicy("ButtonPairing"));
-    iam.addRole(nabto::iam::RoleBuilder("Owner")
-                .addPolicy("HeatPumpWrite")
-                .addPolicy("HeatPumpRead"));
-    iam.addRole(nabto::iam::RoleBuilder("User")
-                .addPolicy("HeatPumpRead")
-                .addPolicy("HeatPumpWrite")
-                .addPolicy("ModifyOwnUser"));
-    iam.addRole(nabto::iam::RoleBuilder("Guest")
-                .addPolicy("HeatPumpRead"));
-
 }

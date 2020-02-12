@@ -25,8 +25,17 @@ bool HeatPumpPersisting::loadUsersIntoIAM(fingerprint_iam::FingerprintIAM& iam)
 bool HeatPumpPersisting::load()
 {
     if (!json_config_load(configFile_, config_)) {
-        return false;
+        initDefault();
     }
+    return true;
+}
+
+bool HeatPumpPersisting::initDefault()
+{
+    setHeatPumpMode("COOL");
+    setHeatPumpPower(false);
+    setHeatPumpTarget(22.3);
+    save();
     return true;
 }
 

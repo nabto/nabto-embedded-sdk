@@ -23,41 +23,7 @@ class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMPersisting
     void save();
     bool load();
 
-    void setProductId(const std::string& productId) {
-        config_["ProductId"] = productId;
-    }
-
-    std::string getProductId() {
-        return config_["ProductId"].get<std::string>();
-    }
-
-    void setDeviceId(const std::string& deviceId) {
-        config_["DeviceId"] = deviceId;
-    }
-
-    std::string getDeviceId() {
-        return config_["DeviceId"].get<std::string>();
-    }
-
-    void setPrivateKey(const std::string& privateKey)
-    {
-        config_["PrivateKey"] = privateKey;
-    }
-
-    std::string getPrivateKey()
-    {
-        return config_["PrivateKey"].get<std::string>();
-    }
-
-    void setServer(const std::string& server)
-    {
-        config_["Server"] = server;
-    }
-
-    std::string getServer()
-    {
-        return config_["Server"].get<std::string>();
-    }
+    bool initDefault();
 
     void setHeatPumpMode(const std::string& mode)
     {
@@ -87,24 +53,6 @@ class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMPersisting
     double getHeatPumpTarget()
     {
         return config_["HeatPump"]["Target"].get<double>();
-    }
-
-    void setClientServerUrl(const std::string serverUrl)
-    {
-        config_["Client"]["ServerUrl"] = serverUrl;
-    }
-
-    void setClientServerKey(const std::string serverKey)
-    {
-        config_["Client"]["ServerKey"] = serverKey;
-    }
-
-    std::string getClientServerUrl() {
-        return config_["Client"]["ServerUrl"].get<std::string>();
-    }
-
-    std::string getClientServerKey() {
-        return config_["Client"]["ServerKey"].get<std::string>();
     }
 
  private:

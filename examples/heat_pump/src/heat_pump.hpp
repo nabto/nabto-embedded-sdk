@@ -7,6 +7,8 @@
 #include "heat_pump_persisting.hpp"
 #include <modules/fingerprint_iam/fingerprint_iam.hpp>
 
+#include <examples/common/device_config.hpp>
+
 #include <nlohmann/json.hpp>
 
 #include <mutex>
@@ -32,25 +34,21 @@ class HeatPumpSetPower;
 class HeatPumpSetTarget;
 class HeatPumpSetMode;
 class HeatPumpGet;
-class HeatPumpGetClientSettings;
 
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, nabto::fingerprint_iam::FingerprintIAM& iam, HeatPumpPersisting& persisting);
+    HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, HeatPumpPersisting& persisting);
 
     ~HeatPump();
 
-    void init();
+    bool init();
 
     void printHeatpumpInfo();
+    void dumpIam();
     void setLogLevel(const std::string& logLevel);
 
     NabtoDeviceError initDevice();
-
-    void deinit()
-    {
-    }
 
     enum class Mode {
         COOL = 0,
@@ -81,33 +79,25 @@ class HeatPump {
         return state;
     }
 
-    std::string getClientServerUrl()
-    {
-        return persisting_.getClientServerUrl();
-    }
-
-    std::string getClientServerKey()
-    {
-        return persisting_.getClientServerKey();
-    }
-
     bool checkAccess(NabtoDeviceCoapRequest* request, const std::string& action);
 
+    void loadIamPolicy();
 
  private:
 
     void initCoapHandlers();
 
     NabtoDevice* device_;
-
+    std::string privateKey_;
+    nabto::examples::common::DeviceConfig& dc_;
     HeatPumpPersisting& persisting_;
-    fingerprint_iam::FingerprintIAM& fingerprintIAM_;
+
+    fingerprint_iam::FingerprintIAM fingerprintIAM_;
 
     std::unique_ptr<HeatPumpSetPower> coapSetPower_;
     std::unique_ptr<HeatPumpSetTarget> coapSetTarget_;
     std::unique_ptr<HeatPumpSetMode> coapSetMode_;
     std::unique_ptr<HeatPumpGet> coapGet_;
-    std::unique_ptr<HeatPumpGetClientSettings> coapGetClientSettings_;
 
     std::unique_ptr<nabto::examples::common::StdoutConnectionEventHandler> stdoutConnectionEventHandler_;
     std::unique_ptr<nabto::examples::common::StdoutDeviceEventHandler> stdoutDeviceEventHandler_;

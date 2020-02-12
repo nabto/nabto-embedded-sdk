@@ -21,6 +21,7 @@ class CoapIsPaired;
 class CoapPairing;
 class CoapPairingPassword;
 class CoapPairingButton;
+class CoapClientSettings;
 
 class UserBuilder;
 
@@ -123,6 +124,8 @@ class FingerprintIAM {
     void enableButtonPairing(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback);
     void enablePasswordPairing(const std::string& password);
 
+    void enableClientSettings(const std::string& clientServerUrl, const std::string& clientServerKey);
+
     std::shared_ptr<Role> getRole(const std::string& role)
     {
         auto it = roles_.find(role);
@@ -179,6 +182,8 @@ class FingerprintIAM {
     std::unique_ptr<CoapPairing> coapPairing_;
     std::unique_ptr<CoapPairingPassword> coapPairingPassword_;
     std::unique_ptr<CoapPairingButton> coapPairingButton_;
+
+    std::unique_ptr<CoapClientSettings> coapClientSettings_;
 
     std::unique_ptr<AuthorizationRequestHandler> authorizationRequestHandler_;
 };

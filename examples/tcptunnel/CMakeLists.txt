@@ -3,7 +3,6 @@ set(src
   src/tcptunnel.cpp
   src/tcptunnel_default_policies.cpp
   src/tcptunnel_persisting.cpp
-  src/tcptunnel_private_key.cpp
   )
 
 add_executable(tcptunnel_device "${src}")
