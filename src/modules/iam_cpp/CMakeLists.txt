@@ -5,6 +5,7 @@ set(src
   statement.cpp
   policy.cpp
   decision.cpp
+  condition.cpp
   )
 
 add_library(iam_cpp "${src}")

@@ -258,7 +258,7 @@ void loadStaticIamPolicy(nabto::fingerprint_iam::FingerprintIAM& iam)
                       .addAction("IAM:ListUsers")
                       .addAction("IAM:AddFingerprint")
                       .addAction("IAM:RemoveFingerprint")
-                      .addAttributeEqualCondition("Connection:UserId", "IAM:UserId"))
+                      .addCondition(nabto::iam::ConditionBuilder(nabto::iam::Condition::Operator::StringEquals, "Connection:UserId").addValue("${IAM:UserId}").build()))
         .build();
 
     iam.addPolicy(buttonPairingPolicy);

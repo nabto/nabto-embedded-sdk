@@ -17,7 +17,7 @@ namespace iam {
  * Output
 {
   "Foo": "Bar",
-  "Baz": 42
+  "Baz": "42"
 }
 */
 nlohmann::json IAMToJson::attributesToJson(const iam::Attributes& attributes)
@@ -25,11 +25,7 @@ nlohmann::json IAMToJson::attributesToJson(const iam::Attributes& attributes)
     nlohmann::json json = nlohmann::json::object();
     iam::AttributeMap map = attributes.getMap();
     for (auto a : map) {
-        if (a.second.getType() == AttributeType::STRING) {
-            json[a.first] = a.second.getString();
-        } else if (a.second.getType() == AttributeType::NUMBER) {
-            json[a.first] == a.second.getNumber();
-        }
+        json[a.first] = a.second;
     }
     return json;
 }
@@ -49,10 +45,7 @@ Attributes IAMToJson::attributesFromJson(const nlohmann::json& json)
             std::string key = it.key();
             const nlohmann::json& value = it.value();
             if (value.is_string()) {
-                map[key] = Attribute(value.get<std::string>());
-            }
-            if (value.is_number()) {
-                map[key] = Attribute(value.get<int64_t>());
+                map[key] = value.get<std::string>();
             }
         }
     }
@@ -97,6 +90,63 @@ bool loadActions(const nlohmann::json& statement, std::set<std::string>& actions
     return true;
 }
 
+std::unique_ptr<Condition> parseCondition(const std::string& op, const nlohmann::json& obj)
+{
+    if (!obj.is_object()) {
+        return nullptr;
+    }
+    auto it = obj.begin();
+    if (it == obj.end()) {
+        return nullptr;
+    }
+    std::vector<std::string> values;
+    const std::string key = it.key();
+    nlohmann::json v = it.value();
+    if (v.is_string()) {
+        values.push_back(v.get<std::string>());
+    } else if (v.is_array()) {
+        for (auto o : v) {
+            if (o.is_string()) {
+                values.push_back(o.get<std::string>());
+            }
+        }
+    }
+    Condition::Operator condOp;
+    if (!Condition::operatorFromString(op, condOp)) {
+        return nullptr;
+    }
+
+    return std::make_unique<Condition>(condOp, key, values);
+}
+
+bool loadConditions(const nlohmann::json& statement, std::vector<Condition>& conditions)
+{
+    if (statement.find("Conditions") == statement.end()) {
+        // no conditions is valid
+        return true;
+    }
+    nlohmann::json cs = statement["Conditions"];
+    if (!cs.is_array()) {
+        return false;
+    }
+    for (auto c : cs) {
+        if (!c.is_object()) {
+            return false;
+        }
+        auto obj = c.begin();
+        if (obj == c.end()) {
+            return false;
+        }
+
+        auto condition = parseCondition(obj.key(), obj.value());
+        if (!condition) {
+            return false;
+        }
+        conditions.push_back(*condition);
+    }
+    return true;
+}
+
 std::unique_ptr<Statement> loadStatement(const nlohmann::json& json)
 {
     Effect effect;
@@ -108,6 +158,11 @@ std::unique_ptr<Statement> loadStatement(const nlohmann::json& json)
     if (!loadActions(json, actions)) {
         return nullptr;
     }
+
+    if (!loadConditions(json, conditions)) {
+        return nullptr;
+    }
+
     return std::make_unique<Statement>(effect, actions, conditions);
 }
 
@@ -174,6 +229,15 @@ nlohmann::json IAMToJson::roleToJson(const RoleBuilder& roleBuilder)
     return root;
 }
 
+static nlohmann::json conditionToJson(const Condition& condition)
+{
+    nlohmann::json root;
+    nlohmann::json kv;
+    kv[condition.getKey()] = condition.getValues();
+    root[Condition::operatorToString(condition.getOperator())] = kv;
+    return root;
+}
+
 static nlohmann::json statementAsJson(const Statement& statement)
 {
     nlohmann::json root;
@@ -185,9 +249,15 @@ static nlohmann::json statementAsJson(const Statement& statement)
 
     root["Actions"] = statement.getActions();
 
-    nlohmann::json conditions = nlohmann::json::array();
 
-    root["Conditions"] = conditions;
+    if (!statement.getConditions().empty()) {
+        nlohmann::json conditions = nlohmann::json::array();
+        for (auto c : statement.getConditions()) {
+            conditions.push_back(conditionToJson(c));
+        }
+
+        root["Conditions"] = conditions;
+    }
     return root;
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "conditions.hpp"
+#include "condition.hpp"
 #include "statement.hpp"
 #include "effect.hpp"
 #include "policy.hpp"
@@ -31,12 +31,6 @@ class StatementBuilder {
     StatementBuilder addAction(const std::string& action)
     {
         actions_.insert(action);
-        return *this;
-    }
-
-    StatementBuilder addAttributeEqualCondition(const std::string& lhs, const std::string& rhs)
-    {
-        conditions_.push_back(AttributeEqualCondition(lhs, rhs));
         return *this;
     }
 
@@ -117,6 +111,29 @@ class RoleBuilder {
  private:
     std::string name_;
     std::set<std::string> policies_;
+};
+
+class ConditionBuilder {
+ public:
+    ConditionBuilder(Condition::Operator op, const std::string& key)
+        : operator_(op), key_(key)
+    {
+    }
+    ConditionBuilder addValue(const std::string& value)
+    {
+        values_.push_back(value);
+        return *this;
+    }
+
+    Condition build()
+    {
+        return Condition(operator_, key_, values_);
+    }
+
+ private:
+    Condition::Operator operator_;
+    std::string key_;
+    std::vector<std::string> values_;
 };
 
 } } // namespace

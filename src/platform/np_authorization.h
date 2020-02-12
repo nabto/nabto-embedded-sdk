@@ -20,11 +20,6 @@ struct np_authorization {
     /**
      * @param authorizationRequest if NULL the function returns OUT_OF_MEMORY.
      */
-    np_error_code (*add_number_attribute)(struct np_authorization_request* authorizationRequest, const char* key, int64_t value);
-
-    /**
-     * @param authorizationRequest if NULL the function returns OUT_OF_MEMORY.
-     */
     np_error_code (*add_string_attribute)(struct np_authorization_request* authorizationRequest, const char* key, const char* value);
 
     /**

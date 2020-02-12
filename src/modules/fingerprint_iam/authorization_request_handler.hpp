@@ -66,15 +66,9 @@ class AuthorizationRequestHandler {
 
         size_t nAttributes = nabto_device_authorization_request_get_attributes_size(request);
         for (size_t i = 0; i < nAttributes; i++) {
-            NabtoDeviceAutorizationAttributeType type = nabto_device_authorization_request_get_attribute_type(request, i);
             std::string name(nabto_device_authorization_request_get_attribute_name(request, i));
-            if (type == NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_NUMBER) {
-                int64_t value = nabto_device_authorization_request_get_attribute_number(request, i);
-                attributes[name] = iam::Attribute(value);
-            } else if (type == NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING) {
-                std::string value(nabto_device_authorization_request_get_attribute_string(request, i));
-                attributes[name] = iam::Attribute(value);
-            }
+            std::string value(nabto_device_authorization_request_get_attribute_value(request, i));
+            attributes[name] = value;
         }
         NabtoDeviceConnectionRef ref = nabto_device_authorization_request_get_connection_ref(request);
         bool verdict = fingerprintIAM_.checkAccess(ref, action, iam::Attributes(attributes));

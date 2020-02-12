@@ -17,7 +17,6 @@
  */
 static struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action);
 static void discard_request(struct np_authorization_request* request);
-static np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value);
 static np_error_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value);
 
 static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2);
@@ -27,16 +26,6 @@ static void check_access(struct np_authorization_request* authorizationRequest, 
  */
 static void free_request_when_unused(struct nabto_device_authorization_request* request);
 static void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict);
-
-void nabto_device_authorization_init_platform(struct np_platform* pl)
-{
-    pl->authorization.create_request = create_request;
-    pl->authorization.discard_request = discard_request;
-    pl->authorization.add_number_attribute = add_number_attribute;
-    pl->authorization.add_string_attribute = add_string_attribute;
-    pl->authorization.check_access = check_access;
-}
-
 
 struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action)
 {
@@ -175,43 +164,11 @@ static void free_attribute(struct nabto_device_authorization_request_attribute* 
     if(attribute == NULL) {
         return;
     }
-    if (attribute->type == NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING) {
-        free(attribute->value.string);
-    }
+
+    free(attribute->value);
     free(attribute);
 }
 
-
-np_error_code add_number_attribute(struct np_authorization_request* request, const char* key, int64_t value)
-{
-    if (request == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-
-    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
-
-    struct nabto_device_authorization_request_attribute* attribute = calloc(1, sizeof(struct nabto_device_authorization_request_attribute));
-
-    if (attribute == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-
-    attribute->type = NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_NUMBER;
-
-    attribute->key = strdup(key);
-    if (attribute->key == NULL) {
-        free_attribute(attribute);
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-
-    attribute->value.number = value;
-
-    struct nabto_device_authorization_request_attribute* old = authReq->attributes;
-
-    authReq->attributes = attribute;
-    attribute->next = old;
-    return NABTO_EC_OK;
-}
 
 np_error_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value)
 {
@@ -227,11 +184,9 @@ np_error_code add_string_attribute(struct np_authorization_request* request, con
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    attribute->type = NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING;
-
     attribute->key = strdup(key);
-    attribute->value.string = strdup(value);
-    if (attribute->key == NULL || attribute->value.string == NULL) {
+    attribute->value = strdup(value);
+    if (attribute->key == NULL || attribute->value == NULL) {
         free_attribute(attribute);
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -280,25 +235,6 @@ nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationR
 }
 
 /**
- * Get the type of the attribute with the given index.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceAutorizationAttributeType NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_type(NabtoDeviceAuthorizationRequest* request, size_t index)
-{
-    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
-    struct nabto_device_context* dev = authReq->module->device;
-
-    NabtoDeviceAutorizationAttributeType type = NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_NUMBER;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-
-    struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
-
-    type = attribute->type;
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return type;
-}
-
-/**
  * Get a name for an attribute
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
@@ -316,10 +252,10 @@ nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRe
 }
 
 /**
- * Retrieve a string value for a key, if the key is not a string the behavior is undefined.
+ * Retrieve a string value for a key.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_string(NabtoDeviceAuthorizationRequest* request, size_t index)
+nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request, size_t index)
 {
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
@@ -328,31 +264,12 @@ nabto_device_authorization_request_get_attribute_string(NabtoDeviceAuthorization
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
-    ret = attribute->value.string;
+    ret = attribute->value;
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return ret;
 }
-
-/**
- * Retrieve a number value for a key, if the key is not a number, the behavior is undefined.
- */
-NABTO_DEVICE_DECL_PREFIX int64_t NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_number(NabtoDeviceAuthorizationRequest* request, size_t index)
-{
-    struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
-    struct nabto_device_context* dev = authReq->module->device;
-    int64_t ret;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-
-    struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
-    ret = attribute->value.number;
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
-
-    return ret;
-}
-
 
 static void free_request_when_unused(struct nabto_device_authorization_request* authReq)
 {
@@ -383,9 +300,6 @@ void nabto_device_authorization_init_module(struct nabto_device_context* context
 
     pl->authorization.create_request = create_request;
     pl->authorization.discard_request = discard_request;
-    pl->authorization.add_number_attribute = add_number_attribute;
     pl->authorization.add_string_attribute = add_string_attribute;
     pl->authorization.check_access = check_access;
-
-
 }

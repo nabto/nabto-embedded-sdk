@@ -142,6 +142,14 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
     return true;
 }
 
+static char* integerToAscii(uint64_t value)
+{
+    static char outBuffer[25];
+    memset(outBuffer, 0, 25);
+    sprintf(outBuffer, "%"PRId64, value);
+    return outBuffer;
+}
+
 /**
  * Create a tunnel.
  *
@@ -169,7 +177,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
 
     struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:Create");
     if (authReq != NULL &&
-        pl->authorization.add_number_attribute(authReq, "TcpTunnel:Port", port) == NABTO_EC_OK &&
+        pl->authorization.add_string_attribute(authReq, "TcpTunnel:Port", integerToAscii(port)) == NABTO_EC_OK &&
         pl->authorization.add_string_attribute(authReq, "TcpTunnel:Host", np_ip_address_to_string(&address)) == NABTO_EC_OK)
     {
         pl->authorization.check_access(authReq, create_tunnel_iam, tunnels, request);

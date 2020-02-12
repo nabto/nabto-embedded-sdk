@@ -3,13 +3,13 @@
 namespace nabto {
 namespace iam {
 
-std::unique_ptr<Attribute> Attributes::get(const std::string& key) const
+std::unique_ptr<std::string> Attributes::get(const std::string& key) const
 {
     auto it = attributes_.find(key);
     if (it == attributes_.end()) {
         return nullptr;
     }
-    return std::make_unique<Attribute>(it->second);
+    return std::make_unique<std::string>(it->second);
 }
 
 AttributeMap Attributes::getMap() const

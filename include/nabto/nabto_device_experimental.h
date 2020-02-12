@@ -16,14 +16,7 @@ extern "C" {
  * such that an application built on top of the Nabto Device SDK can
  * take authorization decision for the core.
  */
-
-typedef enum {
-    NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_NUMBER,
-    NABTO_DEVICE_AUTHORIZATION_ATTRIBUTE_TYPE_STRING
-} NabtoDeviceAutorizationAttributeType;
-
 typedef struct NabtoDeviceAuthorizationRequest_ NabtoDeviceAuthorizationRequest;
-
 
 /**
  * Init an authorization request listener.
@@ -37,9 +30,9 @@ nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDevic
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceAuthorizationRequest** request);
 
-
-
-
+/**
+ * Free a authorization request.
+ */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request);
 
@@ -72,28 +65,17 @@ NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
 nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * Get the type of the attribute with the given index.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceAutorizationAttributeType NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_type(NabtoDeviceAuthorizationRequest* request, size_t index);
-
-/**
  * Get attribute name
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRequest* request, size_t index);
 
 /**
- * Retrieve a string value for a key, if the key is not a string the behavior is undefined.
+ * Retrieve a string value for a key.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_string(NabtoDeviceAuthorizationRequest* request, size_t index);
+nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request, size_t index);
 
-/**
- * Retrieve a number value for a key, if the key is not a number, the behavior is undefined.
- */
-NABTO_DEVICE_DECL_PREFIX int64_t NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_number(NabtoDeviceAuthorizationRequest* request, size_t index);
 
 /******************
  * TCP Tunnelling *
