@@ -3,7 +3,7 @@ set (CMAKE_CXX_STANDARD 14)
 find_package( Threads )
 
 set(src
-  src/main.cpp
+  src/heat_pump_main.cpp
   src/heat_pump.cpp
   src/heat_pump_persisting.cpp
   )
