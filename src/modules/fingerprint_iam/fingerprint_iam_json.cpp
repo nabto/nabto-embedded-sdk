@@ -2,6 +2,7 @@
 #include <modules/iam_cpp/iam_to_json.hpp>
 
 #include "user.hpp"
+#include "role.hpp"
 #include "user_builder.hpp"
 #include "fingerprint_iam.hpp"
 
@@ -119,6 +120,19 @@ bool FingerprintIAMJson::loadUsersFromJson(FingerprintIAM& iam, const nlohmann::
         }
     }
     return true;
+}
+
+nlohmann::json FingerprintIAMJson::roleToJson(const Role& role)
+{
+    nlohmann::json json;
+
+    json["Name"] = role.getName();
+    nlohmann::json policies = nlohmann::json::array();
+    for (auto p : role.getPolicies()) {
+        policies.push_back(p->getName());
+    }
+    json["Policies"] = policies;
+    return json;
 }
 
 } } // namespace

@@ -85,4 +85,12 @@ bool TcpTunnel::loadIamConfig()
     return true;
 }
 
+void TcpTunnel::dumpIam()
+{
+    fingerprintIAM_.dumpUsers();
+    fingerprintIAM_.dumpRoles();
+    fingerprintIAM_.dumpPolicies();
+}
+
+
 } } } // namespace

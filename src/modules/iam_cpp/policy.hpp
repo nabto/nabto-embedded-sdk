@@ -40,6 +40,10 @@ class Policy {
     {
         return name_;
     }
+    std::vector<Statement> getStatements() const
+    {
+        return statements_;
+    }
  private:
     int version_;
     std::string name_;

@@ -56,6 +56,8 @@ class TcpTunnel {
         }
     }
 
+    void dumpIam();
+
     void printTunnelInfo()
     {
         char* fpTemp;
@@ -64,11 +66,13 @@ class TcpTunnel {
         nabto_device_string_free(fpTemp);
 
         std::cout << "######## Nabto tcptunnel device ########" << std::endl;
-        std::cout << "# Product ID:      " << deviceConfig_.getProductId() << std::endl;
-        std::cout << "# Device ID:       " << deviceConfig_.getDeviceId() << std::endl;
-        std::cout << "# Fingerprint:     " << fp << std::endl;
-        std::cout << "# Paring Password: " << state_.getPairingPassword() << std::endl;
-        std::cout << "# Version:         " << nabto_device_version() << std::endl;
+        std::cout << "# Product ID:       " << deviceConfig_.getProductId() << std::endl;
+        std::cout << "# Device ID:        " << deviceConfig_.getDeviceId() << std::endl;
+        std::cout << "# Fingerprint:      " << fp << std::endl;
+        std::cout << "# Paring Password:  " << state_.getPairingPassword() << std::endl;
+        std::cout << "# Client Server Url " << deviceConfig_.getClientServerUrl() << std::endl;
+        std::cout << "# Client Server Key " << deviceConfig_.getClientServerKey() << std::endl;
+        std::cout << "# Version:          " << nabto_device_version() << std::endl;
         std::cout << "######## " << std::endl;
     }
  private:

@@ -12,6 +12,7 @@
 
 #include <sstream>
 #include <functional>
+#include <iostream>
 
 namespace nabto {
 namespace fingerprint_iam {
@@ -22,6 +23,8 @@ class CoapPairingPassword;
 class CoapPairingButton;
 
 class UserBuilder;
+
+class AuthorizationRequestHandler;
 
 class FingerprintIAMPersisting {
  public:
@@ -35,9 +38,6 @@ class FingerprintIAM {
     FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting);
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action);
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action, const nabto::iam::Attributes& attributes);
-
-    void initCoapHandlers();
-
 
     void addPolicy(const nabto::iam::Policy& policy)
     {
@@ -152,6 +152,12 @@ class FingerprintIAM {
 
     std::vector<std::string> getPairingModes();
 
+    void dumpUsers();
+
+    void dumpRoles();
+
+    void dumpPolicies();
+
  private:
 
     Subject createUnpairedSubject();
@@ -173,6 +179,8 @@ class FingerprintIAM {
     std::unique_ptr<CoapPairing> coapPairing_;
     std::unique_ptr<CoapPairingPassword> coapPairingPassword_;
     std::unique_ptr<CoapPairingButton> coapPairingButton_;
+
+    std::unique_ptr<AuthorizationRequestHandler> authorizationRequestHandler_;
 };
 
 } } // namespace

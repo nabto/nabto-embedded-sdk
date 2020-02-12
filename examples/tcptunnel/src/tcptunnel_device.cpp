@@ -31,7 +31,7 @@ std::string exampleDeviceConfig = R"(
 }
 )";
 
-static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel);
+static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam);
 
 void print_missing_device_config_help(const std::string& filename)
 {
@@ -61,7 +61,8 @@ int main(int argc, char** argv)
         ("policies", "Configuration file containing the policies if it does not exists it's created", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
         ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("tcptunnel_state.json"))
 
-        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"));
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
+        ("dump-iam", "Print the iam configuration when the device is started, Policies, Roles Users");
 
     try {
 
@@ -83,7 +84,8 @@ int main(int argc, char** argv)
         std::string policiesFile = result["policies"].as<std::string>();
         std::string stateFile = result["state"].as<std::string>();
         std::string logLevel = result["log-level"].as<std::string>();
-        if (!run_tcptunnel(configFile, policiesFile, stateFile, logLevel)) {
+        bool dumpIam = (result.count("dump-iam") > 0);
+        if (!run_tcptunnel(configFile, policiesFile, stateFile, logLevel, dumpIam)) {
             std::cerr << "Failed to run TCP tunnel" << std::endl;
             return 3;
         }
@@ -99,7 +101,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel)
+bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam)
 {
     nabto::examples::common::DeviceConfig dc(configFile);
     if (!dc.load()) {
@@ -137,7 +139,12 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
         nabto::examples::tcptunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, ttp);
         tcpTunnel.init();
 
+        if (dumpIam) {
+            tcpTunnel.dumpIam();
+        }
+
         tcpTunnel.printTunnelInfo();
+        tcpTunnel.setLogLevel(logLevel);
 
         // Wait for the user to press Ctrl-C
 

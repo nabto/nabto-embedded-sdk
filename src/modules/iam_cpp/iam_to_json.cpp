@@ -22,7 +22,7 @@ namespace iam {
 */
 nlohmann::json IAMToJson::attributesToJson(const iam::Attributes& attributes)
 {
-    nlohmann::json json;
+    nlohmann::json json = nlohmann::json::object();
     iam::AttributeMap map = attributes.getMap();
     for (auto a : map) {
         if (a.second.getType() == AttributeType::STRING) {
@@ -207,6 +207,15 @@ nlohmann::json IAMToJson::policyToJson(const PolicyBuilder& policyBuilder)
     root["Name"] = policyBuilder.getName();
     root["Statements"] = statementsAsJson(policyBuilder.getStatements());
 
+    return root;
+}
+
+nlohmann::json IAMToJson::policyToJson(const Policy& policy)
+{
+    nlohmann::json root;
+
+    root["Name"] = policy.getName();
+    root["Statements"] = statementsAsJson(policy.getStatements());
     return root;
 }
 

@@ -6,10 +6,13 @@
 #include "coap_pairing_password.hpp"
 #include "coap_pairing_button.hpp"
 #include "user_builder.hpp"
+#include "fingerprint_iam_json.hpp"
+#include "authorization_request_handler.hpp"
 
 
 #include <modules/iam_cpp/decision.hpp>
 #include <modules/iam_cpp/iam.hpp>
+#include <modules/iam_cpp/iam_to_json.hpp>
 
 #include <cbor.h>
 #include <iostream>
@@ -24,18 +27,21 @@ FingerprintIAM::~FingerprintIAM()
 FingerprintIAM::FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting)
     : device_(device), persisting_(persisting)
 {
-}
-
-void FingerprintIAM::initCoapHandlers()
-{
     coapIsPaired_ = CoapIsPaired::create(*this, device_);
     coapPairing_ = CoapPairing::create(*this, device_);
+
+    authorizationRequestHandler_ = AuthorizationRequestHandler::create(device, *this);
 }
 
 bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action)
 {
     nabto::iam::Attributes attributes;
     return checkAccess(ref, action, attributes);
+}
+
+static std::string verdictToString(bool verdict)
+{
+    return verdict ? "granted" : "denied";
 }
 
 bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action, const nabto::iam::Attributes& attributes)
@@ -55,16 +61,14 @@ bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string
     if (user) {
         auto subject = createSubjectFromUser(*user);
         verdict = nabto::iam::Decision::checkAccess(subject, action, attributes);
+
+        std::cout << "Access " << verdictToString(verdict) << " to the action: " << action << " for the user: " << user->getUserId() << " on the connection: " << ref << std::endl;
     } else {
         auto subject = createUnpairedSubject();
         verdict = nabto::iam::Decision::checkAccess(subject, action, attributes);
+        std::cout << "Access " << verdictToString(verdict) << " to the action: " << action << " for the unpaired connection: " << ref << " with the role: " << unpairedRole_->getName() << std::endl;
     }
 
-    if (verdict) {
-        std::cout << "Access granted to action: " << action << " For connection with reference: " << ref << std::endl;
-    } else {
-        std::cout << "Access denied to action: " << action << " For connection with reference: " << ref << std::endl;
-    }
     return verdict;
 }
 
@@ -152,5 +156,30 @@ std::vector<std::string> FingerprintIAM::getPairingModes()
     }
     return modes;
 }
+
+void FingerprintIAM::dumpUsers()
+{
+    std::cout << "IAM Users. User Count " << users_.size() << std::endl;
+    for (auto u : users_) {
+        std::cout << FingerprintIAMJson::userToJson(*u.second) << std::endl;
+    }
+}
+
+void FingerprintIAM::dumpRoles()
+{
+    std::cout << "IAM Roles. Role Count " << roles_.size() << std::endl;
+    for (auto r : roles_) {
+        std::cout << FingerprintIAMJson::roleToJson(*r.second) << std::endl;
+    }
+}
+
+void FingerprintIAM::dumpPolicies()
+{
+    std::cout << "IAM Policies. Policies Count " << policies_.size() << std::endl;
+    for (auto p : policies_) {
+        std::cout << iam::IAMToJson::policyToJson(*p.second) << std::endl;
+    }
+}
+
 
 } } // namespace

@@ -7,6 +7,7 @@ namespace fingerprint_iam {
 
 class FingerprintIAM;
 class User;
+class Role;
 
 class FingerprintIAMJson {
  public:
@@ -18,6 +19,8 @@ class FingerprintIAMJson {
 
     static nlohmann::json rolesToJson(const User& user);
     static nlohmann::json fingerprintsToJson(const User& user);
+
+    static nlohmann::json roleToJson(const Role& role);
 
 };
 

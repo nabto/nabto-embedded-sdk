@@ -26,6 +26,7 @@ bool TcpTunnelPersisting::initDefault()
 {
     config_["PairingPassword"] = nabto::examples::common::random_string(16);
     save();
+    return true;
 }
 
 void TcpTunnelPersisting::upsertUser(const fingerprint_iam::User& user)
