@@ -13,12 +13,12 @@
 
 void insertPolicy(nlohmann::json& policies, const nabto::iam::PolicyBuilder& policy)
 {
-    policies[policy.getName()] = nabto::iam::IAMToJson::policyAsJson(policy);
+    policies[policy.getName()] = nabto::iam::IAMToJson::policyToJson(policy);
 }
 
 void insertRole(nlohmann::json& roles, const nabto::iam::RoleBuilder& role)
 {
-    roles[role.getName()] = nabto::iam::IAMToJson::roleAsJson(role);
+    roles[role.getName()] = nabto::iam::IAMToJson::roleToJson(role);
 }
 
 bool init_default_policies(const std::string& policiesFile)

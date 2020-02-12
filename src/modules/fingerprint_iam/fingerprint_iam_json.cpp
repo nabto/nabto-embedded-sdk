@@ -17,7 +17,7 @@ namespace fingerprint_iam {
 */
 bool FingerprintIAMJson::loadRoles(FingerprintIAM& iam, const nlohmann::json& roles)
 {
-    std::vector<iam::RoleBuilder> rbs = iam::IAMToJson::loadRoles(roles);
+    std::vector<iam::RoleBuilder> rbs = iam::IAMToJson::rolesFromJson(roles);
     for (auto& rb : rbs) {
         if (!iam.addRole(rb)) {
             return false;

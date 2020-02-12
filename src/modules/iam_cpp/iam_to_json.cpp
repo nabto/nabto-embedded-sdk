@@ -111,9 +111,6 @@ std::unique_ptr<Statement> loadStatement(const nlohmann::json& json)
     return std::make_unique<Statement>(effect, actions, conditions);
 }
 
-
-
-
 std::unique_ptr<Policy> IAMToJson::policyFromJson(const nlohmann::json& policy)
 {
     if (!policy["Name"].is_string()) {
@@ -145,7 +142,7 @@ std::unique_ptr<Policy> IAMToJson::policyFromJson(const nlohmann::json& policy)
   }
 }
 */
-std::vector<RoleBuilder> IAMToJson::loadRoles(const nlohmann::json& roles)
+std::vector<RoleBuilder> IAMToJson::rolesFromJson(const nlohmann::json& roles)
 {
     std::vector<RoleBuilder> out;
     for (auto it = roles.begin(); it != roles.end(); it++) {
@@ -169,7 +166,7 @@ std::vector<RoleBuilder> IAMToJson::loadRoles(const nlohmann::json& roles)
     return out;
 }
 
-nlohmann::json IAMToJson::roleAsJson(const RoleBuilder& roleBuilder)
+nlohmann::json IAMToJson::roleToJson(const RoleBuilder& roleBuilder)
 {
     nlohmann::json root;
     root["Name"] = roleBuilder.getName();
@@ -203,7 +200,7 @@ static nlohmann::json statementsAsJson(const std::vector<Statement>& statements)
     return out;
 }
 
-nlohmann::json IAMToJson::policyAsJson(const PolicyBuilder& policyBuilder)
+nlohmann::json IAMToJson::policyToJson(const PolicyBuilder& policyBuilder)
 {
     nlohmann::json root;
 
