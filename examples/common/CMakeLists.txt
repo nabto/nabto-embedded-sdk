@@ -1,6 +1,5 @@
 set(src
   json_config.cpp
-  coap_request_handler.cpp
   random_string.cpp
   private_key.cpp
   )

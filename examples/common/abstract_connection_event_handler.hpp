@@ -18,7 +18,7 @@ class AbstractConnectionEventHandler {
     {
 
     }
-    ~AbstractConnectionEventHandler()
+    virtual ~AbstractConnectionEventHandler()
     {
         stop();
         nabto_device_future_free(future_);

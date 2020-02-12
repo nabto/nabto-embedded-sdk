@@ -14,7 +14,7 @@ class AbstractDeviceEventHandler {
     {
     }
 
-    ~AbstractDeviceEventHandler()
+    virtual ~AbstractDeviceEventHandler()
     {
         stop();
         nabto_device_future_free(future_);
