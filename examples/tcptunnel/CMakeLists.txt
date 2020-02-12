@@ -1,5 +1,5 @@
 set(src
-  src/tcptunnel_device.cpp
+  src/tcptunnel_main.cpp
   src/tcptunnel.cpp
   src/tcptunnel_default_policies.cpp
   src/tcptunnel_persisting.cpp
