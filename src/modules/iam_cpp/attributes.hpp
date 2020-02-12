@@ -16,6 +16,10 @@ class Attributes {
     std::unique_ptr<std::string> get(const std::string& key) const;
     AttributeMap getMap() const;
     void merge(const Attributes& attributes);
+    bool empty() const
+    {
+        return attributes_.empty();
+    }
  private:
     AttributeMap attributes_;
 };

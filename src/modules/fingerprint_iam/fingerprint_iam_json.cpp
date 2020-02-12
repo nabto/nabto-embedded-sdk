@@ -51,7 +51,9 @@ nlohmann::json FingerprintIAMJson::userToJson(const User& user)
 {
     nlohmann::json json;
     json["Roles"] = rolesToJson(user);
-    json["Attributes"] = iam::IAMToJson::attributesToJson(user.getAttributes());
+    if (!user.getAttributes().empty()) {
+        json["Attributes"] = iam::IAMToJson::attributesToJson(user.getAttributes());
+    }
     json["Fingerprints"] = fingerprintsToJson(user);
     json["Id"] = user.getUserId();
     return json;
