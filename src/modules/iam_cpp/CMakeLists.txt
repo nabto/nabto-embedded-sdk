@@ -1,6 +1,5 @@
 set(src
   iam_to_json.cpp
-  iam.cpp
   attributes.cpp
   statement.cpp
   policy.cpp

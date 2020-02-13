@@ -53,12 +53,8 @@ class StatementBuilder {
 
 class PolicyBuilder {
  public:
-    PolicyBuilder(const std::string& name) : name_(name) {}
-    PolicyBuilder name(const std::string& name)
-    {
-        name_ = name;
-        return *this;
-    }
+    PolicyBuilder(const std::string& id) : id_(id) {}
+
     PolicyBuilder addStatement(const Statement& statement)
     {
         statements_.push_back(statement);
@@ -72,36 +68,31 @@ class PolicyBuilder {
     }
 
     Policy build() {
-        return Policy(name_, statements_);
+        return Policy(id_, statements_);
     }
 
-    std::string getName() const { return name_; }
+    std::string getId() const { return id_; }
 
     std::vector<Statement> getStatements() const { return statements_; }
  private:
-    std::string name_;
+    std::string id_;
     std::vector<Statement> statements_;
 };
 
 
 class RoleBuilder {
  public:
-    RoleBuilder(const std::string& name) : name_(name) {}
-    RoleBuilder name(const std::string& name)
+    RoleBuilder(const std::string& id) : id_(id) {}
+
+    RoleBuilder addPolicy(const std::string& policyId)
     {
-        name_ = name;
+        policies_.insert(policyId);
         return *this;
     }
 
-    RoleBuilder addPolicy(const std::string& policyName)
+    std::string getId() const
     {
-        policies_.insert(policyName);
-        return *this;
-    }
-
-    std::string getName() const
-    {
-        return name_;
+        return id_;
     }
 
     std::set<std::string> getPolicies() const
@@ -109,7 +100,7 @@ class RoleBuilder {
         return policies_;
     }
  private:
-    std::string name_;
+    std::string id_;
     std::set<std::string> policies_;
 };
 

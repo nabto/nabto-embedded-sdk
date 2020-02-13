@@ -1,7 +1,6 @@
 #pragma once
 
 #include <modules/fingerprint_iam/fingerprint_iam.hpp>
-#include <modules/iam_cpp/iam.hpp>
 
 #include <nlohmann/json.hpp>
 

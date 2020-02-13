@@ -10,15 +10,15 @@ namespace fingerprint_iam {
 
 class Role {
  public:
-    Role(const std::string& name, const std::set<std::shared_ptr<nabto::iam::Policy> >&  policies)
-        : name_(name), policies_(policies)
+    Role(const std::string& id, const std::set<std::shared_ptr<nabto::iam::Policy> >&  policies)
+        : id_(id), policies_(policies)
     {
     }
 
     std::set<std::shared_ptr<nabto::iam::Policy> > getPolicies() const { return policies_; }
-    std::string getName() const { return name_; }
+    std::string getId() const { return id_; }
  private:
-    std::string name_;
+    std::string id_;
     std::set<std::shared_ptr<nabto::iam::Policy> > policies_;
 };
 

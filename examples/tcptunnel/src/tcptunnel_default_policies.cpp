@@ -10,17 +10,6 @@
 #include <nlohmann/json.hpp>
 
 
-
-void insertPolicy(nlohmann::json& policies, const nabto::iam::PolicyBuilder& policy)
-{
-    policies[policy.getName()] = nabto::iam::IAMToJson::policyToJson(policy);
-}
-
-void insertRole(nlohmann::json& roles, const nabto::iam::RoleBuilder& role)
-{
-    roles[role.getName()] = nabto::iam::IAMToJson::roleToJson(role);
-}
-
 bool init_default_policies(const std::string& policiesFile)
 {
     auto passwordPairingPolicy = nabto::iam::PolicyBuilder("PasswordPairing")
@@ -44,17 +33,17 @@ bool init_default_policies(const std::string& policiesFile)
 
     nlohmann::json root;
 
-    nlohmann::json policies;
-    insertPolicy(policies, passwordPairingPolicy);
-    insertPolicy(policies, tunnelAllPolicy);
-    insertPolicy(policies, pairedPolicy);
+    nlohmann::json policies = nlohmann::json::array();
+    policies.push_back(nabto::iam::IAMToJson::policyToJson(passwordPairingPolicy));
+    policies.push_back(nabto::iam::IAMToJson::policyToJson(tunnelAllPolicy));
+    policies.push_back(nabto::iam::IAMToJson::policyToJson(pairedPolicy));
 
     root["Policies"] = policies;
 
-    nlohmann::json roles;
-    insertRole(roles, unpairedRole);
-    insertRole(roles, ownerRole);
-    insertRole(roles, guestRole);
+    nlohmann::json roles = nlohmann::json::array();
+    roles.push_back(nabto::iam::IAMToJson::roleToJson(unpairedRole));
+    roles.push_back(nabto::iam::IAMToJson::roleToJson(ownerRole));
+    roles.push_back(nabto::iam::IAMToJson::roleToJson(guestRole));
 
     root["Roles"] = roles;
 
@@ -73,7 +62,7 @@ bool load_policies(const std::string& policiesFile, nabto::fingerprint_iam::Fing
     nlohmann::json roles = root["Roles"];
     nlohmann::json policies = root["Policies"];
 
-    if (!policies.is_object()) {
+    if (!policies.is_array()) {
         return false;
     }
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <modules/fingerprint_iam/fingerprint_iam.hpp>
-#include <modules/iam_cpp/iam.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -56,6 +55,7 @@ class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMPersisting
     }
 
  private:
+    std::map<std::string, nlohmann::json> users_;
     std::string configFile_;
     nlohmann::json config_;
 };

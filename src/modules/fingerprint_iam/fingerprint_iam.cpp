@@ -12,7 +12,6 @@
 
 
 #include <modules/iam_cpp/decision.hpp>
-#include <modules/iam_cpp/iam.hpp>
 #include <modules/iam_cpp/iam_to_json.hpp>
 
 #include <cbor.h>
@@ -67,7 +66,7 @@ bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string
     } else {
         auto subject = createUnpairedSubject();
         verdict = nabto::iam::Decision::checkAccess(subject, action, attributes);
-        std::cout << "Access " << verdictToString(verdict) << " to the action: " << action << " for the unpaired connection: " << ref << " with the role: " << unpairedRole_->getName() << std::endl;
+        std::cout << "Access " << verdictToString(verdict) << " to the action: " << action << " for the unpaired connection: " << ref << " with the role: " << unpairedRole_->getId() << std::endl;
     }
 
     return verdict;
@@ -116,7 +115,7 @@ void FingerprintIAM::enableClientSettings(const std::string& clientServerUrl, co
 
 bool FingerprintIAM::addRole(const iam::RoleBuilder& roleBuilder)
 {
-    if (roles_.find(roleBuilder.getName()) != roles_.end()) {
+    if (roles_.find(roleBuilder.getId()) != roles_.end()) {
         return false;
     }
     std::set<std::shared_ptr<nabto::iam::Policy> > policies;
@@ -128,7 +127,7 @@ bool FingerprintIAM::addRole(const iam::RoleBuilder& roleBuilder)
             return false;
         }
     }
-    roles_[roleBuilder.getName()] = std::make_shared<Role>(roleBuilder.getName(), policies);
+    roles_[roleBuilder.getId()] = std::make_shared<Role>(roleBuilder.getId(), policies);
     return true;
 }
 

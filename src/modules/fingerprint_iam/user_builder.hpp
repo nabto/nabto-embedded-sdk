@@ -10,13 +10,7 @@ namespace fingerprint_iam {
 class UserBuilder
 {
  public:
-    UserBuilder() {}
-
-    UserBuilder id(const std::string& id)
-    {
-        id_ = id;
-        return *this;
-    }
+    UserBuilder(const std::string& id) : id_(id) {}
 
     UserBuilder addFingerprint(const std::string& fingerprint)
     {

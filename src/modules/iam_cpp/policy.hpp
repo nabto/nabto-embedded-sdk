@@ -14,8 +14,8 @@ class Policy {
 
     Policy() {}
 
-    Policy(const std::string& name, std::vector<Statement> statements)
-        : name_(name), statements_(statements)
+    Policy(const std::string& id, std::vector<Statement> statements)
+        : id_(id), statements_(statements)
     {
     }
 
@@ -26,27 +26,16 @@ class Policy {
         statements_.push_back(statement);
     }
 
-    void setVersion(int version)
+    std::string getId() const
     {
-        version_ = version;
-    }
-
-    void setName(const std::string& name)
-    {
-        name_ = name;
-    }
-
-    std::string getName() const
-    {
-        return name_;
+        return id_;
     }
     std::vector<Statement> getStatements() const
     {
         return statements_;
     }
  private:
-    int version_;
-    std::string name_;
+    std::string id_;
     std::vector<Statement> statements_;
 };
 

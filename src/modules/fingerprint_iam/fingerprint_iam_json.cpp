@@ -32,7 +32,7 @@ nlohmann::json FingerprintIAMJson::rolesToJson(const User& user)
     nlohmann::json roles = nlohmann::json::array();
     for (auto r : user.getRoles())
     {
-        roles.push_back(r->getName());
+        roles.push_back(r->getId());
     }
     return roles;
 }
@@ -104,21 +104,22 @@ static UserBuilder loadAttributes(const nlohmann::json& attributes, UserBuilder 
 
 bool FingerprintIAMJson::loadUsersFromJson(FingerprintIAM& iam, const nlohmann::json& json)
 {
-    if (!json.is_object()) {
+    if (!json.is_array()) {
         return false;
     }
 
-    for (auto it = json.begin(); it != json.end(); it++) {
-        UserBuilder ub;
-        ub = ub.id(it.key());
-        nlohmann::json jsonUser = it.value();
+    for (auto user : json) {
+        nlohmann::json id = user["Id"];
+        if (id.is_string()) {
+            UserBuilder ub(id.get<std::string>());
 
-        ub = loadUserRoles(jsonUser["Roles"], ub);
-        ub = loadFingerprints(jsonUser["Fingerprints"], ub);
-        ub = loadAttributes(jsonUser["Attributes"], ub);
+            ub = loadUserRoles(user["Roles"], ub);
+            ub = loadFingerprints(user["Fingerprints"], ub);
+            ub = loadAttributes(user["Attributes"], ub);
 
-        if (!iam.buildUser(ub)) {
-            return false;
+            if (!iam.buildUser(ub)) {
+                return false;
+            }
         }
     }
     return true;
@@ -128,10 +129,10 @@ nlohmann::json FingerprintIAMJson::roleToJson(const Role& role)
 {
     nlohmann::json json;
 
-    json["Name"] = role.getName();
+    json["Id"] = role.getId();
     nlohmann::json policies = nlohmann::json::array();
     for (auto p : role.getPolicies()) {
-        policies.push_back(p->getName());
+        policies.push_back(p->getId());
     }
     json["Policies"] = policies;
     return json;

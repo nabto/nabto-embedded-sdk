@@ -7,7 +7,6 @@
 
 #include <nabto/nabto_device.h>
 
-#include <modules/iam_cpp/iam.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
 
 #include <sstream>
@@ -42,7 +41,7 @@ class FingerprintIAM {
 
     void addPolicy(const nabto::iam::Policy& policy)
     {
-        policies_[policy.getName()] = std::make_shared<nabto::iam::Policy>(policy);
+        policies_[policy.getId()] = std::make_shared<nabto::iam::Policy>(policy);
     }
 
     bool addRole(const iam::RoleBuilder& roleBuilder);

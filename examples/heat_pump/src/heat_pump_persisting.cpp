@@ -1,7 +1,6 @@
 #include "heat_pump_persisting.hpp"
 #include "json_config.hpp"
 
-#include <modules/iam_cpp/iam.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
 #include <modules/iam_cpp/iam_to_json.hpp>
 #include <modules/iam_cpp/iam_builder.hpp>
@@ -41,24 +40,29 @@ bool HeatPumpPersisting::initDefault()
 
 void HeatPumpPersisting::upsertUser(const fingerprint_iam::User& user)
 {
-    config_["Users"][user.getUserId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
+    users_[user.getUserId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
     save();
 }
 
 void HeatPumpPersisting::deleteUser(const std::string& userId)
 {
-    config_["Users"].erase(userId);
+    users_.erase(userId);
     save();
 }
 
 void HeatPumpPersisting::deleteAllUsers()
 {
-    config_["Users"].clear();
+    users_.clear();
     save();
 }
 
 void HeatPumpPersisting::save()
 {
+    config_["Users"].clear();
+    for (auto u : users_) {
+        config_["Users"] = nlohmann::json::array();
+        config_["Users"].push_back(u.second);
+    }
     json_config_save(configFile_, config_);
 }
 
