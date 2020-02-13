@@ -2,27 +2,30 @@
 
 #include "attributes.hpp"
 
+#include <iostream>
+
 namespace nabto {
 namespace iam {
 
-bool Condition::matches(const Attributes& attributes) const
+Condition::Result Condition::matches(const Attributes& attributes) const
 {
     auto attribute = attributes.get(key_);
     if (!attribute) {
-        return false;
+        return Result::NO_MATCH;
     }
 
     for (auto v : values_) {
         // return true if at least one match exists
-        if (match(*attribute, v)) {
-            return true;
+        Result r = match(*attribute, v);
+        if (r == Result::ERROR || r == Result::MATCH) {
+            return r;
         }
     }
-    return false;
+    return Result::NO_MATCH;
 
 }
 
-bool Condition::match(const std::string& lhs, const std::string& rhs) const
+Condition::Result Condition::match(const std::string& lhs, const std::string& rhs) const
 {
     switch (operator_) {
         case Condition::Operator::StringEquals:
@@ -39,18 +42,18 @@ bool Condition::match(const std::string& lhs, const std::string& rhs) const
         case Condition::Operator::Bool:
             return boolEquals(lhs, rhs);
         default:
-            return false;
+            return Result::ERROR;
     }
 }
 
-bool Condition::stringEquals(const std::string& lhs, const std::string& rhs) const
+Condition::Result Condition::stringEquals(const std::string& lhs, const std::string& rhs) const
 {
-    return lhs == rhs;
+    return status(lhs == rhs);
 }
 
-bool Condition::stringNotEquals(const std::string& lhs, const std::string& rhs) const
+Condition::Result Condition::stringNotEquals(const std::string& lhs, const std::string& rhs) const
 {
-    return lhs != rhs;
+    return status(lhs != rhs);
 }
 
 bool Condition::parseNumeric(const std::string& value, double& out) const
@@ -59,6 +62,7 @@ bool Condition::parseNumeric(const std::string& value, double& out) const
         out = std::stod(value);
         return true;
     } catch (...) {
+        std::cerr << "Cannot parse the value: " << value << " as a number" << std::endl;
         return false;
     }
 }
@@ -72,43 +76,42 @@ bool Condition::parseBool(const std::string& value, bool& out) const
         out = false;
         return true;
     } else {
+        std::cerr << "Cannot parse the value: " << value << " as a boolean, booleans is either 'true' or 'false'" << std::endl;
         return false;
     }
 }
 
-bool Condition::boolEquals(const std::string& lhs, const std::string& rhs) const
+Condition::Result Condition::boolEquals(const std::string& lhs, const std::string& rhs) const
 {
     bool lhsBool;
     bool rhsBool;
     if (parseBool(lhs, lhsBool) && parseBool(rhs, rhsBool)) {
-        return (lhsBool == rhsBool);
+        return status(lhsBool == rhsBool);
     }
-    return false;
+    return Result::ERROR;
 }
 
-bool Condition::numericCondition(const std::string& lhs, const std::string& rhs) const
+Condition::Result Condition::numericCondition(const std::string& lhs, const std::string& rhs) const
 {
     double lhsDouble;
     double rhsDouble;
     if (parseNumeric(lhs, lhsDouble) && parseNumeric(rhs, rhsDouble)) {
         switch (operator_) {
             case Condition::Operator::NumericEquals:
-                return (lhsDouble == rhsDouble);
+                return status(lhsDouble == rhsDouble);
             case Condition::Operator::NumericNotEquals:
-                return (lhsDouble != rhsDouble);
+                return status(lhsDouble != rhsDouble);
             case Condition::Operator::NumericLessThan:
-                return (lhsDouble < rhsDouble);
+                return status(lhsDouble < rhsDouble);
             case Condition::Operator::NumericLessThanEquals:
-                return (lhsDouble <= rhsDouble);
+                return status(lhsDouble <= rhsDouble);
             case Condition::Operator::NumericGreaterThan:
-                return (lhsDouble > rhsDouble);
+                return status(lhsDouble > rhsDouble);
             case Condition::Operator::NumericGreaterThanEquals:
-                return (lhsDouble >= rhsDouble);
-            default:
-                return false;
+                return status(lhsDouble >= rhsDouble);
         }
     }
-    return false;
+    return Result::ERROR;
 }
 
 bool Condition::operatorFromString(const std::string& str, Condition::Operator& op)

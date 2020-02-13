@@ -37,7 +37,7 @@ class Statement {
  private:
     bool matchActions(const std::string& action) const;
 
-    bool matchConditions(const Attributes& attributes) const;
+    Condition::Result matchConditions(const Attributes& attributes) const;
 
     Effect effect_;
     /**

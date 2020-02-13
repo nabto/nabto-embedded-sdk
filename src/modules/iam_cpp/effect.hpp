@@ -6,7 +6,8 @@ namespace iam {
 enum class Effect {
     ALLOW,
     DENY,
-    NO_MATCH
+    NO_MATCH,
+    ERROR
 };
 
 } } // namespace

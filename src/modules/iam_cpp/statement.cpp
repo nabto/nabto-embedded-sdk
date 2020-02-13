@@ -13,15 +13,16 @@ bool Statement::matchActions(const std::string& action) const
     return false;
 }
 
-bool Statement::matchConditions(const Attributes& attributes) const
+Condition::Result Statement::matchConditions(const Attributes& attributes) const
 {
     for (auto condition : conditions_) {
         // All conditions has to match else it is a no match.
-        if (!condition.matches(attributes)) {
-            return false;
+        Condition::Result r = condition.matches(attributes);
+        if (r == Condition::Result::NO_MATCH || r == Condition::Result::ERROR) {
+            return r;
         }
     }
-    return true;
+    return Condition::Result::MATCH;
 }
 
 Effect Statement::eval(const std::string& action, const Attributes& attributes) const
@@ -30,8 +31,12 @@ Effect Statement::eval(const std::string& action, const Attributes& attributes) 
         return Effect::NO_MATCH;
     }
 
-    if (!matchConditions(attributes)) {
+    Condition::Result r = matchConditions(attributes);
+    if (r == Condition::Result::NO_MATCH) {
         return Effect::NO_MATCH;
+    }
+    if (r == Condition::Result::ERROR) {
+        return Effect::ERROR;
     }
 
     // action and conditions matches

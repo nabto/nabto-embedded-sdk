@@ -5,6 +5,8 @@
 #include "effect.hpp"
 #include "policy.hpp"
 
+#include <iostream>
+
 namespace nabto {
 namespace iam {
 
@@ -18,6 +20,10 @@ bool Decision::checkAccess(const Subject& subject, const std::string& action, co
 
     for (auto policy : subject.getPolicies()) {
         nabto::iam::Effect effect = policy->eval(action, attrs);
+        if (effect == Effect::ERROR) {
+            std::cerr << "evaluating the policy: " << policy->getId() << " resulted in an error, denying the access request" << std::endl;
+            return false;
+        }
         if (effect == Effect::DENY) {
             return false;
         }

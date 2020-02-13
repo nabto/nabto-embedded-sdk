@@ -27,12 +27,18 @@ class Condition {
         Bool
     };
 
+    enum class Result {
+        MATCH,
+        NO_MATCH,
+        ERROR
+    };
+
     Condition(Operator op, const std::string& key, const std::vector<std::string>& values)
         : operator_(op), key_(key), values_(values)
     {
     }
     virtual ~Condition() {}
-    virtual bool matches(const Attributes& attributes) const;
+    virtual Result matches(const Attributes& attributes) const;
 
     static bool operatorFromString(const std::string& str, Condition::Operator& op);
 
@@ -52,15 +58,24 @@ class Condition {
         return operator_;
     }
 
+    static Result status(bool status)
+    {
+        if (status) {
+            return Result::MATCH;
+        } else {
+            return Result::NO_MATCH;
+        }
+    }
+
  private:
 
-    bool match(const std::string& lhs, const std::string& rhs) const;
-    bool stringEquals(const std::string& lhs, const std::string& rhs) const;
-    bool stringNotEquals(const std::string& lhs, const std::string& rhs) const;
+    Result match(const std::string& lhs, const std::string& rhs) const;
+    Result stringEquals(const std::string& lhs, const std::string& rhs) const;
+    Result stringNotEquals(const std::string& lhs, const std::string& rhs) const;
     bool parseNumeric(const std::string& value, double& out) const;
     bool parseBool(const std::string& value, bool& out) const;
-    bool boolEquals(const std::string& lhs, const std::string& rhs) const;
-    bool numericCondition(const std::string& lhs, const std::string& rhs) const;
+    Result boolEquals(const std::string& lhs, const std::string& rhs) const;
+    Result numericCondition(const std::string& lhs, const std::string& rhs) const;
 
     Operator operator_;
     std::string key_;

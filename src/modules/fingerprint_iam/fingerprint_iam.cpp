@@ -192,13 +192,13 @@ bool FingerprintIAM::pairNewClient(const std::string& fingerprint)
     if (users_.size() == 0) {
         role = getRole("Admin");
         if (role == nullptr) {
-            std::cout << "Warning missing the Role 'Admin' cannot pair the user" << std::endl;
+            std::cout << "Warning missing the Role 'Admin' so the user cannot be paired." << std::endl;
             return false;
         }
     } else {
         role = getRole("User");
         if (role == nullptr) {
-            std::cout << "Warning missing the Role 'User' cannot pair the user" << std::endl;
+            std::cout << "Warning missing the Role 'User' so the user cannot be paired." << std::endl;
             return false;
         }
     }
