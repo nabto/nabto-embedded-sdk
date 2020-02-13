@@ -31,13 +31,13 @@ bool TcpTunnelPersisting::initDefault()
 
 void TcpTunnelPersisting::upsertUser(const fingerprint_iam::User& user)
 {
-    config_["Users"][user.getUserId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
+    config_["Users"][user.getId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
     save();
 }
 
-void TcpTunnelPersisting::deleteUser(const std::string& userId)
+void TcpTunnelPersisting::deleteUser(const std::string& id)
 {
-    config_["Users"].erase(userId);
+    config_["Users"].erase(id);
     save();
 }
 

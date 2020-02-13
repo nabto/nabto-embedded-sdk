@@ -36,75 +36,50 @@ class FingerprintIAM {
  public:
     ~FingerprintIAM();
     FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting);
+
+    /**
+     * If enabled the coap endpoint pairing/button is enabled.
+     */
+    void enableButtonPairing(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback);
+
+    /**
+     * If enabled the coap endpoint pairing/password is enabled.
+     */
+    void enablePasswordPairing(const std::string& password);
+
+    /**
+     * If enabled it is possible for a client to retrieve client
+     * settings from the coap endpoint pairing/client-settings
+     */
+    void enableClientSettings(const std::string& clientServerUrl, const std::string& clientServerKey);
+
+
+    /**
+     * Check an action with attributes against the iam system.
+     */
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action);
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action, const nabto::iam::Attributes& attributes);
 
-    void addPolicy(const nabto::iam::Policy& policy)
-    {
-        policies_[policy.getId()] = std::make_shared<nabto::iam::Policy>(policy);
-    }
+    /**
+     * Add a policy to the module.
+     */
+    void addPolicy(const nabto::iam::Policy& policy);
 
+    /**
+     * Add a role to the module.
+     */
     bool addRole(const iam::RoleBuilder& roleBuilder);
 
-    bool buildUser(const UserBuilder& ub);
+    /**
+     * Add a user to the module
+     */
+    bool addUser(const UserBuilder& ub);
 
-    std::shared_ptr<User> findUserByFingerprint(const std::string& fingerprint)
-    {
-        auto it = fingerprintToUser_.find(fingerprint);
-        if (it != fingerprintToUser_.end()) {
-            return it->second;
-        }
-        return nullptr;
-    }
-
-    NabtoDevice* getDevice()
-    {
-        return device_;
-    }
 
     /**
      * The client has been granted access with a button press or a password.
      */
-    bool pairNewClient(const std::string& fingerprint)
-    {
-        {
-            auto user = findUserByFingerprint(fingerprint);
-            if (user) {
-                // user is already paired.
-                return true;
-            }
-        }
-
-        if (users_.size() == 0) {
-            if (!ownerRole_) {
-                return false;
-            }
-            auto user = std::make_shared<User>("owner", ownerRole_);
-            addUser(user);
-            addFingerprintToUser(user, fingerprint);
-            return true;
-        } else {
-            if (!guestRole_) {
-                return false;
-            }
-            std::stringstream ss;
-            ss << "guest-" << (users_.size() + 1);
-            auto user = std::make_shared<User>(ss.str(), guestRole_);
-            addUser(user);
-            addFingerprintToUser(user, fingerprint);
-            return true;
-
-        }
-    }
-
-    void addUser(std::shared_ptr<User> user)
-    {
-        users_[user->getUserId()] = user;
-        for (auto fp : user->getFingerprints()) {
-            fingerprintToUser_[fp] = user;
-        }
-        persisting_.upsertUser(*user);
-    }
+    bool pairNewClient(const std::string& fingerprint);
 
     void addFingerprintToUser(std::shared_ptr<User> user, const std::string& fingerprint)
     {
@@ -120,10 +95,6 @@ class FingerprintIAM {
         return (user != nullptr);
     }
 
-    void enableButtonPairing(std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback);
-    void enablePasswordPairing(const std::string& password);
-
-    void enableClientSettings(const std::string& clientServerUrl, const std::string& clientServerKey);
 
     std::shared_ptr<Role> getRole(const std::string& role)
     {
@@ -134,24 +105,6 @@ class FingerprintIAM {
         return it->second;
     }
 
-    bool setUnpairedRole(const std::string& role)
-    {
-        unpairedRole_ = getRole(role);
-        return (unpairedRole_ != nullptr);
-    }
-
-    bool setOwnerRole(const std::string& role)
-    {
-        ownerRole_ = getRole(role);
-        return (ownerRole_ != nullptr);
-    }
-
-    bool setGuestRole(const std::string& role)
-    {
-        guestRole_ = getRole(role);
-        return (guestRole_ != nullptr);
-    }
-
     std::vector<std::string> getPairingModes();
 
     void dumpUsers();
@@ -159,20 +112,21 @@ class FingerprintIAM {
     void dumpRoles();
 
     void dumpPolicies();
-
+    NabtoDevice* getDevice()
+    {
+        return device_;
+    }
  private:
-
+    std::shared_ptr<User> findUserByFingerprint(const std::string& fingerprint);
     Subject createUnpairedSubject();
     Subject createSubjectFromUser(const User& user);
+    void insertUser(std::shared_ptr<User> user);
+    std::string nextUserId();
 
     std::map<std::string, std::shared_ptr<User> > fingerprintToUser_;
     std::map<std::string, std::shared_ptr<User> > users_;
     std::map<std::string, std::shared_ptr<Role> > roles_;
     std::map<std::string, std::shared_ptr<nabto::iam::Policy> > policies_;
-
-    std::shared_ptr<Role> unpairedRole_;
-    std::shared_ptr<Role> ownerRole_;
-    std::shared_ptr<Role> guestRole_;
 
     NabtoDevice* device_;
     FingerprintIAMPersisting& persisting_;

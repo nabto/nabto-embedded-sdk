@@ -55,7 +55,7 @@ nlohmann::json FingerprintIAMJson::userToJson(const User& user)
         json["Attributes"] = iam::IAMToJson::attributesToJson(user.getAttributes());
     }
     json["Fingerprints"] = fingerprintsToJson(user);
-    json["Id"] = user.getUserId();
+    json["Id"] = user.getId();
     return json;
 }
 
@@ -117,7 +117,7 @@ bool FingerprintIAMJson::loadUsersFromJson(FingerprintIAM& iam, const nlohmann::
             ub = loadFingerprints(user["Fingerprints"], ub);
             ub = loadAttributes(user["Attributes"], ub);
 
-            if (!iam.buildUser(ub)) {
+            if (!iam.addUser(ub)) {
                 return false;
             }
         }

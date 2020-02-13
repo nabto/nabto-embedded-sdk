@@ -28,8 +28,8 @@ bool init_default_policies(const std::string& policiesFile)
                       .addAction("Pairing:Get"));
 
     auto unpairedRole = nabto::iam::RoleBuilder("Unpaired").addPolicy("PasswordPairing");
-    auto ownerRole = nabto::iam::RoleBuilder("Owner").addPolicy("TunnelAll").addPolicy("Paired");
-    auto guestRole = nabto::iam::RoleBuilder("Guest").addPolicy("TunnelAll").addPolicy("Paired");
+    auto adminRole = nabto::iam::RoleBuilder("Admin").addPolicy("TunnelAll").addPolicy("Paired");
+    auto userRole = nabto::iam::RoleBuilder("User").addPolicy("TunnelAll").addPolicy("Paired");
 
     nlohmann::json root;
 
@@ -42,8 +42,8 @@ bool init_default_policies(const std::string& policiesFile)
 
     nlohmann::json roles = nlohmann::json::array();
     roles.push_back(nabto::iam::IAMToJson::roleToJson(unpairedRole));
-    roles.push_back(nabto::iam::IAMToJson::roleToJson(ownerRole));
-    roles.push_back(nabto::iam::IAMToJson::roleToJson(guestRole));
+    roles.push_back(nabto::iam::IAMToJson::roleToJson(adminRole));
+    roles.push_back(nabto::iam::IAMToJson::roleToJson(userRole));
 
     root["Roles"] = roles;
 

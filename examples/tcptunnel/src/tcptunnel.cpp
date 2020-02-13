@@ -63,11 +63,6 @@ bool TcpTunnel::initDevice()
 bool TcpTunnel::initAccessControl()
 {
     state_.loadUsersIntoIAM(fingerprintIAM_);
-
-    fingerprintIAM_.setUnpairedRole("Unpaired");
-    fingerprintIAM_.setOwnerRole("Owner");
-    fingerprintIAM_.setGuestRole("Guest");
-
     fingerprintIAM_.enablePasswordPairing(state_.getPairingPassword());
     return true;
 }

@@ -45,9 +45,6 @@ bool HeatPump::init()
             nabto::ButtonPress::wait(std::chrono::seconds(60), cb);
         });
 
-    fingerprintIAM_.setUnpairedRole("Unpaired");
-    fingerprintIAM_.setOwnerRole("Owner");
-    fingerprintIAM_.setGuestRole("Guest");
     fingerprintIAM_.enableClientSettings(dc_.getClientServerUrl(), dc_.getClientServerKey());
 
     initCoapHandlers();
@@ -178,6 +175,11 @@ void HeatPump::loadIamPolicy()
                       .addAction("Pairing:Button"))
         .build();
 
+    auto pairedPolicy = nabto::iam::PolicyBuilder("Paired")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("Pairing:Get"))
+        .build();
+
     auto readPolicy = nabto::iam::PolicyBuilder("HeatPumpRead")
         .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
                       .addAction("HeatPump:Get"))
@@ -189,18 +191,19 @@ void HeatPump::loadIamPolicy()
         .build();
 
     fingerprintIAM_.addPolicy(buttonPairingPolicy);
+    fingerprintIAM_.addPolicy(pairedPolicy);
     fingerprintIAM_.addPolicy(readPolicy);
     fingerprintIAM_.addPolicy(writePolicy);
 
     fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Unpaired").addPolicy("ButtonPairing"));
-    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Owner")
+    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Admin")
                             .addPolicy("HeatPumpWrite")
-                            .addPolicy("HeatPumpRead"));
+                            .addPolicy("HeatPumpRead")
+                            .addPolicy("Paired"));
     fingerprintIAM_.addRole(nabto::iam::RoleBuilder("User")
                             .addPolicy("HeatPumpRead")
-                            .addPolicy("HeatPumpWrite"));
-    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Guest")
-                            .addPolicy("HeatPumpRead"));
+                            .addPolicy("Paired"));
+
 }
 
 

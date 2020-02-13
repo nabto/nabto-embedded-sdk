@@ -40,13 +40,13 @@ bool HeatPumpPersisting::initDefault()
 
 void HeatPumpPersisting::upsertUser(const fingerprint_iam::User& user)
 {
-    users_[user.getUserId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
+    users_[user.getId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
     save();
 }
 
-void HeatPumpPersisting::deleteUser(const std::string& userId)
+void HeatPumpPersisting::deleteUser(const std::string& id)
 {
-    users_.erase(userId);
+    users_.erase(id);
     save();
 }
 

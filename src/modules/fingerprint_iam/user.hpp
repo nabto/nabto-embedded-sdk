@@ -15,12 +15,12 @@ namespace fingerprint_iam {
 
 class User {
  public:
-    User(const std::string& userId, const std::set<std::shared_ptr<Role> >& roles, const std::set<std::string>& fingerprints, const iam::Attributes& attributes)
-        : userId_(userId), roles_(roles), fingerprints_(fingerprints), attributes_(attributes)
+    User(const std::string& id, const std::set<std::shared_ptr<Role> >& roles, const std::set<std::string>& fingerprints, const iam::Attributes& attributes)
+        : id_(id), roles_(roles), fingerprints_(fingerprints), attributes_(attributes)
     {
     }
-    User(const std::string& userId, std::shared_ptr<Role> role)
-        : userId_(userId)
+    User(const std::string& id, std::shared_ptr<Role> role)
+        : id_(id)
     {
         roles_.insert(role);
     }
@@ -32,10 +32,10 @@ class User {
 
     std::set<std::shared_ptr<Role> > getRoles() const { return roles_; }
     nabto::iam::Attributes getAttributes() const { return attributes_; }
-    std::string getUserId() const { return userId_; }
+    std::string getId() const { return id_; }
     std::set<std::string> getFingerprints() const { return fingerprints_; }
  private:
-    std::string userId_;
+    std::string id_;
     std::set<std::shared_ptr<Role> > roles_;
     std::set<std::string> fingerprints_;
     nabto::iam::Attributes attributes_;
