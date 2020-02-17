@@ -24,8 +24,8 @@ FingerprintIAM::~FingerprintIAM()
 {
 }
 
-FingerprintIAM::FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting)
-    : device_(device), persisting_(persisting)
+FingerprintIAM::FingerprintIAM(NabtoDevice* device)
+    : device_(device)
 {
     coapIsPaired_ = CoapIsPaired::create(*this, device_);
     coapPairing_ = CoapPairing::create(*this, device_);
@@ -100,6 +100,7 @@ void FingerprintIAM::addPolicy(const nabto::iam::Policy& policy)
 bool FingerprintIAM::addRole(const iam::RoleBuilder& roleBuilder)
 {
     if (roles_.find(roleBuilder.getId()) != roles_.end()) {
+        std::cout << "Warning the role " << roleBuilder.getId() << " does already exists" << std::endl;
         return false;
     }
     std::set<std::shared_ptr<nabto::iam::Policy> > policies;
@@ -108,6 +109,7 @@ bool FingerprintIAM::addRole(const iam::RoleBuilder& roleBuilder)
         if (it != policies_.end()) {
             policies.insert(it->second);
         } else {
+            std::cout << "Warning cannot find policy " << policyString << " for role " << roleBuilder.getId() << std::endl;
             return false;
         }
     }
@@ -127,12 +129,22 @@ bool FingerprintIAM::addUser(const UserBuilder& ub)
         if (it != roles_.end()) {
             roles.insert(it->second);
         } else {
+            std::cout << "Cannot add the user " << ub.getId() << " as the role " << roleString << " does not exists" << std::endl;
             return false;
         }
     }
 
     insertUser(std::make_shared<User>(ub.getId(), roles, ub.getFingerprints(), ub.getAttributes()));
     return true;
+}
+
+void FingerprintIAM::setUserAttribute(std::shared_ptr<User> user, const std::string& key, const std::string& value)
+{
+    user->setAttribute(key,value);
+    if (changeListener_) {
+        changeListener_->upsertUser(user->getId());
+    }
+
 }
 
 std::vector<std::string> FingerprintIAM::getPairingModes()
@@ -178,13 +190,13 @@ std::string FingerprintIAM::nextUserId()
    return ss.str();
 }
 
-bool FingerprintIAM::pairNewClient(const std::string& fingerprint)
+std::shared_ptr<User> FingerprintIAM::pairNewClient(const std::string& fingerprint)
 {
     {
         auto user = findUserByFingerprint(fingerprint);
         if (user) {
             // user is already paired.
-            return true;
+            return user;
         }
     }
 
@@ -193,19 +205,19 @@ bool FingerprintIAM::pairNewClient(const std::string& fingerprint)
         role = getRole("Admin");
         if (role == nullptr) {
             std::cout << "Warning missing the Role 'Admin' so the user cannot be paired." << std::endl;
-            return false;
+            return nullptr;
         }
     } else {
         role = getRole("User");
         if (role == nullptr) {
             std::cout << "Warning missing the Role 'User' so the user cannot be paired." << std::endl;
-            return false;
+            return nullptr;
         }
     }
     auto user = std::make_shared<User>(nextUserId(), role);
     insertUser(user);
     addFingerprintToUser(user, fingerprint);
-    return true;
+    return user;
 }
 
 
@@ -251,7 +263,9 @@ void FingerprintIAM::insertUser(std::shared_ptr<User> user)
     for (auto fp : user->getFingerprints()) {
         fingerprintToUser_[fp] = user;
     }
-    persisting_.upsertUser(*user);
+    if (changeListener_) {
+        changeListener_->upsertUser(user->getId());
+    }
 }
 
 } } // namespace

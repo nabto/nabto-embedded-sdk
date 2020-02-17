@@ -3,16 +3,27 @@
 #include <nabto/nabto_device.h>
 
 #include "coap_request_handler.hpp"
+#include "cbor_helper.hpp"
 
 #include <functional>
+#include <vector>
+
+#include <cbor.h>
 
 namespace nabto {
 namespace fingerprint_iam {
 
+/**
+ * Button pairing with a device.
+ *
+{
+  "Name": "Friendly name of the user"
+}
+*/
 class CoapPairingButton : public CoapRequestHandler {
  public:
     CoapPairingButton(FingerprintIAM& iam, NabtoDevice* device)
-        : CoapRequestHandler(iam, device)
+        : CoapRequestHandler(device), iam_(iam)
     {
     }
 
@@ -42,17 +53,30 @@ class CoapPairingButton : public CoapRequestHandler {
         std::string clientFingerprint(fingerprint);
         nabto_device_string_free(fingerprint);
 
-        callback_(clientFingerprint, [request, this, clientFingerprint](bool accepted){
+        std::string name;
+        CborParser parser;
+        CborValue map;
+        std::string errorDescription;
+        if (CborHelper::initCborParser(request, parser, map, errorDescription)) {
+            CborHelper::decodeKvString(map, "Name", name);
+        }
+
+        callback_(clientFingerprint, [request, name, this, clientFingerprint](bool accepted){
                 if (!accepted) {
                     nabto_device_coap_error_response(request, 403, "Access denied");
                     nabto_device_coap_request_free(request);
                     return;
                 }
-                if (!iam_.pairNewClient(clientFingerprint)) {
+                auto user = iam_.pairNewClient(clientFingerprint);
+                if (user == nullptr) {
                     std::cout << "Could not pair the user" << std::endl;
                     nabto_device_coap_error_response(request, 500, "Server error");
                     nabto_device_coap_request_free(request);
                     return;
+                }
+
+                if (!name.empty()) {
+                    iam_.setUserAttribute(user, "Name", name);
                 }
 
                 std::cout << "Paired the user with the fingerprint " << clientFingerprint << std::endl;
@@ -63,6 +87,7 @@ class CoapPairingButton : public CoapRequestHandler {
             });
     }
  private:
+    FingerprintIAM& iam_;
     std::function<void (std::string fingerprint, std::function<void (bool accepted)> cb)> callback_;
 };
 

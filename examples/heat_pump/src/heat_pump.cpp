@@ -22,10 +22,10 @@ namespace nabto {
 namespace examples {
 namespace heat_pump {
 
-HeatPump::HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, HeatPumpPersisting& persisting)
-    : device_(device), privateKey_(privateKey), dc_(dc), persisting_(persisting), fingerprintIAM_(device, persisting)
+HeatPump::HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile)
+    : device_(device), privateKey_(privateKey), dc_(dc), fingerprintIAM_(device)
 {
-
+    persisting_ = std::make_shared<HeatPumpPersisting>(stateFile, fingerprintIAM_);
 }
 
 HeatPump::~HeatPump()
@@ -38,16 +38,20 @@ bool HeatPump::init()
         return false;
     }
     loadIamPolicy();
-    persisting_.loadUsersIntoIAM(fingerprintIAM_);
+    persisting_->load();
 
     fingerprintIAM_.enableButtonPairing([](std::string fingerprint, std::function<void (bool accepted)> cb) {
             std::cout << "Allow the client with the fingerprint " << fingerprint << " to pair with the device? [y/n]" << std::endl;
             nabto::ButtonPress::wait(std::chrono::seconds(60), cb);
         });
 
+    fingerprintIAM_.enablePasswordPairing(persisting_->getPairingPassword());
+
     fingerprintIAM_.enableClientSettings(dc_.getClientServerUrl(), dc_.getClientServerKey());
 
     initCoapHandlers();
+
+    fingerprintIAM_.setChangeListener(persisting_);
 
     stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device_);
     stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device_);
@@ -83,6 +87,9 @@ NabtoDeviceError HeatPump::initDevice()
         return ec;
     }
 
+    nabto_device_set_app_name(device_, appName_.c_str());
+    nabto_device_set_app_version(device_, appVersion_.c_str());
+
     ec = nabto_device_enable_mdns(device_);
     if (ec) {
         return ec;
@@ -117,6 +124,8 @@ void HeatPump::printHeatpumpInfo()
     std::cout << "# Product ID:       " << dc_.getProductId() << std::endl;
     std::cout << "# Device ID:        " << dc_.getDeviceId() << std::endl;
     std::cout << "# Fingerprint:      " << fp << std::endl;
+    std::cout << "# Pairing Password  " << persisting_->getPairingPassword() << std::endl;
+    std::cout << "# Server:           " << dc_.getServer() << std::endl;
     std::cout << "# Client Server Url " << dc_.getClientServerUrl() << std::endl;
     std::cout << "# Client Server Key " << dc_.getClientServerKey() << std::endl;
     std::cout << "# Version:          " << nabto_device_version() << std::endl;
@@ -132,19 +141,19 @@ void HeatPump::dumpIam()
 
 void HeatPump::setMode(Mode mode)
 {
-    persisting_.setHeatPumpMode(modeToString(mode));
-    persisting_.save();
+    persisting_->setHeatPumpMode(modeToString(mode));
+    persisting_->save();
 }
 void HeatPump::setTarget(double target)
 {
-    persisting_.setHeatPumpTarget(target);
-    persisting_.save();
+    persisting_->setHeatPumpTarget(target);
+    persisting_->save();
 }
 
 void HeatPump::setPower(bool power)
 {
-    persisting_.setHeatPumpPower(power);
-    persisting_.save();
+    persisting_->setHeatPumpPower(power);
+    persisting_->save();
 }
 
 const char* HeatPump::modeToString(HeatPump::Mode mode)
@@ -170,9 +179,17 @@ bool HeatPump::checkAccess(NabtoDeviceCoapRequest* request, const std::string& a
 
 void HeatPump::loadIamPolicy()
 {
-    auto buttonPairingPolicy = nabto::iam::PolicyBuilder("ButtonPairing")
+    auto deviceInfoPolicy = nabto::iam::PolicyBuilder("DeviceInfo")
         .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
-                      .addAction("Pairing:Button"))
+                      .addAction("Info:Get"))
+        .build();
+
+
+    auto buttonPairingPolicy = nabto::iam::PolicyBuilder("Pairing")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("Pairing:Button")
+                      .addAction("Pairing:Get")
+                      .addAction("Pairing:Password"))
         .build();
 
     auto pairedPolicy = nabto::iam::PolicyBuilder("Paired")
@@ -190,19 +207,24 @@ void HeatPump::loadIamPolicy()
                       .addAction("HeatPump:Set"))
         .build();
 
+    fingerprintIAM_.addPolicy(deviceInfoPolicy);
     fingerprintIAM_.addPolicy(buttonPairingPolicy);
     fingerprintIAM_.addPolicy(pairedPolicy);
     fingerprintIAM_.addPolicy(readPolicy);
     fingerprintIAM_.addPolicy(writePolicy);
 
-    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Unpaired").addPolicy("ButtonPairing"));
+    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Unpaired")
+                            .addPolicy("Pairing")
+                            .addPolicy("DeviceInfo"));
     fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Admin")
                             .addPolicy("HeatPumpWrite")
                             .addPolicy("HeatPumpRead")
-                            .addPolicy("Paired"));
+                            .addPolicy("Paired")
+                            .addPolicy("DeviceInfo"));
     fingerprintIAM_.addRole(nabto::iam::RoleBuilder("User")
                             .addPolicy("HeatPumpRead")
-                            .addPolicy("Paired"));
+                            .addPolicy("Paired")
+                            .addPolicy("DeviceInfo"));
 
 }
 

@@ -26,16 +26,16 @@ class UserBuilder;
 
 class AuthorizationRequestHandler;
 
-class FingerprintIAMPersisting {
+class FingerprintIAMChangeListener {
  public:
     virtual void deleteUser(const std::string& userId) = 0;
-    virtual void upsertUser(const User& user) = 0;
+    virtual void upsertUser(const std::string& userId) = 0;
 };
 
 class FingerprintIAM {
  public:
     ~FingerprintIAM();
-    FingerprintIAM(NabtoDevice* device, FingerprintIAMPersisting& persisting);
+    FingerprintIAM(NabtoDevice* device);
 
     /**
      * If enabled the coap endpoint pairing/button is enabled.
@@ -79,14 +79,16 @@ class FingerprintIAM {
     /**
      * The client has been granted access with a button press or a password.
      */
-    bool pairNewClient(const std::string& fingerprint);
+    std::shared_ptr<User> pairNewClient(const std::string& fingerprint);
 
     void addFingerprintToUser(std::shared_ptr<User> user, const std::string& fingerprint)
     {
         fingerprintToUser_[fingerprint] = user;
 
         user->addFingerprint(fingerprint);
-        persisting_.upsertUser(*user);
+        if (changeListener_) {
+            changeListener_->upsertUser(user->getId());
+        }
     }
 
     bool isPaired(const std::string& fingerprint)
@@ -105,6 +107,8 @@ class FingerprintIAM {
         return it->second;
     }
 
+    void setUserAttribute(std::shared_ptr<User> user, const std::string& key, const std::string& value);
+
     std::vector<std::string> getPairingModes();
 
     void dumpUsers();
@@ -115,6 +119,19 @@ class FingerprintIAM {
     NabtoDevice* getDevice()
     {
         return device_;
+    }
+
+    void setChangeListener(std::shared_ptr<FingerprintIAMChangeListener> changeListener) { changeListener_ = changeListener; }
+
+    void removeChangeListener() { changeListener_ = nullptr; }
+
+    std::vector<std::shared_ptr<User> > getUsers() const
+    {
+        std::vector<std::shared_ptr<User> > users;
+        for (auto u : users_) {
+            users.push_back(u.second);
+        }
+        return users;
     }
  private:
     std::shared_ptr<User> findUserByFingerprint(const std::string& fingerprint);
@@ -129,7 +146,7 @@ class FingerprintIAM {
     std::map<std::string, std::shared_ptr<nabto::iam::Policy> > policies_;
 
     NabtoDevice* device_;
-    FingerprintIAMPersisting& persisting_;
+    std::shared_ptr<FingerprintIAMChangeListener> changeListener_;
 
     std::unique_ptr<CoapIsPaired> coapIsPaired_;
     std::unique_ptr<CoapPairing> coapPairing_;

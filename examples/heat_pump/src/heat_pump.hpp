@@ -15,6 +15,7 @@
 #include <thread>
 #include <sstream>
 
+
 using json = nlohmann::json;
 
 namespace nabto {
@@ -38,7 +39,7 @@ class HeatPumpGet;
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, HeatPumpPersisting& persisting);
+    HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile);
 
     ~HeatPump();
 
@@ -69,14 +70,24 @@ class HeatPump {
     const char* getModeString();
 
 
-    json getState()
+    nlohmann::json getState()
     {
         nlohmann::json state;
-        state["Mode"] = persisting_.getHeatPumpMode();
-        state["Target"] = persisting_.getHeatPumpTarget();
-        state["Power"] = persisting_.getHeatPumpPower();
+        state["Mode"] = persisting_->getHeatPumpMode();
+        state["Target"] = persisting_->getHeatPumpTarget();
+        state["Power"] = persisting_->getHeatPumpPower();
         state["Temperature"] = 22.3;
         return state;
+    }
+
+    nlohmann::json getInfo()
+    {
+        nlohmann::json info;
+        std::string nabtoVersion(nabto_device_version());
+        info["NabtoVersion"] = nabtoVersion;
+        info["AppName"] = appName_;
+        info["AppVersion"] = appVersion_;
+        return info;
     }
 
     bool checkAccess(NabtoDeviceCoapRequest* request, const std::string& action);
@@ -90,7 +101,7 @@ class HeatPump {
     NabtoDevice* device_;
     std::string privateKey_;
     nabto::examples::common::DeviceConfig& dc_;
-    HeatPumpPersisting& persisting_;
+    std::shared_ptr<HeatPumpPersisting> persisting_;
 
     fingerprint_iam::FingerprintIAM fingerprintIAM_;
 
@@ -102,6 +113,8 @@ class HeatPump {
     std::unique_ptr<nabto::examples::common::StdoutConnectionEventHandler> stdoutConnectionEventHandler_;
     std::unique_ptr<nabto::examples::common::StdoutDeviceEventHandler> stdoutDeviceEventHandler_;
 
+    std::string appName_ = "HeatPump";
+    std::string appVersion_ = "1.0.0";
 
 };
 

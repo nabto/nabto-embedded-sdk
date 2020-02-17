@@ -30,6 +30,11 @@ class User {
         fingerprints_.insert(fingerprint);
     }
 
+    void setAttribute(const std::string& key, const std::string& value)
+    {
+        attributes_.set(key, value);
+    }
+
     std::set<std::shared_ptr<Role> > getRoles() const { return roles_; }
     nabto::iam::Attributes getAttributes() const { return attributes_; }
     std::string getId() const { return id_; }

@@ -6,27 +6,25 @@
 #include <modules/iam_cpp/iam_builder.hpp>
 #include <modules/fingerprint_iam/fingerprint_iam_json.hpp>
 
+#include <examples/common/random_string.hpp>
+
 namespace nabto {
 namespace examples {
 namespace heat_pump {
 
-HeatPumpPersisting::HeatPumpPersisting(const std::string& configFile)
-    : configFile_(configFile)
+HeatPumpPersisting::HeatPumpPersisting(const std::string& configFile, fingerprint_iam::FingerprintIAM& iam)
+    : configFile_(configFile), iam_(iam)
 {
-
-}
-
-bool HeatPumpPersisting::loadUsersIntoIAM(fingerprint_iam::FingerprintIAM& iam)
-{
-    return fingerprint_iam::FingerprintIAMJson::loadUsersFromJson(iam, config_["Users"]);
 }
 
 bool HeatPumpPersisting::load()
 {
     if (!json_config_load(configFile_, config_)) {
         initDefault();
+        return true;
+    } else {
+        return fingerprint_iam::FingerprintIAMJson::loadUsersFromJson(iam_, config_["Users"]);
     }
-    return true;
 }
 
 bool HeatPumpPersisting::initDefault()
@@ -34,34 +32,27 @@ bool HeatPumpPersisting::initDefault()
     setHeatPumpMode("COOL");
     setHeatPumpPower(false);
     setHeatPumpTarget(22.3);
+    config_["PairingPassword"] = nabto::examples::common::random_string(16);
     save();
     return true;
 }
 
-void HeatPumpPersisting::upsertUser(const fingerprint_iam::User& user)
+void HeatPumpPersisting::upsertUser(const std::string& id)
 {
-    users_[user.getId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
     save();
 }
 
 void HeatPumpPersisting::deleteUser(const std::string& id)
 {
-    users_.erase(id);
-    save();
-}
-
-void HeatPumpPersisting::deleteAllUsers()
-{
-    users_.clear();
     save();
 }
 
 void HeatPumpPersisting::save()
 {
     config_["Users"].clear();
-    for (auto u : users_) {
-        config_["Users"] = nlohmann::json::array();
-        config_["Users"].push_back(u.second);
+    config_["Users"] = nlohmann::json::array();
+    for (auto u : iam_.getUsers()) {
+        config_["Users"].push_back(nabto::fingerprint_iam::FingerprintIAMJson::userToJson(*u));
     }
     json_config_save(configFile_, config_);
 }

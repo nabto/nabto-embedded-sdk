@@ -9,17 +9,14 @@ namespace nabto {
 namespace examples {
 namespace tcptunnel {
 
-bool TcpTunnelPersisting::loadUsersIntoIAM(fingerprint_iam::FingerprintIAM& iam)
-{
-    return fingerprint_iam::FingerprintIAMJson::loadUsersFromJson(iam, config_["Users"]);
-}
-
 bool TcpTunnelPersisting::load()
 {
     if (!json_config_load(configFile_, config_)) {
         initDefault();
+        return true;
+    } else {
+        return fingerprint_iam::FingerprintIAMJson::loadUsersFromJson(iam_, config_["Users"]);
     }
-    return true;
 }
 
 bool TcpTunnelPersisting::initDefault()
@@ -29,26 +26,23 @@ bool TcpTunnelPersisting::initDefault()
     return true;
 }
 
-void TcpTunnelPersisting::upsertUser(const fingerprint_iam::User& user)
+void TcpTunnelPersisting::upsertUser(const std::string& id)
 {
-    config_["Users"][user.getId()] = nabto::fingerprint_iam::FingerprintIAMJson::userToJson(user);
     save();
 }
 
 void TcpTunnelPersisting::deleteUser(const std::string& id)
 {
-    config_["Users"].erase(id);
-    save();
-}
-
-void TcpTunnelPersisting::deleteAllUsers()
-{
-    config_["Users"].clear();
     save();
 }
 
 void TcpTunnelPersisting::save()
 {
+    config_["Users"].clear();
+    config_["Users"] = nlohmann::json::array();
+    for (auto u : iam_.getUsers()) {
+        config_["Users"].push_back(nabto::fingerprint_iam::FingerprintIAMJson::userToJson(*u));
+    }
     json_config_save(configFile_, config_);
 }
 

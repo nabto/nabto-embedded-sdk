@@ -12,6 +12,11 @@ std::unique_ptr<std::string> Attributes::get(const std::string& key) const
     return std::make_unique<std::string>(it->second);
 }
 
+void Attributes::set(const std::string& key, const std::string& value)
+{
+    attributes_[key] = value;
+}
+
 AttributeMap Attributes::getMap() const
 {
     return attributes_;

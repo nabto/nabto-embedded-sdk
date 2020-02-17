@@ -108,9 +108,6 @@ bool run_heat_pump(const std::string& configFile, const std::string& stateFile, 
         return false;
     }
 
-    nabto::examples::heat_pump::HeatPumpPersisting hpp(stateFile);
-    hpp.load();
-
     NabtoDevice* device = nabto_device_new();
     if (device == NULL) {
         std::cerr << "Device New Failed" << std::endl;
@@ -119,7 +116,7 @@ bool run_heat_pump(const std::string& configFile, const std::string& stateFile, 
 
     {
 
-        nabto::examples::heat_pump::HeatPump hp(device, privateKey, dc, hpp);
+        nabto::examples::heat_pump::HeatPump hp(device, privateKey, dc, stateFile);
         hp.init();
         hp.setLogLevel(logLevel);
         if (dumpIam) {

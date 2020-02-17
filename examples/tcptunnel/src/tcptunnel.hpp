@@ -19,14 +19,14 @@ namespace tcptunnel {
 
 class TcpTunnel {
  public:
-    TcpTunnel(NabtoDevice* device, const std::string& privateKey, const std::string& policiesFile, nabto::examples::common::DeviceConfig& dc, TcpTunnelPersisting& state)
+    TcpTunnel(NabtoDevice* device, const std::string& privateKey, const std::string& policiesFile, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile)
         : device_(device),
           privateKey_(privateKey),
           policiesFile_(policiesFile),
           deviceConfig_(dc),
-          state_(state),
-          fingerprintIAM_(device, state)
+          fingerprintIAM_(device)
     {
+        state_ = std::make_shared<TcpTunnelPersisting>(stateFile, fingerprintIAM_);
         stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device);
         stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device);
     }
@@ -41,10 +41,17 @@ class TcpTunnel {
         if (!initDevice()) {
             return false;
         }
-        if (!loadIamConfig()) {
+        if (!loadIamPolicies()) {
             return false;
         }
-        return initAccessControl();
+        if (!state_->load()) {
+            return false;
+        }
+        if (!initAccessControl()) {
+            return false;
+        }
+        fingerprintIAM_.setChangeListener(state_);
+        return true;
     }
 
     void setLogLevel(const std::string& logLevel)
@@ -69,14 +76,14 @@ class TcpTunnel {
         std::cout << "# Product ID:       " << deviceConfig_.getProductId() << std::endl;
         std::cout << "# Device ID:        " << deviceConfig_.getDeviceId() << std::endl;
         std::cout << "# Fingerprint:      " << fp << std::endl;
-        std::cout << "# Paring Password:  " << state_.getPairingPassword() << std::endl;
+        std::cout << "# Paring Password:  " << state_->getPairingPassword() << std::endl;
         std::cout << "# Client Server Url " << deviceConfig_.getClientServerUrl() << std::endl;
         std::cout << "# Client Server Key " << deviceConfig_.getClientServerKey() << std::endl;
         std::cout << "# Version:          " << nabto_device_version() << std::endl;
         std::cout << "######## " << std::endl;
     }
  private:
-    bool loadIamConfig();
+    bool loadIamPolicies();
     bool initAccessControl();
 
 
@@ -87,7 +94,7 @@ class TcpTunnel {
     std::string privateKey_;
     std::string policiesFile_;
     nabto::examples::common::DeviceConfig& deviceConfig_;
-    TcpTunnelPersisting& state_;
+    std::shared_ptr<TcpTunnelPersisting> state_;
     nabto::fingerprint_iam::FingerprintIAM fingerprintIAM_;
 
 

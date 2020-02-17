@@ -8,16 +8,13 @@ namespace nabto {
 namespace examples {
 namespace tcptunnel {
 
-class TcpTunnelPersisting : public fingerprint_iam::FingerprintIAMPersisting
+class TcpTunnelPersisting : public fingerprint_iam::FingerprintIAMChangeListener
 {
  public:
-    TcpTunnelPersisting(const std::string& configFile) : configFile_(configFile) {}
+    TcpTunnelPersisting(const std::string& configFile, fingerprint_iam::FingerprintIAM& iam) : configFile_(configFile), iam_(iam) {}
 
-    bool loadUsersIntoIAM(fingerprint_iam::FingerprintIAM& iam);
-
-    virtual void upsertUser(const fingerprint_iam::User& user);
+    virtual void upsertUser(const std::string& userId);
     virtual void deleteUser(const std::string& userId);
-    virtual void deleteAllUsers();
 
     void save();
     bool load();
@@ -31,6 +28,7 @@ class TcpTunnelPersisting : public fingerprint_iam::FingerprintIAMPersisting
 
  private:
     std::string configFile_;
+    fingerprint_iam::FingerprintIAM& iam_;
     nlohmann::json config_;
 };
 

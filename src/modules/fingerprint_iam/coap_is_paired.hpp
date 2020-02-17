@@ -8,7 +8,7 @@ namespace fingerprint_iam {
 class CoapIsPaired : public CoapRequestHandler {
  public:
     CoapIsPaired(FingerprintIAM& iam, NabtoDevice* device)
-        : CoapRequestHandler(iam, device)
+        : CoapRequestHandler(device), iam_(iam)
     {
     }
 
@@ -54,6 +54,8 @@ class CoapIsPaired : public CoapRequestHandler {
         nabto_device_coap_response_ready(request);
         nabto_device_coap_request_free(request);
     }
+ private:
+    FingerprintIAM& iam_;
 };
 
 } } // namespace

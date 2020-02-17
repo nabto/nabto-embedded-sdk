@@ -14,6 +14,7 @@ class Attributes {
     Attributes() {}
     Attributes(AttributeMap map) : attributes_(map) {}
     std::unique_ptr<std::string> get(const std::string& key) const;
+    void set(const std::string& key, const std::string& value);
     AttributeMap getMap() const;
     void merge(const Attributes& attributes);
     bool empty() const

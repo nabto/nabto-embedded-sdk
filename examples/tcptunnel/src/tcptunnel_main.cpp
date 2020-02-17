@@ -126,9 +126,6 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
         return false;
     }
 
-    nabto::examples::tcptunnel::TcpTunnelPersisting ttp(stateFile);
-    ttp.load();
-
     NabtoDevice* device = nabto_device_new();
     if (!device) {
         std::cerr << "Could not create device" << std::endl;
@@ -136,7 +133,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
     }
 
     {
-        nabto::examples::tcptunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, ttp);
+        nabto::examples::tcptunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, stateFile);
         tcpTunnel.init();
 
         if (dumpIam) {

@@ -8,19 +8,19 @@ namespace nabto {
 namespace examples {
 namespace heat_pump {
 
-class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMPersisting
+class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMChangeListener
 {
  public:
-    HeatPumpPersisting(const std::string& configFile);
+    HeatPumpPersisting(const std::string& configFile, fingerprint_iam::FingerprintIAM& iam);
 
-    bool loadUsersIntoIAM(fingerprint_iam::FingerprintIAM& iam);
 
-    virtual void upsertUser(const fingerprint_iam::User& user);
-    virtual void deleteUser(const std::string& userId);
-    virtual void deleteAllUsers();
+
+    virtual void upsertUser(const std::string& id);
+    virtual void deleteUser(const std::string& id);
 
     void save();
     bool load();
+
 
     bool initDefault();
 
@@ -54,9 +54,18 @@ class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMPersisting
         return config_["HeatPump"]["Target"].get<double>();
     }
 
+    std::string getPairingPassword()
+    {
+        return config_["PairingPassword"].get<std::string>();
+    }
  private:
+    /**
+     * false until the current config is loaded from the system
+     */
+    bool isLoaded_ = false;
     std::map<std::string, nlohmann::json> users_;
     std::string configFile_;
+    fingerprint_iam::FingerprintIAM& iam_;
     nlohmann::json config_;
 };
 

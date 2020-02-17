@@ -11,8 +11,8 @@ namespace fingerprint_iam {
 
 class CoapRequestHandler {
  public:
-    CoapRequestHandler(FingerprintIAM& iam, NabtoDevice* device)
-        : iam_(iam), device_(device), listener_(nabto_device_listener_new(device)), future_(nabto_device_future_new(device))
+    CoapRequestHandler(NabtoDevice* device)
+        : device_(device), listener_(nabto_device_listener_new(device)), future_(nabto_device_future_new(device))
     {
 
     }
@@ -58,28 +58,6 @@ class CoapRequestHandler {
     }
     virtual void handleRequest(NabtoDeviceCoapRequest* request) = 0;
 
-    // utility function
-    bool initCborParser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
-    {
-        uint16_t contentFormat;
-        NabtoDeviceError ec;
-        ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
-        if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
-            nabto_device_coap_error_response(request, 400, "Invalid Content Format");
-            nabto_device_coap_request_free(request);
-            return false;
-        }
-        void* payload;
-        size_t payloadSize;
-        if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
-            nabto_device_coap_error_response(request, 400, "Missing payload");
-            nabto_device_coap_request_free(request);
-            return false;
-        }
-        cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
-        return true;
-    }
-
     NabtoDevice* getDevice() {
         return device_;
     }
@@ -96,7 +74,6 @@ class CoapRequestHandler {
 
     std::promise<void> promise_;
 
-    FingerprintIAM& iam_;
     NabtoDevice* device_;
     NabtoDeviceListener* listener_;
     NabtoDeviceFuture* future_;

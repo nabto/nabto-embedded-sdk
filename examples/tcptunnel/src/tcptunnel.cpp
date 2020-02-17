@@ -62,12 +62,12 @@ bool TcpTunnel::initDevice()
 
 bool TcpTunnel::initAccessControl()
 {
-    state_.loadUsersIntoIAM(fingerprintIAM_);
-    fingerprintIAM_.enablePasswordPairing(state_.getPairingPassword());
+    fingerprintIAM_.enablePasswordPairing(state_->getPairingPassword());
+    fingerprintIAM_.enableClientSettings(deviceConfig_.getClientServerUrl(), deviceConfig_.getClientServerKey());
     return true;
 }
 
-bool TcpTunnel::loadIamConfig()
+bool TcpTunnel::loadIamPolicies()
 {
     if (!json_config_exists(policiesFile_)) {
         std::cout << "The policies file is not found, creating a new file with default policies" << std::endl;

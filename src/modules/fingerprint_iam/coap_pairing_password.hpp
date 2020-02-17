@@ -2,16 +2,30 @@
 #include <nabto/nabto_device.h>
 
 #include "coap_request_handler.hpp"
+#include "cbor_helper.hpp"
+
 
 #include <iostream>
 
 namespace nabto {
 namespace fingerprint_iam {
 
+/**
+ * This has two forms
+ * Legacy
+{
+  "passwordstring"
+}
+ * New form
+{
+  "Password": "...",
+  "Name": "..."
+}
+ */
 class CoapPairingPassword : public CoapRequestHandler {
  public:
     CoapPairingPassword(FingerprintIAM& iam, NabtoDevice* device)
-        : CoapRequestHandler(iam, device)
+        : CoapRequestHandler(device), iam_(iam)
     {
     }
 
@@ -43,22 +57,28 @@ class CoapPairingPassword : public CoapRequestHandler {
 
         CborParser parser;
         CborValue value;
-        if (!initCborParser(request, &parser, &value)) {
-            return;
-        }
-        if (!cbor_value_is_text_string(&value)) {
-            nabto_device_coap_error_response(request, 400, "Bad request");
-            nabto_device_coap_request_free(request);
-            return;
-        }
-        bool equal;
-        if (cbor_value_text_string_equals(&value, password_.c_str(), &equal) != CborNoError) {
-            nabto_device_coap_error_response(request, 400, "Bad request");
+        std::string errorDescription;
+
+        if (!CborHelper::initCborParser(request, parser, value, errorDescription)) {
+            nabto_device_coap_error_response(request, 400, errorDescription.c_str());
             nabto_device_coap_request_free(request);
             return;
         }
 
-        if (!equal) {
+        std::string password;
+        std::string name;
+
+        if (!CborHelper::decodeString(value, password) &&
+            !CborHelper::decodeKvString(value, "Password", password))
+        {
+            // The password is required either as old or in the new format.
+             nabto_device_coap_error_response(request, 400, "Missing password");
+             nabto_device_coap_request_free(request);
+             return;
+        }
+        CborHelper::decodeKvString(value, "Name", name);
+
+        if (password != password_) {
             nabto_device_coap_error_response(request, 403, "Access denied");
             nabto_device_coap_request_free(request);
             return;
@@ -78,6 +98,7 @@ class CoapPairingPassword : public CoapRequestHandler {
         nabto_device_coap_request_free(request);
     }
  private:
+    FingerprintIAM& iam_;
     std::string password_;
 };
 

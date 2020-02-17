@@ -10,7 +10,7 @@ namespace fingerprint_iam {
 class CoapClientSettings : public CoapRequestHandler {
  public:
     CoapClientSettings(FingerprintIAM& iam, NabtoDevice* device, const std::string& clientServerUrl, const std::string& clientServerKey)
-        : CoapRequestHandler(iam, device), clientServerUrl_(clientServerUrl), clientServerKey_(clientServerKey)
+        : CoapRequestHandler(device), iam_(iam), clientServerUrl_(clientServerUrl), clientServerKey_(clientServerKey)
     {
     }
 
@@ -49,6 +49,7 @@ class CoapClientSettings : public CoapRequestHandler {
         nabto_device_coap_request_free(request);
     }
  private:
+    FingerprintIAM& iam_;
     std::string clientServerUrl_;
     std::string clientServerKey_;
 };
