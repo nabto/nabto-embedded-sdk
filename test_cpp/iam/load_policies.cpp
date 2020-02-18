@@ -8,8 +8,8 @@ BOOST_AUTO_TEST_SUITE(iam)
 std::string testPolicy = R"(
 {
   "Version": 1,
-  "Name": "ReadData",
-  "Statement": [
+  "Id": "ReadData",
+  "Statements": [
     {
       "Effect": "Allow",
       "Actions": ["readfoo", "readbar"]
@@ -20,7 +20,8 @@ std::string testPolicy = R"(
 
 BOOST_AUTO_TEST_CASE(load_policies)
 {
-    std::unique_ptr<nabto::iam::Policy> policy = nabto::iam::IAMToJson::policyFromJson(testPolicy);
+    auto p = nlohmann::json::parse(testPolicy);
+    std::unique_ptr<nabto::iam::Policy> policy = nabto::iam::IAMToJson::policyFromJson(p);
     BOOST_TEST((policy != nullptr));
 }
 
