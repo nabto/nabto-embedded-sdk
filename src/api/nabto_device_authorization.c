@@ -110,6 +110,7 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
     struct nabto_device_context* dev = authReq->module->device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
+    // Set the verdict if free is called without having set a verdict first.
     if (authReq->verdictDone == false) {
         do_verdict(authReq, false);
     }

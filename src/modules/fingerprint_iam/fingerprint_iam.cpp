@@ -96,7 +96,6 @@ void FingerprintIAM::addPolicy(const nabto::iam::Policy& policy)
     policies_[policy.getId()] = std::make_shared<nabto::iam::Policy>(policy);
 }
 
-
 bool FingerprintIAM::addRole(const iam::RoleBuilder& roleBuilder)
 {
     if (roles_.find(roleBuilder.getId()) != roles_.end()) {
@@ -185,9 +184,14 @@ void FingerprintIAM::dumpPolicies()
 
 std::string FingerprintIAM::nextUserId()
 {
-   std::stringstream ss;
-   ss << "" << users_.size()+1;
-   return ss.str();
+    size_t i;
+    for (i = 0;;i++) {
+        std::stringstream ss;
+        ss << "" << i;
+        if (users_.find(ss.str()) == users_.end()) {
+            return ss.str();
+        }
+    }
 }
 
 std::shared_ptr<User> FingerprintIAM::pairNewClient(const std::string& fingerprint)
