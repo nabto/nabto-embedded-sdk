@@ -2,6 +2,7 @@
 #include <nabto/nabto_device_experimental.h>
 
 #include "json_config.hpp"
+#include "none_authorization.h"
 
 #include <iostream>
 #include <cxxopts.hpp>
@@ -13,9 +14,6 @@
 
 static bool init_stream_echo(const std::string& configFile, const std::string& productId, const std::string& deviceId, const std::string& server);
 static void run_stream_echo(const std::string& configFile, const std::string& logLevel);
-
-
-static NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionReference, const char* action, void* attributes, size_t attributesLength, void* userData);
 
 // stream echo handlers
 static void startListenForEchoStream(NabtoDevice* device);
@@ -105,7 +103,7 @@ bool init_stream_echo(const std::string& configFile, const std::string& productI
         exit(2);
     }
 
-    json config;
+    nlohmann::json config;
 
     NabtoDevice* device = nabto_device_new();
     NabtoDeviceError ec;
@@ -161,7 +159,7 @@ bool closing = false;
 void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 {
     NabtoDeviceError ec;
-    json config;
+    nlohmann::json config;
     if (!json_config_load(configFile, config)) {
         std::cerr << "The config file " << configFile << " does not exists, run with --init to create the config file" << std::endl;
         exit(-1);
@@ -205,10 +203,7 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }
 
-    ec = nabto_device_iam_override_check_access_implementation(device, allow_anyone_to_connect, NULL);
-    if (ec) {
-        std::cerr << "Could not override iam check access implementation" << std::endl;
-    }
+    init_none_authorization(device);
 
     // run application
     ec = nabto_device_start(device);
@@ -258,6 +253,8 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
     pause();
     closing = true;
 
+    deinit_none_authorization();
+
     /**
      * WARNING:
      *
@@ -302,11 +299,6 @@ void removeState(struct StreamEchoState* state) {
     iterator->next = state->next;
     state->next = NULL;
     free(state);
-}
-
-NabtoDeviceError allow_anyone_to_connect(NabtoDeviceConnectionRef connectionReference, const char* action, void* attributes, size_t attributesLength, void* userData)
-{
-    return NABTO_DEVICE_EC_OK;
 }
 
 // handle echo streams
