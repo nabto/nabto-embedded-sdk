@@ -25,7 +25,7 @@ class CoapPairing : public CoapRequestHandler {
     {
         auto ptr = std::make_unique<CoapPairing>(iam, device);
         ptr->init();
-        return std::move(ptr);
+        return ptr;
     }
 
     /**

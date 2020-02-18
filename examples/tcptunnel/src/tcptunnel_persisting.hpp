@@ -13,6 +13,7 @@ class TcpTunnelPersisting : public fingerprint_iam::FingerprintIAMChangeListener
  public:
     TcpTunnelPersisting(const std::string& configFile, fingerprint_iam::FingerprintIAM& iam) : configFile_(configFile), iam_(iam) {}
 
+    virtual ~TcpTunnelPersisting() {}
     virtual void upsertUser(const std::string& userId);
     virtual void deleteUser(const std::string& userId);
 

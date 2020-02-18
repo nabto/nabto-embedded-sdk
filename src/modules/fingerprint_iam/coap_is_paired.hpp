@@ -21,7 +21,7 @@ class CoapIsPaired : public CoapRequestHandler {
     {
         auto ptr = std::make_unique<CoapIsPaired>(iam, device);
         ptr->init();
-        return std::move(ptr);
+        return ptr;
     }
 
     void handleRequest(NabtoDeviceCoapRequest* request)

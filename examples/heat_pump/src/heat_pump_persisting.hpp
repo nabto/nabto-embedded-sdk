@@ -12,7 +12,7 @@ class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMChangeListener
 {
  public:
     HeatPumpPersisting(const std::string& configFile, fingerprint_iam::FingerprintIAM& iam);
-
+    virtual ~HeatPumpPersisting() {}
 
 
     virtual void upsertUser(const std::string& id);
@@ -59,10 +59,6 @@ class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMChangeListener
         return config_["PairingPassword"].get<std::string>();
     }
  private:
-    /**
-     * false until the current config is loaded from the system
-     */
-    bool isLoaded_ = false;
     std::map<std::string, nlohmann::json> users_;
     std::string configFile_;
     fingerprint_iam::FingerprintIAM& iam_;

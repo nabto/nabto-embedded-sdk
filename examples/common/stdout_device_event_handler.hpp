@@ -19,7 +19,7 @@ class StdoutDeviceEventHandler : public AbstractDeviceEventHandler
     {
         auto ptr = std::make_unique<StdoutDeviceEventHandler>(device);
         ptr->init();
-        return std::move(ptr);
+        return ptr;
     }
     virtual void handleDeviceEvent(NabtoDeviceEvent event)
     {

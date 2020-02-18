@@ -23,7 +23,7 @@ class CoapClientSettings : public CoapRequestHandler {
     {
         auto ptr = std::make_unique<CoapClientSettings>(iam, device, clientServerUrl, clientServerKey);
         ptr->init();
-        return std::move(ptr);
+        return ptr;
     }
 
     void handleRequest(NabtoDeviceCoapRequest* request)

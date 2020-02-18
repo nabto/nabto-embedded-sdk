@@ -62,7 +62,6 @@ class AbstractDeviceEventHandler {
     NabtoDevice* device_;
     NabtoDeviceListener* listener_;
     NabtoDeviceFuture* future_;
-    NabtoDeviceCoapRequest* request_;
     NabtoDeviceEvent event_;
 };
 

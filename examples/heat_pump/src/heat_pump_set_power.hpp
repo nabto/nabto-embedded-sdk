@@ -17,7 +17,7 @@ class HeatPumpSetPower : public common::AbstractRequestHandler {
     {
         auto handler = std::make_unique<HeatPumpSetPower>(heatPump, device);
         handler->init(NABTO_DEVICE_COAP_POST, {"heat-pump", "power"});
-        return std::move(handler);
+        return handler;
     }
 
     virtual void handleRequest(NabtoDeviceCoapRequest* request)

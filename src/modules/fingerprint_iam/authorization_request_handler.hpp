@@ -29,7 +29,7 @@ class AuthorizationRequestHandler {
     {
         auto ptr = std::make_unique<AuthorizationRequestHandler>(device, fingerprintIAM);
         ptr->init();
-        return std::move(ptr);
+        return ptr;
     }
 
     bool init()

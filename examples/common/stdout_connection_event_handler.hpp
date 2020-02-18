@@ -20,7 +20,7 @@ class StdoutConnectionEventHandler : public AbstractConnectionEventHandler
     {
         auto ptr = std::make_unique<StdoutConnectionEventHandler>(device);
         ptr->init();
-        return std::move(ptr);
+        return ptr;
     }
 
     virtual void handleConnectionEvent(NabtoDeviceConnectionRef ref, NabtoDeviceConnectionEvent event)

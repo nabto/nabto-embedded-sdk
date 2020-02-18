@@ -64,7 +64,6 @@ class AbstractConnectionEventHandler {
     NabtoDevice* device_;
     NabtoDeviceListener* listener_;
     NabtoDeviceFuture* future_;
-    NabtoDeviceCoapRequest* request_;
     NabtoDeviceConnectionRef ref_;
     NabtoDeviceConnectionEvent event_;
 };

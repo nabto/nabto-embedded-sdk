@@ -17,7 +17,7 @@ class CoapGetInfo : public common::AbstractRequestHandler {
     {
         auto handler = std::make_unique<CoapGetInfo>(heatPump, device);
         handler->init(NABTO_DEVICE_COAP_GET, {"info"});
-        return std::move(handler);
+        return handler;
     }
 
     virtual void handleRequest(NabtoDeviceCoapRequest* request)
