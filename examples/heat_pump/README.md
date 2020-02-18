@@ -2,35 +2,44 @@
 
 This is an example application showing how a heat pump application can be made.
 
-## Howto use
+## Usage
 
-The first time the heatpump application is started it needs to be
-started with --init this will write the configuration and state to a
-file. Later the application can be started by just providing the
-configuration and state file.
+The demo needs a configuration file, the default configuration file is
+named device_config.json the structure of that file is this:
 
-// first time the application needs to be initialized and write a config file.
-./heatpump --config file.json --init --product-id=... --device-id=... --server=...
-
-// next time is is sufficient to use the configuration file
-./heatpump --config file.json
-
-config file structure
-
+```json
 {
-    "iam": {
-        "users": "...",
-        "roles": "...",
-        "policies": "...",
-        "defaultUser": "..."
-    },
-    "PrivateKey":
+  "ProductId": "...",
+  "DeviceId": "...",
+  "Server": "...",
+  "Client": {
+    "ServerKey": "...",
+    "ServerUrl": "..."
+  }
 }
+```
+
+## Configuration files
+
+### `device_config.json`
+
+The configuration of the device. This config is static and never
+changes during the lifetime of a device.
+
+### `heat_pump_state.json`
+
+The dynamic runtime state which is updated when the device is running
+
+### `<product_id>_<device_id>.key.json`
+
+The private key used by the device. This file is generated the first
+time the device starts and stays static throughout the lifetime of the
+device.
 
 ## Features
 
 The heatpump example shows how a heatpump can be implemented including
-iam and heatpump functionality.
+using our fingerprint based Identity and Access Management (IAM) module.
 
 ## Heatpump Features
 
@@ -92,8 +101,8 @@ this way concurrency attacks can be avoided.
 
 If the fingerprint of the heat pump is validated in the client, the
 client can assume the connection is secure. In this case a password
-can be sent in clear text to prove that the user is allowed to pair
-with the device.
+can be sent over the connection to prove that the user is allowed to
+pair with the device.
 
 If the fingerprint of the heat pump is not validated, it's not safe to
 send any confidential information on the connection. Since there could
@@ -103,64 +112,11 @@ If the heat pump has an access point, the access point can be secured
 with a password. In this case anyone connecting can be allowed to pair
 with the heat pump.
 
-### Without password or button
-
-It's not generally a good idea to have devices a on network which is
-open for anyone become administrator of. A button requires the person
-to have physical access to the device. In this case access can also
-often be obtained by doing a factory reset of the device. A password
-requires the person wanting access to know some secret.
-
-
-
-### WIP IAM 2.0
-IAM configuration
-
-Users can pair with the device, it requires either a pairing password
-or a press on a button on the device.
-
-Roles:
-
-Unknown,
-Admin,
-guest.
-
-If a user is locally with the heatpump, the app can scan for the
-heatpump and the user can pair with the heatpump using a button press
-on the heatpump.
-
-If a user is remote from the heatpump, the app can use the passowrd
-pairing approach.
-
-### Invite a user to the heatpump.
-
-    1. Create a new pairing token
-    3. create a pairing link and send it to the person which is invited.
-    4. The user password pairs with the heatpump providing a password and a username.
-
-This needs an attribute on the newly created user which is a pairing password.
-
-${user.PairingPassword}
 
 ### Pair with a local heatpump.
 
     1. Scan and connect to the heatpump locally.
     2. Use button pairing and wait for a press on a button before allowing the new connection.
 
-If this is the first user the user gets admin rights. If this is not
-the first user the user gets the role as guest.
-
-### Remote pair with a heatpump.
-
-    1. Use the pairing token provided by the heatpump.
-    2. Password pair with the heatpump, without specifying a username.
-
-This could use a password which us stored in the environment for the iam system.
-
-${env.PairingPassword}
-
-### Storage
-
-The heatpump iam policies and roles is static and should be stored statically inside the system.
-
-The users is stored dynamically in a file as e.g. json.
+If this is the first user the user gets the role `admin`. If this is not
+the first user the user gets the role as `user`.
