@@ -201,7 +201,7 @@ std::string FingerprintIAM::nextUserId()
     }
 }
 
-std::shared_ptr<User> FingerprintIAM::pairNewClient(const std::string& fingerprint)
+std::shared_ptr<User> FingerprintIAM::pairNewClient(const std::string& fingerprint, const std::string& name)
 {
     {
         auto user = findUserByFingerprint(fingerprint);
@@ -226,6 +226,10 @@ std::shared_ptr<User> FingerprintIAM::pairNewClient(const std::string& fingerpri
         }
     }
     auto user = std::make_shared<User>(nextUserId(), role);
+    if (!name.empty()) {
+        user->setAttribute("Name", name);
+    }
+
     insertUser(user);
     addFingerprintToUser(user, fingerprint);
     return user;

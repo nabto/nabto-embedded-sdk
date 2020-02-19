@@ -82,7 +82,7 @@ class FingerprintIAM {
     /**
      * The client has been granted access with a button press or a password.
      */
-    std::shared_ptr<User> pairNewClient(const std::string& fingerprint);
+    std::shared_ptr<User> pairNewClient(const std::string& fingerprint, const std::string& name);
 
     void addFingerprintToUser(std::shared_ptr<User> user, const std::string& fingerprint)
     {

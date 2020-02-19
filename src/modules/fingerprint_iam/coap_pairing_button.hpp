@@ -67,16 +67,12 @@ class CoapPairingButton : public CoapRequestHandler {
                     nabto_device_coap_request_free(request);
                     return;
                 }
-                auto user = iam_.pairNewClient(clientFingerprint);
+                auto user = iam_.pairNewClient(clientFingerprint, name);
                 if (user == nullptr) {
                     std::cout << "Could not pair the user" << std::endl;
                     nabto_device_coap_error_response(request, 500, "Server error");
                     nabto_device_coap_request_free(request);
                     return;
-                }
-
-                if (!name.empty()) {
-                    iam_.setUserAttribute(user, "Name", name);
                 }
 
                 std::cout << "Paired the user with the fingerprint " << clientFingerprint << std::endl;
