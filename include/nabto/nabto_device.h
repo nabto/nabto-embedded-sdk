@@ -620,6 +620,9 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * notation for rest resources "/heatpump/state" becomes the array
  * {"heatpump", "state", NULL }
  *
+ * Parameters can be defined by using the syntax {<parameter>} for a
+ * parameter. E.g. {"iam","users","{id}",NULL}
+ *
  * @return NABTO_DEVICE_EC_OK on success
  *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
  *         NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid pathSegment parameter

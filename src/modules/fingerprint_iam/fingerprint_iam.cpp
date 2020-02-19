@@ -7,6 +7,8 @@
 #include "coap_pairing_button.hpp"
 #include "coap_client_settings.hpp"
 #include "coap_list_users.hpp"
+#include "coap_get_user.hpp"
+#include "coap_delete_user.hpp"
 #include "user_builder.hpp"
 #include "fingerprint_iam_json.hpp"
 #include "authorization_request_handler.hpp"
@@ -32,6 +34,8 @@ FingerprintIAM::FingerprintIAM(NabtoDevice* device)
     coapPairing_ = CoapPairing::create(*this, device_);
 
     coapListUsers_ = CoapListUsers::create(*this, device_);
+    coapGetUser_ = CoapGetUser::create(*this, device_);
+    coapDeleteUser_ = CoapDeleteUser::create(*this, device_);
 
     authorizationRequestHandler_ = AuthorizationRequestHandler::create(device, *this);
 }
@@ -232,7 +236,7 @@ std::shared_ptr<User> FingerprintIAM::findUserByFingerprint(const std::string& f
 {
     auto it = fingerprintToUser_.find(fingerprint);
     if (it != fingerprintToUser_.end()) {
-        return it->second;
+        return it->second.lock();
     }
     return nullptr;
 }

@@ -228,6 +228,8 @@ void HeatPump::loadIamPolicy()
     auto manageUsersPolicy = nabto::iam::PolicyBuilder("ManageUsers")
         .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
                       .addAction("IAM:ListUsers")
+                      .addAction("IAM:GetUser")
+                      .addAction("IAM:DeleteUser")
             )
         .build();
 

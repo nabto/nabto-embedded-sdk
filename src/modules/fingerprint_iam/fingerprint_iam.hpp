@@ -22,6 +22,8 @@ class CoapPairingPassword;
 class CoapPairingButton;
 class CoapClientSettings;
 class CoapListUsers;
+class CoapGetUser;
+class CoapDeleteUser;
 
 class UserBuilder;
 
@@ -134,6 +136,26 @@ class FingerprintIAM {
         }
         return users;
     }
+
+    std::shared_ptr<User> getUser(const std::string& id)
+    {
+        auto it = users_.find(id);
+        if (it == users_.end()) {
+            return nullptr;
+        } else {
+            return it->second;
+        }
+    }
+
+    void deleteUser(const std::string& id)
+    {
+        auto it = users_.find(id);
+        if (it != users_.end()) {
+            users_.erase(id);
+            changeListener_->deleteUser(id);
+        }
+    }
+
  private:
     std::shared_ptr<User> findUserByFingerprint(const std::string& fingerprint);
     Subject createUnpairedSubject();
@@ -141,7 +163,7 @@ class FingerprintIAM {
     void insertUser(std::shared_ptr<User> user);
     std::string nextUserId();
 
-    std::map<std::string, std::shared_ptr<User> > fingerprintToUser_;
+    std::map<std::string, std::weak_ptr<User> > fingerprintToUser_;
     std::map<std::string, std::shared_ptr<User> > users_;
     std::map<std::string, std::shared_ptr<Role> > roles_;
     std::map<std::string, std::shared_ptr<nabto::iam::Policy> > policies_;
@@ -157,6 +179,8 @@ class FingerprintIAM {
     std::unique_ptr<CoapClientSettings> coapClientSettings_;
 
     std::unique_ptr<CoapListUsers> coapListUsers_;
+    std::unique_ptr<CoapGetUser> coapGetUser_;
+    std::unique_ptr<CoapDeleteUser> coapDeleteUser_;
 
     std::unique_ptr<AuthorizationRequestHandler> authorizationRequestHandler_;
 };
