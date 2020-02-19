@@ -1,42 +1,41 @@
-#include <nabto/nabto_device.h>
+#pragma once
 
 #include "coap_request_handler.hpp"
-
-#include <nlohmann/json.hpp>
 
 namespace nabto {
 namespace fingerprint_iam {
 
-class CoapClientSettings : public CoapRequestHandler {
+class CoapListUsers : public CoapRequestHandler {
  public:
-    CoapClientSettings(FingerprintIAM& iam, NabtoDevice* device, const std::string& clientServerUrl, const std::string& clientServerKey)
-        : CoapRequestHandler(device), iam_(iam), clientServerUrl_(clientServerUrl), clientServerKey_(clientServerKey)
+    CoapListUsers(FingerprintIAM& iam, NabtoDevice* device)
+        : CoapRequestHandler(device), iam_(iam)
     {
     }
 
     bool init()
     {
-        return CoapRequestHandler::init(NABTO_DEVICE_COAP_GET, {"pairing", "client-settings"} );
+        return CoapRequestHandler::init(NABTO_DEVICE_COAP_GET, {"iam", "users"} );
     }
 
-    static std::unique_ptr<CoapClientSettings> create(FingerprintIAM& iam, NabtoDevice* device, const std::string& clientServerUrl, const std::string& clientServerKey)
+    static std::unique_ptr<CoapListUsers> create(FingerprintIAM& iam, NabtoDevice* device)
     {
-        auto ptr = std::make_unique<CoapClientSettings>(iam, device, clientServerUrl, clientServerKey);
+        auto ptr = std::make_unique<CoapListUsers>(iam, device);
         ptr->init();
         return ptr;
     }
 
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
-        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "Pairing:Get")) {
+        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:ListUsers")) {
             nabto_device_coap_error_response(request, 403, "Access Denied");
             nabto_device_coap_request_free(request);
             return;
         }
 
-        nlohmann::json root;
-        root["ServerKey"] = clientServerKey_;
-        root["ServerUrl"] = clientServerUrl_;
+        nlohmann::json root = nlohmann::json::array();
+        for (auto u : iam_.getUsers()) {
+            root.push_back(u->getId());
+        }
 
         auto d = nlohmann::json::to_cbor(root);
 
@@ -50,10 +49,9 @@ class CoapClientSettings : public CoapRequestHandler {
         }
         nabto_device_coap_request_free(request);
     }
+
  private:
     FingerprintIAM& iam_;
-    std::string clientServerUrl_;
-    std::string clientServerKey_;
 };
 
 } } // namespace

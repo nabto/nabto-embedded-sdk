@@ -225,11 +225,18 @@ void HeatPump::loadIamPolicy()
                       .addAction("HeatPump:Set"))
         .build();
 
+    auto manageUsersPolicy = nabto::iam::PolicyBuilder("ManageUsers")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("IAM:ListUsers")
+            )
+        .build();
+
     fingerprintIAM_.addPolicy(deviceInfoPolicy);
     fingerprintIAM_.addPolicy(buttonPairingPolicy);
     fingerprintIAM_.addPolicy(pairedPolicy);
     fingerprintIAM_.addPolicy(readPolicy);
     fingerprintIAM_.addPolicy(writePolicy);
+    fingerprintIAM_.addPolicy(manageUsersPolicy);
 
     fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Unpaired")
                             .addPolicy("Pairing")
@@ -238,7 +245,9 @@ void HeatPump::loadIamPolicy()
                             .addPolicy("HeatPumpWrite")
                             .addPolicy("HeatPumpRead")
                             .addPolicy("Paired")
-                            .addPolicy("DeviceInfo"));
+                            .addPolicy("DeviceInfo")
+                            .addPolicy("ManageUsers")
+        );
     fingerprintIAM_.addRole(nabto::iam::RoleBuilder("User")
                             .addPolicy("HeatPumpRead")
                             .addPolicy("Paired")

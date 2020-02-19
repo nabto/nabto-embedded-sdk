@@ -6,6 +6,7 @@
 #include "coap_pairing_password.hpp"
 #include "coap_pairing_button.hpp"
 #include "coap_client_settings.hpp"
+#include "coap_list_users.hpp"
 #include "user_builder.hpp"
 #include "fingerprint_iam_json.hpp"
 #include "authorization_request_handler.hpp"
@@ -29,6 +30,8 @@ FingerprintIAM::FingerprintIAM(NabtoDevice* device)
 {
     coapIsPaired_ = CoapIsPaired::create(*this, device_);
     coapPairing_ = CoapPairing::create(*this, device_);
+
+    coapListUsers_ = CoapListUsers::create(*this, device_);
 
     authorizationRequestHandler_ = AuthorizationRequestHandler::create(device, *this);
 }

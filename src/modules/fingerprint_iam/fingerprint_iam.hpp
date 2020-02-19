@@ -21,6 +21,7 @@ class CoapPairing;
 class CoapPairingPassword;
 class CoapPairingButton;
 class CoapClientSettings;
+class CoapListUsers;
 
 class UserBuilder;
 
@@ -154,6 +155,8 @@ class FingerprintIAM {
     std::unique_ptr<CoapPairingButton> coapPairingButton_;
 
     std::unique_ptr<CoapClientSettings> coapClientSettings_;
+
+    std::unique_ptr<CoapListUsers> coapListUsers_;
 
     std::unique_ptr<AuthorizationRequestHandler> authorizationRequestHandler_;
 };
