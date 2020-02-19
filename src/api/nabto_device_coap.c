@@ -78,18 +78,13 @@ nabto_device_listener_new_coap_request(NabtoDeviceListener* deviceListener, Nabt
         return nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
     }
     struct nabto_device_coap_resource* res = (struct nabto_device_coap_resource*)nabto_device_listener_get_listener_data(listener);
-    if (res->futureRequest != NULL) {
-        nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
-    }
-    *request = NULL;
-    res->futureRequest = (struct nabto_device_coap_request**)request;
-    // user reference must be set before as this call can resolve the future to the future queue
     ec = nabto_device_listener_init_future(listener, fut);
     if (ec != NABTO_EC_OK) {
-        // resetting user reference if future could not be created
-        res->futureRequest = NULL;
         nabto_device_future_resolve(fut, ec);
+    } else {
+        *request = NULL;
+        res->futureRequest = (struct nabto_device_coap_request**)request;
+        nabto_device_listener_try_resolve(listener);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
@@ -255,7 +250,6 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)malloc(sizeof(struct nabto_device_coap_request));
 
     if (req == NULL) {
-        nabto_device_listener_set_error_code(resource->listener, NABTO_EC_OUT_OF_MEMORY);
         // ignore errors, we cannot do more than set the listener error code which is already done
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Insufficient resources");
         nabto_coap_server_request_free(request);

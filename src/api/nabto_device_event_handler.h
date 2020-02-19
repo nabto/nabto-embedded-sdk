@@ -47,7 +47,8 @@ enum nabto_device_listener_type {
     NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS,
     NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS,
     NABTO_DEVICE_LISTENER_TYPE_STREAMS,
-    NABTO_DEVICE_LISTENER_TYPE_COAP
+    NABTO_DEVICE_LISTENER_TYPE_COAP,
+    NABTO_DEVICE_LISTENER_TYPE_AUTHORIZATION
 };
 
 
@@ -88,6 +89,8 @@ np_error_code nabto_device_listener_init_future(struct nabto_device_listener* li
 np_error_code nabto_device_listener_get_status(struct nabto_device_listener* listener);
 
 void* nabto_device_listener_get_listener_data(struct nabto_device_listener* listener);
+
+void nabto_device_listener_try_resolve(struct nabto_device_listener* listener);
 
 /**
  * Add event to the listener

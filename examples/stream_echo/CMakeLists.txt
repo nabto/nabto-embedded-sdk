@@ -1,5 +1,6 @@
 set(src
   src/stream_echo_device.cpp
+  src/none_authorization.c
   )
 
 add_executable(stream_echo_device "${src}")

@@ -2,7 +2,6 @@
 
 #include <core/nc_coap_server.h>
 #include <core/nc_packet.h>
-#include <core/nc_iam.h>
 #include <platform/np_logging.h>
 
 #include <cbor.h>

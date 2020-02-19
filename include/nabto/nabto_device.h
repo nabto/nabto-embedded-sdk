@@ -966,6 +966,12 @@ nabto_device_future_error_code(NabtoDeviceFuture* future);
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_error_get_message(NabtoDeviceError error);
 
+/**
+ * Get the error code as a string
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_error_get_string(NabtoDeviceError error);
+
 /********
  * Misc *
  ********/

@@ -3,15 +3,17 @@
 #include <fstream>
 #include <cstdio>
 
+#include <nlohmann/json.hpp>
+
 bool json_config_exists(const std::string& filename)
 {
     std::ifstream configFile(filename);
     return (configFile.is_open() && !configFile.fail());
 }
 
-bool json_config_load(const std::string& filename, json& config)
+bool json_config_load(const std::string& filename, nlohmann::json& config)
 {
-    json j;
+    nlohmann::json j;
     try {
         std::ifstream configFile(filename);
         configFile >> j;
@@ -22,7 +24,7 @@ bool json_config_load(const std::string& filename, json& config)
     return true;
 }
 
-bool json_config_save(const std::string& filename, const json& config)
+bool json_config_save(const std::string& filename, const nlohmann::json& config)
 {
     std::string tmpFile = "tmp.json";
     bool status = false;

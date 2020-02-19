@@ -35,20 +35,7 @@ extern "C" {
         XX(NOT_FOUND, "Not Found")                                      \
         XX(OUT_OF_MEMORY, "Out of memory")                              \
         XX(NOT_IMPLEMENTED, "Not Implemented")                          \
-        XX(IAM_INVALID_POLICY, "IAM invalid policy")                    \
-        XX(IAM_TOO_MANY_ATTRIBUTES, "IAM too many attributes")          \
-        XX(IAM_STRING_TOO_LONG, "IAM string too long")                  \
-        XX(IAM_INVALID_STRING, "IAM invalid string")                    \
-        XX(IAM_INVALID_ATTRIBUTES, "IAM invalid attributes")            \
-        XX(IAM_INVALID_CONDITIONS, "IAM invalid conditions")            \
-        XX(IAM_INVALID_USERS, "IAM invalid users")                      \
-        XX(IAM_INVALID_ROLES, "IAM invalid roles")                      \
-        XX(IAM_INVALID_POLICIES, "IAM invalid policies")                \
-        XX(IAM_INVALID_STATEMENTS, "IAM invalid statements")            \
-        XX(IAM_INVALID_ACTIONS, "IAM invalid actions")                  \
-        XX(IAM_INVALID_PREDICATES, "IAM invalid predicates")            \
-        XX(IAM_DENY, "IAM deny")                                        \
-        XX(IAM_NONE, "IAM none")                                        \
+        XX(ACCESS_DENIED, "Access denied")                                        \
         XX(STRING_TOO_LONG, "String too long")                          \
         XX(NOT_A_STRING, "Not a string")                                \
         XX(NOT_A_NUMBER, "Not a number")                                \

@@ -60,8 +60,11 @@ add_subdirectory(nabto-common-cpp/src/mdns)
 
 add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)
+#add_subdirectory(src/modules/iam)
 add_subdirectory(src/modules/tcptunnel)
 add_subdirectory(src/modules/logging/test)
+add_subdirectory(src/modules/iam_cpp)
+add_subdirectory(src/modules/fingerprint_iam)
 
 
 CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
@@ -113,6 +116,7 @@ if (DEVICE_BUILD_TESTS)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   add_subdirectory(examples/common)
   add_subdirectory(examples/heat_pump)
   add_subdirectory(examples/tcptunnel)

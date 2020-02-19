@@ -6,7 +6,6 @@
 #include <core/nc_stun.h>
 #include <platform/np_logging.h>
 #include <core/nc_packet.h>
-#include <core/nc_iam.h>
 
 #include <cbor.h>
 

@@ -4,96 +4,62 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
+#include "heat_pump_persisting.hpp"
+#include <modules/fingerprint_iam/fingerprint_iam.hpp>
+
+#include <examples/common/device_config.hpp>
+
 #include <nlohmann/json.hpp>
 
 #include <mutex>
 #include <thread>
 #include <sstream>
 
+
 using json = nlohmann::json;
 
-class HeatPump;
+namespace nabto {
+namespace examples {
+namespace common {
 
-typedef std::function<void (NabtoDeviceCoapRequest* request, HeatPump* application)> CoapHandler;
+class StdoutConnectionEventHandler;
+class StdoutDeviceEventHandler;
 
-class HeatPumpCoapRequestHandler {
- public:
-    ~HeatPumpCoapRequestHandler() {
-        nabto_device_listener_free(listener_);
-        nabto_device_future_free(future_);
-    }
-    HeatPumpCoapRequestHandler(HeatPump* hp, NabtoDeviceCoapMethod methdod, const char** pathSegments, CoapHandler handler);
+} } }  // namespace
 
-    void startListen();
+namespace nabto {
+namespace examples {
+namespace heat_pump {
 
-    void stopListen() {
-        nabto_device_listener_stop(listener_);
-    }
-
-    static void requestCallback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
-    {
-        HeatPumpCoapRequestHandler* handler = (HeatPumpCoapRequestHandler*)data;
-        if (ec != NABTO_DEVICE_EC_OK) {
-            return;
-        }
-        handler->handler_(handler->request_, handler->heatPump_);
-        handler->startListen();
-    }
-
-    HeatPump* heatPump_;
-    //  wait for a request
-    NabtoDeviceFuture* future_;
-    NabtoDeviceCoapRequest* request_;
-    // on this listener
-    NabtoDeviceListener* listener_;
-    // invoke this function if the resource is hit
-    CoapHandler handler_;
-};
+class HeatPumpSetPower;
+class HeatPumpSetTarget;
+class HeatPumpSetMode;
+class HeatPumpGet;
 
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, json config, const std::string& configFile)
-        : device_(device), config_(config), configFile_(configFile)
-    {
-        connectionEventListener_ = nabto_device_listener_new(device);
-        deviceEventListener_ = nabto_device_listener_new(device);
+    HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile);
 
-        connectionEventFuture_ = nabto_device_future_new(device);
-        deviceEventFuture_ = nabto_device_future_new(device);
-        iamChangedFuture_ = nabto_device_future_new(device_);
+    ~HeatPump();
 
-    }
+    bool init();
 
-    ~HeatPump() {
-        nabto_device_future_free(connectionEventFuture_);
-        nabto_device_future_free(deviceEventFuture_);
-        nabto_device_future_free(iamChangedFuture_);
+    void printHeatpumpInfo();
+    void dumpIam();
+    void setLogLevel(const std::string& logLevel);
 
-        nabto_device_listener_free(connectionEventListener_);
-        nabto_device_listener_free(deviceEventListener_);
-    }
-
-    void init();
-
-    void deinit() {
-        if (connectionEventListener_) {
-            nabto_device_listener_stop(connectionEventListener_);
-        }
-        if (deviceEventListener_) {
-            nabto_device_listener_stop(deviceEventListener_);
-        }
-    }
+    NabtoDeviceError initDevice();
 
     enum class Mode {
         COOL = 0,
         HEAT = 1,
         FAN = 2,
         DRY = 3,
-
     };
 
-    NabtoDevice* getDevice() {
+    NabtoDevice* getDevice()
+    {
         return device_;
     }
 
@@ -102,110 +68,56 @@ class HeatPump {
     void setPower(bool on);
     const char* modeToString(HeatPump::Mode mode);
     const char* getModeString();
-    json getState() {
-        return config_["HeatPump"];
-    }
 
-    bool beginPairing() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (pairing_) {
-            return false;
-        }
-        pairing_ = true;
-        return true;
-    }
-    void pairingEnded() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        pairing_ = false;
-    }
 
-    NabtoDeviceError userCount(size_t& count)
+    nlohmann::json getState()
     {
-        std::vector<uint8_t> cbor(1024);
-        size_t used;
-
-        NabtoDeviceError ec = nabto_device_iam_users_list(device_, cbor.data(), cbor.size(), &used);
-        if (ec) {
-            return ec;
-        }
-        cbor.resize(used);
-
-        json users = json::from_cbor(cbor);
-        count = users.size();
-        return NABTO_DEVICE_EC_OK;
+        nlohmann::json state;
+        state["Mode"] = persisting_->getHeatPumpMode();
+        state["Target"] = persisting_->getHeatPumpTarget();
+        state["Power"] = persisting_->getHeatPumpPower();
+        state["Temperature"] = 22.3;
+        return state;
     }
 
-    NabtoDeviceError nextUserName(std::string& name)
+    nlohmann::json getInfo()
     {
-        for (int i = 0;; i++) {
-            std::stringstream ss;
-            ss << "User-" << i;
-            auto str = ss.str();
-            size_t used;
-            NabtoDeviceError ec = nabto_device_iam_users_get(device_, str.c_str(), NULL, 0, &used);
-            if (ec == NABTO_DEVICE_EC_OUT_OF_MEMORY) {
-                // user was found but buffer was too small
-                continue;
-            } else if (ec == NABTO_DEVICE_EC_NOT_FOUND) {
-                // user was not found use this for the next user
-                name = str;
-                return NABTO_DEVICE_EC_OK;
-            } else {
-                return ec;
-            }
-        }
+        nlohmann::json info;
+        std::string nabtoVersion(nabto_device_version());
+        info["NabtoVersion"] = nabtoVersion;
+        info["AppName"] = appName_;
+        info["AppVersion"] = appVersion_;
+        return info;
     }
 
-    std::string getClientServerUrl() {
-        return config_["ClientServerUrl"].get<std::string>();
-    }
+    bool checkAccess(NabtoDeviceCoapRequest* request, const std::string& action);
 
-    std::string getClientServerKey() {
-        return config_["ClientServerKey"].get<std::string>();
-    }
+    void loadIamPolicy();
 
-    std::unique_ptr<std::thread> pairingThread_;
+ private:
 
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapGetState;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPower;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostMode;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostTarget;
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapPostPairingButton;
+    void initCoapHandlers();
 
-    std::unique_ptr<HeatPumpCoapRequestHandler> coapGetClientSettings;
-
-  private:
-
-    static void iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
-    void listenForIamChanges();
-
-    static void connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
-    void listenForConnectionEvents();
-    void startWaitEvent();
-
-    static void deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData);
-    void listenForDeviceEvents();
-    void startWaitDevEvent();
-
-    void saveConfig();
-
-    std::mutex mutex_;
     NabtoDevice* device_;
-    json config_;
-    const std::string& configFile_;
-    bool pairing_ = false;
-    uint64_t currentIamVersion_;
+    std::string privateKey_;
+    nabto::examples::common::DeviceConfig& dc_;
+    std::shared_ptr<HeatPumpPersisting> persisting_;
 
-    NabtoDeviceListener* connectionEventListener_;
-    NabtoDeviceFuture* connectionEventFuture_;
-    NabtoDeviceConnectionRef connectionRef_;
-    NabtoDeviceConnectionEvent connectionEvent_;
+    fingerprint_iam::FingerprintIAM fingerprintIAM_;
 
-    NabtoDeviceListener* deviceEventListener_;
-    NabtoDeviceFuture* deviceEventFuture_;
-    NabtoDeviceEvent deviceEvent_;
+    std::unique_ptr<HeatPumpSetPower> coapSetPower_;
+    std::unique_ptr<HeatPumpSetTarget> coapSetTarget_;
+    std::unique_ptr<HeatPumpSetMode> coapSetMode_;
+    std::unique_ptr<HeatPumpGet> coapGet_;
 
-    NabtoDeviceFuture* iamChangedFuture_;
+    std::unique_ptr<nabto::examples::common::StdoutConnectionEventHandler> stdoutConnectionEventHandler_;
+    std::unique_ptr<nabto::examples::common::StdoutDeviceEventHandler> stdoutDeviceEventHandler_;
+
+    std::string appName_ = "HeatPump";
+    std::string appVersion_ = "1.0.0";
+
 };
+
+} } } // namespace
 
 #endif

@@ -15,6 +15,7 @@ if (HAVE_EPOLL_HEADERS)
 endif()
 
 set(test_src
+  helper.cpp
   unit_test.cpp
   network/tcp_test.cpp
   network/udp_test.cpp
@@ -22,8 +23,13 @@ set(test_src
   api/event_handler_test.cpp
   api/future_test.cpp
   api/device_api.cpp
+  api/authorization_test.cpp
+  api/new_free.cpp
   attach/attach_test.cpp
   test_platform.cpp
+  iam/load_users.cpp
+  iam/load_roles.cpp
+  iam/load_policies.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")
@@ -37,6 +43,7 @@ target_link_libraries(embedded_unit_test
   nc_core
   dtls
   nm_logging_test
+  iam_cpp
 )
 
 if (HAVE_EPOLL_HEADERS)

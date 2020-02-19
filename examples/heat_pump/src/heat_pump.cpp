@@ -1,6 +1,14 @@
 #include "heat_pump.hpp"
 #include "json_config.hpp"
 
+#include "heat_pump_set_power.hpp"
+#include "heat_pump_set_target.hpp"
+#include "heat_pump_set_mode.hpp"
+#include "heat_pump_get.hpp"
+
+#include <examples/common/stdout_connection_event_handler.hpp>
+#include <examples/common/stdout_device_event_handler.hpp>
+
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
@@ -8,42 +16,144 @@
 #include <stdlib.h>
 #include <iostream>
 
-void HeatPump::init() {
-    listenForIamChanges();
-    listenForConnectionEvents();
-    listenForDeviceEvents();
+#include "button_press.hpp"
+
+namespace nabto {
+namespace examples {
+namespace heat_pump {
+
+HeatPump::HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile)
+    : device_(device), privateKey_(privateKey), dc_(dc), fingerprintIAM_(device)
+{
+    persisting_ = std::make_shared<HeatPumpPersisting>(stateFile, fingerprintIAM_);
 }
 
-bool validate_config(const json& config) {
-    try {
-        config["ProductId"].get<std::string>();
-        config["DeviceId"].get<std::string>();
-        config["Server"].get<std::string>();
-        config["PrivateKey"].get<std::string>();
-        config["Iam"]["Users"];
-        config["Iam"]["Roles"];
-        config["Iam"]["Policies"];
-    } catch (std::exception& e) {
+HeatPump::~HeatPump()
+{
+}
+
+bool HeatPump::init()
+{
+    if (initDevice() != NABTO_DEVICE_EC_OK) {
         return false;
     }
+    loadIamPolicy();
+    persisting_->load();
+
+    fingerprintIAM_.enableButtonPairing([](std::string fingerprint, std::function<void (bool accepted)> cb) {
+            std::cout << "Allow the client with the fingerprint " << fingerprint << " to pair with the device? [y/n]" << std::endl;
+            nabto::ButtonPress::wait(std::chrono::seconds(60), cb);
+        });
+
+    fingerprintIAM_.enablePasswordPairing(persisting_->getPairingPassword());
+
+    fingerprintIAM_.enableClientSettings(dc_.getClientServerUrl(), dc_.getClientServerKey());
+
+    initCoapHandlers();
+
+    fingerprintIAM_.setChangeListener(persisting_);
+
+    stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device_);
+    stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device_);
     return true;
+
+}
+
+void HeatPump::initCoapHandlers()
+{
+    coapSetPower_ = nabto::examples::heat_pump::HeatPumpSetPower::create(*this, device_);
+    coapSetTarget_ = nabto::examples::heat_pump::HeatPumpSetTarget::create(*this, device_);
+    coapSetMode_ = nabto::examples::heat_pump::HeatPumpSetMode::create(*this, device_);
+    coapGet_ = nabto::examples::heat_pump::HeatPumpGet::create(*this, device_);
+}
+
+NabtoDeviceError HeatPump::initDevice()
+{
+    NabtoDeviceError ec;
+    ec = nabto_device_set_product_id(device_, dc_.getProductId().c_str());
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_device_id(device_, dc_.getDeviceId().c_str());
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_server_url(device_, dc_.getServer().c_str());
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_private_key(device_, privateKey_.c_str());
+    if (ec) {
+        return ec;
+    }
+
+    nabto_device_set_app_name(device_, appName_.c_str());
+    nabto_device_set_app_version(device_, appVersion_.c_str());
+
+    ec = nabto_device_enable_mdns(device_);
+    if (ec) {
+        return ec;
+    }
+    ec = nabto_device_set_log_std_out_callback(device_);
+    if (ec) {
+        return ec;
+    }
+
+    // run application
+    ec = nabto_device_start(device_);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to start device" << std::endl;
+        return ec;
+    }
+    return NABTO_DEVICE_EC_OK;
+}
+
+void HeatPump::setLogLevel(const std::string& logLevel)
+{
+    nabto_device_set_log_level(device_, logLevel.c_str());
+}
+
+void HeatPump::printHeatpumpInfo()
+{
+    char* fpTemp;
+    nabto_device_get_device_fingerprint_hex(device_, &fpTemp);
+    std::string fp(fpTemp);
+    nabto_device_string_free(fpTemp);
+
+    std::cout << "######## Nabto heat pump device ########" << std::endl;
+    std::cout << "# Product ID:       " << dc_.getProductId() << std::endl;
+    std::cout << "# Device ID:        " << dc_.getDeviceId() << std::endl;
+    std::cout << "# Fingerprint:      " << fp << std::endl;
+    std::cout << "# Pairing Password  " << persisting_->getPairingPassword() << std::endl;
+    std::cout << "# Server:           " << dc_.getServer() << std::endl;
+    std::cout << "# Client Server Url " << dc_.getClientServerUrl() << std::endl;
+    std::cout << "# Client Server Key " << dc_.getClientServerKey() << std::endl;
+    std::cout << "# Version:          " << nabto_device_version() << std::endl;
+    std::cout << "######## " << std::endl;
+}
+
+void HeatPump::dumpIam()
+{
+    fingerprintIAM_.dumpUsers();
+    fingerprintIAM_.dumpRoles();
+    fingerprintIAM_.dumpPolicies();
 }
 
 void HeatPump::setMode(Mode mode)
 {
-    config_["HeatPump"]["Mode"] = modeToString(mode);
-    saveConfig();
+    persisting_->setHeatPumpMode(modeToString(mode));
+    persisting_->save();
 }
 void HeatPump::setTarget(double target)
 {
-    config_["HeatPump"]["Target"] = target;
-    saveConfig();
+    persisting_->setHeatPumpTarget(target);
+    persisting_->save();
 }
 
 void HeatPump::setPower(bool power)
 {
-    config_["HeatPump"]["Power"] = power;
-    saveConfig();
+    persisting_->setHeatPumpPower(power);
+    persisting_->save();
 }
 
 const char* HeatPump::modeToString(HeatPump::Mode mode)
@@ -57,114 +167,66 @@ const char* HeatPump::modeToString(HeatPump::Mode mode)
     }
 }
 
-
-void HeatPump::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
+bool HeatPump::checkAccess(NabtoDeviceCoapRequest* request, const std::string& action)
 {
-    if (err != NABTO_DEVICE_EC_OK) {
-        return;
+    if (!fingerprintIAM_.checkAccess(nabto_device_coap_request_get_connection_ref(request), action)) {
+        nabto_device_coap_error_response(request, 403, "Unauthorized");
+        nabto_device_coap_request_free(request);
+        return false;
     }
-    HeatPump* hp = (HeatPump*)userData;
-    hp->saveConfig();
-    hp->listenForIamChanges();
+    return true;
 }
 
-void HeatPump::listenForIamChanges()
+void HeatPump::loadIamPolicy()
 {
-    nabto_device_iam_listen_for_changes(device_, iamChangedFuture_, currentIamVersion_);
-    nabto_device_future_set_callback(iamChangedFuture_, HeatPump::iamChanged, this);
-}
+    auto deviceInfoPolicy = nabto::iam::PolicyBuilder("DeviceInfo")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("Info:Get"))
+        .build();
 
-void HeatPump::saveConfig()
-{
-    json config = config_;
 
-    uint64_t version;
-    size_t used;
-    if (nabto_device_iam_dump(device_, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OUT_OF_MEMORY) {
-        return;
-    }
+    auto buttonPairingPolicy = nabto::iam::PolicyBuilder("Pairing")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("Pairing:Button")
+                      .addAction("Pairing:Get")
+                      .addAction("Pairing:Password"))
+        .build();
 
-    std::vector<uint8_t> buffer(used);
-    if(nabto_device_iam_dump(device_, &version, buffer.data(), buffer.size(), &used) != NABTO_DEVICE_EC_OK) {
-        return;
-    }
-    config["Iam"] = json::from_cbor(buffer);
-    currentIamVersion_ = version;
+    auto pairedPolicy = nabto::iam::PolicyBuilder("Paired")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("Pairing:Get"))
+        .build();
 
-    std::string tmpFile = "tmp.json";
-    json_config_save(configFile_, config);
-    std::cout << "Configuration saved to file" << std::endl;
-}
+    auto readPolicy = nabto::iam::PolicyBuilder("HeatPumpRead")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("HeatPump:Get"))
+        .build();
 
-void HeatPump::startWaitEvent()
-{
-    nabto_device_listener_connection_event(connectionEventListener_, connectionEventFuture_, &connectionRef_, &connectionEvent_);
-    nabto_device_future_set_callback(connectionEventFuture_, &HeatPump::connectionEvent, this);
-}
+    auto writePolicy = nabto::iam::PolicyBuilder("HeatPumpWrite")
+        .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
+                      .addAction("HeatPump:Set"))
+        .build();
 
-void HeatPump::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
-{
-    HeatPump* hp = (HeatPump*)userData;
-    if (err != NABTO_DEVICE_EC_OK) {
-        std::cout << "Connection event called back with error: " << err << std::endl;
-        return;
-    } else {
-        if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
-            std::cout << "New connection opened with reference: " << hp->connectionRef_ << std::endl;
-        } else if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CLOSED) {
-            std::cout << "Connection with reference: " << hp->connectionRef_ << " was closed" << std::endl;
-        } else if (hp->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED) {
-            std::cout << "Connection with reference: " << hp->connectionRef_ << " changed channel" << std::endl;
-        } else {
-            std::cout << "Unknown connection event: " << hp->connectionEvent_ << " on connection reference: " << hp->connectionRef_ << std::endl;
-        }
-    }
-    hp->startWaitEvent();
+    fingerprintIAM_.addPolicy(deviceInfoPolicy);
+    fingerprintIAM_.addPolicy(buttonPairingPolicy);
+    fingerprintIAM_.addPolicy(pairedPolicy);
+    fingerprintIAM_.addPolicy(readPolicy);
+    fingerprintIAM_.addPolicy(writePolicy);
+
+    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Unpaired")
+                            .addPolicy("Pairing")
+                            .addPolicy("DeviceInfo"));
+    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("Admin")
+                            .addPolicy("HeatPumpWrite")
+                            .addPolicy("HeatPumpRead")
+                            .addPolicy("Paired")
+                            .addPolicy("DeviceInfo"));
+    fingerprintIAM_.addRole(nabto::iam::RoleBuilder("User")
+                            .addPolicy("HeatPumpRead")
+                            .addPolicy("Paired")
+                            .addPolicy("DeviceInfo"));
 
 }
 
-void HeatPump::listenForConnectionEvents()
-{
-    NabtoDeviceError ec = nabto_device_connection_events_init_listener(device_, connectionEventListener_);
-    if (ec) {
-        std::cerr << "Failed to init connection events listener" << std::endl;
-        return;
-    }
-    startWaitEvent();
-}
 
-void HeatPump::startWaitDevEvent()
-{
-    nabto_device_listener_device_event(deviceEventListener_, deviceEventFuture_, &deviceEvent_);
-    nabto_device_future_set_callback(deviceEventFuture_, &HeatPump::deviceEvent, this);
-}
-
-void HeatPump::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
-{
-    HeatPump* hp = (HeatPump*)userData;
-    if (err != NABTO_DEVICE_EC_OK) {
-        std::cout << "Device event called back with error: " << err << std::endl;
-
-        return;
-    } else {
-        if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_ATTACHED) {
-            std::cout << "Device is now attached" << std::endl;
-        } else if (hp->deviceEvent_ == NABTO_DEVICE_EVENT_DETACHED) {
-            std::cout << "Device is now detached" << std::endl;
-        } else {
-            std::cout << "Unknown device event: " << hp->deviceEvent_ << std::endl;
-        }
-    }
-    hp->startWaitDevEvent();
-
-}
-
-void HeatPump::listenForDeviceEvents()
-{
-    NabtoDeviceError ec = nabto_device_device_events_init_listener(device_, deviceEventListener_);
-    if (ec) {
-        std::cerr << "Failed to initialize device events listener" << std::endl;
-        return;
-    }
-    startWaitDevEvent();
-}
+} } } // namespace

@@ -7,6 +7,7 @@
 #include <core/nc_device.h>
 #include <modules/tcptunnel/nm_tcptunnel.h>
 #include <nabto/nabto_device_experimental.h>
+#include "nabto_device_authorization.h"
 
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec);
 
@@ -48,8 +49,7 @@ struct nabto_device_context {
 
     struct nm_tcptunnels tcptunnels;
 
-    NabtoDeviceIAMCheckAccessCallback checkAccessFunctionOverride;
-    void* checkAccessFunctionOverrideUserData;
+    struct nabto_device_authorization_module authorization;
 
 };
 

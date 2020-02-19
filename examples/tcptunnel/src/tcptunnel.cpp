@@ -1,111 +1,91 @@
 #include "tcptunnel.hpp"
 
 #include "json_config.hpp"
+#include "tcptunnel_default_policies.hpp"
 
 #include <nabto/nabto_device_experimental.h>
 
 #include <iostream>
 
-void TcpTunnel::iamChanged(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
+namespace nabto {
+namespace examples {
+namespace tcptunnel {
+
+bool TcpTunnel::initDevice()
 {
-    if (err != NABTO_DEVICE_EC_OK) {
-        return;
-    }
-    TcpTunnel* hp = (TcpTunnel*)userData;
-    hp->saveConfig();
-    hp->listenForIamChanges();
-}
-
-void TcpTunnel::listenForIamChanges()
-{
-    nabto_device_iam_listen_for_changes(device_, iamChangedFuture_, currentIamVersion_);
-    nabto_device_future_set_callback(iamChangedFuture_, TcpTunnel::iamChanged, this);
-}
-
-
-void TcpTunnel::startWaitEvent()
-{
-    nabto_device_listener_connection_event(connectionEventListener_, connectionEventFuture_, &connectionRef_, &connectionEvent_);
-    nabto_device_future_set_callback(connectionEventFuture_, &TcpTunnel::connectionEvent, this);
-}
-
-void TcpTunnel::connectionEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
-{
-    TcpTunnel* tt = (TcpTunnel*)userData;
-    if (err != NABTO_DEVICE_EC_OK) {
-        return;
-    } else {
-        if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_OPENED) {
-            std::cout << "Connection " << tt->connectionRef_ << ": opened" << std::endl;
-        } else if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CLOSED) {
-            std::cout << "Connection " << tt->connectionRef_ << ": closed" << std::endl;
-        } else if (tt->connectionEvent_ == NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED) {
-            std::cout << "Connection " << tt->connectionRef_ << ": changed channel" << std::endl;
-        }
-    }
-    tt->startWaitEvent();
-
-}
-
-void TcpTunnel::listenForConnectionEvents()
-{
-    NabtoDeviceError ec = nabto_device_connection_events_init_listener(device_, connectionEventListener_);
+    NabtoDeviceError ec;
+    ec = nabto_device_set_product_id(device_, deviceConfig_.getProductId().c_str());
     if (ec) {
-        std::cerr << "Failed to initialize connection events listener" << std::endl;
-        return;
+        std::cerr << "Could not set product id" << std::endl;
+        return false;
     }
-    startWaitEvent();
-}
-
-void TcpTunnel::startWaitDevEvent()
-{
-    nabto_device_listener_device_event(deviceEventListener_, deviceEventFuture_, &deviceEvent_);
-    nabto_device_future_set_callback(deviceEventFuture_, &TcpTunnel::deviceEvent, this);
-}
-
-void TcpTunnel::deviceEvent(NabtoDeviceFuture* fut, NabtoDeviceError err, void* userData)
-{
-    TcpTunnel* tt = (TcpTunnel*)userData;
-    if (err != NABTO_DEVICE_EC_OK) {
-        return;
-    } else {
-        if (tt->deviceEvent_ == NABTO_DEVICE_EVENT_ATTACHED) {
-            std::cout << "Device is attached to the basestation" << std::endl;
-        } else if (tt->deviceEvent_ == NABTO_DEVICE_EVENT_DETACHED) {
-            std::cout << "Device is detached from the basestation" << std::endl;
-        }
-    }
-    tt->startWaitDevEvent();
-
-}
-
-void TcpTunnel::listenForDeviceEvents()
-{
-    NabtoDeviceError ec = nabto_device_device_events_init_listener(device_, deviceEventListener_);
+    ec = nabto_device_set_device_id(device_, deviceConfig_.getDeviceId().c_str());
     if (ec) {
-        std::cerr << "Failed to initialize device events listener" << std::endl;
-        return;
+        std::cerr << "Could not set device id" << std::endl;
+        return false;
     }
-    startWaitDevEvent();
+    ec = nabto_device_set_server_url(device_, deviceConfig_.getServer().c_str());
+    if (ec) {
+        std::cerr << "Could not set server url" << std::endl;
+        return false;
+    }
+    ec = nabto_device_set_private_key(device_, privateKey_.c_str());
+    if (ec) {
+        std::cerr << "Could not set private key" << std::endl;
+        return false;
+    }
+
+    ec = nabto_device_enable_mdns(device_);
+    if (ec) {
+        std::cerr << "Failed to enable mdns" << std::endl;
+        return false;
+    }
+    ec = nabto_device_enable_tcp_tunnelling(device_);
+    if (ec) {
+        std::cerr << "Failed to enable tcp tunnelling" << std::endl;
+        return false;
+    }
+    ec = nabto_device_set_log_std_out_callback(device_);
+    if (ec) {
+        std::cerr << "Failed to enable stdour logging" << std::endl;
+        return false;
+    }
+
+    // run application
+    ec = nabto_device_start(device_);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Failed to start device" << std::endl;
+        return false;
+    }
+    return true;
 }
 
-void TcpTunnel::saveConfig()
+bool TcpTunnel::initAccessControl()
 {
-    json config = config_;
-
-    uint64_t version;
-    size_t used;
-    if (nabto_device_iam_dump(device_, &version, NULL, 0, &used) != NABTO_DEVICE_EC_OUT_OF_MEMORY) {
-        return;
-    }
-
-    std::vector<uint8_t> buffer(used);
-    if(nabto_device_iam_dump(device_, &version, buffer.data(), buffer.size(), &used) != NABTO_DEVICE_EC_OK) {
-        return;
-    }
-    config["Iam"] = json::from_cbor(buffer);
-    currentIamVersion_ = version;
-
-    json_config_save(configFile_, config);
-    std::cout << "Configuration saved to file" << std::endl;
+    fingerprintIAM_.enablePasswordPairing(state_->getPairingPassword());
+    fingerprintIAM_.enableClientSettings(deviceConfig_.getClientServerUrl(), deviceConfig_.getClientServerKey());
+    return true;
 }
+
+bool TcpTunnel::loadIamPolicies()
+{
+    if (!json_config_exists(policiesFile_)) {
+        std::cout << "The policies file is not found, creating a new file with default policies" << std::endl;
+        init_default_policies(policiesFile_);
+    }
+
+    nlohmann::json root;
+
+    load_policies(policiesFile_, fingerprintIAM_);
+    return true;
+}
+
+void TcpTunnel::dumpIam()
+{
+    fingerprintIAM_.dumpUsers();
+    fingerprintIAM_.dumpRoles();
+    fingerprintIAM_.dumpPolicies();
+}
+
+
+} } } // namespace

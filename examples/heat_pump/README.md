@@ -2,35 +2,44 @@
 
 This is an example application showing how a heat pump application can be made.
 
-## Howto use
+## Usage
 
-The first time the heatpump application is started it needs to be
-started with --init this will write the configuration and state to a
-file. Later the application can be started by just providing the
-configuration and state file.
+The demo needs a configuration file, the default configuration file is
+named device_config.json the structure of that file is this:
 
-// first time the application needs to be initialized and write a config file.
-./heatpump --config file.json --init --product-id=... --device-id=... --server=...
-
-// next time is is sufficient to use the configuration file
-./heatpump --config file.json
-
-config file structure
-
+```json
 {
-    "iam": {
-        "users": "...",
-        "roles": "...",
-        "policies": "...",
-        "defaultUser": "..."
-    },
-    "PrivateKey":
+  "ProductId": "...",
+  "DeviceId": "...",
+  "Server": "...",
+  "Client": {
+    "ServerKey": "...",
+    "ServerUrl": "..."
+  }
 }
+```
+
+## Configuration files
+
+### `device_config.json`
+
+The configuration of the device. This config is static and never
+changes during the lifetime of a device.
+
+### `heat_pump_state.json`
+
+The dynamic runtime state which is updated when the device is running
+
+### `<product_id>_<device_id>.key.json`
+
+The private key used by the device. This file is generated the first
+time the device starts and stays static throughout the lifetime of the
+device.
 
 ## Features
 
 The heatpump example shows how a heatpump can be implemented including
-iam and heatpump functionality.
+using our fingerprint based Identity and Access Management (IAM) module.
 
 ## Heatpump Features
 
@@ -92,8 +101,8 @@ this way concurrency attacks can be avoided.
 
 If the fingerprint of the heat pump is validated in the client, the
 client can assume the connection is secure. In this case a password
-can be sent in clear text to prove that the user is allowed to pair
-with the device.
+can be sent over the connection to prove that the user is allowed to
+pair with the device.
 
 If the fingerprint of the heat pump is not validated, it's not safe to
 send any confidential information on the connection. Since there could
@@ -103,10 +112,11 @@ If the heat pump has an access point, the access point can be secured
 with a password. In this case anyone connecting can be allowed to pair
 with the heat pump.
 
-### Without password or button
 
-It's not generally a good idea to have devices a on network which is
-open for anyone become administrator of. A button requires the person
-to have physical access to the device. In this case access can also
-often be obtained by doing a factory reset of the device. A password
-requires the person wanting access to know some secret.
+### Pair with a local heatpump.
+
+    1. Scan and connect to the heatpump locally.
+    2. Use button pairing and wait for a press on a button before allowing the new connection.
+
+If this is the first user the user gets the role `admin`. If this is not
+the first user the user gets the role as `user`.
