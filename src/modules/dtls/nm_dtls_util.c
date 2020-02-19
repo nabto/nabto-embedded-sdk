@@ -13,18 +13,16 @@
 #include "mbedtls/sha256.h"
 #include <string.h>
 
-np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp)
+np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
 {
     uint8_t buffer[256];
-    uint8_t fullSha[32];
 
     mbedtls_pk_context *ctx = (mbedtls_pk_context*)(&crt->pk);
     int len = mbedtls_pk_write_pubkey_der( ctx, buffer, sizeof(buffer));
     if (len <= 0) {
         return NABTO_EC_UNKNOWN;
     }
-    mbedtls_sha256_ret(buffer+sizeof(buffer)-len, len, fullSha, 0);
-    memcpy(fp, fullSha, 16);
+    mbedtls_sha256_ret(buffer+sizeof(buffer)-len, len, hash, 0);
     return NABTO_EC_OK;
 }
 
@@ -131,41 +129,32 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
 }
 
 
-np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, char** fingerprint)
+np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
 {
-    *fingerprint = NULL;
     mbedtls_pk_context key;
     int ret;
 
+    np_error_code ec = NABTO_EC_OK;
     mbedtls_pk_init(&key);
     ret = mbedtls_pk_parse_key( &key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
     if (ret != 0) {
-        return NABTO_EC_UNKNOWN;
-    }
-    {
+        ec = NABTO_EC_UNKNOWN;
+    } else {
         // get fingerprint
         uint8_t buffer[256];
-        uint8_t hash[32];
         // !!! The key is written to the end of the buffer
         int len = mbedtls_pk_write_pubkey_der( &key, buffer, sizeof(buffer));
         if (len <= 0) {
-            return NABTO_EC_UNKNOWN;
+            ec = NABTO_EC_UNKNOWN;
+        } else {
+            ret = mbedtls_sha256_ret(buffer+256 - len,  len, hash, false);
+            if (ret != 0) {
+                ec = NABTO_EC_UNKNOWN;
+            }
         }
-
-        ret = mbedtls_sha256_ret(buffer+256 - len,  len, hash, false);
-        if (ret != 0) {
-            return NABTO_EC_UNKNOWN;
-        }
-
-        *fingerprint = malloc(33);
-        memset(*fingerprint, 0, 33);
-        sprintf(*fingerprint, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-                hash[0], hash[1], hash[2],  hash[3],  hash[4],  hash[5],  hash[6],  hash[7],
-                hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
-
     }
     mbedtls_pk_free(&key);
-    return NABTO_EC_OK;
+    return ec;
 }
 
 np_error_code nm_dtls_util_create_private_key(char** privateKey)

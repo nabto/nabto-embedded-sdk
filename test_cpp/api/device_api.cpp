@@ -39,5 +39,21 @@ BOOST_AUTO_TEST_CASE(stop_without_close, *boost::unit_test::timeout(10))
     nabto_device_free(dev);
 }
 
+BOOST_AUTO_TEST_CASE(fingerprints)
+{
+    NabtoDevice* dev = nabto::test::createTestDevice();
+    char* truncatedFp;
+    char* fullFp;
+    BOOST_TEST(nabto_device_get_device_fingerprint_hex(dev, &truncatedFp) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_get_device_fingerprint_full_hex(dev, &fullFp) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(strlen(truncatedFp) == (size_t)32);
+    BOOST_TEST(strlen(fullFp) == (size_t)64);
+
+    BOOST_TEST(memcmp(truncatedFp, fullFp, 32) == 0);
+
+    nabto_device_string_free(truncatedFp);
+    nabto_device_string_free(fullFp);
+
+}
 
 BOOST_AUTO_TEST_SUITE_END()

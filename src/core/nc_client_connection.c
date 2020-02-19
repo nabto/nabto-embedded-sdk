@@ -149,15 +149,6 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
             return;
         }
 
-        uint8_t fp[16];
-        np_error_code ec2;
-        ec2 = conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
-        if (ec2 != NABTO_EC_OK) {
-            NABTO_LOG_ERROR(LOG, "Failed to get fingerprint from DTLS connection");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connection_dtls_closed_cb, conn);
-            return;
-        }
-
         nc_client_connection_keep_alive_start(conn);
         nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_OPENED);
     }

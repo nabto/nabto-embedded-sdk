@@ -272,7 +272,7 @@ nabto_device_create_private_key(NabtoDevice* device, char** key);
 
 
 /**
- * Get the public key fingerprint of the device.  The fingerprint
+ * Get the truncated/full public key fingerprint of the device.  The fingerprint
  * should be freed by calling nabto_device_string_free() afterwards.
  *
  * @param device [in]        The device
@@ -283,6 +283,10 @@ nabto_device_create_private_key(NabtoDevice* device, char** key);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerprint);
+
 
 /**
  * Close a context. This can be called after nabto_device_start() to
@@ -300,7 +304,7 @@ nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
  **************/
 
 /**
- * Get the fingerprint of the client assosiated with a given
+ * Get the truncated/full fingerprint of the client assosiated with a given
  * connection. Free fp with nabto_device_string_free().
  *
  * @param device [in]  The device
@@ -310,6 +314,9 @@ nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
 
 typedef int NabtoDeviceConnectionEvent;
 

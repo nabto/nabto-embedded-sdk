@@ -361,6 +361,22 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     return nabto_device_error_core_to_api(ec);
 }
 
+static char* toHex(uint8_t* data, size_t dataLength)
+{
+    size_t outputLength = dataLength*2 + 1;
+    char* output = (char*)malloc(outputLength);
+    if (output == NULL) {
+        return output;
+    }
+    memset(output,0,outputLength);
+    size_t i;
+    for (i = 0; i < dataLength; i++) {
+        size_t outputOffset = i*2;
+        sprintf(output+outputOffset, "%02x", data[i]);
+    }
+    return output;
+}
+
 NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
 {
     *fingerprint = NULL;
@@ -370,7 +386,30 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
     if (dev->privateKey == NULL) {
         ec = NABTO_DEVICE_EC_INVALID_STATE;
     }
-    ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, fingerprint);
+    uint8_t hash[32];
+    ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, hash);
+    if (ec == NABTO_EC_OK) {
+        *fingerprint = toHex(hash, 16);
+    }
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerprint)
+{
+    *fingerprint = NULL;
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    if (dev->privateKey == NULL) {
+        ec = NABTO_DEVICE_EC_INVALID_STATE;
+    }
+    uint8_t hash[32];
+    ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, hash);
+    if (ec == NABTO_EC_OK) {
+        *fingerprint = toHex(hash, 32);
+    }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
@@ -384,20 +423,36 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    uint8_t clientFingerprint[16];
+    uint8_t clientFingerprint[32];
 
     struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
 
     if (connection == NULL || nc_client_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
         ec = NABTO_EC_INVALID_CONNECTION;
     } else {
+        *fp = toHex(clientFingerprint, 16);
+    }
 
-        *fp = malloc(33);
-        memset(*fp, 0, 33);
-        uint8_t* f = clientFingerprint;
-        sprintf(*fp, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-                f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7],
-                f[8], f[9], f[10], f[11], f[12], f[13], f[14], f[15]);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
+}
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device, NabtoDeviceConnectionRef connectionRef, char** fp)
+{
+    *fp = NULL;
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    uint8_t clientFingerprint[32];
+
+    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
+
+    if (connection == NULL || nc_client_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
+        ec = NABTO_EC_INVALID_CONNECTION;
+    } else {
+        *fp = toHex(clientFingerprint, 32);
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);

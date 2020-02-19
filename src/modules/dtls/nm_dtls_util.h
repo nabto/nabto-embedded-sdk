@@ -23,7 +23,10 @@ np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp)
 
 np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char** crt);
 
-np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, char** fingerprint);
+/**
+ * take a 32 byte fingerprint buffer as input.
+ */
+np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* fingerprint);
 
 np_error_code nm_dtls_util_create_private_key(char** privateKey);
 
