@@ -15,6 +15,7 @@
 #include <mbedtls/error.h>
 #include <mbedtls/debug.h>
 #include <mbedtls/timing.h>
+#include <mbedtls/ssl_ciphersuites.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -22,6 +23,8 @@
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 #define DEBUG_LEVEL 0
+
+static const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
 const char* nm_dtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
@@ -513,6 +516,9 @@ np_error_code nm_dtls_srv_init_config(struct np_dtls_srv* server,
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_config_defaults returned %i", ret);
         return NABTO_EC_UNKNOWN;
     }
+
+    mbedtls_ssl_conf_ciphersuites(&server->conf,
+                                  allowedCipherSuitesList);
 
     mbedtls_ssl_conf_alpn_protocols(&server->conf, nm_dtls_srv_alpnList );
 

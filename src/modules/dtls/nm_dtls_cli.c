@@ -15,6 +15,7 @@
 #include <mbedtls/error.h>
 #include <mbedtls/certs.h>
 #include <mbedtls/timing.h>
+#include <mbedtls/ssl_ciphersuites.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -23,6 +24,8 @@
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0
+
+const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
 struct np_dtls_cli_context {
     struct np_platform* pl;
@@ -244,6 +247,9 @@ np_error_code dtls_cli_init_connection(np_dtls_cli_context* ctx)
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
+
+    mbedtls_ssl_conf_ciphersuites(&ctx->conf,
+                                  allowedCipherSuitesList);
 
     mbedtls_ssl_conf_alpn_protocols(&ctx->conf, nm_dtls_cli_alpnList );
     mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
