@@ -113,22 +113,40 @@ void HeatPump::setLogLevel(const std::string& logLevel)
     nabto_device_set_log_level(device_, logLevel.c_str());
 }
 
-void HeatPump::printHeatpumpInfo()
+std::string HeatPump::getFingerprint()
 {
     char* fpTemp;
     nabto_device_get_device_fingerprint_hex(device_, &fpTemp);
     std::string fp(fpTemp);
     nabto_device_string_free(fpTemp);
+    return fp;
+}
 
+std::string HeatPump::createPairingLink()
+{
+    std::stringstream ss;
+    ss << "https://heatpump.nabto.com/pairing"
+       << "?ProductId=" << dc_.getProductId()
+       << "&DeviceId=" << dc_.getDeviceId()
+       << "&DeviceFingerprint=" << getFingerprint()
+       << "&ClientServerUrl=" << dc_.getClientServerUrl()
+       << "&ClientServerKey=" << dc_.getClientServerKey()
+       << "&PairingPassword=" << persisting_->getPairingPassword();
+    return ss.str();
+}
+
+void HeatPump::printHeatpumpInfo()
+{
     std::cout << "######## Nabto heat pump device ########" << std::endl;
     std::cout << "# Product ID:       " << dc_.getProductId() << std::endl;
     std::cout << "# Device ID:        " << dc_.getDeviceId() << std::endl;
-    std::cout << "# Fingerprint:      " << fp << std::endl;
+    std::cout << "# Fingerprint:      " << getFingerprint() << std::endl;
     std::cout << "# Pairing Password  " << persisting_->getPairingPassword() << std::endl;
     std::cout << "# Server:           " << dc_.getServer() << std::endl;
     std::cout << "# Client Server Url " << dc_.getClientServerUrl() << std::endl;
     std::cout << "# Client Server Key " << dc_.getClientServerKey() << std::endl;
     std::cout << "# Version:          " << nabto_device_version() << std::endl;
+    std::cout << "# Pairing URL       " << createPairingLink() << std::endl;
     std::cout << "######## " << std::endl;
 }
 

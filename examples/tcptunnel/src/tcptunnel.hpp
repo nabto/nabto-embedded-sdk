@@ -65,6 +65,7 @@ class TcpTunnel {
 
     void dumpIam();
 
+
     void printTunnelInfo()
     {
         char* fpTemp;
@@ -75,17 +76,39 @@ class TcpTunnel {
         std::cout << "######## Nabto tcptunnel device ########" << std::endl;
         std::cout << "# Product ID:       " << deviceConfig_.getProductId() << std::endl;
         std::cout << "# Device ID:        " << deviceConfig_.getDeviceId() << std::endl;
-        std::cout << "# Fingerprint:      " << fp << std::endl;
+        std::cout << "# Fingerprint:      " << getFingerprint() << std::endl;
         std::cout << "# Paring Password:  " << state_->getPairingPassword() << std::endl;
         std::cout << "# Client Server Url " << deviceConfig_.getClientServerUrl() << std::endl;
         std::cout << "# Client Server Key " << deviceConfig_.getClientServerKey() << std::endl;
         std::cout << "# Version:          " << nabto_device_version() << std::endl;
+        std::cout << "# Pairing URL:      " << createPairingLink() << std::endl;
         std::cout << "######## " << std::endl;
     }
  private:
     bool loadIamPolicies();
     bool initAccessControl();
 
+    std::string getFingerprint()
+    {
+        char* fpTemp;
+        nabto_device_get_device_fingerprint_hex(device_, &fpTemp);
+        std::string fp(fpTemp);
+        nabto_device_string_free(fpTemp);
+        return fp;
+    }
+
+    std::string createPairingLink()
+    {
+        std::stringstream ss;
+        ss << "https://tcptunnel.nabto.com/pairing"
+           << "?ProductId=" << deviceConfig_.getProductId()
+           << "&DeviceId=" << deviceConfig_.getDeviceId()
+           << "&DeviceFingerprint=" << getFingerprint()
+           << "&ClientServerUrl=" << deviceConfig_.getClientServerUrl()
+           << "&ClientServerKey=" << deviceConfig_.getClientServerKey()
+           << "&PairingPassword=" << state_->getPairingPassword();
+        return ss.str();
+    }
 
     bool initDevice();
 
