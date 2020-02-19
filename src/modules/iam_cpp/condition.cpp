@@ -109,6 +109,11 @@ Condition::Result Condition::numericCondition(const std::string& lhs, const std:
                 return status(lhsDouble > rhsDouble);
             case Condition::Operator::NumericGreaterThanEquals:
                 return status(lhsDouble >= rhsDouble);
+            case Condition::Operator::StringEquals:
+            case Condition::Operator::StringNotEquals:
+            case Condition::Operator::Bool:
+                // We should never get here, this silences the compiler.
+                return Result::ERROR;
         }
     }
     return Result::ERROR;
