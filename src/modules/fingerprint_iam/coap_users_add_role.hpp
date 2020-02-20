@@ -26,16 +26,22 @@ class CoapUsersAddRole : public CoapRequestHandler {
 
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
-        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:AddUserRole")) {
-            nabto_device_coap_error_response(request, 403, "Access Denied");
-            nabto_device_coap_request_free(request);
-            return;
-        }
 
         const char* userId = nabto_device_coap_request_get_parameter(request, "id");
         const char* roleId = nabto_device_coap_request_get_parameter(request, "role");
         if (userId == NULL || roleId == NULL) {
             nabto_device_coap_error_response(request, 500, NULL);
+            nabto_device_coap_request_free(request);
+            return;
+        }
+
+        std::map<std::string,std::string> attributes;
+        attributes["IAM:UserId"] = std::string(userId);
+        attributes["IAM:RoleId"] = std::string(roleId);
+
+        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:AddRoleToUser", attributes))
+        {
+            nabto_device_coap_error_response(request, 403, "Access Denied");
             nabto_device_coap_request_free(request);
             return;
         }

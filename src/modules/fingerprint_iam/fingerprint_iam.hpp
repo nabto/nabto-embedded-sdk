@@ -21,9 +21,6 @@ class CoapPairing;
 class CoapPairingPassword;
 class CoapPairingButton;
 class CoapClientSettings;
-class CoapListUsers;
-class CoapGetUser;
-class CoapDeleteUser;
 
 class CoapRequestHandler;
 
@@ -64,6 +61,11 @@ class FingerprintIAM {
      */
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action);
     bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action, const nabto::iam::Attributes& attributes);
+    bool checkAccess(NabtoDeviceConnectionRef connectionRef, const std::string& action,
+                     const std::map<std::string, std::string> attributes)
+    {
+        return checkAccess(connectionRef, action, nabto::iam::Attributes(attributes));
+    }
 
     /**
      * Add a policy to the module.
@@ -214,9 +216,9 @@ class FingerprintIAM {
 
     std::unique_ptr<CoapClientSettings> coapClientSettings_;
 
-    std::unique_ptr<CoapListUsers> coapListUsers_;
-    std::unique_ptr<CoapGetUser> coapGetUser_;
-    std::unique_ptr<CoapDeleteUser> coapDeleteUser_;
+    std::unique_ptr<CoapRequestHandler> coapListUsers_;
+    std::unique_ptr<CoapRequestHandler> coapGetUser_;
+    std::unique_ptr<CoapRequestHandler> coapDeleteUser_;
     std::unique_ptr<CoapRequestHandler> coapUsersDeleteRole_;
     std::unique_ptr<CoapRequestHandler> coapUsersAddRole_;
     std::unique_ptr<CoapRequestHandler> coapListRoles_;

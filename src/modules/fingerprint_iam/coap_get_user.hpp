@@ -27,15 +27,18 @@ class CoapGetUser : public CoapRequestHandler {
 
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
-        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:GetUser")) {
-            nabto_device_coap_error_response(request, 403, "Access Denied");
+        const char* userId = nabto_device_coap_request_get_parameter(request, "id");
+        if (userId == NULL) {
+            nabto_device_coap_error_response(request, 500, NULL);
             nabto_device_coap_request_free(request);
             return;
         }
 
-        const char* userId = nabto_device_coap_request_get_parameter(request, "id");
-        if (userId == NULL) {
-            nabto_device_coap_error_response(request, 500, NULL);
+        std::map<std::string, std::string> attributes;
+        attributes["IAM:UserId"] = std::string(userId);
+
+        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:GetUser", attributes)) {
+            nabto_device_coap_error_response(request, 403, "Access Denied");
             nabto_device_coap_request_free(request);
             return;
         }

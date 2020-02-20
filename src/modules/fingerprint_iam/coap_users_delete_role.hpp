@@ -14,7 +14,7 @@ class CoapUsersDeleteRole : public CoapRequestHandler {
 
     bool init()
     {
-        return CoapRequestHandler::init(NABTO_DEVICE_COAP_DELETE, {"iam", "users", "{id}", "roles", "{role}"} );
+        return CoapRequestHandler::init(NABTO_DEVICE_COAP_DELETE, {"iam", "users", "{user}", "roles", "{role}"} );
     }
 
     static std::unique_ptr<CoapRequestHandler> create(FingerprintIAM& iam, NabtoDevice* device)
@@ -26,19 +26,25 @@ class CoapUsersDeleteRole : public CoapRequestHandler {
 
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
-        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:RemoveUserRole")) {
-            nabto_device_coap_error_response(request, 403, "Access Denied");
-            nabto_device_coap_request_free(request);
-            return;
-        }
-
-        const char* userId = nabto_device_coap_request_get_parameter(request, "id");
+        const char* userId = nabto_device_coap_request_get_parameter(request, "user");
         const char* roleId = nabto_device_coap_request_get_parameter(request, "role");
         if (userId == NULL || roleId == NULL) {
             nabto_device_coap_error_response(request, 500, NULL);
             nabto_device_coap_request_free(request);
             return;
         }
+
+        std::map<std::string, std::string> attributes;
+        attributes["IAM:UserId"] = std::string(userId);
+        attributes["IAM:RoleId"] = std::string(roleId);
+
+
+        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:RemoveRoleFronUser", attributes)) {
+            nabto_device_coap_error_response(request, 403, "Access Denied");
+            nabto_device_coap_request_free(request);
+            return;
+        }
+
 
         if (iam_.removeRoleFromUser(userId, roleId)) {
             nabto_device_coap_response_set_code(request, 202);
