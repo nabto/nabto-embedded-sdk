@@ -25,6 +25,8 @@ class CoapListUsers;
 class CoapGetUser;
 class CoapDeleteUser;
 
+class CoapRequestHandler;
+
 class UserBuilder;
 
 class AuthorizationRequestHandler;
@@ -137,6 +139,15 @@ class FingerprintIAM {
         return users;
     }
 
+    std::vector<std::shared_ptr<Role> > getRoles() const
+    {
+        std::vector<std::shared_ptr<Role> > roles;
+        for (auto r : roles_) {
+            roles.push_back(r.second);
+        }
+        return roles;
+    }
+
     std::shared_ptr<User> getUser(const std::string& id)
     {
         auto it = users_.find(id);
@@ -153,6 +164,31 @@ class FingerprintIAM {
         if (it != users_.end()) {
             users_.erase(id);
             changeListener_->deleteUser(id);
+        }
+    }
+
+    bool removeRoleFromUser(const std::string& userId, const std::string& roleId)
+    {
+        auto user = getUser(userId);
+        if (user) {
+            user->removeRole(roleId);
+            changeListener_->upsertUser(userId);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool addRoleToUser(const std::string& userId, const std::string& roleId)
+    {
+        auto user = getUser(userId);
+        auto role = getRole(roleId);
+        if (user && role) {
+            user->addRole(role);
+            changeListener_->upsertUser(userId);
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -181,6 +217,9 @@ class FingerprintIAM {
     std::unique_ptr<CoapListUsers> coapListUsers_;
     std::unique_ptr<CoapGetUser> coapGetUser_;
     std::unique_ptr<CoapDeleteUser> coapDeleteUser_;
+    std::unique_ptr<CoapRequestHandler> coapUsersDeleteRole_;
+    std::unique_ptr<CoapRequestHandler> coapUsersAddRole_;
+    std::unique_ptr<CoapRequestHandler> coapListRoles_;
 
     std::unique_ptr<AuthorizationRequestHandler> authorizationRequestHandler_;
 };

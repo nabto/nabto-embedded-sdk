@@ -35,11 +35,35 @@ class User {
         attributes_.set(key, value);
     }
 
+    void removeRole(const std::string& roleId)
+    {
+        std::shared_ptr<Role> foundRole = getRole(roleId);
+        if (foundRole != nullptr) {
+            roles_.erase(foundRole);
+        }
+    }
+
+    void addRole(std::shared_ptr<Role> role)
+    {
+        roles_.insert(role);
+    }
+
     std::set<std::shared_ptr<Role> > getRoles() const { return roles_; }
     nabto::iam::Attributes getAttributes() const { return attributes_; }
     std::string getId() const { return id_; }
     std::set<std::string> getFingerprints() const { return fingerprints_; }
  private:
+
+    std::shared_ptr<Role> getRole(const std::string& roleId)
+    {
+        for (auto r : roles_) {
+            if (r->getId() == roleId) {
+                return r;
+            }
+        }
+        return nullptr;
+    }
+
     std::string id_;
     std::set<std::shared_ptr<Role> > roles_;
     std::set<std::string> fingerprints_;

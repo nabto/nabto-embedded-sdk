@@ -230,6 +230,9 @@ void HeatPump::loadIamPolicy()
                       .addAction("IAM:ListUsers")
                       .addAction("IAM:GetUser")
                       .addAction("IAM:DeleteUser")
+                      .addAction("IAM:AddUserRole")
+                      .addAction("IAM:RemoveUserRole")
+                      .addAction("IAM:ListRoles")
             )
         .build();
 

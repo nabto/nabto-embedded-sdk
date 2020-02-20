@@ -9,6 +9,9 @@
 #include "coap_list_users.hpp"
 #include "coap_get_user.hpp"
 #include "coap_delete_user.hpp"
+#include "coap_users_delete_role.hpp"
+#include "coap_users_add_role.hpp"
+#include "coap_list_roles.hpp"
 #include "user_builder.hpp"
 #include "fingerprint_iam_json.hpp"
 #include "authorization_request_handler.hpp"
@@ -36,6 +39,9 @@ FingerprintIAM::FingerprintIAM(NabtoDevice* device)
     coapListUsers_ = CoapListUsers::create(*this, device_);
     coapGetUser_ = CoapGetUser::create(*this, device_);
     coapDeleteUser_ = CoapDeleteUser::create(*this, device_);
+    coapUsersDeleteRole_ = CoapUsersDeleteRole::create(*this, device_);
+    coapUsersAddRole_ = CoapUsersAddRole::create(*this, device_);
+    coapListRoles_ = CoapListRoles::create(*this, device_);
 
     authorizationRequestHandler_ = AuthorizationRequestHandler::create(device, *this);
 }
