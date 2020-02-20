@@ -8,7 +8,6 @@
 #include <core/nc_coap_server.h>
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
-#include <modules/iam/nc_iam.h>
 #include <core/nc_connection_event.h>
 #include <modules/mdns/nm_mdns.h>
 
@@ -51,7 +50,6 @@ struct nc_device_context {
     struct nc_rendezvous_context rendezvous;
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
-    struct nc_iam iam;
     struct np_dtls_srv* dtlsServer;
 
     bool enableMdns;
@@ -93,8 +91,6 @@ np_error_code nc_device_next_connection_ref(struct nc_device_context* dev, uint6
 uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream);
 
 struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
-
-bool nc_device_user_in_use(struct nc_device_context* dev, struct nc_iam_user* user);
 
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData);
 void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener);

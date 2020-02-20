@@ -11,7 +11,6 @@ set(nabto_device_src
   ${src_dir}/nabto_api_future_queue.c
   ${src_dir}/nabto_device_error.c
   ${src_dir}/nabto_device_util.c
-  ${src_dir}/nabto_device_iam.c
   ${src_dir}/nabto_device_experimental.c
   nabto_device_connection_events.c
   nabto_device_events.c

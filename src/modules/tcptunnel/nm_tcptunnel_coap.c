@@ -2,7 +2,6 @@
 #include "nm_tcptunnel_coap.h"
 
 #include <core/nc_coap_server.h>
-//#include <core/nc_iam.h>
 #include <platform/np_logging.h>
 
 #include <cbor.h>

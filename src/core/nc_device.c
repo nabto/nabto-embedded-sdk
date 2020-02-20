@@ -1,5 +1,4 @@
 #include "nc_device.h"
-#include <modules/iam/nc_iam_coap.h>
 #include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_CORE
@@ -30,13 +29,13 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         nc_device_deinit(device);
         return ec;
     }
-    //nc_iam_init(&device->iam);
+
     ec = nc_coap_server_init(pl, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
-    //nc_iam_coap_register_handlers(device);
+
     ec = nc_coap_client_init(pl, &device->coapClient);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
@@ -102,7 +101,6 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
-    //nc_iam_deinit(&device->iam);
     if (device->dtlsServer != NULL) { // was created
         pl->dtlsS.destroy(device->dtlsServer);
     }
