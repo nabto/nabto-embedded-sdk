@@ -14,7 +14,7 @@ class CoapUsersAddRole : public CoapRequestHandler {
 
     bool init()
     {
-        return CoapRequestHandler::init(NABTO_DEVICE_COAP_PUT, {"iam", "users", "{id}", "roles", "{role}"} );
+        return CoapRequestHandler::init(NABTO_DEVICE_COAP_PUT, {"iam", "users", "{user}", "roles", "{role}"} );
     }
 
     static std::unique_ptr<CoapRequestHandler> create(FingerprintIAM& iam, NabtoDevice* device)
@@ -27,7 +27,7 @@ class CoapUsersAddRole : public CoapRequestHandler {
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
 
-        const char* userId = nabto_device_coap_request_get_parameter(request, "id");
+        const char* userId = nabto_device_coap_request_get_parameter(request, "user");
         const char* roleId = nabto_device_coap_request_get_parameter(request, "role");
         if (userId == NULL || roleId == NULL) {
             nabto_device_coap_error_response(request, 500, NULL);

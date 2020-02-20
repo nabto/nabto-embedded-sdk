@@ -40,23 +40,23 @@ nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* device
     }
 
     res->dev = dev;
-
+    np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    np_error_code ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_COAP, &nabto_device_coap_listener_callback, res);
+    ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_COAP, &nabto_device_coap_listener_callback, res);
     if (ec) {
         free(res);
-        return nabto_device_error_core_to_api(ec);
-    }
-    res->listener = listener;
+    } else {
+        res->listener = listener;
 
-    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res, &res->resource);
-    if (err != NABTO_COAP_ERROR_OK) {
-        free(res);
-        return nabto_device_coap_error_module_to_api(err);
+        nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res, &res->resource);
+        if (err != NABTO_COAP_ERROR_OK) {
+            free(res);
+            ec = nabto_device_coap_error_module_to_api(err);
+        }
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 void NABTO_DEVICE_API

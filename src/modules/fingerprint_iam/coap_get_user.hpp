@@ -15,7 +15,7 @@ class CoapGetUser : public CoapRequestHandler {
 
     bool init()
     {
-        return CoapRequestHandler::init(NABTO_DEVICE_COAP_GET, {"iam", "users", "{id}"} );
+        return CoapRequestHandler::init(NABTO_DEVICE_COAP_GET, {"iam", "users", "{user}"} );
     }
 
     static std::unique_ptr<CoapGetUser> create(FingerprintIAM& iam, NabtoDevice* device)
@@ -27,7 +27,7 @@ class CoapGetUser : public CoapRequestHandler {
 
     void handleRequest(NabtoDeviceCoapRequest* request)
     {
-        const char* userId = nabto_device_coap_request_get_parameter(request, "id");
+        const char* userId = nabto_device_coap_request_get_parameter(request, "user");
         if (userId == NULL) {
             nabto_device_coap_error_response(request, 500, NULL);
             nabto_device_coap_request_free(request);
