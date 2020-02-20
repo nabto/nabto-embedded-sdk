@@ -342,6 +342,7 @@ void nm_epoll_event_bind_port(void* data)
         cb(ec, us->created.data);
         return;
     }
+    memset(&ev, 0, sizeof(struct epoll_event));
     ev.events = EPOLLIN | EPOLLET;
     ev.data.ptr = us;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
@@ -411,6 +412,7 @@ void nm_epoll_event_bind_mdns_ipv4(void* data)
     }
 
     struct epoll_event ev;
+    memset(&ev, 0, sizeof(struct epoll_event));
     ev.events = EPOLLIN | EPOLLET;
     ev.data.ptr = us;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {
@@ -474,6 +476,7 @@ void nm_epoll_event_bind_mdns_ipv6(void* data)
     }
 
     struct epoll_event ev;
+    memset(&ev, 0, sizeof(struct epoll_event));
     ev.events = EPOLLIN | EPOLLET;
     ev.data.ptr = us;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, us->sock, &ev) == -1) {

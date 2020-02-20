@@ -122,6 +122,7 @@ np_error_code nm_epoll_tcp_async_connect(np_tcp_socket* sock, struct np_ip_addre
 
     sock->fd = s;
     struct epoll_event ev;
+    memset(&ev, 0, sizeof(struct epoll_event));
     ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
     ev.data.ptr = sock;
     epoll_ctl(sock->epoll->fd, EPOLL_CTL_ADD, sock->fd, &ev);

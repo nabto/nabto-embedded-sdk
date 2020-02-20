@@ -26,6 +26,7 @@ np_error_code nm_epoll_init(struct nm_epoll_context* epoll, struct np_platform* 
     }
 
     struct epoll_event ev;
+    memset(&ev, 0, sizeof(struct epoll_event));
     ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLHUP;
     ev.data.ptr = NULL;
     if (epoll_ctl(epoll->fd, EPOLL_CTL_ADD, epoll->pipeFd[0], &ev) == -1) {
