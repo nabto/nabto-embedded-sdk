@@ -76,7 +76,7 @@ static std::string verdictToString(bool verdict)
     return verdict ? "granted" : "denied";
 }
 
-bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action, const nabto::iam::Attributes& attributes)
+bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action, const nabto::iam::Attributes& attributesIn)
 {
     NabtoDeviceError ec;
     char* fingerprint;
@@ -85,12 +85,17 @@ bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string
         return false;
     }
 
+    auto attributes = attributesIn;
+
+
     std::string clientFingerprint(fingerprint);
     nabto_device_string_free(fingerprint);
 
     std::shared_ptr<User> user = findUserByFingerprint(clientFingerprint);
     bool verdict;
     if (user) {
+        attributes.set("Connection:UserId", user->getId());
+
         auto subject = createSubjectFromUser(*user);
         verdict = nabto::iam::Decision::checkAccess(subject, action, attributes);
 
