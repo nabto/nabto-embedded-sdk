@@ -39,7 +39,7 @@ class CoapUsersDeleteRole : public CoapRequestHandler {
         attributes["IAM:RoleId"] = std::string(roleId);
 
 
-        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:RemoveRoleFronUser", attributes)) {
+        if (!iam_.checkAccess(nabto_device_coap_request_get_connection_ref(request), "IAM:RemoveRoleFromUser", attributes)) {
             nabto_device_coap_error_response(request, 403, "Access Denied");
             nabto_device_coap_request_free(request);
             return;
