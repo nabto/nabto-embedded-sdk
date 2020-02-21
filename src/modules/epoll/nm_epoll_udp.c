@@ -280,7 +280,7 @@ void nm_epoll_udp_try_read(void* userData)
         sock->recv.cb = NULL;
         cb(NABTO_EC_OK, ep, pl->buf.start(epoll->recvBuffer), recvLength, sock->recv.data);
     }
-    np_event_queue_post_maybe_double(pl, &sock->recv.event, nm_epoll_udp_try_read, socket);
+    np_event_queue_post_maybe_double(pl, &sock->recv.event, nm_epoll_udp_try_read, userData);
 }
 
 np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
