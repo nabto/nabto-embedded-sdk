@@ -129,8 +129,6 @@ pipeline {
                     archiveArtifacts artifacts: 'files/**', onlyIfSuccessful: true
                 }
             }
-
-
         }
     }
 }
