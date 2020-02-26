@@ -22,7 +22,6 @@ struct nabto_device_context {
     struct nabto_device_thread* networkThread;
     struct nabto_device_mutex* eventMutex;
     struct nabto_device_condition* eventCond;
-    struct nabto_device_future* iamChangedFuture;
 
     struct nabto_device_mutex* futureQueueMutex;
 
@@ -31,9 +30,6 @@ struct nabto_device_context {
     bool closing;
 
     struct nabto_device_future* queueHead;
-
-    struct nabto_device_future* streamListenFuture;
-    struct nabto_device_stream** streamListenStream;
 
     char appName[33];
     char appVersion[33];

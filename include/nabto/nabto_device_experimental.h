@@ -109,6 +109,43 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
 
+
+/*************************
+ * Server Connect Tokens *
+ *************************/
+
+/**
+ * Add a server connect token to the basestation which the device uses.
+ *
+ * @param device
+ * @param serverConnectToken  The utf8 encoded token which is added to the basestation.
+ * @return NABTO_DEVICE_EC_OK if the token is added.
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the token cannot be stored in the device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverConnectToken);
+
+/**
+ * Get synchronization state of the tokens.
+ *
+ * The future return ok if sync went ok or we are not attached such that
+ * sync is not neccessary.
+ *
+ * @return NABTO_DEVICE_EC_OK if they are synched
+ *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synched
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_is_server_connect_tokens_synchronized(NabtoDevice* device);
+
+/**
+ * Generate a sufficient strong random server connect token.
+ *
+ * The token is NOT added to the system.
+ * the resulting token needs to be freed with nabto_device_string_free.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConnectToken);
+
 #ifdef __cplusplus
 } // extern c
 #endif

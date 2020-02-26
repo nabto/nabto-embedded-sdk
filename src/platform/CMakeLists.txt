@@ -8,6 +8,7 @@ set(src
   ${src_dir}/np_event_queue.c
   ${src_dir}/np_error_code.c
   ${src_dir}/np_util.c
+  ${src_dir}/np_vector.c
   )
 
 set(test_src

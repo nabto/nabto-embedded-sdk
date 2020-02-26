@@ -516,7 +516,63 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_std_out_callback(NabtoDev
     return NABTO_DEVICE_EC_OK;
 }
 
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverConnectToken)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    ec = nc_device_add_server_connect_token(&dev->core, serverConnectToken);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
 
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_is_server_connect_tokens_synchronized(NabtoDevice* device)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    ec = nc_device_is_server_connect_tokens_synchronized(&dev->core);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConnectToken)
+{
+    const char* alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrtsuvwxyz0123456789";
+    size_t alphabetLength = strlen(alphabet);
+
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+
+    np_error_code ec;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    struct np_platform* pl = &dev->pl;
+
+    char output[21];
+    memset(output, 0, 21);
+    size_t generated = 0;
+    while (generated < 20) {
+        uint8_t randByte;
+
+        ec = pl->random.random(pl, &randByte, 1);
+        if (ec) {
+            break;
+        }
+        if (randByte < alphabetLength) {
+            output[generated] = alphabet[randByte];
+            generated++;
+        }
+    }
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    if (ec == NABTO_EC_OK) {
+        *serverConnectToken = strdup(output);
+    }
+    return nabto_device_error_core_to_api(ec);
+}
 
 /*
  * Thread running the network

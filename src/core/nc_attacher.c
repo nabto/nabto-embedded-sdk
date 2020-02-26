@@ -7,8 +7,10 @@
 #include <core/nc_device.h>
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <cbor.h>
+
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
@@ -178,6 +180,34 @@ np_error_code nc_attacher_stop(struct nc_attach_context* ctx)
     return NABTO_EC_OK;
 }
 
+np_error_code nc_attacher_add_server_connect_token(struct nc_attach_context* ctx, const char* token)
+{
+    char* tokenCopy = strdup(token);
+    if (tokenCopy == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    ctx->sctContext.version++;
+    if (np_vector_push_back(&ctx->sctContext.scts, tokenCopy) != NABTO_EC_OK)
+    {
+        free(tokenCopy);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    // TODO initialize synchronization
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach_context* ctx)
+{
+    if (ctx->state == NC_ATTACHER_STATE_ATTACHED) {
+        if (ctx->sctContext.synchronizedVersion == ctx->sctContext.version) {
+            return NABTO_EC_OK;
+        } else {
+            return NABTO_EC_OPERATION_IN_PROGRESS;
+        }
+    } else {
+        return NABTO_EC_OK;
+    }
+}
 
 /************************
  * local function impls *

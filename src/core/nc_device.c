@@ -337,3 +337,13 @@ void nc_device_events_listener_notify(enum nc_device_event event, void* data)
         current->cb(event, current->userData);
     }
 }
+
+np_error_code nc_device_add_server_connect_token(struct nc_device_context* dev, const char* token)
+{
+    return nc_attacher_add_server_connect_token(&dev->attacher, token);
+}
+
+np_error_code nc_device_is_server_connect_tokens_synchronized(struct nc_device_context* dev)
+{
+    return nc_attacher_is_server_connect_tokens_synchronized(&dev->attacher);
+}

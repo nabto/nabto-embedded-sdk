@@ -2,8 +2,10 @@
 #define NC_ATTACHER_H
 
 #include <platform/np_platform.h>
+#include <platform/np_vector.h>
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +43,12 @@ enum nc_attacher_module_state {
 struct nc_attach_endpoint_context {
     struct nc_attach_context* ctx;
     struct np_udp_endpoint ep;
+};
+
+struct nc_attach_sct_context {
+    struct np_vector scts;
+    uint64_t version;
+    uint64_t synchronizedVersion;
 };
 
 struct nc_attach_context {
@@ -101,6 +109,8 @@ struct nc_attach_context {
     // configurable for testing purposes.
     uint32_t retryWaitTime;
     uint32_t accessDeniedWaitTime;
+
+    struct nc_attach_sct_context sctContext;
 };
 
 // Init attacher module, always first function to be called
@@ -144,6 +154,10 @@ np_error_code nc_attacher_async_close(struct nc_attach_context* ctx,
 
 // Stop the module forcefully
 np_error_code nc_attacher_stop(struct nc_attach_context* ctx);
+
+np_error_code nc_attacher_add_server_connect_token(struct nc_attach_context* ctx, const char* token);
+
+np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach_context* ctx);
 
 #ifdef __cplusplus
 } // extern c

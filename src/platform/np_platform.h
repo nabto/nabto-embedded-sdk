@@ -16,6 +16,7 @@
 #include <platform/np_tcp.h>
 #include <platform/np_mdns.h>
 #include <platform/np_authorization.h>
+#include <platform/np_random.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +45,10 @@ struct np_platform {
 
     // DTLS server module
     struct np_dtls_srv_module dtlsS;
+
+    // Random source
+    struct np_random_module random;
+    void* randomCtx; // userdata for the random module.
 
     // Tcp socket module
     struct np_tcp_module tcp;
