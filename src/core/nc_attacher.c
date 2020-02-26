@@ -12,7 +12,8 @@
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
-const char* attachPath[2] = {"device", "attach"};
+const char* attachPath[2] = {"device", "attach-start"};
+const char* attachEndPath[2] = {"device", "attach-end"};
 
 static const uint32_t ACCESS_DENIED_WAIT_TIME = 3600000; // one hour
 static const uint32_t RETRY_WAIT_TIME = 10000; // 10 seconds
@@ -47,6 +48,9 @@ static void keep_alive_event(const np_error_code ec, void* data);
 static void keep_alive_send_req(struct nc_attach_context* ctx);
 static void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length);
 
+// attach end request
+static void send_attach_end_request(struct nc_attach_context* ctx);
+static void coap_attach_end_handler(struct nabto_coap_client_request* request, void* data);
 
 
 /*****************
@@ -600,13 +604,8 @@ void handle_device_attached_response(struct nc_attach_context* ctx, CborValue* r
     // free the request before calling listener in case the listener deinits coap
     nabto_coap_client_request_free(request);
     ctx->request = NULL;
-    // start keep alive with default values if above failed
-    nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
-    ctx->state = NC_ATTACHER_STATE_ATTACHED;
-    handle_state_change(ctx);
-    if (ctx->listener) {
-        ctx->listener(NC_DEVICE_EVENT_ATTACHED, ctx->listenerData);
-    }
+
+    send_attach_end_request(ctx);
 }
 
 void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* root)
@@ -649,6 +648,51 @@ void handle_device_redirect_response(struct nc_attach_context* ctx, CborValue* r
     return;
 }
 
+void send_attach_end_request(struct nc_attach_context* ctx)
+{
+    struct nabto_coap_client_request* req;
+    req = nabto_coap_client_request_new(nc_coap_client_get_client(ctx->coapClient),
+                                        NABTO_COAP_METHOD_POST,
+                                        2, attachEndPath,
+                                        &coap_attach_end_handler,
+                                        ctx, ctx->dtls);
+    ctx->request = req;
+    nabto_coap_client_request_send(req);
+}
+
+void coap_attach_end_handler(struct nabto_coap_client_request* request, void* data)
+{
+    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
+        // coap_response_failed will set retry state which will close DTLS, once closed it will close completely
+        coap_response_failed(ctx, request);
+        return;
+    }
+    struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
+    if (!res) {
+        // Request failed
+        NABTO_LOG_ERROR(LOG, "Coap request failed, no response");
+        coap_response_failed(ctx, request);
+        return;
+    }
+    uint16_t resCode = nabto_coap_client_response_get_code(res);
+    if (resCode != 201) {
+        NABTO_LOG_ERROR(LOG, "BS returned CoAP error code: %d", resCode);
+        coap_response_failed(ctx, request);
+        return;
+    }
+
+    nabto_coap_client_request_free(request);
+    ctx->request = NULL;
+
+    // start keep alive with default values if above failed
+    nc_keep_alive_wait(&ctx->keepAlive, keep_alive_event, ctx);
+    ctx->state = NC_ATTACHER_STATE_ATTACHED;
+    handle_state_change(ctx);
+    if (ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_ATTACHED, ctx->listenerData);
+    }
+}
 
 void udp_send_callback(const np_error_code ec, void* data)
 {
