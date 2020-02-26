@@ -80,7 +80,7 @@ bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string
 {
     NabtoDeviceError ec;
     char* fingerprint;
-    ec = nabto_device_connection_get_client_fingerprint_hex(getDevice(), ref, &fingerprint);
+    ec = nabto_device_connection_get_client_fingerprint_full_hex(getDevice(), ref, &fingerprint);
     if (ec) {
         return false;
     }

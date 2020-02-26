@@ -46,7 +46,7 @@ class CoapPairingPassword : public CoapRequestHandler {
 
         NabtoDeviceError ec;
         char* fingerprint;
-        ec = nabto_device_connection_get_client_fingerprint_hex(getDevice(), ref, &fingerprint);
+        ec = nabto_device_connection_get_client_fingerprint_full_hex(getDevice(), ref, &fingerprint);
         if (ec) {
             nabto_device_coap_error_response(request, 500, "Server error");
             nabto_device_coap_request_free(request);
