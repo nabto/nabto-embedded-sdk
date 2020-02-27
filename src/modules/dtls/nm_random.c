@@ -1,6 +1,14 @@
 #include "nm_random.h"
 
-static void make_random(struct np_platform* pl, void* buffer, size_t bufferSize);
+#include <platform/np_error_code.h>
+#include <platform/np_platform.h>
+
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+
+#include <stdlib.h>
+
+static np_error_code make_random(struct np_platform* pl, void* buffer, size_t bufferSize);
 
 struct random_ctx {
     mbedtls_ctr_drbg_context ctr_drbg;
@@ -30,6 +38,7 @@ bool nm_random_init(struct np_platform* pl)
     pl->randomCtx = ctx;
 
     pl->random.random = &make_random;
+    return true;
 }
 
 void nm_random_deinit(struct np_platform* pl)
@@ -45,7 +54,6 @@ np_error_code make_random(struct np_platform* pl, void* buffer, size_t bufferSiz
     int i = mbedtls_ctr_drbg_random(&ctx->ctr_drbg, buffer, bufferSize);
     if (i == 0) {
         return NABTO_EC_OK;
-    } else {
-        return NABTO_EC_FAILED;
     }
+    return NABTO_EC_UNKNOWN;
 }

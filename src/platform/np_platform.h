@@ -68,6 +68,11 @@ struct np_platform {
  */
 void np_platform_init(struct np_platform* pl);
 
+/**
+ * Deinitialize the platform structure.
+ */
+void np_platform_deinit(struct np_platform* pl);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

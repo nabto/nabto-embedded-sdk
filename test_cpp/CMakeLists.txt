@@ -25,6 +25,7 @@ set(test_src
   api/device_api.cpp
   api/authorization_test.cpp
   api/new_free.cpp
+  api/create_sct.cpp
   attach/attach_test.cpp
   test_platform.cpp
   iam/load_users.cpp

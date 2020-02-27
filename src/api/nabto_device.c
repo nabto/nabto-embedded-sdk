@@ -173,6 +173,10 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     free(dev->publicKey);
     free(dev->privateKey);
 
+
+    nabto_device_deinit_platform_modules(&dev->pl);
+    nabto_device_deinit_platform(&dev->pl);
+
     free(dev);
 }
 
