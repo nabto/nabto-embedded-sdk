@@ -48,3 +48,17 @@ bool np_vector_empty(struct np_vector* vector)
 {
     return vector->used == 0;
 }
+
+size_t np_vector_size(struct np_vector* vector)
+{
+    return vector->used;
+}
+
+void* np_vector_get(struct np_vector* vector, size_t index)
+{
+    if (index < vector->used) {
+        return vector->elements[index];
+    } else {
+        return NULL;
+    }
+}
