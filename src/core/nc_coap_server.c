@@ -1,4 +1,5 @@
 #include "nc_coap_server.h"
+#include "nc_coap.h"
 #include "nc_client_connection.h"
 #include "nc_coap_packet_printer.h"
 

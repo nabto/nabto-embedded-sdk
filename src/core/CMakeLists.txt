@@ -10,6 +10,9 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(src
   ${src_dir}/nc_attacher.c
+  ${src_dir}/nc_attacher_sct.c
+  ${src_dir}/nc_attacher_attach_end.c
+  ${src_dir}/nc_attacher_attach_start.c
   ${src_dir}/nc_packet.c
   ${src_dir}/nc_keep_alive.c
   ${src_dir}/nc_client_connection.c

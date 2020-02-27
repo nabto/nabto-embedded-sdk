@@ -45,6 +45,15 @@ struct nc_attach_endpoint_context {
     struct np_udp_endpoint ep;
 };
 
+enum nc_attacher_status {
+    NC_ATTACHER_STATUS_ATTACHED,
+    NC_ATTACHER_STATUS_REDIRECT,
+    NC_ATTACHER_STATUS_ERROR
+};
+
+typedef void (*nc_attacher_attach_start_callback)(enum nc_attacher_status status, void* userData);
+typedef void (*nc_attacher_attach_end_callback)(np_error_code ec, void* userData);
+
 typedef void (*nc_attacher_sct_callback)(np_error_code ec, void* userData);
 
 struct nc_attacher_sct_context {
@@ -94,6 +103,13 @@ struct nc_attach_context {
     uint8_t redirectAttempts;
     struct np_timed_event reattachTimer;
     struct np_event closeEv;
+
+    nc_attacher_attach_start_callback startCallback;
+    void* startCallbackUserData;
+
+    nc_attacher_attach_end_callback endCallback;
+    void* endCallbackUserData;
+
 
     struct nabto_coap_client_request* request;
 
@@ -163,6 +179,18 @@ np_error_code nc_attacher_stop(struct nc_attach_context* ctx);
 np_error_code nc_attacher_add_server_connect_token(struct nc_attach_context* ctx, const char* token);
 
 np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach_context* ctx);
+
+np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_attacher_sct_callback cb, void* userData);
+
+/**
+ * @return NABTO_EC_OPERATION_STARTED if the attach start request is started.
+ */
+np_error_code nc_attacher_attach_start_request(struct nc_attach_context* attacher, nc_attacher_attach_start_callback cb, void* userData);
+
+/**
+ * @return NABTO_EC_OPERATION_STARTED if the attach end request is started.
+ */
+np_error_code nc_attacher_attach_end_request(struct nc_attach_context* attacher, nc_attacher_attach_end_callback cb, void* userData);
 
 #ifdef __cplusplus
 } // extern c
