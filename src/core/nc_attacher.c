@@ -54,6 +54,10 @@ static void nc_attacher_add_server_connect_token_callback(np_error_code ec, void
 
 static void coap_attach_failed(struct nc_attach_context* ctx);
 
+// sct request
+void send_sct_request(struct nc_attach_context* ctx);
+void send_sct_request_callback(np_error_code ec, void* userData);
+
 /*****************
  * API functions *
  *****************/
@@ -387,6 +391,7 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
 
 void handle_dtls_closed(struct nc_attach_context* ctx)
 {
+    nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
     np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
@@ -423,6 +428,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             // If this impossible error happens, simply try reattach
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
     }
+
     handle_state_change(ctx);
 }
 
@@ -439,6 +445,7 @@ void handle_dtls_connected(struct nc_attach_context* ctx)
 void handle_dtls_access_denied(struct nc_attach_context* ctx)
 {
     NABTO_LOG_TRACE(LOG, "Received access denied from state: %u", ctx->state);
+    nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
     np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
@@ -463,8 +470,13 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
 {
     struct nc_attach_context* ctx = data;
 
+    if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
+        coap_attach_failed(ctx);
+        return;
+    }
+
     if (status == NC_ATTACHER_STATUS_ATTACHED) {
-        send_attach_end_request(ctx);
+        send_sct_request(ctx);
     } else if (status == NC_ATTACHER_STATUS_REDIRECT) {
         ctx->state = NC_ATTACHER_STATE_REDIRECT;
         ctx->redirectAttempts++;
@@ -474,6 +486,34 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
     }
 }
 
+void send_sct_request(struct nc_attach_context* ctx)
+{
+    np_error_code ec = nc_attacher_sct_upload(ctx, &send_sct_request_callback, ctx);
+    if (ec == NABTO_EC_NO_OPERATION) {
+        send_attach_end_request(ctx);
+    } else if (ec == NABTO_EC_OPERATION_STARTED) {
+        // wait for callback
+    } else {
+        // an error occured fail the attach.
+        coap_attach_failed(ctx);
+    }
+}
+
+void send_sct_request_callback(np_error_code ec, void* userData)
+{
+    struct nc_attach_context* ctx = userData;
+
+    if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
+        coap_attach_failed(ctx);
+        return;
+    }
+
+    if (ec == NABTO_EC_OK) {
+        send_attach_end_request(ctx);
+    } else {
+        coap_attach_failed(ctx);
+    }
+}
 
 void send_attach_end_request(struct nc_attach_context* ctx)
 {
@@ -483,11 +523,6 @@ void send_attach_end_request(struct nc_attach_context* ctx)
     }
 }
 
-void coap_attach_failed(struct nc_attach_context* ctx)
-{
-    ctx->pl->dtlsC.close(ctx->dtls);
-    // TODO
-}
 
 void coap_attach_end_handler(np_error_code ec, void* data)
 {
@@ -510,6 +545,12 @@ void coap_attach_end_handler(np_error_code ec, void* data)
     if (ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_ATTACHED, ctx->listenerData);
     }
+}
+
+void coap_attach_failed(struct nc_attach_context* ctx)
+{
+    ctx->pl->dtlsC.close(ctx->dtls);
+    // TODO
 }
 
 void udp_send_callback(const np_error_code ec, void* data)

@@ -23,7 +23,7 @@ static enum nc_attacher_status coap_attach_start_handle_response(struct nabto_co
 static enum nc_attacher_status handle_attached(struct nc_attach_context* ctx, CborValue* root);
 static enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx, CborValue* root);
 
-np_error_code nc_attacher_attach_start_request(struct nc_attach_context* ctx, nc_attacher_attach_start_callback endCallback, void* userData)
+np_error_code nc_attacher_attach_start_request(struct nc_attach_context* ctx, nc_attacher_attach_start_callback startCallback, void* userData)
 {
     if (ctx->startCallback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
@@ -66,7 +66,7 @@ np_error_code nc_attacher_attach_start_request(struct nc_attach_context* ctx, nc
         ec = nc_coap_error_to_core(err);
         nabto_coap_client_request_free(req);
     } else {
-        ctx->startCallback = endCallback;
+        ctx->startCallback = startCallback;
         ctx->startCallbackUserData = userData;
         nabto_coap_client_request_send(req);
     }
