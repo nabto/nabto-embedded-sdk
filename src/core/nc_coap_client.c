@@ -27,7 +27,7 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     nabto_coap_error err = nabto_coap_client_init(&ctx->client, &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     nc_coap_client_set_infinite_stamp(ctx);
     return NABTO_EC_OK;

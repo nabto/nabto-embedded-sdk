@@ -27,7 +27,7 @@ np_error_code nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_
                                                           &context->resource);
     if (err != NABTO_COAP_ERROR_OK) {
         nc_stun_coap_deinit(context);
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     return NABTO_EC_OK;
 }

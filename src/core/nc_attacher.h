@@ -45,10 +45,15 @@ struct nc_attach_endpoint_context {
     struct np_udp_endpoint ep;
 };
 
-struct nc_attach_sct_context {
+typedef void (*nc_attacher_sct_callback)(np_error_code ec, void* userData);
+
+struct nc_attacher_sct_context {
     struct np_vector scts;
     uint64_t version;
     uint64_t synchronizedVersion;
+    uint64_t uploadingVersion;
+    nc_attacher_sct_callback callback;
+    void* callbackUserData;
 };
 
 struct nc_attach_context {
@@ -110,7 +115,7 @@ struct nc_attach_context {
     uint32_t retryWaitTime;
     uint32_t accessDeniedWaitTime;
 
-    struct nc_attach_sct_context sctContext;
+    struct nc_attacher_sct_context sctContext;
 };
 
 // Init attacher module, always first function to be called

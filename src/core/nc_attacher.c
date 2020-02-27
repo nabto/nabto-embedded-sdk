@@ -2,6 +2,7 @@
 #include "nc_attacher.h"
 
 #include <core/nc_packet.h>
+#include <core/nc_coap.h>
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
 #include <core/nc_device.h>
@@ -207,6 +208,7 @@ np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach
     } else {
         return NABTO_EC_OK;
     }
+    // TODO return something else if we are attaching
 }
 
 /************************
@@ -489,7 +491,7 @@ void send_attach_request(struct nc_attach_context* ctx)
 
     nabto_coap_error err = nabto_coap_client_request_set_payload(req, buffer, used);
     if (err != NABTO_COAP_ERROR_OK) {
-        NABTO_LOG_ERROR(LOG, "Failed to set payload for attach request with error: (%u) %s", err, np_error_code_to_string(nc_coap_server_error_module_to_core(err)));
+        NABTO_LOG_ERROR(LOG, "Failed to set payload for attach request with error: (%u) %s", err, np_error_code_to_string(nc_coap_error_to_core(err)));
         nabto_coap_client_request_free(req);
         ctx->pl->dtlsC.close(ctx->dtls);
         return;
