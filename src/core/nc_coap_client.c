@@ -1,5 +1,7 @@
 #include "nc_coap_client.h"
 
+#include <core/nc_coap.h>
+
 #include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_COAP

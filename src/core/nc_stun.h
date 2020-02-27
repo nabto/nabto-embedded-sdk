@@ -4,9 +4,6 @@
 #include <platform/np_platform.h>
 #include <stun/nabto_stun_client.h>
 
-#include <mbedtls/entropy.h>
-#include <mbedtls/ctr_drbg.h>
-
 #include <core/nc_udp_dispatch.h>
 
 #ifndef NC_STUN_MAX_CALLBACKS
@@ -55,10 +52,6 @@ struct nc_stun_context {
     np_communication_buffer* sendBuf;
     struct np_udp_endpoint sendEp;
     bool simple;
-
-    // Random number generation
-    mbedtls_ctr_drbg_context ctr_drbg;
-    mbedtls_entropy_context entropy;
 };
 
 np_error_code nc_stun_init(struct nc_stun_context* ctx,

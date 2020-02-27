@@ -42,6 +42,8 @@ static void keep_alive_event(const np_error_code ec, void* data);
 static void keep_alive_send_req(struct nc_attach_context* ctx);
 static void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length);
 
+static void coap_attach_failed(struct nc_attach_context* ctx);
+
 // attach start request
 static void send_attach_start_request(struct nc_attach_context* ctx);
 static void coap_attach_start_callback(enum nc_attacher_status status, void* data);
@@ -50,11 +52,12 @@ static void coap_attach_start_callback(enum nc_attacher_status status, void* dat
 static void send_attach_end_request(struct nc_attach_context* ctx);
 static void coap_attach_end_handler(np_error_code ec, void* data);
 
-static void nc_attacher_add_server_connect_token_callback(np_error_code ec, void* userData);
+// sct attach request during attach to the basestation.
+// this is special because the continuation is sending the attach end request.
+void send_attach_sct_request(struct nc_attach_context* ctx);
+void send_attach_sct_request_callback(np_error_code ec, void* userData);
 
-static void coap_attach_failed(struct nc_attach_context* ctx);
-
-// sct request
+// sct request after we are attached.
 void send_sct_request(struct nc_attach_context* ctx);
 void send_sct_request_callback(np_error_code ec, void* userData);
 
@@ -197,7 +200,7 @@ np_error_code nc_attacher_add_server_connect_token(struct nc_attach_context* ctx
     }
 
     if (ctx->state == NC_ATTACHER_STATE_ATTACHED) {
-        nc_attacher_sct_upload(ctx,  &nc_attacher_add_server_connect_token_callback, NULL);
+        send_sct_request(ctx);
     }
 
     return NABTO_EC_OK;
@@ -476,7 +479,7 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
     }
 
     if (status == NC_ATTACHER_STATUS_ATTACHED) {
-        send_sct_request(ctx);
+        send_attach_sct_request(ctx);
     } else if (status == NC_ATTACHER_STATUS_REDIRECT) {
         ctx->state = NC_ATTACHER_STATE_REDIRECT;
         ctx->redirectAttempts++;
@@ -486,9 +489,9 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
     }
 }
 
-void send_sct_request(struct nc_attach_context* ctx)
+void send_attach_sct_request(struct nc_attach_context* ctx)
 {
-    np_error_code ec = nc_attacher_sct_upload(ctx, &send_sct_request_callback, ctx);
+    np_error_code ec = nc_attacher_sct_upload(ctx, &send_attach_sct_request_callback, ctx);
     if (ec == NABTO_EC_NO_OPERATION) {
         send_attach_end_request(ctx);
     } else if (ec == NABTO_EC_OPERATION_STARTED) {
@@ -499,7 +502,7 @@ void send_sct_request(struct nc_attach_context* ctx)
     }
 }
 
-void send_sct_request_callback(np_error_code ec, void* userData)
+void send_attach_sct_request_callback(np_error_code ec, void* userData)
 {
     struct nc_attach_context* ctx = userData;
 
@@ -512,6 +515,28 @@ void send_sct_request_callback(np_error_code ec, void* userData)
         send_attach_end_request(ctx);
     } else {
         coap_attach_failed(ctx);
+    }
+}
+
+void send_sct_request(struct nc_attach_context* ctx)
+{
+    np_error_code ec = nc_attacher_sct_upload(ctx, &send_sct_request_callback, ctx);
+    if (ec == NABTO_EC_NO_OPERATION) {
+        return;
+    } else if (ec == NABTO_EC_OPERATION_STARTED) {
+        // wait for callback
+    } else {
+        // an error occured, do not care.
+    }
+}
+
+void send_sct_request_callback(np_error_code ec, void* userData)
+{
+    struct nc_attach_context* ctx = userData;
+
+    if (ec == NABTO_EC_OK) {
+        // check if there is more scts to be sent
+        send_sct_request(ctx);
     }
 }
 
@@ -545,6 +570,9 @@ void coap_attach_end_handler(np_error_code ec, void* data)
     if (ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_ATTACHED, ctx->listenerData);
     }
+
+    // if we have added scts in the meantime
+    send_sct_request(ctx);
 }
 
 void coap_attach_failed(struct nc_attach_context* ctx)
@@ -696,10 +724,4 @@ void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, si
         sendCtx->data = &ctx->keepAlive;
         pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
     }
-}
-
-
-void nc_attacher_add_server_connect_token_callback(np_error_code ec, void* userData)
-{
-    // do nothing
 }

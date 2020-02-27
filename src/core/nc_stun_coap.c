@@ -4,6 +4,7 @@
 #include <platform/np_platform.h>
 #include <core/nc_coap_server.h>
 #include <core/nc_stun.h>
+#include <core/nc_coap.h>
 #include <platform/np_logging.h>
 #include <core/nc_packet.h>
 
