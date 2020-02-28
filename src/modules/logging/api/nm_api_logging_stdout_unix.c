@@ -48,7 +48,7 @@ void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
             break;
     }
 
-    printf("%02u:%02u:%02u:%03u %s(%03u)[%s] %s\n",
+    printf("%02u:%02u:%02u.%03u %s(%03u)[%s] %s\n",
            tm.tm_hour, tm.tm_min, tm.tm_sec, ms,
            fileTmp, msg->line, level, msg->message);
 }
