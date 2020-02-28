@@ -27,6 +27,7 @@ set(src
   ${src_dir}/nc_coap_client.c
   ${src_dir}/nc_coap.c
   ${src_dir}/nc_coap_packet_printer.c
+  ${src_dir}/nc_coap_rest_error.c
   ${src_dir}/nc_stun_coap.c
   ${src_dir}/nc_rendezvous_coap.c
   ${src_dir}/nc_version.c

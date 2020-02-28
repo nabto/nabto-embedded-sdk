@@ -3,6 +3,7 @@
 #include <platform/np_logging.h>
 #include <core/nc_coap.h>
 #include <core/nc_version.h>
+#include <core/nc_coap_rest_error.h>
 
 #include <cbor.h>
 #include <stdlib.h>
@@ -82,7 +83,10 @@ enum nc_attacher_status coap_attach_start_handle_response(struct nabto_coap_clie
     }
     uint16_t resCode = nabto_coap_client_response_get_code(res);
     if (!nc_coap_is_status_ok(resCode)) {
-        NABTO_LOG_ERROR(LOG, "BS returned CoAP error code: %d", resCode);
+        enum nc_coap_rest_error err = nc_coap_rest_error_handle_response(res);
+        if (err == NC_COAP_REST_ERROR_UNKNOWN_DEVICE_FINGERPRINT) {
+            NABTO_LOG_ERROR(LOG, "The server does not recognize the fingerprint of the device. Check that the fingerprint is in sync with the server");
+        }
         return NC_ATTACHER_STATUS_ERROR;
     }
     const uint8_t* payload;
