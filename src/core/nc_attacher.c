@@ -61,6 +61,11 @@ void send_attach_sct_request_callback(np_error_code ec, void* userData);
 void send_sct_request(struct nc_attach_context* ctx);
 void send_sct_request_callback(np_error_code ec, void* userData);
 
+static void string_free(void* str);
+static np_error_code sct_init(struct nc_attach_context* ctx);
+static void sct_deinit(struct nc_attach_context* ctx);
+
+
 /*****************
  * API functions *
  *****************/
@@ -76,7 +81,14 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     ctx->listenerData = listenerData;
     ctx->retryWaitTime = RETRY_WAIT_TIME;
     ctx->accessDeniedWaitTime = ACCESS_DENIED_WAIT_TIME;
-    np_error_code ec = pl->dtlsC.create(pl, &ctx->dtls, &dtls_packet_sender, &dtls_data_handler, &dtls_event_handler, ctx);
+
+    np_error_code ec;
+    ec = sct_init(ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = pl->dtlsC.create(pl, &ctx->dtls, &dtls_packet_sender, &dtls_data_handler, &dtls_event_handler, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -103,10 +115,13 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
             nabto_coap_client_request_free(ctx->request);
         }
 
+        sct_deinit(ctx);
+
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
         np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
     }
 }
+
 
 void nc_attacher_set_state_listener(struct nc_attach_context* ctx, nc_attacher_state_listener cb, void* data)
 {
@@ -724,4 +739,31 @@ void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, si
         sendCtx->data = &ctx->keepAlive;
         pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
     }
+}
+
+
+void string_free(void* str)
+{
+    free(str);
+}
+
+np_error_code sct_init(struct nc_attach_context* ctx)
+{
+    struct nc_attacher_sct_context* sctCtx = &ctx->sctContext;
+    np_error_code ec;
+    ec = np_vector_init(&sctCtx->scts, &string_free);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    sctCtx->version = 0;
+    sctCtx->synchronizedVersion = 0;
+    sctCtx->uploadingVersion = 0;
+    sctCtx->callback = NULL;
+    sctCtx->callbackUserData = NULL;
+    return ec;
+}
+
+void sct_deinit(struct nc_attach_context* ctx)
+{
+    np_vector_deinit(&ctx->sctContext.scts);
 }
