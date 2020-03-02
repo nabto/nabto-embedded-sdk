@@ -32,7 +32,8 @@ bool HeatPumpPersisting::initDefault()
     setHeatPumpMode("COOL");
     setHeatPumpPower(false);
     setHeatPumpTarget(22.3);
-    config_["PairingPassword"] = nabto::examples::common::random_string(16);
+    config_["PairingPassword"] = nabto::examples::common::random_string(20);
+    config_["PairingServerConnectToken"] = nabto::examples::common::random_string(20);
     save();
     return true;
 }

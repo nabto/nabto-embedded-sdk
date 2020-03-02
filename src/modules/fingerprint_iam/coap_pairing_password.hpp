@@ -84,7 +84,7 @@ class CoapPairingPassword : public CoapRequestHandler {
             return;
         }
 
-        if (!iam_.pairNewClient(clientFingerprint, name)) {
+        if (!iam_.pairNewClient(request, name)) {
             std::cout << "Could not pair the user" << std::endl;
             nabto_device_coap_error_response(request, 500, "Server error");
             nabto_device_coap_request_free(request);

@@ -86,6 +86,8 @@ enum nc_attacher_status coap_attach_start_handle_response(struct nabto_coap_clie
         enum nc_coap_rest_error err = nc_coap_rest_error_handle_response(res);
         if (err == NC_COAP_REST_ERROR_UNKNOWN_DEVICE_FINGERPRINT) {
             NABTO_LOG_ERROR(LOG, "The server does not recognize the fingerprint of the device. Check that the fingerprint is in sync with the server");
+        } else {
+            NABTO_LOG_ERROR(LOG, "Attach failed with code %d", resCode);
         }
         return NC_ATTACHER_STATUS_ERROR;
     }

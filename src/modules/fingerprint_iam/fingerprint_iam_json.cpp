@@ -37,16 +37,6 @@ nlohmann::json FingerprintIAMJson::rolesToJson(const User& user)
     return roles;
 }
 
-nlohmann::json FingerprintIAMJson::fingerprintsToJson(const User& user)
-{
-    nlohmann::json fingerprints = nlohmann::json::array();
-
-    for (auto f : user.getFingerprints()) {
-        fingerprints.push_back(f);
-    }
-    return fingerprints;
-}
-
 nlohmann::json FingerprintIAMJson::userToJson(const User& user)
 {
     nlohmann::json json;
@@ -54,24 +44,28 @@ nlohmann::json FingerprintIAMJson::userToJson(const User& user)
     if (!user.getAttributes().empty()) {
         json["Attributes"] = iam::IAMToJson::attributesToJson(user.getAttributes());
     }
-    json["Fingerprints"] = fingerprintsToJson(user);
+    if (!user.getFingerprint().empty()) {
+        json["Fingerprint"] = user.getFingerprint();
+    }
+    if (!user.getServerConnectToken().empty()) {
+        json["ServerConnectToken"] = user.getServerConnectToken();
+    }
     json["Id"] = user.getId();
     return json;
 }
 
 /**
  * Load user from json
-{
-  "UserId1": {
+[
+  {
+    "UserId1": ...,
     "Roles": ...,
-    "Fingerprints": ....,
+    "Fingerprint": ....,
+    "
     "Attributes": ...,
     "Id": ...
-  },
-  "UserId2": {
-    ...
   }
-}
+]
 */
 
 static UserBuilder loadUserRoles(const nlohmann::json& roles, UserBuilder ub)
@@ -84,12 +78,17 @@ static UserBuilder loadUserRoles(const nlohmann::json& roles, UserBuilder ub)
     return ub;
 }
 
-static UserBuilder loadFingerprints(const nlohmann::json& fingerprints, UserBuilder ub)
+static UserBuilder loadFingerprint(const nlohmann::json& fingerprint, UserBuilder ub)
 {
-    if (fingerprints.is_array()) {
-        for (auto f : fingerprints) {
-            ub = ub.addFingerprint(f);
-        }
+    if (fingerprint.is_string()) {
+        ub = ub.setFingerprint(fingerprint.get<std::string>());
+    }
+    return ub;
+}
+static UserBuilder loadServerConnectToken(const nlohmann::json& sct, UserBuilder ub)
+{
+    if (sct.is_string()) {
+        ub = ub.setServerConnectToken(sct.get<std::string>());
     }
     return ub;
 }
@@ -114,7 +113,8 @@ bool FingerprintIAMJson::loadUsersFromJson(FingerprintIAM& iam, const nlohmann::
             UserBuilder ub(id.get<std::string>());
 
             ub = loadUserRoles(user["Roles"], ub);
-            ub = loadFingerprints(user["Fingerprints"], ub);
+            ub = loadFingerprint(user["Fingerprint"], ub);
+            ub = loadServerConnectToken(user["ServerConnectToken"], ub);
             ub = loadAttributes(user["Attributes"], ub);
 
             if (!iam.addUser(ub)) {

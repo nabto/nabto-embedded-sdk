@@ -58,6 +58,11 @@ class HeatPumpPersisting : public fingerprint_iam::FingerprintIAMChangeListener
     {
         return config_["PairingPassword"].get<std::string>();
     }
+
+    std::string getPairingServerConnectToken()
+    {
+        return config_["PairingServerConnectToken"].get<std::string>();
+    }
  private:
     std::map<std::string, nlohmann::json> users_;
     std::string configFile_;
