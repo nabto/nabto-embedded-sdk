@@ -268,7 +268,7 @@ void nm_epoll_udp_resolve_close(struct nm_epoll_base* base)
         shutdown(sock->sock, SHUT_RDWR);
 
         if (epoll_ctl(epoll->fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
-            NABTO_LOG_TRACE(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
+            NABTO_LOG_TRACE(LOG,"Cannot remove fd: %d from epoll set, %i: %s", sock->sock, errno, strerror(errno));
         }
     }
     nm_epoll_cancel_all_events(sock);
