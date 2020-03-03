@@ -12,11 +12,23 @@ void nabto_device_listener_resolve_error_state(struct nabto_device_listener* lis
 
 void nabto_device_listener_pop_event(struct nabto_device_listener* listener, struct nabto_device_event* ev);
 
+static np_error_code nabto_device_listener_stop_internal(struct nabto_device_listener* listener);
+
 NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* device)
 {
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)calloc(1,sizeof(struct nabto_device_listener));
     listener->isInitialized = false;
     listener->type = NABTO_DEVICE_LISTENER_TYPE_NONE;
+    listener->dev = dev;
+
+    np_list_append(&dev->listeners, &listener->listenersItem, listener);
+
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    //add_listener_to_device(dev, listener);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceListener*)listener;
 }
 
@@ -67,6 +79,9 @@ void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceList
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    np_list_erase_item(&listener->listenersItem);
+
     free(listener);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
@@ -103,18 +118,14 @@ np_error_code nabto_device_listener_init_future(struct nabto_device_listener* li
 NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_stop(NabtoDeviceListener* deviceListener)
 {
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    if (!listener->isInitialized) {
-        return NABTO_DEVICE_EC_INVALID_STATE;
-    }
+    np_error_code ec;
     nabto_device_threads_mutex_lock(listener->dev->eventMutex);
-    if (listener->ec == NABTO_EC_OK) {
-        nabto_device_listener_set_error_code(listener, NABTO_EC_STOPPED);
-        nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
-        return NABTO_DEVICE_EC_STOPPED;
-    }
+    ec = nabto_device_listener_stop_internal(listener);
     nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
-    return nabto_device_error_core_to_api(listener->ec);
+
+    return nabto_device_error_core_to_api(ec);
 }
+
 
 void nabto_device_listener_set_error_code(struct nabto_device_listener* listener, np_error_code ec)
 {
@@ -131,10 +142,37 @@ np_error_code nabto_device_listener_get_status(struct nabto_device_listener* lis
     return listener->ec;
 }
 
+void nabto_device_listener_stop_all(struct nabto_device_context* dev)
+{
+    struct np_list_iterator iterator;
+    for (np_list_front(&dev->listeners, &iterator);
+         np_list_end(&iterator) == false;
+         np_list_next(&iterator))
+    {
+        struct nabto_device_listener* listener = np_list_get_element(&iterator);
+        nabto_device_listener_stop_internal(listener);
+    }
+}
+
+
 
 /********************
  * Helper Functions *
  ********************/
+
+np_error_code nabto_device_listener_stop_internal(struct nabto_device_listener* listener)
+{
+    if (!listener->isInitialized) {
+        return NABTO_EC_INVALID_STATE;
+    }
+    if (listener->ec == NABTO_EC_OK) {
+        nabto_device_listener_set_error_code(listener, NABTO_EC_STOPPED);
+        return NABTO_EC_STOPPED;
+    }
+    return listener->ec;
+}
+
+
 void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
 {
     if (listener->fut && listener->sentinel.next != &listener->sentinel) {
@@ -179,3 +217,8 @@ void nabto_device_listener_pop_event(struct nabto_device_listener* listener, str
     after->prev = before;
     free(ev);
 }
+
+/* np_error_code add_listener_to_device(struct nabto_device_context* dev, struct nabto_device_listener* listener) */
+/* { */
+/*     return np_vector_push_back(&dev->listeners, listener); */
+/* } */

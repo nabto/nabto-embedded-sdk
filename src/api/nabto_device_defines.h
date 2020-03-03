@@ -4,6 +4,7 @@
 #include "nabto_device_threads.h"
 
 #include <platform/np_platform.h>
+#include <platform/np_list.h>
 #include <core/nc_device.h>
 #include <modules/tcptunnel/nm_tcptunnel.h>
 #include <nabto/nabto_device_experimental.h>
@@ -24,6 +25,8 @@ struct nabto_device_context {
     struct nabto_device_condition* eventCond;
 
     struct nabto_device_mutex* futureQueueMutex;
+
+    struct np_list listeners;
 
     bool enableMdns;
 
