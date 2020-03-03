@@ -20,8 +20,8 @@ struct nm_tcptunnel_connection {
     struct np_platform* pl;
     np_tcp_socket* socket;
     struct nc_stream_context* stream;
-    struct np_ip_address address;
     uint16_t port;
+    struct np_ip_address address;
     uint8_t tcpRecvBuffer[NM_TCPTUNNEL_BUFFER_SIZE];
     size_t tcpRecvBufferSize;
 
@@ -38,7 +38,6 @@ struct nm_tcptunnel {
     struct nm_tcptunnel* prev;
     struct nm_tcptunnels* tunnels;
     int id; // id to use in the CoAP api paths
-    struct np_ip_address address;
     uint16_t port;
     struct nm_tcptunnel_connection connectionsSentinel;
     uint32_t streamPort;
@@ -66,7 +65,7 @@ void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels);
 
 struct nm_tcptunnel* nm_tcptunnel_create(struct nm_tcptunnels* tunnels);
 
-void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, struct np_ip_address* address, uint16_t port);
+void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, uint16_t port);
 void nm_tcptunnel_deinit(struct nm_tcptunnel* tunnel);
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel* tunnel);
 

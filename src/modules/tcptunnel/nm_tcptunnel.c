@@ -108,9 +108,8 @@ void nm_tcptunnel_destroy(struct nm_tcptunnel* tunnel)
     free(tunnel);
 }
 
-void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, struct np_ip_address* address, uint16_t port)
+void nm_tcptunnel_init(struct nm_tcptunnel* tunnel, uint16_t port)
 {
-    tunnel->address = *address;
     tunnel->port = port;
 }
 

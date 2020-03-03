@@ -76,40 +76,6 @@ nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRe
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request, size_t index);
 
-
-/******************
- * TCP Tunnelling *
- ******************/
-
-/**
- * Enable TCP tunnelling in the device.
- *
- * Tcp tunnelling is a feature which allows clients to tunnel tcp
- * traffic over a nabto connection to the device. TCP tunnelling is
- * stopped when the device is closed. TCP tunnelling will default
- * incoming tunnel requests to 127.0.0.1 if the IP is not provided in
- * the request. The port number has not default value.
- *
- * Enabling the Tunnelling module means two new authorizations actions
- * needs to be handled.
- *
- * Actions:
- * * `TcpTunnel:Create`
- * * `TcpTunnel:Delete`
- * * `TcpTunnel:Get`
- *
- * Attributes:
- * * `TcpTunnel:Port` the port of the tcp server which the tunnel connects to.
- * * `TcpTunnel:Host` the ip address of the tcp server which the tunnel connects to.
- *
- * @param device   The device
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_RESOURCE_EXISTS if already enabled
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
-
-
 /*************************
  * Server Connect Tokens *
  *************************/

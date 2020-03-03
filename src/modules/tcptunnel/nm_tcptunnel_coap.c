@@ -61,10 +61,8 @@ void nm_tcptunnel_coap_deinit(struct nm_tcptunnels* tunnels)
 
 }
 
-bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, struct np_ip_address* address, uint16_t* port)
+bool parse_port(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, uint16_t* port)
 {
-    *address = tunnels->defaultHost;
-
     int32_t contentFormat;
     contentFormat = nabto_coap_server_request_get_content_format(request);
 
@@ -94,32 +92,6 @@ bool parse_host_and_port(struct nabto_coap_server_request* request, struct nm_tc
         // if we cant send error response, free will auto-reply with 500
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,00), "Invalid payload, not CBOR map");
         return false;
-    }
-
-    CborValue ip;
-    size_t length = 0;
-    if (cbor_value_map_find_value(&map, "Ip", &ip) == CborNoError &&
-        cbor_value_is_byte_string(&ip) &&
-        cbor_value_get_string_length(&ip, &length) == CborNoError)
-    {
-        if (length == 4) {
-            address->type = NABTO_IPV4;
-            if (cbor_value_copy_byte_string(&ip, address->ip.v4, &length, NULL) != CborNoError) {
-                // if we cant send error response, free will auto-reply with 500
-                nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Internal CBOR error");
-                return false;
-            }
-        } else if(length == 16) {
-            address->type = NABTO_IPV6;
-            if (cbor_value_copy_byte_string(&ip, address->ip.v6, &length, NULL) != CborNoError) {
-                // if we cant send error response, free will auto-reply with 500
-                nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Internal CBOR error");
-                return false;
-            }
-        } else {
-            // ip not read, using default
-        }
-
     }
 
     CborValue value;
@@ -163,10 +135,9 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
 {
     struct nm_tcptunnels* tunnels = data;
     // Read host and port, insert default if not exists.
-    struct np_ip_address address;
     uint16_t port;
 
-    if (!parse_host_and_port(request, tunnels, &address, &port)) {
+    if (!parse_port(request, tunnels, &port)) {
         // If parse failed, the function has send an error response
         nabto_coap_server_request_free(request);
         return;
@@ -177,8 +148,7 @@ void create_tunnel(struct nabto_coap_server_request* request, void* data)
 
     struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:Create");
     if (authReq != NULL &&
-        pl->authorization.add_string_attribute(authReq, "TcpTunnel:Port", integerToAscii(port)) == NABTO_EC_OK &&
-        pl->authorization.add_string_attribute(authReq, "TcpTunnel:Host", np_ip_address_to_string(&address)) == NABTO_EC_OK)
+        pl->authorization.add_string_attribute(authReq, "TcpTunnel:Port", integerToAscii(port)) == NABTO_EC_OK)
     {
         pl->authorization.check_access(authReq, create_tunnel_iam, tunnels, request);
         return;
@@ -200,18 +170,17 @@ void create_tunnel_iam(bool allow, void* userData1, void* userData2)
         nabto_coap_server_request_free(request);
         return;
     }
-    // Read host and port, insert default if not exists.
-    struct np_ip_address address;
+    // Read port, insert default if not exists.
     uint16_t port;
 
-    if (!parse_host_and_port(request, tunnels, &address, &port)) {
+    if (!parse_port(request, tunnels, &port)) {
         // If parse failed, the function has send an error response
         nabto_coap_server_request_free(request);
         return;
     }
     // Create tunnel resource.
     struct nm_tcptunnel* tunnel = nm_tcptunnel_create(tunnels);
-    nm_tcptunnel_init(tunnel, &address, port);
+    nm_tcptunnel_init(tunnel, port);
     nm_tcptunnel_init_stream_listener(tunnel);
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
     tunnel->connectionRef = connection->connectionRef;
@@ -232,7 +201,7 @@ void create_tunnel_iam(bool allow, void* userData1, void* userData2)
     }
     size_t used = cbor_encoder_get_buffer_size(&encoder, cborResponse);
 
-    NABTO_LOG_INFO(LOG, "Created tcp tunnel. destination %s:%" PRIu16, np_ip_address_to_string(&address), port);
+    NABTO_LOG_INFO(LOG, "Created tcp tunnel. destination port %" PRIu16, port);
     // Return 201 Created.
     nabto_coap_server_response_set_code(request, NABTO_COAP_CODE(2,01));
     nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
@@ -361,14 +330,7 @@ void get_tunnel_iam(bool allow, void* userData1, void* userData2)
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
     cbor_encode_text_stringz(&map, "StreamPort");
     cbor_encode_uint(&map, tunnel->streamPort);
-    if (tunnel->address.type == NABTO_IPV4 || tunnel->address.type == NABTO_IPV6) {
-        cbor_encode_text_stringz(&map, "Ip");
-        if (tunnel->address.type == NABTO_IPV4) {
-            cbor_encode_byte_string(&map, tunnel->address.ip.v4, 4);
-        } else {
-            cbor_encode_byte_string(&map, tunnel->address.ip.v6, 16);
-        }
-    }
+
     cbor_encode_text_stringz(&map, "Port");
     cbor_encode_uint(&map, tunnel->port);
     cbor_encoder_close_container(&encoder, &map);
