@@ -64,6 +64,11 @@ void FingerprintIAM::enableClientSettings(const std::string& clientServerUrl, co
 
 }
 
+void FingerprintIAM::enableRemotePairing(const std::string& serverConnectToken)
+{
+    nabto_device_add_server_connect_token(device_, serverConnectToken.c_str());
+}
+
 
 bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action)
 {
@@ -329,6 +334,9 @@ void FingerprintIAM::insertUser(std::shared_ptr<User> user)
     }
     if (changeListener_) {
         changeListener_->upsertUser(user->getId());
+    }
+    if (!user->getServerConnectToken().empty()) {
+        nabto_device_add_server_connect_token(device_, user->getServerConnectToken().c_str());
     }
 }
 

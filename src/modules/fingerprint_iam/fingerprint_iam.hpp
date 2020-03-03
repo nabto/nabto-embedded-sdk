@@ -55,6 +55,10 @@ class FingerprintIAM {
      */
     void enableClientSettings(const std::string& clientServerUrl, const std::string& clientServerKey);
 
+    /**
+     * Remote pairing needs a server connect token.
+     */
+    void enableRemotePairing(const std::string& serverConnectToken);
 
     /**
      * Check an action with attributes against the iam system.

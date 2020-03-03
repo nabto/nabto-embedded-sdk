@@ -49,6 +49,8 @@ bool HeatPump::init()
 
     fingerprintIAM_.enableClientSettings(dc_.getClientServerUrl(), dc_.getClientServerKey());
 
+    fingerprintIAM_.enableRemotePairing(persisting_->getPairingServerConnectToken());
+
     initCoapHandlers();
 
     fingerprintIAM_.setChangeListener(persisting_);
@@ -132,7 +134,7 @@ std::string HeatPump::createPairingLink()
        << "&ClientServerUrl=" << dc_.getClientServerUrl()
        << "&ClientServerKey=" << dc_.getClientServerKey()
        << "&PairingPassword=" << persisting_->getPairingPassword()
-       << "&ClientSCT=" << persisting_->getPairingServerConnectToken();
+       << "&ClientServerConnectToken=" << persisting_->getPairingServerConnectToken();
     return ss.str();
 }
 
