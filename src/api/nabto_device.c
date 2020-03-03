@@ -114,6 +114,8 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
+    np_list_init(&dev->listeners);
+
     return (NabtoDevice*)dev;
 }
 
@@ -127,6 +129,8 @@ void nabto_device_stop(NabtoDevice* device)
     if (dev->closing) {
         return;
     }
+
+    nabto_device_listener_stop_all(dev);
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 

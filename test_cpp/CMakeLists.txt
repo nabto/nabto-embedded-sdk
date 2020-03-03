@@ -21,6 +21,7 @@ set(test_src
   network/udp_test.cpp
   platform/hex_test.cpp
   platform/vector_test.cpp
+  platform/list_test.cpp
   api/event_handler_test.cpp
   api/future_test.cpp
   api/device_api.cpp

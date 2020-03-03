@@ -6,6 +6,7 @@
 
 #include <api/nabto_device_future.h>
 #include <platform/np_error_code.h>
+#include <platform/np_list.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +68,8 @@ struct nabto_device_listener {
     np_error_code ec;
     enum nabto_device_listener_type type;
     bool isInitialized;
+    // item for the list of all listeners.
+    struct np_list_item listenersItem;
 };
 
 /**
@@ -113,6 +116,8 @@ np_error_code nabto_device_listener_add_event(struct nabto_device_listener* list
  * @param ec        The error code
  */
 void nabto_device_listener_set_error_code(struct nabto_device_listener* listener, np_error_code ec);
+
+void nabto_device_listener_stop_all(struct nabto_device_context* dev);
 
 #ifdef __cplusplus
 } //extern "C"
