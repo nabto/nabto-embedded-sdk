@@ -316,7 +316,7 @@ np_error_code nm_epoll_tcp_async_read(np_tcp_socket* sock, void* buffer, size_t 
     sock->read.bufferSize = bufferSize;
     sock->read.callback = cb;
     sock->read.userData = userData;
-    np_event_queue_post(sock->pl, &sock->read.event, &nm_epoll_tcp_do_read, sock);
+    np_event_queue_post_maybe_double(sock->pl, &sock->read.event, &nm_epoll_tcp_do_read, sock);
     return NABTO_EC_OK;
 }
 
@@ -385,9 +385,11 @@ void nm_epoll_tcp_handle_event(np_tcp_socket* sock, uint32_t events)
 {
     if (events & EPOLLOUT) {
         nm_epoll_tcp_is_connected(sock);
-        nm_epoll_tcp_do_write(sock);
+        np_event_queue_post_maybe_double(sock->pl, &sock->write.event, &nm_epoll_tcp_do_write, sock);
+        //nm_epoll_tcp_do_write(sock);
     }
     if (events & EPOLLIN) {
-        nm_epoll_tcp_do_read(sock);
+        np_event_queue_post_maybe_double(sock->pl, &sock->read.event, &nm_epoll_tcp_do_read, sock);
+        //nm_epoll_tcp_do_read(sock);
     }
 }
