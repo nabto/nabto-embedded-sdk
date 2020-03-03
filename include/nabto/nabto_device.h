@@ -44,6 +44,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -827,6 +828,158 @@ nabto_device_enable_mdns(NabtoDevice* device);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
+
+/*************************
+ * Server Connect Tokens *
+ *************************/
+
+/**
+ * Server connect tokens is a feature where the device decides who can
+ * access it through the server (basestation). The tokens should not
+ * be used as the only authorization mechanism but be seen as a filter
+ * for what connections is allowed from the internet to the
+ * device. Server Connect Tokens needs to be used together with client
+ * server keys which enforces a check for a valid server connect
+ * token.
+ */
+
+/**
+ * Add a server connect token to the server (basestation) which the
+ * device uses.
+ *
+ * @param device
+ * @param serverConnectToken  The utf8 encoded token which is added to the basestation.
+ * @return NABTO_DEVICE_EC_OK if the token is added.
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the token cannot be stored in the device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverConnectToken);
+
+/**
+ * Get synchronization state of the tokens.
+ *
+ * The future return ok if sync went ok or we are not attached such that
+ * sync is not neccessary.
+ *
+ * @param device
+ * @return NABTO_DEVICE_EC_OK if they are synched
+ *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synched
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_is_server_connect_tokens_synchronized(NabtoDevice* device);
+
+/**
+ * Generate a sufficient strong random server connect token.
+ *
+ * The token is NOT added to the system.
+ * the resulting token needs to be freed with nabto_device_string_free.
+ *
+ * @param [in] device
+ * @param [out] serverConnectToken
+ * @return NABTO_DEVICE_EC_OK if the token is created and a reference is put into serverConnectToken
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConnectToken);
+
+/**************************
+ * Authorization Requests *
+ **************************/
+
+/**
+ * Authorization Requests.
+ *
+ * The authorization functionality in the Nabto Device SDK is made
+ * such that an application built on top of the Nabto Device SDK can
+ * take authorization decision for the core.
+ */
+typedef struct NabtoDeviceAuthorizationRequest_ NabtoDeviceAuthorizationRequest;
+
+/**
+ * Init an authorization request listener. This follows the generic listener pattern in the device.
+ *
+ * @param device    The device
+ * @param listener  The listener.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
+
+/**
+ * Wait for a new Authorization request.
+ *
+ * @param listener
+ * @param future
+ * @param request  Where the new request is stored when the future resolves.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceAuthorizationRequest** request);
+
+/**
+ * Free a authorization request.
+ *
+ * @param request  The request to free.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request);
+
+/**
+ * Call this function to inform the application that the authorization
+ * request has been allowed or denied.
+ *
+ * @param request
+ * @param verdict  The verdict for the request, if true the request is allowed, if false the request is denied.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool verdict);
+
+/**
+ * Get the action associated with the request.
+ *
+ * The string should not be freed and the lifetime is limited by the
+ * call to nabto_device_authorization_request_free
+ *
+ * @param request  The request
+ * @return The action string.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_authorization_request_get_action(NabtoDeviceAuthorizationRequest* request);
+
+/**
+ * Get the connection reference this authorization request originates from.
+ *
+ * @param   request  The authorization request.
+ * @return  The connection reference, 0 if the connection is gone.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
+nabto_device_authorization_request_get_connection_ref(NabtoDeviceAuthorizationRequest* request);
+
+/**
+ * Get the amount of attributes this authorization request contains.
+ *
+ * @param   request
+ * @return  the number og attributes the request contains.
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationRequest* request);
+
+/**
+ * Get attribute name
+ *
+ * @param request [in]  The request
+ * @param index [in]    The index of the attribute to return the name of.
+ * @return the name of the attribute.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRequest* request, size_t index);
+
+/**
+ * Retrieve a string value for a key.
+ *
+ * @param request [in]  The request.
+ * @paran index         The index of the attribute to get the value of.
+ * @return              The value for the attribute.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request, size_t index);
 
 /****************
  * Listener API *

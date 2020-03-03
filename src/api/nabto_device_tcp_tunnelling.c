@@ -1,5 +1,7 @@
 #include <nabto/nabto_device.h>
 
+#include "nabto_device_defines.h"
+#include <platform/np_error_code.h>
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_tcp_tunnelling(NabtoDevice* device)
 {

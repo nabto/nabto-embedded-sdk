@@ -3,19 +3,20 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 find_package( Threads )
 
 set(nabto_device_src
-  ${src_dir}/nabto_device.c
-  ${src_dir}/nabto_device_stream.c
-  ${src_dir}/nabto_device_coap.c
-  ${src_dir}/nabto_device_future.c
-  ${src_dir}/nabto_device_event_handler.c
-  ${src_dir}/nabto_api_future_queue.c
-  ${src_dir}/nabto_device_error.c
-  ${src_dir}/nabto_device_util.c
-  ${src_dir}/nabto_device_experimental.c
+  nabto_device.c
+  nabto_device_stream.c
+  nabto_device_coap.c
+  nabto_device_future.c
+  nabto_device_event_handler.c
+  nabto_api_future_queue.c
+  nabto_device_error.c
+  nabto_device_util.c
+  nabto_device_experimental.c
   nabto_device_connection_events.c
   nabto_device_events.c
   nabto_device_authorization.c
   nabto_device_authorization_events.c
+  nabto_device_tcp_tunnelling.c
   )
 
 message(STATUS "host name: ${CMAKE_HOST_SYSTEM_NAME}")
