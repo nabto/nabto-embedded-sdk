@@ -29,6 +29,7 @@ np_error_code np_vector_push_back(struct np_vector* vector, void* element);
 bool np_vector_empty(struct np_vector* vector);
 size_t np_vector_size(struct np_vector* vector);
 void* np_vector_get(struct np_vector* vector, size_t index);
+void np_vector_erase(struct np_vector* vector, size_t index);
 
 #ifdef __cplusplus
 } //extern "C"
