@@ -49,6 +49,8 @@ bool HeatPump::init()
 
     fingerprintIAM_.enableClientSettings(dc_.getClientServerUrl(), dc_.getClientServerKey());
 
+    fingerprintIAM_.enableRemotePairing(persisting_->getPairingServerConnectToken());
+
     initCoapHandlers();
 
     fingerprintIAM_.setChangeListener(persisting_);
@@ -131,22 +133,24 @@ std::string HeatPump::createPairingLink()
        << "&DeviceFingerprint=" << getFingerprint()
        << "&ClientServerUrl=" << dc_.getClientServerUrl()
        << "&ClientServerKey=" << dc_.getClientServerKey()
-       << "&PairingPassword=" << persisting_->getPairingPassword();
+       << "&PairingPassword=" << persisting_->getPairingPassword()
+       << "&ClientServerConnectToken=" << persisting_->getPairingServerConnectToken();
     return ss.str();
 }
 
 void HeatPump::printHeatpumpInfo()
 {
     std::cout << "######## Nabto heat pump device ########" << std::endl;
-    std::cout << "# Product ID:       " << dc_.getProductId() << std::endl;
-    std::cout << "# Device ID:        " << dc_.getDeviceId() << std::endl;
-    std::cout << "# Fingerprint:      " << getFingerprint() << std::endl;
-    std::cout << "# Pairing Password  " << persisting_->getPairingPassword() << std::endl;
-    std::cout << "# Server:           " << dc_.getServer() << std::endl;
-    std::cout << "# Client Server Url " << dc_.getClientServerUrl() << std::endl;
-    std::cout << "# Client Server Key " << dc_.getClientServerKey() << std::endl;
-    std::cout << "# Version:          " << nabto_device_version() << std::endl;
-    std::cout << "# Pairing URL       " << createPairingLink() << std::endl;
+    std::cout << "# Product ID:                 " << dc_.getProductId() << std::endl;
+    std::cout << "# Device ID:                  " << dc_.getDeviceId() << std::endl;
+    std::cout << "# Fingerprint:                " << getFingerprint() << std::endl;
+    std::cout << "# Pairing Password            " << persisting_->getPairingPassword() << std::endl;
+    std::cout << "# Server:                     " << dc_.getServer() << std::endl;
+    std::cout << "# Client Server Url           " << dc_.getClientServerUrl() << std::endl;
+    std::cout << "# Client Server Key           " << dc_.getClientServerKey() << std::endl;
+    std::cout << "# Client Server Connect Token " << persisting_->getPairingServerConnectToken() << std::endl;
+    std::cout << "# Version:                    " << nabto_device_version() << std::endl;
+    std::cout << "# Pairing URL                 " << createPairingLink() << std::endl;
     std::cout << "######## " << std::endl;
 }
 

@@ -1,6 +1,7 @@
 #include "nc_rendezvous_coap.h"
 
 #include <core/nc_coap_server.h>
+#include <core/nc_coap.h>
 #include <core/nc_packet.h>
 #include <platform/np_logging.h>
 
@@ -21,7 +22,7 @@ np_error_code nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context
                                                           &context->resource);
     if (err != NABTO_COAP_ERROR_OK) {
         nc_rendezvous_coap_deinit(context);
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     return NABTO_EC_OK;
 }

@@ -64,6 +64,11 @@ void FingerprintIAM::enableClientSettings(const std::string& clientServerUrl, co
 
 }
 
+void FingerprintIAM::enableRemotePairing(const std::string& serverConnectToken)
+{
+    nabto_device_add_server_connect_token(device_, serverConnectToken.c_str());
+}
+
 
 bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action)
 {
@@ -151,7 +156,7 @@ bool FingerprintIAM::addUser(const UserBuilder& ub)
         }
     }
 
-    insertUser(std::make_shared<User>(ub.getId(), roles, ub.getFingerprints(), ub.getAttributes()));
+    insertUser(std::make_shared<User>(ub.getId(), roles, ub.getFingerprint(), ub.getServerConnectToken(), ub.getAttributes()));
     return true;
 }
 
@@ -212,14 +217,19 @@ std::string FingerprintIAM::nextUserId()
     }
 }
 
-std::shared_ptr<User> FingerprintIAM::pairNewClient(const std::string& fingerprint, const std::string& name)
+std::shared_ptr<User> FingerprintIAM::pairNewClient(NabtoDeviceCoapRequest* request, const std::string& name)
 {
     {
-        auto user = findUserByFingerprint(fingerprint);
+        auto user = findUserByCoapRequest(request);
         if (user) {
             // user is already paired.
             return user;
         }
+    }
+
+    auto fingerprint = getFingerprintFromCoapRequest(request);
+    if (fingerprint.empty()) {
+        return nullptr;
     }
 
     std::shared_ptr<Role> role;
@@ -236,13 +246,22 @@ std::shared_ptr<User> FingerprintIAM::pairNewClient(const std::string& fingerpri
             return nullptr;
         }
     }
-    auto user = std::make_shared<User>(nextUserId(), role);
+
+    char* sct;
+    NabtoDeviceError ec = nabto_device_create_server_connect_token(getDevice(), &sct);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return nullptr;
+    }
+    std::string serverConnectToken(sct);
+    nabto_device_string_free(sct);
+
+
+    auto user = std::make_shared<User>(nextUserId(), role, fingerprint, serverConnectToken);
     if (!name.empty()) {
         user->setAttribute("Name", name);
     }
 
     insertUser(user);
-    addFingerprintToUser(user, fingerprint);
     return user;
 }
 
@@ -254,6 +273,30 @@ std::shared_ptr<User> FingerprintIAM::findUserByFingerprint(const std::string& f
         return it->second.lock();
     }
     return nullptr;
+}
+
+std::string FingerprintIAM::getFingerprintFromCoapRequest(NabtoDeviceCoapRequest* request)
+{
+    NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
+
+    NabtoDeviceError ec;
+    char* fingerprint;
+    ec = nabto_device_connection_get_client_fingerprint_full_hex(getDevice(), ref, &fingerprint);
+    if (ec) {
+        return "";
+    }
+    std::string clientFingerprint(fingerprint);
+    nabto_device_string_free(fingerprint);
+    return clientFingerprint;
+}
+
+std::shared_ptr<User> FingerprintIAM::findUserByCoapRequest(NabtoDeviceCoapRequest* request)
+{
+    std::string fp = getFingerprintFromCoapRequest(request);
+    if (fp.empty()) {
+        return nullptr;
+    }
+    return findUserByFingerprint(fp);
 }
 
 
@@ -286,11 +329,14 @@ Subject FingerprintIAM::createSubjectFromUser(const User& user)
 void FingerprintIAM::insertUser(std::shared_ptr<User> user)
 {
     users_[user->getId()] = user;
-    for (auto fp : user->getFingerprints()) {
-        fingerprintToUser_[fp] = user;
+    if (!user->getFingerprint().empty()) {
+        fingerprintToUser_[user->getFingerprint()] = user;
     }
     if (changeListener_) {
         changeListener_->upsertUser(user->getId());
+    }
+    if (!user->getServerConnectToken().empty()) {
+        nabto_device_add_server_connect_token(device_, user->getServerConnectToken().c_str());
     }
 }
 

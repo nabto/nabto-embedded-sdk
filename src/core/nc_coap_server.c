@@ -1,4 +1,5 @@
 #include "nc_coap_server.h"
+#include "nc_coap.h"
 #include "nc_client_connection.h"
 #include "nc_coap_packet_printer.h"
 
@@ -16,17 +17,6 @@ void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx);
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data);
 void nc_coap_server_handle_timeout(const np_error_code ec, void* data);
 
-np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec) {
-    switch(ec) {
-        case NABTO_COAP_ERROR_OK: return NABTO_EC_OK;
-        case NABTO_COAP_ERROR_OUT_OF_MEMORY: return NABTO_EC_OUT_OF_MEMORY;
-        case NABTO_COAP_ERROR_NO_CONNECTION: return NABTO_EC_ABORTED;
-        case NABTO_COAP_ERROR_INVALID_PARAMETER: return NABTO_EC_INVALID_ARGUMENT;
-        default: return NABTO_EC_UNKNOWN;
-    }
-}
-
-
 np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
 {
     ctx->sendBuffer = pl->buf.allocate();
@@ -38,7 +28,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);
         ctx->sendBuffer = NULL;
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     ctx->pl = pl;
     nc_coap_server_set_infinite_stamp(ctx);

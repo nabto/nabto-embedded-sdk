@@ -64,6 +64,7 @@ bool TcpTunnel::initAccessControl()
 {
     fingerprintIAM_.enablePasswordPairing(state_->getPairingPassword());
     fingerprintIAM_.enableClientSettings(deviceConfig_.getClientServerUrl(), deviceConfig_.getClientServerKey());
+    fingerprintIAM_.enableRemotePairing(state_->getPairingServerConnectToken());
     return true;
 }
 

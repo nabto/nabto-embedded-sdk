@@ -16,6 +16,7 @@
 #include <platform/np_tcp.h>
 #include <platform/np_mdns.h>
 #include <platform/np_authorization.h>
+#include <platform/np_random.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +46,10 @@ struct np_platform {
     // DTLS server module
     struct np_dtls_srv_module dtlsS;
 
+    // Random source
+    struct np_random_module random;
+    void* randomCtx; // userdata for the random module.
+
     // Tcp socket module
     struct np_tcp_module tcp;
     // Data pointer set when tcp module is initialized.
@@ -62,6 +67,11 @@ struct np_platform {
  * Initialize the platform structure.
  */
 void np_platform_init(struct np_platform* pl);
+
+/**
+ * Deinitialize the platform structure.
+ */
+void np_platform_deinit(struct np_platform* pl);
 
 #ifdef __cplusplus
 } //extern "C"

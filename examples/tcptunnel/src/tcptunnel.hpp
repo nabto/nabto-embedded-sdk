@@ -80,6 +80,7 @@ class TcpTunnel {
         std::cout << "# Paring Password:  " << state_->getPairingPassword() << std::endl;
         std::cout << "# Client Server Url " << deviceConfig_.getClientServerUrl() << std::endl;
         std::cout << "# Client Server Key " << deviceConfig_.getClientServerKey() << std::endl;
+        std::cout << "# Pairing SCT       " << state_->getPairingServerConnectToken() << std::endl;
         std::cout << "# Version:          " << nabto_device_version() << std::endl;
         std::cout << "# Pairing URL:      " << createPairingLink() << std::endl;
         std::cout << "######## " << std::endl;
@@ -106,7 +107,8 @@ class TcpTunnel {
            << "&DeviceFingerprint=" << getFingerprint()
            << "&ClientServerUrl=" << deviceConfig_.getClientServerUrl()
            << "&ClientServerKey=" << deviceConfig_.getClientServerKey()
-           << "&PairingPassword=" << state_->getPairingPassword();
+           << "&PairingPassword=" << state_->getPairingPassword()
+           << "&ClientServerConnectToken=" << state_->getPairingServerConnectToken();
         return ss.str();
     }
 

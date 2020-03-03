@@ -100,4 +100,8 @@ void nc_device_add_device_events_listener(struct nc_device_context* dev, struct 
 void nc_device_remove_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener);
 void nc_device_events_listener_notify(enum nc_device_event event, void* data);
 
+np_error_code nc_device_add_server_connect_token(struct nc_device_context* ctx, const char* token);
+np_error_code nc_device_is_server_connect_tokens_synchronized(struct nc_device_context* ctx);
+
+
 #endif // NC_DEVICE_H

@@ -34,9 +34,17 @@ class CoapClientSettings : public CoapRequestHandler {
             return;
         }
 
+        auto user = iam_.findUserByCoapRequest(request);
+        if (!user) {
+            nabto_device_coap_error_response(request, 403, "Not paired");
+            nabto_device_coap_request_free(request);
+            return;
+        }
+
         nlohmann::json root;
         root["ServerKey"] = clientServerKey_;
         root["ServerUrl"] = clientServerUrl_;
+        root["ServerConnectToken"] = user->getServerConnectToken();
 
         auto d = nlohmann::json::to_cbor(root);
 
@@ -50,6 +58,7 @@ class CoapClientSettings : public CoapRequestHandler {
         }
         nabto_device_coap_request_free(request);
     }
+
  private:
     FingerprintIAM& iam_;
     std::string clientServerUrl_;

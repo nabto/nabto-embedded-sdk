@@ -216,6 +216,7 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
         return NABTO_EC_UNKNOWN;
     }
 
+    np_event_queue_init_event(&ctx->startSendEvent);
 
     *client = ctx;
     return NABTO_EC_OK;
@@ -489,7 +490,7 @@ void nm_dtls_cli_remove_send_data(struct np_dtls_cli_send_context* elm)
 
 void nm_dtls_cli_start_send(struct np_dtls_cli_context* ctx)
 {
-    np_event_queue_post(ctx->pl, &ctx->startSendEvent, &nm_dtls_cli_start_send_deferred, ctx);
+    np_event_queue_post_maybe_double(ctx->pl, &ctx->startSendEvent, &nm_dtls_cli_start_send_deferred, ctx);
 }
 
 void nm_dtls_cli_start_send_deferred(void* data)

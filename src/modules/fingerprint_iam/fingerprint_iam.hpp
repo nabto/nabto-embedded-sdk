@@ -55,6 +55,10 @@ class FingerprintIAM {
      */
     void enableClientSettings(const std::string& clientServerUrl, const std::string& clientServerKey);
 
+    /**
+     * Remote pairing needs a server connect token.
+     */
+    void enableRemotePairing(const std::string& serverConnectToken);
 
     /**
      * Check an action with attributes against the iam system.
@@ -86,13 +90,13 @@ class FingerprintIAM {
     /**
      * The client has been granted access with a button press or a password.
      */
-    std::shared_ptr<User> pairNewClient(const std::string& fingerprint, const std::string& name);
+    std::shared_ptr<User> pairNewClient(NabtoDeviceCoapRequest* request, const std::string& name);
 
     void addFingerprintToUser(std::shared_ptr<User> user, const std::string& fingerprint)
     {
         fingerprintToUser_[fingerprint] = user;
 
-        user->addFingerprint(fingerprint);
+        user->setFingerprint(fingerprint);
         if (changeListener_) {
             changeListener_->upsertUser(user->getId());
         }
@@ -193,6 +197,11 @@ class FingerprintIAM {
             return false;
         }
     }
+
+    // return a user if one exists with the given client fingerprint
+    std::shared_ptr<User> findUserByCoapRequest(NabtoDeviceCoapRequest* request);
+
+    std::string getFingerprintFromCoapRequest(NabtoDeviceCoapRequest* request);
 
  private:
     std::shared_ptr<User> findUserByFingerprint(const std::string& fingerprint);

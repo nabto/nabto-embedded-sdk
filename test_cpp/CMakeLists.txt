@@ -20,11 +20,13 @@ set(test_src
   network/tcp_test.cpp
   network/udp_test.cpp
   platform/hex_test.cpp
+  platform/vector_test.cpp
   api/event_handler_test.cpp
   api/future_test.cpp
   api/device_api.cpp
   api/authorization_test.cpp
   api/new_free.cpp
+  api/create_sct.cpp
   attach/attach_test.cpp
   test_platform.cpp
   iam/load_users.cpp

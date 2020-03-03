@@ -1,5 +1,7 @@
 #include "nc_coap_client.h"
 
+#include <core/nc_coap.h>
+
 #include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
@@ -24,10 +26,11 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     ctx->pl = pl;
     ctx->isSending = false;
     ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
+    np_event_queue_init_event(&ctx->ev);
     nabto_coap_error err = nabto_coap_client_init(&ctx->client, &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     nc_coap_client_set_infinite_stamp(ctx);
     return NABTO_EC_OK;
@@ -154,7 +157,7 @@ void nc_coap_client_notify_event_callback(void* userData)
 void nc_coap_client_notify_event(void* userData)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*)userData;
-    np_event_queue_post(ctx->pl, &ctx->ev, &nc_coap_client_notify_event_callback, ctx);
+    np_event_queue_post_maybe_double(ctx->pl, &ctx->ev, &nc_coap_client_notify_event_callback, ctx);
 }
 
 void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx)

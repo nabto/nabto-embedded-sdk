@@ -2,6 +2,7 @@
 #include "nm_tcptunnel_coap.h"
 
 #include <core/nc_coap_server.h>
+#include <core/nc_coap.h>
 #include <platform/np_logging.h>
 
 #include <cbor.h>
@@ -24,21 +25,21 @@ np_error_code nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_co
                                                           create_tunnel, tunnels, &tunnels->coapPostRes);
     if (err != NABTO_COAP_ERROR_OK) {
         nm_tcptunnel_coap_deinit(tunnels);
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_DELETE,
                                          (const char*[]){"tcptunnels", "{tid}", NULL},
                                          delete_tunnel, tunnels, &tunnels->coapDelRes);
     if (err != NABTO_COAP_ERROR_OK) {
         nm_tcptunnel_coap_deinit(tunnels);
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_GET,
                                          (const char*[]){"tcptunnels", "{tid}", NULL},
                                          get_tunnel, tunnels, &tunnels->coapGetRes);
     if (err != NABTO_COAP_ERROR_OK) {
         nm_tcptunnel_coap_deinit(tunnels);
-        return nc_coap_server_error_module_to_core(err);
+        return nc_coap_error_to_core(err);
     }
     return NABTO_EC_OK;
 }

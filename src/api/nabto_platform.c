@@ -18,3 +18,8 @@ void nabto_device_init_platform(struct np_platform* pl)
     np_platform_init(pl);
     nm_api_log_init();
 }
+
+void nabto_device_deinit_platform(struct np_platform* pl)
+{
+    np_platform_deinit(pl);
+}

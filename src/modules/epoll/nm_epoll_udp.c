@@ -145,7 +145,9 @@ uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
 
 void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events)
 {
-    nm_epoll_udp_try_read(sock);
+    // post event such that the read is executed on the main thread instead of the network thread
+    np_event_queue_post_maybe_double(sock->pl, &sock->recv.event, nm_epoll_udp_try_read, sock);
+    //nm_epoll_udp_try_read(sock);
 }
 
 void nm_epoll_udp_try_read(void* userData)
@@ -268,7 +270,7 @@ void nm_epoll_udp_resolve_close(struct nm_epoll_base* base)
         shutdown(sock->sock, SHUT_RDWR);
 
         if (epoll_ctl(epoll->fd, EPOLL_CTL_DEL, sock->sock, NULL) == -1) {
-            NABTO_LOG_TRACE(LOG,"Cannot remove fd from epoll set, %i: %s", errno, strerror(errno));
+            NABTO_LOG_TRACE(LOG,"Cannot remove fd: %d from epoll set, %i: %s", sock->sock, errno, strerror(errno));
         }
     }
     nm_epoll_cancel_all_events(sock);

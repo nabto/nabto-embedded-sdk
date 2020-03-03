@@ -30,12 +30,12 @@ extern "C" {
         XX(OPERATION_IN_PROGRESS, "Operation in progress")              \
         XX(ABORTED, "Aborted")                                          \
         XX(STOPPED, "Stopped")                                          \
-        XX(CLOSED, "Stream closed")                              \
+        XX(CLOSED, "Stream closed")                                     \
         XX(RESOURCE_EXISTS, "Resource exists")                          \
         XX(NOT_FOUND, "Not Found")                                      \
         XX(OUT_OF_MEMORY, "Out of memory")                              \
         XX(NOT_IMPLEMENTED, "Not Implemented")                          \
-        XX(ACCESS_DENIED, "Access denied")                                        \
+        XX(ACCESS_DENIED, "Access denied")                              \
         XX(STRING_TOO_LONG, "String too long")                          \
         XX(NOT_A_STRING, "Not a string")                                \
         XX(NOT_A_NUMBER, "Not a number")                                \
@@ -44,6 +44,8 @@ extern "C" {
         XX(IN_USE, "In use")                                            \
         XX(INVALID_STATE, "Invalid State")                              \
         XX(NO_DATA, "No data")                                          \
+        XX(OPERATION_STARTED, "Operation started")                      \
+        XX(NO_OPERATION, "No operation neccessary")                     \
 
 
 #define XX_ERROR(name, _) NABTO_EC_##name,

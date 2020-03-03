@@ -2,6 +2,7 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(dtls_common_src
   nm_dtls_timer.c
+  nm_random.c
   )
 
 set(dtls_cli_src
@@ -22,6 +23,8 @@ set(dtls_test_src
   ${src_dir}/nm_dtls_srv.c
   ${src_dir}/nm_dtls_cli.c
   )
+
+
 
 add_library( nm_dtls_cli STATIC ${dtls_cli_src})
 add_library( nm_dtls_srv STATIC ${dtls_srv_src})

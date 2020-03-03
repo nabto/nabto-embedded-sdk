@@ -50,8 +50,9 @@ void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
 bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
-    int i = mbedtls_ctr_drbg_random(&ctx->ctr_drbg, buf, size);
-    if (i == 0) {
+    struct np_platform* pl = ctx->pl;
+    np_error_code ec = pl->random.random(pl, buf, size);
+    if (ec == NABTO_EC_OK) {
         return true;
     } else {
         return false;
@@ -66,15 +67,6 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->sendBuf = pl->buf.allocate();
     if (!ctx->sendBuf) {
         return NABTO_EC_OUT_OF_MEMORY;
-    }
-
-    mbedtls_ctr_drbg_init(&ctx->ctr_drbg);
-    mbedtls_entropy_init(&ctx->entropy);
-    int ret;
-    ret = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy, NULL, 0);
-    if (ret != 0) {
-        pl->buf.free(ctx->sendBuf);
-        return NABTO_EC_UNKNOWN;
     }
 
     ctx->pl = pl;
@@ -93,8 +85,6 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
         struct np_platform* pl = ctx->pl;
         np_event_queue_cancel_event(ctx->pl, &ctx->event);
         np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
-        mbedtls_ctr_drbg_free(&ctx->ctr_drbg);
-        mbedtls_entropy_free(&ctx->entropy);
         pl->buf.free(ctx->sendBuf);
     }
 }

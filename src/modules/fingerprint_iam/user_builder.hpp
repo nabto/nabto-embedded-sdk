@@ -12,9 +12,15 @@ class UserBuilder
  public:
     UserBuilder(const std::string& id) : id_(id) {}
 
-    UserBuilder addFingerprint(const std::string& fingerprint)
+    UserBuilder setFingerprint(const std::string& fingerprint)
     {
-        fingerprints_.insert(fingerprint);
+        fingerprint_ = fingerprint;
+        return *this;
+    }
+
+    UserBuilder setServerConnectToken(const std::string& sct)
+    {
+        serverConnectToken_ = sct;
         return *this;
     }
 
@@ -31,12 +37,14 @@ class UserBuilder
     }
 
     std::string getId() const { return id_; }
-    std::set<std::string> getFingerprints() const { return fingerprints_; }
+    std::string getFingerprint() const { return fingerprint_; }
+    std::string getServerConnectToken() const { return serverConnectToken_; }
     std::set<std::string> getRoles() const { return roles_; }
     iam::Attributes getAttributes() const { return attributes_; }
 
  private:
-    std::set<std::string> fingerprints_;
+    std::string fingerprint_;
+    std::string serverConnectToken_;
     std::set<std::string> roles_;
     iam::Attributes attributes_;
     std::string id_;

@@ -22,6 +22,7 @@ bool TcpTunnelPersisting::load()
 bool TcpTunnelPersisting::initDefault()
 {
     config_["PairingPassword"] = nabto::examples::common::random_string(16);
+    config_["PairingServerConnectToken"] = nabto::examples::common::random_string(20);
     save();
     return true;
 }
