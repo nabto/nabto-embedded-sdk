@@ -829,6 +829,30 @@ nabto_device_enable_mdns(NabtoDevice* device);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
 
+/**
+ * Add a tunnel service to the device
+ *
+ * @param device
+ * @param serviceId           The unique id of the service.
+ * @param servuceType         The type of the service, e.g. ssh, rtsp, http,...
+ * @param serviceDescription  Descriptive text
+ * @param host                The ip address of the host to connect to e.g. "127.0.0.1"
+ * @param port                port number 22, 80, 554 etc
+ * @return NABTO_DEVICE_EC_OK  iff the service was added.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, const char* serviceType, const char* serviceDescription, const char* host, uint16_t port);
+
+/**
+ * Remove a tunnel service from the device
+ *
+ * @param device
+ * @param serviceId
+ * @return NABTO_DEVICE_EC_OK if the service was removed
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceId);
+
 /*************************
  * Server Connect Tokens *
  *************************/
