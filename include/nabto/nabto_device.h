@@ -803,31 +803,22 @@ nabto_device_enable_mdns(NabtoDevice* device);
  ******************/
 
 /**
- * Enable TCP tunnelling in the device.
- *
  * Tcp tunnelling is a feature which allows clients to tunnel tcp
- * traffic over a nabto connection to the device. TCP tunnelling is
- * stopped when the device is closed. TCP tunnelling will by default
- * tunnel to the ip address 127.0.0.1. The ip can be overriden by the function  if the IP is not provided in the
- * request. The port number has not default value.
+ * traffic over a nabto connection to the device.
  *
  * Enabling the Tunnelling module means several new authorizations actions
  * needs to be handled.
  *
  * Actions:
- * * `TcpTunnel:Create`
- * * `TcpTunnel:Delete`
- * * `TcpTunnel:Get`
+ * * `TcpTunnel:ListServices`  Coap request to list services
+ * * `TcpTunnel:GetService`    Coap request to get information for a specific service
+ * * `TcpTunnel:Connect`       Stream request to create a specific connection to a given service
  *
  * Attributes:
- * * `TcpTunnel:Port` the port of the tcp server which the tunnel connects to.
+ * * `TcpTunnel:ServiceId`   The id of the service.
+ * * `TcpTunnel:ServiceType` The type of the service.
  *
- * @param device   The device
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_RESOURCE_EXISTS if already enabled
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
 
 /**
  * Add a tunnel service to the device
