@@ -39,7 +39,7 @@ bool np_list_empty(struct np_list* list);
 void np_list_append(struct np_list* list, struct np_list_item* item, void* element);
 
 // erase an element from the list.
-void np_list_erase_item(struct np_list_item* iterator);
+void np_list_erase_item(struct np_list_item* item);
 
 void np_list_erase_iterator(struct np_list_iterator* iterator);
 

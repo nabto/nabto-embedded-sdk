@@ -114,6 +114,13 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
+    ec = nm_tcptunnels_init(&dev->tcptunnels, &dev->core);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to start tcp tunnelling module");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
     np_list_init(&dev->listeners);
 
     return (NabtoDevice*)dev;

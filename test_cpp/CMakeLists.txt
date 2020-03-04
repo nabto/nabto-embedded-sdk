@@ -22,6 +22,7 @@ set(test_src
   platform/hex_test.cpp
   platform/vector_test.cpp
   platform/list_test.cpp
+  platform/ip_address_test.cpp
   api/event_handler_test.cpp
   api/future_test.cpp
   api/device_api.cpp

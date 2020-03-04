@@ -37,6 +37,11 @@ bool np_ip_is_v6(struct np_ip_address* ip);
 
 const char* np_ip_address_to_string(struct np_ip_address* ip);
 
+/**
+ * assign ipv4 address in host byte order to the ip address.
+ */
+void np_ip_address_assign_v4(struct np_ip_address* ip, uint32_t address);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

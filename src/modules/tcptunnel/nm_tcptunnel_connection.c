@@ -56,9 +56,9 @@ void nm_tcptunnel_connection_free(struct nm_tcptunnel_connection* connection)
     free(connection);
 }
 
-np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel* tunnel, struct nm_tcptunnel_connection* connection, struct nc_stream_context* stream)
+np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel_service* service, struct nm_tcptunnel_connection* connection, struct nc_stream_context* stream)
 {
-    connection->pl = tunnel->tunnels->device->pl;
+    connection->pl = service->tunnels->device->pl;
     struct np_platform* pl = connection->pl;
     np_error_code ec = pl->tcp.create(pl, &connection->socket);
     if (ec) {
@@ -67,19 +67,15 @@ np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel* tunnel, struct n
     }
     connection->stream = stream;
 
-    struct nm_tcptunnels* tunnels = tunnel->tunnels;
+    struct nm_tcptunnels* tunnels = service->tunnels;
 
-    connection->address = tunnels->defaultHost;
-    connection->port = tunnel->port;
+    connection->address = service->address;
+    connection->port = service->port;
 
 
     // insert connection into back of connections list
-    struct nm_tcptunnel_connection* before = tunnel->connectionsSentinel.prev;
-    struct nm_tcptunnel_connection* after = &tunnel->connectionsSentinel;
-    before->next = connection;
-    connection->next = after;
-    after->prev = connection;
-    connection->prev = before;
+
+    np_list_append(&service->connections, &connection->connectionsListItem, connection);
 
     connection->tcpRecvBufferSize = NM_TCPTUNNEL_BUFFER_SIZE;
     connection->streamRecvBufferSize = NM_TCPTUNNEL_BUFFER_SIZE;
@@ -277,10 +273,6 @@ void is_ended(struct nm_tcptunnel_connection* connection)
  */
 void the_end(struct nm_tcptunnel_connection* connection)
 {
-    if (connection->next != NULL &&
-        connection->prev != NULL)
-    {
-        nm_tcptunnel_remove_connection(connection);
-    }
+    np_list_erase_item(&connection->connectionsListItem);
     nm_tcptunnel_connection_free(connection);
 }

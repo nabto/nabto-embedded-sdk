@@ -40,11 +40,7 @@ bool TcpTunnel::initDevice()
         std::cerr << "Failed to enable mdns" << std::endl;
         return false;
     }
-    ec = nabto_device_enable_tcp_tunnelling(device_);
-    if (ec) {
-        std::cerr << "Failed to enable tcp tunnelling" << std::endl;
-        return false;
-    }
+
     ec = nabto_device_set_log_std_out_callback(device_);
     if (ec) {
         std::cerr << "Failed to enable stdour logging" << std::endl;
