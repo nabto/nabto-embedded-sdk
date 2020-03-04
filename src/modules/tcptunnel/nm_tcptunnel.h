@@ -68,7 +68,7 @@ struct nm_tcptunnel_service* nm_tcptunnel_service_create(struct nm_tcptunnels* t
 
 np_error_code nm_tcptunnel_service_destroy_by_id(struct nm_tcptunnels* tunnels, const char* id);
 
-void nm_tcptunnel_service_init(struct nm_tcptunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port);
+np_error_code nm_tcptunnel_service_init(struct nm_tcptunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port);
 void nm_tcptunnel_service_deinit(struct nm_tcptunnel_service* service);
 np_error_code nm_tcptunnel_init_stream_listener(struct nm_tcptunnel_service* service);
 

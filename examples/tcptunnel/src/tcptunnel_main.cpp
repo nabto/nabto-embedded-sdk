@@ -31,7 +31,7 @@ std::string exampleDeviceConfig = R"(
 }
 )";
 
-static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam);
+static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam);
 
 void print_missing_device_config_help(const std::string& filename)
 {
@@ -59,6 +59,7 @@ int main(int argc, char** argv)
 
         ("config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
         ("policies", "Configuration file containing the policies if it does not exists it's created", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
+        ("services", "Configuration file containing the services. If it does not exists a default is created", cxxopts::value<std::string>()->default_value("tcptunnel_services.json"))
         ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("tcptunnel_state.json"))
 
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
@@ -82,10 +83,11 @@ int main(int argc, char** argv)
 
         std::string configFile = result["config"].as<std::string>();
         std::string policiesFile = result["policies"].as<std::string>();
+        std::string servicesFile = result["services"].as<std::string>();
         std::string stateFile = result["state"].as<std::string>();
         std::string logLevel = result["log-level"].as<std::string>();
         bool dumpIam = (result.count("dump-iam") > 0);
-        if (!run_tcptunnel(configFile, policiesFile, stateFile, logLevel, dumpIam)) {
+        if (!run_tcptunnel(configFile, policiesFile, servicesFile, stateFile, logLevel, dumpIam)) {
             std::cerr << "Failed to run TCP tunnel" << std::endl;
             return 3;
         }
@@ -101,7 +103,33 @@ int main(int argc, char** argv)
     return 0;
 }
 
-bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam)
+static std::vector<std::string> split(const std::string& s, char delimiter)
+{
+   std::vector<std::string> tokens;
+   std::string token;
+   std::istringstream tokenStream(s);
+   while (std::getline(tokenStream, token, delimiter))
+   {
+      tokens.push_back(token);
+   }
+   return tokens;
+}
+
+void add_service(const std::string& stateFile, const std::string& service)
+{
+    std::vector<std::string> parts = split(service, ':');
+    if (parts.size() != 4) {
+        std::cout << "Invalid service definition" << std::endl;
+    }
+
+}
+
+void remove_service(const std::string& stateFile, const std::string& id)
+{
+
+}
+
+bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam)
 {
     nabto::examples::common::DeviceConfig dc(configFile);
     if (!dc.load()) {
@@ -118,6 +146,13 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
         init_default_policies(policiesFile);
     }
 
+    if (!json_config_exists(servicesFile)) {
+        std::cout << "The services file does not exists. Creating a new services file with a default service" << std::endl;
+        init_default_services(servicesFile);
+    }
+
+
+
     std::stringstream keyFileName;
     keyFileName << dc.getProductId() << "_" << dc.getDeviceId() << ".key.json";
 
@@ -129,6 +164,12 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
     NabtoDevice* device = nabto_device_new();
     if (!device) {
         std::cerr << "Could not create device" << std::endl;
+        return false;
+    }
+
+    if (!load_services(servicesFile, device))
+    {
+        std::cerr << "Failed to load services check the format of the file " << servicesFile << std::endl;
         return false;
     }
 

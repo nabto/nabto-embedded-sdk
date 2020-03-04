@@ -79,3 +79,50 @@ bool load_policies(const std::string& policiesFile, nabto::fingerprint_iam::Fing
     return true;
 
 }
+
+bool init_default_services(const std::string& servicesFile)
+{
+    nlohmann::json services = nlohmann::json::array();
+    nlohmann::json service;
+    service["Id"] = "ssh";
+    service["Type"] = "ssh";
+    service["Host"] = "127.0.0.1";
+    service["Port"] = 22;
+
+    services.push_back(service);
+
+    json_config_save(servicesFile, services);
+    return true;
+}
+
+bool load_services(const std::string& servicesFile, NabtoDevice* device)
+{
+    nlohmann::json root;
+    if (!json_config_load(servicesFile, root)) {
+        return false;
+    }
+
+    if (!root.is_array()) {
+        return false;
+    }
+
+    for (auto s : root) {
+        if (s.is_object()) {
+            try {
+                std::string id = s["Id"].get<std::string>();
+                std::string type = s["Type"].get<std::string>();
+                std::string host = s["Host"].get<std::string>();
+                uint16_t port = s["Port"].get<uint16_t>();
+                NabtoDeviceError ec = nabto_device_add_tcp_tunnel_service(device, id.c_str(), type.c_str(), host.c_str(), port);
+                if (ec != NABTO_DEVICE_EC_OK) {
+                    std::cerr << "Could not add service: " << s << std::endl;
+                    return false;
+                }
+            } catch (std::exception& e) {
+                std::cerr << "Could not parse service: " << s << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}

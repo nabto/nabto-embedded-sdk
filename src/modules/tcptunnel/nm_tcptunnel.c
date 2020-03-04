@@ -15,6 +15,8 @@ static void nm_tcptunnel_service_stream_listener_callback(np_error_code ec, stru
 
 static void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data);
 static void nm_tcptunnel_service_destroy(struct nm_tcptunnel_service* service);
+static np_error_code nm_tcptunnel_service_init_stream_listener(struct nm_tcptunnel_service* service);
+
 
 np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
 {
@@ -98,12 +100,20 @@ void nm_tcptunnel_service_destroy(struct nm_tcptunnel_service* service)
     free(service);
 }
 
-void nm_tcptunnel_service_init(struct nm_tcptunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port)
+np_error_code nm_tcptunnel_service_init(struct nm_tcptunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port)
 {
+    struct nm_tcptunnels* tunnels = service->tunnels;
     service->id = strdup(id);
     service->type = strdup(type);
     service->address = *address;
     service->port = port;
+
+    np_error_code ec = nm_tcptunnel_service_init_stream_listener(service);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    np_list_append(&tunnels->services, &service->servicesListItem, service);
+    return ec;
 }
 
 void nm_tcptunnel_service_deinit(struct nm_tcptunnel_service* service)
