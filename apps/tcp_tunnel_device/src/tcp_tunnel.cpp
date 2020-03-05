@@ -1,7 +1,7 @@
-#include "tcptunnel.hpp"
+#include "tcp_tunnel.hpp"
 
 #include "json_config.hpp"
-#include "tcptunnel_default_policies.hpp"
+#include "tcp_tunnel_default_policies.hpp"
 
 #include <nabto/nabto_device_experimental.h>
 
@@ -9,7 +9,7 @@
 
 namespace nabto {
 namespace examples {
-namespace tcptunnel {
+namespace tcp_tunnel {
 
 bool TcpTunnel::initDevice()
 {

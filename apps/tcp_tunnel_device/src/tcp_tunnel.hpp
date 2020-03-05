@@ -3,8 +3,8 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
-#include "tcptunnel_persisting.hpp"
-#include "tcptunnel_default_policies.hpp"
+#include "tcp_tunnel_persisting.hpp"
+#include "tcp_tunnel_default_policies.hpp"
 
 #include <examples/common/stdout_connection_event_handler.hpp>
 #include <examples/common/stdout_device_event_handler.hpp>
@@ -16,7 +16,7 @@
 
 namespace nabto {
 namespace examples {
-namespace tcptunnel {
+namespace tcp_tunnel {
 
 class TcpTunnel {
  public:
@@ -120,7 +120,7 @@ class TcpTunnel {
     std::string createPairingLink()
     {
         std::stringstream ss;
-        ss << "https://tcptunnel.nabto.com/pairing"
+        ss << "https://tcp-tunnel.nabto.com/pairing"
            << "?ProductId=" << deviceConfig_.getProductId()
            << "&DeviceId=" << deviceConfig_.getDeviceId()
            << "&DeviceFingerprint=" << getFingerprint()

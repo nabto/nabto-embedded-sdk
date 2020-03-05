@@ -14,6 +14,7 @@ set(CMAKE_C_STANDARD 99)
 
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
 option(DEVICE_BUILD_TESTS "build device tests" ON)
+option(DEVICE_BUILD_APPS "build applications" ON)
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -119,7 +120,10 @@ if (DEVICE_BUILD_EXAMPLES)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   add_subdirectory(examples/common)
   add_subdirectory(examples/heat_pump)
-  add_subdirectory(examples/tcptunnel)
   add_subdirectory(examples/stream_echo)
   add_subdirectory(examples/hello_world)
+endif()
+
+if (DEVICE_BUILD_APPS)
+  add_subdirectory(apps/tcp_tunnel_device)
 endif()

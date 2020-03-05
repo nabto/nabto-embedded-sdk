@@ -46,7 +46,7 @@ TODO: document how to limit access to specific hosts and ports.
 The state of the tcptunnel. This file is updated by the application on
 runtime.
 
-### `<product_id>_<device_id>.key.json`
+### `<product_id>_<device_id>.key`
 
 Key file for the device. If this file does not exists, it's
 created. This file is not updated by the application afterwards.

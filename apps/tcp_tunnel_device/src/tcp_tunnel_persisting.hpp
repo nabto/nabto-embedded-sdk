@@ -6,7 +6,7 @@
 
 namespace nabto {
 namespace examples {
-namespace tcptunnel {
+namespace tcp_tunnel {
 
 class TcpTunnelPersisting : public fingerprint_iam::FingerprintIAMChangeListener
 {

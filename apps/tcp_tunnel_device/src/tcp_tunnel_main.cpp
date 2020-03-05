@@ -1,8 +1,8 @@
-#include "tcptunnel.hpp"
+#include "tcp_tunnel.hpp"
 #include "json_config.hpp"
 
-#include "tcptunnel_default_policies.hpp"
-#include "tcptunnel_persisting.hpp"
+#include "tcp_tunnel_default_policies.hpp"
+#include "tcp_tunnel_persisting.hpp"
 
 #include <examples/common/random_string.hpp>
 #include <examples/common/device_config.hpp>
@@ -31,7 +31,7 @@ std::string exampleDeviceConfig = R"(
 }
 )";
 
-static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& privateKeyFile, const std::string& logLevel, bool dumpIam);
+static bool run_tcp_tunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& privateKeyFile, const std::string& logLevel, bool dumpIam);
 
 void print_missing_device_config_help(const std::string& filename)
 {
@@ -63,9 +63,9 @@ int main(int argc, char** argv)
 
     options.add_options("Configuration file")
         ("device-config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
-        ("policies", "Configuration file containing the policies if it does not exists it's created", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
-        ("services", "Configuration file containing the services. If it does not exists a default is created", cxxopts::value<std::string>()->default_value("tcptunnel_services.json"))
-        ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("tcptunnel_state.json"))
+        ("policies", "Configuration file containing the policies if it does not exists it's created", cxxopts::value<std::string>()->default_value("tcp_tunnel_policies.json"))
+        ("services", "Configuration file containing the services. If it does not exists a default is created", cxxopts::value<std::string>()->default_value("tcp_tunnel_services.json"))
+        ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("tcp_tunnel_state.json"))
         ("private-key", "File containing the private key", cxxopts::value<std::string>()->default_value(defaultPrivateKey));
 
     try {
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
         std::string privateKeyFile = result["private-key"].as<std::string>();
         std::string logLevel = result["log-level"].as<std::string>();
         bool dumpIam = (result.count("dump-iam") > 0);
-        if (!run_tcptunnel(configFile, policiesFile, servicesFile, stateFile, privateKeyFile, logLevel, dumpIam)) {
+        if (!run_tcp_tunnel(configFile, policiesFile, servicesFile, stateFile, privateKeyFile, logLevel, dumpIam)) {
             std::cerr << "Failed to run TCP tunnel" << std::endl;
             return 3;
         }
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& privateKeyFile, const std::string& logLevel, bool dumpIam)
+bool run_tcp_tunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& privateKeyFile, const std::string& logLevel, bool dumpIam)
 {
     nabto::examples::common::DeviceConfig dc(configFile);
     if (!dc.load()) {
@@ -160,7 +160,7 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
 
 
     {
-        nabto::examples::tcptunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, stateFile, services);
+        nabto::examples::tcp_tunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, stateFile, services);
         tcpTunnel.init();
 
         if (dumpIam) {
