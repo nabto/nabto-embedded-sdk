@@ -20,8 +20,8 @@ struct nm_tcp_tunnel_connection {
     struct np_platform* pl;
     np_tcp_socket* socket;
     struct nc_stream_context* stream;
-    uint16_t port;
     struct np_ip_address address;
+    uint16_t port;
     uint8_t tcpRecvBuffer[NM_TCP_TUNNEL_BUFFER_SIZE];
     size_t tcpRecvBufferSize;
 
@@ -49,12 +49,14 @@ struct nm_tcp_tunnel_service {
 
     char* id;
     char* type;
+
+    void* weakPtr;
 };
 
 struct nm_tcp_tunnels {
     struct nc_device_context* device;
     struct np_list services;
-    struct nc_connection_events_listener connectionEventsListener;
+    uint8_t* weakPtrCounter;
 
     struct nabto_coap_server_resource* coapListServices;
     struct nabto_coap_server_resource* coapGetService;
@@ -73,5 +75,6 @@ void nm_tcp_tunnel_service_deinit(struct nm_tcp_tunnel_service* service);
 np_error_code nm_tcp_tunnel_init_stream_listener(struct nm_tcp_tunnel_service* service);
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels* tunnels, const char* id);
+struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr);
 
 #endif

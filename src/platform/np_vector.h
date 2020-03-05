@@ -17,7 +17,6 @@ struct np_vector {
     void** elements;
     size_t capacity;
     size_t used;
-
 };
 
 np_error_code np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction);

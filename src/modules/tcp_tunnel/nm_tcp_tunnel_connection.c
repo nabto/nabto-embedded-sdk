@@ -184,7 +184,7 @@ void stream_written(np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
     if (ec) {
-        NABTO_LOG_ERROR(LOG, "Stream write failed, stopping the tcp tunnel connection");
+        // NABTO_LOG_ERROR(LOG, "Stream write failed, stopping the tcp tunnel connection");
         // failed to write the data to the stream. In this scenario we
         // need to fail the connection since we cannot guarantee the
         // data was delivered.
@@ -209,7 +209,7 @@ void stream_readen(np_error_code ec, void* userData)
         return close_tcp(connection);
     }
     if (ec) {
-        NABTO_LOG_ERROR(LOG, "tcp tunnel, stream read failed stopping the tcp tunnel connection");
+        //NABTO_LOG_ERROR(LOG, "tcp tunnel, stream read failed stopping the tcp tunnel connection");
         connection->streamReadEnded = true;
         abort_connection(connection);
         is_ended(connection);

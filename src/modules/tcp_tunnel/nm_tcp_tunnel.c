@@ -13,10 +13,9 @@
 
 static void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 
-static void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data);
 static void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service);
 static np_error_code nm_tcp_tunnel_service_init_stream_listener(struct nm_tcp_tunnel_service* service);
-static void service_stream_iam_callback(bool allow, void* serviceData, void* streamData);
+static void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceData, void* streamData);
 
 np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device)
 {
@@ -25,13 +24,12 @@ np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_devi
     }
     np_list_init(&tunnels->services);
     tunnels->device = device;
+    tunnels->weakPtrCounter = (void*)(1);
 
     np_error_code ec = nm_tcp_tunnel_coap_init(tunnels, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-
-    nc_device_add_connection_events_listener(device, &tunnels->connectionEventsListener, &connection_event, tunnels);
 
     return NABTO_EC_OK;
 
@@ -40,8 +38,6 @@ np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_devi
 void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
 {
     if (tunnels->device != NULL) { // if init was called
-        nc_device_remove_connection_events_listener(tunnels->device, &tunnels->connectionEventsListener);
-
         while(!np_list_empty(&tunnels->services)) {
             struct np_list_iterator it;
             np_list_front(&tunnels->services, &it);
@@ -54,31 +50,13 @@ void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
     }
 }
 
-void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data)
-{
-//    struct nm_tcp_tunnels* tunnels = data;
-    if (event == NC_CONNECTION_EVENT_CLOSED) {
-        // TODO
-        /* struct np_list_iterator it; */
-        /* np_list_front(tunnels) */
-
-        /*     tunnels->tunnelsSentinel.next; */
-        /* while (iterator != &tunnels->tunnelsSentinel) { */
-        /*     struct nm_tcp_tunnel* current = iterator; */
-        /*     iterator = iterator->next; */
-        /*     if (current->connectionRef == connectionRef) { */
-        /*         nm_tcp_tunnel_service_deinit(current); */
-        /*         nm_tcp_tunnel_service_destroy(current); */
-        /*     } */
-        /* } */
-    }
-}
-
 struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels)
 {
     struct nm_tcp_tunnel_service* service = calloc(1, sizeof(struct nm_tcp_tunnel_service));
 
     service->tunnels = tunnels;
+    tunnels->weakPtrCounter++;
+    service->weakPtr = tunnels->weakPtrCounter;
     np_list_init(&service->connections);
     return service;
 }
@@ -142,13 +120,19 @@ np_error_code nm_tcp_tunnel_service_init_stream_listener(struct nm_tcp_tunnel_se
     return ec;
 }
 
-void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data)
+void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* servicePtr)
 {
     if (ec) {
         // probably stopped
         return;
     } else {
-        struct nm_tcp_tunnel_service* service = data;
+        // Service is guaranteed to be valid since removal of a service removes the listener.
+        struct nm_tcp_tunnel_service* service = servicePtr;
+
+        // we are not guaranteed that the service is not removed
+        // during the authorization request, so use a weakPtr instead.
+        void* serviceWeakPtr = service->weakPtr;
+
 
         struct np_platform* pl = service->tunnels->device->pl;
         struct np_authorization_request* authReq = pl->authorization.create_request(pl, stream->connectionRef, "TcpTunnel:Connect");
@@ -156,7 +140,7 @@ void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_
             pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
             pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
         {
-            pl->authorization.check_access(authReq, service_stream_iam_callback, service, stream);
+            pl->authorization.check_access(authReq, service_stream_iam_callback, service->tunnels, serviceWeakPtr, stream);
             return;
         }
 
@@ -165,12 +149,16 @@ void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_
     }
 }
 
-void service_stream_iam_callback(bool allow, void* serviceData, void* streamData)
+void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWeakPtr, void* streamData)
 {
-    // TODO service could be removed while the iam request is
-    // happening, maybe introduce a concept of weak pointers.
-    struct nm_tcp_tunnel_service* service = serviceData;
+    struct nm_tcp_tunnels* tunnels = tunnelsData;
     struct nc_stream_context* stream = streamData;
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service_by_weak_ptr(tunnels, serviceWeakPtr);
+    if (service == NULL) {
+        // service has been removed during the authorization request
+        nc_stream_release(stream);
+        return;
+    }
 
     if (!allow) {
         nc_stream_release(stream);
@@ -203,6 +191,18 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
     {
         struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
         if (strcmp(service->id, id) == 0) {
+            return service;
+        }
+    }
+    return NULL;
+}
+struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr)
+{
+    struct np_list_iterator it;
+    for (np_list_front(&tunnels->services, &it); !np_list_end(&it); np_list_next(&it))
+    {
+        struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
+        if (service->weakPtr == weakPtr) {
             return service;
         }
     }

@@ -19,7 +19,7 @@ static struct np_authorization_request* create_request(struct np_platform* pl, u
 static void discard_request(struct np_authorization_request* request);
 static np_error_code add_string_attribute(struct np_authorization_request* request, const char* key, const char* value);
 
-static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2);
+static void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2, void* userData3);
 
 /**
  * Helper functions
@@ -54,14 +54,14 @@ void discard_request(struct np_authorization_request* request)
 static void handle_verdict(void* userData)
 {
     struct nabto_device_authorization_request* authReq = userData;
-    authReq->verdictCallback(authReq->verdict, authReq->verdictCallbackUserData1, authReq->verdictCallbackUserData2);
+    authReq->verdictCallback(authReq->verdict, authReq->verdictCallbackUserData1, authReq->verdictCallbackUserData2, authReq->verdictCallbackUserData3);
     authReq->platformDone = true;
     if (authReq->apiDone) {
          free_request_when_unused(authReq);
     }
 }
 
-void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2)
+void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2, void* userData3)
 {
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)authorizationRequest;
     authReq->apiDone = false;
@@ -73,6 +73,7 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     authReq->verdictCallback = callback;
     authReq->verdictCallbackUserData1 = userData1;
     authReq->verdictCallbackUserData2 = userData2;
+    authReq->verdictCallbackUserData3 = userData3;
 
     if (listener) {
         if (nabto_device_listener_add_event(listener, authReq) == NABTO_EC_OK) {

@@ -13,8 +13,8 @@
 static void list_services(struct nabto_coap_server_request* request, void* data);
 static void get_service(struct nabto_coap_server_request* request, void* data);
 static void get_connect(struct nabto_coap_server_request* request, void* data);
-static void list_services_iam(bool allow, void* userData1, void* userData2);
-static void get_service_iam(bool allow, void* userData1, void* userData2);
+static void list_services_iam(bool allow, void* userData1, void* userData2, void* userData3);
+static void get_service_iam(bool allow, void* userData1, void* userData2, void* userData3);
 
 static void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp_tunnels* tunnels, const char* action);
 
@@ -72,7 +72,7 @@ void list_services(struct nabto_coap_server_request* request, void* data)
 
     struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:ListServices");
     if (authReq != NULL) {
-        pl->authorization.check_access(authReq, list_services_iam, tunnels, request);
+        pl->authorization.check_access(authReq, list_services_iam, tunnels, request, NULL);
         return;
     }
 
@@ -126,7 +126,7 @@ static size_t encode_service(struct nm_tcp_tunnel_service* service, uint8_t* buf
 }
 
 
-void list_services_iam(bool allow, void* userData1, void* userData2)
+void list_services_iam(bool allow, void* userData1, void* userData2, void* userData3)
 {
     struct nm_tcp_tunnels* tunnels = userData1;
     struct nabto_coap_server_request* request = userData2;
@@ -188,7 +188,7 @@ void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp
         pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
         pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
     {
-        pl->authorization.check_access(authReq, get_service_iam, tunnels, request);
+        pl->authorization.check_access(authReq, get_service_iam, tunnels, request, NULL);
         return;
     }
 
@@ -198,7 +198,7 @@ void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp
     nabto_coap_server_request_free(request);
 }
 
-void get_service_iam(bool allow, void* userData1, void* userData2)
+void get_service_iam(bool allow, void* userData1, void* userData2, void* userData3)
 {
     struct nm_tcp_tunnels* tunnels = userData1;
     struct nabto_coap_server_request* request = userData2;
