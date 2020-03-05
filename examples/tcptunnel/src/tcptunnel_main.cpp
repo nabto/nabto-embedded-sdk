@@ -31,7 +31,7 @@ std::string exampleDeviceConfig = R"(
 }
 )";
 
-static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam);
+static bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& privateKeyFile, const std::string& logLevel, bool dumpIam);
 
 void print_missing_device_config_help(const std::string& filename)
 {
@@ -49,6 +49,8 @@ void print_invalid_device_config_help(const std::string& filename)
 void my_handler(int s){
 }
 
+std::string defaultPrivateKey = "<productId>-<deviceId>.key";
+
 int main(int argc, char** argv)
 {
     cxxopts::Options options("TCP Tunnel", "Nabto tcp tunnel example.");
@@ -56,14 +58,15 @@ int main(int argc, char** argv)
     options.add_options("General")
         ("h,help", "Show help")
         ("version", "Show version")
+        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
+        ("dump-iam", "Print the iam configuration when the device is started, Policies, Roles Users");
 
-        ("config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
+    options.add_options("Configuration files")
+        ("device-config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
         ("policies", "Configuration file containing the policies if it does not exists it's created", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
         ("services", "Configuration file containing the services. If it does not exists a default is created", cxxopts::value<std::string>()->default_value("tcptunnel_services.json"))
         ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("tcptunnel_state.json"))
-
-        ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
-        ("dump-iam", "Print the iam configuration when the device is started, Policies, Roles Users");
+        ("private-key", "File containing the private key", cxxopts::value<std::string>()->default_value(defaultPrivateKey));
 
     try {
 
@@ -81,13 +84,14 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        std::string configFile = result["config"].as<std::string>();
+        std::string configFile = result["device-config"].as<std::string>();
         std::string policiesFile = result["policies"].as<std::string>();
         std::string servicesFile = result["services"].as<std::string>();
         std::string stateFile = result["state"].as<std::string>();
+        std::string privateKeyFile = result["private-key"].as<std::string>();
         std::string logLevel = result["log-level"].as<std::string>();
         bool dumpIam = (result.count("dump-iam") > 0);
-        if (!run_tcptunnel(configFile, policiesFile, servicesFile, stateFile, logLevel, dumpIam)) {
+        if (!run_tcptunnel(configFile, policiesFile, servicesFile, stateFile, privateKeyFile, logLevel, dumpIam)) {
             std::cerr << "Failed to run TCP tunnel" << std::endl;
             return 3;
         }
@@ -103,7 +107,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam)
+bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& privateKeyFile, const std::string& logLevel, bool dumpIam)
 {
     nabto::examples::common::DeviceConfig dc(configFile);
     if (!dc.load()) {
@@ -125,13 +129,18 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
         init_default_services(servicesFile);
     }
 
+    std::string keyFile = privateKeyFile;
+    if (keyFile == defaultPrivateKey) {
+
+        std::stringstream keyFileName;
+        keyFileName << dc.getProductId() << "_" << dc.getDeviceId() << ".key";
+        keyFile = keyFileName.str();
+    }
 
 
-    std::stringstream keyFileName;
-    keyFileName << dc.getProductId() << "_" << dc.getDeviceId() << ".key.json";
 
     std::string privateKey;
-    if (!load_private_key(keyFileName.str(), privateKey)) {
+    if (!load_private_key(keyFile, privateKey)) {
         return false;
     }
 

@@ -20,8 +20,8 @@ bool init_default_policies(const std::string& policiesFile)
 
     auto tunnelAllPolicy = nabto::iam::PolicyBuilder("TunnelAll")
         .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
-                      .addAction("TcpTunnel:Create")
-                      .addAction("TcpTunnel:Destroy"));
+                      .addAction("TcpTunnel:GetService")
+                      .addAction("TcpTunnel:ListServices"));
 
     auto pairedPolicy = nabto::iam::PolicyBuilder("Paired")
         .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
