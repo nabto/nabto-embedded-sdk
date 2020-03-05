@@ -1,5 +1,5 @@
-#include "nm_tcptunnel.h"
-#include "nm_tcptunnel_coap.h"
+#include "nm_tcp_tunnel.h"
+#include "nm_tcp_tunnel_coap.h"
 
 #include <core/nc_coap_server.h>
 #include <core/nc_coap.h>
@@ -16,37 +16,37 @@ static void get_connect(struct nabto_coap_server_request* request, void* data);
 static void list_services_iam(bool allow, void* userData1, void* userData2);
 static void get_service_iam(bool allow, void* userData1, void* userData2);
 
-static void get_service_action(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, const char* action);
+static void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp_tunnels* tunnels, const char* action);
 
-np_error_code nm_tcptunnel_coap_init(struct nm_tcptunnels* tunnels, struct nc_coap_server_context* server)
+np_error_code nm_tcp_tunnel_coap_init(struct nm_tcp_tunnels* tunnels, struct nc_coap_server_context* server)
 {
     nabto_coap_error err;
 
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_GET,
-                                         (const char*[]){"tcptunnels", "services", NULL},
+                                         (const char*[]){"tcp-tunnels", "services", NULL},
                                          list_services, tunnels, &tunnels->coapListServices);
     if (err != NABTO_COAP_ERROR_OK) {
-        nm_tcptunnel_coap_deinit(tunnels);
+        nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_GET,
-                                         (const char*[]){"tcptunnels", "services", "{id}", NULL},
+                                         (const char*[]){"tcp-tunnels", "services", "{id}", NULL},
                                          get_service, tunnels, &tunnels->coapGetService);
     if (err != NABTO_COAP_ERROR_OK) {
-        nm_tcptunnel_coap_deinit(tunnels);
+        nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
     }
     err = nabto_coap_server_add_resource(&server->server, NABTO_COAP_CODE_GET,
-                                         (const char*[]){"tcptunnels", "connect", "{id}", NULL},
+                                         (const char*[]){"tcp-tunnels", "connect", "{id}", NULL},
                                          get_connect, tunnels, &tunnels->coapGetService);
     if (err != NABTO_COAP_ERROR_OK) {
-        nm_tcptunnel_coap_deinit(tunnels);
+        nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
     }
     return NABTO_EC_OK;
 }
 
-void nm_tcptunnel_coap_deinit(struct nm_tcptunnels* tunnels)
+void nm_tcp_tunnel_coap_deinit(struct nm_tcp_tunnels* tunnels)
 {
     if (tunnels->coapListServices) {
         nabto_coap_server_remove_resource(tunnels->coapListServices);
@@ -61,11 +61,11 @@ void nm_tcptunnel_coap_deinit(struct nm_tcptunnels* tunnels)
 /**
  * List Services
  *
- * CoAP GET /tcptunnels/services
+ * CoAP GET /tcp_tunnels/services
  */
 void list_services(struct nabto_coap_server_request* request, void* data)
 {
-    struct nm_tcptunnels* tunnels = data;
+    struct nm_tcp_tunnels* tunnels = data;
 
     struct np_platform* pl = tunnels->device->pl;
     struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
@@ -82,7 +82,7 @@ void list_services(struct nabto_coap_server_request* request, void* data)
     nabto_coap_server_request_free(request);
 }
 
-static size_t encode_services_list(struct nm_tcptunnels* tunnels, uint8_t* buffer, size_t bufferSize)
+static size_t encode_services_list(struct nm_tcp_tunnels* tunnels, uint8_t* buffer, size_t bufferSize)
 {
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
@@ -92,7 +92,7 @@ static size_t encode_services_list(struct nm_tcptunnels* tunnels, uint8_t* buffe
     struct np_list_iterator it;
     for (np_list_front(&tunnels->services, &it); !np_list_end(&it); np_list_next(&it))
     {
-        struct nm_tcptunnel_service* service = np_list_get_element(&it);
+        struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
         cbor_encode_text_stringz(&array, service->id);
     }
     cbor_encoder_close_container(&encoder, &array);
@@ -100,7 +100,7 @@ static size_t encode_services_list(struct nm_tcptunnels* tunnels, uint8_t* buffe
     return cbor_encoder_get_extra_bytes_needed(&encoder);
 }
 
-static size_t encode_service(struct nm_tcptunnel_service* service, uint8_t* buffer, size_t bufferSize)
+static size_t encode_service(struct nm_tcp_tunnel_service* service, uint8_t* buffer, size_t bufferSize)
 {
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
@@ -128,7 +128,7 @@ static size_t encode_service(struct nm_tcptunnel_service* service, uint8_t* buff
 
 void list_services_iam(bool allow, void* userData1, void* userData2)
 {
-    struct nm_tcptunnels* tunnels = userData1;
+    struct nm_tcp_tunnels* tunnels = userData1;
     struct nabto_coap_server_request* request = userData2;
 
     if (!allow) {
@@ -160,19 +160,19 @@ void list_services_iam(bool allow, void* userData1, void* userData2)
 
 void get_service(struct nabto_coap_server_request* request, void* data)
 {
-    struct nm_tcptunnels* tunnels = data;
+    struct nm_tcp_tunnels* tunnels = data;
     get_service_action(request, tunnels, "TcpTunnel:GetService");
 }
 
 void get_connect(struct nabto_coap_server_request* request, void* data)
 {
-    struct nm_tcptunnels* tunnels = data;
+    struct nm_tcp_tunnels* tunnels = data;
     get_service_action(request, tunnels, "TcpTunnel:Connect");
 }
 
-void get_service_action(struct nabto_coap_server_request* request, struct nm_tcptunnels* tunnels, const char* action)
+void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp_tunnels* tunnels, const char* action)
 {
-    struct nm_tcptunnel_service* service = nm_tcptunnels_find_service(tunnels, nabto_coap_server_request_get_parameter(request, "id"));
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, nabto_coap_server_request_get_parameter(request, "id"));
     if (service == NULL) {
         // OOM impossible with NULL message
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
@@ -200,7 +200,7 @@ void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp
 
 void get_service_iam(bool allow, void* userData1, void* userData2)
 {
-    struct nm_tcptunnels* tunnels = userData1;
+    struct nm_tcp_tunnels* tunnels = userData1;
     struct nabto_coap_server_request* request = userData2;
 
     if (!allow) {
@@ -209,7 +209,7 @@ void get_service_iam(bool allow, void* userData1, void* userData2)
         return;
     }
 
-    struct nm_tcptunnel_service* service = nm_tcptunnels_find_service(tunnels, nabto_coap_server_request_get_parameter(request, "id"));
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, nabto_coap_server_request_get_parameter(request, "id"));
     if (service == NULL) {
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
         nabto_coap_server_request_free(request);

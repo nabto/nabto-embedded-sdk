@@ -1,6 +1,6 @@
-#include "nm_tcptunnel.h"
-#include "nm_tcptunnel_connection.h"
-#include "nm_tcptunnel_coap.h"
+#include "nm_tcp_tunnel.h"
+#include "nm_tcp_tunnel_connection.h"
+#include "nm_tcp_tunnel_coap.h"
 
 #include <core/nc_device.h>
 #include <core/nc_stream_manager.h>
@@ -11,14 +11,14 @@
 
 #define LOG NABTO_LOG_MODULE_TUNNEL
 
-static void nm_tcptunnel_service_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
+static void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data);
 
 static void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data);
-static void nm_tcptunnel_service_destroy(struct nm_tcptunnel_service* service);
-static np_error_code nm_tcptunnel_service_init_stream_listener(struct nm_tcptunnel_service* service);
+static void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service);
+static np_error_code nm_tcp_tunnel_service_init_stream_listener(struct nm_tcp_tunnel_service* service);
 static void service_stream_iam_callback(bool allow, void* serviceData, void* streamData);
 
-np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
+np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device)
 {
     if (tunnels->device != NULL) {
         return NABTO_EC_RESOURCE_EXISTS;
@@ -26,7 +26,7 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
     np_list_init(&tunnels->services);
     tunnels->device = device;
 
-    np_error_code ec = nm_tcptunnel_coap_init(tunnels, &device->coapServer);
+    np_error_code ec = nm_tcp_tunnel_coap_init(tunnels, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -37,7 +37,7 @@ np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device
 
 }
 
-void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
+void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
 {
     if (tunnels->device != NULL) { // if init was called
         nc_device_remove_connection_events_listener(tunnels->device, &tunnels->connectionEventsListener);
@@ -45,18 +45,18 @@ void nm_tcptunnels_deinit(struct nm_tcptunnels* tunnels)
         while(!np_list_empty(&tunnels->services)) {
             struct np_list_iterator it;
             np_list_front(&tunnels->services, &it);
-            struct nm_tcptunnel_service* service = np_list_get_element(&it);
-            nm_tcptunnel_service_deinit(service);
+            struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
+            nm_tcp_tunnel_service_deinit(service);
             np_list_erase_iterator(&it);
         }
 
-        nm_tcptunnel_coap_deinit(tunnels);
+        nm_tcp_tunnel_coap_deinit(tunnels);
     }
 }
 
 void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data)
 {
-//    struct nm_tcptunnels* tunnels = data;
+//    struct nm_tcp_tunnels* tunnels = data;
     if (event == NC_CONNECTION_EVENT_CLOSED) {
         // TODO
         /* struct np_list_iterator it; */
@@ -64,51 +64,51 @@ void connection_event(uint64_t connectionRef, enum nc_connection_event event, vo
 
         /*     tunnels->tunnelsSentinel.next; */
         /* while (iterator != &tunnels->tunnelsSentinel) { */
-        /*     struct nm_tcptunnel* current = iterator; */
+        /*     struct nm_tcp_tunnel* current = iterator; */
         /*     iterator = iterator->next; */
         /*     if (current->connectionRef == connectionRef) { */
-        /*         nm_tcptunnel_service_deinit(current); */
-        /*         nm_tcptunnel_service_destroy(current); */
+        /*         nm_tcp_tunnel_service_deinit(current); */
+        /*         nm_tcp_tunnel_service_destroy(current); */
         /*     } */
         /* } */
     }
 }
 
-struct nm_tcptunnel_service* nm_tcptunnel_service_create(struct nm_tcptunnels* tunnels)
+struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels)
 {
-    struct nm_tcptunnel_service* service = calloc(1, sizeof(struct nm_tcptunnel_service));
+    struct nm_tcp_tunnel_service* service = calloc(1, sizeof(struct nm_tcp_tunnel_service));
 
     service->tunnels = tunnels;
     np_list_init(&service->connections);
     return service;
 }
 
-np_error_code nm_tcptunnel_service_destroy_by_id(struct nm_tcptunnels* tunnels, const char* id)
+np_error_code nm_tcp_tunnel_service_destroy_by_id(struct nm_tcp_tunnels* tunnels, const char* id)
 {
-    struct nm_tcptunnel_service* service = nm_tcptunnels_find_service(tunnels, id);
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, id);
     if (service == NULL) {
         return NABTO_EC_NOT_FOUND;
     }
-    nm_tcptunnel_service_deinit(service);
-    nm_tcptunnel_service_destroy(service);
+    nm_tcp_tunnel_service_deinit(service);
+    nm_tcp_tunnel_service_destroy(service);
     return NABTO_EC_OK;
 }
 
-void nm_tcptunnel_service_destroy(struct nm_tcptunnel_service* service)
+void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service)
 {
     np_list_erase_item(&service->servicesListItem);
     free(service);
 }
 
-np_error_code nm_tcptunnel_service_init(struct nm_tcptunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port)
+np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port)
 {
-    struct nm_tcptunnels* tunnels = service->tunnels;
+    struct nm_tcp_tunnels* tunnels = service->tunnels;
     service->id = strdup(id);
     service->type = strdup(type);
     service->address = *address;
     service->port = port;
 
-    np_error_code ec = nm_tcptunnel_service_init_stream_listener(service);
+    np_error_code ec = nm_tcp_tunnel_service_init_stream_listener(service);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -116,25 +116,25 @@ np_error_code nm_tcptunnel_service_init(struct nm_tcptunnel_service* service, co
     return ec;
 }
 
-void nm_tcptunnel_service_deinit(struct nm_tcptunnel_service* service)
+void nm_tcp_tunnel_service_deinit(struct nm_tcp_tunnel_service* service)
 {
     while(!np_list_empty(&service->connections)) {
         struct np_list_iterator it;
         np_list_front(&service->connections, &it);
-        struct nm_tcptunnel_connection* connection = np_list_get_element(&it);
+        struct nm_tcp_tunnel_connection* connection = np_list_get_element(&it);
         np_list_erase_iterator(&it);
 
-        nm_tcptunnel_connection_stop_from_manager(connection);
+        nm_tcp_tunnel_connection_stop_from_manager(connection);
     }
     nc_stream_manager_remove_listener(&service->streamListener);
 }
 
-np_error_code nm_tcptunnel_service_init_stream_listener(struct nm_tcptunnel_service* service)
+np_error_code nm_tcp_tunnel_service_init_stream_listener(struct nm_tcp_tunnel_service* service)
 {
     struct nc_device_context* device = service->tunnels->device;
     struct nc_stream_manager_context* streamManager = &device->streamManager;
     np_error_code ec;
-    ec = nc_stream_manager_add_listener(streamManager, &service->streamListener, service->streamPort, &nm_tcptunnel_service_stream_listener_callback, service);
+    ec = nc_stream_manager_add_listener(streamManager, &service->streamListener, service->streamPort, &nm_tcp_tunnel_service_stream_listener_callback, service);
     if (!ec) {
         service->streamPort = service->streamListener.type;
     }
@@ -142,13 +142,13 @@ np_error_code nm_tcptunnel_service_init_stream_listener(struct nm_tcptunnel_serv
     return ec;
 }
 
-void nm_tcptunnel_service_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data)
+void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_stream_context* stream, void* data)
 {
     if (ec) {
         // probably stopped
         return;
     } else {
-        struct nm_tcptunnel_service* service = data;
+        struct nm_tcp_tunnel_service* service = data;
 
         struct np_platform* pl = service->tunnels->device->pl;
         struct np_authorization_request* authReq = pl->authorization.create_request(pl, stream->connectionRef, "TcpTunnel:Connect");
@@ -169,7 +169,7 @@ void service_stream_iam_callback(bool allow, void* serviceData, void* streamData
 {
     // TODO service could be removed while the iam request is
     // happening, maybe introduce a concept of weak pointers.
-    struct nm_tcptunnel_service* service = serviceData;
+    struct nm_tcp_tunnel_service* service = serviceData;
     struct nc_stream_context* stream = streamData;
 
     if (!allow) {
@@ -177,22 +177,22 @@ void service_stream_iam_callback(bool allow, void* serviceData, void* streamData
         return;
     }
 
-    struct nm_tcptunnel_connection* c = nm_tcptunnel_connection_new();
+    struct nm_tcp_tunnel_connection* c = nm_tcp_tunnel_connection_new();
 
     if (c == NULL) {
         nc_stream_release(stream);
         return;
     }
 
-    np_error_code ec = nm_tcptunnel_connection_init(service, c, stream);
+    np_error_code ec = nm_tcp_tunnel_connection_init(service, c, stream);
     if(!ec) {
-        nm_tcptunnel_connection_start(c);
+        nm_tcp_tunnel_connection_start(c);
     } else {
-        nm_tcptunnel_connection_free(c);
+        nm_tcp_tunnel_connection_free(c);
     }
 }
 
-struct nm_tcptunnel_service* nm_tcptunnels_find_service(struct nm_tcptunnels* tunnels, const char* id)
+struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels* tunnels, const char* id)
 {
     if (id == NULL) {
         return NULL;
@@ -201,7 +201,7 @@ struct nm_tcptunnel_service* nm_tcptunnels_find_service(struct nm_tcptunnels* tu
     struct np_list_iterator it;
     for (np_list_front(&tunnels->services, &it); !np_list_end(&it); np_list_next(&it))
     {
-        struct nm_tcptunnel_service* service = np_list_get_element(&it);
+        struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
         if (strcmp(service->id, id) == 0) {
             return service;
         }

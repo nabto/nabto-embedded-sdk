@@ -79,7 +79,7 @@ class CoapPairingPassword : public CoapRequestHandler {
         CborHelper::decodeKvString(value, "Name", name);
 
         if (password != password_) {
-            nabto_device_coap_error_response(request, 403, "Access denied");
+            nabto_device_coap_error_response(request, 401, "Wrong Password");
             nabto_device_coap_request_free(request);
             return;
         }

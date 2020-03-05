@@ -2,7 +2,7 @@
 
 #include "nabto_device_defines.h"
 #include <platform/np_error_code.h>
-#include <modules/tcptunnel/nm_tcptunnel.h>
+#include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -27,8 +27,8 @@ nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, 
 
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nm_tcptunnel_service* service = nm_tcptunnel_service_create(&dev->tcptunnels);
-    nm_tcptunnel_service_init(service, serviceId, serviceType, &address, port);
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnel_service_create(&dev->tcpTunnels);
+    nm_tcp_tunnel_service_init(service, serviceId, serviceType, &address, port);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
 }
@@ -40,7 +40,7 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
 
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ec = nm_tcptunnel_service_destroy_by_id(&dev->tcptunnels, serviceId);
+    ec = nm_tcp_tunnel_service_destroy_by_id(&dev->tcpTunnels, serviceId);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return nabto_device_error_core_to_api(ec);
