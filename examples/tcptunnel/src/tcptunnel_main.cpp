@@ -103,32 +103,6 @@ int main(int argc, char** argv)
     return 0;
 }
 
-static std::vector<std::string> split(const std::string& s, char delimiter)
-{
-   std::vector<std::string> tokens;
-   std::string token;
-   std::istringstream tokenStream(s);
-   while (std::getline(tokenStream, token, delimiter))
-   {
-      tokens.push_back(token);
-   }
-   return tokens;
-}
-
-void add_service(const std::string& stateFile, const std::string& service)
-{
-    std::vector<std::string> parts = split(service, ':');
-    if (parts.size() != 4) {
-        std::cout << "Invalid service definition" << std::endl;
-    }
-
-}
-
-void remove_service(const std::string& stateFile, const std::string& id)
-{
-
-}
-
 bool run_tcptunnel(const std::string& configFile, const std::string& policiesFile, const std::string& servicesFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam)
 {
     nabto::examples::common::DeviceConfig dc(configFile);
@@ -167,14 +141,17 @@ bool run_tcptunnel(const std::string& configFile, const std::string& policiesFil
         return false;
     }
 
-    if (!load_services(servicesFile, device))
+    std::vector<TcpTunnelService> services;
+    if (!load_services(servicesFile, services))
     {
         std::cerr << "Failed to load services check the format of the file " << servicesFile << std::endl;
         return false;
     }
 
+
+
     {
-        nabto::examples::tcptunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, stateFile);
+        nabto::examples::tcptunnel::TcpTunnel tcpTunnel(device, privateKey, policiesFile, dc, stateFile, services);
         tcpTunnel.init();
 
         if (dumpIam) {

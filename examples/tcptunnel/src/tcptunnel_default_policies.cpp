@@ -95,7 +95,7 @@ bool init_default_services(const std::string& servicesFile)
     return true;
 }
 
-bool load_services(const std::string& servicesFile, NabtoDevice* device)
+bool load_services(const std::string& servicesFile, std::vector<TcpTunnelService>& services)
 {
     nlohmann::json root;
     if (!json_config_load(servicesFile, root)) {
@@ -109,15 +109,12 @@ bool load_services(const std::string& servicesFile, NabtoDevice* device)
     for (auto s : root) {
         if (s.is_object()) {
             try {
-                std::string id = s["Id"].get<std::string>();
-                std::string type = s["Type"].get<std::string>();
-                std::string host = s["Host"].get<std::string>();
-                uint16_t port = s["Port"].get<uint16_t>();
-                NabtoDeviceError ec = nabto_device_add_tcp_tunnel_service(device, id.c_str(), type.c_str(), host.c_str(), port);
-                if (ec != NABTO_DEVICE_EC_OK) {
-                    std::cerr << "Could not add service: " << s << std::endl;
-                    return false;
-                }
+                TcpTunnelService service;
+                service.id_   = s["Id"].get<std::string>();
+                service.type_ = s["Type"].get<std::string>();
+                service.host_ = s["Host"].get<std::string>();
+                service.port_ = s["Port"].get<uint16_t>();
+                services.push_back(service);
             } catch (std::exception& e) {
                 std::cerr << "Could not parse service: " << s << std::endl;
                 return false;

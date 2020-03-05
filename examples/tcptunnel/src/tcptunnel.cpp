@@ -46,6 +46,7 @@ bool TcpTunnel::initDevice()
         std::cerr << "Failed to enable stdour logging" << std::endl;
         return false;
     }
+    nabto_device_set_log_level(device_, "error");
 
     // run application
     ec = nabto_device_start(device_);
@@ -61,6 +62,18 @@ bool TcpTunnel::initAccessControl()
     fingerprintIAM_.enablePasswordPairing(state_->getPairingPassword());
     fingerprintIAM_.enableClientSettings(deviceConfig_.getClientServerUrl(), deviceConfig_.getClientServerKey());
     fingerprintIAM_.enableRemotePairing(state_->getPairingServerConnectToken());
+    return true;
+}
+
+bool TcpTunnel::initTcpServices()
+{
+    for (auto s : tcpTunnelServices_) {
+        NabtoDeviceError ec = nabto_device_add_tcp_tunnel_service(device_, s.id_.c_str(), s.type_.c_str(), s.host_.c_str(), s.port_);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            std::cerr << "Could not add service: " << s.id_ << std::endl;
+            return false;
+        }
+    }
     return true;
 }
 
