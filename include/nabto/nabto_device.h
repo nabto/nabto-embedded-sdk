@@ -803,21 +803,31 @@ nabto_device_enable_mdns(NabtoDevice* device);
  ******************/
 
 /**
- * Tcp tunnelling is a feature which allows clients to tunnel tcp
+ * TCP tunnelling is a feature which allows clients to tunnel tcp
  * traffic over a nabto connection to the device.
  *
- * Enabling the Tunnelling module means several new authorizations actions
- * needs to be handled.
+ * TCP tunnelling from a clients perspective. A client first asks for
+ * CoAP GET /tcptunnels/connect/:serviceId, this will check that the
+ * given connection is authorized to create a connection to the
+ * specific TCP Service and return the StreamPort the client needs to
+ * use for that connection.  Later when a TCP connection is made
+ * through the client a new stream is created to the StreamPort from
+ * before. When this happens, the device makes another authorization
+ * request which again checks that the given connection is allowed to
+ * connect to the specific TCP Service.
+ *
+ * The tcptunnelling module has the following authorization actions
  *
  * Actions:
  * * `TcpTunnel:ListServices`  Coap request to list services
  * * `TcpTunnel:GetService`    Coap request to get information for a specific service
- * * `TcpTunnel:Connect`       Stream request to create a specific connection to a given service
+ * * `TcpTunnel:Connect`       Coap request to test connect permissions and to get information
+ *                             for a specific service. Stream request to create a specific
+ *                             connection to a given service
  *
  * Attributes:
  * * `TcpTunnel:ServiceId`   The id of the service.
  * * `TcpTunnel:ServiceType` The type of the service.
- *
  */
 
 /**
@@ -825,7 +835,7 @@ nabto_device_enable_mdns(NabtoDevice* device);
  *
  * @param device
  * @param serviceId           The unique id of the service.
- * @param servuceType         The type of the service, e.g. ssh, rtsp, http,...
+ * @param serviceType         The type of the service, e.g. ssh, rtsp, http,...
  * @param host                The ip address of the host to connect to e.g. "127.0.0.1"
  * @param port                port number 22, 80, 554 etc
  * @return NABTO_DEVICE_EC_OK  iff the service was added.
