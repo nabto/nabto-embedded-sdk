@@ -61,7 +61,7 @@ int main(int argc, char** argv)
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
         ("dump-iam", "Print the iam configuration when the device is started, Policies, Roles Users");
 
-    options.add_options("Configuration files")
+    options.add_options("Configuration file")
         ("device-config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
         ("policies", "Configuration file containing the policies if it does not exists it's created", cxxopts::value<std::string>()->default_value("tcptunnel_policies.json"))
         ("services", "Configuration file containing the services. If it does not exists a default is created", cxxopts::value<std::string>()->default_value("tcptunnel_services.json"))
