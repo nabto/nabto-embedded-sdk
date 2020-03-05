@@ -16,7 +16,7 @@ static void nm_tcptunnel_service_stream_listener_callback(np_error_code ec, stru
 static void connection_event(uint64_t connectionRef, enum nc_connection_event event, void* data);
 static void nm_tcptunnel_service_destroy(struct nm_tcptunnel_service* service);
 static np_error_code nm_tcptunnel_service_init_stream_listener(struct nm_tcptunnel_service* service);
-
+static void service_stream_iam_callback(bool allow, void* serviceData, void* streamData);
 
 np_error_code nm_tcptunnels_init(struct nm_tcptunnels* tunnels, struct nc_device_context* device)
 {
@@ -149,13 +149,46 @@ void nm_tcptunnel_service_stream_listener_callback(np_error_code ec, struct nc_s
         return;
     } else {
         struct nm_tcptunnel_service* service = data;
-        struct nm_tcptunnel_connection* c = nm_tcptunnel_connection_new();
-        np_error_code ec = nm_tcptunnel_connection_init(service, c, stream);
-        if(!ec) {
-            nm_tcptunnel_connection_start(c);
-        } else {
-            nm_tcptunnel_connection_free(c);
+
+        struct np_platform* pl = service->tunnels->device->pl;
+        struct np_authorization_request* authReq = pl->authorization.create_request(pl, stream->connectionRef, "TcpTunnel:Connect");
+        if (authReq &&
+            pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
+            pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
+        {
+            pl->authorization.check_access(authReq, service_stream_iam_callback, service, stream);
+            return;
         }
+
+        pl->authorization.discard_request(authReq);
+        nc_stream_release(stream);
+    }
+}
+
+void service_stream_iam_callback(bool allow, void* serviceData, void* streamData)
+{
+    // TODO service could be removed while the iam request is
+    // happening, maybe introduce a concept of weak pointers.
+    struct nm_tcptunnel_service* service = serviceData;
+    struct nc_stream_context* stream = streamData;
+
+    if (!allow) {
+        nc_stream_release(stream);
+        return;
+    }
+
+    struct nm_tcptunnel_connection* c = nm_tcptunnel_connection_new();
+
+    if (c == NULL) {
+        nc_stream_release(stream);
+        return;
+    }
+
+    np_error_code ec = nm_tcptunnel_connection_init(service, c, stream);
+    if(!ec) {
+        nm_tcptunnel_connection_start(c);
+    } else {
+        nm_tcptunnel_connection_free(c);
     }
 }
 

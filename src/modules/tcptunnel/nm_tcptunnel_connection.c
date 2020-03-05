@@ -67,8 +67,6 @@ np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel_service* service,
     }
     connection->stream = stream;
 
-    struct nm_tcptunnels* tunnels = service->tunnels;
-
     connection->address = service->address;
     connection->port = service->port;
 
@@ -85,12 +83,13 @@ np_error_code nm_tcptunnel_connection_init(struct nm_tcptunnel_service* service,
     return NABTO_EC_OK;
 }
 
-void nm_tcptunnel_connection_start(struct nm_tcptunnel_connection* connection)
+void nm_tcptunnel_connection_start(struct nm_tcptunnel_connection* connection, struct nm_tcptunnel_service* service)
 {
     // accept the stream
     nc_stream_accept(connection->stream);
     start_connect(connection);
 }
+
 
 /**
  * Called from manager when the tunnel is asked to close down.
