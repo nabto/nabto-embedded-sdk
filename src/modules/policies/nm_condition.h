@@ -19,6 +19,12 @@ enum nm_condition_operator {
     NM_CONDITION_OPERATOR_BOOL
 };
 
+enum nm_condition_result {
+    NM_CONDITION_RESULT_MATCH,
+    NM_CONDITION_RESULT_NO_MATCH,
+    NM_CONDITION_RESULT_ERROR
+};
+
 struct nm_condition {
     enum nm_condition_operator op;
     char* key;
@@ -29,8 +35,13 @@ void nm_condition_init(struct nm_condition* c, enum nm_condition_operator op, co
 
 void nm_condition_deinit(struct nm_condition* c);
 
+enum nm_condition_result nm_condition_matches(struct nm_condition* c, struct nm_attributes* attributes);
+
 bool nm_condition_parse_bool(const char* value, bool* out);
+
 bool nm_condition_parse_numeric(const char* value, double* out);
+
+enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operator op, const char* lhs, const char* rhs);
 
 #ifdef __cplusplus
 } //extern "C"
