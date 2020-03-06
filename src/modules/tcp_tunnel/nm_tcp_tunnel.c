@@ -75,6 +75,8 @@ np_error_code nm_tcp_tunnel_service_destroy_by_id(struct nm_tcp_tunnels* tunnels
 void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service)
 {
     np_list_erase_item(&service->servicesListItem);
+    free(service->id);
+    free(service->type);
     free(service);
 }
 
