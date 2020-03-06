@@ -8,7 +8,7 @@ struct nabto_device_context;
 
 struct nabto_device_authorization_request_attribute {
     struct nabto_device_authorization_request_attribute* next;
-    const char* key;
+    char* key;
     char* value;
 };
 

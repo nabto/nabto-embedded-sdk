@@ -156,6 +156,7 @@ void list_services_iam(bool allow, void* userData1, void* userData2, void* userD
         nabto_coap_server_response_ready(request);
     }
     nabto_coap_server_request_free(request);
+    free(buffer);
 }
 
 void get_service(struct nabto_coap_server_request* request, void* data)
@@ -235,4 +236,5 @@ void get_service_iam(bool allow, void* userData1, void* userData2, void* userDat
         nabto_coap_server_response_ready(request);
     }
     nabto_coap_server_request_free(request);
+    free(buffer);
 }

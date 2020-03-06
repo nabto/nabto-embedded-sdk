@@ -168,6 +168,7 @@ static void free_attribute(struct nabto_device_authorization_request_attribute* 
     }
 
     free(attribute->value);
+    free(attribute->key);
     free(attribute);
 }
 

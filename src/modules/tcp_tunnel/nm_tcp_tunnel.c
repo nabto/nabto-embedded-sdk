@@ -42,8 +42,10 @@ void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
             struct np_list_iterator it;
             np_list_front(&tunnels->services, &it);
             struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
-            nm_tcp_tunnel_service_deinit(service);
             np_list_erase_iterator(&it);
+            nm_tcp_tunnel_service_deinit(service);
+            nm_tcp_tunnel_service_destroy(service);
+
         }
 
         nm_tcp_tunnel_coap_deinit(tunnels);
