@@ -116,9 +116,12 @@ if (DEVICE_BUILD_TESTS)
   add_subdirectory(test_cpp)
 endif()
 
-if (DEVICE_BUILD_EXAMPLES)
+if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   add_subdirectory(examples/common)
+endif()
+
+if (DEVICE_BUILD_EXAMPLES)
   add_subdirectory(examples/heat_pump)
   add_subdirectory(examples/stream_echo)
   add_subdirectory(examples/hello_world)
