@@ -6,24 +6,30 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <iostream>
+#include <fstream>
 
 static bool try_load_private_key(const std::string& keyfileName, std::string& privateKey);
 static bool create_private_key(const std::string& keyfileName);
 
+bool private_key_exists(const std::string& keyFileName)
+{
+    std::ifstream file(keyFileName);
+    return (file.is_open() && !file.fail());
+}
+
 bool try_load_private_key(const std::string& keyFileName, std::string& privateKey)
 {
-    nlohmann::json content;
-    if (!json_config_load(keyFileName, content)) {
+    if (!private_key_exists(keyFileName)) {
         return false;
     }
-
-    nlohmann::json pk = content["PrivateKey"];
-    if (!pk.is_string()) {
+    try {
+        std::ifstream configFile(keyFileName);
+        privateKey = std::string((std::istreambuf_iterator<char>(configFile)),
+                                 std::istreambuf_iterator<char>());
+        return true;
+    } catch (...) {
         return false;
     }
-
-    privateKey = pk.get<std::string>();
-    return true;
 }
 
 bool create_private_key(const std::string& keyFileName)
@@ -37,13 +43,17 @@ bool create_private_key(const std::string& keyFileName)
         return false;
     }
 
-    nlohmann::json root;
-    root["PrivateKey"] = std::string(privateKey);
-
+    std::string privateKeyString(privateKey);
     nabto_device_string_free(privateKey);
-    json_config_save(keyFileName, root);
     nabto_device_free(device);
-    return true;
+
+    try {
+        std::ofstream key(keyFileName);
+        key << privateKeyString;
+        return true;
+    } catch (...) {
+        return false;
+    }
 }
 
 bool load_private_key(const std::string& keyfileName, std::string& privateKey)

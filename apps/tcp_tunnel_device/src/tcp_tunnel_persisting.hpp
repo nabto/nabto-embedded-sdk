@@ -6,7 +6,7 @@
 
 namespace nabto {
 namespace examples {
-namespace tcptunnel {
+namespace tcp_tunnel {
 
 class TcpTunnelPersisting : public fingerprint_iam::FingerprintIAMChangeListener
 {
@@ -31,6 +31,8 @@ class TcpTunnelPersisting : public fingerprint_iam::FingerprintIAMChangeListener
     {
         return config_["PairingServerConnectToken"].get<std::string>();
     }
+
+
 
  private:
     std::string configFile_;

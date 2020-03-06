@@ -114,6 +114,13 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
+    ec = nm_tcp_tunnels_init(&dev->tcpTunnels, &dev->core);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to start tcp tunnelling module");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
     np_list_init(&dev->listeners);
 
     return (NabtoDevice*)dev;
@@ -134,7 +141,7 @@ void nabto_device_stop(NabtoDevice* device)
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    nm_tcptunnels_deinit(&dev->tcptunnels);
+    nm_tcp_tunnels_deinit(&dev->tcpTunnels);
     nc_device_deinit(&dev->core);
 
     dev->closing = true;
@@ -326,16 +333,6 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_mdns(NabtoDevice* device)
     dev->enableMdns = true;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ec;
-}
-
-NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_tcp_tunnelling(NabtoDevice* device)
-{
-    struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec = NABTO_EC_OK;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-    ec = nm_tcptunnels_init(&dev->tcptunnels, &dev->core);
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return nabto_device_error_core_to_api(ec);
 }
 
 /**

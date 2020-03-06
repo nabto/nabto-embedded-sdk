@@ -64,11 +64,6 @@ class TestDeviceApplication {
             return;
         }
 
-        ec = nabto_device_enable_tcp_tunnelling(device_.get());
-        if (ec != NABTO_DEVICE_EC_OK) {
-            return;
-        }
-
         //ec = nabto_device_iam_override_check_access_implementation(device_.get(), allow_anyone_to_connect, NULL);
         //if (ec) {
         //    std::cerr << "Could not override iam check access implementation" << std::endl;

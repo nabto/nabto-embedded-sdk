@@ -27,3 +27,12 @@ const char* np_ip_address_to_string(struct np_ip_address* address)
     }
     return outputBuffer;
 }
+
+void np_ip_address_assign_v4(struct np_ip_address* ip, uint32_t address)
+{
+    ip->type = NABTO_IPV4;
+    ip->ip.v4[0] = (uint8_t)(address >> 24);
+    ip->ip.v4[1] = (uint8_t)(address >> 16);
+    ip->ip.v4[2] = (uint8_t)(address >> 8);
+    ip->ip.v4[3] = (uint8_t)(address);
+}

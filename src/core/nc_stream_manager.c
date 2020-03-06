@@ -284,7 +284,7 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
     for(i = 0; i < NABTO_MAX_STREAMS; i++) {
         if (ctx->streamConns[i] == connection) {
             ctx->streamConns[i] = NULL;
-            nc_stream_remove_connection(&ctx->streams[i]);
+            nc_stream_handle_connection_closed(&ctx->streams[i]);
         }
     }
 }

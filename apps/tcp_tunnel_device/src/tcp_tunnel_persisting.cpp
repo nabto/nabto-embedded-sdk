@@ -1,4 +1,4 @@
-#include "tcptunnel_persisting.hpp"
+#include "tcp_tunnel_persisting.hpp"
 
 #include <examples/common/json_config.hpp>
 #include <examples/common/random_string.hpp>
@@ -7,7 +7,7 @@
 
 namespace nabto {
 namespace examples {
-namespace tcptunnel {
+namespace tcp_tunnel {
 
 bool TcpTunnelPersisting::load()
 {

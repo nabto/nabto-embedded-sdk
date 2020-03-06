@@ -7,6 +7,8 @@
 namespace nabto {
 namespace iam {
 
+static bool resolveValue(const Attributes& attributes, const std::string& value, std::string& out);
+
 Condition::Result Condition::matches(const Attributes& attributes) const
 {
     auto attribute = attributes.get(key_);
@@ -16,9 +18,15 @@ Condition::Result Condition::matches(const Attributes& attributes) const
 
     for (auto v : values_) {
         // return true if at least one match exists
-        Result r = match(*attribute, v);
-        if (r == Result::ERROR || r == Result::MATCH) {
-            return r;
+
+        std::string resolvedValue;
+        // If the value is a variable we try to resolve it to a string
+        // else interpret it as a string.
+        if(resolveValue(attributes, v, resolvedValue)) {
+            Result r = match(*attribute, resolvedValue);
+            if (r == Result::ERROR || r == Result::MATCH) {
+                return r;
+            }
         }
     }
     return Result::NO_MATCH;
@@ -160,5 +168,28 @@ std::string Condition::operatorToString(const Condition::Operator& op)
         default: return "";
     }
 }
+
+bool resolveValue(const Attributes& attributes, const std::string& value, std::string& out)
+{
+    if (value.size() < 3) {
+        out = value;
+        return true;
+    }
+    if (value.substr(0,2) == "${" && value.back() == '}') {
+        std::string variable = value.substr(2,value.size()-3);
+        auto ptr = attributes.get(variable);
+        if (ptr) {
+            out = *ptr;
+            return true;
+        }
+    } else {
+        out = value;
+        return true;
+    }
+
+    return false;
+
+}
+
 
 } } // namespace

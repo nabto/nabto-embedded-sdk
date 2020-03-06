@@ -7,7 +7,7 @@ struct np_platform;
 
 struct np_authorization_request;
 
-typedef void (*np_authorization_request_callback)(bool allowed, void* userData1, void* userData2);
+typedef void (*np_authorization_request_callback)(bool allowed, void* userData1, void* userData2, void* userData3);
 
 
 struct np_authorization {
@@ -32,11 +32,11 @@ struct np_authorization {
     void (*discard_request)(struct np_authorization_request* authorizationRequest);
 
     /**
-     * Check authorization
+     * Check authorization, call exactly one of them.
      *
      * The callback returns with true iff the request was allowed
      */
-    void (*check_access)(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2);
+    void (*check_access)(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2, void* userData3);
 
 };
 

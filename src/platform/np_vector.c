@@ -40,6 +40,7 @@ np_error_code np_vector_push_back(struct np_vector* vector, void* element)
         memcpy(newElements, vector->elements, (vector->capacity * sizeof(void*)));
         free(vector->elements);
         vector->elements = newElements;
+        vector->capacity = newCapacity;
     }
     vector->elements[vector->used] = element;
     vector->used += 1;
