@@ -50,6 +50,7 @@ target_link_libraries(embedded_unit_test
   dtls
   nm_logging_test
   iam_cpp
+  nm_policies
 )
 
 if (HAVE_EPOLL_HEADERS)

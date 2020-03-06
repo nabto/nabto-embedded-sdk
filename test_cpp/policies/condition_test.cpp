@@ -22,4 +22,23 @@ BOOST_AUTO_TEST_CASE(parse_bool)
     BOOST_TEST(!nm_condition_parse_bool(invalid2, &out));
 }
 
+BOOST_AUTO_TEST_CASE(parse_numeric)
+{
+    const char* n1 = "42";
+    const char* n2 = "42.3";
+    const char* invalid1 = "  ";
+    const char* invalid2 = "foo";
+
+    double out;
+    BOOST_TEST(nm_condition_parse_numeric(n1,&out));
+    BOOST_TEST(out == 42);
+
+    BOOST_TEST(nm_condition_parse_numeric(n2,&out));
+    BOOST_TEST(out == 42.3);
+
+    BOOST_TEST(!nm_condition_parse_numeric(invalid1, &out));
+    BOOST_TEST(!nm_condition_parse_numeric(invalid2, &out));
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
