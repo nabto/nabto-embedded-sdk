@@ -803,31 +803,55 @@ nabto_device_enable_mdns(NabtoDevice* device);
  ******************/
 
 /**
- * Enable TCP tunnelling in the device.
+ * TCP tunnelling is a feature which allows clients to tunnel tcp
+ * traffic over a nabto connection to the device.
  *
- * Tcp tunnelling is a feature which allows clients to tunnel tcp
- * traffic over a nabto connection to the device. TCP tunnelling is
- * stopped when the device is closed. TCP tunnelling will by default
- * tunnel to the ip address 127.0.0.1. The ip can be overriden by the function  if the IP is not provided in the
- * request. The port number has not default value.
+ * TCP tunnelling from a clients perspective. A client first asks for
+ * CoAP GET /tcptunnels/connect/:serviceId, this will check that the
+ * given connection is authorized to create a connection to the
+ * specific TCP Service and return the StreamPort the client needs to
+ * use for that connection.  Later when a TCP connection is made
+ * through the client a new stream is created to the StreamPort from
+ * before. When this happens, the device makes another authorization
+ * request which again checks that the given connection is allowed to
+ * connect to the specific TCP Service.
  *
- * Enabling the Tunnelling module means several new authorizations actions
- * needs to be handled.
+ * The tcptunnelling module has the following authorization actions
  *
  * Actions:
- * * `TcpTunnel:Create`
- * * `TcpTunnel:Delete`
- * * `TcpTunnel:Get`
+ * * `TcpTunnel:ListServices`  Coap request to list services
+ * * `TcpTunnel:GetService`    Coap request to get information for a specific service
+ * * `TcpTunnel:Connect`       Coap request to test connect permissions and to get information
+ *                             for a specific service. Stream request to create a specific
+ *                             connection to a given service
  *
  * Attributes:
- * * `TcpTunnel:Port` the port of the tcp server which the tunnel connects to.
+ * * `TcpTunnel:ServiceId`   The id of the service.
+ * * `TcpTunnel:ServiceType` The type of the service.
+ */
+
+/**
+ * Add a tunnel service to the device
  *
- * @param device   The device
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_RESOURCE_EXISTS if already enabled
+ * @param device
+ * @param serviceId           The unique id of the service.
+ * @param serviceType         The type of the service, e.g. ssh, rtsp, http,...
+ * @param host                The ip address of the host to connect to e.g. "127.0.0.1"
+ * @param port                port number 22, 80, 554 etc
+ * @return NABTO_DEVICE_EC_OK  iff the service was added.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_enable_tcp_tunnelling(NabtoDevice* device);
+nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, const char* serviceType, const char* host, uint16_t port);
+
+/**
+ * Remove a tunnel service from the device
+ *
+ * @param device
+ * @param serviceId
+ * @return NABTO_DEVICE_EC_OK if the service was removed
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceId);
 
 /*************************
  * Server Connect Tokens *

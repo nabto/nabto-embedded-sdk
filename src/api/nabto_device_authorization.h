@@ -8,7 +8,7 @@ struct nabto_device_context;
 
 struct nabto_device_authorization_request_attribute {
     struct nabto_device_authorization_request_attribute* next;
-    const char* key;
+    char* key;
     char* value;
 };
 
@@ -36,6 +36,7 @@ struct nabto_device_authorization_request {
     np_authorization_request_callback verdictCallback;
     void* verdictCallbackUserData1;
     void* verdictCallbackUserData2;
+    void* verdictCallbackUserData3;
 };
 
 struct nabto_device_authorization_module {

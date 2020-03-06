@@ -593,7 +593,6 @@ void coap_attach_end_handler(np_error_code ec, void* data)
 void coap_attach_failed(struct nc_attach_context* ctx)
 {
     ctx->pl->dtlsC.close(ctx->dtls);
-    // TODO
 }
 
 void udp_send_callback(const np_error_code ec, void* data)

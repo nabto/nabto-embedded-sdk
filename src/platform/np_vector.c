@@ -22,7 +22,9 @@ void np_vector_deinit(struct np_vector* vector)
 {
     size_t i;
     for (i = 0; i < vector->used; i++) {
-        vector->freeFunction(vector->elements[i]);
+        if (vector->freeFunction != NULL) {
+            vector->freeFunction(vector->elements[i]);
+        }
     }
     free(vector->elements);
 }
@@ -38,6 +40,7 @@ np_error_code np_vector_push_back(struct np_vector* vector, void* element)
         memcpy(newElements, vector->elements, (vector->capacity * sizeof(void*)));
         free(vector->elements);
         vector->elements = newElements;
+        vector->capacity = newCapacity;
     }
     vector->elements[vector->used] = element;
     vector->used += 1;
@@ -60,5 +63,16 @@ void* np_vector_get(struct np_vector* vector, size_t index)
         return vector->elements[index];
     } else {
         return NULL;
+    }
+}
+
+void np_vector_erase(struct np_vector* vector, size_t index)
+{
+    if (index < vector->used) {
+        // eg. used = 2, remove index 1 aka last element,
+        // used -= 1; used(1) - index(1) = 0
+        vector->used -= 1;
+        size_t after = vector->used - index;
+        memmove(&vector->elements[index], &vector->elements[index+1], sizeof(void*)*after);
     }
 }

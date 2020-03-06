@@ -81,6 +81,19 @@ static std::string verdictToString(bool verdict)
     return verdict ? "granted" : "denied";
 }
 
+static void printAccessCheck(const std::string& who, const std::string& action, const nabto::iam::Attributes& attributes, NabtoDeviceConnectionRef ref, bool verdict)
+{
+    std::cout << "IAM access request on the connection: " << ref << ", who: " << who << ", action: " << action;
+    auto attributesMap = attributes.getMap();
+    if (!attributesMap.empty()) {
+        std::cout << ", attributes: ";
+        for (auto a : attributesMap) {
+            std::cout << a.first << "=" << a.second << " ";
+        }
+    }
+    std::cout << ", verdict: " << verdictToString(verdict) << std::endl;
+}
+
 bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string& action, const nabto::iam::Attributes& attributesIn)
 {
     NabtoDeviceError ec;
@@ -104,11 +117,12 @@ bool FingerprintIAM::checkAccess(NabtoDeviceConnectionRef ref, const std::string
         auto subject = createSubjectFromUser(*user);
         verdict = nabto::iam::Decision::checkAccess(subject, action, attributes);
 
-        std::cout << "Access " << verdictToString(verdict) << " to the action: " << action << " for the user: " << user->getId() << " on the connection: " << ref << std::endl;
+        std::string who = "User " + user->getId();
+        printAccessCheck(who, action, attributes, ref, verdict);
     } else {
         auto subject = createUnpairedSubject();
         verdict = nabto::iam::Decision::checkAccess(subject, action, attributes);
-        std::cout << "Access " << verdictToString(verdict) << " to the action: " << action << " for the unpaired connection: " << ref << " with the role: 'Unpaired'" << std::endl;
+        printAccessCheck("Unpaired", action, attributes, ref, verdict);
     }
 
     return verdict;

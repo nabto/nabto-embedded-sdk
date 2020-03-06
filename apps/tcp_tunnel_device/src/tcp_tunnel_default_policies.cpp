@@ -1,4 +1,4 @@
-#include "tcptunnel_default_policies.hpp"
+#include "tcp_tunnel_default_policies.hpp"
 
 #include <modules/iam_cpp/iam_builder.hpp>
 #include <modules/fingerprint_iam/fingerprint_iam.hpp>
@@ -20,8 +20,9 @@ bool init_default_policies(const std::string& policiesFile)
 
     auto tunnelAllPolicy = nabto::iam::PolicyBuilder("TunnelAll")
         .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
-                      .addAction("TcpTunnel:Create")
-                      .addAction("TcpTunnel:Destroy"));
+                      .addAction("TcpTunnel:GetService")
+                      .addAction("TcpTunnel:Connect")
+                      .addAction("TcpTunnel:ListServices"));
 
     auto pairedPolicy = nabto::iam::PolicyBuilder("Paired")
         .addStatement(nabto::iam::StatementBuilder(nabto::iam::Effect::ALLOW)
@@ -78,4 +79,48 @@ bool load_policies(const std::string& policiesFile, nabto::fingerprint_iam::Fing
 
     return true;
 
+}
+
+bool init_default_services(const std::string& servicesFile)
+{
+    nlohmann::json services = nlohmann::json::array();
+    nlohmann::json service;
+    service["Id"] = "ssh";
+    service["Type"] = "ssh";
+    service["Host"] = "127.0.0.1";
+    service["Port"] = 22;
+
+    services.push_back(service);
+
+    json_config_save(servicesFile, services);
+    return true;
+}
+
+bool load_services(const std::string& servicesFile, std::vector<TcpTunnelService>& services)
+{
+    nlohmann::json root;
+    if (!json_config_load(servicesFile, root)) {
+        return false;
+    }
+
+    if (!root.is_array()) {
+        return false;
+    }
+
+    for (auto s : root) {
+        if (s.is_object()) {
+            try {
+                TcpTunnelService service;
+                service.id_   = s["Id"].get<std::string>();
+                service.type_ = s["Type"].get<std::string>();
+                service.host_ = s["Host"].get<std::string>();
+                service.port_ = s["Port"].get<uint16_t>();
+                services.push_back(service);
+            } catch (std::exception& e) {
+                std::cerr << "Could not parse service: " << s << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
 }

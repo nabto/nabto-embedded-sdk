@@ -113,14 +113,6 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     nabto_stream_destroy(&ctx->stream);
 }
 
-
-void nc_stream_remove_connection(struct nc_stream_context* ctx)
-{
-    ctx->dtls = NULL;
-
-}
-
-
 void nc_stream_event(struct nc_stream_context* ctx)
 {
     nabto_stream_send_segment_available(&ctx->stream);
@@ -210,6 +202,7 @@ void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uin
 
 void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
 {
+    ctx->dtls = NULL;
     nabto_stream_connection_died(&ctx->stream);
     nc_stream_event(ctx);
 }
