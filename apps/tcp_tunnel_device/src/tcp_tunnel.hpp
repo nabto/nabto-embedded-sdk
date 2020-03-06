@@ -86,7 +86,7 @@ class TcpTunnel {
         std::string fp(fpTemp);
         nabto_device_string_free(fpTemp);
 
-        std::cout << "######## Nabto tcptunnel device ########" << std::endl;
+        std::cout << "######## Nabto TCP Tunnel Device ########" << std::endl;
         std::cout << "# Product ID:       " << deviceConfig_.getProductId() << std::endl;
         std::cout << "# Device ID:        " << deviceConfig_.getDeviceId() << std::endl;
         std::cout << "# Fingerprint:      " << getFingerprint() << std::endl;
