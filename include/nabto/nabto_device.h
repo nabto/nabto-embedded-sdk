@@ -802,7 +802,7 @@ nabto_device_enable_mdns(NabtoDevice* device);
  * TCP Tunnelling *
  ******************/
 
-/**
+/*
  * TCP tunnelling is a feature which allows clients to tunnel tcp
  * traffic over a nabto connection to the device.
  *
