@@ -56,5 +56,24 @@ BOOST_AUTO_TEST_CASE(erase)
     // check with valgrind that no memory is leaked.
 }
 
+BOOST_AUTO_TEST_CASE(iterator)
+{
+    struct np_vector vector;
+    np_vector_init(&vector, free_string);
+
+    np_vector_push_back(&vector, strdup("foo"));
+    np_vector_push_back(&vector, strdup("foo"));
+    np_vector_push_back(&vector, strdup("foo"));
+
+    struct np_vector_iterator it;
+    for(np_vector_front(&vector, &it);
+        !np_vector_end(&it);
+        np_vector_next(&it))
+    {
+        void* foo = np_vector_get_element(&it);
+        BOOST_TEST(strcmp((const char*)foo, "foo") == 0);
+    }
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

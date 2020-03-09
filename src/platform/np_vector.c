@@ -76,3 +76,24 @@ void np_vector_erase(struct np_vector* vector, size_t index)
         memmove(&vector->elements[index], &vector->elements[index+1], sizeof(void*)*after);
     }
 }
+
+void np_vector_front(struct np_vector* vector, struct np_vector_iterator* iterator)
+{
+    iterator->v = vector;
+    iterator->current = 0;
+}
+
+void np_vector_next(struct np_vector_iterator* iterator)
+{
+    iterator->current += 1;
+}
+
+bool np_vector_end(struct np_vector_iterator* iterator)
+{
+    return iterator->current >= iterator->v->used;
+}
+
+void* np_vector_get_element(struct np_vector_iterator* iterator)
+{
+    return np_vector_get(iterator->v, iterator->current);
+}

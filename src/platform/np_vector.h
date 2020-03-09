@@ -19,6 +19,11 @@ struct np_vector {
     size_t used;
 };
 
+struct np_vector_iterator {
+    struct np_vector* v;
+    size_t current;
+};
+
 np_error_code np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction);
 
 void np_vector_deinit(struct np_vector* vector);
@@ -29,6 +34,12 @@ bool np_vector_empty(struct np_vector* vector);
 size_t np_vector_size(struct np_vector* vector);
 void* np_vector_get(struct np_vector* vector, size_t index);
 void np_vector_erase(struct np_vector* vector, size_t index);
+
+void np_vector_front(struct np_vector* vector, struct np_vector_iterator* iterator);
+void np_vector_next(struct np_vector_iterator* iterator);
+bool np_vector_end(struct np_vector_iterator* iterator);
+void* np_vector_get_element(struct np_vector_iterator* iterator);
+
 
 #ifdef __cplusplus
 } //extern "C"
