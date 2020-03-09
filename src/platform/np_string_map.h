@@ -3,6 +3,10 @@
 
 #include "np_list.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Dynamic allocated map<string,string>
  */
@@ -31,5 +35,9 @@ void np_string_map_init(struct np_string_map* map);
 void np_string_map_deinit(struct np_string_map* map);
 
 void np_string_map_destroy_item(struct np_string_map_item* item);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

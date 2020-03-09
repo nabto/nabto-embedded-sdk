@@ -48,3 +48,18 @@ np_error_code np_string_map_insert(struct np_string_map* map, const char* key, c
     np_list_append(&map->items, &item->item, item);
     return NABTO_EC_OK;
 }
+
+struct np_string_map_item* np_string_map_get(struct np_string_map* map, const char* key)
+{
+    struct np_list_iterator it;
+    for (np_list_front(&map->items, &it);
+         !np_list_end(&it);
+         np_list_next(&it))
+    {
+        struct np_string_map_item* item = np_list_get_element(&it);
+        if (strcmp(item->key, key) == 0) {
+            return item;
+        }
+    }
+    return NULL;
+}
