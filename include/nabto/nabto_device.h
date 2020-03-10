@@ -868,6 +868,19 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
  */
 
 /**
+ * Generate a sufficiently strong random server connect token.
+ *
+ * The token is NOT added to the system.
+ * the resulting token needs to be freed with nabto_device_string_free.
+ *
+ * @param [in] device
+ * @param [out] serverConnectToken
+ * @return NABTO_DEVICE_EC_OK if the token is created and a reference is put into serverConnectToken
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConnectToken);
+
+/**
  * Add a server connect token to the server (basestation) which the
  * device uses.
  *
@@ -886,24 +899,11 @@ nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverCon
  * sync is not neccessary.
  *
  * @param device
- * @return NABTO_DEVICE_EC_OK if they are synched
- *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synched
+ * @return NABTO_DEVICE_EC_OK if they are synced
+ *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synced
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
-
-/**
- * Generate a sufficient strong random server connect token.
- *
- * The token is NOT added to the system.
- * the resulting token needs to be freed with nabto_device_string_free.
- *
- * @param [in] device
- * @param [out] serverConnectToken
- * @return NABTO_DEVICE_EC_OK if the token is created and a reference is put into serverConnectToken
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConnectToken);
 
 /**************************
  * Authorization Requests *
