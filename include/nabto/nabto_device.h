@@ -857,7 +857,7 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
  * Server Connect Tokens *
  *************************/
 
-/**
+/*
  * Server connect tokens is a feature where the device decides who can
  * access it through the server (basestation). The tokens should not
  * be used as the only authorization mechanism but be seen as a filter
@@ -890,7 +890,7 @@ nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverCon
  *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synched
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_is_server_connect_tokens_synchronized(NabtoDevice* device);
+nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
 
 /**
  * Generate a sufficient strong random server connect token.
@@ -946,8 +946,9 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * Call this function to inform the application that the authorization
- * request has been allowed or denied.
+ * The application calls this function to inform the core that the authorization request has been
+ * allowed or denied. This happens on incoming authorization requests, ie when the auth request
+ * listener future resolves.
  *
  * @param request
  * @param verdict  The verdict for the request, if true the request is allowed, if false the request is denied.

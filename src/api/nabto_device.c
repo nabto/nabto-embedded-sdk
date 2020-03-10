@@ -533,7 +533,7 @@ nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverCon
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_is_server_connect_tokens_synchronized(NabtoDevice* device)
+nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
