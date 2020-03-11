@@ -24,6 +24,7 @@ struct np_string_map {
  * If an item with the key exists return it, else return NULL;
  */
 struct np_string_map_item* np_string_map_get(struct np_string_map* map, const char* key);
+struct np_string_map_item* np_string_map_getn(struct np_string_map* map, const char* key, size_t keyLength);
 
 /**
  * insert an item into a string map

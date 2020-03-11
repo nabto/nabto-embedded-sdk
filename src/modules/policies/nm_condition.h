@@ -2,6 +2,7 @@
 #define _NM_CONDITION_H_
 
 #include <platform/np_vector.h>
+#include <platform/np_string_map.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,13 +36,14 @@ void nm_condition_init(struct nm_condition* c, enum nm_condition_operator op, co
 
 void nm_condition_deinit(struct nm_condition* c);
 
-enum nm_condition_result nm_condition_matches(struct nm_condition* c, struct nm_attributes* attributes);
-
 bool nm_condition_parse_bool(const char* value, bool* out);
 
 bool nm_condition_parse_numeric(const char* value, double* out);
 
 enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operator op, const char* lhs, const char* rhs);
+
+enum nm_condition_result nm_condition_matches(struct nm_condition* condition, struct np_string_map* attributes);
+
 
 #ifdef __cplusplus
 } //extern "C"

@@ -63,3 +63,18 @@ struct np_string_map_item* np_string_map_get(struct np_string_map* map, const ch
     }
     return NULL;
 }
+
+struct np_string_map_item* np_string_map_getn(struct np_string_map* map, const char* key, size_t keyLength)
+{
+    struct np_list_iterator it;
+    for (np_list_front(&map->items, &it);
+         !np_list_end(&it);
+         np_list_next(&it))
+    {
+        struct np_string_map_item* item = np_list_get_element(&it);
+        if (strncmp(item->key, key, keyLength) == 0) {
+            return item;
+        }
+    }
+    return NULL;
+}
