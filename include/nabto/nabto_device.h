@@ -857,7 +857,9 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
  * Server Connect Tokens *
  *************************/
 
-/*
+/**
+ * @intro Server Connect Tokens
+ *
  * Server connect tokens is a feature where the device decides who can
  * access it through the server (basestation). The tokens should not
  * be used as the only authorization mechanism but be seen as a filter
