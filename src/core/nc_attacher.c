@@ -62,7 +62,7 @@ void send_sct_request(struct nc_attach_context* ctx);
 void send_sct_request_callback(np_error_code ec, void* userData);
 
 static void string_free(void* str);
-static np_error_code sct_init(struct nc_attach_context* ctx);
+static void sct_init(struct nc_attach_context* ctx);
 static void sct_deinit(struct nc_attach_context* ctx);
 
 
@@ -71,6 +71,8 @@ static void sct_deinit(struct nc_attach_context* ctx);
  *****************/
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
+    np_error_code ec;
+
     memset(ctx, 0, sizeof(struct nc_attach_context));
     ctx->pl = pl;
     ctx->device = device;
@@ -82,11 +84,8 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     ctx->retryWaitTime = RETRY_WAIT_TIME;
     ctx->accessDeniedWaitTime = ACCESS_DENIED_WAIT_TIME;
 
-    np_error_code ec;
-    ec = sct_init(ctx);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
+
+    sct_init(ctx);
 
     ec = pl->dtlsC.create(pl, &ctx->dtls, &dtls_packet_sender, &dtls_data_handler, &dtls_event_handler, ctx);
     if (ec != NABTO_EC_OK) {
@@ -746,20 +745,15 @@ void string_free(void* str)
     free(str);
 }
 
-np_error_code sct_init(struct nc_attach_context* ctx)
+void sct_init(struct nc_attach_context* ctx)
 {
     struct nc_attacher_sct_context* sctCtx = &ctx->sctContext;
-    np_error_code ec;
-    ec = np_vector_init(&sctCtx->scts, &string_free);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
+    np_vector_init(&sctCtx->scts, &string_free);
     sctCtx->version = 0;
     sctCtx->synchronizedVersion = 0;
     sctCtx->uploadingVersion = 0;
     sctCtx->callback = NULL;
     sctCtx->callbackUserData = NULL;
-    return ec;
 }
 
 void sct_deinit(struct nc_attach_context* ctx)

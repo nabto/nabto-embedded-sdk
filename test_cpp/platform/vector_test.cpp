@@ -12,7 +12,7 @@ void free_string(void* ptr)
 BOOST_AUTO_TEST_CASE(init)
 {
     struct np_vector vector;
-    BOOST_TEST(np_vector_init(&vector, free_string) == NABTO_EC_OK);
+    np_vector_init(&vector, free_string);
 
     char* foo = strdup("foo");
 
@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(init)
 BOOST_AUTO_TEST_CASE(erase)
 {
     struct np_vector vector;
-    BOOST_TEST(np_vector_init(&vector, free_string) == NABTO_EC_OK);
+    np_vector_init(&vector, free_string);
 
     char* foo = strdup("foo");
     char* bar = strdup("bar");

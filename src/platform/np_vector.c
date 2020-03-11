@@ -5,16 +5,12 @@
 #include <stdbool.h>
 #include <string.h>
 
-np_error_code np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction)
+void np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction)
 {
     vector->freeFunction = freeFunction;
-    vector->elements = malloc(1*sizeof(void*));
-    if (vector->elements == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-    vector->capacity = 1;
+    vector->elements = NULL;
+    vector->capacity = 0;
     vector->used = 0;
-    return NABTO_EC_OK;
 }
 
 
@@ -33,6 +29,9 @@ np_error_code np_vector_push_back(struct np_vector* vector, void* element)
 {
     if (vector->used == vector->capacity) {
         size_t newCapacity = vector->capacity*2;
+        if (newCapacity == 0) {
+            newCapacity = 1;
+        }
         void** newElements = malloc(newCapacity*sizeof(void*));
         if (newElements == NULL) {
             return NABTO_EC_OUT_OF_MEMORY;

@@ -24,7 +24,7 @@ struct np_vector_iterator {
     size_t current;
 };
 
-np_error_code np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction);
+void np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction);
 
 void np_vector_deinit(struct np_vector* vector);
 
