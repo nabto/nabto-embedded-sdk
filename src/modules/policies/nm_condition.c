@@ -98,6 +98,22 @@ enum nm_condition_result nm_condition_matches(struct nm_condition* condition, st
 }
 
 
+bool nm_condition_parse_operation(const char* operation, enum nm_condition_operator* op)
+{
+    if      (strcmp(operation, "StringEquals") == 0)             { *op = NM_CONDITION_OPERATOR_STRING_EQUALS; }
+    else if (strcmp(operation, "StringNotEquals") == 0)          { *op = NM_CONDITION_OPERATOR_STRING_NOT_EQUALS; }
+    else if (strcmp(operation, "NumericEquals") == 0)            { *op = NM_CONDITION_OPERATOR_NUMERIC_EQUALS; }
+    else if (strcmp(operation, "NumericNotEquals") == 0)         { *op = NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS; }
+    else if (strcmp(operation, "NumericLessThan") == 0)          { *op = NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN; }
+    else if (strcmp(operation, "NumericLessThanEquals") == 0)    { *op = NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS; }
+    else if (strcmp(operation, "NumericGreaterThan") == 0)       { *op = NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN; }
+    else if (strcmp(operation, "NumericGreaterThanEquals") == 0) { *op = NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS; }
+    else if (strcmp(operation, "Bool") == 0)                     { *op = NM_CONDITION_OPERATOR_BOOL; }
+    else {
+        return false;
+    }
+    return true;
+}
 
 
 /********************************
