@@ -51,8 +51,9 @@ extern "C" {
 #endif
 
 /**
- * The NabtoDevice is a the place which owns the device id,
- * sockets, etc.
+ * The NabtoDevice is an opaque context reference that allows the SDK to keep track of device
+ * configuration, resources such as sockets etc. Most operations in this SDK takes place
+ * through such a reference.
  */
 typedef struct NabtoDevice_ NabtoDevice;
 
@@ -84,16 +85,35 @@ typedef struct NabtoDeviceFuture_ NabtoDeviceFuture;
  */
 typedef uint32_t nabto_device_duration_t;
 
-typedef int NabtoDeviceError;
-
 /**
  * Connection reference, used to correlate requests on connections
  * with e.g. IAM systems.
  */
 typedef uint64_t NabtoDeviceConnectionRef;
 
+/**
+ * Nabto device error codes.
+ *
+ * ```
+ * NABTO_DEVICE_EC_OK
+ * NABTO_DEVICE_EC_UNKNOWN
+ * NABTO_DEVICE_EC_NOT_IMPLEMENTED
+ * NABTO_DEVICE_EC_OUT_OF_MEMORY
+ * NABTO_DEVICE_EC_STRING_TOO_LONG
+ * NABTO_DEVICE_EC_OPERATION_IN_PROGRESS
+ * NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED
+ * NABTO_DEVICE_EC_ABORTED
+ * NABTO_DEVICE_EC_STOPPED
+ * NABTO_DEVICE_EC_EOF
+ * NABTO_DEVICE_EC_INVALID_STATE
+ * NABTO_DEVICE_EC_INVALID_ARGUMENT
+ * NABTO_DEVICE_EC_NO_DATA
+ * ```
+ */
+typedef int NabtoDeviceError;
+
 /*
- * The NabtoDeviceError represents error codes
+ * The NabtoDeviceError represents error codes.
  */
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_OK;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_UNKNOWN;
@@ -111,8 +131,15 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NO_DATA;
 
 
 /**********************
- * Device Api *
+ * Device Context API *
  **********************/
+
+/**
+ * @intro Device Context
+ *
+ * The Device Context API manages NabtoDevice instances. This happens through basic lifecycle functions
+ * for allocation/deallocation and start/stop. And through functions for configuring all device details.
+ */
 
 /**
  * Create a new device instance. If this function succeeds, the user
@@ -124,6 +151,33 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NO_DATA;
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDevice* NABTO_DEVICE_API
 nabto_device_new();
+
+/**
+ * Start the context, attach to some servers if possible, wait for client connections. All
+ * configuration functions (such as nabto_device_set_device_id) must be called prior to invoke this
+ * function.
+ *
+ * @param device [in]   The device instance to start
+ * @return  NABTO_DEVICE_EC_OK on success
+ *          NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
+ *             private key, server URL, device ID, or Product ID.
+ *          NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_start(NabtoDevice* device);
+
+
+/**
+ * Close a context. This can be called after nabto_device_start() to
+ * close all connections down nicely before calling
+ * nabto_device_stop().
+ *
+ * @param device [in]  The device instance to close.
+ * @param future [in]  Future to resolve once the device is closed.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
+
 
 /**
  * Stop a device. This function blocks until all futures, events and
@@ -223,7 +277,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_version(NabtoDevice* device, const char* version);
 
 /**
- * Set local port to use, if unset or 0 using ephemeral
+ * Set local port to use. If unset or 0, an ephemeral (system chosen) port will be used.
  *
  * @param device [in]   The device instance to perform action on
  * @param port [in]     The port number to set
@@ -244,19 +298,6 @@ nabto_device_set_local_port(NabtoDevice* device, uint16_t port);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
-
-/**
- * Start the context, attach to some servers if possible, wait for
- * client connections.
- *
- * @param device [in]   The device instance to start
- * @return  NABTO_DEVICE_EC_OK on success
- *          NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
- *             private key, server URL, device ID, or Product ID.
- *          NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_start(NabtoDevice* device);
 
 /**
  * Utilitiy function to create a private key for a device. Once
@@ -288,17 +329,6 @@ nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerprint);
 
-
-/**
- * Close a context. This can be called after nabto_device_start() to
- * close all connections down nicely before calling
- * nabto_device_stop().
- *
- * @param device [in]  The device instance to close.
- * @param future [in]  Future to resolve once the device is closed.
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
 
 /**************
  * Connection *
@@ -397,6 +427,17 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFut
  *************/
 
 /**
+ * @intro Streaming
+ *
+ * The Streaming feature enables exchange of data between client and device on top of a Nabto
+ * connection using a socket like abstraction. The stream is reliable and ensures data is received
+ * ordered and complete. If either of these conditions cannot be met, the stream will be closed in
+ * such a way that it is detectable.
+ *
+ * Streaming enables tight integration with both the client and device application. For simpler integration of streaming capabilities, consider the [TCP tunnel feature](/developer/api-reference/embedded-device-sdk/tcp_tunnelling/Introduction.html) feature.
+ */
+
+/**
  * Initialize a listener for new streams.
  *
  * @param device [in]    device
@@ -441,7 +482,7 @@ nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFutur
 
 /**
  * Free a stream. If a stream has unresolved futures when freed, they
- * may not be resolved. For streams wi th outstanding futures, call
+ * may not be resolved. For streams with outstanding futures, call
  * nabto_device_stream_abort(), and free the stream when all futures
  * are resolved.
  *
@@ -802,36 +843,43 @@ nabto_device_enable_mdns(NabtoDevice* device);
  * TCP Tunnelling *
  ******************/
 
-/*
- * TCP tunnelling is a feature which allows clients to tunnel tcp
- * traffic over a nabto connection to the device.
+/**
+ * @intro TCP Tunnelling
  *
- * TCP tunnelling from a clients perspective. A client first asks for
- * CoAP GET /tcptunnels/connect/:serviceId, this will check that the
- * given connection is authorized to create a connection to the
- * specific TCP Service and return the StreamPort the client needs to
- * use for that connection.  Later when a TCP connection is made
- * through the client a new stream is created to the StreamPort from
- * before. When this happens, the device makes another authorization
- * request which again checks that the given connection is allowed to
- * connect to the specific TCP Service.
+ * TCP tunnelling allows clients to tunnel TCP
+ * traffic over a Nabto connection to the device.
  *
- * The tcptunnelling module has the following authorization actions
+ * A TCP tunnel client first makes a CoAP request: `GET /tcptunnels/connect/:serviceId` - this will
+ * check that the given connection is authorized to create a connection to the specific TCP Service
+ * and return the `StreamPort` the client needs to use for that connection.
  *
+ * Later, when a TCP connection is made through the client, a new stream is created to the
+ * `StreamPort` obtained in the previous step. When this happens, the device makes another
+ * authorization request which again checks that the given connection is allowed to connect to the
+ * specific TCP Service.
+ *
+ * The TCP tunnelling module has the following authorization actions:
+ *
+ * ```
  * Actions:
- * * `TcpTunnel:ListServices`  Coap request to list services
- * * `TcpTunnel:GetService`    Coap request to get information for a specific service
- * * `TcpTunnel:Connect`       Coap request to test connect permissions and to get information
- *                             for a specific service. Stream request to create a specific
- *                             connection to a given service
+ *  TcpTunnel:ListServices  Coap request to list services
+ *  TcpTunnel:GetService    Coap request to get information for a specific service
+ *  TcpTunnel:Connect       See note below
+ * ```
  *
+ * Note on the `TcpTunnel:Connect` action: When used in CoAP context, it is used to test permissions for establishing a stream connection and to get information about the connection. When used in Streaming context, it is used to authorize an actual stream connection.
+ *
+ * The TCP Tunnelling module has the following authorization attributes:
+ *
+ * ```
  * Attributes:
- * * `TcpTunnel:ServiceId`   The id of the service.
- * * `TcpTunnel:ServiceType` The type of the service.
+ *   TcpTunnel:ServiceId   The id of the service.
+ *   TcpTunnel:ServiceType The type of the service.
+ * ```
  */
 
 /**
- * Add a tunnel service to the device
+ * Add a tunnel service to the device.
  *
  * @param device
  * @param serviceId           The unique id of the service.
@@ -860,13 +908,14 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
 /**
  * @intro Server Connect Tokens
  *
- * Server connect tokens is a feature where the device decides who can
+ * Server connect tokens enable the device to decide who can
  * access it through the server (basestation). The tokens should not
  * be used as the only authorization mechanism but be seen as a filter
- * for what connections is allowed from the internet to the
- * device. Server Connect Tokens needs to be used together with client
- * server keys which enforces a check for a valid server connect
- * token.
+ * for which connections is allowed from the internet to the
+ * device, e.g. to prevent DoS attacks on devices.
+ *
+ * Server Connect Tokens must be used together with client server keys which enforces a
+ * check for a valid server connect token.
  */
 
 /**
