@@ -330,9 +330,17 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerprint);
 
 
-/**************
- * Connection *
- **************/
+/******************
+ * Connection API
+ ******************/
+
+/**
+ * @intro Connection
+ *
+ * The Connection API enables the application to get notified on incoming connections and query
+ * established connections. Used internally by the Nabto IAM module to provide more abstract access
+ * control mechanisms - but can also be used as-is directly by the application.
+ */
 
 /**
  * Get the truncated/full fingerprint of the client assosiated with a given
@@ -349,6 +357,14 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
 
+/**
+ * Connection events relevant for the application.
+ * ```
+ * NABTO_DEVICE_CONNECTION_EVENT_OPENED;
+ * NABTO_DEVICE_CONNECTION_EVENT_CLOSED;
+ * NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED;
+ * ```
+ */
 typedef int NabtoDeviceConnectionEvent;
 
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CONNECTION_EVENT_OPENED;
@@ -384,10 +400,20 @@ nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceLis
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
 
-/*****************
- * Device Events *
- *****************/
+/********************
+ * Device Events API
+ ********************/
 
+/**
+ * General events relevant for the application. Currently only events for when a device is
+ * successfully attached to the basestation, ie registered with the Nabto servers (and
+ * detached/disconnected).
+ *
+ * ```
+ * NABTO_DEVICE_EVENT_ATTACHED
+ * NABTO_DEVICE_EVENT_DETACHED
+ * ```
+ */
 typedef int NabtoDeviceEvent;
 
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
@@ -422,9 +448,9 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceEvent* event);
 
 
-/*************
- * Streaming *
- *************/
+/****************
+ * Streaming API
+ ****************/
 
 /**
  * @intro Streaming
@@ -617,10 +643,19 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_abort(NabtoDeviceStream* stream);
 
 /************
- * Coap API *
+ * CoAP API
  ************/
+
 /**
- * Represents the COAP method for requests and responses
+ * @intro CoAP
+ *
+ * The CoAP API allows clients to interact with a Nabto-enabled device through a HTTP REST like request/response mechanism.
+ *
+ * This API supersedes the Nabto RPC API known from Nabto Micro / Nabto 4 and earlier.
+ */
+
+/**
+ * Represents the CoAP method for requests and responses
  */
 typedef enum {
     NABTO_DEVICE_COAP_GET,
@@ -629,6 +664,9 @@ typedef enum {
     NABTO_DEVICE_COAP_DELETE
 } NabtoDeviceCoapMethod;
 
+/**
+ * Represents the supported CoAP content formats for requests and responses.
+ */
 typedef enum  {
     NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8 = 0,
     NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM = 42,
@@ -637,7 +675,7 @@ typedef enum  {
 } nabto_device_coap_content_format;
 
 /**
- * Representing a COAP request received from the client
+ * Represents a CoAP request received from the client
  */
 typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
 
@@ -646,14 +684,13 @@ typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
  */
 typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, void* userData);
 
-
 /**
- * Initialize listener for a new COAP resource. Once a COAP resource is
+ * Initialize listener for a new CoAP resource. Once a CoAP resource is
  * added, incoming requests will resolve futures retrieved through
  * nabto_device_listener_new_coap_request().
  *
  * @param device [in]      The device
- * @param listener [in]    The listener to initialize as COAP.
+ * @param listener [in]    The listener to initialize as CoAP.
  * @param method [in]      The CoAP method for which to handle requests
  * @param pathSegments [in]
  *
@@ -692,7 +729,7 @@ nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDevic
 
 
 /**
- * Free a COAP request when done handling it. If called without prior
+ * Free a CoAP request when done handling it. If called without prior
  * call to nabto_device_coap_error_response() or
  * nabto_device_coap_response_ready(), an error response with code 500
  * is returned to the client.
@@ -846,8 +883,7 @@ nabto_device_enable_mdns(NabtoDevice* device);
 /**
  * @intro TCP Tunnelling
  *
- * TCP tunnelling allows clients to tunnel TCP
- * traffic over a Nabto connection to the device.
+ * TCP tunnelling allows clients to tunnel TCP traffic over a Nabto connection to the device.
  *
  * A TCP tunnel client first makes a CoAP request: `GET /tcptunnels/connect/:serviceId` - this will
  * check that the given connection is authorized to create a connection to the specific TCP Service
@@ -862,8 +898,8 @@ nabto_device_enable_mdns(NabtoDevice* device);
  *
  * ```
  * Actions:
- *  TcpTunnel:ListServices  Coap request to list services
- *  TcpTunnel:GetService    Coap request to get information for a specific service
+ *  TcpTunnel:ListServices  CoAP request to list services
+ *  TcpTunnel:GetService    CoAP request to get information for a specific service
  *  TcpTunnel:Connect       See note below
  * ```
  *
@@ -879,9 +915,9 @@ nabto_device_enable_mdns(NabtoDevice* device);
  */
 
 /**
- * Add a tunnel service to the device.
+ * Add a TCP tunnel service to the device. Can be invoked multiple times to add multiple services.
  *
- * @param device
+ * @param device              The device instance to add TCP tunnel service on
  * @param serviceId           The unique id of the service.
  * @param serviceType         The type of the service, e.g. ssh, rtsp, http,...
  * @param host                The ip address of the host to connect to e.g. "127.0.0.1"
@@ -889,7 +925,11 @@ nabto_device_enable_mdns(NabtoDevice* device);
  * @return NABTO_DEVICE_EC_OK  iff the service was added.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, const char* serviceType, const char* host, uint16_t port);
+nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
+                                    const char* serviceId,
+                                    const char* serviceType,
+                                    const char* host,
+                                    uint16_t port);
 
 /**
  * Remove a tunnel service from the device
@@ -1097,23 +1137,24 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_listener_stop(NabtoDeviceListener* listener);
 
 /**************
- * Future API *
+ * Futures API
  **************/
 
-/*
- * We have made a future api such that it's easier to get all the
- * different async models from a simple standard api.
+/**
+ * @intro Futures
  *
- * We could have implemented all the future functions for each async
- * function but that would lead to a lot of specialized functions
- * doing almost the same thing.
+ * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a future resolves
+ * once such function has completed. For more details about this topic, see the [Futures Guide](/developer/guides/overview/nabto_futures.html).
  *
- * Futures are resolved in two ways. 1) set a callback on the
- * future. This callback will then be invoked when the future is
- * resolved. This callback will be made from the Nabto core thread,
- * and must therefore never block. 2) Wait for the future to
- * resolve. Waiting will block until the future is resolved, and must
- * therefore never be called from the callback of another future.
+ * Futures are introduced to unify the way return values and completion of asynchronous functions are
+ * handled and to minimize the number of specialized functions required in the APIs: Instead of having
+ * an asynchronous and synchronous version of all functions, the API instead provides a single version
+ * returning a future: For asynchronous behavior, a callback can then be configured on the future - for
+ * synchronous behavior, the future provides a `wait` function.
+ *
+ * In addition to futures, asynchronous functions that are expected to be invoked recurringly
+ * introduces the concept of `listeners`, see the [Listener
+ * API](/developer/api-reference/embedded-device-sdk/listeners/intro.html) for further info.
  */
 
 /**
