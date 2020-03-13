@@ -32,6 +32,10 @@ struct nm_condition {
     struct np_vector values;
 };
 
+struct nm_condition* nm_condition_new();
+
+void nm_condition_free(struct nm_condition* condition);
+
 void nm_condition_init(struct nm_condition* c, enum nm_condition_operator op, const char* key, struct np_vector* values);
 
 void nm_condition_deinit(struct nm_condition* c);
