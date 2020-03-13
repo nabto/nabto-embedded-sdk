@@ -29,7 +29,7 @@ std::string i3 = R"(
 
 } // namespace
 
-BOOST_AUTO_TEST_SUITE(policies_json)
+BOOST_AUTO_TEST_SUITE(condition_json)
 
 BOOST_AUTO_TEST_CASE(parse_c1)
 {

@@ -6,14 +6,12 @@
 static void statement_free(void* statement);
 
 
-struct nm_policy* nm_policy_new(const char* id)
+struct nm_policy* nm_policy_new()
 {
     struct nm_policy* p = calloc(1, sizeof(struct nm_policy));
     if (p == NULL) {
         return NULL;
     }
-
-    p->id = strdup(id);
     np_vector_init(&p->statements, &statement_free);
     return p;
 }

@@ -1,9 +1,12 @@
 #include "nm_policies_json.h"
 #include "nm_condition.h"
 #include "nm_statement.h"
+#include "nm_policy.h"
 
 static bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statement);
 static bool nm_condition_from_json_parse(const cJSON* json, struct nm_condition* condition);
+static bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy);
+
 
 struct nm_condition* nm_condition_from_json(const cJSON* json)
 {
@@ -122,18 +125,34 @@ bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statem
     return true;
 }
 
-struct nm_policy* nm_policy_from_json(const cJSON* policy)
+struct nm_policy* nm_policy_from_json(const cJSON* json)
 {
-    if (!cJSON_IsObject(policy)) {
+    struct nm_policy* policy = nm_policy_new();
+    if (policy == NULL) {
         return NULL;
     }
-    cJSON* id = cJSON_GetObjectItem(policy, "Id");
-    cJSON* statements = cJSON_GetObjectItem(policy, "Statements");
+
+    if (nm_policy_from_json_parse(json, policy)) {
+        return policy;
+    }
+    nm_policy_free(policy);
+    return NULL;
+}
+
+bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy)
+{
+    if (!cJSON_IsObject(json)) {
+        return false;
+    }
+    cJSON* id = cJSON_GetObjectItem(json, "Id");
+    cJSON* statements = cJSON_GetObjectItem(json, "Statements");
     if (!cJSON_IsString(id) ||
         !cJSON_IsArray(statements))
     {
-        return NULL;
+        return false;
     }
+
+    policy->id = strdup(id->valuestring);
 
     size_t count = cJSON_GetArraySize(statements);
     size_t i;
@@ -141,9 +160,9 @@ struct nm_policy* nm_policy_from_json(const cJSON* policy)
         cJSON* statement = cJSON_GetArrayItem(statements, i);
         struct nm_statement* s = nm_statement_from_json(statement);
         if (s == NULL) {
-            return NULL;
+            return false;
         }
-        // TODO add to
+        np_vector_push_back(&policy->statements, s);
     }
-    return NULL;
+    return true;
 }

@@ -37,7 +37,7 @@ std::string i1 = R"(
 
 } // namespace
 
-BOOST_AUTO_TEST_SUITE(policies_json)
+BOOST_AUTO_TEST_SUITE(statement_json)
 
 BOOST_AUTO_TEST_CASE(parse_statement1)
 {

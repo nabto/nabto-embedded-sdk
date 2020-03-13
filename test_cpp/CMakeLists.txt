@@ -38,6 +38,7 @@ set(test_src
   policies/condition_test.cpp
   policies/condition_json_test.cpp
   policies/statement_json_test.cpp
+  policies/policy_json_test.cpp
   iam/condition_test.cpp
 
   )

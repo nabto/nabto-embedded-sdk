@@ -1,6 +1,8 @@
 #ifndef _NM_POLICY_H_
 #define _NM_POLICY_H_
 
+#include "nm_effect.h"
+
 #include <platform/np_vector.h>
 #include <platform/np_string_map.h>
 
@@ -9,7 +11,7 @@ struct nm_policy {
     struct np_vector statements;
 };
 
-struct nm_policy* nm_policy_new(const char* id);
+struct nm_policy* nm_policy_new();
 
 void nm_policy_free(struct nm_policy* poilicy);
 
