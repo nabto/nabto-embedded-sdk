@@ -37,6 +37,7 @@ set(test_src
   iam/load_policies.cpp
   policies/condition_test.cpp
   policies/condition_json_test.cpp
+  policies/statement_json_test.cpp
   iam/condition_test.cpp
 
   )

@@ -2,6 +2,10 @@
 
 #include <modules/policies/nm_policies_json.h>
 
+#include <modules/policies/nm_condition.h>
+#include <modules/policies/nm_statement.h>
+#include <platform/np_string_set.h>
+
 #include <cjson/cJSON.h>
 
 namespace {
@@ -18,8 +22,8 @@ std::string s2 = R"(
   "Effect": "Deny",
   "Actions": ["action1", "action2", "action3"],
   "Conditions": [
-    {"StringEquals" : { "var1: ["val1", "val2", "val3"] } },
-    {"NumericNotEquals" : {"var2": ["42", "43"] } }
+    {"StringEquals": { "var1": ["val1", "val2", "val3"] } },
+    {"NumericNotEquals": { "var2": ["42", "43"] } }
   ]
 }
 )";
@@ -35,13 +39,36 @@ std::string i1 = R"(
 
 BOOST_AUTO_TEST_SUITE(policies_json)
 
-BOOST_AUTO_TEST_CASE(parse_statenent1)
+BOOST_AUTO_TEST_CASE(parse_statement1)
 {
     struct nm_statement* s;
     cJSON* json = cJSON_Parse(s1.c_str());
     BOOST_TEST(json);
-    s = nm_statenent_from_json(json);
-    BOOST_TEST(c);
+    s = nm_statement_from_json(json);
+    BOOST_TEST(s);
+    BOOST_TEST(s->effect == NM_EFFECT_ALLOW);
+    BOOST_TEST(np_string_set_contains(&s->actions, "foo"));
+}
+
+BOOST_AUTO_TEST_CASE(parse_statement2)
+{
+    struct nm_statement* s;
+    cJSON* json = cJSON_Parse(s2.c_str());
+    BOOST_TEST(json);
+    s = nm_statement_from_json(json);
+    BOOST_TEST(s);
+    BOOST_TEST(s->effect == NM_EFFECT_DENY);
+    BOOST_TEST(np_string_set_contains(&s->actions, "action2"));
+    BOOST_TEST(np_vector_size(&s->conditions) == (size_t)2);
+}
+
+BOOST_AUTO_TEST_CASE(parse_statement_fail1)
+{
+    struct nm_statement* s;
+    cJSON* json = cJSON_Parse(i1.c_str());
+    BOOST_TEST(json);
+    s = nm_statement_from_json(json);
+    BOOST_TEST(!s);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
