@@ -3,8 +3,16 @@
 
 #include <cjson/cJSON.h>
 
-struct nm_policy* nm_policy_from_json(const cJSON* policy);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-struct nm_condition* nm_condition_from_json(const cJSON* condition);
+struct nm_policy* nm_policy_from_json(const cJSON* json);
+
+struct nm_condition* nm_condition_from_json(const cJSON* json);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

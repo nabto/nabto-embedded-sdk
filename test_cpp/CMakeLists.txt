@@ -36,7 +36,9 @@ set(test_src
   iam/load_roles.cpp
   iam/load_policies.cpp
   policies/condition_test.cpp
+  policies/condition_json_test.cpp
   iam/condition_test.cpp
+
   )
 
 add_executable(embedded_unit_test "${test_src}")

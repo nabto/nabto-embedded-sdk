@@ -31,7 +31,7 @@ bool np_string_set_contains(struct np_string_set* set, const char* item)
 {
     struct np_vector_iterator it;
     for (np_vector_front(&set->strings, &it);
-         np_vector_end(&it);
+         !np_vector_end(&it);
          np_vector_next(&it))
     {
         const char* e = np_vector_get_element(&it);
@@ -40,4 +40,26 @@ bool np_string_set_contains(struct np_string_set* set, const char* item)
         }
     }
     return false;
+}
+
+
+void np_string_set_front(struct np_string_set* set, struct np_string_set_iterator* it)
+{
+    np_vector_front(&set->strings, &it->it);
+}
+
+bool np_string_set_end(struct np_string_set_iterator* it)
+{
+    return np_vector_end(&it->it);
+}
+
+void np_string_set_next(struct np_string_set_iterator* it)
+{
+    np_vector_next(&it->it);
+}
+
+const char* np_string_set_get_element(struct np_string_set_iterator* it)
+{
+    const char* s = np_vector_get_element(&it->it);
+    return s;
 }

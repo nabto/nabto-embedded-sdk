@@ -64,6 +64,5 @@ enum nm_condition_result match_conditions(struct nm_statement* statement, struct
 static void condition_free(void* condition)
 {
     struct nm_condition* cond = condition;
-    nm_condition_deinit(cond);
-    free(cond);
+    nm_condition_free(cond);
 }

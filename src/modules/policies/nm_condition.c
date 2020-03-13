@@ -7,6 +7,35 @@
 static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs);
 static bool resolve_value(struct np_string_map* attributes, const char* value, const char** out);
 
+struct nm_condition* nm_condition_new()
+{
+    struct nm_condition* c = calloc(1, sizeof(struct nm_condition));
+    if (c == NULL) {
+        return NULL;
+    }
+
+    nm_condition_init(c);
+    return c;
+}
+
+void nm_condition_free(struct nm_condition* condition)
+{
+    nm_condition_deinit(condition);
+    free(condition);
+}
+
+void nm_condition_init(struct nm_condition* condition)
+{
+    np_string_set_init(&condition->values);
+}
+
+void nm_condition_deinit(struct nm_condition* condition)
+{
+    np_string_set_deinit(&condition->values);
+    free(condition->key);
+    condition->key = NULL;
+}
+
 bool nm_condition_parse_bool(const char* value, bool* out)
 {
     if (strcmp(value, "true") == 0) {
@@ -76,12 +105,12 @@ enum nm_condition_result nm_condition_matches(struct nm_condition* condition, st
 
     const char* attribute = item->value;
 
-    struct np_vector_iterator it;
-    for (np_vector_front(&condition->values, &it);
-         !np_vector_end(&it);
-         np_vector_next(&it))
+    struct np_string_set_iterator it;
+    for (np_string_set_front(&condition->values, &it);
+         !np_string_set_end(&it);
+         np_string_set_next(&it))
     {
-        const char* v = np_vector_get_element(&it);
+        const char* v = np_string_set_get_element(&it);
         const char* resolvedValue;
         // If the value is a variable we try to resolve it to a string
         // else interpret it as a string.
@@ -98,7 +127,7 @@ enum nm_condition_result nm_condition_matches(struct nm_condition* condition, st
 }
 
 
-bool nm_condition_parse_operation(const char* operation, enum nm_condition_operator* op)
+bool nm_condition_parse_operator(const char* operation, enum nm_condition_operator* op)
 {
     if      (strcmp(operation, "StringEquals") == 0)             { *op = NM_CONDITION_OPERATOR_STRING_EQUALS; }
     else if (strcmp(operation, "StringNotEquals") == 0)          { *op = NM_CONDITION_OPERATOR_STRING_NOT_EQUALS; }

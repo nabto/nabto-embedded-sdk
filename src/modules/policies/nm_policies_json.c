@@ -3,27 +3,55 @@
 #include "nm_statement.h"
 
 static bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statement);
+static bool nm_condition_from_json_parse(const cJSON* json, struct nm_condition* condition);
 
-struct nm_condition* nm_condition_from_json(const cJSON* condition)
+struct nm_condition* nm_condition_from_json(const cJSON* json)
 {
+    struct nm_condition* condition = nm_condition_new();
+    if (condition == NULL) {
+        return NULL;
+    }
+    if (nm_condition_from_json_parse(json, condition)) {
+        return condition;
+    }
+    nm_condition_free(condition);
+    return NULL;
+}
+
+bool nm_condition_from_json_parse(const cJSON* json, struct nm_condition* condition)
+{
+
     // An object is also an iterable array
-    if (!cJSON_IsObject(condition)) {
-        return NULL;
+    if (!cJSON_IsObject(json)) {
+        return false;
     }
-    cJSON* operation = cJSON_GetArrayItem(condition, 0);
+    cJSON* operation = cJSON_GetArrayItem(json, 0);
     if (operation == NULL || !cJSON_IsObject(operation)) {
-        return NULL;
-    }
-    enum nm_condition_operator op;
-    if (nm_condition_parse_operation(operation->string, &op)) {
-        return NULL;
+        return false;
     }
 
-    cJSON* kv = cJSON_GetArrayItem(operation->child, 0);
-    if (kv == NULL || !cJSON_IsObject(kv)) {
-        return NULL;
+    if (!nm_condition_parse_operator(operation->string, &condition->op)) {
+        return false;
     }
 
+    cJSON* kv = operation->child;
+    if (kv == NULL || !cJSON_IsArray(kv)) {
+        return false;
+    }
+
+    condition->key = strdup(kv->string);
+
+    size_t valuesSize = cJSON_GetArraySize(kv);
+    size_t i;
+    for (i = 0; i < valuesSize; i++) {
+        cJSON* value = cJSON_GetArrayItem(kv, i);
+        if (!cJSON_IsString(value)) {
+            return false;
+        }
+        np_string_set_add(&condition->values, value->valuestring);
+    }
+
+    return true;
 }
 
 struct nm_statement* nm_statement_from_json(const cJSON* json)
@@ -117,5 +145,5 @@ struct nm_policy* nm_policy_from_json(const cJSON* policy)
         }
         // TODO add to
     }
-
+    return NULL;
 }

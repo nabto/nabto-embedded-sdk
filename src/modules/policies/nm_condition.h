@@ -2,6 +2,7 @@
 #define _NM_CONDITION_H_
 
 #include <platform/np_vector.h>
+#include <platform/np_string_set.h>
 #include <platform/np_string_map.h>
 
 #ifdef __cplusplus
@@ -29,14 +30,15 @@ enum nm_condition_result {
 struct nm_condition {
     enum nm_condition_operator op;
     char* key;
-    struct np_vector values;
+
+    struct np_string_set values;
 };
 
 struct nm_condition* nm_condition_new();
 
 void nm_condition_free(struct nm_condition* condition);
 
-void nm_condition_init(struct nm_condition* c, enum nm_condition_operator op, const char* key, struct np_vector* values);
+void nm_condition_init(struct nm_condition* c);
 
 void nm_condition_deinit(struct nm_condition* c);
 
@@ -44,7 +46,7 @@ bool nm_condition_parse_bool(const char* value, bool* out);
 
 bool nm_condition_parse_numeric(const char* value, double* out);
 
-bool nm_condition_parse_operation(const char* operation, enum nm_condition_operator* op);
+bool nm_condition_parse_operator(const char* operation, enum nm_condition_operator* op);
 
 enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operator op, const char* lhs, const char* rhs);
 
