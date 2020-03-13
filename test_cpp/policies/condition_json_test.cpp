@@ -16,11 +16,11 @@ std::string c2 = R"(
 )";
 
 std::string i1 = R"(
-{ "InvalidOperator": { "Invalid", ["42"] } }
+{ "InvalidOperator": { "Invalid": ["42"] } }
 )";
 
 std::string i2 = R"(
-{ "StringEquals": { "Invalid", [42] } }
+{ "StringEquals": { "Invalid": [42] } }
 )";
 
 std::string i3 = R"(
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(parse_c1)
 {
     struct nm_condition* c;
     cJSON* json = cJSON_Parse(c1.c_str());
-    BOOST_TEST(json != (cJSON*)NULL);
+    BOOST_TEST(json);
     c = nm_condition_from_json(json);
     BOOST_TEST(c);
     BOOST_TEST(c->op == NM_CONDITION_OPERATOR_STRING_EQUALS);
@@ -55,6 +55,31 @@ BOOST_AUTO_TEST_CASE(parse_c2)
     BOOST_TEST(c->op == NM_CONDITION_OPERATOR_BOOL);
     BOOST_TEST(strcmp(c->key, "var1") == 0);
     BOOST_TEST(np_string_set_contains(&c->values, "true"));
+}
+
+BOOST_AUTO_TEST_CASE(parse_fail1)
+{
+    struct nm_condition* c;
+    cJSON* json = cJSON_Parse(i1.c_str());
+    BOOST_TEST(json);
+    c = nm_condition_from_json(json);
+    BOOST_TEST(!c);
+}
+BOOST_AUTO_TEST_CASE(parse_fail2)
+{
+    struct nm_condition* c;
+    cJSON* json = cJSON_Parse(i2.c_str());
+    BOOST_TEST(json);
+    c = nm_condition_from_json(json);
+    BOOST_TEST(!c);
+}
+BOOST_AUTO_TEST_CASE(parse_fail3)
+{
+    struct nm_condition* c;
+    cJSON* json = cJSON_Parse(i3.c_str());
+    BOOST_TEST(json);
+    c = nm_condition_from_json(json);
+    BOOST_TEST(!c);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
