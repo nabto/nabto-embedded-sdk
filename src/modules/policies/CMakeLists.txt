@@ -3,6 +3,7 @@ set(src
   nm_statement.c
   nm_policy.c
   nm_policies_json.c
+  nm_policies_to_json.c
   )
 
 add_library(nm_policies ${src})

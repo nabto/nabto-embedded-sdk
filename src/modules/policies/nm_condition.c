@@ -144,6 +144,21 @@ bool nm_condition_parse_operator(const char* operation, enum nm_condition_operat
     return true;
 }
 
+const char* nm_condition_operator_to_string(const enum nm_condition_operator op)
+{
+    switch(op) {
+        case NM_CONDITION_OPERATOR_STRING_EQUALS: return "StringEquals";
+        case NM_CONDITION_OPERATOR_STRING_NOT_EQUALS: return "StringNotEquals";
+        case NM_CONDITION_OPERATOR_NUMERIC_EQUALS: return "NumericEquals";
+        case NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS: return "NumericNotEquals";
+        case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN: return "NumericLessThan";
+        case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS: return "NumericLessThanEquals";
+        case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN: return "NumericGreaterThan";
+        case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS: return "NumericGreaterThanEquals";
+        case NM_CONDITION_OPERATOR_BOOL: return "Bool";
+    }
+    return "";
+}
 
 /********************************
  * Local helper functions below *

@@ -46,17 +46,17 @@ np_error_code np_vector_push_back(struct np_vector* vector, void* element)
     return NABTO_EC_OK;
 }
 
-bool np_vector_empty(struct np_vector* vector)
+bool np_vector_empty(const struct np_vector* vector)
 {
     return vector->used == 0;
 }
 
-size_t np_vector_size(struct np_vector* vector)
+size_t np_vector_size(const struct np_vector* vector)
 {
     return vector->used;
 }
 
-void* np_vector_get(struct np_vector* vector, size_t index)
+void* np_vector_get(const struct np_vector* vector, size_t index)
 {
     if (index < vector->used) {
         return vector->elements[index];
@@ -76,7 +76,7 @@ void np_vector_erase(struct np_vector* vector, size_t index)
     }
 }
 
-void np_vector_front(struct np_vector* vector, struct np_vector_iterator* iterator)
+void np_vector_front(const struct np_vector* vector, struct np_vector_iterator* iterator)
 {
     iterator->v = vector;
     iterator->current = 0;
@@ -87,12 +87,12 @@ void np_vector_next(struct np_vector_iterator* iterator)
     iterator->current += 1;
 }
 
-bool np_vector_end(struct np_vector_iterator* iterator)
+bool np_vector_end(const struct np_vector_iterator* iterator)
 {
     return iterator->current >= iterator->v->used;
 }
 
-void* np_vector_get_element(struct np_vector_iterator* iterator)
+void* np_vector_get_element(const struct np_vector_iterator* iterator)
 {
     return np_vector_get(iterator->v, iterator->current);
 }
