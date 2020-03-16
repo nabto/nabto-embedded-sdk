@@ -79,15 +79,7 @@ bool TcpTunnel::initTcpServices()
 
 bool TcpTunnel::loadIamPolicies()
 {
-    if (!json_config_exists(policiesFile_)) {
-        std::cout << "The policies file is not found, creating a new file with default policies" << std::endl;
-        init_default_policies(policiesFile_);
-    }
-
-    nlohmann::json root;
-
-    load_policies(policiesFile_, fingerprintIAM_);
-    return true;
+    return load_policies(policiesFile_, fingerprintIAM_);
 }
 
 void TcpTunnel::dumpIam()

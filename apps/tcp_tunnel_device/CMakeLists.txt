@@ -7,4 +7,4 @@ set(src
   )
 
 add_executable(tcp_tunnel_device "${src}")
-target_link_libraries(tcp_tunnel_device nabto_device 3rdparty_tinycbor 3rdparty_json 3rdparty_cxxopts device_examples_common iam_cpp fingerprint_iam 3rdparty_cjson nm_policies)
+target_link_libraries(tcp_tunnel_device nabto_device 3rdparty_tinycbor 3rdparty_json 3rdparty_cxxopts device_examples_common iam_cpp fingerprint_iam 3rdparty_cjson nm_policies nm_iam apps_common)

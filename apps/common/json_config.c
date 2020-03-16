@@ -58,7 +58,7 @@ bool json_config_save(const char* fileName, cJSON* config)
         return false;
     }
 
-    j = cJSON_Print(config);
+    j = cJSON_PrintUnformatted(config);
     if (j == NULL) {
         status = false;
     } else {

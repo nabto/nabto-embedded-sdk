@@ -5,6 +5,8 @@
 #include <modules/policies/nm_policy.h>
 #include <modules/policies/nm_statement.h>
 #include <modules/policies/nm_policies_to_json.h>
+#include <modules/iam/nm_iam_role.h>
+#include <modules/iam/nm_iam_to_json.h>
 
 #include <cjson/cJSON.h>
 
@@ -47,6 +49,26 @@ bool init_default_policies(const char* policiesFile)
     cJSON_AddItemToArray(policies, nm_policy_to_json(pairedPolicy));
     cJSON_AddItemToObject(root, "Policies", policies);
 
+
+    struct nm_iam_role* unpairedRole = nm_iam_role_new("Unpaired");
+    nm_iam_role_add_policy(unpairedRole, "PasswordPairing");
+
+    struct nm_iam_role* adminRole = nm_iam_role_new("Admin");
+    nm_iam_role_add_policy(adminRole, "TunnelAll");
+    nm_iam_role_add_policy(adminRole, "Paired");
+
+    struct nm_iam_role* userRole = nm_iam_role_new("User");
+    nm_iam_role_add_policy(userRole, "TunnelAll");
+    nm_iam_role_add_policy(userRole, "Paired");
+
+    cJSON* roles = cJSON_CreateArray();
+    cJSON_AddItemToArray(roles, nm_iam_role_to_json(unpairedRole));
+    cJSON_AddItemToArray(roles, nm_iam_role_to_json(adminRole));
+    cJSON_AddItemToArray(roles, nm_iam_role_to_json(userRole));
+    cJSON_AddItemToObject(root, "Roles", roles);
+
+
+    json_config_save(policiesFile, root);
 
 
     return true;

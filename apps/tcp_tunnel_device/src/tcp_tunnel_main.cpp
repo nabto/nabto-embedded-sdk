@@ -2,6 +2,7 @@
 #include "json_config.hpp"
 
 #include "tcp_tunnel_default_policies.hpp"
+#include "tcp_tunnel_default_policies.h"
 #include "tcp_tunnel_persisting.hpp"
 
 #include <examples/common/random_string.hpp>
@@ -121,7 +122,7 @@ bool run_tcp_tunnel(const std::string& configFile, const std::string& policiesFi
 
     if (!json_config_exists(policiesFile)) {
         std::cout << "The policies file is not found, creating a new file with default policies" << std::endl;
-        init_default_policies(policiesFile);
+        init_default_policies(policiesFile.c_str());
     }
 
     if (!json_config_exists(servicesFile)) {
