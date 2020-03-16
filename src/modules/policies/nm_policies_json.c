@@ -3,42 +3,43 @@
 #include "nm_statement.h"
 #include "nm_policy.h"
 
-static bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statement);
-static bool nm_condition_from_json_parse(const cJSON* json, struct nm_condition* condition);
+static bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement);
+static bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition);
 static bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy);
 
 
 struct nm_condition* nm_condition_from_json(const cJSON* json)
 {
-    struct nm_condition* condition = nm_condition_new();
+    if (!cJSON_IsObject(json)) {
+        return NULL;
+    }
+    cJSON* operation = cJSON_GetArrayItem(json, 0);
+    if (operation == NULL || !cJSON_IsObject(operation)) {
+        return NULL;
+    }
+
+    enum nm_condition_operator op;
+    if (!nm_condition_parse_operator(operation->string, &op)) {
+        return NULL;
+    }
+
+    struct nm_condition* condition = nm_condition_new(op);
     if (condition == NULL) {
         return NULL;
     }
-    if (nm_condition_from_json_parse(json, condition)) {
+    if (nm_condition_from_json_parse(operation->child, condition)) {
         return condition;
     }
     nm_condition_free(condition);
     return NULL;
 }
 
-bool nm_condition_from_json_parse(const cJSON* json, struct nm_condition* condition)
+bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition)
 {
-
+    // json = { "key": ["value1", "value2"] }
     // An object is also an iterable array
-    if (!cJSON_IsObject(json)) {
-        return false;
-    }
-    cJSON* operation = cJSON_GetArrayItem(json, 0);
-    if (operation == NULL || !cJSON_IsObject(operation)) {
-        return false;
-    }
-
-    if (!nm_condition_parse_operator(operation->string, &condition->op)) {
-        return false;
-    }
-
-    cJSON* kv = operation->child;
-    if (kv == NULL || !cJSON_IsArray(kv)) {
+    // string = "key", type = "array"
+    if (!cJSON_IsArray(kv)) {
         return false;
     }
 
@@ -59,21 +60,6 @@ bool nm_condition_from_json_parse(const cJSON* json, struct nm_condition* condit
 
 struct nm_statement* nm_statement_from_json(const cJSON* json)
 {
-    struct nm_statement* s = nm_statement_new();
-    if (s == NULL) {
-        return NULL;
-    }
-
-    if (nm_statement_from_json_parse(json, s)) {
-        return s;
-    } else {
-        nm_statement_free(s);
-        return NULL;
-    }
-}
-
-bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statement)
-{
     if (!cJSON_IsObject(json)) {
         return false;
     }
@@ -85,18 +71,35 @@ bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statem
     if (!cJSON_IsString(effect) ||
         !cJSON_IsArray(actions))
     {
-        return false;
+        return NULL;
     }
     char* effectString = effect->valuestring;
 
+    enum nm_effect e;
+
     if (strcmp(effectString, "Allow") == 0) {
-        statement->effect = NM_EFFECT_ALLOW;
+        e = NM_EFFECT_ALLOW;
     } else if (strcmp(effectString, "Deny") == 0) {
-        statement->effect = NM_EFFECT_DENY;
+        e = NM_EFFECT_DENY;
     } else {
-        return false;
+        return NULL;
     }
 
+    struct nm_statement* s = nm_statement_new(e);
+    if (s == NULL) {
+        return NULL;
+    }
+
+    if (nm_statement_from_json_parse(actions, conditions, s)) {
+        return s;
+    } else {
+        nm_statement_free(s);
+        return NULL;
+    }
+}
+
+bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement)
+{
     size_t actionsSize = cJSON_GetArraySize(actions);
     size_t i;
     for (i = 0; i < actionsSize; i++) {
@@ -104,7 +107,7 @@ bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statem
         if (!cJSON_IsString(action)) {
             return false;
         }
-        if (np_string_set_add(&statement->actions, action->valuestring) != NABTO_EC_OK) {
+        if (nm_statement_add_action(statement, action->valuestring) != NABTO_EC_OK) {
             return false;
         }
     }
@@ -127,20 +130,6 @@ bool nm_statement_from_json_parse(const cJSON* json, struct nm_statement* statem
 
 struct nm_policy* nm_policy_from_json(const cJSON* json)
 {
-    struct nm_policy* policy = nm_policy_new();
-    if (policy == NULL) {
-        return NULL;
-    }
-
-    if (nm_policy_from_json_parse(json, policy)) {
-        return policy;
-    }
-    nm_policy_free(policy);
-    return NULL;
-}
-
-bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy)
-{
     if (!cJSON_IsObject(json)) {
         return false;
     }
@@ -152,8 +141,21 @@ bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy)
         return false;
     }
 
-    policy->id = strdup(id->valuestring);
+    struct nm_policy* policy = nm_policy_new(id->valuestring);
 
+    if (policy == NULL) {
+        return NULL;
+    }
+
+    if (nm_policy_from_json_parse(statements, policy)) {
+        return policy;
+    }
+    nm_policy_free(policy);
+    return NULL;
+}
+
+bool nm_policy_from_json_parse(const cJSON* statements, struct nm_policy* policy)
+{
     size_t count = cJSON_GetArraySize(statements);
     size_t i;
     for (i = 0; i < count; i++) {

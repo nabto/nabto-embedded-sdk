@@ -1,0 +1,6 @@
+set(src
+  json_config.c
+  )
+
+add_library(apps_common ${src})
+target_link_libraries(apps_common 3rdparty_cjson)

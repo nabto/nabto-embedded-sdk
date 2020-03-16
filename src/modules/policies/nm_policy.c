@@ -6,13 +6,21 @@
 static void statement_free(void* statement);
 
 
-struct nm_policy* nm_policy_new()
+struct nm_policy* nm_policy_new(const char* idIn)
 {
-    struct nm_policy* p = calloc(1, sizeof(struct nm_policy));
-    if (p == NULL) {
+    struct nm_policy* p = NULL;
+    char* id = NULL;
+
+    id = strdup(idIn);
+    p = calloc(1, sizeof(struct nm_policy));
+    if (p == NULL || id == NULL) {
+        free(id);
+        free(p);
         return NULL;
     }
     np_vector_init(&p->statements, &statement_free);
+    p->id = id;
+
     return p;
 }
 
@@ -24,9 +32,9 @@ void nm_policy_free(struct nm_policy* policy)
 }
 
 // Add statement to a policy, this takes ownership over the statement.
-np_error_code nm_policy_add_statement(struct nm_policy* policy)
+np_error_code nm_policy_add_statement(struct nm_policy* policy, struct nm_statement* stmt)
 {
-    return np_vector_push_back(&policy->statements, policy);
+    return np_vector_push_back(&policy->statements, stmt);
 }
 
 enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, struct np_string_map* attributes)

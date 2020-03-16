@@ -34,7 +34,7 @@ struct nm_condition {
     struct np_string_set values;
 };
 
-struct nm_condition* nm_condition_new();
+struct nm_condition* nm_condition_new(enum nm_condition_operator op);
 
 void nm_condition_free(struct nm_condition* condition);
 

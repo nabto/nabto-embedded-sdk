@@ -43,6 +43,10 @@ enum nm_effect nm_statement_eval(struct nm_statement* statement, const char* act
 
 }
 
+np_error_code nm_statement_add_action(struct nm_statement* statement, const char* action)
+{
+    return np_string_set_add(&statement->actions, action);
+}
 
 enum nm_condition_result match_conditions(struct nm_statement* statement, struct np_string_map* attributes)
 {
@@ -61,7 +65,7 @@ enum nm_condition_result match_conditions(struct nm_statement* statement, struct
     return NM_CONDITION_RESULT_MATCH;
 }
 
-static void condition_free(void* condition)
+void condition_free(void* condition)
 {
     struct nm_condition* cond = condition;
     nm_condition_free(cond);

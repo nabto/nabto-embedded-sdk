@@ -7,7 +7,7 @@
 static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs);
 static bool resolve_value(struct np_string_map* attributes, const char* value, const char** out);
 
-struct nm_condition* nm_condition_new()
+struct nm_condition* nm_condition_new(enum nm_condition_operator op)
 {
     struct nm_condition* c = calloc(1, sizeof(struct nm_condition));
     if (c == NULL) {
@@ -15,6 +15,7 @@ struct nm_condition* nm_condition_new()
     }
 
     nm_condition_init(c);
+    c->op = op;
     return c;
 }
 
