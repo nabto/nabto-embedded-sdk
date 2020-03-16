@@ -16,6 +16,15 @@ enum {
     OPTION_HOME_DIR
 };
 
+struct args {
+    bool showHelp;
+    bool showVersion;
+    bool showState;
+    const char* logLevel;
+    const char* homeDir;
+};
+
+
 void print_version()
 {
     printf("TCP Tunnel Device Version: %s" NEWLINE, nabto_device_version());
@@ -33,13 +42,18 @@ void print_help()
     printf("   , --log-level, Set the log level to use, valid options is error,warn,info,trace" NEWLINE);
     printf(NEWLINE);
     printf("The following configuration files exists:" NEWLINE);
-    printf(" - HOME_DIR/device_condfig.json this file contains product id, device id and optionally settings the client needs to connect to the device" NEWLINE);
+    printf(" - HOME_DIR/device_config.json this file contains product id, device id and optionally settings the client needs to connect to the device" NEWLINE);
     printf(" - HOME_DIR/<ProductId>_<DeviceId>.key this file contains the private key the device uses." NEWLINE);
     printf(" - HOME_DIR/tcp_tunnel_state.json This file contains the runtime state of the tcp tunnelling device." NEWLINE);
     printf(" - HOME_DIR/tcp_tunnel_policies.json This file contains the policies the tcp tunnelling device uses in its IAM module." NEWLINE);
 }
 
-static bool parse_args(int argc, char** argv)
+void print_start_text(struct args* args)
+{
+    printf("TCP Tunnel Device" NEWLINE);
+}
+
+static bool parse_args(int argc, char** argv, struct args* args)
 {
     const char x1s[] = "h";      const char* x1l[] = { "help", 0 };
     const char x2s[] = "v";      const char* x2l[] = { "version", 0 };
@@ -59,18 +73,50 @@ static bool parse_args(int argc, char** argv)
     void *options = gopt_sort( & argc, (const char**)argv, opts);
 
     if (gopt(options, OPTION_HELP)) {
-        print_help();
-        exit(0);
-    } else if (gopt(options, OPTION_VERSION)) {
-        print_version();
-        exit(0);
+        args->showHelp = true;
     }
+    if (gopt(options, OPTION_VERSION)) {
+        args->showVersion = true;
+    }
+    if (gopt(options, OPTION_SHOW_STATE)) {
+        args->showState = true;
+    }
+    gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel);
+    gopt_arg(options, OPTION_HOME_DIR, &args->homeDir);
 
-
+    gopt_free(options);
     return true;
+}
+
+void args_init(struct args* args)
+{
+    memset(args, 0, sizeof(struct args));
+}
+
+void args_deinit(struct args* args)
+{
 }
 
 int main(int argc, char** argv)
 {
-    parse_args(argc, argv);
+    struct args args;
+    args_init(&args);
+    parse_args(argc, argv, &args);
+
+    if (args.showHelp) {
+        print_help();
+    } else if (args.showVersion) {
+        print_version();
+    } else {
+        // setup system
+
+        if (args.showState) {
+            // print state
+        } else {
+            // run device
+        }
+    }
+
+    args_deinit(&args);
+
 }
