@@ -1001,16 +1001,26 @@ nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
  **************************/
 
 /**
- * Authorization Requests.
+ * @intro Authorization
  *
- * The authorization functionality in the Nabto Device SDK is made
- * such that an application built on top of the Nabto Device SDK can
- * take authorization decision for the core.
+ * The Authorization API allows the application to make authorization decisions for the core. That
+ * is, the core asks the application to decide if a given authorization request should be approved
+ * or rejected.
+ *
+ * The application has access to details from the authorization request through attributes. The
+ * connection on which the authorization request takes place is also available for the application,
+ * making it possible to retrieve details about the remote peer as input in the authorization
+ * decision process.
+ */
+
+/**
+ * Opaque reference to an authorization request.
  */
 typedef struct NabtoDeviceAuthorizationRequest_ NabtoDeviceAuthorizationRequest;
 
 /**
- * Init an authorization request listener. This follows the generic listener pattern in the device.
+ * Init an authorization request listener to get notifications on incoming authorization
+ * requests. This follows the generic listener pattern in the device.
  *
  * @param device    The device
  * @param listener  The listener.
@@ -1019,7 +1029,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
 
 /**
- * Wait for a new Authorization request.
+ * Wait for a new authorization request.
  *
  * @param listener
  * @param future
@@ -1029,7 +1039,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceAuthorizationRequest** request);
 
 /**
- * Free a authorization request.
+ * Free an authorization request.
  *
  * @param request  The request to free.
  */
@@ -1038,14 +1048,14 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
 
 /**
  * The application calls this function to inform the core that the authorization request has been
- * allowed or denied. This happens on incoming authorization requests, ie when the auth request
+ * approved or rejected. This happens on incoming authorization requests, ie when the auth request
  * listener future resolves.
  *
  * @param request
- * @param verdict  The verdict for the request, if true the request is allowed, if false the request is denied.
+ * @param approved  The verdict for the request, if true the request is approved, if false the request is rejected.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool verdict);
+nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool approved);
 
 /**
  * Get the action associated with the request.
@@ -1097,45 +1107,6 @@ nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRe
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request, size_t index);
 
-/****************
- * Listener API *
- ****************/
-
-/**
- * Create a new listener. After creation, a listener should be
- * initialized for a purpose (e.g. as a stream listener through
- * nabto_device_stream_init_listener()). Once initialized, a listener
- * can only be used for the purpose for which it was initialized.
- *
- * @param device [in]  The device
- * @return The created listener, NULL on allocation errors.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
-nabto_device_listener_new(NabtoDevice* device);
-
-/**
- * Free a listener, effectivly cancelling active listening on a
- * resource. To ensure there is no concurrency issues, this should
- * be called while resolving a future for this listener.
- *
- * @param listener [in]  Listener to be freed
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_free(NabtoDeviceListener* listener);
-
-/**
- * Stop a listener, effectivly cancelling active listening on a
- * resource. This is concurrency safe, and can be called
- * anywhere. This will trigger an event with error code
- * NABTO_DEVICE_EC_STOPPED.
- *
- * @param listener [in]  Listener to be stopped
- * @return NABTO_EC_OK on success
- *
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_listener_stop(NabtoDeviceListener* listener);
-
 /**************
  * Futures API
  **************/
@@ -1153,8 +1124,8 @@ nabto_device_listener_stop(NabtoDeviceListener* listener);
  * synchronous behavior, the future provides a `wait` function.
  *
  * In addition to futures, asynchronous functions that are expected to be invoked recurringly
- * introduces the concept of `listeners`, see the [Listener
- * API](/developer/api-reference/embedded-device-sdk/listeners/intro.html) for further info.
+ * introduces the concept of `listeners`, also elaborated in the [Futures
+ * Guide](/developer/guides/overview/nabto_futures.html).
  */
 
 /**
@@ -1262,6 +1233,57 @@ nabto_device_future_timed_wait(NabtoDeviceFuture* future, nabto_device_duration_
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_error_code(NabtoDeviceFuture* future);
+
+/****************
+ * Listener API *
+ ****************/
+
+/**
+ * @intro Listeners
+ *
+ * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a
+ * future resolves once such function has completed. In addition to futures, asynchronous functions
+ * that are expected to be invoked recurringly introduces the concept of `listeners` (see the
+ * [Futures Guide](/developer/guides/overview/nabto_futures.html) for details).
+ *
+ * Listeners are created and freed through this general API. Once created, a listener is initialized for use with a specific purpose, e.g. to listen for [incoming coap requests](/developer/api-reference/embedded-device-sdk/coap/nabto_device_coap_init_listener.html), [incoming stream requests](/developer/api-reference/embedded-device-sdk/streaming/nabto_device_stream_init_listener.html) or [general device events](/developer/api-reference/embedded-device-sdk/context/nabto_device_device_events_init_listener.html).
+ */
+
+/**
+ * Create a new listener. After creation, a listener should be
+ * initialized for a purpose (e.g. as a stream listener through
+ * nabto_device_stream_init_listener()). Once initialized, a listener
+ * can only be used for the purpose for which it was initialized.
+ *
+ * @param device [in]  The device
+ * @return The created listener, NULL on allocation errors.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
+nabto_device_listener_new(NabtoDevice* device);
+
+/**
+ * Free a listener, effectivly cancelling active listening on a
+ * resource. To ensure there is no concurrency issues, this should
+ * be called while resolving a future for this listener.
+ *
+ * @param listener [in]  Listener to be freed
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_free(NabtoDeviceListener* listener);
+
+/**
+ * Stop a listener, effectivly cancelling active listening on a
+ * resource. This is concurrency safe, and can be called
+ * anywhere. This will trigger an event with error code
+ * NABTO_DEVICE_EC_STOPPED.
+ *
+ * @param listener [in]  Listener to be stopped
+ * @return NABTO_EC_OK on success
+ *
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_listener_stop(NabtoDeviceListener* listener);
+
 
 /*************
  * Error API *
