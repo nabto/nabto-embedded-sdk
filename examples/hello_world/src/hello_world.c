@@ -17,7 +17,7 @@
 // discover the device on the local network. Alternatively, replace
 // these values with valid values from the Nabto Cloud Console. The
 // private Key is set to NULL, this causes this code to generate a new
-// private key (see line: 241). If the device should be able to attach
+// private key (see function "start_device"). If the device should be able to attach
 // to the basestation, the private key here should be set to a valid
 // private key, and the fingerprint of the key must be configured in
 // the Nabto Cloud Console.
@@ -83,6 +83,9 @@ int main(int argc, char** argv)
     // requests.
     NabtoDeviceCoapRequest* request;
 
+    ////////////////////////////////////////////////////////////////////////////////
+    // example 1: blocking wait future approach
+
     // Query the listener for a new coap request. This call cannot
     // fail as any failures will be reported through resolving the
     // future.
@@ -99,6 +102,9 @@ int main(int argc, char** argv)
     // request now points to the received request. We will handle a
     // few requests, so the request is handled in a seperate function.
     handle_coap_request(request);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // example 2: poll future approach
 
     // Now the future is resolved and ready to be reused, and we are
     // done using the request reference. This means we can now query
@@ -120,6 +126,9 @@ int main(int argc, char** argv)
         handle_device_error(device, listener, future, "Failed to get new CoAP request"); return -1;
     }
     handle_coap_request(request);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // example 3: call back future approach
 
     // Again the future is resolved and the request pointer is freed,
     // so we can reuse.
