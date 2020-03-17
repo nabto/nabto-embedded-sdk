@@ -6,13 +6,19 @@
 struct nm_iam;
 
 struct nm_iam_list_users {
+    // references
     NabtoDevice* device;
     struct nm_iam* iam;
+
+    // local owned instances
+    NabtoDeviceListener* listener;
+    NabtoDeviceFuture* future;
+    NabtoDeviceCoapRequest* request;
 };
 
-void nm_iam_list_users_init(struct nm_iam_list_users* listUsers, NabtoDevice* device, struct nm_iam* iam);
+bool nm_iam_list_users_init(struct nm_iam_list_users* listUsers, NabtoDevice* device, struct nm_iam* iam);
 void nm_iam_list_users_deinit(struct nm_iam_list_users* listUsers);
 
-void nm_iam_list_users_stop(struct nm_iam_list_users* listUsers);
+// the handler will be stopped when the device is stopped.
 
 #endif
