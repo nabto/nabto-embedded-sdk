@@ -455,7 +455,7 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFut
 /**
  * @intro Streaming
  *
- * The Streaming feature enables exchange of data between client and device on top of a Nabto
+ * The Streaming API enables exchange of data between client and device on top of a Nabto
  * connection using a socket like abstraction. The stream is reliable and ensures data is received
  * ordered and complete. If either of these conditions cannot be met, the stream will be closed in
  * such a way that it is detectable.
@@ -861,23 +861,8 @@ nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request);
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName);
 
-/***************
- * MDNS Server *
- ***************/
-
-/**
- * Enable the optional mdns server/responder. The server is started when the
- * device is started. Mdns has to be enabled before the device is
- * started. The responder is stopped when the device is closed.
- *
- * @param device [in]  The device
- * @return NABTO_DEVICE_EC_OK on success
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_enable_mdns(NabtoDevice* device);
-
 /******************
- * TCP Tunnelling *
+ * TCP Tunnelling
  ******************/
 
 /**
@@ -942,7 +927,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceId);
 
 /*************************
- * Server Connect Tokens *
+ * Server Connect Tokens
  *************************/
 
 /**
@@ -997,7 +982,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
 
 /**************************
- * Authorization Requests *
+ * Authorization Requests
  **************************/
 
 /**
@@ -1235,16 +1220,16 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_error_code(NabtoDeviceFuture* future);
 
 /****************
- * Listener API *
+ * Listener API
  ****************/
 
 /**
  * @intro Listeners
  *
  * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a
- * future resolves once such function has completed. In addition to futures, asynchronous functions
- * that are expected to be invoked recurringly introduces the concept of `listeners` (see the
- * [Futures Guide](/developer/guides/overview/nabto_futures.html) for details).
+ * future resolves once such function has completed. Additionally, the Listener API supports
+ * asynchronous functions that are expected to be invoked recurringly (see the [Futures
+ * Guide](/developer/guides/overview/nabto_futures.html) for details).
  *
  * Listeners are created and freed through this general API. Once created, a listener is initialized for use with a specific purpose, e.g. to listen for [incoming coap requests](/developer/api-reference/embedded-device-sdk/coap/nabto_device_coap_init_listener.html), [incoming stream requests](/developer/api-reference/embedded-device-sdk/streaming/nabto_device_stream_init_listener.html) or [general device events](/developer/api-reference/embedded-device-sdk/context/nabto_device_device_events_init_listener.html).
  */
@@ -1285,48 +1270,9 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_listener_stop(NabtoDeviceListener* listener);
 
 
-/*************
- * Error API *
- *************/
-
-/**
- * Get message assosiated with an error code.
- *
- * @param error [in]  The error code.
- * @return Zero-terminated string describing the error.
- */
-NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_error_get_message(NabtoDeviceError error);
-
-/**
- * Get the error code as a string
- */
-NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_error_get_string(NabtoDeviceError error);
-
-/********
- * Misc *
- ********/
-
-/**
- * Return the version of the nabto embedded library.
- *
- * @return Zero-terminated string with the device version
- */
-NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_version();
-
-/**
- * Free a string allocated by the device.
- *
- * @param str  The string to free
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_string_free(char* str);
-
-/***********
- * Logging *
- ***********/
+/**************
+ * Logging API
+ **************/
 
 /**
  * @intro Logging
@@ -1419,8 +1365,58 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_std_out_callback(NabtoDevice* device);
 
 /********
- * Util *
+ * Misc
  ********/
+
+/**
+ * @intro Misc
+ *
+ * Functions for starting the optional MDNS server, getting the SDK version, accessing error info
+ * and freeing SDK allocated resources.
+ */
+
+/**
+ * Enable the optional mdns server/responder. The server is started when the
+ * device is started. Mdns has to be enabled before the device is
+ * started. The responder is stopped when the device is closed.
+ *
+ * @param device [in]  The device
+ * @return NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_enable_mdns(NabtoDevice* device);
+
+/**
+ * Return the version of the nabto embedded library.
+ *
+ * @return Zero-terminated string with the device version
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_version();
+
+/**
+ * Get message assosiated with an error code.
+ *
+ * @param error [in]  The error code.
+ * @return Zero-terminated string describing the error.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_error_get_message(NabtoDeviceError error);
+
+/**
+ * Get the error code as a string
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_error_get_string(NabtoDeviceError error);
+
+/**
+ * Free a string allocated by the device.
+ *
+ * @param str  The string to free
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_string_free(char* str);
+
 
 #ifdef __cplusplus
 } // extern c
