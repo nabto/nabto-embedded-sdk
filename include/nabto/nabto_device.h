@@ -1328,6 +1328,13 @@ nabto_device_string_free(char* str);
  * Logging *
  ***********/
 
+/**
+ * @intro Logging
+ *
+ * The logging API allows the application to retrieve log messages from the core SDK and configure
+ * the desired core log level.
+  */
+
 enum NabtoDeviceLogLevel_ {
     NABTO_DEVICE_LOG_FATAL = 0x00000001ul,
     NABTO_DEVICE_LOG_ERROR = 0x00000002ul,
@@ -1336,6 +1343,18 @@ enum NabtoDeviceLogLevel_ {
     NABTO_DEVICE_LOG_TRACE = 0x00000010ul
 };
 
+
+/**
+ * Core SDK log levels.
+ *
+ * ```
+ *   NABTO_DEVICE_LOG_FATAL
+ *   NABTO_DEVICE_LOG_ERROR
+ *   NABTO_DEVICE_LOG_WARN
+ *   NABTO_DEVICE_LOG_INFO
+ *   NABTO_DEVICE_LOG_TRACE
+ * ```
+ */
 typedef enum NabtoDeviceLogLevel_ NabtoDeviceLogLevel;
 
 struct NabtoDeviceLogMessage_ {
@@ -1345,6 +1364,18 @@ struct NabtoDeviceLogMessage_ {
     const char* message; /** the message null terminated utf-8 */
 };
 
+/**
+ * Log message from core SDK.
+ *
+ * ```
+ * struct NabtoDeviceLogMessage_ {
+ *   NabtoDeviceLogLevel severity;
+ *   const char* file;
+ *   int line;
+ *   const char* message; /** the message null terminated utf-8
+ * }
+ * ```
+ */
 typedef struct NabtoDeviceLogMessage_ NabtoDeviceLogMessage;
 
 /**
@@ -1363,12 +1394,11 @@ typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
  * @param data [in]    Void pointer passed to the callback when invoked
  * @return NABTO_DEVICE_EC_OK on success
  */
-
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data);
 
 /**
- * Set log level of device
+ * Set log level of device.
  *
  * @param device [in]  The device instance to set level on
  * @param level [in]   The log level to set, available levels are:
@@ -1380,9 +1410,9 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_level(NabtoDevice* device, const char* level);
 
 /**
- * Set log callback to write logging directly to std out
+ * Set log callback to write logging directly to std out.
  *
- * @param device [in]  The device instance to set log callback
+ * @param device [in]  The device instance for which to retrieve call log callback invocations.
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
