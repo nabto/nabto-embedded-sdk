@@ -8,6 +8,7 @@
 #include <cjson/cJSON.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define NEWLINE "\n"
 
@@ -43,10 +44,12 @@ bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile
     cJSON* pairingServerConnectToken = cJSON_GetObjectItem(json, "PairingServerConnectToken");
     cJSON* users = cJSON_GetObjectItem(json, "Users");
 
-    if (!cJSON_IsString(pairingPassword) ||
-        !cJSON_IsString(pairingServerConnectToken))
-    {
+    if (cJSON_IsString(pairingPassword)) {
+        state->pairingPassword = strdup(pairingPassword->valuestring);
+    }
 
+    if (cJSON_IsString(pairingServerConnectToken)) {
+        state->pairingServerConnectToken = strdup(pairingServerConnectToken->valuestring);
     }
 
     if (users != NULL && cJSON_IsArray(users)) {
