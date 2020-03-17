@@ -78,3 +78,30 @@ struct np_string_map_item* np_string_map_getn(struct np_string_map* map, const c
     }
     return NULL;
 }
+
+
+bool np_string_map_empty(struct np_string_map* map)
+{
+    return np_list_empty(&map->items);
+}
+
+// iterator
+void np_string_map_front(struct np_string_map* map, struct np_string_map_iterator* it)
+{
+    np_list_front(&map->items, &it->it);
+}
+
+bool np_string_map_end(struct np_string_map_iterator* it)
+{
+    return np_list_end(&it->it);
+}
+
+void np_string_map_next(struct np_string_map_iterator* it)
+{
+    np_list_next(&it->it);
+}
+
+struct np_string_map_item* np_string_map_get_element(struct np_string_map_iterator* it)
+{
+    return np_list_get_element(&it->it);
+}

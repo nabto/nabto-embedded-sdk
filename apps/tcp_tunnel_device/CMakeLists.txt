@@ -9,6 +9,7 @@ set(src
 set(csrc
   src/tcp_tunnel_main.c
   src/iam_config.c
+  src/tcp_tunnel_state.c
   )
 
 add_executable(tcp_tunnel_device "${src}")

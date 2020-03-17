@@ -42,6 +42,11 @@ bool np_string_set_contains(const struct np_string_set* set, const char* item)
     return false;
 }
 
+bool np_string_set_empty(struct np_string_set* set)
+{
+    return np_vector_empty(&set->strings);
+}
+
 
 void np_string_set_front(const struct np_string_set* set, struct np_string_set_iterator* it)
 {

@@ -1,4 +1,5 @@
 #include "iam_config.h"
+#include "tcp_tunnel_state.h"
 
 #include <nabto/nabto_device.h>
 
@@ -74,6 +75,11 @@ void print_device_config_load_failed(const char* fileName, const char* errorText
 void print_iam_config_load_failed(const char* fileName, const char* errorText)
 {
     printf("Could not open or parse IAM config file (%s) reason: %s" NEWLINE, fileName, errorText);
+}
+
+void print_tcp_tunnel_state_load_failed(const char* fileName, const char* errorText)
+{
+    printf("Could not load TCP tunnel state file (%s) reason: %s" NEWLINE, fileName, errorText);
 }
 
 void print_start_text(struct args* args)
@@ -191,6 +197,14 @@ int main(int argc, char** argv)
     if (!load_iam_config(&iamConfig, args.iamConfigFile, &errorText)) {
         print_iam_config_load_failed(args.iamConfigFile, errorText);
     }
+
+    struct tcp_tunnel_state tcpTunnelState;
+    tcp_tunnel_state_init(&tcpTunnelState);
+
+    if (!load_tcp_tunnel_state(&tcpTunnelState, args.stateFile, &errorText)) {
+        print_tcp_tunnel_state_load_failed(args.stateFile, errorText);
+    }
+
 
     // setup system
 

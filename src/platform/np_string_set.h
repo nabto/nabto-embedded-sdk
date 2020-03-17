@@ -23,6 +23,8 @@ np_error_code np_string_set_add(struct np_string_set* set, const char* item);
 
 bool np_string_set_contains(const struct np_string_set* set, const char* item);
 
+bool np_string_set_empty(struct np_string_set* set);
+
 void np_string_set_front(const struct np_string_set* set, struct np_string_set_iterator* it);
 bool np_string_set_end(const struct np_string_set_iterator* it);
 void np_string_set_next(struct np_string_set_iterator* it);

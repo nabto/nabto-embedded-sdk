@@ -1,4 +1,5 @@
 #include "json_config.h"
+#include "string_file.h"
 
 #include <stdio.h>
 #include <unistd.h>
