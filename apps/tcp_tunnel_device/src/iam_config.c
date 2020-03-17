@@ -5,8 +5,10 @@
 #include <modules/policies/nm_policy.h>
 #include <modules/policies/nm_statement.h>
 #include <modules/policies/nm_policies_to_json.h>
+#include <modules/policies/nm_policies_from_json.h>
 #include <modules/iam/nm_iam_role.h>
 #include <modules/iam/nm_iam_to_json.h>
+#include <modules/iam/nm_iam_from_json.h>
 
 #include <stdio.h>
 
@@ -30,10 +32,49 @@ bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, co
         printf("IAM configuration file (%s) does not exists creating a new default file.\n", iamConfigFile);
         create_default_iam_config(iamConfigFile);
     }
-    cJSON* config;
-    if (json_config_load(iamConfigFile, &config)) {
 
+    cJSON* config;
+    if (!json_config_load(iamConfigFile, &config)) {
+        *errorText = "Could not load iam config file";
+        return false;
     }
+
+    if (!cJSON_IsObject(config)) {
+        *errorText = "Invalid IAM config format";
+        return false;
+    }
+
+    cJSON* policies = cJSON_GetObjectItem(config, "Policies");
+    cJSON* roles = cJSON_GetObjectItem(config, "Roles");
+
+    if (!cJSON_IsArray(policies) ||
+        !cJSON_IsArray(roles))
+    {
+        *errorText = "missing policies or roles";
+        return false;
+    }
+
+    size_t policiesSize = cJSON_GetArraySize(policies);
+    for (size_t i = 0; i < policiesSize; i++) {
+        cJSON* item = cJSON_GetArrayItem(policies, i);
+        struct nm_policy* policy = nm_policy_from_json(item);
+        if (policy == NULL) {
+            return false;
+        }
+        np_vector_push_back(&iamConfig->policies, policy);
+    }
+
+    size_t rolesSize = cJSON_GetArraySize(roles);
+    for(size_t i = 0; i < rolesSize; i++) {
+        cJSON* item = cJSON_GetArrayItem(roles, i);
+        struct nm_iam_role* role = nm_iam_role_from_json(item);
+        if (role == NULL) {
+            return false;
+        }
+        np_vector_push_back(&iamConfig->roles, role);
+    }
+
+    return true;
 }
 
 bool create_default_iam_config(const char* iamConfigFile)

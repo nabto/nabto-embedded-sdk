@@ -1,4 +1,4 @@
-#include "nm_policies_json.h"
+#include "nm_policies_from_json.h"
 #include "nm_condition.h"
 #include "nm_statement.h"
 #include "nm_policy.h"

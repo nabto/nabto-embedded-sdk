@@ -2,7 +2,7 @@ set(src
   nm_condition.c
   nm_statement.c
   nm_policy.c
-  nm_policies_json.c
+  nm_policies_from_json.c
   nm_policies_to_json.c
   )
 

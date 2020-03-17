@@ -1,6 +1,7 @@
 set(src
   nm_iam_role.c
   nm_iam_to_json.c
+  nm_iam_from_json.c
   )
 
 add_library(nm_iam ${src})

@@ -1,6 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
-#include <modules/policies/nm_policies_json.h>
+#include <modules/policies/nm_policies_from_json.h>
 
 #include <modules/policies/nm_condition.h>
 #include <modules/policies/nm_statement.h>
