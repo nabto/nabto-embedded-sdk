@@ -1,4 +1,8 @@
+#include "iam_config.h"
+
 #include <nabto/nabto_device.h>
+
+#include <apps/common/device_config.h>
 
 #include <gopt/gopt.h>
 
@@ -21,7 +25,12 @@ struct args {
     bool showVersion;
     bool showState;
     const char* logLevel;
-    const char* homeDir;
+    char* homeDir;
+
+    char* deviceConfigFile;
+    char* keyFile;
+    char* stateFile;
+    char* iamConfigFile;
 };
 
 
@@ -46,6 +55,25 @@ void print_help()
     printf(" - HOME_DIR/<ProductId>_<DeviceId>.key this file contains the private key the device uses." NEWLINE);
     printf(" - HOME_DIR/tcp_tunnel_state.json This file contains the runtime state of the tcp tunnelling device." NEWLINE);
     printf(" - HOME_DIR/tcp_tunnel_policies.json This file contains the policies the tcp tunnelling device uses in its IAM module." NEWLINE);
+}
+
+void print_device_config_load_failed(const char* fileName, const char* errorText)
+{
+    printf("Could not open or parse the device config file (%s) reason: %s" NEWLINE, fileName, errorText);
+    printf("Please ensure the file exists and has the following format." NEWLINE);
+    printf("{" NEWLINE);
+    printf("  \"ProductId\": \"<product_id>\"," NEWLINE);
+    printf("  \"DeviceId\": \"<device_id>\"," NEWLINE);
+    printf("  \"Server\": \"<hostname>\"," NEWLINE);
+    printf("  \"client\": {" NEWLINE);
+    printf("    \"ServerKey\": \"<server_key>\"," NEWLINE);
+    printf("    \"ServerUrl\": \"<server_url>\"," NEWLINE);
+    printf("  }" NEWLINE);
+}
+
+void print_iam_config_load_failed(const char* fileName, const char* errorText)
+{
+    printf("Could not open or parse IAM config file (%s) reason: %s" NEWLINE, fileName, errorText);
 }
 
 void print_start_text(struct args* args)
@@ -82,7 +110,11 @@ static bool parse_args(int argc, char** argv, struct args* args)
         args->showState = true;
     }
     gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel);
-    gopt_arg(options, OPTION_HOME_DIR, &args->homeDir);
+    const char* hd = NULL;
+    if (gopt_arg(options, OPTION_HOME_DIR, &hd)) {
+        args->homeDir = strdup(hd);
+    }
+
 
     gopt_free(options);
     return true;
@@ -95,7 +127,26 @@ void args_init(struct args* args)
 
 void args_deinit(struct args* args)
 {
+    free(args->homeDir);
+    free(args->deviceConfigFile);
+    free(args->stateFile);
+    free(args->iamConfigFile);
 }
+
+char* expand_file_name(const char* homeDir, const char* fileName)
+{
+    //homeDir+/+fileName+NULL
+    size_t requiredLength = strlen(homeDir) + 1 + strlen(fileName) + 1;
+
+    char* fullFileName = calloc(1,requiredLength);
+    if (fullFileName == NULL) {
+        return NULL;
+    }
+
+    sprintf(fullFileName, "%s/%s", homeDir, fileName);
+    return fullFileName;
+}
+
 
 int main(int argc, char** argv)
 {
@@ -105,16 +156,49 @@ int main(int argc, char** argv)
 
     if (args.showHelp) {
         print_help();
+        return 0;
     } else if (args.showVersion) {
         print_version();
-    } else {
-        // setup system
+        return 0;
+    }
 
-        if (args.showState) {
-            // print state
-        } else {
-            // run device
-        }
+    const char* homeEnv = getenv("HOME");
+    if (args.homeDir != NULL) {
+        // perfect just using the homeDir
+    } else if (homeEnv != NULL) {
+        args.homeDir = expand_file_name(homeEnv, ".nabto");
+    } else {
+        printf("Missing HomeDir option or HOME environment variable one of these needs to be set.");
+        exit(1);
+    }
+
+    args.deviceConfigFile = expand_file_name(args.homeDir, "device_config.json");
+    args.stateFile = expand_file_name(args.homeDir, "tcp_tunnel_state.json");
+    args.iamConfigFile = expand_file_name(args.homeDir, "tcp_tunnel_iam_config.json");
+
+    struct device_config dc;
+    device_config_init(&dc);
+
+    const char* errorText;
+    if (!load_device_config(args.deviceConfigFile, &dc, &errorText)) {
+        print_device_config_load_failed(args.deviceConfigFile, errorText);
+        exit(1);
+    }
+
+    struct iam_config iamConfig;
+    iam_config_init(&iamConfig);
+
+    if (!load_iam_config(&iamConfig, args.iamConfigFile, &errorText)) {
+        print_iam_config_load_failed(args.iamConfigFile, errorText);
+    }
+
+    // setup system
+
+    if (args.showState) {
+        //print_state();
+        // print state
+    } else {
+        // run device
     }
 
     args_deinit(&args);

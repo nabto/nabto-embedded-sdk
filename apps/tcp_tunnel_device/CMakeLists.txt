@@ -8,6 +8,7 @@ set(src
 
 set(csrc
   src/tcp_tunnel_main.c
+  src/iam_config.c
   )
 
 add_executable(tcp_tunnel_device "${src}")
@@ -15,4 +16,4 @@ target_link_libraries(tcp_tunnel_device nabto_device 3rdparty_tinycbor 3rdparty_
 
 
 add_executable(tcp_tunnel_device_c "${csrc}")
-target_link_libraries(tcp_tunnel_device_c nabto_device 3rdparty_gopt)
+target_link_libraries(tcp_tunnel_device_c nabto_device 3rdparty_gopt apps_common nm_iam)
