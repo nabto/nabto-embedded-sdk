@@ -49,7 +49,7 @@ np_error_code np_string_map_insert(struct np_string_map* map, const char* key, c
     return NABTO_EC_OK;
 }
 
-struct np_string_map_item* np_string_map_get(struct np_string_map* map, const char* key)
+struct np_string_map_item* np_string_map_get(const struct np_string_map* map, const char* key)
 {
     struct np_list_iterator it;
     for (np_list_front(&map->items, &it);
@@ -64,7 +64,7 @@ struct np_string_map_item* np_string_map_get(struct np_string_map* map, const ch
     return NULL;
 }
 
-struct np_string_map_item* np_string_map_getn(struct np_string_map* map, const char* key, size_t keyLength)
+struct np_string_map_item* np_string_map_getn(const struct np_string_map* map, const char* key, size_t keyLength)
 {
     struct np_list_iterator it;
     for (np_list_front(&map->items, &it);
@@ -80,18 +80,25 @@ struct np_string_map_item* np_string_map_getn(struct np_string_map* map, const c
 }
 
 
-bool np_string_map_empty(struct np_string_map* map)
+bool np_string_map_empty(const struct np_string_map* map)
 {
     return np_list_empty(&map->items);
 }
 
 // iterator
-void np_string_map_front(struct np_string_map* map, struct np_string_map_iterator* it)
+void np_string_map_front(const struct np_string_map* map, struct np_string_map_iterator* it)
 {
     np_list_front(&map->items, &it->it);
 }
 
-bool np_string_map_end(struct np_string_map_iterator* it)
+struct np_string_map_iterator np_string_map_front2(const struct np_string_map* map)
+{
+    struct np_string_map_iterator it;
+    np_list_front(&map->items, &it.it);
+    return it;
+}
+
+bool np_string_map_end(const struct np_string_map_iterator* it)
 {
     return np_list_end(&it->it);
 }
@@ -101,7 +108,7 @@ void np_string_map_next(struct np_string_map_iterator* it)
     np_list_next(&it->it);
 }
 
-struct np_string_map_item* np_string_map_get_element(struct np_string_map_iterator* it)
+struct np_string_map_item* np_string_map_get_element(const struct np_string_map_iterator* it)
 {
     return np_list_get_element(&it->it);
 }

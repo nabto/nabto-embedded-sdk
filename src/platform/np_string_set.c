@@ -53,6 +53,13 @@ void np_string_set_front(const struct np_string_set* set, struct np_string_set_i
     np_vector_front(&set->strings, &it->it);
 }
 
+struct np_string_set_iterator np_string_set_front2(const struct np_string_set* set)
+{
+    struct np_string_set_iterator it;
+    np_vector_front(&set->strings, &it.it);
+    return it;
+}
+
 bool np_string_set_end(const struct np_string_set_iterator* it)
 {
     return np_vector_end(&it->it);

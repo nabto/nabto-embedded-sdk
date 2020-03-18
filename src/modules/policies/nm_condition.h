@@ -52,7 +52,7 @@ const char* nm_condition_operator_to_string(const enum nm_condition_operator op)
 
 enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operator op, const char* lhs, const char* rhs);
 
-enum nm_condition_result nm_condition_matches(struct nm_condition* condition, struct np_string_map* attributes);
+enum nm_condition_result nm_condition_matches(const struct nm_condition* condition, const struct np_string_map* attributes);
 
 
 

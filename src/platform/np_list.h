@@ -22,7 +22,7 @@ struct np_list {
 };
 
 struct np_list_iterator {
-    struct np_list* list;
+    const struct np_list* list;
     struct np_list_item* item;
 };
 
@@ -33,7 +33,7 @@ void np_list_deinit(struct np_list* list);
 
 
 // return true if the list is empty
-bool np_list_empty(struct np_list* list);
+bool np_list_empty(const struct np_list* list);
 
 // add an item to the end of the list
 void np_list_append(struct np_list* list, struct np_list_item* item, void* element);
@@ -44,13 +44,13 @@ void np_list_erase_item(struct np_list_item* item);
 void np_list_erase_iterator(struct np_list_iterator* iterator);
 
 // return front element of the list or NULL if empty
-void np_list_front(struct np_list* list, struct np_list_iterator* iterator);
+void np_list_front(const struct np_list* list, struct np_list_iterator* iterator);
 
 void np_list_next(struct np_list_iterator* iterator);
 
-bool np_list_end(struct np_list_iterator* iterator);
+bool np_list_end(const struct np_list_iterator* iterator);
 
-void* np_list_get_element(struct np_list_iterator* iterator);
+void* np_list_get_element(const struct np_list_iterator* iterator);
 
 #ifdef __cplusplus
 } //extern "C"

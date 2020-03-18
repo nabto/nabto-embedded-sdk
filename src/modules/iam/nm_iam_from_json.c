@@ -61,6 +61,10 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
         return NULL;
     }
 
+    if (cJSON_IsString(fingerprint)) {
+        user->fingerprint = strdup(fingerprint->valuestring);
+    }
+
     if (cJSON_IsString(serverConnectToken)) {
         user->serverConnectToken = strdup(serverConnectToken->valuestring);
     }
@@ -75,4 +79,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
         }
     }
 
+    load_attributes(&user->attributes, attributes);
+
+    return user;
 }

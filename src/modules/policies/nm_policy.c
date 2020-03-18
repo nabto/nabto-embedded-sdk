@@ -37,7 +37,7 @@ np_error_code nm_policy_add_statement(struct nm_policy* policy, struct nm_statem
     return np_vector_push_back(&policy->statements, stmt);
 }
 
-enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, struct np_string_map* attributes)
+enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, const struct np_string_map* attributes)
 {
     enum nm_effect decision = NM_EFFECT_NO_MATCH;
     struct np_vector_iterator it;

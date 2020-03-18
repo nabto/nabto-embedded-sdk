@@ -16,7 +16,7 @@ struct nm_iam_list_users {
     NabtoDeviceCoapRequest* request;
 };
 
-bool nm_iam_list_users_init(struct nm_iam_list_users* listUsers, NabtoDevice* device, struct nm_iam* iam);
+NabtoDeviceError nm_iam_list_users_init(struct nm_iam_list_users* listUsers, NabtoDevice* device, struct nm_iam* iam);
 void nm_iam_list_users_deinit(struct nm_iam_list_users* listUsers);
 
 // the handler will be stopped when the device is stopped.

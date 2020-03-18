@@ -16,7 +16,7 @@ void np_list_deinit(struct np_list* list)
 
 
 // return true if the list is empty
-bool np_list_empty(struct np_list* list)
+bool np_list_empty(const struct np_list* list)
 {
     return list->sentinel.next == &list->sentinel;
 }
@@ -52,7 +52,7 @@ void np_list_erase_iterator(struct np_list_iterator* iterator)
 }
 
 // return front element of the list or NULL if empty
-void np_list_front(struct np_list* list, struct np_list_iterator* iterator)
+void np_list_front(const struct np_list* list, struct np_list_iterator* iterator)
 {
     iterator->list = list;
     iterator->item = list->sentinel.next;
@@ -63,12 +63,12 @@ void np_list_next(struct np_list_iterator* iterator)
     iterator->item = iterator->item->next;
 }
 
-bool np_list_end(struct np_list_iterator* iterator)
+bool np_list_end(const struct np_list_iterator* iterator)
 {
     return iterator->item == &iterator->list->sentinel;
 }
 
-void* np_list_get_element(struct np_list_iterator* iterator)
+void* np_list_get_element(const struct np_list_iterator* iterator)
 {
     return iterator->item->element;
 }

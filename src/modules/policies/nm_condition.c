@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs);
-static bool resolve_value(struct np_string_map* attributes, const char* value, const char** out);
+static bool resolve_value(const struct np_string_map* attributes, const char* value, const char** out);
 
 struct nm_condition* nm_condition_new(enum nm_condition_operator op)
 {
@@ -97,7 +97,7 @@ enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operato
     return NM_CONDITION_RESULT_ERROR;
 }
 
-enum nm_condition_result nm_condition_matches(struct nm_condition* condition, struct np_string_map* attributes)
+enum nm_condition_result nm_condition_matches(const struct nm_condition* condition, const struct np_string_map* attributes)
 {
     struct np_string_map_item* item = np_string_map_get(attributes, condition->key);
     if (item == NULL) {
@@ -205,7 +205,7 @@ static enum nm_condition_result match(enum nm_condition_operator op, const char*
     return NM_CONDITION_RESULT_ERROR;
 }
 
-bool resolve_value(struct np_string_map* attributes, const char* value, const char** out)
+bool resolve_value(const struct np_string_map* attributes, const char* value, const char** out)
 {
     size_t valueLength = strlen(value);
     if (valueLength < 3) {

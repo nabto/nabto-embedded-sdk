@@ -15,7 +15,7 @@ set(CMAKE_C_STANDARD 99)
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
 option(DEVICE_BUILD_TESTS "build device tests" ON)
 option(DEVICE_BUILD_APPS "build applications" ON)
-add_compile_options(-Wall)
+
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
@@ -28,7 +28,8 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
   add_definitions("/W4")
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   include_directories(src/types/linux)
-  add_definitions("-Wall")
+  add_compile_options(-Wall)
+  add_compile_options(-Werror)
 endif()
 
 include_directories(src)

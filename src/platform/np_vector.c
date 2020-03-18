@@ -82,6 +82,14 @@ void np_vector_front(const struct np_vector* vector, struct np_vector_iterator* 
     iterator->current = 0;
 }
 
+struct np_vector_iterator np_vector_front2(const struct np_vector* vector)
+{
+    struct np_vector_iterator iterator;
+    iterator.v = vector;
+    iterator.current = 0;
+    return iterator;
+}
+
 void np_vector_next(struct np_vector_iterator* iterator)
 {
     iterator->current += 1;

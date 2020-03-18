@@ -16,7 +16,7 @@ struct nm_statement* nm_statement_new();
 
 void nm_statement_free(struct nm_statement* statement);
 
-enum nm_effect nm_statement_eval(struct nm_statement* statement, const char* action, struct np_string_map* attributes);
+enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct np_string_map* attributes);
 
 np_error_code nm_statement_add_action(struct nm_statement* statement, const char* action);
 

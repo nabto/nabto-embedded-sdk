@@ -36,10 +36,12 @@ void* np_vector_get(const struct np_vector* vector, size_t index);
 void np_vector_erase(struct np_vector* vector, size_t index);
 
 void np_vector_front(const struct np_vector* vector, struct np_vector_iterator* iterator);
+struct np_vector_iterator np_vector_front2(const struct np_vector* vector);
 void np_vector_next(struct np_vector_iterator* iterator);
 bool np_vector_end(const struct np_vector_iterator* iterator);
 void* np_vector_get_element(const struct np_vector_iterator* iterator);
 
+#define NP_VECTOR_FOREACH(element, vector) for (struct np_vector_iterator it = np_vector_front2(vector); element = np_vector_get_element(&it), !np_vector_end(&it); np_vector_next(&it))
 
 #ifdef __cplusplus
 } //extern "C"

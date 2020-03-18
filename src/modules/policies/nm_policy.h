@@ -19,6 +19,6 @@ void nm_policy_free(struct nm_policy* poilicy);
 // Add statement to a policy, this takes ownership over the statement.
 np_error_code nm_policy_add_statement(struct nm_policy* policy, struct nm_statement* stmt);
 
-enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, struct np_string_map* attributes);
+enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, const struct np_string_map* attributes);
 
 #endif

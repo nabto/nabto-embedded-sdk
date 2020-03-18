@@ -2,7 +2,7 @@
 #include "nm_condition.h"
 #include <stdlib.h>
 
-static enum nm_condition_result match_conditions(struct nm_statement* statement, struct np_string_map* attributes);
+static enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes);
 
 static void condition_free(void* condition);
 
@@ -24,7 +24,7 @@ void nm_statement_free(struct nm_statement* statement)
     np_vector_deinit(&statement->conditions);
 }
 
-enum nm_effect nm_statement_eval(struct nm_statement* statement, const char* action, struct np_string_map* attributes)
+enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct np_string_map* attributes)
 {
     if (!np_string_set_contains(&statement->actions, action)) {
         return NM_EFFECT_NO_MATCH;
@@ -48,7 +48,7 @@ np_error_code nm_statement_add_action(struct nm_statement* statement, const char
     return np_string_set_add(&statement->actions, action);
 }
 
-enum nm_condition_result match_conditions(struct nm_statement* statement, struct np_string_map* attributes)
+enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes)
 {
     struct np_vector_iterator it;
     for (np_vector_front(&statement->conditions, &it);
@@ -56,7 +56,7 @@ enum nm_condition_result match_conditions(struct nm_statement* statement, struct
          np_vector_next(&it))
     {
         // All conditions has to match else it is a no match.
-        struct nm_condition* condition = np_vector_get_element(&it);
+        const struct nm_condition* condition = np_vector_get_element(&it);
         enum nm_condition_result r = nm_condition_matches(condition, attributes);
         if (r == NM_CONDITION_RESULT_NO_MATCH || r == NM_CONDITION_RESULT_ERROR) {
             return r;
