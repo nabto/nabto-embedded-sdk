@@ -225,6 +225,17 @@ int main(int argc, char** argv)
     }
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
+    printf("# Product ID:        %s" NEWLINE);
+    printf("# Device ID:         %s" NEWLINE);
+    printf("# Fingerprint:       %s" NEWLINE);
+    printf("# Pairing password:  %s" NEWLINE);
+    printf("# Client Server Url: %s" NEWLINE);
+    printf("# Client Server Key: %s" NEWLINE);
+    printf("# Paring SCT:        %s" NEWLINE);
+    printf("# Version:           %s" NEWLINE);
+    printf("# Pairing URL:       %s" NEWLINE);
+
+
 
     if (args.showState) {
         //print_state();
