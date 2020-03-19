@@ -17,6 +17,8 @@ struct nm_iam {
     struct nm_iam_coap_handler listUsers;
 
     struct nm_iam_role* unpairedRole;
+
+    char* pairingPassword;
 };
 
 void nm_iam_init(struct nm_iam* iam);

@@ -5,6 +5,7 @@ set(src
   nm_iam_to_json.c
   nm_iam_from_json.c
   nm_iam_list_users.c
+  nm_iam_pairing_get.c
   nm_iam_auth_handler.c
   nm_iam_coap_handler.c
   )
