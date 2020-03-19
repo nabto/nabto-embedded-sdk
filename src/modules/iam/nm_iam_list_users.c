@@ -1,4 +1,4 @@
-#include "nm_iam_list_users.h"
+#include "nm_iam_coap_handler.h"
 #include "nm_iam_user.h"
 #include "nm_iam.h"
 

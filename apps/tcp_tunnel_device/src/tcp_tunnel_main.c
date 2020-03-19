@@ -2,8 +2,9 @@
 #include "tcp_tunnel_state.h"
 
 #include <nabto/nabto_device.h>
-
 #include <apps/common/device_config.h>
+
+#include <modules/iam/nm_iam.h>
 
 #include <gopt/gopt.h>
 
@@ -205,8 +206,16 @@ int main(int argc, char** argv)
         print_tcp_tunnel_state_load_failed(args.stateFile, errorText);
     }
 
+    struct nm_iam iam;
+    NabtoDevice* device = nabto_device_new();
 
-    // setup system
+    nabto_device_set_product_id(device, dc.productId);
+    nabto_device_set_device_id(device, dc.deviceId);
+    nabto_device_set_server_url(device, dc.server);
+
+
+    nm_iam_init(&iam, device);
+
 
     if (args.showState) {
         //print_state();
@@ -214,6 +223,10 @@ int main(int argc, char** argv)
     } else {
         // run device
     }
+
+    nabto_device_free(device);
+
+
 
     args_deinit(&args);
 

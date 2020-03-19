@@ -1,4 +1,8 @@
-#include "nm_iam_pairing_password.h"
+#include "nm_iam_coap_handler.h"
+
+#include "nm_iam.h"
+
+#include <stdlib.h>
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
@@ -11,14 +15,15 @@ NabtoDeviceError nm_iam_pairing_password_init(struct nm_iam_coap_handler* handle
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "Pairing:Password", NULL)) {
+    NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
+    if (!nm_iam_check_access(handler->iam, ref, "Pairing:Password", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
 
     NabtoDeviceError ec;
     char* fingerprint;
-    ec = nabto_device_connection_get_client_fingerprint_full_hex(getDevice(), ref, &fingerprint);
+    ec = nabto_device_connection_get_client_fingerprint_full_hex(handler->device, ref, &fingerprint);
     if (ec) {
         nabto_device_coap_error_response(request, 500, "Server error");
         return;
@@ -26,8 +31,6 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     CborParser parser;
     CborValue value;
-
-    std::string errorDescription;
 
     if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
@@ -37,32 +40,32 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* password = NULL;
     char* name = NULL;
 
-    if (!nm_iam_cbor_decode_string(value, &password) &&
-        !nm_iam_cbor_decode_kv_string(value, "Password", &password))
+    if (!nm_iam_cbor_decode_string(&value, &password) &&
+        !nm_iam_cbor_decode_kv_string(&value, "Password", &password))
     {
         // The password is required either as old or in the new format.
         nabto_device_coap_error_response(request, 400, "Missing password");
         return;
     }
 
-    nm_iam_cbor_decode_kv_string(value, "Name", &name);
+    nm_iam_cbor_decode_kv_string(&value, "Name", &name);
 
-    if (strcmp(password, iam->pairingPassword) != 0) {
+    if (strcmp(password, handler->iam->pairingPassword) != 0) {
         nabto_device_coap_error_response(request, 401, "Wrong Password");
         return;
     }
 
-    if (!nm_iam_pair_new_client(request, name)) {
+    if (!nm_iam_pair_new_client(handler->iam, request, name)) {
         nabto_device_coap_error_response(request, 500, "Server error");
         return;
     }
 
-    printf("Paired the user with the fingerprint %s\n", clientFingerprint);
+    printf("Paired the user with the fingerprint %s\n", fingerprint);
     // OK response
     nabto_device_coap_response_set_code(request, 201);
     nabto_device_coap_response_ready(request);
 
-    free(clientFingerprint);
+    free(fingerprint);
     free(password);
     free(name);
 }

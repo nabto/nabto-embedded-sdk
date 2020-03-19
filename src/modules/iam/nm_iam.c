@@ -2,18 +2,30 @@
 #include "nm_iam_user.h"
 #include "nm_iam_role.h"
 
+#include "nm_iam_coap_handler.h"
+
 #include <modules/policies/nm_effect.h>
 #include <modules/policies/nm_policy.h>
+
+#include <stdlib.h>
 
 
 static enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct np_string_map* attributes);
 static enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct np_string_map* attributes);
 
-void nm_iam_init(struct nm_iam* iam)
+static void init_coap_handlers(struct nm_iam* iam);
+static char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
+static struct nm_iam_user* find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
+
+
+void nm_iam_init(struct nm_iam* iam, NabtoDevice* device)
 {
+    iam->device = device;
     np_vector_init(&iam->users, NULL);
     np_vector_init(&iam->roles, NULL);
     np_vector_init(&iam->policies, NULL);
+
+    init_coap_handlers(iam);
 }
 
 void nm_iam_deinit(struct nm_iam* iam)
@@ -104,4 +116,154 @@ enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* 
         }
     }
     return result;
+}
+
+void init_coap_handlers(struct nm_iam* iam)
+{
+    nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
+    nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
+    nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
+}
+
+void deinit_coap_handlers(struct nm_iam* iam)
+{
+    nm_iam_coap_handler_deinit(&iam->coapPairingGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingPasswordPostHandler);
+}
+
+
+struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const char* fingerprint)
+{
+    struct nm_iam_user* user;
+    NP_VECTOR_FOREACH(user, &iam->users) {
+        if (strcmp(user->fingerprint, fingerprint) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}
+
+struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* roleStr)
+{
+    struct nm_iam_role* role;
+    NP_VECTOR_FOREACH(role, &iam->roles)
+    {
+        if (strcmp(role->id, roleStr) == 0) {
+            return role;
+        }
+    }
+    return NULL;
+}
+struct nm_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyStr)
+{
+    struct nm_policy* policy;
+    NP_VECTOR_FOREACH(policy, &iam->policies)
+    {
+        if (strcmp(policy->id, policyStr) == 0) {
+            return policy;
+        }
+    }
+    return NULL;
+}
+
+struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* name)
+{
+    {
+        struct nm_iam_user* user = find_user_by_coap_request(iam, request);
+        if (user != NULL) {
+            // user is already paired.
+            return user;
+        }
+    }
+
+    char* fingerprint = get_fingerprint_from_coap_request(iam, request);
+    if (fingerprint == NULL) {
+        return NULL;
+    }
+
+    const char* roleStr;
+
+    if (np_vector_size(&iam->users) == 0) {
+        roleStr = "Admin";
+    } else {
+        roleStr = "User";
+    }
+
+    if (nm_iam_find_role(iam, roleStr) == NULL) {
+        printf("Warning missing the Role '%s' so the user cannot be paired.\n", roleStr);
+        return NULL;
+    }
+
+    char* sct;
+    NabtoDeviceError ec = nabto_device_create_server_connect_token(iam->device, &sct);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return NULL;
+    }
+
+    char* nextId = nm_iam_next_user_id(iam);
+    struct nm_iam_user* user = nm_iam_user_new(nextId);
+    free(nextId);
+
+    np_string_set_add(&user->roles, roleStr);
+    user->fingerprint = strdup(fingerprint);
+    user->serverConnectToken = strdup(sct);
+
+    np_vector_push_back(&iam->users, user);
+
+    nabto_device_string_free(fingerprint);
+    nabto_device_string_free(sct);
+    return user;
+}
+
+char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request)
+{
+    NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
+
+    NabtoDeviceError ec;
+    char* fingerprint;
+    ec = nabto_device_connection_get_client_fingerprint_full_hex(iam->device, ref, &fingerprint);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return NULL;
+    }
+    return fingerprint;
+}
+
+struct nm_iam_user* find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request)
+{
+    char* fp = get_fingerprint_from_coap_request(iam, request);
+    if (fp == NULL) {
+        return NULL;
+    }
+    struct nm_iam_user* user = nm_iam_find_user_by_fingerprint(iam, fp);
+    nabto_device_string_free(fp);
+    return user;
+}
+
+struct nm_iam_user* nm_iam_find_user_by_id(struct nm_iam* iam, const char* id)
+{
+    struct nm_iam_user* user;
+    NP_VECTOR_FOREACH(user, &iam->users) {
+        if (strcmp(user->id, id) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}
+
+char* nm_iam_next_user_id(struct nm_iam* iam)
+{
+    char* id = malloc(20);
+    int i = 0;
+
+    struct nm_iam_user* user;
+    do {
+        memset(id, 0, 20);
+        i++;
+        sprintf(id, "%d", (int)i);
+
+        user = nm_iam_find_user_by_id(iam, id);
+    } while (user != NULL);
+
+    return id;
 }

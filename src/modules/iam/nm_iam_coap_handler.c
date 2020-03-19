@@ -61,7 +61,7 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
 }
 
 
-bool nm_iam_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
+bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
 {
     uint16_t contentFormat;
     NabtoDeviceError ec;

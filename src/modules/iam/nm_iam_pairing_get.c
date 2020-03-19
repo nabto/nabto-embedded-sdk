@@ -1,4 +1,4 @@
-#include "nm_iam_pairing_get.h"
+#include "nm_iam_coap_handler.h"
 
 #include "nm_iam.h"
 
