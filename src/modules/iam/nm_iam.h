@@ -14,7 +14,7 @@ struct nm_iam {
     struct np_vector roles;
     struct np_vector policies;
 
-    struct nm_iam_list_users listUsers;
+    struct nm_iam_coap_handler listUsers;
 
     struct nm_iam_role* unpairedRole;
 };
