@@ -216,6 +216,15 @@ int main(int argc, char** argv)
 
     nm_iam_init(&iam, device);
 
+    if (tcpTunnelState.pairingPassword != NULL) {
+        nm_iam_enable_password_pairing(&iam, tcpTunnelState.pairingPassword);
+    }
+
+    if (tcpTunnelState.pairingServerConnectToken != NULL) {
+        nm_iam_enable_remote_pairing(&iam, tcpTunnelState.pairingServerConnectToken);
+    }
+
+    printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
 
     if (args.showState) {
         //print_state();

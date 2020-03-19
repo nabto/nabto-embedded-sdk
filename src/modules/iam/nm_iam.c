@@ -14,6 +14,8 @@ static enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam
 static enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct np_string_map* attributes);
 
 static void init_coap_handlers(struct nm_iam* iam);
+static void deinit_coap_handlers(struct nm_iam* iam);
+
 static char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
 static struct nm_iam_user* find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
 
@@ -25,14 +27,22 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device)
     np_vector_init(&iam->roles, NULL);
     np_vector_init(&iam->policies, NULL);
 
+    nm_iam_auth_handler_init(&iam->authHandler, device, iam);
+
     init_coap_handlers(iam);
 }
 
 void nm_iam_deinit(struct nm_iam* iam)
 {
+    deinit_coap_handlers(iam);
+
+    nm_iam_auth_handler_deinit(&iam->authHandler);
+
     np_vector_deinit(&iam->users);
     np_vector_deinit(&iam->roles);
     np_vector_deinit(&iam->policies);
+
+    free(iam->pairingPassword);
 }
 
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct np_string_map* attributesIn)
@@ -117,6 +127,19 @@ enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* 
     }
     return result;
 }
+
+bool nm_iam_enable_password_pairing(struct nm_iam* iam, const char* pairingPassword)
+{
+    iam->pairingPassword = strdup(pairingPassword);
+    return true;
+}
+
+bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerConnectToken)
+{
+    nabto_device_add_server_connect_token(iam->device, pairingServerConnectToken);
+    return true;
+}
+
 
 void init_coap_handlers(struct nm_iam* iam)
 {
