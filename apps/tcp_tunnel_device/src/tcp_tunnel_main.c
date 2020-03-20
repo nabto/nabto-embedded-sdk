@@ -1,5 +1,6 @@
 #include "iam_config.h"
 #include "tcp_tunnel_state.h"
+#include "tcp_tunnel_services.h"
 
 #include <nabto/nabto_device.h>
 #include <apps/common/device_config.h>
@@ -36,6 +37,7 @@ struct args {
     char* keyFile;
     char* stateFile;
     char* iamConfigFile;
+    char* servicesFile;
 };
 
 static void signal_handler(int s);
@@ -63,6 +65,7 @@ void print_help()
     printf(" - HOME_DIR/<ProductId>_<DeviceId>.key this file contains the private key the device uses." NEWLINE);
     printf(" - HOME_DIR/tcp_tunnel_state.json This file contains the runtime state of the tcp tunnelling device." NEWLINE);
     printf(" - HOME_DIR/tcp_tunnel_policies.json This file contains the policies the tcp tunnelling device uses in its IAM module." NEWLINE);
+    printf(" - HOME_DIR/tcp_tunnel_services.json This file contains the services this tunnel exposes." NEWLINE);
 }
 
 void print_device_config_load_failed(const char* fileName, const char* errorText)
@@ -182,6 +185,19 @@ char* generate_pairing_url(const char* productId, const char* deviceId, const ch
     return buffer;
 }
 
+void print_item(const char* item)
+{
+    size_t printSize = strlen(item);
+    if (printSize > 16) {
+        printSize = 16;
+    }
+    printf("%.*s", (int)printSize, item);
+
+    const char* spaces = "                 ";
+    size_t spacesSize = 17 - printSize;
+    printf("%.*s", (int)spacesSize, spaces);
+}
+
 int main(int argc, char** argv)
 {
     struct args args;
@@ -209,6 +225,7 @@ int main(int argc, char** argv)
     args.deviceConfigFile = expand_file_name(args.homeDir, "device_config.json");
     args.stateFile = expand_file_name(args.homeDir, "tcp_tunnel_state.json");
     args.iamConfigFile = expand_file_name(args.homeDir, "tcp_tunnel_iam_config.json");
+    args.servicesFile = expand_file_name(args.homeDir, "tcp_tunnel_services.json");
 
     struct device_config dc;
     device_config_init(&dc);
@@ -261,6 +278,14 @@ int main(int argc, char** argv)
         nm_iam_enable_remote_pairing(&iam, tcpTunnelState.pairingServerConnectToken);
     }
 
+    struct np_vector services;
+    np_vector_init(&services, NULL);
+
+    if (!load_tcp_tunnel_services(&services, args.servicesFile, &errorText))
+    {
+        printf("Failed to load TCP Services from (%s) reason: %s", args.servicesFile, errorText);
+    }
+
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint_hex(device, &deviceFingerprint);
 
@@ -276,6 +301,14 @@ int main(int argc, char** argv)
     printf("# Client Server Key: %s" NEWLINE, dc.clientServerKey);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
     printf("# Pairing URL:       %s" NEWLINE, pairingUrl);
+    printf("# Configured TCP Services" NEWLINE);
+    printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
+    struct tcp_tunnel_service* item;
+
+    NP_VECTOR_FOREACH(item, &services)
+    {
+        printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); printf("%d" NEWLINE, item->port);
+    }
     printf("########" NEWLINE);
 
 
