@@ -1,6 +1,7 @@
 #include "iam_config.h"
 #include "tcp_tunnel_state.h"
 #include "tcp_tunnel_services.h"
+#include "device_event_handler.h"
 
 #include <nabto/nabto_device.h>
 #include <apps/common/device_config.h>
@@ -253,9 +254,15 @@ int main(int argc, char** argv)
     struct nm_iam iam;
     NabtoDevice* device = nabto_device_new();
 
+    if (args.logLevel != NULL) {
+        nabto_device_set_log_std_out_callback(device);
+        nabto_device_set_log_level(device, args.logLevel);
+    }
+
     nabto_device_set_product_id(device, dc.productId);
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);
+    nabto_device_enable_mdns(device);
 
     char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
     char* privateKeyFile = expand_file_name(args.homeDir, privateKeyFileName);
@@ -287,7 +294,7 @@ int main(int argc, char** argv)
     }
 
     char* deviceFingerprint;
-    nabto_device_get_device_fingerprint_hex(device, &deviceFingerprint);
+  nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
 
     char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, deviceFingerprint, dc.clientServerUrl, dc.clientServerKey, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
 
@@ -301,7 +308,7 @@ int main(int argc, char** argv)
     printf("# Client Server Key: %s" NEWLINE, dc.clientServerKey);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
     printf("# Pairing URL:       %s" NEWLINE, pairingUrl);
-    printf("# Configured TCP Services" NEWLINE);
+    printf("######## Configured TCP Services ########" NEWLINE);
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;
 
@@ -317,6 +324,10 @@ int main(int argc, char** argv)
         // print state
     } else {
 
+        struct device_event_handler eventHandler;
+
+        device_event_handler_init(&eventHandler, device);
+
         nabto_device_start(device);
 
         // Wait for the user to press Ctrl-C
@@ -330,22 +341,18 @@ int main(int argc, char** argv)
         sigaction(SIGINT, &sigIntHandler, NULL);
 
         pause();
+        NabtoDeviceFuture* fut = nabto_device_future_new(device);
+        nabto_device_close(device, fut);
+        nabto_device_future_wait(fut);
+        nabto_device_future_free(fut);
+        nabto_device_stop(device);
 
+        device_event_handler_deinit(&eventHandler);
     }
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
-    nabto_device_stop(device);
-
 
     nm_iam_deinit(&iam);
 
-
     nabto_device_free(device);
-
-
 
     args_deinit(&args);
 
