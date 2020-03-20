@@ -46,7 +46,7 @@ bool string_file_load(const char* fileName, char** content)
     return status;
 }
 
-bool json_config_save(const char* fileName, char* content)
+bool string_file_save(const char* fileName, char* content)
 {
     bool status;
 

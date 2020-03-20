@@ -1,6 +1,8 @@
 set(src
   json_config.c
   device_config.c
+  private_key.c
+  string_file.c
   )
 
 add_library(apps_common ${src})

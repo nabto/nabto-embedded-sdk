@@ -3,6 +3,7 @@
 
 #include <nabto/nabto_device.h>
 #include <apps/common/device_config.h>
+#include <apps/common/private_key.h>
 
 #include <modules/iam/nm_iam.h>
 
@@ -35,6 +36,8 @@ struct args {
     char* iamConfigFile;
 };
 
+
+static char* generate_private_key_file_name(const char* productId, const char* deviceId);
 
 void print_version()
 {
@@ -71,6 +74,7 @@ void print_device_config_load_failed(const char* fileName, const char* errorText
     printf("    \"ServerKey\": \"<server_key>\"," NEWLINE);
     printf("    \"ServerUrl\": \"<server_url>\"," NEWLINE);
     printf("  }" NEWLINE);
+    printf("}" NEWLINE);
 }
 
 void print_iam_config_load_failed(const char* fileName, const char* errorText)
@@ -86,6 +90,11 @@ void print_tcp_tunnel_state_load_failed(const char* fileName, const char* errorT
 void print_start_text(struct args* args)
 {
     printf("TCP Tunnel Device" NEWLINE);
+}
+
+void print_private_key_file_load_failed(const char* fileName, const char* errorText)
+{
+    printf("Could not load the private key (%s) reason: %s" NEWLINE, fileName, errorText);
 }
 
 static bool parse_args(int argc, char** argv, struct args* args)
@@ -154,6 +163,21 @@ char* expand_file_name(const char* homeDir, const char* fileName)
     return fullFileName;
 }
 
+char* generate_pairing_url(const char* productId, const char* deviceId, const char* deviceFingerprint, const char* clientServerUrl, const char* clientServerKey, const char* pairingPassword, const char* pairingServerConnectToken)
+{
+    char* buffer = calloc(1, 1024); // long enough!
+
+    sprintf(buffer, "https://tcp-tunnel.nabto.com/pairing?ProductId=%s&DeviceId=%s&DeviceFingerprint=%s&ClientServerUrl=%s&ClientServerKey=%s&PairingPassword=%s&ClientServerConnectToken=%s",
+            productId,
+            deviceId,
+            deviceFingerprint,
+            clientServerUrl,
+            clientServerKey,
+            pairingPassword,
+            pairingServerConnectToken);
+
+    return buffer;
+}
 
 int main(int argc, char** argv)
 {
@@ -213,6 +237,16 @@ int main(int argc, char** argv)
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);
 
+    char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
+    char* privateKeyFile = expand_file_name(args.homeDir, privateKeyFileName);
+    free(privateKeyFileName);
+
+    char* privateKey;
+    if (!load_or_create_private_key(device, privateKeyFile, &privateKey, &errorText)) {
+        print_private_key_file_load_failed(privateKeyFile, errorText);
+    }
+
+    nabto_device_set_private_key(device, privateKey);
 
     nm_iam_init(&iam, device);
 
@@ -224,16 +258,21 @@ int main(int argc, char** argv)
         nm_iam_enable_remote_pairing(&iam, tcpTunnelState.pairingServerConnectToken);
     }
 
+    char* deviceFingerprint;
+    nabto_device_get_device_fingerprint_hex(device, &deviceFingerprint);
+
+    char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, deviceFingerprint, dc.clientServerUrl, dc.clientServerKey, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
+
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
-    printf("# Product ID:        %s" NEWLINE);
-    printf("# Device ID:         %s" NEWLINE);
-    printf("# Fingerprint:       %s" NEWLINE);
-    printf("# Pairing password:  %s" NEWLINE);
-    printf("# Client Server Url: %s" NEWLINE);
-    printf("# Client Server Key: %s" NEWLINE);
-    printf("# Paring SCT:        %s" NEWLINE);
-    printf("# Version:           %s" NEWLINE);
-    printf("# Pairing URL:       %s" NEWLINE);
+    printf("# Product ID:        %s" NEWLINE, dc.productId);
+    printf("# Device ID:         %s" NEWLINE, dc.deviceId);
+    printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
+    printf("# Pairing password:  %s" NEWLINE, tcpTunnelState.pairingPassword);
+    printf("# Paring SCT:        %s" NEWLINE, tcpTunnelState.pairingServerConnectToken);
+    printf("# Client Server Url: %s" NEWLINE, dc.clientServerUrl);
+    printf("# Client Server Key: %s" NEWLINE, dc.clientServerKey);
+    printf("# Version:           %s" NEWLINE, nabto_device_version());
+    printf("# Pairing URL:       %s" NEWLINE, pairingUrl);
 
 
 
@@ -250,4 +289,18 @@ int main(int argc, char** argv)
 
     args_deinit(&args);
 
+}
+
+
+static char* generate_private_key_file_name(const char* productId, const char* deviceId)
+{
+    // productId_deviceId.key
+    size_t outLength = strlen(productId) + 1 + strlen(deviceId) + 4;
+    char* str = malloc(outLength+1);
+    if (str == NULL) {
+        return NULL;
+    }
+    sprintf(str, "%s_%s.key", productId, deviceId);
+    str[outLength] = 0;
+    return str;
 }
