@@ -14,24 +14,25 @@ bool string_file_exists(const char* fileName)
     }
 }
 
-static bool load_from_file(FILE* f, char** content)
+static bool load_from_file(FILE* f, char** out)
 {
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    *content = malloc(fsize + 1);
-    if (*content == NULL) {
+    char* content = malloc(fsize + 1);
+    if (content == NULL) {
         return false;
     }
 
-    size_t read = fread(*content, 1, fsize, f);
+    size_t read = fread(content, 1, fsize, f);
     if (read != fsize) {
-        free(*content);
+        free(content);
         return false;
     }
 
-    *content[fsize] = 0;
+    content[fsize] = 0;
+    *out = content;
     return true;
 }
 
