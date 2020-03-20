@@ -9,8 +9,10 @@
 
 #include <gopt/gopt.h>
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdbool.h>
 
 #define NEWLINE "\n"
@@ -36,6 +38,7 @@ struct args {
     char* iamConfigFile;
 };
 
+static void signal_handler(int s);
 
 static char* generate_private_key_file_name(const char* productId, const char* deviceId);
 
@@ -273,15 +276,39 @@ int main(int argc, char** argv)
     printf("# Client Server Key: %s" NEWLINE, dc.clientServerKey);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
     printf("# Pairing URL:       %s" NEWLINE, pairingUrl);
-
+    printf("########" NEWLINE);
 
 
     if (args.showState) {
         //print_state();
         // print state
     } else {
-        // run device
+
+        nabto_device_start(device);
+
+        // Wait for the user to press Ctrl-C
+
+        struct sigaction sigIntHandler;
+
+        sigIntHandler.sa_handler = signal_handler;
+        sigemptyset(&sigIntHandler.sa_mask);
+        sigIntHandler.sa_flags = 0;
+
+        sigaction(SIGINT, &sigIntHandler, NULL);
+
+        pause();
+
     }
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+    nabto_device_stop(device);
+
+
+    nm_iam_deinit(&iam);
+
 
     nabto_device_free(device);
 
@@ -303,4 +330,9 @@ static char* generate_private_key_file_name(const char* productId, const char* d
     sprintf(str, "%s_%s.key", productId, deviceId);
     str[outLength] = 0;
     return str;
+}
+
+
+void signal_handler(int s)
+{
 }
