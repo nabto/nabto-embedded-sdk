@@ -9,6 +9,7 @@ set(src
   nm_iam_pairing_password.c
   nm_iam_auth_handler.c
   nm_iam_coap_handler.c
+  nm_iam_is_paired.c
   )
 
 add_library(nm_iam ${src})

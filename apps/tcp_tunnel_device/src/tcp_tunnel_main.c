@@ -320,6 +320,20 @@ int main(int argc, char** argv)
     }
     np_vector_clear(&tcpTunnelState.users);
 
+    // add roles to iam module
+    struct nm_iam_role* role;
+    NP_VECTOR_FOREACH(role, &iamConfig.roles) {
+        nm_iam_add_role(&iam, role);
+    }
+    np_vector_clear(&iamConfig.roles);
+
+    // add policies to iam module
+    struct nm_policy* policy;
+    NP_VECTOR_FOREACH(policy, &iamConfig.policies) {
+        nm_iam_add_policy(&iam, policy);
+    }
+    np_vector_clear(&iamConfig.policies);
+
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);

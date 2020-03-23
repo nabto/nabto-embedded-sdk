@@ -7,5 +7,5 @@ struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* roleStr);
 struct nm_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyStr);
 
 struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* name);
-
+struct nm_iam_user* find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
 #endif

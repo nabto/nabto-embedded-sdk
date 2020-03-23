@@ -18,11 +18,12 @@ static void init_coap_handlers(struct nm_iam* iam);
 static void deinit_coap_handlers(struct nm_iam* iam);
 
 static char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
-static struct nm_iam_user* find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
+
 
 
 void nm_iam_init(struct nm_iam* iam, NabtoDevice* device)
 {
+    memset(iam, 0, sizeof(struct nm_iam));
     iam->device = device;
     np_vector_init(&iam->users, NULL);
     np_vector_init(&iam->roles, NULL);
@@ -86,6 +87,8 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
         verdict = true;
     }
 
+    printf("IAM access request action: %s, verdict: %s\n", action, verdict?"ALLOW":"DENY");
+
     return verdict;
 }
 
@@ -99,6 +102,10 @@ enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* 
     NP_STRING_SET_FOREACH(roleStr, &user->roles)
     {
         struct nm_iam_role* role = nm_iam_find_role(iam, roleStr);
+        if (role == NULL) {
+            printf("Role %s does not exists\n", roleStr);
+            return NM_EFFECT_ERROR;
+        }
 
         enum nm_effect e = nm_iam_check_access_role(iam, role, action, attributes);
 
@@ -150,6 +157,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
     nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
+    nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
@@ -255,6 +263,18 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
     if (iam->changeCallbacks.userChanged) {
         iam->changeCallbacks.userChanged(iam, user->id, iam->changeCallbacks.userChangedData);
     }
+    return true;
+}
+
+bool nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role)
+{
+    np_vector_push_back(&iam->roles, role);
+    return true;
+}
+
+bool nm_iam_add_policy(struct nm_iam* iam, struct nm_policy* policy)
+{
+    np_vector_push_back(&iam->policies, policy);
     return true;
 }
 

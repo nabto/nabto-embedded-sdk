@@ -50,13 +50,9 @@ np_error_code nm_statement_add_action(struct nm_statement* statement, const char
 
 enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes)
 {
-    struct np_vector_iterator it;
-    for (np_vector_front(&statement->conditions, &it);
-         np_vector_end(&it);
-         np_vector_next(&it))
+    const struct nm_condition* condition;
+    NP_VECTOR_FOREACH(condition, &statement->conditions)
     {
-        // All conditions has to match else it is a no match.
-        const struct nm_condition* condition = np_vector_get_element(&it);
         enum nm_condition_result r = nm_condition_matches(condition, attributes);
         if (r == NM_CONDITION_RESULT_NO_MATCH || r == NM_CONDITION_RESULT_ERROR) {
             return r;
