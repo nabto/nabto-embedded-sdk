@@ -8,6 +8,10 @@
 #include <apps/common/private_key.h>
 
 #include <modules/iam/nm_iam.h>
+#include <modules/iam/nm_iam_user.h>
+
+#include <platform/np_string_set.h>
+
 
 #include <gopt/gopt.h>
 
@@ -39,11 +43,13 @@ struct args {
     char* stateFile;
     char* iamConfigFile;
     char* servicesFile;
+    char* privateKeyFile;
 };
 
 static void signal_handler(int s);
 
 static char* generate_private_key_file_name(const char* productId, const char* deviceId);
+static void print_iam_state(struct nm_iam* iam);
 
 void print_version()
 {
@@ -154,6 +160,7 @@ void args_deinit(struct args* args)
     free(args->deviceConfigFile);
     free(args->stateFile);
     free(args->iamConfigFile);
+    free(args->privateKeyFile);
 }
 
 char* expand_file_name(const char* homeDir, const char* fileName)
@@ -228,6 +235,7 @@ int main(int argc, char** argv)
     args.iamConfigFile = expand_file_name(args.homeDir, "tcp_tunnel_iam_config.json");
     args.servicesFile = expand_file_name(args.homeDir, "tcp_tunnel_services.json");
 
+
     struct device_config dc;
     device_config_init(&dc);
 
@@ -236,6 +244,10 @@ int main(int argc, char** argv)
         print_device_config_load_failed(args.deviceConfigFile, errorText);
         exit(1);
     }
+
+    char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
+    args.privateKeyFile = expand_file_name(args.homeDir, privateKeyFileName);
+    free(privateKeyFileName);
 
     struct iam_config iamConfig;
     iam_config_init(&iamConfig);
@@ -251,7 +263,6 @@ int main(int argc, char** argv)
         print_tcp_tunnel_state_load_failed(args.stateFile, errorText);
     }
 
-    struct nm_iam iam;
     NabtoDevice* device = nabto_device_new();
 
     if (args.logLevel != NULL) {
@@ -259,18 +270,21 @@ int main(int argc, char** argv)
         nabto_device_set_log_level(device, args.logLevel);
     }
 
+
+
     nabto_device_set_product_id(device, dc.productId);
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);
     nabto_device_enable_mdns(device);
 
-    char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
-    char* privateKeyFile = expand_file_name(args.homeDir, privateKeyFileName);
-    free(privateKeyFileName);
+    struct nm_iam iam;
+    nm_iam_init(&iam, device);
+
+
 
     char* privateKey;
-    if (!load_or_create_private_key(device, privateKeyFile, &privateKey, &errorText)) {
-        print_private_key_file_load_failed(privateKeyFile, errorText);
+    if (!load_or_create_private_key(device, args.privateKeyFile, &privateKey, &errorText)) {
+        print_private_key_file_load_failed(args.privateKeyFile, errorText);
     }
 
     nabto_device_set_private_key(device, privateKey);
@@ -298,6 +312,15 @@ int main(int argc, char** argv)
 
     char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, deviceFingerprint, dc.clientServerUrl, dc.clientServerKey, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
 
+    // add users to iam module.
+    struct nm_iam_user* user;
+    NP_VECTOR_FOREACH(user, &tcpTunnelState.users)
+    {
+        nm_iam_add_user(&iam, user);
+    }
+    np_vector_clear(&tcpTunnelState.users);
+
+
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);
     printf("# Device ID:         %s" NEWLINE, dc.deviceId);
@@ -320,15 +343,14 @@ int main(int argc, char** argv)
 
 
     if (args.showState) {
-        //print_state();
-        // print state
+        print_iam_state(&iam);
     } else {
-
         struct device_event_handler eventHandler;
 
         device_event_handler_init(&eventHandler, device);
 
         nabto_device_start(device);
+        nm_iam_start(&iam);
 
         // Wait for the user to press Ctrl-C
 
@@ -350,8 +372,10 @@ int main(int argc, char** argv)
         device_event_handler_deinit(&eventHandler);
     }
 
-    nm_iam_deinit(&iam);
 
+
+    nabto_device_stop(device);
+    nm_iam_deinit(&iam);
     nabto_device_free(device);
 
     args_deinit(&args);
@@ -375,4 +399,19 @@ static char* generate_private_key_file_name(const char* productId, const char* d
 
 void signal_handler(int s)
 {
+}
+
+
+void print_iam_state(struct nm_iam* iam)
+{
+    struct np_string_set ss;
+    np_string_set_init(&ss);
+    nm_iam_get_users(iam, &ss);
+
+    const char* id;
+    NP_STRING_SET_FOREACH(id, &ss)
+    {
+        struct nm_iam_user* user = nm_iam_find_user(iam, id);
+        printf("User: %s, fingerprint: %s" NEWLINE, user->id, user->fingerprint);
+    }
 }

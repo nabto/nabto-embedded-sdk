@@ -1,4 +1,5 @@
 #include "nm_iam.h"
+#include "nm_iam_internal.h"
 #include "nm_iam_user.h"
 #include "nm_iam_role.h"
 
@@ -26,10 +27,13 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device)
     np_vector_init(&iam->users, NULL);
     np_vector_init(&iam->roles, NULL);
     np_vector_init(&iam->policies, NULL);
-
-    nm_iam_auth_handler_init(&iam->authHandler, device, iam);
+    nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
 
     init_coap_handlers(iam);
+}
+
+void nm_iam_start(struct nm_iam* iam)
+{
 }
 
 void nm_iam_deinit(struct nm_iam* iam)
@@ -232,11 +236,26 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
     user->fingerprint = strdup(fingerprint);
     user->serverConnectToken = strdup(sct);
 
-    np_vector_push_back(&iam->users, user);
+    nm_iam_add_user(iam, user);
 
     nabto_device_string_free(fingerprint);
     nabto_device_string_free(sct);
+
     return user;
+}
+
+bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
+{
+    np_vector_push_back(&iam->users, user);
+
+    if (user->serverConnectToken != NULL) {
+        nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
+    }
+
+    if (iam->changeCallbacks.userChanged) {
+        iam->changeCallbacks.userChanged(iam, user->id, iam->changeCallbacks.userChangedData);
+    }
+    return true;
 }
 
 char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request)
@@ -274,6 +293,11 @@ struct nm_iam_user* nm_iam_find_user_by_id(struct nm_iam* iam, const char* id)
     return NULL;
 }
 
+struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* id)
+{
+    return nm_iam_find_user_by_id(iam, id);
+}
+
 char* nm_iam_next_user_id(struct nm_iam* iam)
 {
     char* id = malloc(20);
@@ -289,4 +313,20 @@ char* nm_iam_next_user_id(struct nm_iam* iam)
     } while (user != NULL);
 
     return id;
+}
+
+void nm_iam_set_user_change_callback(struct nm_iam* iam, nm_iam_user_changed userChanged, void* data)
+{
+    iam->changeCallbacks.userChanged = userChanged;
+    iam->changeCallbacks.userChangedData = data;
+}
+
+bool nm_iam_get_users(struct nm_iam* iam, struct np_string_set* ids)
+{
+    struct nm_iam_user* user;
+    NP_VECTOR_FOREACH(user, &iam->users)
+    {
+        np_string_set_add(ids, user->id);
+    }
+    return true;
 }

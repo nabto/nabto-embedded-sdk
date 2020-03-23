@@ -45,7 +45,7 @@ void nm_iam_coap_handler_deinit(struct nm_iam_coap_handler* handler)
 void start_listen(struct nm_iam_coap_handler* handler)
 {
     nabto_device_listener_new_coap_request(handler->listener, handler->future, &handler->request);
-    nabto_device_future_set_callback(handler->future, &request_callback, handler);
+    nabto_device_future_set_callback(handler->future, request_callback, handler);
 }
 
 void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)

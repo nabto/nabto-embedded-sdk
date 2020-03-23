@@ -76,6 +76,12 @@ void np_vector_erase(struct np_vector* vector, size_t index)
     }
 }
 
+void np_vector_clear(struct np_vector* vector)
+{
+    vector->used = 0;
+    // TODO free elements if needed
+}
+
 void np_vector_front(const struct np_vector* vector, struct np_vector_iterator* iterator)
 {
     iterator->v = vector;

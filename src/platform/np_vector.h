@@ -34,6 +34,7 @@ bool np_vector_empty(const struct np_vector* vector);
 size_t np_vector_size(const struct np_vector* vector);
 void* np_vector_get(const struct np_vector* vector, size_t index);
 void np_vector_erase(struct np_vector* vector, size_t index);
+void np_vector_clear(struct np_vector* vector);
 
 void np_vector_front(const struct np_vector* vector, struct np_vector_iterator* iterator);
 struct np_vector_iterator np_vector_front2(const struct np_vector* vector);

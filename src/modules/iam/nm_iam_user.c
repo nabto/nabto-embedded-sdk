@@ -28,6 +28,7 @@ struct nm_iam_user* nm_iam_user_new(const char* idIn)
 
     np_string_map_init(&user->attributes);
     np_string_set_init(&user->roles);
+    user->id = id;
 
     return user;
 }
