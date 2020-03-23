@@ -289,8 +289,6 @@ int main(int argc, char** argv)
 
     nabto_device_set_private_key(device, privateKey);
 
-    nm_iam_init(&iam, device);
-
     if (tcpTunnelState.pairingPassword != NULL) {
         nm_iam_enable_password_pairing(&iam, tcpTunnelState.pairingPassword);
     }
@@ -307,8 +305,16 @@ int main(int argc, char** argv)
         printf("Failed to load TCP Services from (%s) reason: %s", args.servicesFile, errorText);
     }
 
+    struct tcp_tunnel_service* service;
+    NP_VECTOR_FOREACH(service, &services)
+    {
+        nabto_device_add_tcp_tunnel_service(device, service->id, service->type, service->host, service->port);
+        tcp_tunnel_service_free(service);
+    }
+    np_vector_clear(&services);
+
     char* deviceFingerprint;
-  nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
+    nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
 
     char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, deviceFingerprint, dc.clientServerUrl, dc.clientServerKey, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
 
