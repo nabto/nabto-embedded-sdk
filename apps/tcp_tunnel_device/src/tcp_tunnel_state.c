@@ -4,6 +4,7 @@
 #include <modules/iam/nm_iam_from_json.h>
 
 #include <apps/common/json_config.h>
+#include <apps/common/random_string.h>
 
 #include <cjson/cJSON.h>
 
@@ -71,8 +72,9 @@ bool create_default_tcp_tunnel_state(const char* stateFile)
 {
     struct tcp_tunnel_state state;
     tcp_tunnel_state_init(&state);
-    state.pairingPassword = strdup("TODOPairingPassword");
-    state.pairingServerConnectToken = strdup("TODOPairingServerConnectToken");
+    state.pairingPassword = random_password(20);
+    state.pairingServerConnectToken = random_password(20);
+
 
     bool status = write_state_to_file(stateFile, &state);
 
