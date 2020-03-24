@@ -47,6 +47,10 @@ bool np_string_set_empty(struct np_string_set* set)
     return np_vector_empty(&set->strings);
 }
 
+size_t np_string_set_size(struct np_string_set* set)
+{
+    return np_vector_size(&set->strings);
+}
 
 void np_string_set_front(const struct np_string_set* set, struct np_string_set_iterator* it)
 {

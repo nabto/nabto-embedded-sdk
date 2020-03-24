@@ -11,6 +11,7 @@
 
 struct nm_policy;
 struct np_string_set;
+struct nm_iam_role;
 
 typedef void (*nm_iam_user_changed)(struct nm_iam* iam, const char* userId, void* userData);
 
@@ -31,13 +32,14 @@ struct nm_iam {
     struct nm_iam_coap_handler coapPairingGetHandler;
     struct nm_iam_coap_handler coapPairingPasswordPostHandler;
     struct nm_iam_coap_handler coapPairingIsPairedGetHandler;
+    struct nm_iam_coap_handler coapPairingClientSettingsGetHandler;
 
     struct nm_iam_auth_handler authHandler;
 
-    struct nm_iam_role* unpairedRole;
-
     struct nm_iam_change_callbacks changeCallbacks;
     char* pairingPassword;
+    char* clientServerUrl;
+    char* clientServerKey;
 };
 
 /**
@@ -61,6 +63,13 @@ bool nm_iam_enable_password_pairing(struct nm_iam* iam, const char* pairingPassw
  * Enable remote pairing for the iam module
  */
 bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerConnectToken);
+
+/**
+ * Enable client settings.
+ *
+ * This allows client settings to be provisioned by a coap request to the device
+ */
+void nm_iam_enable_client_settings(struct nm_iam* iam, const char* clientServerUrl, const char* clientServerKey);
 
 /**
  * Set change callbacks such that state can be persisted

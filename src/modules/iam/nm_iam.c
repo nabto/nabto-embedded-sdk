@@ -73,13 +73,19 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
     struct nm_iam_user* user = nm_iam_find_user_by_fingerprint(iam, fingerprint);
     nabto_device_string_free(fingerprint);
 
-    enum nm_effect effect;
+    enum nm_effect effect = NM_EFFECT_DENY;
 
     if (user) {
         np_string_map_insert(&attributes, "Connection:UserId", user->id);
         effect = nm_iam_check_access_user(iam, user, action, &attributes);
     } else {
-        effect = nm_iam_check_access_role(iam, iam->unpairedRole, action, &attributes);
+        struct nm_iam_role* unpaired = nm_iam_find_role(iam, "Unpaired");
+        if (unpaired == NULL) {
+            printf("The role Unpaired does not exists, rejecting the request");
+            effect = NM_EFFECT_ERROR;
+        } else {
+            effect = nm_iam_check_access_role(iam, unpaired, action, &attributes);
+        }
     }
 
     bool verdict = false;
@@ -165,6 +171,8 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordPostHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingIsPairedGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingClientSettingsGetHandler);
 }
 
 
@@ -205,7 +213,7 @@ struct nm_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyStr)
 struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* name)
 {
     {
-        struct nm_iam_user* user = find_user_by_coap_request(iam, request);
+        struct nm_iam_user* user = nm_iam_find_user_by_coap_request(iam, request);
         if (user != NULL) {
             // user is already paired.
             return user;
@@ -291,7 +299,7 @@ char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCoapReque
     return fingerprint;
 }
 
-struct nm_iam_user* find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request)
+struct nm_iam_user* nm_iam_find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request)
 {
     char* fp = get_fingerprint_from_coap_request(iam, request);
     if (fp == NULL) {
@@ -335,7 +343,7 @@ char* nm_iam_next_user_id(struct nm_iam* iam)
     return id;
 }
 
-void nm_iam_set_user_change_callback(struct nm_iam* iam, nm_iam_user_changed userChanged, void* data)
+void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChanged, void* data)
 {
     iam->changeCallbacks.userChanged = userChanged;
     iam->changeCallbacks.userChangedData = data;
@@ -349,4 +357,12 @@ bool nm_iam_get_users(struct nm_iam* iam, struct np_string_set* ids)
         np_string_set_add(ids, user->id);
     }
     return true;
+}
+
+
+void nm_iam_enable_client_settings(struct nm_iam* iam, const char* clientServerUrl, const char* clientServerKey)
+{
+    iam->clientServerUrl = strdup(clientServerUrl);
+    iam->clientServerKey = strdup(clientServerKey);
+    nm_iam_client_settings_init(&iam->coapPairingClientSettingsGetHandler, iam->device, iam);
 }

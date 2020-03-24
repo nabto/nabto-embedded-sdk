@@ -85,6 +85,11 @@ bool np_string_map_empty(const struct np_string_map* map)
     return np_list_empty(&map->items);
 }
 
+size_t np_string_map_size(const struct np_string_map* map)
+{
+    return np_list_size(&map->items);
+}
+
 // iterator
 void np_string_map_front(const struct np_string_map* map, struct np_string_map_iterator* it)
 {

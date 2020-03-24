@@ -26,7 +26,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     // get user, if user exists, then return 205 else 403.
 
-    struct nm_iam_user* user = find_user_by_coap_request(handler->iam, request);
+    struct nm_iam_user* user = nm_iam_find_user_by_coap_request(handler->iam, request);
     if(user) {
         nabto_device_coap_response_set_code(request, 205);
     } else {

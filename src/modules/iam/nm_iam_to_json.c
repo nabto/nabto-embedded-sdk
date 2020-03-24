@@ -46,6 +46,7 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
             const char* role = np_string_set_get_element(&it);
             cJSON_AddItemToArray(array, cJSON_CreateString(role));
         }
+        cJSON_AddItemToObject(root, "Roles", array);
     }
 
     if (!np_string_map_empty(&user->attributes)) {
@@ -58,6 +59,7 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
             struct np_string_map_item* item = np_string_map_get_element(&it);
             cJSON_AddItemToObject(kvPairs, item->key, cJSON_CreateString(item->value));
         }
+        cJSON_AddItemToObject(root, "Attributes", kvPairs);
     }
     return root;
 }

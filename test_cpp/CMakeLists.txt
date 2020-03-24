@@ -40,6 +40,7 @@ set(test_src
   policies/statement_json_test.cpp
   policies/policy_json_test.cpp
   iam/condition_test.cpp
+  iam/save_users.cpp
 
   )
 
@@ -56,6 +57,7 @@ target_link_libraries(embedded_unit_test
   nm_logging_test
   iam_cpp
   nm_policies
+  nm_iam
 )
 
 if (HAVE_EPOLL_HEADERS)

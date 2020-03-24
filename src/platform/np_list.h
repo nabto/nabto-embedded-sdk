@@ -35,6 +35,8 @@ void np_list_deinit(struct np_list* list);
 // return true if the list is empty
 bool np_list_empty(const struct np_list* list);
 
+size_t np_list_size(const struct np_list* list);
+
 // add an item to the end of the list
 void np_list_append(struct np_list* list, struct np_list_item* item, void* element);
 

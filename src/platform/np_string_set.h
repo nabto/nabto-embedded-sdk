@@ -24,6 +24,7 @@ np_error_code np_string_set_add(struct np_string_set* set, const char* item);
 bool np_string_set_contains(const struct np_string_set* set, const char* item);
 
 bool np_string_set_empty(struct np_string_set* set);
+size_t np_string_set_size(struct np_string_set* set);
 
 void np_string_set_front(const struct np_string_set* set, struct np_string_set_iterator* it);
 struct np_string_set_iterator np_string_set_front2(const struct np_string_set* set);

@@ -37,19 +37,28 @@ struct args {
     bool showState;
     const char* logLevel;
     char* homeDir;
+};
+
+
+struct tcp_tunnel {
+    char* pairingPassword;
+    char* pairingServerConnectToken;
 
     char* deviceConfigFile;
-    char* keyFile;
     char* stateFile;
     char* iamConfigFile;
     char* servicesFile;
     char* privateKeyFile;
+
+    struct np_vector services;
 };
+
 
 static void signal_handler(int s);
 
 static char* generate_private_key_file_name(const char* productId, const char* deviceId);
 static void print_iam_state(struct nm_iam* iam);
+static void iam_user_changed(struct nm_iam* iam, const char* id, void* userData);
 
 void print_version()
 {
@@ -157,10 +166,21 @@ void args_init(struct args* args)
 void args_deinit(struct args* args)
 {
     free(args->homeDir);
-    free(args->deviceConfigFile);
-    free(args->stateFile);
-    free(args->iamConfigFile);
-    free(args->privateKeyFile);
+}
+
+void tcp_tunnel_init(struct tcp_tunnel* tunnel)
+{
+    memset(tunnel, 0, sizeof(struct tcp_tunnel));
+    np_vector_init(&tunnel->services, NULL);
+}
+
+void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)
+{
+    free(tunnel->deviceConfigFile);
+    free(tunnel->stateFile);
+    free(tunnel->iamConfigFile);
+    free(tunnel->privateKeyFile);
+    np_vector_deinit(&tunnel->services);
 }
 
 char* expand_file_name(const char* homeDir, const char* fileName)
@@ -209,6 +229,7 @@ void print_item(const char* item)
 int main(int argc, char** argv)
 {
     struct args args;
+
     args_init(&args);
     parse_args(argc, argv, &args);
 
@@ -230,37 +251,40 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    args.deviceConfigFile = expand_file_name(args.homeDir, "device_config.json");
-    args.stateFile = expand_file_name(args.homeDir, "tcp_tunnel_state.json");
-    args.iamConfigFile = expand_file_name(args.homeDir, "tcp_tunnel_iam_config.json");
-    args.servicesFile = expand_file_name(args.homeDir, "tcp_tunnel_services.json");
+    struct tcp_tunnel tunnel;
+    tcp_tunnel_init(&tunnel);
+
+    tunnel.deviceConfigFile = expand_file_name(args.homeDir, "device_config.json");
+    tunnel.stateFile = expand_file_name(args.homeDir, "tcp_tunnel_state.json");
+    tunnel.iamConfigFile = expand_file_name(args.homeDir, "tcp_tunnel_iam_config.json");
+    tunnel.servicesFile = expand_file_name(args.homeDir, "tcp_tunnel_services.json");
 
 
     struct device_config dc;
     device_config_init(&dc);
 
     const char* errorText;
-    if (!load_device_config(args.deviceConfigFile, &dc, &errorText)) {
-        print_device_config_load_failed(args.deviceConfigFile, errorText);
+    if (!load_device_config(tunnel.deviceConfigFile, &dc, &errorText)) {
+        print_device_config_load_failed(tunnel.deviceConfigFile, errorText);
         exit(1);
     }
 
     char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
-    args.privateKeyFile = expand_file_name(args.homeDir, privateKeyFileName);
+    tunnel.privateKeyFile = expand_file_name(args.homeDir, privateKeyFileName);
     free(privateKeyFileName);
 
     struct iam_config iamConfig;
     iam_config_init(&iamConfig);
 
-    if (!load_iam_config(&iamConfig, args.iamConfigFile, &errorText)) {
-        print_iam_config_load_failed(args.iamConfigFile, errorText);
+    if (!load_iam_config(&iamConfig, tunnel.iamConfigFile, &errorText)) {
+        print_iam_config_load_failed(tunnel.iamConfigFile, errorText);
     }
 
     struct tcp_tunnel_state tcpTunnelState;
     tcp_tunnel_state_init(&tcpTunnelState);
 
-    if (!load_tcp_tunnel_state(&tcpTunnelState, args.stateFile, &errorText)) {
-        print_tcp_tunnel_state_load_failed(args.stateFile, errorText);
+    if (!load_tcp_tunnel_state(&tcpTunnelState, tunnel.stateFile, &errorText)) {
+        print_tcp_tunnel_state_load_failed(tunnel.stateFile, errorText);
     }
 
     NabtoDevice* device = nabto_device_new();
@@ -283,35 +307,34 @@ int main(int argc, char** argv)
 
 
     char* privateKey;
-    if (!load_or_create_private_key(device, args.privateKeyFile, &privateKey, &errorText)) {
-        print_private_key_file_load_failed(args.privateKeyFile, errorText);
+    if (!load_or_create_private_key(device, tunnel.privateKeyFile, &privateKey, &errorText)) {
+        print_private_key_file_load_failed(tunnel.privateKeyFile, errorText);
     }
 
     nabto_device_set_private_key(device, privateKey);
 
     if (tcpTunnelState.pairingPassword != NULL) {
         nm_iam_enable_password_pairing(&iam, tcpTunnelState.pairingPassword);
+        tunnel.pairingPassword = strdup(tcpTunnelState.pairingPassword);
     }
 
     if (tcpTunnelState.pairingServerConnectToken != NULL) {
         nm_iam_enable_remote_pairing(&iam, tcpTunnelState.pairingServerConnectToken);
+        tunnel.pairingServerConnectToken = strdup(tcpTunnelState.pairingServerConnectToken);
     }
 
-    struct np_vector services;
-    np_vector_init(&services, NULL);
+    nm_iam_enable_client_settings(&iam, dc.clientServerUrl, dc.clientServerKey);
 
-    if (!load_tcp_tunnel_services(&services, args.servicesFile, &errorText))
+    if (!load_tcp_tunnel_services(&tunnel.services, tunnel.servicesFile, &errorText))
     {
-        printf("Failed to load TCP Services from (%s) reason: %s", args.servicesFile, errorText);
+        printf("Failed to load TCP Services from (%s) reason: %s", tunnel.servicesFile, errorText);
     }
 
     struct tcp_tunnel_service* service;
-    NP_VECTOR_FOREACH(service, &services)
+    NP_VECTOR_FOREACH(service, &tunnel.services)
     {
         nabto_device_add_tcp_tunnel_service(device, service->id, service->type, service->host, service->port);
-        tcp_tunnel_service_free(service);
     }
-    np_vector_clear(&services);
 
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
@@ -355,11 +378,12 @@ int main(int argc, char** argv)
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;
 
-    NP_VECTOR_FOREACH(item, &services)
+    NP_VECTOR_FOREACH(item, &tunnel.services)
     {
         printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); printf("%d" NEWLINE, item->port);
     }
     printf("########" NEWLINE);
+
 
 
     if (args.showState) {
@@ -368,6 +392,8 @@ int main(int argc, char** argv)
         struct device_event_handler eventHandler;
 
         device_event_handler_init(&eventHandler, device);
+
+        nm_iam_set_user_changed_callback(&iam, iam_user_changed, &tunnel);
 
         nabto_device_start(device);
         nm_iam_start(&iam);
@@ -434,4 +460,33 @@ void print_iam_state(struct nm_iam* iam)
         struct nm_iam_user* user = nm_iam_find_user(iam, id);
         printf("User: %s, fingerprint: %s" NEWLINE, user->id, user->fingerprint);
     }
+}
+
+
+void iam_user_changed(struct nm_iam* iam, const char* id, void* userData)
+{
+    struct tcp_tunnel* tcpTunnel = userData;
+
+    struct tcp_tunnel_state toWrite;
+
+    tcp_tunnel_state_init(&toWrite);
+    if (tcpTunnel->pairingPassword) {
+        toWrite.pairingPassword = strdup(tcpTunnel->pairingPassword);
+    }
+    if (tcpTunnel->pairingServerConnectToken) {
+        toWrite.pairingServerConnectToken = strdup(tcpTunnel->pairingServerConnectToken);
+    }
+
+    struct np_string_set userIds;
+    np_string_set_init(&userIds);
+    nm_iam_get_users(iam, &userIds);
+
+    const char* uid;
+    NP_STRING_SET_FOREACH(uid, &userIds)
+    {
+        struct nm_iam_user* user = nm_iam_find_user(iam, uid);
+        np_vector_push_back(&toWrite.users, user);
+    }
+
+    save_tcp_tunnel_state(tcpTunnel->stateFile, &toWrite);
 }

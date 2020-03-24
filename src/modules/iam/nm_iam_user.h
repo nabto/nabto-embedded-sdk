@@ -4,6 +4,10 @@
 #include <platform/np_string_set.h>
 #include <platform/np_string_map.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nm_iam_user {
     char* id;
     struct np_string_set roles;
@@ -17,5 +21,9 @@ void nm_iam_user_deinit(struct nm_iam_user* user);
 
 struct nm_iam_user* nm_iam_user_new(const char* id);
 void nm_iam_user_free(struct nm_iam_user* user);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

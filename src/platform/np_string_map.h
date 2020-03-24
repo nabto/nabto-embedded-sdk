@@ -42,6 +42,7 @@ void np_string_map_deinit(struct np_string_map* map);
 void np_string_map_destroy_item(struct np_string_map_item* item);
 
 bool np_string_map_empty(const struct np_string_map* map);
+size_t np_string_map_size(const struct np_string_map* map);
 
 // iterator
 void np_string_map_front(const struct np_string_map* map, struct np_string_map_iterator* it);

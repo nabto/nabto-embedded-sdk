@@ -37,9 +37,15 @@ NabtoDeviceError nm_iam_coap_handler_init(
 
 void nm_iam_coap_handler_deinit(struct nm_iam_coap_handler* handler)
 {
-    nabto_device_listener_stop(handler->listener);
-    nabto_device_future_free(handler->future);
-    nabto_device_listener_free(handler->listener);
+    if (handler->device != NULL) {
+        nabto_device_listener_stop(handler->listener);
+        nabto_device_future_free(handler->future);
+        nabto_device_listener_free(handler->listener);
+        handler->device = NULL;
+        handler->iam = NULL;
+        handler->listener = NULL;
+        handler->future = NULL;
+    }
 }
 
 void start_listen(struct nm_iam_coap_handler* handler)

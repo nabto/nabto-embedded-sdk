@@ -21,6 +21,16 @@ bool np_list_empty(const struct np_list* list)
     return list->sentinel.next == &list->sentinel;
 }
 
+size_t np_list_size(const struct np_list* list)
+{
+    size_t size = 0;
+    struct np_list_iterator it;
+    for(np_list_front(list, &it); !np_list_end(&it); np_list_next(&it)) {
+        size++;
+    }
+    return size;
+}
+
 // add an item to the end of the list
 void np_list_append(struct np_list* list, struct np_list_item* item, void* element)
 {
