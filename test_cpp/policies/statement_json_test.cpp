@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(parse_statement1)
     struct nm_statement* s;
     cJSON* json = cJSON_Parse(s1.c_str());
     BOOST_TEST(json);
-    s = nm_statement_from_json(json);
+    s = nm_statement_from_json(json, NULL);
     BOOST_TEST(s);
     BOOST_TEST(s->effect == NM_EFFECT_ALLOW);
     BOOST_TEST(np_string_set_contains(&s->actions, "foo"));
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(parse_statement2)
     struct nm_statement* s;
     cJSON* json = cJSON_Parse(s2.c_str());
     BOOST_TEST(json);
-    s = nm_statement_from_json(json);
+    s = nm_statement_from_json(json, NULL);
     BOOST_TEST(s);
     BOOST_TEST(s->effect == NM_EFFECT_DENY);
     BOOST_TEST(np_string_set_contains(&s->actions, "action2"));
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(parse_statement_fail1)
     struct nm_statement* s;
     cJSON* json = cJSON_Parse(i1.c_str());
     BOOST_TEST(json);
-    s = nm_statement_from_json(json);
+    s = nm_statement_from_json(json, NULL);
     BOOST_TEST(!s);
 }
 

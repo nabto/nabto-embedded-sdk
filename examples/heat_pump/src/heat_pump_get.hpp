@@ -36,7 +36,6 @@ class HeatPumpGet : public common::AbstractRequestHandler {
         } else {
             nabto_device_coap_response_ready(request);
         }
-        nabto_device_coap_request_free(request);
     }
  private:
     HeatPump& heatPump_;

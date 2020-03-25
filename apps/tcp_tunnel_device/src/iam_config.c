@@ -57,7 +57,7 @@ bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, co
     size_t policiesSize = cJSON_GetArraySize(policies);
     for (size_t i = 0; i < policiesSize; i++) {
         cJSON* item = cJSON_GetArrayItem(policies, i);
-        struct nm_policy* policy = nm_policy_from_json(item);
+        struct nm_policy* policy = nm_policy_from_json(item, NULL);
         if (policy == NULL) {
             return false;
         }

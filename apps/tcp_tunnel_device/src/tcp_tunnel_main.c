@@ -2,6 +2,7 @@
 #include "tcp_tunnel_state.h"
 #include "tcp_tunnel_services.h"
 #include "device_event_handler.h"
+#include "logging.h"
 
 #include <nabto/nabto_device.h>
 #include <apps/common/device_config.h>
@@ -11,6 +12,8 @@
 #include <modules/iam/nm_iam_user.h>
 
 #include <platform/np_string_set.h>
+
+#include <nn/log.h>
 
 
 #include <gopt/gopt.h>
@@ -22,6 +25,11 @@
 #include <stdbool.h>
 
 #define NEWLINE "\n"
+
+const char* DEVICE_CONFIG_FILE = "device_config.json";
+const char* TCP_TUNNEL_STATE_FILE = "tcp_tunnel_state.json";
+const char* TCP_TUNNEL_IAM_FILE = "tcp_tunnel_iam.json";
+const char* TCP_TUNNEL_SERVICES_FILE = "tcp_tunnel_services.json";
 
 enum {
     OPTION_HELP = 1,
@@ -60,6 +68,8 @@ static char* generate_private_key_file_name(const char* productId, const char* d
 static void print_iam_state(struct nm_iam* iam);
 static void iam_user_changed(struct nm_iam* iam, const char* id, void* userData);
 
+
+
 void print_version()
 {
     printf("TCP Tunnel Device Version: %s" NEWLINE, nabto_device_version());
@@ -77,11 +87,11 @@ void print_help()
     printf("   , --log-level, Set the log level to use, valid options is error,warn,info,trace" NEWLINE);
     printf(NEWLINE);
     printf("The following configuration files exists:" NEWLINE);
-    printf(" - HOME_DIR/device_config.json this file contains product id, device id and optionally settings the client needs to connect to the device" NEWLINE);
+    printf(" - HOME_DIR/%s this file contains product id, device id and optionally settings the client needs to connect to the device" NEWLINE, DEVICE_CONFIG_FILE);
     printf(" - HOME_DIR/<ProductId>_<DeviceId>.key this file contains the private key the device uses." NEWLINE);
-    printf(" - HOME_DIR/tcp_tunnel_state.json This file contains the runtime state of the tcp tunnelling device." NEWLINE);
-    printf(" - HOME_DIR/tcp_tunnel_policies.json This file contains the policies the tcp tunnelling device uses in its IAM module." NEWLINE);
-    printf(" - HOME_DIR/tcp_tunnel_services.json This file contains the services this tunnel exposes." NEWLINE);
+    printf(" - HOME_DIR/%s This file contains the runtime state of the tcp tunnelling device." NEWLINE, TCP_TUNNEL_STATE_FILE);
+    printf(" - HOME_DIR/%s This file contains the iam configuration the tcp tunnelling device uses." NEWLINE, TCP_TUNNEL_IAM_FILE);
+    printf(" - HOME_DIR/%s This file contains the services this tunnel exposes." NEWLINE, TCP_TUNNEL_SERVICES_FILE);
 }
 
 void print_device_config_load_failed(const char* fileName, const char* errorText)
@@ -254,10 +264,10 @@ int main(int argc, char** argv)
     struct tcp_tunnel tunnel;
     tcp_tunnel_init(&tunnel);
 
-    tunnel.deviceConfigFile = expand_file_name(args.homeDir, "device_config.json");
-    tunnel.stateFile = expand_file_name(args.homeDir, "tcp_tunnel_state.json");
-    tunnel.iamConfigFile = expand_file_name(args.homeDir, "tcp_tunnel_iam_config.json");
-    tunnel.servicesFile = expand_file_name(args.homeDir, "tcp_tunnel_services.json");
+    tunnel.deviceConfigFile = expand_file_name(args.homeDir, DEVICE_CONFIG_FILE);
+    tunnel.stateFile = expand_file_name(args.homeDir, TCP_TUNNEL_STATE_FILE);
+    tunnel.iamConfigFile = expand_file_name(args.homeDir, TCP_TUNNEL_IAM_FILE);
+    tunnel.servicesFile = expand_file_name(args.homeDir, TCP_TUNNEL_SERVICES_FILE);
 
 
     struct device_config dc;
@@ -300,6 +310,7 @@ int main(int argc, char** argv)
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);
     nabto_device_enable_mdns(device);
+    nabto_device_set_log_callback(device, device_log, NULL);
 
     struct nm_iam iam;
     nm_iam_init(&iam, device);
@@ -327,7 +338,7 @@ int main(int argc, char** argv)
 
     if (!load_tcp_tunnel_services(&tunnel.services, tunnel.servicesFile, &errorText))
     {
-        printf("Failed to load TCP Services from (%s) reason: %s", tunnel.servicesFile, errorText);
+        printf("Failed to load TCP Services from (%s) reason: %s" NEWLINE, tunnel.servicesFile, errorText);
     }
 
     struct tcp_tunnel_service* service;

@@ -3,12 +3,12 @@
 #include "nm_statement.h"
 #include "nm_policy.h"
 
-static bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement);
-static bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition);
-static bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy);
+static bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement, struct nn_log* logger);
+static bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition, struct nn_log* logger);
+static bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy, struct nn_log* logger);
 
 
-struct nm_condition* nm_condition_from_json(const cJSON* json)
+struct nm_condition* nm_condition_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
         return NULL;
@@ -27,14 +27,14 @@ struct nm_condition* nm_condition_from_json(const cJSON* json)
     if (condition == NULL) {
         return NULL;
     }
-    if (nm_condition_from_json_parse(operation->child, condition)) {
+    if (nm_condition_from_json_parse(operation->child, condition, logger)) {
         return condition;
     }
     nm_condition_free(condition);
     return NULL;
 }
 
-bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition)
+bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition, struct nn_log* logger)
 {
     // json = { "key": ["value1", "value2"] }
     // An object is also an iterable array
@@ -58,7 +58,7 @@ bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* conditio
     return true;
 }
 
-struct nm_statement* nm_statement_from_json(const cJSON* json)
+struct nm_statement* nm_statement_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
         return false;
@@ -90,7 +90,7 @@ struct nm_statement* nm_statement_from_json(const cJSON* json)
         return NULL;
     }
 
-    if (nm_statement_from_json_parse(actions, conditions, s)) {
+    if (nm_statement_from_json_parse(actions, conditions, s, logger)) {
         return s;
     } else {
         nm_statement_free(s);
@@ -98,7 +98,7 @@ struct nm_statement* nm_statement_from_json(const cJSON* json)
     }
 }
 
-bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement)
+bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement, struct nn_log* logger)
 {
     size_t actionsSize = cJSON_GetArraySize(actions);
     size_t i;
@@ -116,7 +116,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
         size_t conditionsSize = cJSON_GetArraySize(conditions);
         for (i = 0; i < conditionsSize; i++) {
             cJSON* c = cJSON_GetArrayItem(conditions, i);
-            struct nm_condition* tmp = nm_condition_from_json(c);
+            struct nm_condition* tmp = nm_condition_from_json(c, logger);
             if (tmp == NULL) {
                 return false;
             }
@@ -128,7 +128,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
     return true;
 }
 
-struct nm_policy* nm_policy_from_json(const cJSON* json)
+struct nm_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
         return false;
@@ -147,20 +147,20 @@ struct nm_policy* nm_policy_from_json(const cJSON* json)
         return NULL;
     }
 
-    if (nm_policy_from_json_parse(statements, policy)) {
+    if (nm_policy_from_json_parse(statements, policy, logger)) {
         return policy;
     }
     nm_policy_free(policy);
     return NULL;
 }
 
-bool nm_policy_from_json_parse(const cJSON* statements, struct nm_policy* policy)
+bool nm_policy_from_json_parse(const cJSON* statements, struct nm_policy* policy, struct nn_log* logger)
 {
     size_t count = cJSON_GetArraySize(statements);
     size_t i;
     for (i = 0; i < count; i++) {
         cJSON* statement = cJSON_GetArrayItem(statements, i);
-        struct nm_statement* s = nm_statement_from_json(statement);
+        struct nm_statement* s = nm_statement_from_json(statement, logger);
         if (s == NULL) {
             return false;
         }

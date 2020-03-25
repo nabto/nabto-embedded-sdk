@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(parse_c1)
     struct nm_condition* c;
     cJSON* json = cJSON_Parse(c1.c_str());
     BOOST_TEST(json);
-    c = nm_condition_from_json(json);
+    c = nm_condition_from_json(json, NULL);
     BOOST_TEST(c);
     BOOST_TEST(c->op == NM_CONDITION_OPERATOR_STRING_EQUALS);
     BOOST_TEST(strcmp(c->key, "var1") == 0);
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(parse_c2)
     struct nm_condition* c;
     cJSON* json = cJSON_Parse(c2.c_str());
     BOOST_TEST(json);
-    c = nm_condition_from_json(json);
+    c = nm_condition_from_json(json, NULL);
     BOOST_TEST(c);
     BOOST_TEST(c->op == NM_CONDITION_OPERATOR_BOOL);
     BOOST_TEST(strcmp(c->key, "var1") == 0);
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(parse_fail1)
     struct nm_condition* c;
     cJSON* json = cJSON_Parse(i1.c_str());
     BOOST_TEST(json);
-    c = nm_condition_from_json(json);
+    c = nm_condition_from_json(json, NULL);
     BOOST_TEST(!c);
 }
 BOOST_AUTO_TEST_CASE(parse_fail2)
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(parse_fail2)
     struct nm_condition* c;
     cJSON* json = cJSON_Parse(i2.c_str());
     BOOST_TEST(json);
-    c = nm_condition_from_json(json);
+    c = nm_condition_from_json(json, NULL);
     BOOST_TEST(!c);
 }
 BOOST_AUTO_TEST_CASE(parse_fail3)
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(parse_fail3)
     struct nm_condition* c;
     cJSON* json = cJSON_Parse(i3.c_str());
     BOOST_TEST(json);
-    c = nm_condition_from_json(json);
+    c = nm_condition_from_json(json, NULL);
     BOOST_TEST(!c);
 }
 

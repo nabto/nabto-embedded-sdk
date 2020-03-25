@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(parse1)
     struct nm_policy* p;
     cJSON* json = cJSON_Parse(p1.c_str());
     BOOST_TEST(json);
-    p = nm_policy_from_json(json);
+    p = nm_policy_from_json(json, NULL);
     BOOST_TEST(strcmp(p->id, "Policy1") == 0);
     BOOST_TEST(np_vector_size(&p->statements) == (size_t)2);
 }
