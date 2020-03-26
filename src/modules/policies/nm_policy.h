@@ -4,7 +4,7 @@
 #include "nm_effect.h"
 #include "nm_statement.h"
 
-#include <platform/np_vector.h>
+#include <nn/vector.h>
 #include <platform/np_string_map.h>
 
 #ifdef __cplusplus
@@ -13,7 +13,7 @@ extern "C" {
 
 struct nm_policy {
     char* id;
-    struct np_vector statements;
+    struct nn_vector statements;
 };
 
 struct nm_policy* nm_policy_new(const char* id);
@@ -21,7 +21,7 @@ struct nm_policy* nm_policy_new(const char* id);
 void nm_policy_free(struct nm_policy* poilicy);
 
 // Add statement to a policy, this takes ownership over the statement.
-np_error_code nm_policy_add_statement(struct nm_policy* policy, struct nm_statement* stmt);
+bool nm_policy_add_statement(struct nm_policy* policy, struct nm_statement* stmt);
 
 enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, const struct np_string_map* attributes);
 

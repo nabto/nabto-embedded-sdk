@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(parse_statement2)
     BOOST_TEST(s);
     BOOST_TEST(s->effect == NM_EFFECT_DENY);
     BOOST_TEST(nn_string_set_contains(&s->actions, "action2"));
-    BOOST_TEST(np_vector_size(&s->conditions) == (size_t)2);
+    BOOST_TEST(nn_vector_size(&s->conditions) == (size_t)2);
 }
 
 BOOST_AUTO_TEST_CASE(parse_statement_fail1)

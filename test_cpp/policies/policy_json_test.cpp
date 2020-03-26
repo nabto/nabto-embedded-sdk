@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(parse1)
     BOOST_TEST(json);
     p = nm_policy_from_json(json, NULL);
     BOOST_TEST(strcmp(p->id, "Policy1") == 0);
-    BOOST_TEST(np_vector_size(&p->statements) == (size_t)2);
+    BOOST_TEST(nn_vector_size(&p->statements) == (size_t)2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -2,7 +2,7 @@
 #define _NM_STATEMENT_H_
 
 #include "nm_effect.h"
-#include <platform/np_vector.h>
+#include <nn/vector.h>
 #include <nn/string_set.h>
 #include <platform/np_string_map.h>
 
@@ -11,7 +11,7 @@
 struct nm_statement {
     enum nm_effect effect;
     struct nn_string_set actions;
-    struct np_vector conditions;
+    struct nn_vector conditions;
 };
 
 struct nm_statement* nm_statement_new();

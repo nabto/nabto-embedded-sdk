@@ -5,6 +5,8 @@
 
 #include <nn/string_set.h>
 
+#include <string.h>
+
 static bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement, struct nn_log* logger);
 static bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition, struct nn_log* logger);
 static bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy, struct nn_log* logger);
@@ -122,7 +124,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
             if (tmp == NULL) {
                 return false;
             }
-            if (np_vector_push_back(&statement->conditions, tmp) != NABTO_EC_OK) {
+            if (!nn_vector_push_back(&statement->conditions, &tmp)) {
                 return false;
             }
         }
@@ -166,7 +168,7 @@ bool nm_policy_from_json_parse(const cJSON* statements, struct nm_policy* policy
         if (s == NULL) {
             return false;
         }
-        np_vector_push_back(&policy->statements, s);
+        nn_vector_push_back(&policy->statements, &s);
     }
     return true;
 }

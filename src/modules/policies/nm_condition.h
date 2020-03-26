@@ -1,8 +1,6 @@
 #ifndef _NM_CONDITION_H_
 #define _NM_CONDITION_H_
 
-#include <platform/np_vector.h>
-
 #include <platform/np_string_map.h>
 
 #include <nn/string_set.h>

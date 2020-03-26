@@ -9,8 +9,6 @@
 
 static enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes);
 
-static void condition_free(void* condition);
-
 struct nm_statement* nm_statement_new(enum nm_effect effect)
 {
     struct nm_statement* statement = calloc(1, sizeof(struct nm_statement));
@@ -19,14 +17,21 @@ struct nm_statement* nm_statement_new(enum nm_effect effect)
     }
     statement->effect = effect;
     nn_string_set_init(&statement->actions);
-    np_vector_init(&statement->conditions, &condition_free);
+    nn_vector_init(&statement->conditions, sizeof(void*));
     return statement;
 }
 
 void nm_statement_free(struct nm_statement* statement)
 {
     nn_string_set_deinit(&statement->actions);
-    np_vector_deinit(&statement->conditions);
+
+
+    struct nm_condition* condition;
+    NN_VECTOR_FOREACH(&condition, &statement->conditions) {
+        nm_condition_free(condition);
+    }
+
+    nn_vector_deinit(&statement->conditions);
 }
 
 enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct np_string_map* attributes)
@@ -56,7 +61,7 @@ bool nm_statement_add_action(struct nm_statement* statement, const char* action)
 enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes)
 {
     const struct nm_condition* condition;
-    NP_VECTOR_FOREACH(condition, &statement->conditions)
+    NN_VECTOR_FOREACH(&condition, &statement->conditions)
     {
         enum nm_condition_result r = nm_condition_matches(condition, attributes);
         if (r == NM_CONDITION_RESULT_NO_MATCH || r == NM_CONDITION_RESULT_ERROR) {
@@ -64,10 +69,4 @@ enum nm_condition_result match_conditions(const struct nm_statement* statement, 
         }
     }
     return NM_CONDITION_RESULT_MATCH;
-}
-
-void condition_free(void* condition)
-{
-    struct nm_condition* cond = condition;
-    nm_condition_free(cond);
 }

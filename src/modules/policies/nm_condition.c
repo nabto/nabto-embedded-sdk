@@ -3,6 +3,7 @@
 #include <platform/np_string_map.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs);
 static bool resolve_value(const struct np_string_map* attributes, const char* value, const char** out);
