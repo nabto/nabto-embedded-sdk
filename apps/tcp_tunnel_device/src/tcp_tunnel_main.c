@@ -347,8 +347,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
-
-
     nabto_device_set_product_id(device, dc.productId);
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);

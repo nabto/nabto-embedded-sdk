@@ -4,6 +4,7 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/nn/src)
 set(src
   ${src_dir}/nn/log.c
   ${src_dir}/nn/vector.c
+  ${src_dir}/nn/string_set.c
   )
 
 add_library(3rdparty_nn "${src}")

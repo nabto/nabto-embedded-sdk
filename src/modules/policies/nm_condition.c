@@ -27,12 +27,12 @@ void nm_condition_free(struct nm_condition* condition)
 
 void nm_condition_init(struct nm_condition* condition)
 {
-    np_string_set_init(&condition->values);
+    nn_string_set_init(&condition->values);
 }
 
 void nm_condition_deinit(struct nm_condition* condition)
 {
-    np_string_set_deinit(&condition->values);
+    nn_string_set_deinit(&condition->values);
     free(condition->key);
     condition->key = NULL;
 }
@@ -106,12 +106,8 @@ enum nm_condition_result nm_condition_matches(const struct nm_condition* conditi
 
     const char* attribute = item->value;
 
-    struct np_string_set_iterator it;
-    for (np_string_set_front(&condition->values, &it);
-         !np_string_set_end(&it);
-         np_string_set_next(&it))
-    {
-        const char* v = np_string_set_get_element(&it);
+    const char* v;
+    NN_STRING_SET_FOREACH(v, &condition->values) {
         const char* resolvedValue;
         // If the value is a variable we try to resolve it to a string
         // else interpret it as a string.

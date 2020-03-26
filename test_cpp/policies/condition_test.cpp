@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(condition_match)
     nm_condition_init(&c);
     c.op = NM_CONDITION_OPERATOR_STRING_EQUALS;
     c.key = strdup("foo");
-    np_string_set_add(&c.values, "bar");
+    nn_string_set_insert(&c.values, "bar");
 
     {
         struct np_string_map attributes;
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(condition_variable)
     nm_condition_init(&c);
     c.op = NM_CONDITION_OPERATOR_STRING_EQUALS;
     c.key = strdup("IAM:UserId");
-    np_string_set_add(&c.values, "${Connection:UserId}");
+    nn_string_set_insert(&c.values, "${Connection:UserId}");
 
     {
         struct np_string_map attributes;

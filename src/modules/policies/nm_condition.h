@@ -2,8 +2,10 @@
 #define _NM_CONDITION_H_
 
 #include <platform/np_vector.h>
-#include <platform/np_string_set.h>
+
 #include <platform/np_string_map.h>
+
+#include <nn/string_set.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +33,7 @@ struct nm_condition {
     enum nm_condition_operator op;
     char* key;
 
-    struct np_string_set values;
+    struct nn_string_set values;
 };
 
 struct nm_condition* nm_condition_new(enum nm_condition_operator op);

@@ -6,10 +6,11 @@
 #include "nm_condition.h"
 
 #include <platform/np_vector.h>
+#include <nn/string_set.h>
 
 static cJSON* nm_condition_to_json(const struct nm_condition* condition);
 static cJSON* nm_conditions_to_json(const struct np_vector* conditions);
-static cJSON* nm_string_set_to_json(const struct np_string_set* set);
+static cJSON* nm_string_set_to_json(const struct nn_string_set* set);
 static cJSON* nm_statement_to_json(const struct nm_statement* statement);
 static cJSON* nm_statements_to_json(const struct np_vector* statements);
 
@@ -49,15 +50,12 @@ cJSON* nm_conditions_to_json(const struct np_vector* conditions)
     return array;
 }
 
-cJSON* nm_string_set_to_json(const struct np_string_set* set)
+cJSON* nm_string_set_to_json(const struct nn_string_set* set)
 {
     cJSON* array = cJSON_CreateArray();
-    struct np_string_set_iterator it;
-    for(np_string_set_front(set, &it);
-        !np_string_set_end(&it);
-        np_string_set_next(&it))
-    {
-        cJSON_AddItemToArray(array, cJSON_CreateString(np_string_set_get_element(&it)));
+    const char* str;
+    NN_STRING_SET_FOREACH(str, set) {
+        cJSON_AddItemToArray(array, cJSON_CreateString(str));
     }
     return array;
 }

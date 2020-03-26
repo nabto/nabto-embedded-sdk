@@ -3,12 +3,12 @@
 
 #include "nm_effect.h"
 #include <platform/np_vector.h>
-#include <platform/np_string_set.h>
+#include <nn/string_set.h>
 #include <platform/np_string_map.h>
 
 struct nm_statement {
     enum nm_effect effect;
-    struct np_string_set actions;
+    struct nn_string_set actions;
     struct np_vector conditions;
 };
 

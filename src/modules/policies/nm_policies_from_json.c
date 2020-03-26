@@ -3,6 +3,8 @@
 #include "nm_statement.h"
 #include "nm_policy.h"
 
+#include <nn/string_set.h>
+
 static bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement, struct nn_log* logger);
 static bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition, struct nn_log* logger);
 static bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy, struct nn_log* logger);
@@ -52,7 +54,7 @@ bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* conditio
         if (!cJSON_IsString(value)) {
             return false;
         }
-        np_string_set_add(&condition->values, value->valuestring);
+        nn_string_set_insert(&condition->values, value->valuestring);
     }
 
     return true;

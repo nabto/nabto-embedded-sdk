@@ -40,9 +40,9 @@ BOOST_AUTO_TEST_CASE(parse_c1)
     BOOST_TEST(c);
     BOOST_TEST(c->op == NM_CONDITION_OPERATOR_STRING_EQUALS);
     BOOST_TEST(strcmp(c->key, "var1") == 0);
-    BOOST_TEST(np_string_set_contains(&c->values, "val1"));
-    BOOST_TEST(np_string_set_contains(&c->values, "val2"));
-    BOOST_TEST(np_string_set_contains(&c->values, "val3"));
+    BOOST_TEST(nn_string_set_contains(&c->values, "val1"));
+    BOOST_TEST(nn_string_set_contains(&c->values, "val2"));
+    BOOST_TEST(nn_string_set_contains(&c->values, "val3"));
 }
 
 BOOST_AUTO_TEST_CASE(parse_c2)
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(parse_c2)
     BOOST_TEST(c);
     BOOST_TEST(c->op == NM_CONDITION_OPERATOR_BOOL);
     BOOST_TEST(strcmp(c->key, "var1") == 0);
-    BOOST_TEST(np_string_set_contains(&c->values, "true"));
+    BOOST_TEST(nn_string_set_contains(&c->values, "true"));
 }
 
 BOOST_AUTO_TEST_CASE(parse_fail1)

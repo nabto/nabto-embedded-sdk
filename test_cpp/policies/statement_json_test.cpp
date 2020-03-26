@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(parse_statement1)
     s = nm_statement_from_json(json, NULL);
     BOOST_TEST(s);
     BOOST_TEST(s->effect == NM_EFFECT_ALLOW);
-    BOOST_TEST(np_string_set_contains(&s->actions, "foo"));
+    BOOST_TEST(nn_string_set_contains(&s->actions, "foo"));
 }
 
 BOOST_AUTO_TEST_CASE(parse_statement2)
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(parse_statement2)
     s = nm_statement_from_json(json, NULL);
     BOOST_TEST(s);
     BOOST_TEST(s->effect == NM_EFFECT_DENY);
-    BOOST_TEST(np_string_set_contains(&s->actions, "action2"));
+    BOOST_TEST(nn_string_set_contains(&s->actions, "action2"));
     BOOST_TEST(np_vector_size(&s->conditions) == (size_t)2);
 }
 

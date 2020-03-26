@@ -1,6 +1,11 @@
 #include "nm_statement.h"
 #include "nm_condition.h"
+
+#include <nn/string_set.h>
+
 #include <stdlib.h>
+
+
 
 static enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes);
 
@@ -13,20 +18,20 @@ struct nm_statement* nm_statement_new(enum nm_effect effect)
         return NULL;
     }
     statement->effect = effect;
-    np_string_set_init(&statement->actions);
+    nn_string_set_init(&statement->actions);
     np_vector_init(&statement->conditions, &condition_free);
     return statement;
 }
 
 void nm_statement_free(struct nm_statement* statement)
 {
-    np_string_set_deinit(&statement->actions);
+    nn_string_set_deinit(&statement->actions);
     np_vector_deinit(&statement->conditions);
 }
 
 enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct np_string_map* attributes)
 {
-    if (!np_string_set_contains(&statement->actions, action)) {
+    if (!nn_string_set_contains(&statement->actions, action)) {
         return NM_EFFECT_NO_MATCH;
     }
 
@@ -45,7 +50,7 @@ enum nm_effect nm_statement_eval(const struct nm_statement* statement, const cha
 
 np_error_code nm_statement_add_action(struct nm_statement* statement, const char* action)
 {
-    return np_string_set_add(&statement->actions, action);
+    return nn_string_set_insert(&statement->actions, action);
 }
 
 enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes)
