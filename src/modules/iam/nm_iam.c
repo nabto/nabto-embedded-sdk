@@ -8,8 +8,11 @@
 #include <modules/policies/nm_effect.h>
 #include <modules/policies/nm_policy.h>
 
+#include <nn/log.h>
+
 #include <stdlib.h>
 
+static const char* LOGM = "iam";
 
 static enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct np_string_map* attributes);
 static enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct np_string_map* attributes);
@@ -82,7 +85,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
     } else {
         struct nm_iam_role* unpaired = nm_iam_find_role(iam, "Unpaired");
         if (unpaired == NULL) {
-            printf("The role Unpaired does not exists, rejecting the request");
+            NN_LOG_ERROR(iam->logger, LOGM, "The role Unpaired does not exists, rejecting the request");
             effect = NM_EFFECT_ERROR;
         } else {
             effect = nm_iam_check_access_role(iam, unpaired, action, &attributes);
@@ -94,7 +97,14 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
         verdict = true;
     }
 
-    printf("IAM access request action: %s, verdict: %s\n", action, verdict?"ALLOW":"DENY");
+    const char* userId;
+    if (user) {
+        userId = user->id;
+    } else {
+        userId = "Not Paired";
+    }
+
+    NN_LOG_INFO(iam->logger, LOGM, "IAM access from the user: %s, request action: %s, verdict: %s", userId, action, verdict?"ALLOW":"DENY");
 
     return verdict;
 }
@@ -110,7 +120,7 @@ enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* 
     {
         struct nm_iam_role* role = nm_iam_find_role(iam, roleStr);
         if (role == NULL) {
-            printf("Role %s does not exists\n", roleStr);
+            NN_LOG_ERROR(iam->logger, LOGM, "The role %s does not exists", roleStr);
             return NM_EFFECT_ERROR;
         }
 
@@ -235,7 +245,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
     }
 
     if (nm_iam_find_role(iam, roleStr) == NULL) {
-        printf("Warning missing the Role '%s' so the user cannot be paired.\n", roleStr);
+        NN_LOG_ERROR(iam->logger, LOGM, "The role '%s' does not exists so the user cannot be paired.\n", roleStr);
         return NULL;
     }
 

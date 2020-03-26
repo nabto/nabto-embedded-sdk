@@ -61,7 +61,6 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    printf("Paired the user with the fingerprint %s\n", fingerprint);
     // OK response
     nabto_device_coap_response_set_code(request, 201);
     nabto_device_coap_response_ready(request);
