@@ -337,6 +337,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     if (!load_iam_config(&iamConfig, tunnel->iamConfigFile, &logger)) {
         print_iam_config_load_failed(tunnel->iamConfigFile);
+        return false;
     }
 
     struct tcp_tunnel_state tcpTunnelState;

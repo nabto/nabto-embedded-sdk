@@ -6,6 +6,8 @@
 #include <nn/string_set.h>
 #include <platform/np_string_map.h>
 
+#include <stdbool.h>
+
 struct nm_statement {
     enum nm_effect effect;
     struct nn_string_set actions;
@@ -18,6 +20,6 @@ void nm_statement_free(struct nm_statement* statement);
 
 enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct np_string_map* attributes);
 
-np_error_code nm_statement_add_action(struct nm_statement* statement, const char* action);
+bool nm_statement_add_action(struct nm_statement* statement, const char* action);
 
 #endif

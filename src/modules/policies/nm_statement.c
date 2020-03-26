@@ -48,7 +48,7 @@ enum nm_effect nm_statement_eval(const struct nm_statement* statement, const cha
 
 }
 
-np_error_code nm_statement_add_action(struct nm_statement* statement, const char* action)
+bool nm_statement_add_action(struct nm_statement* statement, const char* action)
 {
     return nn_string_set_insert(&statement->actions, action);
 }

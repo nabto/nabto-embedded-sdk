@@ -109,7 +109,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
         if (!cJSON_IsString(action)) {
             return false;
         }
-        if (nm_statement_add_action(statement, action->valuestring) != NABTO_EC_OK) {
+        if (!nm_statement_add_action(statement, action->valuestring)) {
             return false;
         }
     }
