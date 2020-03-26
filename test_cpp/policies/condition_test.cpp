@@ -98,20 +98,50 @@ BOOST_AUTO_TEST_CASE(condition_match)
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);
         np_string_map_deinit(&attributes);
     }
+    nm_condition_deinit(&c);
 }
 
-// BOOST_AUTO_TEST_CASE(condition_variable)
-// {
-//     Condition c(Condition::Operator::StringEquals, "IAM:UserId", {"${Connection:UserId}"});
-//     Attributes a;
+BOOST_AUTO_TEST_CASE(condition_variable)
+{
+    struct nm_condition c;
+    nm_condition_init(&c);
+    c.op = NM_CONDITION_OPERATOR_STRING_EQUALS;
+    c.key = strdup("IAM:UserId");
+    np_string_set_add(&c.values, "${Connection:UserId}");
 
-//     BOOST_TEST(c.matches(a) == Condition::Result::NO_MATCH);
-//     a.set("IAM:UserId", "someuser");
-//     BOOST_TEST(c.matches(a) == Condition::Result::NO_MATCH);
-//     a.set("Connection:UserId", "somebar");
-//     BOOST_TEST(c.matches(a) == Condition::Result::NO_MATCH);
-//     a.set("Connection:UserId", "someuser");
-//     BOOST_TEST(c.matches(a) == Condition::Result::MATCH);
-// }
+    {
+        struct np_string_map attributes;
+        np_string_map_init(&attributes);
+
+        BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        np_string_map_deinit(&attributes);
+    }
+
+    {
+        struct np_string_map attributes;
+        np_string_map_init(&attributes);
+        np_string_map_insert(&attributes, "IAM:UserId", "someuser");
+        BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        np_string_map_deinit(&attributes);
+    }
+    {
+        struct np_string_map attributes;
+        np_string_map_init(&attributes);
+        np_string_map_insert(&attributes, "IAM:UserId", "someuser");
+        np_string_map_insert(&attributes, "Connection:UserId", "somebar");
+        BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        np_string_map_deinit(&attributes);
+    }
+    {
+        struct np_string_map attributes;
+        np_string_map_init(&attributes);
+        np_string_map_insert(&attributes, "IAM:UserId", "someuser");
+        np_string_map_insert(&attributes, "Connection:UserId", "someuser");
+        BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);
+        np_string_map_deinit(&attributes);
+    }
+
+    nm_condition_deinit(&c);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
