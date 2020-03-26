@@ -99,12 +99,12 @@ void print_device_config_load_failed(const char* fileName)
     printf("Could not open or parse the device config file (%s)." NEWLINE, fileName);
     printf("Please ensure the file exists and has the following format." NEWLINE);
     printf("{" NEWLINE);
-    printf("  \"ProductId\": \"<product_id>\"," NEWLINE);
-    printf("  \"DeviceId\": \"<device_id>\"," NEWLINE);
-    printf("  \"Server\": \"<hostname>\"," NEWLINE);
+    printf("  \"ProductId\": \"pr-abcd1234\"," NEWLINE);
+    printf("  \"DeviceId\": \"de-abcd1234\"," NEWLINE);
+    printf("  \"Server\": \"pr-abcd1234.devices.nabto.net or pr-abcd1234.devices.dev.nabto.net or something else.\"," NEWLINE);
     printf("  \"client\": {" NEWLINE);
-    printf("    \"ServerKey\": \"<server_key>\"," NEWLINE);
-    printf("    \"ServerUrl\": \"<server_url>\"," NEWLINE);
+    printf("    \"ServerKey\": \"sk-...\"," NEWLINE);
+    printf("    \"ServerUrl\": \"https://pr-abcd1234.clients.dev.nabto.net or https://pr-abcd1234.clients.nabto.net or something else\"," NEWLINE);
     printf("  }" NEWLINE);
     printf("}" NEWLINE);
 }
