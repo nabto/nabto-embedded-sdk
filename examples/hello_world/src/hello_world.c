@@ -330,5 +330,5 @@ void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, NabtoDeviceFutu
     if (l) {
         nabto_device_listener_free(l);
     }
-    printf(msg);
+    printf("%s", msg);
 }

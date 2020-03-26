@@ -28,7 +28,7 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
     va_list list;
 
     for (i = 0; i < chunks; i++) {
-        ret = sprintf(str, "%04lx: ", i*16);
+        ret = sprintf(str, "%04lx: ", (long unsigned int)(i*16));
         ptr = str + ret;
         for (n = 0; n < 16; n++) {
             ret = sprintf(ptr, "%02x ", buf[i*16+n]);
@@ -48,7 +48,7 @@ void nm_unix_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
         }
         nm_unix_log(severity, module, line, file, str, list);
     }
-    ret = sprintf(str, "%04lx: ", chunks*16);
+    ret = sprintf(str, "%04lx: ", (long unsigned int)(chunks*16));
     ptr = str + ret;
     for (n = chunks*16; n < len; n++) {
         ret = sprintf(ptr, "%02x ", buf[n]);
