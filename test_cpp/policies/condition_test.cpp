@@ -74,16 +74,30 @@ BOOST_AUTO_TEST_CASE(condition_match)
     c.key = strdup("foo");
     np_string_set_add(&c.values, "bar");
 
-    struct np_string_map attributes;
-    np_string_map_init(&attributes);
+    {
+        struct np_string_map attributes;
+        np_string_map_init(&attributes);
 
-    BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        np_string_map_deinit(&attributes);
+    }
 
-    np_string_map_insert(&attributes, "foo", "baz");
-    BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+    {
+        struct np_string_map attributes;
+        np_string_map_init(&attributes);
+        np_string_map_insert(&attributes, "foo", "baz");
+        BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        np_string_map_deinit(&attributes);
+    }
 
-    np_string_map_insert(&attributes, "foo", "bar");
-    BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);
+    {
+        struct np_string_map attributes;
+        np_string_map_init(&attributes);
+
+        np_string_map_insert(&attributes, "foo", "bar");
+        BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);
+        np_string_map_deinit(&attributes);
+    }
 }
 
 // BOOST_AUTO_TEST_CASE(condition_variable)

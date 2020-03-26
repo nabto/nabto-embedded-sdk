@@ -177,11 +177,11 @@ enum nm_condition_result bool_equals(const char* lhs, const char* rhs)
 
 enum nm_condition_result string_equals(const char* lhs, const char* rhs)
 {
-    return (strcmp(lhs, rhs) == 0);
+    return status(strcmp(lhs, rhs) == 0);
 }
 enum nm_condition_result string_not_equals(const char* lhs, const char* rhs)
 {
-    return (strcmp(lhs, rhs) != 0);
+    return status(strcmp(lhs, rhs) != 0);
 }
 
 static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs)

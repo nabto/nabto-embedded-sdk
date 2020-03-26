@@ -39,6 +39,7 @@ set(test_src
   policies/condition_json_test.cpp
   policies/statement_json_test.cpp
   policies/policy_json_test.cpp
+  policies/policy_deny_test.cpp
   iam/condition_test.cpp
   iam/save_users.cpp
 
