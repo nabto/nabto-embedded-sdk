@@ -13,7 +13,9 @@ enum nabto_protocol_error_codes {
     UNKNOWN_PRODUCT_ID = 3,
     UNKNOWN_DEVICE_ID = 4,
     UNKNOWN_DEVICE_FINGERPRINT = 5,
-    REJECTED_SERVER_CONNECT_TOKEN = 6
+    REJECTED_SERVER_CONNECT_TOKEN = 6,
+    WRONG_PRODUCT_ID = 7,
+    WRONG_DEVICE_ID = 8
 };
 
 enum nc_coap_rest_error nc_coap_rest_error_handle_response(struct nabto_coap_client_response* response)
@@ -55,6 +57,10 @@ enum nc_coap_rest_error nc_coap_rest_error_handle_response(struct nabto_coap_cli
                 NABTO_LOG_TRACE(LOG, "CoAP response, code: %d, message: %.*s", code, messageSize, messageBuffer);
                 if (code == UNKNOWN_DEVICE_FINGERPRINT) {
                     return NC_COAP_REST_ERROR_UNKNOWN_DEVICE_FINGERPRINT;
+                } else if (code == WRONG_PRODUCT_ID) {
+                    return NC_COAP_REST_ERROR_WRONG_PRODUCT_ID;
+                } else if (code == WRONG_DEVICE_ID) {
+                    return NC_COAP_REST_ERROR_WRONG_DEVICE_ID;
                 }
             }
         } else {

@@ -70,7 +70,7 @@ const char* device_severity_as_string(NabtoDeviceLogLevel severity)
 void device_log(NabtoDeviceLogMessage* msg, void* data)
 {
     printf("%s:%s %s - ", truncated_file_name(msg->file), line_as_str(msg->line), device_severity_as_string(msg->severity));
-    printf(" %s\n", msg->message);
+    printf("%s\n", msg->message);
 }
 
 const char* nn_log_severity_as_str(enum nn_log_severity severity)
