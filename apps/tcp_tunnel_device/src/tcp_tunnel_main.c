@@ -84,7 +84,7 @@ void print_help()
     printf(" -v, --version, Print version info" NEWLINE);
     printf(" -H, --homedir, Specify the homedir for the configuration files" NEWLINE);
     printf("   , --show-state, Show the state of the TCP Tunnelling Device" NEWLINE);
-    printf("   , --log-level, Set the log level to use, valid options is error,warn,info,trace" NEWLINE);
+    printf("   , --log-level, Set the log level to use, valid options is error,warn,info,trace. The default level is error" NEWLINE);
     printf(NEWLINE);
     printf("The following configuration files exists:" NEWLINE);
     printf(" - HOME_DIR/%s this file contains product id, device id and optionally settings the client needs to connect to the device" NEWLINE, DEVICE_CONFIG_FILE);
@@ -124,9 +124,21 @@ void print_start_text(struct args* args)
     printf("TCP Tunnel Device" NEWLINE);
 }
 
-void print_private_key_file_load_failed(const char* fileName, const char* errorText)
+void print_private_key_file_load_failed(const char* fileName)
 {
-    printf("Could not load the private key (%s) reason: %s" NEWLINE, fileName, errorText);
+    printf("Could not load the private key (%s) see error log for further details." NEWLINE, fileName);
+}
+
+bool check_log_level(const char* level)
+{
+    if (strcmp(level, "error") == 0 ||
+        strcmp(level, "warn") == 0 ||
+        strcmp(level, "info") == 0 ||
+        strcmp(level, "trace") == 0)
+    {
+        return true;
+    }
+    return false;
 }
 
 static bool parse_args(int argc, char** argv, struct args* args)
@@ -157,7 +169,17 @@ static bool parse_args(int argc, char** argv, struct args* args)
     if (gopt(options, OPTION_SHOW_STATE)) {
         args->showState = true;
     }
-    gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel);
+
+    if (gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel)) {
+
+    } else {
+        args->logLevel = "error";
+    }
+
+    if (!check_log_level(args->logLevel)) {
+        printf("The log level %s is not valid" NEWLINE, args->logLevel);
+    }
+
     const char* hd = NULL;
     if (gopt_arg(options, OPTION_HOME_DIR, &hd)) {
         args->homeDir = strdup(hd);
@@ -236,113 +258,127 @@ void print_item(const char* item)
     printf("%.*s", (int)spacesSize, spaces);
 }
 
+bool handle_main(struct args* args, struct tcp_tunnel* tunnel);
+
 int main(int argc, char** argv)
 {
     struct args args;
-
     args_init(&args);
-    parse_args(argc, argv, &args);
-
-    if (args.showHelp) {
+    if (!parse_args(argc, argv, &args)) {
+        printf("Could not parse arguments.");
         print_help();
-        return 0;
-    } else if (args.showVersion) {
-        print_version();
-        return 0;
+        args_deinit(&args);
+        return 1;
     }
 
-    const char* homeEnv = getenv("HOME");
-    if (args.homeDir != NULL) {
-        // perfect just using the homeDir
-    } else if (homeEnv != NULL) {
-        args.homeDir = expand_file_name(homeEnv, ".nabto");
-    } else {
-        printf("Missing HomeDir option or HOME environment variable one of these needs to be set.");
-        exit(1);
-    }
+
 
     struct tcp_tunnel tunnel;
     tcp_tunnel_init(&tunnel);
 
-    tunnel.deviceConfigFile = expand_file_name(args.homeDir, DEVICE_CONFIG_FILE);
-    tunnel.stateFile = expand_file_name(args.homeDir, TCP_TUNNEL_STATE_FILE);
-    tunnel.iamConfigFile = expand_file_name(args.homeDir, TCP_TUNNEL_IAM_FILE);
-    tunnel.servicesFile = expand_file_name(args.homeDir, TCP_TUNNEL_SERVICES_FILE);
+    bool status = handle_main(&args, &tunnel);
+
+    tcp_tunnel_deinit(&tunnel);
+    args_deinit(&args);
+
+    if (status) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
+{
+    if (args->showHelp) {
+        print_help();
+        return true;
+    } else if (args->showVersion) {
+        print_version();
+        return true;
+    }
+
+    const char* homeEnv = getenv("HOME");
+    if (args->homeDir != NULL) {
+        // perfect just using the homeDir
+    } else if (homeEnv != NULL) {
+        args->homeDir = expand_file_name(homeEnv, ".nabto");
+    } else {
+        printf("Missing HomeDir option or HOME environment variable one of these needs to be set." NEWLINE);
+        return false;
+    }
+
+    tunnel->deviceConfigFile = expand_file_name(args->homeDir, DEVICE_CONFIG_FILE);
+    tunnel->stateFile = expand_file_name(args->homeDir, TCP_TUNNEL_STATE_FILE);
+    tunnel->iamConfigFile = expand_file_name(args->homeDir, TCP_TUNNEL_IAM_FILE);
+    tunnel->servicesFile = expand_file_name(args->homeDir, TCP_TUNNEL_SERVICES_FILE);
 
 
     struct device_config dc;
     device_config_init(&dc);
 
     const char* errorText;
-    if (!load_device_config(tunnel.deviceConfigFile, &dc, &errorText)) {
-        print_device_config_load_failed(tunnel.deviceConfigFile, errorText);
+    if (!load_device_config(tunnel->deviceConfigFile, &dc, &errorText)) {
+        print_device_config_load_failed(tunnel->deviceConfigFile, errorText);
         exit(1);
     }
 
     char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
-    tunnel.privateKeyFile = expand_file_name(args.homeDir, privateKeyFileName);
+    tunnel->privateKeyFile = expand_file_name(args->homeDir, privateKeyFileName);
     free(privateKeyFileName);
 
     struct iam_config iamConfig;
     iam_config_init(&iamConfig);
 
-    if (!load_iam_config(&iamConfig, tunnel.iamConfigFile, &errorText)) {
-        print_iam_config_load_failed(tunnel.iamConfigFile, errorText);
+    if (!load_iam_config(&iamConfig, tunnel->iamConfigFile, &errorText)) {
+        print_iam_config_load_failed(tunnel->iamConfigFile, errorText);
     }
 
     struct tcp_tunnel_state tcpTunnelState;
     tcp_tunnel_state_init(&tcpTunnelState);
 
-    if (!load_tcp_tunnel_state(&tcpTunnelState, tunnel.stateFile, &errorText)) {
-        print_tcp_tunnel_state_load_failed(tunnel.stateFile, errorText);
+    if (!load_tcp_tunnel_state(&tcpTunnelState, tunnel->stateFile, &errorText)) {
+        print_tcp_tunnel_state_load_failed(tunnel->stateFile, errorText);
     }
 
     NabtoDevice* device = nabto_device_new();
-
-    if (args.logLevel != NULL) {
-        nabto_device_set_log_std_out_callback(device);
-        nabto_device_set_log_level(device, args.logLevel);
-    }
-
-
 
     nabto_device_set_product_id(device, dc.productId);
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);
     nabto_device_enable_mdns(device);
-    nabto_device_set_log_callback(device, device_log, NULL);
+
+    struct nn_log logger;
+    init_logging(device, &logger, args->logLevel);
 
     struct nm_iam iam;
-    nm_iam_init(&iam, device);
+    nm_iam_init(&iam, device, &logger);
 
 
-
-    char* privateKey;
-    if (!load_or_create_private_key(device, tunnel.privateKeyFile, &privateKey, &errorText)) {
-        print_private_key_file_load_failed(tunnel.privateKeyFile, errorText);
+    if (!load_or_create_private_key(device, tunnel->privateKeyFile, &logger)) {
+        print_private_key_file_load_failed(tunnel->privateKeyFile);
+        return false;
     }
-
-    nabto_device_set_private_key(device, privateKey);
 
     if (tcpTunnelState.pairingPassword != NULL) {
         nm_iam_enable_password_pairing(&iam, tcpTunnelState.pairingPassword);
-        tunnel.pairingPassword = strdup(tcpTunnelState.pairingPassword);
+        tunnel->pairingPassword = strdup(tcpTunnelState.pairingPassword);
     }
 
     if (tcpTunnelState.pairingServerConnectToken != NULL) {
         nm_iam_enable_remote_pairing(&iam, tcpTunnelState.pairingServerConnectToken);
-        tunnel.pairingServerConnectToken = strdup(tcpTunnelState.pairingServerConnectToken);
+        tunnel->pairingServerConnectToken = strdup(tcpTunnelState.pairingServerConnectToken);
     }
 
     nm_iam_enable_client_settings(&iam, dc.clientServerUrl, dc.clientServerKey);
 
-    if (!load_tcp_tunnel_services(&tunnel.services, tunnel.servicesFile, &errorText))
+    if (!load_tcp_tunnel_services(&tunnel->services, tunnel->servicesFile, &errorText))
     {
-        printf("Failed to load TCP Services from (%s) reason: %s" NEWLINE, tunnel.servicesFile, errorText);
+        printf("Failed to load TCP Services from (%s) reason: %s" NEWLINE, tunnel->servicesFile, errorText);
     }
 
     struct tcp_tunnel_service* service;
-    NP_VECTOR_FOREACH(service, &tunnel.services)
+    NP_VECTOR_FOREACH(service, &tunnel->services)
     {
         nabto_device_add_tcp_tunnel_service(device, service->id, service->type, service->host, service->port);
     }
@@ -389,7 +425,7 @@ int main(int argc, char** argv)
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;
 
-    NP_VECTOR_FOREACH(item, &tunnel.services)
+    NP_VECTOR_FOREACH(item, &tunnel->services)
     {
         printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); printf("%d" NEWLINE, item->port);
     }
@@ -397,7 +433,7 @@ int main(int argc, char** argv)
 
 
 
-    if (args.showState) {
+    if (args->showState) {
         print_iam_state(&iam);
     } else {
         struct device_event_handler eventHandler;
@@ -429,14 +465,10 @@ int main(int argc, char** argv)
         device_event_handler_deinit(&eventHandler);
     }
 
-
-
     nabto_device_stop(device);
     nm_iam_deinit(&iam);
     nabto_device_free(device);
-
-    args_deinit(&args);
-
+    return true;
 }
 
 

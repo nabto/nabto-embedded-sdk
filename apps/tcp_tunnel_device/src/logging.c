@@ -6,6 +6,29 @@
 
 #include <stdio.h>
 
+static void device_log(NabtoDeviceLogMessage* msg, void* data);
+static void nn_log_function(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args);
+
+static int logMask = 0;
+
+void init_logging(NabtoDevice* device, struct nn_log* logger, const char* logLevel)
+{
+    nabto_device_set_log_callback(device, device_log, NULL);
+    nabto_device_set_log_level(device, logLevel);
+
+    nn_log_init(logger, nn_log_function, NULL);
+
+    if (strcmp(logLevel, "error") == 0) {
+        logMask = NN_LOG_SEVERITY_ERROR;
+    } else if (strcmp(logLevel, "warn") == 0) {
+        logMask = NN_LOG_SEVERITY_ERROR | NN_LOG_SEVERITY_WARN;
+    } else if (strcmp(logLevel, "info") == 0) {
+        logMask = NN_LOG_SEVERITY_ERROR | NN_LOG_SEVERITY_WARN | NN_LOG_SEVERITY_INFO;
+    } else if (strcmp(logLevel, "trace") == 0) {
+        logMask = NN_LOG_SEVERITY_ERROR | NN_LOG_SEVERITY_WARN | NN_LOG_SEVERITY_INFO | NN_LOG_SEVERITY_TRACE;
+    }
+}
+
 const char* truncated_file_name(const char* filename)
 {
     size_t len = strlen(filename);
@@ -44,29 +67,30 @@ const char* device_severity_as_string(NabtoDeviceLogLevel severity)
 }
 
 
-
 void device_log(NabtoDeviceLogMessage* msg, void* data)
 {
     printf("%s:%s %s", truncated_file_name(msg->file), line_as_str(msg->line), device_severity_as_string(msg->severity));
     printf(" %s\n", msg->message);
 }
 
-void log_function(enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args)
+const char* nn_log_severity_as_str(enum nn_log_severity severity)
 {
-    const char* severityStr = "NONE ";
-    if (severity == NN_LOG_SEVERITY_ERROR) {
-        severityStr = "ERROR";
-    } else if (severity == NN_LOG_SEVERITY_WARN) {
-        severityStr = "WARN ";
-    } else if (severity == NN_LOG_SEVERITY_INFO) {
-        severityStr = "INFO ";
-    } else if (severity == NN_LOG_SEVERITY_TRACE) {
-        severityStr = "TRACE";
+    switch(severity) {
+        case NN_LOG_SEVERITY_ERROR: return "ERROR";
+        case NN_LOG_SEVERITY_WARN:  return "WARN ";
+        case NN_LOG_SEVERITY_INFO:  return "INFO ";
+        case NN_LOG_SEVERITY_TRACE: return "TRACE";
     }
+    return "NONE ";
+}
 
-    printf("%s:%04d %s ", file, line, severityStr);
-    vprintf(fmt, args);
-    printf("\n");
+void nn_log_function(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args)
+{
+    if ((severity & logMask) != 0) {
+        printf("%s:%s %s ", truncated_file_name(file), line_as_str(line), nn_log_severity_as_str(severity));
+        vprintf(fmt, args);
+        printf("\n");
+    }
 }
 
 #endif

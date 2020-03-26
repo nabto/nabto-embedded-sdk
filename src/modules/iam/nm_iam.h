@@ -1,8 +1,11 @@
 #ifndef _NM_IAM_H_
 #define _NM_IAM_H_
 
+
 #include "nm_iam_coap_handler.h"
 #include "nm_iam_auth_handler.h"
+
+#include <nn/log.h>
 
 #include <platform/np_vector.h>
 #include <platform/np_string_map.h>
@@ -24,6 +27,7 @@ struct nm_iam_change_callbacks {
 
 struct nm_iam {
     NabtoDevice* device;
+    struct nn_log* logger;
     struct np_vector users;
     struct np_vector roles;
     struct np_vector policies;
@@ -45,7 +49,7 @@ struct nm_iam {
 /**
  * Init the iam module
  */
-void nm_iam_init(struct nm_iam* iam, NabtoDevice* device);
+void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger);
 
 void nm_iam_start(struct nm_iam* iam);
 

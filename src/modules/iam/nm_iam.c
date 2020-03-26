@@ -21,10 +21,11 @@ static char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCo
 
 
 
-void nm_iam_init(struct nm_iam* iam, NabtoDevice* device)
+void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 {
     memset(iam, 0, sizeof(struct nm_iam));
     iam->device = device;
+    iam->logger = logger;
     np_vector_init(&iam->users, NULL);
     np_vector_init(&iam->roles, NULL);
     np_vector_init(&iam->policies, NULL);
