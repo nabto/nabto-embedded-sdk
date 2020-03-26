@@ -137,8 +137,9 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NO_DATA;
 /**
  * @intro Device Context
  *
- * The Device Context API manages NabtoDevice instances. This happens through basic lifecycle functions
- * for allocation/deallocation and start/stop. And through functions for configuring all device details.
+ * The Device Context API manages NabtoDevice instances. This happens through basic lifecycle
+ * functions for allocation/deallocation and start/stop. And through functions for configuring all
+ * device details.
  */
 
 /**
@@ -329,7 +330,6 @@ nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint)
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerprint);
 
-
 /******************
  * Connection API
  ******************/
@@ -352,10 +352,14 @@ nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerp
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
+nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device,
+                                                   NabtoDeviceConnectionRef ref,
+                                                   char** fp);
 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fp);
+nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device,
+                                                        NabtoDeviceConnectionRef ref,
+                                                        char** fp);
 
 /**
  * Connection events relevant for the application.
@@ -398,7 +402,10 @@ nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceLis
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_connection_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceConnectionRef* ref, NabtoDeviceConnectionEvent* event);
+nabto_device_listener_connection_event(NabtoDeviceListener* listener,
+                                       NabtoDeviceFuture* future,
+                                       NabtoDeviceConnectionRef* ref,
+                                       NabtoDeviceConnectionEvent* event);
 
 /********************
  * Device Events API
@@ -445,7 +452,9 @@ nabto_device_device_events_init_listener(NabtoDevice* device, NabtoDeviceListene
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceEvent* event);
+nabto_device_listener_device_event(NabtoDeviceListener* listener,
+                                   NabtoDeviceFuture* future,
+                                   NabtoDeviceEvent* event);
 
 
 /****************
@@ -460,7 +469,9 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFut
  * ordered and complete. If either of these conditions cannot be met, the stream will be closed in
  * such a way that it is detectable.
  *
- * Streaming enables tight integration with both the client and device application. For simpler integration of streaming capabilities, consider the [TCP tunnel feature](/developer/api-reference/embedded-device-sdk/tcp_tunnelling/Introduction.html) feature.
+ * Streaming enables tight integration with both the client and device application. For simpler
+ * integration of streaming capabilities, consider the [TCP tunnel
+ * feature](/developer/api-reference/embedded-device-sdk/tcp_tunnelling/Introduction.html) feature.
  */
 
 /**
@@ -475,7 +486,9 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener, NabtoDeviceFut
  *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the port number has an active listener
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* listener, uint32_t port);
+nabto_device_stream_init_listener(NabtoDevice* device,
+                                  NabtoDeviceListener* listener,
+                                  uint32_t port);
 
 /**
  * Initialize a listener for new streams with ephemeral port number.
@@ -486,7 +499,9 @@ nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* list
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_stream_init_listener_ephemeral(NabtoDevice* device, NabtoDeviceListener* listener, uint32_t* port);
+nabto_device_stream_init_listener_ephemeral(NabtoDevice* device,
+                                            NabtoDeviceListener* listener,
+                                            uint32_t* port);
 
 /**
  * Start listening for new streams. The stream resource must be kept
@@ -504,7 +519,9 @@ nabto_device_stream_init_listener_ephemeral(NabtoDevice* device, NabtoDeviceList
  *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_new_stream(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceStream** stream);
+nabto_device_listener_new_stream(NabtoDeviceListener* listener,
+                                 NabtoDeviceFuture* future,
+                                 NabtoDeviceStream** stream);
 
 /**
  * Free a stream. If a stream has unresolved futures when freed, they
@@ -564,7 +581,11 @@ nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_stream_read_all(NabtoDeviceStream* stream, NabtoDeviceFuture* future, void* buffer, size_t bufferLength, size_t* readLength);
+nabto_device_stream_read_all(NabtoDeviceStream* stream,
+                             NabtoDeviceFuture* future,
+                             void* buffer,
+                             size_t bufferLength,
+                             size_t* readLength);
 
 /**
  * Read some bytes from a stream.
@@ -585,7 +606,11 @@ nabto_device_stream_read_all(NabtoDeviceStream* stream, NabtoDeviceFuture* futur
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_stream_read_some(NabtoDeviceStream* stream, NabtoDeviceFuture* future, void* buffer, size_t bufferLength, size_t* readLength);
+nabto_device_stream_read_some(NabtoDeviceStream* stream,
+                              NabtoDeviceFuture* future,
+                              void* buffer,
+                              size_t bufferLength,
+                              size_t* readLength);
 
 /**
  * Write bytes to a stream.
@@ -610,7 +635,10 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream, NabtoDeviceFuture* futu
  *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being written to
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_stream_write(NabtoDeviceStream* stream, NabtoDeviceFuture* future, const void* buffer, size_t bufferLength);
+nabto_device_stream_write(NabtoDeviceStream* stream,
+                          NabtoDeviceFuture* future,
+                          const void* buffer,
+                          size_t bufferLength);
 
 /**
  * Close a stream. When a stream has been closed no further data can
@@ -649,7 +677,8 @@ nabto_device_stream_abort(NabtoDeviceStream* stream);
 /**
  * @intro CoAP
  *
- * The CoAP API allows clients to interact with a Nabto-enabled device through a HTTP REST like request/response mechanism.
+ * The CoAP API allows clients to interact with a Nabto-enabled device through a HTTP REST like
+ * request/response mechanism.
  *
  * This API supersedes the Nabto RPC API known from Nabto Micro / Nabto 4 and earlier.
  */
@@ -707,7 +736,10 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  *         NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid pathSegment parameter
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
-nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* listener, NabtoDeviceCoapMethod method, const char** pathSegments);
+nabto_device_coap_init_listener(NabtoDevice* device,
+                                NabtoDeviceListener* listener,
+                                NabtoDeviceCoapMethod method,
+                                const char** pathSegments);
 
 /**
  * Listen for a new coap request on the given listener.
@@ -725,7 +757,9 @@ nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* listen
  *                                structure could not be allocated.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_new_coap_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceCoapRequest** request);
+nabto_device_listener_new_coap_request(NabtoDeviceListener* listener,
+                                       NabtoDeviceFuture* future,
+                                       NabtoDeviceCoapRequest** request);
 
 
 /**
@@ -759,7 +793,9 @@ nabto_device_coap_request_free(NabtoDeviceCoapRequest* request);
  *         NABTO_DEVICE_EC_ABORTED if the underlying connection was closed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_error_response(NabtoDeviceCoapRequest* request, uint16_t code, const char* message);
+nabto_device_coap_error_response(NabtoDeviceCoapRequest* request,
+                                 uint16_t code,
+                                 const char* message);
 
 /**
  * Set the response code of a given response. This code should follow
@@ -784,7 +820,9 @@ nabto_device_coap_response_set_code(NabtoDeviceCoapRequest* request, uint16_t co
  *         NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_response_set_payload(NabtoDeviceCoapRequest* request, const void* data, size_t dataSize);
+nabto_device_coap_response_set_payload(NabtoDeviceCoapRequest* request,
+                                       const void* data,
+                                       size_t dataSize);
 
 /**
  * Set the content format of a given response. This should follow the
@@ -823,7 +861,8 @@ nabto_device_coap_response_ready(NabtoDeviceCoapRequest* request);
  *         NABTO_DEVICE_EC_NO_DATA if the content format is not available
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request, uint16_t* contentFormat);
+nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
+                                             uint16_t* contentFormat);
 
 /**
  * Get the payload of a given request.
@@ -836,7 +875,9 @@ nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request, ui
  *         NABTO_DEVICE_EC_NO_DATA if the request does not contain a payload.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request, void** payload, size_t* payloadLength);
+nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
+                                      void** payload,
+                                      size_t* payloadLength);
 
 /**
  * Get a reference to the underlying connection on which the request
@@ -888,7 +929,9 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  *  TcpTunnel:Connect       See note below
  * ```
  *
- * Note on the `TcpTunnel:Connect` action: When used in CoAP context, it is used to test permissions for establishing a stream connection and to get information about the connection. When used in Streaming context, it is used to authorize an actual stream connection.
+ * Note on the `TcpTunnel:Connect` action: When used in CoAP context, it is used to test permissions
+ * for establishing a stream connection and to get information about the connection. When used in
+ * Streaming context, it is used to authorize an actual stream connection.
  *
  * The TCP Tunnelling module has the following authorization attributes:
  *
@@ -1021,7 +1064,9 @@ nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDevic
  * @param request  Where the new request is stored when the future resolves.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDeviceAuthorizationRequest** request);
+nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener,
+                                                NabtoDeviceFuture* future,
+                                                NabtoDeviceAuthorizationRequest** request);
 
 /**
  * Free an authorization request.
@@ -1036,8 +1081,8 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
  * approved or rejected. This happens on incoming authorization requests, ie when the auth request
  * listener future resolves.
  *
- * @param request
- * @param approved  The verdict for the request, if true the request is approved, if false the request is rejected.
+ * @param request The request to approve or reject
+ * @param approved The verdict for the request, if true the request is approved, if false the request is rejected.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool approved);
@@ -1080,7 +1125,8 @@ nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationR
  * @return the name of the attribute.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRequest* request, size_t index);
+nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRequest* request,
+                                                      size_t index);
 
 /**
  * Retrieve a string value for a key.
@@ -1090,7 +1136,8 @@ nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRe
  * @return              The value for the attribute.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request, size_t index);
+nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request,
+                                                       size_t index);
 
 /**************
  * Futures API
@@ -1099,14 +1146,15 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
 /**
  * @intro Futures
  *
- * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a future resolves
- * once such function has completed. For more details about this topic, see the [Futures Guide](/developer/guides/overview/nabto_futures.html).
+ * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a
+ * future resolves once such function has completed. For more details about this topic, see the
+ * [Futures Guide](/developer/guides/overview/nabto_futures.html).
  *
- * Futures are introduced to unify the way return values and completion of asynchronous functions are
- * handled and to minimize the number of specialized functions required in the APIs: Instead of having
- * an asynchronous and synchronous version of all functions, the API instead provides a single version
- * returning a future: For asynchronous behavior, a callback can then be configured on the future - for
- * synchronous behavior, the future provides a `wait` function.
+ * Futures are introduced to unify the way return values and completion of asynchronous functions
+ * are handled and to minimize the number of specialized functions required in the APIs: Instead of
+ * having an asynchronous and synchronous version of all functions, the API instead provides a
+ * single version returning a future: For asynchronous behavior, a callback can then be configured
+ * on the future - for synchronous behavior, the future provides a `wait` function.
  *
  * In addition to futures, asynchronous functions that are expected to be invoked recurringly
  * introduces the concept of `listeners`, also elaborated in the [Futures
@@ -1145,7 +1193,8 @@ nabto_device_future_free(NabtoDeviceFuture* future);
  * Query if a future is ready.
  *
  * @param future [in]  The future.
- * @return NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED if the future is not resolved yet, else the error code of the async operation.
+ * @return NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED if the future is not resolved yet, else the error
+ * code of the async operation.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_ready(NabtoDeviceFuture* future);
@@ -1231,7 +1280,13 @@ nabto_device_future_error_code(NabtoDeviceFuture* future);
  * asynchronous functions that are expected to be invoked recurringly (see the [Futures
  * Guide](/developer/guides/overview/nabto_futures.html) for details).
  *
- * Listeners are created and freed through this general API. Once created, a listener is initialized for use with a specific purpose, e.g. to listen for [incoming coap requests](/developer/api-reference/embedded-device-sdk/coap/nabto_device_coap_init_listener.html), [incoming stream requests](/developer/api-reference/embedded-device-sdk/streaming/nabto_device_stream_init_listener.html) or [general device events](/developer/api-reference/embedded-device-sdk/context/nabto_device_device_events_init_listener.html).
+ * Listeners are created and freed through this general API. Once created, a listener is initialized
+ * for use with a specific purpose, e.g. to listen for [incoming coap
+ * requests](/developer/api-reference/embedded-device-sdk/coap/nabto_device_coap_init_listener.html),
+ * [incoming stream
+ * requests](/developer/api-reference/embedded-device-sdk/streaming/nabto_device_stream_init_listener.html)
+ * or [general device
+ * events](/developer/api-reference/embedded-device-sdk/context/nabto_device_device_events_init_listener.html).
  */
 
 /**
@@ -1303,11 +1358,12 @@ enum NabtoDeviceLogLevel_ {
  */
 typedef enum NabtoDeviceLogLevel_ NabtoDeviceLogLevel;
 
+
 struct NabtoDeviceLogMessage_ {
     NabtoDeviceLogLevel severity;
     const char* file;
     int line;
-    const char* message; /** the message null terminated utf-8 */
+    const char* message; // the message (null terminated utf-8)
 };
 
 /**
@@ -1318,7 +1374,7 @@ struct NabtoDeviceLogMessage_ {
  *   NabtoDeviceLogLevel severity;
  *   const char* file;
  *   int line;
- *   const char* message; /** the message null terminated utf-8
+ *   const char* message; // null (terminated utf-8)
  * }
  * ```
  */
