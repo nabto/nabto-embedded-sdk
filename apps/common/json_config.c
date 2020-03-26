@@ -1,10 +1,14 @@
 #include "json_config.h"
 #include "string_file.h"
 
+#include <nn/log.h>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+
+static const char* LOGM = "json_config";
 
 bool json_config_exists(const char* fileName)
 {
@@ -15,7 +19,7 @@ bool json_config_exists(const char* fileName)
     }
 }
 
-static bool load_from_file(FILE* f, cJSON** config)
+static bool load_from_file(FILE* f, cJSON** config, struct nn_log* logger)
 {
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
@@ -34,17 +38,24 @@ static bool load_from_file(FILE* f, cJSON** config)
     string[fsize] = 0;
 
     *config = cJSON_Parse(string);
+    if (*config == NULL) {
+        const char* error = cJSON_GetErrorPtr();
+        if (error != NULL) {
+            NN_LOG_ERROR(logger, LOGM, "JSON parse error: %s", error);
+        }
+    }
     free(string);
     return (*config != NULL);
 }
 
-bool json_config_load(const char* fileName, cJSON** config)
+bool json_config_load(const char* fileName, cJSON** config, struct nn_log* logger)
 {
     FILE* f = fopen(fileName, "rb");
     if (f == NULL) {
+        NN_LOG_ERROR(logger, LOGM, "Cannot open file %s.", fileName);
         return false;
     }
-    bool status = load_from_file(f, config);
+    bool status = load_from_file(f, config, logger);
     fclose(f);
     return status;
 }

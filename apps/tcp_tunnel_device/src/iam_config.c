@@ -12,6 +12,8 @@
 
 #include <stdio.h>
 
+static const char* LOGM = "iam_config";
+
 static bool create_default_iam_config(const char* iamConfigFile);
 
 void iam_config_init(struct iam_config* iamConfig)
@@ -26,21 +28,20 @@ void iam_config_deinit(struct iam_config* iamConfig)
     np_vector_deinit(&iamConfig->policies);
 }
 
-bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, const char** errorText)
+bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, struct nn_log* logger)
 {
     if (!json_config_exists(iamConfigFile)) {
-        printf("IAM configuration file (%s) does not exists creating a new default file.\n", iamConfigFile);
+        NN_LOG_INFO(logger, LOGM, "IAM configuration file (%s) does not exists creating a new default file.", iamConfigFile);
         create_default_iam_config(iamConfigFile);
     }
 
     cJSON* config;
-    if (!json_config_load(iamConfigFile, &config)) {
-        *errorText = "Could not load iam config file";
+    if (!json_config_load(iamConfigFile, &config, logger)) {
         return false;
     }
 
     if (!cJSON_IsObject(config)) {
-        *errorText = "Invalid IAM config format";
+        NN_LOG_ERROR(logger, LOGM, "Invalid IAM config format");
         return false;
     }
 
@@ -50,7 +51,7 @@ bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, co
     if (!cJSON_IsArray(policies) ||
         !cJSON_IsArray(roles))
     {
-        *errorText = "missing policies or roles";
+        NN_LOG_ERROR(logger, LOGM, "missing policies or roles");
         return false;
     }
 

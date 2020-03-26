@@ -7,11 +7,13 @@
 #include <apps/common/random_string.h>
 
 #include <cjson/cJSON.h>
+#include <nn/log.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#define NEWLINE "\n"
+static const char* LOGM = "tcp_tunnel_state";
+
 
 static bool write_state_to_file(const char* stateFile, struct tcp_tunnel_state* state);
 static bool create_default_tcp_tunnel_state(const char* stateFile);
@@ -30,16 +32,16 @@ void tcp_tunnel_state_deinit(struct tcp_tunnel_state* state)
 }
 
 
-bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile, const char** errorText)
+bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile, struct nn_log* logger)
 {
     if (!json_config_exists(stateFile)) {
-        printf("State file does not exists (%s), creating a new default file" NEWLINE, stateFile);
+        NN_LOG_INFO(logger, LOGM, "State file does not exists (%s), creating a new default file", stateFile);
         create_default_tcp_tunnel_state(stateFile);
     }
 
     cJSON* json;
 
-    json_config_load(stateFile, &json);
+    json_config_load(stateFile, &json, logger);
 
     cJSON* pairingPassword = cJSON_GetObjectItem(json, "PairingPassword");
     cJSON* pairingServerConnectToken = cJSON_GetObjectItem(json, "PairingServerConnectToken");

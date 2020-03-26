@@ -7,11 +7,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-bool load_device_config(const char* fileName, struct device_config* dc, const char** errorText)
+static const char* LOGM = "device_config";
+
+bool load_device_config(const char* fileName, struct device_config* dc, struct nn_log* logger)
 {
     cJSON* config;
-    if (!json_config_load(fileName, &config)) {
-        *errorText = "could not load device config file";
+    if (!json_config_load(fileName, &config, logger)) {
+        NN_LOG_ERROR(logger, LOGM, "Could not load device configuration file %s", fileName);
         return false;
     }
 
@@ -24,7 +26,7 @@ bool load_device_config(const char* fileName, struct device_config* dc, const ch
         !cJSON_IsString(deviceId) ||
         !cJSON_IsString(server))
     {
-        *errorText = "Invalid device config file";
+        NN_LOG_ERROR(logger, LOGM, "Missing required device config options");
         return false;
     }
 
@@ -38,7 +40,7 @@ bool load_device_config(const char* fileName, struct device_config* dc, const ch
         if (!cJSON_IsString(clientServerKey) ||
             !cJSON_IsString(clientServerUrl))
         {
-            *errorText = "Invalid client settings in device config file";
+            NN_LOG_ERROR(logger, LOGM, "Invalid client settings in device config file");
             return false;
         }
 

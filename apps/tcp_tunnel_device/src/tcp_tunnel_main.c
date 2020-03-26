@@ -94,9 +94,9 @@ void print_help()
     printf(" - HOME_DIR/%s This file contains the services this tunnel exposes." NEWLINE, TCP_TUNNEL_SERVICES_FILE);
 }
 
-void print_device_config_load_failed(const char* fileName, const char* errorText)
+void print_device_config_load_failed(const char* fileName)
 {
-    printf("Could not open or parse the device config file (%s) reason: %s" NEWLINE, fileName, errorText);
+    printf("Could not open or parse the device config file (%s)." NEWLINE, fileName);
     printf("Please ensure the file exists and has the following format." NEWLINE);
     printf("{" NEWLINE);
     printf("  \"ProductId\": \"<product_id>\"," NEWLINE);
@@ -109,14 +109,14 @@ void print_device_config_load_failed(const char* fileName, const char* errorText
     printf("}" NEWLINE);
 }
 
-void print_iam_config_load_failed(const char* fileName, const char* errorText)
+void print_iam_config_load_failed(const char* fileName)
 {
-    printf("Could not open or parse IAM config file (%s) reason: %s" NEWLINE, fileName, errorText);
+    printf("Could not open or parse IAM config file (%s)" NEWLINE, fileName);
 }
 
-void print_tcp_tunnel_state_load_failed(const char* fileName, const char* errorText)
+void print_tcp_tunnel_state_load_failed(const char* fileName)
 {
-    printf("Could not load TCP tunnel state file (%s) reason: %s" NEWLINE, fileName, errorText);
+    printf("Could not load TCP tunnel state file (%s)" NEWLINE, fileName);
 }
 
 void print_start_text(struct args* args)
@@ -308,6 +308,11 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
+    NabtoDevice* device = nabto_device_new();
+    struct nn_log logger;
+    init_logging(device, &logger, args->logLevel);
+
+
     tunnel->deviceConfigFile = expand_file_name(args->homeDir, DEVICE_CONFIG_FILE);
     tunnel->stateFile = expand_file_name(args->homeDir, TCP_TUNNEL_STATE_FILE);
     tunnel->iamConfigFile = expand_file_name(args->homeDir, TCP_TUNNEL_IAM_FILE);
@@ -317,10 +322,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct device_config dc;
     device_config_init(&dc);
 
-    const char* errorText;
-    if (!load_device_config(tunnel->deviceConfigFile, &dc, &errorText)) {
-        print_device_config_load_failed(tunnel->deviceConfigFile, errorText);
-        exit(1);
+    if (!load_device_config(tunnel->deviceConfigFile, &dc, &logger)) {
+        print_device_config_load_failed(tunnel->deviceConfigFile);
+        return false;
+
     }
 
     char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
@@ -330,26 +335,25 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct iam_config iamConfig;
     iam_config_init(&iamConfig);
 
-    if (!load_iam_config(&iamConfig, tunnel->iamConfigFile, &errorText)) {
-        print_iam_config_load_failed(tunnel->iamConfigFile, errorText);
+    if (!load_iam_config(&iamConfig, tunnel->iamConfigFile, &logger)) {
+        print_iam_config_load_failed(tunnel->iamConfigFile);
     }
 
     struct tcp_tunnel_state tcpTunnelState;
     tcp_tunnel_state_init(&tcpTunnelState);
 
-    if (!load_tcp_tunnel_state(&tcpTunnelState, tunnel->stateFile, &errorText)) {
-        print_tcp_tunnel_state_load_failed(tunnel->stateFile, errorText);
+    if (!load_tcp_tunnel_state(&tcpTunnelState, tunnel->stateFile, &logger)) {
+        print_tcp_tunnel_state_load_failed(tunnel->stateFile);
+        return false;
     }
 
-    NabtoDevice* device = nabto_device_new();
+
 
     nabto_device_set_product_id(device, dc.productId);
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);
     nabto_device_enable_mdns(device);
 
-    struct nn_log logger;
-    init_logging(device, &logger, args->logLevel);
 
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);
@@ -372,9 +376,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     nm_iam_enable_client_settings(&iam, dc.clientServerUrl, dc.clientServerKey);
 
-    if (!load_tcp_tunnel_services(&tunnel->services, tunnel->servicesFile, &errorText))
+    if (!load_tcp_tunnel_services(&tunnel->services, tunnel->servicesFile, &logger))
     {
-        printf("Failed to load TCP Services from (%s) reason: %s" NEWLINE, tunnel->servicesFile, errorText);
+        printf("Failed to load TCP Services from (%s)" NEWLINE, tunnel->servicesFile);
+        return false;
     }
 
     struct tcp_tunnel_service* service;
