@@ -2,6 +2,9 @@
 
 #include <modules/policies/nm_policy.h>
 #include <modules/policies/nm_policies_from_json.h>
+
+#include <nn/string_map.h>
+
 #include <cjson/cJSON.h>
 
 namespace {
@@ -31,15 +34,15 @@ BOOST_AUTO_TEST_CASE(deny_ssh)
     struct nm_policy* policy = nm_policy_from_json(json, NULL);
     BOOST_REQUIRE(policy);
 
-    struct np_string_map attributes;
-    np_string_map_init(&attributes);
+    struct nn_string_map attributes;
+    nn_string_map_init(&attributes);
 
 
     enum nm_effect effect;
     effect = nm_policy_eval(policy, "TcpTunnel:Connect", &attributes);
     BOOST_TEST(effect == NM_EFFECT_NO_MATCH);
 
-    np_string_map_insert(&attributes, "TcpTunnel:ServiceType", "ssh");
+    nn_string_map_insert(&attributes, "TcpTunnel:ServiceType", "ssh");
     effect = nm_policy_eval(policy, "TcpTunnel:Connect", &attributes);
     BOOST_TEST(effect == NM_EFFECT_DENY);
 

@@ -3,8 +3,6 @@
 #include "nm_iam.h"
 #include "nm_iam_internal.h"
 
-#include <platform/np_vector.h>
-
 #include <stdlib.h>
 
 #include <cbor.h>

@@ -1,8 +1,8 @@
 #ifndef _NM_IAM_USER_H_
 #define _NM_IAM_USER_H_
 
-#include <platform/np_string_set.h>
-#include <platform/np_string_map.h>
+#include <nn/string_set.h>
+#include <nn/string_map.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,10 +10,10 @@ extern "C" {
 
 struct nm_iam_user {
     char* id;
-    struct np_string_set roles;
+    struct nn_string_set roles;
     char* fingerprint;
     char* serverConnectToken;
-    struct np_string_map attributes;
+    struct nn_string_map attributes;
 };
 
 void nm_iam_user_init(struct nm_iam_user* user);

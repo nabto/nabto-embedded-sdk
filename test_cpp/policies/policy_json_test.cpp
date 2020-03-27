@@ -2,7 +2,7 @@
 
 #include <modules/policies/nm_policies_from_json.h>
 
-#include <platform/np_vector.h>
+#include <nn/vector.h>
 #include <modules/policies/nm_policy.h>
 
 namespace {

@@ -5,11 +5,12 @@
 #include "nm_statement.h"
 
 #include <nn/vector.h>
-#include <platform/np_string_map.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct nn_string_map;
 
 struct nm_policy {
     char* id;
@@ -23,7 +24,7 @@ void nm_policy_free(struct nm_policy* poilicy);
 // Add statement to a policy, this takes ownership over the statement.
 bool nm_policy_add_statement(struct nm_policy* policy, struct nm_statement* stmt);
 
-enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, const struct np_string_map* attributes);
+enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, const struct nn_string_map* attributes);
 
 #ifdef __cplusplus
 } //extern "C"

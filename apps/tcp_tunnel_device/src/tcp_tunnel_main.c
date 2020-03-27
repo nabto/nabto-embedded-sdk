@@ -11,7 +11,7 @@
 #include <modules/iam/nm_iam.h>
 #include <modules/iam/nm_iam_user.h>
 
-#include <platform/np_string_set.h>
+#include <nn/string_set.h>
 
 #include <nn/log.h>
 
@@ -58,7 +58,7 @@ struct tcp_tunnel {
     char* servicesFile;
     char* privateKeyFile;
 
-    struct np_vector services;
+    struct nn_vector services;
 };
 
 
@@ -203,7 +203,7 @@ void args_deinit(struct args* args)
 void tcp_tunnel_init(struct tcp_tunnel* tunnel)
 {
     memset(tunnel, 0, sizeof(struct tcp_tunnel));
-    np_vector_init(&tunnel->services, NULL);
+    nn_vector_init(&tunnel->services, sizeof(void*));
 }
 
 void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)
@@ -212,7 +212,7 @@ void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)
     free(tunnel->stateFile);
     free(tunnel->iamConfigFile);
     free(tunnel->privateKeyFile);
-    np_vector_deinit(&tunnel->services);
+    nn_vector_deinit(&tunnel->services);
 }
 
 char* expand_file_name(const char* homeDir, const char* fileName)
@@ -382,7 +382,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
 
     struct tcp_tunnel_service* service;
-    NP_VECTOR_FOREACH(service, &tunnel->services)
+    NN_VECTOR_FOREACH(&service, &tunnel->services)
     {
         nabto_device_add_tcp_tunnel_service(device, service->id, service->type, service->host, service->port);
     }
@@ -394,25 +394,25 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     // add users to iam module.
     struct nm_iam_user* user;
-    NP_VECTOR_FOREACH(user, &tcpTunnelState.users)
+    NN_VECTOR_FOREACH(&user, &tcpTunnelState.users)
     {
         nm_iam_add_user(&iam, user);
     }
-    np_vector_clear(&tcpTunnelState.users);
+    nn_vector_clear(&tcpTunnelState.users);
 
     // add roles to iam module
     struct nm_iam_role* role;
-    NP_VECTOR_FOREACH(role, &iamConfig.roles) {
+    NN_VECTOR_FOREACH(&role, &iamConfig.roles) {
         nm_iam_add_role(&iam, role);
     }
-    np_vector_clear(&iamConfig.roles);
+    nn_vector_clear(&iamConfig.roles);
 
     // add policies to iam module
     struct nm_policy* policy;
-    NP_VECTOR_FOREACH(policy, &iamConfig.policies) {
+    NN_VECTOR_FOREACH(&policy, &iamConfig.policies) {
         nm_iam_add_policy(&iam, policy);
     }
-    np_vector_clear(&iamConfig.policies);
+    nn_vector_clear(&iamConfig.policies);
 
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
@@ -429,7 +429,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;
 
-    NP_VECTOR_FOREACH(item, &tunnel->services)
+    NN_VECTOR_FOREACH(&item, &tunnel->services)
     {
         printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); printf("%d" NEWLINE, item->port);
     }
@@ -497,12 +497,12 @@ void signal_handler(int s)
 
 void print_iam_state(struct nm_iam* iam)
 {
-    struct np_string_set ss;
-    np_string_set_init(&ss);
+    struct nn_string_set ss;
+    nn_string_set_init(&ss);
     nm_iam_get_users(iam, &ss);
 
     const char* id;
-    NP_STRING_SET_FOREACH(id, &ss)
+    NN_STRING_SET_FOREACH(id, &ss)
     {
         struct nm_iam_user* user = nm_iam_find_user(iam, id);
         printf("User: %s, fingerprint: %s" NEWLINE, user->id, user->fingerprint);
@@ -524,15 +524,15 @@ void iam_user_changed(struct nm_iam* iam, const char* id, void* userData)
         toWrite.pairingServerConnectToken = strdup(tcpTunnel->pairingServerConnectToken);
     }
 
-    struct np_string_set userIds;
-    np_string_set_init(&userIds);
+    struct nn_string_set userIds;
+    nn_string_set_init(&userIds);
     nm_iam_get_users(iam, &userIds);
 
     const char* uid;
-    NP_STRING_SET_FOREACH(uid, &userIds)
+    NN_STRING_SET_FOREACH(uid, &userIds)
     {
         struct nm_iam_user* user = nm_iam_find_user(iam, uid);
-        np_vector_push_back(&toWrite.users, user);
+        nn_vector_push_back(&toWrite.users, &user);
     }
 
     save_tcp_tunnel_state(tcpTunnel->stateFile, &toWrite);

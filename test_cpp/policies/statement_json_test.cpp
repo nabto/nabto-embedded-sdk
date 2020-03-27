@@ -4,7 +4,7 @@
 
 #include <modules/policies/nm_condition.h>
 #include <modules/policies/nm_statement.h>
-#include <platform/np_string_set.h>
+#include <nn/string_set.h>
 
 #include <cjson/cJSON.h>
 

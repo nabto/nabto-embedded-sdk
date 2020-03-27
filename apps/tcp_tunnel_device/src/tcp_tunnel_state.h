@@ -1,10 +1,10 @@
 #ifndef _TCP_TUNNEL_STATE_H_
 #define _TCP_TUNNEL_STATE_H_
 
-#include <platform/np_vector.h>
+#include <nn/vector.h>
 
 struct tcp_tunnel_state {
-    struct np_vector users;
+    struct nn_vector users;
     char* pairingPassword;
     char* pairingServerConnectToken;
 };

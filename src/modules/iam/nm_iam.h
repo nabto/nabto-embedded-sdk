@@ -7,13 +7,15 @@
 
 #include <nn/log.h>
 
-#include <platform/np_vector.h>
-#include <platform/np_string_map.h>
+#include <nn/vector.h>
+
+#include <nn/string_map.h>
+#include <nn/string_set.h>
 
 // the iam module needs a list of users, roles, policies
 
 struct nm_policy;
-struct np_string_set;
+struct nn_string_set;
 struct nm_iam_role;
 
 typedef void (*nm_iam_user_changed)(struct nm_iam* iam, const char* userId, void* userData);
@@ -28,9 +30,9 @@ struct nm_iam_change_callbacks {
 struct nm_iam {
     NabtoDevice* device;
     struct nn_log* logger;
-    struct np_vector users;
-    struct np_vector roles;
-    struct np_vector policies;
+    struct nn_vector users;
+    struct nn_vector roles;
+    struct nn_vector policies;
 
     struct nm_iam_coap_handler coapIamUsersGetHandler;
     struct nm_iam_coap_handler coapPairingGetHandler;
@@ -96,7 +98,7 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user);
 /**
  * Get a list of all users in the system.
  */
-bool nm_iam_get_users(struct nm_iam* iam, struct np_string_set* ids);
+bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids);
 
 /**
  * Add a role to the iam system.
@@ -116,6 +118,6 @@ bool nm_iam_add_policy(struct nm_iam* iam, struct nm_policy* policy);
  * Check if the given connection has access to do the given action
  * provided the given attributes.
  */
-bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct np_string_map* attributes);
+bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributes);
 
 #endif

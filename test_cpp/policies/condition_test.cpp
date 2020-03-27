@@ -2,6 +2,8 @@
 
 #include <modules/policies/nm_condition.h>
 
+#include <nn/string_map.h>
+
 #include <vector>
 #include <utility>
 
@@ -75,28 +77,28 @@ BOOST_AUTO_TEST_CASE(condition_match)
     nn_string_set_insert(&c.values, "bar");
 
     {
-        struct np_string_map attributes;
-        np_string_map_init(&attributes);
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
 
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
-        np_string_map_deinit(&attributes);
+        nn_string_map_deinit(&attributes);
     }
 
     {
-        struct np_string_map attributes;
-        np_string_map_init(&attributes);
-        np_string_map_insert(&attributes, "foo", "baz");
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
+        nn_string_map_insert(&attributes, "foo", "baz");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
-        np_string_map_deinit(&attributes);
+        nn_string_map_deinit(&attributes);
     }
 
     {
-        struct np_string_map attributes;
-        np_string_map_init(&attributes);
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
 
-        np_string_map_insert(&attributes, "foo", "bar");
+        nn_string_map_insert(&attributes, "foo", "bar");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);
-        np_string_map_deinit(&attributes);
+        nn_string_map_deinit(&attributes);
     }
     nm_condition_deinit(&c);
 }
@@ -110,35 +112,35 @@ BOOST_AUTO_TEST_CASE(condition_variable)
     nn_string_set_insert(&c.values, "${Connection:UserId}");
 
     {
-        struct np_string_map attributes;
-        np_string_map_init(&attributes);
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
 
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
-        np_string_map_deinit(&attributes);
+        nn_string_map_deinit(&attributes);
     }
 
     {
-        struct np_string_map attributes;
-        np_string_map_init(&attributes);
-        np_string_map_insert(&attributes, "IAM:UserId", "someuser");
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
+        nn_string_map_insert(&attributes, "IAM:UserId", "someuser");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
-        np_string_map_deinit(&attributes);
+        nn_string_map_deinit(&attributes);
     }
     {
-        struct np_string_map attributes;
-        np_string_map_init(&attributes);
-        np_string_map_insert(&attributes, "IAM:UserId", "someuser");
-        np_string_map_insert(&attributes, "Connection:UserId", "somebar");
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
+        nn_string_map_insert(&attributes, "IAM:UserId", "someuser");
+        nn_string_map_insert(&attributes, "Connection:UserId", "somebar");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
-        np_string_map_deinit(&attributes);
+        nn_string_map_deinit(&attributes);
     }
     {
-        struct np_string_map attributes;
-        np_string_map_init(&attributes);
-        np_string_map_insert(&attributes, "IAM:UserId", "someuser");
-        np_string_map_insert(&attributes, "Connection:UserId", "someuser");
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
+        nn_string_map_insert(&attributes, "IAM:UserId", "someuser");
+        nn_string_map_insert(&attributes, "Connection:UserId", "someuser");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);
-        np_string_map_deinit(&attributes);
+        nn_string_map_deinit(&attributes);
     }
 
     nm_condition_deinit(&c);

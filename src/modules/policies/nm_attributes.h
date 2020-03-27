@@ -8,7 +8,7 @@ struct nm_attributes_item {
 
 struct nm_attributes {
     const char* key;
-    np_string_map value;
+    nn_string_map value;
 };
 
 const char* nm_attributes_get_value_

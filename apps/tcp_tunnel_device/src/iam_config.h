@@ -1,13 +1,13 @@
 #ifndef _IAM_CONFIG_H_
 #define _IAM_CONFIG_H_
 
-#include <platform/np_vector.h>
+#include <nn/vector.h>
 
 struct nn_log;
 
 struct iam_config {
-    struct np_vector roles;
-    struct np_vector policies;
+    struct nn_vector roles;
+    struct nn_vector policies;
 };
 
 void iam_config_init(struct iam_config* iamConfig);

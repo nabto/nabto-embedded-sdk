@@ -5,9 +5,10 @@
 #include <cjson/cJSON.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 static bool create_default_services_file(const char* servicesFile);
-static bool load_services_from_json(struct np_vector* services, cJSON* json, struct nn_log* logger);
+static bool load_services_from_json(struct nn_vector* services, cJSON* json, struct nn_log* logger);
 static struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger);
 
 static const char* LOGM = "services";
@@ -26,7 +27,7 @@ void tcp_tunnel_service_free(struct tcp_tunnel_service* service)
     free(service);
 }
 
-bool load_tcp_tunnel_services(struct np_vector* services, const char* servicesFile, struct nn_log* logger)
+bool load_tcp_tunnel_services(struct nn_vector* services, const char* servicesFile, struct nn_log* logger)
 {
     if (!json_config_exists(servicesFile)) {
         if (!create_default_services_file(servicesFile)) {
@@ -49,7 +50,7 @@ bool load_tcp_tunnel_services(struct np_vector* services, const char* servicesFi
     return true;
 }
 
-bool load_services_from_json(struct np_vector* services, cJSON* json, struct nn_log* logger)
+bool load_services_from_json(struct nn_vector* services, cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsArray(json)) {
         NN_LOG_ERROR(logger, LOGM, "The configuration needs to be an array of services");
@@ -61,7 +62,7 @@ bool load_services_from_json(struct np_vector* services, cJSON* json, struct nn_
         cJSON* service = cJSON_GetArrayItem(json, i);
         struct tcp_tunnel_service* s = service_from_json(service, logger);
         if (s) {
-            np_vector_push_back(services, s);
+            nn_vector_push_back(services, &s);
         } else {
             return false;
         }

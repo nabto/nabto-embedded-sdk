@@ -1,12 +1,12 @@
 #include "nm_condition.h"
 
-#include <platform/np_string_map.h>
+#include <nn/string_map.h>
 
 #include <stdlib.h>
 #include <string.h>
 
 static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs);
-static bool resolve_value(const struct np_string_map* attributes, const char* value, const char** out);
+static bool resolve_value(const struct nn_string_map* attributes, const char* value, const char** out);
 
 struct nm_condition* nm_condition_new(enum nm_condition_operator op)
 {
@@ -98,14 +98,14 @@ enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operato
     return NM_CONDITION_RESULT_ERROR;
 }
 
-enum nm_condition_result nm_condition_matches(const struct nm_condition* condition, const struct np_string_map* attributes)
+enum nm_condition_result nm_condition_matches(const struct nm_condition* condition, const struct nn_string_map* attributes)
 {
-    struct np_string_map_item* item = np_string_map_get(attributes, condition->key);
-    if (item == NULL) {
+    struct nn_string_map_iterator it = nn_string_map_get(attributes, condition->key);
+    if (nn_string_map_is_end(&it)) {
         return NM_CONDITION_RESULT_NO_MATCH;
     }
 
-    const char* attribute = item->value;
+    const char* attributeValue = nn_string_map_value(&it);
 
     const char* v;
     NN_STRING_SET_FOREACH(v, &condition->values) {
@@ -113,7 +113,7 @@ enum nm_condition_result nm_condition_matches(const struct nm_condition* conditi
         // If the value is a variable we try to resolve it to a string
         // else interpret it as a string.
         if (resolve_value(attributes, v, &resolvedValue)) {
-            enum nm_condition_result r = match(condition->op, attribute, resolvedValue);
+            enum nm_condition_result r = match(condition->op, attributeValue, resolvedValue);
             if (r == NM_CONDITION_RESULT_ERROR ||
                 r == NM_CONDITION_RESULT_MATCH)
             {
@@ -202,7 +202,7 @@ static enum nm_condition_result match(enum nm_condition_operator op, const char*
     return NM_CONDITION_RESULT_ERROR;
 }
 
-bool resolve_value(const struct np_string_map* attributes, const char* value, const char** out)
+bool resolve_value(const struct nn_string_map* attributes, const char* value, const char** out)
 {
     size_t valueLength = strlen(value);
     if (valueLength < 3) {
@@ -215,9 +215,9 @@ bool resolve_value(const struct np_string_map* attributes, const char* value, co
     {
         const char* variable = value+2;
         size_t variableLength = valueLength - 3;
-        struct np_string_map_item* item = np_string_map_getn(attributes, variable, variableLength);
-        if (item) {
-            *out = item->value;
+        struct nn_string_map_iterator it = nn_string_map_getn(attributes, variable, variableLength);
+        if (!nn_string_map_is_end(&it)) {
+            *out = nn_string_map_value(&it);
             return true;
         }
     } else {

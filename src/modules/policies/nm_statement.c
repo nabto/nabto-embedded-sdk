@@ -2,12 +2,13 @@
 #include "nm_condition.h"
 
 #include <nn/string_set.h>
+#include <nn/string_map.h>
 
 #include <stdlib.h>
 
 
 
-static enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes);
+static enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct nn_string_map* attributes);
 
 struct nm_statement* nm_statement_new(enum nm_effect effect)
 {
@@ -34,7 +35,7 @@ void nm_statement_free(struct nm_statement* statement)
     nn_vector_deinit(&statement->conditions);
 }
 
-enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct np_string_map* attributes)
+enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct nn_string_map* attributes)
 {
     if (!nn_string_set_contains(&statement->actions, action)) {
         return NM_EFFECT_NO_MATCH;
@@ -58,7 +59,7 @@ bool nm_statement_add_action(struct nm_statement* statement, const char* action)
     return nn_string_set_insert(&statement->actions, action);
 }
 
-enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct np_string_map* attributes)
+enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct nn_string_map* attributes)
 {
     const struct nm_condition* condition;
     NN_VECTOR_FOREACH(&condition, &statement->conditions)

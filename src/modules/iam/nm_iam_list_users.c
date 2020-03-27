@@ -2,7 +2,7 @@
 #include "nm_iam_user.h"
 #include "nm_iam.h"
 
-#include <platform/np_vector.h>
+#include <nn/vector.h>
 
 #include <stdlib.h>
 
@@ -23,9 +23,9 @@ static size_t encode_users(struct nm_iam* iam, void* buffer, size_t bufferSize)
     CborEncoder array;
     cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
 
-    struct np_vector* users = &iam->users;
+    struct nn_vector* users = &iam->users;
     struct nm_iam_user* user;
-    NP_VECTOR_FOREACH(user, users) {
+    NN_VECTOR_FOREACH(&user, users) {
         cbor_encode_text_stringz(&array, user->id);
     }
 

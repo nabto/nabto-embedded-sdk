@@ -39,7 +39,7 @@ bool nm_policy_add_statement(struct nm_policy* policy, struct nm_statement* stmt
     return nn_vector_push_back(&policy->statements, &stmt);
 }
 
-enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, const struct np_string_map* attributes)
+enum nm_effect nm_policy_eval(struct nm_policy* policy, const char* action, const struct nn_string_map* attributes)
 {
     enum nm_effect decision = NM_EFFECT_NO_MATCH;
     struct nm_statement* stmt;

@@ -5,6 +5,8 @@ set(src
   ${src_dir}/nn/log.c
   ${src_dir}/nn/vector.c
   ${src_dir}/nn/string_set.c
+  ${src_dir}/nn/string_map.c
+  ${src_dir}/nn/llist.c
   )
 
 add_library(3rdparty_nn "${src}")

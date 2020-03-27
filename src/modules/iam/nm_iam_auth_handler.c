@@ -45,13 +45,13 @@ void handle_request(struct nm_iam_auth_handler* handler, NabtoDeviceAuthorizatio
 {
     const char* action = nabto_device_authorization_request_get_action(request);
 
-    struct np_string_map attributes;
-    np_string_map_init(&attributes);
+    struct nn_string_map attributes;
+    nn_string_map_init(&attributes);
     size_t attributesSize = nabto_device_authorization_request_get_attributes_size(request);
     for (size_t i = 0; i < attributesSize; i++) {
         const char* key = nabto_device_authorization_request_get_attribute_name(request, i);
         const char* value = nabto_device_authorization_request_get_attribute_value(request, i);
-        np_string_map_insert(&attributes, key, value);
+        nn_string_map_insert(&attributes, key, value);
     }
     NabtoDeviceConnectionRef ref = nabto_device_authorization_request_get_connection_ref(request);
     bool verdict = nm_iam_check_access(handler->iam, ref, action, &attributes);

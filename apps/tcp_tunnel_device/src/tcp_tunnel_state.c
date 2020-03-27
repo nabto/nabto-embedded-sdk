@@ -11,6 +11,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 
 static const char* LOGM = "tcp_tunnel_state";
 
@@ -21,12 +23,12 @@ static bool create_default_tcp_tunnel_state(const char* stateFile);
 void tcp_tunnel_state_init(struct tcp_tunnel_state* state)
 {
     memset(state, 0, sizeof(struct tcp_tunnel_state));
-    np_vector_init(&state->users, NULL);
+    nn_vector_init(&state->users, sizeof(void*));
 }
 
 void tcp_tunnel_state_deinit(struct tcp_tunnel_state* state)
 {
-    np_vector_deinit(&state->users);
+    nn_vector_deinit(&state->users);
     free(state->pairingPassword);
     free(state->pairingServerConnectToken);
 }
@@ -62,7 +64,7 @@ bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile
             cJSON* item = cJSON_GetArrayItem(users, i);
             struct nm_iam_user* user = nm_iam_user_from_json(item);
             if (user != NULL) {
-                np_vector_push_back(&state->users, user);
+                nn_vector_push_back(&state->users, &user);
             }
         }
     }
@@ -94,12 +96,9 @@ bool write_state_to_file(const char* stateFile, struct tcp_tunnel_state* state)
 
     cJSON* usersArray = cJSON_CreateArray();
 
-    struct np_vector_iterator it;
-    for (np_vector_front(&state->users, &it);
-         !np_vector_end(&it);
-         np_vector_next(&it))
+    struct nm_iam_user* user;
+    NN_VECTOR_FOREACH(&user, &state->users)
     {
-        struct nm_iam_user* user = np_vector_get_element(&it);
         cJSON* encodedUser = nm_iam_user_to_json(user);
         cJSON_AddItemToArray(usersArray, encodedUser);
     }

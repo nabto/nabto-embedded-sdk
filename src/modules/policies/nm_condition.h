@@ -1,8 +1,6 @@
 #ifndef _NM_CONDITION_H_
 #define _NM_CONDITION_H_
 
-#include <platform/np_string_map.h>
-
 #include <nn/string_set.h>
 
 #ifdef __cplusplus
@@ -34,6 +32,8 @@ struct nm_condition {
     struct nn_string_set values;
 };
 
+struct nn_string_map;
+
 struct nm_condition* nm_condition_new(enum nm_condition_operator op);
 
 void nm_condition_free(struct nm_condition* condition);
@@ -52,9 +52,7 @@ const char* nm_condition_operator_to_string(const enum nm_condition_operator op)
 
 enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operator op, const char* lhs, const char* rhs);
 
-enum nm_condition_result nm_condition_matches(const struct nm_condition* condition, const struct np_string_map* attributes);
-
-
+enum nm_condition_result nm_condition_matches(const struct nm_condition* condition, const struct nn_string_map* attributes);
 
 #ifdef __cplusplus
 } //extern "C"

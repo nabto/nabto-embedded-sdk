@@ -3,6 +3,7 @@
 #include "nm_iam_role.h"
 #include "nm_iam_user.h"
 
+#include <string.h>
 
 struct nm_iam_role* nm_iam_role_from_json(const cJSON* json)
 {
@@ -21,13 +22,13 @@ struct nm_iam_role* nm_iam_role_from_json(const cJSON* json)
         cJSON* p = cJSON_GetArrayItem(policies, i);
         // todo handle non strings.
         if (cJSON_IsString(p)) {
-            np_string_set_add(&role->policies, p->valuestring);
+            nn_string_set_insert(&role->policies, p->valuestring);
         }
     }
     return role;
 }
 
-bool load_attributes(struct np_string_map* attributes, const cJSON* json)
+bool load_attributes(struct nn_string_map* attributes, const cJSON* json)
 {
     if (!cJSON_IsObject(json)) {
         return false;
@@ -37,7 +38,7 @@ bool load_attributes(struct np_string_map* attributes, const cJSON* json)
     cJSON_ArrayForEach(item, json)
     {
         if (cJSON_IsString(item)) {
-            np_string_map_insert(attributes, item->string, item->valuestring);
+            nn_string_map_insert(attributes, item->string, item->valuestring);
         }
     }
 
@@ -74,7 +75,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
         for (size_t i = 0; i < rolesSize; i++) {
             cJSON* item = cJSON_GetArrayItem(roles, i);
             if (cJSON_IsString(item)) {
-                np_string_set_add(&user->roles, item->valuestring);
+                nn_string_set_insert(&user->roles, item->valuestring);
             }
         }
     }

@@ -20,19 +20,19 @@ struct nm_iam_role* nm_iam_role_new(const char* idIn)
         free(role);
         return NULL;
     }
-    np_string_set_init(&role->policies);
+    nn_string_set_init(&role->policies);
     role->id = id;
     return role;
 }
 
 void nm_iam_role_free(struct nm_iam_role* role)
 {
-    np_string_set_deinit(&role->policies);
+    nn_string_set_deinit(&role->policies);
     free(role->id);
     free(role);
 }
 
-np_error_code nm_iam_role_add_policy(struct nm_iam_role* role, const char* policy)
+bool nm_iam_role_add_policy(struct nm_iam_role* role, const char* policy)
 {
-    return np_string_set_add(&role->policies, policy);
+    return nn_string_set_insert(&role->policies, policy);
 }

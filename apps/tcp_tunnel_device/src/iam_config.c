@@ -18,14 +18,14 @@ static bool create_default_iam_config(const char* iamConfigFile);
 
 void iam_config_init(struct iam_config* iamConfig)
 {
-    np_vector_init(&iamConfig->roles, NULL);
-    np_vector_init(&iamConfig->policies, NULL);
+    nn_vector_init(&iamConfig->roles, sizeof(void*));
+    nn_vector_init(&iamConfig->policies, sizeof(void*));
 }
 
 void iam_config_deinit(struct iam_config* iamConfig)
 {
-    np_vector_deinit(&iamConfig->roles);
-    np_vector_deinit(&iamConfig->policies);
+    nn_vector_deinit(&iamConfig->roles);
+    nn_vector_deinit(&iamConfig->policies);
 }
 
 bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, struct nn_log* logger)
@@ -62,7 +62,7 @@ bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, st
         if (policy == NULL) {
             return false;
         }
-        np_vector_push_back(&iamConfig->policies, policy);
+        nn_vector_push_back(&iamConfig->policies, &policy);
     }
 
     size_t rolesSize = cJSON_GetArraySize(roles);
@@ -72,7 +72,7 @@ bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, st
         if (role == NULL) {
             return false;
         }
-        np_vector_push_back(&iamConfig->roles, role);
+        nn_vector_push_back(&iamConfig->roles, &role);
     }
 
     return true;
@@ -104,9 +104,9 @@ bool create_default_iam_config(const char* iamConfigFile)
         nm_policy_add_statement(pairedPolicy, stmt);
     }
 
-    //struct nm_iam_role* unpairedRole = nm_iam_role_new("Unpaired");
+    //struct nm_iam_role* unnairedRole = nm_iam_role_new("Unnaired");
 
-    //nm_iam_role_add_policy(unpairedRole, "PasswordPairing");
+    //nm_iam_role_add_policy(unnairedRole, "PasswordPairing");
 
 
     cJSON* root = cJSON_CreateObject();

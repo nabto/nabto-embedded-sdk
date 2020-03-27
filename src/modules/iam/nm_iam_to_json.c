@@ -11,12 +11,8 @@ cJSON* nm_iam_role_to_json(struct nm_iam_role* role)
     cJSON_AddItemToObject(root, "Id", cJSON_CreateString(role->id));
 
     cJSON* policies = cJSON_CreateArray();
-    struct np_string_set_iterator it;
-    for(np_string_set_front(&role->policies, &it);
-        !np_string_set_end(&it);
-        np_string_set_next(&it))
-    {
-        const char* str = np_string_set_get_element(&it);
+    const char* str;
+    NN_STRING_SET_FOREACH(str, &role->policies) {
         cJSON_AddItemToArray(policies, cJSON_CreateString(str));
     }
 
@@ -36,28 +32,21 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
         cJSON_AddItemToObject(root, "ServerConnectToken", cJSON_CreateString(user->serverConnectToken));
     }
 
-    if (!np_string_set_empty(&user->roles)) {
+    if (!nn_string_set_empty(&user->roles)) {
         cJSON* array = cJSON_CreateArray();
-        struct np_string_set_iterator it;
-        for (np_string_set_front(&user->roles, &it);
-             !np_string_set_end(&it);
-             np_string_set_next(&it))
-        {
-            const char* role = np_string_set_get_element(&it);
+        const char* role;
+        NN_STRING_SET_FOREACH(role, &user->roles) {
             cJSON_AddItemToArray(array, cJSON_CreateString(role));
         }
         cJSON_AddItemToObject(root, "Roles", array);
     }
 
-    if (!np_string_map_empty(&user->attributes)) {
+    if (!nn_string_map_empty(&user->attributes)) {
         cJSON* kvPairs = cJSON_CreateObject();
-        struct np_string_map_iterator it;
-        for(np_string_map_front(&user->attributes, &it);
-            !np_string_map_end(&it);
-            np_string_map_next(&it))
+        struct nn_string_map_iterator it;
+        for (it = nn_string_map_begin(&user->attributes); !nn_string_map_is_end(&it); nn_string_map_next(&it))
         {
-            struct np_string_map_item* item = np_string_map_get_element(&it);
-            cJSON_AddItemToObject(kvPairs, item->key, cJSON_CreateString(item->value));
+            cJSON_AddItemToObject(kvPairs, nn_string_map_key(&it), cJSON_CreateString(nn_string_map_value(&it)));
         }
         cJSON_AddItemToObject(root, "Attributes", kvPairs);
     }
