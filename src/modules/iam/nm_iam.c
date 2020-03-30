@@ -179,6 +179,7 @@ void init_coap_handlers(struct nm_iam* iam)
 
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
+    nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)

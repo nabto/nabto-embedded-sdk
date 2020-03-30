@@ -45,6 +45,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapPairingClientSettingsGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserDeleteHandler;
+    struct nm_iam_coap_handler coapIamRolesGetHandler;
 
     struct nm_iam_auth_handler authHandler;
 
