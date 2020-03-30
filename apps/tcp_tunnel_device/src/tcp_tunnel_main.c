@@ -24,12 +24,16 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #define NEWLINE "\n"
 
-const char* DEVICE_CONFIG_FILE = "device_config.json";
-const char* TCP_TUNNEL_STATE_FILE = "tcp_tunnel_state.json";
-const char* TCP_TUNNEL_IAM_FILE = "tcp_tunnel_iam.json";
-const char* TCP_TUNNEL_SERVICES_FILE = "tcp_tunnel_services.json";
+const char* DEVICE_CONFIG_FILE = "config/device.json";
+const char* TCP_TUNNEL_STATE_FILE = "state/tcp_tunnel_state.json";
+const char* TCP_TUNNEL_IAM_FILE = "config/tcp_tunnel_iam.json";
+const char* TCP_TUNNEL_SERVICES_FILE = "config/tcp_tunnel_services.json";
+const char* DEVICE_KEY_FILE = "keys/device.key";
 
 enum {
     OPTION_HELP = 1,
@@ -64,9 +68,9 @@ struct tcp_tunnel {
 
 static void signal_handler(int s);
 
-static char* generate_private_key_file_name(const char* productId, const char* deviceId);
 static void print_iam_state(struct nm_iam* iam);
 static void iam_user_changed(struct nm_iam* iam, const char* id, void* userData);
+static bool make_directory(const char* directory);
 
 
 
@@ -302,7 +306,12 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     if (args->homeDir != NULL) {
         // perfect just using the homeDir
     } else if (homeEnv != NULL) {
-        args->homeDir = expand_file_name(homeEnv, ".nabto");
+        args->homeDir = expand_file_name(homeEnv, ".nabto/edge");
+        char* dotNabto = expand_file_name(homeEnv, ".nabto");
+        make_directory(dotNabto);
+        free(dotNabto);
+
+        make_directory(args->homeDir);
     } else {
         printf("Missing HomeDir option or HOME environment variable one of these needs to be set." NEWLINE);
         return false;
@@ -312,13 +321,29 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct nn_log logger;
     init_logging(device, &logger, args->logLevel);
 
+    // Create directories if missing
+    char* stateDir = expand_file_name(args->homeDir, "state");
+    make_directory(stateDir);
+    free(stateDir);
+
+    char* keysDir = expand_file_name(args->homeDir, "keys");
+    make_directory(keysDir);
+    free(keysDir);
+
+    char* configDir = expand_file_name(args->homeDir, "config");
+    make_directory(configDir);
+    free(configDir);
 
     tunnel->deviceConfigFile = expand_file_name(args->homeDir, DEVICE_CONFIG_FILE);
     tunnel->stateFile = expand_file_name(args->homeDir, TCP_TUNNEL_STATE_FILE);
     tunnel->iamConfigFile = expand_file_name(args->homeDir, TCP_TUNNEL_IAM_FILE);
     tunnel->servicesFile = expand_file_name(args->homeDir, TCP_TUNNEL_SERVICES_FILE);
+    tunnel->privateKeyFile = expand_file_name(args->homeDir, DEVICE_KEY_FILE);
 
 
+    /**
+     * Load data files
+     */
     struct device_config dc;
     device_config_init(&dc);
 
@@ -327,10 +352,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
 
     }
-
-    char* privateKeyFileName = generate_private_key_file_name(dc.productId, dc.deviceId);
-    tunnel->privateKeyFile = expand_file_name(args->homeDir, privateKeyFileName);
-    free(privateKeyFileName);
 
     struct iam_config iamConfig;
     iam_config_init(&iamConfig);
@@ -348,6 +369,17 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
+    if (!load_tcp_tunnel_services(&tunnel->services, tunnel->servicesFile, &logger))
+    {
+        printf("Failed to load TCP Services from (%s)" NEWLINE, tunnel->servicesFile);
+        return false;
+    }
+
+    if (!load_or_create_private_key(device, tunnel->privateKeyFile, &logger)) {
+        print_private_key_file_load_failed(tunnel->privateKeyFile);
+        return false;
+    }
+
     nabto_device_set_product_id(device, dc.productId);
     nabto_device_set_device_id(device, dc.deviceId);
     nabto_device_set_server_url(device, dc.server);
@@ -356,12 +388,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);
-
-
-    if (!load_or_create_private_key(device, tunnel->privateKeyFile, &logger)) {
-        print_private_key_file_load_failed(tunnel->privateKeyFile);
-        return false;
-    }
 
     if (tcpTunnelState.pairingPassword != NULL) {
         nm_iam_enable_password_pairing(&iam, tcpTunnelState.pairingPassword);
@@ -374,12 +400,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
 
     nm_iam_enable_client_settings(&iam, dc.clientServerUrl, dc.clientServerKey);
-
-    if (!load_tcp_tunnel_services(&tunnel->services, tunnel->servicesFile, &logger))
-    {
-        printf("Failed to load TCP Services from (%s)" NEWLINE, tunnel->servicesFile);
-        return false;
-    }
 
     struct tcp_tunnel_service* service;
     NN_VECTOR_FOREACH(&service, &tunnel->services)
@@ -475,21 +495,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     return true;
 }
 
-
-static char* generate_private_key_file_name(const char* productId, const char* deviceId)
-{
-    // productId_deviceId.key
-    size_t outLength = strlen(productId) + 1 + strlen(deviceId) + 4;
-    char* str = malloc(outLength+1);
-    if (str == NULL) {
-        return NULL;
-    }
-    sprintf(str, "%s_%s.key", productId, deviceId);
-    str[outLength] = 0;
-    return str;
-}
-
-
 void signal_handler(int s)
 {
 }
@@ -536,4 +541,10 @@ void iam_user_changed(struct nm_iam* iam, const char* id, void* userData)
     }
 
     save_tcp_tunnel_state(tcpTunnel->stateFile, &toWrite);
+}
+
+bool make_directory(const char* directory)
+{
+    mkdir(directory, 0777);
+    return true;
 }

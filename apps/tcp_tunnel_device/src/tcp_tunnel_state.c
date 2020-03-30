@@ -43,7 +43,9 @@ bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile
 
     cJSON* json;
 
-    json_config_load(stateFile, &json, logger);
+    if (!json_config_load(stateFile, &json, logger)) {
+        return false;
+    }
 
     cJSON* pairingPassword = cJSON_GetObjectItem(json, "PairingPassword");
     cJSON* pairingServerConnectToken = cJSON_GetObjectItem(json, "PairingServerConnectToken");
