@@ -12,6 +12,10 @@
 #include <nn/string_map.h>
 #include <nn/string_set.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // the iam module needs a list of users, roles, policies
 
 struct nm_policy;
@@ -119,5 +123,9 @@ bool nm_iam_add_policy(struct nm_iam* iam, struct nm_policy* policy);
  * provided the given attributes.
  */
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributes);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

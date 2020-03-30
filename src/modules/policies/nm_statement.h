@@ -7,6 +7,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nn_string_map;
 
 struct nm_statement {
@@ -15,12 +19,16 @@ struct nm_statement {
     struct nn_vector conditions;
 };
 
-struct nm_statement* nm_statement_new();
+struct nm_statement* nm_statement_new(enum nm_effect effect);
 
 void nm_statement_free(struct nm_statement* statement);
 
 enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct nn_string_map* attributes);
 
 bool nm_statement_add_action(struct nm_statement* statement, const char* action);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

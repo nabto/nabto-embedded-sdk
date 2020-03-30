@@ -11,7 +11,7 @@ static void nn_log_function(void* userData, enum nn_log_severity severity, const
 
 static int logMask = 0;
 
-void init_logging(NabtoDevice* device, struct nn_log* logger, const char* logLevel)
+void logging_init(NabtoDevice* device, struct nn_log* logger, const char* logLevel)
 {
     nabto_device_set_log_callback(device, device_log, NULL);
     nabto_device_set_log_level(device, logLevel);

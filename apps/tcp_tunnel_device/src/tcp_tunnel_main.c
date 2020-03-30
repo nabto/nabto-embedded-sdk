@@ -2,11 +2,12 @@
 #include "tcp_tunnel_state.h"
 #include "tcp_tunnel_services.h"
 #include "device_event_handler.h"
-#include "logging.h"
+
 
 #include <nabto/nabto_device.h>
 #include <apps/common/device_config.h>
 #include <apps/common/private_key.h>
+#include <apps/common/logging.h>
 
 #include <modules/iam/nm_iam.h>
 #include <modules/iam/nm_iam_user.h>
@@ -319,7 +320,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     NabtoDevice* device = nabto_device_new();
     struct nn_log logger;
-    init_logging(device, &logger, args->logLevel);
+    logging_init(device, &logger, args->logLevel);
 
     // Create directories if missing
     char* stateDir = expand_file_name(args->homeDir, "state");

@@ -4,6 +4,7 @@ set(src
   private_key.c
   string_file.c
   random_string.c
+  logging.c
   )
 
 add_library(apps_common ${src})
