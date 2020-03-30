@@ -44,6 +44,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapPairingIsPairedGetHandler;
     struct nm_iam_coap_handler coapPairingClientSettingsGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserGetHandler;
+    struct nm_iam_coap_handler coapIamUsersUserDeleteHandler;
 
     struct nm_iam_auth_handler authHandler;
 
@@ -104,6 +105,11 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user);
  * Get a list of all users in the system.
  */
 bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids);
+
+/**
+ * Delete an user.
+ */
+void nm_iam_delete_user(struct nm_iam* iam, const char* userId);
 
 /**
  * Add a role to the iam system.

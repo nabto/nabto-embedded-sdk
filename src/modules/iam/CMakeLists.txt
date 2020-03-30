@@ -11,6 +11,7 @@ set(src
   nm_iam_coap_handler.c
   nm_iam_is_paired.c
   nm_iam_get_user.c
+  nm_iam_delete_user.c
   nm_iam_client_settings.c
   )
 

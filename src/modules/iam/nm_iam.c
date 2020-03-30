@@ -178,6 +178,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
 
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
+    nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
@@ -371,6 +372,26 @@ bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids)
         nn_string_set_insert(ids, user->id);
     }
     return true;
+}
+
+void nm_iam_delete_user(struct nm_iam* iam, const char* userId)
+{
+    size_t s;
+    s = nn_vector_size(&iam->users);
+    for (size_t i = 0; i < s; i++) {
+        struct nm_iam_user* user;
+        nn_vector_get(&iam->users, i, &user);
+        if (strcmp(user->id, userId) == 0) {
+            nn_vector_erase(&iam->users, i);
+            nm_iam_user_free(user);
+
+            if (iam->changeCallbacks.userChanged) {
+                iam->changeCallbacks.userChanged(iam, userId, iam->changeCallbacks.userChangedData);
+            }
+
+            return;
+        }
+    }
 }
 
 
