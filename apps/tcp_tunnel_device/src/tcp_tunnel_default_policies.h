@@ -9,8 +9,6 @@ extern "C" {
 
 bool init_default_policies(const char* fileName);
 
-//bool load_policies(const char* fileName, nabto::fingerprint_iam::FingerprintIAM& iam);
-
 #ifdef __cplusplus
 } //extern "C"
 #endif

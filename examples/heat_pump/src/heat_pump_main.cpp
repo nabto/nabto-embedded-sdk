@@ -7,8 +7,6 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
-#include <modules/iam_cpp/iam_builder.hpp>
-
 #include <cxxopts.hpp>
 
 #include <signal.h>

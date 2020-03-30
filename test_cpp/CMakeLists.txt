@@ -32,17 +32,11 @@ set(test_src
   api/create_sct.cpp
   attach/attach_test.cpp
   test_platform.cpp
-  iam/load_users.cpp
-  iam/load_roles.cpp
-  iam/load_policies.cpp
   policies/condition_test.cpp
   policies/condition_json_test.cpp
   policies/statement_json_test.cpp
   policies/policy_json_test.cpp
   policies/policy_deny_test.cpp
-  iam/condition_test.cpp
-  iam/save_users.cpp
-
   )
 
 add_executable(embedded_unit_test "${test_src}")
@@ -56,7 +50,6 @@ target_link_libraries(embedded_unit_test
   nc_core
   dtls
   nm_logging_test
-  iam_cpp
   nm_policies
   nm_iam
 )

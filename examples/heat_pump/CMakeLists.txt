@@ -8,6 +8,6 @@ set(src
   )
 
 add_executable(heat_pump_device ${src})
-target_link_libraries(heat_pump_device nabto_device 3rdparty_tinycbor 3rdparty_gopt 3rdparty_json 3rdparty_cxxopts device_examples_common iam_cpp fingerprint_iam 3rdparty_nn nm_iam apps_common nm_policies)
+target_link_libraries(heat_pump_device nabto_device 3rdparty_tinycbor 3rdparty_gopt 3rdparty_json 3rdparty_cxxopts device_examples_common 3rdparty_nn nm_iam apps_common nm_policies)
 
 target_link_libraries( heat_pump_device ${CMAKE_THREAD_LIBS_INIT} )

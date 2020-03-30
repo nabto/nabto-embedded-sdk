@@ -8,8 +8,6 @@
 
 #include <modules/iam/nm_iam.h>
 
-#include <modules/fingerprint_iam/fingerprint_iam.hpp>
-
 #include <examples/common/device_config.hpp>
 
 #include <nlohmann/json.hpp>
