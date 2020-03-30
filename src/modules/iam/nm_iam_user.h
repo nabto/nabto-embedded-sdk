@@ -22,6 +22,9 @@ void nm_iam_user_deinit(struct nm_iam_user* user);
 struct nm_iam_user* nm_iam_user_new(const char* id);
 void nm_iam_user_free(struct nm_iam_user* user);
 
+bool nm_iam_user_add_role(struct nm_iam_user* user, const char* roleId);
+void nm_iam_user_remove_role(struct nm_iam_user* user, const char* roleId);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

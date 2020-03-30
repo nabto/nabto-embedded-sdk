@@ -13,6 +13,8 @@ set(src
   nm_iam_get_user.c
   nm_iam_delete_user.c
   nm_iam_list_roles.c
+  nm_iam_remove_role_from_user.c
+  nm_iam_add_role_to_user.c
   nm_iam_client_settings.c
   )
 

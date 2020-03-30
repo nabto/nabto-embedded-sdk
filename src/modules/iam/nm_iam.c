@@ -180,6 +180,8 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
     nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
+    nm_iam_remove_role_from_user_init(&iam->coapIamUsersUserRolesDeleteHandler, iam->device, iam);
+    nm_iam_add_role_to_user_init(&iam->coapIamUsersUserRolesPutHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
@@ -401,4 +403,37 @@ void nm_iam_enable_client_settings(struct nm_iam* iam, const char* clientServerU
     iam->clientServerUrl = strdup(clientServerUrl);
     iam->clientServerKey = strdup(clientServerKey);
     nm_iam_client_settings_init(&iam->coapPairingClientSettingsGetHandler, iam->device, iam);
+}
+
+void nm_iam_remove_role_from_user(struct nm_iam* iam, const char* userId, const char* roleId)
+{
+    struct nm_iam_user* user = nm_iam_find_user(iam, userId);
+    if (user == NULL) {
+        return;
+    }
+    nm_iam_user_remove_role(user, roleId);
+
+    if (iam->changeCallbacks.userChanged) {
+        iam->changeCallbacks.userChanged(iam, userId, iam->changeCallbacks.userChangedData);
+    }
+}
+
+
+bool nm_iam_add_role_to_user(struct nm_iam* iam, const char* userId, const char* roleId)
+{
+    struct nm_iam_user* user = nm_iam_find_user(iam, userId);
+    struct nm_iam_role* role = nm_iam_find_role(iam, roleId);
+
+    if (user == NULL || role == NULL) {
+        return false;
+    }
+
+    bool status = nm_iam_user_add_role(user, roleId);
+
+    if (status == true) {
+        if (iam->changeCallbacks.userChanged) {
+            iam->changeCallbacks.userChanged(iam, userId, iam->changeCallbacks.userChangedData);
+        }
+    }
+    return status;
 }

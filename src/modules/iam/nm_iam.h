@@ -46,6 +46,8 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserDeleteHandler;
     struct nm_iam_coap_handler coapIamRolesGetHandler;
+    struct nm_iam_coap_handler coapIamUsersUserRolesDeleteHandler;
+    struct nm_iam_coap_handler coapIamUsersUserRolesPutHandler;
 
     struct nm_iam_auth_handler authHandler;
 
@@ -119,6 +121,7 @@ void nm_iam_delete_user(struct nm_iam* iam, const char* userId);
 bool nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role);
 
 
+
 /**
  * Add a policy to the IAM system
  *
@@ -131,6 +134,16 @@ bool nm_iam_add_policy(struct nm_iam* iam, struct nm_policy* policy);
  * provided the given attributes.
  */
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributes);
+
+/**
+ * remove a role from a user.
+ */
+void nm_iam_remove_role_from_user(struct nm_iam* iam, const char* userId, const char* roleId);
+
+/**
+ * Add a role to a user
+ */
+bool nm_iam_add_role_to_user(struct nm_iam* iam, const char* userId, const char* roleId);
 
 #ifdef __cplusplus
 } //extern "C"

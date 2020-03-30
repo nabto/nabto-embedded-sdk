@@ -43,3 +43,13 @@ void nm_iam_user_free(struct nm_iam_user* user)
     nn_string_set_deinit(&user->roles);
     free(user);
 }
+
+bool nm_iam_user_add_role(struct nm_iam_user* user, const char* roleId)
+{
+    return nn_string_set_insert(&user->roles, roleId);
+}
+
+void nm_iam_user_remove_role(struct nm_iam_user* user, const char* roleId)
+{
+    nn_string_set_erase(&user->roles, roleId);
+}
