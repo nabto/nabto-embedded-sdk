@@ -176,6 +176,8 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
     nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
     nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
+
+    nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
