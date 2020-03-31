@@ -32,7 +32,7 @@ string(STRIP "${GIT_COUNT}" GIT_COUNT)
 string(STRIP "${GIT_BRANCH_COUNT}" GIT_BRANCH_COUNT)
 string(STRIP "${GIT_HASH}" GIT_HASH)
 
-set(VERSION_NUMBER "5.0.0")
+set(VERSION_NUMBER "5.1.0")
 
 if (GIT_TAG)
   # string v4.5.6 -> 4.5.6
