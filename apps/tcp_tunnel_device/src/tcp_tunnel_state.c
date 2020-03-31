@@ -70,6 +70,9 @@ bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile
             }
         }
     }
+
+    cJSON_Delete(json);
+
     return true;
 }
 

@@ -74,7 +74,7 @@ bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, st
         }
         nn_vector_push_back(&iamConfig->roles, &role);
     }
-
+    cJSON_Delete(config);
     return true;
 }
 
@@ -136,6 +136,8 @@ bool create_default_iam_config(const char* iamConfigFile)
     cJSON_AddItemToObject(root, "Roles", roles);
 
     json_config_save(iamConfigFile, root);
+
+    cJSON_Delete(root);
 
     return true;
 }

@@ -44,9 +44,12 @@ bool load_device_config(const char* fileName, struct device_config* dc, struct n
             return false;
         }
 
-        dc->clientServerKey = clientServerKey->valuestring;
-        dc->clientServerUrl = clientServerUrl->valuestring;
+        dc->clientServerKey = strdup(clientServerKey->valuestring);
+        dc->clientServerUrl = strdup(clientServerUrl->valuestring);
     }
+
+    cJSON_Delete(config);
+
     return true;
 }
 

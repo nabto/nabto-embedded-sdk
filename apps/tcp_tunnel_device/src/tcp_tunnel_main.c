@@ -217,6 +217,14 @@ void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)
     free(tunnel->stateFile);
     free(tunnel->iamConfigFile);
     free(tunnel->privateKeyFile);
+    free(tunnel->servicesFile);
+    free(tunnel->pairingPassword);
+    free(tunnel->pairingServerConnectToken);
+    struct tcp_tunnel_service* service;
+    NN_VECTOR_FOREACH(&service, &tunnel->services)
+    {
+        tcp_tunnel_service_free(service);
+    }
     nn_vector_deinit(&tunnel->services);
 }
 
@@ -434,6 +442,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         nm_iam_add_policy(&iam, policy);
     }
     nn_vector_clear(&iamConfig.policies);
+    iam_config_deinit(&iamConfig);
 
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
@@ -456,7 +465,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
     printf("########" NEWLINE);
 
+    free(pairingUrl);
+    nabto_device_string_free(deviceFingerprint);
 
+    tcp_tunnel_state_deinit(&tcpTunnelState);
 
     if (args->showState) {
         print_iam_state(&iam);
@@ -465,7 +477,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
         device_event_handler_init(&eventHandler, device);
 
-        nm_iam_set_user_changed_callback(&iam, iam_user_changed, &tunnel);
+        nm_iam_set_user_changed_callback(&iam, iam_user_changed, tunnel);
 
         nabto_device_start(device);
         nm_iam_start(&iam);
@@ -493,6 +505,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     nabto_device_stop(device);
     nm_iam_deinit(&iam);
     nabto_device_free(device);
+
+
+    device_config_deinit(&dc);
+
     return true;
 }
 

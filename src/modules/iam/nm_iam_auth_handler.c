@@ -57,4 +57,6 @@ void handle_request(struct nm_iam_auth_handler* handler, NabtoDeviceAuthorizatio
     bool verdict = nm_iam_check_access(handler->iam, ref, action, &attributes);
 
     nabto_device_authorization_request_verdict(request, verdict);
+
+    nn_string_map_deinit(&attributes);
 }

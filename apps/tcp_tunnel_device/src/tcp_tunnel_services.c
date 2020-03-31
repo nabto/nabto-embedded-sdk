@@ -47,6 +47,8 @@ bool load_tcp_tunnel_services(struct nn_vector* services, const char* servicesFi
         return false;
     }
 
+    cJSON_Delete(config);
+
     return true;
 }
 
