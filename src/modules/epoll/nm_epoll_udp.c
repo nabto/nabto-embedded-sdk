@@ -536,7 +536,8 @@ void nm_epoll_event_send_to(void* data)
         } else {
 
             if (status == EADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
-                status == ENETUNREACH) // if we send ipv6 on a system without it.
+                status == ENETUNREACH || // if we send ipv6 on a system without it.
+                status == EAFNOSUPPORT) // if we send ipv6 on an ipv4 only socket
             {
                 NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
             } else {

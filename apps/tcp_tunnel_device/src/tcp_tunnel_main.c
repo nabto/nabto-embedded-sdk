@@ -529,6 +529,7 @@ void print_iam_state(struct nm_iam* iam)
         struct nm_iam_user* user = nm_iam_find_user(iam, id);
         printf("User: %s, fingerprint: %s" NEWLINE, user->id, user->fingerprint);
     }
+    nn_string_set_deinit(&ss);
 }
 
 
@@ -556,8 +557,9 @@ void iam_user_changed(struct nm_iam* iam, const char* id, void* userData)
         struct nm_iam_user* user = nm_iam_find_user(iam, uid);
         nn_vector_push_back(&toWrite.users, &user);
     }
-
+    nn_string_set_deinit(&userIds);
     save_tcp_tunnel_state(tcpTunnel->stateFile, &toWrite);
+    tcp_tunnel_state_deinit(&toWrite);
 }
 
 bool make_directory(const char* directory)
