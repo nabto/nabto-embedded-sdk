@@ -7,8 +7,6 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
-#include <modules/iam_cpp/iam_builder.hpp>
-
 #include <cxxopts.hpp>
 
 #include <signal.h>
@@ -39,7 +37,6 @@ void print_invalid_device_config_help(const std::string& filename)
     std::cout << "The device config is invalid (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
     std::cout << nabto::examples::common::DeviceConfig::example() << std::endl;
 }
-
 
 int main(int argc, char** argv) {
     cxxopts::Options options("Heat pump", "Nabto heat pump example.");

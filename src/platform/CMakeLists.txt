@@ -10,6 +10,8 @@ set(src
   ${src_dir}/np_util.c
   ${src_dir}/np_vector.c
   ${src_dir}/np_list.c
+  ${src_dir}/np_string_map.c
+  ${src_dir}/np_string_set.c
   )
 
 set(test_src

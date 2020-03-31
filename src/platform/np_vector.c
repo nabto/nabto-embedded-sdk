@@ -5,16 +5,12 @@
 #include <stdbool.h>
 #include <string.h>
 
-np_error_code np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction)
+void np_vector_init(struct np_vector* vector, np_vector_element_free freeFunction)
 {
     vector->freeFunction = freeFunction;
-    vector->elements = malloc(1*sizeof(void*));
-    if (vector->elements == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-    vector->capacity = 1;
+    vector->elements = NULL;
+    vector->capacity = 0;
     vector->used = 0;
-    return NABTO_EC_OK;
 }
 
 
@@ -33,6 +29,9 @@ np_error_code np_vector_push_back(struct np_vector* vector, void* element)
 {
     if (vector->used == vector->capacity) {
         size_t newCapacity = vector->capacity*2;
+        if (newCapacity == 0) {
+            newCapacity = 1;
+        }
         void** newElements = malloc(newCapacity*sizeof(void*));
         if (newElements == NULL) {
             return NABTO_EC_OUT_OF_MEMORY;
@@ -47,17 +46,17 @@ np_error_code np_vector_push_back(struct np_vector* vector, void* element)
     return NABTO_EC_OK;
 }
 
-bool np_vector_empty(struct np_vector* vector)
+bool np_vector_empty(const struct np_vector* vector)
 {
     return vector->used == 0;
 }
 
-size_t np_vector_size(struct np_vector* vector)
+size_t np_vector_size(const struct np_vector* vector)
 {
     return vector->used;
 }
 
-void* np_vector_get(struct np_vector* vector, size_t index)
+void* np_vector_get(const struct np_vector* vector, size_t index)
 {
     if (index < vector->used) {
         return vector->elements[index];
@@ -75,4 +74,39 @@ void np_vector_erase(struct np_vector* vector, size_t index)
         size_t after = vector->used - index;
         memmove(&vector->elements[index], &vector->elements[index+1], sizeof(void*)*after);
     }
+}
+
+void np_vector_clear(struct np_vector* vector)
+{
+    vector->used = 0;
+    // TODO free elements if needed
+}
+
+void np_vector_front(const struct np_vector* vector, struct np_vector_iterator* iterator)
+{
+    iterator->v = vector;
+    iterator->current = 0;
+}
+
+struct np_vector_iterator np_vector_front2(const struct np_vector* vector)
+{
+    struct np_vector_iterator iterator;
+    iterator.v = vector;
+    iterator.current = 0;
+    return iterator;
+}
+
+void np_vector_next(struct np_vector_iterator* iterator)
+{
+    iterator->current += 1;
+}
+
+bool np_vector_end(const struct np_vector_iterator* iterator)
+{
+    return iterator->current >= iterator->v->used;
+}
+
+void* np_vector_get_element(const struct np_vector_iterator* iterator)
+{
+    return np_vector_get(iterator->v, iterator->current);
 }

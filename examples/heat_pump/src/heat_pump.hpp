@@ -4,12 +4,15 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
-#include "heat_pump_persisting.hpp"
-#include <modules/fingerprint_iam/fingerprint_iam.hpp>
+
+
+#include <modules/iam/nm_iam.h>
 
 #include <examples/common/device_config.hpp>
 
 #include <nlohmann/json.hpp>
+
+#include <nn/log.h>
 
 #include <mutex>
 #include <thread>
@@ -73,9 +76,9 @@ class HeatPump {
     nlohmann::json getState()
     {
         nlohmann::json state;
-        state["Mode"] = persisting_->getHeatPumpMode();
-        state["Target"] = persisting_->getHeatPumpTarget();
-        state["Power"] = persisting_->getHeatPumpPower();
+        state["Mode"] = mode_;
+        state["Target"] = target_;
+        state["Power"] = power_;
         state["Temperature"] = 22.3;
         return state;
     }
@@ -96,6 +99,12 @@ class HeatPump {
 
  private:
 
+    static void iamUserChanged(struct nm_iam* iam, const char* userId, void* userData);
+    void userChanged();
+    void saveState();
+    void loadState();
+    void createState();
+
     void initCoapHandlers();
     std::string getFingerprint();
     std::string createPairingLink();
@@ -103,9 +112,9 @@ class HeatPump {
     NabtoDevice* device_;
     std::string privateKey_;
     nabto::examples::common::DeviceConfig& dc_;
-    std::shared_ptr<HeatPumpPersisting> persisting_;
 
-    fingerprint_iam::FingerprintIAM fingerprintIAM_;
+    struct nn_log logger_;
+    struct nm_iam iam_;
 
     std::unique_ptr<HeatPumpSetPower> coapSetPower_;
     std::unique_ptr<HeatPumpSetTarget> coapSetTarget_;
@@ -117,6 +126,15 @@ class HeatPump {
 
     std::string appName_ = "HeatPump";
     std::string appVersion_ = "1.0.0";
+
+    std::string stateFile_;
+    bool power_ = false;
+    double target_ = 22.3;
+    std::string mode_ = "COOL";
+
+    std::string pairingPassword_;
+    std::string pairingServerConnectToken_;
+
 
 };
 

@@ -12,7 +12,7 @@ void free_string(void* ptr)
 BOOST_AUTO_TEST_CASE(init)
 {
     struct np_vector vector;
-    BOOST_TEST(np_vector_init(&vector, free_string) == NABTO_EC_OK);
+    np_vector_init(&vector, free_string);
 
     char* foo = strdup("foo");
 
@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(init)
 BOOST_AUTO_TEST_CASE(erase)
 {
     struct np_vector vector;
-    BOOST_TEST(np_vector_init(&vector, free_string) == NABTO_EC_OK);
+    np_vector_init(&vector, free_string);
 
     char* foo = strdup("foo");
     char* bar = strdup("bar");
@@ -54,6 +54,25 @@ BOOST_AUTO_TEST_CASE(erase)
 
     np_vector_deinit(&vector);
     // check with valgrind that no memory is leaked.
+}
+
+BOOST_AUTO_TEST_CASE(iterator)
+{
+    struct np_vector vector;
+    np_vector_init(&vector, free_string);
+
+    np_vector_push_back(&vector, strdup("foo"));
+    np_vector_push_back(&vector, strdup("foo"));
+    np_vector_push_back(&vector, strdup("foo"));
+
+    struct np_vector_iterator it;
+    for(np_vector_front(&vector, &it);
+        !np_vector_end(&it);
+        np_vector_next(&it))
+    {
+        void* foo = np_vector_get_element(&it);
+        BOOST_TEST(strcmp((const char*)foo, "foo") == 0);
+    }
 }
 
 

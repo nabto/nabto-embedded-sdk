@@ -423,7 +423,10 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener,
  */
 typedef int NabtoDeviceEvent;
 
+// The device is successfully attached to the basestation.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACHED;
+
+// The device is detached after it has been attached.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
 
 /**

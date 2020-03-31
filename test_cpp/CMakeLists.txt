@@ -23,6 +23,7 @@ set(test_src
   platform/vector_test.cpp
   platform/list_test.cpp
   platform/ip_address_test.cpp
+  platform/string_map_test.cpp
   api/event_handler_test.cpp
   api/future_test.cpp
   api/device_api.cpp
@@ -31,10 +32,11 @@ set(test_src
   api/create_sct.cpp
   attach/attach_test.cpp
   test_platform.cpp
-  iam/load_users.cpp
-  iam/load_roles.cpp
-  iam/load_policies.cpp
-  iam/condition_test.cpp
+  policies/condition_test.cpp
+  policies/condition_json_test.cpp
+  policies/statement_json_test.cpp
+  policies/policy_json_test.cpp
+  policies/policy_deny_test.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")
@@ -48,7 +50,8 @@ target_link_libraries(embedded_unit_test
   nc_core
   dtls
   nm_logging_test
-  iam_cpp
+  nm_policies
+  nm_iam
 )
 
 if (HAVE_EPOLL_HEADERS)

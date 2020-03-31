@@ -10,7 +10,9 @@
 
 enum nc_coap_rest_error {
     NC_COAP_REST_ERROR_UNKNOWN,
-    NC_COAP_REST_ERROR_UNKNOWN_DEVICE_FINGERPRINT
+    NC_COAP_REST_ERROR_UNKNOWN_DEVICE_FINGERPRINT,
+    NC_COAP_REST_ERROR_WRONG_PRODUCT_ID,
+    NC_COAP_REST_ERROR_WRONG_DEVICE_ID
     // add specific errors which needs to be handled programmatically here.
 };
 
