@@ -47,11 +47,27 @@ void nm_iam_deinit(struct nm_iam* iam)
 
     nm_iam_auth_handler_deinit(&iam->authHandler);
 
+    struct nm_iam_user* user;
+    NN_VECTOR_FOREACH(&user, &iam->users) {
+        nm_iam_user_free(user);
+    }
     nn_vector_deinit(&iam->users);
+
+    struct nm_iam_role* role;
+    NN_VECTOR_FOREACH(&role, &iam->roles) {
+        nm_iam_role_free(role);
+    }
     nn_vector_deinit(&iam->roles);
+
+    struct nm_policy* policy;
+    NN_VECTOR_FOREACH(&policy, &iam->policies) {
+        nm_policy_free(policy);
+    }
     nn_vector_deinit(&iam->policies);
 
     free(iam->pairingPassword);
+    free(iam->clientServerUrl);
+    free(iam->clientServerKey);
 }
 
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)
@@ -92,6 +108,9 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
             effect = nm_iam_check_access_role(iam, unpaired, action, &attributes);
         }
     }
+
+    nn_string_map_deinit(&attributes);
+
 
     bool verdict = false;
     if (effect == NM_EFFECT_ALLOW) {
@@ -173,10 +192,11 @@ bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerC
 void init_coap_handlers(struct nm_iam* iam)
 {
     nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
-    nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
+
     nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
     nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
 
+    nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
     nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
@@ -187,11 +207,19 @@ void init_coap_handlers(struct nm_iam* iam)
 void deinit_coap_handlers(struct nm_iam* iam)
 {
     nm_iam_coap_handler_deinit(&iam->coapPairingGetHandler);
-    nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingIsPairedGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingClientSettingsGetHandler);
+
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserGetHandler);
+
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserDeleteHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamRolesGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserRolesDeleteHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserRolesPutHandler);
 }
+
 
 
 struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const char* fingerprint)

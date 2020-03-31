@@ -33,6 +33,7 @@ void nm_statement_free(struct nm_statement* statement)
     }
 
     nn_vector_deinit(&statement->conditions);
+    free(statement);
 }
 
 enum nm_effect nm_statement_eval(const struct nm_statement* statement, const char* action, const struct nn_string_map* attributes)

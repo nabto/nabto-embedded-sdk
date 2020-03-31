@@ -43,6 +43,8 @@ HeatPump::HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::ex
 
 HeatPump::~HeatPump()
 {
+    nabto_device_stop(device_);
+    nm_iam_deinit(&iam_);
 }
 
 
@@ -172,6 +174,7 @@ void HeatPump::loadState()
             }
         }
     }
+    cJSON_Delete(json);
 
 }
 void HeatPump::createState()

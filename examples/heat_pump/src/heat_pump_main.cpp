@@ -38,7 +38,6 @@ void print_invalid_device_config_help(const std::string& filename)
     std::cout << nabto::examples::common::DeviceConfig::example() << std::endl;
 }
 
-
 int main(int argc, char** argv) {
     cxxopts::Options options("Heat pump", "Nabto heat pump example.");
 
