@@ -1,4 +1,5 @@
 #include "iam_config.h"
+#include "help.h"
 #include "tcp_tunnel_state.h"
 #include "tcp_tunnel_services.h"
 #include "device_event_handler.h"
@@ -80,25 +81,6 @@ void print_version()
     printf("TCP Tunnel Device Version: %s" NEWLINE, nabto_device_version());
 }
 
-void print_help()
-{
-    printf("TCP Tunnel Device" NEWLINE);
-    printf(NEWLINE);
-    printf("Usage:" NEWLINE);
-    printf(" -h, --help,    Print help text" NEWLINE);
-    printf(" -v, --version, Print version info" NEWLINE);
-    printf(" -H, --homedir, Specify the homedir for the configuration files" NEWLINE);
-    printf("   , --show-state, Show the state of the TCP Tunnelling Device" NEWLINE);
-    printf("   , --log-level, Set the log level to use, valid options is error,warn,info,trace. The default level is error" NEWLINE);
-    printf(NEWLINE);
-    printf("The following configuration files exists:" NEWLINE);
-    printf(" - HOME_DIR/%s this file contains product id, device id and optionally settings the client needs to connect to the device" NEWLINE, DEVICE_CONFIG_FILE);
-    printf(" - HOME_DIR/<ProductId>_<DeviceId>.key this file contains the private key the device uses." NEWLINE);
-    printf(" - HOME_DIR/%s This file contains the runtime state of the tcp tunnelling device." NEWLINE, TCP_TUNNEL_STATE_FILE);
-    printf(" - HOME_DIR/%s This file contains the iam configuration the tcp tunnelling device uses." NEWLINE, TCP_TUNNEL_IAM_FILE);
-    printf(" - HOME_DIR/%s This file contains the services this tunnel exposes." NEWLINE, TCP_TUNNEL_SERVICES_FILE);
-}
-
 void print_device_config_load_failed(const char* fileName)
 {
     printf("Could not open or parse the device config file (%s)." NEWLINE, fileName);
@@ -152,7 +134,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x2s[] = "v";      const char* x2l[] = { "version", 0 };
     const char x3s[] = "";       const char* x3l[] = { "log-level", 0 };
     const char x4s[] = "";       const char* x4l[] = { "show-state", 0 };
-    const char x5s[] = "H";      const char* x5l[] = { "homedir", 0 };
+    const char x5s[] = "H";      const char* x5l[] = { "home-dir", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },

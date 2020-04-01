@@ -4,6 +4,7 @@ set(csrc
   src/tcp_tunnel_state.c
   src/tcp_tunnel_services.c
   src/device_event_handler.c
+  src/help.c
   )
 
 add_executable(tcp_tunnel_device "${csrc}")
