@@ -339,9 +339,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     device_config_init(&dc);
 
     if (!load_device_config(tunnel->deviceConfigFile, &dc, &logger)) {
-        print_device_config_load_failed(tunnel->deviceConfigFile);
+        printf("Failed to start device because a valid `%s` configuration file is missing. see --help for information about this file." NEWLINE, tunnel->deviceConfigFile);
         return false;
-
     }
 
     struct iam_config iamConfig;

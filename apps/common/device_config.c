@@ -13,7 +13,6 @@ bool load_device_config(const char* fileName, struct device_config* dc, struct n
 {
     cJSON* config;
     if (!json_config_load(fileName, &config, logger)) {
-        NN_LOG_ERROR(logger, LOGM, "Could not load device configuration file %s", fileName);
         return false;
     }
 
