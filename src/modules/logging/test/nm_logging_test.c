@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include <sys/time.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,15 +104,6 @@ void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
 void nm_test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
     if(((logLevel & severity) && ((NABTO_LOG_MODULE_FILTER & module) || module == 0))) {
-        time_t sec;
-        unsigned int ms;
-        struct timeval tv;
-        struct tm tm;
-        gettimeofday(&tv, NULL);
-        sec = tv.tv_sec;
-        ms = tv.tv_usec/1000;
-
-        localtime_r(&sec, &tm);
 
         size_t fileLen = strlen(file);
         char fileTmp[NM_UNIX_LOGGING_FILE_LENGTH+4];
@@ -139,8 +129,7 @@ void nm_test_log (uint32_t severity, uint32_t module, uint32_t line, const char*
                 break;
         }
 
-        printf("%02u:%02u:%02u:%03u %s(%03u)[%s] ",
-               tm.tm_hour, tm.tm_min, tm.tm_sec, ms,
+        printf("%s(%03u)[%s] ",
                fileTmp, line, level);
         vprintf(fmt, args);
         printf("\n");
