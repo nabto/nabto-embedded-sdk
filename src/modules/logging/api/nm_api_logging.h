@@ -9,10 +9,6 @@
 extern "C" {
 #endif
 
-struct nm_api_logging {
-
-};
-
 void nm_api_log_init();
 void nm_api_logging_set_level(uint32_t level);
 void nm_api_logging_set_callback(NabtoDeviceLogCallback cb, void* data);

@@ -10,7 +10,7 @@
 
 typedef uint32_t nabto_device_duration_t_;
 
-NabtoDeviceFuture* nabto_device_future_new(NabtoDevice* device)
+NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_future_new(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_future* fut = malloc(sizeof(struct nabto_device_future));

@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_DNS
 
@@ -44,14 +45,14 @@ DWORD WINAPI resolver_thread(LPVOID data) {
                 NABTO_LOG_TRACE(LOG, "Found IPv4");
                 ctx->ec = NABTO_EC_OK;
                 ctx->ips[ctx->recSize].type = NABTO_IPV4;
-                memcpy(ctx->ips[ctx->recSize].v4.addr, &sockaddr_ipv4->sin_addr, 4);
+                memcpy(ctx->ips[ctx->recSize].ip.v4, &sockaddr_ipv4->sin_addr, 4);
                 ctx->recSize++;
             } else if (p->ai_family == AF_INET6) {
                 struct sockaddr_in6* sockaddr_ipv6 = (struct sockaddr_in6 *) p->ai_addr;
                 NABTO_LOG_TRACE(LOG, "Found IPv6");
                 ctx->ec = NABTO_EC_OK;
                 ctx->ips[ctx->recSize].type = NABTO_IPV6;
-                memcpy(ctx->ips[ctx->recSize].v6.addr, &sockaddr_ipv6->sin6_addr, 16);
+                memcpy(ctx->ips[ctx->recSize].ip.v6, &sockaddr_ipv6->sin6_addr, 16);
                 ctx->recSize++;
             } else {
                 // unknown address family, skipping

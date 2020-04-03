@@ -30,7 +30,7 @@ void nabto_device_free_threads(struct nabto_device_context* dev);
 NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
 void nabto_device_do_stop(struct nabto_device_context* dev);
 
-const char* nabto_device_version()
+const char* NABTO_DEVICE_API nabto_device_version()
 {
     return nc_version();
 }
@@ -129,7 +129,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 /**
  * block until no further work is done.
  */
-void nabto_device_stop(NabtoDevice* device)
+void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 

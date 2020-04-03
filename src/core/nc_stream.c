@@ -412,7 +412,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
                 // wait for a new event saying more data is ready.
             } else {
                 *stream->readLength += readen;
-                stream->readBuffer += readen;
+                (uint8_t*)stream->readBuffer += readen;
                 stream->readBufferLength -= readen;
                 if (stream->readAllCb) {
                     if (stream->readBufferLength == 0) {
@@ -446,7 +446,7 @@ void nc_stream_do_write_all(struct nc_stream_context* stream)
             stream->writeCb = NULL;
             cb(NABTO_EC_OK, stream->writeUserData);
         } else {
-            stream->writeBuffer += written;
+            (uint8_t*)stream->writeBuffer += written;
             stream->writeBufferLength -= written;
             nc_stream_do_write_all(stream);
         }
