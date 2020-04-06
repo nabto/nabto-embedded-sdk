@@ -63,6 +63,43 @@ class DnsTest {
     struct np_platform* pl_;
 };
 
+class DnsTestNoSuchDomain {
+ public:
+    DnsTestNoSuchDomain(nabto::test::TestPlatform& tp)
+        : tp_(tp), pl_(tp.getPlatform())
+    {
+    }
+
+    void start()
+    {
+        tp_.init();
+        pl_->dns.async_resolve(pl_, dnsName_, &DnsTestNoSuchDomain::dnsCallback, this);
+        tp_.run();
+    }
+
+    static void dnsCallback(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data)
+    {
+        if (ec != NABTO_EC_OK) {
+
+        } else {
+            BOOST_TEST(v4RecSize == (size_t)0);
+            BOOST_TEST(v6RecSize == (size_t)0);
+        }
+        DnsTestNoSuchDomain* t = (DnsTestNoSuchDomain*)data;
+        t->end();
+    }
+
+    void end() {
+        tp_.stop();
+    }
+
+ private:
+    const char* dnsName_ = "no-such-domain.dev.nabto.com";
+    nabto::test::TestPlatform& tp_;
+    struct np_platform* pl_;
+};
+
+
 }
 
 BOOST_AUTO_TEST_SUITE(dns)
@@ -71,10 +108,19 @@ BOOST_AUTO_TEST_SUITE(dns)
 
 BOOST_AUTO_TEST_CASE(resolve_epoll, * boost::unit_test::timeout(30))
 {
-    nabto::test::TestPlatformEpoll epollPlatform;
+    {
+        nabto::test::TestPlatformEpoll epollPlatform;
 
-    DnsTest dt(epollPlatform);
-    dt.start();
+        DnsTest dt(epollPlatform);
+        dt.start();
+    }
+    {
+        nabto::test::TestPlatformEpoll epollPlatform;
+
+        DnsTestNoSuchDomain dt(epollPlatform);
+        dt.start();
+    }
+
 }
 
 #endif
@@ -83,10 +129,18 @@ BOOST_AUTO_TEST_CASE(resolve_epoll, * boost::unit_test::timeout(30))
 
 BOOST_AUTO_TEST_CASE(resolve_libevent, * boost::unit_test::timeout(30))
 {
-    nabto::test::TestPlatformLibevent libeventPlatform;
+    {
+        nabto::test::TestPlatformLibevent libeventPlatform;
 
-    DnsTest dt(libeventPlatform);
-    dt.start();
+        DnsTest dt(libeventPlatform);
+        dt.start();
+    }
+    {
+        nabto::test::TestPlatformLibevent libeventPlatform;
+
+        DnsTestNoSuchDomain dt(libeventPlatform);
+        dt.start();
+    }
 }
 
 #endif
