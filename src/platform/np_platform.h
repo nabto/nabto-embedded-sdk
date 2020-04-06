@@ -39,6 +39,7 @@ struct np_platform {
 
     // DNS resolver module
     struct np_dns_module dns;
+    void* dnsData;
 
     // DTLS client module
     struct np_dtls_cli_module dtlsC;

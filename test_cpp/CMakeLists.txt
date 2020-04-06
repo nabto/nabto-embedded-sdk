@@ -10,8 +10,14 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/coap_cpp co
 INCLUDE(CheckIncludeFiles)
 CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
 
+CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
+
 if (HAVE_EPOLL_HEADERS)
   add_definitions(-DHAVE_EPOLL)
+endif()
+
+if (HAVE_LIBEVENT_HEADERS)
+  add_definitions(-DHAVE_LIBEVENT)
 endif()
 
 set(test_src
@@ -37,6 +43,7 @@ set(test_src
   policies/statement_json_test.cpp
   policies/policy_json_test.cpp
   policies/policy_deny_test.cpp
+  dns/dns_test.cpp
   )
 
 add_executable(embedded_unit_test "${test_src}")
@@ -56,6 +63,10 @@ target_link_libraries(embedded_unit_test
 
 if (HAVE_EPOLL_HEADERS)
   target_link_libraries(embedded_unit_test nm_epoll)
+endif()
+
+if (HAVE_LIBEVENT_HEADERS)
+  target_link_libraries(embedded_unit_test nm_libevent)
 endif()
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
