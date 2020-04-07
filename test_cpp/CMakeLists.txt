@@ -7,18 +7,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/util common
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/dtls common_dtls)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/coap_cpp common_coap_cpp)
 
-INCLUDE(CheckIncludeFiles)
-CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
-
-CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
-
-if (HAVE_EPOLL_HEADERS)
-  add_definitions(-DHAVE_EPOLL)
-endif()
-
-if (HAVE_LIBEVENT_HEADERS)
-  add_definitions(-DHAVE_LIBEVENT)
-endif()
 
 set(test_src
   helper.cpp

@@ -69,16 +69,23 @@ add_subdirectory(src/modules/logging/test)
 #add_subdirectory(src/modules/iam_cpp)
 add_subdirectory(src/modules/policies)
 add_subdirectory(src/modules/iam)
-add_subdirectory(src/modules/libevent)
 add_subdirectory(src/modules/posix)
 add_subdirectory(apps/common)
 
 
 CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
+CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 
 if (HAVE_EPOLL_HEADERS)
   add_subdirectory(src/modules/epoll)
+  add_definitions(-DHAVE_EPOLL)
 endif()
+
+if (HAVE_LIBEVENT_HEADERS)
+  add_definitions(-DHAVE_LIBEVENT)
+  add_subdirectory(src/modules/libevent)
+endif()
+
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_subdirectory(src/modules/dns/unix)
