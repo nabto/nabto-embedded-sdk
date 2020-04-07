@@ -4,17 +4,17 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-bool np_ip_is_v4(struct np_ip_address* ip)
+bool np_ip_is_v4(const struct np_ip_address* ip)
 {
     return (ip->type == NABTO_IPV4);
 }
 
-bool np_ip_is_v6(struct np_ip_address* ip)
+bool np_ip_is_v6(const struct np_ip_address* ip)
 {
     return (ip->type == NABTO_IPV6);
 }
 
-const char* np_ip_address_to_string(struct np_ip_address* address)
+const char* np_ip_address_to_string(const struct np_ip_address* address)
 {
     static char outputBuffer[40]; // 8*4 + 7 + 1
     memset(outputBuffer, 0, 40);
@@ -40,10 +40,10 @@ void np_ip_address_assign_v4(struct np_ip_address* ip, uint32_t address)
 static const uint8_t ipv4MappedIpv6Prefix[12] = {0x00,0x00,0x00,0x00,
                                                  0x00,0x00,0x00,0x00,
                                                  0x00,0x00,0xFF,0xFF};
-bool np_ip_is_v4_mapped(struct np_ip_address* ip)
+bool np_ip_is_v4_mapped(const struct np_ip_address* ip)
 {
     if (np_ip_is_v6(ip)) {
-        uint8_t* ptr = ip->ip.v6;
+        const uint8_t* ptr = ip->ip.v6;
         if (memcmp(ptr, ipv4MappedIpv6Prefix, 12) == 0) {
             return true;
         }
@@ -51,7 +51,7 @@ bool np_ip_is_v4_mapped(struct np_ip_address* ip)
     return false;
 }
 
-void np_ip_convert_v4_to_v4_mapped(struct np_ip_address* v4, struct np_ip_address* v6)
+void np_ip_convert_v4_to_v4_mapped(const struct np_ip_address* v4, struct np_ip_address* v6)
 {
     // convert v4 to v4 mapped ipv6 address.  ipv4 mapped ipv6
     // addresses consist of the prefix 0:0:0:0:0:FFFF and then the
@@ -63,7 +63,7 @@ void np_ip_convert_v4_to_v4_mapped(struct np_ip_address* v4, struct np_ip_addres
     memcpy(ptr + 12, v4->ip.v4, 4);
 }
 
-void np_ip_convert_v4_mapped_to_v4(struct np_ip_address* v6, struct np_ip_address* v4)
+void np_ip_convert_v4_mapped_to_v4(const struct np_ip_address* v6, struct np_ip_address* v4)
 {
     v4->type = NABTO_IPV4;
     memcpy(v4->ip.v4, v6->ip.v6+12, 4);

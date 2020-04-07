@@ -1,6 +1,6 @@
 #pragma once
 
-#include <modules/libevent/nm_libevent_dns.h>
+#include <modules/libevent/nm_libevent.h>
 
 #include <event2/event.h>
 
@@ -25,7 +25,7 @@ class TestPlatformLibevent : public TestPlatform {
         np_event_queue_init(&pl_, NULL, NULL);
         nm_logging_test_init();
         np_communication_buffer_init(&pl_);
-        nm_libevent_dns_init(&pl_, eventBase_);
+        nm_libevent_init(&pl_, eventBase_);
         nm_unix_ts_init(&pl_);
         nm_dtls_cli_init(&pl_);
         nm_dtls_srv_init(&pl_);

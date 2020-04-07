@@ -31,30 +31,30 @@ struct np_ip_address {
     } ip;
 };
 
-bool np_ip_is_v4(struct np_ip_address* ip);
+bool np_ip_is_v4(const struct np_ip_address* ip);
 
-bool np_ip_is_v6(struct np_ip_address* ip);
+bool np_ip_is_v6(const struct np_ip_address* ip);
 
 /**
  * Return true if the ip address is an ipv4 mapped ipv6 address.
  */
-bool np_ip_is_v4_mapped(struct np_ip_address* ip);
+bool np_ip_is_v4_mapped(const struct np_ip_address* ip);
 
 /**
  * Convert an ipv4 address to an ipv6 mapped ipv4 address.
  */
-void np_ip_convert_v4_to_v4_mapped(struct np_ip_address* v4, struct np_ip_address* v6);
+void np_ip_convert_v4_to_v4_mapped(const struct np_ip_address* v4, struct np_ip_address* v6);
 
 /**
  * Convert an v4 mapped ipv6 address to an ipv4 address.
  */
-void np_ip_convert_v4_mapped_to_v4(struct np_ip_address* v6, struct np_ip_address* v4);
+void np_ip_convert_v4_mapped_to_v4(const struct np_ip_address* v6, struct np_ip_address* v4);
 
 /**
  * print the ip into a null terminated static buffer. This buffer is
 overwritten next time this function is called.
 */
-const char* np_ip_address_to_string(struct np_ip_address* ip);
+const char* np_ip_address_to_string(const struct np_ip_address* ip);
 
 /**
  * assign ipv4 address in host byte order to the ip address.

@@ -70,6 +70,7 @@ add_subdirectory(src/modules/logging/test)
 add_subdirectory(src/modules/policies)
 add_subdirectory(src/modules/iam)
 add_subdirectory(src/modules/libevent)
+add_subdirectory(src/modules/posix)
 add_subdirectory(apps/common)
 
 
