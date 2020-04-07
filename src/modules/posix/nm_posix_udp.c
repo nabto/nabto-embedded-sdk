@@ -25,7 +25,7 @@ nm_posix_socket nonblocking_socket(int domain, int type)
     int flags = fcntl(sock, F_GETFL, 0);
     if (flags == -1) flags = 0;
     fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-    return sock
+    return sock;
 #endif
 }
 
