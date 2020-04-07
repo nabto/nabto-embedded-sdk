@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+
 
 #define LOG NABTO_LOG_MODULE_UDP
 
