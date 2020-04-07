@@ -36,3 +36,35 @@ void np_ip_address_assign_v4(struct np_ip_address* ip, uint32_t address)
     ip->ip.v4[2] = (uint8_t)(address >> 8);
     ip->ip.v4[3] = (uint8_t)(address);
 }
+
+static const uint8_t ipv4MappedIpv6Prefix[12] = {0x00,0x00,0x00,0x00,
+                                                 0x00,0x00,0x00,0x00,
+                                                 0x00,0x00,0xFF,0xFF};
+bool np_ip_is_v4_mapped(struct np_ip_address* ip)
+{
+    if (np_ip_is_v6(ip)) {
+        uint8_t* ptr = ip->ip.v6;
+        if (memcmp(ptr, ipv4MappedIpv6Prefix, 12) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void np_ip_convert_v4_to_v4_mapped(struct np_ip_address* v4, struct np_ip_address* v6)
+{
+    // convert v4 to v4 mapped ipv6 address.  ipv4 mapped ipv6
+    // addresses consist of the prefix 0:0:0:0:0:FFFF and then the
+    // ipv4 address.
+    v6->type = NABTO_IPV6;
+    uint8_t* ptr = v6->ip.v6;
+    // 80 bits of zeroes
+    memcpy(ptr, ipv4MappedIpv6Prefix, 12);
+    memcpy(ptr + 12, v4->ip.v4, 4);
+}
+
+void np_ip_convert_v4_mapped_to_v4(struct np_ip_address* v6, struct np_ip_address* v4)
+{
+    v4->type = NABTO_IPV4;
+    memcpy(v4->ip.v4, v6->ip.v6+12, 4);
+}
