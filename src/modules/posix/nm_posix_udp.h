@@ -12,12 +12,16 @@ struct nm_posix_received_ctx {
 };
 
 struct nm_posix_udp_socket {
+    struct np_platform* pl;
     nm_posix_socket sock;
     struct nm_posix_received_ctx recv;
     enum np_ip_address_type type;
+    np_communication_buffer* recvBuffer;
 };
 
 np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize);
+
+void nm_posix_udp_event_try_recv_from(void* userData);
 
 np_error_code nm_posix_bind_port(struct nm_posix_udp_socket* s, uint16_t port);
 

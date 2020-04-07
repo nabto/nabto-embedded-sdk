@@ -53,7 +53,6 @@ struct np_udp_socket {
     struct nm_posix_udp_socket posixSocket;
     bool aborted;
     struct nm_epoll_created_ctx created;
-    struct nm_epoll_received_ctx recv;
     struct np_event abortEv;
 };
 
@@ -79,13 +78,12 @@ static np_error_code nm_epoll_async_recv_from(np_udp_socket* socket,
                                               np_udp_packet_received_callback cb, void* data);
 static enum np_ip_address_type nm_epoll_get_protocol(np_udp_socket* socket);
 static uint16_t nm_epoll_get_local_port(np_udp_socket* socket);
-static void nm_epoll_udp_try_read(void* userData);
 
 void nm_epoll_cancel_all_events(np_udp_socket* sock)
 {
     NABTO_LOG_TRACE(LOG, "Cancelling all events");
     np_event_queue_cancel_event(sock->pl, &sock->created.event);
-    np_event_queue_cancel_event(sock->pl, &sock->recv.event);
+    np_event_queue_cancel_event(sock->pl, &sock->posixSocket.recv.event);
     np_event_queue_cancel_event(sock->pl, &sock->abortEv);
 }
 
@@ -127,71 +125,21 @@ uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
 void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events)
 {
     // post event such that the read is executed on the main thread instead of the network thread
-    np_event_queue_post_maybe_double(sock->pl, &sock->recv.event, nm_epoll_udp_try_read, sock);
-    //nm_epoll_udp_try_read(sock);
-}
-
-void nm_epoll_udp_try_read(void* userData)
-{
-    np_udp_socket* sock = userData;
-    if (sock->recv.cb == NULL || sock->aborted) {
-        // ignore read on aborted socket, callback is resolved in nm_epoll_udp_event_abort
-        return;
-    }
-    struct np_udp_endpoint ep;
-    struct np_platform* pl = sock->pl;
-    struct nm_epoll_context* epoll = pl->udpData;
-    ssize_t recvLength;
-    uint8_t* start;
-    start = pl->buf.start(epoll->recvBuffer);
-    if (sock->posixSocket.type == NABTO_IPV6) {
-        struct sockaddr_in6 sa;
-        socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->posixSocket.sock, start,  pl->buf.size(epoll->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep.ip.ip.v6));
-        ep.port = ntohs(sa.sin6_port);
-        ep.ip.type = NABTO_IPV6;
-    } else {
-        struct sockaddr_in sa;
-        socklen_t addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->posixSocket.sock, start, pl->buf.size(epoll->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep.ip.ip.v4));
-        ep.port = ntohs(sa.sin_port);
-        ep.ip.type = NABTO_IPV4;
-    }
-    if (recvLength < 0) {
-        int status = errno;
-        if (status == EAGAIN || status == EWOULDBLOCK) {
-            // expected
-            return;
-        } else {
-            np_udp_packet_received_callback cb;
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_udp_handle_event", strerror(status), (int) status);
-            if(sock->recv.cb) {
-                cb = sock->recv.cb;
-                sock->recv.cb = NULL;
-                cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recv.data);
-            }
-            return;
-        }
-    }
-    if (sock->recv.cb) {
-        np_udp_packet_received_callback cb = sock->recv.cb;
-        sock->recv.cb = NULL;
-        cb(NABTO_EC_OK, ep, pl->buf.start(epoll->recvBuffer), recvLength, sock->recv.data);
-    }
-    np_event_queue_post_maybe_double(pl, &sock->recv.event, nm_epoll_udp_try_read, userData);
+    np_event_queue_post_maybe_double(sock->pl, &sock->posixSocket.recv.event, nm_posix_udp_event_try_recv_from, &sock->posixSocket);
 }
 
 np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
 {
+    struct nm_epoll_context* epoll = pl->udpData;
     *sock = calloc(1, sizeof(np_udp_socket));
     if (*sock == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
     (*sock)->type = NM_EPOLL_TYPE_UDP;
     (*sock)->pl = pl;
-    np_event_queue_init_event(&(*sock)->recv.event);
+    (*sock)->posixSocket.pl = pl;
+    (*sock)->posixSocket.recvBuffer = epoll->recvBuffer;
+    np_event_queue_init_event(&(*sock)->posixSocket.recv.event);
     nm_epoll_add_udp_socket(pl->udpData);
     return NABTO_EC_OK;
 }
@@ -199,11 +147,11 @@ np_error_code nm_epoll_create(struct np_platform* pl, np_udp_socket** sock)
 void nm_epoll_udp_event_abort(void* userData)
 {
     np_udp_socket* sock = (np_udp_socket*)userData;
-    if (sock->recv.cb != NULL) {
+    if (sock->posixSocket.recv.cb != NULL) {
         struct np_udp_endpoint ep;
-        np_udp_packet_received_callback cb = sock->recv.cb;
-        sock->recv.cb = NULL;
-        cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->recv.data);
+        np_udp_packet_received_callback cb = sock->posixSocket.recv.cb;
+        sock->posixSocket.recv.cb = NULL;
+        cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->posixSocket.recv.data);
     }
     if (sock->created.cb) {
         sock->created.cb(NABTO_EC_ABORTED, sock->created.data);
@@ -417,16 +365,16 @@ np_error_code nm_epoll_async_recv_from(np_udp_socket* socket,
         NABTO_LOG_ERROR(LOG, "recv from called on aborted socket");
         return NABTO_EC_ABORTED;
     }
-    if (socket->recv.cb != NULL) {
+    if (socket->posixSocket.recv.cb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
     struct np_platform* pl = socket->pl;
 
-    socket->recv.cb = cb;
-    socket->recv.data = data;
+    socket->posixSocket.recv.cb = cb;
+    socket->posixSocket.recv.data = data;
 
     // if we received multiple packets in one epoll_wait the event
     // will not be triggered between recv callbacks
-    np_event_queue_post_maybe_double(pl, &socket->recv.event, nm_epoll_udp_try_read, socket);
+    np_event_queue_post_maybe_double(pl, &socket->posixSocket.recv.event, nm_posix_udp_event_try_recv_from, &socket->posixSocket);
     return NABTO_EC_OK;
 }

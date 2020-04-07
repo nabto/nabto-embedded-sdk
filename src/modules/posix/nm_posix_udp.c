@@ -2,6 +2,8 @@
 
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
+#include <platform/np_platform.h>
+#include <platform/np_communication_buffer.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -71,6 +73,56 @@ np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct n
     return NABTO_EC_OK;
 }
 
+void nm_posix_udp_event_try_recv_from(void* userData)
+{
+    struct nm_posix_udp_socket* sock = userData;
+    if (sock->recv.cb == NULL) {
+        // ignore data if no recv callback is registered
+        return;
+    }
+    struct np_udp_endpoint ep;
+    struct np_platform* pl = sock->pl;
+    ssize_t recvLength;
+    uint8_t* start;
+    start = pl->buf.start(sock->recvBuffer);
+    if (sock->type == NABTO_IPV6) {
+        struct sockaddr_in6 sa;
+        socklen_t addrlen = sizeof(sa);
+        recvLength = recvfrom(sock->sock, start,  pl->buf.size(sock->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
+        memcpy(&ep.ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep.ip.ip.v6));
+        ep.port = ntohs(sa.sin6_port);
+        ep.ip.type = NABTO_IPV6;
+    } else {
+        struct sockaddr_in sa;
+        socklen_t addrlen = sizeof(sa);
+        recvLength = recvfrom(sock->sock, start, pl->buf.size(sock->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
+        memcpy(&ep.ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep.ip.ip.v4));
+        ep.port = ntohs(sa.sin_port);
+        ep.ip.type = NABTO_IPV4;
+    }
+    if (recvLength < 0) {
+        int status = errno;
+        if (status == EAGAIN || status == EWOULDBLOCK) {
+            // expected
+            // wait for next event to check for data.
+            return;
+        } else {
+            np_udp_packet_received_callback cb;
+            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_posix_event_try_read", strerror(status), (int) status);
+            if(sock->recv.cb) {
+                cb = sock->recv.cb;
+                sock->recv.cb = NULL;
+                cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recv.data);
+            }
+            return;
+        }
+    }
+    if (sock->recv.cb) {
+        np_udp_packet_received_callback cb = sock->recv.cb;
+        sock->recv.cb = NULL;
+        cb(NABTO_EC_OK, ep, pl->buf.start(sock->recvBuffer), recvLength, sock->recv.data);
+    }
+}
 
 np_error_code nm_posix_bind_port(struct nm_posix_udp_socket* s, uint16_t port)
 {
