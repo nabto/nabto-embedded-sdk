@@ -7,26 +7,12 @@
 
 #include <sys/select.h>
 
+#include <modules/posix/nm_posix_udp.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct nm_select_unix_udp_send_base {
-    struct nm_select_unix_udp_send_base* next;
-    struct nm_select_unix_udp_send_base* prev;
-};
-
-struct nm_select_unix_udp_send_context {
-    struct nm_select_unix_udp_send_base* next;
-    struct nm_select_unix_udp_send_base* prev;
-    np_udp_socket* sock;
-    struct np_udp_endpoint ep;
-    uint8_t* buffer;
-    uint16_t bufferSize;
-    np_udp_packet_sent_callback cb;
-    void* cbData;
-    struct np_event ev;
-};
 
 struct nm_select_unix_created_ctx {
     np_udp_socket_created_callback cb;
@@ -35,26 +21,18 @@ struct nm_select_unix_created_ctx {
     uint16_t port;
 };
 
-struct nm_select_unix_received_ctx {
-    np_udp_packet_received_callback cb;
-    void* data;
-    struct np_event event;
-};
-
 struct np_udp_socket {
     struct np_platform* pl;
     struct nm_select_unix* selectCtx;
-    int sock;
-    bool isIpv6;
+    struct nm_posix_udp_socket posixSocket;
+
     struct nm_select_unix_created_ctx created;
-    struct nm_select_unix_received_ctx recv;
+
     struct np_udp_socket* next;
     struct np_udp_socket* prev;
     bool aborted;
     bool destroyed;
     struct np_event abortEv;
-    struct nm_select_unix_udp_send_base sendSentinelData;
-    struct nm_select_unix_udp_send_base* sendSentinel;
 };
 
 struct nm_select_unix_udp_sockets {

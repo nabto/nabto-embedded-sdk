@@ -14,6 +14,21 @@
 
 #define LOG NABTO_LOG_MODULE_UDP
 
+nm_posix_socket nonblocking_socket(int domain, int type)
+{
+#if defined(SOCK_NONBLOCK)
+    return socket(domain, type | SOCK_NONBLOCK, 0);
+#else
+
+    int sock = socket(domain, type, 0);
+
+    int flags = fcntl(sock, F_GETFL, 0);
+    if (flags == -1) flags = 0;
+    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+    return sock
+#endif
+}
+
 np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize)
 {
     ssize_t res;
@@ -155,9 +170,9 @@ np_error_code nm_posix_bind_port(struct nm_posix_udp_socket* s, uint16_t port)
 
 np_error_code nm_posix_udp_create_socket_any(struct nm_posix_udp_socket* s)
 {
-    int sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    int sock = nonblocking_socket(AF_INET6, SOCK_DGRAM);
     if (sock == -1) {
-        sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+        sock = nonblocking_socket(AF_INET, SOCK_DGRAM);
         if (s->sock == -1) {
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
@@ -182,7 +197,7 @@ np_error_code nm_posix_udp_create_socket_any(struct nm_posix_udp_socket* s)
 
 np_error_code nm_posix_udp_create_socket_ipv6(struct nm_posix_udp_socket* s)
 {
-    int sock = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    int sock = nonblocking_socket(AF_INET6, SOCK_DGRAM);
     if (sock == -1) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
@@ -193,7 +208,7 @@ np_error_code nm_posix_udp_create_socket_ipv6(struct nm_posix_udp_socket* s)
 
 np_error_code nm_posix_udp_create_socket_ipv4(struct nm_posix_udp_socket* s)
 {
-    int sock = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    int sock = nonblocking_socket(AF_INET, SOCK_DGRAM);
     if (sock == -1) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }

@@ -3,6 +3,10 @@
 
 #include <platform/np_udp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef int nm_posix_socket;
 
 struct nm_posix_received_ctx {
@@ -29,5 +33,8 @@ np_error_code nm_posix_udp_create_socket_any(struct nm_posix_udp_socket* s);
 np_error_code nm_posix_udp_create_socket_ipv6(struct nm_posix_udp_socket* s);
 np_error_code nm_posix_udp_create_socket_ipv4(struct nm_posix_udp_socket* s);
 
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

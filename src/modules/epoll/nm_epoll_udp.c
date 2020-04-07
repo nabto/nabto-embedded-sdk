@@ -21,11 +21,6 @@
 
 #define LOG NABTO_LOG_MODULE_UDP
 
-struct nm_epoll_udp_send_base {
-    struct nm_epoll_udp_send_base* next;
-    struct nm_epoll_udp_send_base* prev;
-};
-
 struct send_context {
     np_udp_socket* sock;
     np_udp_packet_sent_callback cb;
@@ -35,12 +30,6 @@ struct send_context {
 
 struct nm_epoll_created_ctx {
     np_udp_socket_created_callback cb;
-    void* data;
-    struct np_event event;
-};
-
-struct nm_epoll_received_ctx {
-    np_udp_packet_received_callback cb;
     void* data;
     struct np_event event;
 };
@@ -195,7 +184,7 @@ void nm_epoll_udp_resolve_close(struct nm_epoll_base* base)
     free(sock);
 }
 
-void event_bind_callback(void* data)
+static void event_bind_callback(void* data)
 {
     np_udp_socket* us = (np_udp_socket*)data;
     np_udp_socket_created_callback cb = us->created.cb;
@@ -238,7 +227,7 @@ np_error_code nm_epoll_async_bind_port(np_udp_socket* sock, uint16_t port, np_ud
 
     sock->created.cb = cb;
     sock->created.data = data;
-    np_event_queue_post(pl, &sock->created.event, event_bind_callback, sock);
+    np_event_queue_post(pl, &sock->created.event, &event_bind_callback, sock);
     return NABTO_EC_OK;
 }
 
@@ -328,7 +317,7 @@ np_error_code nm_epoll_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_c
     return NABTO_EC_OK;
 }
 
-void async_send_to_complete(void* data)
+static void async_send_to_complete(void* data)
 {
     struct send_context* sendCtx = data;
     sendCtx->cb(NABTO_EC_OK, sendCtx->cbUserData);
