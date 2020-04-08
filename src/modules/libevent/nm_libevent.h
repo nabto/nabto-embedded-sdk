@@ -3,6 +3,9 @@
 
 #include <platform/np_communication_buffer.h>
 
+#include <event2/event.h>
+#include <event.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,8 +19,8 @@ struct nm_libevent_context {
     np_communication_buffer* recvBuffer;
 };
 
-void nm_libevent_init(struct np_platform* pl, struct event_base* eventBase);
-void nm_libevent_deinit(struct np_platform* pl);
+void nm_libevent_init(struct np_platform* pl, struct nm_libevent_context* ctx, struct event_base* eventBase);
+void nm_libevent_deinit(struct nm_libevent_context* ctx);
 
 #ifdef __cplusplus
 } //extern "C"

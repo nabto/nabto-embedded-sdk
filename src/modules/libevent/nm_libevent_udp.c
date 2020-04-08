@@ -59,9 +59,9 @@ static void udp_ready_callback(evutil_socket_t s, short events, void* userData);
 static enum np_ip_address_type udp_get_protocol(np_udp_socket* socket);
 static uint16_t udp_get_local_port(np_udp_socket* socket);
 
-void nm_libevent_udp_init(struct np_platform* pl, struct event_base* base)
+void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ctx)
 {
-    pl->udpData = base;
+    pl->udpData = ctx;
 
     pl->udp.create               = &udp_create;
     pl->udp.destroy              = &udp_destroy;
@@ -73,6 +73,11 @@ void nm_libevent_udp_init(struct np_platform* pl, struct event_base* base)
     pl->udp.get_protocol         = &udp_get_protocol;
 //    pl->udp.get_local_ip         = &udp_get_local_ip;
     pl->udp.get_local_port       = &udp_get_local_port;
+}
+
+void nm_libevent_udp_deinit(struct np_platform* pl)
+{
+    // TODO
 }
 
 enum np_ip_address_type udp_get_protocol(np_udp_socket* socket)
@@ -107,14 +112,16 @@ np_error_code udp_create(struct np_platform* pl, np_udp_socket** sock)
     s->posixSocket.recvBuffer = ctx->recvBuffer;
     np_event_queue_init_event(&s->posixSocket.recv.event);
 
+    *sock = s;
+
     return NABTO_EC_OK;
 }
 
 void udp_add_to_libevent(np_udp_socket* sock)
 {
     struct np_platform* pl = sock->pl;
-    struct event_base* base = pl->udpData;
-    event_assign(&sock->event, base, sock->posixSocket.sock, EV_READ, udp_ready_callback, sock);
+    struct nm_libevent_context* context = pl->udpData;
+    event_assign(&sock->event, context->eventBase, sock->posixSocket.sock, EV_READ, udp_ready_callback, sock);
 }
 
 np_error_code udp_abort(np_udp_socket* sock)
@@ -170,6 +177,12 @@ void udp_destroy(np_udp_socket* sock)
         NABTO_LOG_ERROR(LOG, "socket destroyed twice");
         return;
     }
+
+//    struct nm_libevent_context* libeventContext = sock->pl->udpData;
+
+    event_del_block(&sock->event);
+
+    free(sock);
     // TODO
     //nm_epoll_close_socket(sock->pl->udpData, (struct nm_epoll_base*)sock);
     //nm_epoll_break_wait(sock->pl->udpData);
@@ -336,5 +349,8 @@ np_error_code udp_async_recv_from(np_udp_socket* socket,
     // if we received multiple packets in one epoll_wait the event
     // will not be triggered between recv callbacks
     np_event_queue_post_maybe_double(pl, &socket->posixSocket.recv.event, nm_posix_udp_event_try_recv_from, &socket->posixSocket);
+
+    event_add(&socket->event, 0);
+
     return NABTO_EC_OK;
 }

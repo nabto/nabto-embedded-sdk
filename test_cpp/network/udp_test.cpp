@@ -6,6 +6,10 @@
 #include <test_platform_epoll.hpp>
 #endif
 
+#ifdef HAVE_LIBEVENT
+#include <test_platform_libevent.hpp>
+#endif
+
 #include <test_platform_select_unix.hpp>
 
 #include <platform/np_platform.h>
@@ -40,7 +44,6 @@ class UdpEchoClientTest {
         for (size_t i = 0; i < data_.size(); i++) {
             data_[i] = (uint8_t)i;
         }
-
 
         ep_.ip.type = NABTO_IPV4;
         memcpy(ep_.ip.ip.v6, addr, 4);
@@ -114,6 +117,23 @@ BOOST_AUTO_TEST_CASE(echo_epoll, * boost::unit_test::timeout(120))
 
     nabto::test::TestPlatformEpoll epollPlatform;
     nabto::test::UdpEchoClientTest client(epollPlatform);
+    client.start(udpServer->getPort());
+
+    BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
+    udpServer->stop();
+}
+
+#endif
+
+#ifdef HAVE_LIBEVENT
+
+BOOST_AUTO_TEST_CASE(echo_libevent, * boost::unit_test::timeout(120))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
+
+    nabto::test::TestPlatformLibevent p;
+    nabto::test::UdpEchoClientTest client(p);
     client.start(udpServer->getPort());
 
     BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
