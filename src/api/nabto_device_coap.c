@@ -177,7 +177,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     }
 }
 
-NabtoDeviceConnectionRef nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request)
+NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request)
 {
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
     return req->connectionRef;
