@@ -6,12 +6,45 @@
 #include <platform/np_communication_buffer.h>
 
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
 #include <errno.h>
 #include <string.h>
+
+
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#include <ws2ipdef.h>
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+// close on unix
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_IO_H
+// close on windows
+#include <io.h>
+#endif
+
 #include <fcntl.h>
+
+
+#ifdef HAVE_WINSOCK2_H
+typedef int ssize_type;
+typedef int socklen_type;
+#else
+typedef ssize_t ssize_type;
+typedef socklen_t socklen_type;
+#endif
 
 
 #define LOG NABTO_LOG_MODULE_UDP
@@ -22,6 +55,7 @@ nm_posix_socket nonblocking_socket(int domain, int type)
     return socket(domain, type | SOCK_NONBLOCK, 0);
 #else
 
+#ifdef F_GETFL
     int sock = socket(domain, type, 0);
 
     int flags = fcntl(sock, F_GETFL, 0);
@@ -33,7 +67,7 @@ nm_posix_socket nonblocking_socket(int domain, int type)
 
 np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize)
 {
-    ssize_t res;
+    ssize_type res;
 
     struct np_ip_address sendIp;
 
@@ -99,19 +133,19 @@ void nm_posix_udp_event_try_recv_from(void* userData)
     }
     struct np_udp_endpoint ep;
     struct np_platform* pl = sock->pl;
-    ssize_t recvLength;
+    ssize_type recvLength;
     uint8_t* start;
     start = pl->buf.start(sock->recvBuffer);
     if (sock->type == NABTO_IPV6) {
         struct sockaddr_in6 sa;
-        socklen_t addrlen = sizeof(sa);
+        socklen_type addrlen = sizeof(sa);
         recvLength = recvfrom(sock->sock, start,  pl->buf.size(sock->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep.ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep.ip.ip.v6));
         ep.port = ntohs(sa.sin6_port);
         ep.ip.type = NABTO_IPV6;
     } else {
         struct sockaddr_in sa;
-        socklen_t addrlen = sizeof(sa);
+        socklen_type addrlen = sizeof(sa);
         recvLength = recvfrom(sock->sock, start, pl->buf.size(sock->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep.ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep.ip.ip.v4));
         ep.port = ntohs(sa.sin_port);

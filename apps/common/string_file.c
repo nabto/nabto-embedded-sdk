@@ -1,17 +1,27 @@
 #include "string_file.h"
 
 #include <stdio.h>
+
+#ifdef HAVE_UNISTD_H
+// close on unix
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_IO_H
+// close on windows
+#include <io.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
 bool string_file_exists(const char* fileName)
 {
-    if( access( fileName, F_OK ) != -1 ) {
-        return true;
-    } else {
-        return false;
-    }
+#ifdef HAVE_IO_H
+    return (_access( fileName, 0 ) != -1 );
+#else
+    return (access( fileName, F_OK ) != -1 );
+#endif
 }
 
 static bool load_from_file(FILE* f, char** out)

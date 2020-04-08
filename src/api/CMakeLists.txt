@@ -69,8 +69,6 @@ target_link_libraries( nabto_device
   nm_dtls_cli
   nc_core
   nm_logging_api
-  nm_dns
-  nm_mdns
   nm_dtls_srv
   np_platform
   nm_timestamp
@@ -82,14 +80,18 @@ target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
 
 if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   target_link_libraries( nabto_device
-    nm_epoll)
+    nm_epoll
+    nm_dns
+    )
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
   target_link_libraries( nabto_device
-    nm_select_win)
+    nm_libevent)
 
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   target_link_libraries( nabto_device
-    nm_select_unix)
+    nm_select_unix
+    nm_dns
+    )
 endif ()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")

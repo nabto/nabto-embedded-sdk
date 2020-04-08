@@ -33,11 +33,56 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
   add_definitions(-DWINVER=0x0601)
   add_definitions(-D_WIN32_WINNT=0x0601)
   add_definitions(/wd4996)
+  add_definitions(/wd4214)
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   include_directories(src/types/linux)
   add_compile_options(-Wall)
   add_compile_options(-Werror)
 endif()
+
+CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
+CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
+CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
+CHECK_INCLUDE_FILES("netinet/in.h" HAVE_NETINET_IN_H)
+CHECK_INCLUDE_FILES("unistd.h" HAVE_UNISTD_H)
+CHECK_INCLUDE_FILES("winsock2.h" HAVE_WINSOCK2_H)
+CHECK_INCLUDE_FILES("io.h" HAVE_IO_H)
+
+find_package(Libevent)
+
+
+if (HAVE_EPOLL_HEADERS)
+  add_subdirectory(src/modules/epoll)
+  add_definitions(-DHAVE_EPOLL)
+endif()
+
+if (Libevent_FOUND)
+  add_definitions(-DHAVE_LIBEVENT)
+  include_directories(${LIBEVENT_INCLUDE_DIRS})
+  add_subdirectory(src/modules/libevent)
+endif()
+
+if (HAVE_SYS_SOCKET_H)
+  add_definitions(-DHAVE_SYS_SOCKET_H)
+endif()
+
+if (HAVE_NETINET_IN_H)
+  add_definitions(-DHAVE_NETINET_IN_H)
+endif()
+
+if (HAVE_UNISTD_H)
+  add_definitions(-DHAVE_UNISTD_H)
+endif()
+
+if (HAVE_WINSOCK2_H)
+  add_definitions(-DHAVE_WINSOCK2_H)
+endif()
+
+if (HAVE_IO_H)
+  add_definitions(-DHAVE_IO_H)
+endif()
+
+
 
 include_directories(src)
 include_directories(include)
@@ -79,31 +124,20 @@ add_subdirectory(src/modules/iam)
 add_subdirectory(src/modules/posix)
 add_subdirectory(apps/common)
 
-
-CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
-CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
-
-if (HAVE_EPOLL_HEADERS)
-  add_subdirectory(src/modules/epoll)
-  add_definitions(-DHAVE_EPOLL)
+if (HAVE_SYS_SOCKET_H)
+  add_subdirectory(src/modules/select_unix)
+  add_definitions(-DHAVE_SELECT_UNIX)
 endif()
-
-if (HAVE_LIBEVENT_HEADERS)
-  add_definitions(-DHAVE_LIBEVENT)
-  add_subdirectory(src/modules/libevent)
-endif()
-
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_subdirectory(src/modules/dns/unix)
-  add_subdirectory(src/modules/select_unix)
   add_subdirectory(src/modules/timestamp/unix)
   add_subdirectory(src/modules/logging/unix)
   add_subdirectory(src/modules/unix)
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
   add_subdirectory(src/modules/logging/win)
-  add_subdirectory(src/modules/dns/win)
-  add_subdirectory(src/modules/udp/select_win)
+  #add_subdirectory(src/modules/dns/win)
+  #add_subdirectory(src/modules/udp/select_win)
   add_subdirectory(src/modules/timestamp/win)
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_subdirectory(src/modules/logging/unix)

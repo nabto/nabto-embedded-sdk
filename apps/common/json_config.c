@@ -4,15 +4,23 @@
 #include <nn/log.h>
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
 static const char* LOGM = "json_config";
 
+
+
 bool json_config_exists(const char* fileName)
 {
-    if( access( fileName, F_OK ) != -1 ) {
+    int mode;
+#ifdef F_OK
+    mode = F_OK;
+#else
+    // F_OK does not exists on windows
+    mode = 0;
+#endif
+    if( access( fileName, mode ) != -1 ) {
         return true;
     } else {
         return false;
