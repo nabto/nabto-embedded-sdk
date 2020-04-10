@@ -104,11 +104,7 @@ uint16_t nm_epoll_get_local_port(np_udp_socket* socket)
         NABTO_LOG_ERROR(LOG, "get local port called on aborted socket");
         return 0;
     }
-    struct sockaddr_in6 addr;
-    addr.sin6_port = 0;
-    socklen_t length = sizeof(struct sockaddr_in6);
-    getsockname(socket->posixSocket.sock, (struct sockaddr*)(&addr), &length);
-    return htons(addr.sin6_port);
+    return nm_posix_udp_get_local_port(&socket->posixSocket);
 }
 
 void nm_epoll_udp_handle_event(np_udp_socket* sock, uint32_t events)

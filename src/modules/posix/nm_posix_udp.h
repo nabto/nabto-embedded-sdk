@@ -28,6 +28,7 @@ np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct n
 void nm_posix_udp_event_try_recv_from(void* userData);
 
 np_error_code nm_posix_bind_port(struct nm_posix_udp_socket* s, uint16_t port);
+uint16_t nm_posix_udp_get_local_port(struct nm_posix_udp_socket* s);
 
 np_error_code nm_posix_udp_create_socket_any(struct nm_posix_udp_socket* s);
 np_error_code nm_posix_udp_create_socket_ipv6(struct nm_posix_udp_socket* s);

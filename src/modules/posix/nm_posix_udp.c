@@ -53,7 +53,7 @@ nm_posix_socket nonblocking_socket(int domain, int type)
 {
 #if defined(SOCK_NONBLOCK)
     return socket(domain, type | SOCK_NONBLOCK, 0);
-#else
+#endif
 
 #ifdef F_GETFL
     int sock = socket(domain, type, 0);
@@ -204,6 +204,23 @@ np_error_code nm_posix_bind_port(struct nm_posix_udp_socket* s, uint16_t port)
     }
 }
 
+uint16_t nm_posix_udp_get_local_port(struct nm_posix_udp_socket* s)
+{
+    if (s->type == NABTO_IPV6) {
+        struct sockaddr_in6 addr;
+        addr.sin6_port = 0;
+        socklen_type length = sizeof(struct sockaddr_in6);
+        getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+        return htons(addr.sin6_port);
+    } else {
+        struct sockaddr_in addr;
+        addr.sin_port = 0;
+        socklen_type length = sizeof(struct sockaddr_in);
+        getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+        return htons(addr.sin_port);
+    }
+}
+
 np_error_code nm_posix_udp_create_socket_any(struct nm_posix_udp_socket* s)
 {
     int sock = nonblocking_socket(AF_INET6, SOCK_DGRAM);
@@ -237,6 +254,13 @@ np_error_code nm_posix_udp_create_socket_ipv6(struct nm_posix_udp_socket* s)
     if (sock == -1) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
+
+    int no = 0;
+    int status = setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no));
+    if (status < 0) {
+        NABTO_LOG_ERROR(LOG, "Cannot set IPV6_V6ONLY");
+    }
+
     s->type = NABTO_IPV6;
     s->sock = sock;
     return NABTO_EC_OK;

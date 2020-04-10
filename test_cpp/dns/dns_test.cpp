@@ -1,6 +1,10 @@
 #include <boost/test/unit_test.hpp>
 #include <test_platform.hpp>
 
+#include <platform/np_error_code.h>
+#include <platform/np_platform.h>
+#include <platform/np_ip_address.h>
+
 #ifdef HAVE_EPOLL
 #include <test_platform_epoll.hpp>
 #endif

@@ -48,6 +48,12 @@ CHECK_INCLUDE_FILES("unistd.h" HAVE_UNISTD_H)
 CHECK_INCLUDE_FILES("winsock2.h" HAVE_WINSOCK2_H)
 CHECK_INCLUDE_FILES("io.h" HAVE_IO_H)
 
+include_directories(src)
+include_directories(include)
+
+include_directories(nabto-common-cpp/src)
+
+
 find_package(Libevent)
 
 
@@ -58,7 +64,6 @@ endif()
 
 if (Libevent_FOUND)
   add_definitions(-DHAVE_LIBEVENT)
-  include_directories(${LIBEVENT_INCLUDE_DIRS})
   add_subdirectory(src/modules/libevent)
 endif()
 
@@ -84,10 +89,6 @@ endif()
 
 
 
-include_directories(src)
-include_directories(include)
-
-include_directories(nabto-common-cpp/src)
 
 add_subdirectory(src/platform)
 add_subdirectory(src/core)
@@ -148,8 +149,8 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
 endif()
 
 if (DEVICE_BUILD_TESTS)
-  add_subdirectory(nabto-common-cpp/src/http_server)
-  add_subdirectory(test)
+#  add_subdirectory(nabto-common-cpp/src/http_server)
+  #add_subdirectory(test)
 
   if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
     add_executable(unit_test "${test_runner_src}")
@@ -167,7 +168,7 @@ if (DEVICE_BUILD_TESTS)
   endif()
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
-  add_subdirectory(test_cpp)
+#  add_subdirectory(test_cpp)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)

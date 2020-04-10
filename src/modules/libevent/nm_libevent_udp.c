@@ -12,11 +12,17 @@
 #include <event2/event.h>
 #include <event.h>
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #define LOG NABTO_LOG_MODULE_UDP
 
@@ -91,11 +97,7 @@ uint16_t udp_get_local_port(np_udp_socket* socket)
         NABTO_LOG_ERROR(LOG, "get local port called on aborted socket");
         return 0;
     }
-    struct sockaddr_in6 addr;
-    addr.sin6_port = 0;
-    socklen_t length = sizeof(struct sockaddr_in6);
-    getsockname(socket->posixSocket.sock, (struct sockaddr*)(&addr), &length);
-    return htons(addr.sin6_port);
+    return nm_posix_udp_get_local_port(&socket->posixSocket);
 }
 
 np_error_code udp_create(struct np_platform* pl, np_udp_socket** sock)
@@ -272,13 +274,6 @@ np_error_code udp_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_create
     np_error_code ec = nm_posix_udp_create_socket_ipv6(&sock->posixSocket);
     if (ec) {
         return ec;
-    }
-
-    int no = 0;
-    int status = setsockopt(sock->posixSocket.sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no));
-    if (status < 0)
-    {
-        NABTO_LOG_ERROR(LOG, "Cannot set IPV6_V6ONLY");
     }
 
     if (!nm_unix_init_mdns_ipv6_socket(sock->posixSocket.sock)) {
