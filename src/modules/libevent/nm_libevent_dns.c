@@ -21,11 +21,14 @@ struct dns_request {
     size_t v4RecordsSize;
     size_t v6RecordsSize;
     const char* host;
+
+    struct np_event callbackEvent;
 };
 
 static np_error_code async_resolve(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data);
 static void dns_cbv4(int result, char type, int count, int ttl, void *addresses, void *arg);
 static void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* arg);
+static void dns_done_event(void* data);
 
 void nm_libevent_dns_init(struct np_platform* pl, struct event_base *event_base)
 {
@@ -91,6 +94,14 @@ void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* 
         req->v6RecordsSize = i;
     }
 
+    // post to event queue such that the callback is completed on the right queue.
+    struct np_platform* pl = req->pl;
+    np_event_queue_post(pl, &req->callbackEvent, &dns_done_event, req);
+}
+
+void dns_done_event(void* data)
+{
+    struct dns_request* req = data;
     req->callback(NABTO_EC_OK, req->v4Records, req->v4RecordsSize, req->v6Records, req->v6RecordsSize, req->callbackUserData);
     free(req);
 }

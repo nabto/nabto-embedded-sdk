@@ -84,6 +84,7 @@ np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct n
         return NABTO_EC_FAILED_TO_SEND_PACKET;
     }
 
+    NABTO_LOG_TRACE(LOG, "Sending packet of size %d, to %s:%d", bufferSize, np_ip_address_to_string(&sendIp), ep->port);
     if (sendIp.type == NABTO_IPV4) {
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
@@ -119,7 +120,6 @@ np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct n
             return NABTO_EC_FAILED_TO_SEND_PACKET;
         }
     }
-    NABTO_LOG_TRACE(LOG, "Send packet of size %d, to %s", bufferSize, np_ip_address_to_string(&sendIp));
 
     return NABTO_EC_OK;
 }

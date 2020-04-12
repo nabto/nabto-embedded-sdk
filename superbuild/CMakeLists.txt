@@ -16,6 +16,7 @@ ExternalProject_Add(libevent
       -DEVENT__LIBRARY_TYPE:STRING=STATIC
       -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
       -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/libevent
+      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
 )
 
 
@@ -30,6 +31,7 @@ ExternalProject_Add(nabto-embedded-sdk
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON
   CMAKE_CACHE_ARGS
         -DLibevent_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}/libevent/lib/cmake/libevent
+        -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
 
   DEPENDS libevent
   )

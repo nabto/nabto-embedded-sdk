@@ -7,6 +7,7 @@
 
 #include <modules/posix/nm_posix_udp.h>
 #include <modules/unix/nm_unix_mdns.h>
+#include <modules/unix/nm_unix_get_local_ip.h>
 
 #include <event2/util.h>
 #include <event2/event.h>
@@ -77,7 +78,7 @@ void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ct
     pl->udp.async_send_to        = &udp_async_send_to;
     pl->udp.async_recv_from      = &udp_async_recv_from;
     pl->udp.get_protocol         = &udp_get_protocol;
-//    pl->udp.get_local_ip         = &udp_get_local_ip;
+    pl->udp.get_local_ip         = &nm_unix_get_local_ip;
     pl->udp.get_local_port       = &udp_get_local_port;
 }
 
