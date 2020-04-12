@@ -49,7 +49,7 @@ target_link_libraries(embedded_unit_test
   nm_iam
 )
 
-if (HAVE_EPOLL_HEADERS)
+if (HAVE_SYS_EPOLL_H)
   target_link_libraries(embedded_unit_test nm_epoll)
 endif()
 

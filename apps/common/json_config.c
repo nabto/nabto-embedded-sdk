@@ -13,22 +13,13 @@ static const char* LOGM = "json_config";
 
 bool json_config_exists(const char* fileName)
 {
-    int mode;
-#ifdef F_OK
-    mode = F_OK;
-#else
-    // F_OK does not exists on windows
-    mode = 0;
-#endif
-    if( access( fileName, mode ) != -1 ) {
-        return true;
-    } else {
-        return false;
-    }
+    return string_file_exists(fileName);
 }
 
 static bool load_from_file(FILE* f, cJSON** config, struct nn_log* logger)
 {
+    // TODO use string file
+
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);

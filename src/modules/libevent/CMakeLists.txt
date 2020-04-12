@@ -8,4 +8,5 @@ set(src
 
 add_library(nm_libevent ${src})
 target_include_directories(nm_libevent PUBLIC ${LIBEVENT_INCLUDE_DIRS})
+target_link_libraries(nm_libevent nm_posix nm_unix nm_unix_communication_buffer)
 target_link_libraries(nm_libevent ${LIBEVENT_STATIC_LIBRARIES})

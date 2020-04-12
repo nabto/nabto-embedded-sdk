@@ -40,32 +40,15 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_compile_options(-Werror)
 endif()
 
-CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_EPOLL_HEADERS)
+CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_SYS_EPOLL_H)
 CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
 CHECK_INCLUDE_FILES("netinet/in.h" HAVE_NETINET_IN_H)
 CHECK_INCLUDE_FILES("unistd.h" HAVE_UNISTD_H)
 CHECK_INCLUDE_FILES("winsock2.h" HAVE_WINSOCK2_H)
 CHECK_INCLUDE_FILES("io.h" HAVE_IO_H)
-
-include_directories(src)
-include_directories(include)
-
-include_directories(nabto-common-cpp/src)
-
-
-find_package(Libevent)
-
-
-if (HAVE_EPOLL_HEADERS)
-  add_subdirectory(src/modules/epoll)
-  add_definitions(-DHAVE_EPOLL)
-endif()
-
-if (Libevent_FOUND)
-  add_definitions(-DHAVE_LIBEVENT)
-  add_subdirectory(src/modules/libevent)
-endif()
+CHECK_INCLUDE_FILES("pthread.h" HAVE_PTHREAD_H)
+CHECK_INCLUDE_FILES("windows.h" HAVE_WINDOWS_H)
 
 if (HAVE_SYS_SOCKET_H)
   add_definitions(-DHAVE_SYS_SOCKET_H)
@@ -87,7 +70,32 @@ if (HAVE_IO_H)
   add_definitions(-DHAVE_IO_H)
 endif()
 
+if (HAVE_SYS_EPOLL_H)
+  add_definitions(-DHAVE_EPOLL)
+endif()
 
+if (Libevent_FOUND)
+  set(HAVE_LIBEVENT true)
+  add_definitions(-DHAVE_LIBEVENT)
+endif()
+
+
+include_directories(src)
+include_directories(include)
+
+include_directories(nabto-common-cpp/src)
+
+
+find_package(Libevent REQUIRED)
+
+
+if (HAVE_SYS_EPOLL_H)
+  add_subdirectory(src/modules/epoll)
+endif()
+
+if (Libevent_FOUND)
+  add_subdirectory(src/modules/libevent)
+endif()
 
 
 add_subdirectory(src/platform)
@@ -144,7 +152,6 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_subdirectory(src/modules/logging/unix)
   add_subdirectory(src/modules/dns/unix)
   add_subdirectory(src/modules/timestamp/unix)
-  add_subdirectory(src/modules/select_unix)
   add_subdirectory(src/modules/unix)
 endif()
 
