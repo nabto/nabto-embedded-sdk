@@ -51,6 +51,8 @@ struct np_udp_socket {
 
 static np_error_code udp_create(struct np_platform* pl, np_udp_socket** sock);
 static void udp_destroy(np_udp_socket* sock);
+static np_error_code udp_abort(np_udp_socket* sock);
+static void udp_event_abort(void* userData);
 static np_error_code udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data);
 static np_error_code udp_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
 static np_error_code udp_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
@@ -72,6 +74,7 @@ void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ct
 
     pl->udp.create               = &udp_create;
     pl->udp.destroy              = &udp_destroy;
+    pl->udp.abort                = &udp_abort;
     pl->udp.async_bind_port      = &udp_async_bind_port;
     pl->udp.async_bind_mdns_ipv4 = &udp_async_bind_mdns_ipv4;
     pl->udp.async_bind_mdns_ipv6 = &udp_async_bind_mdns_ipv6;
@@ -134,7 +137,7 @@ np_error_code udp_abort(np_udp_socket* sock)
     }
     sock->aborted = true;
     // TODO
-//    np_event_queue_post(sock->pl, &sock->abortEv, &nm_epoll_udp_event_abort, sock);
+    np_event_queue_post(sock->pl, &sock->abortEv, &udp_event_abort, sock);
     return NABTO_EC_OK;
 }
 
@@ -150,16 +153,16 @@ void udp_ready_callback(evutil_socket_t s, short events, void* userData)
 void udp_event_abort(void* userData)
 {
     // TODO
-    /* np_udp_socket* sock = (np_udp_socket*)userData; */
-    /* if (sock->posixSocket.recv.cb != NULL) { */
-    /*     struct np_udp_endpoint ep; */
-    /*     np_udp_packet_received_callback cb = sock->posixSocket.recv.cb; */
-    /*     sock->posixSocket.recv.cb = NULL; */
-    /*     cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->posixSocket.recv.data); */
-    /* } */
-    /* if (sock->created.cb) { */
-    /*     sock->created.cb(NABTO_EC_ABORTED, sock->created.data); */
-    /* } */
+    np_udp_socket* sock = (np_udp_socket*)userData;
+    if (sock->posixSocket.recv.cb != NULL) {
+        struct np_udp_endpoint ep;
+        np_udp_packet_received_callback cb = sock->posixSocket.recv.cb;
+        sock->posixSocket.recv.cb = NULL;
+        cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->posixSocket.recv.data);
+    }
+    if (sock->created.cb) {
+        sock->created.cb(NABTO_EC_ABORTED, sock->created.data);
+    }
 }
 
 np_error_code nm_epoll_abort(np_udp_socket* sock)

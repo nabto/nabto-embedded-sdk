@@ -79,6 +79,13 @@ if (Libevent_FOUND)
   add_definitions(-DHAVE_LIBEVENT)
 endif()
 
+if (HAVE_PTHREAD_H)
+  add_definitions(-DHAVE_PTHREAD_H)
+endif()
+
+if (HAVE_WINDOWS_H)
+  add_definitions(-DHAVE_WINDOWS_H)
+endif()
 
 include_directories(src)
 include_directories(include)

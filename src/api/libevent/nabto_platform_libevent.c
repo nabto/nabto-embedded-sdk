@@ -10,6 +10,7 @@
 
 #include <event.h>
 #include <event2/event.h>
+#include <event2/thread.h>
 
 struct event_base* eventBase;
 struct nm_libevent_context libeventContext;
@@ -18,7 +19,13 @@ void nabto_device_init_platform(struct np_platform* pl)
 {
     np_platform_init(pl);
     nm_api_log_init();
-
+#if defined(HAVE_PTHREAD_H)
+    evthread_use_pthreads();
+#elif defined(HAVE_WINDOWS_H)
+    evtgread_use_windows_threads();
+#else
+    #error "missing thread library"
+#endif
     eventBase = event_base_new();
 }
 
