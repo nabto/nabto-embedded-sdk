@@ -56,7 +56,7 @@ void ts_set_future_timestamp(np_timestamp* ts, uint32_t ms)
 void ts_now(np_timestamp* ts)
 {
     struct timeval tv;
-    int status = event_base_gettimeofday_cached(eventBase, &tv);
+    event_base_gettimeofday_cached(eventBase, &tv);
 
     *ts = (((uint64_t)tv.tv_sec)*1000) + (((uint64_t)tv.tv_usec)/1000);
 }
@@ -73,7 +73,7 @@ uint32_t ts_difference(np_timestamp* t1, np_timestamp* t2)
 uint32_t ts_now_ms()
 {
     struct timeval tv;
-    int status = event_base_gettimeofday_cached(eventBase, &tv);
+    event_base_gettimeofday_cached(eventBase, &tv);
 
     return ((((uint64_t)tv.tv_sec)*1000) + (((uint64_t)tv.tv_usec)/1000));
 }
