@@ -13,11 +13,7 @@ extern "C" {
 
 #define NABTO_MAX_BASESTATION_EPS 2
 
-enum nc_device_event {
-    NC_DEVICE_EVENT_ATTACHED,
-    NC_DEVICE_EVENT_DETACHED,
-    NC_DEVICE_EVENT_FAILURE
-};
+enum nc_device_event;
 
 typedef void (*nc_attacher_closed_callback)(void* data);
 typedef void (*nc_attacher_event_listener)(enum nc_device_event event, void* data);

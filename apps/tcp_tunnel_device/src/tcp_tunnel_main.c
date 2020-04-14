@@ -71,6 +71,7 @@ struct tcp_tunnel {
     struct nn_vector services;
 };
 
+NabtoDevice* device_;
 
 static void signal_handler(int s);
 
@@ -467,6 +468,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         nabto_device_start(device);
         nm_iam_start(&iam);
 
+        device_ = device;
         // Wait for the user to press Ctrl-C
 
         struct sigaction sigIntHandler;
@@ -477,11 +479,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
         sigaction(SIGINT, &sigIntHandler, NULL);
 
-        pause();
-        NabtoDeviceFuture* fut = nabto_device_future_new(device);
-        nabto_device_close(device, fut);
-        nabto_device_future_wait(fut);
-        nabto_device_future_free(fut);
+
+        device_event_handler_blocking_listener(&eventHandler);
+
         nabto_device_stop(device);
 
         device_event_handler_deinit(&eventHandler);
@@ -499,6 +499,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
 void signal_handler(int s)
 {
+    NabtoDeviceFuture* fut = nabto_device_future_new(device_);
+    nabto_device_close(device_, fut);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
 }
 
 

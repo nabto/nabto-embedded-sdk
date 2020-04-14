@@ -13,6 +13,13 @@
 
 #include <platform/np_error_code.h>
 
+enum nc_device_event {
+    NC_DEVICE_EVENT_ATTACHED,
+    NC_DEVICE_EVENT_DETACHED,
+    NC_DEVICE_EVENT_CLOSED
+};
+
+
 enum nc_device_state {
     NC_DEVICE_STATE_SETUP,
     NC_DEVICE_STATE_RUNNING,

@@ -473,6 +473,7 @@ void nabto_device_close_cb(const np_error_code ec, void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     nabto_device_future_resolve(dev->closeFut, nabto_device_error_core_to_api(ec));
+    nc_device_events_listener_notify(NC_DEVICE_EVENT_CLOSED, &dev->core);
 }
 
 void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future)
