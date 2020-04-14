@@ -469,17 +469,11 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         nm_iam_start(&iam);
 
         device_ = device;
+
         // Wait for the user to press Ctrl-C
+        signal(SIGINT, &signal_handler);
 
-        struct sigaction sigIntHandler;
-
-        sigIntHandler.sa_handler = signal_handler;
-        sigemptyset(&sigIntHandler.sa_mask);
-        sigIntHandler.sa_flags = 0;
-
-        sigaction(SIGINT, &sigIntHandler, NULL);
-
-
+        // block until the NABTO_DEVICE_EVENT_CLOSED event is emitted.
         device_event_handler_blocking_listener(&eventHandler);
 
         nabto_device_stop(device);

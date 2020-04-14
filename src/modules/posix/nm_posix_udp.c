@@ -16,7 +16,6 @@
 #include <netinet/in.h>
 #endif
 
-#include <errno.h>
 #include <string.h>
 
 
@@ -25,21 +24,9 @@
 #include <ws2ipdef.h>
 #endif
 
-
-#ifdef HAVE_UNISTD_H
-// close on unix
-#include <unistd.h>
-#endif
-
-#ifdef HAVE_IO_H
-// close on windows
-#include <io.h>
-#endif
-
 #include <fcntl.h>
 
-
-
+#include <event2/util.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 
@@ -96,16 +83,16 @@ np_error_code nm_posix_udp_send_to(struct nm_posix_udp_socket* s, const struct n
     }
 
     if (res < 0) {
-        int status = errno;
-        NABTO_LOG_TRACE(LOG, "UDP returned error status %i", status);
-        if (status == EAGAIN || status == EWOULDBLOCK) {
+        int status = EVUTIL_SOCKET_ERROR();
+        NABTO_LOG_TRACE(LOG, "UDP returned error status (%d) %s", status, evutil_socket_error_to_string(status));
+        if (status == ERROR_AGAIN || status == ERROR_WOULDBLOCK) {
             // expected
             // just drop the packet and the upper layers will take care of retransmissions.
         } else {
 
-            if (status == EADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
-                status == ENETUNREACH || // if we send ipv6 on a system without it.
-                status == EAFNOSUPPORT) // if we send ipv6 on an ipv4 only socket
+            if (status == ERROR_ADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
+                status == ERROR_NETUNREACH || // if we send ipv6 on a system without it.
+                status == ERROR_AFNOSUPPORT) // if we send ipv6 on an ipv4 only socket
             {
                 NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
             } else {
@@ -146,14 +133,14 @@ void nm_posix_udp_event_try_recv_from(void* userData)
         ep.ip.type = NABTO_IPV4;
     }
     if (recvLength < 0) {
-        int status = errno;
-        if (status == EAGAIN || status == EWOULDBLOCK) {
+        int status = EVUTIL_SOCKET_ERROR();
+        if (status == ERROR_AGAIN || status == ERROR_WOULDBLOCK) {
             // expected
             // wait for next event to check for data.
             return;
         } else {
             np_udp_packet_received_callback cb;
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_posix_event_try_read", strerror(status), (int) status);
+            NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in nm_posix_event_try_read", status, evutil_socket_error_to_string(status));
             if(sock->recv.cb) {
                 cb = sock->recv.cb;
                 sock->recv.cb = NULL;
@@ -221,7 +208,8 @@ np_error_code nm_posix_udp_create_socket_any(struct nm_posix_udp_socket* s)
     if (sock == -1) {
         sock = nonblocking_socket(AF_INET, SOCK_DGRAM);
         if (s->sock == -1) {
-            NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", errno, strerror(errno));
+            int e = EVUTIL_SOCKET_ERROR();
+            NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, evutil_socket_error_to_string(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         } else {
             NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
@@ -232,9 +220,10 @@ np_error_code nm_posix_udp_create_socket_any(struct nm_posix_udp_socket* s)
         s->type = NABTO_IPV6;
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no)))
         {
-            NABTO_LOG_ERROR(LOG,"Unable to set option: (%i) '%s'.", errno, strerror(errno));
+            int e = EVUTIL_SOCKET_ERROR();
+            NABTO_LOG_ERROR(LOG,"Unable to set option: (%i) '%s'.", e, evutil_socket_error_to_string(e));
 
-            close(s->sock);
+            evutil_closesocket(s->sock);
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         }
     }

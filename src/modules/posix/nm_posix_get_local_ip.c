@@ -71,7 +71,7 @@ size_t nm_posix_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
                 }
             }
         }
-        close(s);
+        evutil_closesocket(s);
     }
     if (addrsSize < ind+1) {
         return ind;
@@ -105,7 +105,7 @@ size_t nm_posix_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
                 }
             }
         }
-        close(s);
+        evutil_closesocket(s);
     }
     return ind;
 }

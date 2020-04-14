@@ -7,6 +7,10 @@
 #include <platform/np_platform.h>
 #include <event2/event.h>
 
+#if defined(HAVE_WINSOCK2_H)
+#include <winsock2.h>
+#endif
+
 void nm_libevent_init(struct np_platform* pl, struct nm_libevent_context* ctx, struct event_base* eventBase)
 {
     ctx->eventBase = eventBase;
