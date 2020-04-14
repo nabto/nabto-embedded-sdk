@@ -6,8 +6,8 @@
 #include <platform/np_event_queue.h>
 
 #include <modules/posix/nm_posix_udp.h>
-#include <modules/unix/nm_unix_mdns.h>
-#include <modules/unix/nm_unix_get_local_ip.h>
+#include <modules/posix/nm_posix_mdns.h>
+#include <modules/posix/nm_posix_get_local_ip.h>
 
 #include <event2/util.h>
 #include <event2/event.h>
@@ -81,7 +81,7 @@ void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ct
     pl->udp.async_send_to        = &udp_async_send_to;
     pl->udp.async_recv_from      = &udp_async_recv_from;
     pl->udp.get_protocol         = &udp_get_protocol;
-    pl->udp.get_local_ip         = &nm_unix_get_local_ip;
+    pl->udp.get_local_ip         = &nm_posix_get_local_ip;
     pl->udp.get_local_port       = &udp_get_local_port;
 }
 
@@ -251,14 +251,14 @@ np_error_code udp_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_create
         return ec;
     }
 
-    if (!nm_unix_init_mdns_ipv4_socket(sock->posixSocket.sock)) {
+    if (!nm_posix_init_mdns_ipv4_socket(sock->posixSocket.sock)) {
         close(sock->posixSocket.sock);
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 
     // TODO add to libevent
 
-    nm_unix_mdns_update_ipv4_socket_registration(sock->posixSocket.sock);
+    nm_posix_mdns_update_ipv4_socket_registration(sock->posixSocket.sock);
 
     sock->created.cb = cb;
     sock->created.data = data;
@@ -280,15 +280,14 @@ np_error_code udp_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_create
         return ec;
     }
 
-    if (!nm_unix_init_mdns_ipv6_socket(sock->posixSocket.sock)) {
+    if (!nm_posix_init_mdns_ipv6_socket(sock->posixSocket.sock)) {
         close(sock->posixSocket.sock);
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 
     // TODO add to libevent
 
-
-    nm_unix_mdns_update_ipv6_socket_registration(sock->posixSocket.sock);
+    nm_posix_mdns_update_ipv6_socket_registration(sock->posixSocket.sock);
 
     sock->created.cb = cb;
     sock->created.data = data;

@@ -49,6 +49,11 @@ CHECK_INCLUDE_FILES("winsock2.h" HAVE_WINSOCK2_H)
 CHECK_INCLUDE_FILES("io.h" HAVE_IO_H)
 CHECK_INCLUDE_FILES("pthread.h" HAVE_PTHREAD_H)
 CHECK_INCLUDE_FILES("windows.h" HAVE_WINDOWS_H)
+CHECK_INCLUDE_FILES("ifaddrs.h" HAVE_IFADDRS_H)
+CHECK_INCLUDE_FILES("net/if.h" HAVE_NET_IF_H)
+
+
+find_package(Libevent REQUIRED)
 
 if (HAVE_SYS_SOCKET_H)
   add_definitions(-DHAVE_SYS_SOCKET_H)
@@ -87,13 +92,21 @@ if (HAVE_WINDOWS_H)
   add_definitions(-DHAVE_WINDOWS_H)
 endif()
 
+if (HAVE_IFADDRS_H)
+  add_definitions(-DHAVE_IFADDRS_H)
+endif()
+
+if (HAVE_NET_IF_H)
+  add_definitions(-DHAVE_NET_IF_H)
+endif()
+
 include_directories(src)
 include_directories(include)
 
 include_directories(nabto-common-cpp/src)
 
 
-find_package(Libevent REQUIRED)
+
 
 
 if (HAVE_SYS_EPOLL_H)
@@ -104,6 +117,7 @@ if (Libevent_FOUND)
   add_subdirectory(src/modules/libevent)
 endif()
 
+include_directories(LIBEVENT_INCLUDE_DIRS)
 
 add_subdirectory(src/platform)
 add_subdirectory(src/core)

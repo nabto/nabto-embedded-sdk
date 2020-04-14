@@ -4,9 +4,11 @@
 #include <platform/np_error_code.h>
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 
-#if _WIN32
+#if defined(HAVE_WINSOCK2_H)
 #include <Winsock2.h>
-#else
+#endif
+
+#if defined(HAVE_ARPA_INET_H)
 #include <arpa/inet.h>
 #endif
 

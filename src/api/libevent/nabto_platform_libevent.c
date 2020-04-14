@@ -22,7 +22,7 @@ void nabto_device_init_platform(struct np_platform* pl)
 #if defined(HAVE_PTHREAD_H)
     evthread_use_pthreads();
 #elif defined(HAVE_WINDOWS_H)
-    evtgread_use_windows_threads();
+    evthread_use_windows_threads();
 #else
     #error "missing thread library"
 #endif
@@ -40,7 +40,6 @@ np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
     np_communication_buffer_init(pl);
     nm_libevent_init(pl, &libeventContext, eventBase);
 
-    nm_unix_ts_init(pl);
     nm_dtls_cli_init(pl);
     nm_dtls_srv_init(pl);
     nm_mdns_init(pl);

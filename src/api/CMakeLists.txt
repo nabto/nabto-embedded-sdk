@@ -20,10 +20,13 @@ set(nabto_device_src
 
   )
 
+find_package(Libevent REQUIRED)
+
 if (Libevent_FOUND)
   list(APPEND nabto_device_src
     ${src_dir}/libevent/nabto_platform_libevent.c
     )
+  include_directories(${LIBEVENT_INCLUDE_DIRS})
 elseif(HAVE_SYS_EPOLL_H)
   list(APPEND nabto_device_src
     ${src_dir}/unix/nabto_device_platform_modules_linux.c
@@ -56,7 +59,6 @@ target_link_libraries( nabto_device_api
   nm_mdns
   nm_dtls_srv
   np_platform
-  nm_timestamp
   nm_tcp_tunnel
   nm_posix
   )
@@ -72,7 +74,6 @@ target_link_libraries( nabto_device
   nm_logging_api
   nm_dtls_srv
   np_platform
-  nm_timestamp
   nm_mdns
   nm_tcp_tunnel
   nm_posix)
@@ -87,7 +88,12 @@ elseif(HAVE_EPOLL_H)
   target_link_libraries( nabto_device
     nm_epoll
     nm_dns
+    nm_timestamp
     )
+endif()
+
+if (HAVE_WINDOWS_H)
+  target_link_libraries(nabto_device ws2_32)
 endif()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")

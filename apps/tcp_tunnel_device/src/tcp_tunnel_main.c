@@ -23,7 +23,11 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#if defined(HAVE_UNISTD_h)
 #include <unistd.h>
+#endif
+
 #include <stdbool.h>
 
 #include <sys/stat.h>

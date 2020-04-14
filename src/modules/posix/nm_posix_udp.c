@@ -1,4 +1,5 @@
 #include "nm_posix_udp.h"
+#include "nm_posix_types.h"
 
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
@@ -38,13 +39,6 @@
 #include <fcntl.h>
 
 
-#ifdef HAVE_WINSOCK2_H
-typedef int ssize_type;
-typedef int socklen_type;
-#else
-typedef ssize_t ssize_type;
-typedef socklen_t socklen_type;
-#endif
 
 
 #define LOG NABTO_LOG_MODULE_UDP
