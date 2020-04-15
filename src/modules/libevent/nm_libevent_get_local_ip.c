@@ -44,7 +44,7 @@ size_t nm_libevent_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
         return 0;
     }
     int s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (s != -1) {
+    if (s != NM_INVALID_SOCKET) {
         memset(&si_me, 0, sizeof(si_me));
         memset(&si_other, 0, sizeof(si_me));
         //bind to local port 4567
@@ -78,7 +78,7 @@ size_t nm_libevent_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
         return ind;
     }
     s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-    if (s != -1) {
+    if (s != NM_INVALID_SOCKET) {
         memset(&si6_me, 0, sizeof(si6_me));
         memset(&si6_other, 0, sizeof(si6_me));
         //bind to local port 4567

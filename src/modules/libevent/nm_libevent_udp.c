@@ -368,14 +368,21 @@ evutil_socket_t nonblocking_socket(int domain, int type)
 {
 #if defined(SOCK_NONBLOCK)
     return socket(domain, type | SOCK_NONBLOCK, 0);
-#endif
+#else
 
-#ifdef F_GETFL
     evutil_socket_t sock = socket(domain, type, 0);
 
+#ifdef F_GETFL
     int flags = fcntl(sock, F_GETFL, 0);
     if (flags == -1) flags = 0;
     fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+#endif
+
+#ifdef FIONBIO
+    u_long nonblocking = 1;
+    ioctlsocket(sock, FIONBIO, &nonblocking);
+#endif
+
     return sock;
 #endif
 }
@@ -536,10 +543,10 @@ uint16_t udp_get_local_port(np_udp_socket* s)
 
 np_error_code udp_create_socket_any(struct np_udp_socket* s)
 {
-    int sock = nonblocking_socket(AF_INET6, SOCK_DGRAM);
-    if (sock == -1) {
+    evutil_socket_t sock = nonblocking_socket(AF_INET6, SOCK_DGRAM);
+    if (sock == NM_INVALID_SOCKET) {
         sock = nonblocking_socket(AF_INET, SOCK_DGRAM);
-        if (s->sock == -1) {
+        if (s->sock == NM_INVALID_SOCKET) {
             int e = EVUTIL_SOCKET_ERROR();
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, evutil_socket_error_to_string(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
@@ -548,6 +555,7 @@ np_error_code udp_create_socket_any(struct np_udp_socket* s)
             s->type = NABTO_IPV4;
         }
     } else {
+        NABTO_LOG_TRACE(LOG, "Opened socket %d", sock);
         int no = 0;
         s->type = NABTO_IPV6;
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no)))
@@ -565,8 +573,8 @@ np_error_code udp_create_socket_any(struct np_udp_socket* s)
 
 np_error_code udp_create_socket_ipv6(struct np_udp_socket* s)
 {
-    int sock = nonblocking_socket(AF_INET6, SOCK_DGRAM);
-    if (sock == -1) {
+    evutil_socket_t sock = nonblocking_socket(AF_INET6, SOCK_DGRAM);
+    if (sock == NM_INVALID_SOCKET) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 
@@ -583,8 +591,8 @@ np_error_code udp_create_socket_ipv6(struct np_udp_socket* s)
 
 np_error_code udp_create_socket_ipv4(struct np_udp_socket* s)
 {
-    int sock = nonblocking_socket(AF_INET, SOCK_DGRAM);
-    if (sock == -1) {
+    evutil_socket_t sock = nonblocking_socket(AF_INET, SOCK_DGRAM);
+    if (sock == NM_INVALID_SOCKET) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
     s->type = NABTO_IPV4;
