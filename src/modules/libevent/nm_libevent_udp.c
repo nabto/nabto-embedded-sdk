@@ -384,7 +384,7 @@ evutil_socket_t nonblocking_socket(int domain, int type)
         NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
         return NM_INVALID_SOCKET;
     }
-    if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+    if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) < 0) {
         NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
         return NM_INVALID_SOCKET;
     }
