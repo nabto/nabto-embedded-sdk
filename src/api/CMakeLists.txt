@@ -60,7 +60,6 @@ target_link_libraries( nabto_device_api
   nm_dtls_srv
   np_platform
   nm_tcp_tunnel
-  nm_posix
   )
 
 add_library( nabto_device SHARED "${nabto_device_src}")
@@ -75,8 +74,7 @@ target_link_libraries( nabto_device
   nm_dtls_srv
   np_platform
   nm_mdns
-  nm_tcp_tunnel
-  nm_posix)
+  nm_tcp_tunnel)
 
 
 

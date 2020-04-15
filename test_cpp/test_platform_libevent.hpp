@@ -46,7 +46,7 @@ class TestPlatformLibevent : public TestPlatform {
         event_base_loopbreak(tp->eventBase_);
     }
 
-    static void timeoutCb(int fd, short events, void* userData)
+    static void timeoutCb(evutil_socket_t fd, short events, void* userData)
     {
         TestPlatformLibevent* tp = (TestPlatformLibevent*)userData;
         event_base_loopbreak(tp->eventBase_);

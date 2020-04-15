@@ -10,7 +10,9 @@
 #include <test_platform_libevent.hpp>
 #endif
 
+#ifdef HAVE_SYS_SELECT_H
 #include <test_platform_select_unix.hpp>
+#endif
 
 #include <platform/np_ip_address.h>
 

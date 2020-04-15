@@ -159,11 +159,11 @@ add_subdirectory(src/modules/tcp_tunnel)
 add_subdirectory(src/modules/logging/test)
 add_subdirectory(src/modules/policies)
 add_subdirectory(src/modules/iam)
-add_subdirectory(src/modules/posix)
 add_subdirectory(apps/common)
 
 if (HAVE_SYS_SOCKET_H)
   add_subdirectory(src/modules/select_unix)
+  add_subdirectory(src/modules/posix)
   add_definitions(-DHAVE_SELECT_UNIX)
 endif()
 
@@ -202,7 +202,7 @@ if (DEVICE_BUILD_TESTS)
   endif()
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
-  add_subdirectory(test_cpp)
+#  add_subdirectory(test_cpp)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)

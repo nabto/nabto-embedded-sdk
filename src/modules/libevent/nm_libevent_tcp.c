@@ -15,6 +15,12 @@
 #include <string.h>
 
 
+#if defined(HAVE_WINSOCK2_H)
+#include <winsock2.h>
+#include <ws2ipdef.h>
+#endif
+
+
 struct tcp_write_context {
     np_tcp_write_callback callback;
     void* userData;
@@ -52,6 +58,7 @@ static np_error_code tcp_async_connect(np_tcp_socket* sock, struct np_ip_address
 static np_error_code tcp_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
 static np_error_code tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
 static np_error_code tcp_shutdown(np_tcp_socket* sock);
+
 static np_error_code tcp_abort(np_tcp_socket* sock);
 
 
@@ -218,7 +225,11 @@ np_error_code tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLen
 np_error_code tcp_shutdown(np_tcp_socket* sock)
 {
     evutil_socket_t s = bufferevent_getfd(sock->bev);
+#if defined(HAVE_WINSOCK2_H)
+    shutdown(s, SD_SEND);
+#else
     shutdown(s, SHUT_WR);
+#endif
     return NABTO_EC_OK;
 }
 
