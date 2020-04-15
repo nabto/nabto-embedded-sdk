@@ -3,10 +3,6 @@
 
 #include <platform/np_communication_buffer.h>
 
-#include <event2/event.h>
-#include <event.h>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

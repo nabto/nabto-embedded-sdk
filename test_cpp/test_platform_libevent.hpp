@@ -1,6 +1,10 @@
 #pragma once
 
+#include <platform/np_platform.h>
 #include <modules/libevent/nm_libevent.h>
+#include <modules/logging/test/nm_logging_test.h>
+#include <modules/dtls/nm_dtls_cli.h>
+#include <modules/dtls/nm_dtls_srv.h>
 
 #include <event2/event.h>
 #include <event.h>
@@ -27,7 +31,6 @@ class TestPlatformLibevent : public TestPlatform {
         nm_logging_test_init();
         np_communication_buffer_init(&pl_);
         nm_libevent_init(&pl_, &libeventContext_, eventBase_);
-        nm_unix_ts_init(&pl_);
         nm_dtls_cli_init(&pl_);
         nm_dtls_srv_init(&pl_);
     }
