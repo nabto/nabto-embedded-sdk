@@ -2,6 +2,8 @@
 
 #include <nabto/nabto_device.h>
 
+#include <thread>
+
 namespace nabto {
 namespace test {
 
@@ -35,6 +37,7 @@ BOOST_AUTO_TEST_CASE(stop_without_close, *boost::unit_test::timeout(10))
     NabtoDevice* dev = nabto::test::createTestDevice();
     ec = nabto_device_start(dev);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     nabto_device_stop(dev);
     nabto_device_free(dev);
 }

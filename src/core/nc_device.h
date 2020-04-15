@@ -1,6 +1,7 @@
 #ifndef NC_DEVICE_H
 #define NC_DEVICE_H
 
+#include <core/nc_device_defines.h>
 #include <core/nc_attacher.h>
 #include <core/nc_stream_manager.h>
 #include <core/nc_client_connection_dispatch.h>
@@ -12,13 +13,6 @@
 #include <modules/mdns/nm_mdns.h>
 
 #include <platform/np_error_code.h>
-
-enum nc_device_event {
-    NC_DEVICE_EVENT_ATTACHED,
-    NC_DEVICE_EVENT_DETACHED,
-    NC_DEVICE_EVENT_CLOSED
-};
-
 
 enum nc_device_state {
     NC_DEVICE_STATE_SETUP,

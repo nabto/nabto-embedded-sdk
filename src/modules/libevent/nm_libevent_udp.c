@@ -63,7 +63,7 @@ struct np_udp_socket {
     bool aborted;
     struct created_ctx created;
     struct np_event abortEv;
-    struct event event;
+    struct event* event;
 };
 
 static np_error_code udp_create(struct np_platform* pl, np_udp_socket** sock);
@@ -144,7 +144,7 @@ void udp_add_to_libevent(np_udp_socket* sock)
 {
     struct np_platform* pl = sock->pl;
     struct nm_libevent_context* context = pl->udpData;
-    event_assign(&sock->event, context->eventBase, sock->sock, EV_READ, udp_ready_callback, sock);
+    sock->event = event_new(context->eventBase, sock->sock, EV_READ, udp_ready_callback, sock);
 }
 
 np_error_code udp_abort(np_udp_socket* sock)
@@ -178,8 +178,11 @@ void udp_event_abort(void* userData)
         sock->recv.cb = NULL;
         cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->recv.data);
     }
+
     if (sock->created.cb) {
-        sock->created.cb(NABTO_EC_ABORTED, sock->created.data);
+        np_udp_socket_created_callback cb = sock->created.cb;
+        sock->created.cb = NULL;
+        cb(NABTO_EC_ABORTED, sock->created.data);
     }
 }
 
@@ -204,7 +207,10 @@ void udp_destroy(np_udp_socket* sock)
 
 //    struct nm_libevent_context* libeventContext = sock->pl->udpData;
 
-    event_del_block(&sock->event);
+    if (sock->event) {
+        event_del_block(sock->event);
+        event_free(sock->event);
+    }
 
     free(sock);
     // TODO
@@ -364,7 +370,7 @@ np_error_code udp_async_recv_from(np_udp_socket* sock,
     // will not be triggered between recv callbacks
     np_event_queue_post_maybe_double(pl, &sock->recv.event, udp_event_try_recv_from, sock);
 
-    event_add(&sock->event, 0);
+    event_add(sock->event, 0);
 
     return NABTO_EC_OK;
 }

@@ -5,6 +5,7 @@
 #include <platform/np_vector.h>
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
+#include <core/nc_device_defines.h>
 
 
 #ifdef __cplusplus

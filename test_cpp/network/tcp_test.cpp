@@ -6,6 +6,10 @@
 #include <test_platform_epoll.hpp>
 #endif
 
+#ifdef HAVE_LIBEVENT
+#include <test_platform_libevent.hpp>
+#endif
+
 #include <test_platform_select_unix.hpp>
 
 #include <platform/np_ip_address.h>
@@ -339,6 +343,36 @@ BOOST_AUTO_TEST_CASE(close_epoll)
     test::TcpEchoServer tcpServer(ioService->getIoService());
 
     test::TestPlatformEpoll platform;
+
+    test::TcpCloseClientTest client(platform);
+    client.start(tcpServer.getPort());
+
+//    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
+}
+
+#endif
+
+#ifdef HAVE_LIBEVENT
+
+BOOST_AUTO_TEST_CASE(echo_libevent)
+{
+    auto ioService = IoService::create("test");
+    test::TcpEchoServer tcpServer(ioService->getIoService());
+
+    test::TestPlatformLibevent platform;
+
+    test::TcpEchoClientTest client(platform);
+    client.start(tcpServer.getPort());
+
+    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
+}
+
+BOOST_AUTO_TEST_CASE(close_libevent)
+{
+    auto ioService = IoService::create("test");
+    test::TcpEchoServer tcpServer(ioService->getIoService());
+
+    test::TestPlatformLibevent platform;
 
     test::TcpCloseClientTest client(platform);
     client.start(tcpServer.getPort());

@@ -37,11 +37,12 @@ set(test_src
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test
   nabto_device_api
-  test_platform
+  #test_platform
   3rdparty_boost_test
   3rdparty_boost_asio
   common_util
   nm_select_unix
+  nm_timestamp
   nc_core
   dtls
   nm_logging_test

@@ -1,0 +1,10 @@
+#ifndef _NC_DEVICE_DEFINES_H_
+#define _NC_DEVICE_DEFINES_H_
+
+enum nc_device_event {
+    NC_DEVICE_EVENT_ATTACHED,
+    NC_DEVICE_EVENT_DETACHED,
+    NC_DEVICE_EVENT_CLOSED
+};
+
+#endif
