@@ -367,24 +367,30 @@ np_error_code udp_async_recv_from(np_udp_socket* sock,
 evutil_socket_t nonblocking_socket(int domain, int type)
 {
 #if defined(SOCK_NONBLOCK)
-    return socket(domain, type | SOCK_NONBLOCK, 0);
-#else
+    type |= SOCK_NONBLOCK;
+#endif
 
     evutil_socket_t sock = socket(domain, type, 0);
 
-#ifdef F_GETFL
+#ifndef SOCK_NONBLOCK
+#if defined(F_GETFL)
     int flags = fcntl(sock, F_GETFL, 0);
-    if (flags == -1) flags = 0;
-    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-#endif
-
-#ifdef FIONBIO
+    if (flags < 0) {
+        NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
+        return NM_INVALID_SOCKET;
+    }
+    if (fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+        NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
+        return NM_INVALID_SOCKET;
+    }
+#elif defined(FIONBIO)
     u_long nonblocking = 1;
     ioctlsocket(sock, FIONBIO, &nonblocking);
+#else
+    #error cannot make socket nonblocking
 #endif
-
+#endif
     return sock;
-#endif
 }
 
 np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize)
