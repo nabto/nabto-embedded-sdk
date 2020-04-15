@@ -52,6 +52,7 @@ CHECK_INCLUDE_FILES("windows.h" HAVE_WINDOWS_H)
 CHECK_INCLUDE_FILES("ifaddrs.h" HAVE_IFADDRS_H)
 CHECK_INCLUDE_FILES("net/if.h" HAVE_NET_IF_H)
 CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
+CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
 
 
 find_package(Libevent REQUIRED)
@@ -103,6 +104,10 @@ endif()
 
 if (HAVE_ARPA_INET_H)
   add_definitions(-DHAVE_ARPA_INET_H)
+endif()
+
+if (HAVE_FCNTL_H)
+  add_definitions(-DHAVE_FCNTL_H)
 endif()
 
 include_directories(src)

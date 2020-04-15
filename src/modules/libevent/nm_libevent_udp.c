@@ -28,6 +28,10 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
 #define LOG NABTO_LOG_MODULE_UDP
 
 struct send_context {
@@ -169,6 +173,7 @@ void udp_event_abort(void* userData)
     np_udp_socket* sock = (np_udp_socket*)userData;
     if (sock->recv.cb != NULL) {
         struct np_udp_endpoint ep;
+        memset(&ep, 0, sizeof(struct np_udp_endpoint));
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;
         cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->recv.data);
