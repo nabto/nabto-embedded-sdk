@@ -1,10 +1,7 @@
 #include <boost/test/unit_test.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <test_platform.hpp>
-
-#ifdef HAVE_EPOLL
-#include <test_platform_epoll.hpp>
-#endif
 
 #ifdef HAVE_LIBEVENT
 #include <test_platform_libevent.hpp>
@@ -322,89 +319,30 @@ class TcpCloseClientTest {
 
 } }
 
+BOOST_TEST_DONT_PRINT_LOG_VALUE( std::vector<std::unique_ptr<nabto::test::TestPlatform> >)
+BOOST_TEST_DONT_PRINT_LOG_VALUE( std::unique_ptr<nabto::test::TestPlatform>)
+
 BOOST_AUTO_TEST_SUITE(tcp)
 
-#ifdef HAVE_EPOLL
-
-BOOST_AUTO_TEST_CASE(echo_epoll)
+BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
+BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatform::multi(), tp)
 {
     auto ioService = IoService::create("test");
     test::TcpEchoServer tcpServer(ioService->getIoService());
 
-    test::TestPlatformEpoll platform;
-
-    test::TcpEchoClientTest client(platform);
+    test::TcpEchoClientTest client(*tp);
     client.start(tcpServer.getPort());
 
     BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
 }
 
-BOOST_AUTO_TEST_CASE(close_epoll)
+BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
+BOOST_DATA_TEST_CASE(close, nabto::test::TestPlatform::multi(), tp)
 {
     auto ioService = IoService::create("test");
     test::TcpEchoServer tcpServer(ioService->getIoService());
 
-    test::TestPlatformEpoll platform;
-
-    test::TcpCloseClientTest client(platform);
-    client.start(tcpServer.getPort());
-
-//    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
-}
-
-#endif
-
-#ifdef HAVE_LIBEVENT
-
-BOOST_AUTO_TEST_CASE(echo_libevent)
-{
-    auto ioService = IoService::create("test");
-    test::TcpEchoServer tcpServer(ioService->getIoService());
-
-    test::TestPlatformLibevent platform;
-
-    test::TcpEchoClientTest client(platform);
-    client.start(tcpServer.getPort());
-
-    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
-}
-
-BOOST_AUTO_TEST_CASE(close_libevent)
-{
-    auto ioService = IoService::create("test");
-    test::TcpEchoServer tcpServer(ioService->getIoService());
-
-    test::TestPlatformLibevent platform;
-
-    test::TcpCloseClientTest client(platform);
-    client.start(tcpServer.getPort());
-
-//    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
-}
-
-#endif
-
-BOOST_AUTO_TEST_CASE(echo_select)
-{
-    auto ioService = IoService::create("test");
-    test::TcpEchoServer tcpServer(ioService->getIoService());
-
-    test::TestPlatformSelectUnix platform;
-
-    test::TcpEchoClientTest client(platform);
-    client.start(tcpServer.getPort());
-
-    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
-}
-
-BOOST_AUTO_TEST_CASE(close_select)
-{
-    auto ioService = IoService::create("test");
-    test::TcpEchoServer tcpServer(ioService->getIoService());
-
-    test::TestPlatformSelectUnix platform;
-
-    test::TcpCloseClientTest client(platform);
+    test::TcpCloseClientTest client(*tp);
     client.start(tcpServer.getPort());
 
 //    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);

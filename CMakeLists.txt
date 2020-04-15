@@ -40,7 +40,7 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_compile_options(-Werror)
 endif()
 
-CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_SYS_EPOLL_H)
+#CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_SYS_EPOLL_H)
 CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
 CHECK_INCLUDE_FILES("netinet/in.h" HAVE_NETINET_IN_H)
@@ -77,9 +77,9 @@ if (HAVE_IO_H)
   add_definitions(-DHAVE_IO_H)
 endif()
 
-if (HAVE_SYS_EPOLL_H)
-  add_definitions(-DHAVE_EPOLL)
-endif()
+#if (HAVE_SYS_EPOLL_H)
+#  add_definitions(-DHAVE_EPOLL)
+#endif()
 
 if (Libevent_FOUND)
   set(HAVE_LIBEVENT true)
@@ -119,9 +119,9 @@ include_directories(nabto-common-cpp/src)
 
 
 
-if (HAVE_SYS_EPOLL_H)
-  add_subdirectory(src/modules/epoll)
-endif()
+#if (HAVE_SYS_EPOLL_H)
+#  add_subdirectory(src/modules/epoll)
+#endif()
 
 if (Libevent_FOUND)
   add_subdirectory(src/modules/libevent)
@@ -202,7 +202,7 @@ if (DEVICE_BUILD_TESTS)
   endif()
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
-#  add_subdirectory(test_cpp)
+  add_subdirectory(test_cpp)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)

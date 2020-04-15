@@ -12,22 +12,34 @@
 #include "test_platform_libevent.hpp"
 #endif
 
+#include <vector>
+
 
 namespace nabto {
 namespace test {
 
 std::unique_ptr<TestPlatform> TestPlatform::create()
 {
-#if defined(HAVE_EPOLL)
-    return std::unique_ptr<TestPlatform>(new nabto::test::TestPlatformEpoll());
+#if defined(HAVE_LIBEVENT)
+    return std::unique_ptr<TestPlatform>(new nabto::test::TestPlatformLibevent());
 #elif defined(HAVE_SELECT_UNIX)
     return std::unique_ptr<TestPlatform>(new nabto::test::TestPlatformSelectUnix());
-#elif defined(HAVE_LIBEVENT)
-    return std::unique_ptr<TestPlatform>(new nabto::test::TestPlatformLibevent());
 #else
     #error no test platform exists
     return std::nullptr;
 #endif
+}
+
+std::vector<std::shared_ptr<TestPlatform> > TestPlatform::multi()
+{
+    std::vector<std::shared_ptr<TestPlatform> > platforms;
+#if defined(HAVE_LIBEVENT)
+    platforms.push_back(std::make_shared<TestPlatformLibevent>());
+#endif
+#if defined(HAVE_SELECT_UNIX)
+    platforms.push_back(std::make_shared<TestPlatformLibevent>());
+#endif
+    return platforms;
 }
 
 } }

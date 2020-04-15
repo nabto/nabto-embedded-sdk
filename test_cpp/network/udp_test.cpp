@@ -1,18 +1,7 @@
 #include <boost/test/unit_test.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <test_platform.hpp>
-
-#ifdef HAVE_EPOLL
-#include <test_platform_epoll.hpp>
-#endif
-
-#ifdef HAVE_LIBEVENT
-#include <test_platform_libevent.hpp>
-#endif
-
-#ifdef HAVE_SYS_SELECT_H
-#include <test_platform_select_unix.hpp>
-#endif
 
 #include <platform/np_platform.h>
 
@@ -108,53 +97,22 @@ class UdpEchoClientTest {
 
 } } // namespace
 
+
+
 BOOST_AUTO_TEST_SUITE(udp)
 
-#ifdef HAVE_EPOLL
-
-BOOST_AUTO_TEST_CASE(echo_epoll, * boost::unit_test::timeout(120))
+BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
+BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatform::multi(), tp)
 {
     auto ioService = nabto::IoService::create("test");
     auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
 
-    nabto::test::TestPlatformEpoll epollPlatform;
-    nabto::test::UdpEchoClientTest client(epollPlatform);
+    nabto::test::UdpEchoClientTest client(*tp);
     client.start(udpServer->getPort());
 
     BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
     udpServer->stop();
 }
 
-#endif
-
-#ifdef HAVE_LIBEVENT
-
-BOOST_AUTO_TEST_CASE(echo_libevent, * boost::unit_test::timeout(120))
-{
-    auto ioService = nabto::IoService::create("test");
-    auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
-
-    nabto::test::TestPlatformLibevent p;
-    nabto::test::UdpEchoClientTest client(p);
-    client.start(udpServer->getPort());
-
-    BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
-    udpServer->stop();
-}
-
-#endif
-
-BOOST_AUTO_TEST_CASE(echo_select_unix, * boost::unit_test::timeout(120))
-{
-    auto ioService = nabto::IoService::create("test");
-    auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
-
-    nabto::test::TestPlatformSelectUnix platform;
-    nabto::test::UdpEchoClientTest client(platform);
-    client.start(udpServer->getPort());
-
-    BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
-    udpServer->stop();
-}
 
 BOOST_AUTO_TEST_SUITE_END()

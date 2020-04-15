@@ -5,10 +5,6 @@
 #include <platform/np_platform.h>
 #include <platform/np_ip_address.h>
 
-#ifdef HAVE_EPOLL
-#include <test_platform_epoll.hpp>
-#endif
-
 #ifdef HAVE_LIBEVENT
 #include <test_platform_libevent.hpp>
 #endif
@@ -107,27 +103,6 @@ class DnsTestNoSuchDomain {
 }
 
 BOOST_AUTO_TEST_SUITE(dns)
-
-#ifdef HAVE_EPOLL
-
-BOOST_AUTO_TEST_CASE(resolve_epoll, * boost::unit_test::timeout(30))
-{
-    {
-        nabto::test::TestPlatformEpoll epollPlatform;
-
-        DnsTest dt(epollPlatform);
-        dt.start();
-    }
-    {
-        nabto::test::TestPlatformEpoll epollPlatform;
-
-        DnsTestNoSuchDomain dt(epollPlatform);
-        dt.start();
-    }
-
-}
-
-#endif
 
 #ifdef HAVE_LIBEVENT
 

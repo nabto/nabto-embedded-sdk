@@ -50,10 +50,6 @@ target_link_libraries(embedded_unit_test
   nm_iam
 )
 
-if (HAVE_SYS_EPOLL_H)
-  target_link_libraries(embedded_unit_test nm_epoll)
-endif()
-
 if (Libevent_FOUND)
   target_link_libraries(embedded_unit_test nm_libevent)
   target_include_directories(embedded_unit_test PUBLIC ${LIBEVENT_INCLUDE_DIRS})

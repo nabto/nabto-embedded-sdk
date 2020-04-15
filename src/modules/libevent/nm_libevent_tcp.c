@@ -8,6 +8,7 @@
 #include <platform/np_event_queue.h>
 
 #include <event2/bufferevent.h>
+#include <event2/buffer.h>
 #include <event2/event.h>
 
 #include <stddef.h>
