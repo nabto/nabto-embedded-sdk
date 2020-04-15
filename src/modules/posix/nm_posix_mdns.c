@@ -31,7 +31,7 @@
 #include <ws2tcpip.h>
 #endif
 
-#include <event2/util.h>
+#include <errno.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 
@@ -54,8 +54,8 @@ bool nm_posix_init_mdns_ipv6_socket(int sock)
     si_me.sin6_port = htons(5353);
     si_me.sin6_addr = in6addr_any;
     if (bind(sock, (struct sockaddr*)&si_me, sizeof(si_me)) < 0) {
-        int e = EVUTIL_SOCKET_ERROR();
-        NABTO_LOG_INFO(LOG, "bind mdns ipv6 failed (%d) %s", e, evutil_socket_error_to_string(e));
+        int e = errno;
+        NABTO_LOG_INFO(LOG, "bind mdns ipv6 failed (%d) %s", e, strerror(e));
         return false;
     }
 
@@ -65,8 +65,8 @@ bool nm_posix_init_mdns_ipv6_socket(int sock)
     group.ipv6mr_interface = 0;
     int status = setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *)&group, sizeof(struct ipv6_mreq));
     if (status < 0) {
-        int e = EVUTIL_SOCKET_ERROR();
-        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 default membership (%d) %s", e, evutil_socket_error_to_string(e));
+        int e = errno;
+        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 default membership (%d) %s", e, strerror(e));
     }
 
     return true;
@@ -101,8 +101,8 @@ bool nm_posix_init_mdns_ipv4_socket(int sock)
     group.imr_interface.s_addr = INADDR_ANY;
     int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
     if (status < 0) {
-        int e = EVUTIL_SOCKET_ERROR();
-        NABTO_LOG_ERROR(LOG, "Cannot add ipv4 default membership (%d) %s", e, evutil_socket_error_to_string(e));
+        int e = errno;
+        NABTO_LOG_ERROR(LOG, "Cannot add ipv4 default membership (%d) %s", e, strerror(e));
     }
 
     return true;
@@ -126,11 +126,11 @@ void nm_posix_mdns_update_ipv4_socket_registration(int sock)
                 group.imr_ifindex = index;
                 int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
                 if (status < 0) {
-                    int e = EVUTIL_SOCKET_ERROR();
-                    if (e == ERROR_ADDRINUSE) {
+                    int e = errno;
+                    if (e == EADDRINUSE) {
                         // ok probable already registered
                     } else {
-                        NABTO_LOG_TRACE(LOG, "Cannot add ipv4 membership (%d) %s, interface %s", e, evutil_socket_error_to_string(e), iterator->ifa_name);
+                        NABTO_LOG_TRACE(LOG, "Cannot add ipv4 membership (%d) %s, interface %s", e, strerror(e), iterator->ifa_name);
                     }
                 }
 
@@ -163,13 +163,13 @@ void nm_posix_mdns_update_ipv6_socket_registration(int sock)
                 group.ipv6mr_interface = index;
                 int status = setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *)&group, sizeof(struct ipv6_mreq));
                 if (status < 0) {
-                    int e = EVUTIL_SOCKET_ERROR()
-                    if (last_error() == ERROR_ADDRINUSE) {
+                    int e = errno;
+                    if (e == EADDRINUSE) {
                         // some interface indexes occurs more than
                         // once, the interface can only be joined for
                         // a multicast group once for each socket.
                     } else {
-                        NABTO_LOG_TRACE(LOG, "Cannot add ipv6 membership (%d) %s,  interface name %s", e, evutil_socket_error_to_string(e), iterator->ifa_name);
+                        NABTO_LOG_TRACE(LOG, "Cannot add ipv6 membership (%d) %s,  interface name %s", e, strerror(e), iterator->ifa_name);
                     }
                 }
             }

@@ -464,8 +464,6 @@ nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device, Nab
     return ec;
 }
 
-
-
 /**
  * Closing the device
  */

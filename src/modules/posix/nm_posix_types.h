@@ -21,35 +21,4 @@ typedef ssize_t ssize_type;
 typedef socklen_t socklen_type;
 #endif
 
-#if defined(EAGAIN)
-#define ERROR_AGAIN EAGAIN
-#else
-#define ERROR_AGAIN 0
-#endif
-
-#if defined(EWOULDBLOCK)
-#define ERROR_WOULDBLOCK EWOULDBLOCK
-#elif defined(WSAWOULDBLOCK)
-#define ERROR_WOULDBLOCK WSAWOULDBLOCK
-#endif
-
-#if defined(EADDRNOTAVAIL)
-#define ERROR_ADDRNOTAVAIL EADDRNOTAVAIL
-#else
-#define ERROR_ADDRNOTAVAIL 0
-#endif
-
-#if defined(ENETUNREACH)
-#define ERROR_NETUNREACH ENETUNREACH
-#else
-#define ERROR_NETUNREACH 0
-#endif
-
-#if defined(EAFNOSUPPORT)
-#define ERROR_AFNOSUPPORT EAFNOSUPPORT
-#else
-#define ERROR_AFNOSUPPORT 0
-#endif
-
-
 #endif
