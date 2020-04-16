@@ -16,6 +16,15 @@ static void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, c
 
 static uint32_t logLevel = NABTO_LOG_SEVERITY_LEVEL_NONE;
 
+static int common_strcasecmp(const char* s1, const char* s2)
+{
+#if defined(_WIN32)
+    return _stricmp(s1,s2);
+#else
+    return strcasecmp(s1,s2);
+#endif
+}
+
 void nm_logging_test_init()
 {
     np_log.log = &nm_test_log;
@@ -24,13 +33,13 @@ void nm_logging_test_init()
     char* logLevelStr = getenv("NABTO_LOG_LEVEL");
     if (logLevelStr) {
 
-        if (strcasecmp(logLevelStr, "trace") == 0) {
+        if (common_strcasecmp(logLevelStr, "trace") == 0) {
             logLevel = NABTO_LOG_SEVERITY_LEVEL_TRACE;
-        } else if (strcasecmp(logLevelStr, "info") == 0) {
+        } else if (common_strcasecmp(logLevelStr, "info") == 0) {
             logLevel = NABTO_LOG_SEVERITY_LEVEL_INFO;
-        } else if (strcasecmp(logLevelStr, "warn") == 0) {
+        } else if (common_strcasecmp(logLevelStr, "warn") == 0) {
             logLevel = NABTO_LOG_SEVERITY_LEVEL_WARN;
-        } else if (strcasecmp(logLevelStr, "error") == 0) {
+        } else if (common_strcasecmp(logLevelStr, "error") == 0) {
             logLevel = NABTO_LOG_SEVERITY_LEVEL_ERROR;
         } else {
             // invalid log level
