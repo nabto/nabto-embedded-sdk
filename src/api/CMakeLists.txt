@@ -46,7 +46,6 @@ target_link_libraries( nabto_device_api
   nm_dtls_cli
   nc_core
   nm_logging_api
-  nm_dns
   nm_mdns
   nm_dtls_srv
   np_platform

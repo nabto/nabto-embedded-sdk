@@ -11,6 +11,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_definitions(-DNODEFAULTLIB)
+add_definitions(-DBOOST_ALL_NO_LIB)
 
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
 option(DEVICE_BUILD_TESTS "build device tests" ON)

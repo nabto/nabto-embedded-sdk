@@ -3,15 +3,10 @@
 
 #include <test_platform.hpp>
 
-#ifdef HAVE_LIBEVENT
-#include <test_platform_libevent.hpp>
-#endif
-
-#ifdef HAVE_SYS_SELECT_H
-#include <test_platform_select_unix.hpp>
-#endif
-
 #include <platform/np_ip_address.h>
+#include <platform/np_error_code.h>
+#include <platform/np_tcp.h>
+#include <platform/np_platform.h>
 
 #include <util/io_service.hpp>
 
