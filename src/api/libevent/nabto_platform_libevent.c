@@ -41,6 +41,7 @@ np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
 
 void nabto_device_deinit_platform_modules(struct np_platform* pl)
 {
+    nm_random_deinit(pl);
     nm_libevent_deinit(&libeventContext);
 }
 
