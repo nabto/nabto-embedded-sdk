@@ -39,7 +39,7 @@ else()
   message(error "missing thread library")
 endif()
 
-add_definitions(-DNABTO_DEVICE_API_EXPORTS)
+
 add_library( nabto_device_api "${nabto_device_src}")
 
 target_link_libraries( nabto_device_api
@@ -51,6 +51,9 @@ target_link_libraries( nabto_device_api
   np_platform
   nm_tcp_tunnel
   )
+
+target_compile_definitions(nabto_device_api PRIVATE NABTO_DEVICE_WIN32_API_STATIC)
+target_compile_definitions(nabto_device_api PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
 
 add_library( nabto_device SHARED "${nabto_device_src}")
 
