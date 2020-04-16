@@ -20,7 +20,6 @@ class DnsTest {
 
     void start()
     {
-        tp_.init();
         pl_->dns.async_resolve(pl_, dnsName_, &DnsTest::dnsCallback, this);
         tp_.run();
     }
@@ -72,7 +71,6 @@ class DnsTestNoSuchDomain {
 
     void start()
     {
-        tp_.init();
         pl_->dns.async_resolve(pl_, dnsName_, &DnsTestNoSuchDomain::dnsCallback, this);
         tp_.run();
     }

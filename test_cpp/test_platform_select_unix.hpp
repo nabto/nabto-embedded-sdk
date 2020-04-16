@@ -18,6 +18,15 @@ namespace test {
 
 class TestPlatformSelectUnix : public TestPlatform {
  public:
+
+    TestPlatformSelectUnix() {
+        init();
+    }
+
+    ~TestPlatformSelectUnix() {
+        deinit();
+    }
+
     virtual void init()
     {
         np_platform_init(&pl_);

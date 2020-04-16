@@ -23,7 +23,6 @@ class AttachTest {
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
         event_ = event;
         state_ = state;
-        tp_.init();
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
         BOOST_TEST(nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
                                               &AttachTest::udpDispatchCb, this) == NABTO_EC_OK);
@@ -83,12 +82,14 @@ class AttachTest {
 
     void end() {
         ended_ = true;
-        nc_attacher_deinit(&attach_);
-        nc_coap_client_deinit(&coapClient_);
-        nc_udp_dispatch_deinit(&udpDispatch_);
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
         tp_.stop();
     }
+    //    nc_attacher_deinit(&attach_);
+    //    nc_coap_client_deinit(&coapClient_);
+    //    nc_udp_dispatch_deinit(&udpDispatch_);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    //}
 
     nabto::test::TestPlatform& tp_;
     struct nc_attach_context attach_;

@@ -197,8 +197,6 @@ class TcpEchoClientTest {
     }
 
     void start(uint16_t port) {
-        tp_.init();
-
         BOOST_TEST(pl_->tcp.create(pl_, &socket_) == NABTO_EC_OK);
 
         struct np_ip_address address;
@@ -278,7 +276,6 @@ class TcpCloseClientTest {
     }
 
     void start(uint16_t port) {
-        tp_.init();
         port_ = port;
         createSock();
         tp_.run();

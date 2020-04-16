@@ -22,7 +22,6 @@ BOOST_AUTO_TEST_SUITE(test_platform)
 
 BOOST_DATA_TEST_CASE(start_stop, nabto::test::TestPlatform::multi(),tp)
 {
-    tp->init();
     std::thread t([tp](){ tp->run(); });
     // HERE BE DRAGONS, wait for the thread to start the loop such that stop breaks the loop
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -33,7 +32,6 @@ BOOST_DATA_TEST_CASE(start_stop, nabto::test::TestPlatform::multi(),tp)
 
 BOOST_DATA_TEST_CASE(stop_from_event, nabto::test::TestPlatform::multi(),tp)
 {
-    tp->init();
     std::thread t([tp](){ tp->run(); });
     struct np_platform* pl = tp->getPlatform();
     struct np_event stopEvent;
@@ -43,7 +41,6 @@ BOOST_DATA_TEST_CASE(stop_from_event, nabto::test::TestPlatform::multi(),tp)
 
 BOOST_DATA_TEST_CASE(stop_from_event_no_thread, nabto::test::TestPlatform::multi(),tp)
 {
-    tp->init();
     struct np_platform* pl = tp->getPlatform();
     struct np_event stopEvent;
     np_event_queue_post(pl, &stopEvent, &stopFunction, tp.get());

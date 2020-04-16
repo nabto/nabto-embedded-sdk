@@ -40,7 +40,9 @@ void nm_libevent_dns_init(struct np_platform* pl, struct event_base *event_base)
 
 void nm_libevent_dns_deinit(struct np_platform* pl)
 {
-    evdns_base_free(pl->dnsData, 1);
+    if (pl->dnsData != NULL) {
+        evdns_base_free(pl->dnsData, 1);
+    }
     pl->dnsData = NULL;
 }
 

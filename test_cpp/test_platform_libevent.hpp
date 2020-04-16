@@ -19,9 +19,11 @@ class TestPlatformLibevent : public TestPlatform {
     TestPlatformLibevent() {
         nm_libevent_global_init();
         eventBase_ = event_base_new();
+        init();
     }
 
     ~TestPlatformLibevent() {
+        deinit();
         event_base_free(eventBase_);
     }
 
@@ -58,7 +60,6 @@ class TestPlatformLibevent : public TestPlatform {
     void doOneLoop()
     {
         if (stopped_) {
-            //deinit();
             return;
         }
         np_event_queue_execute_all(&pl_);
@@ -80,7 +81,6 @@ class TestPlatformLibevent : public TestPlatform {
     {
         stopped_ = true;
         event_base_loopbreak(eventBase_);
-        deinit();
     }
 
     struct np_platform* getPlatform() {
