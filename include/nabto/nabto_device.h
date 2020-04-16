@@ -24,7 +24,7 @@
 #if defined(_WIN32)
 #define NABTO_DEVICE_API __stdcall
 #if defined(NABTO_DEVICE_WIN32_API_STATIC)
-#define NABTO_DEVICE_DECL_PREFIX extern
+#define NABTO_DEVICE_DECL_PREFIX
 #elif defined(NABTO_DEVICE_API_EXPORTS)
 #define NABTO_DEVICE_DECL_PREFIX __declspec(dllexport)
 #else
