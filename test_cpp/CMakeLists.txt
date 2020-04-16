@@ -26,6 +26,7 @@ set(test_src
   api/create_sct.cpp
   attach/attach_test.cpp
   test_platform.cpp
+  test_platform_test.cpp
   policies/condition_test.cpp
   policies/condition_json_test.cpp
   policies/statement_json_test.cpp

@@ -16,6 +16,7 @@ struct nm_libevent_context {
     np_communication_buffer* recvBuffer;
 };
 
+void nm_libevent_global_init();
 void nm_libevent_init(struct np_platform* pl, struct nm_libevent_context* ctx, struct event_base* eventBase);
 void nm_libevent_deinit(struct nm_libevent_context* ctx);
 

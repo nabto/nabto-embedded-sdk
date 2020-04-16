@@ -17,20 +17,7 @@ struct nm_libevent_context libeventContext;
 
 void nabto_device_init_platform(struct np_platform* pl)
 {
-#ifdef _WIN32
-	WSADATA wsa_data;
-	WSAStartup(0x0201, &wsa_data);
-#endif
-
-    np_platform_init(pl);
-    nm_api_log_init();
-#if defined(HAVE_PTHREAD_H)
-    evthread_use_pthreads();
-#elif defined(HAVE_WINDOWS_H)
-    evthread_use_windows_threads();
-#else
-    #error "missing thread library"
-#endif
+    nm_libevent_global_init();
     eventBase = event_base_new();
 }
 

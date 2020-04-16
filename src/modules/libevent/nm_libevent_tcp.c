@@ -234,8 +234,32 @@ np_error_code tcp_shutdown(np_tcp_socket* sock)
     return NABTO_EC_OK;
 }
 
+void tcp_event_abort(void* userData)
+{
+    np_tcp_socket* sock = (np_tcp_socket*)userData;
+    if (sock->read.callback != NULL) {
+        np_tcp_read_callback cb = sock->read.callback;
+        sock->read.callback = NULL;
+        cb(NABTO_EC_ABORTED, 0, sock->read.userData);
+    }
+    if (sock->write.callback != NULL) {
+        np_tcp_write_callback cb = sock->write.callback;
+        sock->write.callback = NULL;
+        cb(NABTO_EC_ABORTED, sock->write.userData);
+    }
+    if (sock->connect.callback) {
+        np_tcp_connect_callback cb = sock->connect.callback;
+        sock->connect.callback = NULL;
+        cb(NABTO_EC_ABORTED, sock->connect.userData);
+    }
+}
+
 np_error_code tcp_abort(np_tcp_socket* sock)
 {
-    // TODO
-    return NABTO_EC_NOT_SUPPORTED;
+    if (sock->aborted == true) {
+        return NABTO_EC_OK;
+    }
+    sock->aborted = true;
+    np_event_queue_post(sock->pl, &sock->abortEv, &tcp_event_abort, sock);
+    return NABTO_EC_OK;
 }

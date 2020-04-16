@@ -210,6 +210,7 @@ void udp_destroy(np_udp_socket* sock)
     if (sock->event) {
         event_del_block(sock->event);
         event_free(sock->event);
+        sock->event = NULL;
     }
 
     free(sock);
@@ -423,7 +424,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
         return NABTO_EC_FAILED_TO_SEND_PACKET;
     }
 
-    NABTO_LOG_TRACE(LOG, "Sending packet of size %d, to %s:%d", bufferSize, np_ip_address_to_string(&sendIp), ep->port);
+    NABTO_LOG_TRACE(LOG, "Sending packet of size %d, to %s, port %d", bufferSize, np_ip_address_to_string(&sendIp), ep->port);
     if (sendIp.type == NABTO_IPV4) {
         struct sockaddr_in srv_addr;
         srv_addr.sin_family = AF_INET;
