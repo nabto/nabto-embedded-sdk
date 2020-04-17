@@ -24,8 +24,7 @@ pipeline {
                         checkout scm
                         dir('build-amd64') {
                             sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
-                            sh "make -j"
-                            sh "make install"
+                            sh "cmake --build ."
                         }
                         stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
@@ -48,8 +47,7 @@ pipeline {
                         checkout scm
                         dir('build-armhf') {
                             sh "cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$WORKSPACE/${releaseDir} ${srcDir}/superbuild"
-                            sh "make -j"
-                            sh "make install"
+                            sh "cmake --build ."
                         }
                         stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
@@ -67,8 +65,7 @@ pipeline {
                         checkout scm
                         dir('build-mac') {
                             sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
-                            sh "make -j"
-                            sh "make install"
+                            sh "cmake --build ."
                         }
                         stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
