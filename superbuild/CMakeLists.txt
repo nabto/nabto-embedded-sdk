@@ -21,7 +21,8 @@ ExternalProject_Add(libevent
 
 
 ExternalProject_Add(nabto-embedded-sdk
-  PREFIX nabto-embedded-sdk
+  PREFIX nabto-embedded-sdk-build
+  INSTALL_DIR nabto-embedded-sdk
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.."
   BUILD_ALWAYS 1
   CMAKE_ARGS
