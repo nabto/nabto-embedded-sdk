@@ -17,8 +17,10 @@ struct nm_libevent_context libeventContext;
 
 void nabto_device_init_platform(struct np_platform* pl)
 {
+    np_platform_init(pl);
     nm_libevent_global_init();
     eventBase = event_base_new();
+    nm_api_log_init();
 }
 
 void nabto_device_deinit_platform(struct np_platform* pl)

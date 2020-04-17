@@ -5,7 +5,7 @@
 
 void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
 {
-       if(NABTO_LOG_SEVERITY_FILTER & msg->severity) {
+    if(NABTO_LOG_SEVERITY_FILTER & msg->severity) {
         SYSTEMTIME st;
         GetSystemTime(&st);
 
