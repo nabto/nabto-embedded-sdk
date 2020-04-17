@@ -40,7 +40,6 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
 elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   include_directories(src/types/linux)
   add_compile_options(-Wall)
-  add_compile_options(-Werror)
 endif()
 
 #CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_SYS_EPOLL_H)
