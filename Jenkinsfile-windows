@@ -1,0 +1,68 @@
+pipeline {
+    agent none
+    options {
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+    stages {
+        stage('Build') {
+            parallel {
+                stage('Build win') {
+                    agent {
+                        label "windows"
+                    }
+                    environment {
+                        releaseDir = "win-release"
+                        srcDir = pwd()
+                    }
+                    steps {
+                        checkout scm
+                        dir('build-dir') {
+                            sh 'cmake -DCMAKE_INSTALL_PREFIX=../${releaseDir} -DCMAKE_BUILD_TYPE=Release ../superbuild'
+                            sh 'cmake --build . --config Release'
+                            sh 'cmake --build . --config Release --target INSTALL'
+                        }
+
+                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
+                    }
+                }
+            }
+        }
+        stage('Test') {
+            parallel {
+                stage('win') {
+                    agent {
+                            label "windows"
+                    }
+                    steps {
+
+                        dir ('test-dir') {
+                            unstash "win-release"
+                            sh "win-release/bin/embedded_unit_test --detect_memory_leaks=0 --log_format=JUNIT --log_sink=embedded_unit_test_win.xml"
+                        }
+                    }
+                    post {
+                        always {
+                            junit "test-dir/*.xml"
+                        }
+                    }
+                }
+            }
+        }
+        stage('Deploy') {
+            agent {
+                label "windows"
+            }
+            steps {
+                dir('files') {
+                    unstash "win-release"
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'files/**', onlyIfSuccessful: true
+                }
+            }
+        }
+    }
+}
