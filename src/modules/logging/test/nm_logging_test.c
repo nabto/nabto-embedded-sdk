@@ -63,7 +63,7 @@ void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
     size_t i, n;
     int ret = 0;
     va_list list;
-
+    
     for (i = 0; i < chunks; i++) {
         ret = sprintf(str, "%04lx: ", (long unsigned int)(i*16));
         ptr = str + ret;
@@ -83,7 +83,7 @@ void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
                 ptr = ptr + ret;
             }
         }
-        nm_test_log(severity, module, line, file, str, list);
+        //nm_test_log(severity, module, line, file, str, list);
     }
     ret = sprintf(str, "%04lx: ", (long unsigned int)(chunks*16));
     ptr = str + ret;
@@ -107,7 +107,7 @@ void nm_test_log_buf(uint32_t severity, uint32_t module, uint32_t line, const ch
             ptr = ptr + ret;
         }
     }
-    nm_test_log(severity, module, line, file, str, list);
+    //nm_test_log(severity, module, line, file, str, list);
 }
 
 void nm_test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
