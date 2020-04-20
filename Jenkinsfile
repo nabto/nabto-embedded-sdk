@@ -26,7 +26,7 @@ pipeline {
                             sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
                             sh "cmake --build ."
                         }
-                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
+                        stash name: "${releaseDir}", includes: "build-amd64/nabto-embedded-sdk/**"
                     }
                 }
                 stage('Build linux armhf') {
@@ -49,7 +49,7 @@ pipeline {
                             sh "cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$WORKSPACE/${releaseDir} ${srcDir}/superbuild"
                             sh "cmake --build ."
                         }
-                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
+                        stash name: "${releaseDir}", includes: "build-armhf/nabto-embedded-sdk/**"
                     }
                 }
                 stage('Build on mac') {
@@ -67,7 +67,7 @@ pipeline {
                             sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
                             sh "cmake --build ."
                         }
-                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
+                        stash name: "${releaseDir}", includes: "build-mac/nabto-embedded-sdk/**"
                     }
                 }
             }
@@ -84,8 +84,7 @@ pipeline {
                     steps {
                         dir ('test-dir') {
                             unstash "linux-release"
-                            sh "./linux-release/bin/unit_test"
-                            sh "./linux-release/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_linux.xml"
+                            sh "./build-amd64/nabto-embedded-sdk/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_linux.xml"
                         }
                     }
                     post {
@@ -101,7 +100,7 @@ pipeline {
                     steps {
                         dir ('test-dir') {
                             unstash "mac-release"
-                            sh "./mac-release/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_mac.xml"
+                            sh "./build-mac/nabto-embedded-sdk/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_mac.xml"
                         }
                     }
                     post {
