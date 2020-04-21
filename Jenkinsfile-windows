@@ -18,8 +18,7 @@ pipeline {
                     steps {
                         checkout scm
                         dir('build-dir') {
-                            sh 'cmake -DCMAKE_INSTALL_PREFIX=../${releaseDir} -DCMAKE_BUILD_TYPE=Release ../superbuild'
-                            sh 'cmake --build . --config Release'
+                            sh 'cmake -DCMAKE_INSTALL_PREFIX=../${releaseDir} -DCMAKE_BUILD_TYPE=Release ..'
                             sh 'cmake --build . --config Release --target INSTALL'
                         }
 
