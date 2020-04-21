@@ -49,10 +49,7 @@ target_link_libraries(embedded_unit_test
   nm_iam
 )
 
-if (Libevent_FOUND)
-  target_link_libraries(embedded_unit_test nm_libevent)
-  target_include_directories(embedded_unit_test PUBLIC ${LIBEVENT_INCLUDE_DIRS})
-endif()
+target_link_libraries(embedded_unit_test nm_libevent 3rdparty_libevent)
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

@@ -37,7 +37,7 @@ std::vector<std::shared_ptr<TestPlatform> > TestPlatform::multi()
     platforms.push_back(std::make_shared<TestPlatformLibevent>());
 #endif
 #if defined(HAVE_SELECT_UNIX)
-    platforms.push_back(std::make_shared<TestPlatformLibevent>());
+    platforms.push_back(std::make_shared<TestPlatformSelectUnix>());
 #endif
     return platforms;
 }
