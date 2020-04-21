@@ -10,3 +10,6 @@
 [submodule "3rdparty/nn/nn"]
 	path = 3rdparty/nn/nn
 	url = https://github.com/nabto/nn
+[submodule "3rdparty/libevent/libevent"]
+	path = 3rdparty/libevent/libevent
+	url = git@github.com:libevent/libevent

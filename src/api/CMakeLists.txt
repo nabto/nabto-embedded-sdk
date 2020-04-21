@@ -2,6 +2,8 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package( Threads )
 
+include_directories(${EVENT__INCLUDE_DIRS})
+
 set(nabto_device_src
   nabto_device.c
   nabto_device_stream.c
@@ -19,8 +21,6 @@ set(nabto_device_src
   nabto_device_tcp_tunnelling.c
 
   )
-
-find_package(Libevent REQUIRED)
 
 list(APPEND nabto_device_src
   ${src_dir}/libevent/nabto_platform_libevent.c
@@ -73,9 +73,7 @@ target_link_libraries( nabto_device
 
 target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
 
-if (Libevent_FOUND)
-  target_link_libraries(nabto_device nm_libevent)
-endif()
+target_link_libraries(nabto_device nm_libevent event_core)
 
 if (HAVE_WINDOWS_H)
   target_link_libraries(nabto_device ws2_32)

@@ -57,7 +57,7 @@ CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
 CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
 
 
-find_package(Libevent REQUIRED)
+#find_package(Libevent REQUIRED)
 
 if (HAVE_SYS_SOCKET_H)
   add_definitions(-DHAVE_SYS_SOCKET_H)
@@ -125,15 +125,11 @@ include_directories(nabto-common-cpp/src)
 #  add_subdirectory(src/modules/epoll)
 #endif()
 
-if (Libevent_FOUND)
-  add_subdirectory(src/modules/libevent)
-endif()
 
-include_directories(LIBEVENT_INCLUDE_DIRS)
 
-add_subdirectory(src/platform)
-add_subdirectory(src/core)
-add_subdirectory(src/api)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include)
+
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -150,6 +146,7 @@ add_subdirectory(3rdparty/tinycbor)
 add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
 add_subdirectory(3rdparty/nn)
+add_subdirectory(3rdparty/libevent)
 add_subdirectory(nabto-common-cpp/src/streaming)
 add_subdirectory(nabto-common-cpp/src/stun)
 add_subdirectory(nabto-common-cpp/src/coap)
@@ -161,7 +158,12 @@ add_subdirectory(src/modules/tcp_tunnel)
 add_subdirectory(src/modules/logging/test)
 add_subdirectory(src/modules/policies)
 add_subdirectory(src/modules/iam)
+add_subdirectory(src/modules/libevent)
 add_subdirectory(apps/common)
+
+add_subdirectory(src/platform)
+add_subdirectory(src/core)
+add_subdirectory(src/api)
 
 if (HAVE_SYS_SOCKET_H)
   add_subdirectory(src/modules/select_unix)
@@ -203,7 +205,7 @@ if (DEVICE_BUILD_TESTS)
   endif()
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
-  add_subdirectory(test_cpp)
+  #add_subdirectory(test_cpp)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)
@@ -212,8 +214,8 @@ if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES)
-#  add_subdirectory(examples/common)
-#  add_subdirectory(examples/heat_pump)
+  #add_subdirectory(examples/common)
+  #add_subdirectory(examples/heat_pump)
 #  add_subdirectory(examples/stream_echo)
 #  add_subdirectory(examples/hello_world)
 endif()
