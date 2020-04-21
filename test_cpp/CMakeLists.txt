@@ -47,7 +47,15 @@ target_link_libraries(embedded_unit_test
   nm_logging_test
   nm_policies
   nm_iam
-)
+  )
+
+if (NOT WIN32)
+  target_link_libraries(embedded_unit_test
+    nm_timestamp
+    nm_select_unix
+    nm_unix_dns
+    )
+endif()
 
 target_link_libraries(embedded_unit_test nm_libevent 3rdparty_libevent)
 
