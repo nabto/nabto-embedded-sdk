@@ -24,7 +24,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     }
 
     ~TestPlatformSelectUnix() {
-        deinit();
+        //deinit();
     }
 
     virtual void init()

@@ -82,6 +82,9 @@ class AttachTest {
 
     void end() {
         ended_ = true;
+        nc_attacher_stop(&attach_);
+        nc_udp_dispatch_abort(&udpDispatch_);
+        nc_udp_dispatch_deinit(&udpDispatch_);
         tp_.stop();
     }
     //    nc_attacher_deinit(&attach_);
