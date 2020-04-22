@@ -13,13 +13,17 @@
 #include <event2/thread.h>
 
 struct event_base* eventBase;
+struct event* signalEvent;
 struct nm_libevent_context libeventContext;
+
+static void nabto_device_signal_event(evutil_socket_t s, short event, void* userData);
 
 void nabto_device_init_platform(struct np_platform* pl)
 {
     np_platform_init(pl);
     nm_libevent_global_init();
     eventBase = event_base_new();
+    signalEvent = event_new(eventBase, -1, 0, &nabto_device_signal_event, NULL);
     nm_api_log_init();
 }
 
@@ -63,9 +67,14 @@ void nabto_device_platform_close(struct np_platform* pl)
     // TODO
 }
 
-void nabto_device_platform_signal(struct np_platform* pl)
+void nabto_device_signal_event(evutil_socket_t s, short event, void* userData)
 {
     event_base_loopbreak(eventBase);
+}
+
+void nabto_device_platform_signal(struct np_platform* pl)
+{
+    event_active(signalEvent, 0, 0);
 }
 
 bool nabto_device_platform_finished()

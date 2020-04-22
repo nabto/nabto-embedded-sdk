@@ -3,9 +3,11 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
+#include <thread>
+
 BOOST_AUTO_TEST_SUITE(device_api)
 
-BOOST_AUTO_TEST_CASE(create_sct, *boost::unit_test::timeout(10))
+BOOST_AUTO_TEST_CASE(create_sct, *boost::unit_test::timeout(180))
 {
     NabtoDevice* device = nabto_device_new();
 
