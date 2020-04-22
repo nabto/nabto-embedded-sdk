@@ -42,6 +42,11 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_compile_options(-Wall)
 endif()
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include)
+
+#set(CMAKE_REQUIRED_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include;${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include")
+
 #CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_SYS_EPOLL_H)
 CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
@@ -56,6 +61,8 @@ CHECK_INCLUDE_FILES("net/if.h" HAVE_NET_IF_H)
 CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
 CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
 
+set(HAVE_LIBEVENT_HEADERS 1)
+add_definitions(-DHAVE_LIBEVENT)
 
 #find_package(Libevent REQUIRED)
 
@@ -127,8 +134,6 @@ include_directories(nabto-common-cpp/src)
 
 
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include)
 
 
 set(CMAKE_BUILD_TYPE Debug)

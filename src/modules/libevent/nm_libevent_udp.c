@@ -212,6 +212,11 @@ void udp_destroy(np_udp_socket* sock)
         event_free(sock->event);
         sock->event = NULL;
     }
+    struct np_platform* pl = sock->pl;
+
+    np_event_queue_cancel_event(pl, &sock->abortEv);
+    np_event_queue_cancel_event(pl, &sock->created.event);
+    np_event_queue_cancel_event(pl, &sock->recv.event);
 
     free(sock);
     // TODO
