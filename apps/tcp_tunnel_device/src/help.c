@@ -9,7 +9,7 @@ void print_help() {
     printf("%s" NEWLINE, "  -h, --help       Print help");
     printf("%s" NEWLINE, "  -v, --version    Print version");
     printf("%s" NEWLINE, "  -H, --home-dir   Set alternative home dir, The default home dir is");
-    printf("%s" NEWLINE, "                   $HOME/.nabto/edge on linux and mac, and %APPDATA%\nabto\edge");
+    printf("%s" NEWLINE, "                   $HOME/.nabto/edge on linux and mac, and %APPDATA%\\nabto\\edge");
     printf("%s" NEWLINE, "                   on windows");
     printf("%s" NEWLINE, "      --log-level  Set the log level for the application the possible levels");
     printf("%s" NEWLINE, "                   is error, warn, info and trace.");
@@ -20,7 +20,7 @@ void print_help() {
     printf("%s" NEWLINE, "the homedir. Namely config, state and keys.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "The files is by default located in the folder unix:");
-    printf("%s" NEWLINE, "`$HOME/.nabto/edge`, windows `%APPDATA%\nabto\edge`. The location can");
+    printf("%s" NEWLINE, "`$HOME/.nabto/edge`, windows `%APPDATA%\\nabto\\edge`. The location can");
     printf("%s" NEWLINE, "be overriden by the home-dir option. In this case basefolder is");
     printf("%s" NEWLINE, "`${home-dir}`.");
     printf("%s" NEWLINE, "");

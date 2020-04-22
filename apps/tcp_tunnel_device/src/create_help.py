@@ -9,8 +9,10 @@ helpOutputFile.write("void print_help() {\n");
 
 for line in helpInputFile:
 
-    line2 = line.replace('"', '\\"');
+    line2 = line.replace('\\', '\\\\');
+    line3 = line2.replace('"', '\\"');
 
-    helpOutputFile.write("    printf(\"%s\" NEWLINE, \""+line2+"\");\n");
+
+    helpOutputFile.write("    printf(\"%s\" NEWLINE, \""+line3+"\");\n");
 
 helpOutputFile.write("}\n");
