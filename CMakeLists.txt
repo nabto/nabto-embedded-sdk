@@ -124,20 +124,6 @@ include_directories(include)
 
 include_directories(nabto-common-cpp/src)
 
-
-
-
-
-#if (HAVE_SYS_EPOLL_H)
-#  add_subdirectory(src/modules/epoll)
-#endif()
-
-
-
-
-
-set(CMAKE_BUILD_TYPE Debug)
-
 set(test_runner_src
   ${CMAKE_CURRENT_SOURCE_DIR}/test/runner/linux.c
   )
@@ -204,10 +190,12 @@ if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES)
-  #add_subdirectory(examples/common)
-  #add_subdirectory(examples/heat_pump)
-#  add_subdirectory(examples/stream_echo)
-#  add_subdirectory(examples/hello_world)
+  if (NOT WIN32)
+    add_subdirectory(examples/common)
+    add_subdirectory(examples/heat_pump)
+    add_subdirectory(examples/stream_echo)
+    add_subdirectory(examples/hello_world)
+  endif()
 endif()
 
 if (DEVICE_BUILD_APPS)
