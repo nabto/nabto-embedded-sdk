@@ -4,7 +4,8 @@ TCP Tunnel Device Help.
   -h, --help       Print help
   -v, --version    Print version
   -H, --home-dir   Set alternative home dir, The default home dir is
-                   $HOME/.nabto/edge on linux and mac.
+                   $HOME/.nabto/edge on linux and mac, and %APPDATA%\nabto\edge
+                   on windows
       --log-level  Set the log level for the application the possible levels
                    is error, warn, info and trace.
 
@@ -13,9 +14,10 @@ TCP Tunnel Device Help.
 The application uses several files. The are located in subfolders of
 the homedir. Namely config, state and keys.
 
-The files is by default located in the folder `~/.nabto/edge`. The
-location can be overriden by the home-dir option. In this case
-basefolder is `${home-dir}`.
+The files is by default located in the folder unix:
+`$HOME/.nabto/edge`, windows `%APPDATA%\nabto\edge`. The location can
+be overriden by the home-dir option. In this case basefolder is
+`${home-dir}`.
 
 ## `config/device.json`
 
