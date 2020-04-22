@@ -16,7 +16,8 @@ void test_log (uint32_t severity, uint32_t module, uint32_t line, const char* fi
 {
     pnt.severity = severity;
     pnt.module = module;
-    strncpy(pnt.fmt, fmt, 64);
+    pnt.fmt[63] = '\0';
+    strncpy(pnt.fmt, fmt, 63);
     pnt.arg1 = va_arg(args, uint32_t);
     pnt.arg2 = (char)va_arg(args, uint32_t);
 }
