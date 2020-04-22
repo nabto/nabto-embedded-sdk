@@ -194,21 +194,6 @@ if (DEVICE_BUILD_TESTS)
 #  add_subdirectory(nabto-common-cpp/src/http_server)
   #add_subdirectory(test)
 
-  if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
-    add_executable(unit_test "${test_runner_src}")
-
-    target_link_libraries(unit_test
-      np_platform_test
-      np_platform
-      nc_core
-      nm_logging_unix)
-
-    install(TARGETS unit_test
-      RUNTIME DESTINATION bin
-      )
-
-  endif()
-
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
   add_subdirectory(test_cpp)
 endif()

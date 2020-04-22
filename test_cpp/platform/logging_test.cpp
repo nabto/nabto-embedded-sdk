@@ -1,8 +1,7 @@
-#include "np_unit_test.h"
-#include "np_tests.h"
+#include <boost/test/unit_test.hpp>
 #include <platform/np_logging.h>
-#include <string.h>
 
+namespace {
 struct print {
     uint32_t severity;
     uint32_t module;
@@ -54,28 +53,29 @@ void reset_pnt()
     }
 }
 
-void np_logging_test()
+} // namespace
+
+BOOST_AUTO_TEST_SUITE(logging)
+
+BOOST_AUTO_TEST_CASE(severity)
 {
     reset_pnt();
     np_log.log=&test_log;
     NABTO_LOG_ERROR(43, "%d:%c", 20, 'e');
-    NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_ERROR, 43, "%d:%c", 20 , 'e'));
+    BOOST_TEST(check_pnt(NABTO_LOG_SEVERITY_ERROR, 43, "%d:%c", 20 , 'e'));
     reset_pnt();
     NABTO_LOG_WARN (44, "%d:%c", 21, 'd');
-    NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_WARN, 44, "%d:%c", 21 , 'd'));
+    BOOST_TEST(check_pnt(NABTO_LOG_SEVERITY_WARN, 44, "%d:%c", 21 , 'd'));
     reset_pnt();
     NABTO_LOG_INFO (45, "%d:%c", 22, 'c');
-    NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_INFO, 45, "%d:%c", 22 , 'c'));
+    BOOST_TEST(check_pnt(NABTO_LOG_SEVERITY_INFO, 45, "%d:%c", 22 , 'c'));
     reset_pnt();
     NABTO_LOG_TRACE(47, "%d:%c", 24, 'a');
-    NABTO_TEST_CHECK(check_pnt(NABTO_LOG_SEVERITY_TRACE, 47, "%d:%c", 24 , 'a'));
+    BOOST_TEST(check_pnt(NABTO_LOG_SEVERITY_TRACE, 47, "%d:%c", 24 , 'a'));
     reset_pnt();
     NABTO_LOG_INFO(48, "test with no variadic arguments");
-    NABTO_TEST_CHECK(pnt.severity == NABTO_LOG_SEVERITY_INFO);
-    NABTO_TEST_CHECK(pnt.module == 48);
+    BOOST_TEST(pnt.severity == NABTO_LOG_SEVERITY_INFO);
+    BOOST_TEST((int)pnt.module == (int)48);
 }
 
-void np_logging_tests()
-{
-    np_logging_test();
-}
+BOOST_AUTO_TEST_SUITE_END()

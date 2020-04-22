@@ -29,4 +29,18 @@ BOOST_AUTO_TEST_CASE(is_v4_mapped)
     BOOST_TEST(std::string(str) == "0000:0000:0000:0000:0000:FFFF:7F00:0001");
 }
 
+BOOST_AUTO_TEST_CASE(is_v4)
+{
+    struct np_ip_address ip;
+    ip.type = NABTO_IPV4;
+    BOOST_TEST(np_ip_is_v4(&ip));
+}
+
+BOOST_AUTO_TEST_CASE(is_v6)
+{
+    struct np_ip_address ip;
+    ip.type = NABTO_IPV6;
+    BOOST_TEST(np_ip_is_v6(&ip));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,6 +1,9 @@
+#include <boost/test/unit_test.hpp>
+
 #include <platform/np_platform.h>
-#include <platform/np_unit_test.h>
-#include <platform/np_tests.h>
+
+namespace
+{
 
 struct test_state {
     bool called;
@@ -18,14 +21,39 @@ static void np_timed_event_test_callback(const np_error_code ec, void* data)
     state->called = true;
 }
 
-void np_platform_test_post_event()
+np_timestamp time_;
+bool np_platform_test_ts_passed_or_now(np_timestamp* timestamp)
+{
+    return (time_ >= *timestamp);
+}
+
+void np_platform_test_ts_now(np_timestamp* ts)
+{
+    *ts = time_;
+}
+bool np_platform_test_ts_less_or_equal(np_timestamp* t1, np_timestamp* t2)
+{
+    return (*t1 <= *t2);
+}
+
+void np_platform_test_ts_set_future_timestamp(np_timestamp* ts, uint32_t milliseconds)
+{
+    *ts = time_ + milliseconds;
+}
+
+}
+
+BOOST_AUTO_TEST_SUITE(event_queue)
+
+
+BOOST_AUTO_TEST_CASE(test_post_event)
 {
     struct np_platform pl;
 
     np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
-    NABTO_TEST_CHECK(np_event_queue_is_event_queue_empty(&pl));
+    BOOST_TEST(np_event_queue_is_event_queue_empty(&pl));
 
     struct test_state state;
     state.called = false;
@@ -34,16 +62,16 @@ void np_platform_test_post_event()
 
     np_event_queue_post(&pl, &event, &np_test_callback, &state);
 
-    NABTO_TEST_CHECK(!np_event_queue_is_event_queue_empty(&pl));
+    BOOST_TEST(!np_event_queue_is_event_queue_empty(&pl));
 
     np_event_queue_poll_one(&pl);
 
-    NABTO_TEST_CHECK(np_event_queue_is_event_queue_empty(&pl));
+    BOOST_TEST(np_event_queue_is_event_queue_empty(&pl));
 
-    NABTO_TEST_CHECK(state.called);
+    BOOST_TEST(state.called);
 }
 
-void np_platform_test_post_many_event()
+BOOST_AUTO_TEST_CASE(test_post_many_event)
 {
     struct np_platform pl;
     int i;
@@ -51,7 +79,7 @@ void np_platform_test_post_many_event()
     np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
-    NABTO_TEST_CHECK(np_event_queue_is_event_queue_empty(&pl));
+    BOOST_TEST(np_event_queue_is_event_queue_empty(&pl));
 
     struct test_state state[100];
     for (i = 0; i < 100; i++) {
@@ -65,50 +93,30 @@ void np_platform_test_post_many_event()
     }
 
     for (int i = 0; i < 100; i++) {
-        NABTO_TEST_CHECK(!np_event_queue_is_event_queue_empty(&pl));
+        BOOST_TEST(!np_event_queue_is_event_queue_empty(&pl));
         np_event_queue_poll_one(&pl);
     }
 
-    NABTO_TEST_CHECK(np_event_queue_is_event_queue_empty(&pl));
+    BOOST_TEST(np_event_queue_is_event_queue_empty(&pl));
 
     for (int i = 0; i < 100; i++) {
-        NABTO_TEST_CHECK(state[i].called);
+        BOOST_TEST(state[i].called);
     }
 }
 
-np_timestamp time;
-bool np_platform_test_ts_passed_or_now(np_timestamp* timestamp)
-{
-    return (time >= *timestamp);
-}
-
-void np_platform_test_ts_now(np_timestamp* ts)
-{
-    *ts = time;
-}
-bool np_platform_test_ts_less_or_equal(np_timestamp* t1, np_timestamp* t2)
-{
-    return (*t1 <= *t2);
-}
-
-void np_platform_test_ts_set_future_timestamp(np_timestamp* ts, uint32_t milliseconds)
-{
-    *ts = time + milliseconds;
-}
-
-void np_platform_test_post_timed_event()
+BOOST_AUTO_TEST_CASE(test_post_timed_event)
 {
     struct np_platform pl;
     np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
-    time = 0;
+    time_ = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
     pl.ts.less_or_equal = &np_platform_test_ts_less_or_equal;
     pl.ts.now = &np_platform_test_ts_now;
     pl.ts.set_future_timestamp = &np_platform_test_ts_set_future_timestamp;
 
-    NABTO_TEST_CHECK(!np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_timed_event(&pl));
 
     struct np_timed_event event;
     struct test_state state;
@@ -116,35 +124,35 @@ void np_platform_test_post_timed_event()
 
     np_event_queue_post_timed_event(&pl, &event, 50, &np_timed_event_test_callback, &state);
 
-    NABTO_TEST_CHECK(np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(np_event_queue_has_timed_event(&pl));
 
-    NABTO_TEST_CHECK(!np_event_queue_has_ready_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_ready_timed_event(&pl));
 
-    time += 100;
+    time_ += 100;
 
-    NABTO_TEST_CHECK(np_event_queue_has_ready_timed_event(&pl));
+    BOOST_TEST(np_event_queue_has_ready_timed_event(&pl));
 
     np_event_queue_poll_one_timed_event(&pl);
 
-    NABTO_TEST_CHECK(!np_event_queue_has_ready_timed_event(&pl));
-    NABTO_TEST_CHECK(!np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_ready_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_timed_event(&pl));
 
-    NABTO_TEST_CHECK(state.called == true);
+    BOOST_TEST(state.called == true);
 }
 
-void np_platform_test_cancel_timed_event()
+BOOST_AUTO_TEST_CASE(cancel_timed_event)
 {
     struct np_platform pl;
     np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
-    time = 0;
+    time_ = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
     pl.ts.less_or_equal = &np_platform_test_ts_less_or_equal;
     pl.ts.now = &np_platform_test_ts_now;
     pl.ts.set_future_timestamp = &np_platform_test_ts_set_future_timestamp;
 
-    NABTO_TEST_CHECK(!np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_timed_event(&pl));
 
     struct np_timed_event event;
     struct test_state state;
@@ -152,32 +160,32 @@ void np_platform_test_cancel_timed_event()
 
     np_event_queue_post_timed_event(&pl, &event, 50, &np_timed_event_test_callback, &state);
 
-    NABTO_TEST_CHECK(np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(np_event_queue_has_timed_event(&pl));
 
     np_event_queue_cancel_timed_event(&pl, &event);
 
-    NABTO_TEST_CHECK(!np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_timed_event(&pl));
 
-    time += 100;
+    time_ += 100;
 
     np_event_queue_poll_one_timed_event(&pl);
 
-    NABTO_TEST_CHECK(state.called == false);
+    BOOST_TEST(state.called == false);
 }
 
-void np_platform_test_cancel_timed_event_for_non_empty_q()
+BOOST_AUTO_TEST_CASE(test_cancel_timed_event_for_non_empty_q)
 {
     struct np_platform pl;
     np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
-    time = 0;
+    time_ = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
     pl.ts.less_or_equal = &np_platform_test_ts_less_or_equal;
     pl.ts.now = &np_platform_test_ts_now;
     pl.ts.set_future_timestamp = &np_platform_test_ts_set_future_timestamp;
 
-    NABTO_TEST_CHECK(!np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_timed_event(&pl));
 
     struct np_timed_event event;
     struct np_timed_event event2;
@@ -191,32 +199,33 @@ void np_platform_test_cancel_timed_event_for_non_empty_q()
     np_event_queue_post_timed_event(&pl, &event, 50, &np_timed_event_test_callback, &state);
     np_event_queue_post_timed_event(&pl, &event3, 50, &np_timed_event_test_callback, &state3);
 
-    NABTO_TEST_CHECK(np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(np_event_queue_has_timed_event(&pl));
 
     np_event_queue_cancel_timed_event(&pl, &event);
 
-    time += 100;
+    time_ += 100;
 
     np_event_queue_poll_one_timed_event(&pl);
     np_event_queue_poll_one_timed_event(&pl);
     np_event_queue_poll_one_timed_event(&pl);
 
-    NABTO_TEST_CHECK(state.called == false);
+    BOOST_TEST(state.called == false);
 }
 
-void np_platform_test_post_timed_event_sorting()
+
+BOOST_AUTO_TEST_CASE(test_post_timed_event_sorting)
 {
     struct np_platform pl;
     np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
-    time = 0;
+    time_ = 0;
     pl.ts.passed_or_now = &np_platform_test_ts_passed_or_now;
     pl.ts.less_or_equal = &np_platform_test_ts_less_or_equal;
     pl.ts.now = &np_platform_test_ts_now;
     pl.ts.set_future_timestamp = &np_platform_test_ts_set_future_timestamp;
 
-    NABTO_TEST_CHECK(!np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_timed_event(&pl));
 
     struct np_timed_event event1;
     struct np_timed_event event2;
@@ -227,36 +236,28 @@ void np_platform_test_post_timed_event_sorting()
 
     np_event_queue_post_timed_event(&pl, &event1, 5000, &np_timed_event_test_callback, &state1);
 
-    NABTO_TEST_CHECK(np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(np_event_queue_has_timed_event(&pl));
 
-    NABTO_TEST_CHECK(!np_event_queue_has_ready_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_ready_timed_event(&pl));
 
-    time += 100;
+    time_ += 100;
 
-    NABTO_TEST_CHECK(!np_event_queue_has_ready_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_ready_timed_event(&pl));
 
     np_event_queue_post_timed_event(&pl, &event2, 50, &np_timed_event_test_callback, &state2);
 
-    time += 100;
+    time_ += 100;
 
-    NABTO_TEST_CHECK(np_event_queue_has_ready_timed_event(&pl));
+    BOOST_TEST(np_event_queue_has_ready_timed_event(&pl));
 
     np_event_queue_poll_one_timed_event(&pl);
 
-    NABTO_TEST_CHECK(!np_event_queue_has_ready_timed_event(&pl));
-    NABTO_TEST_CHECK(np_event_queue_has_timed_event(&pl));
+    BOOST_TEST(!np_event_queue_has_ready_timed_event(&pl));
+    BOOST_TEST(np_event_queue_has_timed_event(&pl));
 
-    NABTO_TEST_CHECK(state2.called == true);
-    NABTO_TEST_CHECK(state1.called == false);
+    BOOST_TEST(state2.called == true);
+    BOOST_TEST(state1.called == false);
 }
 
-void np_event_queue_tests()
-{
-    np_platform_test_post_event();
-    np_platform_test_post_many_event();
-    np_platform_test_post_timed_event();
-    np_platform_test_post_timed_event_sorting();
-    np_platform_test_cancel_timed_event();
-    np_platform_test_cancel_timed_event_for_non_empty_q();
-    np_platform_test_post_timed_event_sorting();
-}
+
+BOOST_AUTO_TEST_SUITE_END()
