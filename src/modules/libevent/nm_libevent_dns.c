@@ -57,7 +57,9 @@ np_error_code async_resolve(struct np_platform* pl, const char* host, np_dns_res
     req->callbackUserData = data;
     req->host = host;
     req->request = evdns_base_resolve_ipv4(base, host, flags, dns_cbv4, req);
-    // TODO check for NULL
+    if (req->request == NULL) {
+        return NABTO_EC_UNKNOWN;
+    }
     return NABTO_EC_OK;
 }
 
@@ -78,8 +80,10 @@ void dns_cbv4(int result, char type, int count, int ttl, void *addresses, void *
         req->v4RecordsSize = i;
     }
     int flags = 0;
-    evdns_base_resolve_ipv6(base, req->host, flags, dns_cbv6, req);
-    // TODO check for NULL
+    req->request = evdns_base_resolve_ipv6(base, req->host, flags, dns_cbv6, req);
+    if (req->request == NULL) {
+        np_event_queue_post(pl, &req->callbackEvent, &dns_done_event, req);
+    }
 }
 
 void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* arg)

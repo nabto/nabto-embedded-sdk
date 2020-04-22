@@ -153,7 +153,6 @@ np_error_code udp_abort(np_udp_socket* sock)
         return NABTO_EC_OK;
     }
     sock->aborted = true;
-    // TODO
     np_event_queue_post(sock->pl, &sock->abortEv, &udp_event_abort, sock);
     return NABTO_EC_OK;
 }
@@ -169,7 +168,6 @@ void udp_ready_callback(evutil_socket_t s, short events, void* userData)
 
 void udp_event_abort(void* userData)
 {
-    // TODO
     np_udp_socket* sock = (np_udp_socket*)userData;
     if (sock->recv.cb != NULL) {
         struct np_udp_endpoint ep;
@@ -184,18 +182,6 @@ void udp_event_abort(void* userData)
         sock->created.cb = NULL;
         cb(NABTO_EC_ABORTED, sock->created.data);
     }
-}
-
-np_error_code nm_epoll_abort(np_udp_socket* sock)
-{
-    if (sock->aborted) {
-        return NABTO_EC_OK;
-    }
-
-    sock->aborted = true;
-    //TODO
-    //np_event_queue_post(sock->pl, &sock->abortEv, &nm_epoll_udp_event_abort, sock);
-    return NABTO_EC_OK;
 }
 
 void udp_destroy(np_udp_socket* sock)
@@ -219,9 +205,6 @@ void udp_destroy(np_udp_socket* sock)
     np_event_queue_cancel_event(pl, &sock->recv.event);
 
     free(sock);
-    // TODO
-    //nm_epoll_close_socket(sock->pl->udpData, (struct nm_epoll_base*)sock);
-    //nm_epoll_break_wait(sock->pl->udpData);
 }
 
 
@@ -257,8 +240,6 @@ np_error_code udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_soc
         evutil_closesocket(sock->sock);
     }
 
-    // TODO add to libevent
-
     sock->created.cb = cb;
     sock->created.data = data;
     np_event_queue_post(pl, &sock->created.event, &event_bind_callback, sock);
@@ -285,8 +266,6 @@ np_error_code udp_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_create
         evutil_closesocket(sock->sock);
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
-
-    // TODO add to libevent
 
     nm_libevent_mdns_update_ipv4_socket_registration(sock->sock);
 

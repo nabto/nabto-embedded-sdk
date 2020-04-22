@@ -14,7 +14,7 @@
 #endif
 
 
-// TODO add to data to platform.
+// TODO add data to platform.
 static struct event_base* eventBase;
 
 static bool ts_passed_or_now(np_timestamp* ts);

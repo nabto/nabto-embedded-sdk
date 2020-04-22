@@ -64,7 +64,6 @@ void nabto_device_platform_read(int nfds)
 
 void nabto_device_platform_close(struct np_platform* pl)
 {
-    // TODO
 }
 
 void nabto_device_signal_event(evutil_socket_t s, short event, void* userData)
