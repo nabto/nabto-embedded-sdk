@@ -1,12 +1,7 @@
 #include <boost/test/unit_test.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <test_platform.hpp>
-
-#ifdef HAVE_EPOLL
-#include <test_platform_epoll.hpp>
-#endif
-
-#include <test_platform_select_unix.hpp>
 
 #include <platform/np_platform.h>
 
@@ -31,8 +26,6 @@ class UdpEchoClientTest {
     }
 
     void start(uint16_t port) {
-        tp_.init();
-
         BOOST_TEST(pl_->udp.create(pl_, &socket_) == NABTO_EC_OK);
 
         uint8_t addr[] = { 0x7F, 0x00, 0x00, 0x01 };
@@ -40,7 +33,6 @@ class UdpEchoClientTest {
         for (size_t i = 0; i < data_.size(); i++) {
             data_[i] = (uint8_t)i;
         }
-
 
         ep_.ip.type = NABTO_IPV4;
         memcpy(ep_.ip.ip.v6, addr, 4);
@@ -103,36 +95,22 @@ class UdpEchoClientTest {
 
 } } // namespace
 
+
+
 BOOST_AUTO_TEST_SUITE(udp)
 
-#ifdef HAVE_EPOLL
-
-BOOST_AUTO_TEST_CASE(echo_epoll, * boost::unit_test::timeout(120))
+BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
+BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatform::multi(), tp)
 {
     auto ioService = nabto::IoService::create("test");
     auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
 
-    nabto::test::TestPlatformEpoll epollPlatform;
-    nabto::test::UdpEchoClientTest client(epollPlatform);
+    nabto::test::UdpEchoClientTest client(*tp);
     client.start(udpServer->getPort());
 
     BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
     udpServer->stop();
 }
 
-#endif
-
-BOOST_AUTO_TEST_CASE(echo_select_unix, * boost::unit_test::timeout(120))
-{
-    auto ioService = nabto::IoService::create("test");
-    auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
-
-    nabto::test::TestPlatformSelectUnix platform;
-    nabto::test::UdpEchoClientTest client(platform);
-    client.start(udpServer->getPort());
-
-    BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
-    udpServer->stop();
-}
 
 BOOST_AUTO_TEST_SUITE_END()

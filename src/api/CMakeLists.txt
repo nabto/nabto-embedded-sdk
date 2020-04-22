@@ -2,6 +2,8 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package( Threads )
 
+include_directories(${EVENT__INCLUDE_DIRS})
+
 set(nabto_device_src
   nabto_device.c
   nabto_device_stream.c
@@ -17,48 +19,41 @@ set(nabto_device_src
   nabto_device_authorization.c
   nabto_device_authorization_events.c
   nabto_device_tcp_tunnelling.c
+
   )
 
-message(STATUS "host name: ${CMAKE_HOST_SYSTEM_NAME}")
+list(APPEND nabto_device_src
+  ${src_dir}/libevent/nabto_platform_libevent.c
+  )
+include_directories(${LIBEVENT_INCLUDE_DIRS})
 
-if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
-  set(nabto_device_src
-    ${nabto_device_src}
-    ${src_dir}/nabto_platform.c
+if (HAVE_PTHREAD_H)
+  list(APPEND nabto_device_src
     ${src_dir}/unix/nabto_device_threads_unix.c
-    ${src_dir}/unix/nabto_device_platform_modules_linux.c
     )
-
-elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
-  set(nabto_device_src
-    ${nabto_device_src}
-    ${src_dir}/nabto_platform.c
+elseif(HAVE_WINDOWS_H)
+  list(APPEND nabto_device_src
     ${src_dir}/windows/nabto_device_threads_win.c
-    ${src_dir}/windows/nabto_device_platform_modules_win.c
     )
-elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
-  set(nabto_device_src
-    ${nabto_device_src}
-    ${src_dir}/nabto_platform.c
-    ${src_dir}/unix/nabto_device_threads_unix.c
-    ${src_dir}/unix/nabto_device_platform_modules_mac.c
-    )
-endif ()
+else()
+  message(error "missing thread library")
+endif()
 
-add_definitions(-DNABTO_DEVICE_API_EXPORTS)
+
 add_library( nabto_device_api "${nabto_device_src}")
 
 target_link_libraries( nabto_device_api
   nm_dtls_cli
   nc_core
   nm_logging_api
-  nm_dns
   nm_mdns
   nm_dtls_srv
   np_platform
-  nm_timestamp
   nm_tcp_tunnel
   )
+
+target_compile_definitions(nabto_device_api PRIVATE NABTO_DEVICE_WIN32_API_STATIC)
+target_compile_definitions(nabto_device_api PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
 
 add_library( nabto_device SHARED "${nabto_device_src}")
 
@@ -69,28 +64,20 @@ target_link_libraries( nabto_device
   nm_dtls_cli
   nc_core
   nm_logging_api
-  nm_dns
-  nm_mdns
   nm_dtls_srv
   np_platform
-  nm_timestamp
+  nm_mdns
   nm_tcp_tunnel)
 
 
 
 target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
 
-if("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
-  target_link_libraries( nabto_device
-    nm_epoll)
-elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Windows")
-  target_link_libraries( nabto_device
-    nm_select_win)
+target_link_libraries(nabto_device nm_libevent event_core)
 
-elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
-  target_link_libraries( nabto_device
-    nm_select_unix)
-endif ()
+if (HAVE_WINDOWS_H)
+  target_link_libraries(nabto_device ws2_32)
+endif()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")
 

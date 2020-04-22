@@ -23,7 +23,6 @@ class AttachTest {
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
         event_ = event;
         state_ = state;
-        tp_.init();
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
         BOOST_TEST(nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
                                               &AttachTest::udpDispatchCb, this) == NABTO_EC_OK);
@@ -83,12 +82,17 @@ class AttachTest {
 
     void end() {
         ended_ = true;
-        nc_attacher_deinit(&attach_);
-        nc_coap_client_deinit(&coapClient_);
+        nc_attacher_stop(&attach_);
+        nc_udp_dispatch_abort(&udpDispatch_);
         nc_udp_dispatch_deinit(&udpDispatch_);
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
         tp_.stop();
     }
+    //    nc_attacher_deinit(&attach_);
+    //    nc_coap_client_deinit(&coapClient_);
+    //    nc_udp_dispatch_deinit(&udpDispatch_);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    //}
 
     nabto::test::TestPlatform& tp_;
     struct nc_attach_context attach_;
@@ -97,7 +101,7 @@ class AttachTest {
     struct nc_udp_dispatch_context udpDispatch_;
 
     uint16_t serverPort_;
-    const char* hostname_ = "localhost";
+    const char* hostname_ = "localhost.nabto.net";
     const char* appName_ = "foo";
     const char* appVersion_ = "bar";
     const char* productId_ = "test";
@@ -165,7 +169,7 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     auto testLogger = nabto::test::TestLogger::create();
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
-    redirectServer->setRedirect("localhost", attachServer->getPort(), attachServer->getFingerprint());
+    redirectServer->setRedirect("localhost.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
     at.start([](nabto::test::AttachTest& at){
@@ -275,7 +279,7 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
     auto testLogger = nabto::test::TestLogger::create();
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
-    redirectServer->setRedirect("localhost", attachServer->getPort(), attachServer->getFingerprint());
+    redirectServer->setRedirect("localhost.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
 
@@ -365,7 +369,7 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break)
     auto testLogger = nabto::test::TestLogger::create();
 
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
-    redirectServer->setRedirect("localhost", redirectServer->getPort(), redirectServer->getFingerprint());
+    redirectServer->setRedirect("localhost.nabto.net", redirectServer->getPort(), redirectServer->getFingerprint());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());

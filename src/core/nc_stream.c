@@ -406,13 +406,13 @@ void nc_stream_do_read(struct nc_stream_context* stream)
         NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
     } else {
         size_t readen;
-        nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, stream->readBuffer, stream->readBufferLength, &readen);
+        nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, (uint8_t*)stream->readBuffer, stream->readBufferLength, &readen);
         if (status == NABTO_STREAM_STATUS_OK) {
             if (readen == 0) {
                 // wait for a new event saying more data is ready.
             } else {
                 *stream->readLength += readen;
-                stream->readBuffer += readen;
+                stream->readBuffer = ((uint8_t*)stream->readBuffer) + readen;
                 stream->readBufferLength -= readen;
                 if (stream->readAllCb) {
                     if (stream->readBufferLength == 0) {
@@ -446,7 +446,7 @@ void nc_stream_do_write_all(struct nc_stream_context* stream)
             stream->writeCb = NULL;
             cb(NABTO_EC_OK, stream->writeUserData);
         } else {
-            stream->writeBuffer += written;
+            stream->writeBuffer = ((uint8_t*)stream->writeBuffer) + written;
             stream->writeBufferLength -= written;
             nc_stream_do_write_all(stream);
         }

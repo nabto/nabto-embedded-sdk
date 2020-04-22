@@ -23,13 +23,27 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#endif
+
 #include <stdbool.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#if defined(_WIN32)
+#define HOMEDIR_ENV_VARIABLE "APPDATA"
+#define HOMEDIR_NABTO_FOLDER "nabto"
+#define NEWLINE "\r\n"
+#else
+#define HOMEDIR_ENV_VARIABLE "HOME"
+#define HOMEDIR_NABTO_FOLDER ".nabto"
 #define NEWLINE "\n"
+#endif
+
+#define HOMEDIR_EDGE_FOLDER HOMEDIR_NABTO_FOLDER "/edge"
 
 const char* DEVICE_CONFIG_FILE = "config/device.json";
 const char* TCP_TUNNEL_STATE_FILE = "state/tcp_tunnel_state.json";
@@ -67,6 +81,7 @@ struct tcp_tunnel {
     struct nn_vector services;
 };
 
+NabtoDevice* device_;
 
 static void signal_handler(int s);
 
@@ -293,12 +308,12 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return true;
     }
 
-    const char* homeEnv = getenv("HOME");
+    const char* homeEnv = getenv(HOMEDIR_ENV_VARIABLE);
     if (args->homeDir != NULL) {
         // perfect just using the homeDir
     } else if (homeEnv != NULL) {
-        args->homeDir = expand_file_name(homeEnv, ".nabto/edge");
-        char* dotNabto = expand_file_name(homeEnv, ".nabto");
+        args->homeDir = expand_file_name(homeEnv, HOMEDIR_EDGE_FOLDER);
+        char* dotNabto = expand_file_name(homeEnv, HOMEDIR_NABTO_FOLDER);
         make_directory(dotNabto);
         free(dotNabto);
 
@@ -463,21 +478,14 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         nabto_device_start(device);
         nm_iam_start(&iam);
 
+        device_ = device;
+
         // Wait for the user to press Ctrl-C
+        signal(SIGINT, &signal_handler);
 
-        struct sigaction sigIntHandler;
+        // block until the NABTO_DEVICE_EVENT_CLOSED event is emitted.
+        device_event_handler_blocking_listener(&eventHandler);
 
-        sigIntHandler.sa_handler = signal_handler;
-        sigemptyset(&sigIntHandler.sa_mask);
-        sigIntHandler.sa_flags = 0;
-
-        sigaction(SIGINT, &sigIntHandler, NULL);
-
-        pause();
-        NabtoDeviceFuture* fut = nabto_device_future_new(device);
-        nabto_device_close(device, fut);
-        nabto_device_future_wait(fut);
-        nabto_device_future_free(fut);
         nabto_device_stop(device);
 
         device_event_handler_deinit(&eventHandler);
@@ -495,6 +503,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
 void signal_handler(int s)
 {
+    NabtoDeviceFuture* fut = nabto_device_future_new(device_);
+    nabto_device_close(device_, fut);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
 }
 
 

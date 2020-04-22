@@ -16,6 +16,7 @@
 
 const int NABTO_DEVICE_EVENT_ATTACHED = (int)NC_DEVICE_EVENT_ATTACHED;
 const int NABTO_DEVICE_EVENT_DETACHED = (int)NC_DEVICE_EVENT_DETACHED;
+const int NABTO_DEVICE_EVENT_CLOSED   = (int)NC_DEVICE_EVENT_CLOSED;
 
 struct nabto_device_listen_device_event{
     NabtoDeviceEvent coreEvent;

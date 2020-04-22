@@ -24,7 +24,7 @@
 #if defined(_WIN32)
 #define NABTO_DEVICE_API __stdcall
 #if defined(NABTO_DEVICE_WIN32_API_STATIC)
-#define NABTO_DEVICE_DECL_PREFIX extern
+#define NABTO_DEVICE_DECL_PREFIX
 #elif defined(NABTO_DEVICE_API_EXPORTS)
 #define NABTO_DEVICE_DECL_PREFIX __declspec(dllexport)
 #else
@@ -428,6 +428,9 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACH
 
 // The device is detached after it has been attached.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
+
+// The device has been closed by a call to nabto_device_close
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CLOSED;
 
 /**
  * Initialize a listener for device events.

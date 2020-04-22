@@ -71,19 +71,22 @@ void nc_udp_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoin
     struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*) data;
     uint8_t* start = buffer;
     if (ec != NABTO_EC_OK) {
-        if (ec != NABTO_EC_ABORTED) { // if aborted, we asked for the error so dont advertise it
-            NABTO_LOG_ERROR(LOG, "Socket returned error: (%u) %s", ec, np_error_code_to_string(ec));
+        if (ec == NABTO_EC_ABORTED) {
+            // if aborted, we asked for the error so dont advertise it
+            return;
         }
-        return;
-    }
-    if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
-        nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
-    }  else if (ctx->dtls != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
-        ctx->pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
-    } else if (ctx->cliConn != NULL && (start[0] >= 240)) {
-        nc_client_connection_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
+        // do not fail on other errors just see the async recv as failed and try to recv next packet
     } else {
-        NABTO_LOG_ERROR(LOG, "Unable to dispatch packet with ID: %u", start[0]);
+        // ec == OK
+        if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
+            nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
+        }  else if (ctx->dtls != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
+            ctx->pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
+        } else if (ctx->cliConn != NULL && (start[0] >= 240)) {
+            nc_client_connection_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
+        } else {
+            NABTO_LOG_ERROR(LOG, "Unable to dispatch packet with ID: %u", start[0]);
+        }
     }
     ctx->pl->udp.async_recv_from(ctx->sock, &nc_udp_dispatch_handle_packet, ctx);
 }

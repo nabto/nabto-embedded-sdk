@@ -4,23 +4,22 @@
 #include <nn/log.h>
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
 static const char* LOGM = "json_config";
 
+
+
 bool json_config_exists(const char* fileName)
 {
-    if( access( fileName, F_OK ) != -1 ) {
-        return true;
-    } else {
-        return false;
-    }
+    return string_file_exists(fileName);
 }
 
 static bool load_from_file(FILE* f, cJSON** config, struct nn_log* logger)
 {
+    // TODO use string file
+
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);

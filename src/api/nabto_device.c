@@ -30,7 +30,7 @@ void nabto_device_free_threads(struct nabto_device_context* dev);
 NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
 void nabto_device_do_stop(struct nabto_device_context* dev);
 
-const char* nabto_device_version()
+const char* NABTO_DEVICE_API nabto_device_version()
 {
     return nc_version();
 }
@@ -129,7 +129,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 /**
  * block until no further work is done.
  */
-void nabto_device_stop(NabtoDevice* device)
+void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
@@ -464,8 +464,6 @@ nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device, Nab
     return ec;
 }
 
-
-
 /**
  * Closing the device
  */
@@ -473,6 +471,7 @@ void nabto_device_close_cb(const np_error_code ec, void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
     nabto_device_future_resolve(dev->closeFut, nabto_device_error_core_to_api(ec));
+    nc_device_events_listener_notify(NC_DEVICE_EVENT_CLOSED, &dev->core);
 }
 
 void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future)
