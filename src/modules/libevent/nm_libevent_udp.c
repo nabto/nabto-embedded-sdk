@@ -351,12 +351,7 @@ np_error_code udp_async_recv_from(np_udp_socket* sock,
     sock->recv.cb = cb;
     sock->recv.data = data;
 
-    // if we received multiple packets in one epoll_wait the event
-    // will not be triggered between recv callbacks
-    np_event_queue_post_maybe_double(pl, &sock->recv.event, udp_event_try_recv_from, sock);
-
     event_add(sock->event, 0);
-
     return NABTO_EC_OK;
 }
 
@@ -432,9 +427,9 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
             // expected
             // just drop the packet and the upper layers will take care of retransmissions.
         } else if (ERR_IS_EXPECTED(status)) {
-            NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
+            NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in udp_send_to", (int) status, strerror(status));
         } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
+            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in udp_send_to", (int) status, strerror(status));
         }
         return NABTO_EC_FAILED_TO_SEND_PACKET;
     }
@@ -469,9 +464,11 @@ void udp_event_try_recv_from(void* userData)
         ep.port = ntohs(sa.sin_port);
         ep.ip.type = NABTO_IPV4;
     }
+
     if (recvLength < 0) {
         int status = EVUTIL_SOCKET_ERROR();
         if (ERR_IS_EAGAIN(status)) {
+            NABTO_LOG_TRACE(LOG,"(%d) '%s' in udp_event_try_recv_from %d", status, evutil_socket_error_to_string(status), sock->sock);
             // expected
             // wait for next event to check for data.
             return;
@@ -486,6 +483,7 @@ void udp_event_try_recv_from(void* userData)
             return;
         }
     }
+    NABTO_LOG_TRACE(LOG, "received udp data %i", recvLength);
     if (sock->recv.cb) {
         np_udp_packet_received_callback cb = sock->recv.cb;
         sock->recv.cb = NULL;

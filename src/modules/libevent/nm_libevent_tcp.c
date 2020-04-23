@@ -88,7 +88,15 @@ np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock)
     s->aborted = false;
     s->pl = pl;
     s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE);
+
+
+    np_event_queue_init_event(&s->write.event);
+    np_event_queue_init_event(&s->read.event);
+    np_event_queue_init_event(&s->connect.event);
+
     *sock = s;
+
+
     return NABTO_EC_OK;
 }
 
@@ -116,7 +124,7 @@ void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
 void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData)
 {
     struct np_tcp_socket* sock = userData;
-    np_event_queue_post(sock->pl, &sock->write.event, &tcp_written_data, userData);
+    np_event_queue_post_maybe_double(sock->pl, &sock->write.event, &tcp_written_data, userData);
 }
 
 void tcp_connected(void* userData)

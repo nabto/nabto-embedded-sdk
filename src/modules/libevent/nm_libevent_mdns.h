@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 /**
- * init functions common for both epoll and select on unix
+ * MDNS init functions common for libevent
  */
 
 bool nm_libevent_init_mdns_ipv6_socket(int sock);
