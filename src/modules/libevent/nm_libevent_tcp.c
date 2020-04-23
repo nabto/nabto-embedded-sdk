@@ -50,8 +50,10 @@ struct np_tcp_socket {
     struct tcp_connect_context connect;
     bool aborted;
     struct np_event abortEv;
+    struct np_event eofEvent;
 };
 
+#define LOG NABTO_LOG_MODULE_TCP
 
 static np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock);
 static void tcp_destroy(np_tcp_socket* sock);
@@ -78,6 +80,7 @@ void nm_libevent_tcp_init(struct np_platform* pl, struct nm_libevent_context* ct
 
 np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock)
 {
+    NABTO_LOG_TRACE(LOG, "tcp_create");
     struct np_tcp_socket* s = calloc(1, sizeof(struct np_tcp_socket));
     if (s == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -103,16 +106,19 @@ np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock)
 static void tcp_connected(void* userData);
 static void tcp_written_data(void* userData);
 static void tcp_read_data(void* userData);
+static void tcp_eof(void* userData);
 
 void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 {
     struct np_tcp_socket* sock = userData;
     if (event & BEV_EVENT_CONNECTED) {
-        if (sock->connect.callback) {
-            np_event_queue_post(sock->pl, &sock->connect.event, &tcp_connected, userData);
-        }
+        np_event_queue_post(sock->pl, &sock->connect.event, &tcp_connected, userData);
+    } else if (event & BEV_EVENT_EOF) {
+        np_event_queue_post(sock->pl, &sock->eofEvent, &tcp_eof, userData);
     }
 }
+
+
 
 
 void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
@@ -127,8 +133,22 @@ void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData)
     np_event_queue_post_maybe_double(sock->pl, &sock->write.event, &tcp_written_data, userData);
 }
 
+void tcp_eof(void* userData)
+{
+    struct np_tcp_socket* sock = userData;
+    NABTO_LOG_TRACE(LOG, "tcp_eof");
+    if (sock->read.callback)
+    {
+        np_tcp_read_callback cb = sock->read.callback;
+        sock->read.callback = NULL;
+        bufferevent_disable(sock->bev, EV_READ);
+        cb(NABTO_EC_EOF, 0, sock->read.userData);
+    }
+}
+
 void tcp_connected(void* userData)
 {
+    NABTO_LOG_TRACE(LOG, "tcp_connected");
     struct np_tcp_socket* sock = userData;
     if (sock->connect.callback) {
         np_tcp_connect_callback cb = sock->connect.callback;
@@ -139,6 +159,7 @@ void tcp_connected(void* userData)
 
 void tcp_written_data(void* userData)
 {
+    NABTO_LOG_TRACE(LOG, "tcp_written_data");
     struct np_tcp_socket* sock = userData;
     struct evbuffer *output = bufferevent_get_output(sock->bev);
     if (evbuffer_get_length(output) == 0) {
@@ -152,6 +173,7 @@ void tcp_written_data(void* userData)
 
 void tcp_read_data(void* userData)
 {
+    NABTO_LOG_TRACE(LOG, "tcp_read_data");
     struct np_tcp_socket* sock = userData;
     if (sock->read.callback) {
         size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
@@ -171,6 +193,7 @@ void tcp_destroy(np_tcp_socket* sock)
 
 np_error_code tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
 {
+    NABTO_LOG_TRACE(LOG, "tcp_async_connect");
     bufferevent_setcb(sock->bev, &tcp_bufferevent_event_read, &tcp_bufferevent_event_write, &tcp_bufferevent_event, sock);
     sock->connect.callback = cb;
     sock->connect.userData = userData;
