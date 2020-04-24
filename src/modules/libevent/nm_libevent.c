@@ -21,7 +21,7 @@ void nm_libevent_global_init()
         WSADATA wsa_data;
         WSAStartup(0x0201, &wsa_data);
 #endif
-        event_enable_debug_mode();
+        //event_enable_debug_mode();
 #if defined(HAVE_PTHREAD_H)
         evthread_use_pthreads();
 #elif defined(HAVE_WINDOWS_H)
