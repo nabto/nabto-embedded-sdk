@@ -96,6 +96,8 @@ np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock)
     np_event_queue_init_event(&s->write.event);
     np_event_queue_init_event(&s->read.event);
     np_event_queue_init_event(&s->connect.event);
+    np_event_queue_init_event(&s->abortEv);
+    np_event_queue_init_event(&s->eofEvent);
 
     *sock = s;
 
@@ -113,9 +115,9 @@ void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
     struct np_tcp_socket* sock = userData;
     NABTO_LOG_TRACE(LOG, "bufferevent event %i", event);
     if (event & BEV_EVENT_CONNECTED) {
-        np_event_queue_post(sock->pl, &sock->connect.event, &tcp_connected, userData);
+        np_event_queue_post_maybe_double(sock->pl, &sock->connect.event, &tcp_connected, userData);
     } else if (event & BEV_EVENT_EOF || event & BEV_EVENT_ERROR) {
-        np_event_queue_post(sock->pl, &sock->eofEvent, &tcp_eof, userData);
+        np_event_queue_post_maybe_double(sock->pl, &sock->eofEvent, &tcp_eof, userData);
     }
 }
 
@@ -125,7 +127,7 @@ void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
 {
     struct np_tcp_socket* sock = userData;
-    np_event_queue_post(sock->pl, &sock->read.event, &tcp_read_data, userData);
+    np_event_queue_post_maybe_double(sock->pl, &sock->read.event, &tcp_read_data, userData);
 }
 
 void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData)
@@ -312,6 +314,6 @@ np_error_code tcp_abort(np_tcp_socket* sock)
         return NABTO_EC_OK;
     }
     sock->aborted = true;
-    np_event_queue_post(sock->pl, &sock->abortEv, &tcp_event_abort, sock);
+    np_event_queue_post_maybe_double(sock->pl, &sock->abortEv, &tcp_event_abort, sock);
     return NABTO_EC_OK;
 }
