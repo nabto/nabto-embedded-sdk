@@ -292,20 +292,24 @@ np_error_code tcp_shutdown(np_tcp_socket* sock)
 void tcp_event_abort(void* userData)
 {
     np_tcp_socket* sock = (np_tcp_socket*)userData;
-    if (sock->read.callback != NULL) {
-        np_tcp_read_callback cb = sock->read.callback;
-        sock->read.callback = NULL;
-        cb(NABTO_EC_ABORTED, 0, sock->read.userData);
+    np_tcp_read_callback readCb = sock->read.callback;
+    sock->read.callback = NULL;
+    void* readUserData = sock->read.userData;
+    np_tcp_write_callback writeCb = sock->write.callback;
+    sock->write.callback = NULL;
+    void* writeUserData = sock->write.userData;
+    np_tcp_connect_callback connectCb = sock->connect.callback;
+    sock->connect.callback = NULL;
+    void* connectUserData = sock->connect.userData;
+
+    if (readCb != NULL) {
+        readCb(NABTO_EC_ABORTED, 0, readUserData);
     }
-    if (sock->write.callback != NULL) {
-        np_tcp_write_callback cb = sock->write.callback;
-        sock->write.callback = NULL;
-        cb(NABTO_EC_ABORTED, sock->write.userData);
+    if (writeCb != NULL) {
+        writeCb(NABTO_EC_ABORTED, writeUserData);
     }
-    if (sock->connect.callback) {
-        np_tcp_connect_callback cb = sock->connect.callback;
-        sock->connect.callback = NULL;
-        cb(NABTO_EC_ABORTED, sock->connect.userData);
+    if (connectCb != NULL) {
+        connectCb(NABTO_EC_ABORTED, connectUserData);
     }
 }
 
