@@ -85,6 +85,7 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
 
 void nm_tcp_tunnel_connection_start(struct nm_tcp_tunnel_connection* connection, struct nm_tcp_tunnel_service* service)
 {
+    NABTO_LOG_TRACE(LOG, "nm_tcp_tunnel_connection_start");
     // accept the stream
     nc_stream_accept(connection->stream);
     start_connect(connection);

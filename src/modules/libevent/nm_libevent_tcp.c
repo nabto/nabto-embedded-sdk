@@ -111,9 +111,10 @@ static void tcp_eof(void* userData);
 void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 {
     struct np_tcp_socket* sock = userData;
+    NABTO_LOG_TRACE(LOG, "bufferevent event %i", event);
     if (event & BEV_EVENT_CONNECTED) {
         np_event_queue_post(sock->pl, &sock->connect.event, &tcp_connected, userData);
-    } else if (event & BEV_EVENT_EOF) {
+    } else if (event & BEV_EVENT_EOF || event & BEV_EVENT_ERROR) {
         np_event_queue_post(sock->pl, &sock->eofEvent, &tcp_eof, userData);
     }
 }
@@ -137,6 +138,12 @@ void tcp_eof(void* userData)
 {
     struct np_tcp_socket* sock = userData;
     NABTO_LOG_TRACE(LOG, "tcp_eof");
+    if (sock->connect.callback)
+    {
+        np_tcp_connect_callback cb = sock->connect.callback;
+        sock->connect.callback = NULL;
+        cb(NABTO_EC_EOF, sock->connect.userData);
+    }
     if (sock->read.callback)
     {
         np_tcp_read_callback cb = sock->read.callback;
@@ -161,6 +168,14 @@ void tcp_written_data(void* userData)
 {
     NABTO_LOG_TRACE(LOG, "tcp_written_data");
     struct np_tcp_socket* sock = userData;
+
+    if (sock->connect.callback) {
+        np_tcp_connect_callback cb = sock->connect.callback;
+        sock->connect.callback = NULL;
+        cb(NABTO_EC_OK, sock->connect.userData);
+    }
+
+
     struct evbuffer *output = bufferevent_get_output(sock->bev);
     if (evbuffer_get_length(output) == 0) {
         if (sock->write.callback) {
@@ -188,17 +203,19 @@ void tcp_read_data(void* userData)
 
 void tcp_destroy(np_tcp_socket* sock)
 {
+    bufferevent_free(sock->bev);
     // TOOD
 }
 
 np_error_code tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
 {
     NABTO_LOG_TRACE(LOG, "tcp_async_connect");
+
     bufferevent_setcb(sock->bev, &tcp_bufferevent_event_read, &tcp_bufferevent_event_write, &tcp_bufferevent_event, sock);
     sock->connect.callback = cb;
     sock->connect.userData = userData;
 
-    bufferevent_enable(sock->bev, EV_WRITE);
+    bufferevent_enable(sock->bev, EV_READ|EV_WRITE);
 
     if (address->type == NABTO_IPV6) {
         struct sockaddr_in6 in;
@@ -229,7 +246,7 @@ np_error_code tcp_async_write(np_tcp_socket* sock, const void* data, size_t data
     }
     sock->write.callback = cb;
     sock->write.userData = userData;
-
+    bufferevent_enable(sock->bev, EV_WRITE);
     int status = bufferevent_write(sock->bev, data, dataLength);
     if (status == 0) {
         return NABTO_EC_OK;

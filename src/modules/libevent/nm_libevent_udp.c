@@ -169,18 +169,22 @@ void udp_ready_callback(evutil_socket_t s, short events, void* userData)
 void udp_event_abort(void* userData)
 {
     np_udp_socket* sock = (np_udp_socket*)userData;
-    if (sock->recv.cb != NULL) {
+
+    np_udp_packet_received_callback recvCb = sock->recv.cb;
+    void* recvCbData = sock->recv.data;
+    sock->recv.cb = NULL;
+    np_udp_socket_created_callback createdCb = sock->created.cb;
+    void* createdCbData =  sock->created.data;
+    sock->created.cb = NULL;
+
+    if (recvCb != NULL) {
         struct np_udp_endpoint ep;
         memset(&ep, 0, sizeof(struct np_udp_endpoint));
-        np_udp_packet_received_callback cb = sock->recv.cb;
-        sock->recv.cb = NULL;
-        cb(NABTO_EC_ABORTED, ep, NULL, 0, sock->recv.data);
+        recvCb(NABTO_EC_ABORTED, ep, NULL, 0, recvCbData);
     }
 
-    if (sock->created.cb) {
-        np_udp_socket_created_callback cb = sock->created.cb;
-        sock->created.cb = NULL;
-        cb(NABTO_EC_ABORTED, sock->created.data);
+    if (createdCb != NULL) {
+        createdCb(NABTO_EC_ABORTED, createdCbData);
     }
 }
 
