@@ -90,7 +90,7 @@ np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock)
 
     s->aborted = false;
     s->pl = pl;
-    s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE);
+    s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 
 
     np_event_queue_init_event(&s->write.event);
@@ -188,6 +188,7 @@ void tcp_written_data(void* userData)
 
 void tcp_read_data(void* userData)
 {
+
     NABTO_LOG_TRACE(LOG, "tcp_read_data");
     struct np_tcp_socket* sock = userData;
     if (sock->read.callback) {
@@ -203,6 +204,13 @@ void tcp_read_data(void* userData)
 
 void tcp_destroy(np_tcp_socket* sock)
 {
+    struct np_platform* pl = sock->pl;
+    bufferevent_disable(sock->bev, EV_READ);
+    np_event_queue_cancel_event(pl, &sock->read.event);
+
+    np_event_queue_cancel_event(pl, &sock->write.event);
+
+    np_event_queue_cancel_event(pl, &sock->connect.event);
     bufferevent_free(sock->bev);
     // TOOD
 }
@@ -258,6 +266,7 @@ np_error_code tcp_async_write(np_tcp_socket* sock, const void* data, size_t data
 
 np_error_code tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData)
 {
+    NABTO_LOG_TRACE(LOG, "tcp_async_read");
     if (sock->read.callback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
