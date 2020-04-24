@@ -212,7 +212,6 @@ void tcp_destroy(np_tcp_socket* sock)
 
     np_event_queue_cancel_event(pl, &sock->connect.event);
     bufferevent_free(sock->bev);
-    // TOOD
 }
 
 np_error_code tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
