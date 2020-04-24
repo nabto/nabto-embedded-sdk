@@ -175,7 +175,6 @@ void tcp_written_data(void* userData)
         cb(NABTO_EC_OK, sock->connect.userData);
     }
 
-
     struct evbuffer *output = bufferevent_get_output(sock->bev);
     if (evbuffer_get_length(output) == 0) {
         if (sock->write.callback) {
@@ -188,7 +187,6 @@ void tcp_written_data(void* userData)
 
 void tcp_read_data(void* userData)
 {
-
     NABTO_LOG_TRACE(LOG, "tcp_read_data");
     struct np_tcp_socket* sock = userData;
     if (sock->read.callback) {
@@ -212,6 +210,7 @@ void tcp_destroy(np_tcp_socket* sock)
 
     np_event_queue_cancel_event(pl, &sock->connect.event);
     bufferevent_free(sock->bev);
+    free(sock);
 }
 
 np_error_code tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
@@ -240,10 +239,7 @@ np_error_code tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* addre
         bufferevent_socket_connect(sock->bev, (struct sockaddr*)&in, sizeof(struct sockaddr_in));
     }
 
-
     return NABTO_EC_OK;
-
-
 }
 
 np_error_code tcp_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData)
