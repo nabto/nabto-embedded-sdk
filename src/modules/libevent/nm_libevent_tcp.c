@@ -207,10 +207,11 @@ void tcp_destroy(np_tcp_socket* sock)
     struct np_platform* pl = sock->pl;
     bufferevent_disable(sock->bev, EV_READ);
     np_event_queue_cancel_event(pl, &sock->read.event);
-
     np_event_queue_cancel_event(pl, &sock->write.event);
-
     np_event_queue_cancel_event(pl, &sock->connect.event);
+    np_event_queue_cancel_event(pl, &sock->eofEvent);
+    np_event_queue_cancel_event(pl, &sock->abortEv);
+
     bufferevent_free(sock->bev);
     free(sock);
 }
