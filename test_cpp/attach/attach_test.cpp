@@ -81,11 +81,16 @@ class AttachTest {
     }
 
     void end() {
-        ended_ = true;
-        nc_attacher_stop(&attach_);
-        nc_udp_dispatch_abort(&udpDispatch_);
-        nc_udp_dispatch_deinit(&udpDispatch_);
-        tp_.stop();
+        np_event_queue_post(tp_.getPlatform(), &endEvent_, &AttachTest::endEvent, this);
+    }
+
+    static void endEvent(void* userData) {
+        AttachTest* at = (AttachTest*)userData;
+        at->ended_ = true;
+        nc_attacher_stop(&at->attach_);
+        nc_udp_dispatch_abort(&at->udpDispatch_);
+        nc_udp_dispatch_deinit(&at->udpDispatch_);
+        at->tp_.stop();
     }
     //    nc_attacher_deinit(&attach_);
     //    nc_coap_client_deinit(&coapClient_);
@@ -109,6 +114,7 @@ class AttachTest {
     std::function<void (AttachTest& at)> event_;
     std::function<void (AttachTest& at)> state_;
     bool ended_ = false;
+    struct np_event endEvent_;
 
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };
