@@ -49,39 +49,52 @@ struct np_udp_module {
      *
      * @param completionEvent event to be resolved when the socket is bound
      */
-    np_error_code (*async_bind_port)(np_udp_socket* sock, uint16_t port, struct np_event_ec* completionEvent);
+    void (*async_bind_port)(np_udp_socket* sock, uint16_t port, struct np_event_ec* completionEvent);
 
     /**
      * Optional create function which creates a mdns ready socket.
      * The socket is bound to 5353 and uses has the REUSEPORT flag set.
      */
-    np_error_code (*async_bind_mdns_ipv4)(np_udp_socket* sock, struct np_event_ec* completionEvent);
+    void (*async_bind_mdns_ipv4)(np_udp_socket* sock, struct np_event_ec* completionEvent);
 
     /**
      * Optional create function which creates a mdns ready socket.
      * The socket is bound to 5353 and uses has the REUSEPORT flag set.
      */
-    np_error_code (*async_bind_mdns_ipv6)(np_udp_socket* sock, struct np_event_ec* completionEvent);
+    void (*async_bind_mdns_ipv6)(np_udp_socket* sock, struct np_event_ec* completionEvent);
 
     /**
      * Send packet async. It's the responsibility of the caller to
      * keep the ep and buffer alive until the callback is invoked.
      */
-    np_error_code (*async_send_to)(np_udp_socket* sock, struct np_udp_endpoint ep,
-                                   uint8_t* buffer, uint16_t bufferSize,
-                                   struct np_event* completionEvent);
+    void (*async_send_to)(np_udp_socket* sock, struct np_udp_endpoint ep,
+                          uint8_t* buffer, uint16_t bufferSize,
+                          struct np_event* completionEvent);
 
     /**
      * Wait for a packet to be ready to be received. This needs to be
      * combined with recv_from.
+     *
+     * The reason for splitting recv_from up into two functions is
+     * that the recv_from operation can take a long time, we do not
+     * want to occupy a recv buffer for that long time. On systems
+     * without events like select, epoll, kqueue the recv_from adapter
+     * code can store a buffered copy of the packet between the
+     * completionEvent is resolved and recv_from is called.
+     *
+     * If async_recv_wait resolves with NABTO_EC_OK, the recv_from
+     * function is guaranteed to be called. If async recv_wait
+     * resolves with something else than NABTO_EC_OK the socket is
+     * assumed to be closed for further reading.
      */
-    np_error_code (*async_recv_wait)(np_udp_socket* socket, struct np_event_ec* completionEvent);
+    void (*async_recv_wait)(np_udp_socket* socket, struct np_event_ec* completionEvent);
 
     /**
-     * Recv an udp packet from a socket.
+     * Recv an UDP packet from a socket.
      *
      * @return NABTO_EC_OK iff a packet was ready and put into the recv buffer.
      *         NABTO_EC_AGAIN if the socket does not have ready data or the retrieval would have blocked.
+     *         NABTO_EC_EOF if no more data can be received from the socket.
      */
     np_error_code (*recv_from)(np_udp_socket* socket, struct np_udp_endpoint* ep, uint8_t** buffer, size_t bufferSize, size_t* recvSize);
 
