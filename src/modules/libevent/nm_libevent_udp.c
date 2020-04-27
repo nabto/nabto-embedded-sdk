@@ -82,7 +82,6 @@ static np_error_code udp_async_recv_from(np_udp_socket* socket,
 
 static void udp_ready_callback(evutil_socket_t s, short events, void* userData);
 
-static enum np_ip_address_type udp_get_protocol(np_udp_socket* socket);
 static uint16_t udp_get_local_port(np_udp_socket* socket);
 
 
@@ -107,7 +106,6 @@ void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ct
     pl->udp.async_bind_mdns_ipv6 = &udp_async_bind_mdns_ipv6;
     pl->udp.async_send_to        = &udp_async_send_to;
     pl->udp.async_recv_from      = &udp_async_recv_from;
-    pl->udp.get_protocol         = &udp_get_protocol;
     pl->udp.get_local_ip         = &nm_libevent_get_local_ip;
     pl->udp.get_local_port       = &udp_get_local_port;
 }
@@ -115,11 +113,6 @@ void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ct
 void nm_libevent_udp_deinit(struct np_platform* pl)
 {
     // TODO
-}
-
-enum np_ip_address_type udp_get_protocol(np_udp_socket* sock)
-{
-    return sock->type;
 }
 
 np_error_code udp_create(struct np_platform* pl, np_udp_socket** sock)

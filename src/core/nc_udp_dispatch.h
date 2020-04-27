@@ -9,8 +9,6 @@ extern "C" {
 
 struct nc_stun_context;
 
-//typedef void (*nc_udp_dispatch_send_callback)(const np_error_code ec, void* data);
-typedef np_udp_packet_sent_callback nc_udp_dispatch_send_callback;
 typedef void (*nc_udp_dispatch_bind_callback)(const np_error_code ec, void* data);
 
 struct nc_udp_dispatch_context {
@@ -34,7 +32,7 @@ np_error_code nc_udp_dispatch_abort(struct nc_udp_dispatch_context* ctx);
 
 np_error_code nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct np_udp_endpoint* ep,
                                             uint8_t* buffer, uint16_t bufferSize,
-                                            nc_udp_dispatch_send_callback cb, void* data);
+                                            struct np_completion_event* completionEvent);
 
 uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx);
 

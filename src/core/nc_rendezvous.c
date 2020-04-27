@@ -6,6 +6,7 @@
 
 
 #include <platform/np_logging.h>
+#include <platform/np_completion_event.h>
 
 #include <string.h>
 
@@ -87,9 +88,10 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 
     ctx->sendingDevReqs = true;
     size_t used = ptr - start;
+    np_completion_event_init(ctx->pl, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx);
     np_error_code ec = nc_udp_dispatch_async_send_to(ctx->udpDispatch, &packet->ep,
-                                                     start, used,
-                                                     &nc_rendezvous_packet_sent, ctx);
+                                                     start, used, &ctx->sendCompletionEvent);
+
     if (ec != NABTO_EC_OK) {
         nc_rendezvous_packet_sent(ec, ctx);
     }

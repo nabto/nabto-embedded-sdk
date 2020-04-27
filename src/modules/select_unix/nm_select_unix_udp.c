@@ -51,7 +51,6 @@ static np_error_code nm_select_unix_udp_async_send_to(np_udp_socket* sock, struc
                                                       np_udp_packet_sent_callback cb, void* userData);
 static np_error_code nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
                                                         np_udp_packet_received_callback cb, void* data);
-static enum np_ip_address_type nm_select_unix_udp_get_protocol(np_udp_socket* socket);
 static uint16_t nm_select_unix_udp_get_local_port(np_udp_socket* socket);
 
 np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
@@ -65,7 +64,6 @@ np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_plat
     pl->udp.async_bind_mdns_ipv6 = &nm_select_unix_async_bind_mdns_ipv6;
     pl->udp.async_send_to    = &nm_select_unix_udp_async_send_to;
     pl->udp.async_recv_from  = &nm_select_unix_udp_async_recv_from;
-    pl->udp.get_protocol     = &nm_select_unix_udp_get_protocol;
     pl->udp.get_local_ip     = &nm_unix_get_local_ip;
     pl->udp.get_local_port   = &nm_select_unix_udp_get_local_port;
     pl->udpData = ctx;
@@ -266,11 +264,6 @@ np_error_code nm_select_unix_udp_async_recv_from(np_udp_socket* socket,
     socket->posixSocket.recv.data = data;
     nm_select_unix_notify(socket->selectCtx);
     return NABTO_EC_OK;
-}
-
-enum np_ip_address_type nm_select_unix_udp_get_protocol(np_udp_socket* socket)
-{
-    return socket->posixSocket.type;
 }
 
 uint16_t nm_select_unix_udp_get_local_port(np_udp_socket* socket)

@@ -616,6 +616,7 @@ np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
                                  void* senderData)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
+    struct np_platform* pl = ctx->pl;
     if (ctx->activeEp == NULL) {
         // We have yet to find suitable endpoint
         if (ctx->senderCb != NULL) {
@@ -627,6 +628,7 @@ np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
         np_error_code ec2 = NABTO_EC_UNKNOWN;
         for (int i = 0; i < NABTO_MAX_BASESTATION_EPS; i++) {
             if (ctx->v4BsEps[i].ctx != NULL) {
+                np_completion_event_init(pl)
                  ec2 = nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v4BsEps[i].ep,
                                                      buffer, bufferSize,
                                                      udp_send_callback, &ctx->v4BsEps[i]);
