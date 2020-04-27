@@ -21,15 +21,6 @@ struct np_udp_endpoint {
     uint16_t port;
 };
 
-typedef void (*np_udp_socket_created_callback)(const np_error_code ec, void* data);
-
-typedef void (*np_udp_packet_sent_callback)(const np_error_code ec, void* data);
-
-typedef void (*np_udp_packet_received_callback)(const np_error_code ec, struct np_udp_endpoint ep,
-                                                uint8_t* buffer, uint16_t bufferSize, void* data);
-
-typedef void (*np_udp_socket_destroyed_callback)(const np_error_code ec, void* data);
-
 struct np_udp_module {
 
     /**
@@ -55,20 +46,22 @@ struct np_udp_module {
 
     /**
      * Create a udp socket and bind it to a port. Port 0 means ephemeral.
+     *
+     * @param completionEvent event to be resolved when the socket is bound
      */
-    np_error_code (*async_bind_port)(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data);
+    np_error_code (*async_bind_port)(np_udp_socket* sock, uint16_t port, struct np_event_ec* completionEvent);
 
     /**
      * Optional create function which creates a mdns ready socket.
      * The socket is bound to 5353 and uses has the REUSEPORT flag set.
      */
-    np_error_code (*async_bind_mdns_ipv4)(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
+    np_error_code (*async_bind_mdns_ipv4)(np_udp_socket* sock, struct np_event_ec* completionEvent);
 
     /**
      * Optional create function which creates a mdns ready socket.
      * The socket is bound to 5353 and uses has the REUSEPORT flag set.
      */
-    np_error_code (*async_bind_mdns_ipv6)(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
+    np_error_code (*async_bind_mdns_ipv6)(np_udp_socket* sock, struct np_event_ec* completionEvent);
 
     /**
      * Send packet async. It's the responsibility of the caller to
@@ -76,13 +69,21 @@ struct np_udp_module {
      */
     np_error_code (*async_send_to)(np_udp_socket* sock, struct np_udp_endpoint ep,
                                    uint8_t* buffer, uint16_t bufferSize,
-                                   np_udp_packet_sent_callback cb, void* userData);
+                                   struct np_event* completionEvent);
 
     /**
-     * Receive a packet async. If the socket is broken an error is
-     * returned.
+     * Wait for a packet to be ready to be received. This needs to be
+     * combined with recv_from.
      */
-    np_error_code (*async_recv_from)(np_udp_socket* socket, np_udp_packet_received_callback cb, void* data);
+    np_error_code (*async_recv_wait)(np_udp_socket* socket, struct np_event_ec* completionEvent);
+
+    /**
+     * Recv an udp packet from a socket.
+     *
+     * @return NABTO_EC_OK iff a packet was ready and put into the recv buffer.
+     *         NABTO_EC_AGAIN if the socket does not have ready data or the retrieval would have blocked.
+     */
+    np_error_code (*recv_from)(np_udp_socket* socket, struct np_udp_endpoint* ep, uint8_t** buffer, size_t bufferSize, size_t* recvSize);
 
     /**
      * Get the IP protocol of the socket.
