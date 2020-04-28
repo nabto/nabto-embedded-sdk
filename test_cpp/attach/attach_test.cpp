@@ -24,8 +24,8 @@ class AttachTest {
         event_ = event;
         state_ = state;
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
-        BOOST_TEST(nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
-                                              &AttachTest::udpDispatchCb, this) == NABTO_EC_OK);
+        nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
+                                   &AttachTest::udpDispatchCb, this);
 
         // blocks until done
         tp_.run();

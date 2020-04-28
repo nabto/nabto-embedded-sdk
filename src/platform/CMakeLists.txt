@@ -12,6 +12,7 @@ set(src
   ${src_dir}/np_list.c
   ${src_dir}/np_string_map.c
   ${src_dir}/np_string_set.c
+  ${src_dir}/np_completion_event.c
   )
 
 add_library(np_platform STATIC "${src}")

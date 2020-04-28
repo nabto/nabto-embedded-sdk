@@ -71,7 +71,7 @@ np_error_code nc_client_connection_dispatch_async_close(struct nc_client_connect
 //                                              np_communication_buffer* buffer, uint16_t bufferSize,
 //                                              void* data)*/
 void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dispatch_context* ctx,
-                                                 struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
+                                                 struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                                  uint8_t* buffer, uint16_t bufferSize)
 {
     int i;

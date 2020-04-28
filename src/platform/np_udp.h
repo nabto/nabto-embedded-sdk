@@ -51,7 +51,7 @@ struct np_udp_module {
      *
      * @param sock  The socket resource.
      */
-    np_error_code (*abort)(np_udp_socket* sock);
+    void (*abort)(np_udp_socket* sock);
 
     /**
      * Bind a socket to a port. Port 0 means ephemeral.

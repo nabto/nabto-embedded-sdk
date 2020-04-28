@@ -2,6 +2,7 @@
 #define NC_UDP_DISPATCH_H
 
 #include <platform/np_platform.h>
+#include <platform/np_completion_event.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,18 +22,22 @@ struct nc_udp_dispatch_context {
     nc_udp_dispatch_bind_callback bindCb;
     void* bindCbData;
 
+    np_communication_buffer* recvBuffer;
+
+    struct np_completion_event bindCompletionEvent;
+    struct np_completion_event recvCompletionEvent;
 };
 
 np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl);
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx);
 
-np_error_code nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
+void nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
                                          nc_udp_dispatch_bind_callback cb, void* data);
 np_error_code nc_udp_dispatch_abort(struct nc_udp_dispatch_context* ctx);
 
-np_error_code nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct np_udp_endpoint* ep,
-                                            uint8_t* buffer, uint16_t bufferSize,
-                                            struct np_completion_event* completionEvent);
+void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct np_udp_endpoint* ep,
+                                   uint8_t* buffer, uint16_t bufferSize,
+                                   struct np_completion_event* completionEvent);
 
 uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx);
 

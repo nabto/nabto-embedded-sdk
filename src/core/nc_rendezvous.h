@@ -3,6 +3,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_dtls_srv.h>
+#include <platform/np_completion_event.h>
 
 #define NC_RENDEZVOUS_SEND_QUEUE_LENGTH 10
 
@@ -25,6 +26,7 @@ struct nc_rendezvous_context {
     bool sendingDevReqs;
 
     struct np_udp_endpoint cliRespEp;
+    struct np_completion_event sendCompletionEvent;
 };
 
 
@@ -36,7 +38,7 @@ void nc_rendezvous_set_udp_dispatch(struct nc_rendezvous_context* ctx, struct nc
 void nc_rendezvous_remove_udp_dispatch(struct nc_rendezvous_context* ctx);
 
 void nc_rendezvous_handle_client_request(struct nc_rendezvous_context* ctx,
-                                         np_udp_endpoint ep,
+                                         np_udp_endpoint* ep,
                                          uint8_t* connectionId);
 
 // enqueue a rendezvous packet to be sent async. The packet is copied

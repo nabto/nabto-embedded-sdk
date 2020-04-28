@@ -158,10 +158,7 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
         dev->pl->mdns.start(&dev->mdns, dev->pl, dev->productId, dev->deviceId, nc_device_mdns_get_port, dev);
     }
 
-    np_error_code ec2 = nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_bound_cb, dev);
-    if (ec2 != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "nc_device failed to bind secondary UDP socket");
-    }
+    nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &nc_device_secondary_udp_bound_cb, dev);
 }
 
 np_error_code nc_device_start(struct nc_device_context* dev,
@@ -181,10 +178,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     nc_attacher_set_app_info(&dev->attacher, appName, appVersion);
     nc_attacher_set_device_info(&dev->attacher, productId, deviceId);
 
-    np_error_code ec = nc_udp_dispatch_async_bind(&dev->udp, pl, port, &nc_device_udp_bound_cb, dev);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
+    nc_udp_dispatch_async_bind(&dev->udp, pl, port, &nc_device_udp_bound_cb, dev);
     return NABTO_EC_OK;
 }
 

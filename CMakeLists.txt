@@ -50,6 +50,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/inclu
 #CHECK_INCLUDE_FILES("sys/epoll.h" HAVE_SYS_EPOLL_H)
 CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
+#CHECK_INCLUDE_FILES("sys/select.h" HAVE_SYS_SELECT_H)
 CHECK_INCLUDE_FILES("netinet/in.h" HAVE_NETINET_IN_H)
 CHECK_INCLUDE_FILES("unistd.h" HAVE_UNISTD_H)
 CHECK_INCLUDE_FILES("winsock2.h" HAVE_WINSOCK2_H)
@@ -68,6 +69,10 @@ add_definitions(-DHAVE_LIBEVENT)
 
 if (HAVE_SYS_SOCKET_H)
   add_definitions(-DHAVE_SYS_SOCKET_H)
+endif()
+
+if (HAVE_SYS_SELECT_H)
+  add_definitions(-DHAVE_SYS_SELECT_H)
 endif()
 
 if (HAVE_NETINET_IN_H)
@@ -156,7 +161,7 @@ add_subdirectory(src/platform)
 add_subdirectory(src/core)
 add_subdirectory(src/api)
 
-if (HAVE_SYS_SOCKET_H)
+if (HAVE_SYS_SELECT_H)
   add_subdirectory(src/modules/select_unix)
   add_subdirectory(src/modules/posix)
   add_definitions(-DHAVE_SELECT_UNIX)

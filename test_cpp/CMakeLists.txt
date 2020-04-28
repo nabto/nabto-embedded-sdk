@@ -52,9 +52,9 @@ target_link_libraries(embedded_unit_test
   nm_iam
   )
 
-if (NOT WIN32)
+if (HAVE_SELECT_UNIX)
   target_link_libraries(embedded_unit_test
-    nm_timestamp
+    nm_select_unix
     nm_select_unix
     nm_unix_dns
     )

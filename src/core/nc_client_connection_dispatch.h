@@ -39,7 +39,7 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
 np_error_code nc_client_connection_dispatch_async_close(struct nc_client_connection_dispatch_context* ctx, nc_client_connection_dispatch_close_callback cb, void* data);
 
 void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dispatch_context* ctx,
-                                              struct nc_udp_dispatch_context* udp, struct np_udp_endpoint ep,
+                                              struct nc_udp_dispatch_context* udp, struct np_udp_endpoint* ep,
                                               uint8_t* buffer, uint16_t bufferSize);
 
 np_error_code nc_client_connection_dispatch_close_connection(struct nc_client_connection_dispatch_context* ctx,

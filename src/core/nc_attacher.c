@@ -599,7 +599,8 @@ void udp_send_callback(const np_error_code ec, void* data)
     struct nc_attach_endpoint_context* ep = (struct nc_attach_endpoint_context*)data;
     ep->ctx->bsEpsTried--;
     if (ep->ctx->activeEp == NULL && ec == NABTO_EC_OK) {
-        // First successful responder
+        // TODO we should set active EP when a successful packet is
+        // received not when it is succesfully sent.
         ep->ctx->activeEp = ep;
     }
     if (ep->ctx->senderCb && ep->ctx->bsEpsTried == 0 && ep->ctx->activeEp != NULL) {
@@ -624,35 +625,28 @@ np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
         }
         ctx->senderCb = cb;
         ctx->senderCbData = data;
-        np_error_code ec = NABTO_EC_UNKNOWN;
-        np_error_code ec2 = NABTO_EC_UNKNOWN;
         for (int i = 0; i < NABTO_MAX_BASESTATION_EPS; i++) {
             if (ctx->v4BsEps[i].ctx != NULL) {
-                np_completion_event_init(pl)
-                 ec2 = nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v4BsEps[i].ep,
-                                                     buffer, bufferSize,
-                                                     udp_send_callback, &ctx->v4BsEps[i]);
-                 if (ec2 == NABTO_EC_OK) {
-                     ctx->bsEpsTried++;
-                     ec = ec2;
-                 }
+                np_completion_event_init(pl, &ctx->v4BsEps[i].sendCompletionEvent, udp_send_callback, &ctx->v4BsEps[i]);
+                nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v4BsEps[i].ep,
+                                              buffer, bufferSize,
+                                              &ctx->v4BsEps[i].sendCompletionEvent);
             }
             if (ctx->v6BsEps[i].ctx != NULL) {
-                 ec2 = nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v6BsEps[i].ep,
-                                                     buffer, bufferSize,
-                                                     udp_send_callback, &ctx->v6BsEps[i]);
-                 if (ec2 == NABTO_EC_OK) {
-                     ctx->bsEpsTried++;
-                     ec = ec2;
-                 }
+                np_completion_event_init(pl, &ctx->v6BsEps[i].sendCompletionEvent, udp_send_callback, &ctx->v4BsEps[i]);
+                nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v6BsEps[i].ep,
+                                              buffer, bufferSize,
+                                              &ctx->v6BsEps[i].sendCompletionEvent);
             }
         }
         // OK if at least one send succeeded UNKNOWN otherwise
-        return ec;
+        return NABTO_EC_OK;
     } else {
-        return nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp->ep,
-                                             buffer, bufferSize,
-                                             cb, data);
+        np_completion_event_init(pl, &ctx->senderCompletionEvent, cb, data);
+        nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp->ep,
+                                      buffer, bufferSize,
+                                      &ctx->senderCompletionEvent);
+        return NABTO_EC_OK;
     }
 }
 

@@ -32,7 +32,7 @@ void nc_client_connection_keep_alive_packet_sent(const np_error_code ec, void* d
 np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
                                         struct nc_client_connection_dispatch_context* dispatch,
                                         struct nc_device_context* device,
-                                        struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
+                                        struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                         uint8_t* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
@@ -40,7 +40,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     memset(conn, 0, sizeof(struct nc_client_connection));
     memcpy(conn->id.id, buffer, 16);
     conn->currentChannel.sock = sock;
-    conn->currentChannel.ep = ep;
+    conn->currentChannel.ep = *ep;
     conn->currentChannel.channelId = conn->id.id[15];
     conn->alternativeChannel = conn->currentChannel;
     conn->pl = pl;
@@ -72,7 +72,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
 }
 
 np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
-                                                 struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
+                                                 struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                                  uint8_t* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
@@ -94,7 +94,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 
     if (channelId != conn->currentChannel.channelId) {
         conn->alternativeChannel.channelId = channelId;
-        conn->alternativeChannel.ep = ep;
+        conn->alternativeChannel.ep = *ep;
         conn->alternativeChannel.sock = sock;
     } else {
         // not changed but update if we for whatever reason has a
@@ -102,7 +102,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
         // id.  If this was a keep alive on another channel the
         // channel id would not match and hence a keep alive would not
         // alter the current ep and socket.
-        conn->currentChannel.ep = ep;
+        conn->currentChannel.ep = *ep;
         conn->currentChannel.sock = sock;
     }
 
@@ -293,7 +293,7 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
                                                      np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
-    np_error_code ec = NABTO_EC_UNKNOWN;
+    struct np_platform* pl = conn->pl;
     if (conn->sentCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -307,16 +307,18 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
 
     if (channel == conn->currentChannel.channelId || channel == NP_DTLS_SRV_DEFAULT_CHANNEL_ID) {
         *(start+15) = conn->currentChannel.channelId;
-        ec = nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->currentChannel.ep,
-                                           start, bufferSize,
-                                           &nc_client_connection_send_to_udp_cb, conn);
+        np_completion_event_init(pl, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
+        nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->currentChannel.ep,
+                                      start, bufferSize,
+                                      &conn->sendCompletionEvent);
     } else if (channel == conn->alternativeChannel.channelId) {
         *(start+15) = conn->alternativeChannel.channelId;
-        ec = nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->alternativeChannel.ep,
+        np_completion_event_init(pl, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
+        nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->alternativeChannel.ep,
                                       start, bufferSize,
-                                      &nc_client_connection_send_to_udp_cb, conn);
+                                      &conn->sendCompletionEvent);
     }
-    return ec;
+    return NABTO_EC_OK;
 }
 
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data)

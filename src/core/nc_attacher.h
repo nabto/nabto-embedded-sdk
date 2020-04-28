@@ -3,6 +3,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_vector.h>
+#include <platform/np_completion_event.h>
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
 #include <core/nc_device_defines.h>
@@ -40,6 +41,7 @@ enum nc_attacher_module_state {
 struct nc_attach_endpoint_context {
     struct nc_attach_context* ctx;
     struct np_udp_endpoint ep;
+    struct np_completion_event sendCompletionEvent;
 };
 
 enum nc_attacher_status {
@@ -123,6 +125,7 @@ struct nc_attach_context {
 
     np_dtls_cli_send_callback senderCb;
     void* senderCbData;
+    struct np_completion_event senderCompletionEvent;
 
     // configurable for testing purposes.
     uint32_t retryWaitTime;

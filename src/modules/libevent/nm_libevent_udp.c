@@ -7,6 +7,7 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <platform/np_event_queue.h>
+#include <platform/np_completion_event.h>
 
 #include <event2/util.h>
 #include <event2/event.h>
@@ -34,23 +35,8 @@
 
 #define LOG NABTO_LOG_MODULE_UDP
 
-struct send_context {
-    np_udp_socket* sock;
-    np_udp_packet_sent_callback cb;
-    void* cbUserData;
-    struct np_event ev;
-};
-
-struct created_ctx {
-    np_udp_socket_created_callback cb;
-    void* data;
-    struct np_event event;
-};
-
 struct received_ctx {
-    np_udp_packet_received_callback cb;
-    void* data;
-    struct np_event event;
+    struct np_completion_event* completionEvent;
 };
 
 
@@ -61,24 +47,23 @@ struct np_udp_socket {
     evutil_socket_t sock;
     struct np_platform* pl;
     bool aborted;
-    struct created_ctx created;
     struct np_event abortEv;
     struct event* event;
 };
 
 static np_error_code udp_create(struct np_platform* pl, np_udp_socket** sock);
 static void udp_destroy(np_udp_socket* sock);
-static np_error_code udp_abort(np_udp_socket* sock);
-static void udp_event_abort(void* userData);
-static np_error_code udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data);
-static np_error_code udp_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
-static np_error_code udp_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data);
-static np_error_code udp_async_send_to(np_udp_socket* sock, struct np_udp_endpoint ep,
-                                       uint8_t* buffer, uint16_t bufferSize,
-                                       np_udp_packet_sent_callback cb, void* userData);
+static void udp_abort(np_udp_socket* sock);
+static void udp_async_bind_port(np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
+static void udp_async_bind_mdns_ipv4(np_udp_socket* sock, struct np_completion_event* completionEvent);
+static void udp_async_bind_mdns_ipv6(np_udp_socket* sock, struct np_completion_event* completionEvent);
+static void udp_async_send_to(np_udp_socket* sock, struct np_udp_endpoint* ep,
+                              uint8_t* buffer, uint16_t bufferSize,
+                              struct np_completion_event* completionEvent);
 
-static np_error_code udp_async_recv_from(np_udp_socket* socket,
-                                         np_udp_packet_received_callback cb, void* data);
+static void udp_async_recv_wait(np_udp_socket* socket,
+                                struct np_completion_event* completionEvent);
+static np_error_code udp_recv_from(np_udp_socket* socket, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* readLength);
 
 static void udp_ready_callback(evutil_socket_t s, short events, void* userData);
 
@@ -89,10 +74,9 @@ static np_error_code udp_create_socket_ipv4(struct np_udp_socket* s);
 static np_error_code udp_create_socket_ipv6(struct np_udp_socket* s);
 static np_error_code udp_create_socket_any(struct np_udp_socket* s);
 static np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port);
-static void udp_event_try_recv_from(void* userData);
 static np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize);
 static evutil_socket_t nonblocking_socket(int domain, int type);
-
+static void complete_recv_wait(np_udp_socket* sock, np_error_code ec);
 
 void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ctx)
 {
@@ -105,7 +89,8 @@ void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ct
     pl->udp.async_bind_mdns_ipv4 = &udp_async_bind_mdns_ipv4;
     pl->udp.async_bind_mdns_ipv6 = &udp_async_bind_mdns_ipv6;
     pl->udp.async_send_to        = &udp_async_send_to;
-    pl->udp.async_recv_from      = &udp_async_recv_from;
+    pl->udp.async_recv_wait      = &udp_async_recv_wait;
+    pl->udp.recv_from            = &udp_recv_from;
     pl->udp.get_local_ip         = &nm_libevent_get_local_ip;
     pl->udp.get_local_port       = &udp_get_local_port;
 }
@@ -126,7 +111,7 @@ np_error_code udp_create(struct np_platform* pl, np_udp_socket** sock)
 
     s->pl = pl;
     s->recvBuffer = ctx->recvBuffer;
-    np_event_queue_init_event(&s->recv.event);
+    //np_event_queue_init_event(&s->recv.event);
 
     *sock = s;
 
@@ -140,44 +125,28 @@ void udp_add_to_libevent(np_udp_socket* sock)
     sock->event = event_new(context->eventBase, sock->sock, EV_READ, udp_ready_callback, sock);
 }
 
-np_error_code udp_abort(np_udp_socket* sock)
+void udp_abort(np_udp_socket* sock)
 {
     if (sock->aborted) {
-        return NABTO_EC_OK;
+        return;
     }
     sock->aborted = true;
-    np_event_queue_post(sock->pl, &sock->abortEv, &udp_event_abort, sock);
-    return NABTO_EC_OK;
+    complete_recv_wait(sock, NABTO_EC_ABORTED);
+}
+
+void complete_recv_wait(np_udp_socket* sock, np_error_code ec)
+{
+    if (sock->recv.completionEvent != NULL) {
+        np_completion_event_resolve(sock->recv.completionEvent, ec);
+        sock->recv.completionEvent = NULL;
+    }
 }
 
 void udp_ready_callback(evutil_socket_t s, short events, void* userData)
 {
     np_udp_socket* sock = userData;
     if (events & EV_READ) {
-        np_event_queue_post_maybe_double(sock->pl, &sock->recv.event, udp_event_try_recv_from, sock);
-    }
-}
-
-
-void udp_event_abort(void* userData)
-{
-    np_udp_socket* sock = (np_udp_socket*)userData;
-
-    np_udp_packet_received_callback recvCb = sock->recv.cb;
-    void* recvCbData = sock->recv.data;
-    sock->recv.cb = NULL;
-    np_udp_socket_created_callback createdCb = sock->created.cb;
-    void* createdCbData =  sock->created.data;
-    sock->created.cb = NULL;
-
-    if (recvCb != NULL) {
-        struct np_udp_endpoint ep;
-        memset(&ep, 0, sizeof(struct np_udp_endpoint));
-        recvCb(NABTO_EC_ABORTED, ep, NULL, 0, recvCbData);
-    }
-
-    if (createdCb != NULL) {
-        createdCb(NABTO_EC_ABORTED, createdCbData);
+        complete_recv_wait(sock, NABTO_EC_OK);
     }
 }
 
@@ -188,46 +157,27 @@ void udp_destroy(np_udp_socket* sock)
         return;
     }
 
-//    struct nm_libevent_context* libeventContext = sock->pl->udpData;
+    udp_abort(sock);
 
     if (sock->event) {
         event_del_block(sock->event);
         event_free(sock->event);
         sock->event = NULL;
     }
-    struct np_platform* pl = sock->pl;
-
-    np_event_queue_cancel_event(pl, &sock->abortEv);
-    np_event_queue_cancel_event(pl, &sock->created.event);
-    np_event_queue_cancel_event(pl, &sock->recv.event);
-
     free(sock);
 }
 
-
-static void event_bind_callback(void* data)
-{
-    np_udp_socket* us = (np_udp_socket*)data;
-    udp_add_to_libevent(us);
-
-    np_udp_socket_created_callback cb = us->created.cb;
-    us->created.cb = NULL;
-    cb(NABTO_EC_OK, us->created.data);
-    return;
-}
-
-np_error_code udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_socket_created_callback cb, void* data)
+np_error_code udp_async_bind_port_ec(np_udp_socket* sock, uint16_t port)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
         return NABTO_EC_ABORTED;
     }
 
-    struct np_platform* pl = sock->pl;
-
     np_error_code ec;
 
     ec = udp_create_socket_any(sock);
+
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -236,21 +186,22 @@ np_error_code udp_async_bind_port(np_udp_socket* sock, uint16_t port, np_udp_soc
     if (ec != NABTO_EC_OK) {
         evutil_closesocket(sock->sock);
     }
-
-    sock->created.cb = cb;
-    sock->created.data = data;
-    np_event_queue_post(pl, &sock->created.event, &event_bind_callback, sock);
+    udp_add_to_libevent(sock);
     return NABTO_EC_OK;
 }
 
-np_error_code udp_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+void udp_async_bind_port(np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent)
+{
+    np_error_code ec = udp_async_bind_port_ec(sock, port);
+    np_completion_event_resolve(completionEvent, ec);
+}
+
+np_error_code udp_async_bind_mdns_ipv4_ec(np_udp_socket* sock)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
         return NABTO_EC_ABORTED;
     }
-
-    struct np_platform* pl = sock->pl;
 
     np_error_code ec;
     ec = udp_create_socket_ipv4(sock);
@@ -265,21 +216,22 @@ np_error_code udp_async_bind_mdns_ipv4(np_udp_socket* sock, np_udp_socket_create
     }
 
     nm_libevent_mdns_update_ipv4_socket_registration(sock->sock);
-
-    sock->created.cb = cb;
-    sock->created.data = data;
-    np_event_queue_post(pl, &sock->created.event, event_bind_callback, sock);
+    udp_add_to_libevent(sock);
     return NABTO_EC_OK;
 }
 
-np_error_code udp_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_created_callback cb, void* data)
+void udp_async_bind_mdns_ipv4(np_udp_socket* sock, struct np_completion_event* completionEvent)
+{
+    np_error_code ec = udp_async_bind_mdns_ipv4_ec(sock);
+    np_completion_event_resolve(completionEvent, ec);
+}
+
+np_error_code udp_async_bind_mdns_ipv6_ec(np_udp_socket* sock)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
         return NABTO_EC_ABORTED;
     }
-
-    struct np_platform* pl = sock->pl;
 
     np_error_code ec = udp_create_socket_ipv6(sock);
     if (ec) {
@@ -293,63 +245,55 @@ np_error_code udp_async_bind_mdns_ipv6(np_udp_socket* sock, np_udp_socket_create
 
     nm_libevent_mdns_update_ipv6_socket_registration(sock->sock);
 
-    sock->created.cb = cb;
-    sock->created.data = data;
-    np_event_queue_post(pl, &sock->created.event, event_bind_callback, sock);
+    udp_add_to_libevent(sock);
     return NABTO_EC_OK;
 }
 
-
-static void async_send_to_complete(void* data)
+void udp_async_bind_mdns_ipv6(np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
-    struct send_context* sendCtx = data;
-    sendCtx->cb(NABTO_EC_OK, sendCtx->cbUserData);
-    free(sendCtx);
+    np_error_code ec = udp_async_bind_mdns_ipv6_ec(sock);
+    np_completion_event_resolve(completionEvent, ec);
 }
 
-np_error_code udp_async_send_to(np_udp_socket* sock, struct np_udp_endpoint ep,
-                                uint8_t* buffer, uint16_t bufferSize,
-                                np_udp_packet_sent_callback cb, void* userData)
+np_error_code udp_async_send_to_ec(np_udp_socket* sock, struct np_udp_endpoint* ep,
+                                   uint8_t* buffer, uint16_t bufferSize)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "send to called on aborted socket");
         return NABTO_EC_ABORTED;
     }
 
-    struct send_context* sendCtx = calloc(1, sizeof(struct send_context));
-    sendCtx->sock = sock;
-    sendCtx->cb = cb;
-    sendCtx->cbUserData = userData;
+    return udp_send_to(sock, ep, buffer, bufferSize);
+}
 
-    np_error_code ec = udp_send_to(sock, &ep, buffer, bufferSize);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-
-    np_event_queue_post(sock->pl, &sendCtx->ev, async_send_to_complete, sendCtx);
-    return NABTO_EC_OK;
+void udp_async_send_to(np_udp_socket* sock, struct np_udp_endpoint* ep,
+                       uint8_t* buffer, uint16_t bufferSize,
+                       struct np_completion_event* completionEvent)
+{
+    np_error_code ec = udp_async_send_to_ec(sock, ep, buffer, bufferSize);
+    np_completion_event_resolve(completionEvent, ec);
 }
 
 
-np_error_code udp_async_recv_from(np_udp_socket* sock,
-                                  np_udp_packet_received_callback cb, void* data)
+void udp_async_recv_wait(np_udp_socket* sock,
+                         struct np_completion_event* completionEvent)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "recv from called on aborted socket");
-        return NABTO_EC_ABORTED;
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+        return;
     }
 
-    if (sock->recv.cb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (sock->recv.completionEvent != NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
 
-    struct np_platform* pl = sock->pl;
 
-    sock->recv.cb = cb;
-    sock->recv.data = data;
+    sock->recv.completionEvent = completionEvent;
 
     event_add(sock->event, 0);
-    return NABTO_EC_OK;
+    return;
 }
 
 evutil_socket_t nonblocking_socket(int domain, int type)
@@ -434,58 +378,39 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
     return NABTO_EC_OK;
 }
 
-void udp_event_try_recv_from(void* userData)
+np_error_code udp_recv_from(np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* readLength)
 {
-    struct np_udp_socket* sock = userData;
-    if (sock->recv.cb == NULL) {
-        // ignore data if no recv callback is registered
-        return;
-    }
-    struct np_udp_endpoint ep;
-    struct np_platform* pl = sock->pl;
     ssize_type recvLength;
-    uint8_t* start;
-    start = pl->buf.start(sock->recvBuffer);
     if (sock->type == NABTO_IPV6) {
         struct sockaddr_in6 sa;
         socklen_type addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, start,  pl->buf.size(sock->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep.ip.ip.v6));
-        ep.port = ntohs(sa.sin6_port);
-        ep.ip.type = NABTO_IPV6;
+        recvLength = recvfrom(sock->sock, buffer, bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
+        memcpy(&ep->ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep->ip.ip.v6));
+        ep->port = ntohs(sa.sin6_port);
+        ep->ip.type = NABTO_IPV6;
     } else {
         struct sockaddr_in sa;
         socklen_type addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, start, pl->buf.size(sock->recvBuffer), 0, (struct sockaddr*)&sa, &addrlen);
-        memcpy(&ep.ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep.ip.ip.v4));
-        ep.port = ntohs(sa.sin_port);
-        ep.ip.type = NABTO_IPV4;
+        recvLength = recvfrom(sock->sock, buffer, bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
+        memcpy(&ep->ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep->ip.ip.v4));
+        ep->port = ntohs(sa.sin_port);
+        ep->ip.type = NABTO_IPV4;
     }
 
     if (recvLength < 0) {
         int status = EVUTIL_SOCKET_ERROR();
         if (ERR_IS_EAGAIN(status)) {
-            NABTO_LOG_TRACE(LOG,"(%d) '%s' in udp_event_try_recv_from %d", status, evutil_socket_error_to_string(status), sock->sock);
+            NABTO_LOG_TRACE(LOG,"(%d) '%s' in udp_recv_from %d", status, evutil_socket_error_to_string(status), sock->sock);
             // expected
             // wait for next event to check for data.
-            return;
+            return NABTO_EC_AGAIN;
         } else {
-            np_udp_packet_received_callback cb;
-            NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_event_try_recv_from", status, evutil_socket_error_to_string(status));
-            if(sock->recv.cb) {
-                cb = sock->recv.cb;
-                sock->recv.cb = NULL;
-                cb(NABTO_EC_UDP_SOCKET_ERROR, ep, NULL, 0, sock->recv.data);
-            }
-            return;
+            NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, evutil_socket_error_to_string(status));
+            return NABTO_EC_UDP_SOCKET_ERROR;
         }
     }
-    NABTO_LOG_TRACE(LOG, "received udp data %i", recvLength);
-    if (sock->recv.cb) {
-        np_udp_packet_received_callback cb = sock->recv.cb;
-        sock->recv.cb = NULL;
-        cb(NABTO_EC_OK, ep, pl->buf.start(sock->recvBuffer), recvLength, sock->recv.data);
-    }
+    *readLength = recvLength;
+    return NABTO_EC_OK;
 }
 
 np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port)

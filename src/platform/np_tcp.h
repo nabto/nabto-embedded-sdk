@@ -72,7 +72,7 @@ struct np_tcp_module {
      *
      * @param sock  The socket resource.
      */
-    np_error_code (*abort)(np_tcp_socket* sock);
+    void (*abort)(np_tcp_socket* sock);
 };
 
 #ifdef __cplusplus
