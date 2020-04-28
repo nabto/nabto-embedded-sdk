@@ -631,12 +631,14 @@ np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
                 nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v4BsEps[i].ep,
                                               buffer, bufferSize,
                                               &ctx->v4BsEps[i].sendCompletionEvent);
+                ctx->bsEpsTried++;
             }
             if (ctx->v6BsEps[i].ctx != NULL) {
                 np_completion_event_init(pl, &ctx->v6BsEps[i].sendCompletionEvent, udp_send_callback, &ctx->v4BsEps[i]);
                 nc_udp_dispatch_async_send_to(ctx->udp, &ctx->v6BsEps[i].ep,
                                               buffer, bufferSize,
                                               &ctx->v6BsEps[i].sendCompletionEvent);
+                ctx->bsEpsTried++;
             }
         }
         // OK if at least one send succeeded UNKNOWN otherwise

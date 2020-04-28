@@ -21,7 +21,8 @@ np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct n
     memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
     ctx->pl = pl;
     ctx->recvBuffer = pl->buf.allocate();
-    return pl->udp.create(pl, &ctx->sock);
+    np_error_code ec = pl->udp.create(pl, &ctx->sock);
+    return ec;
 }
 
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
@@ -39,7 +40,7 @@ void nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_p
 {
     ctx->bindCb = cb;
     ctx->bindCbData = data;
-    np_completion_event_init(pl, &ctx->bindCompletionEvent, nc_udp_dispatch_sock_bound_cb, data);
+    np_completion_event_init(pl, &ctx->bindCompletionEvent, nc_udp_dispatch_sock_bound_cb, ctx);
     pl->udp.async_bind_port(ctx->sock, port, &ctx->bindCompletionEvent);
 }
 

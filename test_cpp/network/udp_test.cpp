@@ -84,7 +84,7 @@ class UdpEchoClientTest {
         BOOST_TEST(client->pl_->udp.recv_from(client->socket_, &ep, buffer, bufferSize, &recvLength) == NABTO_EC_OK);
 
         auto sentData = lib::span<const uint8_t>(client->data_.data(), client->data_.size());
-        auto receivedData = lib::span<const uint8_t>(buffer, bufferSize);
+        auto receivedData = lib::span<const uint8_t>(buffer, recvLength);
         BOOST_TEST(sentData == receivedData);
         client->end();
     }

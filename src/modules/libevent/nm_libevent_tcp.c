@@ -99,7 +99,6 @@ np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock)
     return NABTO_EC_OK;
 }
 
-static void tcp_read_data(void* userData);
 static void tcp_eof(void* userData);
 
 void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
@@ -116,7 +115,16 @@ void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
 {
     struct np_tcp_socket* sock = userData;
-    np_event_queue_post_maybe_double(sock->pl, &sock->read.event, &tcp_read_data, userData);
+    if (sock->read.completionEvent != NULL) {
+        size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
+        if (readDataSize > 0) {
+            *(sock->read.readLength) = readDataSize;
+            struct np_completion_event* e = sock->read.completionEvent;
+            sock->read.completionEvent = NULL;
+            bufferevent_disable(sock->bev, EV_READ);
+            np_completion_event_resolve(e, NABTO_EC_OK);
+        }
+    }
 }
 
 void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData)
@@ -167,21 +175,6 @@ void tcp_eof(void* userData)
     NABTO_LOG_TRACE(LOG, "tcp_eof");
     resolve_tcp_connect(sock, NABTO_EC_EOF);
     resolve_tcp_read(sock, NABTO_EC_EOF);
-}
-
-void tcp_read_data(void* userData)
-{
-    NABTO_LOG_TRACE(LOG, "tcp_read_data");
-    struct np_tcp_socket* sock = userData;
-    if (sock->read.completionEvent != NULL) {
-        size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
-        if (readDataSize > 0) {
-            struct np_completion_event* e = sock->read.completionEvent;
-            sock->read.completionEvent = NULL;
-            bufferevent_disable(sock->bev, EV_READ);
-            np_completion_event_resolve(e, NABTO_EC_OK);
-        }
-    }
 }
 
 void tcp_destroy(np_tcp_socket* sock)
@@ -245,6 +238,7 @@ void tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, size
         return;
     }
 
+    sock->read.completionEvent = completionEvent;
     sock->read.buffer = buffer;
     sock->read.bufferLength = bufferLength;
     sock->read.readLength = readLength;

@@ -285,6 +285,7 @@ void udp_async_recv_wait(np_udp_socket* sock,
     }
 
     if (sock->recv.completionEvent != NULL) {
+        NABTO_LOG_TRACE(LOG, "operation in progress");
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
@@ -410,6 +411,7 @@ np_error_code udp_recv_from(np_udp_socket* sock, struct np_udp_endpoint* ep, uin
         }
     }
     *readLength = recvLength;
+    NABTO_LOG_TRACE(LOG, "Received udp packet of size %d", recvLength);
     return NABTO_EC_OK;
 }
 
