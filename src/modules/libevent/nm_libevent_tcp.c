@@ -36,7 +36,6 @@ struct tcp_read_context {
     void* buffer;
     size_t bufferLength;
     size_t* readLength;
-    struct np_event event;
 };
 
 struct np_tcp_socket {
@@ -46,8 +45,6 @@ struct np_tcp_socket {
     struct tcp_read_context read;
     struct tcp_connect_context connect;
     bool aborted;
-    struct np_event abortEv;
-    struct np_event eofEvent;
 };
 
 #define LOG NABTO_LOG_MODULE_TCP

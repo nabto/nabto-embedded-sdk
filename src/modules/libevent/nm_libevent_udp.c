@@ -47,7 +47,6 @@ struct np_udp_socket {
     evutil_socket_t sock;
     struct np_platform* pl;
     bool aborted;
-    struct np_event abortEv;
     struct event* event;
 };
 

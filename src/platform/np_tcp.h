@@ -18,6 +18,7 @@ struct np_tcp_module {
      *
      * @param pl  The platform.
      * @param sock  The resulting socket resource.
+     * @return NABTO_EC_OK iff the socket resource was created.
      */
     np_error_code (*create)(struct np_platform* pl, np_tcp_socket** sock);
 
@@ -48,6 +49,7 @@ struct np_tcp_module {
      * @param completionEvent  The event to call when data has been writtem or the write failed.
      */
     void (*async_write)(np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
+
     /**
      * Read data from a socket.
      *
@@ -62,13 +64,16 @@ struct np_tcp_module {
     /**
      * Shutdown further write to the socket.
      *
+     * This equals shutdown(sock, SHUT_WR)
+     *
      * @param sock  The socket resource to shutdown.
      */
     np_error_code (*shutdown)(np_tcp_socket* sock);
 
     /**
      * Abort outstanding async operations on the socket, no further
-     * reads or writes are possible.
+     * reads or writes are possible. This operation is idempotent and
+     * hence can be called multiple times.
      *
      * @param sock  The socket resource.
      */
