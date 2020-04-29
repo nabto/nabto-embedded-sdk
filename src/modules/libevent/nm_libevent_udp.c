@@ -137,8 +137,9 @@ void udp_abort(np_udp_socket* sock)
 void complete_recv_wait(np_udp_socket* sock, np_error_code ec)
 {
     if (sock->recv.completionEvent != NULL) {
-        np_completion_event_resolve(sock->recv.completionEvent, ec);
+        struct np_completion_event* ev = sock->recv.completionEvent;
         sock->recv.completionEvent = NULL;
+        np_completion_event_resolve(ev, ec);
     }
 }
 
@@ -289,7 +290,6 @@ void udp_async_recv_wait(np_udp_socket* sock,
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
-
 
     sock->recv.completionEvent = completionEvent;
 

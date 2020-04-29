@@ -293,8 +293,8 @@ void nm_mdns_socket_opened_v6(const np_error_code ec, void* userData)
 void nm_mdns_recv_packet_v6(struct np_mdns_context* mdns)
 {
     struct np_platform* pl = mdns->pl;
-    np_completion_event_init(pl, &mdns->v4RecvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed_v6, mdns);
-    pl->udp.async_recv_wait(mdns->socketv6, &mdns->v4RecvWaitCompletionEvent);
+    np_completion_event_init(pl, &mdns->v6RecvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed_v6, mdns);
+    pl->udp.async_recv_wait(mdns->socketv6, &mdns->v6RecvWaitCompletionEvent);
 }
 
 void nm_mdns_packet_recv_wait_completed_v6(const np_error_code ec, void* userData)
