@@ -60,10 +60,6 @@ np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_plat
     pl->udp.get_local_port   = &nm_select_unix_udp_get_local_port;
     pl->udpData = ctx;
 
-    sockets->recvBuf = pl->buf.allocate();
-    if (!sockets->recvBuf) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
     sockets->socketsSentinel.next = &sockets->socketsSentinel;
     sockets->socketsSentinel.prev = &sockets->socketsSentinel;
     return NABTO_EC_OK;
@@ -71,7 +67,6 @@ np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_plat
 
 void nm_select_unix_udp_deinit(struct nm_select_unix* ctx)
 {
-    ctx->pl->buf.free(ctx->udpSockets.recvBuf);
 }
 
 bool nm_select_unix_udp_has_sockets(struct nm_select_unix* ctx)

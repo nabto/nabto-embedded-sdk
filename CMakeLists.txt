@@ -165,6 +165,7 @@ if (HAVE_SYS_SELECT_H)
   add_subdirectory(src/modules/select_unix)
   add_subdirectory(src/modules/posix)
   add_definitions(-DHAVE_SELECT_UNIX)
+  set(HAVE_SELECT_UNIX 1)
 endif()
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")

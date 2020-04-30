@@ -55,8 +55,8 @@ target_link_libraries(embedded_unit_test
 if (HAVE_SELECT_UNIX)
   target_link_libraries(embedded_unit_test
     nm_select_unix
-    nm_select_unix
     nm_unix_dns
+    nm_unix_timestamp
     )
 endif()
 

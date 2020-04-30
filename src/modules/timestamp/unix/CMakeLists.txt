@@ -5,4 +5,4 @@ set(unix_src
   )
 
 
-add_library( nm_timestamp STATIC ${unix_src})
+add_library( nm_unix_timestamp STATIC ${unix_src})

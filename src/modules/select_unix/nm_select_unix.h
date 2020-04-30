@@ -28,13 +28,11 @@ struct np_udp_socket {
     bool aborted;
     bool destroyed;
     struct nm_select_unix_udp_recv_wait_context recv;
-    struct np_event abortEv;
 };
 
 struct nm_select_unix_udp_sockets {
     struct np_platform* pl;
     struct np_udp_socket socketsSentinel;
-    np_communication_buffer* recvBuf;
 };
 
 struct nm_select_unix_tcp_connect_context {
