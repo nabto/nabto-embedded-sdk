@@ -68,7 +68,7 @@ struct np_tcp_module {
      *
      * @param sock  The socket resource to shutdown.
      */
-    np_error_code (*shutdown)(np_tcp_socket* sock);
+    void (*shutdown)(np_tcp_socket* sock);
 
     /**
      * Abort outstanding async operations on the socket, no further

@@ -24,7 +24,7 @@ static void destroy(np_tcp_socket* sock);
 static void async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
 static void async_write(np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
 static void async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
-static np_error_code tcp_shutdown(np_tcp_socket* sock);
+static void tcp_shutdown(np_tcp_socket* sock);
 static void tcp_abort(np_tcp_socket* sock);
 
 static void is_connected(np_tcp_socket* sock);
@@ -447,10 +447,9 @@ void async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, size_t* re
     nm_select_unix_notify(sock->selectCtx);
 }
 
-np_error_code tcp_shutdown(np_tcp_socket* sock)
+void tcp_shutdown(np_tcp_socket* sock)
 {
     shutdown(sock->fd, SHUT_WR);
-    return NABTO_EC_OK;
 }
 
 void tcp_abort(np_tcp_socket* sock)
