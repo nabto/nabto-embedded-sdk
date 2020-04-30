@@ -14,6 +14,10 @@ extern "C" {
 #endif
 
 
+struct nm_select_unix_udp_recv_wait_context {
+    struct np_completion_event* completionEvent;
+};
+
 struct np_udp_socket {
     struct np_platform* pl;
     struct nm_select_unix* selectCtx;
@@ -23,6 +27,7 @@ struct np_udp_socket {
     struct np_udp_socket* prev;
     bool aborted;
     bool destroyed;
+    struct nm_select_unix_udp_recv_wait_context recv;
     struct np_event abortEv;
 };
 
