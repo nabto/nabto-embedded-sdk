@@ -7,6 +7,8 @@
 
 #include <platform/np_types.h>
 
+#include <event.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,101 +34,104 @@ typedef void (*np_event_queue_executor_notify)(void* data);
  */
 struct np_event;
 struct np_event {
+    struct np_platform* pl;
     // Reference to next element in the queue
-    struct np_event* next;
-    struct np_event* prev;
     np_event_callback cb;
     void* data;
+    struct event event;
 };
 
 struct np_timed_event {
+    struct np_platform* pl;
     // Reference to the previous element in the priority queue
-    struct np_timed_event* next;
-    struct np_timed_event* prev;
-    np_timestamp timestamp;
     np_timed_event_callback cb;
     void* data;
-};
-
-struct np_event_list {
-    struct np_event sentinelData;
-    struct np_event* sentinel;
-};
-
-struct np_timed_event_list {
-    struct np_timed_event sentinelData;
-    struct np_timed_event* sentinel;
+    struct event event;
 };
 
 struct np_event_queue {
+    /**
+     * Init an event
+     *
+     * @param pl  The platform.
+     * @param event  The event to initialize.
+     * @param cb  The callback to execute when executed.
+     * @param data  The callback user data.
+     */
+    void (*init_event)(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
 
-    // Private data for the event module
-    struct np_event_list events;
+    /**
+     * Post the event to the event queue
+     *
+     * @param event
+     */
+    bool (*post)(struct np_event* event);
 
-    // Private data for the timed events module
-    struct np_timed_event_list timedEvents;
+    /**
+     * Post an event which has the chance of being double
+     * posted. i.e. be added to the event queue before it has been
+     * executed.
+     *
+     * @param event  The event.
+     */
+    void (*post_maybe_double)(struct np_event* event);
 
-    // called to notify the executor that a new event has been posted to the eventQueue.
-    np_event_queue_executor_notify notify;
-    void* notifyData;
+    /**
+     * Cancel an event
+     *
+     * @param event  The event.
+     */
+    void (*cancel)(struct np_event* event);
+
+
+    /**
+     * Init a timed event
+     *
+     * @param pl  The platform.
+     * @param event  The timed event to initialize.
+     * @param cb  The callback to call when the timed event is executed.
+     * @param data  The user data for the callback.
+     */
+    void (*init_timed_event)(struct np_platform* pl, struct np_timed_event* event, np_timed_event_callback cb, void* data);
+
+    /**
+     * Post a timed event to the event queue
+     *
+     * @param event  The event.
+     * @param milliseconds  The amount of milliseconds into the future until the event is executed.
+     */
+    void (*post_timed_event)(struct np_timed_event* event, uint32_t milliseconds);
+
+
+    /**
+     * Cancel a timed event
+     *
+     * @param timedEvent  The timed event.
+     */
+    void (*cancel_timed_event)(struct np_timed_event* timedEvent);
 };
 
-void np_event_queue_init(struct np_platform* pl, np_event_queue_executor_notify notify, void* notifyData);
+void np_event_queue_init_event(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
 
-void np_event_queue_init_event(struct np_event* event);
-
-bool np_event_queue_has_ready_event(struct np_platform* pl);
 /**
  * Enqueue an event to the event queue.
  */
-bool np_event_queue_post(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
+bool np_event_queue_post(struct np_event* event);
 
 /**
  * Enqueue an event which maybe already is in the queue. If it is on
  * the queue it is not requeued. These events needs to be initialized with np_event_queue_init_event
  */
-void np_event_queue_post_maybe_double(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
+void np_event_queue_post_maybe_double(struct np_event* event);
 
-void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds, np_timed_event_callback cb, void* data);
+void np_event_queue_init_timed_event(struct np_platform* pl, struct np_timed_event* event, np_timed_event_callback cb, void* data);
 
-/**
- * execute a single event on the event queue, if empty execute ready event from timed event queue
- */
-void np_event_queue_execute_one(struct np_platform* pl);
+void np_event_queue_post_timed_event(struct np_timed_event* event, uint32_t milliseconds);
 
-/**
- * execute all ready events on both event queues
- */
-void np_event_queue_execute_all(struct np_platform* pl);
+void np_event_queue_cancel_timed_event(struct np_timed_event* ev);
 
-/**
- * execute a single event on the event queue
- */
-void np_event_queue_poll_one(struct np_platform* pl);
+void np_event_queue_cancel_event(struct np_event* ev);
 
-void np_event_queue_poll_one_timed_event(struct np_platform* pl);
-
-/**
- * Return true iff there are no more events ready in the queue to be
- * executed,
- */
-bool np_event_queue_is_event_queue_empty(struct np_platform* pl);
-
-bool np_event_queue_has_timed_event(struct np_platform* pl);
-
-bool np_event_queue_has_ready_timed_event(struct np_platform* pl);
-
-bool np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* ev);
-
-bool np_event_queue_cancel_event(struct np_platform* pl, struct np_event* ev);
-
-bool np_event_queue_is_event_enqueued(struct np_platform* pl, struct np_event* ev);
-
-/**
- * Return the time in milliseconds until the next timed event is due,
- * returns 0 if np_event_queue_has_timed_event returns false.
- */
-uint32_t np_event_queue_next_timed_event_occurance(struct np_platform* pl);
 
 #ifdef __cplusplus
 } //extern "C"

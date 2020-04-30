@@ -139,7 +139,8 @@ np_error_code nm_unix_dns_resolve(struct np_platform* pl, const char* host, np_d
         return NABTO_EC_UNKNOWN;
     }
     pthread_attr_destroy(&attr);
-    np_event_queue_post_timed_event(pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, ctx);
+    np_event_queue_init_timed_event(pl, &ctx->ev, &nm_unix_dns_check_resolved, ctx);
+    np_event_queue_post_timed_event(&ctx->ev, 50);
     return NABTO_EC_OK;
 }
 
@@ -147,7 +148,7 @@ void nm_unix_dns_check_resolved(const np_error_code ec, void* data)
 {
     struct nm_unix_dns_ctx* ctx = (struct nm_unix_dns_ctx*)data;
     if(ctx->resolver_is_running) {
-        np_event_queue_post_timed_event(ctx->pl, &ctx->ev, 50, &nm_unix_dns_check_resolved, data);
+        np_event_queue_post_timed_event(&ctx->ev, 50);
         return;
     } else {
         ctx->cb(ctx->ec, ctx->v4Ips, ctx->v4IpsSize, ctx->v6Ips, ctx->v6IpsSize, ctx->data);

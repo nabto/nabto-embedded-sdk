@@ -6,6 +6,8 @@
 
 #include <nabto_types.h>
 
+#include <event.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,6 +24,7 @@ struct nabto_device_future {
     struct nabto_device_condition* cond;
 
     struct nabto_device_future* next;
+    struct event event;
 };
 
 void nabto_device_future_reset(struct nabto_device_future* fut);

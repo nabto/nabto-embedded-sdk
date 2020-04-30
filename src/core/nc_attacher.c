@@ -116,8 +116,8 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
 
         sct_deinit(ctx);
 
-        np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
-        np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
+        np_event_queue_cancel_timed_event(&ctx->reattachTimer);
+        np_event_queue_cancel_event(&ctx->closeEv);
     }
 }
 
@@ -243,19 +243,21 @@ np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach
 void do_close(struct nc_attach_context* ctx)
 {
     if (ctx->moduleState == NC_ATTACHER_MODULE_SETUP) {
-        np_event_queue_post(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
+        np_event_queue_init_event(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
+        np_event_queue_post(&ctx->closeEv);
         return;
     }
     ctx->moduleState = NC_ATTACHER_MODULE_CLOSED;
     switch(ctx->state) {
         case NC_ATTACHER_STATE_RETRY_WAIT:
         case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
-            np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
+            np_event_queue_cancel_timed_event(&ctx->reattachTimer);
             ctx->state = NC_ATTACHER_STATE_CLOSED;
             handle_state_change(ctx);
             break;
         case NC_ATTACHER_STATE_CLOSED:
-            np_event_queue_post(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
+            np_event_queue_init_event(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
+            np_event_queue_post(&ctx->closeEv);
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
         case NC_ATTACHER_STATE_ATTACHED:
@@ -274,8 +276,8 @@ void do_close(struct nc_attach_context* ctx)
 void resolve_close(void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->reattachTimer);
-    np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
+    np_event_queue_cancel_timed_event(&ctx->reattachTimer);
+    np_event_queue_cancel_event(&ctx->closeEv);
     if (ctx->closedCb) {
         nc_attacher_closed_callback cb = ctx->closedCb;
         ctx->closedCb = NULL;
@@ -297,15 +299,18 @@ void handle_state_change(struct nc_attach_context* ctx)
         }
         break;
         case NC_ATTACHER_STATE_CLOSED:
-            np_event_queue_post(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
+            np_event_queue_init_event(ctx->pl, &ctx->closeEv, &resolve_close, ctx);
+            np_event_queue_post(&ctx->closeEv);
             break;
         case NC_ATTACHER_STATE_REDIRECT:
             break;
         case NC_ATTACHER_STATE_RETRY_WAIT:
-            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, ctx->retryWaitTime, &reattach, ctx);
+            np_event_queue_init_timed_event(ctx->pl, &ctx->reattachTimer, &reattach, ctx);
+            np_event_queue_post_timed_event(&ctx->reattachTimer, ctx->retryWaitTime);
             break;
         case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
-            np_event_queue_post_timed_event(ctx->pl, &ctx->reattachTimer, ctx->accessDeniedWaitTime, &reattach, ctx);
+            np_event_queue_init_timed_event(ctx->pl, &ctx->reattachTimer, &reattach, ctx);
+            np_event_queue_post_timed_event(&ctx->reattachTimer, ctx->accessDeniedWaitTime);
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
             ctx->pl->dtlsC.set_sni(ctx->dtls, ctx->hostname);

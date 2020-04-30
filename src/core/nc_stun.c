@@ -74,7 +74,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
-    np_event_queue_init_event(&ctx->event);
+    np_event_queue_init_timed_event(pl, &ctx->toEv, &nc_stun_handle_timeout, ctx);
     return NABTO_EC_OK;
 }
 
@@ -83,8 +83,7 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
     if (ctx->pl != NULL) { // if init called
         ctx->state = NC_STUN_STATE_ABORTED;
         struct np_platform* pl = ctx->pl;
-        np_event_queue_cancel_event(ctx->pl, &ctx->event);
-        np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
+        np_event_queue_cancel_timed_event(&ctx->toEv);
         pl->buf.free(ctx->sendBuf);
     }
 }
@@ -136,10 +135,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
         NABTO_LOG_INFO(LOG, "Stun already running, adding callback");
         return NABTO_EC_OK;
     }
-    /*if (ctx->state == NC_STUN_STATE_DONE) {
-        np_event_queue_post(ctx->pl, &ctx->resultEv, &nc_stun_resolve_callbacks, ctx);
-        return NABTO_EC_OK;
-        }*/
+
     ctx->simple = simple;
     ctx->state = NC_STUN_STATE_RUNNING;
     ctx->pl->dns.async_resolve(ctx->pl, ctx->hostname, &nc_stun_dns_cb, ctx);
@@ -186,8 +182,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
 {
     enum nabto_stun_next_event_type event = nabto_stun_next_event_to_handle(&ctx->stun);
     struct np_platform* pl = ctx->pl;
-    np_event_queue_cancel_event(ctx->pl, &ctx->event);
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
+    np_event_queue_cancel_timed_event(&ctx->toEv);
     switch(event) {
         case STUN_ET_SEND_PRIMARY:
         {
@@ -250,7 +245,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
         case STUN_ET_WAIT:
         {
             uint32_t to = nabto_stun_get_timeout_ms(&ctx->stun);
-            np_event_queue_post_timed_event(ctx->pl, &ctx->toEv, to, &nc_stun_handle_timeout, ctx);
+            np_event_queue_post_timed_event(&ctx->toEv, to);
         }
             break;
         case STUN_ET_NO_EVENT:

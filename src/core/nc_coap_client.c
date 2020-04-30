@@ -12,6 +12,8 @@ void nc_coap_client_event(struct nc_coap_client_context* ctx);
 void nc_coap_client_send_to_callback(const np_error_code ec, void* data);
 void nc_coap_client_handle_timeout(const np_error_code ec, void* data);
 
+static void nc_coap_client_notify_event_callback(void* userData);
+
 struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_context* ctx)
 {
     return &ctx->client;
@@ -26,21 +28,25 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     ctx->pl = pl;
     ctx->isSending = false;
     ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
-    np_event_queue_init_event(&ctx->ev);
+    np_event_queue_init_event(ctx->pl, &ctx->ev, &nc_coap_client_notify_event_callback, ctx);
+
     nabto_coap_error err = nabto_coap_client_init(&ctx->client, &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);
         return nc_coap_error_to_core(err);
     }
     nc_coap_client_set_infinite_stamp(ctx);
+
+    np_event_queue_init_timed_event(ctx->pl, &ctx->timer, &nc_coap_client_handle_timeout, ctx);
+
     return NABTO_EC_OK;
 }
 
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
-        np_event_queue_cancel_event(ctx->pl, &ctx->ev);
-        np_event_queue_cancel_timed_event(ctx->pl, &ctx->timer);
+        np_event_queue_cancel_event(&ctx->ev);
+        np_event_queue_cancel_timed_event(&ctx->timer);
         nabto_coap_client_destroy(&ctx->client);
         ctx->pl->buf.free(ctx->sendBuffer);
     }
@@ -99,7 +105,7 @@ void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
         if (diff < 0) {
             diff = 0;
         }
-        np_event_queue_post_timed_event(ctx->pl, &ctx->timer, diff, &nc_coap_client_handle_timeout, ctx);
+        np_event_queue_post_timed_event(&ctx->timer, diff);
     }
 }
 
@@ -157,7 +163,7 @@ void nc_coap_client_notify_event_callback(void* userData)
 void nc_coap_client_notify_event(void* userData)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*)userData;
-    np_event_queue_post_maybe_double(ctx->pl, &ctx->ev, &nc_coap_client_notify_event_callback, ctx);
+    np_event_queue_post_maybe_double(&ctx->ev);
 }
 
 void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx)

@@ -16,7 +16,8 @@ void np_completion_event_init(struct np_platform* pl, struct np_completion_event
 void np_completion_event_resolve(struct np_completion_event* completionEvent, np_error_code ec)
 {
     completionEvent->ec = ec;
-    np_event_queue_post(completionEvent->pl, &completionEvent->event, &resolve_event_callback, completionEvent);
+    np_event_queue_init_event(completionEvent->pl, &completionEvent->event, &resolve_event_callback, completionEvent);
+    np_event_queue_post(&completionEvent->event);
 }
 
 

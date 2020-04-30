@@ -187,7 +187,7 @@ if (DEVICE_BUILD_TESTS)
   #add_subdirectory(test)
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
-  add_subdirectory(test_cpp)
+#  add_subdirectory(test_cpp)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)

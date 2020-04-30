@@ -97,7 +97,8 @@ void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict
         struct np_platform* pl = authReq->module->pl;
         authReq->verdict = verdict;
         authReq->verdictDone = true;
-        np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
+        np_event_queue_init_event(pl, &authReq->verdictEvent, handle_verdict, authReq);
+        np_event_queue_post(&authReq->verdictEvent);
     }
 }
 

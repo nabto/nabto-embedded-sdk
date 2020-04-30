@@ -28,6 +28,8 @@ struct np_platform {
 
     // Event Queue module
     struct np_event_queue eq;
+    // Data for the event queue module
+    void* eqData;
 
     // UDP Socket module
     struct np_udp_module udp;

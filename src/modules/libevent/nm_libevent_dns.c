@@ -82,7 +82,8 @@ void dns_cbv4(int result, char type, int count, int ttl, void *addresses, void *
     int flags = 0;
     req->request = evdns_base_resolve_ipv6(base, req->host, flags, dns_cbv6, req);
     if (req->request == NULL) {
-        np_event_queue_post(pl, &req->callbackEvent, &dns_done_event, req);
+        np_event_queue_init_event(pl, &req->callbackEvent, &dns_done_event, req);
+        np_event_queue_post(&req->callbackEvent);
     }
 }
 
@@ -102,7 +103,8 @@ void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* 
 
     // post to event queue such that the callback is completed on the right queue.
     struct np_platform* pl = req->pl;
-    np_event_queue_post(pl, &req->callbackEvent, &dns_done_event, req);
+    np_event_queue_init_event(pl, &req->callbackEvent, &dns_done_event, req);
+    np_event_queue_post(&req->callbackEvent);
 }
 
 void dns_done_event(void* data)
