@@ -3,10 +3,13 @@
 #include "nabto_device_threads.h"
 #include "nabto_device_future.h"
 
+#include <platform/np_logging.h>
+
 #include <stdlib.h>
 
 #include <event2/event.h>
 
+#define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
 static void init_event(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
 static bool post(struct np_event* event);
@@ -28,14 +31,12 @@ void nabto_device_event_queue_init(struct np_platform* pl, struct nabto_device_m
 {
     struct nabto_device_event_queue* eq = calloc(1, sizeof(struct nabto_device_event_queue));
 
-
     eq->mutex = mutex;
     eq->eventBase = event_base_new();
     pl->eqData = eq;
 
     eq->coreThread = nabto_device_threads_create_thread();
     nabto_device_threads_run(eq->coreThread, nabto_device_event_queue_core_thread, eq);
-
 
     pl->eq.init_event = &init_event;
     pl->eq.post = &post;
@@ -55,6 +56,7 @@ void nabto_device_event_queue_deinit(struct np_platform* pl)
 
 void handle_timed_event(evutil_socket_t s, short events, void* data)
 {
+    NABTO_LOG_TRACE(LOG, "handle timed event");
     struct np_timed_event* timedEvent = data;
     struct np_platform* pl = timedEvent->pl;
     struct nabto_device_event_queue* eq = pl->eqData;
@@ -67,6 +69,7 @@ void handle_timed_event(evutil_socket_t s, short events, void* data)
 
 void handle_event(evutil_socket_t s, short events, void* data)
 {
+    NABTO_LOG_TRACE(LOG, "handle event");
     struct np_event* event = data;
     struct np_platform* pl = event->pl;
     struct nabto_device_event_queue* eq = pl->eqData;
@@ -94,6 +97,7 @@ void init_event(struct np_platform* pl, struct np_event* event, np_event_callbac
 
 bool post(struct np_event* event)
 {
+    NABTO_LOG_TRACE(LOG, "post event");
     //struct np_platform* pl = event->pl;
     //struct nabto_device_event_queue* eq = pl->eqData;
     event_active(&event->event, 0, 0);
@@ -149,6 +153,6 @@ void nabto_device_event_queue_future_post(struct np_platform* pl, struct nabto_d
 void* nabto_device_event_queue_core_thread(void* data)
 {
     struct nabto_device_event_queue* eq = data;
-    event_base_loop(eq->eventBase, 0);
+    event_base_loop(eq->eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
     return NULL;
 }

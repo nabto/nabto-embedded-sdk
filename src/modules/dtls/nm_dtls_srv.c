@@ -398,7 +398,6 @@ void nm_dtls_srv_do_event_callback(void* data)
 
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 {
-    np_event_queue_init_event(ctx->pl, &ctx->startSendEvent, &nm_dtls_srv_start_send_deferred, ctx);
     np_event_queue_post_maybe_double(&ctx->startSendEvent);
 }
 
