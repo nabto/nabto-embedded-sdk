@@ -7,6 +7,7 @@
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/logging/api/nm_api_logging.h>
+#include <api/nabto_device_threads.h>
 
 #include <event.h>
 #include <event2/event.h>
@@ -16,7 +17,12 @@ struct event_base* eventBase;
 struct event* signalEvent;
 struct nm_libevent_context libeventContext;
 
+struct nabto_device_thread* networkThread;
+
+static bool stopped = false;
+
 static void nabto_device_signal_event(evutil_socket_t s, short event, void* userData);
+static void* nabto_device_platform_network_thread(void* data);
 
 void nabto_device_init_platform(struct np_platform* pl)
 {
@@ -25,10 +31,13 @@ void nabto_device_init_platform(struct np_platform* pl)
     eventBase = event_base_new();
     signalEvent = event_new(eventBase, -1, 0, &nabto_device_signal_event, NULL);
     nm_api_log_init();
+
+
 }
 
 void nabto_device_deinit_platform(struct np_platform* pl)
 {
+    event_base_loopbreak(eventBase);
     event_base_free(eventBase);
     np_platform_deinit(pl);
 }
@@ -42,6 +51,12 @@ np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
     nm_dtls_srv_init(pl);
     nm_mdns_init(pl);
     nm_random_init(pl);
+
+    networkThread = nabto_device_threads_create_thread();
+    if (nabto_device_threads_run(networkThread, nabto_device_platform_network_thread, eventBase) != 0) {
+        // TODO
+    }
+
     return NABTO_EC_OK;
 }
 
@@ -64,6 +79,21 @@ void nabto_device_platform_read(int nfds)
 
 void nabto_device_platform_close(struct np_platform* pl)
 {
+    stopped = true;
+    event_base_loopbreak(eventBase);
+}
+
+/*
+ * Thread running the network
+ */
+void* nabto_device_platform_network_thread(void* data)
+{
+    struct event_base* eventBase = data;
+    if (stopped == true) {
+        return NULL;
+    }
+    event_base_loop(eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
+    return NULL;
 }
 
 void nabto_device_signal_event(evutil_socket_t s, short event, void* userData)

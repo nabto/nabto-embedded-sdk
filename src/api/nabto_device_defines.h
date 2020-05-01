@@ -19,9 +19,7 @@ struct nabto_device_context {
     struct np_platform pl;
     struct nc_device_context core;
 
-    struct nabto_device_thread* networkThread;
     struct nabto_device_mutex* eventMutex;
-    struct nabto_device_condition* eventCond;
 
     struct nabto_device_mutex* futureQueueMutex;
 

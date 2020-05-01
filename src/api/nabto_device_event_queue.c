@@ -195,6 +195,7 @@ void nabto_device_event_queue_future_post(struct np_platform* pl, struct nabto_d
 {
     struct nabto_device_event_queue* eq = pl->eqData;
     event_assign(&fut->event, eq->eventBase, -1, 0, &handle_future_event, fut);
+    event_active(&fut->event, 0, 0);
 }
 
 void* nabto_device_event_queue_core_thread(void* data)
