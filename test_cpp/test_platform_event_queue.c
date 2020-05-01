@@ -1,9 +1,11 @@
-#include "nabto_device_event_queue.h"
+#include "test_platform_event_queue.h"
 
-#include "nabto_device_threads.h"
-#include "nabto_device_future.h"
+
+#include "test_platform_event_queue.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_event_queue.h>
+#include <platform/np_platform.h>
 
 #include <stdlib.h>
 
@@ -19,27 +21,16 @@ static void post_timed_event(struct np_timed_event* event, uint32_t milliseconds
 static void cancel(struct np_event* event);
 static void cancel_timed_event(struct np_timed_event* timedEvent);
 
-static void handle_timed_event(evutil_socket_t s, short events, void* data);
-static void handle_event(evutil_socket_t s, short events, void* data);
-
-static void* nabto_device_event_queue_core_thread(void* data);
-
-struct nabto_device_event_queue {
-    struct nabto_device_mutex* mutex;
-    struct nabto_device_thread* coreThread;
+struct test_platform_event_queue {
     struct event_base* eventBase;
 };
 
-void nabto_device_event_queue_init(struct np_platform* pl, struct nabto_device_mutex* mutex)
+void test_platform_event_queue_init(struct np_platform* pl, struct event_base* eventBase)
 {
-    struct nabto_device_event_queue* eq = calloc(1, sizeof(struct nabto_device_event_queue));
+    struct test_platform_event_queue* eq = calloc(1, sizeof(struct test_platform_event_queue));
 
-    eq->mutex = mutex;
-    eq->eventBase = event_base_new();
+    eq->eventBase = eventBase;
     pl->eqData = eq;
-
-    eq->coreThread = nabto_device_threads_create_thread();
-    nabto_device_threads_run(eq->coreThread, nabto_device_event_queue_core_thread, eq);
 
     pl->eq.init_event = &init_event;
     pl->eq.post = &post;
@@ -50,42 +41,34 @@ void nabto_device_event_queue_init(struct np_platform* pl, struct nabto_device_m
     pl->eq.cancel_timed_event = &cancel_timed_event;
 }
 
-void nabto_device_event_queue_deinit(struct np_platform* pl)
+void test_platform_event_queue_deinit(struct np_platform* pl)
 {
-    struct nabto_device_event_queue* eq = pl->eqData;
+    struct test_platform_event_queue* eq = pl->eqData;
     event_base_loopbreak(eq->eventBase);
-    nabto_device_threads_join(eq->coreThread);
 }
 
 void handle_timed_event(evutil_socket_t s, short events, void* data)
 {
     NABTO_LOG_TRACE(LOG, "handle timed event");
     struct np_timed_event* timedEvent = data;
-    struct np_platform* pl = timedEvent->pl;
-    struct nabto_device_event_queue* eq = pl->eqData;
+//    struct np_platform* pl = timedEvent->pl;
+//    struct test_plaform_event_queue* eq = pl->eqData;
 
-    nabto_device_threads_mutex_lock(eq->mutex);
+//    nabto_device_threads_mutex_lock(eq->mutex);
     timedEvent->cb(NABTO_EC_OK, timedEvent->data);
-    nabto_device_threads_mutex_unlock(eq->mutex);
-
+//    nabto_device_threads_mutex_unlock(eq->mutex);
 }
 
 void handle_event(evutil_socket_t s, short events, void* data)
 {
     NABTO_LOG_TRACE(LOG, "handle event");
     struct np_event* event = data;
-    struct np_platform* pl = event->pl;
-    struct nabto_device_event_queue* eq = pl->eqData;
+//    struct np_platform* pl = event->pl;
+//    struct test_platform_event_queue* eq = pl->eqData;
 
-    nabto_device_threads_mutex_lock(eq->mutex);
+//    nabto_device_threads_mutex_lock(eq->mutex);
     event->cb(event->data);
-    nabto_device_threads_mutex_unlock(eq->mutex);
-}
-
-void handle_future_event(evutil_socket_t s, short events, void* data)
-{
-    struct nabto_device_future* future = data;
-    nabto_device_future_popped(future);
+//    nabto_device_threads_mutex_unlock(eq->mutex);
 }
 
 void init_event(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
@@ -94,7 +77,7 @@ void init_event(struct np_platform* pl, struct np_event* event, np_event_callbac
     event->cb = cb;
     event->data = data;
 
-    struct nabto_device_event_queue* eq = pl->eqData;
+    struct test_platform_event_queue* eq = pl->eqData;
     event_assign(&event->event, eq->eventBase, -1, 0, &handle_event, event);
 }
 
@@ -118,7 +101,7 @@ void post_maybe_double(struct np_event* event)
 void init_timed_event(struct np_platform* pl, struct np_timed_event* event, np_timed_event_callback cb, void* data)
 {
     //struct np_platform* pl = event->pl;
-    struct nabto_device_event_queue* eq = pl->eqData;
+    struct test_platform_event_queue* eq = pl->eqData;
     event->pl = pl;
     event->cb = cb;
     event->data = data;
@@ -144,18 +127,4 @@ void cancel(struct np_event* event)
 void cancel_timed_event(struct np_timed_event* timedEvent)
 {
     event_del(&timedEvent->event);
-}
-
-
-void nabto_device_event_queue_future_post(struct np_platform* pl, struct nabto_device_future* fut)
-{
-    struct nabto_device_event_queue* eq = pl->eqData;
-    event_assign(&fut->event, eq->eventBase, -1, 0, &handle_future_event, fut);
-}
-
-void* nabto_device_event_queue_core_thread(void* data)
-{
-    struct nabto_device_event_queue* eq = data;
-    event_base_loop(eq->eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
-    return NULL;
 }

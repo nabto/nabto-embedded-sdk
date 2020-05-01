@@ -81,7 +81,8 @@ class AttachTest {
     }
 
     void end() {
-        np_event_queue_post(tp_.getPlatform(), &endEvent_, &AttachTest::endEvent, this);
+        np_event_queue_init_event(tp_.getPlatform(), &endEvent_, &AttachTest::endEvent, this);
+        np_event_queue_post(&endEvent_);
     }
 
     static void endEvent(void* userData) {

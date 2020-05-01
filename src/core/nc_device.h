@@ -67,7 +67,6 @@ struct nc_device_context {
 
     uint16_t serverPort;
 
-    struct np_event closeEvent;
     nc_device_close_callback closeCb;
     void* closeCbData;
 

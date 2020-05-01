@@ -1,6 +1,7 @@
 #pragma once
 
 #include "test_platform.hpp"
+#include "test_platform_event_queue.h"
 
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
@@ -10,7 +11,9 @@
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/logging/test/nm_logging_test.h>
+#include <modules/libevent/nm_libevent.h>
 
+#include <thread>
 
 namespace nabto {
 namespace test {
@@ -20,17 +23,20 @@ class TestPlatformSelectUnix : public TestPlatform {
  public:
 
     TestPlatformSelectUnix() {
+        nm_libevent_global_init();
+        eventBase_ = event_base_new();
         init();
     }
 
     ~TestPlatformSelectUnix() {
         //deinit();
+        event_base_free(eventBase_);
     }
 
     virtual void init()
     {
         np_platform_init(&pl_);
-        np_event_queue_init(&pl_, NULL, NULL);
+        test_platform_event_queue_init(&pl_, eventBase_);
         nm_logging_test_init();
         np_communication_buffer_init(&pl_);
         nm_select_unix_init(&selectCtx_, &pl_);
@@ -43,31 +49,34 @@ class TestPlatformSelectUnix : public TestPlatform {
     void deinit()
     {
         nm_select_unix_close(&selectCtx_);
+        if (networkThread_) {
+            networkThread_->join();
+        }
     }
 
     virtual void run()
     {
+        networkThread_ = std::make_unique<std::thread>(&TestPlatformSelectUnix::networkThread, this);
+        event_base_loop(eventBase_, EVLOOP_NO_EXIT_ON_EMPTY);
+    }
+
+    static void networkThread(TestPlatformSelectUnix* tp)
+    {
         int nfds;
         while (true) {
-            if (stopped_ && nm_select_unix_finished(&selectCtx_)) {
-                deinit();
+            if (tp->stopped_ && nm_select_unix_finished(&tp->selectCtx_)) {
                 return;
             }
-            np_event_queue_execute_all(&pl_);
-            if (np_event_queue_has_timed_event(&pl_)) {
-                uint32_t ms = np_event_queue_next_timed_event_occurance(&pl_);
-
-                nfds = nm_select_unix_timed_wait(&selectCtx_, ms);
-            } else {
-                nfds = nm_select_unix_inf_wait(&selectCtx_);
-            }
-            nm_select_unix_read(&selectCtx_, nfds);
+            nfds = nm_select_unix_inf_wait(&tp->selectCtx_);
+            nm_select_unix_read(&tp->selectCtx_, nfds);
         }
     }
+
     virtual void stop()
     {
         stopped_ = true;
         nm_select_unix_break_wait(&selectCtx_);
+        event_base_loopbreak(eventBase_);
     }
 
     struct np_platform* getPlatform() {
@@ -77,6 +86,8 @@ class TestPlatformSelectUnix : public TestPlatform {
     struct np_platform pl_;
     struct nm_select_unix selectCtx_;
     bool stopped_ = false;
+    std::unique_ptr<std::thread> networkThread_;
+    struct event_base* eventBase_;
 };
 
 

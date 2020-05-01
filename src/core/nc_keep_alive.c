@@ -20,6 +20,8 @@ void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* p
 
     ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
 
+    np_event_queue_init_timed_event(ctx->pl, &ctx->keepAliveEvent, NULL, NULL);
+
     return;
 }
 

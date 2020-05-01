@@ -87,7 +87,6 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     struct np_platform* pl = device->pl;
 
-    np_event_queue_cancel_event(&device->closeEvent);
     if (device->mdns) {
         pl->mdns.stop(device->mdns);
         device->mdns = NULL;

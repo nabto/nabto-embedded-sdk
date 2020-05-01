@@ -35,7 +35,8 @@ BOOST_DATA_TEST_CASE(stop_from_event, nabto::test::TestPlatform::multi(),tp)
     std::thread t([tp](){ tp->run(); });
     struct np_platform* pl = tp->getPlatform();
     struct np_event stopEvent;
-    np_event_queue_post(pl, &stopEvent, &stopFunction, tp.get());
+    np_event_queue_init_event(pl, &stopEvent, &stopFunction, tp.get());
+    np_event_queue_post(&stopEvent);
     t.join();
 }
 
@@ -43,7 +44,8 @@ BOOST_DATA_TEST_CASE(stop_from_event_no_thread, nabto::test::TestPlatform::multi
 {
     struct np_platform* pl = tp->getPlatform();
     struct np_event stopEvent;
-    np_event_queue_post(pl, &stopEvent, &stopFunction, tp.get());
+    np_event_queue_init_event(pl, &stopEvent, &stopFunction, tp.get());
+    np_event_queue_post(&stopEvent);
     tp->run();
 }
 
