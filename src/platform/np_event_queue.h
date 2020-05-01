@@ -123,12 +123,12 @@ void np_event_queue_destroy_event(struct np_platform* pl, struct np_event* event
 /**
  * Create a new timed event
  */
-np_error_code np_event_queue_create_timed_event(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event);
+np_error_code np_event_queue_create_timed_event(struct np_platform* pl, np_timed_event_callback cb, void* data, struct np_timed_event** event);
 
 /**
  * Destroy a timed event
  */
-void np_event_queue_destroy_timed_event(struct np_platform* pl, struct np_event* event);
+void np_event_queue_destroy_timed_event(struct np_platform* pl, struct np_timed_event* event);
 
 /**
  * Enqueue an event to the event queue.

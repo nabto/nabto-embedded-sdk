@@ -25,13 +25,13 @@ struct nc_stream_context {
     uint64_t streamId;
     struct np_dtls_srv_connection* dtls;
     struct nc_stream_manager_context* streamManager;
-    struct np_event ev;
+    struct np_event* ev;
     bool active;
     uint64_t connectionRef;
 
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
-    struct np_timed_event timer;
+    struct np_timed_event* timer;
 
     // user facing stream data
     nc_stream_callback acceptCb;

@@ -100,8 +100,8 @@ struct nc_attach_context {
     uint8_t dnsLen;
 
     uint8_t redirectAttempts;
-    struct np_timed_event reattachTimer;
-    struct np_event closeEv;
+    struct np_timed_event* reattachTimer;
+    struct np_event* closeEv;
 
     nc_attacher_attach_start_callback startCallback;
     void* startCallbackUserData;

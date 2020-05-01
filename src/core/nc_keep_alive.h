@@ -40,7 +40,7 @@ struct nc_keep_alive_context
 
     bool isSending;
     uint8_t sendBuffer[18];
-    struct np_timed_event keepAliveEvent;
+    struct np_timed_event* keepAliveEvent;
 
 };
 
@@ -60,7 +60,7 @@ typedef void (*keep_alive_wait_callback)(const np_error_code ec, void* data);
  * @param retryInterval The interval between retransmissions in case of packet loss
  * @param maxRetries    The maximum amount of retransmissions before a connection is considered dead
  */
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl);
+void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, keep_alive_wait_callback cb, void* data);
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx);
 
@@ -74,7 +74,7 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
 bool nc_keep_alive_handle_request(struct nc_keep_alive_context* ctx, uint8_t* reqBuffer, size_t reqLength, uint8_t** respBuffer, size_t* respLength);
 
 
-void nc_keep_alive_wait(struct nc_keep_alive_context* ctx, keep_alive_wait_callback cb, void* data);
+void nc_keep_alive_wait(struct nc_keep_alive_context* ctx);
 void nc_keep_alive_packet_sent(const np_error_code ec, void* data);
 
 #endif //NC_KEEP_ALIVE_H

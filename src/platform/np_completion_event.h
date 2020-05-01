@@ -15,7 +15,7 @@ struct np_completion_event {
     np_completion_event_callback cb;
     void* userData;
     np_error_code ec;
-    struct np_event event;
+    struct np_event* event;
 };
 
 /**

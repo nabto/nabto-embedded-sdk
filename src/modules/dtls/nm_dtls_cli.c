@@ -38,13 +38,13 @@ struct np_dtls_cli_context {
 
     struct nm_dtls_timer timer;
 
-    struct np_event closeEv;
+    struct np_event* closeEv;
 
     uint32_t recvCount;
     uint32_t sentCount;
 
     struct np_dtls_cli_send_context sendSentinel;
-    struct np_event startSendEvent;
+    struct np_event* startSendEvent;
 
     bool sending;
     bool receiving;
@@ -89,6 +89,8 @@ static void nm_dtls_timed_event_do_one(const np_error_code ec, void* data);
 static np_error_code dtls_cli_init_connection(np_dtls_cli_context* ctx);
 static np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx);
 static np_error_code nm_dtls_connect(np_dtls_cli_context* ctx);
+
+static void nm_dtls_event_close(void* data);
 
 // Function called by mbedtls when data should be sent to the network
 int nm_dtls_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
@@ -216,7 +218,9 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
         return NABTO_EC_UNKNOWN;
     }
 
-    np_event_queue_init_event(pl, &ctx->startSendEvent, &nm_dtls_cli_start_send_deferred, ctx);
+    np_event_queue_create_event(pl, &nm_dtls_cli_start_send_deferred, ctx, &ctx->startSendEvent);
+    np_event_queue_create_event(ctx->pl, &nm_dtls_event_close, ctx, &ctx->closeEv);
+
 
     *client = ctx;
     return NABTO_EC_OK;
@@ -288,8 +292,8 @@ np_error_code nm_dtls_cli_reset(np_dtls_cli_context* ctx)
     ctx->recvBufferSize = 0;
 
     nm_dtls_timer_cancel(&ctx->timer);
-    np_event_queue_cancel_event(&ctx->startSendEvent);
-    np_event_queue_cancel_event(&ctx->closeEv);
+    np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
+    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
     return NABTO_EC_OK;
 }
 
@@ -304,8 +308,8 @@ void nm_dtls_cli_do_free(np_dtls_cli_context* ctx)
     }
 
     nm_dtls_timer_cancel(&ctx->timer);
-    np_event_queue_cancel_event(&ctx->startSendEvent);
-    np_event_queue_cancel_event(&ctx->closeEv);
+    np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
+    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
 
     pl->buf.free(ctx->sslRecvBuf);
     pl->buf.free(ctx->sslSendBuffer);
@@ -489,7 +493,7 @@ void nm_dtls_cli_remove_send_data(struct np_dtls_cli_send_context* elm)
 
 void nm_dtls_cli_start_send(struct np_dtls_cli_context* ctx)
 {
-    np_event_queue_post_maybe_double(&ctx->startSendEvent);
+    np_event_queue_post_maybe_double(ctx->pl, ctx->startSendEvent);
 }
 
 void nm_dtls_cli_start_send_deferred(void* data)
@@ -546,7 +550,7 @@ np_error_code async_send_data(np_dtls_cli_context* ctx,
 void nm_dtls_do_close(void* data, np_error_code ec){
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
-    np_event_queue_cancel_event(&ctx->closeEv);
+    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
     nm_dtls_timer_cancel(&ctx->timer);
     ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
 }
@@ -554,8 +558,7 @@ void nm_dtls_do_close(void* data, np_error_code ec){
 void nm_dtls_event_close(void* data) {
     np_dtls_cli_context* ctx = (np_dtls_cli_context*) data;
     if (ctx->sending) {
-        np_event_queue_init_event(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
-        np_event_queue_post(&ctx->closeEv);
+        np_event_queue_post(ctx->pl, ctx->closeEv);
         return;
     }
     nm_dtls_do_close(data, NABTO_EC_CONNECTION_CLOSING);
@@ -569,8 +572,7 @@ np_error_code dtls_cli_close(np_dtls_cli_context* ctx)
     if ( ctx->state != CLOSING) {
         ctx->state = CLOSING;
         mbedtls_ssl_close_notify(&ctx->ssl);
-        np_event_queue_init_event(ctx->pl, &ctx->closeEv, &nm_dtls_event_close, ctx);
-        np_event_queue_post(&ctx->closeEv);
+        np_event_queue_post(ctx->pl, ctx->closeEv);
     }
     return NABTO_EC_OK;
 }

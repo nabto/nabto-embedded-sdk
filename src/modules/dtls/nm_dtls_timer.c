@@ -10,12 +10,12 @@ void nm_dtls_timer_init(struct nm_dtls_timer* timer, struct np_platform* pl, nm_
     timer->cb = cb;
     timer->cbData = userData;
 
-    np_event_queue_init_timed_event(pl, &timer->tEv, cb, userData);
+    np_event_queue_create_timed_event(pl, cb, userData, &timer->tEv);
 }
 
 void nm_dtls_timer_cancel(struct nm_dtls_timer* timer)
 {
-    np_event_queue_cancel_timed_event(&timer->tEv);
+    np_event_queue_cancel_timed_event(timer->pl, timer->tEv);
 }
 
 void nm_dtls_timer_set_delay(void* data, uint32_t intermediateMilliseconds, uint32_t finalMilliseconds)
@@ -23,13 +23,13 @@ void nm_dtls_timer_set_delay(void* data, uint32_t intermediateMilliseconds, uint
     struct nm_dtls_timer* ctx = data;
     if (finalMilliseconds == 0) {
         // disable current timer
-        np_event_queue_cancel_timed_event(&ctx->tEv);
+        np_event_queue_cancel_timed_event(ctx->pl, ctx->tEv);
         ctx->finalTp = 0;
     } else {
         ctx->pl->ts.set_future_timestamp(&ctx->intermediateTp, intermediateMilliseconds);
         ctx->pl->ts.set_future_timestamp(&ctx->finalTp, finalMilliseconds);
-        np_event_queue_cancel_timed_event(&ctx->tEv);
-        np_event_queue_post_timed_event(&ctx->tEv, finalMilliseconds);
+        np_event_queue_cancel_timed_event(ctx->pl, ctx->tEv);
+        np_event_queue_post_timed_event(ctx->pl, ctx->tEv, finalMilliseconds);
     }
 }
 

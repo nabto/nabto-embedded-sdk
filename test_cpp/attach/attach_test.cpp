@@ -18,6 +18,7 @@ class AttachTest {
         : tp_(tp)
     {
         serverPort_ = port;
+        np_event_queue_create_event(tp_.getPlatform(), &AttachTest::endEvent, this, &endEvent_);
     }
 
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
@@ -26,6 +27,8 @@ class AttachTest {
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
         nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
                                    &AttachTest::udpDispatchCb, this);
+
+
 
         // blocks until done
         tp_.run();
@@ -81,8 +84,7 @@ class AttachTest {
     }
 
     void end() {
-        np_event_queue_init_event(tp_.getPlatform(), &endEvent_, &AttachTest::endEvent, this);
-        np_event_queue_post(&endEvent_);
+        np_event_queue_post(tp_.getPlatform(), endEvent_);
     }
 
     static void endEvent(void* userData) {
@@ -115,7 +117,7 @@ class AttachTest {
     std::function<void (AttachTest& at)> event_;
     std::function<void (AttachTest& at)> state_;
     bool ended_ = false;
-    struct np_event endEvent_;
+    struct np_event* endEvent_;
 
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };

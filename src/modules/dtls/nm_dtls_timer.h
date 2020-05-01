@@ -12,7 +12,7 @@ struct nm_dtls_timer {
     struct np_platform* pl;
     np_timestamp intermediateTp;
     np_timestamp finalTp;
-    struct np_timed_event tEv;
+    struct np_timed_event* tEv;
     nm_dtls_timer_callback cb;
     void* cbData;
 };
