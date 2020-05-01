@@ -4,9 +4,9 @@
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
-void np_event_queue_init_event(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data)
+np_error_code np_event_queue_create_event(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data, struct np_event** event)
 {
-    pl->eq.init_event(pl, event, cb, data);
+    return pl->eq.create_event(pl, cb, data, event);
 }
 
 /**
