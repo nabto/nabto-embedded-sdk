@@ -26,39 +26,26 @@ struct np_platform;
 typedef void (*np_event_callback)(void* data);
 typedef void (*np_timed_event_callback)(const np_error_code ec, void* data);
 
-typedef void (*np_event_queue_executor_notify)(void* data);
-
-/**
- * The event is owned by the one who is posting the event. This way we
- * do not need to allocate space for a large queue inside this module.
- */
 struct np_event;
-struct np_event {
-    struct np_platform* pl;
-    // Reference to next element in the queue
-    np_event_callback cb;
-    void* data;
-    struct event event;
-};
-
-struct np_timed_event {
-    struct np_platform* pl;
-    // Reference to the previous element in the priority queue
-    np_timed_event_callback cb;
-    void* data;
-    struct event event;
-};
+struct np_timed_event;
 
 struct np_event_queue {
     /**
-     * Init an event
+     * Create a new event
      *
      * @param pl  The platform.
-     * @param event  The event to initialize.
-     * @param cb  The callback to execute when executed.
-     * @param data  The callback user data.
+     * @param cb  The callback to associate with the event.
+     * @param data  The data to associate with the callback.
+     * @param event  The resulting event.
+     * @return NABTO_EC_OK  iff the event is created.
      */
-    void (*init_event)(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
+    np_error_code (*create_event)(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event);
+
+    /**
+     * Destroy an event.
+     * @param event  The event.
+     */
+    void (*destroy_event)(struct np_event* event);
 
     /**
      * Post the event to the event queue
@@ -85,14 +72,22 @@ struct np_event_queue {
 
 
     /**
-     * Init a timed event
+     * Create a timed event
      *
      * @param pl  The platform.
-     * @param event  The timed event to initialize.
      * @param cb  The callback to call when the timed event is executed.
      * @param data  The user data for the callback.
+     * @param event  The resulting timed event.
+     * @return NABTO_EC_OK  iff the timed event was created.
      */
-    void (*init_timed_event)(struct np_platform* pl, struct np_timed_event* event, np_timed_event_callback cb, void* data);
+    np_error_code (*create_timed_event)(struct np_platform* pl, np_timed_event_callback cb, void* data, struct np_timed_event** event);
+
+    /**
+     * Destroy a timed event
+     *
+     * @param event  The timed event
+     */
+    void (*destroy_timed_event)(struct np_timed_event* event);
 
     /**
      * Post a timed event to the event queue
@@ -111,7 +106,29 @@ struct np_event_queue {
     void (*cancel_timed_event)(struct np_timed_event* timedEvent);
 };
 
-void np_event_queue_init_event(struct np_platform* pl, struct np_event* event, np_event_callback cb, void* data);
+/**
+ * Wrapper functions which call the platform adapter functions
+ */
+
+/**
+ * Create a new event.
+ */
+np_error_code np_event_queue_create_event(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event);
+
+/**
+ * Destroy an event.
+ */
+void np_event_queue_destroy_event(struct np_event* event);
+
+/**
+ * Create a new timed event
+ */
+np_error_code np_event_queue_create_timed_event(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event);
+
+/**
+ * Destroy a timed event
+ */
+void np_event_queue_destroy_timed_event(struct np_event* event);
 
 /**
  * Enqueue an event to the event queue.
