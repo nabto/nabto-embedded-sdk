@@ -63,6 +63,7 @@ void test_platform_event_queue_deinit(struct np_platform* pl)
 {
     struct test_platform_event_queue* eq = pl->eqData;
     event_base_loopbreak(eq->eventBase);
+    free(eq);
 }
 
 void handle_timed_event(evutil_socket_t s, short events, void* data)

@@ -18,6 +18,7 @@ struct nm_dtls_timer {
 };
 
 void nm_dtls_timer_init(struct nm_dtls_timer* timer, struct np_platform* pl, nm_dtls_timer_callback cb, void* userData);
+void nm_dtls_timer_deinit(struct nm_dtls_timer* timer);
 
 void nm_dtls_timer_cancel(struct nm_dtls_timer* timer);
 

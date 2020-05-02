@@ -47,6 +47,9 @@ void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
         np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
         nabto_coap_server_destroy(&ctx->server);
         ctx->pl->buf.free(ctx->sendBuffer);
+
+        np_event_queue_destroy_event(ctx->pl, ctx->ev);
+        np_event_queue_destroy_timed_event(ctx->pl, ctx->timer);
     }
 }
 

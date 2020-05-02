@@ -29,7 +29,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     }
 
     ~TestPlatformSelectUnix() {
-        //deinit();
+        deinit();
         event_base_free(eventBase_);
     }
 
@@ -52,6 +52,7 @@ class TestPlatformSelectUnix : public TestPlatform {
         if (networkThread_) {
             networkThread_->join();
         }
+        test_platform_event_queue_deinit(&pl_);
     }
 
     virtual void run()

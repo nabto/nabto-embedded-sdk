@@ -85,6 +85,8 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
         struct np_platform* pl = ctx->pl;
         np_event_queue_cancel_timed_event(ctx->pl, ctx->toEv);
         pl->buf.free(ctx->sendBuf);
+
+        np_event_queue_destroy_timed_event(pl, ctx->toEv);
     }
 }
 

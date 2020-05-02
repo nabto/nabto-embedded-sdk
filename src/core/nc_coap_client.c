@@ -47,6 +47,8 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
     if (ctx->pl != NULL) { // if init was called
         np_event_queue_cancel_event(ctx->pl, ctx->ev);
         np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
+        np_event_queue_destroy_event(ctx->pl, ctx->ev);
+        np_event_queue_destroy_timed_event(ctx->pl, ctx->timer);
         nabto_coap_client_destroy(&ctx->client);
         ctx->pl->buf.free(ctx->sendBuffer);
     }

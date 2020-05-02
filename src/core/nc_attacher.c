@@ -120,6 +120,8 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
 
         np_event_queue_cancel_timed_event(ctx->pl, ctx->reattachTimer);
         np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
+        np_event_queue_destroy_timed_event(ctx->pl, ctx->reattachTimer);
+        np_event_queue_destroy_event(ctx->pl, ctx->closeEv);
     }
 }
 

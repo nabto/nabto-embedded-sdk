@@ -122,10 +122,8 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 
 void nabto_device_do_stop(struct nabto_device_context* dev)
 {
-    // Send a signal if a function is blocking the network thread.
-    nabto_device_platform_signal(&dev->pl);
-
     nabto_device_platform_close(&dev->pl);
+
 }
 
 /**
@@ -147,7 +145,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
     nabto_device_deinit_platform_modules(&dev->pl);
     nabto_device_deinit_platform(&dev->pl);
-
+    nabto_device_event_queue_deinit(&dev->pl);
     free(dev);
 }
 

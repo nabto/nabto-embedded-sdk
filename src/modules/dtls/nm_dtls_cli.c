@@ -310,7 +310,9 @@ void nm_dtls_cli_do_free(np_dtls_cli_context* ctx)
     nm_dtls_timer_cancel(&ctx->timer);
     np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
     np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
-
+    np_event_queue_destroy_event(ctx->pl, ctx->startSendEvent);
+    np_event_queue_destroy_event(ctx->pl, ctx->closeEv);
+    nm_dtls_timer_deinit(&ctx->timer);
     pl->buf.free(ctx->sslRecvBuf);
     pl->buf.free(ctx->sslSendBuffer);
 

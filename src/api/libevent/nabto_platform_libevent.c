@@ -38,6 +38,7 @@ void nabto_device_init_platform(struct np_platform* pl)
 void nabto_device_deinit_platform(struct np_platform* pl)
 {
     event_base_loopbreak(eventBase);
+    nabto_device_threads_join(networkThread);
     event_base_free(eventBase);
     np_platform_deinit(pl);
 }
@@ -80,7 +81,7 @@ void nabto_device_platform_read(int nfds)
 void nabto_device_platform_close(struct np_platform* pl)
 {
     stopped = true;
-    event_base_loopbreak(eventBase);
+    event_active(signalEvent, 0, 0);
 }
 
 /*
@@ -99,11 +100,6 @@ void* nabto_device_platform_network_thread(void* data)
 void nabto_device_signal_event(evutil_socket_t s, short event, void* userData)
 {
     event_base_loopbreak(eventBase);
-}
-
-void nabto_device_platform_signal(struct np_platform* pl)
-{
-    event_active(signalEvent, 0, 0);
 }
 
 bool nabto_device_platform_finished()

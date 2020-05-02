@@ -299,6 +299,7 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
     nm_dtls_timer_cancel(&ctx->timer);
+    nm_dtls_timer_deinit(&ctx->timer);
     np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
     np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
     pl->buf.free(connection->sslRecvBuf);

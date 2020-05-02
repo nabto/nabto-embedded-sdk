@@ -76,6 +76,9 @@ void nabto_device_event_queue_deinit(struct np_platform* pl)
     struct nabto_device_event_queue* eq = pl->eqData;
     event_base_loopbreak(eq->eventBase);
     nabto_device_threads_join(eq->coreThread);
+    event_base_free(eq->eventBase);
+    nabto_device_threads_free_thread(eq->coreThread);
+    free(eq);
 }
 
 void handle_timed_event(evutil_socket_t s, short events, void* data)

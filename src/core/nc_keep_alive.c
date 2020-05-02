@@ -28,6 +28,8 @@ void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
         np_event_queue_cancel_timed_event(ctx->pl, ctx->keepAliveEvent);
+
+        np_event_queue_destroy_timed_event(ctx->pl, ctx->keepAliveEvent);
     }
 }
 

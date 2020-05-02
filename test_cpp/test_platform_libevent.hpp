@@ -44,6 +44,7 @@ class TestPlatformLibevent : public TestPlatform {
     void deinit()
     {
         nm_libevent_deinit(&libeventContext_);
+        test_platform_event_queue_deinit(&pl_);
     }
 
     virtual void run()

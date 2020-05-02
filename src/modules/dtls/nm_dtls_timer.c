@@ -13,6 +13,11 @@ void nm_dtls_timer_init(struct nm_dtls_timer* timer, struct np_platform* pl, nm_
     np_event_queue_create_timed_event(pl, cb, userData, &timer->tEv);
 }
 
+void nm_dtls_timer_deinit(struct nm_dtls_timer* timer)
+{
+    np_event_queue_destroy_timed_event(timer->pl, timer->tEv);
+}
+
 void nm_dtls_timer_cancel(struct nm_dtls_timer* timer)
 {
     np_event_queue_cancel_timed_event(timer->pl, timer->tEv);
