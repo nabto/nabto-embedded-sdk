@@ -14,7 +14,7 @@ struct nc_udp_dispatch_context {
     struct np_platform* pl;
     struct np_udp_socket* sock;
     struct nc_client_connection_dispatch_context* cliConn;
-    struct np_dtls_cli_context* dtls;
+    struct nc_attach_context* attacher;
     struct nc_stun_context* stun;
 
     np_communication_buffer* recvBuffer;
@@ -43,16 +43,16 @@ uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx);
 
 // SET AND CLEAR CONTEXTS
 void nc_udp_dispatch_set_client_connection_context(struct nc_udp_dispatch_context* ctx,
-                                                struct nc_client_connection_dispatch_context* cliConn);
+                                                   struct nc_client_connection_dispatch_context* cliConn);
 
-void nc_udp_dispatch_set_dtls_cli_context(struct nc_udp_dispatch_context* ctx,
-                                          struct np_dtls_cli_context* dtls);
+void nc_udp_dispatch_set_attach_context(struct nc_udp_dispatch_context* ctx,
+                                        struct nc_attach_context* attacher);
 
 void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
                                       struct nc_stun_context* stun);
 
 void nc_udp_dispatch_clear_client_connection_context(struct nc_udp_dispatch_context* ctx);
-void nc_udp_dispatch_clear_dtls_cli_context(struct nc_udp_dispatch_context* ctx);
+void nc_udp_dispatch_clear_attacher_context(struct nc_udp_dispatch_context* ctx);
 void nc_udp_dispatch_clear_stun_context(struct nc_udp_dispatch_context* ctx);
 
 #ifdef __cplusplus

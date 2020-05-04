@@ -6,6 +6,7 @@
 
 #include <core/nc_client_connection_dispatch.h>
 #include <core/nc_stun.h>
+#include <core/nc_attacher.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
 
@@ -104,8 +105,8 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
     // ec == OK
     if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
         nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
-    }  else if (ctx->dtls != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
-        ctx->pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
+    }  else if (ctx->attacher != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
+        nc_attacher_handle_dtls_packet(ctx->attacher, ep, buffer, bufferSize);
     } else if (ctx->cliConn != NULL && (start[0] >= 240)) {
         nc_client_connection_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
     } else {
@@ -119,10 +120,10 @@ void nc_udp_dispatch_set_client_connection_context(struct nc_udp_dispatch_contex
     ctx->cliConn = cliConn;
 }
 
-void nc_udp_dispatch_set_dtls_cli_context(struct nc_udp_dispatch_context* ctx,
-                                          struct np_dtls_cli_context* dtls)
+void nc_udp_dispatch_set_attach_context(struct nc_udp_dispatch_context* ctx,
+                                        struct nc_attach_context* attacher)
 {
-    ctx->dtls = dtls;
+    ctx->attacher = attacher;
 }
 
 void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
@@ -136,9 +137,9 @@ void nc_udp_dispatch_clear_client_connection_context(struct nc_udp_dispatch_cont
     ctx->cliConn = NULL;
 }
 
-void nc_udp_dispatch_clear_dtls_cli_context(struct nc_udp_dispatch_context* ctx)
+void nc_udp_dispatch_clear_attacher_context(struct nc_udp_dispatch_context* ctx)
 {
-    ctx->dtls = NULL;
+    ctx->attacher = NULL;
 }
 
 void nc_udp_dispatch_clear_stun_context(struct nc_udp_dispatch_context* ctx)
