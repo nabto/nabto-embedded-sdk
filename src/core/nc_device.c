@@ -91,7 +91,7 @@ void nc_device_deinit(struct nc_device_context* device) {
     struct np_platform* pl = device->pl;
 
     if (device->mdns) {
-        pl->mdns.stop(device->mdns);
+        pl->mdns.destroy(device->mdns);
         device->mdns = NULL;
     }
     nc_stream_manager_deinit(&device->streamManager);
@@ -146,6 +146,7 @@ void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
 void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
+    struct np_platform* pl = dev->pl;
     if (dev->state == NC_DEVICE_STATE_STOPPED) {
         // nothing is running just abort
         return;
@@ -163,7 +164,10 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
     nc_udp_dispatch_start_recv(&dev->udp);
 
     if (dev->enableMdns) {
-        dev->pl->mdns.start(&dev->mdns, dev->pl, dev->productId, dev->deviceId, nc_device_mdns_get_port, dev);
+        if (pl->mdns.create(pl, dev->productId, dev->deviceId, nc_device_mdns_get_port, dev, &dev->mdns) == NABTO_EC_OK)
+        {
+            pl->mdns.start(dev->mdns);
+        }
     }
 
     np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_udp_bound_cb, dev);
@@ -211,9 +215,16 @@ void nc_device_client_connections_closed_cb(void* data)
 
 void nc_device_stop(struct nc_device_context* dev)
 {
+    struct np_platform* pl = dev->pl;
     dev->state = NC_DEVICE_STATE_STOPPED;
     nc_udp_dispatch_abort(&dev->udp);
     nc_udp_dispatch_abort(&dev->secondaryUdp);
+    nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
+    nc_stun_remove_sockets(&dev->stun);
+
+    if (dev->mdns) {
+        pl->mdns.stop(dev->mdns);
+    }
 }
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)
@@ -223,13 +234,10 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
     }
     dev->closeCb = cb;
     dev->closeCbData = data;
+
     dev->state = NC_DEVICE_STATE_STOPPED;
-    nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
-    nc_stun_remove_sockets(&dev->stun);
-    if (dev->enableMdns && dev->mdns) {
-        dev->pl->mdns.stop(dev->mdns);
-        dev->mdns = NULL;
-    }
+
+    //nc_device_stop(dev);
 
     np_error_code ec = nc_client_connection_dispatch_async_close(&dev->clientConnect, &nc_device_client_connections_closed_cb, dev);
     if (ec == NABTO_EC_STOPPED) {

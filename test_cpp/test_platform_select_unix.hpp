@@ -64,7 +64,7 @@ class TestPlatformSelectUnix : public TestPlatform {
         // run last events after it has been stopped
         event_base_loop(eventBase_, EVLOOP_NONBLOCK);
 
-        stopped_.set_value();
+        stoppedPromise_.set_value();
     }
 
     static void networkThread(TestPlatformSelectUnix* tp)
@@ -88,7 +88,7 @@ class TestPlatformSelectUnix : public TestPlatform {
 
     virtual void waitForStopped()
     {
-        std::future<void> fut = stopped_.get_future();
+        std::future<void> fut = stoppedPromise_.get_future();
         fut.get();
     }
 
@@ -101,7 +101,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     bool stopped_ = false;
     std::unique_ptr<std::thread> networkThread_;
     struct event_base* eventBase_;
-    std::promise<void> stopped_;
+    std::promise<void> stoppedPromise_;
 };
 
 

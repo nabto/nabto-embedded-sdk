@@ -63,6 +63,8 @@ struct np_platform {
 
     // Mdns
     struct np_mdns_module mdns;
+    // mdns module data
+    void* mdnsData;
 
     // Access control module
     struct np_authorization authorization;

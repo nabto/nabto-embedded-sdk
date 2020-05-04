@@ -95,6 +95,9 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     }
     // Init keep alive with default values,
     nc_keep_alive_init(&ctx->keepAlive, pl, keep_alive_event, ctx);
+
+    np_completion_event_init(pl, &ctx->senderCompletionEvent, NULL, NULL);
+
     return ec;
 }
 void nc_attacher_deinit(struct nc_attach_context* ctx)
@@ -122,6 +125,8 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
         np_event_queue_destroy_timed_event(ctx->pl, ctx->reattachTimer);
         np_event_queue_destroy_event(ctx->pl, ctx->closeEv);
+
+        np_completion_event_deinit(&ctx->senderCompletionEvent);
     }
 }
 
@@ -648,7 +653,7 @@ np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
         // OK if at least one send succeeded UNKNOWN otherwise
         return NABTO_EC_OK;
     } else {
-        np_completion_event_init(pl, &ctx->senderCompletionEvent, cb, data);
+        np_completion_event_reinit(&ctx->senderCompletionEvent, cb, data);
         nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp->ep,
                                       buffer, bufferSize,
                                       &ctx->senderCompletionEvent);
