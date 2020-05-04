@@ -86,6 +86,7 @@ class AttachTest {
     static void udpDispatchCb(const np_error_code ec, void* data) {
         BOOST_TEST(ec == NABTO_EC_OK);
         AttachTest* at = (AttachTest*)data;
+        nc_udp_dispatch_start_recv(&at->udpDispatch_);
         at->startAttach();
     }
 
