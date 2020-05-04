@@ -134,7 +134,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
     nabto_device_stop(device);
 
-    nabto_device_event_queue_stop(&dev->pl);
+    //nabto_device_event_queue_stop(&dev->pl);
 
     nc_device_deinit(&dev->core);
 
@@ -153,6 +153,8 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
 
     free(dev);
+
+
 }
 
 /**

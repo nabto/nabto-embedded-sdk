@@ -23,6 +23,9 @@ extern "C" {
 #endif
 
 struct np_platform {
+    // Data pointer to custom data used for implementing the platform functionality
+    void* platformData;
+
     // Timestamp module
     struct np_timestamp_module ts;
 

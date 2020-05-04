@@ -22,6 +22,7 @@ np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct n
     ctx->pl = pl;
     ctx->recvBuffer = pl->buf.allocate();
     np_error_code ec = pl->udp.create(pl, &ctx->sock);
+    np_completion_event_init(pl, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx);
     return ec;
 }
 
@@ -31,6 +32,8 @@ void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
         struct np_platform* pl = ctx->pl;
         pl->udp.destroy(ctx->sock);
         pl->buf.free(ctx->recvBuffer);
+        np_completion_event_deinit(&ctx->recvCompletionEvent);
+
     }
 }
 

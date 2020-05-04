@@ -212,6 +212,8 @@ void nc_device_client_connections_closed_cb(void* data)
 void nc_device_stop(struct nc_device_context* dev)
 {
     dev->state = NC_DEVICE_STATE_STOPPED;
+    nc_udp_dispatch_abort(&dev->udp);
+    nc_udp_dispatch_abort(&dev->secondaryUdp);
 }
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)

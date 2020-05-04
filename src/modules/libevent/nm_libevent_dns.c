@@ -109,9 +109,11 @@ void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* 
     np_event_queue_post(pl, req->callbackEvent);
 }
 
-void dns_done_event(void* data)
+void dns_done_event (void* data)
 {
     struct dns_request* req = data;
     req->callback(NABTO_EC_OK, req->v4Records, req->v4RecordsSize, req->v6Records, req->v6RecordsSize, req->callbackUserData);
+    np_event_queue_destroy_event(req->pl, req->callbackEvent);
+//    evdns_cancel_request(req->pl->dnsData, req->request);
     free(req);
 }
