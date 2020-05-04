@@ -36,22 +36,14 @@ void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
 
 
 void nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
-                                nc_udp_dispatch_bind_callback cb, void* data)
+                                struct np_completion_event* completionEvent)
 {
-    ctx->bindCb = cb;
-    ctx->bindCbData = data;
-    np_completion_event_init(pl, &ctx->bindCompletionEvent, nc_udp_dispatch_sock_bound_cb, ctx);
-    pl->udp.async_bind_port(ctx->sock, port, &ctx->bindCompletionEvent);
+    pl->udp.async_bind_port(ctx->sock, port, completionEvent);
 }
 
-void nc_udp_dispatch_sock_bound_cb(const np_error_code ec, void* data)
+void nc_udp_dispatch_start_recv(struct nc_udp_dispatch_context* ctx)
 {
-    struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*) data;
-    if (ec == NABTO_EC_OK) {
-        start_recv(ctx);
-    }
-    ctx->bindCb(ec, ctx->bindCbData);
-    ctx->bindCb = NULL;
+    start_recv(ctx);
 }
 
 np_error_code nc_udp_dispatch_abort(struct nc_udp_dispatch_context* ctx)

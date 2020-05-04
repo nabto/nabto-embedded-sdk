@@ -27,7 +27,7 @@ class TestPlatformLibevent : public TestPlatform {
     ~TestPlatformLibevent() {
         deinit();
         event_base_free(eventBase_);
-        //event_free(doOneEvent_);
+        nm_libevent_global_deinit();
     }
 
     virtual void init()

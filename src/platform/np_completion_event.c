@@ -5,16 +5,28 @@
 
 static void resolve_event_callback(void* userData);
 
-void np_completion_event_init(struct np_platform* pl, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData)
+np_error_code np_completion_event_init(struct np_platform* pl, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData)
 {
     memset(completionEvent, 0, sizeof(struct np_completion_event));
     completionEvent->cb = cb;
     completionEvent->userData = userData;
     completionEvent->pl = pl;
 
-    np_event_queue_create_event(completionEvent->pl, &resolve_event_callback, completionEvent, &completionEvent->event);
-
+    return np_event_queue_create_event(completionEvent->pl, &resolve_event_callback, completionEvent, &completionEvent->event);
 }
+
+void np_completion_event_deinit(struct np_completion_event* completionEvent)
+{
+    np_event_queue_destroy_event(completionEvent->pl, completionEvent->event);
+}
+
+void np_completion_event_reinit(struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData)
+{
+    completionEvent->cb = cb;
+    completionEvent->userData = userData;
+}
+
+
 
 void np_completion_event_resolve(struct np_completion_event* completionEvent, np_error_code ec)
 {

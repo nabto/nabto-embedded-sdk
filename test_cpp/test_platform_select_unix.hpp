@@ -31,6 +31,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     ~TestPlatformSelectUnix() {
         deinit();
         event_base_free(eventBase_);
+        nm_libevent_global_deinit();
     }
 
     virtual void init()

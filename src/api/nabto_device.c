@@ -113,7 +113,7 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     nm_tcp_tunnels_deinit(&dev->tcpTunnels);
-    nc_device_deinit(&dev->core);
+    nc_device_stop(&dev->core);
 
     dev->closing = true;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -122,8 +122,7 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 
 void nabto_device_do_stop(struct nabto_device_context* dev)
 {
-    nabto_device_platform_close(&dev->pl);
-
+    nabto_device_platform_stop_blocking(&dev->pl);
 }
 
 /**
@@ -134,6 +133,16 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
     nabto_device_stop(device);
+
+    nabto_device_event_queue_stop(&dev->pl);
+
+    nc_device_deinit(&dev->core);
+
+    nabto_device_deinit_platform_modules(&dev->pl);
+    nabto_device_deinit_platform(&dev->pl);
+
+    nabto_device_event_queue_deinit(&dev->pl);
+
     nabto_device_free_threads(dev);
 
     free(dev->productId);
@@ -143,9 +152,6 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     free(dev->privateKey);
 
 
-    nabto_device_deinit_platform_modules(&dev->pl);
-    nabto_device_deinit_platform(&dev->pl);
-    nabto_device_event_queue_deinit(&dev->pl);
     free(dev);
 }
 

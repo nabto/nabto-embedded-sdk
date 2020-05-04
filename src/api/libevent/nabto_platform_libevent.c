@@ -37,10 +37,10 @@ void nabto_device_init_platform(struct np_platform* pl)
 
 void nabto_device_deinit_platform(struct np_platform* pl)
 {
-    event_base_loopbreak(eventBase);
-    nabto_device_threads_join(networkThread);
+    event_free(signalEvent);
     event_base_free(eventBase);
     np_platform_deinit(pl);
+    nm_libevent_global_deinit();
 }
 
 np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
@@ -65,23 +65,17 @@ void nabto_device_deinit_platform_modules(struct np_platform* pl)
 {
     nm_random_deinit(pl);
     nm_libevent_deinit(&libeventContext);
+    nabto_device_threads_free_thread(networkThread);
 }
 
-int nabto_device_platform_inf_wait()
+void nabto_device_platform_stop_blocking(struct np_platform* pl)
 {
-    event_base_loop(eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
-    return 0;
-}
-
-void nabto_device_platform_read(int nfds)
-{
-    // read is handled in inf wat
-}
-
-void nabto_device_platform_close(struct np_platform* pl)
-{
+    if (stopped) {
+        return;
+    }
     stopped = true;
     event_active(signalEvent, 0, 0);
+    nabto_device_threads_join(networkThread);
 }
 
 /*
@@ -100,9 +94,4 @@ void* nabto_device_platform_network_thread(void* data)
 void nabto_device_signal_event(evutil_socket_t s, short event, void* userData)
 {
     event_base_loopbreak(eventBase);
-}
-
-bool nabto_device_platform_finished()
-{
-    return true;
 }

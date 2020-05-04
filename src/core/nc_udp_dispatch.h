@@ -10,8 +10,6 @@ extern "C" {
 
 struct nc_stun_context;
 
-typedef void (*nc_udp_dispatch_bind_callback)(const np_error_code ec, void* data);
-
 struct nc_udp_dispatch_context {
     struct np_platform* pl;
     struct np_udp_socket* sock;
@@ -19,20 +17,22 @@ struct nc_udp_dispatch_context {
     struct np_dtls_cli_context* dtls;
     struct nc_stun_context* stun;
 
-    nc_udp_dispatch_bind_callback bindCb;
-    void* bindCbData;
-
     np_communication_buffer* recvBuffer;
 
-    struct np_completion_event bindCompletionEvent;
     struct np_completion_event recvCompletionEvent;
 };
 
 np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl);
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx);
 
+/**
+ * Call start recv after the socket is bound.
+ */
+void nc_udp_dispatch_start_recv(struct nc_udp_dispatch_context* ctx);
+
 void nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
-                                         nc_udp_dispatch_bind_callback cb, void* data);
+                                struct np_completion_event* completionEvent);
+
 np_error_code nc_udp_dispatch_abort(struct nc_udp_dispatch_context* ctx);
 
 void nc_udp_dispatch_async_send_to(struct nc_udp_dispatch_context* ctx, struct np_udp_endpoint* ep,

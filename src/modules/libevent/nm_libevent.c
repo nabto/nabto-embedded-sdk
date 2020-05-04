@@ -13,10 +13,11 @@
 #include <winsock2.h>
 #endif
 
+static int useCount = 0;
+
 void nm_libevent_global_init()
 {
-    static bool globalInitialized = false;
-    if (!globalInitialized) {
+    if (useCount == 0) {
 #ifdef _WIN32
         WSADATA wsa_data;
         WSAStartup(0x0201, &wsa_data);
@@ -29,7 +30,15 @@ void nm_libevent_global_init()
 #else
 #error "missing thread library"
 #endif
-        globalInitialized = true;
+    }
+    useCount++;
+}
+
+void nm_libevent_global_deinit()
+{
+    useCount--;
+    if (useCount == 0) {
+        libevent_global_shutdown();
     }
 }
 

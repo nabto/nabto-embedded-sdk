@@ -10,9 +10,6 @@ void nabto_device_deinit_platform(struct np_platform* pl);
 np_error_code nabto_device_init_platform_modules(struct np_platform* pl);
 void nabto_device_deinit_platform_modules(struct np_platform* pl);
 
-int nabto_device_platform_inf_wait();
-void nabto_device_platform_read(int nfds);
-void nabto_device_platform_close(struct np_platform* pl);
-bool nabto_device_platform_finished();
+void nabto_device_platform_stop_blocking(struct np_platform* pl);
 
 #endif

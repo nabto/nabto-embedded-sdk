@@ -49,8 +49,10 @@ static void nm_mdns_update_local_ips(struct np_mdns_context* mdns);
 
 void nm_mdns_init(struct np_platform* pl)
 {
+    // todo add create and destroy.
     pl->mdns.start = &nm_mdns_create;
     pl->mdns.stop = &nm_mdns_stop;
+
 }
 
 void nm_mdns_try_done(struct np_mdns_context* mdns)
@@ -97,50 +99,56 @@ void nm_mdns_force_free(struct np_mdns_context* mdns)
 np_error_code nm_mdns_create(struct np_mdns_context** mdns, struct np_platform* pl, const char* productId, const char* deviceId, np_mdns_get_port getPort, void* userData)
 {
 
-    *mdns = calloc(1, sizeof(struct np_mdns_context));
-    if (*mdns == NULL) {
+    struct np_mdns_context* ctx = calloc(1, sizeof(struct np_mdns_context));
+    if (ctx == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    (*mdns)->stopped = false;
-    (*mdns)->v4Done = false;
-    (*mdns)->v6Done = false;
-    (*mdns)->pl = pl;
-    (*mdns)->sendBufferv4 = pl->buf.allocate();
-    if (!(*mdns)->sendBufferv4) {
-        nm_mdns_force_free(*mdns);
+    ctx->stopped = false;
+    ctx->v4Done = false;
+    ctx->v6Done = false;
+    ctx->pl = pl;
+    ctx->sendBufferv4 = pl->buf.allocate();
+    if (!ctx->sendBufferv4) {
+        nm_mdns_force_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    (*mdns)->sendBufferv6 = pl->buf.allocate();
-    if (!(*mdns)->sendBufferv4) {
-        nm_mdns_force_free(*mdns);
+    ctx->sendBufferv6 = pl->buf.allocate();
+    if (!ctx->sendBufferv4) {
+        nm_mdns_force_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    (*mdns)->getPort = getPort;
-    (*mdns)->getPortUserData = userData;
+    ctx->getPort = getPort;
+    ctx->getPortUserData = userData;
     np_error_code ec;
-    ec = pl->udp.create(pl, &(*mdns)->socketv4);
+    ec = pl->udp.create(pl, &ctx->socketv4);
     if (ec != NABTO_EC_OK) {
-        nm_mdns_force_free(*mdns);
+        nm_mdns_force_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    ec = pl->udp.create(pl, &(*mdns)->socketv6);
+    ec = pl->udp.create(pl, &ctx->socketv6);
     if (ec != NABTO_EC_OK) {
-        nm_mdns_force_free(*mdns);
+        nm_mdns_force_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    nabto_mdns_server_init(&(*mdns)->mdnsServer, deviceId, productId,
+    nabto_mdns_server_init(&ctx->mdnsServer, deviceId, productId,
                            deviceId /*serviceName must be unique*/,
                            deviceId /*hostname must be unique*/);
-    ec = nm_mdns_start(*mdns);
+
+    // TODO check ec
+    np_completion_event_init(pl, &ctx->v4OpenedCompletionEvent, nm_mdns_socket_opened_v4, ctx);
+    np_completion_event_init(pl, &ctx->v6OpenedCompletionEvent, nm_mdns_socket_opened_v6, ctx);
+
+    ec = nm_mdns_start(ctx);
     if (ec != NABTO_EC_OK) {
-        pl->udp.destroy((*mdns)->socketv4);
-        pl->udp.destroy((*mdns)->socketv6);
-        pl->buf.free((*mdns)->sendBufferv4);
-        pl->buf.free((*mdns)->sendBufferv6);
-        free(*mdns);
+        pl->udp.destroy(ctx->socketv4);
+        pl->udp.destroy(ctx->socketv6);
+        pl->buf.free(ctx->sendBufferv4);
+        pl->buf.free(ctx->sendBufferv6);
+        free(ctx);
         return ec;
     }
+    *mdns = ctx;
     return NABTO_EC_OK;
 }
 
@@ -148,11 +156,9 @@ np_error_code nm_mdns_start(struct np_mdns_context* mdns)
 {
     struct np_platform* pl = mdns->pl;
     if (pl->udp.async_bind_mdns_ipv4 != NULL) {
-        np_completion_event_init(pl, &mdns->v4OpenedCompletionEvent, nm_mdns_socket_opened_v4, mdns);
         pl->udp.async_bind_mdns_ipv4(mdns->socketv4, &mdns->v4OpenedCompletionEvent);
     }
     if (pl->udp.async_bind_mdns_ipv6 != NULL) {
-        np_completion_event_init(pl, &mdns->v6OpenedCompletionEvent, nm_mdns_socket_opened_v6, mdns);
         pl->udp.async_bind_mdns_ipv6(mdns->socketv6, &mdns->v6OpenedCompletionEvent);
     }
     return NABTO_EC_OK;
