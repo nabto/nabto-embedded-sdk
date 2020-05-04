@@ -14,6 +14,7 @@
 #include <modules/libevent/nm_libevent.h>
 
 #include <thread>
+#include <future>
 
 namespace nabto {
 namespace test {
@@ -60,6 +61,10 @@ class TestPlatformSelectUnix : public TestPlatform {
     {
         networkThread_ = std::make_unique<std::thread>(&TestPlatformSelectUnix::networkThread, this);
         event_base_loop(eventBase_, EVLOOP_NO_EXIT_ON_EMPTY);
+        // run last events after it has been stopped
+        event_base_loop(eventBase_, EVLOOP_NONBLOCK);
+
+        stopped_.set_value();
     }
 
     static void networkThread(TestPlatformSelectUnix* tp)
@@ -83,7 +88,8 @@ class TestPlatformSelectUnix : public TestPlatform {
 
     virtual void waitForStopped()
     {
-        return;
+        std::future<void> fut = stopped_.get_future();
+        fut.get();
     }
 
     struct np_platform* getPlatform() {
@@ -95,6 +101,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     bool stopped_ = false;
     std::unique_ptr<std::thread> networkThread_;
     struct event_base* eventBase_;
+    std::promise<void> stopped_;
 };
 
 
