@@ -81,6 +81,11 @@ class TestPlatformSelectUnix : public TestPlatform {
         event_base_loopbreak(eventBase_);
     }
 
+    virtual void waitForStopped()
+    {
+        return;
+    }
+
     struct np_platform* getPlatform() {
         return &pl_;
     }

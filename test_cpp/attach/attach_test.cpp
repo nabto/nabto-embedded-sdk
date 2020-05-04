@@ -24,6 +24,9 @@ class AttachTest {
 
     ~AttachTest()
     {
+        tp_.stop();
+        tp_.waitForStopped();
+        nc_udp_dispatch_deinit(&udpDispatch_);
         np_completion_event_deinit(&boundCompletionEvent);
     }
 
@@ -99,7 +102,6 @@ class AttachTest {
         at->ended_ = true;
         nc_attacher_stop(&at->attach_);
         nc_udp_dispatch_abort(&at->udpDispatch_);
-        nc_udp_dispatch_deinit(&at->udpDispatch_);
         at->tp_.stop();
     }
     //    nc_attacher_deinit(&attach_);

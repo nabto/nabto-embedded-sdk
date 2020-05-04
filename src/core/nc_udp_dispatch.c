@@ -70,10 +70,7 @@ uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx)
 void start_recv(struct nc_udp_dispatch_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
-
-    np_completion_event_init(pl, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx);
-    ctx->pl->udp.async_recv_wait(ctx->sock, &ctx->recvCompletionEvent);
-
+    pl->udp.async_recv_wait(ctx->sock, &ctx->recvCompletionEvent);
 }
 
 void async_recv_wait_complete(const np_error_code ec, void* userData)

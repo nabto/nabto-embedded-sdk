@@ -12,6 +12,7 @@
 #include <event.h>
 #include <event2/thread.h>
 
+#include <future>
 
 namespace nabto {
 namespace test {
@@ -50,11 +51,22 @@ class TestPlatformLibevent : public TestPlatform {
     virtual void run()
     {
         event_base_loop(eventBase_, EVLOOP_NO_EXIT_ON_EMPTY);
+
+        // run last events after it has been stopped
+        event_base_loop(eventBase_, EVLOOP_NONBLOCK);
+
+        stopped_.set_value();
     }
 
     virtual void stop()
     {
         event_base_loopbreak(eventBase_);
+    }
+
+    virtual void waitForStopped()
+    {
+        std::future<void> fut = stopped_.get_future();
+        fut.get();
     }
 
     struct np_platform* getPlatform() {
@@ -65,6 +77,8 @@ class TestPlatformLibevent : public TestPlatform {
     struct np_platform pl_;
     struct event_base* eventBase_;
     struct nm_libevent_context libeventContext_;
+
+    std::promise<void> stopped_;
 };
 
 } } // namespace

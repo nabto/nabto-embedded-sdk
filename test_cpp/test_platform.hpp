@@ -22,6 +22,7 @@ class TestPlatform {
 
     virtual void run() = 0;
     virtual void stop() = 0;
+    virtual void waitForStopped() = 0;
     virtual struct np_platform* getPlatform() = 0;
 };
 
