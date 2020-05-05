@@ -10,7 +10,7 @@ extern "C" {
 
 struct nabto_device_thread;
 
-struct nabto_device_mutext;
+struct nabto_device_mutex;
 
 struct nabto_device_condition;
 

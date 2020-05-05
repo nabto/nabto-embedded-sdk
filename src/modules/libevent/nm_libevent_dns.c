@@ -22,7 +22,7 @@ struct dns_request {
     size_t v6RecordsSize;
     const char* host;
 
-    struct np_event callbackEvent;
+    struct np_event* callbackEvent;
 };
 
 static np_error_code async_resolve(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data);
@@ -60,6 +60,9 @@ np_error_code async_resolve(struct np_platform* pl, const char* host, np_dns_res
     if (req->request == NULL) {
         return NABTO_EC_UNKNOWN;
     }
+
+    np_event_queue_create_event(pl, &dns_done_event, req, &req->callbackEvent);
+
     return NABTO_EC_OK;
 }
 
@@ -82,7 +85,7 @@ void dns_cbv4(int result, char type, int count, int ttl, void *addresses, void *
     int flags = 0;
     req->request = evdns_base_resolve_ipv6(base, req->host, flags, dns_cbv6, req);
     if (req->request == NULL) {
-        np_event_queue_post(pl, &req->callbackEvent, &dns_done_event, req);
+        np_event_queue_post(req->pl, req->callbackEvent);
     }
 }
 
@@ -102,12 +105,15 @@ void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* 
 
     // post to event queue such that the callback is completed on the right queue.
     struct np_platform* pl = req->pl;
-    np_event_queue_post(pl, &req->callbackEvent, &dns_done_event, req);
+
+    np_event_queue_post(pl, req->callbackEvent);
 }
 
-void dns_done_event(void* data)
+void dns_done_event (void* data)
 {
     struct dns_request* req = data;
     req->callback(NABTO_EC_OK, req->v4Records, req->v4RecordsSize, req->v6Records, req->v6RecordsSize, req->callbackUserData);
+    np_event_queue_destroy_event(req->pl, req->callbackEvent);
+//    evdns_cancel_request(req->pl->dnsData, req->request);
     free(req);
 }

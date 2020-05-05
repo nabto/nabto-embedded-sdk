@@ -12,8 +12,8 @@ struct nc_coap_server_context {
     struct np_platform* pl;
     struct nabto_coap_server server;
     uint32_t currentExpiry;
-    struct np_event ev;
-    struct np_timed_event timer;
+    struct np_event* ev;
+    struct np_timed_event* timer;
     np_communication_buffer* sendBuffer;
     struct np_dtls_srv_send_context sendCtx;
     bool isSending;

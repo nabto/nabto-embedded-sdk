@@ -19,9 +19,9 @@ set(test_src
   platform/ip_address_test.cpp
   platform/string_map_test.cpp
   platform/logging_test.cpp
-  platform/event_queue_test.cpp
-  api/event_handler_test.cpp
-  api/future_test.cpp
+#  platform/event_queue_test.cpp
+#  api/event_handler_test.cpp
+#  api/future_test.cpp
   api/device_api.cpp
   api/authorization_test.cpp
   api/new_free.cpp
@@ -35,6 +35,7 @@ set(test_src
   policies/policy_json_test.cpp
   policies/policy_deny_test.cpp
   dns/dns_test.cpp
+  test_platform_event_queue.c
 
   )
 

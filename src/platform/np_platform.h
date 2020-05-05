@@ -23,11 +23,16 @@ extern "C" {
 #endif
 
 struct np_platform {
+    // Data pointer to custom data used for implementing the platform functionality
+    void* platformData;
+
     // Timestamp module
     struct np_timestamp_module ts;
 
     // Event Queue module
     struct np_event_queue eq;
+    // Data for the event queue module
+    void* eqData;
 
     // UDP Socket module
     struct np_udp_module udp;
@@ -58,6 +63,8 @@ struct np_platform {
 
     // Mdns
     struct np_mdns_module mdns;
+    // mdns module data
+    void* mdnsData;
 
     // Access control module
     struct np_authorization authorization;

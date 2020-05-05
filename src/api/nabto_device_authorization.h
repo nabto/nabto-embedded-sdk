@@ -29,7 +29,7 @@ struct nabto_device_authorization_request {
      */
     bool platformDone;
 
-    struct np_event verdictEvent;
+    struct np_event* verdictEvent;
     bool verdict;
     bool verdictDone;
 

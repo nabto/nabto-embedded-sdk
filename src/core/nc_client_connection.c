@@ -53,7 +53,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     }
     conn->device = device;
 
-    nc_keep_alive_init(&conn->keepAlive, conn->pl);
+    nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
     ec = pl->dtlsS.create_connection(device->dtlsServer, &conn->dtls,
                                      &nc_client_connection_async_send_to_udp,
                                      &nc_client_connection_handle_data,
@@ -209,7 +209,7 @@ void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, u
 
 void nc_client_connection_keep_alive_start(struct nc_client_connection* ctx)
 {
-    nc_keep_alive_wait(&ctx->keepAlive, &nc_client_connection_keep_alive_event, ctx);
+    nc_keep_alive_wait(&ctx->keepAlive);
 }
 
 void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
@@ -228,11 +228,11 @@ void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
         enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
         switch(action) {
             case DO_NOTHING:
-                nc_keep_alive_wait(&ctx->keepAlive, &nc_client_connection_keep_alive_event, ctx);
+                nc_keep_alive_wait(&ctx->keepAlive);
                 break;
             case SEND_KA:
                 nc_client_connection_keep_alive_send_req(ctx);
-                nc_keep_alive_wait(&ctx->keepAlive, &nc_client_connection_keep_alive_event, ctx);
+                nc_keep_alive_wait(&ctx->keepAlive);
                 break;
             case KA_TIMEOUT:
                 NABTO_LOG_INFO(LOG, "Closed connection because of keep alive timeout.");

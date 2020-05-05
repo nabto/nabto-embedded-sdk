@@ -134,11 +134,13 @@ void conn_async_send_to(struct np_platform* pl, np_connection* conn, uint8_t cha
     if (conn == &srvConn) {
         srvSendBuf = buffer;
         srvSendBufSize = bufferSize;
-        np_event_queue_post(pl, &conn->ev, &test_async_send_to_client, conn);
+        np_event_queue_init_event(pl, &conn->ev, &test_async_send_to_client, conn);
+        np_event_queue_post(&conn->ev);
     } else if (conn == &cliConn) {
         cliSendBuf = buffer;
         cliSendBufSize = bufferSize;
-        np_event_queue_post(pl, &conn->ev, &test_async_send_to_server, conn);
+        np_event_queue_init_event(pl, &conn->ev, &test_async_send_to_server, conn);
+        np_event_queue_post(&conn->ev);
     } else {
         NABTO_TEST_CHECK(false);
     }

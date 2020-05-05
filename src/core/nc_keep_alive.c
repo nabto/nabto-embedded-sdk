@@ -7,7 +7,7 @@
 
 #define LOG NABTO_LOG_MODULE_KEEP_ALIVE
 
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl)
+void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, keep_alive_wait_callback cb, void* data)
 {
     NABTO_LOG_TRACE(LOG, "initializing keep alive");
     ctx->pl = pl;
@@ -19,19 +19,23 @@ void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* p
     ctx->lostKeepAlives = 0;
 
     ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
+
+    np_event_queue_create_timed_event(ctx->pl, cb, data, &ctx->keepAliveEvent);
     return;
 }
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
-        np_event_queue_cancel_timed_event(ctx->pl, &ctx->keepAliveEvent);
+        np_event_queue_cancel_timed_event(ctx->pl, ctx->keepAliveEvent);
+
+        np_event_queue_destroy_timed_event(ctx->pl, ctx->keepAliveEvent);
     }
 }
 
 void nc_keep_alive_reset(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->keepAliveEvent);
+    np_event_queue_cancel_timed_event(ctx->pl, ctx->keepAliveEvent);
     ctx->kaInterval = NC_KEEP_ALIVE_DEFAULT_INTERVAL;
     ctx->kaRetryInterval = NC_KEEP_ALIVE_DEFAULT_RETRY_INTERVAL;
     ctx->kaMaxRetries = NC_KEEP_ALIVE_DEFAULT_MAX_RETRIES;
@@ -69,9 +73,9 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
     }
 }
 
-void nc_keep_alive_wait(struct nc_keep_alive_context* ctx, keep_alive_wait_callback cb, void* data)
+void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_post_timed_event(ctx->pl, &ctx->keepAliveEvent, ctx->kaRetryInterval, cb, data);
+    np_event_queue_post_timed_event(ctx->pl, ctx->keepAliveEvent, ctx->kaRetryInterval);
 }
 
 void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, size_t* length)

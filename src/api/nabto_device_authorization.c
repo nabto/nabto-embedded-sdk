@@ -26,6 +26,7 @@ static void check_access(struct np_authorization_request* authorizationRequest, 
  */
 static void free_request_when_unused(struct nabto_device_authorization_request* request);
 static void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict);
+static void handle_verdict(void* userData);
 
 struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action)
 {
@@ -37,6 +38,9 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     request->platformDone = false;
     request->verdictDone = false;
     request->module = pl->authorizationData;
+
+    np_event_queue_create_event(pl, handle_verdict, request, &request->verdictEvent);
+
 
     return (struct np_authorization_request*)request;
 }
@@ -51,7 +55,7 @@ void discard_request(struct np_authorization_request* request)
     }
 }
 
-static void handle_verdict(void* userData)
+void handle_verdict(void* userData)
 {
     struct nabto_device_authorization_request* authReq = userData;
     authReq->verdictCallback(authReq->verdict, authReq->verdictCallbackUserData1, authReq->verdictCallbackUserData2, authReq->verdictCallbackUserData3);
@@ -97,7 +101,7 @@ void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict
         struct np_platform* pl = authReq->module->pl;
         authReq->verdict = verdict;
         authReq->verdictDone = true;
-        np_event_queue_post(pl, &authReq->verdictEvent, handle_verdict, authReq);
+        np_event_queue_post(pl, authReq->verdictEvent);
     }
 }
 

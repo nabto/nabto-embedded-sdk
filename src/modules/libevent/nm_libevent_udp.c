@@ -399,7 +399,7 @@ np_error_code udp_recv_from(np_udp_socket* sock, struct np_udp_endpoint* ep, uin
 
     if (recvLength < 0) {
         int status = EVUTIL_SOCKET_ERROR();
-        if (ERR_IS_EAGAIN(status)) {
+        if (ERR_IS_EAGAIN(status) || ERR_IS_EXPECTED(status)) {
             NABTO_LOG_TRACE(LOG,"(%d) '%s' in udp_recv_from %d", status, evutil_socket_error_to_string(status), sock->sock);
             // expected
             // wait for next event to check for data.

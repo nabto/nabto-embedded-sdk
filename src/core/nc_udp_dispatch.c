@@ -6,6 +6,7 @@
 
 #include <core/nc_client_connection_dispatch.h>
 #include <core/nc_stun.h>
+#include <core/nc_attacher.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
 
@@ -22,6 +23,7 @@ np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct n
     ctx->pl = pl;
     ctx->recvBuffer = pl->buf.allocate();
     np_error_code ec = pl->udp.create(pl, &ctx->sock);
+    np_completion_event_init(pl, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx);
     return ec;
 }
 
@@ -31,27 +33,21 @@ void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
         struct np_platform* pl = ctx->pl;
         pl->udp.destroy(ctx->sock);
         pl->buf.free(ctx->recvBuffer);
+        np_completion_event_deinit(&ctx->recvCompletionEvent);
+
     }
 }
 
 
 void nc_udp_dispatch_async_bind(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, uint16_t port,
-                                nc_udp_dispatch_bind_callback cb, void* data)
+                                struct np_completion_event* completionEvent)
 {
-    ctx->bindCb = cb;
-    ctx->bindCbData = data;
-    np_completion_event_init(pl, &ctx->bindCompletionEvent, nc_udp_dispatch_sock_bound_cb, ctx);
-    pl->udp.async_bind_port(ctx->sock, port, &ctx->bindCompletionEvent);
+    pl->udp.async_bind_port(ctx->sock, port, completionEvent);
 }
 
-void nc_udp_dispatch_sock_bound_cb(const np_error_code ec, void* data)
+void nc_udp_dispatch_start_recv(struct nc_udp_dispatch_context* ctx)
 {
-    struct nc_udp_dispatch_context* ctx = (struct nc_udp_dispatch_context*) data;
-    if (ec == NABTO_EC_OK) {
-        start_recv(ctx);
-    }
-    ctx->bindCb(ec, ctx->bindCbData);
-    ctx->bindCb = NULL;
+    start_recv(ctx);
 }
 
 np_error_code nc_udp_dispatch_abort(struct nc_udp_dispatch_context* ctx)
@@ -75,10 +71,7 @@ uint16_t nc_udp_dispatch_get_local_port(struct nc_udp_dispatch_context* ctx)
 void start_recv(struct nc_udp_dispatch_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
-
-    np_completion_event_init(pl, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx);
-    ctx->pl->udp.async_recv_wait(ctx->sock, &ctx->recvCompletionEvent);
-
+    pl->udp.async_recv_wait(ctx->sock, &ctx->recvCompletionEvent);
 }
 
 void async_recv_wait_complete(const np_error_code ec, void* userData)
@@ -112,8 +105,8 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
     // ec == OK
     if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
         nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
-    }  else if (ctx->dtls != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
-        ctx->pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
+    }  else if (ctx->attacher != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
+        nc_attacher_handle_dtls_packet(ctx->attacher, ep, buffer, bufferSize);
     } else if (ctx->cliConn != NULL && (start[0] >= 240)) {
         nc_client_connection_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
     } else {
@@ -127,10 +120,10 @@ void nc_udp_dispatch_set_client_connection_context(struct nc_udp_dispatch_contex
     ctx->cliConn = cliConn;
 }
 
-void nc_udp_dispatch_set_dtls_cli_context(struct nc_udp_dispatch_context* ctx,
-                                          struct np_dtls_cli_context* dtls)
+void nc_udp_dispatch_set_attach_context(struct nc_udp_dispatch_context* ctx,
+                                        struct nc_attach_context* attacher)
 {
-    ctx->dtls = dtls;
+    ctx->attacher = attacher;
 }
 
 void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
@@ -144,9 +137,9 @@ void nc_udp_dispatch_clear_client_connection_context(struct nc_udp_dispatch_cont
     ctx->cliConn = NULL;
 }
 
-void nc_udp_dispatch_clear_dtls_cli_context(struct nc_udp_dispatch_context* ctx)
+void nc_udp_dispatch_clear_attacher_context(struct nc_udp_dispatch_context* ctx)
 {
-    ctx->dtls = NULL;
+    ctx->attacher = NULL;
 }
 
 void nc_udp_dispatch_clear_stun_context(struct nc_udp_dispatch_context* ctx)

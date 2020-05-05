@@ -69,6 +69,7 @@ BOOST_AUTO_TEST_CASE(fingerprints)
 
     nabto_device_string_free(truncatedFp);
     nabto_device_string_free(fullFp);
+    nabto_device_free(dev);
 
 }
 

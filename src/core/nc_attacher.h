@@ -64,6 +64,19 @@ struct nc_attacher_sct_context {
     void* callbackUserData;
 };
 
+#define NC_ATTACHER_MAX_ENDPOINTS 4
+
+struct nc_attacher_initial_packet_send
+{
+    uint8_t* buffer;
+    size_t bufferSize;
+    np_dtls_cli_send_callback cb;
+    void* cbData;
+    size_t endpointsIndex;
+    size_t endpointsSize;
+    struct np_udp_endpoint endpoints[NC_ATTACHER_MAX_ENDPOINTS];
+};
+
 struct nc_attach_context {
     // External references
     struct np_platform* pl;
@@ -90,9 +103,9 @@ struct nc_attach_context {
     enum nc_attacher_module_state moduleState;
 
     uint32_t sessionId;
-    struct nc_attach_endpoint_context v4BsEps[NABTO_MAX_BASESTATION_EPS];
-    struct nc_attach_endpoint_context v6BsEps[NABTO_MAX_BASESTATION_EPS];
-    struct nc_attach_endpoint_context* activeEp;
+    struct nc_attacher_initial_packet_send initialPacket;
+    struct np_udp_endpoint activeEp;
+    bool hasActiveEp;
     uint8_t bsEpsTried;
 
     uint16_t currentPort;
@@ -100,8 +113,8 @@ struct nc_attach_context {
     uint8_t dnsLen;
 
     uint8_t redirectAttempts;
-    struct np_timed_event reattachTimer;
-    struct np_event closeEv;
+    struct np_timed_event* reattachTimer;
+    struct np_event* closeEv;
 
     nc_attacher_attach_start_callback startCallback;
     void* startCallbackUserData;
@@ -191,6 +204,8 @@ np_error_code nc_attacher_attach_start_request(struct nc_attach_context* attache
  * @return NABTO_EC_OPERATION_STARTED if the attach end request is started.
  */
 np_error_code nc_attacher_attach_end_request(struct nc_attach_context* attacher, nc_attacher_attach_end_callback cb, void* userData);
+
+void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize);
 
 #ifdef __cplusplus
 } // extern c

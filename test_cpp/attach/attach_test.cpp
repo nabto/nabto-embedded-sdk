@@ -18,6 +18,16 @@ class AttachTest {
         : tp_(tp)
     {
         serverPort_ = port;
+        np_event_queue_create_event(tp_.getPlatform(), &AttachTest::endEvent, this, &endEvent_);
+        np_completion_event_init(tp_.getPlatform(), &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
+    }
+
+    ~AttachTest()
+    {
+        tp_.stop();
+        tp_.waitForStopped();
+        nc_udp_dispatch_deinit(&udpDispatch_);
+        np_completion_event_deinit(&boundCompletionEvent);
     }
 
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
@@ -25,7 +35,9 @@ class AttachTest {
         state_ = state;
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
         nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
-                                   &AttachTest::udpDispatchCb, this);
+                                   &boundCompletionEvent);
+
+
 
         // blocks until done
         tp_.run();
@@ -77,11 +89,12 @@ class AttachTest {
     static void udpDispatchCb(const np_error_code ec, void* data) {
         BOOST_TEST(ec == NABTO_EC_OK);
         AttachTest* at = (AttachTest*)data;
+        nc_udp_dispatch_start_recv(&at->udpDispatch_);
         at->startAttach();
     }
 
     void end() {
-        np_event_queue_post(tp_.getPlatform(), &endEvent_, &AttachTest::endEvent, this);
+        np_event_queue_post(tp_.getPlatform(), endEvent_);
     }
 
     static void endEvent(void* userData) {
@@ -89,7 +102,6 @@ class AttachTest {
         at->ended_ = true;
         nc_attacher_stop(&at->attach_);
         nc_udp_dispatch_abort(&at->udpDispatch_);
-        nc_udp_dispatch_deinit(&at->udpDispatch_);
         at->tp_.stop();
     }
     //    nc_attacher_deinit(&attach_);
@@ -105,6 +117,8 @@ class AttachTest {
     struct nc_coap_client_context coapClient_;
     struct nc_udp_dispatch_context udpDispatch_;
 
+    struct np_completion_event boundCompletionEvent;
+
     uint16_t serverPort_;
     const char* hostname_ = "localhost.nabto.net";
     const char* appName_ = "foo";
@@ -114,7 +128,7 @@ class AttachTest {
     std::function<void (AttachTest& at)> event_;
     std::function<void (AttachTest& at)> state_;
     bool ended_ = false;
-    struct np_event endEvent_;
+    struct np_event* endEvent_;
 
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };
