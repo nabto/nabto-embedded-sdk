@@ -25,7 +25,7 @@ typedef socklen_t socklen_type;
 
 #ifdef HAVE_WINSOCK2_H
 #define ERR_IS_EAGAIN(e) ((e) == WSAEWOULDBLOCK || (e) == EAGAIN)
-#define ERR_IS_EXPECTED(e) ((e) == EADDRNOTAVAIL || (e) == ENETUNREACH || (e) == EAFNOSUPPORT) || (e) == WSAENETUNREACH
+#define ERR_IS_EXPECTED(e) ((e) == EADDRNOTAVAIL || (e) == ENETUNREACH || (e) == EAFNOSUPPORT) || (e) == WSAENETUNREACH || (e) == WSAECONNRESET
 #define ERR_IS_EADDRINUSE(e) ((e) == EADDRINUSE)
 
 #else
