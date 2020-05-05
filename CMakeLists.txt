@@ -147,6 +147,7 @@ add_subdirectory(nabto-common-cpp/src/streaming)
 add_subdirectory(nabto-common-cpp/src/stun)
 add_subdirectory(nabto-common-cpp/src/coap)
 add_subdirectory(nabto-common-cpp/src/mdns)
+add_subdirectory(nabto-common-cpp/src/lib)
 
 add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)
