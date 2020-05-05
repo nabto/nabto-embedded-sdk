@@ -2,6 +2,7 @@
 #define NC_STUN_H
 
 #include <platform/np_platform.h>
+#include <platform/np_completion_event.h>
 #include <stun/nabto_stun_client.h>
 
 #include <core/nc_udp_dispatch.h>
@@ -46,11 +47,11 @@ struct nc_stun_context {
     uint16_t priPort;
     struct nabto_stun_endpoint eps[NC_STUN_MAX_ENDPOINTS];
     size_t numEps;
-    struct np_event event;
-    struct np_timed_event toEv;
+    struct np_timed_event* toEv;
 
     np_communication_buffer* sendBuf;
     struct np_udp_endpoint sendEp;
+    struct np_completion_event sendCompletionEvent;
     bool simple;
 };
 
@@ -68,7 +69,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
                                     nc_stun_analyze_callback cb, void* data);
 
 void nc_stun_handle_packet(struct nc_stun_context* ctx,
-                           struct np_udp_endpoint ep,
+                           struct np_udp_endpoint* ep,
                            uint8_t* buffer,
                            uint16_t bufferSize);
 

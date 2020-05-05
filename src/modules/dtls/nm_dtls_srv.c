@@ -39,7 +39,7 @@ struct np_dtls_srv_connection {
     np_communication_buffer* sslSendBuffer;
     size_t sslSendBufferSize;
     struct nm_dtls_timer timer;
-    struct np_event closeEv;
+    struct np_event* closeEv;
 
     np_dtls_close_callback closeCb;
     void* closeCbData;
@@ -48,8 +48,8 @@ struct np_dtls_srv_connection {
     uint32_t sentCount;
 
     struct np_dtls_srv_send_context sendSentinel;
-    struct np_event startSendEvent;
-    struct np_event deferredEventEvent;
+    struct np_event* startSendEvent;
+    struct np_event* deferredEventEvent;
     enum np_dtls_srv_event deferredEvent;
 
     np_dtls_srv_sender sender;
@@ -133,9 +133,7 @@ static void nm_dtls_srv_timed_event_do_one(const np_error_code ec, void* userDat
 void nm_dtls_srv_event_send_to(void* data);
 void deferred_event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event);
 void nm_dtls_srv_do_event_callback(void* data);
-
-
-
+static void nm_dtls_srv_event_close(void* data);
 
 // Get the packet counters for given dtls_cli_context
 np_error_code nm_dtls_srv_get_packet_count(struct np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount)
@@ -243,7 +241,12 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
 
     ctx->sendSentinel.next = &ctx->sendSentinel;
     ctx->sendSentinel.prev = &ctx->sendSentinel;
-    np_event_queue_init_event(&ctx->startSendEvent);
+
+    struct np_platform* pl = ctx->pl;
+    np_event_queue_create_event(pl, &nm_dtls_srv_start_send_deferred, ctx, &ctx->startSendEvent);
+    np_event_queue_create_event(pl, &nm_dtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
+    np_event_queue_create_event(pl, &nm_dtls_srv_event_close, ctx, &ctx->closeEv);
+    np_event_queue_create_event(pl, &nm_dtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
 
     nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_srv_timed_event_do_one, ctx);
 
@@ -296,8 +299,9 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
     nm_dtls_timer_cancel(&ctx->timer);
-    np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
+    nm_dtls_timer_deinit(&ctx->timer);
+    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
+    np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
     pl->buf.free(connection->sslRecvBuf);
     pl->buf.free(connection->sslSendBuffer);
     mbedtls_ssl_free(&connection->ssl);
@@ -379,14 +383,15 @@ void deferred_event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_sr
 {
     struct np_platform* pl = ctx->pl;
     ctx->deferredEvent = event;
-    np_event_queue_post(pl, &ctx->deferredEventEvent, &nm_dtls_srv_do_event_callback, ctx);
+    np_event_queue_post(pl, ctx->deferredEventEvent);
 }
 
 void nm_dtls_srv_do_event_callback(void* data)
 {
     struct np_dtls_srv_connection* ctx = data;
     if (ctx->state == CLOSING && ctx->sending) {
-        np_event_queue_post(ctx->pl, &ctx->deferredEventEvent, &nm_dtls_srv_do_event_callback, ctx);
+
+        np_event_queue_post(ctx->pl, ctx->deferredEventEvent);
     } else {
         ctx->eventHandler(ctx->deferredEvent, ctx->senderData);
     }
@@ -394,7 +399,7 @@ void nm_dtls_srv_do_event_callback(void* data)
 
 void nm_dtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 {
-    np_event_queue_post_maybe_double(ctx->pl, &ctx->startSendEvent, &nm_dtls_srv_start_send_deferred, ctx);
+    np_event_queue_post_maybe_double(ctx->pl, ctx->startSendEvent);
 }
 
 void nm_dtls_srv_start_send_deferred(void* data)
@@ -445,13 +450,13 @@ np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls
 void nm_dtls_srv_event_close(void* data){
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->sending) {
-        np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_srv_event_close, ctx);
+        np_event_queue_post(ctx->pl, ctx->closeEv);
         return;
     }
     nm_dtls_timer_cancel(&ctx->timer);
-    np_event_queue_cancel_event(ctx->pl, &ctx->closeEv);
-    np_event_queue_cancel_event(ctx->pl, &ctx->startSendEvent);
-    np_event_queue_cancel_event(ctx->pl, &ctx->deferredEventEvent);
+    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
+    np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
+    np_event_queue_cancel_event(ctx->pl, ctx->deferredEventEvent);
 
     np_dtls_close_callback cb = ctx->closeCb;
     void* cbData = ctx->closeCbData;
@@ -471,7 +476,7 @@ np_error_code nm_dtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv
     ctx->closeCbData = data;
     ctx->state = CLOSING;
     mbedtls_ssl_close_notify(&ctx->ssl);
-    np_event_queue_post(ctx->pl, &ctx->closeEv, &nm_dtls_srv_event_close, ctx);
+    np_event_queue_post(ctx->pl, ctx->closeEv);
     return NABTO_EC_OK;
 }
 

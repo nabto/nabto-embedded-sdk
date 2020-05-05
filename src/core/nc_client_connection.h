@@ -2,6 +2,7 @@
 #define NC_CLIENT_CONNECTION_H
 
 #include <platform/np_platform.h>
+#include <platform/np_completion_event.h>
 #include <core/nc_rendezvous.h>
 #include <core/nc_stream_manager.h>
 #include <core/nc_coap_server.h>
@@ -42,21 +43,22 @@ struct nc_client_connection {
     np_dtls_srv_send_callback sentCb;
     void* sentData;
     uint64_t connectionRef;
-
+    struct np_completion_event sendCompletionEvent;
 
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_srv_send_context keepAliveSendCtx;
+
 };
 
 
 np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
                                      struct nc_client_connection_dispatch_context* dispatch,
                                      struct nc_device_context* device,
-                                     struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
+                                     struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                      uint8_t* buffer, uint16_t bufferSize);
 
 np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct nc_client_connection* conn,
-                                              struct nc_udp_dispatch_context* sock, struct np_udp_endpoint ep,
+                                              struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                               uint8_t* buffer, uint16_t bufferSize);
 
 void nc_client_connection_close_connection(struct nc_client_connection* conn);

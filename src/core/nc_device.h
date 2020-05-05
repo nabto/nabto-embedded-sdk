@@ -67,12 +67,12 @@ struct nc_device_context {
 
     uint16_t serverPort;
 
-    struct np_event closeEvent;
     nc_device_close_callback closeCb;
     void* closeCbData;
 
     struct nc_connection_events_listener eventsListenerSentinel;
     struct nc_device_events_listener deviceEventsSentinel;
+    struct np_completion_event socketBoundCompletionEvent;
 };
 
 np_error_code nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
@@ -84,6 +84,8 @@ np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
                               const char* hostname, const uint16_t port, bool enableMdns);
+
+void nc_device_stop(struct nc_device_context* dev);
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data);
 

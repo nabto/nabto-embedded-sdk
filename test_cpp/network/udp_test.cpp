@@ -4,6 +4,7 @@
 #include <test_platform.hpp>
 
 #include <platform/np_platform.h>
+#include <platform/np_completion_event.h>
 
 #include <util/io_service.hpp>
 #include <util/udp_echo_server.hpp>
@@ -38,7 +39,8 @@ class UdpEchoClientTest {
         memcpy(ep_.ip.ip.v6, addr, 4);
         ep_.port = port;
 
-        pl_->udp.async_bind_port(socket_, 0, &UdpEchoClientTest::created, this);
+        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::created, this);
+        pl_->udp.async_bind_port(socket_, 0, &completionEvent_);
 
         tp_.run();
     }
@@ -52,8 +54,8 @@ class UdpEchoClientTest {
 
     void startSend()
     {
-
-        pl_->udp.async_send_to(socket_, ep_, data_.data(), data_.size(), &UdpEchoClientTest::sent, this);
+        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::sent, this);
+        pl_->udp.async_send_to(socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
     }
 
     static void sent(np_error_code ec, void* data)
@@ -65,15 +67,24 @@ class UdpEchoClientTest {
 
     void startRecv()
     {
-        pl_->udp.async_recv_from(socket_, &UdpEchoClientTest::received, this);
+        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::received, this);
+        pl_->udp.async_recv_wait(socket_, &completionEvent_);
     }
 
-    static void received(np_error_code ec, struct np_udp_endpoint ep, uint8_t* buffer, uint16_t bufferSize, void* data)
+    static void received(np_error_code ec, void* data)
     {
         UdpEchoClientTest* client = (UdpEchoClientTest*)data;
+
+        struct np_udp_endpoint ep;
+        uint8_t buffer[1500];
+        size_t bufferSize = 1500;
+        size_t recvLength;
+
         BOOST_TEST(ec == NABTO_EC_OK);
+        BOOST_TEST(client->pl_->udp.recv_from(client->socket_, &ep, buffer, bufferSize, &recvLength) == NABTO_EC_OK);
+
         auto sentData = lib::span<const uint8_t>(client->data_.data(), client->data_.size());
-        auto receivedData = lib::span<const uint8_t>(buffer, bufferSize);
+        auto receivedData = lib::span<const uint8_t>(buffer, recvLength);
         BOOST_TEST(sentData == receivedData);
         client->end();
     }
@@ -90,6 +101,7 @@ class UdpEchoClientTest {
     np_udp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
+    struct np_completion_event completionEvent_;
 
 };
 

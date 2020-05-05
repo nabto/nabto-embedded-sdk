@@ -31,6 +31,11 @@ struct nm_tcp_tunnel_connection {
 
     bool tcpReadEnded;
     bool streamReadEnded;
+
+    struct np_completion_event connectCompletionEvent;
+    struct np_completion_event readCompletionEvent;
+    size_t readLength;
+    struct np_completion_event writeCompletionEvent;
 };
 
 struct nm_tcp_tunnel_service {

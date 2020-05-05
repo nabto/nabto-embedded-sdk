@@ -12,8 +12,11 @@ static NabtoDevice* createTestDevice()
     NabtoDeviceError ec;
     NabtoDevice* dev = nabto_device_new();
     BOOST_TEST(dev);
-//    ec = nabto_device_set_log_std_out_callback(dev);
-//    ec = nabto_device_set_log_level(dev, "trace");
+    char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        ec = nabto_device_set_log_std_out_callback(dev);
+        ec = nabto_device_set_log_level(dev, logLevel);
+    }
 
     ec = nabto_device_set_server_url(dev, "server.foo.bar");
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
@@ -66,6 +69,7 @@ BOOST_AUTO_TEST_CASE(fingerprints)
 
     nabto_device_string_free(truncatedFp);
     nabto_device_string_free(fullFp);
+    nabto_device_free(dev);
 
 }
 

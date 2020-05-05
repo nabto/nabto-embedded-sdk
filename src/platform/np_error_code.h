@@ -46,6 +46,7 @@ extern "C" {
         XX(NO_DATA, "No data")                                          \
         XX(OPERATION_STARTED, "Operation started")                      \
         XX(NO_OPERATION, "No operation neccessary")                     \
+        XX(AGAIN, "No data available try again later")                  \
 
 
 #define XX_ERROR(name, _) NABTO_EC_##name,

@@ -2,6 +2,7 @@
 
 #include <platform/np_util.h>
 #include <platform/np_logging.h>
+#include <platform/np_completion_event.h>
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,13 +21,13 @@
 
 static np_error_code create(struct np_platform* pl, np_tcp_socket** sock);
 static void destroy(np_tcp_socket* sock);
-static np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData);
-static np_error_code async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData);
-static np_error_code async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, np_tcp_read_callback cb, void* userData);
-static np_error_code tcp_shutdown(np_tcp_socket* sock);
-static np_error_code tcp_close(np_tcp_socket* sock);
+static void async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
+static void async_write(np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
+static void async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
+static void tcp_shutdown(np_tcp_socket* sock);
+static void tcp_abort(np_tcp_socket* sock);
 
-static void is_connected(void* userData);
+static void is_connected(np_tcp_socket* sock);
 static void tcp_do_write(np_tcp_socket* sock);
 static void tcp_do_read(np_tcp_socket* sock);
 
@@ -44,7 +45,7 @@ void nm_select_unix_tcp_init(struct nm_select_unix* ctx)
     pl->tcp.async_write = &async_write;
     pl->tcp.async_read = &async_read;
     pl->tcp.shutdown = &tcp_shutdown;
-    pl->tcp.abort = &tcp_close;
+    pl->tcp.abort = &tcp_abort;
 }
 
 void nm_select_unix_tcp_deinit(struct nm_select_unix* ctx)
@@ -63,24 +64,16 @@ void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
     struct np_tcp_socket* iterator = sockets->socketsSentinel.next;
     while (iterator != &sockets->socketsSentinel)
     {
-        if (iterator->read.callback != NULL) {
+        if (iterator->read.completionEvent != NULL) {
             FD_SET(iterator->fd, &ctx->readFds);
             ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->fd);
         }
-        if (iterator->write.callback != NULL || iterator->connectCb != NULL) {
+        if (iterator->write.completionEvent != NULL || iterator->connect.completionEvent != NULL) {
             FD_SET(iterator->fd, &ctx->writeFds);
             ctx->maxWriteFd = NP_MAX(ctx->maxWriteFd, iterator->fd);
         }
         iterator = iterator->next;
     }
-}
-
-void nm_select_unix_tcp_cancel_all_events(np_tcp_socket* sock)
-{
-    struct np_platform* pl = sock->pl;
-    NABTO_LOG_TRACE(LOG, "Cancelling all events");
-    np_event_queue_cancel_event(pl, &sock->connectEvent);
-    np_event_queue_cancel_event(pl, &sock->abortEv);
 }
 
 void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
@@ -90,9 +83,9 @@ void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
     before->next = after;
     after->prev = before;
 
+    tcp_abort(sock);
     shutdown(sock->fd, SHUT_RDWR);
     close(sock->fd);
-    nm_select_unix_tcp_cancel_all_events(sock);
     free(sock);
 
 }
@@ -113,10 +106,10 @@ void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
             tcp_do_read(iterator);
         }
         if (FD_ISSET(iterator->fd, &ctx->writeFds)) {
-            if (iterator->connectCb) {
+            if (iterator->connect.completionEvent) {
                 is_connected(iterator);
             }
-            if (iterator->write.callback) {
+            if (iterator->write.completionEvent) {
                 tcp_do_write(iterator);
             }
         }
@@ -157,14 +150,8 @@ void destroy(np_tcp_socket* sock)
     return;
 }
 
-np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, np_tcp_connect_callback cb, void* userData)
+np_error_code async_connect_ec(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port)
 {
-    if (sock->aborted) {
-        return NABTO_EC_ABORTED;
-    }
-    if (sock->connectCb) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
-    }
     struct np_platform* pl = sock->pl;
     int s;
 
@@ -269,7 +256,7 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
         }
         if (status == 0) {
             // connected
-            np_event_queue_post(pl, &sock->connectEvent, &is_connected, sock);
+            return NABTO_EC_OK;
         } else {
             if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
                 // OK
@@ -279,169 +266,211 @@ np_error_code async_connect(np_tcp_socket* sock, struct np_ip_address* address, 
             }
             nm_select_unix_notify(pl->tcpData);
         }
-
-        // wait for the socket to be connected
-        sock->connectCb = cb;
-        sock->connectCbData = userData;
     }
-    return NABTO_EC_OK;
+    return NABTO_EC_AGAIN;
 }
 
-void is_connected(void* userData)
+void async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
 {
-    np_tcp_socket* sock = userData;
-    if (sock->connectCb == NULL) {
+    if (sock->aborted) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
         return;
     }
+    if (sock->connect.completionEvent) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
+
+
+    sock->connect.completionEvent = completionEvent;
+    np_error_code ec = async_connect_ec(sock, address, port);
+    if (ec == NABTO_EC_AGAIN) {
+        // a deferred operation has begun
+        return;
+    } else {
+        // connected or error.
+        sock->connect.completionEvent = NULL;
+        np_completion_event_resolve(completionEvent, ec);
+        return;
+    }
+}
+
+np_error_code is_connected_ec(np_tcp_socket* sock)
+{
     int err;
     socklen_t len;
     len = sizeof(err);
     if (getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &err, &len) != 0) {
         NABTO_LOG_ERROR(LOG, "getsockopt error %s",strerror(errno));
+        return NABTO_EC_UNKNOWN;
     } else {
         if (err == 0) {
-            np_tcp_connect_callback cb = sock->connectCb;
-            sock->connectCb = NULL;
-            cb(NABTO_EC_OK, sock->connectCbData);
+            return NABTO_EC_OK;
         } else if ( err == EINPROGRESS) {
             // Wait for next event
+            return NABTO_EC_AGAIN;
         } else {
             NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
-            np_tcp_connect_callback cb = sock->connectCb;
-            sock->connectCb = NULL;
-            cb(NABTO_EC_UNKNOWN, sock->connectCbData);
+            return NABTO_EC_UNKNOWN;
         }
     }
 }
 
-void tcp_do_write(np_tcp_socket* sock)
-{
-    if (sock->write.callback == NULL) {
-        // nothing to write
+void is_connected(np_tcp_socket* sock) {
+    if (sock->connect.completionEvent == NULL) {
         return;
     }
+
+    np_error_code ec = is_connected_ec(sock);
+    if (ec != NABTO_EC_AGAIN) {
+        struct np_completion_event* ev = sock->connect.completionEvent;
+        sock->connect.completionEvent = NULL;
+        np_completion_event_resolve(ev, ec);
+    }
+}
+
+np_error_code tcp_do_write_ec(np_tcp_socket* sock)
+{
     int sent = send(sock->fd, sock->write.data, sock->write.dataLength, MSG_NOSIGNAL);
     if (sent < 0) {
         if (sent == EAGAIN || sent == EWOULDBLOCK) {
             // Wait for next event which triggers write.
-            return;
+            return NABTO_EC_AGAIN;
         } else {
-            np_tcp_write_callback cb = sock->write.callback;
-            sock->write.callback = NULL;
-            cb(NABTO_EC_UNKNOWN, sock->write.userData);
-            return;
+            return NABTO_EC_UNKNOWN;
         }
     } else {
         sock->write.data += sent;
         sock->write.dataLength -= sent;
         if (sock->write.dataLength > 0) {
             // Wait for next event which triggers write.
-            return;
+            return NABTO_EC_AGAIN;
         } else {
-            np_tcp_write_callback cb = sock->write.callback;
-            sock->write.callback = NULL;
-            cb(NABTO_EC_OK, sock->write.userData);
-            return;
+            return NABTO_EC_OK;
         }
     }
 }
 
-np_error_code async_write(np_tcp_socket* sock, const void* data, size_t dataLength, np_tcp_write_callback cb, void* userData)
+void tcp_do_write(np_tcp_socket* sock)
 {
-    if (sock->aborted) {
-        return NABTO_EC_ABORTED;
+    if (sock->write.completionEvent == NULL) {
+        // nothing to write
+        return;
     }
-    if (sock->write.callback != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+
+    np_error_code ec = tcp_do_write_ec(sock);
+    if (ec != NABTO_EC_AGAIN) {
+        struct np_completion_event* ev = sock->write.completionEvent;
+        sock->write.completionEvent = NULL;
+        np_completion_event_resolve(ev, ec);
     }
+}
+
+np_error_code async_write_ec(np_tcp_socket* sock, const void* data, size_t dataLength)
+
+{
     sock->write.data = data;
     sock->write.dataLength = dataLength;
-    sock->write.callback = cb;
-    sock->write.userData = userData;
 
     nm_select_unix_notify(sock->selectCtx);
-    return NABTO_EC_OK;
+    return NABTO_EC_AGAIN;
+}
+
+void async_write(np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
+{
+    if (sock->aborted) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+        return;
+    }
+    if (sock->write.completionEvent != NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
+
+    sock->write.completionEvent = completionEvent;
+
+    np_error_code ec = async_write_ec(sock, data, dataLength);
+    if (ec != NABTO_EC_AGAIN) {
+        sock->write.completionEvent = NULL;
+        np_completion_event_resolve(completionEvent, ec);
+    }
+}
+
+np_error_code tcp_do_read_ec(np_tcp_socket* sock)
+{
+    int readen = recv(sock->fd, sock->read.buffer, sock->read.bufferSize, 0);
+    if (readen == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return NABTO_EC_AGAIN;
+        } else {
+            NABTO_LOG_ERROR(LOG, "recv error %s", strerror(errno));
+            return NABTO_EC_UNKNOWN;
+        }
+    } else if (readen == 0) {
+        return NABTO_EC_EOF;
+    } else {
+        *(sock->read.readLength) = readen;
+        return NABTO_EC_OK;
+    }
 }
 
 void tcp_do_read(np_tcp_socket* sock)
 {
-    if (sock->read.callback == NULL) {
+    if (sock->read.completionEvent == NULL) {
         return;
     }
-    int readen = recv(sock->fd, sock->read.buffer, sock->read.bufferSize, 0);
-    if (readen == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // wait for next event.
-            return;
-        } else {
-            NABTO_LOG_ERROR(LOG, "recv error %s", strerror(errno));
-            np_tcp_read_callback cb = sock->read.callback;
-            sock->read.callback = NULL;
-            cb(NABTO_EC_UNKNOWN, 0, sock->read.userData);
-            return;
-        }
-    } else if (readen == 0) {
-        np_tcp_read_callback cb = sock->read.callback;
-        sock->read.callback = NULL;
-        cb(NABTO_EC_EOF, 0, sock->read.userData);
-        return;
-    } else {
-        np_tcp_read_callback cb = sock->read.callback;
-        sock->read.callback = NULL;
-        cb(NABTO_EC_OK, readen, sock->read.userData);
-        return;
+
+    np_error_code ec = tcp_do_read_ec(sock);
+
+    if (ec != NABTO_EC_AGAIN) {
+        struct np_completion_event* ev = sock->read.completionEvent;
+        sock->read.completionEvent = NULL;
+        np_completion_event_resolve(ev, ec);
     }
 }
 
 
-np_error_code async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, np_tcp_read_callback cb, void* userData)
+void async_read(np_tcp_socket* sock, void* buffer, size_t bufferSize, size_t* readLength, struct np_completion_event* completionEvent)
 {
     if (sock->aborted) {
-        return NABTO_EC_ABORTED;
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+        return;
     }
-    if (sock->read.callback != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (sock->read.completionEvent != NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
     sock->read.buffer = buffer;
     sock->read.bufferSize = bufferSize;
-    sock->read.callback = cb;
-    sock->read.userData = userData;
+    sock->read.readLength = readLength;
+    sock->read.completionEvent = completionEvent;
     nm_select_unix_notify(sock->selectCtx);
-    return NABTO_EC_OK;
 }
 
-np_error_code tcp_shutdown(np_tcp_socket* sock)
+void tcp_shutdown(np_tcp_socket* sock)
 {
     shutdown(sock->fd, SHUT_WR);
-    return NABTO_EC_OK;
 }
 
-void nm_select_unix_tcp_event_abort(void* userData)
-{
-    np_tcp_socket* sock = (np_tcp_socket*)userData;
-    if (sock->read.callback != NULL) {
-        np_tcp_read_callback cb = sock->read.callback;
-        sock->read.callback = NULL;
-        cb(NABTO_EC_ABORTED, 0, sock->read.userData);
-    }
-    if (sock->write.callback != NULL) {
-        np_tcp_write_callback cb = sock->write.callback;
-        sock->write.callback = NULL;
-        cb(NABTO_EC_ABORTED, sock->write.userData);
-    }
-    if (sock->connectCb) {
-        np_tcp_connect_callback cb = sock->connectCb;
-        sock->connectCb = NULL;
-        cb(NABTO_EC_ABORTED, sock->connectCbData);
-    }
-}
-
-np_error_code tcp_close(np_tcp_socket* sock)
+void tcp_abort(np_tcp_socket* sock)
 {
     if (sock->aborted) {
-        return NABTO_EC_OK;
+        return;
     }
     sock->aborted = true;
-    np_event_queue_post(sock->pl, &sock->abortEv, &nm_select_unix_tcp_event_abort, sock);
-    return NABTO_EC_OK;
+    if (sock->read.completionEvent != NULL) {
+        struct np_completion_event* ev = sock->read.completionEvent;
+        sock->read.completionEvent = NULL;
+        np_completion_event_resolve(ev, NABTO_EC_ABORTED);
+    }
+    if (sock->write.completionEvent != NULL) {
+        struct np_completion_event* ev = sock->write.completionEvent;
+        sock->write.completionEvent = NULL;
+        np_completion_event_resolve(ev, NABTO_EC_ABORTED);
+    }
+    if (sock->connect.completionEvent) {
+        struct np_completion_event* ev = sock->connect.completionEvent;
+        sock->connect.completionEvent = NULL;
+        np_completion_event_resolve(ev, NABTO_EC_ABORTED);
+    }
 }

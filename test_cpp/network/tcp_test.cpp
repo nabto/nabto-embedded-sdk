@@ -7,6 +7,7 @@
 #include <platform/np_error_code.h>
 #include <platform/np_tcp.h>
 #include <platform/np_platform.h>
+#include <platform/np_completion_event.h>
 
 #include <util/io_service.hpp>
 
@@ -208,7 +209,8 @@ class TcpEchoClientTest {
             data_[i] = (uint8_t)i;
         }
 
-        BOOST_TEST(pl_->tcp.async_connect(socket_, &address, port, &TcpEchoClientTest::connected, this) == NABTO_EC_OK);
+        np_completion_event_init(pl_, &completionEvent_, &TcpEchoClientTest::connected, this);
+        pl_->tcp.async_connect(socket_, &address, port, &completionEvent_);
 
         tp_.run();
     }
@@ -217,7 +219,8 @@ class TcpEchoClientTest {
     {
         auto test = (TcpEchoClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
-        BOOST_TEST(test->pl_->tcp.async_write(test->socket_, test->data_.data(), test->data_.size(), &TcpEchoClientTest::hasWritten, test) == NABTO_EC_OK);
+        np_completion_event_init(test->pl_, &test->completionEvent_, &TcpEchoClientTest::hasWritten, test);
+        test->pl_->tcp.async_write(test->socket_, test->data_.data(), test->data_.size(), &test->completionEvent_);
     }
 
     static void hasWritten(np_error_code ec, void* userData)
@@ -225,19 +228,20 @@ class TcpEchoClientTest {
         auto test = (TcpEchoClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
         test->recvBuffer_.resize(test->data_.size());
-        BOOST_TEST(test->pl_->tcp.async_read(test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &TcpEchoClientTest::hasReaden, test) == NABTO_EC_OK);
+        np_completion_event_init(test->pl_, &test->completionEvent_, &TcpEchoClientTest::hasReaden, test);
+        test->pl_->tcp.async_read(test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &test->readLength_, &test->completionEvent_);
     }
 
-    static void hasReaden(np_error_code ec, size_t readen, void* userData)
+    static void hasReaden(np_error_code ec, void* userData)
     {
         auto test = (TcpEchoClientTest*)userData;
         // TODO fix lazy written test case, if data is split up readen is less than data_.size()
         BOOST_TEST(ec == NABTO_EC_OK);
-        BOOST_TEST(readen == test->data_.size());
+        BOOST_TEST(test->readLength_ == test->data_.size());
         auto sentData = lib::span<const uint8_t>(test->data_.data(), test->data_.size());
         auto receivedData = lib::span<const uint8_t>(test->recvBuffer_.data(), test->recvBuffer_.size());
         BOOST_TEST(sentData == receivedData);
-        BOOST_TEST(test->pl_->tcp.abort(test->socket_) == NABTO_EC_OK);
+        test->pl_->tcp.abort(test->socket_);
         test->end();
     }
 
@@ -251,6 +255,8 @@ class TcpEchoClientTest {
     np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
+    size_t readLength_;
+    struct np_completion_event completionEvent_;
 };
 
 class TcpCloseClientTest {
@@ -271,8 +277,8 @@ class TcpCloseClientTest {
         for (size_t i = 0; i < data_.size(); i++) {
             data_[i] = (uint8_t)i;
         }
-
-        BOOST_TEST(pl_->tcp.async_connect(socket_, &address, port_, &TcpCloseClientTest::connected, this) == NABTO_EC_OK);
+        np_completion_event_init(pl_, &completionEvent_, &TcpCloseClientTest::connected, this);
+        pl_->tcp.async_connect(socket_, &address, port_, &completionEvent_);
     }
 
     void start(uint16_t port) {
@@ -285,11 +291,12 @@ class TcpCloseClientTest {
     {
         auto test = (TcpCloseClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
-        BOOST_TEST(test->pl_->tcp.async_read(test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &TcpCloseClientTest::hasReaden, test) == NABTO_EC_OK);
-        BOOST_TEST(test->pl_->tcp.abort(test->socket_) == NABTO_EC_OK);
+        np_completion_event_init(test->pl_, &test->completionEvent_, &TcpCloseClientTest::hasReaden, test);
+        test->pl_->tcp.async_read(test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &test->readLength_, &test->completionEvent_);
+        test->pl_->tcp.abort(test->socket_);
     }
 
-    static void hasReaden(np_error_code ec, size_t readen, void* userData)
+    static void hasReaden(np_error_code ec, void* userData)
     {
         auto test = (TcpCloseClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_ABORTED, "ec was not ABORTED: " << ec);
@@ -306,7 +313,9 @@ class TcpCloseClientTest {
     np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
+    size_t readLength_;
     uint16_t port_;
+    struct np_completion_event completionEvent_;
 };
 
 } }

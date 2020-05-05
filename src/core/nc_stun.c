@@ -74,7 +74,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
-    np_event_queue_init_event(&ctx->event);
+    np_event_queue_create_timed_event(pl, &nc_stun_handle_timeout, ctx, &ctx->toEv);
     return NABTO_EC_OK;
 }
 
@@ -83,9 +83,10 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
     if (ctx->pl != NULL) { // if init called
         ctx->state = NC_STUN_STATE_ABORTED;
         struct np_platform* pl = ctx->pl;
-        np_event_queue_cancel_event(ctx->pl, &ctx->event);
-        np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
+        np_event_queue_cancel_timed_event(ctx->pl, ctx->toEv);
         pl->buf.free(ctx->sendBuf);
+
+        np_event_queue_destroy_timed_event(pl, ctx->toEv);
     }
 }
 
@@ -136,10 +137,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
         NABTO_LOG_INFO(LOG, "Stun already running, adding callback");
         return NABTO_EC_OK;
     }
-    /*if (ctx->state == NC_STUN_STATE_DONE) {
-        np_event_queue_post(ctx->pl, &ctx->resultEv, &nc_stun_resolve_callbacks, ctx);
-        return NABTO_EC_OK;
-        }*/
+
     ctx->simple = simple;
     ctx->state = NC_STUN_STATE_RUNNING;
     ctx->pl->dns.async_resolve(ctx->pl, ctx->hostname, &nc_stun_dns_cb, ctx);
@@ -149,7 +147,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
 
 // Handle packet function
 void nc_stun_handle_packet(struct nc_stun_context* ctx,
-                           struct np_udp_endpoint ep,
+                           struct np_udp_endpoint* ep,
                            uint8_t* buffer,
                            uint16_t bufferSize)
 {
@@ -186,8 +184,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
 {
     enum nabto_stun_next_event_type event = nabto_stun_next_event_to_handle(&ctx->stun);
     struct np_platform* pl = ctx->pl;
-    np_event_queue_cancel_event(ctx->pl, &ctx->event);
-    np_event_queue_cancel_timed_event(ctx->pl, &ctx->toEv);
+    np_event_queue_cancel_timed_event(ctx->pl, ctx->toEv);
     switch(event) {
         case STUN_ET_SEND_PRIMARY:
         {
@@ -214,11 +211,8 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            np_error_code ec = nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
-            if (ec != NABTO_EC_OK) {
-                // send errors is ok in stun context
-                np_event_queue_post_maybe_double(pl, &ctx->event, &nc_stun_event_deferred, ctx);
-            }
+            np_completion_event_init(pl, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx);
+            nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &ctx->sendCompletionEvent);
             break;
         }
         case STUN_ET_SEND_SECONDARY:
@@ -246,17 +240,14 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            np_error_code ec = nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &nc_stun_send_to_cb, ctx);
-            if (ec != NABTO_EC_OK) {
-                // send errors is ok in stun context
-                np_event_queue_post_maybe_double(pl, &ctx->event, &nc_stun_event_deferred, ctx);
-            }
+            np_completion_event_init(pl, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx);
+            nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &ctx->sendCompletionEvent);
             break;
         }
         case STUN_ET_WAIT:
         {
             uint32_t to = nabto_stun_get_timeout_ms(&ctx->stun);
-            np_event_queue_post_timed_event(ctx->pl, &ctx->toEv, to, &nc_stun_handle_timeout, ctx);
+            np_event_queue_post_timed_event(ctx->pl, ctx->toEv, to);
         }
             break;
         case STUN_ET_NO_EVENT:

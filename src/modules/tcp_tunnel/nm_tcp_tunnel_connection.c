@@ -13,7 +13,7 @@ static void connect_callback(np_error_code ec, void* userData);
 static void connected(struct nm_tcp_tunnel_connection* connection);
 
 static void start_tcp_read(struct nm_tcp_tunnel_connection* connection);
-static void tcp_readen(np_error_code ec, size_t transferred, void* userData);
+static void tcp_readen(const np_error_code ec, void* userData);
 static void start_stream_write(struct nm_tcp_tunnel_connection* connection, size_t transferred);
 static void stream_written(np_error_code ec, void* userData);
 static void close_stream(struct nm_tcp_tunnel_connection* connection);
@@ -22,7 +22,7 @@ static void stream_closed(np_error_code ec, void* userDat);
 static void start_stream_read(struct nm_tcp_tunnel_connection* connection);
 static void stream_readen(np_error_code ec, void* userData);
 static void start_tcp_write(struct nm_tcp_tunnel_connection* connection, size_t transferred);
-static void tcp_written(np_error_code ec, void* userData);
+static void tcp_written(const np_error_code ec, void* userData);
 static void close_tcp(struct nm_tcp_tunnel_connection* connection);
 
 static void abort_connection(struct nm_tcp_tunnel_connection* connection);
@@ -114,7 +114,8 @@ void nm_tcp_tunnel_connection_stop_from_manager(struct nm_tcp_tunnel_connection*
 void start_connect(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    pl->tcp.async_connect(connection->socket, &connection->address, connection->port, &connect_callback, connection);
+    np_completion_event_init(pl, &connection->connectCompletionEvent, &connect_callback, connection);
+    pl->tcp.async_connect(connection->socket, &connection->address, connection->port, &connection->connectCompletionEvent);
 }
 
 void connect_callback(np_error_code ec, void* userData)
@@ -138,25 +139,26 @@ void connected(struct nm_tcp_tunnel_connection* connection)
 void start_tcp_read(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    pl->tcp.async_read(connection->socket, connection->tcpRecvBuffer, connection->tcpRecvBufferSize, &tcp_readen, connection);
+    np_completion_event_init(pl, &connection->readCompletionEvent, &tcp_readen, connection);
+    pl->tcp.async_read(connection->socket, connection->tcpRecvBuffer, connection->tcpRecvBufferSize, &connection->readLength, &connection->readCompletionEvent);
 }
 
-void tcp_readen(np_error_code ec, size_t transferred, void* userData)
+void tcp_readen(np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
-    if (transferred == 0 || ec == NABTO_EC_EOF) {
+    if (connection->readLength == 0 || ec == NABTO_EC_EOF) {
         NABTO_LOG_TRACE(LOG, "TCP EOF received");
         // Close stream, aka signal that we will not write any
         // more data to the stream.
         return close_stream(connection);
     }
-    if (ec) {
+    if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Tcp read error");
         // something not EOF
         connection->tcpReadEnded = true;
         return abort_connection(connection);
     }
-    start_stream_write(connection, transferred);
+    start_stream_write(connection, connection->readLength);
 }
 
 void close_stream(struct nm_tcp_tunnel_connection* connection)
@@ -232,10 +234,11 @@ void close_tcp(struct nm_tcp_tunnel_connection* connection)
 void start_tcp_write(struct nm_tcp_tunnel_connection* connection, size_t transferred)
 {
     struct np_platform* pl = connection->pl;
-    pl->tcp.async_write(connection->socket, connection->streamRecvBuffer, transferred, &tcp_written, connection);
+    np_completion_event_init(pl, &connection->writeCompletionEvent, &tcp_written, connection);
+    pl->tcp.async_write(connection->socket, connection->streamRecvBuffer, transferred, &connection->writeCompletionEvent);
 }
 
-void tcp_written(np_error_code ec, void* userData)
+void tcp_written(const np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
     if (ec) {
