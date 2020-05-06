@@ -90,6 +90,7 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
 
         np_event_queue_destroy_timed_event(pl, ctx->toEv);
         np_completion_event_deinit(&ctx->dnsCompletionEvent);
+        nc_dns_resolver_deinit(&ctx->dnsResolver);
     }
 }
 

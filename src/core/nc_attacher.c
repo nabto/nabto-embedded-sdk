@@ -140,6 +140,8 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
 
         np_completion_event_deinit(&ctx->senderCompletionEvent);
         np_completion_event_deinit(&ctx->resolveCompletionEvent);
+
+        nc_dns_resolver_deinit(&ctx->dnsResolver);
     }
 }
 

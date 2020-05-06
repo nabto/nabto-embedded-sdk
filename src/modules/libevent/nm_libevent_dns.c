@@ -72,6 +72,7 @@ np_error_code create_resolver(struct np_platform* pl, struct np_dns_resolver** r
 void destroy_resolver(struct np_dns_resolver* resolver)
 {
     stop_resolver(resolver);
+    free(resolver);
 }
 
 void stop_resolver(struct np_dns_resolver* resolver)
