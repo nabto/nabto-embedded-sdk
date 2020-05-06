@@ -52,6 +52,7 @@ struct nc_device_context {
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
     struct np_dtls_srv* dtlsServer;
+    struct np_dns_resolver* dnsResolver;
 
     bool enableMdns;
     struct np_mdns_context* mdns;

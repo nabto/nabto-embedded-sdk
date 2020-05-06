@@ -7,6 +7,7 @@
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
 #include <core/nc_device_defines.h>
+#include <core/nc_dns_resolver.h>
 
 
 #ifdef __cplusplus
@@ -65,6 +66,7 @@ struct nc_attacher_sct_context {
 };
 
 #define NC_ATTACHER_MAX_ENDPOINTS 4
+#define NC_ATTACHER_MAX_IPS 4
 
 struct nc_attacher_initial_packet_send
 {
@@ -74,6 +76,7 @@ struct nc_attacher_initial_packet_send
     void* cbData;
     size_t endpointsIndex;
     size_t endpointsSize;
+
     struct np_udp_endpoint endpoints[NC_ATTACHER_MAX_ENDPOINTS];
 };
 
@@ -111,6 +114,11 @@ struct nc_attach_context {
     uint16_t currentPort;
     char dns[256];
     uint8_t dnsLen;
+
+    struct nc_dns_resolver_context dnsResolver;
+    struct np_ip_address resolvedIps[NC_ATTACHER_MAX_IPS];
+    size_t resolvedIpsSize;
+    struct np_completion_event resolveCompletionEvent;
 
     uint8_t redirectAttempts;
     struct np_timed_event* reattachTimer;
@@ -150,6 +158,7 @@ struct nc_attach_context {
 // Init attacher module, always first function to be called
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl,
                                struct nc_device_context* device, struct nc_coap_client_context* coapClient,
+                               struct np_dns_resolver* dnsResolver,
                                nc_attacher_event_listener listener, void* listenerData);
 
 // deinit attacher module, always last function to be called, called after stop

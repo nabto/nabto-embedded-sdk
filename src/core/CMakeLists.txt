@@ -31,6 +31,7 @@ set(src
   ${src_dir}/nc_stun_coap.c
   ${src_dir}/nc_rendezvous_coap.c
   ${src_dir}/nc_version.c
+  ${src_dir}/nc_dns_resolver.c
   )
 
 add_library( nc_core STATIC "${src}")

@@ -20,6 +20,9 @@ class AttachTest {
         serverPort_ = port;
         np_event_queue_create_event(tp_.getPlatform(), &AttachTest::endEvent, this, &endEvent_);
         np_completion_event_init(tp_.getPlatform(), &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
+        struct np_platform* pl = tp_.getPlatform();
+        pl->dns.create_resolver(pl, &dnsResolver_);
+
     }
 
     ~AttachTest()
@@ -45,7 +48,7 @@ class AttachTest {
 
     void startAttach() {
         nc_coap_client_init(tp_.getPlatform(), &coapClient_);
-        nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, &AttachTest::listener, this);
+        nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, dnsResolver_, &AttachTest::listener, this);
         nc_attacher_set_state_listener(&attach_, &AttachTest::stateListener, this);
         nc_attacher_set_keys(&attach_,
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str()), nabto::test::devicePublicKey.size(),
@@ -94,6 +97,8 @@ class AttachTest {
     }
 
     void end() {
+        struct np_platform* pl = tp_.getPlatform();
+        pl->dns.destroy_resolver(dnsResolver_);
         np_event_queue_post(tp_.getPlatform(), endEvent_);
     }
 
@@ -118,6 +123,8 @@ class AttachTest {
     struct nc_udp_dispatch_context udpDispatch_;
 
     struct np_completion_event boundCompletionEvent;
+
+    struct np_dns_resolver* dnsResolver_;
 
     uint16_t serverPort_;
     const char* hostname_ = "localhost.nabto.net";
