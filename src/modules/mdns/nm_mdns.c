@@ -15,8 +15,8 @@ struct np_mdns_context {
     np_mdns_get_port getPort;
     void* getPortUserData;
     struct nabto_mdns_server_context mdnsServer;
-    np_udp_socket* socketv4;
-    np_udp_socket* socketv6;
+    struct np_udp_socket* socketv4;
+    struct np_udp_socket* socketv6;
     struct nabto_mdns_ip_address localIps[MAX_LOCAL_IPS];
     size_t localIpsSize;
     struct np_communication_buffer* sendBufferv4;

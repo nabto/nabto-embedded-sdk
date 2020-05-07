@@ -35,8 +35,8 @@ struct np_dtls_srv_connection {
     uint8_t currentChannelId;
     uint8_t* recvBuffer;
     size_t recvBufferSize;
-    np_communication_buffer* sslRecvBuf;
-    np_communication_buffer* sslSendBuffer;
+    struct np_communication_buffer* sslRecvBuf;
+    struct np_communication_buffer* sslSendBuffer;
     size_t sslSendBufferSize;
     struct nm_dtls_timer timer;
     struct np_event* closeEv;

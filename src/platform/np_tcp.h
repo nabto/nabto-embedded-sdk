@@ -10,7 +10,7 @@ extern "C" {
 struct np_platform;
 struct np_completion_event;
 
-typedef struct np_tcp_socket np_tcp_socket;
+struct np_tcp_socket;
 
 struct np_tcp_module {
     /**
@@ -20,7 +20,7 @@ struct np_tcp_module {
      * @param sock  The resulting socket resource.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_platform* pl, np_tcp_socket** sock);
+    np_error_code (*create)(struct np_platform* pl, struct np_tcp_socket** sock);
 
     /**
      * Destroy a socket. All outstanding completion events will be
@@ -28,7 +28,7 @@ struct np_tcp_module {
      *
      * @param sock  The socket resource.
      */
-    void (*destroy)(np_tcp_socket* sock);
+    void (*destroy)(struct np_tcp_socket* sock);
 
     /**
      * Connect a socket to the given addresa and port.
@@ -38,7 +38,7 @@ struct np_tcp_module {
      * @param port  The port to connect to.
      * @param completionEvent  The completion event.
      */
-    void (*async_connect)(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
+    void (*async_connect)(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
 
     /**
      * Write data to the tcp socket.
@@ -48,7 +48,7 @@ struct np_tcp_module {
      * @param dataLength  The length of the data to write.
      * @param completionEvent  The event to call when data has been writtem or the write failed.
      */
-    void (*async_write)(np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
+    void (*async_write)(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
 
     /**
      * Read data from a socket.
@@ -59,7 +59,7 @@ struct np_tcp_module {
      * @param readLength  The length of received data.
      * @param completionEvent  The completion event to resolve when data has been read.
      */
-    void (*async_read)(np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
+    void (*async_read)(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
 
     /**
      * Shutdown further write to the socket.
@@ -68,7 +68,7 @@ struct np_tcp_module {
      *
      * @param sock  The socket resource to shutdown.
      */
-    void (*shutdown)(np_tcp_socket* sock);
+    void (*shutdown)(struct np_tcp_socket* sock);
 
     /**
      * Abort outstanding async operations on the socket, no further
@@ -77,7 +77,7 @@ struct np_tcp_module {
      *
      * @param sock  The socket resource.
      */
-    void (*abort)(np_tcp_socket* sock);
+    void (*abort)(struct np_tcp_socket* sock);
 };
 
 #ifdef __cplusplus

@@ -50,7 +50,7 @@ struct nc_stun_context {
     size_t numEps;
     struct np_timed_event* toEv;
 
-    np_communication_buffer* sendBuf;
+    struct np_communication_buffer* sendBuf;
     struct np_udp_endpoint sendEp;
     struct np_completion_event sendCompletionEvent;
     bool simple;

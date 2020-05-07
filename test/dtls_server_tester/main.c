@@ -41,7 +41,7 @@ const char test_pub_key_crt[] =
 
 struct test_context {
     int data;
-    np_udp_socket* sock;
+    struct np_udp_socket* sock;
     struct np_dtls_srv* dtlsServer;
     struct np_dtls_srv_connection* dtls;
     struct nc_connection_id id;

@@ -252,7 +252,7 @@ class TcpEchoClientTest {
  private:
     TestPlatform& tp_;
     struct np_platform* pl_;
-    np_tcp_socket* socket_;
+    struct np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
     size_t readLength_;
@@ -310,7 +310,7 @@ class TcpCloseClientTest {
  private:
     TestPlatform& tp_;
     struct np_platform* pl_;
-    np_tcp_socket* socket_;
+    struct np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
     size_t readLength_;

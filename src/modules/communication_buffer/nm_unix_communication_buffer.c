@@ -21,9 +21,9 @@ void np_communication_buffer_init(struct np_platform* pl)
     pl->buf.size     = &nm_unix_comm_buf_size;
 }
 
-np_communication_buffer* nm_unix_comm_buf_allocate()
+struct np_communication_buffer* nm_unix_comm_buf_allocate()
 {
-    np_communication_buffer* buf = (np_communication_buffer*)malloc(sizeof(np_communication_buffer));
+    struct np_communication_buffer* buf = (struct np_communication_buffer*)malloc(sizeof(struct np_communication_buffer));
     if (!buf) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer structure");
         return NULL;
@@ -38,7 +38,7 @@ np_communication_buffer* nm_unix_comm_buf_allocate()
     return buf;
 }
 
-void nm_unix_comm_buf_free(np_communication_buffer* buf)
+void nm_unix_comm_buf_free(struct np_communication_buffer* buf)
 {
     if (buf == NULL) {
         return;
@@ -47,12 +47,12 @@ void nm_unix_comm_buf_free(np_communication_buffer* buf)
     free(buf);
 }
 
-uint8_t* nm_unix_comm_buf_start(np_communication_buffer* buf)
+uint8_t* nm_unix_comm_buf_start(struct np_communication_buffer* buf)
 {
     return buf->buf;
 }
 
-uint16_t nm_unix_comm_buf_size(np_communication_buffer* buf)
+uint16_t nm_unix_comm_buf_size(struct np_communication_buffer* buf)
 {
     return buf->size;
 }

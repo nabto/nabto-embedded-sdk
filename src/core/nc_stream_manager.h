@@ -27,7 +27,7 @@ struct nc_stream_listener {
 struct nc_stream_manager_context {
     struct np_platform* pl;
     struct nc_stream_listener listenerSentinel;
-    np_communication_buffer* rstBuf;
+    struct np_communication_buffer* rstBuf;
     struct nc_stream_context streams[NABTO_MAX_STREAMS];
     struct nc_client_connection* streamConns[NABTO_MAX_STREAMS];
     struct np_dtls_srv_send_context sendCtx;

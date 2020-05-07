@@ -1,9 +1,6 @@
 #ifndef NP_UDP_H
 #define NP_UDP_H
 
-typedef struct np_udp_endpoint np_udp_endpoint;
-typedef struct np_udp_socket np_udp_socket;
-
 #include <core/nc_protocol_defines.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_error_code.h>
@@ -16,6 +13,7 @@ extern "C" {
 
 struct np_platform;
 struct np_completion_event;
+struct np_udp_socket;
 
 struct np_udp_endpoint {
     struct np_ip_address ip;
@@ -31,7 +29,7 @@ struct np_udp_module {
      *
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_platform* pl, np_udp_socket** sock);
+    np_error_code (*create)(struct np_platform* pl, struct np_udp_socket** sock);
 
     /**
      * Destroy a socket. This will close everything and clean up
@@ -40,7 +38,7 @@ struct np_udp_module {
      *
      * @param sock  The socket resource
      */
-    void (*destroy)(np_udp_socket* sock);
+    void (*destroy)(struct np_udp_socket* sock);
 
     /**
      * Abort outstanding async operations on the socket resolving all
@@ -51,7 +49,7 @@ struct np_udp_module {
      *
      * @param sock  The socket resource.
      */
-    void (*abort)(np_udp_socket* sock);
+    void (*abort)(struct np_udp_socket* sock);
 
     /**
      * Bind a socket to a port. Port 0 means ephemeral.
@@ -67,7 +65,7 @@ struct np_udp_module {
      * @param completionEvent  The event to be resolved when the socket is bound and ready to be used.
      *
      */
-    void (*async_bind_port)(np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
+    void (*async_bind_port)(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
 
     /**
      * Optional function to bind a socket the mdns port and ipv4 mdns
@@ -77,7 +75,7 @@ struct np_udp_module {
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
      */
-    void (*async_bind_mdns_ipv4)(np_udp_socket* sock, struct np_completion_event* completionEvent);
+    void (*async_bind_mdns_ipv4)(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
     /**
      * Optional function to bind a socket the mdns port and ipv6 mdns
@@ -86,7 +84,7 @@ struct np_udp_module {
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
      */
-    void (*async_bind_mdns_ipv6)(np_udp_socket* sock, struct np_completion_event* completionEvent);
+    void (*async_bind_mdns_ipv6)(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
     /**
      * Send packet async. It's the responsibility of the caller to
@@ -101,7 +99,7 @@ struct np_udp_module {
      * @param bufferSize  The size of the buffer.
      * @param completionEvent  The completion event, which is resolved when the
      */
-    void (*async_send_to)(np_udp_socket* sock, struct np_udp_endpoint* ep,
+    void (*async_send_to)(struct np_udp_socket* sock, struct np_udp_endpoint* ep,
                           uint8_t* buffer, uint16_t bufferSize,
                           struct np_completion_event* completionEvent);
 
@@ -125,7 +123,7 @@ struct np_udp_module {
      * @param completionEvent  The completion event to be resolved
      *                         when data is ready to be received from the socket.
      */
-    void (*async_recv_wait)(np_udp_socket* socket, struct np_completion_event* completionEvent);
+    void (*async_recv_wait)(struct np_udp_socket* socket, struct np_completion_event* completionEvent);
 
     /**
      * Recv an UDP packet from a socket.
@@ -139,7 +137,7 @@ struct np_udp_module {
      *         NABTO_EC_AGAIN if the socket does not have ready data or the retrieval would have blocked.
      *         NABTO_EC_EOF if no more data can be received from the socket.
      */
-    np_error_code (*recv_from)(np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* recvSize);
+    np_error_code (*recv_from)(struct np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* recvSize);
 
     /**
      * Get the local port number
@@ -147,7 +145,7 @@ struct np_udp_module {
      * @param sock  The socket resource
      * @return  The port number the socket is bound to.
      */
-    uint16_t (*get_local_port)(np_udp_socket* sock);
+    uint16_t (*get_local_port)(struct np_udp_socket* sock);
 
     /**
      * Get the local IP address.
