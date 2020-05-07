@@ -26,15 +26,16 @@ void nm_dtls_timer_cancel(struct nm_dtls_timer* timer)
 void nm_dtls_timer_set_delay(void* data, uint32_t intermediateMilliseconds, uint32_t finalMilliseconds)
 {
     struct nm_dtls_timer* ctx = data;
+    struct np_platform* pl = ctx->pl;
     if (finalMilliseconds == 0) {
         // disable current timer
         np_event_queue_cancel_timed_event(ctx->pl, ctx->tEv);
         ctx->finalTp = 0;
     } else {
-        ctx->pl->ts.set_future_timestamp(&ctx->intermediateTp, intermediateMilliseconds);
-        ctx->pl->ts.set_future_timestamp(&ctx->finalTp, finalMilliseconds);
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->tEv);
-        np_event_queue_post_timed_event(ctx->pl, ctx->tEv, finalMilliseconds);
+        ctx->intermediateTp = np_timestamp_future(pl, intermediateMilliseconds);
+        ctx->finalTp = np_timestamp_future(pl, finalMilliseconds);
+        np_event_queue_cancel_timed_event(pl, ctx->tEv);
+        np_event_queue_post_timed_event(pl, ctx->tEv, finalMilliseconds);
     }
 }
 
@@ -43,9 +44,9 @@ int nm_dtls_timer_get_delay(void* data)
     struct nm_dtls_timer* ctx = data;
     struct np_platform* pl = ctx->pl;
     if (ctx->finalTp) {
-        if (pl->ts.passed_or_now(&ctx->finalTp)) {
+        if (np_timestamp_passed_or_now(pl, ctx->finalTp)) {
             return 2;
-        } else if (pl->ts.passed_or_now(&ctx->intermediateTp)) {
+        } else if (np_timestamp_passed_or_now(pl, ctx->intermediateTp)) {
             return 1;
         } else {
             return 0;

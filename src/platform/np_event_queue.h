@@ -3,7 +3,6 @@
 
 
 #include <platform/np_error_code.h>
-#include <platform/np_timestamp.h>
 
 #include <platform/np_types.h>
 

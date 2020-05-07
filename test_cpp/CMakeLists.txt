@@ -19,6 +19,7 @@ set(test_src
   platform/ip_address_test.cpp
   platform/string_map_test.cpp
   platform/logging_test.cpp
+  platform/timestamp_test.cpp
 #  platform/event_queue_test.cpp
 #  api/event_handler_test.cpp
 #  api/future_test.cpp

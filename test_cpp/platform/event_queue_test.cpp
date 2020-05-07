@@ -21,22 +21,22 @@ static void np_timed_event_test_callback(const np_error_code ec, void* data)
     state->called = true;
 }
 
-np_timestamp time_;
-bool np_platform_test_ts_passed_or_now(np_timestamp* timestamp)
+uint32_t time_;
+bool np_platform_test_ts_passed_or_now(uint32_t* timestamp)
 {
     return (time_ >= *timestamp);
 }
 
-void np_platform_test_ts_now(np_timestamp* ts)
+void np_platform_test_ts_now(uint32_t* ts)
 {
     *ts = time_;
 }
-bool np_platform_test_ts_less_or_equal(np_timestamp* t1, np_timestamp* t2)
+bool np_platform_test_ts_less_or_equal(uint32_t* t1, uint32_t* t2)
 {
     return (*t1 <= *t2);
 }
 
-void np_platform_test_ts_set_future_timestamp(np_timestamp* ts, uint32_t milliseconds)
+void np_platform_test_ts_set_future_timestamp(uint32_t* ts, uint32_t milliseconds)
 {
     *ts = time_ + milliseconds;
 }

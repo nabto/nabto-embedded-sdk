@@ -66,8 +66,9 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
                                   uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_context* dtls)
 {
+    uint32_t ts = np_timestamp_now_ms(ctx->pl);
     enum nabto_coap_client_status status = nabto_coap_client_handle_packet(&ctx->client,
-                                                                           ctx->pl->ts.now_ms(),
+                                                                           ts,
                                                                            buffer,
                                                                            bufferSize, dtls);
     NABTO_LOG_TRACE(LOG, "coap handling packet with status %i: ", status);
@@ -90,7 +91,8 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
     uint8_t* end = sendCtx->buffer+pl->buf.size(ctx->sendBuffer);
 
     void* connection;
-    uint8_t* ptr = nabto_coap_client_create_packet(&ctx->client, ctx->pl->ts.now_ms(), sendCtx->buffer, end, &connection);
+    uint32_t ts = np_timestamp_now_ms(ctx->pl);
+    uint8_t* ptr = nabto_coap_client_create_packet(&ctx->client, ts, sendCtx->buffer, end, &connection);
     if (ptr == NULL || ptr < sendCtx->buffer || connection == NULL) {
         // should not happen.
     } else {
@@ -108,10 +110,10 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
 void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
 {
     uint32_t nextStamp;
-    nextStamp = nabto_coap_client_get_next_timeout(&ctx->client, ctx->pl->ts.now_ms());
+    uint32_t now = np_timestamp_now_ms(ctx->pl);
+    nextStamp = nabto_coap_client_get_next_timeout(&ctx->client, now);
     if (nabto_coap_is_stamp_less(nextStamp, ctx->currentExpiry)) {
         ctx->currentExpiry = nextStamp;
-        uint32_t now = ctx->pl->ts.now_ms();
         int32_t diff = nabto_coap_stamp_diff(nextStamp, now);
         if (diff < 0) {
             diff = 0;
@@ -124,7 +126,8 @@ void nc_coap_client_handle_timeout(const np_error_code ec, void* data)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*) data;
     nc_coap_client_set_infinite_stamp(ctx);
-    nabto_coap_client_handle_timeout(&ctx->client, ctx->pl->ts.now_ms());
+    uint32_t now = np_timestamp_now_ms(ctx->pl);
+    nabto_coap_client_handle_timeout(&ctx->client, now);
     nc_coap_client_event(ctx);
 }
 
@@ -141,7 +144,8 @@ void nc_coap_client_handle_callback(struct nc_coap_client_context* ctx)
 
 void nc_coap_client_event(struct nc_coap_client_context* ctx)
 {
-    enum nabto_coap_client_next_event nextEvent = nabto_coap_client_get_next_event(&ctx->client, ctx->pl->ts.now_ms());
+    uint32_t now = np_timestamp_now_ms(ctx->pl);
+    enum nabto_coap_client_next_event nextEvent = nabto_coap_client_get_next_event(&ctx->client, now);
     if(nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_CALLBACK) {
         nc_coap_client_handle_callback(ctx);
         return;
@@ -179,6 +183,7 @@ void nc_coap_client_notify_event(void* userData)
 
 void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx)
 {
-    ctx->currentExpiry = ctx->pl->ts.now_ms();
+    uint32_t now = np_timestamp_now_ms(ctx->pl);
+    ctx->currentExpiry = now;
     ctx->currentExpiry += (1 << 29);
 }

@@ -7,53 +7,49 @@
 extern "C" {
 #endif
 
-// This module assumes a timestamp type is defined in types.h
-
-// e.g. typedef uint32_t np_timestamp;
-
 struct np_platform;
 
 struct np_timestamp_module {
     /**
-     * Test if a timestamp is from the past or the current now.
+     * Return current timestamp as milliseconds the timestamp should
+     * be a monotonic value which wraps around whenever the value
+     * reaches 2^32. The precision is not critical.
      *
-     * @param timestamp  The timestamp to compare to now.
-     * @return true iff timstamp is passed or equal to now.
+     * @return  The current timestamp in milliseconds.
      */
-    bool (*passed_or_now)(np_timestamp* timestamp);
-
-    /**
-     * Test if t1 is less than equal to t2.
-     *
-     * @param t1  Timestamp 1.
-     * @param t2  Timestamp 2.
-     * @return True iff t1 <= t2.
-     */
-    bool (*less_or_equal)(np_timestamp* t1, np_timestamp* t2);
-
-    /**
-     * Set a timestamp to n milliseconds into the future.
-     *
-     * @param ts  The timestamp to set.
-     * @param milliseconds  The amount of milliseconds to set the timestamp into the future from now.
-     */
-    void (*set_future_timestamp)(np_timestamp* ts, uint32_t milliseconds);
-
-    /**
-     * Return current timestamp.
-     *
-     * @param timestamp  The timestamp to write now to.
-     */
-    void (*now)(np_timestamp* timestamp);
-
-    /**
-     * Return current timestamp as uint32_t the result will be
-     * truncated and wrapping around.
-     *
-     * @return  The current timestamp as a truncated uint32_t.
-     */
-    uint32_t (*now_ms)(void);
+    uint32_t (*now_ms)(struct np_platform* pl);
 };
+
+/**
+ * get current timestamp in milliseconds
+ *
+ * @return timestamp in milliseconds
+ */
+uint32_t np_timestamp_now_ms(struct np_platform* pl);
+
+/**
+ * @param pl  The platform.
+ * @param stamp  The timestamp.
+ * @return True iff the timestamp is in the past.
+ */
+bool np_timestamp_passed_or_now(struct np_platform* pl, uint32_t stamp);
+
+/**
+ * @param t1 Timestamp 1
+ * @param t2 Timestamp 2
+ * @return t1 <= t2 the function implements timestamp wraparound handling.
+ */
+bool np_timestamp_less_or_equal(uint32_t t1, uint32_t t2);
+
+/**
+ * Get a stamp which is n milliseconds into the future.
+ *
+ * @param pl  The platform
+ * @param ms  Amount of milliseconds to set the timestamp into the future.
+ * @return the resulting timestamp.
+ */
+uint32_t np_timestamp_future(struct np_platform* pl, uint32_t ms);
+
 
 #ifdef __cplusplus
 } //extern "C"
