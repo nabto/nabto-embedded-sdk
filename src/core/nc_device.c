@@ -1,6 +1,8 @@
 #include "nc_device.h"
 #include <platform/np_logging.h>
 
+#include <nn/llist.h>
+
 #define LOG NABTO_LOG_MODULE_CORE
 
 void nc_device_attached_cb(const np_error_code ec, void* data);
@@ -82,11 +84,8 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     nc_stream_manager_init(&device->streamManager, pl);
 
-    device->eventsListenerSentinel.next = &device->eventsListenerSentinel;
-    device->eventsListenerSentinel.prev = &device->eventsListenerSentinel;
-
-    device->deviceEventsSentinel.next = &device->deviceEventsSentinel;
-    device->deviceEventsSentinel.prev = &device->deviceEventsSentinel;
+    nn_llist_init(&device->eventsListeners);
+    nn_llist_init(&device->deviceEvents);
 
     device->serverPort = 4433;
 
@@ -288,38 +287,25 @@ void nc_device_add_connection_events_listener(struct nc_device_context* dev, str
     listener->cb = cb;
     listener->userData = userData;
 
-    struct nc_connection_events_listener* before = dev->eventsListenerSentinel.prev;
-    struct nc_connection_events_listener* after = before->next;
-
-    before->next = listener;
-    listener->next = after;
-    after->prev = listener;
-    listener->prev = before;
-
+    nn_llist_append(&dev->eventsListeners, &listener->eventListenersNode, listener);
 }
 
 void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener)
 {
-    struct nc_connection_events_listener* before = listener->prev;
-    struct nc_connection_events_listener* after = listener->next;
-    before->next = after;
-    after->prev = before;
-    listener->prev = listener;
-    listener->next = listener;
+    nn_llist_erase_node(&listener->eventListenersNode);
 }
 
 void nc_device_connection_events_listener_notify(struct nc_device_context* dev, uint64_t connectionRef, enum nc_connection_event event)
 {
-    struct nc_connection_events_listener* iterator = dev->eventsListenerSentinel.next;
+    struct nn_llist_iterator iterator = nn_llist_begin(&dev->eventsListeners);
 
-    while (iterator != &dev->eventsListenerSentinel)
+    while(!nn_llist_is_end(&iterator))
     {
         // increment iterator now, such that it's allowed to remove
         // the listener from the connection in from the event handler.
-        struct nc_connection_events_listener* current = iterator;
-        iterator = iterator->next;
-
-        current->cb(connectionRef, event, current->userData);
+        struct nc_connection_events_listener* listener = nn_llist_get_item(&iterator);
+        nn_llist_next(&iterator);
+        listener->cb(connectionRef, event, listener->userData);
     }
 }
 
@@ -328,30 +314,17 @@ void nc_device_add_device_events_listener(struct nc_device_context* dev, struct 
     listener->cb = cb;
     listener->userData = userData;
 
-    struct nc_device_events_listener* before = dev->deviceEventsSentinel.prev;
-    struct nc_device_events_listener* after = before->next;
-
-    before->next = listener;
-    listener->next = after;
-    after->prev = listener;
-    listener->prev = before;
-
+    nn_llist_append(&dev->deviceEvents, &listener->eventsListenersNode, listener);
 }
 
 void nc_device_remove_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener)
 {
-    struct nc_device_events_listener* before = listener->prev;
-    struct nc_device_events_listener* after = listener->next;
-    before->next = after;
-    after->prev = before;
-    listener->prev = listener;
-    listener->next = listener;
+    nn_llist_erase_node(&listener->eventsListenersNode);
 }
 
 void nc_device_events_listener_notify(enum nc_device_event event, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
-    struct nc_device_events_listener* iterator = dev->deviceEventsSentinel.next;
 
     if (event == NC_DEVICE_EVENT_ATTACHED && dev->attacher.stunPort != 0) {
         dev->stunHost = dev->attacher.stunHost;
@@ -359,12 +332,13 @@ void nc_device_events_listener_notify(enum nc_device_event event, void* data)
         nc_stun_set_host(&dev->stun, dev->stunHost, dev->stunPort);
     }
 
-    while (iterator != &dev->deviceEventsSentinel)
+    struct nn_llist_iterator iterator = nn_llist_begin(&dev->deviceEvents);
+    while (!nn_llist_is_end(&iterator))
     {
         // increment iterator now, such that it's allowed to remove
         // the listener from the connection in from the event handler.
-        struct nc_device_events_listener* current = iterator;
-        iterator = iterator->next;
+        struct nc_device_events_listener* current = nn_llist_get_item(&iterator);
+        nn_llist_next(&iterator);
 
         current->cb(event, current->userData);
     }

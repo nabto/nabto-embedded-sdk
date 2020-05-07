@@ -9,10 +9,8 @@ enum nc_connection_event {
 
 typedef void (*nc_connection_event_callback)(uint64_t connectionRef, enum nc_connection_event event, void* userData);
 
-struct nc_connection_events_listener;
 struct nc_connection_events_listener {
-    struct nc_connection_events_listener* next;
-    struct nc_connection_events_listener* prev;
+    struct nn_llist_node eventListenersNode;
 
     nc_connection_event_callback cb;
     void* userData;

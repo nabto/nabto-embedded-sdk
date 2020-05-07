@@ -22,10 +22,8 @@ enum nc_device_state {
 
 typedef void (*nc_device_event_callback)(enum nc_device_event event, void* userData);
 
-struct nc_device_events_listener;
 struct nc_device_events_listener {
-    struct nc_device_events_listener* next;
-    struct nc_device_events_listener* prev;
+    struct nn_llist_node eventsListenersNode;
 
     nc_device_event_callback cb;
     void* userData;
@@ -71,8 +69,8 @@ struct nc_device_context {
     nc_device_close_callback closeCb;
     void* closeCbData;
 
-    struct nc_connection_events_listener eventsListenerSentinel;
-    struct nc_device_events_listener deviceEventsSentinel;
+    struct nn_llist eventsListeners;
+    struct nn_llist deviceEvents;
     struct np_completion_event socketBoundCompletionEvent;
 };
 
