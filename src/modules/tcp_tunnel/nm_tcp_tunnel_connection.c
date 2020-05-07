@@ -76,7 +76,7 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
 
     // insert connection into back of connections list
 
-    np_list_append(&service->connections, &connection->connectionsListItem, connection);
+    nn_llist_append(&service->connections, &connection->connectionsListItem, connection);
 
     ec = np_completion_event_init(pl, &connection->connectCompletionEvent, &connect_callback, connection);
     if (ec != NABTO_EC_OK) {
@@ -291,6 +291,6 @@ void is_ended(struct nm_tcp_tunnel_connection* connection)
  */
 void the_end(struct nm_tcp_tunnel_connection* connection)
 {
-    np_list_erase_item(&connection->connectionsListItem);
+    nn_llist_erase_node(&connection->connectionsListItem);
     nm_tcp_tunnel_connection_free(connection);
 }

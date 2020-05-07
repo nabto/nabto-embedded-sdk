@@ -8,10 +8,6 @@ set(src
   ${src_dir}/np_event_queue.c
   ${src_dir}/np_error_code.c
   ${src_dir}/np_util.c
-  #${src_dir}/np_vector.c
-  ${src_dir}/np_list.c
-  ${src_dir}/np_string_map.c
-  #${src_dir}/np_string_set.c
   ${src_dir}/np_completion_event.c
   ${src_dir}/np_timestamp.c
   )

@@ -7,6 +7,8 @@
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
 
+#include <nn/llist.h>
+
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_TUNNEL
@@ -22,7 +24,7 @@ np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_devi
     if (tunnels->device != NULL) {
         return NABTO_EC_RESOURCE_EXISTS;
     }
-    np_list_init(&tunnels->services);
+    nn_llist_init(&tunnels->services);
     tunnels->device = device;
     tunnels->weakPtrCounter = (void*)(1);
 
@@ -38,11 +40,10 @@ np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_devi
 void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
 {
     if (tunnels->device != NULL) { // if init was called
-        while(!np_list_empty(&tunnels->services)) {
-            struct np_list_iterator it;
-            np_list_front(&tunnels->services, &it);
-            struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
-            np_list_erase_iterator(&it);
+        while(!nn_llist_empty(&tunnels->services)) {
+            struct nn_llist_iterator it = nn_llist_begin(&tunnels->services);
+            struct nm_tcp_tunnel_service* service = nn_llist_get_item(&it);
+            nn_llist_erase(&it);
             nm_tcp_tunnel_service_deinit(service);
             nm_tcp_tunnel_service_destroy(service);
 
@@ -59,7 +60,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels
     service->tunnels = tunnels;
     tunnels->weakPtrCounter++;
     service->weakPtr = tunnels->weakPtrCounter;
-    np_list_init(&service->connections);
+    nn_llist_init(&service->connections);
     return service;
 }
 
@@ -76,7 +77,7 @@ np_error_code nm_tcp_tunnel_service_destroy_by_id(struct nm_tcp_tunnels* tunnels
 
 void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service)
 {
-    np_list_erase_item(&service->servicesListItem);
+    nn_llist_erase_node(&service->servicesListItem);
     free(service->id);
     free(service->type);
     free(service);
@@ -94,17 +95,16 @@ np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, 
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    np_list_append(&tunnels->services, &service->servicesListItem, service);
+    nn_llist_append(&tunnels->services, &service->servicesListItem, service);
     return ec;
 }
 
 void nm_tcp_tunnel_service_deinit(struct nm_tcp_tunnel_service* service)
 {
-    while(!np_list_empty(&service->connections)) {
-        struct np_list_iterator it;
-        np_list_front(&service->connections, &it);
-        struct nm_tcp_tunnel_connection* connection = np_list_get_element(&it);
-        np_list_erase_iterator(&it);
+    while(!nn_llist_empty(&service->connections)) {
+        struct nn_llist_iterator it = nn_llist_begin(&service->connections);
+        struct nm_tcp_tunnel_connection* connection = nn_llist_get_item(&it);
+        nn_llist_erase(&it);
 
         nm_tcp_tunnel_connection_stop_from_manager(connection);
     }
@@ -190,10 +190,9 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
         return NULL;
     }
 
-    struct np_list_iterator it;
-    for (np_list_front(&tunnels->services, &it); !np_list_end(&it); np_list_next(&it))
+    struct nm_tcp_tunnel_service* service;
+    NN_LLIST_FOREACH(service, &tunnels->services)
     {
-        struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
         if (strcmp(service->id, id) == 0) {
             return service;
         }
@@ -202,10 +201,9 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
 }
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr)
 {
-    struct np_list_iterator it;
-    for (np_list_front(&tunnels->services, &it); !np_list_end(&it); np_list_next(&it))
+    struct nm_tcp_tunnel_service* service;
+    NN_LLIST_FOREACH(service, &tunnels->services)
     {
-        struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
         if (service->weakPtr == weakPtr) {
             return service;
         }

@@ -4,11 +4,12 @@
 #include "nabto_device_threads.h"
 
 #include <platform/np_platform.h>
-#include <platform/np_list.h>
 #include <core/nc_device.h>
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 #include <nabto/nabto_device_experimental.h>
 #include "nabto_device_authorization.h"
+
+#include <nn/llist.h>
 
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec);
 
@@ -23,7 +24,7 @@ struct nabto_device_context {
 
     struct nabto_device_mutex* futureQueueMutex;
 
-    struct np_list listeners;
+    struct nn_llist listeners;
 
     bool enableMdns;
 

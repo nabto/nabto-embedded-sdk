@@ -3,10 +3,11 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_tcp.h>
-#include <platform/np_list.h>
 
 #include <core/nc_stream_manager.h>
 #include <core/nc_device.h>
+
+#include <nn/llist.h>
 
 struct nabto_stream;
 struct nc_device_context;
@@ -16,7 +17,7 @@ struct nc_device_context;
 #define NM_TCP_TUNNEL_BUFFER_SIZE 8192
 
 struct nm_tcp_tunnel_connection {
-    struct np_list_item connectionsListItem;
+    struct nn_llist_node connectionsListItem;
     struct np_platform* pl;
     np_tcp_socket* socket;
     struct nc_stream_context* stream;
@@ -39,7 +40,7 @@ struct nm_tcp_tunnel_connection {
 };
 
 struct nm_tcp_tunnel_service {
-    struct np_list_item servicesListItem;
+    struct nn_llist_node servicesListItem;
     struct nm_tcp_tunnel* next;
     struct nm_tcp_tunnel* prev;
     struct nm_tcp_tunnels* tunnels;
@@ -50,7 +51,7 @@ struct nm_tcp_tunnel_service {
 
     struct nc_stream_listener streamListener;
 
-    struct np_list connections;
+    struct nn_llist connections;
 
     char* id;
     char* type;
@@ -60,7 +61,7 @@ struct nm_tcp_tunnel_service {
 
 struct nm_tcp_tunnels {
     struct nc_device_context* device;
-    struct np_list services;
+    struct nn_llist services;
     uint8_t* weakPtrCounter;
 
     struct nabto_coap_server_resource* coapListServices;

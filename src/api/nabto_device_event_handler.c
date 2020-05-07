@@ -22,7 +22,7 @@ NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* dev
     listener->type = NABTO_DEVICE_LISTENER_TYPE_NONE;
     listener->dev = dev;
 
-    np_list_append(&dev->listeners, &listener->listenersItem, listener);
+    nn_llist_append(&dev->listeners, &listener->listenersItem, listener);
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
@@ -80,7 +80,7 @@ void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceList
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    np_list_erase_item(&listener->listenersItem);
+    nn_llist_erase_node(&listener->listenersItem);
 
     free(listener);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -144,12 +144,9 @@ np_error_code nabto_device_listener_get_status(struct nabto_device_listener* lis
 
 void nabto_device_listener_stop_all(struct nabto_device_context* dev)
 {
-    struct np_list_iterator iterator;
-    for (np_list_front(&dev->listeners, &iterator);
-         np_list_end(&iterator) == false;
-         np_list_next(&iterator))
+    struct nabto_device_listener* listener;
+    NN_LLIST_FOREACH(listener, &dev->listeners)
     {
-        struct nabto_device_listener* listener = np_list_get_element(&iterator);
         nabto_device_listener_stop_internal(listener);
     }
 }

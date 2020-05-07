@@ -89,10 +89,9 @@ static size_t encode_services_list(struct nm_tcp_tunnels* tunnels, uint8_t* buff
     CborEncoder array;
     cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
 
-    struct np_list_iterator it;
-    for (np_list_front(&tunnels->services, &it); !np_list_end(&it); np_list_next(&it))
+    struct nm_tcp_tunnel_service* service;
+    NN_LLIST_FOREACH(service, &tunnels->services)
     {
-        struct nm_tcp_tunnel_service* service = np_list_get_element(&it);
         cbor_encode_text_stringz(&array, service->id);
     }
     cbor_encoder_close_container(&encoder, &array);

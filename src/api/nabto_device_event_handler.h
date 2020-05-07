@@ -6,7 +6,7 @@
 
 #include <api/nabto_device_future.h>
 #include <platform/np_error_code.h>
-#include <platform/np_list.h>
+#include <nn/llist.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,7 +69,7 @@ struct nabto_device_listener {
     enum nabto_device_listener_type type;
     bool isInitialized;
     // item for the list of all listeners.
-    struct np_list_item listenersItem;
+    struct nn_llist_node listenersItem;
 };
 
 /**

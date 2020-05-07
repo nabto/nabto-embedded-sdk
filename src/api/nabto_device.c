@@ -92,7 +92,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
-    np_list_init(&dev->listeners);
+    nn_llist_init(&dev->listeners);
 
     return (NabtoDevice*)dev;
 }
