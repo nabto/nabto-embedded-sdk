@@ -15,7 +15,7 @@ static void sct_request_handler(struct nabto_coap_client_request* request, void*
  * return the number of bytes needed to encode the scts if an encoder
  * without a buffer is used. Else return 0.
  */
-static size_t encode_scts(CborEncoder* encoder, struct np_vector* scts);
+static size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts);
 
 np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_attacher_sct_callback cb, void* userData)
 {
@@ -91,15 +91,13 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     cb(status, cbUserData);
 }
 
-size_t encode_scts(CborEncoder* encoder, struct np_vector* scts)
+size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
 {
-    size_t i;
     CborEncoder array;
     cbor_encoder_create_array(encoder, &array, CborIndefiniteLength);
 
-    size_t vectorSize = np_vector_size(scts);
-    for (i = 0; i < vectorSize; i++) {
-        char* str = np_vector_get(scts, i);
+    const char* str;
+    NN_STRING_SET_FOREACH(str, scts) {
         cbor_encode_text_stringz(&array, str);
     }
     cbor_encoder_close_container(encoder, &array);

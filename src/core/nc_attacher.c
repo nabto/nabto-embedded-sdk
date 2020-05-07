@@ -69,7 +69,6 @@ void send_attach_sct_request_callback(np_error_code ec, void* userData);
 void send_sct_request(struct nc_attach_context* ctx);
 void send_sct_request_callback(np_error_code ec, void* userData);
 
-static void string_free(void* str);
 static void sct_init(struct nc_attach_context* ctx);
 static void sct_deinit(struct nc_attach_context* ctx);
 
@@ -241,14 +240,9 @@ np_error_code nc_attacher_stop(struct nc_attach_context* ctx)
 
 np_error_code nc_attacher_add_server_connect_token(struct nc_attach_context* ctx, const char* token)
 {
-    char* tokenCopy = strdup(token);
-    if (tokenCopy == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
     ctx->sctContext.version++;
-    if (np_vector_push_back(&ctx->sctContext.scts, tokenCopy) != NABTO_EC_OK)
+    if (nn_string_set_insert(&ctx->sctContext.scts, token) != NABTO_EC_OK)
     {
-        free(tokenCopy);
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
@@ -769,16 +763,10 @@ void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, si
     }
 }
 
-
-void string_free(void* str)
-{
-    free(str);
-}
-
 void sct_init(struct nc_attach_context* ctx)
 {
     struct nc_attacher_sct_context* sctCtx = &ctx->sctContext;
-    np_vector_init(&sctCtx->scts, &string_free);
+    nn_string_set_init(&sctCtx->scts);
     sctCtx->version = 0;
     sctCtx->synchronizedVersion = 0;
     sctCtx->uploadingVersion = 0;
@@ -788,5 +776,5 @@ void sct_init(struct nc_attach_context* ctx)
 
 void sct_deinit(struct nc_attach_context* ctx)
 {
-    np_vector_deinit(&ctx->sctContext.scts);
+    nn_string_set_deinit(&ctx->sctContext.scts);
 }

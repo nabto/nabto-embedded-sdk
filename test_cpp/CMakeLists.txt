@@ -14,7 +14,7 @@ set(test_src
   network/tcp_test.cpp
   network/udp_test.cpp
   platform/hex_test.cpp
-  platform/vector_test.cpp
+#  platform/vector_test.cpp
   platform/list_test.cpp
   platform/ip_address_test.cpp
   platform/string_map_test.cpp

@@ -2,12 +2,13 @@
 #define NC_ATTACHER_H
 
 #include <platform/np_platform.h>
-#include <platform/np_vector.h>
 #include <platform/np_completion_event.h>
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
 #include <core/nc_device_defines.h>
 #include <core/nc_dns_multi_resolver.h>
+
+#include <nn/string_set.h>
 
 
 #ifdef __cplusplus
@@ -57,7 +58,7 @@ typedef void (*nc_attacher_attach_end_callback)(np_error_code ec, void* userData
 typedef void (*nc_attacher_sct_callback)(np_error_code ec, void* userData);
 
 struct nc_attacher_sct_context {
-    struct np_vector scts;
+    struct nn_string_set scts;
     uint64_t version;
     uint64_t synchronizedVersion;
     uint64_t uploadingVersion;

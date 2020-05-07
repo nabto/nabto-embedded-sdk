@@ -217,8 +217,3 @@ void nabto_device_listener_pop_event(struct nabto_device_listener* listener, str
     after->prev = before;
     free(ev);
 }
-
-/* np_error_code add_listener_to_device(struct nabto_device_context* dev, struct nabto_device_listener* listener) */
-/* { */
-/*     return np_vector_push_back(&dev->listeners, listener); */
-/* } */
