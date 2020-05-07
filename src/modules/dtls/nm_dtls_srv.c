@@ -47,7 +47,7 @@ struct np_dtls_srv_connection {
     uint32_t recvCount;
     uint32_t sentCount;
 
-    struct np_dtls_srv_send_context sendSentinel;
+    struct nn_llist sendList;
     struct np_event* startSendEvent;
     struct np_event* deferredEventEvent;
     enum np_dtls_srv_event deferredEvent;
@@ -68,26 +68,6 @@ struct np_dtls_srv {
     mbedtls_x509_crt publicKey;
     mbedtls_pk_context privateKey;
 };
-
-// insert chunk into end of double linked list.
-void nm_dtls_srv_insert_send_data(struct np_dtls_srv_connection* connection, struct np_dtls_srv_send_context* chunk)
-{
-    struct np_dtls_srv_send_context* before = connection->sendSentinel.prev;
-    struct np_dtls_srv_send_context* after = &connection->sendSentinel;
-
-    before->next = chunk;
-    chunk->next = after;
-    after->prev = chunk;
-    chunk->prev = before;
-}
-
-void nm_dtls_srv_remove_send_data(struct np_dtls_srv_send_context* elm)
-{
-    struct np_dtls_srv_send_context* before = elm->prev;
-    struct np_dtls_srv_send_context* after = elm->next;
-    before->next = after;
-    after->prev = before;
-}
 
 static np_error_code nm_dtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server);
 static void nm_dtls_srv_destroy(struct np_dtls_srv* server);
@@ -239,8 +219,7 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     ctx->sending = false;
 
-    ctx->sendSentinel.next = &ctx->sendSentinel;
-    ctx->sendSentinel.prev = &ctx->sendSentinel;
+    nn_llist_init(&ctx->sendList);
 
     struct np_platform* pl = ctx->pl;
 
@@ -307,9 +286,10 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
     struct np_dtls_srv_connection* ctx = connection;
     ctx->state = CLOSING;
     // remove the first element until the list is empty
-    while(ctx->sendSentinel.next != &ctx->sendSentinel) {
-        struct np_dtls_srv_send_context* first = ctx->sendSentinel.next;
-        nm_dtls_srv_remove_send_data(first);
+    while(!nn_llist_empty(&ctx->sendList)) {
+        struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
+        struct np_dtls_srv_send_context* first = nn_llist_get_item(&it);
+        nn_llist_erase(&it);
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
     nm_dtls_timer_cancel(&ctx->timer);
@@ -426,13 +406,14 @@ void nm_dtls_srv_start_send_deferred(void* data)
         return;
     }
 
-    if (ctx->sendSentinel.next == &ctx->sendSentinel) {
+    if (nn_llist_empty(&ctx->sendList)) {
         // empty send queue
         return;
     }
 
-    struct np_dtls_srv_send_context* next = ctx->sendSentinel.next;
-    nm_dtls_srv_remove_send_data(next);
+    struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
+    struct np_dtls_srv_send_context* next = nn_llist_get_item(&it);
+    nn_llist_erase(&it);
 
     ctx->channelId = next->channelId;
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) next->buffer, next->bufferSize );
@@ -459,7 +440,7 @@ np_error_code nm_dtls_srv_async_send_data(struct np_platform* pl, struct np_dtls
     if (ctx->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
-    nm_dtls_srv_insert_send_data(ctx, sendCtx);
+    nn_llist_append(&ctx->sendList, &sendCtx->sendListNode, sendCtx);
     nm_dtls_srv_start_send(ctx);
     return NABTO_EC_OK;
 }

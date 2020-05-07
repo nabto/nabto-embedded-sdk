@@ -31,7 +31,7 @@ add_library( nm_dtls_srv STATIC ${dtls_srv_src})
 
 #add_executable( nm_dtls_test ${dtls_test_src})
 
-target_link_libraries(nm_dtls_cli 3rdparty_mbedtls)
+target_link_libraries(nm_dtls_cli 3rdparty_mbedtls 3rdparty_nn)
 target_link_libraries(nm_dtls_srv 3rdparty_mbedtls)
 
 #target_link_libraries(nm_dtls_test

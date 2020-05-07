@@ -128,6 +128,7 @@ include_directories(src)
 include_directories(include)
 
 include_directories(nabto-common-cpp/src)
+include_directories(3rdparty/nn/nn/include)
 
 set(test_runner_src
   ${CMAKE_CURRENT_SOURCE_DIR}/test/runner/linux.c

@@ -7,6 +7,8 @@
 #include <platform/np_dtls.h>
 #include <platform/np_udp.h>
 
+#include <nn/llist.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,8 +37,7 @@ struct np_dtls_cli_send_context {
     uint16_t bufferSize;
     np_dtls_send_to_callback cb;
     void* data;
-    struct np_dtls_cli_send_context* next;
-    struct np_dtls_cli_send_context* prev;
+    struct nn_llist_node sendListNode;
 };
 
 struct np_dtls_cli_module {

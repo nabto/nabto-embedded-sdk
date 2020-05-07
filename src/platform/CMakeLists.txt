@@ -13,3 +13,4 @@ set(src
   )
 
 add_library(np_platform STATIC "${src}")
+target_link_libraries(np_platform 3rdparty_nn)

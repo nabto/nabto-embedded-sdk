@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <nn/llist.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0
@@ -43,7 +44,7 @@ struct np_dtls_cli_context {
     uint32_t recvCount;
     uint32_t sentCount;
 
-    struct np_dtls_cli_send_context sendSentinel;
+    struct nn_llist sendList;
     struct np_event* startSendEvent;
 
     bool sending;
@@ -201,8 +202,7 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, struct np_dtls_cli_cont
         nm_dtls_cli_do_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    ctx->sendSentinel.next = &ctx->sendSentinel;
-    ctx->sendSentinel.prev = &ctx->sendSentinel;
+    nn_llist_init(&ctx->sendList);
     ctx->destroyed = false;
 
     np_error_code ec = dtls_cli_init_connection(ctx);
@@ -293,9 +293,11 @@ np_error_code nm_dtls_cli_reset(struct np_dtls_cli_context* ctx)
 {
     mbedtls_ssl_session_reset( &ctx->ssl );
     // remove the first element until the list is empty
-    while(ctx->sendSentinel.next != &ctx->sendSentinel) {
-        struct np_dtls_cli_send_context* first = ctx->sendSentinel.next;
-        nm_dtls_cli_remove_send_data(first);
+
+    while(!nn_llist_empty(&ctx->sendList)) {
+        struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
+        struct np_dtls_cli_send_context* first = nn_llist_get_item(&it);
+        nn_llist_erase(&it);
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
     ctx->sslSendBufferSize = 0;
@@ -311,9 +313,10 @@ void nm_dtls_cli_do_free(struct np_dtls_cli_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
     // remove the first element until the list is empty
-    while(ctx->sendSentinel.next != &ctx->sendSentinel) {
-        struct np_dtls_cli_send_context* first = ctx->sendSentinel.next;
-        nm_dtls_cli_remove_send_data(first);
+    while(!nn_llist_empty(&ctx->sendList)) {
+        struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
+        struct np_dtls_cli_send_context* first = nn_llist_get_item(&it);
+        nn_llist_erase(&it);
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
 
@@ -483,26 +486,6 @@ void nm_dtls_event_do_one(void* data)
     }
 }
 
-// insert chunk into double linked list after elm.
-void nm_dtls_cli_insert_send_data(struct np_dtls_cli_send_context* chunk, struct np_dtls_cli_send_context* elm)
-{
-    struct np_dtls_cli_send_context* before = elm;
-    struct np_dtls_cli_send_context* after = elm->next;
-
-    before->next = chunk;
-    chunk->next = after;
-    after->prev = chunk;
-    chunk->prev = before;
-}
-
-void nm_dtls_cli_remove_send_data(struct np_dtls_cli_send_context* elm)
-{
-    struct np_dtls_cli_send_context* before = elm->prev;
-    struct np_dtls_cli_send_context* after = elm->next;
-    before->next = after;
-    after->prev = before;
-}
-
 void nm_dtls_cli_start_send(struct np_dtls_cli_context* ctx)
 {
     np_event_queue_post_maybe_double(ctx->pl, ctx->startSendEvent);
@@ -518,13 +501,14 @@ void nm_dtls_cli_start_send_deferred(void* data)
         return;
     }
 
-    if (ctx->sendSentinel.next == &ctx->sendSentinel) {
+    if (nn_llist_empty(&ctx->sendList)) {
         // empty send queue
         return;
     }
 
-    struct np_dtls_cli_send_context* next = ctx->sendSentinel.next;
-    nm_dtls_cli_remove_send_data(next);
+    struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
+    struct np_dtls_cli_send_context* next = nn_llist_get_item(&it);
+    nn_llist_erase(&it);
 
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) next->buffer, next->bufferSize );
     if (next->cb == NULL) {
@@ -554,7 +538,7 @@ np_error_code async_send_data(struct np_dtls_cli_context* ctx,
     if (ctx->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
-    nm_dtls_cli_insert_send_data(sendCtx, &ctx->sendSentinel);
+    nn_llist_append(&ctx->sendList, &sendCtx->sendListNode, sendCtx);
     nm_dtls_cli_start_send(ctx);
     return NABTO_EC_OK;
 }
