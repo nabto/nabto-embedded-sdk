@@ -107,7 +107,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     np_completion_event_init(pl, &ctx->senderCompletionEvent, NULL, NULL);
     np_completion_event_init(pl, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
 
-    nc_dns_resolver_init(pl, &ctx->dnsResolver, dnsResolver);
+    nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, dnsResolver);
 
     return ec;
 }
@@ -141,7 +141,7 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         np_completion_event_deinit(&ctx->senderCompletionEvent);
         np_completion_event_deinit(&ctx->resolveCompletionEvent);
 
-        nc_dns_resolver_deinit(&ctx->dnsResolver);
+        nc_dns_multi_resolver_deinit(&ctx->dnsResolver);
     }
 }
 
@@ -340,7 +340,7 @@ void handle_state_change(struct nc_attach_context* ctx)
 
 void dns_start_resolve(struct nc_attach_context* ctx)
 {
-    nc_dns_resolver_resolve(&ctx->dnsResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
+    nc_dns_multi_resolver_resolve(&ctx->dnsResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
 }
 
 void dns_resolved_callback(const np_error_code ec, void* data)

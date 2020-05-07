@@ -75,7 +75,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
     np_event_queue_create_timed_event(pl, &nc_stun_handle_timeout, ctx, &ctx->toEv);
-    nc_dns_resolver_init(pl, &ctx->dnsResolver, resolver);
+    nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, resolver);
     np_completion_event_init(pl, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx);
     return NABTO_EC_OK;
 }
@@ -90,7 +90,7 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
 
         np_event_queue_destroy_timed_event(pl, ctx->toEv);
         np_completion_event_deinit(&ctx->dnsCompletionEvent);
-        nc_dns_resolver_deinit(&ctx->dnsResolver);
+        nc_dns_multi_resolver_deinit(&ctx->dnsResolver);
     }
 }
 
@@ -144,7 +144,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
 
     ctx->simple = simple;
     ctx->state = NC_STUN_STATE_RUNNING;
-    nc_dns_resolver_resolve(&ctx->dnsResolver, ctx->hostname, ctx->resolvedIps, NC_STUN_MAX_ENDPOINTS, &ctx->resolvedIpsSize, &ctx->dnsCompletionEvent);
+    nc_dns_multi_resolver_resolve(&ctx->dnsResolver, ctx->hostname, ctx->resolvedIps, NC_STUN_MAX_ENDPOINTS, &ctx->resolvedIpsSize, &ctx->dnsCompletionEvent);
 
     return NABTO_EC_OK;
 }

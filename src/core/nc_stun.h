@@ -6,7 +6,7 @@
 #include <stun/nabto_stun_client.h>
 
 #include <core/nc_udp_dispatch.h>
-#include <core/nc_dns_resolver.h>
+#include <core/nc_dns_multi_resolver.h>
 
 #ifndef NC_STUN_MAX_CALLBACKS
 #define NC_STUN_MAX_CALLBACKS 10
@@ -55,7 +55,7 @@ struct nc_stun_context {
     struct np_completion_event sendCompletionEvent;
     bool simple;
 
-    struct nc_dns_resolver_context dnsResolver;
+    struct nc_dns_multi_resolver_context dnsResolver;
     struct np_ip_address resolvedIps[NC_STUN_MAX_ENDPOINTS];
     size_t resolvedIpsSize;
     struct np_completion_event dnsCompletionEvent;
