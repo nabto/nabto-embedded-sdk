@@ -19,7 +19,7 @@ typedef void (*nc_client_connection_send_callback)(const np_error_code ec, void*
 
 struct nc_connection_channel {
     struct nc_udp_dispatch_context* sock;
-    np_udp_endpoint ep;
+    struct np_udp_endpoint ep;
     uint8_t channelId;
 };
 

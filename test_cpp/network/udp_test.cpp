@@ -98,7 +98,7 @@ class UdpEchoClientTest {
     nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
     struct np_udp_endpoint ep_;
-    np_udp_socket* socket_;
+    struct np_udp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
     struct np_completion_event completionEvent_;
