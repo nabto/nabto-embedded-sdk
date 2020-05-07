@@ -28,6 +28,8 @@ struct np_platform {
 
     // Timestamp module
     struct np_timestamp_module ts;
+    // data for the timestamp module
+    void* tsData;
 
     // Event Queue module
     struct np_event_queue eq;

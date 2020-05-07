@@ -10,8 +10,8 @@ typedef void (*nm_dtls_timer_callback)(const np_error_code ec, void* data);
 
 struct nm_dtls_timer {
     struct np_platform* pl;
-    np_timestamp intermediateTp;
-    np_timestamp finalTp;
+    uint32_t intermediateTp;
+    uint32_t finalTp;
     struct np_timed_event* tEv;
     nm_dtls_timer_callback cb;
     void* cbData;

@@ -181,7 +181,7 @@ void nc_coap_server_send_to_callback(const np_error_code ec, void* data)
 
 uint32_t nc_coap_server_get_stamp(void* userData) {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    return ctx->pl->ts.now_ms();
+    return np_timestamp_now_ms(ctx->pl);
 }
 
 void nc_coap_server_notify_event_callback(void* userData)

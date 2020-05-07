@@ -27,7 +27,7 @@ static void nc_stun_dns_cb(const np_error_code ec, void* data);
 uint32_t nc_stun_get_stamp(void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
-    return ctx->pl->ts.now_ms();
+    return np_timestamp_now_ms(ctx->pl);
 }
 void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
                  const char* fmt, va_list args, void* data)
