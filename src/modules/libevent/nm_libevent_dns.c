@@ -134,7 +134,11 @@ void dns_cb(int result, char type, int count, int ttl, void *addresses, void *ar
             resolved++;
         }
     }
-    *ctx->ipsResolved = resolved;
-    np_completion_event_resolve(ctx->completionEvent, NABTO_EC_OK);
+    if (resolved == 0) {
+        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_NO_DATA);
+    } else {
+        *ctx->ipsResolved = resolved;
+        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_OK);
+    }
     free(ctx);
 }
