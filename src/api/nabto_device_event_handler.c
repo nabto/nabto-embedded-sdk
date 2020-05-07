@@ -41,15 +41,15 @@ np_error_code nabto_device_listener_init(struct nabto_device_context* dev,
     listener->dev = dev;
     listener->cb = cb;
     listener->listenerData = listenerData;
-    listener->sentinel.next = &listener->sentinel;
-    listener->sentinel.prev = &listener->sentinel;
+
+    nn_llist_init(&listener->eventsList);
     listener->ec = NABTO_EC_OK;
     listener->type = type;
     listener->isInitialized = true;
     return NABTO_EC_OK;
 }
 
-np_error_code nabto_device_listener_add_event(struct nabto_device_listener* listener, void* data)
+np_error_code nabto_device_listener_add_event(struct nabto_device_listener* listener, struct nn_llist_node* eventListNode, void* data)
 {
     if (!listener->isInitialized) {
         return NABTO_EC_INVALID_STATE;
@@ -57,19 +57,8 @@ np_error_code nabto_device_listener_add_event(struct nabto_device_listener* list
     if (listener->ec != NABTO_EC_OK) {
         return listener->ec;
     }
-    struct nabto_device_event* ev = (struct nabto_device_event*)calloc(1,sizeof(struct nabto_device_event));
-    if (ev == NULL) {
-        listener->ec = NABTO_EC_OUT_OF_MEMORY;
-        nabto_device_listener_resolve_error_state(listener);
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-    ev->data = data;
-    struct nabto_device_event* before = listener->sentinel.prev;
-    struct nabto_device_event* after = &listener->sentinel;
-    before->next = ev;
-    ev->next = after;
-    after->prev = ev;
-    ev->prev = before;
+
+    nn_llist_append(&listener->eventsList, eventListNode, data);
     nabto_device_listener_try_resolve(listener);
     return NABTO_EC_OK;
 }
@@ -172,14 +161,19 @@ np_error_code nabto_device_listener_stop_internal(struct nabto_device_listener* 
 
 void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
 {
-    if (listener->fut && listener->sentinel.next != &listener->sentinel) {
+    // try to resolve the front item
+
+    if (listener->fut && !nn_llist_empty(&listener->eventsList)) {
         np_error_code ec = NABTO_DEVICE_EC_UNKNOWN;
+        struct nn_llist_iterator it = nn_llist_begin(&listener->eventsList);
+        void* item = nn_llist_get_item(&it);
+        nn_llist_erase(&it);
         if (listener->cb) {
-            ec = listener->cb(NABTO_EC_OK, listener->fut, listener->sentinel.next->data, listener->listenerData);
+            ec = listener->cb(NABTO_EC_OK, listener->fut, item, listener->listenerData);
         }
         nabto_device_future_resolve(listener->fut, nabto_device_error_core_to_api(ec));
         listener->fut = NULL;
-        nabto_device_listener_pop_event(listener, listener->sentinel.next);
+
     }
 }
 
@@ -190,27 +184,24 @@ void nabto_device_listener_resolve_error_state(struct nabto_device_listener* lis
         // On aborted, we stop all events first, then resolve with ABORTED
         ec = NABTO_EC_STOPPED;
     }
-    while (listener->sentinel.next != &listener->sentinel) {
+
+    while (!nn_llist_empty(&listener->eventsList)) {
+        struct nn_llist_iterator it = nn_llist_begin(&listener->eventsList);
+        void* item = nn_llist_get_item(&it);
+        nn_llist_erase(&it);
         if (listener->cb) {
-            listener->cb(ec, NULL, listener->sentinel.next->data, listener->listenerData);
+            listener->cb(ec, NULL, item, listener->listenerData);
         }
-        nabto_device_listener_pop_event(listener, listener->sentinel.next);
+
     }
+
     if (listener->fut) {
         nabto_device_future_resolve(listener->fut, nabto_device_error_core_to_api(listener->ec));
         listener->fut = NULL;
     }
+
     if (listener->cb) {
         listener->cb(NABTO_EC_ABORTED, NULL, NULL, listener->listenerData);
     }
     listener->cb = NULL;
-}
-
-void nabto_device_listener_pop_event(struct nabto_device_listener* listener, struct nabto_device_event* ev)
-{
-    struct nabto_device_event* before = ev->prev;
-    struct nabto_device_event* after = ev->next;
-    before->next = after;
-    after->prev = before;
-    free(ev);
 }

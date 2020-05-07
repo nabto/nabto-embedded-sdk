@@ -85,7 +85,7 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     authReq->verdictCallbackUserData3 = userData3;
 
     if (listener) {
-        if (nabto_device_listener_add_event(listener, authReq) == NABTO_EC_OK) {
+        if (nabto_device_listener_add_event(listener, &authReq->eventListNode, authReq) == NABTO_EC_OK) {
             return;
         } else {
             NABTO_LOG_ERROR(LOG, "Authorization request could not be added to listener queue.");

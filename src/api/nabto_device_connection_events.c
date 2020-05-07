@@ -8,6 +8,8 @@
 
 #include <platform/np_logging.h>
 
+#include <nn/llist.h>
+
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_API
@@ -23,6 +25,7 @@ const int NABTO_DEVICE_CONNECTION_EVENT_CHANNEL_CHANGED = (int)NC_CONNECTION_EVE
 struct nabto_device_listen_connection_event{
     NabtoDeviceConnectionRef coreRef;
     NabtoDeviceConnectionEvent coreEvent;
+    struct nn_llist_node eventListNode;
 };
 
 struct nabto_device_listen_connection_context {
@@ -71,7 +74,7 @@ void nabto_device_connection_events_core_cb(uint64_t connectionRef, enum nc_conn
     }
     ev->coreRef = connectionRef;
     ev->coreEvent = (int)event;
-    np_error_code ec = nabto_device_listener_add_event(ctx->listener, ev);
+    np_error_code ec = nabto_device_listener_add_event(ctx->listener, &ev->eventListNode, ev);
     if (ec != NABTO_EC_OK) {
         free(ev);
     }

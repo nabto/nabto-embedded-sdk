@@ -4,6 +4,8 @@
 #include <platform/np_event_queue.h>
 #include <platform/np_authorization.h>
 
+#include <nn/llist.h>
+
 struct nabto_device_context;
 
 struct nabto_device_authorization_request_attribute {
@@ -32,6 +34,8 @@ struct nabto_device_authorization_request {
     struct np_event* verdictEvent;
     bool verdict;
     bool verdictDone;
+
+    struct nn_llist_node eventListNode;
 
     np_authorization_request_callback verdictCallback;
     void* verdictCallbackUserData1;

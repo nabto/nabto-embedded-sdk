@@ -302,6 +302,7 @@ np_error_code nabto_device_stream_listener_callback(const np_error_code ec, stru
 }
 
 
+
 void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_context* stream, void* data)
 {
     struct nabto_device_stream_listener_context* listenerContext = data;
@@ -317,7 +318,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
         str->stream = stream;
         str->dev = dev;
         // using the stream structure directly as listener event, this means we dont free event untill user calls stream_free()
-        np_error_code ec = nabto_device_listener_add_event(listenerContext->listener, str);
+        np_error_code ec = nabto_device_listener_add_event(listenerContext->listener, &str->eventListNode, str);
         if (ec != NABTO_EC_OK) {
             nc_stream_release(str->stream);
             free(str);

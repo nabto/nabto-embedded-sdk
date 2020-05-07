@@ -18,6 +18,8 @@ struct nabto_device_stream {
     struct nabto_device_future* closeFut;
     struct nabto_device_context* dev;
 
+    struct nn_llist_node eventListNode;
+
 };
 
 np_error_code nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);

@@ -21,19 +21,18 @@ struct nabto_device_event;
  * resolved, once the call returns, the listener will resolve the
  * future with whatever code is returned by this call. The listener
  * deems a future ready to be resolved if
- * nabto_device_listener_create_future has been called, and the
- * sentinel does not point to itself. (ie.
- * nabto_device_listener_add_event has been called) If the listener
- * goes into an error state, this function is called with the error
- * for each event in the queue. Once no more events are left, this
- * function is called once with error code NABTO_EC_ABORTED to signal
- * that the listener has been aborted and no further actions will be
- * made on provided references and it is okay to cleanup any remaining
- * resources. If the listener goes into the error state
- * NABTO_EC_ABORTED, it will be changed to NABTO_EC_STOPPED while
- * cleaning up events. Therefore, NABTO_EC_ABORTED is ALWAYS the last
- * error code this function will receive. When resolving error states,
- * the return value is ignored.
+ * nabto_device_listener_create_future has been called, and the list
+ * is not empty. (ie.  nabto_device_listener_add_event has been
+ * called) If the listener goes into an error state, this function is
+ * called with the error for each event in the queue. Once no more
+ * events are left, this function is called once with error code
+ * NABTO_EC_ABORTED to signal that the listener has been aborted and
+ * no further actions will be made on provided references and it is
+ * okay to cleanup any remaining resources. If the listener goes into
+ * the error state NABTO_EC_ABORTED, it will be changed to
+ * NABTO_EC_STOPPED while cleaning up events. Therefore,
+ * NABTO_EC_ABORTED is ALWAYS the last error code this function will
+ * receive. When resolving error states, the return value is ignored.
  *
  * This is called with ec:
  *      NABTO_EC_OK when future should be resolved. All arguments are set.
@@ -52,16 +51,12 @@ enum nabto_device_listener_type {
     NABTO_DEVICE_LISTENER_TYPE_AUTHORIZATION
 };
 
-
-struct nabto_device_event {
-    struct nabto_device_event* next;
-    struct nabto_device_event* prev;
-    void* data;
-};
-
 struct nabto_device_listener {
     struct nabto_device_context* dev;
-    struct nabto_device_event sentinel;
+
+    // list of events which needs to be handled by the listener
+    struct nn_llist eventsList;
+
     nabto_device_listener_resolve_event cb;
     void* listenerData;
     struct nabto_device_future* fut;
@@ -104,7 +99,7 @@ void nabto_device_listener_try_resolve(struct nabto_device_listener* listener);
  *         NABTO_EC_OUT_OF_MEMORY if event allocation failed
  *         Whatever error state the listener is in eg. by nabto_device_listener_set_error_code
  */
-np_error_code nabto_device_listener_add_event(struct nabto_device_listener* listener, void* eventData);
+np_error_code nabto_device_listener_add_event(struct nabto_device_listener* listener, struct nn_llist_node* eventsListNode, void* eventData);
 
 /**
  * Set error code on listener. Putting the listener into an error

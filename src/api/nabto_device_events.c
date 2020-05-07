@@ -20,6 +20,7 @@ const int NABTO_DEVICE_EVENT_CLOSED   = (int)NC_DEVICE_EVENT_CLOSED;
 
 struct nabto_device_listen_device_event{
     NabtoDeviceEvent coreEvent;
+    struct nn_llist_node eventListNode;
 };
 
 struct nabto_device_listen_device_context {
@@ -64,7 +65,7 @@ void nabto_device_events_core_cb(enum nc_device_event event, void* userData)
         return;
     }
     ev->coreEvent = (int)event;
-    np_error_code ec = nabto_device_listener_add_event(ctx->listener, ev);
+    np_error_code ec = nabto_device_listener_add_event(ctx->listener, &ev->eventListNode, ev);
     if (ec != NABTO_EC_OK) {
         free(ev);
     }

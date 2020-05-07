@@ -263,7 +263,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
             req->connectionRef = 0;
         }
 
-        np_error_code ec = nabto_device_listener_add_event(resource->listener, req);
+        np_error_code ec = nabto_device_listener_add_event(resource->listener, &req->eventListNode, req);
         if (ec != NABTO_EC_OK) {
             // since we are out of resources, this probably fails. Either way we keep cleaning up
             nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Insufficient resources");
