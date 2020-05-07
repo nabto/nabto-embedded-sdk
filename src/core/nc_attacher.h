@@ -97,7 +97,7 @@ struct nc_attach_context {
     void* listenerData;
     struct nc_coap_client_context* coapClient;
     struct nc_udp_dispatch_context* udp;
-    np_dtls_cli_context* dtls;
+    struct np_dtls_cli_context* dtls;
 
     nc_attacher_state_listener stateListener;
     void* stateListenerData;

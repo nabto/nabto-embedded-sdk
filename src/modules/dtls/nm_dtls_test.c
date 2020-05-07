@@ -169,8 +169,8 @@ np_error_code conn_cancel_async_send(struct np_platform* pl, np_connection* conn
 
 /* ========= Callbacks ========*/
 bool cliConnCbCalled = false;
-np_dtls_cli_context* cliCtx = NULL;
-void test_dtls_cli_conn_cb(const np_error_code ec, np_dtls_cli_context* ctx, void* data)
+struct np_dtls_cli_context* cliCtx = NULL;
+void test_dtls_cli_conn_cb(const np_error_code ec, struct np_dtls_cli_context* ctx, void* data)
 {
     NABTO_TEST_CHECK(ec == NABTO_EC_OK);
     cliConnCbCalled = true;

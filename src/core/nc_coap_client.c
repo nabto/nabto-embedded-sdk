@@ -64,7 +64,7 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 }
 
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
-                                  uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_context* dtls)
+                                  uint8_t* buffer, uint16_t bufferSize, struct np_dtls_cli_context* dtls)
 {
     uint32_t ts = np_timestamp_now_ms(ctx->pl);
     enum nabto_coap_client_status status = nabto_coap_client_handle_packet(&ctx->client,
@@ -102,7 +102,7 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         sendCtx->data = ctx;
         sendCtx->bufferSize = used;
 
-        np_dtls_cli_context* dtls = (np_dtls_cli_context*)connection;
+        struct np_dtls_cli_context* dtls = connection;
         ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
     }
 }

@@ -99,7 +99,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         return;
     }
     struct nc_client_connection* clientConnection = (struct nc_client_connection*)connection;
-    np_dtls_srv_connection* dtls = clientConnection->dtls;
+    struct np_dtls_srv_connection* dtls = clientConnection->dtls;
 
     uint8_t* sendBuffer = pl->buf.start(ctx->sendBuffer);
     size_t sendBufferSize = pl->buf.size(ctx->sendBuffer);

@@ -38,7 +38,7 @@ struct np_dtls_srv_send_context {
 
 struct np_platform;
 
-typedef struct np_dtls_srv_connection np_dtls_srv_connection;
+struct np_dtls_srv_connection;
 
 struct np_dtls_srv;
 
