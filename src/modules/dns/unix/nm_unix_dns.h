@@ -11,8 +11,6 @@ extern "C" {
 
 void nm_unix_dns_init(struct np_platform* pl);
 
-np_error_code nm_unix_dns_resolve(struct  np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data);
-
 #ifdef __cplusplus
 } //extern "C"
 #endif

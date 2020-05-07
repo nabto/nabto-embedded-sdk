@@ -4,116 +4,141 @@
 #include <platform/np_ip_address.h>
 #include <platform/np_dns.h>
 #include <platform/np_platform.h>
+#include <platform/np_completion_event.h>
 
 #include <stdlib.h>
 #include <string.h>
 
 #define DNS_RECORDS_SIZE 4
 
-struct dns_request {
-    struct np_platform* pl;
-    struct evdns_request* request;
-    np_dns_resolve_callback callback;
-    void* callbackUserData;
-
-    struct np_ip_address v4Records[DNS_RECORDS_SIZE];
-    struct np_ip_address v6Records[DNS_RECORDS_SIZE];
-    size_t v4RecordsSize;
-    size_t v6RecordsSize;
-    const char* host;
-
-    struct np_event* callbackEvent;
+struct nm_libevent_dns_module {
+    struct event_base* eventBase;
 };
 
-static np_error_code async_resolve(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data);
-static void dns_cbv4(int result, char type, int count, int ttl, void *addresses, void *arg);
-static void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* arg);
-static void dns_done_event(void* data);
+struct np_dns_resolver {
+    struct evdns_base* dnsBase;
+};
 
-void nm_libevent_dns_init(struct np_platform* pl, struct event_base *event_base)
+struct nm_dns_request {
+    struct np_platform* pl;
+    struct evdns_request* request;
+    struct np_completion_event* completionEvent;
+    struct np_ip_address* ips;
+    struct evdns_request* req;
+    size_t ipsSize;
+    size_t* ipsResolved;
+};
+
+static void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg);
+
+
+static np_error_code create_resolver(struct np_platform* pl, struct np_dns_resolver** resolver);
+static void destroy_resolver(struct np_dns_resolver* resolver);
+static void stop_resolver(struct np_dns_resolver* resolver);
+static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+
+void nm_libevent_dns_init(struct np_platform* pl, struct event_base *eventBase)
 {
+    struct nm_libevent_dns_module* module = calloc(1,sizeof(struct nm_libevent_dns_module));
+    module->eventBase = eventBase;
+    pl->dnsData = module;
 
-    struct evdns_base * base = evdns_base_new(event_base, EVDNS_BASE_INITIALIZE_NAMESERVERS);
-    pl->dnsData = base;
-    pl->dns.async_resolve = &async_resolve;
+    pl->dns.create_resolver = &create_resolver;
+    pl->dns.destroy_resolver = &destroy_resolver;
+    pl->dns.stop = &stop_resolver;
+    pl->dns.async_resolve_v4 = &async_resolve_v4;
+    pl->dns.async_resolve_v6 = &async_resolve_v6;
 }
 
 void nm_libevent_dns_deinit(struct np_platform* pl)
 {
     if (pl->dnsData != NULL) {
-        evdns_base_free(pl->dnsData, 1);
+        struct nm_libevent_dns_module* module = pl->dnsData;
+        free(module);
     }
     pl->dnsData = NULL;
 }
 
-
-np_error_code async_resolve(struct np_platform* pl, const char* host, np_dns_resolve_callback cb, void* data)
+np_error_code create_resolver(struct np_platform* pl, struct np_dns_resolver** resolver)
 {
-    struct evdns_base* base = pl->dnsData;
-    int flags = 0;
-    struct dns_request* req = calloc(1, sizeof(struct dns_request));
-    req->pl = pl;
-    req->callback = cb;
-    req->callbackUserData = data;
-    req->host = host;
-    req->request = evdns_base_resolve_ipv4(base, host, flags, dns_cbv4, req);
-    if (req->request == NULL) {
-        return NABTO_EC_UNKNOWN;
-    }
-
-    np_event_queue_create_event(pl, &dns_done_event, req, &req->callbackEvent);
-
+    struct nm_libevent_dns_module* module = pl->dnsData;
+    struct np_dns_resolver* r = calloc(1, sizeof(struct np_dns_resolver));
+    r->dnsBase = evdns_base_new(module->eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);
+    *resolver = r;
     return NABTO_EC_OK;
 }
 
-void dns_cbv4(int result, char type, int count, int ttl, void *addresses, void *arg)
+void destroy_resolver(struct np_dns_resolver* resolver)
 {
-    struct dns_request* req = arg;
+    stop_resolver(resolver);
+    free(resolver);
+}
 
-    struct np_platform* pl = req->pl;
-    struct evdns_base* base = pl->dnsData;
-
-    if (result == DNS_ERR_NONE && type == DNS_IPv4_A) {
-        int i;
-        for (i = 0; i < count && i < DNS_RECORDS_SIZE; i++) {
-            req->v4Records[i].type = NABTO_IPV4;
-            uint8_t* addressStart = ((uint8_t*)addresses) + i*4;
-            memcpy(req->v4Records[i].ip.v4, addressStart, 4);
-        }
-        req->v4RecordsSize = i;
+void stop_resolver(struct np_dns_resolver* resolver)
+{
+    if (resolver->dnsBase == NULL) {
+        return;
     }
+    evdns_base_free(resolver->dnsBase, 1);
+    resolver->dnsBase = NULL;
+}
+
+static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+{
+    struct evdns_base* dnsBase = resolver->dnsBase;
     int flags = 0;
-    req->request = evdns_base_resolve_ipv6(base, req->host, flags, dns_cbv6, req);
-    if (req->request == NULL) {
-        np_event_queue_post(req->pl, req->callbackEvent);
-    }
+
+    struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
+    dnsRequest->completionEvent = completionEvent;
+    dnsRequest->ips = ips;
+    dnsRequest->ipsSize = ipsSize;
+    dnsRequest->ipsResolved = ipsResolved;
+    dnsRequest->req = evdns_base_resolve_ipv4(dnsBase, host, flags, dns_cb, dnsRequest);
 }
 
-void dns_cbv6(int result, char type, int count, int ttl, void* addresses, void* arg)
+static void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct dns_request* req = arg;
+    struct evdns_base* dnsBase = resolver->dnsBase;
+    int flags = 0;
 
-    if (result == DNS_ERR_NONE && type == DNS_IPv6_AAAA) {
-        int i;
-        for (i = 0; i < count && i < DNS_RECORDS_SIZE; i++) {
-            req->v6Records[i].type = NABTO_IPV6;
+    struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
+    dnsRequest->completionEvent = completionEvent;
+    dnsRequest->ips = ips;
+    dnsRequest->ipsSize = ipsSize;
+    dnsRequest->ipsResolved = ipsResolved;
+    dnsRequest->req = evdns_base_resolve_ipv6(dnsBase, host, flags, dns_cb, dnsRequest);
+}
+
+void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg)
+{
+    struct nm_dns_request* ctx = arg;
+    if (result != DNS_ERR_NONE) {
+        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_UNKNOWN);
+        free(ctx);
+        return;
+    }
+
+    int i;
+    size_t resolved = 0;
+    for (i = 0; i < count && resolved < ctx->ipsSize; i++) {
+        if (type == DNS_IPv4_A) {
+            ctx->ips[i].type = NABTO_IPV4;
+            uint8_t* addressStart = ((uint8_t*)addresses) + i*4;
+            memcpy(ctx->ips[resolved].ip.v4, addressStart, 4);
+            resolved++;
+        } else if (type == DNS_IPv6_AAAA) {
+            ctx->ips[i].type = NABTO_IPV6;
             uint8_t* addressStart = ((uint8_t*)addresses) + i*16;
-            memcpy(req->v6Records[i].ip.v6, addressStart, 16);
+            memcpy(ctx->ips[resolved].ip.v6, addressStart, 16);
+            resolved++;
         }
-        req->v6RecordsSize = i;
     }
-
-    // post to event queue such that the callback is completed on the right queue.
-    struct np_platform* pl = req->pl;
-
-    np_event_queue_post(pl, req->callbackEvent);
-}
-
-void dns_done_event (void* data)
-{
-    struct dns_request* req = data;
-    req->callback(NABTO_EC_OK, req->v4Records, req->v4RecordsSize, req->v6Records, req->v6RecordsSize, req->callbackUserData);
-    np_event_queue_destroy_event(req->pl, req->callbackEvent);
-//    evdns_cancel_request(req->pl->dnsData, req->request);
-    free(req);
+    if (resolved == 0) {
+        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_NO_DATA);
+    } else {
+        *ctx->ipsResolved = resolved;
+        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_OK);
+    }
+    free(ctx);
 }

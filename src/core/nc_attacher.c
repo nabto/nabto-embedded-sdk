@@ -35,7 +35,8 @@ static np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np
 static void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
 
-static void dns_resolved_callback(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data);
+static void dns_start_resolve(struct nc_attach_context* ctx);
+static void dns_resolved_callback(const np_error_code ec, void* data);
 
 static void start_send_initial_packet(struct nc_attach_context* ctx,
                                       uint8_t* buffer, uint16_t bufferSize,
@@ -76,7 +77,7 @@ static void sct_deinit(struct nc_attach_context* ctx);
 /*****************
  * API functions *
  *****************/
-np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
+np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, struct np_dns_resolver* dnsResolver, nc_attacher_event_listener listener, void* listenerData)
 {
     np_error_code ec;
 
@@ -104,9 +105,13 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     nc_keep_alive_init(&ctx->keepAlive, pl, keep_alive_event, ctx);
 
     np_completion_event_init(pl, &ctx->senderCompletionEvent, NULL, NULL);
+    np_completion_event_init(pl, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
+
+    nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, dnsResolver);
 
     return ec;
 }
+
 void nc_attacher_deinit(struct nc_attach_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
@@ -134,6 +139,9 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         np_event_queue_destroy_event(ctx->pl, ctx->closeEv);
 
         np_completion_event_deinit(&ctx->senderCompletionEvent);
+        np_completion_event_deinit(&ctx->resolveCompletionEvent);
+
+        nc_dns_multi_resolver_deinit(&ctx->dnsResolver);
     }
 }
 
@@ -304,14 +312,8 @@ void handle_state_change(struct nc_attach_context* ctx)
     NABTO_LOG_TRACE(LOG, "State change to: %u", ctx->state);
     switch(ctx->state) {
         case NC_ATTACHER_STATE_DNS:
-        {
-            np_error_code ec = ctx->pl->dns.async_resolve(ctx->pl, ctx->dns, &dns_resolved_callback, ctx);
-            if (ec) {
-                ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
-                handle_state_change(ctx);
-            }
-        }
-        break;
+            dns_start_resolve(ctx);
+            break;
         case NC_ATTACHER_STATE_CLOSED:
             np_event_queue_post(ctx->pl, ctx->closeEv);
             break;
@@ -336,10 +338,14 @@ void handle_state_change(struct nc_attach_context* ctx)
     }
 }
 
-
-void dns_resolved_callback(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data)
+void dns_start_resolve(struct nc_attach_context* ctx)
 {
-    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    nc_dns_multi_resolver_resolve(&ctx->dnsResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
+}
+
+void dns_resolved_callback(const np_error_code ec, void* data)
+{
+    struct nc_attach_context* ctx = data;
     if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
         ctx->state = NC_ATTACHER_STATE_CLOSED;
         handle_state_change(ctx);
@@ -353,29 +359,17 @@ void dns_resolved_callback(const np_error_code ec, struct np_ip_address* v4Rec, 
         handle_state_change(ctx);
         return;
     }
-    if (v4RecSize == 0 && v6RecSize == 0) {
-        NABTO_LOG_ERROR(LOG, "Empty record list");
-        // No DTLS to close so we go directly to RETRY WAIT
-        ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
-        handle_state_change(ctx);
-        return;
-    }
 
     ctx->initialPacket.endpointsSize = 0;
     ctx->initialPacket.endpointsIndex = 0;
 
-    for (size_t i = 0; i < v4RecSize+v6RecSize; i++) {
+    size_t ipsSize = ctx->resolvedIpsSize;
+
+    for (size_t i = 0; i < ipsSize; i++) {
         if (ctx->initialPacket.endpointsIndex < NC_ATTACHER_MAX_ENDPOINTS) {
-            if (i < v4RecSize) {
-                ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].ip = v4Rec[i];
-                ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].port = ctx->currentPort;
-                ctx->initialPacket.endpointsSize++;
-            }
-            if (i < v6RecSize) {
-                ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].ip = v6Rec[i];
-                ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].port = ctx->currentPort;
-                ctx->initialPacket.endpointsSize++;
-            }
+            ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].ip = ctx->resolvedIps[i];
+            ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].port = ctx->currentPort;
+            ctx->initialPacket.endpointsSize++;
         }
     }
 

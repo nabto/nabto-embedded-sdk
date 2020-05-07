@@ -12,17 +12,16 @@
 
 // util functions
 void nc_stun_resolve_callbacks(void* data);
-size_t nc_stun_convert_ep_list(struct np_ip_address* v4Rrec, size_t v4RecSize,
-                               struct np_ip_address* v6Rrec, size_t v6RecSize,
+size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
                                struct nabto_stun_endpoint* eps, size_t epsSize,
                                uint16_t port);
 void nc_stun_event(struct nc_stun_context* ctx);
 
 // Async callback functions
-void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4ecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data);
 void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data);
 void nc_stun_send_to_cb(const np_error_code ec, void* data);
 void nc_stun_handle_timeout(const np_error_code ec, void* data);
+static void nc_stun_dns_cb(const np_error_code ec, void* data);
 
 // stun module functions
 uint32_t nc_stun_get_stamp(void* data)
@@ -61,6 +60,7 @@ bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 
 // init function
 np_error_code nc_stun_init(struct nc_stun_context* ctx,
+                           struct np_dns_resolver* resolver,
                            struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_stun_context));
@@ -75,6 +75,8 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
     np_event_queue_create_timed_event(pl, &nc_stun_handle_timeout, ctx, &ctx->toEv);
+    nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, resolver);
+    np_completion_event_init(pl, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx);
     return NABTO_EC_OK;
 }
 
@@ -87,6 +89,8 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
         pl->buf.free(ctx->sendBuf);
 
         np_event_queue_destroy_timed_event(pl, ctx->toEv);
+        np_completion_event_deinit(&ctx->dnsCompletionEvent);
+        nc_dns_multi_resolver_deinit(&ctx->dnsResolver);
     }
 }
 
@@ -140,7 +144,7 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
 
     ctx->simple = simple;
     ctx->state = NC_STUN_STATE_RUNNING;
-    ctx->pl->dns.async_resolve(ctx->pl, ctx->hostname, &nc_stun_dns_cb, ctx);
+    nc_dns_multi_resolver_resolve(&ctx->dnsResolver, ctx->hostname, ctx->resolvedIps, NC_STUN_MAX_ENDPOINTS, &ctx->resolvedIpsSize, &ctx->dnsCompletionEvent);
 
     return NABTO_EC_OK;
 }
@@ -269,7 +273,8 @@ void nc_stun_event(struct nc_stun_context* ctx)
     }
 }
 
-void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* v4Rec, size_t v4RecSize, struct np_ip_address* v6Rec, size_t v6RecSize, void* data)
+void nc_stun_dns_cb(const np_error_code ec, void* data)
+
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
     if (ctx->state == NC_STUN_STATE_ABORTED) {
@@ -283,7 +288,7 @@ void nc_stun_dns_cb(const np_error_code ec, struct np_ip_address* v4Rec, size_t 
         nc_stun_resolve_callbacks(ctx);
         return;
     }
-    ctx->numEps = nc_stun_convert_ep_list(v4Rec, v4RecSize, v6Rec, v6RecSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, ctx->priPort);
+    ctx->numEps = nc_stun_convert_ep_list(ctx->resolvedIps, ctx->resolvedIpsSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, ctx->priPort);
     nabto_stun_init(&ctx->stun, &ctx->stunModule, ctx, ctx->eps, ctx->numEps);
     nabto_stun_async_analyze(&ctx->stun, ctx->simple);
     nc_stun_event(ctx);
@@ -352,41 +357,14 @@ void nc_stun_set_endpoint(struct nabto_stun_endpoint* ep, struct np_ip_address* 
     ep->port = port;
 }
 
-size_t nc_stun_convert_ep_list(struct np_ip_address* v4Rec, size_t v4RecSize,
-                               struct np_ip_address* v6Rec, size_t v6RecSize,
+size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
                                struct nabto_stun_endpoint* eps, size_t epsSize,
                                uint16_t port)
 {
-    size_t v4Used = 0;
-    size_t v6Used = 0;
-    int i = 0;
-    for (i = 0; i < epsSize; i++) {
-        if (i % 2) { // try add IPv6 on odd indexes
-            if (v6Used < v6RecSize) {
-                nc_stun_set_endpoint(&eps[i], &v6Rec[v6Used], port);
-                v6Used++;
-                continue;
-            }
-        } else { // try add IPv4 on even indexes
-            if (v4Used < v4RecSize) {
-                nc_stun_set_endpoint(&eps[i], &v4Rec[v4Used], port);
-                v4Used++;
-                continue;
-            }
-        }
-        // if current record list is empty fill with whatever
-        if (v4Used < v4RecSize) {
-            nc_stun_set_endpoint(&eps[i], &v4Rec[v4Used], port);
-            v4Used++;
-            continue;
-        }
-        if (v6Used < v6RecSize) {
-            nc_stun_set_endpoint(&eps[i], &v6Rec[v6Used], port);
-            v6Used++;
-            continue;
-        }
-        // if continue not called yet no more endpoints are available
-        return i; // we did not use this index so index == count
+    size_t i;
+    for (i = 0; i < ipsSize && i < epsSize; i++)
+    {
+        nc_stun_set_endpoint(&eps[i], &ips[i], port);
     }
     return i; // for increased index to count
 }
