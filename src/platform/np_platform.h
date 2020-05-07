@@ -41,27 +41,28 @@ struct np_platform {
     // Data for the udp module object
     void* udpData;
 
-    // Communication buffer module
-    struct np_communication_buffer_module buf;
-
     // DNS resolver module
     struct np_dns_module dns;
     void* dnsData;
+
+    // Tcp socket module
+    struct np_tcp_module tcp;
+    // Data pointer set when tcp module is initialized.
+    void* tcpData;
+
+    // Random source
+    struct np_random_module random;
+    void* randomData; // userdata for the random module.
+
+
+    // Communication buffer module
+    struct np_communication_buffer_module buf;
 
     // DTLS client module
     struct np_dtls_cli_module dtlsC;
 
     // DTLS server module
     struct np_dtls_srv_module dtlsS;
-
-    // Random source
-    struct np_random_module random;
-    void* randomCtx; // userdata for the random module.
-
-    // Tcp socket module
-    struct np_tcp_module tcp;
-    // Data pointer set when tcp module is initialized.
-    void* tcpData;
 
     // Mdns
     struct np_mdns_module mdns;

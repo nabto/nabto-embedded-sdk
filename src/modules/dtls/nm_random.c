@@ -35,7 +35,7 @@ bool nm_random_init(struct np_platform* pl)
         free_random_ctx(ctx);
         return false;
     }
-    pl->randomCtx = ctx;
+    pl->randomData = ctx;
 
     pl->random.random = &make_random;
     return true;
@@ -44,13 +44,13 @@ bool nm_random_init(struct np_platform* pl)
 void nm_random_deinit(struct np_platform* pl)
 {
 
-    struct random_ctx* ctx = pl->randomCtx;
+    struct random_ctx* ctx = pl->randomData;
     free_random_ctx(ctx);
 }
 
 np_error_code make_random(struct np_platform* pl, void* buffer, size_t bufferSize)
 {
-    struct random_ctx* ctx = pl->randomCtx;
+    struct random_ctx* ctx = pl->randomData;
     int i = mbedtls_ctr_drbg_random(&ctx->ctr_drbg, buffer, bufferSize);
     if (i == 0) {
         return NABTO_EC_OK;
