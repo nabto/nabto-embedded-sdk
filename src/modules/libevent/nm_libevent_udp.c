@@ -43,7 +43,7 @@ struct received_ctx {
 struct np_udp_socket {
     struct received_ctx recv;
     enum np_ip_address_type type;
-    np_communication_buffer* recvBuffer;
+    struct np_communication_buffer* recvBuffer;
     evutil_socket_t sock;
     struct np_platform* pl;
     bool aborted;

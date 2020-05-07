@@ -43,7 +43,7 @@ np_error_code dtlsSendTo(struct np_platform* plIn, struct np_dtls_srv_connection
 }
 
 void udpRecvCb(const np_error_code ec, struct np_udp_endpoint inEp,
-               np_communication_buffer* buffer, uint16_t bufferSize,
+               struct np_communication_buffer* buffer, uint16_t bufferSize,
                void* data)
 {
     NABTO_LOG_INFO(0, "UDP receive");

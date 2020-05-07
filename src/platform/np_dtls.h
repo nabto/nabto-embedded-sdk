@@ -6,7 +6,7 @@
 typedef void (*np_dtls_send_to_callback)(const np_error_code ec, void* data);
 
 typedef void (*np_dtls_received_callback)(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                                              np_communication_buffer* buffer, uint16_t bufferSize, void* data);
+                                          struct np_communication_buffer* buffer, uint16_t bufferSize, void* data);
 
 typedef void (*np_dtls_close_callback)(const np_error_code ec, void* data);
 

@@ -13,7 +13,7 @@ struct event_base;
 struct nm_libevent_context {
     struct event_base* eventBase;
     struct np_platform* pl;
-    np_communication_buffer* recvBuffer;
+    struct np_communication_buffer* recvBuffer;
 };
 
 void nm_libevent_global_init();

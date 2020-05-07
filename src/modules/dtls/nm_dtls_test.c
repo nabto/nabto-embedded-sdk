@@ -80,9 +80,9 @@ int main() {
         exit(0);
     }
 }
-np_communication_buffer* cliSendBuf;
+struct np_communication_buffer* cliSendBuf;
 uint16_t cliSendBufSize;
-np_communication_buffer* srvSendBuf;
+struct np_communication_buffer* srvSendBuf;
 uint16_t srvSendBufSize;
 struct np_connection srvConn;
 struct np_connection cliConn;
@@ -126,8 +126,8 @@ struct np_connection_id* conn_get_id(struct np_platform* pl, np_connection* conn
 }
 
 void conn_async_send_to(struct np_platform* pl, np_connection* conn, uint8_t channelId,
-                          np_communication_buffer* buffer, uint16_t bufferSize,
-                          np_connection_sent_callback cb, void* data)
+                        struct np_communication_buffer* buffer, uint16_t bufferSize,
+                        np_connection_sent_callback cb, void* data)
 {
     conn->sentCb = cb;
     conn->sentData = data;
@@ -204,7 +204,7 @@ void test_dtls_srv_send_to_callback(const np_error_code ec, void* data)
 const char cliSendTestBuf[] = {AT_DEVICE_LB, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
 bool srvRecvCbCalled = false;
 void test_dtls_srv_received_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                                     np_communication_buffer* buffer, uint16_t bufferSize, void* data)
+                                     struct np_communication_buffer* buffer, uint16_t bufferSize, void* data)
 {
     NABTO_TEST_CHECK(ec==NABTO_EC_OK);
     srvRecvCbCalled = true;

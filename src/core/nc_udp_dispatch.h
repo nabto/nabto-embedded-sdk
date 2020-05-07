@@ -17,7 +17,7 @@ struct nc_udp_dispatch_context {
     struct nc_attach_context* attacher;
     struct nc_stun_context* stun;
 
-    np_communication_buffer* recvBuffer;
+    struct np_communication_buffer* recvBuffer;
 
     struct np_completion_event recvCompletionEvent;
 };

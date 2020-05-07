@@ -30,10 +30,10 @@ const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM
 struct np_dtls_cli_context {
     struct np_platform* pl;
     enum sslState state;
-    np_communication_buffer* sslRecvBuf;
+    struct np_communication_buffer* sslRecvBuf;
     uint8_t* recvBuffer;
     size_t recvBufferSize;
-    np_communication_buffer* sslSendBuffer;
+    struct np_communication_buffer* sslSendBuffer;
     size_t sslSendBufferSize;
 
     struct nm_dtls_timer timer;
