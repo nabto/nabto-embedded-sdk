@@ -19,7 +19,7 @@ struct nc_device_context;
 struct nm_tcp_tunnel_connection {
     struct nn_llist_node connectionsListItem;
     struct np_platform* pl;
-    np_tcp_socket* socket;
+    struct np_tcp_socket* socket;
     struct nc_stream_context* stream;
     struct np_ip_address address;
     uint16_t port;

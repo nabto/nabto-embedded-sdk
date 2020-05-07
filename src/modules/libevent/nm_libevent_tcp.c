@@ -49,14 +49,14 @@ struct np_tcp_socket {
 
 #define LOG NABTO_LOG_MODULE_TCP
 
-static np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock);
-static void tcp_destroy(np_tcp_socket* sock);
-static void tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
-static void tcp_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
-static void tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
-static void tcp_shutdown(np_tcp_socket* sock);
+static np_error_code tcp_create(struct np_platform* pl, struct np_tcp_socket** sock);
+static void tcp_destroy(struct np_tcp_socket* sock);
+static void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
+static void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
+static void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
+static void tcp_shutdown(struct np_tcp_socket* sock);
 
-static void tcp_abort(np_tcp_socket* sock);
+static void tcp_abort(struct np_tcp_socket* sock);
 static void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData);
 static void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData);
 static void resolve_tcp_connect(struct np_tcp_socket* sock, np_error_code ec);
@@ -77,7 +77,7 @@ void nm_libevent_tcp_init(struct np_platform* pl, struct nm_libevent_context* ct
 }
 
 
-np_error_code tcp_create(struct np_platform* pl, np_tcp_socket** sock)
+np_error_code tcp_create(struct np_platform* pl, struct np_tcp_socket** sock)
 {
     NABTO_LOG_TRACE(LOG, "tcp_create");
     struct np_tcp_socket* s = calloc(1, sizeof(struct np_tcp_socket));
@@ -174,7 +174,7 @@ void tcp_eof(void* userData)
     resolve_tcp_read(sock, NABTO_EC_EOF);
 }
 
-void tcp_destroy(np_tcp_socket* sock)
+void tcp_destroy(struct np_tcp_socket* sock)
 {
     bufferevent_disable(sock->bev, EV_READ);
     tcp_abort(sock);
@@ -183,7 +183,7 @@ void tcp_destroy(np_tcp_socket* sock)
     free(sock);
 }
 
-void tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
+void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
 {
     NABTO_LOG_TRACE(LOG, "tcp_async_connect");
 
@@ -209,7 +209,7 @@ void tcp_async_connect(np_tcp_socket* sock, struct np_ip_address* address, uint1
     }
 }
 
-void tcp_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
+void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
 {
     if (sock->write.completionEvent != NULL) {
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
@@ -227,7 +227,7 @@ void tcp_async_write(np_tcp_socket* sock, const void* data, size_t dataLength, s
     }
 }
 
-void tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent)
+void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent)
 {
     NABTO_LOG_TRACE(LOG, "tcp_async_read");
     if (sock->read.completionEvent != NULL) {
@@ -244,7 +244,7 @@ void tcp_async_read(np_tcp_socket* sock, void* buffer, size_t bufferLength, size
     return;
 }
 
-void tcp_shutdown(np_tcp_socket* sock)
+void tcp_shutdown(struct np_tcp_socket* sock)
 {
     evutil_socket_t s = bufferevent_getfd(sock->bev);
 #if defined(HAVE_WINSOCK2_H)
@@ -254,7 +254,7 @@ void tcp_shutdown(np_tcp_socket* sock)
 #endif
 }
 
-void tcp_abort(np_tcp_socket* sock)
+void tcp_abort(struct np_tcp_socket* sock)
 {
     if (sock->aborted == true) {
         return;
