@@ -64,7 +64,7 @@ uint32_t nc_stream_get_stamp(void* userData)
     return ctx->pl->ts.now_ms();
 }
 
-void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager, uint64_t connectionRef)
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager, uint64_t connectionRef)
 {
     nc_stream_module.get_stamp = &nc_stream_get_stamp;
     nc_stream_module.log = &nc_stream_log;
@@ -73,6 +73,16 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     nc_stream_module.alloc_recv_segment = &nc_stream_alloc_recv_segment;
     nc_stream_module.free_recv_segment = &nc_stream_free_recv_segment;
     nc_stream_module.notify_event = &nc_stream_event_callback;
+
+    np_error_code ec;
+    ec = np_event_queue_create_event(pl, &nc_stream_event_queue_callback, ctx, &ctx->ev);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = np_event_queue_create_timed_event(pl, &nc_stream_handle_timeout, ctx, &ctx->timer);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     ctx->active = true;
     ctx->dtls = dtls;
@@ -83,15 +93,17 @@ void nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint6
     ctx->isSending = false;
     ctx->connectionRef = connectionRef;
 
-    np_event_queue_create_event(pl, &nc_stream_event_queue_callback, ctx, &ctx->ev);
-    np_event_queue_create_timed_event(ctx->pl, &nc_stream_handle_timeout, ctx, &ctx->timer);
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
     nabto_stream_set_application_event_callback(&ctx->stream, &nc_stream_application_event_callback, ctx);
+    return NABTO_EC_OK;
 }
 
 void nc_stream_destroy(struct nc_stream_context* ctx)
 {
+    if (!ctx->active) {
+        return;
+    }
     if (ctx->acceptCb) {
         ctx->acceptCb(NABTO_EC_ABORTED, ctx->acceptUserData);
     }
@@ -111,6 +123,8 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     ctx->dtls = NULL;
     ctx->streamId = 0;
     np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
+    np_event_queue_destroy_event(ctx->pl, ctx->ev);
+    np_event_queue_destroy_timed_event(ctx->pl, ctx->timer);
     nabto_stream_destroy(&ctx->stream);
 }
 

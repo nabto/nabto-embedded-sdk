@@ -218,8 +218,14 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
         return NABTO_EC_UNKNOWN;
     }
 
-    np_event_queue_create_event(pl, &nm_dtls_cli_start_send_deferred, ctx, &ctx->startSendEvent);
-    np_event_queue_create_event(ctx->pl, &nm_dtls_event_close, ctx, &ctx->closeEv);
+    ec = np_event_queue_create_event(pl, &nm_dtls_cli_start_send_deferred, ctx, &ctx->startSendEvent);
+    if (ec != NABTO_EC_OK) {
+        return;
+    }
+    ec = np_event_queue_create_event(ctx->pl, &nm_dtls_event_close, ctx, &ctx->closeEv);
+    if (ec != NABTO_EC_OK) {
+        return;
+    }
 
 
     *client = ctx;
@@ -228,7 +234,11 @@ np_error_code nm_dtls_cli_create(struct np_platform* pl, np_dtls_cli_context** c
 
 np_error_code dtls_cli_init_connection(np_dtls_cli_context* ctx)
 {
-    nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_timed_event_do_one, ctx);
+    np_error_code ec;
+    ec = nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_timed_event_do_one, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     int ret;
     const char *pers = "dtls_client";

@@ -92,8 +92,14 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     ctx->retryWaitTime = RETRY_WAIT_TIME;
     ctx->accessDeniedWaitTime = ACCESS_DENIED_WAIT_TIME;
 
-    np_event_queue_create_timed_event(ctx->pl, &reattach, ctx, &ctx->reattachTimer);
-    np_event_queue_create_event(ctx->pl, &resolve_close, ctx, &ctx->closeEv);
+    ec = np_event_queue_create_timed_event(ctx->pl, &reattach, ctx, &ctx->reattachTimer);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = np_event_queue_create_event(ctx->pl, &resolve_close, ctx, &ctx->closeEv);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     sct_init(ctx);
 
@@ -102,10 +108,19 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
     // Init keep alive with default values,
-    nc_keep_alive_init(&ctx->keepAlive, pl, keep_alive_event, ctx);
+    ec = nc_keep_alive_init(&ctx->keepAlive, pl, keep_alive_event, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
-    np_completion_event_init(pl, &ctx->senderCompletionEvent, NULL, NULL);
-    np_completion_event_init(pl, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
+    ec = np_completion_event_init(pl, &ctx->senderCompletionEvent, NULL, NULL);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = np_completion_event_init(pl, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, dnsResolver);
 

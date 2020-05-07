@@ -39,7 +39,12 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     request->verdictDone = false;
     request->module = pl->authorizationData;
 
-    np_event_queue_create_event(pl, handle_verdict, request, &request->verdictEvent);
+    np_error_code ec;
+    ec = np_event_queue_create_event(pl, handle_verdict, request, &request->verdictEvent);
+    if (ec != NABTO_EC_OK) {
+        free(request);
+        return NULL;
+    }
 
 
     return (struct np_authorization_request*)request;
@@ -287,7 +292,8 @@ static void free_request_when_unused(struct nabto_device_authorization_request* 
         param = param->next;
         free_attribute(old);
     }
-
+    struct np_platform* pl = authReq->module->pl;
+    np_event_queue_destroy_event(pl, authReq->verdictEvent);
     free(authReq);
 }
 

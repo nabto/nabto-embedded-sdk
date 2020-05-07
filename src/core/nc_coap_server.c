@@ -34,9 +34,16 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
     }
     ctx->pl = pl;
     nc_coap_server_set_infinite_stamp(ctx);
-    np_event_queue_create_event(pl, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
+    np_error_code ec;
+    ec = np_event_queue_create_event(pl, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
-    np_event_queue_create_timed_event(ctx->pl, &nc_coap_server_handle_timeout, ctx, &ctx->timer);
+    ec = np_event_queue_create_timed_event(ctx->pl, &nc_coap_server_handle_timeout, ctx, &ctx->timer);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     return NABTO_EC_OK;
 }

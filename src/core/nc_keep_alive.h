@@ -60,7 +60,7 @@ typedef void (*keep_alive_wait_callback)(const np_error_code ec, void* data);
  * @param retryInterval The interval between retransmissions in case of packet loss
  * @param maxRetries    The maximum amount of retransmissions before a connection is considered dead
  */
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, keep_alive_wait_callback cb, void* data);
+np_error_code nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, keep_alive_wait_callback cb, void* data);
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx);
 

@@ -243,12 +243,26 @@ np_error_code nm_dtls_srv_create_connection(struct np_dtls_srv* server,
     ctx->sendSentinel.prev = &ctx->sendSentinel;
 
     struct np_platform* pl = ctx->pl;
-    np_event_queue_create_event(pl, &nm_dtls_srv_start_send_deferred, ctx, &ctx->startSendEvent);
-    np_event_queue_create_event(pl, &nm_dtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
-    np_event_queue_create_event(pl, &nm_dtls_srv_event_close, ctx, &ctx->closeEv);
-    np_event_queue_create_event(pl, &nm_dtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
 
-    nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_srv_timed_event_do_one, ctx);
+    np_error_code ec;
+    ec = np_event_queue_create_event(pl, &nm_dtls_srv_start_send_deferred, ctx, &ctx->startSendEvent);
+    if(ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_event_queue_create_event(pl, &nm_dtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = np_event_queue_create_event(pl, &nm_dtls_srv_event_close, ctx, &ctx->closeEv);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = nm_dtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_srv_timed_event_do_one, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     NABTO_LOG_TRACE(LOG, "New DTLS srv connection was allocated.");
     //mbedtls connection initialization
@@ -300,8 +314,11 @@ static void nm_dtls_srv_destroy_connection(struct np_dtls_srv_connection* connec
     }
     nm_dtls_timer_cancel(&ctx->timer);
     nm_dtls_timer_deinit(&ctx->timer);
-    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
-    np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
+    np_event_queue_cancel_event(pl, ctx->closeEv);
+    np_event_queue_cancel_event(pl, ctx->startSendEvent);
+    np_event_queue_destroy_event(pl, ctx->closeEv);
+    np_event_queue_destroy_event(pl, ctx->startSendEvent);
+    np_event_queue_destroy_event(pl, ctx->deferredEventEvent);
     pl->buf.free(connection->sslRecvBuf);
     pl->buf.free(connection->sslSendBuffer);
     mbedtls_ssl_free(&connection->ssl);

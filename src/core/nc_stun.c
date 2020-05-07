@@ -74,9 +74,24 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
-    np_event_queue_create_timed_event(pl, &nc_stun_handle_timeout, ctx, &ctx->toEv);
-    nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, resolver);
-    np_completion_event_init(pl, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx);
+    np_error_code ec;
+    ec = np_event_queue_create_timed_event(pl, &nc_stun_handle_timeout, ctx, &ctx->toEv);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, resolver);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = np_completion_event_init(pl, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = np_completion_event_init(pl, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     return NABTO_EC_OK;
 }
 
@@ -90,6 +105,7 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
 
         np_event_queue_destroy_timed_event(pl, ctx->toEv);
         np_completion_event_deinit(&ctx->dnsCompletionEvent);
+        np_completion_event_deinit(&ctx->sendCompletionEvent);
         nc_dns_multi_resolver_deinit(&ctx->dnsResolver);
     }
 }
@@ -215,7 +231,6 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            np_completion_event_init(pl, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx);
             nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &ctx->sendCompletionEvent);
             break;
         }
@@ -244,7 +259,6 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
-            np_completion_event_init(pl, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx);
             nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &ctx->sendCompletionEvent);
             break;
         }

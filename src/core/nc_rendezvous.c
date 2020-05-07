@@ -12,7 +12,8 @@
 
 #define LOG NABTO_LOG_MODULE_RENDEZVOUS
 
-void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx);
+static void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx);
+static void nc_rendezvous_packet_sent(const np_error_code ec, void* data);
 
 np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
                                  struct np_platform* pl)
@@ -22,6 +23,13 @@ np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
     if (!ctx->priBuf) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
+
+    np_error_code ec;
+    ec = np_completion_event_init(pl, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     ctx->pl = pl;
     ctx->packetIndex = 0;
     ctx->sendingDevReqs = false;
@@ -31,6 +39,7 @@ np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
 void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
+        np_completion_event_deinit(&ctx->sendCompletionEvent);
         ctx->pl->buf.free(ctx->priBuf);
     }
 }
@@ -88,7 +97,6 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 
     ctx->sendingDevReqs = true;
     size_t used = ptr - start;
-    np_completion_event_init(ctx->pl, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx);
     nc_udp_dispatch_async_send_to(ctx->udpDispatch, &packet->ep,
                                   start, used, &ctx->sendCompletionEvent);
 

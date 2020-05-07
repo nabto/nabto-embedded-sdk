@@ -3,14 +3,14 @@
 #include <platform/np_platform.h>
 #include <string.h>
 
-void nm_dtls_timer_init(struct nm_dtls_timer* timer, struct np_platform* pl, nm_dtls_timer_callback cb, void* userData)
+np_error_code nm_dtls_timer_init(struct nm_dtls_timer* timer, struct np_platform* pl, nm_dtls_timer_callback cb, void* userData)
 {
     memset(timer, 0, sizeof(struct nm_dtls_timer));
     timer->pl = pl;
     timer->cb = cb;
     timer->cbData = userData;
 
-    np_event_queue_create_timed_event(pl, cb, userData, &timer->tEv);
+    return np_event_queue_create_timed_event(pl, cb, userData, &timer->tEv);
 }
 
 void nm_dtls_timer_deinit(struct nm_dtls_timer* timer)

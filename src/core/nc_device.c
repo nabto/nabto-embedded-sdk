@@ -90,7 +90,10 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 
     device->serverPort = 4433;
 
-    np_completion_event_init(pl, &device->socketBoundCompletionEvent, &nc_device_udp_bound_cb, device);
+    ec = np_completion_event_init(pl, &device->socketBoundCompletionEvent, &nc_device_udp_bound_cb, device);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     return NABTO_EC_OK;
 }

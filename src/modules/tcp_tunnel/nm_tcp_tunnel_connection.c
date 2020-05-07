@@ -50,6 +50,9 @@ void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
     pl->tcp.destroy(connection->socket);
+    np_completion_event_deinit(&connection->connectCompletionEvent);
+    np_completion_event_deinit(&connection->readCompletionEvent);
+    np_completion_event_deinit(&connection->writeCompletionEvent);
     if (connection->stream) {
         nc_stream_release(connection->stream);
     }
@@ -74,6 +77,21 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     // insert connection into back of connections list
 
     np_list_append(&service->connections, &connection->connectionsListItem, connection);
+
+    ec = np_completion_event_init(pl, &connection->connectCompletionEvent, &connect_callback, connection);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(pl, &connection->readCompletionEvent, &tcp_readen, connection);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(pl, &connection->writeCompletionEvent, &tcp_written, connection);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     connection->tcpRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
     connection->streamRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
@@ -114,7 +132,6 @@ void nm_tcp_tunnel_connection_stop_from_manager(struct nm_tcp_tunnel_connection*
 void start_connect(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    np_completion_event_init(pl, &connection->connectCompletionEvent, &connect_callback, connection);
     pl->tcp.async_connect(connection->socket, &connection->address, connection->port, &connection->connectCompletionEvent);
 }
 
@@ -139,7 +156,6 @@ void connected(struct nm_tcp_tunnel_connection* connection)
 void start_tcp_read(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    np_completion_event_init(pl, &connection->readCompletionEvent, &tcp_readen, connection);
     pl->tcp.async_read(connection->socket, connection->tcpRecvBuffer, connection->tcpRecvBufferSize, &connection->readLength, &connection->readCompletionEvent);
 }
 
@@ -234,7 +250,6 @@ void close_tcp(struct nm_tcp_tunnel_connection* connection)
 void start_tcp_write(struct nm_tcp_tunnel_connection* connection, size_t transferred)
 {
     struct np_platform* pl = connection->pl;
-    np_completion_event_init(pl, &connection->writeCompletionEvent, &tcp_written, connection);
     pl->tcp.async_write(connection->socket, connection->streamRecvBuffer, transferred, &connection->writeCompletionEvent);
 }
 

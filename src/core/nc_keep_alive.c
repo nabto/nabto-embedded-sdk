@@ -7,7 +7,7 @@
 
 #define LOG NABTO_LOG_MODULE_KEEP_ALIVE
 
-void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, keep_alive_wait_callback cb, void* data)
+np_error_code nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* pl, keep_alive_wait_callback cb, void* data)
 {
     NABTO_LOG_TRACE(LOG, "initializing keep alive");
     ctx->pl = pl;
@@ -20,8 +20,7 @@ void nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_platform* p
 
     ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
 
-    np_event_queue_create_timed_event(ctx->pl, cb, data, &ctx->keepAliveEvent);
-    return;
+    return np_event_queue_create_timed_event(ctx->pl, cb, data, &ctx->keepAliveEvent);
 }
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)

@@ -28,6 +28,7 @@ void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx);
 void nc_client_connection_keep_alive_send_response(struct nc_client_connection* connection, uint8_t channelId, uint8_t* buffer, size_t length);
 void nc_client_connection_keep_alive_packet_sent(const np_error_code ec, void* data);
 
+static void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data);
 
 np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
                                         struct nc_client_connection_dispatch_context* dispatch,
@@ -53,14 +54,24 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     }
     conn->device = device;
 
-    nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
+    ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(pl, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+
     ec = pl->dtlsS.create_connection(device->dtlsServer, &conn->dtls,
                                      &nc_client_connection_async_send_to_udp,
                                      &nc_client_connection_handle_data,
                                      &nc_client_connection_handle_event, conn);
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Failed to create DTLS server");
-        return NABTO_EC_UNKNOWN;
+        NABTO_LOG_ERROR(LOG, "Failed to create DTLS server connection");
+        return ec;
     }
 
     // Remove connection ID before passing packet to DTLS
@@ -128,6 +139,7 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
     nc_stream_manager_remove_connection(conn->streamManager, conn);
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
     pl->dtlsS.destroy_connection(conn->dtls);
+    np_completion_event_deinit(&conn->sendCompletionEvent);
 
     memset(conn, 0, sizeof(struct nc_client_connection));
 }
@@ -293,7 +305,7 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
                                                      np_dtls_srv_send_callback cb, void* data, void* listenerData)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)listenerData;
-    struct np_platform* pl = conn->pl;
+
     if (conn->sentCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -307,13 +319,11 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
 
     if (channel == conn->currentChannel.channelId || channel == NP_DTLS_SRV_DEFAULT_CHANNEL_ID) {
         *(start+15) = conn->currentChannel.channelId;
-        np_completion_event_init(pl, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
         nc_udp_dispatch_async_send_to(conn->currentChannel.sock, &conn->currentChannel.ep,
                                       start, bufferSize,
                                       &conn->sendCompletionEvent);
     } else if (channel == conn->alternativeChannel.channelId) {
         *(start+15) = conn->alternativeChannel.channelId;
-        np_completion_event_init(pl, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
         nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->alternativeChannel.ep,
                                       start, bufferSize,
                                       &conn->sendCompletionEvent);
