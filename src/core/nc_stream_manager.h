@@ -14,11 +14,8 @@ typedef void (*nc_stream_manager_listen_callback)(np_error_code ec, struct nc_st
 
 struct nc_client_connection;
 
-struct nc_stream_listener;
-
 struct nc_stream_listener {
-    struct nc_stream_listener* next;
-    struct nc_stream_listener* prev;
+    struct nn_llist_node listenersNode;
     uint32_t type;
     nc_stream_manager_listen_callback cb;
     void* cbData;
@@ -26,7 +23,7 @@ struct nc_stream_listener {
 
 struct nc_stream_manager_context {
     struct np_platform* pl;
-    struct nc_stream_listener listenerSentinel;
+    struct nn_llist listeners;
     struct np_communication_buffer* rstBuf;
     struct nc_stream_context streams[NABTO_MAX_STREAMS];
     struct nc_client_connection* streamConns[NABTO_MAX_STREAMS];

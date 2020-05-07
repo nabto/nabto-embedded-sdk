@@ -23,8 +23,7 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
 {
     ctx->pl = pl;
 
-    ctx->listenerSentinel.prev = &ctx->listenerSentinel;
-    ctx->listenerSentinel.next = &ctx->listenerSentinel;
+    nn_llist_init(&ctx->listeners);
 }
 
 void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)
@@ -35,8 +34,9 @@ void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, str
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
-        while (ctx->listenerSentinel.next != &ctx->listenerSentinel) {
-            struct nc_stream_listener* listener = ctx->listenerSentinel.next;
+        struct nc_stream_listener* listener;
+        NN_LLIST_FOREACH(listener, &ctx->listeners)
+        {
             nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
         }
     }
@@ -44,12 +44,12 @@ void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 
 bool nc_stream_manager_port_in_use(struct nc_stream_manager_context* ctx, uint32_t type)
 {
-    struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
-    while (iterator != &ctx->listenerSentinel) {
-        if (iterator->type == type) {
+    struct nc_stream_listener* listener;
+    NN_LLIST_FOREACH(listener, &ctx->listeners)
+    {
+        if (listener->type == type) {
             return true;
         }
-        iterator = iterator->next;
     }
     return false;
 }
@@ -72,24 +72,13 @@ np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* c
     listener->cb = cb;
     listener->cbData = data;
     listener->type = type;
-    struct nc_stream_listener* before = ctx->listenerSentinel.prev;
-    struct nc_stream_listener* after = &ctx->listenerSentinel;
-
-    before->next = listener;
-    listener->next = after;
-    after->prev = listener;
-    listener->prev = before;
+    nn_llist_append(&ctx->listeners, &listener->listenersNode, listener);
     return NABTO_EC_OK;
 }
 
 void nc_stream_manager_remove_listener(struct nc_stream_listener* listener)
 {
-    struct nc_stream_listener* before = listener->prev;
-    struct nc_stream_listener* after = listener->next;
-    before->next = after;
-    after->prev = before;
-    listener->prev = listener;
-    listener->next = listener;
+    nn_llist_erase_node(&listener->listenersNode);
 }
 
 void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn,
@@ -141,13 +130,12 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
 {
     uint32_t type = nabto_stream_get_content_type(&stream->stream);
 
-    struct nc_stream_listener* iterator = ctx->listenerSentinel.next;
-    while (iterator != &ctx->listenerSentinel) {
-        if (iterator->type == type) {
-            nc_stream_manager_resolve_listener(iterator, stream, NABTO_EC_OK);
+    struct nc_stream_listener* listener;
+    NN_LLIST_FOREACH(listener, &ctx->listeners) {
+        if (listener->type == type) {
+            nc_stream_manager_resolve_listener(listener, stream, NABTO_EC_OK);
             return;
         }
-        iterator = iterator->next;
     }
     nabto_stream_release(&stream->stream);
     return;
