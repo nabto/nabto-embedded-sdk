@@ -50,7 +50,6 @@ BOOST_AUTO_TEST_CASE(test_post_event)
 {
     struct np_platform pl;
 
-    np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
     BOOST_TEST(np_event_queue_is_event_queue_empty(&pl));
@@ -76,7 +75,6 @@ BOOST_AUTO_TEST_CASE(test_post_many_event)
     struct np_platform pl;
     int i;
 
-    np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
     BOOST_TEST(np_event_queue_is_event_queue_empty(&pl));
@@ -107,7 +105,6 @@ BOOST_AUTO_TEST_CASE(test_post_many_event)
 BOOST_AUTO_TEST_CASE(test_post_timed_event)
 {
     struct np_platform pl;
-    np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
     time_ = 0;
@@ -143,7 +140,6 @@ BOOST_AUTO_TEST_CASE(test_post_timed_event)
 BOOST_AUTO_TEST_CASE(cancel_timed_event)
 {
     struct np_platform pl;
-    np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
     time_ = 0;
@@ -176,7 +172,6 @@ BOOST_AUTO_TEST_CASE(cancel_timed_event)
 BOOST_AUTO_TEST_CASE(test_cancel_timed_event_for_non_empty_q)
 {
     struct np_platform pl;
-    np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
     time_ = 0;
@@ -216,7 +211,6 @@ BOOST_AUTO_TEST_CASE(test_cancel_timed_event_for_non_empty_q)
 BOOST_AUTO_TEST_CASE(test_post_timed_event_sorting)
 {
     struct np_platform pl;
-    np_platform_init(&pl);
     np_event_queue_init(&pl, NULL, NULL);
 
     time_ = 0;

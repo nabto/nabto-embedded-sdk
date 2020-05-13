@@ -15,7 +15,6 @@ struct nm_select_unix ctx;
 void test_platform_init(struct test_platform* tp)
 {
     struct np_platform* pl = &tp->pl;
-    np_platform_init(pl);
     np_event_queue_init(pl, NULL, NULL);
     nm_logging_test_init();
     np_communication_buffer_init(pl);

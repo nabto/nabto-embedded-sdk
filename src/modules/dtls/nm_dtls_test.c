@@ -219,7 +219,6 @@ void test_dtls_connection()
     np_error_code ec;
     struct np_dtls_srv_send_context sendCtx;
 
-    np_platform_init(&pl);
     np_communication_buffer_init(&pl);
     nm_unix_ts_init(&pl);
 

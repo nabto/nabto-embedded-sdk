@@ -33,7 +33,6 @@ class TestPlatformLibevent : public TestPlatform {
 
     virtual void init()
     {
-        np_platform_init(&pl_);
         test_platform_event_queue_init(&pl_, eventBase_);
         nm_logging_test_init();
         np_communication_buffer_init(&pl_);

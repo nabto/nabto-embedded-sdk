@@ -18,7 +18,6 @@ class TestPlatformEpoll : public TestPlatform {
  public:
     virtual void init()
     {
-        np_platform_init(&pl_);
         np_event_queue_init(&pl_, NULL, NULL);
         nm_logging_test_init();
         np_communication_buffer_init(&pl_);

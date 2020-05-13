@@ -50,6 +50,14 @@ bool np_timestamp_less_or_equal(uint32_t t1, uint32_t t2);
  */
 uint32_t np_timestamp_future(struct np_platform* pl, uint32_t ms);
 
+/**
+ * Return the difference between timestamps.
+ *
+ * @param t1  Timestamp t1.
+ * @param t2  Timestamp t2.
+ * @return t1 - t2
+ */
+int32_t np_timestamp_difference(uint32_t t1, uint32_t t2);
 
 #ifdef __cplusplus
 } //extern "C"

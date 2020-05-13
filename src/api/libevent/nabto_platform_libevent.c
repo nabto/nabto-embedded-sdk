@@ -36,8 +36,6 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 {
     nm_libevent_global_init();
 
-    np_platform_init(pl);
-
     struct nabto_device_platform_libevent* platform = calloc(1, sizeof(struct nabto_device_platform_libevent));
 
     pl->platformData = platform;
@@ -73,7 +71,6 @@ void nabto_device_deinit_platform(struct np_platform* pl)
 
     event_free(platform->signalEvent);
     event_base_free(platform->eventBase);
-    np_platform_deinit(pl);
     nm_libevent_global_deinit();
     free(platform);
 }

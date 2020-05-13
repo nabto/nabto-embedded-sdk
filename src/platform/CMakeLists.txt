@@ -2,7 +2,6 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(src
   ${src_dir}/np_ip_address.c
-  ${src_dir}/np_platform.c
   ${src_dir}/np_logging.c
   ${src_dir}/np_udp.c
   ${src_dir}/np_event_queue.c

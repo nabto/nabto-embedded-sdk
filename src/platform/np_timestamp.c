@@ -25,3 +25,12 @@ uint32_t np_timestamp_future(struct np_platform* pl, uint32_t ms)
 {
     return np_timestamp_now_ms(pl) + ms;
 }
+
+
+int32_t np_timestamp_difference(uint32_t t1, uint32_t t2)
+{
+    int32_t v1 = (int32_t)t1;
+    int32_t v2 = (int32_t)t2;
+
+    return v1 - v2;
+}
