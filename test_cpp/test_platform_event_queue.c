@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 
+#include <event.h>
 #include <event2/event.h>
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE

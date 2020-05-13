@@ -8,10 +8,10 @@
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 #include <nabto/nabto_device_experimental.h>
 #include "nabto_device_authorization.h"
+#include "nabto_device_future_queue.h"
 
 #include <nn/llist.h>
 
-NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec);
 
 struct nabto_device_coap_resource;
 struct nm_tcp_tunnels;
@@ -21,8 +21,6 @@ struct nabto_device_context {
     struct nc_device_context core;
 
     struct nabto_device_mutex* eventMutex;
-
-    struct nabto_device_mutex* futureQueueMutex;
 
     struct nn_llist listeners;
 
@@ -46,6 +44,7 @@ struct nabto_device_context {
 
     struct nm_tcp_tunnels tcpTunnels;
 
+    struct nabto_device_future_queue futureQueue;
     struct nabto_device_authorization_module authorization;
 
 };

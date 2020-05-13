@@ -10,7 +10,7 @@ set(nabto_device_src
   nabto_device_coap.c
   nabto_device_future.c
   nabto_device_event_handler.c
-  nabto_api_future_queue.c
+  nabto_device_future_queue.c
   nabto_device_error.c
   nabto_device_util.c
   nabto_device_experimental.c
@@ -19,12 +19,12 @@ set(nabto_device_src
   nabto_device_authorization.c
   nabto_device_authorization_events.c
   nabto_device_tcp_tunnelling.c
-  nabto_device_event_queue.c
 
   )
 
 list(APPEND nabto_device_src
   ${src_dir}/libevent/nabto_platform_libevent.c
+  ${src_dir}/libevent/libevent_event_queue.c
   )
 include_directories(${LIBEVENT_INCLUDE_DIRS})
 

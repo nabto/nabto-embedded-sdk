@@ -1,6 +1,7 @@
 #include <nabto/nabto_device.h>
 
 #include "nabto_device_defines.h"
+#include <api/nabto_device_error.h>
 #include <platform/np_error_code.h>
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 

@@ -6,8 +6,6 @@
 
 #include <platform/np_types.h>
 
-#include <event.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -16,6 +16,8 @@
 #include <thread>
 #include <future>
 
+#include <event.h>
+
 namespace nabto {
 namespace test {
 

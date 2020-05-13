@@ -1,7 +1,6 @@
 #include "nabto_device_future.h"
 #include "nabto_device_threads.h"
 #include "nabto_device_defines.h"
-#include "nabto_api_future_queue.h"
 
 #include <platform/np_logging.h>
 
@@ -34,7 +33,6 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_future_new(NabtoDevice* device)
         return NULL;
     }
     return (NabtoDeviceFuture*)fut;
-
 }
 
 
@@ -61,9 +59,7 @@ void NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFuture* future
     fut->cb = callback;
     fut->cbData = data;
     if (fut->ready) {
-        nabto_device_threads_mutex_lock(dev->eventMutex);
-        nabto_api_future_queue_post(dev, fut);
-        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        nabto_device_future_queue_post(&dev->futureQueue, fut);
     }
     nabto_device_threads_mutex_unlock(fut->mutex);
 
@@ -151,7 +147,7 @@ void nabto_device_future_resolve(struct nabto_device_future* fut, NabtoDeviceErr
     fut->ec = ec;
     fut->ready = true;
     if (fut->cb != NULL) {
-        nabto_api_future_queue_post(fut->dev, fut);
+        nabto_device_future_queue_post(&fut->dev->futureQueue, fut);
     } else {
         nabto_device_threads_cond_signal(fut->cond);
     }

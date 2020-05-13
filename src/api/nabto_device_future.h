@@ -4,9 +4,9 @@
 #include <nabto/nabto_device.h>
 #include <api/nabto_device_threads.h>
 
-#include <nabto_types.h>
+#include <nn/llist.h>
 
-#include <event.h>
+#include <nabto_types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,7 +24,9 @@ struct nabto_device_future {
     struct nabto_device_condition* cond;
 
     struct nabto_device_future* next;
-    struct event event;
+
+
+    struct nn_llist_node futureListNode;
 };
 
 void nabto_device_future_reset(struct nabto_device_future* fut);

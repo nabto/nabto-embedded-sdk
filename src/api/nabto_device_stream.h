@@ -2,7 +2,6 @@
 #define NABTO_DEVICE_STREAM_H
 
 #include <nabto/nabto_device.h>
-#include <api/nabto_api_future_queue.h>
 
 #include <core/nc_device.h>
 

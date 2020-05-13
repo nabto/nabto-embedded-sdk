@@ -4,9 +4,9 @@
 
 #include <api/nabto_device_defines.h>
 
-#include <api/nabto_api_future_queue.h>
 #include <api/nabto_device_event_handler.h>
 #include <api/nabto_device_future.h>
+#include <api/nabto_device_error.h>
 #include <platform/np_logging.h>
 
 #include <stdlib.h>

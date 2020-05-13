@@ -1,5 +1,7 @@
 #include <api/nabto_platform.h>
 
+#include "libevent_event_queue.h"
+
 #include <modules/libevent/nm_libevent.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dtls/nm_random.h>
@@ -30,7 +32,7 @@ struct nabto_device_platform_libevent {
     bool stopped;
 };
 
-void nabto_device_init_platform(struct np_platform* pl)
+np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_device_mutex* eventMutex)
 {
     nm_libevent_global_init();
 
@@ -42,22 +44,7 @@ void nabto_device_init_platform(struct np_platform* pl)
     platform->eventBase = event_base_new();
     platform->signalEvent = event_new(platform->eventBase, -1, 0, &nabto_device_signal_event, platform);
     nm_api_log_init();
-}
 
-void nabto_device_deinit_platform(struct np_platform* pl)
-{
-    struct nabto_device_platform_libevent* platform = pl->platformData;
-
-    event_free(platform->signalEvent);
-    event_base_free(platform->eventBase);
-    np_platform_deinit(pl);
-    nm_libevent_global_deinit();
-    free(platform);
-}
-
-np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
-{
-    struct nabto_device_platform_libevent* platform = pl->platformData;
     np_communication_buffer_init(pl);
     nm_libevent_init(pl, &platform->libeventContext, platform->eventBase);
 
@@ -65,6 +52,8 @@ np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
     nm_dtls_srv_init(pl);
     nm_mdns_init(pl);
     nm_random_init(pl);
+
+    libevent_event_queue_init(pl, eventMutex);
 
     platform->networkThread = nabto_device_threads_create_thread();
     if (nabto_device_threads_run(platform->networkThread, nabto_device_platform_network_thread, platform) != 0) {
@@ -74,12 +63,19 @@ np_error_code nabto_device_init_platform_modules(struct np_platform* pl)
     return NABTO_EC_OK;
 }
 
-void nabto_device_deinit_platform_modules(struct np_platform* pl)
+void nabto_device_deinit_platform(struct np_platform* pl)
 {
     struct nabto_device_platform_libevent* platform = pl->platformData;
+    libevent_event_queue_deinit(pl);
     nm_random_deinit(pl);
     nm_libevent_deinit(&platform->libeventContext);
     nabto_device_threads_free_thread(platform->networkThread);
+
+    event_free(platform->signalEvent);
+    event_base_free(platform->eventBase);
+    np_platform_deinit(pl);
+    nm_libevent_global_deinit();
+    free(platform);
 }
 
 void nabto_device_platform_stop_blocking(struct np_platform* pl)

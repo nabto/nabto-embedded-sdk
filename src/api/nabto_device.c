@@ -5,10 +5,11 @@
 #include <api/nabto_device_coap.h>
 #include <api/nabto_device_future.h>
 #include <api/nabto_device_event_handler.h>
-#include <api/nabto_api_future_queue.h>
 #include <api/nabto_platform.h>
 #include <api/nabto_device_coap.h>
 #include <api/nabto_device_authorization.h>
+#include <api/nabto_device_future_queue.h>
+#include <api/nabto_device_error.h>
 #include <platform/np_error_code.h>
 
 #include <platform/np_logging.h>
@@ -19,16 +20,13 @@
 #include <modules/logging/api/nm_api_logging.h>
 #include <modules/dtls/nm_dtls_util.h>
 
-#include "nabto_device_event_queue.h"
+//#include "nabto_device_event_queue.h"
 
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_API
 
-void* nabto_device_network_thread(void* data);
-void nabto_device_init_platform(struct np_platform* pl);
 void nabto_device_free_threads(struct nabto_device_context* dev);
-NabtoDeviceError  nabto_device_create_crt_from_private_key(struct nabto_device_context* dev);
 void nabto_device_do_stop(struct nabto_device_context* dev);
 
 const char* NABTO_DEVICE_API nabto_device_version()
@@ -55,12 +53,6 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     }
     memset(dev, 0, sizeof(struct nabto_device_context));
 
-    nabto_device_init_platform(&dev->pl);
-    ec = nabto_device_init_platform_modules(&dev->pl);
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");
-        return NULL;
-    }
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
     if (dev->eventMutex == NULL) {
@@ -68,14 +60,12 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         nabto_device_new_resolve_failure(dev);
         return NULL;
     }
-    dev->futureQueueMutex = nabto_device_threads_create_mutex();
-    if (dev->futureQueueMutex == NULL) {
-        NABTO_LOG_ERROR(LOG, "future queue mutex init has failed");
-        nabto_device_new_resolve_failure(dev);
+
+    ec = nabto_device_init_platform(&dev->pl, dev->eventMutex);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");
         return NULL;
     }
-
-    nabto_device_event_queue_init(&dev->pl, dev->eventMutex);
 
     nabto_device_authorization_init_module(dev);
 
@@ -93,6 +83,13 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     }
 
     nn_llist_init(&dev->listeners);
+
+    ec = nabto_device_future_queue_init(&dev->futureQueue);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to start future_queue");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
 
     return (NabtoDevice*)dev;
 }
@@ -122,6 +119,7 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 
 void nabto_device_do_stop(struct nabto_device_context* dev)
 {
+    nabto_device_future_queue_stop(&dev->futureQueue);
     nabto_device_platform_stop_blocking(&dev->pl);
 }
 
@@ -138,11 +136,8 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
     nc_device_deinit(&dev->core);
 
-    nabto_device_deinit_platform_modules(&dev->pl);
     nabto_device_deinit_platform(&dev->pl);
-
-    nabto_device_event_queue_deinit(&dev->pl);
-
+    nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
     free(dev->productId);
@@ -550,9 +545,5 @@ void nabto_device_free_threads(struct nabto_device_context* dev)
     if (dev->eventMutex) {
         nabto_device_threads_free_mutex(dev->eventMutex);
         dev->eventMutex = NULL;
-    }
-    if (dev->futureQueueMutex) {
-        nabto_device_threads_free_mutex(dev->futureQueueMutex);
-        dev->futureQueueMutex = NULL;
     }
 }

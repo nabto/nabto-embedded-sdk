@@ -4,6 +4,7 @@
 
 #include "nabto_device_threads.h"
 #include "nabto_device_defines.h"
+#include <api/nabto_device_error.h>
 
 #include <modules/dtls/nm_dtls_util.h>
 
