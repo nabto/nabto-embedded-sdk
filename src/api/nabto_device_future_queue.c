@@ -24,6 +24,9 @@ void nabto_device_future_queue_deinit(struct nabto_device_future_queue* queue)
 {
     nabto_device_future_queue_stop(queue);
     nabto_device_threads_join(queue->thread);
+    nabto_device_threads_free_cond(queue->condition);
+    nabto_device_threads_free_mutex(queue->mutex);
+    nabto_device_threads_free_thread(queue->thread);
 }
 
 void nabto_device_future_queue_stop(struct nabto_device_future_queue* queue)
