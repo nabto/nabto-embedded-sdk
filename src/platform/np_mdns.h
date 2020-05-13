@@ -4,6 +4,12 @@
 #include <stdint.h>
 #include <platform/np_error_code.h>
 
+/**
+ * Mdns server interface
+ *
+ * Warning: this interface will maybe change in the future.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

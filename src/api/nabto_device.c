@@ -5,7 +5,7 @@
 #include <api/nabto_device_coap.h>
 #include <api/nabto_device_future.h>
 #include <api/nabto_device_event_handler.h>
-#include <api/nabto_platform.h>
+#include <api/nabto_device_platform.h>
 #include <api/nabto_device_coap.h>
 #include <api/nabto_device_authorization.h>
 #include <api/nabto_device_future_queue.h>

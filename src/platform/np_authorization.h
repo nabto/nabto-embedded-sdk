@@ -1,6 +1,11 @@
 #ifndef NP_AUTHORIZATION_H
 #define NP_AUTHORIZATION_H
 
+/**
+ * Authorization interface
+ *
+ * Warning: This interface will maybe change in the future.
+ */
 
 struct np_platform;
 

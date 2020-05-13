@@ -4,6 +4,12 @@
 #include <platform/np_error_code.h>
 #include <platform/np_dtls.h>
 
+/**
+ * DTLS Server interface
+ *
+ * Warning: this interface is not final.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

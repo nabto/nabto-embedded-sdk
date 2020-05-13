@@ -9,6 +9,14 @@
 
 #include <nn/llist.h>
 
+/**
+ * DTLS Client interface
+ *
+ * Warning: this interface is not final.
+ */
+
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

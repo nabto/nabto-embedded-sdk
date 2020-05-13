@@ -3,6 +3,12 @@
 
 #include <nabto_types.h>
 
+/**
+ * Communication buffer interface.
+ *
+ * Warning: This interface will maybe change in the future.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

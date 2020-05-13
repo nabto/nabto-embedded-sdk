@@ -1,4 +1,4 @@
-#include <api/nabto_platform.h>
+#include <api/nabto_device_platform.h>
 
 #include "libevent_event_queue.h"
 
