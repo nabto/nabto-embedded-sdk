@@ -5,8 +5,9 @@
 
 struct nabto_device_future;
 struct nabto_device_mutex;
+struct event_base;
 
-void libevent_event_queue_init(struct np_platform* pl, struct nabto_device_mutex* mutex);
+void libevent_event_queue_init(struct np_platform* pl, struct event_base* eventBase, struct nabto_device_mutex* mutex);
 void libevent_event_queue_deinit(struct np_platform* pl);
 
 #endif

@@ -27,8 +27,6 @@ static void cancel_timed_event(struct np_timed_event* timedEvent);
 static void handle_timed_event(evutil_socket_t s, short events, void* data);
 static void handle_event(evutil_socket_t s, short events, void* data);
 
-static void* event_queue_core_thread(void* data);
-
 struct libevent_event_queue {
     struct nabto_device_mutex* mutex;
     struct nabto_device_thread* coreThread;
@@ -49,16 +47,13 @@ struct np_timed_event {
     struct event event;
 };
 
-void libevent_event_queue_init(struct np_platform* pl, struct nabto_device_mutex* mutex)
+void libevent_event_queue_init(struct np_platform* pl, struct event_base* eventBase, struct nabto_device_mutex* mutex)
 {
     struct libevent_event_queue* eq = calloc(1, sizeof(struct libevent_event_queue));
 
     eq->mutex = mutex;
-    eq->eventBase = event_base_new();
+    eq->eventBase = eventBase;
     pl->eqData = eq;
-
-    eq->coreThread = nabto_device_threads_create_thread();
-    nabto_device_threads_run(eq->coreThread, event_queue_core_thread, eq);
 
     pl->eq.create_event = &create_event;
     pl->eq.destroy_event = &destroy_event;
@@ -75,10 +70,6 @@ void libevent_event_queue_init(struct np_platform* pl, struct nabto_device_mutex
 void libevent_event_queue_deinit(struct np_platform* pl)
 {
     struct libevent_event_queue* eq = pl->eqData;
-    event_base_loopbreak(eq->eventBase);
-    nabto_device_threads_join(eq->coreThread);
-    event_base_free(eq->eventBase);
-    nabto_device_threads_free_thread(eq->coreThread);
     free(eq);
 }
 
@@ -131,7 +122,7 @@ void destroy_event(struct np_event* event)
 
 bool post(struct np_event* event)
 {
-    NABTO_LOG_TRACE(LOG, "post event");
+    //NABTO_LOG_TRACE(LOG, "post event");
     //struct np_platform* pl = event->pl;
     //struct nabto_device_event_queue* eq = pl->eqData;
     event_active(&event->event, 0, 0);
@@ -186,11 +177,4 @@ void cancel(struct np_event* event)
 void cancel_timed_event(struct np_timed_event* timedEvent)
 {
     event_del(&timedEvent->event);
-}
-
-void* event_queue_core_thread(void* data)
-{
-    struct libevent_event_queue* eq = data;
-    event_base_loop(eq->eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
-    return NULL;
 }

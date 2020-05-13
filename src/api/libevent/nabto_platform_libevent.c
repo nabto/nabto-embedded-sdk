@@ -51,7 +51,7 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     nm_mdns_init(pl);
     nm_random_init(pl);
 
-    libevent_event_queue_init(pl, eventMutex);
+    libevent_event_queue_init(pl, platform->eventBase, eventMutex);
 
     platform->networkThread = nabto_device_threads_create_thread();
     if (nabto_device_threads_run(platform->networkThread, nabto_device_platform_network_thread, platform) != 0) {
