@@ -12,6 +12,7 @@
 #include <modules/dtls/nm_dtls_srv.h>
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/mdns/nm_mdns.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -41,6 +42,7 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     nm_dtls_srv_init(pl);
     nm_mdns_init(pl);
     nm_random_init(pl);
+    nm_unix_ts_init(pl);
 
     nm_select_unix_init(&platform->selectUnix, pl);
 
