@@ -9,9 +9,9 @@ set(src
 
 
 if (HAVE_PTHREAD_H)
-  add_library(nabto_device_threads STATIC ../api/unix/nabto_device_threads_unix.c)
+  add_library(nabto_device_threads STATIC ../modules/threads/unix/nabto_device_threads_unix.c)
 elseif(HAVE_WINDOWS_H)
-  add_library(nabto_device_threads STATIC ../api/windows/nabto_device_threads_win.c)
+  add_library(nabto_device_threads STATIC ../modules/threads/windows/nabto_device_threads_win.c)
 else()
   message(error "missing thread library")
 endif()
@@ -58,7 +58,6 @@ target_link_libraries( nabto_device
   nm_tcp_tunnel
   libevent_platform
   nabto_device_threads
-
   )
 
 target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
@@ -70,9 +69,6 @@ if (HAVE_WINDOWS_H)
 endif()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")
-
-#set (CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libnabto_device.version")
-#set_target_properties(nabto_device PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libnabto_device.version)
 
 install(TARGETS nabto_device
   RUNTIME DESTINATION bin

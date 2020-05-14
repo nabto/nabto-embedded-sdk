@@ -8,9 +8,9 @@
  * locks such that the core of the device is synchronized with the
  * application which uses the nabto_device.h api.
  */
-struct select_unix_platform;
+struct nm_event_queue;
 struct np_platform;
-void select_unix_event_queue_init(struct select_unix_platform* platform, struct np_platform* pl);
+void select_unix_event_queue_init(struct nm_event_queue* eventQueue, struct np_platform* pl);
 
 
 
