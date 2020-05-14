@@ -49,7 +49,7 @@ struct np_event_queue {
      *
      * @param event
      */
-    bool (*post)(struct np_event* event);
+    void (*post)(struct np_event* event);
 
     /**
      * Post an event which has the chance of being double
@@ -130,7 +130,7 @@ void np_event_queue_destroy_timed_event(struct np_platform* pl, struct np_timed_
 /**
  * Enqueue an event to the event queue.
  */
-bool np_event_queue_post(struct np_platform* pl, struct np_event* event);
+void np_event_queue_post(struct np_platform* pl, struct np_event* event);
 
 /**
  * Enqueue an event which maybe already is in the queue. If it is on

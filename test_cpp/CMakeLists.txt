@@ -39,7 +39,7 @@ set(test_src
 
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test
-  nabto_device_api
+
   #test_platform
   3rdparty_boost_test
   3rdparty_boost_asio
@@ -49,6 +49,7 @@ target_link_libraries(embedded_unit_test
   nm_logging_test
   nm_policies
   nm_iam
+  nabto_device_static
   )
 
 if (HAVE_SELECT_UNIX)

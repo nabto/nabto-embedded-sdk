@@ -17,9 +17,9 @@ void np_event_queue_destroy_event(struct np_platform* pl, struct np_event* event
 /**
  * Enqueue an event to the event queue.
  */
-bool np_event_queue_post(struct np_platform* pl, struct np_event* event)
+void np_event_queue_post(struct np_platform* pl, struct np_event* event)
 {
-    return pl->eq.post(event);
+    pl->eq.post(event);
 }
 
 /**
