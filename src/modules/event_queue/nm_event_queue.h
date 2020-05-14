@@ -10,6 +10,23 @@ struct nm_event_queue {
     struct nn_llist timedEvents;
 };
 
+
+struct np_event {
+    struct np_platform* pl;
+    np_event_callback cb;
+    void* data;
+    struct nn_llist_node eventsNode;
+};
+
+struct np_timed_event {
+    struct np_platform* pl;
+    np_timed_event_callback cb;
+    void* data;
+    struct nn_llist_node timedEventsNode;
+    uint32_t expireTimestamp;
+};
+
+
 void nm_event_queue_init(struct nm_event_queue* queue);
 
 // see np_event_queue for documentation on the following functions.

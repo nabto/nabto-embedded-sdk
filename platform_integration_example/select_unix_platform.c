@@ -13,6 +13,7 @@
 #include <modules/dtls/nm_dtls_cli.h>
 #include <modules/mdns/nm_mdns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
+#include <modules/dns/unix/nm_unix_dns.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -43,6 +44,7 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     nm_mdns_init(pl);
     nm_random_init(pl);
     nm_unix_ts_init(pl);
+    nm_unix_dns_init(pl);
 
     nm_select_unix_init(&platform->selectUnix, pl);
 
@@ -103,4 +105,11 @@ void* core_thread(void* data)
         }
     }
     return NULL;
+}
+
+
+void select_unix_notify_platform(void* data)
+{
+    struct select_unix_platform* platform = data;
+    nm_select_unix_notify(&platform->selectUnix);
 }
