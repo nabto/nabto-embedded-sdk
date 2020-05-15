@@ -1,9 +1,5 @@
 #include "test_platform.hpp"
 
-#ifdef HAVE_EPOLL
-#include "test_platform_epoll.hpp"
-#endif
-
 #ifdef HAVE_SELECT_UNIX
 #include "test_platform_select_unix.hpp"
 #endif
