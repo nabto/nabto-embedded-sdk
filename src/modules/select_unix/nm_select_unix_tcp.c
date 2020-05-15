@@ -33,10 +33,6 @@ static void tcp_do_read(struct np_tcp_socket* sock);
 
 void nm_select_unix_tcp_init(struct nm_select_unix* ctx)
 {
-    struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
-    sockets->socketsSentinel.next = &sockets->socketsSentinel;
-    sockets->socketsSentinel.prev = &sockets->socketsSentinel;
-
     struct np_platform* pl = ctx->pl;
     pl->tcpData = ctx;
     pl->tcp.create = &create;
@@ -53,35 +49,25 @@ void nm_select_unix_tcp_deinit(struct nm_select_unix* ctx)
     // nothing was allocated in init
 }
 
-bool nm_select_unix_tcp_has_sockets(struct nm_select_unix* ctx)
-{
-    return ctx->tcpSockets.socketsSentinel.next == &ctx->tcpSockets.socketsSentinel;
-}
-
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
 {
-    struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
-    struct np_tcp_socket* iterator = sockets->socketsSentinel.next;
-    while (iterator != &sockets->socketsSentinel)
+    struct np_tcp_socket* s;
+    NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
-        if (iterator->read.completionEvent != NULL) {
-            FD_SET(iterator->fd, &ctx->readFds);
-            ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->fd);
+        if (s->read.completionEvent != NULL) {
+            FD_SET(s->fd, &ctx->readFds);
+            ctx->maxReadFd = NP_MAX(ctx->maxReadFd, s->fd);
         }
-        if (iterator->write.completionEvent != NULL || iterator->connect.completionEvent != NULL) {
-            FD_SET(iterator->fd, &ctx->writeFds);
-            ctx->maxWriteFd = NP_MAX(ctx->maxWriteFd, iterator->fd);
+        if (s->write.completionEvent != NULL || s->connect.completionEvent != NULL) {
+            FD_SET(s->fd, &ctx->writeFds);
+            ctx->maxWriteFd = NP_MAX(ctx->maxWriteFd, s->fd);
         }
-        iterator = iterator->next;
     }
 }
 
 void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
 {
-    struct np_tcp_socket* before = sock->prev;
-    struct np_tcp_socket* after = sock->next;
-    before->next = after;
-    after->prev = before;
+    nn_llist_erase_node(&sock->tcpSocketsNode);
 
     tcp_abort(sock);
     shutdown(sock->fd, SHUT_RDWR);
@@ -92,28 +78,20 @@ void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
 
 void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
-    struct nm_select_unix_tcp_sockets* sockets = &ctx->tcpSockets;
-    struct np_tcp_socket* iterator = sockets->socketsSentinel.next;
-    while (iterator != &sockets->socketsSentinel)
+    struct np_tcp_socket* s;
+    NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
-        if (iterator->destroyed) {
-            struct np_tcp_socket* current = iterator;
-            iterator = iterator->next;
-            nm_select_unix_tcp_free_socket(current);
-            continue;
+        if (FD_ISSET(s->fd, &ctx->readFds)) {
+            tcp_do_read(s);
         }
-        if (FD_ISSET(iterator->fd, &ctx->readFds)) {
-            tcp_do_read(iterator);
-        }
-        if (FD_ISSET(iterator->fd, &ctx->writeFds)) {
-            if (iterator->connect.completionEvent) {
-                is_connected(iterator);
+        if (FD_ISSET(s->fd, &ctx->writeFds)) {
+            if (s->connect.completionEvent) {
+                is_connected(s);
             }
-            if (iterator->write.completionEvent) {
-                tcp_do_write(iterator);
+            if (s->write.completionEvent) {
+                tcp_do_write(s);
             }
         }
-        iterator = iterator->next;
     }
 }
 
@@ -121,21 +99,14 @@ void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 np_error_code create(struct np_platform* pl, struct np_tcp_socket** sock)
 {
     struct nm_select_unix* selectCtx = pl->tcpData;
-    struct nm_select_unix_tcp_sockets* sockets = &selectCtx->tcpSockets;
     struct np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
     s->pl = pl;
     s->fd = -1;
     *sock = s;
     s->selectCtx = selectCtx;
 
-    struct np_tcp_socket* before = sockets->socketsSentinel.prev;
-    struct np_tcp_socket* after = before->next;
-    before->next = s;
-    s->next = after;
-    after->prev = s;
-    s->prev = before;
+    nn_llist_append(&selectCtx->tcpSockets, &s->tcpSocketsNode, s);
 
-    s->destroyed = false;
     s->aborted = false;
     return NABTO_EC_OK;
 }
@@ -145,8 +116,7 @@ void destroy(struct np_tcp_socket* sock)
     if (sock == NULL) {
         return;
     }
-    sock->destroyed = true;
-    nm_select_unix_notify(sock->selectCtx);
+    nm_select_unix_tcp_free_socket(sock);
     return;
 }
 

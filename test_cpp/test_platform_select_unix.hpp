@@ -72,7 +72,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     {
         int nfds;
         while (true) {
-            if (tp->stopped_ && nm_select_unix_finished(&tp->selectCtx_)) {
+            if (tp->stopped_) {
                 return;
             }
             nfds = nm_select_unix_inf_wait(&tp->selectCtx_);

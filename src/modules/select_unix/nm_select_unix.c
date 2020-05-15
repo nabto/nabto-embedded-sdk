@@ -29,6 +29,9 @@ np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform
     ctx->pl = pl;
     pl->udpData = ctx;
 
+    nn_llist_init(&ctx->udpSockets);
+    nn_llist_init(&ctx->tcpSockets);
+
     if (pipe(ctx->pipefd) == -1) {
         NABTO_LOG_ERROR(LOG, "Failed to create pipe %s", errno);
         return NABTO_EC_UNKNOWN;
@@ -94,12 +97,6 @@ void nm_select_unix_close(struct nm_select_unix* ctx)
     close(ctx->pipefd[1]);
 }
 
-bool nm_select_unix_finished(struct nm_select_unix* ctx)
-{
-    return nm_select_unix_udp_has_sockets(ctx) && nm_select_unix_tcp_has_sockets(ctx);
-}
-
-
 /**
  * Helper functions start
  */
@@ -115,8 +112,7 @@ void nm_select_unix_build_fd_sets(struct nm_select_unix* ctx)
     FD_SET(ctx->pipefd[1], &ctx->readFds);
     ctx->maxReadFd = NP_MAX(ctx->maxReadFd, ctx->pipefd[1]);
 
-    struct nm_select_unix_udp_sockets* udp = &ctx->udpSockets;
-    nm_select_unix_udp_build_fd_sets(ctx, udp);
+    nm_select_unix_udp_build_fd_sets(ctx);
 
     nm_select_unix_tcp_build_fd_sets(ctx);
 }

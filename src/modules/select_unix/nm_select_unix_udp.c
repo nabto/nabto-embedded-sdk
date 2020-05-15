@@ -46,7 +46,6 @@ static uint16_t nm_select_unix_udp_get_local_port(struct np_udp_socket* socket);
 
 np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
 {
-    struct nm_select_unix_udp_sockets* sockets = &ctx->udpSockets;
     pl->udp.create           = &nm_select_unix_udp_create;
     pl->udp.destroy          = &nm_select_unix_udp_destroy;
     pl->udp.abort            = &nm_select_unix_udp_abort;
@@ -60,20 +59,12 @@ np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_plat
     pl->udp.get_local_port   = &nm_select_unix_udp_get_local_port;
     pl->udpData = ctx;
 
-    sockets->socketsSentinel.next = &sockets->socketsSentinel;
-    sockets->socketsSentinel.prev = &sockets->socketsSentinel;
     return NABTO_EC_OK;
 }
 
 void nm_select_unix_udp_deinit(struct nm_select_unix* ctx)
 {
 }
-
-bool nm_select_unix_udp_has_sockets(struct nm_select_unix* ctx)
-{
-    return ctx->udpSockets.socketsSentinel.next == &ctx->udpSockets.socketsSentinel;
-}
-
 
 np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_socket** sock)
 {
@@ -85,19 +76,12 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_so
     s->posixSocket.sock = -1;
 
     struct nm_select_unix* selectCtx = pl->udpData;
-    struct nm_select_unix_udp_sockets* sockets = &selectCtx->udpSockets;
 
     s->pl = selectCtx->pl;
     s->selectCtx = pl->udpData;
-    s->destroyed = false;
     s->aborted = false;
 
-    struct np_udp_socket* before = sockets->socketsSentinel.prev;
-    struct np_udp_socket* after = &sockets->socketsSentinel;
-    before->next = s;
-    s->next = after;
-    after->prev = s;
-    s->prev = before;
+    nn_llist_append(&selectCtx->udpSockets, &s->udpSocketsNode, s);
 
     s->posixSocket.pl = pl;
 
@@ -281,8 +265,7 @@ void nm_select_unix_udp_destroy(struct np_udp_socket* sock)
     if (sock == NULL) {
         return;
     }
-    sock->destroyed = true;
-    nm_select_unix_notify(sock->selectCtx);
+    nm_select_unix_udp_free_socket(sock);
     return;
 }
 
@@ -297,10 +280,7 @@ void nm_select_unix_udp_handle_event(struct np_udp_socket* sock)
 
 void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
 {
-    struct np_udp_socket* before = sock->prev;
-    struct np_udp_socket* after = sock->next;
-    before->next = after;
-    after->prev = before;
+    nn_llist_erase_node(&sock->udpSocketsNode);
 
     nm_select_unix_udp_abort(sock);
     shutdown(sock->posixSocket.sock, SHUT_RDWR);
@@ -308,35 +288,27 @@ void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
     free(sock);
 }
 
-void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx, struct nm_select_unix_udp_sockets* sockets)
+void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
 {
-    struct np_udp_socket* iterator = sockets->socketsSentinel.next;
+    struct np_udp_socket* s;
 
-    while(iterator != &sockets->socketsSentinel)
+    NN_LLIST_FOREACH(s, &ctx->udpSockets)
     {
-        if (iterator->recv.completionEvent && iterator->posixSocket.sock != -1) {
-            FD_SET(iterator->posixSocket.sock, &ctx->readFds);
-            ctx->maxReadFd = NP_MAX(ctx->maxReadFd, iterator->posixSocket.sock);
+        if (s->recv.completionEvent && s->posixSocket.sock != -1) {
+            FD_SET(s->posixSocket.sock, &ctx->readFds);
+            ctx->maxReadFd = NP_MAX(ctx->maxReadFd, s->posixSocket.sock);
         }
-        iterator = iterator->next;
     }
 }
 
 void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
-    struct nm_select_unix_udp_sockets* sockets = &ctx->udpSockets;
-    struct np_udp_socket* iterator = sockets->socketsSentinel.next;
-    while(iterator != &sockets->socketsSentinel)
+    struct np_udp_socket* s;
+
+    NN_LLIST_FOREACH(s, &ctx->udpSockets)
     {
-        if (iterator->destroyed) {
-            struct np_udp_socket* current = iterator;
-            iterator = iterator->next;
-            nm_select_unix_udp_free_socket(current);
-            continue;
+        if (s->posixSocket.sock != -1 && FD_ISSET(s->posixSocket.sock, &ctx->readFds)) {
+            nm_select_unix_udp_handle_event(s);
         }
-        if (iterator->posixSocket.sock != -1 && FD_ISSET(iterator->posixSocket.sock, &ctx->readFds)) {
-            nm_select_unix_udp_handle_event(iterator);
-        }
-        iterator = iterator->next;
     }
 }

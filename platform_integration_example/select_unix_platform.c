@@ -20,12 +20,12 @@
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
-static void* core_thread(void* data);
+static void* network_thread(void* data);
 
 struct select_unix_platform
 {
     struct np_platform* pl;
-    struct nabto_device_thread* coreThread;
+    struct nabto_device_thread* networkThread;
     struct nabto_device_mutex* mutex;
     struct nm_select_unix selectUnix;
     struct select_unix_event_queue eventQueue;
@@ -52,8 +52,8 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 
     select_unix_event_queue_init(&platform->eventQueue, pl, eventMutex);
 
-    platform->coreThread = nabto_device_threads_create_thread();
-    if (nabto_device_threads_run(platform->coreThread, core_thread, platform) != 0) {
+    platform->networkThread = nabto_device_threads_create_thread();
+    if (nabto_device_threads_run(platform->networkThread, network_thread, platform) != 0) {
         // TODO
     }
     return NABTO_EC_OK;
@@ -62,8 +62,12 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 
 void nabto_device_deinit_platform(struct np_platform* pl)
 {
+    nm_random_deinit(pl);
     struct select_unix_platform* platform = pl->platformData;
     select_unix_event_queue_deinit(&platform->eventQueue);
+
+    nabto_device_threads_free_thread(platform->networkThread);
+    free(platform);
 }
 
 void nabto_device_platform_stop_blocking(struct np_platform* pl)
@@ -71,7 +75,7 @@ void nabto_device_platform_stop_blocking(struct np_platform* pl)
     struct select_unix_platform* platform = pl->platformData;
     platform->stopped = true;
     nm_select_unix_notify(&platform->selectUnix);
-    nabto_device_threads_join(platform->coreThread);
+    nabto_device_threads_join(platform->networkThread);
     nm_select_unix_notify(&platform->selectUnix);
     select_unix_event_queue_stop_blocking(&platform->eventQueue);
 
@@ -79,7 +83,7 @@ void nabto_device_platform_stop_blocking(struct np_platform* pl)
 
 }
 
-void* core_thread(void* data)
+void* network_thread(void* data)
 {
     struct select_unix_platform* platform = data;
 

@@ -9,6 +9,8 @@
 
 #include <modules/posix/nm_posix_udp.h>
 
+#include <nn/llist.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,16 +25,9 @@ struct np_udp_socket {
     struct nm_select_unix* selectCtx;
     struct nm_posix_udp_socket posixSocket;
 
-    struct np_udp_socket* next;
-    struct np_udp_socket* prev;
+    struct nn_llist_node udpSocketsNode;
     bool aborted;
-    bool destroyed;
     struct nm_select_unix_udp_recv_wait_context recv;
-};
-
-struct nm_select_unix_udp_sockets {
-    struct np_platform* pl;
-    struct np_udp_socket socketsSentinel;
 };
 
 struct nm_select_unix_tcp_connect_context {
@@ -53,8 +48,7 @@ struct nm_select_unix_tcp_read_context {
 };
 
 struct np_tcp_socket {
-    struct np_tcp_socket* next;
-    struct np_tcp_socket* prev;
+    struct nn_llist_node tcpSocketsNode;
     struct np_platform* pl;
     struct nm_select_unix* selectCtx;
     int fd;
@@ -67,10 +61,6 @@ struct np_tcp_socket {
     bool aborted;
 };
 
-struct nm_select_unix_tcp_sockets {
-    struct np_tcp_socket socketsSentinel;
-};
-
 struct nm_select_unix {
     struct np_platform* pl;
     fd_set readFds;
@@ -78,8 +68,8 @@ struct nm_select_unix {
     int maxReadFd;
     int maxWriteFd;
     int pipefd[2];
-    struct nm_select_unix_udp_sockets udpSockets;
-    struct nm_select_unix_tcp_sockets tcpSockets;
+    struct nn_llist udpSockets;
+    struct nn_llist tcpSockets;
 };
 
 /**
@@ -92,7 +82,6 @@ int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms);
 int nm_select_unix_inf_wait(struct nm_select_unix* ctx);
 
 void nm_select_unix_read(struct nm_select_unix* ctx, int nfds);
-bool nm_select_unix_finished(struct nm_select_unix* ctx);
 
 /**
  * Functions only used internally in the module

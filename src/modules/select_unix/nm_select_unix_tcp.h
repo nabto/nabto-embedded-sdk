@@ -11,7 +11,6 @@ void nm_select_unix_tcp_init(struct nm_select_unix* ctx);
 void nm_select_unix_tcp_deinit(struct nm_select_unix* ctx);
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx);
 void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds);
-bool nm_select_unix_tcp_has_sockets(struct nm_select_unix* ctx);
 
 #ifdef __cplusplus
 } //extern "C"
