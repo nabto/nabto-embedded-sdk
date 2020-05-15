@@ -234,6 +234,8 @@ void nc_device_stop(struct nc_device_context* dev)
     nc_udp_dispatch_abort(&dev->secondaryUdp);
     nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
     nc_stun_remove_sockets(&dev->stun);
+    nc_attacher_stop(&dev->attacher);
+
 
     if (dev->mdns) {
         pl->mdns.stop(dev->mdns);

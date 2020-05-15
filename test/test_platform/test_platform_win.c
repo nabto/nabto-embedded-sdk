@@ -50,5 +50,5 @@ void test_platform_run(struct test_platform* tp)
 void test_platform_stop(struct test_platform* tp)
 {
     tp->stopped = true;
-    nm_select_unix_break_wait(&ctx);
+    nm_select_unix_notify(&ctx);
 }

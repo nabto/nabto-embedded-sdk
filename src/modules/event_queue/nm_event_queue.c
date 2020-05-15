@@ -1,7 +1,10 @@
 #include "nm_event_queue.h"
 
+#include <platform/np_logging.h>
+
 #include <stdlib.h>
 
+#define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
 void nm_event_queue_init(struct nm_event_queue* queue)
 {
@@ -16,108 +19,97 @@ void nm_event_queue_deinit(struct nm_event_queue* queue)
 }
 
 // see np_event_queue for documentation on the following functions.
-np_error_code nm_event_queue_create_event(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event)
+void nm_event_queue_event_init(struct nm_event_queue_event* event, np_event_callback cb, void* data)
 {
-    struct np_event* ev = calloc(1, sizeof(struct np_event));
-    if (ev == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-    ev->pl = pl;
-    ev->cb = cb;
-    ev->data = data;
-
-    *event = ev;
-    return NABTO_EC_OK;
+    event->cb = cb;
+    event->data = data;
+    nn_llist_node_init(&event->eventsNode);
 }
 
-void nm_event_queue_destroy_event(struct np_event* event)
+void nm_event_queue_event_deinit(struct nm_event_queue_event* event)
 {
     nm_event_queue_cancel_event(event);
-    free(event);
 }
 
-void nm_event_queue_post_event(struct np_event* event)
+void nm_event_queue_post_event(struct nm_event_queue* queue, struct nm_event_queue_event* event)
 {
-    // todo check if the event is already in the list and print an error if so
-    struct np_platform* pl = event->pl;
-    struct nm_event_queue* eq = pl->eqData;
-    nn_llist_append(&eq->events, &event->eventsNode, event);
-}
-
-void nm_event_queue_post_event_maybe_double(struct np_event* event)
-{
-    // TODO check if event is already in the list
-    struct np_platform* pl = event->pl;
-    struct nm_event_queue* eq = pl->eqData;
-    nn_llist_append(&eq->events, &event->eventsNode, event);
-}
-
-void nm_event_queue_cancel_event(struct np_event* event)
-{
-    // TODO
-}
-
-np_error_code nm_event_queue_create_timed_event(struct np_platform* pl, np_timed_event_callback cb, void* data, struct np_timed_event** event)
-{
-    struct np_timed_event* ev = calloc(1, sizeof(struct np_timed_event));
-    if (ev == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
+    if (nn_llist_node_in_list(&event->eventsNode)) {
+        NABTO_LOG_ERROR(LOG, "Double posted event, use the post_maybe_double if this bahavior is intended");
+        return;
     }
-    ev->pl = pl;
-    ev->cb = cb;
-    ev->data = data;
-
-    *event = ev;
-    return NABTO_EC_OK;
+    nn_llist_append(&queue->events, &event->eventsNode, event);
 }
 
-void nm_event_queue_destroy_timed_event(struct np_timed_event* event)
+void nm_event_queue_post_event_maybe_double(struct nm_event_queue* queue, struct nm_event_queue_event* event)
+{
+    if (nn_llist_node_in_list(&event->eventsNode)) {
+        return;
+    }
+    nn_llist_append(&queue->events, &event->eventsNode, event);
+}
+
+void nm_event_queue_cancel_event(struct nm_event_queue_event* event)
+{
+    if (nn_llist_node_in_list(&event->eventsNode)) {
+        nn_llist_erase_node(&event->eventsNode);
+    }
+}
+
+void nm_event_queue_timed_event_init(struct nm_event_queue_timed_event* event, np_timed_event_callback cb, void* data)
+{
+    event->cb = cb;
+    event->data = data;
+
+    nn_llist_node_init(&event->timedEventsNode);
+}
+
+void nm_event_queue_timed_event_deinit(struct nm_event_queue_timed_event* event)
 {
     nm_event_queue_cancel_timed_event(event);
-    free(event);
 }
 
-void nm_event_queue_post_timed_event(struct np_timed_event* event, uint32_t milliseconds)
+void nm_event_queue_post_timed_event(struct nm_event_queue* queue, struct nm_event_queue_timed_event* event, uint32_t timestamp)
 {
-    struct np_platform* pl = event->pl;
-    struct nm_event_queue* eq = pl->eqData;
+    event->expireTimestamp = timestamp;
+    if (nn_llist_node_in_list(&event->timedEventsNode)) {
+        nn_llist_erase_node(&event->timedEventsNode);
+    }
 
-    uint32_t timestamp = np_timestamp_now_ms(pl);
-    timestamp += milliseconds;
-
-    struct nn_llist_iterator it = nn_llist_begin(&eq->timedEvents);
+    struct nn_llist_iterator it = nn_llist_begin(&queue->timedEvents);
     while (!nn_llist_is_end(&it)) {
-        struct np_timed_event* timedEvent = nn_llist_get_item(&it);
+        struct nm_event_queue_timed_event* timedEvent = nn_llist_get_item(&it);
         if (np_timestamp_less_or_equal(timestamp, timedEvent->expireTimestamp)) {
             nn_llist_insert_before(&it, &event->timedEventsNode, event);
             return;
         }
+        nn_llist_next(&it);
     }
     // the event is not added to the list simply because it should be at the very end.
-    nn_llist_append(&eq->timedEvents, &event->timedEventsNode, event);
+    nn_llist_append(&queue->timedEvents, &event->timedEventsNode, event);
 }
 
-void nm_event_queue_cancel_timed_event(struct np_timed_event* event)
+void nm_event_queue_cancel_timed_event(struct nm_event_queue_timed_event* event)
 {
-    // TODO
+    if (nn_llist_node_in_list(&event->timedEventsNode)) {
+        nn_llist_erase_node(&event->timedEventsNode);
+    }
 }
 
 
 /**
- * run a single event on the queue if an event exits.
+ * take a single event off the queue if an event exits.
  *
- * @return true iff an event was executed.
+ * @return true iff an event is taken off the event queue.
  */
-bool nm_event_queue_run_event(struct nm_event_queue* queue)
+bool nm_event_queue_take_event(struct nm_event_queue* queue, struct nm_event_queue_event** event)
 {
     struct nn_llist_iterator it = nn_llist_begin(&queue->events);
     if (nn_llist_is_end(&it)) {
         return false;
     }
 
-    struct np_event* event = nn_llist_get_item(&it);
+    *event = nn_llist_get_item(&it);
     nn_llist_erase(&it);
-    event->cb(event->data);
     return true;
 }
 
@@ -126,7 +118,7 @@ bool nm_event_queue_run_event(struct nm_event_queue* queue)
  *
  * @return true iff a timed event was executed
  */
-bool nm_event_queue_run_timed_event(struct nm_event_queue* queue, uint32_t now)
+bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now, struct nm_event_queue_timed_event** event)
 {
     struct nn_llist_iterator it = nn_llist_begin(&queue->timedEvents);
 
@@ -134,10 +126,10 @@ bool nm_event_queue_run_timed_event(struct nm_event_queue* queue, uint32_t now)
         return false;
     }
 
-    struct np_timed_event* event = nn_llist_get_item(&it);
-    if (np_timestamp_less_or_equal(event->expireTimestamp, now)) {
+    struct nm_event_queue_timed_event* ev = nn_llist_get_item(&it);
+    if (np_timestamp_less_or_equal(ev->expireTimestamp, now)) {
         nn_llist_erase(&it);
-        event->cb(NABTO_EC_OK, event->data);
+        *event = ev;
         return true;
     }
 
@@ -158,7 +150,7 @@ bool nm_event_queue_next_timed_event(struct nm_event_queue* queue, uint32_t* nex
         return false;
     }
 
-    struct np_timed_event* event = nn_llist_get_item(&it);
+    struct nm_event_queue_timed_event* event = nn_llist_get_item(&it);
     *nextTime = event->expireTimestamp;
     return true;
 }

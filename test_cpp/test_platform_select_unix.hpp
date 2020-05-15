@@ -83,7 +83,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     virtual void stop()
     {
         stopped_ = true;
-        nm_select_unix_break_wait(&selectCtx_);
+        nm_select_unix_notify(&selectCtx_);
         event_base_loopbreak(eventBase_);
     }
 

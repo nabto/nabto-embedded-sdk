@@ -14,7 +14,7 @@
 
 static np_error_code create_event(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event);
 static void destroy_event(struct np_event* event);
-static bool post(struct np_event* event);
+static void post(struct np_event* event);
 static void post_maybe_double(struct np_event* event);
 
 static np_error_code create_timed_event(struct np_platform* pl, np_timed_event_callback cb, void* data, struct np_timed_event** event);
@@ -120,13 +120,12 @@ void destroy_event(struct np_event* event)
     free(event);
 }
 
-bool post(struct np_event* event)
+void post(struct np_event* event)
 {
     //NABTO_LOG_TRACE(LOG, "post event");
     //struct np_platform* pl = event->pl;
     //struct nabto_device_event_queue* eq = pl->eqData;
     event_active(&event->event, 0, 0);
-    return true;
 }
 
 void post_maybe_double(struct np_event* event)

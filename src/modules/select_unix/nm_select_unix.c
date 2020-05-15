@@ -57,6 +57,7 @@ int nm_select_unix_inf_wait(struct nm_select_unix* ctx)
 
 int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms)
 {
+    NABTO_LOG_TRACE(LOG, "timed wait %d", ms);
     int nfds;
     struct timeval timeout_val;
     timeout_val.tv_sec = (ms/1000);
@@ -91,11 +92,6 @@ void nm_select_unix_close(struct nm_select_unix* ctx)
     nm_select_unix_tcp_deinit(ctx);
     close(ctx->pipefd[0]);
     close(ctx->pipefd[1]);
-}
-
-void nm_select_unix_break_wait(struct nm_select_unix* ctx)
-{
-    nm_select_unix_notify(ctx);
 }
 
 bool nm_select_unix_finished(struct nm_select_unix* ctx)

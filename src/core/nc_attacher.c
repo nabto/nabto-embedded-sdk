@@ -159,7 +159,6 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
     }
 }
 
-
 void nc_attacher_set_state_listener(struct nc_attach_context* ctx, nc_attacher_state_listener cb, void* data)
 {
     ctx->stateListener = cb;
@@ -234,6 +233,8 @@ np_error_code nc_attacher_async_close(struct nc_attach_context* ctx, nc_attacher
  */
 np_error_code nc_attacher_stop(struct nc_attach_context* ctx)
 {
+    nc_keep_alive_stop(&ctx->keepAlive);
+
     do_close(ctx);
     return NABTO_EC_OK;
 }

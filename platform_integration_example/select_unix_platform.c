@@ -18,6 +18,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#define LOG NABTO_LOG_MODULE_EVENT_QUEUE
+
 static void* core_thread(void* data);
 
 struct select_unix_platform
@@ -26,7 +28,7 @@ struct select_unix_platform
     struct nabto_device_thread* coreThread;
     struct nabto_device_mutex* mutex;
     struct nm_select_unix selectUnix;
-    struct nm_event_queue eventQueue;
+    struct select_unix_event_queue eventQueue;
     bool stopped;
 };
 
@@ -48,7 +50,8 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 
     nm_select_unix_init(&platform->selectUnix, pl);
 
-    select_unix_event_queue_init(&platform->eventQueue, pl);
+    select_unix_event_queue_init(&platform->eventQueue, pl, eventMutex);
+
     platform->coreThread = nabto_device_threads_create_thread();
     if (nabto_device_threads_run(platform->coreThread, core_thread, platform) != 0) {
         // TODO
@@ -59,14 +62,21 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 
 void nabto_device_deinit_platform(struct np_platform* pl)
 {
+    struct select_unix_platform* platform = pl->platformData;
+    select_unix_event_queue_deinit(&platform->eventQueue);
 }
 
 void nabto_device_platform_stop_blocking(struct np_platform* pl)
 {
     struct select_unix_platform* platform = pl->platformData;
     platform->stopped = true;
-    nm_select_unix_close(&platform->selectUnix);
+    nm_select_unix_notify(&platform->selectUnix);
     nabto_device_threads_join(platform->coreThread);
+    nm_select_unix_notify(&platform->selectUnix);
+    select_unix_event_queue_stop_blocking(&platform->eventQueue);
+
+    nm_select_unix_close(&platform->selectUnix);
+
 }
 
 void* core_thread(void* data)
@@ -74,42 +84,18 @@ void* core_thread(void* data)
     struct select_unix_platform* platform = data;
 
     while(true) {
-        uint32_t nextEvent;
-        uint32_t now = np_timestamp_now_ms(platform->pl);
         int nfds;
-        nabto_device_threads_mutex_lock(platform->mutex);
-        if (nm_event_queue_run_event(&platform->eventQueue)) {
-            // Run the loop again to see if there's more events ready.
-            nabto_device_threads_mutex_unlock(platform->mutex);
-        } else if (nm_event_queue_run_timed_event(&platform->eventQueue, now)) {
-            // Run the loop again to see if there's more events ready.
-            nabto_device_threads_mutex_unlock(platform->mutex);
-        } else if (nm_event_queue_next_timed_event(&platform->eventQueue, &nextEvent)) {
-            // There is a timed event in the future lets wait for it
-            // or some network traffic or some other event.
 
-            nabto_device_threads_mutex_unlock(platform->mutex);
-            int32_t diff = np_timestamp_difference(nextEvent, now);
-            nfds = nm_select_unix_timed_wait(&platform->selectUnix, diff);
-        } else if (platform->stopped) {
+        if (platform->stopped) {
             // There is no pending events or timed events and the
             // platform is stopped, lets exit.
-            nabto_device_threads_mutex_unlock(platform->mutex);
             return NULL;
         } else {
             // There is no events or timed events and we are not
             // stopped.
-            nabto_device_threads_mutex_unlock(platform->mutex);
             nfds = nm_select_unix_inf_wait(&platform->selectUnix);
             nm_select_unix_read(&platform->selectUnix, nfds);
         }
     }
     return NULL;
-}
-
-
-void select_unix_notify_platform(void* data)
-{
-    struct select_unix_platform* platform = data;
-    nm_select_unix_notify(&platform->selectUnix);
 }

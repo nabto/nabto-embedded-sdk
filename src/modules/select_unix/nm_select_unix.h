@@ -87,7 +87,6 @@ struct nm_select_unix {
  */
 np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl);
 void nm_select_unix_close(struct nm_select_unix* ctx);
-void nm_select_unix_break_wait(struct nm_select_unix* ctx);
 
 int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms);
 int nm_select_unix_inf_wait(struct nm_select_unix* ctx);

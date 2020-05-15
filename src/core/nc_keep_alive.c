@@ -32,6 +32,11 @@ void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
     }
 }
 
+void nc_keep_alive_stop(struct nc_keep_alive_context* ctx)
+{
+    np_event_queue_cancel_timed_event(ctx->pl, ctx->keepAliveEvent);
+}
+
 void nc_keep_alive_reset(struct nc_keep_alive_context* ctx)
 {
     np_event_queue_cancel_timed_event(ctx->pl, ctx->keepAliveEvent);
