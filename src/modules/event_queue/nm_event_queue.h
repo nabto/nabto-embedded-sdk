@@ -5,7 +5,6 @@
 #include <nn/llist.h>
 
 struct nm_event_queue {
-    struct np_platform* pl;
     struct nn_llist events;
     struct nn_llist timedEvents;
 };
@@ -42,16 +41,16 @@ void nm_event_queue_cancel_timed_event(struct nm_event_queue_timed_event* event)
 
 
 /**
- * run a single event on the queue if an event exits.
+ * take a single event from the queue if an event exits.
  *
- * @return true iff an event was executed.
+ * @return true iff an event is returned.
  */
 bool nm_event_queue_take_event(struct nm_event_queue* queue, struct nm_event_queue_event** event);
 
 /**
- * run a single timed event if a timed event exists and ready to be run.
+ * take a single timed event from the event queue if a timed event exists and ready to be run.
  *
- * @return true iff a timed event was executed
+ * @return true iff a timed event is returned.
  */
 bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now, struct nm_event_queue_timed_event** event);
 
