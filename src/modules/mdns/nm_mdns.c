@@ -338,7 +338,7 @@ void nm_mdns_packet_recv_wait_completed_v6(const np_error_code ec, void* userDat
             }
         }
 
-        if (ec == NABTO_EC_OK || NABTO_EC_AGAIN) {
+        if (ec == NABTO_EC_OK || ec == NABTO_EC_AGAIN) {
             nm_mdns_recv_packet_v6(mdns);
             return;
         }
