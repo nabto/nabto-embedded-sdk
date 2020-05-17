@@ -41,8 +41,6 @@ struct nm_tcp_tunnel_connection {
 
 struct nm_tcp_tunnel_service {
     struct nn_llist_node servicesListItem;
-    struct nm_tcp_tunnel* next;
-    struct nm_tcp_tunnel* prev;
     struct nm_tcp_tunnels* tunnels;
 
     struct np_ip_address address;
