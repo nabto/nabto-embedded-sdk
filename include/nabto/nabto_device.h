@@ -987,9 +987,6 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
  * be used as the only authorization mechanism but be seen as a filter
  * for which connections is allowed from the internet to the
  * device, e.g. to prevent DoS attacks on devices.
- *
- * Server Connect Tokens must be used together with client server keys which enforces a
- * check for a valid server connect token.
  */
 
 /**
