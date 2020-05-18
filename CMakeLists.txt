@@ -135,11 +135,13 @@ add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
 add_subdirectory(3rdparty/nn)
 add_subdirectory(3rdparty/libevent)
-add_subdirectory(nabto-common-cpp/src/streaming)
-add_subdirectory(nabto-common-cpp/src/stun)
-add_subdirectory(nabto-common-cpp/src/coap)
-add_subdirectory(nabto-common-cpp/src/mdns)
-add_subdirectory(nabto-common-cpp/src/lib)
+add_subdirectory(nabto-common-c/components/streaming)
+add_subdirectory(nabto-common-c/components/stun)
+add_subdirectory(nabto-common-c/components/coap)
+add_subdirectory(nabto-common-c/components/mdns)
+
+#add_subdirectory(nabto-common-cpp/src/lib)
+
 
 add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)
