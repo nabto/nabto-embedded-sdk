@@ -8,6 +8,6 @@ run apt-get install apt-transport-https ca-certificates gnupg software-propertie
 
 run wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - > /etc/apt/trusted.gpg.d/kitware.gpg
 
-sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
+run apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
 
 run apt-get update && apt-get install build-essential cmake git ninja-build libboost-dev libboost-test-dev libboost-system-dev -y
