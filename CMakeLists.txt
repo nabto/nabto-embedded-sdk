@@ -118,8 +118,6 @@ endif()
 include_directories(src)
 include_directories(include)
 
-#include_directories(nabto-common-c/components/nn/include)
-
 set(test_runner_src
   ${CMAKE_CURRENT_SOURCE_DIR}/test/runner/linux.c
   )
@@ -133,11 +131,12 @@ add_subdirectory(3rdparty/tinycbor)
 add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
 add_subdirectory(3rdparty/libevent)
-add_subdirectory(nabto-common-c/components/nn)
-add_subdirectory(nabto-common-c/components/streaming)
-add_subdirectory(nabto-common-c/components/stun)
-add_subdirectory(nabto-common-c/components/coap)
-add_subdirectory(nabto-common-c/components/mdns)
+
+add_subdirectory(nabto-common/components/nn)
+add_subdirectory(nabto-common/components/streaming)
+add_subdirectory(nabto-common/components/stun)
+add_subdirectory(nabto-common/components/coap)
+add_subdirectory(nabto-common/components/mdns)
 
 add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)

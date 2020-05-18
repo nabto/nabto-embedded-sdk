@@ -18,6 +18,8 @@ set(test_src
   api/authorization_test.cpp
   api/new_free.cpp
   api/create_sct.cpp
+  # TODO move the attach_test to somewhere else where the dtls server
+  #exists or move the dtls server to this repository
   #attach/attach_test.cpp
   test_platform.cpp
   test_platform_test.cpp

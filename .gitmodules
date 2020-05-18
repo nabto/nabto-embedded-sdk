@@ -7,6 +7,6 @@
 [submodule "3rdparty/libevent/libevent"]
 	path = 3rdparty/libevent/libevent
 	url = https://github.com/libevent/libevent
-[submodule "nabto-common-c"]
-	path = nabto-common-c
-	url = git@github.com:nabto/nabto-common-c
+[submodule "nabto-common"]
+	path = nabto-common
+	url = https://github.com/nabto/nabto-common
