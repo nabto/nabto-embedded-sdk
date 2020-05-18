@@ -1,10 +1,8 @@
 FROM ubuntu:16.04
 
-run apt-get update && apt-get install software-properties-common -y
+run apt-get update && apt-get install software-properties-common install apt-transport-https ca-certificates gnupg wget -y
 
 run add-apt-repository ppa:git-core/ppa -y
-
-run apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
 
 run wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - > /etc/apt/trusted.gpg.d/kitware.gpg
 

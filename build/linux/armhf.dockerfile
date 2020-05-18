@@ -1,8 +1,6 @@
 FROM ubuntu:18.04
 
-run apt update
-
-run apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
+run apt update && apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
 
 run wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - > /etc/apt/trusted.gpg.d/kitware.gpg
 
