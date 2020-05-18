@@ -24,7 +24,7 @@ pipeline {
                         checkout scm
                         dir('build-amd64') {
                             sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
-                            sh "cmake --build ."
+                            sh "cmake --build --parallel ."
                         }
                         stash name: "${releaseDir}", includes: "build-amd64/nabto-embedded-sdk/**"
                     }
@@ -47,7 +47,7 @@ pipeline {
                         checkout scm
                         dir('build-armhf') {
                             sh "cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$WORKSPACE/${releaseDir} ${srcDir}/superbuild"
-                            sh "cmake --build ."
+                            sh "cmake --build --parallel ."
                         }
                         stash name: "${releaseDir}", includes: "build-armhf/nabto-embedded-sdk/**"
                     }
@@ -65,7 +65,7 @@ pipeline {
                         checkout scm
                         dir('build-mac') {
                             sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
-                            sh "cmake --build ."
+                            sh "cmake --build --parallel ."
                         }
                         stash name: "${releaseDir}", includes: "build-mac/nabto-embedded-sdk/**"
                     }
