@@ -55,9 +55,10 @@ np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_plat
     pl->udp.async_send_to    = &nm_select_unix_udp_async_send_to;
     pl->udp.async_recv_wait  = &nm_select_unix_udp_async_recv_wait;
     pl->udp.recv_from        = &nm_select_unix_udp_recv_from;
-    pl->udp.get_local_ip     = &nm_unix_get_local_ip;
     pl->udp.get_local_port   = &nm_select_unix_udp_get_local_port;
     pl->udpData = ctx;
+
+    pl->localIp.get_local_ip = &nm_unix_get_local_ip;
 
     return NABTO_EC_OK;
 }

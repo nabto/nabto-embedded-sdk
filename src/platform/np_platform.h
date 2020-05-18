@@ -17,6 +17,7 @@
 #include <platform/np_mdns.h>
 #include <platform/np_authorization.h>
 #include <platform/np_random.h>
+#include <platform/np_local_ip.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +73,11 @@ struct np_platform {
     // Access control module
     struct np_authorization authorization;
     void* authorizationData;
+
+    // Get local ip
+    struct np_local_ip localIp;
+    // data for the local ip module.
+    void* localIpData;
 };
 
 #ifdef __cplusplus

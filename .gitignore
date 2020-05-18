@@ -3,3 +3,4 @@
 *#
 .#*
 /src/core/nc_version.c
+*.gdb_history

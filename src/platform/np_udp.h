@@ -161,16 +161,6 @@ struct np_udp_module {
      * @return  The port number the socket is bound to.
      */
     uint16_t (*get_local_port)(struct np_udp_socket* sock);
-
-    /**
-     * Get the local IP address.
-     *
-     * TODO move out of udp module.
-     * @param addrs     Pointer to an ip_address array of size addrsSize
-     * @param addrsSize size of addrs
-     * @return number of ip addresses put into the array
-     */
-    size_t (*get_local_ip)( struct np_ip_address *addrs, size_t addrsSize);
 };
 
 #ifdef __cplusplus

@@ -90,8 +90,10 @@ void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ct
     pl->udp.async_send_to        = &udp_async_send_to;
     pl->udp.async_recv_wait      = &udp_async_recv_wait;
     pl->udp.recv_from            = &udp_recv_from;
-    pl->udp.get_local_ip         = &nm_libevent_get_local_ip;
     pl->udp.get_local_port       = &udp_get_local_port;
+
+    pl->localIp.get_local_ip     = &nm_libevent_get_local_ip;
+
 }
 
 void nm_libevent_udp_deinit(struct np_platform* pl)
