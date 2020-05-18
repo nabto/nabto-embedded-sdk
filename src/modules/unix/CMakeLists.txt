@@ -4,3 +4,4 @@ set(src
   )
 
 add_library(nm_unix ${src})
+target_link_libraries(nm_unix np_platform)

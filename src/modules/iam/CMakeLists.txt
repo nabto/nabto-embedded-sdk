@@ -19,4 +19,4 @@ set(src
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam nm_policies 3rdparty_cjson 3rdparty_tinycbor 3rdparty_nn)
+target_link_libraries(nm_iam nm_policies 3rdparty_cjson 3rdparty_tinycbor nn)

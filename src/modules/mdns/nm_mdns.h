@@ -3,7 +3,6 @@
 
 #include <platform/np_mdns.h>
 #include <platform/np_platform.h>
-#include <mdns/mdns_server.h>
 
 void nm_mdns_init(struct np_platform* pl);
 

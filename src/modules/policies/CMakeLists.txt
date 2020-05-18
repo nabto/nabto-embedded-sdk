@@ -7,4 +7,4 @@ set(src
   )
 
 add_library(nm_policies ${src})
-target_link_libraries(nm_policies 3rdparty_cjson 3rdparty_nn)
+target_link_libraries(nm_policies 3rdparty_cjson nn)

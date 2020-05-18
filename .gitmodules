@@ -7,9 +7,6 @@
 [submodule "3rdparty/tinycbor/tinycbor"]
 	path = 3rdparty/tinycbor/tinycbor
 	url = https://github.com/intel/tinycbor
-[submodule "3rdparty/nn/nn"]
-	path = 3rdparty/nn/nn
-	url = https://github.com/nabto/nn
 [submodule "3rdparty/libevent/libevent"]
 	path = 3rdparty/libevent/libevent
 	url = https://github.com/libevent/libevent

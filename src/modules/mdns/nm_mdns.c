@@ -1,4 +1,5 @@
 #include "nm_mdns.h"
+#include <mdns/mdns_server.h>
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
 #include <stdlib.h>

@@ -38,4 +38,4 @@ add_library( nc_core STATIC "${src}")
 
 add_dependencies(nc_core GENERATE_VERSION)
 
-target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap 3rdparty_tinycbor 3rdparty_nn)
+target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap 3rdparty_tinycbor nn)
