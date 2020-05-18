@@ -8,7 +8,7 @@ services:
     volumes:
       - ../..:/nabto/nabto-embedded-sdk
       - ../../../artifacts:/artifacts
-    command: bash -c "mkdir /tmp/build && cd /tmp/build && CC=arm-linux-gnueabihf-gcc-8 CXX=arm-linux-gnueabihf-g++-8 cmake -DCMAKE_INSTALL_PREFIX=/artifacts/nabto-embedded-sdk/armhf -DCMAKE_BUILD_TYPE=release /nabto/nabto-embedded-sdk && make -j && make install"
+    command: bash -c "mkdir /tmp/build && cd /tmp/build && CC=arm-linux-gnueabihf-gcc-8 CXX=arm-linux-gnueabihf-g++-8 cmake -DDEVICE_BUILD_EXAMPLES=OFF -DDEVICE_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/artifacts/nabto-embedded-sdk/armhf -DCMAKE_BUILD_TYPE=release /nabto/nabto-embedded-sdk && make -j && make install"
   build-linux64:
     build:
       context: .
