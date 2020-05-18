@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 
-run apt-get update && apt-get install software-properties-common install apt-transport-https ca-certificates gnupg wget -y
+run apt-get update && apt-get install software-properties-common apt-transport-https ca-certificates gnupg wget -y
 
 run add-apt-repository ppa:git-core/ppa -y
 
