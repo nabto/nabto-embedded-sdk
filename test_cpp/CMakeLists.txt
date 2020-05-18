@@ -1,16 +1,8 @@
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/3rdparty/boost 3rdparty_boost)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/3rdparty/fmtlib 3rdparty_fmtlib)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/lib common_lib)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/util common_util)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/dtls common_dtls)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nabto-common-cpp/src/coap_cpp common_coap_cpp)
-
-
 set(test_src
+  util/io_service.cpp
   helper.cpp
   unit_test.cpp
   network/tcp_test.cpp
@@ -26,7 +18,7 @@ set(test_src
   api/authorization_test.cpp
   api/new_free.cpp
   api/create_sct.cpp
-  attach/attach_test.cpp
+  #attach/attach_test.cpp
   test_platform.cpp
   test_platform_test.cpp
   policies/condition_test.cpp
@@ -39,19 +31,24 @@ set(test_src
 
   )
 
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost COMPONENTS unit_test_framework system REQUIRED)
+
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test
 
   #test_platform
-  3rdparty_boost_test
-  3rdparty_boost_asio
-  common_util
+  #3rdparty_boost_test
+  #3rdparty_boost_asio
+  #common_util
   nc_core
-  dtls
+  #dtls
   nm_logging_test
   nm_policies
   nm_iam
   nabto_device_static
+  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
   )
 
 if (HAVE_SELECT_UNIX)

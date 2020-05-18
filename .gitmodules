@@ -1,9 +1,6 @@
 [submodule "3rdparty/mbedtls/mbedtls"]
 	path = 3rdparty/mbedtls/mbedtls
 	url = https://github.com/ARMmbed/mbedtls.git
-[submodule "nabto-common-cpp"]
-	path = nabto-common-cpp
-	url = ../nabto-common-cpp.git
 [submodule "3rdparty/tinycbor/tinycbor"]
 	path = 3rdparty/tinycbor/tinycbor
 	url = https://github.com/intel/tinycbor
