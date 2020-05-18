@@ -58,7 +58,9 @@ struct np_udp_module {
      * ipv4+ipv6 socket.
      *
      * The completion event is resolved with NABTO_EC_OK if the socket
-     * is bound to the specified port and ready to be used.
+     * is bound to the specified port and ready to be used. if the
+     * function fails the completion event shall be resolved with an
+     * error.
      *
      * @param sock  The socket resource;
      * @param port  The port to bind to, 0 means ephemeral port.
@@ -72,6 +74,9 @@ struct np_udp_module {
      * multicast group.  The socket is bound to 5353 and needs to have
      * the equivalent of the REUSEPORT flag set.
      *
+     * The completion event shall be resolved when a result for the
+     * operation is available.
+     *
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
      */
@@ -81,6 +86,10 @@ struct np_udp_module {
      * Optional function to bind a socket the mdns port and ipv6 mdns
      * multicast group.  The socket is bound to 5353 and needs to have
      * the equivalent of the REUSEPORT flag set.
+     *
+     * The completion event shall be resolved when a result for the
+     * operation is available.
+     *
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
      */
@@ -90,6 +99,9 @@ struct np_udp_module {
      * Send packet async. It's the responsibility of the caller to
      * keep the ep and buffer alive until the completion event is
      * resolved.
+     *
+     * The completion event shall be resolved when a result of the
+     * operation is available.
      *
      * @param sock  The socket resource.
      * @param ep  The endpoint. If the send to is deferred the endpoint has to be copied.
@@ -118,6 +130,9 @@ struct np_udp_module {
      * function is guaranteed to be called. If async recv_wait
      * resolves with something else than NABTO_EC_OK the socket is
      * assumed to be closed for further reading.
+     *
+     * The completion event shall be resolved when a result of the
+     * operation is available.
      *
      * @param sock  The socket resource
      * @param completionEvent  The completion event to be resolved

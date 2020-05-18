@@ -33,6 +33,9 @@ struct np_tcp_module {
     /**
      * Connect a socket to the given addresa and port.
      *
+     * The completion event shall be resolved when a result of the
+     * operation is available.
+     *
      * @param sock  The socket resource.
      * @param address  The address to connect to.
      * @param port  The port to connect to.
@@ -43,6 +46,9 @@ struct np_tcp_module {
     /**
      * Write data to the tcp socket.
      *
+     * The completion event shall be resolved when a result of the
+     * operation is available.
+     *
      * @param sock  The socket resource.
      * @param data  The data to write.
      * @param dataLength  The length of the data to write.
@@ -52,6 +58,9 @@ struct np_tcp_module {
 
     /**
      * Read data from a socket.
+     *
+     * The completion event shall be resolved when a result of the
+     * operation is available.
      *
      * @param sock  The socket resource.
      * @param buffer  The buffer to write data to.
