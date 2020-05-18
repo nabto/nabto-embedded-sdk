@@ -132,6 +132,7 @@ add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
 add_subdirectory(3rdparty/libevent)
 
+set(NN_BUILD_TESTS OFF CACHE BOOL "enable nn tests")
 add_subdirectory(nabto-common/components/nn)
 add_subdirectory(nabto-common/components/streaming)
 add_subdirectory(nabto-common/components/stun)
