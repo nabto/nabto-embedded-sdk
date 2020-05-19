@@ -28,8 +28,8 @@ target_link_libraries( test_platform
   nm_logging_test
   nm_unix_communication_buffer
   nm_timestamp
-  nm_dtls_cli
-  nm_dtls_srv
+  nm_mbedtls_cli
+  nm_mbedtls_srv
   nm_dns
   nc_core
   nm_mdns

@@ -5,8 +5,8 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
-#include <modules/mbedtls/nm_dtls_cli.h>
-#include <modules/mbedtls/nm_dtls_srv.h>
+#include <modules/mbedtls/nm_mbedtls_cli.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
@@ -45,8 +45,8 @@ class TestPlatformSelectUnix : public TestPlatform {
         nm_select_unix_init(&selectCtx_, &pl_);
         nm_unix_ts_init(&pl_);
         nm_unix_dns_init(&pl_);
-        nm_dtls_cli_init(&pl_);
-        nm_dtls_srv_init(&pl_);
+        nm_mbedtls_cli_init(&pl_);
+        nm_mbedtls_srv_init(&pl_);
     }
 
     void deinit()

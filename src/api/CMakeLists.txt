@@ -29,6 +29,7 @@ target_link_libraries( nabto_device_api
   nc_core
   nm_logging_api
   np_platform
-  nm_dtls_srv
+  nm_mbedtls_srv
   nm_tcp_tunnel
+  3rdparty_mbedtls
   )

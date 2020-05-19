@@ -12,6 +12,6 @@ target_link_libraries(dtls_server_tester
   nm_logging_unix
   nm_unix_communication_buffer
   nm_timestamp
-  nm_dtls_srv
+  nm_mbedtls_srv
   nc_core
   )

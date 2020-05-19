@@ -1,8 +1,8 @@
 #include <nabto_types.h>
 #include <platform/np_unit_test.h>
-#include "nm_dtls_util.h"
-#include "nm_dtls_cli.h"
-#include "nm_dtls_srv.h"
+#include "nm_mbedtls_util.h"
+#include "nm_mbedtls_cli.h"
+#include "nm_mbedtls_srv.h"
 #include <modules/communication_buffer/nm_unix_communication_buffer.h>
 
 #include <stdio.h>

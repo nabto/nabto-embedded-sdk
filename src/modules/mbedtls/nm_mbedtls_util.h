@@ -1,5 +1,5 @@
-#ifndef NM_DTLS_UTIL_H
-#define NM_DTLS_UTIL_H
+#ifndef NM_MBEDTLS_UTIL_H
+#define NM_MBEDTLS_UTIL_H
 
 #include <platform/np_platform.h>
 #include <platform/np_error_code.h>
@@ -30,4 +30,4 @@ np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, u
 
 np_error_code nm_dtls_util_create_private_key(char** privateKey);
 
-#endif //NM_DTLS_UTIL_H
+#endif //NM_MBEDTLS_UTIL_H

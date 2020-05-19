@@ -10,8 +10,8 @@
 #include <modules/event_queue/nm_event_queue.h>
 #include <modules/logging/api/nm_api_logging.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
-#include <modules/mbedtls/nm_dtls_srv.h>
-#include <modules/mbedtls/nm_dtls_cli.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
+#include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mdns/nm_mdns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dns/unix/nm_unix_dns.h>
@@ -37,8 +37,8 @@ np_error_code nabto_device_default_modules_init(struct np_platform* pl)
 {
     nm_api_log_init();
     np_communication_buffer_init(pl);
-    nm_dtls_cli_init(pl);
-    nm_dtls_srv_init(pl);
+    nm_mbedtls_cli_init(pl);
+    nm_mbedtls_srv_init(pl);
     nm_mbedtls_random_init(pl);
 
     return NABTO_EC_OK;

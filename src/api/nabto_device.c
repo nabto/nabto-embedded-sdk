@@ -18,7 +18,7 @@
 #include <core/nc_client_connection.h>
 
 #include <modules/logging/api/nm_api_logging.h>
-#include <modules/mbedtls/nm_dtls_util.h>
+#include <modules/mbedtls/nm_mbedtls_util.h>
 
 //#include "nabto_device_event_queue.h"
 

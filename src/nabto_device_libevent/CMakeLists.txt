@@ -20,8 +20,8 @@ endif()
 add_library(libevent_platform STATIC "${src}")
 target_link_libraries(libevent_platform
   nm_mdns
-  nm_dtls_srv
-  nm_dtls_cli
+  nm_mbedtls_srv
+  nm_mbedtls_cli
   nm_mbedtls_random
   )
 
@@ -31,10 +31,10 @@ target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STA
 
 target_link_libraries(nabto_device_static
   nabto_device_api
-  nm_dtls_cli
+  nm_mbedtls_cli
   nc_core
   nm_logging_api
-  nm_dtls_srv
+  nm_mbedtls_srv
   nm_mbedtls_random
   np_platform
   nm_mdns
@@ -51,10 +51,10 @@ target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
 
 target_link_libraries( nabto_device
   nabto_device_api
-  nm_dtls_cli
+  nm_mbedtls_cli
   nc_core
   nm_logging_api
-  nm_dtls_srv
+  nm_mbedtls_srv
   nm_mbedtls_random
   np_platform
   nm_mdns
