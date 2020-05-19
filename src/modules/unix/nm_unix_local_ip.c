@@ -1,35 +1,22 @@
-#include "nm_posix_get_local_ip.h"
-#include "nm_posix_types.h"
+#include "nm_unix_local_ip.h"
 
 #include <platform/np_logging.h>
 
-#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#endif
-
-#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
-#endif
-
-#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2def.h>
-#include <ws2ipdef.h>
-#endif
-
 
 #define LOG NABTO_LOG_MODULE_UDP
 
-size_t nm_posix_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
+static size_t get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
+
+void nm_unix_local_ip_init(struct np_platform* pl)
+{
+    pl->localIp.get_local_ip = &get_local_ip;
+}
+
+size_t get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
 {
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;
@@ -60,7 +47,7 @@ size_t nm_posix_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
             // NABTO_LOG_ERROR(LOG, "Cannot connect to host");
         } else {
             struct sockaddr_in my_addr;
-            socklen_type len = sizeof my_addr;
+            socklen_t len = sizeof my_addr;
             if(getsockname(s,(struct sockaddr*)&my_addr,&len) == -1) {
                 NABTO_LOG_ERROR(LOG, "getsockname failed");
             } else {
@@ -94,7 +81,7 @@ size_t nm_posix_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
             // NABTO_LOG_ERROR(LOG, "Cannot connect to host");
         } else {
             struct sockaddr_in6 my_addr;
-            socklen_type len = sizeof my_addr;
+            socklen_t len = sizeof my_addr;
             if(getsockname(s,(struct sockaddr*)&my_addr,&len) == -1) {
                 NABTO_LOG_ERROR(LOG, "getsockname failed");
             } else {

@@ -15,6 +15,7 @@
 #include <modules/mdns/nm_mdns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dns/unix/nm_unix_dns.h>
+#include <modules/unix/nm_unix_local_ip.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -25,7 +26,11 @@ static void* network_thread(void* data);
 
 struct select_unix_platform
 {
+    /**
+     * a reference to the platform. The np_platform is owned by the NabtoDevice object.
+     */
     struct np_platform* pl;
+
     /**
      * The network thread is used for running the select loop.
      */
@@ -100,6 +105,9 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 
     // This platform integration uses the unix based select module to provide the UDP and TCP abstractions.
     nm_select_unix_init(&platform->selectUnix, pl);
+
+    // This platform integrations uses the posix module for getting local ips of the system
+    nm_unix_local_ip_init(pl);
 
     // This platform integration uses the following event queue.
     select_unix_event_queue_init(&platform->eventQueue, pl, eventMutex);

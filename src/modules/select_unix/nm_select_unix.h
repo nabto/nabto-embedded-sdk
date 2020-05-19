@@ -7,8 +7,6 @@
 
 #include <sys/select.h>
 
-#include <modules/posix/nm_posix_udp.h>
-
 #include <nn/llist.h>
 
 #ifdef __cplusplus
@@ -23,7 +21,8 @@ struct nm_select_unix_udp_recv_wait_context {
 struct np_udp_socket {
     struct np_platform* pl;
     struct nm_select_unix* selectCtx;
-    struct nm_posix_udp_socket posixSocket;
+    int sock;
+    enum np_ip_address_type type;
 
     struct nn_llist_node udpSocketsNode;
     bool aborted;
