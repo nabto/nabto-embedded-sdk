@@ -3,6 +3,7 @@
 #include "nm_libevent_dns.h"
 #include "nm_libevent_udp.h"
 #include "nm_libevent_tcp.h"
+#include "nm_libevent_get_local_ip.h"
 #include "nm_libevent_timestamp.h"
 
 #include <platform/np_platform.h>
@@ -51,6 +52,8 @@ void nm_libevent_init(struct np_platform* pl, struct nm_libevent_context* ctx, s
     nm_libevent_udp_init(pl, ctx);
     nm_libevent_timestamp_init(eventBase, pl);
     nm_libevent_tcp_init(pl, ctx);
+    nm_libevent_local_ip_init(pl);
+
 }
 
 void nm_libevent_deinit(struct nm_libevent_context* ctx)

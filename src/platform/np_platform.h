@@ -29,55 +29,55 @@ struct np_platform {
 
     // Timestamp module
     struct np_timestamp_module ts;
-    // data for the timestamp module
-    void* tsData;
+    void* tsData;  // Custom data for the timestamp module
 
     // Event Queue module
     struct np_event_queue eq;
-    // Data for the event queue module
-    void* eqData;
+    void* eqData;  // Custom data for the event queue module
 
     // UDP Socket module
     struct np_udp_module udp;
-    // Data for the udp module object
-    void* udpData;
+    void* udpData;  // Custom data for the udp module object
 
     // DNS resolver module
     struct np_dns_module dns;
-    void* dnsData;
+    void* dnsData;  // Custom data for the dns module.
 
     // Tcp socket module
     struct np_tcp_module tcp;
-    // Data pointer set when tcp module is initialized.
-    void* tcpData;
+    void* tcpData;  // Custom data for the TCP module.
 
-    // Random source
+    // Random module
     struct np_random_module random;
-    void* randomData; // userdata for the random module.
+    void* randomData; // Custom data for the random module.
 
+    // Local ip module.
+    struct np_local_ip localIp;
+    void* localIpData;  // Custom data for the local ip module.
+
+
+    // The following modules are not final yet and they are subject to
+    // changes in the future.
 
     // Communication buffer module
     struct np_communication_buffer_module buf;
 
     // DTLS client module
     struct np_dtls_cli_module dtlsC;
+    void* dtlsCData; // Custom data for the dtls client module.
 
     // DTLS server module
     struct np_dtls_srv_module dtlsS;
+    void* dtlsSData; // Custom data for the dtls server module.
 
-    // Mdns
+    // Mdns module
     struct np_mdns_module mdns;
-    // mdns module data
-    void* mdnsData;
+    void* mdnsData;  // Custom data for the mdns module.
 
     // Access control module
     struct np_authorization authorization;
     void* authorizationData;
 
-    // Get local ip
-    struct np_local_ip localIp;
-    // data for the local ip module.
-    void* localIpData;
 };
 
 #ifdef __cplusplus

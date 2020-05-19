@@ -30,7 +30,14 @@
 
 #define LOG NABTO_LOG_MODULE_UDP
 
-size_t nm_libevent_get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
+static size_t get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
+
+void nm_libevent_local_ip_init(struct np_platform* pl)
+{
+    pl->localIp.get_local_ip = &get_local_ip;
+}
+
+size_t get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
 {
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;

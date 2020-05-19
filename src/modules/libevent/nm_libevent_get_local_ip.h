@@ -5,6 +5,6 @@
 
 #include <string.h>
 
-size_t nm_libevent_get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
+void nm_libevent_local_ip_init(struct np_platform* pl);
 
 #endif
