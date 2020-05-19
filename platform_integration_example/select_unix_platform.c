@@ -15,6 +15,7 @@
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/unix/nm_unix_local_ip.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -75,8 +76,8 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     platform->stopped = false;
     pl->platformData = platform;
 
-    // This function just needs to be called.
-    np_communication_buffer_init(pl);
+    // This platform integration uses the default communication buffer module.
+    nm_communication_buffer_init(pl);
 
     // This platform integration uses mbedtls to provide the dtls
     // server module.

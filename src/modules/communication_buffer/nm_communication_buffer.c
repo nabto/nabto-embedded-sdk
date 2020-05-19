@@ -1,10 +1,21 @@
-#include "nm_unix_communication_buffer.h"
+#include "nm_communication_buffer.h"
 
+#include <platform/np_communication_buffer.h>
+#include <platform/np_platform.h>
 #include <platform/np_logging.h>
 
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_CORE
+
+
+static struct np_communication_buffer* buf_allocate(void);
+
+static void buf_free(struct np_communication_buffer* buf);
+
+static uint8_t* buf_start(struct np_communication_buffer* buf);
+
+static uint16_t buf_size(struct np_communication_buffer* buf);
 
 
 struct np_communication_buffer {
@@ -13,15 +24,15 @@ struct np_communication_buffer {
 };
 
 
-void np_communication_buffer_init(struct np_platform* pl)
+void nm_communication_buffer_init(struct np_platform* pl)
 {
-    pl->buf.allocate = &nm_unix_comm_buf_allocate;
-    pl->buf.free     = &nm_unix_comm_buf_free;
-    pl->buf.start    = &nm_unix_comm_buf_start;
-    pl->buf.size     = &nm_unix_comm_buf_size;
+    pl->buf.allocate = &buf_allocate;
+    pl->buf.free     = &buf_free;
+    pl->buf.start    = &buf_start;
+    pl->buf.size     = &buf_size;
 }
 
-struct np_communication_buffer* nm_unix_comm_buf_allocate()
+struct np_communication_buffer* buf_allocate()
 {
     struct np_communication_buffer* buf = (struct np_communication_buffer*)malloc(sizeof(struct np_communication_buffer));
     if (!buf) {
@@ -38,7 +49,7 @@ struct np_communication_buffer* nm_unix_comm_buf_allocate()
     return buf;
 }
 
-void nm_unix_comm_buf_free(struct np_communication_buffer* buf)
+void buf_free(struct np_communication_buffer* buf)
 {
     if (buf == NULL) {
         return;
@@ -47,12 +58,12 @@ void nm_unix_comm_buf_free(struct np_communication_buffer* buf)
     free(buf);
 }
 
-uint8_t* nm_unix_comm_buf_start(struct np_communication_buffer* buf)
+uint8_t* buf_start(struct np_communication_buffer* buf)
 {
     return buf->buf;
 }
 
-uint16_t nm_unix_comm_buf_size(struct np_communication_buffer* buf)
+uint16_t buf_size(struct np_communication_buffer* buf)
 {
     return buf->size;
 }

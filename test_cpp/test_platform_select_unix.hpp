@@ -12,6 +12,7 @@
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/logging/test/nm_logging_test.h>
 #include <modules/libevent/nm_libevent.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include <thread>
 #include <future>
@@ -41,7 +42,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     {
         test_platform_event_queue_init(&pl_, eventBase_);
         nm_logging_test_init();
-        np_communication_buffer_init(&pl_);
+        nm_communication_buffer_init(&pl_);
         nm_select_unix_init(&selectCtx_, &pl_);
         nm_unix_ts_init(&pl_);
         nm_unix_dns_init(&pl_);

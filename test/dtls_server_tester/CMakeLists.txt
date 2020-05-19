@@ -10,7 +10,7 @@ target_link_libraries(dtls_server_tester
   test_platform
   np_platform
   nm_logging_unix
-  nm_unix_communication_buffer
+  nm_communication_buffer
   nm_timestamp
   nm_mbedtls_srv
   nc_core

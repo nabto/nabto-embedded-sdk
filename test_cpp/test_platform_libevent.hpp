@@ -5,6 +5,7 @@
 #include <modules/logging/test/nm_logging_test.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include "test_platform_event_queue.h"
 
@@ -35,7 +36,7 @@ class TestPlatformLibevent : public TestPlatform {
     {
         test_platform_event_queue_init(&pl_, eventBase_);
         nm_logging_test_init();
-        np_communication_buffer_init(&pl_);
+        nm_communication_buffer_init(&pl_);
         nm_libevent_init(&pl_, &libeventContext_, eventBase_);
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);

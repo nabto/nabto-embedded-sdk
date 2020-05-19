@@ -8,7 +8,9 @@
 #include <modules/mdns/nm_mdns.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
 #include <api/nabto_device_threads.h>
+
 
 #include <event.h>
 #include <event2/event.h>
@@ -41,7 +43,7 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     platform->eventBase = event_base_new();
     platform->signalEvent = event_new(platform->eventBase, -1, 0, &nabto_device_signal_event, platform);
 
-    np_communication_buffer_init(pl);
+    nm_communication_buffer_init(pl);
     nm_libevent_init(pl, &platform->libeventContext, platform->eventBase);
 
     nm_mbedtls_cli_init(pl);

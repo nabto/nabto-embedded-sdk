@@ -61,6 +61,8 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
+    nabto_device_logging_init();
+
     ec = nabto_device_init_platform(&dev->pl, dev->eventMutex);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");

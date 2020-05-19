@@ -41,6 +41,7 @@ target_link_libraries(embedded_unit_test
   #test_platform
   3rdparty_boost_test
   3rdparty_boost_asio
+  nm_communication_buffer
   #common_util
   nc_core
   #dtls

@@ -1,7 +1,7 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <platform/np_dtls_srv.h>
-#include <modules/communication_buffer/nm_unix_communication_buffer.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <platform/np_ip_address.h>

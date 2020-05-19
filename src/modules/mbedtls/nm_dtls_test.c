@@ -3,7 +3,7 @@
 #include "nm_mbedtls_util.h"
 #include "nm_mbedtls_cli.h"
 #include "nm_mbedtls_srv.h"
-#include <modules/communication_buffer/nm_unix_communication_buffer.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -219,7 +219,7 @@ void test_dtls_connection()
     np_error_code ec;
     struct np_dtls_srv_send_context sendCtx;
 
-    np_communication_buffer_init(&pl);
+    nm_communication_buffer_init(&pl);
     nm_unix_ts_init(&pl);
 
     pl.conn.async_create = &conn_async_create;
