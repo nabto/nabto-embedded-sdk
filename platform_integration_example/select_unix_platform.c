@@ -26,30 +26,43 @@ static void* network_thread(void* data);
 struct select_unix_platform
 {
     struct np_platform* pl;
+    /**
+     * The network thread is used for running the select loop.
+     */
     struct nabto_device_thread* networkThread;
+
+    /**
+     * This mutex is used for protecting the system such that only one
+     * thread can make calls to the core at a time.
+     */
     struct nabto_device_mutex* mutex;
+
+    /**
+     * The select unix module.
+     */
     struct nm_select_unix selectUnix;
+
+    /**
+     * The select unix event queue which is implemented specifically
+     * for this implementation. The purpose of the event queue is to
+     * execute events.
+     */
     struct select_unix_event_queue eventQueue;
+
+    /**
+     * Stopped bit if true the platform has been stopped and the
+     * network thread should stop its event loop.
+     */
     bool stopped;
 };
 
-np_error_code nabto_device_default_modules_init(struct np_platform* pl)
-{
-    nm_api_log_init();
-    np_communication_buffer_init(pl);
-    nm_mbedtls_cli_init(pl);
-    nm_mbedtls_srv_init(pl);
-    nm_mbedtls_random_init(pl);
-
-    return NABTO_EC_OK;
-}
-
-
-void nabto_device_default_modules_deinit(struct np_platform* pl)
-{
-    nm_mbedtls_random_deinit(pl);
-}
-
+/**
+ * This function is called when nabto_device_new is invoked. This
+ * function should initialize all the platform modules whis is needed
+ * to create a functional platform for the device. See
+ * <platform/np_platform.h> for a list of modules required for a
+ * platform.
+ */
 np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_device_mutex* eventMutex)
 {
     struct select_unix_platform* platform = calloc(1, sizeof(struct select_unix_platform));
@@ -58,23 +71,37 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     platform->stopped = false;
     pl->platformData = platform;
 
-    // There are some default modules these includes at the time
-    // beeing logging, communication buffers, dtls server, dtls
-    // client, mdns server, mbedtls based random module. All these
-    // modules is initialized by the following function.
-    np_error_code ec;
-    ec = nabto_device_default_modules_init(pl);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
+    // TODO this function just needs to be called.
+    nm_api_log_init();
 
+    // TODO this function just needs to be called.
+    np_communication_buffer_init(pl);
+
+    // This platform integration uses mbedtls to provide the dtls
+    // server module.
+    nm_mbedtls_cli_init(pl);
+
+    // This platform integration uses mbedtls to provide the dtls
+    // client module.
+    nm_mbedtls_srv_init(pl);
+
+    // This platform integration uses mbedtls to provide the random
+    // module.
+    nm_mbedtls_random_init(pl);
+
+    // This platform uses a default
     nm_mdns_init(pl);
+
+    // This platform integration uses the unix timestamp module.
     nm_unix_ts_init(pl);
+
+    // This platform integration uses the unix dns module.
     nm_unix_dns_init(pl);
 
-    // This one initializes both the udp and tcp module.
+    // This platform integration uses the unix based select module to provide the UDP and TCP abstractions.
     nm_select_unix_init(&platform->selectUnix, pl);
 
+    // This platform integration uses the following event queue.
     select_unix_event_queue_init(&platform->eventQueue, pl, eventMutex);
 
     platform->networkThread = nabto_device_threads_create_thread();
@@ -84,18 +111,24 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     return NABTO_EC_OK;
 }
 
-
+/**
+ * This function is called from nabto_device_free.
+ */
 void nabto_device_deinit_platform(struct np_platform* pl)
 {
     struct select_unix_platform* platform = pl->platformData;
     select_unix_event_queue_deinit(&platform->eventQueue);
 
-    nabto_device_default_modules_deinit(pl);
+    nm_mbedtls_random_deinit(pl);
 
     nabto_device_threads_free_thread(platform->networkThread);
     free(platform);
 }
 
+/**
+ * This function is called from nabto_device_stop or nabto_device_free
+ * if the device is freed without being stopped first.
+ */
 void nabto_device_platform_stop_blocking(struct np_platform* pl)
 {
     struct select_unix_platform* platform = pl->platformData;
@@ -117,12 +150,9 @@ void* network_thread(void* data)
         int nfds;
 
         if (platform->stopped) {
-            // There is no pending events or timed events and the
-            // platform is stopped, lets exit.
             return NULL;
         } else {
-            // There is no events or timed events and we are not
-            // stopped.
+            // Wait for events.
             nfds = nm_select_unix_inf_wait(&platform->selectUnix);
             nm_select_unix_read(&platform->selectUnix, nfds);
         }
