@@ -10,6 +10,7 @@
 #include <api/nabto_device_authorization.h>
 #include <api/nabto_device_future_queue.h>
 #include <api/nabto_device_error.h>
+#include <api/nabto_device_logging.h>
 #include <platform/np_error_code.h>
 
 #include <platform/np_logging.h>
@@ -17,7 +18,6 @@
 #include <core/nc_version.h>
 #include <core/nc_client_connection.h>
 
-#include <modules/logging/api/nm_api_logging.h>
 #include <modules/mbedtls/nm_mbedtls_util.h>
 
 //#include "nabto_device_event_queue.h"
@@ -453,7 +453,7 @@ void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture*
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data)
 {
-    nm_api_logging_set_callback(cb, data);
+    nabto_device_logging_set_callback(cb, data);
     return NABTO_DEVICE_EC_OK;
 }
 
@@ -471,13 +471,14 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_level(NabtoDevice* device
     } else {
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
-    nm_api_logging_set_level(l);
+    nabto_device_logging_set_level(l);
     return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_std_out_callback(NabtoDevice* device)
 {
-    nm_api_logging_set_callback(&nm_api_logging_std_out_callback, NULL);
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_logging_set_callback(&nabto_device_logging_std_out_callback, &dev->pl);
     return NABTO_DEVICE_EC_OK;
 }
 

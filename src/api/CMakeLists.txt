@@ -19,15 +19,13 @@ set(nabto_device_src
   nabto_device_authorization.c
   nabto_device_authorization_events.c
   nabto_device_tcp_tunnelling.c
-#  nabto_device_default_modules.c
-
+  nabto_device_logging.c
   )
 
 add_library( nabto_device_api "${nabto_device_src}")
 
 target_link_libraries( nabto_device_api
   nc_core
-  nm_logging_api
   np_platform
   nm_mbedtls_srv
   nm_tcp_tunnel

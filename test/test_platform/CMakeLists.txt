@@ -24,7 +24,6 @@ add_library( test_platform "${src}")
 
 target_link_libraries( test_platform
   np_platform
-  nm_logging_api
   nm_logging_test
   nm_unix_communication_buffer
   nm_timestamp

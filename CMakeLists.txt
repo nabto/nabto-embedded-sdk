@@ -139,7 +139,6 @@ add_subdirectory(nabto-common/components/stun)
 add_subdirectory(nabto-common/components/coap)
 add_subdirectory(nabto-common/components/mdns)
 
-add_subdirectory(src/modules/logging/api)
 add_subdirectory(src/modules/mdns)
 add_subdirectory(src/modules/tcp_tunnel)
 add_subdirectory(src/modules/logging/test)

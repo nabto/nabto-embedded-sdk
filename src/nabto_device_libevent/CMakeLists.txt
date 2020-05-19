@@ -33,7 +33,6 @@ target_link_libraries(nabto_device_static
   nabto_device_api
   nm_mbedtls_cli
   nc_core
-  nm_logging_api
   nm_mbedtls_srv
   nm_mbedtls_random
   np_platform
@@ -53,7 +52,6 @@ target_link_libraries( nabto_device
   nabto_device_api
   nm_mbedtls_cli
   nc_core
-  nm_logging_api
   nm_mbedtls_srv
   nm_mbedtls_random
   np_platform

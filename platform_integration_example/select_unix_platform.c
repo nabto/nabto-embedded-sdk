@@ -8,7 +8,6 @@
 
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/event_queue/nm_event_queue.h>
-#include <modules/logging/api/nm_api_logging.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
@@ -75,9 +74,6 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     platform->mutex = eventMutex;
     platform->stopped = false;
     pl->platformData = platform;
-
-    // This function just needs to be called.
-    nm_api_log_init();
 
     // This function just needs to be called.
     np_communication_buffer_init(pl);
