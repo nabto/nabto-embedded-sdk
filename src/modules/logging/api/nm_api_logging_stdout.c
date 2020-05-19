@@ -1,24 +1,17 @@
 #include "nm_api_logging.h"
 
-#include <time.h>
-#include <sys/time.h>
 #include <stdio.h>
 
 #define NM_API_LOGGING_FILE_LENGTH 24
 
 void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
 {
-    // This if statement only works because NabtoDeviceLogLevel is defined the same way as the internal log levels
 
-    time_t sec;
-    unsigned int ms;
-    struct timeval tv;
-    struct tm tm;
-    gettimeofday(&tv, NULL);
-    sec = tv.tv_sec;
-    ms = tv.tv_usec/1000;
+    struct np_platform* pl = data;
+    uint32_t now = np_timestamp_now_ms(pl);
 
-    localtime_r(&sec, &tm);
+    uint32_t milliseconds = now%1000;
+    uint32_t seconds = (now/1000)%1000;
 
     size_t fileLen = strlen(msg->file);
     char fileTmp[NM_API_LOGGING_FILE_LENGTH+4];
@@ -48,7 +41,7 @@ void nm_api_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
             break;
     }
 
-    printf("%02u:%02u:%02u.%03u %s(%03u)[%s] %s\n",
-           tm.tm_hour, tm.tm_min, tm.tm_sec, ms,
+    printf("%02u.%02u %s(%03u)[%s] %s\n",
+           seconds, milliseconds,
            fileTmp, msg->line, level, msg->message);
 }

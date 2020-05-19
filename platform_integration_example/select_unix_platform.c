@@ -76,10 +76,10 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     platform->stopped = false;
     pl->platformData = platform;
 
-    // TODO this function just needs to be called.
+    // This function just needs to be called.
     nm_api_log_init();
 
-    // TODO this function just needs to be called.
+    // This function just needs to be called.
     np_communication_buffer_init(pl);
 
     // This platform integration uses mbedtls to provide the dtls
@@ -106,10 +106,12 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     // This platform integration uses the unix based select module to provide the UDP and TCP abstractions.
     nm_select_unix_init(&platform->selectUnix, pl);
 
-    // This platform integrations uses the posix module for getting local ips of the system
+    // This platform integrations uses the unix module for getting local ips of the system
     nm_unix_local_ip_init(pl);
 
-    // This platform integration uses the following event queue.
+    // This platform integration uses the following event queue. The
+    // event queue executes events and allow events to be posted to
+    // it.
     select_unix_event_queue_init(&platform->eventQueue, pl, eventMutex);
 
     platform->networkThread = nabto_device_threads_create_thread();
