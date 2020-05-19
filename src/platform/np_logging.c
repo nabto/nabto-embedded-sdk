@@ -3,10 +3,8 @@
 void np_default_log(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
 }
-void np_default_log_buf(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len)
-{
-}
-struct np_logging np_log = { &np_default_log, &np_default_log_buf };
+
+struct np_logging np_log = { &np_default_log };
 
 #ifdef HAS_NO_VARIADIC_MACROS
 void np_error_adapter(uint32_t module, const char* fmt, ...)
@@ -74,8 +72,3 @@ void np_raw_adapter(uint32_t severity, uint32_t module, uint32_t line, const cha
     va_end(args);
 }
 #endif
-
-void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, const uint8_t* buf, size_t len)
-{
-    np_log.log_buf(NABTO_LOG_SEVERITY_TRACE, module, line, file, buf, len);
-}

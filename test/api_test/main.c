@@ -73,7 +73,6 @@ int main()
     nabto_device_stream_read_some(stream, fut, buf, 1500, &readen);
     nabto_device_future_wait(fut);
     NABTO_LOG_INFO(0, "read %u bytes into buf:", readen);
-    NABTO_LOG_BUF(0, buf, readen);
 
     nabto_device_stream_write(stream, fut, buf, readen);
     nabto_device_future_wait(fut);

@@ -96,7 +96,6 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* 
     uint8_t* payload;
     size_t payloadLength;
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
-    NABTO_LOG_BUF(LOG, payload, payloadLength);
     if (payload == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
     } else {

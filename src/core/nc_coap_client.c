@@ -72,7 +72,6 @@ void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
                                                                            buffer,
                                                                            bufferSize, dtls);
     NABTO_LOG_TRACE(LOG, "coap handling packet with status %i: ", status);
-    NABTO_LOG_BUF(LOG, buffer, bufferSize);
     if (status == NABTO_COAP_CLIENT_STATUS_DECODE_ERROR) {
         NABTO_LOG_ERROR(LOG, "nabto_coap_client_handle_packet failed with status: %d", status);
     }

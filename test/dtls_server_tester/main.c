@@ -81,7 +81,6 @@ void receivedCb(uint8_t channelId, uint64_t sequence,
 {
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Server Received data:");
-    NABTO_LOG_BUF(0, buffer, bufferSize);
     uint8_t* sendBuf = malloc(1500);
     struct np_dtls_srv_send_context* sendCtx = malloc(sizeof(struct np_dtls_srv_send_context));
     memcpy(sendBuf, buffer, bufferSize);
@@ -140,7 +139,6 @@ void udpRecvCb(const np_error_code ec, struct np_udp_endpoint epLocal,
     struct test_context* ctx = (struct test_context*)data;
     ep = epLocal;
     NABTO_LOG_INFO(0, "UDP received:");
-    NABTO_LOG_BUF(0, buffer, bufferSize);
     pl->dtlsS.handle_packet(pl, ctx->dtls, 0, buffer, bufferSize);
     pl->udp.async_recv_from(ctx->sock, udpRecvCb, data);
 }
