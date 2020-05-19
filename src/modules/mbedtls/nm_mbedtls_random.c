@@ -1,4 +1,4 @@
-#include "nm_random.h"
+#include "nm_mbedtls_random.h"
 
 #include <platform/np_error_code.h>
 #include <platform/np_platform.h>
@@ -21,7 +21,7 @@ static void free_random_ctx(struct random_ctx* ctx) {
     free(ctx);
 }
 
-bool nm_random_init(struct np_platform* pl)
+bool nm_mbedtls_random_init(struct np_platform* pl)
 {
     struct random_ctx* ctx = calloc(1, sizeof(struct random_ctx));
     if (ctx == NULL) {
@@ -41,7 +41,7 @@ bool nm_random_init(struct np_platform* pl)
     return true;
 }
 
-void nm_random_deinit(struct np_platform* pl)
+void nm_mbedtls_random_deinit(struct np_platform* pl)
 {
 
     struct random_ctx* ctx = pl->randomData;

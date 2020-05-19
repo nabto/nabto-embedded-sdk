@@ -19,6 +19,7 @@ set(nabto_device_src
   nabto_device_authorization.c
   nabto_device_authorization_events.c
   nabto_device_tcp_tunnelling.c
+#  nabto_device_default_modules.c
 
   )
 

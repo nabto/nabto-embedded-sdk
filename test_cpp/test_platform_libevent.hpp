@@ -3,8 +3,8 @@
 #include <platform/np_platform.h>
 #include <modules/libevent/nm_libevent.h>
 #include <modules/logging/test/nm_logging_test.h>
-#include <modules/dtls/nm_dtls_cli.h>
-#include <modules/dtls/nm_dtls_srv.h>
+#include <modules/mbedtls/nm_dtls_cli.h>
+#include <modules/mbedtls/nm_dtls_srv.h>
 
 #include "test_platform_event_queue.h"
 

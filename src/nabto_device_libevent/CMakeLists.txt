@@ -22,6 +22,7 @@ target_link_libraries(libevent_platform
   nm_mdns
   nm_dtls_srv
   nm_dtls_cli
+  nm_mbedtls_random
   )
 
 add_library( nabto_device_static STATIC "dummy.c")
@@ -34,6 +35,7 @@ target_link_libraries(nabto_device_static
   nc_core
   nm_logging_api
   nm_dtls_srv
+  nm_mbedtls_random
   np_platform
   nm_mdns
   nm_tcp_tunnel
@@ -53,6 +55,7 @@ target_link_libraries( nabto_device
   nc_core
   nm_logging_api
   nm_dtls_srv
+  nm_mbedtls_random
   np_platform
   nm_mdns
   nm_tcp_tunnel

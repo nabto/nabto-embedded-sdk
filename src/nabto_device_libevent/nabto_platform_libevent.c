@@ -4,10 +4,10 @@
 
 #include <modules/libevent/nm_libevent.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
-#include <modules/dtls/nm_random.h>
+#include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mdns/nm_mdns.h>
-#include <modules/dtls/nm_dtls_cli.h>
-#include <modules/dtls/nm_dtls_srv.h>
+#include <modules/mbedtls/nm_dtls_cli.h>
+#include <modules/mbedtls/nm_dtls_srv.h>
 #include <modules/logging/api/nm_api_logging.h>
 #include <api/nabto_device_threads.h>
 
@@ -49,7 +49,7 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     nm_dtls_cli_init(pl);
     nm_dtls_srv_init(pl);
     nm_mdns_init(pl);
-    nm_random_init(pl);
+    nm_mbedtls_random_init(pl);
 
     libevent_event_queue_init(pl, platform->eventBase, eventMutex);
 
@@ -65,7 +65,7 @@ void nabto_device_deinit_platform(struct np_platform* pl)
 {
     struct nabto_device_platform_libevent* platform = pl->platformData;
     libevent_event_queue_deinit(pl);
-    nm_random_deinit(pl);
+    nm_mbedtls_random_deinit(pl);
     nm_libevent_deinit(&platform->libeventContext);
     nabto_device_threads_free_thread(platform->networkThread);
 

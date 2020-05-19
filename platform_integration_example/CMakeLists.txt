@@ -10,6 +10,7 @@ add_library(select_unix_platform ${src})
 target_link_libraries(select_unix_platform
   nm_dtls_cli
   nm_dtls_srv
+  nm_mbedtls_random
   nm_event_queue
   nm_select_unix
   nm_mdns

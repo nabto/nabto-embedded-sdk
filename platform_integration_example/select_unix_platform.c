@@ -1,5 +1,6 @@
 #include <api/nabto_device_platform.h>
 #include <api/nabto_device_threads.h>
+//#include <api/nabto_device_default_modules.h>
 
 #include "select_unix_event_queue.h"
 
@@ -8,9 +9,9 @@
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/event_queue/nm_event_queue.h>
 #include <modules/logging/api/nm_api_logging.h>
-#include <modules/dtls/nm_random.h>
-#include <modules/dtls/nm_dtls_srv.h>
-#include <modules/dtls/nm_dtls_cli.h>
+#include <modules/mbedtls/nm_mbedtls_random.h>
+#include <modules/mbedtls/nm_dtls_srv.h>
+#include <modules/mbedtls/nm_dtls_cli.h>
 #include <modules/mdns/nm_mdns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dns/unix/nm_unix_dns.h>
@@ -32,6 +33,23 @@ struct select_unix_platform
     bool stopped;
 };
 
+np_error_code nabto_device_default_modules_init(struct np_platform* pl)
+{
+    nm_api_log_init();
+    np_communication_buffer_init(pl);
+    nm_dtls_cli_init(pl);
+    nm_dtls_srv_init(pl);
+    nm_mbedtls_random_init(pl);
+
+    return NABTO_EC_OK;
+}
+
+
+void nabto_device_default_modules_deinit(struct np_platform* pl)
+{
+    nm_mbedtls_random_deinit(pl);
+}
+
 np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_device_mutex* eventMutex)
 {
     struct select_unix_platform* platform = calloc(1, sizeof(struct select_unix_platform));
@@ -39,15 +57,22 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     platform->mutex = eventMutex;
     platform->stopped = false;
     pl->platformData = platform;
-    nm_api_log_init();
-    np_communication_buffer_init(pl);
-    nm_dtls_cli_init(pl);
-    nm_dtls_srv_init(pl);
+
+    // There are some default modules these includes at the time
+    // beeing logging, communication buffers, dtls server, dtls
+    // client, mdns server, mbedtls based random module. All these
+    // modules is initialized by the following function.
+    np_error_code ec;
+    ec = nabto_device_default_modules_init(pl);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     nm_mdns_init(pl);
-    nm_random_init(pl);
     nm_unix_ts_init(pl);
     nm_unix_dns_init(pl);
 
+    // This one initializes both the udp and tcp module.
     nm_select_unix_init(&platform->selectUnix, pl);
 
     select_unix_event_queue_init(&platform->eventQueue, pl, eventMutex);
@@ -62,9 +87,10 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 
 void nabto_device_deinit_platform(struct np_platform* pl)
 {
-    nm_random_deinit(pl);
     struct select_unix_platform* platform = pl->platformData;
     select_unix_event_queue_deinit(&platform->eventQueue);
+
+    nabto_device_default_modules_deinit(pl);
 
     nabto_device_threads_free_thread(platform->networkThread);
     free(platform);
