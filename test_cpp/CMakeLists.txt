@@ -33,15 +33,14 @@ set(test_src
 
   )
 
-set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost COMPONENTS unit_test_framework system REQUIRED)
+add_subdirectory(../nabto-common/3rdparty/boost boost)
 
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test
 
   #test_platform
-  #3rdparty_boost_test
-  #3rdparty_boost_asio
+  3rdparty_boost_test
+  3rdparty_boost_asio
   #common_util
   nc_core
   #dtls
@@ -49,8 +48,7 @@ target_link_libraries(embedded_unit_test
   nm_policies
   nm_iam
   nabto_device_static
-  ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
+  3rdparty_boost_test
   )
 
 if (HAVE_SELECT_UNIX)
