@@ -43,14 +43,26 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
     platform->eventBase = event_base_new();
     platform->signalEvent = event_new(platform->eventBase, -1, 0, &nabto_device_signal_event, platform);
 
+    // Use the default communication buffer module
     nm_communication_buffer_init(pl);
+
+    // The libevent module comes with UDP, TCP, local ip and timestamp module implementations.
     nm_libevent_init(pl, &platform->libeventContext, platform->eventBase);
 
+    // Use mbedtls for the dtls client.
     nm_mbedtls_cli_init(pl);
+
+    // Use mbedtls for the dtls server.
     nm_mbedtls_srv_init(pl);
+
+    // Use the default mdns server
     nm_mdns_init(pl);
+
+    // Use the mbedtls random module
     nm_mbedtls_random_init(pl);
 
+    // The event queue is specific for this implementation. Everything
+    // both network and the core runs in one thread.
     libevent_event_queue_init(pl, platform->eventBase, eventMutex);
 
     platform->networkThread = nabto_device_threads_create_thread();
