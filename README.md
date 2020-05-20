@@ -10,9 +10,17 @@ cmake ..
 `./test_cpp/embedded_unit_test`
 
 
-## Components
+## Overview
 
-The source is split into several "components"
+An application using this SDK is going to use the `nabto_device`
+library. The interface for that library is described in
+`include/nabto/nabto_device.h` This repository both contains code
+which implements the `nabto_device` library and apps/examples which
+are using the `nabto_device` library.
+
+## Parts of this repository
+
+The source is split into several parts.
 
 ### `src/platform`
 
@@ -38,6 +46,11 @@ etc.
 
 This folder contains some common functionality which is shared amongst
 several components.
+
+### `3rdparty`
+
+This folder contains 3rdparty functionality. Either as submodules or
+code which is copied for simplicity.
 
 ### `examples`
 
