@@ -10,10 +10,27 @@ for such integrations.
 The example creates a library which implements the of the
 `nabto/nabto_device.h` API.
 
+## Overall architecture.
+
+An application e.g. a Heat Pump Device is using the API described in
+the header file `nabto/nabto_device.h`. The heatpump is linked against
+the library e.g. `libnabto_device.so` (`nabto_device` library).
+
+This platform integration example is all about creating the
+`nabto_device` library.
+
+The architecture of the `nabto_device` library is as follows. The
+functions which is decribed in the header file `nabto/nabto_device.h`
+is implemented in several files in the folder `src/api/` (API). The
+API primarily uses the core `src/core`, some threads
+`src/api/nabto_device_threads.h` and the
+`src/api/nabto_device_platform.h` to implements the nabto_device
+library.
+
 ## Components which is needed for a custom platform.
 
-To create such a library several things needs to be implemented. Each
-of the following sections describe
+To create the `nabto_device` library several things needs to be
+implemented.
 
 ### `platform/np_platform.h`
 
