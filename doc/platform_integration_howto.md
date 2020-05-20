@@ -57,4 +57,4 @@ the header file for more information or take a look at the existing
 implementations in the `src/modules/threads` folder.
 
 ### Example integration
-In the directory 'platform_integration_example' an example integration can be examined.
+In the directory `platform_integration_example` an example integration can be viewed.
