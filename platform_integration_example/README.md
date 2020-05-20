@@ -32,29 +32,29 @@ library.
 To create the `nabto_device` library several things needs to be
 implemented.
 
-### `platform/np_platform.h`
-
-The first is the `platform/np_platform.h` platform. This contains all
-the core functionality, but it does not come with threads, since the
-core `src/core` does not rely on threads. The platform consists of
-several independent modules. Each module in `np_platform.h` should be
-implemented or an implementation which is working on the desired
-platform should be choosen. This example works on UNIX systems so
-modules which works on such a system has been choosen. The actual
-initialization of the platform happens from the
-`nabto_devoce_init_platform` function described later. But the
-individual platform modules should be implemented and tested
-seperately. see `doc/np_platform.md` and the header file for further
-information.
-
 ### `api/nabto_device_platform.h`
 
 This file contains 3 functions, an init, deinit and a stop
 function. These functions is called when a device is created,
 destroyed and stopped. The purpose of these functions is to setup the
-`platform/np_platform.h` and to create the overall functionality which
+`platform/np_platform.h` (described later) and to create the overall functionality which
 is required to run such a platform. That could include threads to run
-the networking and the event queue.
+the networking and the event queue. The actual initialization of the platform happens from the
+`nabto_device_init_platform` function. See `doc/np_platform.md` and the header file for further
+information.
+
+### `platform/np_platform.h`
+
+The first is the `platform/np_platform.h` platform. This contains all
+the core functionality that is needed for Nabto Edge to run on a specific platform.
+The platform consists of several independent modules encapsulated in struct's.
+Each struct consists of a list of function pointers that needs to be setup in the bootstrap process of 'nabto_device_init_platform'.
+
+Each module in `np_platform.h` should be implemented or an implementation which
+is working on the desired platform should be choosen. This example works on UNIX systems so
+modules which works on such a system has been choosen. 
+
+
 
 ### `api/nabto_device_threads.h`
 
