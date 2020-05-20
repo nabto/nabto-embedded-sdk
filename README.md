@@ -7,17 +7,20 @@ Nabto embedded SDK
 mkdir build
 cd build
 cmake ..
-./unit_test
+`./test_cpp/embedded_unit_test`
 
 
 ## Components
 
+The source is split into several "components"
+
 ### `src/platform`
 
 The platform folder contains a platform which is used to run the
-unabto core. The platform implements a set of functions which can
-schedule events and several interfaces which is used for diverse
-features such as udp communication, dns lookups, timestamps etc.
+core. The platform implements a set of functions which can schedule
+events and several interfaces which is used for diverse features such
+as udp communication, dns lookups, timestamps etc. See
+`src/platform/np_platform.h` for futher information.
 
 ### `src/core`
 
@@ -31,6 +34,25 @@ Modules is the folder where modules for specific targets
 exists. Modules can be for encryption, networking, timing, logging
 etc.
 
-### `src/dtls`
+### `nabto-common`
 
-The DTLS folder implements the dtls used in the core.
+This folder contains some common functionality which is shared amongst
+several components.
+
+### `examples`
+
+This folder contains examples for how the platform can be used.
+
+### `apps`
+
+This folder contains applications which can be used as they are.
+
+### `platform_integration_example`
+
+This folder contains an example of a custom implementation of the
+`nabto/nabto_device.h` api.
+
+### `include`
+
+This folder has the public interface which the nabto_device api
+exposes.

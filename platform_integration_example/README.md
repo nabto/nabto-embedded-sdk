@@ -1,8 +1,49 @@
 # Platform Integration Example
 
-This folder contains an example of a platform integration which can be
-used on unix systems relying on
+This is an example of a platform integration which can be used on unix
+systems relying on
 the [select](https://en.wikipedia.org/wiki/Select_(Unix)) method for
 event notifications on sockets. The select abstraction is also found
 on numereous embedded systems so this example can be used as an base
 for such integrations.
+
+The example creates a library which implements the of the
+`nabto/nabto_device.h` API.
+
+## Components which is needed for a custom platform.
+
+To create such a library several things needs to be implemented. Each
+of the following sections describe
+
+### `platform/np_platform.h`
+
+The first is the `platform/np_platform.h` platform. This contains all
+the core functionality, but it does not come with threads, since the
+core `src/core` does not rely on threads. The platform consists of
+several independent modules. Each module in `np_platform.h` should be
+implemented or an implementation which is working on the desired
+platform should be choosen. This example works on UNIX systems so
+modules which works on such a system has been choosen. The actual
+initialization of the platform happens from the
+`nabto_devoce_init_platform` function described later. But the
+individual platform modules should be implemented and tested
+seperately. see `doc/np_platform.md` and the header file for further
+information.
+
+### `api/nabto_device_platform.h`
+
+This file contains 3 functions, an init, deinit and a stop
+function. These functions is called when a device is created,
+destroyed and stopped. The purpose of these functions is to setup the
+`platform/np_platform.h` and to create the overall functionality which
+is required to run such a platform. That could include threads to run
+the networking and the event queue.
+
+### `api/nabto_device_threads.h`
+
+The api `nabto/nabto_device.h` is a thread safe API, which also
+exposes functionality which can block the system. So the api
+implementation needs to have a thread implementation. The thread
+abstraction defindes, threads, mutexes and condition variables. See
+the header file for more information or take a look at the existing
+implementations in the `src/modules/threads` folder.

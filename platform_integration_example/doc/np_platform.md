@@ -7,7 +7,7 @@ interfaces for the following functionality:
  * UDP communication.
  * TCP communication.
  * DNS resolution.
- * Logical timestamps.
+ * Timestamps.
  * Event queue handling.
  * Dtls server and client handling.
  * Random generation.
