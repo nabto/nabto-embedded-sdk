@@ -25,9 +25,8 @@ The source is split into several parts.
 ### `src/platform`
 
 The platform folder contains a platform which is used to run the
-core. The platform implements a set of functions which can schedule
-events and several interfaces which is used for diverse features such
-as udp communication, dns lookups, timestamps etc. See
+core. The platform contains functionality for things like UDP, TCP,
+timestamps, DNS resolution, DTLS, etc. See
 `src/platform/np_platform.h` for futher information.
 
 ### `src/core`
