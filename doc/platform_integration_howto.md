@@ -15,8 +15,14 @@ that are supplied to Nabto Edge via setup of structs.
 
 ## Components which is needed for a custom platform.
 
-To create the `nabto_device` library several things needs to be
-implemented.
+First of all, the Nabto Edge implementation files need to be included in the
+development tool/ide of the new platform.
+The specific need list of files can be seen in nabto_files.cmake which also could be
+used for IDE's capabable of using cmake.
+
+Once this is done, the Nabt Edge system needs to be supplied with knowledge of the platform/hardware it is running on.
+3 major files need to be examined for this.
+
 
 ### `api/nabto_device_platform.h`
 
