@@ -36,6 +36,9 @@ void custom_timestamp_init(struct np_platform* pl, struct custom_time_module* mo
 }
 ```
 
+'custom_timestamp_init' should be called from 'nabto_device_init_platform' function called by the system when performing the bootstrap of the system.
+
+
 The low level platform `src/platform/np_platform.h` can then be
 implemented by using different modules. Either modules which already
 exists or modules which is tailored for the specific platform. The
