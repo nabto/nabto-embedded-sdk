@@ -55,3 +55,6 @@ also need to have a thread implementation. The thread
 abstraction defindes, threads, mutexes and condition variables. See
 the header file for more information or take a look at the existing
 implementations in the `src/modules/threads` folder.
+
+### Example integration
+In the directory 'platform_integration_example' an example integration can be examined.
