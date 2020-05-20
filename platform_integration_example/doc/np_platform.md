@@ -39,5 +39,4 @@ void custom_timestamp_init(struct np_platform* pl, struct custom_time_module* mo
 The low level platform `src/platform/np_platform.h` can then be
 implemented by using different modules. Either modules which already
 exists or modules which is tailored for the specific platform. The
-initialization of the complete set of modules often happens alsewhere,
-see `api_adapters.md`.
+initialization of the complete set of modules often happens alsewhere.
