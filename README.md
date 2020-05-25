@@ -4,9 +4,10 @@ Nabto embedded SDK
 
 ## Building and Testing
 
-mkdir build
-cd build
+mkdir `build_dir`
+cd `build_dir`
 cmake ..
+make
 `./test_cpp/embedded_unit_test`
 
 
