@@ -16,6 +16,7 @@ target_link_libraries(select_unix_platform
   nm_mdns
   nm_unix_timestamp
   nm_unix_dns
+  nm_communication_buffer
   )
 
 add_library(nabto_device_select_unix SHARED dummy.c)
