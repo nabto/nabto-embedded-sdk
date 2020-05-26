@@ -23,10 +23,11 @@ pipeline {
                     steps {
                         checkout scm
                         dir('build-amd64') {
-                            sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
+                            sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}"
                             sh "cmake --build . --parallel"
+                            sh "cmake --build . --target install"
                         }
-                        stash name: "${releaseDir}", includes: "build-amd64/nabto-embedded-sdk/**"
+                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
                 }
                 stage('Build linux armhf') {
@@ -46,10 +47,11 @@ pipeline {
                     steps {
                         checkout scm
                         dir('build-armhf') {
-                            sh "cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$WORKSPACE/${releaseDir} ${srcDir}/superbuild"
+                            sh "cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$WORKSPACE/${releaseDir} ${srcDir}"
                             sh "cmake --build . --parallel"
+                            sh "cmake --build . --target install"
                         }
-                        stash name: "${releaseDir}", includes: "build-armhf/nabto-embedded-sdk/**"
+                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
                 }
                 stage('Build on mac') {
@@ -64,10 +66,11 @@ pipeline {
                     steps {
                         checkout scm
                         dir('build-mac') {
-                            sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}/superbuild"
+                            sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release ${srcDir}"
                             sh "cmake --build . --parallel"
+                            sh "cmake --build . --target install"
                         }
-                        stash name: "${releaseDir}", includes: "build-mac/nabto-embedded-sdk/**"
+                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
                 }
             }
@@ -84,7 +87,7 @@ pipeline {
                     steps {
                         dir ('test-dir') {
                             unstash "linux-release"
-                            sh "./build-amd64/nabto-embedded-sdk/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_linux.xml"
+                            sh "./linux-release/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_linux.xml"
                         }
                     }
                     post {
@@ -100,7 +103,7 @@ pipeline {
                     steps {
                         dir ('test-dir') {
                             unstash "mac-release"
-                            sh "./build-mac/nabto-embedded-sdk/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_mac.xml"
+                            sh "./mac-release/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_mac.xml"
                         }
                     }
                     post {
