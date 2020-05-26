@@ -5,30 +5,15 @@
 #include <platform/np_error_code.h>
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 
-#if defined(HAVE_WINSOCK2_H)
-#include <Winsock2.h>
-#endif
-
-#if defined(HAVE_ARPA_INET_H)
-#include <arpa/inet.h>
-#endif
-
-
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, const char* serviceType, const char* host, uint16_t port)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
-    struct in_addr in;
-    int status = inet_pton(AF_INET, host, &in);
-    if (status == 0) {
+    struct np_ip_address address;
+    if (!np_ip_address_read_v4(host, &address)) {
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
-
-
-
-    struct np_ip_address address;
-    np_ip_address_assign_v4(&address, ntohl(in.s_addr));
 
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);

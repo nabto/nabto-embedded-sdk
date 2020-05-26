@@ -43,4 +43,15 @@ BOOST_AUTO_TEST_CASE(is_v6)
     BOOST_TEST(np_ip_is_v6(&ip));
 }
 
+BOOST_AUTO_TEST_CASE(read_v4)
+{
+    std::vector<std::string> ips = { "1.2.3.4", "123.255.0.0", "0.0.0.0" };
+
+    for (auto ip : ips) {
+        struct np_ip_address address;
+        BOOST_TEST(np_ip_address_read_v4(ip.c_str(), &address));
+        BOOST_TEST(std::string(np_ip_address_to_string(&address)) == ip);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

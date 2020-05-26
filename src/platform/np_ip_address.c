@@ -68,3 +68,58 @@ void np_ip_convert_v4_mapped_to_v4(const struct np_ip_address* v6, struct np_ip_
     v4->type = NABTO_IPV4;
     memcpy(v4->ip.v4, v6->ip.v6+12, 4);
 }
+
+static bool is_digit(const char c)
+{
+    return c >= '0' && c <= '9';
+}
+
+static const char* read_number(const char* ptr, uint32_t* number)
+{
+    // read the number and return the position after the number.
+    uint32_t n = 0;
+    uint32_t base = 10;
+    for(;;) {
+        if (is_digit(*ptr)) {
+            n = (n * base) + (uint32_t)((*ptr) - '0');
+            ptr++;
+        } else {
+            *number = n;
+            return ptr;
+        }
+    }
+}
+
+bool np_ip_address_read_v4(const char* str, struct np_ip_address* ip)
+{
+    // read an ip of the form a.b.c.d
+    const char* ptr = str;
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
+    uint32_t d;
+    ptr = read_number(ptr, &a);
+    if (*ptr != '.') {
+        return false;
+    }
+    ptr++;
+    ptr = read_number(ptr, &b);
+    if (*ptr != '.') {
+        return false;
+    }
+    ptr++;
+    ptr = read_number(ptr, &c);
+    if (*ptr != '.') {
+        return false;
+    }
+    ptr++;
+    ptr = read_number(ptr, &d);
+
+    ip->ip.v4[0] = a;
+    ip->ip.v4[1] = b;
+    ip->ip.v4[2] = c;
+    ip->ip.v4[3] = d;
+
+    ip->type = NABTO_IPV4;
+    return true;
+}

@@ -61,6 +61,13 @@ const char* np_ip_address_to_string(const struct np_ip_address* ip);
  */
 void np_ip_address_assign_v4(struct np_ip_address* ip, uint32_t address);
 
+/**
+ * Read an ipv4 address from a string on the form a.b.c.d
+ *
+ * @return true iff the ip is read from the string.
+ */
+bool np_ip_address_read_v4(const char* str, struct np_ip_address* ip);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif
