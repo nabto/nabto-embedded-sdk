@@ -5,6 +5,22 @@
 #include <platform/np_error_code.h>
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 
+<<<<<<< Updated upstream
+=======
+#if defined(HAVE_WINSOCK2_H)
+#include <Winsock2.h>
+#endif
+
+#if defined(HAVE_ARPA_INET_H)
+#include <arpa/inet.h>
+#endif
+
+#if defined(ESP_PLATFORM)
+#include <lwip/sockets.h>
+#endif
+
+
+>>>>>>> Stashed changes
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, const char* serviceType, const char* host, uint16_t port)
 {

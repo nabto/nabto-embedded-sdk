@@ -15,8 +15,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
-#include <ifaddrs.h>
 #include <net/if.h>
+
+#if defined(__unix__)
+#include <ifaddrs.h>
+#elifdef ESP_PLATFORM
+#warning ESP
+#endif
+
 
 #define LOG NABTO_LOG_MODULE_UDP
 

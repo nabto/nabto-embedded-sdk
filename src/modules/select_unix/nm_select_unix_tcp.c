@@ -4,14 +4,20 @@
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
 
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+
+#if defined(__unix__)
+#include <netinet/tcp.h>
+#elifdef ESP_PLATFORM
+#warning ESP
+#endif
 
 #define LOG NABTO_LOG_MODULE_TCP
 
