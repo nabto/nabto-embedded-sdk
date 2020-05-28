@@ -18,6 +18,7 @@ set(test_src
   api/authorization_test.cpp
   api/new_free.cpp
   api/create_sct.cpp
+  api/private_key_test.cpp
   # TODO move the attach_test to somewhere else where the dtls server
   #exists or move the dtls server to this repository
   #attach/attach_test.cpp
@@ -28,6 +29,7 @@ set(test_src
   policies/statement_json_test.cpp
   policies/policy_json_test.cpp
   policies/policy_deny_test.cpp
+
   dns/dns_test.cpp
   test_platform_event_queue.c
 

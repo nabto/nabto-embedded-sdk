@@ -246,7 +246,7 @@ nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
  * Set the private key from the device. Required before calling nabto_device_start().
  *
  * @param device [in]   The device instance to perform action on
- * @param privKey [in]  The private code to set
+ * @param privKey [in]  The private key to set
  * @return NABTO_DEVICE_EC_OK on success
  *         NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
  */
