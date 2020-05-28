@@ -13,10 +13,8 @@
 #include <errno.h>
 #include <string.h>
 
-#if defined(__unix__)
+#if defined(HAVE_NETINET_TCP_H)
 #include <netinet/tcp.h>
-#elifdef ESP_PLATFORM
-#warning ESP
 #endif
 
 #define LOG NABTO_LOG_MODULE_TCP

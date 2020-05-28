@@ -58,6 +58,7 @@ CHECK_INCLUDE_FILES("ifaddrs.h" HAVE_IFADDRS_H)
 CHECK_INCLUDE_FILES("net/if.h" HAVE_NET_IF_H)
 CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
 CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
+CHECK_INCLUDE_FILES("netinet/tcp.h" HAVE_NETINET_TCP_H)
 
 set(HAVE_LIBEVENT_HEADERS 1)
 add_definitions(-DHAVE_LIBEVENT)
@@ -113,6 +114,10 @@ endif()
 
 if (HAVE_FCNTL_H)
   add_definitions(-DHAVE_FCNTL_H)
+endif()
+
+if (HAVE_NETINET_TCP_H)
+  add_definitions(-DHAVE_NETINET_TCP_H)
 endif()
 
 include_directories(src)
