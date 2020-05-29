@@ -3,7 +3,7 @@
 
 uint32_t np_timestamp_now_ms(struct np_platform* pl)
 {
-    return pl->ts.now_ms(pl);
+    return pl->ts.now_ms(pl->tsImpl);
 }
 
 bool np_timestamp_passed_or_now(struct np_platform* pl, uint32_t stamp)

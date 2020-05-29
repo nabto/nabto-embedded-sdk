@@ -22,7 +22,7 @@ np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct n
     memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
     ctx->pl = pl;
     ctx->recvBuffer = pl->buf.allocate();
-    np_error_code ec = pl->udp.create(pl, &ctx->sock);
+    np_error_code ec = pl->udp.create(pl->udpImpl, &ctx->sock);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

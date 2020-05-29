@@ -28,16 +28,16 @@ struct np_platform {
     void* platformData;
 
     // Timestamp module
-    struct np_timestamp_module ts;
-    void* tsData;  // Custom data for the timestamp module
+    struct np_timestamp_functions ts;
+    struct np_timestamp_impl* tsImpl;
 
     // Event Queue module
     struct np_event_queue eq;
     void* eqData;  // Custom data for the event queue module
 
     // UDP Socket module
-    struct np_udp_module udp;
-    void* udpData;  // Custom data for the udp module object
+    struct np_udp_functions udp;
+    struct np_udp_impl* udpImpl;  // Custom data for the udp module object
 
     // DNS resolver module
     struct np_dns_module dns;

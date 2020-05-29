@@ -27,7 +27,7 @@ class UdpEchoClientTest {
     }
 
     void start(uint16_t port) {
-        BOOST_TEST(pl_->udp.create(pl_, &socket_) == NABTO_EC_OK);
+        BOOST_TEST(pl_->udp.create(pl_->udpImpl, &socket_) == NABTO_EC_OK);
 
         uint8_t addr[] = { 0x7F, 0x00, 0x00, 0x01 };
 

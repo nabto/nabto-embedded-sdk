@@ -13,17 +13,17 @@
 #include <winsock2.h>
 #endif
 
-static uint32_t ts_now_ms(struct np_platform* pl);
+static uint32_t ts_now_ms(struct np_timestamp_impl* impl);
 
 void nm_libevent_timestamp_init(struct event_base* eb, struct np_platform* pl)
 {
-    pl->tsData = eb;
+    pl->tsImpl = (struct np_timestamp_impl*)eb;
     pl->ts.now_ms               = &ts_now_ms;
 }
 
-uint32_t ts_now_ms(struct np_platform* pl)
+uint32_t ts_now_ms(struct np_timestamp_impl* impl)
 {
-    struct event_base* eventBase = pl->tsData;
+    struct event_base* eventBase = (struct event_base*)impl;
     struct timeval tv;
     event_base_gettimeofday_cached(eventBase, &tv);
 

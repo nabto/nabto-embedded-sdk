@@ -45,12 +45,12 @@ struct np_udp_socket {
     enum np_ip_address_type type;
     struct np_communication_buffer* recvBuffer;
     evutil_socket_t sock;
-    struct np_platform* pl;
+    struct nm_libevent_context* impl;
     bool aborted;
     struct event* event;
 };
 
-static np_error_code udp_create(struct np_platform* pl, struct np_udp_socket** sock);
+static np_error_code udp_create(struct np_udp_impl* impl, struct np_udp_socket** sock);
 static void udp_destroy(struct np_udp_socket* sock);
 static void udp_abort(struct np_udp_socket* sock);
 static void udp_async_bind_port(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
@@ -79,7 +79,7 @@ static void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec);
 
 void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ctx)
 {
-    pl->udpData = ctx;
+    pl->udpImpl = (struct np_udp_impl*)ctx;
 
     pl->udp.create               = &udp_create;
     pl->udp.destroy              = &udp_destroy;
@@ -98,16 +98,16 @@ void nm_libevent_udp_deinit(struct np_platform* pl)
     // TODO
 }
 
-np_error_code udp_create(struct np_platform* pl, struct np_udp_socket** sock)
+np_error_code udp_create(struct np_udp_impl* impl, struct np_udp_socket** sock)
 {
     struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
     if (s == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    struct nm_libevent_context* ctx = pl->udpData;
+    struct nm_libevent_context* ctx = (struct nm_libevent_context*)impl;
 
-    s->pl = pl;
+    s->impl = ctx;
     s->recvBuffer = ctx->recvBuffer;
     //np_event_queue_init_event(&s->recv.event);
 
@@ -118,8 +118,7 @@ np_error_code udp_create(struct np_platform* pl, struct np_udp_socket** sock)
 
 void udp_add_to_libevent(struct np_udp_socket* sock)
 {
-    struct np_platform* pl = sock->pl;
-    struct nm_libevent_context* context = pl->udpData;
+    struct nm_libevent_context* context = sock->impl;
     sock->event = event_new(context->eventBase, sock->sock, EV_READ, udp_ready_callback, sock);
 }
 

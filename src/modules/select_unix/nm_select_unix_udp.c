@@ -28,7 +28,7 @@ static void nm_select_unix_udp_free_socket(struct np_udp_socket* sock);
 /**
  * Api function declarations
  */
-static np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_socket** sock);
+static np_error_code nm_select_unix_udp_create(struct np_udp_impl* impl, struct np_udp_socket** sock);
 static void nm_select_unix_udp_destroy(struct np_udp_socket* sock);
 static void nm_select_unix_udp_abort(struct np_udp_socket* sock);
 static void nm_select_unix_udp_async_bind_port(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
@@ -61,7 +61,7 @@ np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_plat
     pl->udp.async_recv_wait  = &nm_select_unix_udp_async_recv_wait;
     pl->udp.recv_from        = &nm_select_unix_udp_recv_from;
     pl->udp.get_local_port   = &nm_select_unix_udp_get_local_port;
-    pl->udpData = ctx;
+    pl->udpImpl = (struct np_udp_impl*)ctx;
 
     return NABTO_EC_OK;
 }
@@ -70,7 +70,7 @@ void nm_select_unix_udp_deinit(struct nm_select_unix* ctx)
 {
 }
 
-np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_socket** sock)
+np_error_code nm_select_unix_udp_create(struct np_udp_impl* impl, struct np_udp_socket** sock)
 {
     struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
     if (!s) {
@@ -79,10 +79,9 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_so
     *sock = s;
     s->sock = -1;
 
-    struct nm_select_unix* selectCtx = pl->udpData;
+    struct nm_select_unix* selectCtx = (struct nm_select_unix*)impl;
 
-    s->pl = selectCtx->pl;
-    s->selectCtx = pl->udpData;
+    s->selectCtx = selectCtx;
     s->aborted = false;
 
     nn_llist_append(&selectCtx->udpSockets, &s->udpSocketsNode, s);

@@ -27,7 +27,7 @@ void nm_select_unix_build_fd_sets();
 np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl)
 {
     ctx->pl = pl;
-    pl->udpData = ctx;
+    pl->udpImpl = (struct np_udp_impl*)ctx;
 
     nn_llist_init(&ctx->udpSockets);
     nn_llist_init(&ctx->tcpSockets);

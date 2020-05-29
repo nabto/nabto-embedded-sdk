@@ -14,22 +14,34 @@ extern "C" {
 struct np_platform;
 struct np_completion_event;
 struct np_udp_socket;
+struct np_udp_impl;
 
 struct np_udp_endpoint {
     struct np_ip_address ip;
     uint16_t port;
 };
 
-struct np_udp_module {
-
+/**
+ * This struct defines a list of functions which is required for udp
+ * communication.
+ *
+ * Each function needs to point to a specific platform dependent
+ * implementation.
+ */
+struct np_udp_functions {
     /**
      * create an UDP socket resource. If create returns NABTO_EC_OK,
      * destroy must be called when socket is no longer in use to clean
      * up the resource.
      *
+     * The udpModule pointer is a reference to the implementation of
+     * the udp module.
+     *
+     * @param impl  A pointer to the actual udp module implementation.
+     * @param sock  The created socket.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_platform* pl, struct np_udp_socket** sock);
+    np_error_code (*create)(struct np_udp_impl* impl, struct np_udp_socket** sock);
 
     /**
      * Destroy a socket. This will close everything and clean up

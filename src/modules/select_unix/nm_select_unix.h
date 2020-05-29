@@ -19,7 +19,6 @@ struct nm_select_unix_udp_recv_wait_context {
 };
 
 struct np_udp_socket {
-    struct np_platform* pl;
     struct nm_select_unix* selectCtx;
     int sock;
     enum np_ip_address_type type;

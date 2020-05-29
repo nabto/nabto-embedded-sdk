@@ -102,12 +102,12 @@ np_error_code mdns_create(struct np_platform* pl, const char* productId, const c
     ctx->getPort = getPort;
     ctx->getPortUserData = getPortUserData;
     np_error_code ec;
-    ec = pl->udp.create(pl, &ctx->socketv4);
+    ec = pl->udp.create(pl->udpImpl, &ctx->socketv4);
     if (ec != NABTO_EC_OK) {
         nm_mdns_force_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    ec = pl->udp.create(pl, &ctx->socketv6);
+    ec = pl->udp.create(pl->udpImpl, &ctx->socketv6);
     if (ec != NABTO_EC_OK) {
         nm_mdns_force_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
