@@ -12,7 +12,7 @@ struct np_timestamp_impl;
 
 struct np_timestamp_functions;
 
-struct np_timestamp_object {
+struct np_timestamp {
     const struct np_timestamp_functions* vptr;
     void* data;
 };
@@ -26,7 +26,7 @@ struct np_timestamp_functions {
      * @param  data  The timestamp object data.
      * @return  The current timestamp in milliseconds.
      */
-    uint32_t (*now_ms)(struct np_timestamp_object* data);
+    uint32_t (*now_ms)(void* data);
 };
 
 /**

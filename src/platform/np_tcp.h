@@ -14,7 +14,7 @@ struct np_tcp_socket;
 struct np_tcp_functions;
 
 
-struct np_tcp_object {
+struct np_tcp {
     const struct np_tcp_functions* vptr;
     void* data;
 };
@@ -27,7 +27,7 @@ struct np_tcp_functions {
      * @param sock  The resulting socket resource.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_tcp_object* obj, struct np_tcp_socket** sock);
+    np_error_code (*create)(void* data, struct np_tcp_socket** sock);
 
     /**
      * Destroy a socket. All outstanding completion events will be

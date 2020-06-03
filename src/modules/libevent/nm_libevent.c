@@ -64,33 +64,33 @@ void nm_libevent_deinit(struct nm_libevent_context* ctx)
 
 
 
-struct np_udp_object nm_libevent_create_udp_object(struct nm_libevent_context* ctx)
+struct np_udp nm_libevent_create_udp(struct nm_libevent_context* ctx)
 {
-    struct np_udp_object obj;
+    struct np_udp obj;
     obj.vptr = nm_libevent_udp_functions();
     obj.data = ctx;
     return obj;
 }
 
-struct np_tcp_object nm_libevent_create_tcp_object(struct nm_libevent_context* ctx)
+struct np_tcp nm_libevent_create_tcp(struct nm_libevent_context* ctx)
 {
-    struct np_tcp_object obj;
+    struct np_tcp obj;
     obj.vptr = nm_libevent_tcp_functions();
     obj.data = ctx;
     return obj;
 }
 
-struct np_timestamp_object nm_libevent_create_timestamp_object(struct nm_libevent_context* ctx)
+struct np_timestamp nm_libevent_create_timestamp(struct nm_libevent_context* ctx)
 {
-    struct np_timestamp_object obj;
+    struct np_timestamp obj;
     obj.vptr = nm_libevent_timestamp_functions();
     obj.data = ctx;
     return obj;
 }
 
-struct np_dns_object nm_libevent_create_dns_object(struct nm_libevent_context* ctx)
+struct np_dns nm_libevent_create_dns(struct nm_libevent_context* ctx)
 {
-    struct np_dns_object obj;
+    struct np_dns obj;
     obj.vptr = nm_libevent_dns_functions();
     obj.data = ctx;
     return obj;

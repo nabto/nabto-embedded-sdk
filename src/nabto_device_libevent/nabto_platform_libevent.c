@@ -24,7 +24,9 @@
 static void nabto_device_signal_event(evutil_socket_t s, short event, void* userData);
 static void* nabto_device_platform_network_thread(void* data);
 
-
+/**
+ * Structure containing all the platform adapter specific data.
+ */
 struct nabto_device_platform_libevent {
     struct event_base* eventBase;
     struct event* signalEvent;
@@ -32,7 +34,7 @@ struct nabto_device_platform_libevent {
 
     struct nabto_device_thread* networkThread;
     bool stopped;
-    struct np_event_queue_object eq;
+    struct np_event_queue eq;
 };
 
 np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex)
@@ -41,18 +43,21 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     struct nabto_device_platform_libevent* platform = calloc(1, sizeof(struct nabto_device_platform_libevent));
 
-     // The libevent module comes with UDP, TCP, local ip and timestamp module implementations.
-    nm_libevent_init(&platform->libeventContext, platform->eventBase);
 
     platform->eventBase = event_base_new();
     platform->signalEvent = event_new(platform->eventBase, -1, 0, &nabto_device_signal_event, platform);
 
+    // The libevent module comes with UDP, TCP, local ip and timestamp module implementations.
+    nm_libevent_init(&platform->libeventContext, platform->eventBase);
+
+
     nabto_device_platform_adapter_set(device, platform);
 
-    struct np_udp_object udp = nm_libevent_create_udp_object(&platform->libeventContext);
-    struct np_tcp_object tcp = nm_libevent_create_tcp_object(&platform->libeventContext);
-    struct np_timestamp_object timestamp = nm_libevent_create_timestamp_object(&platform->libeventContext);
-    struct np_dns_object dns = nm_libevent_create_dns_object(&platform->libeventContext);
+    struct np_udp udp = nm_libevent_create_udp(&platform->libeventContext);
+    struct np_tcp tcp = nm_libevent_create_tcp(&platform->libeventContext);
+    struct np_timestamp timestamp = nm_libevent_create_timestamp(&platform->libeventContext);
+    struct np_dns dns = nm_libevent_create_dns(&platform->libeventContext);
+    struct np_local_ip localIp = nm_libevent_create_local_ip(&platform->libeventContext);
 
     platform->eq = libevent_event_queue_create(platform->eventBase, eventMutex);
 
@@ -61,7 +66,9 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     nabto_device_platform_adapter_set_timestamp(device, &timestamp);
     nabto_device_platform_adapter_set_dns(device, &dns);
     nabto_device_platform_adapter_set_event_queue(device, &platform->eq);
+    nabto_device_platform_adapter_set_local_ip(device, &localIp);
 
+    // TODO
     //nabto_device_platform_adapter_set_system_information_impl(device, systemFunctions, systemImpl);
 
     platform->networkThread = nabto_device_threads_create_thread();

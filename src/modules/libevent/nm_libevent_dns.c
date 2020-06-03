@@ -29,7 +29,7 @@ struct nm_dns_request {
 static void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg);
 
 
-static np_error_code create_resolver(struct np_dns_object* dns, struct np_dns_resolver** resolver);
+static np_error_code create_resolver(void* data, struct np_dns_resolver** resolver);
 static void destroy_resolver(struct np_dns_resolver* resolver);
 static void stop_resolver(struct np_dns_resolver* resolver);
 static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
@@ -48,9 +48,9 @@ const struct np_dns_functions* nm_libevent_dns_functions()
     return &dns_vtable;
 }
 
-np_error_code create_resolver(struct np_dns_object* obj, struct np_dns_resolver** resolver)
+np_error_code create_resolver(void* data, struct np_dns_resolver** resolver)
 {
-    struct nm_libevent_context* ctx = obj->data;
+    struct nm_libevent_context* ctx = data;
 
     struct np_dns_resolver* r = calloc(1, sizeof(struct np_dns_resolver));
     r->dnsBase = evdns_base_new(ctx->eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);

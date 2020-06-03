@@ -85,7 +85,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
 
     struct np_ip_address localAddrs[2];
 
-    size_t addrs = ctx->pl->localIp.get_local_ip(localAddrs, 2);
+    size_t addrs = ctx->pl->localIp.get_local_ips(ctx->pl->localIpData, localAddrs, 2);
 
     for (size_t i = 0; i < addrs; i++) {
         struct np_udp_endpoint ep;

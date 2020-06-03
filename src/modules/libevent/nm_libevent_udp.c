@@ -49,7 +49,7 @@ struct np_udp_socket {
     struct event* event;
 };
 
-static np_error_code udp_create(struct np_udp_object* obj, struct np_udp_socket** sock);
+static np_error_code udp_create(void* data, struct np_udp_socket** sock);
 static void udp_destroy(struct np_udp_socket* sock);
 static void udp_abort(struct np_udp_socket* sock);
 static void udp_async_bind_port(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
@@ -97,14 +97,14 @@ void nm_libevent_udp_deinit(struct np_platform* pl)
     // TODO
 }
 
-np_error_code udp_create(struct np_udp_object* obj, struct np_udp_socket** sock)
+np_error_code udp_create(void* data, struct np_udp_socket** sock)
 {
     struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
     if (s == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    struct nm_libevent_context* ctx = (struct nm_libevent_context*)obj->data;
+    struct nm_libevent_context* ctx = data;
 
     s->impl = ctx;
     //np_event_queue_init_event(&s->recv.event);

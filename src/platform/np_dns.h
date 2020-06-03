@@ -18,7 +18,7 @@ struct np_completion_event;
 struct np_dns_resolver;
 struct np_dns_functions;
 
-struct np_dns_object {
+struct np_dns {
     const struct np_dns_functions* vptr;
     void* data;
 };
@@ -32,7 +32,7 @@ struct np_dns_functions {
      * @param resolver  The resulting resolver.
      * @return NABTO_EC_OK  iff the object is created.
      */
-    np_error_code (*create_resolver)(struct np_dns_object* obj, struct np_dns_resolver** resolver);
+    np_error_code (*create_resolver)(void* data, struct np_dns_resolver** resolver);
 
     /**
      * Destroy a resolver.

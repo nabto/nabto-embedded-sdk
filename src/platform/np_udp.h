@@ -20,7 +20,7 @@ struct np_udp_endpoint {
     uint16_t port;
 };
 
-struct np_udp_object {
+struct np_udp {
     const struct np_udp_functions* vptr;
     void* data;
 };
@@ -45,7 +45,7 @@ struct np_udp_functions {
      * @param sock  The created socket.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_udp_object* obj, struct np_udp_socket** sock);
+    np_error_code (*create)(void* data, struct np_udp_socket** sock);
 
     /**
      * Destroy a socket. This will close everything and clean up

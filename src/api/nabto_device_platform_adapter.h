@@ -3,13 +3,14 @@
 
 #include <nabto/nabto_device.h>
 
-struct np_udp_object;
-struct np_tcp_object;
-struct np_timestamp_object;
-struct np_dns_object;
-struct np_system_information_object;
-struct np_event_queue_object;
+struct np_udp;
+struct np_tcp;
+struct np_timestamp;
+struct np_dns;
+struct np_system_information;
+struct np_event_queue;
 struct nabto_device_context;
+struct np_local_ip;
 
 
 
@@ -34,7 +35,7 @@ void nabto_device_platform_adapter_set(struct nabto_device_context* device, void
  * @param functions  Struct which contains the udp functions to use. See src/platform/np_udp.h. (Object virtual table.)
  * @param data  opaque data for the udp instance. (Object instance data).
  */
-void nabto_device_platform_adapter_set_udp(struct nabto_device_context* device, struct np_udp_object* obj);
+void nabto_device_platform_adapter_set_udp(struct nabto_device_context* device, struct np_udp* obj);
 
 /**
  * Set the TCP implementation which the device uses.
@@ -45,27 +46,31 @@ void nabto_device_platform_adapter_set_udp(struct nabto_device_context* device, 
  * @param functions  Struct which contains the tcp functions to use. See src/platform/np_tcp.h.
  * @param data  Data pointer to be used with the tcp functions.
  */
-void nabto_device_platform_adapter_set_tcp(struct nabto_device_context* device, struct np_tcp_object* obj);
+void nabto_device_platform_adapter_set_tcp(struct nabto_device_context* device, struct np_tcp* obj);
 
 /**
  * Set the timestamp implementation which the device uses.
  */
-void nabto_device_platform_adapter_set_timestamp(struct nabto_device_context* device, struct np_timestamp_object* obj);
+void nabto_device_platform_adapter_set_timestamp(struct nabto_device_context* device, struct np_timestamp* obj);
 
 /**
  * Set the dns implementation which the device uses.
  */
-void nabto_device_platform_adapter_set_dns(struct nabto_device_context* device, struct np_dns_object* obj);
+void nabto_device_platform_adapter_set_dns(struct nabto_device_context* device, struct np_dns* obj);
 
 /**
  * Set the system information implementation which the device uses.
  */
-void nabto_device_platform_adapter_set_system_information_object(struct nabto_device_context* device, struct np_system_information_object* obj);
+void nabto_device_platform_adapter_set_system_information(struct nabto_device_context* device, struct np_system_information* obj);
 
 /**
  * Set the event queue object
  */
-void nabto_device_platform_adapter_set_event_queue(struct nabto_device_context* device, struct np_event_queue_object* obj);
+void nabto_device_platform_adapter_set_event_queue(struct nabto_device_context* device, struct np_event_queue* obj);
 
+/**
+ *
+ */
+void nabto_device_platform_adapter_set_local_ip(struct nabto_device_context* device, struct np_local_ip* obj);
 
 #endif

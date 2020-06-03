@@ -188,7 +188,7 @@ void nm_mdns_update_local_ips(struct np_mdns_context* mdns)
 {
     struct np_platform* pl = mdns->pl;
     struct np_ip_address ips[MAX_LOCAL_IPS];
-    size_t ipsFound = pl->localIp.get_local_ip(ips, MAX_LOCAL_IPS);
+    size_t ipsFound = pl->localIp.get_local_ips(pl->localIpData, ips, MAX_LOCAL_IPS);
 
     mdns->localIpsSize = ipsFound;
     for(int i = 0; i < ipsFound; i++) {

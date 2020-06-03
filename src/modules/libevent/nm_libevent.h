@@ -22,10 +22,11 @@ void nm_libevent_deinit(struct nm_libevent_context* ctx);
 
 void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ctx);
 
-struct np_udp_object nm_libevent_create_udp_object(struct nm_libevent_context* ctx);
-struct np_tcp_object nm_libevent_create_tcp_object(struct nm_libevent_context* ctx);
-struct np_timestamp_object nm_libevent_create_timestamp_object(struct nm_libevent_context* ctx);
-struct np_dns_object nm_libevent_create_dns_object(struct nm_libevent_context* ctx);
+struct np_udp nm_libevent_create_udp(struct nm_libevent_context* ctx);
+struct np_tcp nm_libevent_create_tcp(struct nm_libevent_context* ctx);
+struct np_timestamp nm_libevent_create_timestamp(struct nm_libevent_context* ctx);
+struct np_dns nm_libevent_create_dns(struct nm_libevent_context* ctx);
+struct np_local_ip nm_libevent_create_local_ip(struct nm_libevent_context* ctx);
 
 #ifdef __cplusplus
 } //extern "C"
