@@ -8,8 +8,7 @@ extern "C" {
 struct np_platform;
 struct event_base;
 
-void nm_libevent_dns_init(struct np_platform* pl, struct event_base* base);
-void nm_libevent_dns_deinit(struct np_platform* pl);
+const struct np_dns_functions* nm_libevent_dns_functions();
 
 #ifdef __cplusplus
 } //extern "C"

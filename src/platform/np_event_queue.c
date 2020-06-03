@@ -6,7 +6,7 @@
 
 np_error_code np_event_queue_create_event(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event)
 {
-    return pl->eq.create_event(pl, cb, data, event);
+    return pl->eq.create_event(pl->eqData, cb, data, event);
 }
 
 void np_event_queue_destroy_event(struct np_platform* pl, struct np_event* event)
@@ -33,7 +33,7 @@ void np_event_queue_post_maybe_double(struct np_platform* pl, struct np_event* e
 
 np_error_code np_event_queue_create_timed_event(struct np_platform* pl, np_timed_event_callback cb, void* data, struct np_timed_event** event)
 {
-    return pl->eq.create_timed_event(pl, cb, data, event);
+    return pl->eq.create_timed_event(pl->eqData, cb, data, event);
 }
 
 void np_event_queue_destroy_timed_event(struct np_platform* pl, struct np_timed_event* event)

@@ -47,6 +47,7 @@ struct nabto_device_context {
     struct nabto_device_future_queue futureQueue;
     struct nabto_device_authorization_module authorization;
 
+    void* platformAdapter;
 };
 
 

@@ -36,9 +36,9 @@ struct np_mdns_module {
      * @return NABTO_EC_OK  Iff the mdns server was created.
      */
     np_error_code (*create)(struct np_platform* pl,
-                           const char* productId, const char* deviceId,
-                           np_mdns_get_port getPort, void* getPortUserData,
-                           struct np_mdns_context** mdns);
+                            const char* productId, const char* deviceId,
+                            np_mdns_get_port getPort, void* getPortUserData,
+                            struct np_mdns_context** mdns);
 
     /**
      * Destroy a mdns server

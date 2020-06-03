@@ -12,14 +12,20 @@ struct event_base;
 
 struct nm_libevent_context {
     struct event_base* eventBase;
-    struct np_platform* pl;
-    struct np_communication_buffer* recvBuffer;
+
 };
 
 void nm_libevent_global_init();
 void nm_libevent_global_deinit();
-void nm_libevent_init(struct np_platform* pl, struct nm_libevent_context* ctx, struct event_base* eventBase);
+void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase);
 void nm_libevent_deinit(struct nm_libevent_context* ctx);
+
+void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ctx);
+
+struct np_udp_object nm_libevent_create_udp_object(struct nm_libevent_context* ctx);
+struct np_tcp_object nm_libevent_create_tcp_object(struct nm_libevent_context* ctx);
+struct np_timestamp_object nm_libevent_create_timestamp_object(struct nm_libevent_context* ctx);
+struct np_dns_object nm_libevent_create_dns_object(struct nm_libevent_context* ctx);
 
 #ifdef __cplusplus
 } //extern "C"

@@ -16,8 +16,14 @@ extern "C" {
 struct np_platform;
 struct np_completion_event;
 struct np_dns_resolver;
+struct np_dns_functions;
 
-struct np_dns_module {
+struct np_dns_object {
+    const struct np_dns_functions* vptr;
+    void* data;
+};
+
+struct np_dns_functions {
     /**
      * Create a new resolver. A resolver can be used to resolve either
      * ipv4 or ipv6 addresses.
@@ -26,7 +32,7 @@ struct np_dns_module {
      * @param resolver  The resulting resolver.
      * @return NABTO_EC_OK  iff the object is created.
      */
-    np_error_code (*create_resolver)(struct np_platform* pl, struct np_dns_resolver** resolver);
+    np_error_code (*create_resolver)(struct np_dns_object* obj, struct np_dns_resolver** resolver);
 
     /**
      * Destroy a resolver.

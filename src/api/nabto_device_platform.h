@@ -5,6 +5,7 @@
 
 struct nabto_device_mutex;
 struct np_platform;
+struct nabto_device_context;
 
 /**
  * Init a platform
@@ -15,14 +16,14 @@ struct np_platform;
  * @param mutex  The mutex which is used to synchronize calls to functions in the `nabto_device.h` api and the internal event queue.
  * @return NABTO_EC_OK  iff the platform is initialized.
  */
-np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_device_mutex* mutex);
+np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* mutex);
 
 /**
  * Deinit a platform, this function is called from the nabto_device_free function.
  *
  * @param pl  The platform.
  */
-void nabto_device_deinit_platform(struct np_platform* pl);
+void nabto_device_platform_deinit(struct nabto_device_context* device);
 
 /**
  * Blocking stop function of the platform. After this function returns
@@ -31,6 +32,6 @@ void nabto_device_deinit_platform(struct np_platform* pl);
  *
  * @param pl  The platform.
  */
-void nabto_device_platform_stop_blocking(struct np_platform* pl);
+void nabto_device_platform_stop_blocking(struct nabto_device_context* device);
 
 #endif

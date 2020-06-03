@@ -43,25 +43,55 @@ void nm_libevent_global_deinit()
     }
 }
 
-void nm_libevent_init(struct np_platform* pl, struct nm_libevent_context* ctx, struct event_base* eventBase)
+void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase)
 {
     ctx->eventBase = eventBase;
-    ctx->pl = pl;
-    ctx->recvBuffer = pl->buf.allocate();
-    nm_libevent_dns_init(pl, ctx->eventBase);
-    nm_libevent_udp_init(pl, ctx);
-    nm_libevent_timestamp_init(eventBase, pl);
-    nm_libevent_tcp_init(pl, ctx);
-    nm_libevent_local_ip_init(pl);
+
+    // TODO
+    //nm_libevent_dns_init(pl, ctx->eventBase);
+    //nm_libevent_udp_init(pl, ctx);
+    //nm_libevent_timestamp_init(eventBase, pl);
+    //nm_libevent_tcp_init(pl, ctx);
+    //nm_libevent_local_ip_init(pl);
 
 }
 
 void nm_libevent_deinit(struct nm_libevent_context* ctx)
 {
-    struct np_platform* pl = ctx->pl;
+    //nm_libevent_dns_deinit(pl);
 
-    nm_libevent_udp_deinit(pl);
-    nm_libevent_dns_deinit(pl);
+}
 
-    pl->buf.free(ctx->recvBuffer);
+
+
+struct np_udp_object nm_libevent_create_udp_object(struct nm_libevent_context* ctx)
+{
+    struct np_udp_object obj;
+    obj.vptr = nm_libevent_udp_functions();
+    obj.data = ctx;
+    return obj;
+}
+
+struct np_tcp_object nm_libevent_create_tcp_object(struct nm_libevent_context* ctx)
+{
+    struct np_tcp_object obj;
+    obj.vptr = nm_libevent_tcp_functions();
+    obj.data = ctx;
+    return obj;
+}
+
+struct np_timestamp_object nm_libevent_create_timestamp_object(struct nm_libevent_context* ctx)
+{
+    struct np_timestamp_object obj;
+    obj.vptr = nm_libevent_timestamp_functions();
+    obj.data = ctx;
+    return obj;
+}
+
+struct np_dns_object nm_libevent_create_dns_object(struct nm_libevent_context* ctx)
+{
+    struct np_dns_object obj;
+    obj.vptr = nm_libevent_dns_functions();
+    obj.data = ctx;
+    return obj;
 }

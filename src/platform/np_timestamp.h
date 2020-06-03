@@ -10,16 +10,23 @@ extern "C" {
 struct np_platform;
 struct np_timestamp_impl;
 
+struct np_timestamp_functions;
+
+struct np_timestamp_object {
+    const struct np_timestamp_functions* vptr;
+    void* data;
+};
+
 struct np_timestamp_functions {
     /**
      * Return current timestamp as milliseconds the timestamp should
      * be a monotonic value which wraps around whenever the value
      * reaches 2^32. The precision is not critical.
      *
-     * @param  impl  The timestamp module implementation.
+     * @param  data  The timestamp object data.
      * @return  The current timestamp in milliseconds.
      */
-    uint32_t (*now_ms)(struct np_timestamp_impl* impl);
+    uint32_t (*now_ms)(struct np_timestamp_object* data);
 };
 
 /**

@@ -63,7 +63,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 
     nabto_device_logging_init();
 
-    ec = nabto_device_init_platform(&dev->pl, dev->eventMutex);
+    ec = nabto_device_platform_init(dev, dev->eventMutex);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");
         return NULL;
@@ -122,7 +122,7 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 void nabto_device_do_stop(struct nabto_device_context* dev)
 {
     nabto_device_future_queue_stop(&dev->futureQueue);
-    nabto_device_platform_stop_blocking(&dev->pl);
+    nabto_device_platform_stop_blocking(dev);
 }
 
 /**
@@ -138,7 +138,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
     nc_device_deinit(&dev->core);
 
-    nabto_device_deinit_platform(&dev->pl);
+    nabto_device_platform_deinit(dev);
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 

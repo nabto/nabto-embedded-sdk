@@ -45,7 +45,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-    ec = pl->dns.create_resolver(pl, &device->dnsResolver);
+    ec = pl->dns.create_resolver(pl->dnsData, &device->dnsResolver);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;

@@ -11,7 +11,6 @@
 extern "C" {
 #endif
 
-struct np_platform;
 struct np_completion_event;
 struct np_udp_socket;
 struct np_udp_impl;
@@ -19,6 +18,11 @@ struct np_udp_impl;
 struct np_udp_endpoint {
     struct np_ip_address ip;
     uint16_t port;
+};
+
+struct np_udp_object {
+    const struct np_udp_functions* vptr;
+    void* data;
 };
 
 /**
@@ -37,11 +41,11 @@ struct np_udp_functions {
      * The udpModule pointer is a reference to the implementation of
      * the udp module.
      *
-     * @param impl  A pointer to the actual udp module implementation.
+     * @param instance  A pointer to the actual udp module instance.
      * @param sock  The created socket.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_udp_impl* impl, struct np_udp_socket** sock);
+    np_error_code (*create)(struct np_udp_object* obj, struct np_udp_socket** sock);
 
     /**
      * Destroy a socket. This will close everything and clean up

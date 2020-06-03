@@ -4,6 +4,8 @@
 struct np_platform;
 struct nm_libevent_context;
 
-void nm_libevent_tcp_init(struct np_platform* pl, struct nm_libevent_context* ctx);
+//void nm_libevent_tcp_init(struct np_platform* pl, struct nm_libevent_context* ctx);
+
+const struct np_tcp_functions* nm_libevent_tcp_functions();
 
 #endif

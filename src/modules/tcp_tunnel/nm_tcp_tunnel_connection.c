@@ -63,7 +63,7 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
 {
     connection->pl = service->tunnels->device->pl;
     struct np_platform* pl = connection->pl;
-    np_error_code ec = pl->tcp.create(pl, &connection->socket);
+    np_error_code ec = pl->tcp.create(pl->tcpData, &connection->socket);
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Cannot create tcp connection");
         return ec;

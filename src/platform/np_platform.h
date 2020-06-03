@@ -29,23 +29,23 @@ struct np_platform {
 
     // Timestamp module
     struct np_timestamp_functions ts;
-    struct np_timestamp_impl* tsImpl;
+    struct np_timestamp_object* tsImpl;
 
     // Event Queue module
-    struct np_event_queue eq;
+    struct np_event_queue_functions eq;
     void* eqData;  // Custom data for the event queue module
 
     // UDP Socket module
     struct np_udp_functions udp;
-    struct np_udp_impl* udpImpl;  // Custom data for the udp module object
+    struct np_udp_object* udpImpl;  // Custom data for the udp module object
 
     // DNS resolver module
-    struct np_dns_module dns;
-    void* dnsData;  // Custom data for the dns module.
+    struct np_dns_functions dns;
+    struct np_dns_object* dnsData;  // Custom data for the dns module.
 
     // Tcp socket module
-    struct np_tcp_module tcp;
-    void* tcpData;  // Custom data for the TCP module.
+    struct np_tcp_functions tcp;
+    struct np_tcp_object* tcpData;  // Custom data for the TCP module.
 
     // Random module
     struct np_random_module random;

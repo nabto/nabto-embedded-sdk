@@ -1,4 +1,5 @@
 #include "nm_libevent_dns.h"
+#include "nm_libevent.h"
 #include <event2/dns.h>
 
 #include <platform/np_ip_address.h>
@@ -10,10 +11,6 @@
 #include <string.h>
 
 #define DNS_RECORDS_SIZE 4
-
-struct nm_libevent_dns_module {
-    struct event_base* eventBase;
-};
 
 struct np_dns_resolver {
     struct evdns_base* dnsBase;
@@ -32,39 +29,31 @@ struct nm_dns_request {
 static void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg);
 
 
-static np_error_code create_resolver(struct np_platform* pl, struct np_dns_resolver** resolver);
+static np_error_code create_resolver(struct np_dns_object* dns, struct np_dns_resolver** resolver);
 static void destroy_resolver(struct np_dns_resolver* resolver);
 static void stop_resolver(struct np_dns_resolver* resolver);
 static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
-void nm_libevent_dns_init(struct np_platform* pl, struct event_base *eventBase)
-{
-    struct nm_libevent_dns_module* module = calloc(1,sizeof(struct nm_libevent_dns_module));
-    module->eventBase = eventBase;
-    pl->dnsData = module;
+static struct np_dns_functions dns_vtable = {
+    &create_resolver,
+    &destroy_resolver,
+    &stop_resolver,
+    &async_resolve_v4,
+    &async_resolve_v6
+};
 
-    pl->dns.create_resolver = &create_resolver;
-    pl->dns.destroy_resolver = &destroy_resolver;
-    pl->dns.stop = &stop_resolver;
-    pl->dns.async_resolve_v4 = &async_resolve_v4;
-    pl->dns.async_resolve_v6 = &async_resolve_v6;
+const struct np_dns_functions* nm_libevent_dns_functions()
+{
+    return &dns_vtable;
 }
 
-void nm_libevent_dns_deinit(struct np_platform* pl)
+np_error_code create_resolver(struct np_dns_object* obj, struct np_dns_resolver** resolver)
 {
-    if (pl->dnsData != NULL) {
-        struct nm_libevent_dns_module* module = pl->dnsData;
-        free(module);
-    }
-    pl->dnsData = NULL;
-}
+    struct nm_libevent_context* ctx = obj->data;
 
-np_error_code create_resolver(struct np_platform* pl, struct np_dns_resolver** resolver)
-{
-    struct nm_libevent_dns_module* module = pl->dnsData;
     struct np_dns_resolver* r = calloc(1, sizeof(struct np_dns_resolver));
-    r->dnsBase = evdns_base_new(module->eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);
+    r->dnsBase = evdns_base_new(ctx->eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);
     *resolver = r;
     return NABTO_EC_OK;
 }
