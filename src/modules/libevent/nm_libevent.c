@@ -46,23 +46,7 @@ void nm_libevent_global_deinit()
 void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase)
 {
     ctx->eventBase = eventBase;
-
-    // TODO
-    //nm_libevent_dns_init(pl, ctx->eventBase);
-    //nm_libevent_udp_init(pl, ctx);
-    //nm_libevent_timestamp_init(eventBase, pl);
-    //nm_libevent_tcp_init(pl, ctx);
-    //nm_libevent_local_ip_init(pl);
-
 }
-
-void nm_libevent_deinit(struct nm_libevent_context* ctx)
-{
-    //nm_libevent_dns_deinit(pl);
-
-}
-
-
 
 struct np_udp nm_libevent_create_udp(struct nm_libevent_context* ctx)
 {
