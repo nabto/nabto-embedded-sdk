@@ -34,4 +34,5 @@ void nabto_device_platform_deinit(struct nabto_device_context* device);
  */
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device);
 
+
 #endif

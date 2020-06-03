@@ -1,5 +1,5 @@
 #include <api/nabto_device_platform.h>
-#include <api/nabto_device_platform_adapter.h>
+#include <api/nabto_device_integration.h>
 
 #include "libevent_event_queue.h"
 
@@ -51,7 +51,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     nm_libevent_init(&platform->libeventContext, platform->eventBase);
 
 
-    nabto_device_platform_adapter_set(device, platform);
+    nabto_device_integration_set_platform_data(device, platform);
 
     struct np_udp udp = nm_libevent_create_udp(&platform->libeventContext);
     struct np_tcp tcp = nm_libevent_create_tcp(&platform->libeventContext);
@@ -61,12 +61,12 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     platform->eq = libevent_event_queue_create(platform->eventBase, eventMutex);
 
-    nabto_device_platform_adapter_set_udp(device, &udp);
-    nabto_device_platform_adapter_set_tcp(device, &tcp);
-    nabto_device_platform_adapter_set_timestamp(device, &timestamp);
-    nabto_device_platform_adapter_set_dns(device, &dns);
-    nabto_device_platform_adapter_set_event_queue(device, &platform->eq);
-    nabto_device_platform_adapter_set_local_ip(device, &localIp);
+    nabto_device_integration_set_udp_impl(device, &udp);
+    nabto_device_integration_set_tcp_impl(device, &tcp);
+    nabto_device_integration_set_timestamp_impl(device, &timestamp);
+    nabto_device_integration_set_dns_impl(device, &dns);
+    nabto_device_integration_set_event_queue_impl(device, &platform->eq);
+    nabto_device_integration_set_local_ip_impl(device, &localIp);
 
     // TODO
     //nabto_device_platform_adapter_set_system_information_impl(device, systemFunctions, systemImpl);
@@ -81,21 +81,21 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
 void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
-    struct nabto_device_platform_libevent* platformAdapter = nabto_device_platform_adapter_get(device);
-    libevent_event_queue_destroy(&platformAdapter->eq);
+    struct nabto_device_platform_libevent* platform = nabto_device_integration_get_platform_data(device);
+    libevent_event_queue_destroy(&platform->eq);
     //nm_mbedtls_random_deinit(pl);
-    nm_libevent_deinit(&platformAdapter->libeventContext);
-    nabto_device_threads_free_thread(platformAdapter->networkThread);
+    nm_libevent_deinit(&platform->libeventContext);
+    nabto_device_threads_free_thread(platform->networkThread);
 
-    event_free(platformAdapter->signalEvent);
-    event_base_free(platformAdapter->eventBase);
+    event_free(platform->signalEvent);
+    event_base_free(platform->eventBase);
     nm_libevent_global_deinit();
-    free(platformAdapter);
+    free(platform);
 }
 
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
-    struct nabto_device_platform_libevent* platform = nabto_device_platform_adapter_get(device);
+    struct nabto_device_platform_libevent* platform = nabto_device_integration_get_platform_data(device);
     if (platform->stopped) {
         return;
     }

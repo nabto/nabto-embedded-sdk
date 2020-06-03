@@ -27,7 +27,7 @@ set(api_src
   ${api_src_dir}/nabto_device_authorization_events.c
   ${api_src_dir}/nabto_device_tcp_tunnelling.c
   ${api_src_dir}/nabto_device_logging.c
-  ${api_src_dir}/nabto_device_platform_adapter.c
+  ${api_src_dir}/nabto_device_integration.c
   )
 
 if (HAVE_PTHREAD_H)
