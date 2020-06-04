@@ -34,7 +34,10 @@ class TestPlatformLibevent : public TestPlatform {
 
     virtual void init()
     {
-        test_platform_event_queue_init(&pl_, eventBase_);
+        eq_ = test_platform_event_queue_init(&pl_, eventBase_);
+        struct np_event_queue q = test_platform_event_queue_get_impl(eq_);
+        pl.eq = q.vptr;
+        pl.eqData = q.data;
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
         nm_libevent_init(&pl_, &libeventContext_, eventBase_);
@@ -77,6 +80,7 @@ class TestPlatformLibevent : public TestPlatform {
     struct np_platform pl_;
     struct event_base* eventBase_;
     struct nm_libevent_context libeventContext_;
+    struct test_platform_event_queue* eq_;
 
     std::promise<void> stopped_;
 };

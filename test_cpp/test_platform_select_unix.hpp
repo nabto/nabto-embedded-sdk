@@ -40,12 +40,13 @@ class TestPlatformSelectUnix : public TestPlatform {
 
     virtual void init()
     {
-        test_platform_event_queue_init(&pl_, eventBase_);
+        eq_ = test_platform_event_queue_init(eventBase_);
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
-        nm_select_unix_init(&selectCtx_, &pl_);
-        nm_unix_ts_init(&pl_);
-        nm_unix_dns_init(&pl_);
+        nm_select_unix_init(&selectCtx_);
+
+        struct np_timestamp ts = nm_unix_ts_create();
+        struct np_dns dns = nm_unix_dns_create();
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
     }
@@ -56,7 +57,7 @@ class TestPlatformSelectUnix : public TestPlatform {
         if (networkThread_) {
             networkThread_->join();
         }
-        test_platform_event_queue_deinit(&pl_);
+        test_platform_event_queue_deinit(eq_);
     }
 
     virtual void run()
@@ -104,6 +105,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     std::unique_ptr<std::thread> networkThread_;
     struct event_base* eventBase_;
     std::promise<void> stoppedPromise_;
+    struct test_platform_event_queue* eq_;
 };
 
 

@@ -47,7 +47,6 @@ struct nm_select_unix_tcp_read_context {
 
 struct np_tcp_socket {
     struct nn_llist_node tcpSocketsNode;
-    struct np_platform* pl;
     struct nm_select_unix* selectCtx;
     int fd;
 
@@ -60,7 +59,6 @@ struct np_tcp_socket {
 };
 
 struct nm_select_unix {
-    struct np_platform* pl;
     fd_set readFds;
     fd_set writeFds;
     int maxReadFd;
@@ -73,7 +71,7 @@ struct nm_select_unix {
 /**
  * Functions used from the API
  */
-np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl);
+np_error_code nm_select_unix_init(struct nm_select_unix* ctx);
 void nm_select_unix_close(struct nm_select_unix* ctx);
 
 int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms);

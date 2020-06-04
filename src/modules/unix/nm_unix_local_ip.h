@@ -5,6 +5,6 @@
 
 #include <string.h>
 
-void nm_unix_local_ip_init(struct np_platform* pl);
+struct np_local_ip nm_unix_local_ip_get_impl();
 
 #endif

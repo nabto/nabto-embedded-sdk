@@ -4,17 +4,21 @@
 
 #include <time.h>
 
-static uint32_t ts_now_ms(struct np_timestamp_impl* impl);
+static uint32_t ts_now_ms(void* data);
 
+static struct np_timestamp_functions vtable = {
+    .now_ms               = &ts_now_ms
+};
 
-
-void nm_unix_ts_init(struct np_platform* pl)
+struct np_timestamp nm_unix_ts_create()
 {
-    pl->ts.now_ms               = &ts_now_ms;
-    pl->tsImpl = NULL;
+    struct np_timestamp ts;
+    ts.vptr = &vtable;
+    ts.data = NULL;
+    return ts;
 }
 
-uint32_t ts_now_ms(struct np_timestamp_impl* pl)
+uint32_t ts_now_ms(void* data)
 {
     struct timespec spec;
     clock_gettime(CLOCK_REALTIME, &spec);

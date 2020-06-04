@@ -19,16 +19,17 @@ struct nm_event_queue;
 struct np_platform;
 
 struct select_unix_event_queue {
-    struct np_platform* pl;
     struct nabto_device_thread* queueThread;
     struct nabto_device_mutex* mutex;
     struct nabto_device_mutex* queueMutex;
     struct nabto_device_condition* condition;
     struct nm_event_queue eventQueue;
+    struct np_timestamp ts;
     bool stopped;
 };
 
-np_error_code select_unix_event_queue_init(struct select_unix_event_queue* eventQueue, struct np_platform* pl, struct nabto_device_mutex* mutex);
+struct np_event_queue select_unix_event_queue_init(struct select_unix_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts);
+
 void select_unix_event_queue_deinit(struct select_unix_event_queue* queue);
 
 void select_unix_event_queue_stop_blocking(struct select_unix_event_queue* queue);

@@ -23,7 +23,7 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-static np_error_code create(struct np_platform* pl, struct np_tcp_socket** sock);
+static np_error_code create(void* data, struct np_tcp_socket** sock);
 static void destroy(struct np_tcp_socket* sock);
 static void async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
 static void async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
@@ -35,22 +35,22 @@ static void is_connected(struct np_tcp_socket* sock);
 static void tcp_do_write(struct np_tcp_socket* sock);
 static void tcp_do_read(struct np_tcp_socket* sock);
 
-void nm_select_unix_tcp_init(struct nm_select_unix* ctx)
-{
-    struct np_platform* pl = ctx->pl;
-    pl->tcpData = ctx;
-    pl->tcp.create = &create;
-    pl->tcp.destroy = &destroy;
-    pl->tcp.async_connect = &async_connect;
-    pl->tcp.async_write = &async_write;
-    pl->tcp.async_read = &async_read;
-    pl->tcp.shutdown = &tcp_shutdown;
-    pl->tcp.abort = &tcp_abort;
-}
+static struct np_tcp_functions vtable = {
+    .create = &create,
+    .destroy = &destroy,
+    .async_connect = &async_connect,
+    .async_write = &async_write,
+    .async_read = &async_read,
+    .shutdown = &tcp_shutdown,
+    .abort = &tcp_abort
+};
 
-void nm_select_unix_tcp_deinit(struct nm_select_unix* ctx)
+struct np_tcp nm_select_unix_tcp_get_impl(struct nm_select_unix* ctx)
 {
-    // nothing was allocated in init
+    struct np_tcp obj;
+    obj.vptr = &vtable;
+    obj.data = ctx;
+    return obj;
 }
 
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
@@ -100,11 +100,10 @@ void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 }
 
 
-np_error_code create(struct np_platform* pl, struct np_tcp_socket** sock)
+np_error_code create(void* data, struct np_tcp_socket** sock)
 {
-    struct nm_select_unix* selectCtx = pl->tcpData;
+    struct nm_select_unix* selectCtx = data;
     struct np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
-    s->pl = pl;
     s->fd = -1;
     *sock = s;
     s->selectCtx = selectCtx;
@@ -126,7 +125,6 @@ void destroy(struct np_tcp_socket* sock)
 
 np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port)
 {
-    struct np_platform* pl = sock->pl;
     int s;
 
     int type = SOCK_STREAM;
@@ -238,7 +236,7 @@ np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address*
                 NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
                 return NABTO_EC_UNKNOWN;
             }
-            nm_select_unix_notify(pl->tcpData);
+            nm_select_unix_notify(sock->selectCtx);
         }
     }
     return NABTO_EC_AGAIN;

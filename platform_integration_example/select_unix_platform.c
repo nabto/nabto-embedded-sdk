@@ -1,12 +1,14 @@
 #include <api/nabto_device_platform.h>
 #include <api/nabto_device_threads.h>
-//#include <api/nabto_device_default_modules.h>
+#include <api/nabto_device_integration.h>
 
 #include "select_unix_event_queue.h"
 
 
 
 #include <modules/select_unix/nm_select_unix.h>
+#include <modules/select_unix/nm_select_unix_udp.h>
+#include <modules/select_unix/nm_select_unix_tcp.h>
 #include <modules/event_queue/nm_event_queue.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
@@ -16,6 +18,8 @@
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/unix/nm_unix_local_ip.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
+
+#include <platform/np_tcp.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -68,48 +72,35 @@ struct select_unix_platform
  * <platform/np_platform.h> for a list of modules required for a
  * platform.
  */
-np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_device_mutex* eventMutex)
+np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex)
 {
     struct select_unix_platform* platform = calloc(1, sizeof(struct select_unix_platform));
-    platform->pl = pl;
     platform->mutex = eventMutex;
     platform->stopped = false;
-    pl->platformData = platform;
 
-    // This platform integration uses the default communication buffer module.
-    nm_communication_buffer_init(pl);
+    nabto_device_integration_set_platform_data(device, platform);
 
-    // This platform integration uses mbedtls to provide the dtls
-    // server module.
-    nm_mbedtls_cli_init(pl);
+    nm_select_unix_init(&platform->selectUnix);
 
-    // This platform integration uses mbedtls to provide the dtls
-    // client module.
-    nm_mbedtls_srv_init(pl);
+    struct np_udp udpImpl = nm_select_unix_udp_get_impl(&platform->selectUnix);
+    struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->selectUnix);
+    //struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->selectUnix);
+    struct np_dns dnsImpl = nm_unix_dns_create();
+    struct np_timestamp timestampImpl = nm_unix_ts_create();
+    struct np_local_ip localIpImpl = nm_unix_local_ip_get_impl();
 
-    // This platform integration uses mbedtls to provide the random
-    // module.
-    nm_mbedtls_random_init(pl);
-
-    // This platform uses a default
-    nm_mdns_init(pl);
-
-    // This platform integration uses the unix timestamp module.
-    nm_unix_ts_init(pl);
-
-    // This platform integration uses the unix dns module.
-    nm_unix_dns_init(pl);
-
-    // This platform integration uses the unix based select module to provide the UDP and TCP abstractions.
-    nm_select_unix_init(&platform->selectUnix, pl);
-
-    // This platform integrations uses the unix module for getting local ips of the system
-    nm_unix_local_ip_init(pl);
+    nabto_device_integration_set_udp_impl(device, &udpImpl);
+    nabto_device_integration_set_tcp_impl(device, &tcpImpl);
+    nabto_device_integration_set_timestamp_impl(device, &timestampImpl);
+    nabto_device_integration_set_dns_impl(device, &dnsImpl);
+    nabto_device_integration_set_local_ip_impl(device, &localIpImpl);
 
     // This platform integration uses the following event queue. The
     // event queue executes events and allow events to be posted to
     // it.
-    select_unix_event_queue_init(&platform->eventQueue, pl, eventMutex);
+    struct np_event_queue eventQueueImpl = select_unix_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
+
+    nabto_device_integration_set_event_queue_impl(device, &eventQueueImpl);
 
     platform->networkThread = nabto_device_threads_create_thread();
     if (nabto_device_threads_run(platform->networkThread, network_thread, platform) != 0) {
@@ -121,13 +112,11 @@ np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_de
 /**
  * This function is called from nabto_device_free.
  */
-void nabto_device_deinit_platform(struct np_platform* pl)
+void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
-    struct select_unix_platform* platform = pl->platformData;
+
+    struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     select_unix_event_queue_deinit(&platform->eventQueue);
-
-    nm_mbedtls_random_deinit(pl);
-
     nabto_device_threads_free_thread(platform->networkThread);
     free(platform);
 }
@@ -136,9 +125,9 @@ void nabto_device_deinit_platform(struct np_platform* pl)
  * This function is called from nabto_device_stop or nabto_device_free
  * if the device is freed without being stopped first.
  */
-void nabto_device_platform_stop_blocking(struct np_platform* pl)
+void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
-    struct select_unix_platform* platform = pl->platformData;
+    struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     platform->stopped = true;
     nm_select_unix_notify(&platform->selectUnix);
     nabto_device_threads_join(platform->networkThread);

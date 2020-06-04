@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void nm_unix_dns_init(struct np_platform* pl);
+struct np_dns nm_unix_dns_create(void);
 
 #ifdef __cplusplus
 } //extern "C"

@@ -37,20 +37,27 @@ struct nm_dns_resolve_event {
     struct np_completion_event* completionEvent;
 };
 
-static np_error_code create_resolver(struct np_platform* pl, struct np_dns_resolver** resolver);
+static np_error_code create_resolver(void* data, struct np_dns_resolver** resolver);
 static void destroy_resolver(struct np_dns_resolver* resolver);
 static void stop_resolver(struct np_dns_resolver* resolver);
 static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve(struct np_dns_resolver* resolver, int family, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
-void nm_unix_dns_init(struct np_platform* pl)
+static struct np_dns_functions vtable = {
+    .create_resolver = &create_resolver,
+    .destroy_resolver = &destroy_resolver,
+    .stop = &stop_resolver,
+    .async_resolve_v4 = &async_resolve_v4,
+    .async_resolve_v6 = &async_resolve_v6
+};
+
+struct np_dns nm_unix_dns_create()
 {
-    pl->dns.create_resolver = &create_resolver;
-    pl->dns.destroy_resolver = &destroy_resolver;
-    pl->dns.stop = &stop_resolver;
-    pl->dns.async_resolve_v4 = &async_resolve_v4;
-    pl->dns.async_resolve_v6 = &async_resolve_v6;
+    struct np_dns dns;
+    dns.vptr = &vtable;
+    dns.data = NULL;
+    return dns;
 }
 
 np_error_code resolve_one_ec(struct nm_dns_resolve_event* event)
@@ -131,7 +138,7 @@ void* resolve_thread(void* data)
     }
 }
 
-np_error_code create_resolver(struct np_platform* pl, struct np_dns_resolver** resolver)
+np_error_code create_resolver(void* data, struct np_dns_resolver** resolver)
 {
     struct np_dns_resolver* r = calloc(1, sizeof(struct np_dns_resolver));
 

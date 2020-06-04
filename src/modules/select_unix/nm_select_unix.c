@@ -24,11 +24,8 @@ void nm_select_unix_build_fd_sets();
 /**
  * Api functions start
  */
-np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform *pl)
+np_error_code nm_select_unix_init(struct nm_select_unix* ctx)
 {
-    ctx->pl = pl;
-    pl->udpImpl = (struct np_udp_impl*)ctx;
-
     nn_llist_init(&ctx->udpSockets);
     nn_llist_init(&ctx->tcpSockets);
 
@@ -37,11 +34,6 @@ np_error_code nm_select_unix_init(struct nm_select_unix* ctx, struct np_platform
         return NABTO_EC_UNKNOWN;
     }
 
-    np_error_code ec = nm_select_unix_udp_init(ctx, pl);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-    nm_select_unix_tcp_init(ctx);
     return NABTO_EC_OK;
 }
 
@@ -91,8 +83,6 @@ void nm_select_unix_read(struct nm_select_unix* ctx, int nfds)
 
 void nm_select_unix_close(struct nm_select_unix* ctx)
 {
-    nm_select_unix_udp_deinit(ctx);
-    nm_select_unix_tcp_deinit(ctx);
     close(ctx->pipefd[0]);
     close(ctx->pipefd[1]);
 }
