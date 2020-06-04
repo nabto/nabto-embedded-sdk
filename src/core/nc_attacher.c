@@ -317,9 +317,30 @@ void resolve_close(void* data)
     }
 }
 
+char* state_to_text(enum nc_attacher_attach_state state) {
+    switch(state) {
+    case NC_ATTACHER_STATE_DNS:
+        return "NC_ATTACHER_STATE_DNS";
+    case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
+        return "NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST";
+    case NC_ATTACHER_STATE_RETRY_WAIT:
+        return "NC_ATTACHER_STATE_RETRY_WAIT";
+    case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
+        return "NC_ATTACHER_STATE_ACCESS_DENIED_WAIT";
+    case NC_ATTACHER_STATE_REDIRECT:
+        return "NC_ATTACHER_STATE_REDIRECT";
+    case NC_ATTACHER_STATE_ATTACHED:
+        return "NC_ATTACHER_STATE_ATTACHED";
+    case NC_ATTACHER_STATE_CLOSED:
+        return "NC_ATTACHER_STATE_CLOSED";
+    }
+    return "UNKNOWN STATE - ERROR";
+}
+        
+
 void handle_state_change(struct nc_attach_context* ctx)
 {
-    NABTO_LOG_TRACE(LOG, "State change to: %u", ctx->state);
+    NABTO_LOG_TRACE(LOG, "State change to: %s", state_to_text(ctx->state));
     switch(ctx->state) {
         case NC_ATTACHER_STATE_DNS:
             dns_start_resolve(ctx);
@@ -341,6 +362,7 @@ void handle_state_change(struct nc_attach_context* ctx)
             break;
         case NC_ATTACHER_STATE_ATTACHED:
             // Nothing to do when attached
+
             break;
     }
     if (ctx->stateListener != NULL) {
@@ -351,6 +373,7 @@ void handle_state_change(struct nc_attach_context* ctx)
 void dns_start_resolve(struct nc_attach_context* ctx)
 {
     nc_dns_multi_resolver_resolve(&ctx->dnsResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
+
 }
 
 void dns_resolved_callback(const np_error_code ec, void* data)
