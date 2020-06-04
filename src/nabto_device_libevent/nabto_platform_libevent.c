@@ -4,6 +4,7 @@
 #include "libevent_event_queue.h"
 
 #include <modules/libevent/nm_libevent.h>
+#include <modules/libevent/nm_libevent_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mdns/nm_mdns.h>
@@ -68,7 +69,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct np_udp udp = nm_libevent_create_udp(&platform->libeventContext);
     struct np_tcp tcp = nm_libevent_create_tcp(&platform->libeventContext);
     struct np_timestamp timestamp = nm_libevent_create_timestamp(&platform->libeventContext);
-    struct np_dns dns = nm_libevent_create_dns(&platform->libeventContext);
+    struct np_dns dns = nm_libevent_dns_create_impl(&platform->libeventContext);
     struct np_local_ip localIp = nm_libevent_create_local_ip(&platform->libeventContext);
 
     // Create an event queue which is based on libevent.

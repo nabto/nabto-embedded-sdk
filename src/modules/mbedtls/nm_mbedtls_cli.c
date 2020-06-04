@@ -3,7 +3,6 @@
 #include "nm_mbedtls_timer.h"
 
 #include <platform/np_logging.h>
-#include <platform/np_udp.h>
 
 #include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>

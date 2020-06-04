@@ -5,7 +5,7 @@
 
 #include <platform/np_ip_address.h>
 #include <platform/np_error_code.h>
-#include <platform/np_tcp.h>
+#include <platform/interfaces/np_tcp.h>
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
 

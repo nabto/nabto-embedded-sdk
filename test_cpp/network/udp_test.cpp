@@ -27,7 +27,7 @@ class UdpEchoClientTest {
     }
 
     void start(uint16_t port) {
-        BOOST_TEST(pl_->udp.create(pl_->udpImpl, &socket_) == NABTO_EC_OK);
+        BOOST_TEST(np_udp_create(&pl_->udp, &socket_) == NABTO_EC_OK);
 
         uint8_t addr[] = { 0x7F, 0x00, 0x00, 0x01 };
 
@@ -68,7 +68,7 @@ class UdpEchoClientTest {
     void startRecv()
     {
         np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::received, this);
-        pl_->udp.async_recv_wait(socket_, &completionEvent_);
+        np_udp_async_recv_wait(&pl_->udp, socket_, &completionEvent_);
     }
 
     static void received(np_error_code ec, void* data)
@@ -81,7 +81,7 @@ class UdpEchoClientTest {
         size_t recvLength;
 
         BOOST_TEST(ec == NABTO_EC_OK);
-        BOOST_TEST(client->pl_->udp.recv_from(client->socket_, &ep, buffer, bufferSize, &recvLength) == NABTO_EC_OK);
+        BOOST_TEST(np_udp_recv_from(&client->pl_->udp, client->socket_, &ep, buffer, bufferSize, &recvLength) == NABTO_EC_OK);
 
         auto sentData = lib::span<const uint8_t>(client->data_.data(), client->data_.size());
         auto receivedData = lib::span<const uint8_t>(buffer, recvLength);
@@ -90,7 +90,7 @@ class UdpEchoClientTest {
     }
 
     void end() {
-        pl_->udp.destroy(socket_);
+        np_udp_destroy(&pl_->udp, socket_);
         tp_.stop();
     }
 

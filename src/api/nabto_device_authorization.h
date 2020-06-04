@@ -1,7 +1,7 @@
 #ifndef NABTO_DEVICE_AUTHORIZATION_H
 #define NABTO_DEVICE_AUTHORIZATION_H
 
-#include <platform/np_event_queue.h>
+#include <platform/interfaces/np_event_queue.h>
 #include <platform/np_authorization.h>
 
 #include <nn/llist.h>

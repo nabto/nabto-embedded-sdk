@@ -4,9 +4,7 @@
 #include "nm_libevent_mdns.h"
 #include "nm_libevent_get_local_ip.h"
 
-#include <platform/np_platform.h>
 #include <platform/np_logging.h>
-#include <platform/np_event_queue.h>
 #include <platform/np_completion_event.h>
 
 #include <event2/util.h>

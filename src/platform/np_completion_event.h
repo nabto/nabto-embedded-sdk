@@ -1,7 +1,7 @@
 #ifndef _NP_COMPLETION_EVENT_H_
 #define _NP_COMPLETION_EVENT_H_
 
-#include "np_event_queue.h"
+#include "interfaces/np_event_queue.h"
 #include "np_error_code.h"
 
 #ifdef __cplusplus

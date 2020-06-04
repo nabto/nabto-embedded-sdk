@@ -76,7 +76,7 @@ static void sct_deinit(struct nc_attach_context* ctx);
 /*****************
  * API functions *
  *****************/
-np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, struct np_dns_resolver* dnsResolver, nc_attacher_event_listener listener, void* listenerData)
+np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
     np_error_code ec;
 
@@ -121,7 +121,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
-    nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, dnsResolver);
+    nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
 
     return ec;
 }
@@ -155,7 +155,7 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         np_completion_event_deinit(&ctx->senderCompletionEvent);
         np_completion_event_deinit(&ctx->resolveCompletionEvent);
 
-        nc_dns_multi_resolver_deinit(&ctx->dnsResolver);
+        nc_dns_multi_resolver_deinit(&ctx->dnsMultiResolver);
     }
 }
 
@@ -350,7 +350,7 @@ void handle_state_change(struct nc_attach_context* ctx)
 
 void dns_start_resolve(struct nc_attach_context* ctx)
 {
-    nc_dns_multi_resolver_resolve(&ctx->dnsResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
+    nc_dns_multi_resolver_resolve(&ctx->dnsMultiResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
 }
 
 void dns_resolved_callback(const np_error_code ec, void* data)

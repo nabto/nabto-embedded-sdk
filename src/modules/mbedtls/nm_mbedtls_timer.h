@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include <platform/np_platform.h>
-#include <platform/np_timestamp.h>
+#include <platform/interfaces/np_timestamp.h>
 
 typedef void (*nm_mbedtls_timer_callback)(const np_error_code ec, void* data);
 

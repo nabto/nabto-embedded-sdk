@@ -4,8 +4,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_platform.h>
 #include <platform/np_error_code.h>
-#include <platform/np_tcp.h>
-#include <platform/np_event_queue.h>
+#include <platform/interfaces/np_tcp.h>
 #include <platform/np_completion_event.h>
 
 #include <event2/bufferevent.h>

@@ -3,7 +3,7 @@
 #include <core/nc_packet.h>
 
 #include <platform/np_logging.h>
-#include <platform/np_event_queue.h>
+#include <platform/interfaces/np_event_queue.h>
 
 #include <stdlib.h>
 

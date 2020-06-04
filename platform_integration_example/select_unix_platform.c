@@ -19,8 +19,6 @@
 #include <modules/unix/nm_unix_local_ip.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
-#include <platform/np_tcp.h>
-
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -58,6 +56,8 @@ struct select_unix_platform
      */
     struct select_unix_event_queue eventQueue;
 
+    struct nm_unix_dns_resolver dnsResolver;
+
     /**
      * Stopped bit if true the platform has been stopped and the
      * network thread should stop its event loop.
@@ -82,10 +82,12 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     nm_select_unix_init(&platform->selectUnix);
 
+    nm_unix_dns_resolver_init(&platform->dnsResolver);
+
     struct np_udp udpImpl = nm_select_unix_udp_get_impl(&platform->selectUnix);
     struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->selectUnix);
     //struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->selectUnix);
-    struct np_dns dnsImpl = nm_unix_dns_create();
+    struct np_dns dnsImpl = nm_unix_dns_create(&platform->dnsResolver);
     struct np_timestamp timestampImpl = nm_unix_ts_create();
     struct np_local_ip localIpImpl = nm_unix_local_ip_get_impl();
 

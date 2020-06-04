@@ -3,7 +3,7 @@
 #include "nm_libevent.h"
 
 #include <platform/np_logging.h>
-#include <platform/np_local_ip.h>
+#include <platform/interfaces/np_local_ip.h>
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>

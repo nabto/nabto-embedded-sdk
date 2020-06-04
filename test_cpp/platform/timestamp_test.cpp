@@ -1,7 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
 
-#include <platform/np_timestamp.h>
+#include <platform/interfaces/np_timestamp.h>
 
 #include <test_platform.hpp>
 

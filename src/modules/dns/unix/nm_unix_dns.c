@@ -19,13 +19,6 @@
  * A resolver has a list of events. Each event is a hostname which is
  * either resolved to v4 or v6 addresses
  */
-struct np_dns_resolver {
-    pthread_t thread;
-    pthread_mutex_t mutex;
-    pthread_cond_t condition;
-    struct nn_llist events;
-    bool stopped;
-};
 
 struct nm_dns_resolve_event {
     struct nn_llist_node eventsNode;
@@ -37,26 +30,21 @@ struct nm_dns_resolve_event {
     struct np_completion_event* completionEvent;
 };
 
-static np_error_code create_resolver(void* data, struct np_dns_resolver** resolver);
-static void destroy_resolver(struct np_dns_resolver* resolver);
-static void stop_resolver(struct np_dns_resolver* resolver);
-static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
-static void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
-static void async_resolve(struct np_dns_resolver* resolver, int family, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void stop_resolver(struct nm_unix_dns_resolver* resolver);
+static void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve(struct nm_unix_dns_resolver* resolver, int family, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
 static struct np_dns_functions vtable = {
-    .create_resolver = &create_resolver,
-    .destroy_resolver = &destroy_resolver,
-    .stop = &stop_resolver,
     .async_resolve_v4 = &async_resolve_v4,
     .async_resolve_v6 = &async_resolve_v6
 };
 
-struct np_dns nm_unix_dns_create()
+struct np_dns nm_unix_dns_create(struct nm_unix_dns_resolver* resolver)
 {
     struct np_dns dns;
     dns.vptr = &vtable;
-    dns.data = NULL;
+    dns.data = resolver;
     return dns;
 }
 
@@ -118,7 +106,7 @@ void resolve_one(struct nm_dns_resolve_event* event)
 
 void* resolve_thread(void* data)
 {
-    struct np_dns_resolver* resolver = data;
+    struct nm_unix_dns_resolver* resolver = data;
     while (true) {
         pthread_mutex_lock(&resolver->mutex);
         if (resolver->stopped) {
@@ -138,28 +126,24 @@ void* resolve_thread(void* data)
     }
 }
 
-np_error_code create_resolver(void* data, struct np_dns_resolver** resolver)
+np_error_code nm_unix_dns_resolver_init(struct nm_unix_dns_resolver* r)
 {
-    struct np_dns_resolver* r = calloc(1, sizeof(struct np_dns_resolver));
-
     nn_llist_init(&r->events);
 
     pthread_mutex_init(&r->mutex, NULL);
     pthread_cond_init(&r->condition, NULL);
     pthread_create(&r->thread, NULL, &resolve_thread, r);
-    *resolver = r;
     return NABTO_EC_OK;
 }
 
-void destroy_resolver(struct np_dns_resolver* resolver)
+void nm_unix_dns_resolver_deinit(struct nm_unix_dns_resolver* resolver)
 {
     stop_resolver(resolver);
     pthread_mutex_destroy(&resolver->mutex);
     nn_llist_deinit(&resolver->events);
-    free(resolver);
 }
 
-void stop_resolver(struct np_dns_resolver* resolver)
+void stop_resolver(struct nm_unix_dns_resolver* resolver)
 {
     if (resolver->stopped) {
         return;
@@ -180,17 +164,19 @@ void stop_resolver(struct np_dns_resolver* resolver)
     pthread_join(resolver->thread, NULL);
 }
 
-void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
+    struct nm_unix_dns_resolver* resolver = data;
     async_resolve(resolver, AF_INET, host, ips, ipsSize, ipsResolved, completionEvent);
 }
 
-void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
+    struct nm_unix_dns_resolver* resolver = data;
     async_resolve(resolver, AF_INET6, host, ips, ipsSize, ipsResolved, completionEvent);
 }
 
-void async_resolve(struct np_dns_resolver* resolver, int family, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+void async_resolve(struct nm_unix_dns_resolver* resolver, int family, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
     if (resolver->stopped) {
         np_completion_event_resolve(completionEvent, NABTO_EC_STOPPED);

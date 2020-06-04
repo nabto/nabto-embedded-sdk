@@ -1,11 +1,9 @@
 #ifndef NP_UDP_H
 #define NP_UDP_H
 
-#include <core/nc_protocol_defines.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_error_code.h>
 #include <platform/np_communication_buffer.h>
-#include <platform/np_event_queue.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,6 +91,9 @@ struct np_udp_functions {
      * The completion event shall be resolved when a result for the
      * operation is available.
      *
+     * If the function is not implemented properly it needs to resolve
+     * the completion event with NABTO_EC_NOT_IMPLEMENTED.
+     *
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
      */
@@ -105,6 +106,9 @@ struct np_udp_functions {
      *
      * The completion event shall be resolved when a result for the
      * operation is available.
+     *
+     * If the function is not implemented properly it needs to resolve
+     * the completion event with NABTO_EC_NOT_IMPLEMENTED.
      *
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
@@ -154,7 +158,7 @@ struct np_udp_functions {
      * @param completionEvent  The completion event to be resolved
      *                         when data is ready to be received from the socket.
      */
-    void (*async_recv_wait)(struct np_udp_socket* socket, struct np_completion_event* completionEvent);
+    void (*async_recv_wait)(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
     /**
      * Recv an UDP packet from a socket.

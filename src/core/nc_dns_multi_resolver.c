@@ -1,15 +1,14 @@
 #include "nc_dns_multi_resolver.h"
 
-#include <platform/np_dns.h>
+#include <platform/np_dns_wrapper.h>
 #include <platform/np_platform.h>
 
 static void dns_resolved_callback_v4(const np_error_code ec, void* data);
 static void dns_resolved_callback_v6(const np_error_code ec, void* data);
 static void dns_resolved(struct nc_dns_multi_resolver_context* ctx);
 
-np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_multi_resolver_context* ctx, struct np_dns_resolver* resolver)
+np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_multi_resolver_context* ctx)
 {
-    ctx->resolver = resolver;
     ctx->pl = pl;
     np_error_code ec;
     ec = np_completion_event_init(pl, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx);
@@ -40,8 +39,8 @@ void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, co
     ctx->v6IpsSize = 0;
     ctx->v4Ec = NABTO_EC_OPERATION_IN_PROGRESS;
     ctx->v6Ec = NABTO_EC_OPERATION_IN_PROGRESS;
-    pl->dns.async_resolve_v4(ctx->resolver, host, ctx->v4Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v4IpsSize, &ctx->v4CompletionEvent);
-    pl->dns.async_resolve_v6(ctx->resolver, host, ctx->v6Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v6IpsSize, &ctx->v6CompletionEvent);
+    np_dns_async_resolve_v4(&pl->dns, host, ctx->v4Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v4IpsSize, &ctx->v4CompletionEvent);
+    np_dns_async_resolve_v6(&pl->dns, host, ctx->v6Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v6IpsSize, &ctx->v6CompletionEvent);
 }
 
 void dns_resolved_callback_v4(const np_error_code ec, void* data)

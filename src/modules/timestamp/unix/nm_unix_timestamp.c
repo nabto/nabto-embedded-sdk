@@ -1,6 +1,6 @@
 #include "nm_unix_timestamp.h"
 #include <platform/np_logging.h>
-#include <platform/np_timestamp.h>
+#include <platform/interfaces/np_timestamp.h>
 
 #include <time.h>
 

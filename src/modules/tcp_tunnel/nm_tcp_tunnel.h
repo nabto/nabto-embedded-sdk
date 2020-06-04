@@ -2,7 +2,7 @@
 #define _NM_TCP_TUNNEL_H_
 
 #include <platform/np_platform.h>
-#include <platform/np_tcp.h>
+#include <platform/interfaces/np_tcp.h>
 
 #include <core/nc_stream_manager.h>
 #include <core/nc_device.h>

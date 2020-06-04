@@ -1,4 +1,4 @@
-#include "np_timestamp.h"
+#include "interfaces/np_timestamp.h"
 #include "np_platform.h"
 
 uint32_t np_timestamp_now_ms(struct np_platform* pl)

@@ -2,7 +2,7 @@
 #define NM_SELECT_UNIX_H
 
 #include <nabto_types.h>
-#include <platform/np_udp.h>
+//#include <platform/interfaces/np_udp.h>
 #include <platform/np_platform.h>
 
 #include <sys/select.h>

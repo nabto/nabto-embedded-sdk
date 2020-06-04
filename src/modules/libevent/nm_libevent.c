@@ -9,6 +9,7 @@
 #include <platform/np_platform.h>
 #include <event2/event.h>
 #include <event2/thread.h>
+#include <event2/dns.h>
 
 #if defined(HAVE_WINSOCK2_H)
 #include <winsock2.h>
@@ -46,6 +47,12 @@ void nm_libevent_global_deinit()
 void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase)
 {
     ctx->eventBase = eventBase;
+    ctx->dnsBase = evdns_base_new(eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);
+}
+
+void nm_libevent_deinit(struct nm_libevent_context* ctx)
+{
+    evdns_base_free(ctx->dnsBase, 1);
 }
 
 struct np_udp nm_libevent_create_udp(struct nm_libevent_context* ctx)
@@ -68,14 +75,6 @@ struct np_timestamp nm_libevent_create_timestamp(struct nm_libevent_context* ctx
 {
     struct np_timestamp obj;
     obj.vptr = nm_libevent_timestamp_functions();
-    obj.data = ctx;
-    return obj;
-}
-
-struct np_dns nm_libevent_create_dns(struct nm_libevent_context* ctx)
-{
-    struct np_dns obj;
-    obj.vptr = nm_libevent_dns_functions();
     obj.data = ctx;
     return obj;
 }

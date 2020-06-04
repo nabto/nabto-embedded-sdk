@@ -6,18 +6,18 @@
  * the core.
  */
 
-#include <platform/np_timestamp.h>
-#include <platform/np_event_queue.h>
-#include <platform/np_udp.h>
+#include <platform/interfaces/np_timestamp.h>
+#include <platform/interfaces/np_event_queue.h>
+#include <platform/interfaces/np_udp.h>
 #include <platform/np_communication_buffer.h>
-#include <platform/np_dns.h>
+#include <platform/interfaces/np_dns.h>
 #include <platform/np_dtls_cli.h>
 #include <platform/np_dtls_srv.h>
-#include <platform/np_tcp.h>
+#include <platform/interfaces/np_tcp.h>
 #include <platform/np_mdns.h>
 #include <platform/np_authorization.h>
 #include <platform/np_random.h>
-#include <platform/np_local_ip.h>
+#include <platform/interfaces/np_local_ip.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,12 +36,10 @@ struct np_platform {
     void* eqData;  // Custom data for the event queue module
 
     // UDP Socket module
-    struct np_udp_functions udp;
-    void* udpImpl;  // Custom data for the udp module object
+    struct np_udp udp;
 
     // DNS resolver module
-    struct np_dns_functions dns;
-    void* dnsData;  // Custom data for the dns module.
+    struct np_dns dns;
 
     // Tcp socket module
     struct np_tcp_functions tcp;

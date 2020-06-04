@@ -1,4 +1,4 @@
-#include "np_event_queue.h"
+#include "interfaces/np_event_queue.h"
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 

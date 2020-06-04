@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include <platform/np_platform.h>
-#include <platform/np_timestamp.h>
+//#include <platform/np_timestamp.h>
 
 NabtoDeviceLogCallback logCallback;
 void* userData;

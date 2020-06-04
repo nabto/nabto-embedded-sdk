@@ -1,7 +1,7 @@
 #include "nm_libevent_timestamp.h"
 
 #include <platform/np_platform.h>
-#include <platform/np_timestamp.h>
+#include <platform/interfaces/np_timestamp.h>
 
 #include <event2/event.h>
 

@@ -3,7 +3,7 @@
 #include <event2/dns.h>
 
 #include <platform/np_ip_address.h>
-#include <platform/np_dns.h>
+#include <platform/interfaces/np_dns.h>
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
 
@@ -11,10 +11,6 @@
 #include <string.h>
 
 #define DNS_RECORDS_SIZE 4
-
-struct np_dns_resolver {
-    struct evdns_base* dnsBase;
-};
 
 struct nm_dns_request {
     struct np_platform* pl;
@@ -29,53 +25,26 @@ struct nm_dns_request {
 static void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg);
 
 
-static np_error_code create_resolver(void* data, struct np_dns_resolver** resolver);
-static void destroy_resolver(struct np_dns_resolver* resolver);
-static void stop_resolver(struct np_dns_resolver* resolver);
-static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
-static void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
-static struct np_dns_functions dns_vtable = {
-    &create_resolver,
-    &destroy_resolver,
-    &stop_resolver,
+static struct np_dns_functions vtable = {
     &async_resolve_v4,
     &async_resolve_v6
 };
 
-const struct np_dns_functions* nm_libevent_dns_functions()
+struct np_dns nm_libevent_dns_create_impl(struct nm_libevent_context* ctx)
 {
-    return &dns_vtable;
+    struct np_dns obj;
+    obj.vptr = &vtable;
+    obj.data = ctx;
+    return obj;
 }
 
-np_error_code create_resolver(void* data, struct np_dns_resolver** resolver)
+static void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
     struct nm_libevent_context* ctx = data;
-
-    struct np_dns_resolver* r = calloc(1, sizeof(struct np_dns_resolver));
-    r->dnsBase = evdns_base_new(ctx->eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);
-    *resolver = r;
-    return NABTO_EC_OK;
-}
-
-void destroy_resolver(struct np_dns_resolver* resolver)
-{
-    stop_resolver(resolver);
-    free(resolver);
-}
-
-void stop_resolver(struct np_dns_resolver* resolver)
-{
-    if (resolver->dnsBase == NULL) {
-        return;
-    }
-    evdns_base_free(resolver->dnsBase, 1);
-    resolver->dnsBase = NULL;
-}
-
-static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
-{
-    struct evdns_base* dnsBase = resolver->dnsBase;
+    struct evdns_base* dnsBase = ctx->dnsBase;
     int flags = 0;
 
     struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
@@ -86,9 +55,10 @@ static void async_resolve_v4(struct np_dns_resolver* resolver, const char* host,
     dnsRequest->req = evdns_base_resolve_ipv4(dnsBase, host, flags, dns_cb, dnsRequest);
 }
 
-static void async_resolve_v6(struct np_dns_resolver* resolver, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+static void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct evdns_base* dnsBase = resolver->dnsBase;
+    struct nm_libevent_context* ctx = data;
+    struct evdns_base* dnsBase = ctx->dnsBase;
     int flags = 0;
 
     struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
