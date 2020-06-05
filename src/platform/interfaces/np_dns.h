@@ -28,14 +28,14 @@ struct np_dns_functions {
      * The completion event shall be resolved when the dns resolution
      * has either failed or succeeded.
      *
-     * @param data  Opaque data for the implementation.
+     * @param obj  Dns implemetation object.
      * @param host  The host to resolve.
      * @param ips  The array to store the resolved ips in.
      * @param ipsSize  The size of the ips array.
      * @param ipsResolved  The number of ips put in the the ips array.
      * @param completionEvent  The completion event.
      */
-    void (*async_resolve_v4)(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+    void (*async_resolve_v4)(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
     /**
      * Resolve ipv6 addresses for the host name.
@@ -43,14 +43,14 @@ struct np_dns_functions {
      * The completion event shall be resolved when the dns resolution
      * has either failed or succeeded.
      *
-     * @param data  Opaque data for the implementation.
+     * @param obj  Dns implementation object.
      * @param host  The host to resolve.
      * @param ips  The array to store the resolved ips in.
      * @param ipsSize  The size of the ips array.
      * @param ipsResolved  The number of ips put in the the ips array.
      * @param completionEvent  The completion event.
      */
-    void (*async_resolve_v6)(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+    void (*async_resolve_v6)(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
 };
 

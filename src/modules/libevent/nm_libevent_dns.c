@@ -25,8 +25,8 @@ struct nm_dns_request {
 static void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg);
 
 
-static void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
-static void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
 static struct np_dns_functions vtable = {
     &async_resolve_v4,
@@ -41,9 +41,9 @@ struct np_dns nm_libevent_dns_create_impl(struct nm_libevent_context* ctx)
     return obj;
 }
 
-static void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct nm_libevent_context* ctx = data;
+    struct nm_libevent_context* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
     int flags = 0;
 
@@ -55,9 +55,9 @@ static void async_resolve_v4(void* data, const char* host, struct np_ip_address*
     dnsRequest->req = evdns_base_resolve_ipv4(dnsBase, host, flags, dns_cb, dnsRequest);
 }
 
-static void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct nm_libevent_context* ctx = data;
+    struct nm_libevent_context* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
     int flags = 0;
 

@@ -31,8 +31,8 @@ struct nm_dns_resolve_event {
 };
 
 static void stop_resolver(struct nm_unix_dns_resolver* resolver);
-static void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
-static void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+static void async_resolve_v6(struct np_dns*obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve(struct nm_unix_dns_resolver* resolver, int family, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
 static struct np_dns_functions vtable = {
@@ -164,15 +164,15 @@ void stop_resolver(struct nm_unix_dns_resolver* resolver)
     pthread_join(resolver->thread, NULL);
 }
 
-void async_resolve_v4(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct nm_unix_dns_resolver* resolver = data;
+    struct nm_unix_dns_resolver* resolver = obj->data;
     async_resolve(resolver, AF_INET, host, ips, ipsSize, ipsResolved, completionEvent);
 }
 
-void async_resolve_v6(void* data, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
+void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct nm_unix_dns_resolver* resolver = data;
+    struct nm_unix_dns_resolver* resolver = obj->data;
     async_resolve(resolver, AF_INET6, host, ips, ipsSize, ipsResolved, completionEvent);
 }
 

@@ -47,7 +47,7 @@ class DnsTestV4 : public DnsTest {
 
     void start()
     {
-        pl_->dns.async_resolve_v4(resolver_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
+        np_dns_async_resolve_v4(&pl_->dns, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
         tp_.run();
     }
 
@@ -125,7 +125,7 @@ class DnsTestNoSuchDomain : public DnsTest {
 
     void start()
     {
-        pl_->dns.async_resolve_v4(resolver_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
+        np_dns_async_resolve_v4(&pl_->dns, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
         tp_.run();
     }
 
