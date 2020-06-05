@@ -3,6 +3,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
 #include <platform/np_udp_wrapper.h>
+#include <platform/np_local_ip_wrapper.h>
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_MDNS
@@ -185,7 +186,7 @@ void nm_mdns_update_local_ips(struct np_mdns_context* mdns)
 {
     struct np_platform* pl = mdns->pl;
     struct np_ip_address ips[MAX_LOCAL_IPS];
-    size_t ipsFound = pl->localIp.get_local_ips(pl->localIpData, ips, MAX_LOCAL_IPS);
+    size_t ipsFound = np_local_ip_get_local_ips(&pl->localIp, ips, MAX_LOCAL_IPS);
 
     mdns->localIpsSize = ipsFound;
     for(int i = 0; i < ipsFound; i++) {

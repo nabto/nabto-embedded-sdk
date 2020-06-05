@@ -2,6 +2,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_timestamp_wrapper.h>
+#include <platform/np_event_queue_wrapper.h>
 #include <string.h>
 
 np_error_code nm_mbedtls_timer_init(struct nm_mbedtls_timer* timer, struct np_platform* pl, nm_mbedtls_timer_callback cb, void* userData)

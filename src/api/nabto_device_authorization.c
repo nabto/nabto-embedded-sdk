@@ -3,6 +3,7 @@
 #include <platform/np_error_code.h>
 
 #include <platform/np_logging.h>
+#include <platform/np_event_queue_wrapper.h>
 
 #include "nabto_device_authorization.h"
 #include "nabto_device_defines.h"

@@ -31,8 +31,7 @@ struct np_platform {
     struct np_timestamp timestamp;
 
     // Event Queue module
-    struct np_event_queue_functions eq;
-    void* eqData;  // Custom data for the event queue module
+    struct np_event_queue eq;
 
     // UDP Socket module
     struct np_udp udp;
@@ -41,20 +40,18 @@ struct np_platform {
     struct np_dns dns;
 
     // Tcp socket module
-    struct np_tcp_functions tcp;
-    void* tcpData;  // Custom data for the TCP module.
-
-    // Random module
-    struct np_random_module random;
-    void* randomData; // Custom data for the random module.
+    struct np_tcp tcp;
 
     // Local ip module.
-    struct np_local_ip_functions localIp;
-    void* localIpData;  // Custom data for the local ip module.
+    struct np_local_ip localIp;
 
 
     // The following modules are not final yet and they are subject to
     // changes in the future.
+
+    // Random module
+    struct np_random_module random;
+    void* randomData; // Custom data for the random module.
 
     // Communication buffer module
     struct np_communication_buffer_module buf;

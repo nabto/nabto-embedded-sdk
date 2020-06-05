@@ -1,5 +1,7 @@
 #include "np_completion_event.h"
 
+#include <platform/np_event_queue_wrapper.h>
+
 #include <stdlib.h>
 #include <string.h>
 

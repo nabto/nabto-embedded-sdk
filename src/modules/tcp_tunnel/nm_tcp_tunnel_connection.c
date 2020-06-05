@@ -1,6 +1,7 @@
 #include "nm_tcp_tunnel.h"
 #include <core/nc_stream.h>
 #include <platform/np_logging.h>
+#include <platform/np_tcp_wrapper.h>
 
 #include <stdlib.h>
 
@@ -49,7 +50,7 @@ struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new()
 void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    pl->tcp.destroy(connection->socket);
+    np_tcp_destroy(&pl->tcp, connection->socket);
     np_completion_event_deinit(&connection->connectCompletionEvent);
     np_completion_event_deinit(&connection->readCompletionEvent);
     np_completion_event_deinit(&connection->writeCompletionEvent);
@@ -63,7 +64,7 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
 {
     connection->pl = service->tunnels->device->pl;
     struct np_platform* pl = connection->pl;
-    np_error_code ec = pl->tcp.create(pl->tcpData, &connection->socket);
+    np_error_code ec = np_tcp_create(&pl->tcp, &connection->socket);
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Cannot create tcp connection");
         return ec;
@@ -132,7 +133,7 @@ void nm_tcp_tunnel_connection_stop_from_manager(struct nm_tcp_tunnel_connection*
 void start_connect(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    pl->tcp.async_connect(connection->socket, &connection->address, connection->port, &connection->connectCompletionEvent);
+    np_tcp_async_connect(&pl->tcp, connection->socket, &connection->address, connection->port, &connection->connectCompletionEvent);
 }
 
 void connect_callback(np_error_code ec, void* userData)
@@ -156,7 +157,7 @@ void connected(struct nm_tcp_tunnel_connection* connection)
 void start_tcp_read(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    pl->tcp.async_read(connection->socket, connection->tcpRecvBuffer, connection->tcpRecvBufferSize, &connection->readLength, &connection->readCompletionEvent);
+    np_tcp_async_read(&pl->tcp, connection->socket, connection->tcpRecvBuffer, connection->tcpRecvBufferSize, &connection->readLength, &connection->readCompletionEvent);
 }
 
 void tcp_readen(np_error_code ec, void* userData)
@@ -242,7 +243,7 @@ void close_tcp(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
     // inform tcp that no more data is written to the socket.
-    pl->tcp.shutdown(connection->socket);
+    np_tcp_shutdown(&pl->tcp, connection->socket);
     connection->streamReadEnded = true;
     is_ended(connection);
 }
@@ -250,7 +251,7 @@ void close_tcp(struct nm_tcp_tunnel_connection* connection)
 void start_tcp_write(struct nm_tcp_tunnel_connection* connection, size_t transferred)
 {
     struct np_platform* pl = connection->pl;
-    pl->tcp.async_write(connection->socket, connection->streamRecvBuffer, transferred, &connection->writeCompletionEvent);
+    np_tcp_async_write(&pl->tcp, connection->socket, connection->streamRecvBuffer, transferred, &connection->writeCompletionEvent);
 }
 
 void tcp_written(const np_error_code ec, void* userData)
@@ -271,7 +272,7 @@ void abort_connection(struct nm_tcp_tunnel_connection* connection)
 {
     // close stream and tcp and end it all.
     struct np_platform* pl = connection->pl;
-    pl->tcp.abort(connection->socket);
+    np_tcp_abort(&pl->tcp, connection->socket);
     if (connection->stream) {
         nc_stream_abort(connection->stream);
         connection->stream = NULL;

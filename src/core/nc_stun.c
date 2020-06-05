@@ -1,6 +1,8 @@
 #include "nc_stun.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_timestamp_wrapper.h>
+#include <platform/np_event_queue_wrapper.h>
 
 #include <string.h>
 
@@ -29,6 +31,7 @@ uint32_t nc_stun_get_stamp(void* data)
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
     return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
+
 void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
                  const char* fmt, va_list args, void* data)
 {

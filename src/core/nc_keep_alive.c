@@ -1,6 +1,7 @@
 #include "nc_keep_alive.h"
 #include <platform/interfaces/np_event_queue.h>
 #include <platform/np_logging.h>
+#include <platform/np_event_queue_wrapper.h>
 #include <core/nc_packet.h>
 
 #include <string.h>

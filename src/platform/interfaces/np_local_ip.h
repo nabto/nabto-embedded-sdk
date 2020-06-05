@@ -1,6 +1,9 @@
 #ifndef _NP_SYSTEM_INFORMATION_H_
 #define _NP_SYSTEM_INFORMATION_H_
 
+#include <stddef.h>
+#include <platform/np_ip_address.h>
+
 struct np_local_ip_functions;
 
 struct np_local_ip {

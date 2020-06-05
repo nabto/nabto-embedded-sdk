@@ -20,8 +20,7 @@ void nabto_device_integration_set_udp_impl(struct nabto_device_context* device, 
 
 void nabto_device_integration_set_tcp_impl(struct nabto_device_context* device, struct np_tcp* obj)
 {
-    device->pl.tcp = *(obj->vptr);
-    device->pl.tcpData = obj->data;
+    device->pl.tcp = *obj;
 }
 
 void nabto_device_integration_set_timestamp_impl(struct nabto_device_context* device, struct np_timestamp* obj)
@@ -36,12 +35,10 @@ void nabto_device_integration_set_dns_impl(struct nabto_device_context* device, 
 
 void nabto_device_integration_set_event_queue_impl(struct nabto_device_context* device, struct np_event_queue* obj)
 {
-    device->pl.eq = *(obj->vptr);
-    device->pl.eqData = obj->data;
+    device->pl.eq = *obj;
 }
 
 void nabto_device_integration_set_local_ip_impl(struct nabto_device_context* device, struct np_local_ip* obj)
 {
-    device->pl.localIp = *(obj->vptr);
-    device->pl.localIpData = obj->data;
+    device->pl.localIp = *obj;
 }

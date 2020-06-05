@@ -2,15 +2,19 @@
 #define _NP_TCP_H_
 
 #include <platform/np_ip_address.h>
+#include <platform/np_error_code.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct np_platform;
 struct np_completion_event;
 
+/**
+ * opaque pointer which should be defined by the implementor.
+ */
 struct np_tcp_socket;
+
 struct np_tcp_functions;
 
 

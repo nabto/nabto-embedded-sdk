@@ -4,6 +4,8 @@
 
 #include <platform/np_logging.h>
 #include <platform/interfaces/np_event_queue.h>
+#include <platform/np_timestamp_wrapper.h>
+#include <platform/np_event_queue_wrapper.h>
 
 #include <stdlib.h>
 
