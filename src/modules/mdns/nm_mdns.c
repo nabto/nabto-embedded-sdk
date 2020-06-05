@@ -42,6 +42,7 @@ struct np_mdns nm_mdns_get_impl(struct nm_mdns_server* server)
 np_error_code nm_mdns_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp)
 {
     server->stopped = false;
+    server->running = false;
     server->v4Done = false;
     server->v6Done = false;
     server->eq = *eq;
@@ -87,9 +88,6 @@ np_error_code nm_mdns_init(struct nm_mdns_server* server, struct np_event_queue*
         return ec;
     }
 
-    np_udp_async_bind_mdns_ipv4(udp, server->socketv4, &server->v4OpenedCompletionEvent);
-    np_udp_async_bind_mdns_ipv6(udp, server->socketv6, &server->v6OpenedCompletionEvent);
-
     return NABTO_EC_OK;
 }
 
@@ -105,9 +103,8 @@ void nm_mdns_deinit(struct nm_mdns_server* mdns)
     np_completion_event_deinit(&mdns->v4SendCompletionEvent);
     np_completion_event_deinit(&mdns->v6SendCompletionEvent);
 
-    struct np_platform* pl = mdns->pl;
-    np_udp_destroy(&pl->udp, mdns->socketv4);
-    np_udp_destroy(&pl->udp, mdns->socketv6);
+    np_udp_destroy(&mdns->udp, mdns->socketv4);
+    np_udp_destroy(&mdns->udp, mdns->socketv6);
 
     free(mdns);
 }
@@ -122,10 +119,18 @@ void nm_mdns_stop(struct nm_mdns_server* mdns)
 void publish_service(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId)
 {
     struct nm_mdns_server* server = obj->data;
+    if (server->running) {
+        // publishing more than one service is not supported
+        return;
+    }
+    server->running = true;
     server->port = port;
     nabto_mdns_server_init(&server->mdnsServer, deviceId, productId,
                            deviceId /*serviceName must be unique*/,
                            deviceId /*hostname must be unique*/);
+
+    np_udp_async_bind_mdns_ipv4(&server->udp, server->socketv4, &server->v4OpenedCompletionEvent);
+    np_udp_async_bind_mdns_ipv6(&server->udp, server->socketv6, &server->v6OpenedCompletionEvent);
 }
 
 void nm_mdns_update_local_ips(struct nm_mdns_server* mdns)
@@ -291,7 +296,6 @@ void nm_mdns_packet_recv_wait_completed_v6(const np_error_code ec, void* userDat
 
 void nm_mdns_send_packet_v6(struct nm_mdns_server* mdns)
 {
-    struct np_platform* pl = mdns->pl;
     size_t written;
     struct np_udp_endpoint ep;
     ep.ip.type = NABTO_IPV6;
@@ -304,7 +308,7 @@ void nm_mdns_send_packet_v6(struct nm_mdns_server* mdns)
     nm_mdns_update_local_ips(mdns);
     if (port > 0) {
         if (nabto_mdns_server_build_packet(&mdns->mdnsServer, mdns->localIps, mdns->localIpsSize, port, mdns->sendBufferV6, 1500, &written)) {
-            np_udp_async_send_to(&pl->udp, mdns->socketv6,
+            np_udp_async_send_to(&mdns->udp, mdns->socketv6,
                                  &ep, mdns->sendBufferV6, (uint16_t)written,
                                  &mdns->v6SendCompletionEvent);
             return;

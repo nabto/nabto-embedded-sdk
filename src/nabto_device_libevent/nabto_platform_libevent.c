@@ -11,6 +11,7 @@
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
+#include <modules/mdns/nm_mdns.h>
 #include <api/nabto_device_threads.h>
 
 #include <event.h>
@@ -35,6 +36,8 @@ struct libevent_platform {
 
     // Store a reference to the event queue as it needs special destruction.
     struct np_event_queue eq;
+
+    struct nm_mdns_server mdnsServer;
 };
 
 /**
@@ -83,6 +86,12 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     nabto_device_integration_set_dns_impl(device, &dns);
     nabto_device_integration_set_event_queue_impl(device, &platform->eq);
     nabto_device_integration_set_local_ip_impl(device, &localIp);
+
+    // Create a mdns server
+    nm_mdns_init(&platform->mdnsServer, &platform->eq, &udp, &localIp);
+
+    struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
+    nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
 
     // Start the thread where the libevent main loop runs.
     platform->libeventThread = nabto_device_threads_create_thread();

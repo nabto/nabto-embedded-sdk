@@ -42,3 +42,8 @@ void nabto_device_integration_set_local_ip_impl(struct nabto_device_context* dev
 {
     device->pl.localIp = *obj;
 }
+
+void nabto_device_integration_set_mdns_impl(struct nabto_device_context* device, struct np_mdns* obj)
+{
+    device->pl.mdns = *obj;
+}

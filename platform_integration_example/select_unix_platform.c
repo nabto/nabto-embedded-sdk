@@ -18,6 +18,7 @@
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/unix/nm_unix_local_ip.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
+#include <modules/mdns/nm_mdns.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -57,6 +58,8 @@ struct select_unix_platform
     struct select_unix_event_queue eventQueue;
 
     struct nm_unix_dns_resolver dnsResolver;
+
+    struct nm_mdns_server mdnsServer;
 
     /**
      * Stopped bit if true the platform has been stopped and the
@@ -102,6 +105,12 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // it.
     struct np_event_queue eventQueueImpl = select_unix_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
 
+    // Create a mdns server
+    nm_mdns_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &localIpImpl);
+
+    struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
+    nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
+
     nabto_device_integration_set_event_queue_impl(device, &eventQueueImpl);
 
     platform->networkThread = nabto_device_threads_create_thread();
@@ -116,7 +125,6 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
  */
 void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
-
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     select_unix_event_queue_deinit(&platform->eventQueue);
     nabto_device_threads_free_thread(platform->networkThread);

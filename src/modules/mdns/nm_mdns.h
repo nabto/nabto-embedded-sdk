@@ -15,7 +15,7 @@
 #define MDNS_MAX_LOCAL_IPS 2
 
 struct nm_mdns_server {
-    struct np_platform* pl;
+    bool running;
     bool stopped;
     bool v4Done;
     bool v6Done;

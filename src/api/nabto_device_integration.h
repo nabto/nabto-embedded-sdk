@@ -11,6 +11,7 @@ struct np_system_information;
 struct np_event_queue;
 struct nabto_device_context;
 struct np_local_ip;
+struct np_mdns;
 
 
 
@@ -60,13 +61,18 @@ void nabto_device_integration_set_timestamp_impl(struct nabto_device_context* de
 void nabto_device_integration_set_dns_impl(struct nabto_device_context* device, struct np_dns* obj);
 
 /**
- * Set the event queue object
+ * Set the event queue implementation
  */
 void nabto_device_integration_set_event_queue_impl(struct nabto_device_context* device, struct np_event_queue* obj);
 
 /**
- *
+ * Set the local ip implementation.
  */
 void nabto_device_integration_set_local_ip_impl(struct nabto_device_context* device, struct np_local_ip* obj);
+
+/**
+ * Set the mdns implementation
+ */
+void nabto_device_integration_set_mdns_impl(struct nabto_device_context* device, struct np_mdns* mdns);
 
 #endif
