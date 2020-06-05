@@ -48,7 +48,7 @@ struct np_tcp_socket {
 
 #define LOG NABTO_LOG_MODULE_TCP
 
-static np_error_code tcp_create(void* data, struct np_tcp_socket** sock);
+static np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock);
 static void tcp_destroy(struct np_tcp_socket* sock);
 static void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
 static void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
@@ -78,7 +78,7 @@ const struct np_tcp_functions* nm_libevent_tcp_functions()
     return &tcpVtbl;
 }
 
-np_error_code tcp_create(void* data, struct np_tcp_socket** sock)
+np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
 {
     NABTO_LOG_TRACE(LOG, "tcp_create");
     struct np_tcp_socket* s = calloc(1, sizeof(struct np_tcp_socket));
@@ -86,7 +86,7 @@ np_error_code tcp_create(void* data, struct np_tcp_socket** sock)
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    struct nm_libevent_context* ctx = data;
+    struct nm_libevent_context* ctx = obj->data;
 
     s->aborted = false;
     s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);

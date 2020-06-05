@@ -4,7 +4,7 @@
 
 #include <time.h>
 
-static uint32_t ts_now_ms(void* data);
+static uint32_t ts_now_ms(struct np_timestamp* obj);
 
 static struct np_timestamp_functions vtable = {
     .now_ms               = &ts_now_ms
@@ -18,7 +18,7 @@ struct np_timestamp nm_unix_ts_create()
     return ts;
 }
 
-uint32_t ts_now_ms(void* data)
+uint32_t ts_now_ms(struct np_timestamp* obj)
 {
     struct timespec spec;
     clock_gettime(CLOCK_REALTIME, &spec);

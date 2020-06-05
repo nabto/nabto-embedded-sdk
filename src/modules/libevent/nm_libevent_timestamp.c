@@ -16,7 +16,7 @@
 
 
 
-static uint32_t ts_now_ms(void* data);
+static uint32_t ts_now_ms(struct np_timestamp* obj);
 
 static const struct np_timestamp_functions vtable = {
     .now_ms = &ts_now_ms
@@ -28,9 +28,9 @@ const struct np_timestamp_functions* nm_libevent_timestamp_functions()
     return &vtable;
 }
 
-uint32_t ts_now_ms(void* data)
+uint32_t ts_now_ms(struct np_timestamp* obj)
 {
-    struct event_base* eventBase = data;
+    struct event_base* eventBase = obj->data;
     struct timeval tv;
     event_base_gettimeofday_cached(eventBase, &tv);
 

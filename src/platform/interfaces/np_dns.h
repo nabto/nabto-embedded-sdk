@@ -18,6 +18,7 @@ struct np_dns_functions;
 
 struct np_dns {
     const struct np_dns_functions* vptr;
+    // Pointer to implementation specific data.
     void* data;
 };
 

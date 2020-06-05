@@ -20,6 +20,7 @@ struct np_udp_endpoint {
 
 struct np_udp {
     const struct np_udp_functions* vptr;
+    // Pointer to data which is implementation specific.
     void* data;
 };
 
@@ -39,11 +40,11 @@ struct np_udp_functions {
      * The udpModule pointer is a reference to the implementation of
      * the udp module.
      *
-     * @param instance  A pointer to the actual udp module instance.
+     * @param obj  A pointer to the actual udp object.
      * @param sock  The created socket.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(void* data, struct np_udp_socket** sock);
+    np_error_code (*create)(struct np_udp* obj, struct np_udp_socket** sock);
 
     /**
      * Destroy a socket. This will close everything and clean up

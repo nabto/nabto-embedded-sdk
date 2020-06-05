@@ -28,7 +28,7 @@ static void nm_select_unix_udp_free_socket(struct np_udp_socket* sock);
 /**
  * Api function declarations
  */
-static np_error_code nm_select_unix_udp_create(void* data, struct np_udp_socket** sock);
+static np_error_code nm_select_unix_udp_create(struct np_udp* obj, struct np_udp_socket** sock);
 static void nm_select_unix_udp_destroy(struct np_udp_socket* sock);
 static void nm_select_unix_udp_abort(struct np_udp_socket* sock);
 static void nm_select_unix_udp_async_bind_port(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
@@ -73,7 +73,7 @@ struct np_udp nm_select_unix_udp_get_impl(struct nm_select_unix* ctx)
     return obj;
 }
 
-np_error_code nm_select_unix_udp_create(void* data, struct np_udp_socket** sock)
+np_error_code nm_select_unix_udp_create(struct np_udp* obj, struct np_udp_socket** sock)
 {
     struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
     if (!s) {
@@ -82,7 +82,7 @@ np_error_code nm_select_unix_udp_create(void* data, struct np_udp_socket** sock)
     *sock = s;
     s->sock = -1;
 
-    struct nm_select_unix* selectCtx = data;
+    struct nm_select_unix* selectCtx = obj->data;
 
     s->selectCtx = selectCtx;
     s->aborted = false;

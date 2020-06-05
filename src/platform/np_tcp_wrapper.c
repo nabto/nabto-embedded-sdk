@@ -4,7 +4,7 @@
 
 np_error_code np_tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
 {
-    return obj->vptr->create(obj->data, sock);
+    return obj->vptr->create(obj, sock);
 }
 void np_tcp_destroy(struct np_tcp* obj, struct np_tcp_socket* sock)
 {

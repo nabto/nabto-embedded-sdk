@@ -3,7 +3,7 @@
 // Wrapper functions for the functionality. See above struct for documentation for the functions.
 inline np_error_code np_udp_create(struct np_udp* udp, struct np_udp_socket** sock)
 {
-    return udp->vptr->create(udp->data, sock);
+    return udp->vptr->create(udp, sock);
 }
 
 inline void np_udp_destroy(struct np_udp* udp, struct np_udp_socket* sock)
