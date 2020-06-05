@@ -27,7 +27,7 @@ set(ne_streaming
 )
 
 set(ne_mdns
-  ${root_dir}/nabto-common/components/mdns/src/mdns_server.c
+#  ${root_dir}/nabto-common/components/mdns/src/mdns_server.c
 )
 
 set(ne_coap
