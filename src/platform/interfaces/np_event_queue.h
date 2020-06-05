@@ -19,12 +19,9 @@ extern "C" {
  */
 
 typedef void (*np_event_callback)(void* data);
-typedef void (*np_timed_event_callback)(const np_error_code ec, void* data);
 
 // opaque pointers
 struct np_event;
-struct np_timed_event;
-
 
 struct np_event_queue_functions;
 
@@ -44,13 +41,13 @@ struct np_event_queue_functions {
      * @param event  The resulting event.
      * @return NABTO_EC_OK  iff the event is created.
      */
-    np_error_code (*create_event)(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
+    np_error_code (*create)(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
 
     /**
      * Destroy an event.
      * @param event  The event.
      */
-    void (*destroy_event)(struct np_event* event);
+    void (*destroy)(struct np_event* event);
 
     /**
      * Post the event to the event queue
@@ -69,30 +66,11 @@ struct np_event_queue_functions {
     void (*post_maybe_double)(struct np_event* event);
 
     /**
-     * Cancel an event
+     * Cancel an event, the event will not be executed.
      *
      * @param event  The event.
      */
     void (*cancel)(struct np_event* event);
-
-
-    /**
-     * Create a timed event
-     *
-     * @param obj  The event queue object.
-     * @param cb  The callback to call when the timed event is executed.
-     * @param cbData  The user data for the callback.
-     * @param event  The resulting timed event.
-     * @return NABTO_EC_OK  iff the timed event was created.
-     */
-    np_error_code (*create_timed_event)(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
-
-    /**
-     * Destroy a timed event
-     *
-     * @param event  The timed event
-     */
-    void (*destroy_timed_event)(struct np_timed_event* event);
 
     /**
      * Post a timed event to the event queue
@@ -100,15 +78,8 @@ struct np_event_queue_functions {
      * @param event  The event.
      * @param milliseconds  The amount of milliseconds into the future until the event is executed.
      */
-    void (*post_timed_event)(struct np_timed_event* event, uint32_t milliseconds);
+    void (*post_timed)(struct np_event* event, uint32_t milliseconds);
 
-
-    /**
-     * Cancel a timed event
-     *
-     * @param timedEvent  The timed event.
-     */
-    void (*cancel_timed_event)(struct np_timed_event* timedEvent);
 };
 
 #ifdef __cplusplus

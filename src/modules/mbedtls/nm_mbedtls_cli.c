@@ -86,7 +86,7 @@ static np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* f
 
 static np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout);
 
-static void nm_dtls_timed_event_do_one(const np_error_code ec, void* data);
+static void nm_dtls_timed_event_do_one(void* data);
 static np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx);
 static np_error_code nm_mbedtls_cli_reset(struct np_dtls_cli_context* ctx);
 static np_error_code nm_dtls_connect(struct np_dtls_cli_context* ctx);
@@ -639,7 +639,7 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
     }
 }
 
-void nm_dtls_timed_event_do_one(const np_error_code ec, void* data) {
+void nm_dtls_timed_event_do_one(void* data) {
     struct np_dtls_cli_context* ctx = data;
     if (ctx->state == CLOSING) {
         return;

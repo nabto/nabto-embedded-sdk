@@ -109,7 +109,7 @@ int nm_mbedtls_srv_mbedtls_send(void* ctx, const unsigned char* buffer, size_t b
 // Function called by mbedtls when it wants data from the network
 int nm_mbedtls_srv_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferSize);
 
-static void nm_mbedtls_srv_timed_event_do_one(const np_error_code ec, void* userData);
+static void nm_mbedtls_srv_timed_event_do_one(void* userData);
 
 void nm_mbedtls_srv_event_send_to(void* data);
 void deferred_event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event);
@@ -622,6 +622,6 @@ int nm_mbedtls_srv_mbedtls_recv(void* data, unsigned char* buffer, size_t buffer
     }
 }
 
-void nm_mbedtls_srv_timed_event_do_one(const np_error_code ec, void* data) {
+void nm_mbedtls_srv_timed_event_do_one(void* data) {
     nm_mbedtls_srv_do_one(data);
 }

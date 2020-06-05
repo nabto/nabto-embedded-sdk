@@ -12,19 +12,14 @@
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
-static np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
-static void destroy_event(struct np_event* event);
+static np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
+static void destroy(struct np_event* event);
 static void post(struct np_event* event);
 static void post_maybe_double(struct np_event* event);
 
-static np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
-static void destroy_timed_event(struct np_timed_event* event);
-
-static void post_timed_event(struct np_timed_event* event, uint32_t milliseconds);
+static void post_timed(struct np_event* event, uint32_t milliseconds);
 static void cancel(struct np_event* event);
-static void cancel_timed_event(struct np_timed_event* timedEvent);
 
-static void handle_timed_event(evutil_socket_t s, short events, void* data);
 static void handle_event(evutil_socket_t s, short events, void* data);
 
 struct libevent_event_queue {
@@ -40,24 +35,13 @@ struct np_event {
     struct event event;
 };
 
-struct np_timed_event {
-    struct libevent_event_queue* eq;
-    np_timed_event_callback cb;
-    void* data;
-    struct event event;
-};
-
-
 static struct np_event_queue_functions vtable = {
-    .create_event = &create_event,
-    .destroy_event = &destroy_event,
+    .create = &create,
+    .destroy = &destroy,
     .post = &post,
     .post_maybe_double = &post_maybe_double,
     .cancel = &cancel,
-    .create_timed_event = &create_timed_event,
-    .destroy_timed_event = &destroy_timed_event,
-    .post_timed_event = &post_timed_event,
-    .cancel_timed_event = &cancel_timed_event
+    .post_timed = &post_timed
 };
 
 struct np_event_queue libevent_event_queue_create(struct event_base* eventBase, struct nabto_device_mutex* mutex)
@@ -76,19 +60,6 @@ void libevent_event_queue_destroy(struct np_event_queue* obj)
     free(obj->data);
 }
 
-void handle_timed_event(evutil_socket_t s, short events, void* data)
-{
-    NABTO_LOG_TRACE(LOG, "handle timed event");
-    struct np_timed_event* timedEvent = data;
-
-    struct libevent_event_queue* eq = timedEvent->eq;
-
-    nabto_device_threads_mutex_lock(eq->mutex);
-    timedEvent->cb(NABTO_EC_OK, timedEvent->data);
-    nabto_device_threads_mutex_unlock(eq->mutex);
-
-}
-
 void handle_event(evutil_socket_t s, short events, void* data)
 {
     NABTO_LOG_TRACE(LOG, "handle event");
@@ -100,7 +71,7 @@ void handle_event(evutil_socket_t s, short events, void* data)
     nabto_device_threads_mutex_unlock(eq->mutex);
 }
 
-np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event)
+np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event)
 {
     struct np_event* ev = calloc(1, sizeof(struct np_event));
     if (ev == NULL) {
@@ -117,7 +88,7 @@ np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, voi
     return NABTO_EC_OK;
 }
 
-void destroy_event(struct np_event* event)
+void destroy(struct np_event* event)
 {
     free(event);
 }
@@ -138,29 +109,7 @@ void post_maybe_double(struct np_event* event)
     event_active(&event->event, 0, 0);
 }
 
-np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event)
-{
-    struct np_timed_event* ev = calloc(1, sizeof(struct np_timed_event));
-    if (ev == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-    struct libevent_event_queue* eq = obj->data;
-    ev->eq = eq;
-    ev->cb = cb;
-    ev->data = cbData;
-
-    event_assign(&ev->event, eq->eventBase, -1, 0, &handle_timed_event, ev);
-
-    *event = ev;
-    return NABTO_EC_OK;
-}
-
-void destroy_timed_event(struct np_timed_event* event)
-{
-    free(event);
-}
-
-void post_timed_event(struct np_timed_event* event, uint32_t milliseconds)
+void post_timed(struct np_event* event, uint32_t milliseconds)
 {
     //struct np_platform* pl = event->pl;
     //struct nabto_device_event_queue* eq = pl->eqData;
@@ -173,9 +122,4 @@ void post_timed_event(struct np_timed_event* event, uint32_t milliseconds)
 void cancel(struct np_event* event)
 {
     event_del(&event->event);
-}
-
-void cancel_timed_event(struct np_timed_event* timedEvent)
-{
-    event_del(&timedEvent->event);
 }

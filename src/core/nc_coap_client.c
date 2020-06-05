@@ -12,7 +12,7 @@ void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx);
 void nc_coap_client_notify_event(void* userData);
 void nc_coap_client_event(struct nc_coap_client_context* ctx);
 void nc_coap_client_send_to_callback(const np_error_code ec, void* data);
-void nc_coap_client_handle_timeout(const np_error_code ec, void* data);
+void nc_coap_client_handle_timeout(void* data);
 
 static void nc_coap_client_notify_event_callback(void* userData);
 
@@ -35,7 +35,7 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_event_queue_create_timed_event(ctx->pl, &nc_coap_client_handle_timeout, ctx, &ctx->timer);
+    ec = np_event_queue_create_event(ctx->pl, &nc_coap_client_handle_timeout, ctx, &ctx->timer);
     if (ec != NABTO_EC_OK)
     {
         return ec;
@@ -56,10 +56,8 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
-        np_event_queue_cancel_event(ctx->pl, ctx->ev);
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
         np_event_queue_destroy_event(ctx->pl, ctx->ev);
-        np_event_queue_destroy_timed_event(ctx->pl, ctx->timer);
+        np_event_queue_destroy_event(ctx->pl, ctx->timer);
         nabto_coap_client_destroy(&ctx->client);
         ctx->pl->buf.free(ctx->sendBuffer);
     }
@@ -123,7 +121,7 @@ void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
     }
 }
 
-void nc_coap_client_handle_timeout(const np_error_code ec, void* data)
+void nc_coap_client_handle_timeout(void* data)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*) data;
     nc_coap_client_set_infinite_stamp(ctx);

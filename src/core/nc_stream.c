@@ -20,7 +20,7 @@ static void nc_stream_event_queue_callback(void* data);
 void event(struct nc_stream_context* ctx);
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType);
 void nc_stream_handle_wait(struct nc_stream_context* ctx);
-void nc_stream_handle_timeout(const np_error_code ec, void* data);
+void nc_stream_handle_timeout(void* data);
 void nc_stream_event_callback(enum nabto_stream_module_event event, void* data);
 struct nabto_stream_send_segment* nc_stream_alloc_send_segment(size_t bufferSize, void* userData);
 void nc_stream_free_send_segment(struct nabto_stream_send_segment* segment, void* userData);
@@ -81,7 +81,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_event_queue_create_timed_event(pl, &nc_stream_handle_timeout, ctx, &ctx->timer);
+    ec = np_event_queue_create_event(pl, &nc_stream_handle_timeout, ctx, &ctx->timer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -124,9 +124,9 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     ctx->active = false;
     ctx->dtls = NULL;
     ctx->streamId = 0;
-    np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
+
     np_event_queue_destroy_event(ctx->pl, ctx->ev);
-    np_event_queue_destroy_timed_event(ctx->pl, ctx->timer);
+    np_event_queue_destroy_event(ctx->pl, ctx->timer);
     nabto_stream_destroy(&ctx->stream);
 }
 
@@ -166,7 +166,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
             nc_stream_destroy(ctx);
             return;
         case ET_CLOSED:
-            np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
+            np_event_queue_cancel_event(ctx->pl, ctx->timer);
             return;
     }
 
@@ -198,13 +198,12 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
                 ctx->negativeCount = 0;
             }
             diff += 2; // make sure that we have passed the timestamp inside the module.
-            np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
             np_event_queue_post_timed_event(ctx->pl, ctx->timer, diff);
         }
     }
 }
 
-void nc_stream_handle_timeout(const np_error_code ec, void* data)
+void nc_stream_handle_timeout(void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
     ctx->currentExpiry = nabto_stream_stamp_infinite();

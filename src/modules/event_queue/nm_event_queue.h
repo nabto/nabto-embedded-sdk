@@ -14,15 +14,9 @@ struct nm_event_queue_event {
     np_event_callback cb;
     void* data;
     struct nn_llist_node eventsNode;
-};
-
-struct nm_event_queue_timed_event {
-    np_timed_event_callback cb;
-    void* data;
-    struct nn_llist_node timedEventsNode;
     uint32_t expireTimestamp;
-};
 
+};
 
 void nm_event_queue_init(struct nm_event_queue* queue);
 
@@ -34,10 +28,7 @@ void nm_event_queue_post_event(struct nm_event_queue* queue, struct nm_event_que
 void nm_event_queue_post_event_maybe_double(struct nm_event_queue* queue, struct nm_event_queue_event* event);
 void nm_event_queue_cancel_event(struct nm_event_queue_event* event);
 
-void nm_event_queue_timed_event_init(struct nm_event_queue_timed_event* event, np_timed_event_callback cb, void* data);
-void nm_event_queue_timed_event_deinit(struct nm_event_queue_timed_event* event);
-void nm_event_queue_post_timed_event(struct nm_event_queue* queue, struct nm_event_queue_timed_event* event, uint32_t milliseconds);
-void nm_event_queue_cancel_timed_event(struct nm_event_queue_timed_event* event);
+void nm_event_queue_post_timed_event(struct nm_event_queue* queue, struct nm_event_queue_event* event, uint32_t milliseconds);
 
 
 /**
@@ -52,7 +43,7 @@ bool nm_event_queue_take_event(struct nm_event_queue* queue, struct nm_event_que
  *
  * @return true iff a timed event is returned.
  */
-bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now, struct nm_event_queue_timed_event** event);
+bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now, struct nm_event_queue_event** event);
 
 /**
  * Get the timestamp of the next event on the event queue.

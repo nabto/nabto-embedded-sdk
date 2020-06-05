@@ -40,7 +40,7 @@ struct nc_keep_alive_context
 
     bool isSending;
     uint8_t sendBuffer[18];
-    struct np_timed_event* keepAliveEvent;
+    struct np_event* keepAliveEvent;
 
 };
 
@@ -50,7 +50,7 @@ enum nc_keep_alive_action{
     KA_TIMEOUT
 };
 
-typedef void (*keep_alive_wait_callback)(const np_error_code ec, void* data);
+typedef void (*keep_alive_wait_callback)(void* data);
 
 /**
  * Init keep alive with the given parameters

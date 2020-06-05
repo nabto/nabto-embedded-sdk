@@ -6,12 +6,12 @@
 
 np_error_code np_event_queue_create_event(struct np_platform* pl, np_event_callback cb, void* data, struct np_event** event)
 {
-    return pl->eq.vptr->create_event(&pl->eq, cb, data, event);
+    return pl->eq.vptr->create(&pl->eq, cb, data, event);
 }
 
 void np_event_queue_destroy_event(struct np_platform* pl, struct np_event* event)
 {
-    return pl->eq.vptr->destroy_event(event);
+    return pl->eq.vptr->destroy(event);
 }
 
 /**
@@ -31,24 +31,9 @@ void np_event_queue_post_maybe_double(struct np_platform* pl, struct np_event* e
     pl->eq.vptr->post_maybe_double(event);
 }
 
-np_error_code np_event_queue_create_timed_event(struct np_platform* pl, np_timed_event_callback cb, void* data, struct np_timed_event** event)
+void np_event_queue_post_timed_event(struct np_platform* pl, struct np_event* event, uint32_t milliseconds)
 {
-    return pl->eq.vptr->create_timed_event(&pl->eq, cb, data, event);
-}
-
-void np_event_queue_destroy_timed_event(struct np_platform* pl, struct np_timed_event* event)
-{
-    pl->eq.vptr->destroy_timed_event(event);
-}
-
-void np_event_queue_post_timed_event(struct np_platform* pl, struct np_timed_event* event, uint32_t milliseconds)
-{
-    pl->eq.vptr->post_timed_event(event, milliseconds);
-}
-
-void np_event_queue_cancel_timed_event(struct np_platform* pl, struct np_timed_event* ev)
-{
-    pl->eq.vptr->cancel_timed_event(ev);
+    pl->eq.vptr->post_timed(event, milliseconds);
 }
 
 void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* ev)

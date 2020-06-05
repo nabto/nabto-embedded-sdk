@@ -22,7 +22,7 @@ void nc_stun_event(struct nc_stun_context* ctx);
 // Async callback functions
 void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data);
 void nc_stun_send_to_cb(const np_error_code ec, void* data);
-void nc_stun_handle_timeout(const np_error_code ec, void* data);
+void nc_stun_handle_timeout(void* data);
 static void nc_stun_dns_cb(const np_error_code ec, void* data);
 
 // stun module functions
@@ -77,7 +77,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.log = &nc_stun_log;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
     np_error_code ec;
-    ec = np_event_queue_create_timed_event(pl, &nc_stun_handle_timeout, ctx, &ctx->toEv);
+    ec = np_event_queue_create_event(pl, &nc_stun_handle_timeout, ctx, &ctx->toEv);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -102,10 +102,9 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
     if (ctx->pl != NULL) { // if init called
         ctx->state = NC_STUN_STATE_ABORTED;
         struct np_platform* pl = ctx->pl;
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->toEv);
         pl->buf.free(ctx->sendBuf);
 
-        np_event_queue_destroy_timed_event(pl, ctx->toEv);
+        np_event_queue_destroy_event(pl, ctx->toEv);
         np_completion_event_deinit(&ctx->dnsCompletionEvent);
         np_completion_event_deinit(&ctx->sendCompletionEvent);
         nc_dns_multi_resolver_deinit(&ctx->dnsMultiResolver);
@@ -206,7 +205,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
 {
     enum nabto_stun_next_event_type event = nabto_stun_next_event_to_handle(&ctx->stun);
     struct np_platform* pl = ctx->pl;
-    np_event_queue_cancel_timed_event(ctx->pl, ctx->toEv);
+    np_event_queue_cancel_event(ctx->pl, ctx->toEv);
     switch(event) {
         case STUN_ET_SEND_PRIMARY:
         {
@@ -317,18 +316,11 @@ void nc_stun_send_to_cb(const np_error_code ec, void* data)
     nc_stun_event(ctx);
 }
 
-void nc_stun_handle_timeout(const np_error_code ec, void* data)
+void nc_stun_handle_timeout(void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
-    if (ec != NABTO_EC_OK) {
-        ctx->state = NC_STUN_STATE_DONE;
-        ctx->ec = ec;
-        nc_stun_resolve_callbacks(ctx);
-        return;
-    }
     nabto_stun_handle_wait_event(&ctx->stun);
     nc_stun_event(ctx);
-
 }
 
 void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result* res, void* data)

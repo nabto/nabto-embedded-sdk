@@ -17,7 +17,7 @@ void nc_coap_server_notify_event(void* userData);
 void nc_coap_server_handle_send(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx);
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data);
-void nc_coap_server_handle_timeout(const np_error_code ec, void* data);
+void nc_coap_server_handle_timeout(void* data);
 
 static void nc_coap_server_notify_event_callback(void* userData);
 
@@ -42,7 +42,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
         return ec;
     }
 
-    ec = np_event_queue_create_timed_event(ctx->pl, &nc_coap_server_handle_timeout, ctx, &ctx->timer);
+    ec = np_event_queue_create_event(ctx->pl, &nc_coap_server_handle_timeout, ctx, &ctx->timer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -53,12 +53,11 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
         nabto_coap_server_destroy(&ctx->server);
         ctx->pl->buf.free(ctx->sendBuffer);
 
         np_event_queue_destroy_event(ctx->pl, ctx->ev);
-        np_event_queue_destroy_timed_event(ctx->pl, ctx->timer);
+        np_event_queue_destroy_event(ctx->pl, ctx->timer);
     }
 }
 
@@ -137,12 +136,11 @@ void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
         if (diff < 0) {
             diff = 0;
         }
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
         np_event_queue_post_timed_event(ctx->pl, ctx->timer, diff);
     }
 }
 
-void nc_coap_server_handle_timeout(const np_error_code ec, void* data)
+void nc_coap_server_handle_timeout(void* data)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*) data;
     //NABTO_LOG_TRACE(LOG, "Handle timeout called");

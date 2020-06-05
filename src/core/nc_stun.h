@@ -48,7 +48,7 @@ struct nc_stun_context {
     uint16_t priPort;
     struct nabto_stun_endpoint eps[NC_STUN_MAX_ENDPOINTS];
     size_t numEps;
-    struct np_timed_event* toEv;
+    struct np_event* toEv;
 
     struct np_communication_buffer* sendBuf;
     struct np_udp_endpoint sendEp;

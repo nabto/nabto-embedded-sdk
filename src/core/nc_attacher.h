@@ -122,7 +122,7 @@ struct nc_attach_context {
     struct np_completion_event resolveCompletionEvent;
 
     uint8_t redirectAttempts;
-    struct np_timed_event* reattachTimer;
+    struct np_event* reattachTimer;
     struct np_event* closeEv;
 
     nc_attacher_attach_start_callback startCallback;
