@@ -6,6 +6,7 @@
 #include <platform/np_logging.h>
 #include <core/nc_version.h>
 #include <core/nc_device.h>
+#include <platform/np_event_queue_wrapper.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -23,7 +24,7 @@ static const uint8_t MAX_REDIRECT_FOLLOW = 5;
  * local function definitions *
  ******************************/
 static void do_close(struct nc_attach_context* ctx);
-static void reattach(const np_error_code ec, void* data);
+static void reattach(void* data);
 static void resolve_close(void* data);
 
 static void handle_state_change(struct nc_attach_context* ctx);
@@ -45,7 +46,7 @@ static void send_initial_packet(struct nc_attach_context* ctx);
 static void initial_packet_sent(const np_error_code ec, void* userData);
 
 
-static void keep_alive_event(const np_error_code ec, void* data);
+static void keep_alive_event(void* data);
 
 static void keep_alive_send_req(struct nc_attach_context* ctx);
 static void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length);
@@ -76,7 +77,7 @@ static void sct_deinit(struct nc_attach_context* ctx);
 /*****************
  * API functions *
  *****************/
-np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, struct np_dns_resolver* dnsResolver, nc_attacher_event_listener listener, void* listenerData)
+np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
     np_error_code ec;
 
@@ -91,11 +92,13 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     ctx->retryWaitTime = RETRY_WAIT_TIME;
     ctx->accessDeniedWaitTime = ACCESS_DENIED_WAIT_TIME;
 
-    ec = np_event_queue_create_timed_event(ctx->pl, &reattach, ctx, &ctx->reattachTimer);
+    struct np_event_queue* eq = &pl->eq;
+
+    ec = np_event_queue_create_event(eq, &reattach, ctx, &ctx->reattachTimer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_event_queue_create_event(ctx->pl, &resolve_close, ctx, &ctx->closeEv);
+    ec = np_event_queue_create_event(eq, &resolve_close, ctx, &ctx->closeEv);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -112,16 +115,16 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
-    ec = np_completion_event_init(pl, &ctx->senderCompletionEvent, NULL, NULL);
+    ec = np_completion_event_init(eq, &ctx->senderCompletionEvent, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(pl, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
+    ec = np_completion_event_init(eq, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    nc_dns_multi_resolver_init(pl, &ctx->dnsResolver, dnsResolver);
+    nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
 
     return ec;
 }
@@ -147,15 +150,14 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
 
         sct_deinit(ctx);
 
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->reattachTimer);
-        np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
-        np_event_queue_destroy_timed_event(ctx->pl, ctx->reattachTimer);
-        np_event_queue_destroy_event(ctx->pl, ctx->closeEv);
+        struct np_event_queue* eq = &ctx->pl->eq;
+        np_event_queue_destroy_event(eq, ctx->reattachTimer);
+        np_event_queue_destroy_event(eq, ctx->closeEv);
 
         np_completion_event_deinit(&ctx->senderCompletionEvent);
         np_completion_event_deinit(&ctx->resolveCompletionEvent);
 
-        nc_dns_multi_resolver_deinit(&ctx->dnsResolver);
+        nc_dns_multi_resolver_deinit(&ctx->dnsMultiResolver);
     }
 }
 
@@ -277,19 +279,19 @@ np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach
 void do_close(struct nc_attach_context* ctx)
 {
     if (ctx->moduleState == NC_ATTACHER_MODULE_SETUP) {
-        np_event_queue_post(ctx->pl, ctx->closeEv);
+        np_event_queue_post(&ctx->pl->eq, ctx->closeEv);
         return;
     }
     ctx->moduleState = NC_ATTACHER_MODULE_CLOSED;
     switch(ctx->state) {
         case NC_ATTACHER_STATE_RETRY_WAIT:
         case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
-            np_event_queue_cancel_timed_event(ctx->pl, ctx->reattachTimer);
+            np_event_queue_cancel_event(&ctx->pl->eq, ctx->reattachTimer);
             ctx->state = NC_ATTACHER_STATE_CLOSED;
             handle_state_change(ctx);
             break;
         case NC_ATTACHER_STATE_CLOSED:
-            np_event_queue_post(ctx->pl, ctx->closeEv);
+            np_event_queue_post(&ctx->pl->eq, ctx->closeEv);
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
         case NC_ATTACHER_STATE_ATTACHED:
@@ -308,8 +310,8 @@ void do_close(struct nc_attach_context* ctx)
 void resolve_close(void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
-    np_event_queue_cancel_timed_event(ctx->pl, ctx->reattachTimer);
-    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->reattachTimer);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->closeEv);
     if (ctx->closedCb) {
         nc_attacher_closed_callback cb = ctx->closedCb;
         ctx->closedCb = NULL;
@@ -336,7 +338,7 @@ char* state_to_text(enum nc_attacher_attach_state state) {
     }
     return "UNKNOWN STATE - ERROR";
 }
-        
+
 
 void handle_state_change(struct nc_attach_context* ctx)
 {
@@ -346,15 +348,15 @@ void handle_state_change(struct nc_attach_context* ctx)
             dns_start_resolve(ctx);
             break;
         case NC_ATTACHER_STATE_CLOSED:
-            np_event_queue_post(ctx->pl, ctx->closeEv);
+            np_event_queue_post(&ctx->pl->eq, ctx->closeEv);
             break;
         case NC_ATTACHER_STATE_REDIRECT:
             break;
         case NC_ATTACHER_STATE_RETRY_WAIT:
-            np_event_queue_post_timed_event(ctx->pl, ctx->reattachTimer, ctx->retryWaitTime);
+            np_event_queue_post_timed_event(&ctx->pl->eq, ctx->reattachTimer, ctx->retryWaitTime);
             break;
         case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
-            np_event_queue_post_timed_event(ctx->pl, ctx->reattachTimer, ctx->accessDeniedWaitTime);
+            np_event_queue_post_timed_event(&ctx->pl->eq, ctx->reattachTimer, ctx->accessDeniedWaitTime);
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
             ctx->pl->dtlsC.set_sni(ctx->dtls, ctx->hostname);
@@ -372,8 +374,7 @@ void handle_state_change(struct nc_attach_context* ctx)
 
 void dns_start_resolve(struct nc_attach_context* ctx)
 {
-    nc_dns_multi_resolver_resolve(&ctx->dnsResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
-
+    nc_dns_multi_resolver_resolve(&ctx->dnsMultiResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
 }
 
 void dns_resolved_callback(const np_error_code ec, void* data)
@@ -412,7 +413,7 @@ void dns_resolved_callback(const np_error_code ec, void* data)
     handle_state_change(ctx);
 }
 
-void reattach(const np_error_code ec, void* data)
+void reattach(void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
@@ -721,7 +722,7 @@ void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data)
     }
 }
 
-void keep_alive_event(const np_error_code ec, void* data)
+void keep_alive_event(void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     struct np_platform* pl = ctx->pl;
@@ -729,24 +730,19 @@ void keep_alive_event(const np_error_code ec, void* data)
     uint32_t recvCount;
     uint32_t sentCount;
 
-    if (ec != NABTO_EC_OK) {
-        // event probably cancelled
-        return;
-    } else {
-        pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
-        enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
-        switch(action) {
-            case DO_NOTHING:
-                nc_keep_alive_wait(&ctx->keepAlive);
-                break;
-            case SEND_KA:
-                keep_alive_send_req(ctx);
-                nc_keep_alive_wait(&ctx->keepAlive);
-                break;
-            case KA_TIMEOUT:
-                ctx->pl->dtlsC.close(ctx->dtls);
-                break;
-        }
+    pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
+    enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
+    switch(action) {
+        case DO_NOTHING:
+            nc_keep_alive_wait(&ctx->keepAlive);
+            break;
+        case SEND_KA:
+            keep_alive_send_req(ctx);
+            nc_keep_alive_wait(&ctx->keepAlive);
+            break;
+        case KA_TIMEOUT:
+            ctx->pl->dtlsC.close(ctx->dtls);
+            break;
     }
 }
 

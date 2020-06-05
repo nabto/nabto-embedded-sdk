@@ -5,7 +5,6 @@
 
 #include <platform/np_error_code.h>
 #include <platform/np_dtls.h>
-#include <platform/np_udp.h>
 
 #include <nn/llist.h>
 

@@ -6,6 +6,7 @@
 #include <core/nc_stun.h>
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
+#include <platform/np_local_ip_wrapper.h>
 #include <core/nc_packet.h>
 
 #include <cbor.h>
@@ -85,7 +86,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
 
     struct np_ip_address localAddrs[2];
 
-    size_t addrs = ctx->pl->localIp.get_local_ip(localAddrs, 2);
+    size_t addrs = np_local_ip_get_local_ips(&ctx->pl->localIp, localAddrs, 2);
 
     for (size_t i = 0; i < addrs; i++) {
         struct np_udp_endpoint ep;

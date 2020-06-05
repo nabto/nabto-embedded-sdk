@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include <platform/np_platform.h>
-#include <platform/np_timestamp.h>
+#include <platform/np_timestamp_wrapper.h>
 
 NabtoDeviceLogCallback logCallback;
 void* userData;
@@ -81,7 +81,7 @@ void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* dat
 {
 
     struct np_platform* pl = data;
-    uint32_t now = np_timestamp_now_ms(pl);
+    uint32_t now = np_timestamp_now_ms(&pl->timestamp);
 
     uint32_t milliseconds = now%1000;
     uint32_t seconds = (now/1000)%1000;

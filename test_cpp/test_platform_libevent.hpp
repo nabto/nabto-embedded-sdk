@@ -34,10 +34,17 @@ class TestPlatformLibevent : public TestPlatform {
 
     virtual void init()
     {
-        test_platform_event_queue_init(&pl_, eventBase_);
+        eq_ = test_platform_event_queue_init(eventBase_);
+        pl_.eq = test_platform_event_queue_get_impl(eq_);
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
-        nm_libevent_init(&pl_, &libeventContext_, eventBase_);
+        nm_libevent_init(&libeventContext_, eventBase_);
+        pl_.dns = nm_libevent_dns_create_impl(&libeventContext_);
+        pl_.udp = nm_libevent_create_udp(&libeventContext_);
+        pl_.tcp = nm_libevent_create_tcp(&libeventContext_);
+        pl_.localIp = nm_libevent_create_local_ip(&libeventContext_);
+        pl_.timestamp = nm_libevent_create_timestamp(&libeventContext_);
+
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
     }
@@ -45,7 +52,7 @@ class TestPlatformLibevent : public TestPlatform {
     void deinit()
     {
         nm_libevent_deinit(&libeventContext_);
-        test_platform_event_queue_deinit(&pl_);
+        test_platform_event_queue_deinit(eq_);
     }
 
     virtual void run()
@@ -77,6 +84,7 @@ class TestPlatformLibevent : public TestPlatform {
     struct np_platform pl_;
     struct event_base* eventBase_;
     struct nm_libevent_context libeventContext_;
+    struct test_platform_event_queue* eq_;
 
     std::promise<void> stopped_;
 };

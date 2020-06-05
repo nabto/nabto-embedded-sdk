@@ -9,6 +9,7 @@
 #include <platform/np_platform.h>
 #include <event2/event.h>
 #include <event2/thread.h>
+#include <event2/dns.h>
 
 #if defined(HAVE_WINSOCK2_H)
 #include <winsock2.h>
@@ -43,25 +44,37 @@ void nm_libevent_global_deinit()
     }
 }
 
-void nm_libevent_init(struct np_platform* pl, struct nm_libevent_context* ctx, struct event_base* eventBase)
+void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase)
 {
     ctx->eventBase = eventBase;
-    ctx->pl = pl;
-    ctx->recvBuffer = pl->buf.allocate();
-    nm_libevent_dns_init(pl, ctx->eventBase);
-    nm_libevent_udp_init(pl, ctx);
-    nm_libevent_timestamp_init(eventBase, pl);
-    nm_libevent_tcp_init(pl, ctx);
-    nm_libevent_local_ip_init(pl);
-
+    ctx->dnsBase = evdns_base_new(eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);
 }
 
 void nm_libevent_deinit(struct nm_libevent_context* ctx)
 {
-    struct np_platform* pl = ctx->pl;
+    evdns_base_free(ctx->dnsBase, 1);
+}
 
-    nm_libevent_udp_deinit(pl);
-    nm_libevent_dns_deinit(pl);
+struct np_udp nm_libevent_create_udp(struct nm_libevent_context* ctx)
+{
+    struct np_udp obj;
+    obj.vptr = nm_libevent_udp_functions();
+    obj.data = ctx;
+    return obj;
+}
 
-    pl->buf.free(ctx->recvBuffer);
+struct np_tcp nm_libevent_create_tcp(struct nm_libevent_context* ctx)
+{
+    struct np_tcp obj;
+    obj.vptr = nm_libevent_tcp_functions();
+    obj.data = ctx;
+    return obj;
+}
+
+struct np_timestamp nm_libevent_create_timestamp(struct nm_libevent_context* ctx)
+{
+    struct np_timestamp obj;
+    obj.vptr = nm_libevent_timestamp_functions();
+    obj.data = ctx;
+    return obj;
 }

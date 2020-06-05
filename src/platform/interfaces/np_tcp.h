@@ -2,25 +2,37 @@
 #define _NP_TCP_H_
 
 #include <platform/np_ip_address.h>
+#include <platform/np_error_code.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct np_platform;
 struct np_completion_event;
 
+/**
+ * opaque pointer which should be defined by the implementor.
+ */
 struct np_tcp_socket;
 
-struct np_tcp_module {
+struct np_tcp_functions;
+
+
+struct np_tcp {
+    const struct np_tcp_functions* vptr;
+    // Pointer to data which is implementation specific
+    void* data;
+};
+
+struct np_tcp_functions {
     /**
      * Create a tcp socket.
      *
-     * @param pl  The platform.
+     * @param obj  The TCP object.
      * @param sock  The resulting socket resource.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_platform* pl, struct np_tcp_socket** sock);
+    np_error_code (*create)(struct np_tcp* obj, struct np_tcp_socket** sock);
 
     /**
      * Destroy a socket. All outstanding completion events will be

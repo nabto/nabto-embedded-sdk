@@ -1,35 +1,50 @@
 #ifndef NP_UDP_H
 #define NP_UDP_H
 
-#include <core/nc_protocol_defines.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_error_code.h>
 #include <platform/np_communication_buffer.h>
-#include <platform/np_event_queue.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct np_platform;
 struct np_completion_event;
 struct np_udp_socket;
+struct np_udp_impl;
 
 struct np_udp_endpoint {
     struct np_ip_address ip;
     uint16_t port;
 };
 
-struct np_udp_module {
+struct np_udp {
+    const struct np_udp_functions* vptr;
+    // Pointer to data which is implementation specific.
+    void* data;
+};
 
+/**
+ * This struct defines a list of functions which is required for udp
+ * communication.
+ *
+ * Each function needs to point to a specific platform dependent
+ * implementation.
+ */
+struct np_udp_functions {
     /**
      * create an UDP socket resource. If create returns NABTO_EC_OK,
      * destroy must be called when socket is no longer in use to clean
      * up the resource.
      *
+     * The udpModule pointer is a reference to the implementation of
+     * the udp module.
+     *
+     * @param obj  A pointer to the actual udp object.
+     * @param sock  The created socket.
      * @return NABTO_EC_OK iff the socket resource was created.
      */
-    np_error_code (*create)(struct np_platform* pl, struct np_udp_socket** sock);
+    np_error_code (*create)(struct np_udp* obj, struct np_udp_socket** sock);
 
     /**
      * Destroy a socket. This will close everything and clean up
@@ -77,6 +92,9 @@ struct np_udp_module {
      * The completion event shall be resolved when a result for the
      * operation is available.
      *
+     * If the function is not implemented properly it needs to resolve
+     * the completion event with NABTO_EC_NOT_IMPLEMENTED.
+     *
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
      */
@@ -89,6 +107,9 @@ struct np_udp_module {
      *
      * The completion event shall be resolved when a result for the
      * operation is available.
+     *
+     * If the function is not implemented properly it needs to resolve
+     * the completion event with NABTO_EC_NOT_IMPLEMENTED.
      *
      * @param sock  The socket resource.
      * @param completionEvent  The completion event to be resolved the socket is bound.
@@ -138,7 +159,7 @@ struct np_udp_module {
      * @param completionEvent  The completion event to be resolved
      *                         when data is ready to be received from the socket.
      */
-    void (*async_recv_wait)(struct np_udp_socket* socket, struct np_completion_event* completionEvent);
+    void (*async_recv_wait)(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
     /**
      * Recv an UDP packet from a socket.

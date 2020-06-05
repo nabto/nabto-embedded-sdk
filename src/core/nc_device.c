@@ -45,14 +45,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-    ec = pl->dns.create_resolver(pl, &device->dnsResolver);
-    if (ec != NABTO_EC_OK) {
-        nc_device_deinit(device);
-        return ec;
-    }
-
-
-    ec = nc_attacher_init(&device->attacher, pl, device, &device->coapClient, device->dnsResolver, &nc_device_events_listener_notify, device);
+    ec = nc_attacher_init(&device->attacher, pl, device, &device->coapClient, &nc_device_events_listener_notify, device);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -69,7 +62,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     }
 
 
-    ec = nc_stun_init(&device->stun, device->dnsResolver, pl);
+    ec = nc_stun_init(&device->stun, pl);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -89,7 +82,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 
     device->serverPort = 4433;
 
-    ec = np_completion_event_init(pl, &device->socketBoundCompletionEvent, &nc_device_udp_bound_cb, device);
+    ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, &nc_device_udp_bound_cb, device);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -102,10 +95,6 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     struct np_platform* pl = device->pl;
 
-    if (device->mdns) {
-        pl->mdns.destroy(device->mdns);
-        device->mdns = NULL;
-    }
     nc_stream_manager_deinit(&device->streamManager);
     nc_client_connection_dispatch_deinit(&device->clientConnect);
     nc_stun_coap_deinit(&device->stunCoap);
@@ -120,14 +109,7 @@ void nc_device_deinit(struct nc_device_context* device) {
     }
     nc_udp_dispatch_deinit(&device->udp);
     nc_udp_dispatch_deinit(&device->secondaryUdp);
-    pl->dns.destroy_resolver(device->dnsResolver);
     np_completion_event_deinit(&device->socketBoundCompletionEvent);
-}
-
-uint16_t nc_device_mdns_get_port(void* userData)
-{
-    struct nc_device_context* dev = (struct nc_device_context*)userData;
-    return nc_udp_dispatch_get_local_port(&dev->udp);
 }
 
 void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
@@ -177,10 +159,8 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
     nc_udp_dispatch_start_recv(&dev->udp);
 
     if (dev->enableMdns) {
-        if (pl->mdns.create(pl, dev->productId, dev->deviceId, nc_device_mdns_get_port, dev, &dev->mdns) == NABTO_EC_OK)
-        {
-            pl->mdns.start(dev->mdns);
-        }
+        uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->udp);
+        pl->mdns.vptr->publish_service(&pl->mdns, localPort, dev->productId, dev->deviceId);
     }
 
     np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_udp_bound_cb, dev);
@@ -228,18 +208,12 @@ void nc_device_client_connections_closed_cb(void* data)
 
 void nc_device_stop(struct nc_device_context* dev)
 {
-    struct np_platform* pl = dev->pl;
     dev->state = NC_DEVICE_STATE_STOPPED;
     nc_udp_dispatch_abort(&dev->udp);
     nc_udp_dispatch_abort(&dev->secondaryUdp);
     nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
     nc_stun_remove_sockets(&dev->stun);
     nc_attacher_stop(&dev->attacher);
-
-
-    if (dev->mdns) {
-        pl->mdns.stop(dev->mdns);
-    }
 }
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)

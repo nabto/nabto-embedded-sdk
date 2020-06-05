@@ -10,7 +10,6 @@
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
 #include <core/nc_connection_event.h>
-#include <modules/mdns/nm_mdns.h>
 
 #include <platform/np_error_code.h>
 
@@ -50,7 +49,6 @@ struct nc_device_context {
     struct nc_stun_coap_context stunCoap;
     struct nc_rendezvous_coap_context rendezvousCoap;
     struct np_dtls_srv* dtlsServer;
-    struct np_dns_resolver* dnsResolver;
 
     bool enableMdns;
     struct np_mdns_context* mdns;

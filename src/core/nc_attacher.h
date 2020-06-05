@@ -116,13 +116,13 @@ struct nc_attach_context {
     char dns[256];
     uint8_t dnsLen;
 
-    struct nc_dns_multi_resolver_context dnsResolver;
+    struct nc_dns_multi_resolver_context dnsMultiResolver;
     struct np_ip_address resolvedIps[NC_ATTACHER_MAX_IPS];
     size_t resolvedIpsSize;
     struct np_completion_event resolveCompletionEvent;
 
     uint8_t redirectAttempts;
-    struct np_timed_event* reattachTimer;
+    struct np_event* reattachTimer;
     struct np_event* closeEv;
 
     nc_attacher_attach_start_callback startCallback;
@@ -159,7 +159,6 @@ struct nc_attach_context {
 // Init attacher module, always first function to be called
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl,
                                struct nc_device_context* device, struct nc_coap_client_context* coapClient,
-                               struct np_dns_resolver* dnsResolver,
                                nc_attacher_event_listener listener, void* listenerData);
 
 // deinit attacher module, always last function to be called, called after stop

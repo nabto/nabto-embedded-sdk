@@ -31,7 +31,7 @@ struct nc_stream_context {
 
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
-    struct np_timed_event* timer;
+    struct np_event* timer;
 
     // user facing stream data
     nc_stream_callback acceptCb;

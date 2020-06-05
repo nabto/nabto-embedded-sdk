@@ -4,6 +4,8 @@
 #include "nc_coap_packet_printer.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_timestamp_wrapper.h>
+#include <platform/np_event_queue_wrapper.h>
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
@@ -15,7 +17,7 @@ void nc_coap_server_notify_event(void* userData);
 void nc_coap_server_handle_send(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx);
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data);
-void nc_coap_server_handle_timeout(const np_error_code ec, void* data);
+void nc_coap_server_handle_timeout(void* data);
 
 static void nc_coap_server_notify_event_callback(void* userData);
 
@@ -35,12 +37,12 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
     ctx->pl = pl;
     nc_coap_server_set_infinite_stamp(ctx);
     np_error_code ec;
-    ec = np_event_queue_create_event(pl, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
+    ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_event_queue_create_timed_event(ctx->pl, &nc_coap_server_handle_timeout, ctx, &ctx->timer);
+    ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_handle_timeout, ctx, &ctx->timer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -51,12 +53,12 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
         nabto_coap_server_destroy(&ctx->server);
         ctx->pl->buf.free(ctx->sendBuffer);
 
-        np_event_queue_destroy_event(ctx->pl, ctx->ev);
-        np_event_queue_destroy_timed_event(ctx->pl, ctx->timer);
+        struct np_event_queue* eq = &ctx->pl->eq;
+        np_event_queue_destroy_event(eq, ctx->ev);
+        np_event_queue_destroy_event(eq, ctx->timer);
     }
 }
 
@@ -135,12 +137,11 @@ void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
         if (diff < 0) {
             diff = 0;
         }
-        np_event_queue_cancel_timed_event(ctx->pl, ctx->timer);
-        np_event_queue_post_timed_event(ctx->pl, ctx->timer, diff);
+        np_event_queue_post_timed_event(&ctx->pl->eq, ctx->timer, diff);
     }
 }
 
-void nc_coap_server_handle_timeout(const np_error_code ec, void* data)
+void nc_coap_server_handle_timeout(void* data)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*) data;
     //NABTO_LOG_TRACE(LOG, "Handle timeout called");
@@ -181,7 +182,7 @@ void nc_coap_server_send_to_callback(const np_error_code ec, void* data)
 
 uint32_t nc_coap_server_get_stamp(void* userData) {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    return np_timestamp_now_ms(ctx->pl);
+    return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
 void nc_coap_server_notify_event_callback(void* userData)
@@ -193,7 +194,7 @@ void nc_coap_server_notify_event_callback(void* userData)
 void nc_coap_server_notify_event(void* userData)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    np_event_queue_post_maybe_double(ctx->pl, ctx->ev);
+    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
 }
 
 void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx)

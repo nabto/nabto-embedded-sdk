@@ -1,9 +1,5 @@
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
-find_package( Threads )
-
-include_directories(${EVENT__INCLUDE_DIRS})
-
 set(nabto_device_src
   nabto_device.c
   nabto_device_stream.c
@@ -20,6 +16,7 @@ set(nabto_device_src
   nabto_device_authorization_events.c
   nabto_device_tcp_tunnelling.c
   nabto_device_logging.c
+  nabto_device_integration.c
   )
 
 add_library( nabto_device_api "${nabto_device_src}")

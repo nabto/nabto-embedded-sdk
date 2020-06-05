@@ -23,7 +23,7 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
 void nc_client_connection_handle_keep_alive(struct nc_client_connection* conn, uint8_t channelId, uint8_t* buffer, uint16_t bufferSize);
 void nc_client_connection_keep_alive_start(struct nc_client_connection* conn);
 void nc_client_connection_keep_alive_wait(struct nc_client_connection* conn);
-void nc_client_connection_keep_alive_event(const np_error_code ec, void* data);
+void nc_client_connection_keep_alive_event(void* data);
 void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx);
 void nc_client_connection_keep_alive_send_response(struct nc_client_connection* connection, uint8_t channelId, uint8_t* buffer, size_t length);
 void nc_client_connection_keep_alive_packet_sent(const np_error_code ec, void* data);
@@ -59,7 +59,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
         return ec;
     }
 
-    ec = np_completion_event_init(pl, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
+    ec = np_completion_event_init(&pl->eq, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -224,7 +224,7 @@ void nc_client_connection_keep_alive_start(struct nc_client_connection* ctx)
     nc_keep_alive_wait(&ctx->keepAlive);
 }
 
-void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
+void nc_client_connection_keep_alive_event(void* data)
 {
     struct nc_client_connection* ctx = (struct nc_client_connection*)data;
     struct np_platform* pl = ctx->pl;
@@ -232,25 +232,20 @@ void nc_client_connection_keep_alive_event(const np_error_code ec, void* data)
     uint32_t recvCount;
     uint32_t sentCount;
 
-    if (ec != NABTO_EC_OK) {
-        // event probably cancelled
-        return;
-    } else {
-        pl->dtlsS.get_packet_count(ctx->dtls, &recvCount, &sentCount);
-        enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
-        switch(action) {
-            case DO_NOTHING:
-                nc_keep_alive_wait(&ctx->keepAlive);
-                break;
-            case SEND_KA:
-                nc_client_connection_keep_alive_send_req(ctx);
-                nc_keep_alive_wait(&ctx->keepAlive);
-                break;
-            case KA_TIMEOUT:
-                NABTO_LOG_INFO(LOG, "Closed connection because of keep alive timeout.");
-                nc_client_connection_close_connection(ctx);
-                break;
-        }
+    pl->dtlsS.get_packet_count(ctx->dtls, &recvCount, &sentCount);
+    enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
+    switch(action) {
+        case DO_NOTHING:
+            nc_keep_alive_wait(&ctx->keepAlive);
+            break;
+        case SEND_KA:
+            nc_client_connection_keep_alive_send_req(ctx);
+            nc_keep_alive_wait(&ctx->keepAlive);
+            break;
+        case KA_TIMEOUT:
+            NABTO_LOG_INFO(LOG, "Closed connection because of keep alive timeout.");
+            nc_client_connection_close_connection(ctx);
+            break;
     }
 }
 

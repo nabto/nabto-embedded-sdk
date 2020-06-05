@@ -1,6 +1,7 @@
 #include "nm_event_queue.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_timestamp_wrapper.h>
 
 #include <stdlib.h>
 
@@ -55,46 +56,25 @@ void nm_event_queue_cancel_event(struct nm_event_queue_event* event)
     }
 }
 
-void nm_event_queue_timed_event_init(struct nm_event_queue_timed_event* event, np_timed_event_callback cb, void* data)
-{
-    event->cb = cb;
-    event->data = data;
-
-    nn_llist_node_init(&event->timedEventsNode);
-}
-
-void nm_event_queue_timed_event_deinit(struct nm_event_queue_timed_event* event)
-{
-    nm_event_queue_cancel_timed_event(event);
-}
-
-void nm_event_queue_post_timed_event(struct nm_event_queue* queue, struct nm_event_queue_timed_event* event, uint32_t timestamp)
+void nm_event_queue_post_timed_event(struct nm_event_queue* queue, struct nm_event_queue_event* event, uint32_t timestamp)
 {
     event->expireTimestamp = timestamp;
-    if (nn_llist_node_in_list(&event->timedEventsNode)) {
-        nn_llist_erase_node(&event->timedEventsNode);
+    if (nn_llist_node_in_list(&event->eventsNode)) {
+        nn_llist_erase_node(&event->eventsNode);
     }
 
     struct nn_llist_iterator it = nn_llist_begin(&queue->timedEvents);
     while (!nn_llist_is_end(&it)) {
-        struct nm_event_queue_timed_event* timedEvent = nn_llist_get_item(&it);
+        struct nm_event_queue_event* timedEvent = nn_llist_get_item(&it);
         if (np_timestamp_less_or_equal(timestamp, timedEvent->expireTimestamp)) {
-            nn_llist_insert_before(&it, &event->timedEventsNode, event);
+            nn_llist_insert_before(&it, &event->eventsNode, event);
             return;
         }
         nn_llist_next(&it);
     }
     // the event is not added to the list simply because it should be at the very end.
-    nn_llist_append(&queue->timedEvents, &event->timedEventsNode, event);
+    nn_llist_append(&queue->timedEvents, &event->eventsNode, event);
 }
-
-void nm_event_queue_cancel_timed_event(struct nm_event_queue_timed_event* event)
-{
-    if (nn_llist_node_in_list(&event->timedEventsNode)) {
-        nn_llist_erase_node(&event->timedEventsNode);
-    }
-}
-
 
 /**
  * take a single event off the queue if an event exits.
@@ -118,7 +98,7 @@ bool nm_event_queue_take_event(struct nm_event_queue* queue, struct nm_event_que
  *
  * @return true iff a timed event was executed
  */
-bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now, struct nm_event_queue_timed_event** event)
+bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now, struct nm_event_queue_event** event)
 {
     struct nn_llist_iterator it = nn_llist_begin(&queue->timedEvents);
 
@@ -126,7 +106,7 @@ bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now,
         return false;
     }
 
-    struct nm_event_queue_timed_event* ev = nn_llist_get_item(&it);
+    struct nm_event_queue_event* ev = nn_llist_get_item(&it);
     if (np_timestamp_less_or_equal(ev->expireTimestamp, now)) {
         nn_llist_erase(&it);
         *event = ev;
@@ -150,7 +130,7 @@ bool nm_event_queue_next_timed_event(struct nm_event_queue* queue, uint32_t* nex
         return false;
     }
 
-    struct nm_event_queue_timed_event* event = nn_llist_get_item(&it);
+    struct nm_event_queue_event* event = nn_llist_get_item(&it);
     *nextTime = event->expireTimestamp;
     return true;
 }

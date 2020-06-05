@@ -1,16 +1,18 @@
 #include <api/nabto_device_platform.h>
+#include <api/nabto_device_integration.h>
 
 #include "libevent_event_queue.h"
 
 #include <modules/libevent/nm_libevent.h>
+#include <modules/libevent/nm_libevent_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mdns/nm_mdns.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
+#include <modules/mdns/nm_mdns.h>
 #include <api/nabto_device_threads.h>
-
 
 #include <event.h>
 #include <event2/event.h>
@@ -18,68 +20,94 @@
 
 #include <stdlib.h>
 
+static void signal_event(evutil_socket_t s, short event, void* userData);
+static void* libevent_thread(void* data);
 
-static void nabto_device_signal_event(evutil_socket_t s, short event, void* userData);
-static void* nabto_device_platform_network_thread(void* data);
-
-
-struct nabto_device_platform_libevent {
+/**
+ * Structure containing all the platform adapter specific data.
+ */
+struct libevent_platform {
     struct event_base* eventBase;
     struct event* signalEvent;
     struct nm_libevent_context libeventContext;
 
-    struct nabto_device_thread* networkThread;
-
+    struct nabto_device_thread* libeventThread;
     bool stopped;
+
+    // Store a reference to the event queue as it needs special destruction.
+    struct np_event_queue eq;
+
+    struct nm_mdns_server mdnsServer;
 };
 
-np_error_code nabto_device_init_platform(struct np_platform* pl, struct nabto_device_mutex* eventMutex)
+/**
+ * This function is called from nabto_device_new.
+ */
+np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex)
 {
+    // Initialize the global libevent context.
     nm_libevent_global_init();
 
-    struct nabto_device_platform_libevent* platform = calloc(1, sizeof(struct nabto_device_platform_libevent));
+    // Create a new platform object. The platform is providing all the
+    // functionality which can change between the nabto_device
+    // implementations.
+    struct libevent_platform* platform = calloc(1, sizeof(struct libevent_platform));
 
-    pl->platformData = platform;
+
     platform->eventBase = event_base_new();
-    platform->signalEvent = event_new(platform->eventBase, -1, 0, &nabto_device_signal_event, platform);
+    platform->signalEvent = event_new(platform->eventBase, -1, 0, &signal_event, platform);
 
-    // Use the default communication buffer module
-    nm_communication_buffer_init(pl);
+    // The libevent module comes with UDP, TCP, local ip and timestamp
+    // module implementations.
+    nm_libevent_init(&platform->libeventContext, platform->eventBase);
 
-    // The libevent module comes with UDP, TCP, local ip and timestamp module implementations.
-    nm_libevent_init(pl, &platform->libeventContext, platform->eventBase);
+    /**
+     * Store a pointer to the libevent_platform in the device, such
+     * that it can be retrieved in later lifecycle events.
+     */
+    nabto_device_integration_set_platform_data(device, platform);
 
-    // Use mbedtls for the dtls client.
-    nm_mbedtls_cli_init(pl);
+    // Create libevent based implementations of udp, tcp, dns,
+    // timestamp and local ip functionalities.
+    struct np_udp udp = nm_libevent_create_udp(&platform->libeventContext);
+    struct np_tcp tcp = nm_libevent_create_tcp(&platform->libeventContext);
+    struct np_timestamp timestamp = nm_libevent_create_timestamp(&platform->libeventContext);
+    struct np_dns dns = nm_libevent_dns_create_impl(&platform->libeventContext);
+    struct np_local_ip localIp = nm_libevent_create_local_ip(&platform->libeventContext);
 
-    // Use mbedtls for the dtls server.
-    nm_mbedtls_srv_init(pl);
+    // Create an event queue which is based on libevent.
+    platform->eq = libevent_event_queue_create(platform->eventBase, eventMutex);
 
-    // Use the default mdns server
-    nm_mdns_init(pl);
+    // Tell the device which implementations of the functionalities it
+    // should use.
+    nabto_device_integration_set_udp_impl(device, &udp);
+    nabto_device_integration_set_tcp_impl(device, &tcp);
+    nabto_device_integration_set_timestamp_impl(device, &timestamp);
+    nabto_device_integration_set_dns_impl(device, &dns);
+    nabto_device_integration_set_event_queue_impl(device, &platform->eq);
+    nabto_device_integration_set_local_ip_impl(device, &localIp);
 
-    // Use the mbedtls random module
-    nm_mbedtls_random_init(pl);
+    // Create a mdns server
+    nm_mdns_init(&platform->mdnsServer, &platform->eq, &udp, &localIp);
 
-    // The event queue is specific for this implementation. Everything
-    // both network and the core runs in one thread.
-    libevent_event_queue_init(pl, platform->eventBase, eventMutex);
+    struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
+    nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
 
-    platform->networkThread = nabto_device_threads_create_thread();
-    if (nabto_device_threads_run(platform->networkThread, nabto_device_platform_network_thread, platform) != 0) {
+    // Start the thread where the libevent main loop runs.
+    platform->libeventThread = nabto_device_threads_create_thread();
+    if (nabto_device_threads_run(platform->libeventThread, libevent_thread, platform) != 0) {
         // TODO
     }
 
     return NABTO_EC_OK;
 }
 
-void nabto_device_deinit_platform(struct np_platform* pl)
+void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
-    struct nabto_device_platform_libevent* platform = pl->platformData;
-    libevent_event_queue_deinit(pl);
-    nm_mbedtls_random_deinit(pl);
-    nm_libevent_deinit(&platform->libeventContext);
-    nabto_device_threads_free_thread(platform->networkThread);
+    struct libevent_platform* platform = nabto_device_integration_get_platform_data(device);
+    libevent_event_queue_destroy(&platform->eq);
+
+    nabto_device_threads_free_thread(platform->libeventThread);
 
     event_free(platform->signalEvent);
     event_base_free(platform->eventBase);
@@ -87,23 +115,23 @@ void nabto_device_deinit_platform(struct np_platform* pl)
     free(platform);
 }
 
-void nabto_device_platform_stop_blocking(struct np_platform* pl)
+void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
-    struct nabto_device_platform_libevent* platform = pl->platformData;
+    struct libevent_platform* platform = nabto_device_integration_get_platform_data(device);
     if (platform->stopped) {
         return;
     }
     platform->stopped = true;
     event_active(platform->signalEvent, 0, 0);
-    nabto_device_threads_join(platform->networkThread);
+    nabto_device_threads_join(platform->libeventThread);
 }
 
 /*
  * Thread running the network
  */
-void* nabto_device_platform_network_thread(void* data)
+void* libevent_thread(void* data)
 {
-    struct nabto_device_platform_libevent* platform = data;
+    struct libevent_platform* platform = data;
     if (platform->stopped == true) {
         return NULL;
     }
@@ -111,8 +139,8 @@ void* nabto_device_platform_network_thread(void* data)
     return NULL;
 }
 
-void nabto_device_signal_event(evutil_socket_t s, short event, void* userData)
+void signal_event(evutil_socket_t s, short event, void* userData)
 {
-    struct nabto_device_platform_libevent* platform = userData;
+    struct libevent_platform* platform = userData;
     event_base_loopbreak(platform->eventBase);
 }

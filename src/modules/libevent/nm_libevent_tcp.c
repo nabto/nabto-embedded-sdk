@@ -4,8 +4,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_platform.h>
 #include <platform/np_error_code.h>
-#include <platform/np_tcp.h>
-#include <platform/np_event_queue.h>
+#include <platform/interfaces/np_tcp.h>
 #include <platform/np_completion_event.h>
 
 #include <event2/bufferevent.h>
@@ -49,7 +48,7 @@ struct np_tcp_socket {
 
 #define LOG NABTO_LOG_MODULE_TCP
 
-static np_error_code tcp_create(struct np_platform* pl, struct np_tcp_socket** sock);
+static np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock);
 static void tcp_destroy(struct np_tcp_socket* sock);
 static void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
 static void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
@@ -64,20 +63,22 @@ static void resolve_tcp_read(struct np_tcp_socket* sock, np_error_code ec);
 static void resolve_tcp_write(struct np_tcp_socket* sock, np_error_code ec);
 static void tcp_eof(void* userData);
 
-void nm_libevent_tcp_init(struct np_platform* pl, struct nm_libevent_context* ctx)
+static struct np_tcp_functions tcpVtbl = {
+    .create = tcp_create,
+    .destroy = tcp_destroy,
+    .async_connect = tcp_async_connect,
+    .async_write = tcp_async_write,
+    .async_read = tcp_async_read,
+    .shutdown = tcp_shutdown,
+    .abort = tcp_abort
+};
+
+const struct np_tcp_functions* nm_libevent_tcp_functions()
 {
-    pl->tcp.create        = &tcp_create;
-    pl->tcp.destroy       = &tcp_destroy;
-    pl->tcp.async_connect = &tcp_async_connect;
-    pl->tcp.async_write   = &tcp_async_write;
-    pl->tcp.async_read    = &tcp_async_read;
-    pl->tcp.shutdown      = &tcp_shutdown;
-    pl->tcp.abort         = &tcp_abort;
-    pl->tcpData = ctx;
+    return &tcpVtbl;
 }
 
-
-np_error_code tcp_create(struct np_platform* pl, struct np_tcp_socket** sock)
+np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
 {
     NABTO_LOG_TRACE(LOG, "tcp_create");
     struct np_tcp_socket* s = calloc(1, sizeof(struct np_tcp_socket));
@@ -85,10 +86,9 @@ np_error_code tcp_create(struct np_platform* pl, struct np_tcp_socket** sock)
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    struct nm_libevent_context* ctx = pl->tcpData;
+    struct nm_libevent_context* ctx = obj->data;
 
     s->aborted = false;
-    s->pl = pl;
     s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 
     *sock = s;

@@ -4,15 +4,15 @@
 #include <stdint.h>
 
 #include <platform/np_platform.h>
-#include <platform/np_timestamp.h>
+#include <platform/interfaces/np_timestamp.h>
 
-typedef void (*nm_mbedtls_timer_callback)(const np_error_code ec, void* data);
+typedef void (*nm_mbedtls_timer_callback)(void* data);
 
 struct nm_mbedtls_timer {
     struct np_platform* pl;
     uint32_t intermediateTp;
     uint32_t finalTp;
-    struct np_timed_event* tEv;
+    struct np_event* tEv;
     nm_mbedtls_timer_callback cb;
     void* cbData;
 };

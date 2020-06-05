@@ -1,7 +1,8 @@
 #include "nm_libevent_timestamp.h"
+#include "nm_libevent.h"
 
 #include <platform/np_platform.h>
-#include <platform/np_timestamp.h>
+#include <platform/interfaces/np_timestamp.h>
 
 #include <event2/event.h>
 
@@ -13,17 +14,25 @@
 #include <winsock2.h>
 #endif
 
-static uint32_t ts_now_ms(struct np_platform* pl);
 
-void nm_libevent_timestamp_init(struct event_base* eb, struct np_platform* pl)
+
+
+static uint32_t ts_now_ms(struct np_timestamp* obj);
+
+static const struct np_timestamp_functions vtable = {
+    .now_ms = &ts_now_ms
+};
+
+
+const struct np_timestamp_functions* nm_libevent_timestamp_functions()
 {
-    pl->tsData = eb;
-    pl->ts.now_ms               = &ts_now_ms;
+    return &vtable;
 }
 
-uint32_t ts_now_ms(struct np_platform* pl)
+uint32_t ts_now_ms(struct np_timestamp* obj)
 {
-    struct event_base* eventBase = pl->tsData;
+    struct nm_libevent_context* ctx = obj->data;
+    struct event_base* eventBase = ctx->eventBase;
     struct timeval tv;
     event_base_gettimeofday_cached(eventBase, &tv);
 

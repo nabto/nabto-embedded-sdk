@@ -6,18 +6,18 @@
  * the core.
  */
 
-#include <platform/np_timestamp.h>
-#include <platform/np_event_queue.h>
-#include <platform/np_udp.h>
+#include <platform/interfaces/np_timestamp.h>
+#include <platform/interfaces/np_event_queue.h>
+#include <platform/interfaces/np_udp.h>
 #include <platform/np_communication_buffer.h>
-#include <platform/np_dns.h>
+#include <platform/interfaces/np_dns.h>
 #include <platform/np_dtls_cli.h>
 #include <platform/np_dtls_srv.h>
-#include <platform/np_tcp.h>
-#include <platform/np_mdns.h>
+#include <platform/interfaces/np_tcp.h>
+#include <platform/interfaces/np_mdns.h>
 #include <platform/np_authorization.h>
 #include <platform/np_random.h>
-#include <platform/np_local_ip.h>
+#include <platform/interfaces/np_local_ip.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,36 +28,33 @@ struct np_platform {
     void* platformData;
 
     // Timestamp module
-    struct np_timestamp_module ts;
-    void* tsData;  // Custom data for the timestamp module
+    struct np_timestamp timestamp;
 
     // Event Queue module
     struct np_event_queue eq;
-    void* eqData;  // Custom data for the event queue module
 
     // UDP Socket module
-    struct np_udp_module udp;
-    void* udpData;  // Custom data for the udp module object
+    struct np_udp udp;
 
     // DNS resolver module
-    struct np_dns_module dns;
-    void* dnsData;  // Custom data for the dns module.
+    struct np_dns dns;
 
     // Tcp socket module
-    struct np_tcp_module tcp;
-    void* tcpData;  // Custom data for the TCP module.
-
-    // Random module
-    struct np_random_module random;
-    void* randomData; // Custom data for the random module.
+    struct np_tcp tcp;
 
     // Local ip module.
     struct np_local_ip localIp;
-    void* localIpData;  // Custom data for the local ip module.
+
+    // Mdns module
+    struct np_mdns mdns;
 
 
     // The following modules are not final yet and they are subject to
     // changes in the future.
+
+    // Random module
+    struct np_random_module random;
+    void* randomData; // Custom data for the random module.
 
     // Communication buffer module
     struct np_communication_buffer_module buf;
@@ -70,9 +67,6 @@ struct np_platform {
     struct np_dtls_srv_module dtlsS;
     void* dtlsSData; // Custom data for the dtls server module.
 
-    // Mdns module
-    struct np_mdns_module mdns;
-    void* mdnsData;  // Custom data for the mdns module.
 
     // Access control module
     struct np_authorization authorization;

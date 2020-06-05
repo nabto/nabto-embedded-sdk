@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(cancel_timed_event)
 
     BOOST_TEST(np_event_queue_has_timed_event(&pl));
 
-    np_event_queue_cancel_timed_event(&pl, &event);
+    np_event_queue_cancel_event(&pl, &event);
 
     BOOST_TEST(!np_event_queue_has_timed_event(&pl));
 
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(test_cancel_timed_event_for_non_empty_q)
 
     BOOST_TEST(np_event_queue_has_timed_event(&pl));
 
-    np_event_queue_cancel_timed_event(&pl, &event);
+    np_event_queue_cancel_event(&pl, &event);
 
     time_ += 100;
 

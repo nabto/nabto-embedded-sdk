@@ -1,7 +1,9 @@
 #include "nm_libevent_get_local_ip.h"
 #include "nm_libevent_types.h"
+#include "nm_libevent.h"
 
 #include <platform/np_logging.h>
+#include <platform/interfaces/np_local_ip.h>
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
@@ -30,14 +32,22 @@
 
 #define LOG NABTO_LOG_MODULE_UDP
 
-static size_t get_local_ip( struct np_ip_address *addrs, size_t addrsSize);
+static size_t get_local_ips(struct np_local_ip* obj, struct np_ip_address *addrs, size_t addrsSize);
 
-void nm_libevent_local_ip_init(struct np_platform* pl)
+
+const struct np_local_ip_functions vtable = {
+    .get_local_ips = get_local_ips
+};
+
+struct np_local_ip nm_libevent_create_local_ip(struct nm_libevent_context* ctx)
 {
-    pl->localIp.get_local_ip = &get_local_ip;
+    struct np_local_ip obj;
+    obj.vptr = &vtable;
+    obj.data = ctx;
+    return obj;
 }
 
-size_t get_local_ip( struct np_ip_address *addrs, size_t addrsSize)
+size_t get_local_ips(struct np_local_ip* obj, struct np_ip_address *addrs, size_t addrsSize)
 {
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;

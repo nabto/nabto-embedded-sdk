@@ -4,9 +4,7 @@
 #include "nm_libevent_mdns.h"
 #include "nm_libevent_get_local_ip.h"
 
-#include <platform/np_platform.h>
 #include <platform/np_logging.h>
-#include <platform/np_event_queue.h>
 #include <platform/np_completion_event.h>
 
 #include <event2/util.h>
@@ -43,14 +41,13 @@ struct received_ctx {
 struct np_udp_socket {
     struct received_ctx recv;
     enum np_ip_address_type type;
-    struct np_communication_buffer* recvBuffer;
     evutil_socket_t sock;
-    struct np_platform* pl;
+    struct nm_libevent_context* impl;
     bool aborted;
     struct event* event;
 };
 
-static np_error_code udp_create(struct np_platform* pl, struct np_udp_socket** sock);
+static np_error_code udp_create(struct np_udp* obj, struct np_udp_socket** sock);
 static void udp_destroy(struct np_udp_socket* sock);
 static void udp_abort(struct np_udp_socket* sock);
 static void udp_async_bind_port(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
@@ -77,20 +74,20 @@ static np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_en
 static evutil_socket_t nonblocking_socket(int domain, int type);
 static void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec);
 
-void nm_libevent_udp_init(struct np_platform* pl, struct nm_libevent_context* ctx)
+const struct np_udp_functions* nm_libevent_udp_functions()
 {
-    pl->udpData = ctx;
-
-    pl->udp.create               = &udp_create;
-    pl->udp.destroy              = &udp_destroy;
-    pl->udp.abort                = &udp_abort;
-    pl->udp.async_bind_port      = &udp_async_bind_port;
-    pl->udp.async_bind_mdns_ipv4 = &udp_async_bind_mdns_ipv4;
-    pl->udp.async_bind_mdns_ipv6 = &udp_async_bind_mdns_ipv6;
-    pl->udp.async_send_to        = &udp_async_send_to;
-    pl->udp.async_recv_wait      = &udp_async_recv_wait;
-    pl->udp.recv_from            = &udp_recv_from;
-    pl->udp.get_local_port       = &udp_get_local_port;
+    static struct np_udp_functions f;
+    f.create               = &udp_create;
+    f.destroy              = &udp_destroy;
+    f.abort                = &udp_abort;
+    f.async_bind_port      = &udp_async_bind_port;
+    f.async_bind_mdns_ipv4 = &udp_async_bind_mdns_ipv4;
+    f.async_bind_mdns_ipv6 = &udp_async_bind_mdns_ipv6;
+    f.async_send_to        = &udp_async_send_to;
+    f.async_recv_wait      = &udp_async_recv_wait;
+    f.recv_from            = &udp_recv_from;
+    f.get_local_port       = &udp_get_local_port;
+    return &f;
 }
 
 void nm_libevent_udp_deinit(struct np_platform* pl)
@@ -98,18 +95,16 @@ void nm_libevent_udp_deinit(struct np_platform* pl)
     // TODO
 }
 
-np_error_code udp_create(struct np_platform* pl, struct np_udp_socket** sock)
+np_error_code udp_create(struct np_udp* obj, struct np_udp_socket** sock)
 {
     struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
     if (s == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    struct nm_libevent_context* ctx = pl->udpData;
+    struct nm_libevent_context* ctx = obj->data;
 
-    s->pl = pl;
-    s->recvBuffer = ctx->recvBuffer;
-    //np_event_queue_init_event(&s->recv.event);
+    s->impl = ctx;
 
     *sock = s;
 
@@ -118,8 +113,7 @@ np_error_code udp_create(struct np_platform* pl, struct np_udp_socket** sock)
 
 void udp_add_to_libevent(struct np_udp_socket* sock)
 {
-    struct np_platform* pl = sock->pl;
-    struct nm_libevent_context* context = pl->udpData;
+    struct nm_libevent_context* context = sock->impl;
     sock->event = event_new(context->eventBase, sock->sock, EV_READ, udp_ready_callback, sock);
 }
 

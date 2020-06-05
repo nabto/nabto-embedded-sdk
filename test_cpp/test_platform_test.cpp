@@ -1,7 +1,9 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
 
-#include <platform/np_event_queue.h>
+#include <platform/interfaces/np_event_queue.h>
+#include <platform/np_event_queue_wrapper.h>
+#include <platform/np_platform.h>
 
 #include "test_platform.hpp"
 
@@ -34,9 +36,10 @@ BOOST_DATA_TEST_CASE(stop_from_event, nabto::test::TestPlatform::multi(),tp)
 {
     std::thread t([tp](){ tp->run(); });
     struct np_platform* pl = tp->getPlatform();
+    struct np_event_queue* eq = &pl->eq;
     struct np_event* stopEvent;
-    np_event_queue_create_event(pl, &stopFunction, tp.get(), &stopEvent);
-    np_event_queue_post(pl, stopEvent);
+    np_event_queue_create_event(eq, &stopFunction, tp.get(), &stopEvent);
+    np_event_queue_post(eq, stopEvent);
     t.join();
 }
 
@@ -44,8 +47,9 @@ BOOST_DATA_TEST_CASE(stop_from_event_no_thread, nabto::test::TestPlatform::multi
 {
     struct np_platform* pl = tp->getPlatform();
     struct np_event* stopEvent;
-    np_event_queue_create_event(pl, &stopFunction, tp.get(), &stopEvent);
-    np_event_queue_post(pl, stopEvent);
+    struct np_event_queue* eq = &pl->eq;
+    np_event_queue_create_event(eq, &stopFunction, tp.get(), &stopEvent);
+    np_event_queue_post(eq, stopEvent);
     tp->run();
 }
 

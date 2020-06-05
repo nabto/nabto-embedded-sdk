@@ -1,19 +1,24 @@
 #include "nm_unix_timestamp.h"
 #include <platform/np_logging.h>
-#include <platform/np_timestamp.h>
+#include <platform/interfaces/np_timestamp.h>
 
 #include <time.h>
 
-static uint32_t ts_now_ms(struct np_platform* pl);
+static uint32_t ts_now_ms(struct np_timestamp* obj);
 
+static struct np_timestamp_functions vtable = {
+    .now_ms               = &ts_now_ms
+};
 
-
-void nm_unix_ts_init(struct np_platform* pl)
+struct np_timestamp nm_unix_ts_create()
 {
-    pl->ts.now_ms               = &ts_now_ms;
+    struct np_timestamp ts;
+    ts.vptr = &vtable;
+    ts.data = NULL;
+    return ts;
 }
 
-uint32_t ts_now_ms(struct np_platform* pl)
+uint32_t ts_now_ms(struct np_timestamp* obj)
 {
     struct timespec spec;
     clock_gettime(CLOCK_REALTIME, &spec);

@@ -52,6 +52,7 @@ target_link_libraries(embedded_unit_test
   nm_iam
   nabto_device_static
   3rdparty_boost_test
+  np_platform
   )
 
 if (HAVE_SELECT_UNIX)

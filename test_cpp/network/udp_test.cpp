@@ -5,6 +5,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_udp_wrapper.h>
 
 #include <util/io_service.hpp>
 #include <util/udp_echo_server.hpp>
@@ -18,7 +19,7 @@ namespace test {
 class UdpEchoClientTest {
  public:
     UdpEchoClientTest(TestPlatform& tp)
-        : tp_(tp), pl_(tp.getPlatform())
+        : tp_(tp), pl_(tp.getPlatform()), eq_(pl_->eq)
     {
     }
 
@@ -27,7 +28,7 @@ class UdpEchoClientTest {
     }
 
     void start(uint16_t port) {
-        BOOST_TEST(pl_->udp.create(pl_, &socket_) == NABTO_EC_OK);
+        BOOST_TEST(np_udp_create(&pl_->udp, &socket_) == NABTO_EC_OK);
 
         uint8_t addr[] = { 0x7F, 0x00, 0x00, 0x01 };
 
@@ -39,8 +40,8 @@ class UdpEchoClientTest {
         memcpy(ep_.ip.ip.v6, addr, 4);
         ep_.port = port;
 
-        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::created, this);
-        pl_->udp.async_bind_port(socket_, 0, &completionEvent_);
+        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::created, this);
+        np_udp_async_bind_port(&pl_->udp, socket_, 0, &completionEvent_);
 
         tp_.run();
     }
@@ -54,8 +55,8 @@ class UdpEchoClientTest {
 
     void startSend()
     {
-        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::sent, this);
-        pl_->udp.async_send_to(socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
+        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::sent, this);
+        np_udp_async_send_to(&pl_->udp, socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
     }
 
     static void sent(np_error_code ec, void* data)
@@ -67,8 +68,8 @@ class UdpEchoClientTest {
 
     void startRecv()
     {
-        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::received, this);
-        pl_->udp.async_recv_wait(socket_, &completionEvent_);
+        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::received, this);
+        np_udp_async_recv_wait(&pl_->udp, socket_, &completionEvent_);
     }
 
     static void received(np_error_code ec, void* data)
@@ -81,7 +82,7 @@ class UdpEchoClientTest {
         size_t recvLength;
 
         BOOST_TEST(ec == NABTO_EC_OK);
-        BOOST_TEST(client->pl_->udp.recv_from(client->socket_, &ep, buffer, bufferSize, &recvLength) == NABTO_EC_OK);
+        BOOST_TEST(np_udp_recv_from(&client->pl_->udp, client->socket_, &ep, buffer, bufferSize, &recvLength) == NABTO_EC_OK);
 
         auto sentData = lib::span<const uint8_t>(client->data_.data(), client->data_.size());
         auto receivedData = lib::span<const uint8_t>(buffer, recvLength);
@@ -90,13 +91,14 @@ class UdpEchoClientTest {
     }
 
     void end() {
-        pl_->udp.destroy(socket_);
+        np_udp_destroy(&pl_->udp, socket_);
         tp_.stop();
     }
 
  private:
     nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
+    struct np_event_queue eq_;
     struct np_udp_endpoint ep_;
     struct np_udp_socket* socket_;
     std::array<uint8_t, 42> data_;

@@ -28,7 +28,7 @@ static void nm_select_unix_udp_free_socket(struct np_udp_socket* sock);
 /**
  * Api function declarations
  */
-static np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_socket** sock);
+static np_error_code nm_select_unix_udp_create(struct np_udp* obj, struct np_udp_socket** sock);
 static void nm_select_unix_udp_destroy(struct np_udp_socket* sock);
 static void nm_select_unix_udp_abort(struct np_udp_socket* sock);
 static void nm_select_unix_udp_async_bind_port(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
@@ -49,28 +49,31 @@ static np_error_code create_socket_any(struct np_udp_socket* s);
 static np_error_code create_socket_ipv6(struct np_udp_socket* s);
 static np_error_code create_socket_ipv4(struct np_udp_socket* s);
 
-np_error_code nm_select_unix_udp_init(struct nm_select_unix* ctx, struct np_platform *pl)
-{
-    pl->udp.create           = &nm_select_unix_udp_create;
-    pl->udp.destroy          = &nm_select_unix_udp_destroy;
-    pl->udp.abort            = &nm_select_unix_udp_abort;
-    pl->udp.async_bind_port  = &nm_select_unix_udp_async_bind_port;
-    pl->udp.async_bind_mdns_ipv4 = &nm_select_unix_async_bind_mdns_ipv4;
-    pl->udp.async_bind_mdns_ipv6 = &nm_select_unix_async_bind_mdns_ipv6;
-    pl->udp.async_send_to    = &nm_select_unix_udp_async_send_to;
-    pl->udp.async_recv_wait  = &nm_select_unix_udp_async_recv_wait;
-    pl->udp.recv_from        = &nm_select_unix_udp_recv_from;
-    pl->udp.get_local_port   = &nm_select_unix_udp_get_local_port;
-    pl->udpData = ctx;
 
-    return NABTO_EC_OK;
+
+static struct np_udp_functions vtable = {
+    .create           = &nm_select_unix_udp_create,
+    .destroy          = &nm_select_unix_udp_destroy,
+    .abort            = &nm_select_unix_udp_abort,
+    .async_bind_port  = &nm_select_unix_udp_async_bind_port,
+    .async_bind_mdns_ipv4 = &nm_select_unix_async_bind_mdns_ipv4,
+    .async_bind_mdns_ipv6 = &nm_select_unix_async_bind_mdns_ipv6,
+    .async_send_to    = &nm_select_unix_udp_async_send_to,
+    .async_recv_wait  = &nm_select_unix_udp_async_recv_wait,
+    .recv_from        = &nm_select_unix_udp_recv_from,
+    .get_local_port   = &nm_select_unix_udp_get_local_port
+};
+
+
+struct np_udp nm_select_unix_udp_get_impl(struct nm_select_unix* ctx)
+{
+    struct np_udp obj;
+    obj.vptr = &vtable;
+    obj.data = ctx;
+    return obj;
 }
 
-void nm_select_unix_udp_deinit(struct nm_select_unix* ctx)
-{
-}
-
-np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_socket** sock)
+np_error_code nm_select_unix_udp_create(struct np_udp* obj, struct np_udp_socket** sock)
 {
     struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
     if (!s) {
@@ -79,10 +82,9 @@ np_error_code nm_select_unix_udp_create(struct np_platform* pl, struct np_udp_so
     *sock = s;
     s->sock = -1;
 
-    struct nm_select_unix* selectCtx = pl->udpData;
+    struct nm_select_unix* selectCtx = obj->data;
 
-    s->pl = selectCtx->pl;
-    s->selectCtx = pl->udpData;
+    s->selectCtx = selectCtx;
     s->aborted = false;
 
     nn_llist_append(&selectCtx->udpSockets, &s->udpSocketsNode, s);

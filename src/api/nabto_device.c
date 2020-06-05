@@ -19,6 +19,11 @@
 #include <core/nc_client_connection.h>
 
 #include <modules/mbedtls/nm_mbedtls_util.h>
+#include <modules/mbedtls/nm_mbedtls_cli.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
+#include <modules/mbedtls/nm_mbedtls_random.h>
+
+#include <modules/communication_buffer/nm_communication_buffer.h>
 
 //#include "nabto_device_event_queue.h"
 
@@ -63,7 +68,13 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 
     nabto_device_logging_init();
 
-    ec = nabto_device_init_platform(&dev->pl, dev->eventMutex);
+    struct np_platform* pl = &dev->pl;
+    nm_communication_buffer_init(pl);
+    nm_mbedtls_cli_init(pl);
+    nm_mbedtls_srv_init(pl);
+    nm_mbedtls_random_init(pl);
+
+    ec = nabto_device_platform_init(dev, dev->eventMutex);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");
         return NULL;
@@ -122,7 +133,7 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 void nabto_device_do_stop(struct nabto_device_context* dev)
 {
     nabto_device_future_queue_stop(&dev->futureQueue);
-    nabto_device_platform_stop_blocking(&dev->pl);
+    nabto_device_platform_stop_blocking(dev);
 }
 
 /**
@@ -138,7 +149,9 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
     nc_device_deinit(&dev->core);
 
-    nabto_device_deinit_platform(&dev->pl);
+
+    nabto_device_platform_deinit(dev);
+    nm_mbedtls_random_deinit(&dev->pl);
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
