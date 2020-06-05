@@ -4,6 +4,7 @@
 #include "nc_coap_packet_printer.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_timestamp_wrapper.h>
 #include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
@@ -181,7 +182,7 @@ void nc_coap_server_send_to_callback(const np_error_code ec, void* data)
 
 uint32_t nc_coap_server_get_stamp(void* userData) {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    return np_timestamp_now_ms(ctx->pl);
+    return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
 void nc_coap_server_notify_event_callback(void* userData)

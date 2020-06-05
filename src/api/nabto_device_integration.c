@@ -26,8 +26,7 @@ void nabto_device_integration_set_tcp_impl(struct nabto_device_context* device, 
 
 void nabto_device_integration_set_timestamp_impl(struct nabto_device_context* device, struct np_timestamp* obj)
 {
-    device->pl.ts = *(obj->vptr);
-    device->pl.tsImpl = obj->data;
+    device->pl.timestamp = *obj;
 }
 
 void nabto_device_integration_set_dns_impl(struct nabto_device_context* device, struct np_dns* obj)

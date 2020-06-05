@@ -7,7 +7,7 @@ set(src
   ${src_dir}/np_error_code.c
   ${src_dir}/np_util.c
   ${src_dir}/np_completion_event.c
-  ${src_dir}/np_timestamp.c
+  ${src_dir}/np_timestamp_wrapper.c
   ${src_dir}/np_udp_wrapper.c
   ${src_dir}/np_dns_wrapper.c
   )
