@@ -7,6 +7,10 @@
  * TCP wrapper functions see np_tcp for help
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 np_error_code np_tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock);
 void np_tcp_destroy(struct np_tcp* obj, struct np_tcp_socket* sock);
 void np_tcp_async_connect(struct np_tcp* obj, struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent);
@@ -15,5 +19,8 @@ void np_tcp_async_read(struct np_tcp* obj, struct np_tcp_socket* sock, void* buf
 void np_tcp_shutdown(struct np_tcp* obj, struct np_tcp_socket* sock);
 void np_tcp_abort(struct np_tcp* obj, struct np_tcp_socket* sock);
 
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

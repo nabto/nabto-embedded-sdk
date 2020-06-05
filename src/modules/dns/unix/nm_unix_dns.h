@@ -22,7 +22,14 @@ struct nm_unix_dns_resolver {
 
 struct np_dns nm_unix_dns_create(struct nm_unix_dns_resolver* resolver);
 
+/**
+ * Initialize the dns resolver.
+ */
 np_error_code nm_unix_dns_resolver_init(struct nm_unix_dns_resolver* resolver);
+
+/**
+ * Deinitialize the dns resolver
+ */
 void nm_unix_dns_resolver_deinit(struct nm_unix_dns_resolver* resolver);
 
 #ifdef __cplusplus

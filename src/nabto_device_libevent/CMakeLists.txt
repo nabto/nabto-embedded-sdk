@@ -38,21 +38,7 @@ else()
   message(error "missing thread library")
 endif()
 
-
-add_library(libevent_platform STATIC "${src}" "${api_src}")
-target_link_libraries(libevent_platform
-  nm_mdns
-  nm_mbedtls_srv
-  nm_mbedtls_cli
-  nm_mbedtls_random
-  nc_core
-  np_platform
-  nm_mbedtls_srv
-  nm_tcp_tunnel
-  3rdparty_mbedtls
-  )
-
-add_library( nabto_device_static STATIC "dummy.c")
+add_library( nabto_device_static STATIC "${src}" "${api_src}")
 target_compile_definitions(nabto_device_static PRIVATE NABTO_DEVICE_WIN32_API_STATIC)
 target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
 
@@ -65,7 +51,6 @@ target_link_libraries(nabto_device_static
   np_platform
   nm_mdns
   nm_tcp_tunnel
-  libevent_platform
   nabto_device_threads
   nc_core
   np_platform
@@ -75,7 +60,7 @@ target_link_libraries(nabto_device_static
   )
 
 
-add_library( nabto_device SHARED "dummy.c")
+add_library( nabto_device SHARED "${src}" "${api_src}")
 
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
@@ -89,7 +74,6 @@ target_link_libraries( nabto_device
   np_platform
   nm_mdns
   nm_tcp_tunnel
-  libevent_platform
   nabto_device_threads
   )
 

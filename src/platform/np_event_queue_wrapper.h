@@ -1,10 +1,15 @@
 #ifndef _NP_EVENT_QUEUE_WRAPPER_H_
 #define _NP_EVENT_QUEUE_WRAPPER_H_
 
+#include "interfaces/np_event_queue.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Wrapper functions which call the platform adapter functions, see np_event_queue.h for help.
  */
-
 
 /**
  * Create a new event.
@@ -31,5 +36,9 @@ void np_event_queue_post_maybe_double(struct np_platform* pl, struct np_event* e
 void np_event_queue_post_timed_event(struct np_platform* pl, struct np_event* event, uint32_t milliseconds);
 
 void np_event_queue_cancel_event(struct np_platform* pl, struct np_event* ev);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

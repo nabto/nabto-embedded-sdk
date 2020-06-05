@@ -26,6 +26,7 @@ struct np_udp nm_libevent_create_udp(struct nm_libevent_context* ctx);
 struct np_tcp nm_libevent_create_tcp(struct nm_libevent_context* ctx);
 struct np_timestamp nm_libevent_create_timestamp(struct nm_libevent_context* ctx);
 struct np_local_ip nm_libevent_create_local_ip(struct nm_libevent_context* ctx);
+struct np_dns nm_libevent_dns_create_impl(struct nm_libevent_context* ctx);
 
 #ifdef __cplusplus
 } //extern "C"

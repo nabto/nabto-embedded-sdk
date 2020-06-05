@@ -1,4 +1,5 @@
 #include "nm_libevent_timestamp.h"
+#include "nm_libevent.h"
 
 #include <platform/np_platform.h>
 #include <platform/interfaces/np_timestamp.h>
@@ -30,7 +31,8 @@ const struct np_timestamp_functions* nm_libevent_timestamp_functions()
 
 uint32_t ts_now_ms(struct np_timestamp* obj)
 {
-    struct event_base* eventBase = obj->data;
+    struct nm_libevent_context* ctx = obj->data;
+    struct event_base* eventBase = ctx->eventBase;
     struct timeval tv;
     event_base_gettimeofday_cached(eventBase, &tv);
 

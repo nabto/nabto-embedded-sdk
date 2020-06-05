@@ -5,6 +5,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_udp_wrapper.h>
 
 #include <util/io_service.hpp>
 #include <util/udp_echo_server.hpp>
@@ -40,7 +41,7 @@ class UdpEchoClientTest {
         ep_.port = port;
 
         np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::created, this);
-        pl_->udp.async_bind_port(socket_, 0, &completionEvent_);
+        np_udp_async_bind_port(&pl_->udp, socket_, 0, &completionEvent_);
 
         tp_.run();
     }
@@ -55,7 +56,7 @@ class UdpEchoClientTest {
     void startSend()
     {
         np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::sent, this);
-        pl_->udp.async_send_to(socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
+        np_udp_async_send_to(&pl_->udp, socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
     }
 
     static void sent(np_error_code ec, void* data)

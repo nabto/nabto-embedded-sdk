@@ -6,6 +6,7 @@
 #include <platform/np_platform.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_dns_wrapper.h>
 
 #ifdef HAVE_LIBEVENT
 #include <test_platform_libevent.hpp>
@@ -16,9 +17,8 @@ namespace {
 class DnsTest {
  public:
     DnsTest(nabto::test::TestPlatform& tp)
-        : tp_(tp), pl_(tp.getPlatform())
+        : tp_(tp), pl_(tp.getPlatform()), dns_(pl_->dns)
     {
-        pl_->dns.create_resolver(pl_, &resolver_);
         np_completion_event_init(pl_, &completionEvent_, &DnsTest::dnsCallback, this);
     }
     static void dnsCallback(const np_error_code ec, void* data)
@@ -31,7 +31,7 @@ class DnsTest {
  protected:
     nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
-    struct np_dns_resolver* resolver_;
+    struct np_dns dns_;
     struct np_ip_address ips_[4];
     size_t ipsResolved_;
     struct np_completion_event completionEvent_;
@@ -47,7 +47,7 @@ class DnsTestV4 : public DnsTest {
 
     void start()
     {
-        np_dns_async_resolve_v4(&pl_->dns, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
+        np_dns_async_resolve_v4(&dns_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
         tp_.run();
     }
 
@@ -68,7 +68,6 @@ class DnsTestV4 : public DnsTest {
     }
 
     void end() {
-        pl_->dns.destroy_resolver(resolver_);
         tp_.stop();
     }
 
@@ -85,7 +84,7 @@ class DnsTestV6 : public DnsTest {
 
     void start()
     {
-        pl_->dns.async_resolve_v6(resolver_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
+        np_dns_async_resolve_v6(&dns_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
         tp_.run();
     }
 
@@ -107,7 +106,6 @@ class DnsTestV6 : public DnsTest {
     }
 
     void end() {
-        pl_->dns.destroy_resolver(resolver_);
         tp_.stop();
     }
 
@@ -125,7 +123,7 @@ class DnsTestNoSuchDomain : public DnsTest {
 
     void start()
     {
-        np_dns_async_resolve_v4(&pl_->dns, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
+        np_dns_async_resolve_v4(&dns_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
         tp_.run();
     }
 
@@ -141,7 +139,6 @@ class DnsTestNoSuchDomain : public DnsTest {
     }
 
     void end() {
-        pl_->dns.destroy_resolver(resolver_);
         tp_.stop();
     }
 

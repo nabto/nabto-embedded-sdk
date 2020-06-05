@@ -7,12 +7,8 @@
 extern "C" {
 #endif
 
-void nm_select_unix_tcp_init(struct nm_select_unix* ctx);
-void nm_select_unix_tcp_deinit(struct nm_select_unix* ctx);
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx);
 void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds);
-
-struct np_tcp nm_select_unix_tcp_get_impl(struct nm_select_unix* ctx);
 
 #ifdef __cplusplus
 } //extern "C"

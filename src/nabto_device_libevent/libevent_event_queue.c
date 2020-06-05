@@ -90,6 +90,7 @@ np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbD
 
 void destroy(struct np_event* event)
 {
+    cancel(event);
     free(event);
 }
 

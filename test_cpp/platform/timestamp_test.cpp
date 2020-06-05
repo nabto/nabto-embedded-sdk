@@ -2,6 +2,8 @@
 #include <boost/test/data/test_case.hpp>
 
 #include <platform/interfaces/np_timestamp.h>
+#include <platform/np_timestamp_wrapper.h>
+#include <platform/np_platform.h>
 
 #include <test_platform.hpp>
 

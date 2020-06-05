@@ -86,6 +86,21 @@ void nm_select_unix_read(struct nm_select_unix* ctx, int nfds);
 // notify select that something has changed in the filedescriptor sets
 void nm_select_unix_notify(struct nm_select_unix* ctx);
 
+/**
+ * Get implementations for the implemented modules.
+ */
+
+/**
+ * Get an object implementing the udp interface.
+ */
+struct np_udp nm_select_unix_udp_get_impl(struct nm_select_unix* ctx);
+
+/**
+ * Get an object implementing the tcp interface.
+ */
+struct np_tcp nm_select_unix_tcp_get_impl(struct nm_select_unix* ctx);
+
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

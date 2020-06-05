@@ -3,6 +3,10 @@
 
 #include "interfaces/np_udp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Wrapper functions for the functionality. See above struct for documentation for the functions.
 np_error_code np_udp_create(struct np_udp* udp, struct np_udp_socket** sock);
 
@@ -27,5 +31,9 @@ np_error_code np_udp_recv_from(struct np_udp* udp, struct np_udp_socket* sock, s
 
 
 uint16_t np_udp_get_local_port(struct np_udp* udp, struct np_udp_socket* sock);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

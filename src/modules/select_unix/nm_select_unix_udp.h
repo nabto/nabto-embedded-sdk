@@ -12,8 +12,6 @@ extern "C" {
 void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx);
 void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds);
 
-struct np_udp nm_select_unix_udp_get_impl(struct nm_select_unix* ctx);
-
 #ifdef __cplusplus
 } //extern "C"
 #endif

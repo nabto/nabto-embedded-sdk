@@ -3,6 +3,10 @@
 
 #include "interfaces/np_timestamp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Wrapper functions for the timestamp interface. See np_timestamp.h
  * for help.
@@ -45,5 +49,9 @@ uint32_t np_timestamp_future(struct np_timestamp* obj, uint32_t ms);
  * @return t1 - t2
  */
 int32_t np_timestamp_difference(uint32_t t1, uint32_t t2);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

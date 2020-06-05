@@ -130,6 +130,8 @@ np_error_code nm_unix_dns_resolver_init(struct nm_unix_dns_resolver* r)
 {
     nn_llist_init(&r->events);
 
+    r->stopped = false;
+
     pthread_mutex_init(&r->mutex, NULL);
     pthread_cond_init(&r->condition, NULL);
     pthread_create(&r->thread, NULL, &resolve_thread, r);
