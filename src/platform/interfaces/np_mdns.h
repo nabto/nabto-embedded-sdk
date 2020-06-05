@@ -10,9 +10,6 @@
  * The Device has the possibility to expose its nabto service via
  * MDNS.
  *
- * The service type which should be registered is
- * `_nabto._udp`.
- *
  * MDNS quick guide:
  *
  * MDNS stands for multicast DNS. Multicast dns is implemented by a
@@ -22,23 +19,23 @@
  * request.
  *
  * MDNS uses a concept called service types. A service types is
- * e.g. _nabto._udp. The service type is concatinated with a domain,
- * e.g. .local. This means that the service exposed by a MDNS server for
- * the nabto service is _nabto._udp.local.
+ * e.g. _nabto._udp. The service type is concatenated with a domain,
+ * e.g. .local. to create a domain name. This means that the service
+ * exposed by a MDNS server for the nabto service is
+ * _nabto._udp.local.
  *
  * A mdns server then listens for PTR queries. When a PTR request for
- * _nabto._udp.local is received the mdns server answer back with the
- * dns name of the nabto service. The dns name is a specific name for
- * the actual service and not a generic name.
+ * _nabto._udp.local is received the mdns server answers the request
+ * with the name of the nabto service on the device
+ * e.g. <device-id>._nabto._udp.local.
  *
- * SRV and TXT lookups is then made to the instance specific service
- * name. E.g. <device-id>._nabto._udp.local. This lookup then answers
- * with TXT records and SRV records. The SRV record contains the
- * actual hostname of the device and the port number of the
- * service. The hostname can then be resolved to A and AAAA
- * records. The TXT records contains additional data for the service
- * on this specific address. These records could be the version,
- * device id, product id or other simple but relevant information.
+ * SRV and TXT lookups is then made to the specific service
+ * name. E.g. <device-id>._nabto._udp.local. This lookup answers with
+ * TXT records and a SRV record. The SRV record contains the actual
+ * hostname of the device and the port number of the service. The
+ * hostname can then be resolved to A and AAAA records. The TXT
+ * records contains additional data for the service on this specific
+ * device e.g. productid and deviceid.
  *
  * Implementations of this module should expose a mdns service with
  * the following items:
@@ -64,7 +61,7 @@ struct np_mdns_functions {
      * Publihs the mdns service for the device.
      *
      * @param obj  The mdns server implementation.
-     * @param port  The port number to expose for the service.
+     * @param port  The UDP port number to expose for the service.
      * @param productId  The productId to expose in a TXT record.
      * @param deviceId The device id to expose in a TXT record.
      */

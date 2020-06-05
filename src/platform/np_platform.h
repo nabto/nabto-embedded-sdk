@@ -14,7 +14,7 @@
 #include <platform/np_dtls_cli.h>
 #include <platform/np_dtls_srv.h>
 #include <platform/interfaces/np_tcp.h>
-#include <platform/np_mdns.h>
+#include <platform/interfaces/np_mdns.h>
 #include <platform/np_authorization.h>
 #include <platform/np_random.h>
 #include <platform/interfaces/np_local_ip.h>

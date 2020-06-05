@@ -7,7 +7,7 @@
 #include <platform/np_local_ip_wrapper.h>
 #include <stdlib.h>
 
-#include <platform/np_mdns.h>
+#include <platform/interfaces/np_mdns.h>
 #include <platform/np_platform.h>
 
 #include <mdns/mdns_server.h>
