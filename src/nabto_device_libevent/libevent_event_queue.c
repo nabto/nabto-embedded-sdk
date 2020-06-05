@@ -12,12 +12,12 @@
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
-static np_error_code create_event(void* data, np_event_callback cb, void* cbData, struct np_event** event);
+static np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
 static void destroy_event(struct np_event* event);
 static void post(struct np_event* event);
 static void post_maybe_double(struct np_event* event);
 
-static np_error_code create_timed_event(void* data, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
+static np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
 static void destroy_timed_event(struct np_timed_event* event);
 
 static void post_timed_event(struct np_timed_event* event, uint32_t milliseconds);
@@ -100,13 +100,13 @@ void handle_event(evutil_socket_t s, short events, void* data)
     nabto_device_threads_mutex_unlock(eq->mutex);
 }
 
-np_error_code create_event(void* data, np_event_callback cb, void* cbData, struct np_event** event)
+np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event)
 {
     struct np_event* ev = calloc(1, sizeof(struct np_event));
     if (ev == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    struct libevent_event_queue* eq = data;
+    struct libevent_event_queue* eq = obj->data;
     ev->eq = eq;
     ev->cb = cb;
     ev->data = cbData;
@@ -138,13 +138,13 @@ void post_maybe_double(struct np_event* event)
     event_active(&event->event, 0, 0);
 }
 
-np_error_code create_timed_event(void* data, np_timed_event_callback cb, void* cbData, struct np_timed_event** event)
+np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event)
 {
     struct np_timed_event* ev = calloc(1, sizeof(struct np_timed_event));
     if (ev == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    struct libevent_event_queue* eq = data;
+    struct libevent_event_queue* eq = obj->data;
     ev->eq = eq;
     ev->cb = cb;
     ev->data = cbData;

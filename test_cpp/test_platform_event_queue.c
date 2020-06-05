@@ -4,7 +4,7 @@
 #include "test_platform_event_queue.h"
 
 #include <platform/np_logging.h>
-#include <platform/np_event_queue.h>
+#include <platform/interfaces/np_event_queue.h>
 #include <platform/np_platform.h>
 
 #include <stdlib.h>
@@ -14,11 +14,11 @@
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
-static np_error_code create_event(void* data, np_event_callback cb, void* cbData, struct np_event** event);
+static np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
 static void destroy_event(struct np_event* event);
 static void post(struct np_event* event);
 static void post_maybe_double(struct np_event* event);
-static np_error_code create_timed_event(void* data, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
+static np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
 static void destroy_timed_event(struct np_timed_event* event);
 static void post_timed_event(struct np_timed_event* event, uint32_t milliseconds);
 static void cancel(struct np_event* event);
@@ -99,10 +99,10 @@ void handle_event(evutil_socket_t s, short events, void* data)
 //    nabto_device_threads_mutex_unlock(eq->mutex);
 }
 
-np_error_code create_event(void* data, np_event_callback cb, void* cbData, struct np_event** event)
+np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event)
 {
     struct np_event* ev = calloc(1, sizeof(struct np_event));
-    struct test_platform_event_queue* eq = data;
+    struct test_platform_event_queue* eq = obj->data;
     ev->queue = eq;
     ev->cb = cb;
     ev->data = cbData;
@@ -134,11 +134,11 @@ void post_maybe_double(struct np_event* event)
     event_active(&event->event, 0, 0);
 }
 
-np_error_code create_timed_event(void* data, np_timed_event_callback cb, void* cbData, struct np_timed_event** event)
+np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event)
 {
     struct np_timed_event* ev = calloc(1, sizeof(struct np_timed_event));
     //struct np_platform* pl = event->pl;
-    struct test_platform_event_queue* eq = data;
+    struct test_platform_event_queue* eq = obj->data;
     ev->queue = eq;
     ev->cb = cb;
     ev->data = cbData;

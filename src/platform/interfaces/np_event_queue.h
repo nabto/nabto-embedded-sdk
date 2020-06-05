@@ -37,13 +37,13 @@ struct np_event_queue_functions {
     /**
      * Create a new event
      *
-     * @param data  Opaque event queue data.
+     * @param obj  The event queue object.
      * @param cb  The callback to associate with the event.
-     * @param data  The data to associate with the callback.
+     * @param cbData  The data to associate with the callback.
      * @param event  The resulting event.
      * @return NABTO_EC_OK  iff the event is created.
      */
-    np_error_code (*create_event)(void* data, np_event_callback cb, void* cbData, struct np_event** event);
+    np_error_code (*create_event)(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
 
     /**
      * Destroy an event.
@@ -78,13 +78,13 @@ struct np_event_queue_functions {
     /**
      * Create a timed event
      *
-     * @param data  Opaque event queue implementation data.
+     * @param obj  The event queue object.
      * @param cb  The callback to call when the timed event is executed.
-     * @param data  The user data for the callback.
+     * @param cbData  The user data for the callback.
      * @param event  The resulting timed event.
      * @return NABTO_EC_OK  iff the timed event was created.
      */
-    np_error_code (*create_timed_event)(void* data, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
+    np_error_code (*create_timed_event)(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
 
     /**
      * Destroy a timed event

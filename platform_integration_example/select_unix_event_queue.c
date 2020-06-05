@@ -17,14 +17,14 @@ struct np_timed_event {
 };
 
 
-static np_error_code create_event(void* data, np_event_callback cb, void* cbData, struct np_event** event);
+static np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
 static void destroy_event(struct np_event* event);
 static void post_event(struct np_event* event);
 static void post_event_maybe_double(struct np_event* event);
 
 static void cancel_event(struct np_event* event);
 
-static np_error_code create_timed_event(void* data, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
+static np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event);
 static void destroy_timed_event(struct np_timed_event* event);
 static void post_timed_event(struct np_timed_event* event, uint32_t milliseconds);
 static void cancel_timed_event(struct np_timed_event* event);
@@ -85,14 +85,14 @@ void select_unix_event_queue_stop_blocking(struct select_unix_event_queue* queue
 }
 
 
-np_error_code create_event(void* data, np_event_callback cb, void* cbData, struct np_event** event)
+np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event)
 {
     struct np_event* ev = calloc(1, sizeof(struct np_event));
     if (ev == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
     nm_event_queue_event_init(&ev->event, cb, cbData);
-    ev->queue = data;
+    ev->queue = obj->data;
     *event = ev;
     return NABTO_EC_OK;
 }
@@ -132,7 +132,7 @@ void cancel_event(struct np_event* event)
     nabto_device_threads_mutex_unlock(queue->queueMutex);
 }
 
-np_error_code create_timed_event(void* data, np_timed_event_callback cb, void* cbData, struct np_timed_event** event)
+np_error_code create_timed_event(struct np_event_queue* obj, np_timed_event_callback cb, void* cbData, struct np_timed_event** event)
 {
     struct np_timed_event* ev = calloc(1, sizeof(struct np_timed_event));
     if (ev == NULL) {
@@ -141,7 +141,7 @@ np_error_code create_timed_event(void* data, np_timed_event_callback cb, void* c
 
     nm_event_queue_timed_event_init(&ev->event, cb, cbData);
 
-    ev->queue = data;
+    ev->queue = obj->data;
 
     *event = ev;
     return NABTO_EC_OK;
