@@ -72,7 +72,6 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nm_communication_buffer_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_srv_init(pl);
-    nm_mdns_init(pl);
     nm_mbedtls_random_init(pl);
 
     ec = nabto_device_platform_init(dev, dev->eventMutex);

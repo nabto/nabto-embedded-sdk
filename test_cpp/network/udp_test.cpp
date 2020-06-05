@@ -19,7 +19,7 @@ namespace test {
 class UdpEchoClientTest {
  public:
     UdpEchoClientTest(TestPlatform& tp)
-        : tp_(tp), pl_(tp.getPlatform())
+        : tp_(tp), pl_(tp.getPlatform()), eq_(pl_->eq)
     {
     }
 
@@ -40,7 +40,7 @@ class UdpEchoClientTest {
         memcpy(ep_.ip.ip.v6, addr, 4);
         ep_.port = port;
 
-        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::created, this);
+        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::created, this);
         np_udp_async_bind_port(&pl_->udp, socket_, 0, &completionEvent_);
 
         tp_.run();
@@ -55,7 +55,7 @@ class UdpEchoClientTest {
 
     void startSend()
     {
-        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::sent, this);
+        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::sent, this);
         np_udp_async_send_to(&pl_->udp, socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
     }
 
@@ -68,7 +68,7 @@ class UdpEchoClientTest {
 
     void startRecv()
     {
-        np_completion_event_init(pl_, &completionEvent_, &UdpEchoClientTest::received, this);
+        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::received, this);
         np_udp_async_recv_wait(&pl_->udp, socket_, &completionEvent_);
     }
 
@@ -98,6 +98,7 @@ class UdpEchoClientTest {
  private:
     nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
+    struct np_event_queue eq_;
     struct np_udp_endpoint ep_;
     struct np_udp_socket* socket_;
     std::array<uint8_t, 42> data_;

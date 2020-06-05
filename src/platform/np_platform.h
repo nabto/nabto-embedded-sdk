@@ -45,6 +45,9 @@ struct np_platform {
     // Local ip module.
     struct np_local_ip localIp;
 
+    // Mdns module
+    struct np_mdns mdns;
+
 
     // The following modules are not final yet and they are subject to
     // changes in the future.
@@ -64,9 +67,6 @@ struct np_platform {
     struct np_dtls_srv_module dtlsS;
     void* dtlsSData; // Custom data for the dtls server module.
 
-    // Mdns module
-    struct np_mdns_module mdns;
-    void* mdnsData;  // Custom data for the mdns module.
 
     // Access control module
     struct np_authorization authorization;

@@ -41,7 +41,7 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     request->module = pl->authorizationData;
 
     np_error_code ec;
-    ec = np_event_queue_create_event(pl, handle_verdict, request, &request->verdictEvent);
+    ec = np_event_queue_create_event(&pl->eq, handle_verdict, request, &request->verdictEvent);
     if (ec != NABTO_EC_OK) {
         free(request);
         return NULL;
@@ -107,7 +107,7 @@ void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict
         struct np_platform* pl = authReq->module->pl;
         authReq->verdict = verdict;
         authReq->verdictDone = true;
-        np_event_queue_post(pl, authReq->verdictEvent);
+        np_event_queue_post(&pl->eq, authReq->verdictEvent);
     }
 }
 
@@ -294,7 +294,8 @@ static void free_request_when_unused(struct nabto_device_authorization_request* 
         free_attribute(old);
     }
     struct np_platform* pl = authReq->module->pl;
-    np_event_queue_destroy_event(pl, authReq->verdictEvent);
+    struct np_event_queue* eq = &pl->eq;
+    np_event_queue_destroy_event(eq, authReq->verdictEvent);
     free(authReq);
 }
 

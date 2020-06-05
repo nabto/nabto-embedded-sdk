@@ -19,7 +19,7 @@ class DnsTest {
     DnsTest(nabto::test::TestPlatform& tp)
         : tp_(tp), pl_(tp.getPlatform()), dns_(pl_->dns)
     {
-        np_completion_event_init(pl_, &completionEvent_, &DnsTest::dnsCallback, this);
+        np_completion_event_init(&pl_->eq, &completionEvent_, &DnsTest::dnsCallback, this);
     }
     static void dnsCallback(const np_error_code ec, void* data)
     {

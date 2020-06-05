@@ -12,17 +12,17 @@ np_error_code nm_mbedtls_timer_init(struct nm_mbedtls_timer* timer, struct np_pl
     timer->cb = cb;
     timer->cbData = userData;
 
-    return np_event_queue_create_event(pl, cb, userData, &timer->tEv);
+    return np_event_queue_create_event(&pl->eq, cb, userData, &timer->tEv);
 }
 
 void nm_mbedtls_timer_deinit(struct nm_mbedtls_timer* timer)
 {
-    np_event_queue_destroy_event(timer->pl, timer->tEv);
+    np_event_queue_destroy_event(&timer->pl->eq, timer->tEv);
 }
 
 void nm_mbedtls_timer_cancel(struct nm_mbedtls_timer* timer)
 {
-    np_event_queue_cancel_event(timer->pl, timer->tEv);
+    np_event_queue_cancel_event(&timer->pl->eq, timer->tEv);
 }
 
 void nm_mbedtls_timer_set_delay(void* data, uint32_t intermediateMilliseconds, uint32_t finalMilliseconds)
@@ -32,13 +32,13 @@ void nm_mbedtls_timer_set_delay(void* data, uint32_t intermediateMilliseconds, u
     struct np_timestamp* ts = &pl->timestamp;
     if (finalMilliseconds == 0) {
         // disable current timer
-        np_event_queue_cancel_event(ctx->pl, ctx->tEv);
+        np_event_queue_cancel_event(&ctx->pl->eq, ctx->tEv);
         ctx->finalTp = 0;
     } else {
         ctx->intermediateTp = np_timestamp_future(ts, intermediateMilliseconds);
         ctx->finalTp = np_timestamp_future(ts, finalMilliseconds);
-        np_event_queue_cancel_event(pl, ctx->tEv);
-        np_event_queue_post_timed_event(pl, ctx->tEv, finalMilliseconds);
+        np_event_queue_cancel_event(&pl->eq, ctx->tEv);
+        np_event_queue_post_timed_event(&pl->eq, ctx->tEv, finalMilliseconds);
     }
 }
 

@@ -21,24 +21,24 @@ np_error_code nc_keep_alive_init(struct nc_keep_alive_context* ctx, struct np_pl
 
     ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
 
-    return np_event_queue_create_event(ctx->pl, cb, data, &ctx->keepAliveEvent);
+    return np_event_queue_create_event(&ctx->pl->eq, cb, data, &ctx->keepAliveEvent);
 }
 
 void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
-        np_event_queue_destroy_event(ctx->pl, ctx->keepAliveEvent);
+        np_event_queue_destroy_event(&ctx->pl->eq, ctx->keepAliveEvent);
     }
 }
 
 void nc_keep_alive_stop(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_cancel_event(ctx->pl, ctx->keepAliveEvent);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->keepAliveEvent);
 }
 
 void nc_keep_alive_reset(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_cancel_event(ctx->pl, ctx->keepAliveEvent);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->keepAliveEvent);
     ctx->kaInterval = NC_KEEP_ALIVE_DEFAULT_INTERVAL;
     ctx->kaRetryInterval = NC_KEEP_ALIVE_DEFAULT_RETRY_INTERVAL;
     ctx->kaMaxRetries = NC_KEEP_ALIVE_DEFAULT_MAX_RETRIES;
@@ -78,7 +78,7 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_post_timed_event(ctx->pl, ctx->keepAliveEvent, ctx->kaRetryInterval);
+    np_event_queue_post_timed_event(&ctx->pl->eq, ctx->keepAliveEvent, ctx->kaRetryInterval);
 }
 
 void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, size_t* length)

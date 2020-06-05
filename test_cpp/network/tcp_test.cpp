@@ -195,7 +195,7 @@ void TcpEchoConnection::start()
 class TcpEchoClientTest {
  public:
     TcpEchoClientTest(TestPlatform& tp)
-        :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp)
+        :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
     }
 
@@ -211,7 +211,7 @@ class TcpEchoClientTest {
             data_[i] = (uint8_t)i;
         }
 
-        np_completion_event_init(pl_, &completionEvent_, &TcpEchoClientTest::connected, this);
+        np_completion_event_init(&eq_, &completionEvent_, &TcpEchoClientTest::connected, this);
         np_tcp_async_connect(&tcp_, socket_, &address, port, &completionEvent_);
 
         tp_.run();
@@ -221,7 +221,7 @@ class TcpEchoClientTest {
     {
         auto test = (TcpEchoClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
-        np_completion_event_init(test->pl_, &test->completionEvent_, &TcpEchoClientTest::hasWritten, test);
+        np_completion_event_init(&test->eq_, &test->completionEvent_, &TcpEchoClientTest::hasWritten, test);
         np_tcp_async_write(&test->tcp_, test->socket_, test->data_.data(), test->data_.size(), &test->completionEvent_);
     }
 
@@ -230,7 +230,7 @@ class TcpEchoClientTest {
         auto test = (TcpEchoClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
         test->recvBuffer_.resize(test->data_.size());
-        np_completion_event_init(test->pl_, &test->completionEvent_, &TcpEchoClientTest::hasReaden, test);
+        np_completion_event_init(&test->eq_, &test->completionEvent_, &TcpEchoClientTest::hasReaden, test);
         np_tcp_async_read(&test->tcp_, test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &test->readLength_, &test->completionEvent_);
     }
 
@@ -260,12 +260,13 @@ class TcpEchoClientTest {
     size_t readLength_;
     struct np_completion_event completionEvent_;
     struct np_tcp tcp_;
+    struct np_event_queue eq_;
 };
 
 class TcpCloseClientTest {
  public:
     TcpCloseClientTest(TestPlatform& tp)
-        :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp)
+        :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
     }
 
@@ -280,7 +281,7 @@ class TcpCloseClientTest {
         for (size_t i = 0; i < data_.size(); i++) {
             data_[i] = (uint8_t)i;
         }
-        np_completion_event_init(pl_, &completionEvent_, &TcpCloseClientTest::connected, this);
+        np_completion_event_init(&eq_, &completionEvent_, &TcpCloseClientTest::connected, this);
         np_tcp_async_connect(&tcp_, socket_, &address, port_, &completionEvent_);
     }
 
@@ -294,7 +295,7 @@ class TcpCloseClientTest {
     {
         auto test = (TcpCloseClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
-        np_completion_event_init(test->pl_, &test->completionEvent_, &TcpCloseClientTest::hasReaden, test);
+        np_completion_event_init(&test->eq_, &test->completionEvent_, &TcpCloseClientTest::hasReaden, test);
         np_tcp_async_read(&test->tcp_, test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &test->readLength_, &test->completionEvent_);
         np_tcp_abort(&test->tcp_, test->socket_);
     }
@@ -313,6 +314,7 @@ class TcpCloseClientTest {
  private:
     TestPlatform& tp_;
     struct np_platform* pl_;
+
     struct np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
@@ -320,6 +322,7 @@ class TcpCloseClientTest {
     uint16_t port_;
     struct np_completion_event completionEvent_;
     struct np_tcp tcp_;
+    struct np_event_queue eq_;
 };
 
 } }

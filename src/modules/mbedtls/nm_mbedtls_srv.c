@@ -225,16 +225,16 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     struct np_platform* pl = ctx->pl;
 
     np_error_code ec;
-    ec = np_event_queue_create_event(pl, &nm_mbedtls_srv_start_send_deferred, ctx, &ctx->startSendEvent);
+    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_srv_start_send_deferred, ctx, &ctx->startSendEvent);
     if(ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_event_queue_create_event(pl, &nm_mbedtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
+    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_event_queue_create_event(pl, &nm_mbedtls_srv_event_close, ctx, &ctx->closeEv);
+    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_srv_event_close, ctx, &ctx->closeEv);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -295,11 +295,10 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
     }
     nm_mbedtls_timer_cancel(&ctx->timer);
     nm_mbedtls_timer_deinit(&ctx->timer);
-    np_event_queue_cancel_event(pl, ctx->closeEv);
-    np_event_queue_cancel_event(pl, ctx->startSendEvent);
-    np_event_queue_destroy_event(pl, ctx->closeEv);
-    np_event_queue_destroy_event(pl, ctx->startSendEvent);
-    np_event_queue_destroy_event(pl, ctx->deferredEventEvent);
+    struct np_event_queue* eq = &pl->eq;
+    np_event_queue_destroy_event(eq, ctx->closeEv);
+    np_event_queue_destroy_event(eq, ctx->startSendEvent);
+    np_event_queue_destroy_event(eq, ctx->deferredEventEvent);
     pl->buf.free(connection->sslRecvBuf);
     pl->buf.free(connection->sslSendBuffer);
     mbedtls_ssl_free(&connection->ssl);
@@ -381,7 +380,7 @@ void deferred_event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_sr
 {
     struct np_platform* pl = ctx->pl;
     ctx->deferredEvent = event;
-    np_event_queue_post(pl, ctx->deferredEventEvent);
+    np_event_queue_post(&pl->eq, ctx->deferredEventEvent);
 }
 
 void nm_mbedtls_srv_do_event_callback(void* data)
@@ -389,7 +388,7 @@ void nm_mbedtls_srv_do_event_callback(void* data)
     struct np_dtls_srv_connection* ctx = data;
     if (ctx->state == CLOSING && ctx->sending) {
 
-        np_event_queue_post(ctx->pl, ctx->deferredEventEvent);
+        np_event_queue_post(&ctx->pl->eq, ctx->deferredEventEvent);
     } else {
         ctx->eventHandler(ctx->deferredEvent, ctx->senderData);
     }
@@ -397,7 +396,7 @@ void nm_mbedtls_srv_do_event_callback(void* data)
 
 void nm_mbedtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 {
-    np_event_queue_post_maybe_double(ctx->pl, ctx->startSendEvent);
+    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->startSendEvent);
 }
 
 void nm_mbedtls_srv_start_send_deferred(void* data)
@@ -449,13 +448,13 @@ np_error_code nm_mbedtls_srv_async_send_data(struct np_platform* pl, struct np_d
 void nm_mbedtls_srv_event_close(void* data){
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->sending) {
-        np_event_queue_post(ctx->pl, ctx->closeEv);
+        np_event_queue_post(&ctx->pl->eq, ctx->closeEv);
         return;
     }
     nm_mbedtls_timer_cancel(&ctx->timer);
-    np_event_queue_cancel_event(ctx->pl, ctx->closeEv);
-    np_event_queue_cancel_event(ctx->pl, ctx->startSendEvent);
-    np_event_queue_cancel_event(ctx->pl, ctx->deferredEventEvent);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->closeEv);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->startSendEvent);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->deferredEventEvent);
 
     np_dtls_close_callback cb = ctx->closeCb;
     void* cbData = ctx->closeCbData;
@@ -475,7 +474,7 @@ np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct np_dtls_
     ctx->closeCbData = data;
     ctx->state = CLOSING;
     mbedtls_ssl_close_notify(&ctx->ssl);
-    np_event_queue_post(ctx->pl, ctx->closeEv);
+    np_event_queue_post(&ctx->pl->eq, ctx->closeEv);
     return NABTO_EC_OK;
 }
 

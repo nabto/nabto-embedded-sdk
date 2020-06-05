@@ -11,11 +11,12 @@ np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_m
 {
     ctx->pl = pl;
     np_error_code ec;
-    ec = np_completion_event_init(pl, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx);
+    struct np_event_queue* eq = &pl->eq;
+    ec = np_completion_event_init(eq, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(pl, &ctx->v6CompletionEvent, &dns_resolved_callback_v6, ctx);
+    ec = np_completion_event_init(eq, &ctx->v6CompletionEvent, &dns_resolved_callback_v6, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

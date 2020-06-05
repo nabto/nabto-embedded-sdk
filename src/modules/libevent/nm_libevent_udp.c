@@ -105,7 +105,6 @@ np_error_code udp_create(struct np_udp* obj, struct np_udp_socket** sock)
     struct nm_libevent_context* ctx = obj->data;
 
     s->impl = ctx;
-    //np_event_queue_init_event(&s->recv.event);
 
     *sock = s;
 

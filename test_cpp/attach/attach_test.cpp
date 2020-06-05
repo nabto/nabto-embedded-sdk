@@ -18,9 +18,9 @@ class AttachTest {
         : tp_(tp)
     {
         serverPort_ = port;
-        np_event_queue_create_event(tp_.getPlatform(), &AttachTest::endEvent, this, &endEvent_);
-        np_completion_event_init(tp_.getPlatform(), &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
-        struct np_platform* pl = tp_.getPlatform();
+        struct np_platform* pl = tp_.getPlatform()
+        np_event_queue_create_event(&pl->eq, &AttachTest::endEvent, this, &endEvent_);
+        np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
         pl->dns.create_resolver(pl, &dnsResolver_);
 
     }

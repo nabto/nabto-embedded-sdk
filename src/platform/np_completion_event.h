@@ -11,7 +11,7 @@ extern "C" {
 typedef void (*np_completion_event_callback)(const np_error_code ec, void* userData);
 
 struct np_completion_event {
-    struct np_platform* pl;
+    struct np_event_queue eq;
     np_completion_event_callback cb;
     void* userData;
     np_error_code ec;
@@ -26,7 +26,7 @@ struct np_completion_event {
  * @param cb  The callback to call when the completion events is resolved.
  * @param userData  The userData to give to the callback.
  */
-np_error_code np_completion_event_init(struct np_platform* pl, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData);
+np_error_code np_completion_event_init(struct np_event_queue* eq, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData);
 
 /**
  * Reinitialize a completion event.

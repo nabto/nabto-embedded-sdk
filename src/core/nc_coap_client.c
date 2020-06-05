@@ -31,11 +31,11 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     ctx->isSending = false;
     ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
     np_error_code ec;
-    ec = np_event_queue_create_event(ctx->pl, &nc_coap_client_notify_event_callback, ctx, &ctx->ev);
+    ec = np_event_queue_create_event(&ctx->pl->eq, &nc_coap_client_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_event_queue_create_event(ctx->pl, &nc_coap_client_handle_timeout, ctx, &ctx->timer);
+    ec = np_event_queue_create_event(&ctx->pl->eq, &nc_coap_client_handle_timeout, ctx, &ctx->timer);
     if (ec != NABTO_EC_OK)
     {
         return ec;
@@ -56,8 +56,9 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
-        np_event_queue_destroy_event(ctx->pl, ctx->ev);
-        np_event_queue_destroy_event(ctx->pl, ctx->timer);
+        struct np_event_queue* eq = &ctx->pl->eq;
+        np_event_queue_destroy_event(eq, ctx->ev);
+        np_event_queue_destroy_event(eq, ctx->timer);
         nabto_coap_client_destroy(&ctx->client);
         ctx->pl->buf.free(ctx->sendBuffer);
     }
@@ -117,7 +118,7 @@ void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
         if (diff < 0) {
             diff = 0;
         }
-        np_event_queue_post_timed_event(ctx->pl, ctx->timer, diff);
+        np_event_queue_post_timed_event(&ctx->pl->eq, ctx->timer, diff);
     }
 }
 
@@ -177,7 +178,7 @@ void nc_coap_client_notify_event_callback(void* userData)
 void nc_coap_client_notify_event(void* userData)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*)userData;
-    np_event_queue_post_maybe_double(ctx->pl, ctx->ev);
+    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
 }
 
 void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx)

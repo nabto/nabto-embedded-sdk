@@ -79,17 +79,18 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
 
     nn_llist_append(&service->connections, &connection->connectionsListItem, connection);
 
-    ec = np_completion_event_init(pl, &connection->connectCompletionEvent, &connect_callback, connection);
+    struct np_event_queue* eq = &pl->eq;
+    ec = np_completion_event_init(eq, &connection->connectCompletionEvent, &connect_callback, connection);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(pl, &connection->readCompletionEvent, &tcp_readen, connection);
+    ec = np_completion_event_init(eq, &connection->readCompletionEvent, &tcp_readen, connection);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(pl, &connection->writeCompletionEvent, &tcp_written, connection);
+    ec = np_completion_event_init(eq, &connection->writeCompletionEvent, &tcp_written, connection);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

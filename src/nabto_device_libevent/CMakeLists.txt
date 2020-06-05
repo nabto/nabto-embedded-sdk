@@ -43,19 +43,14 @@ target_compile_definitions(nabto_device_static PRIVATE NABTO_DEVICE_WIN32_API_ST
 target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
 
 target_link_libraries(nabto_device_static
-  #nabto_device_api
-  nm_mbedtls_cli
   nc_core
+  np_platform
+  nm_mbedtls_cli
   nm_mbedtls_srv
   nm_mbedtls_random
-  np_platform
   nm_mdns
   nm_tcp_tunnel
   nabto_device_threads
-  nc_core
-  np_platform
-  nm_mbedtls_srv
-  nm_tcp_tunnel
   3rdparty_mbedtls
   )
 
@@ -66,12 +61,11 @@ target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
 
 target_link_libraries( nabto_device
-  nabto_device_api
-  nm_mbedtls_cli
   nc_core
+  np_platform
+  nm_mbedtls_cli
   nm_mbedtls_srv
   nm_mbedtls_random
-  np_platform
   nm_mdns
   nm_tcp_tunnel
   nabto_device_threads

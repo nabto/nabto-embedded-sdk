@@ -39,6 +39,8 @@ target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_EXP
 target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_SHARED)
 
 target_link_libraries( nabto_device_select_unix
+  nc_core
+  np_platform
   nm_mbedtls_cli
   nm_mbedtls_srv
   nm_mbedtls_random
@@ -48,11 +50,7 @@ target_link_libraries( nabto_device_select_unix
   nm_unix_timestamp
   nm_unix_dns
   nm_communication_buffer
-  nc_core
-  np_platform
-  nm_mbedtls_srv
   nm_tcp_tunnel
   3rdparty_mbedtls
-  nabto_device_api
   nm_threads_unix
   )
