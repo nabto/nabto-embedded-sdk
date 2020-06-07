@@ -17,14 +17,14 @@ struct timestamp_test {
     struct np_timestamp timestamp;
 };
 
-void resolve_and_free_test(struct timestamp_test* t, np_error_code ec)
+static void resolve_and_free_test(struct timestamp_test* t, np_error_code ec)
 {
     nabto_device_future_resolve(t->fut, nabto_device_error_core_to_api(ec));
     np_event_queue_destroy_event(&t->eq, t->timedEvent);
     free(t);
 }
 
-void timed_event_callback(void* data)
+static void timed_event_callback(void* data)
 {
     struct timestamp_test* t = data;
     // check that the timestamp now is more than 50 ms and less than 1

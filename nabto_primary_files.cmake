@@ -95,6 +95,7 @@ set(ne_api
   ${root_dir}/src/api/nabto_device_test_future_resolve.c
   ${root_dir}/src/api/nabto_device_test_event_queue.c
   ${root_dir}/src/api/nabto_device_test_timestamp.c
+  ${root_dir}/src/api/nabto_device_test_dns.c
 )
 
 set(ne_tinycbor

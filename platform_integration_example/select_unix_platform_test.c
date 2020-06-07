@@ -11,6 +11,7 @@ static void logging_test(void);
 static void future_test(void);
 static void event_queue_test(void);
 static void timestamp_test(void);
+static void dns_test(void);
 
 
 int main() {
@@ -18,6 +19,7 @@ int main() {
     future_test();
     event_queue_test();
     timestamp_test();
+    dns_test();
 }
 
 
@@ -84,6 +86,24 @@ void timestamp_test()
         printf("Timestamp test failed with error %s\n", nabto_device_error_get_string(ec));
     } else {
         printf("Timestamp test passed\n");
+    }
+    nabto_device_future_free(future);
+    nabto_device_free(device);
+}
+
+/**
+ * Test dns resolution
+ */
+void dns_test()
+{
+    NabtoDevice* device = nabto_device_new();
+    NabtoDeviceFuture* future = nabto_device_future_new(device);
+    nabto_device_test_dns(device, future);
+    NabtoDeviceError ec = nabto_device_future_wait(future);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("DNS test failed with error %s\n", nabto_device_error_get_string(ec));
+    } else {
+        printf("DNS test passed\n");
     }
     nabto_device_future_free(future);
     nabto_device_free(device);
