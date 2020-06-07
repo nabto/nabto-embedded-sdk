@@ -17,6 +17,9 @@ set(nabto_device_src
   nabto_device_tcp_tunnelling.c
   nabto_device_logging.c
   nabto_device_integration.c
+  nabto_device_test_future_resolve.c
+  nabto_device_test_logging.c
+  nabto_device_test_event_queue.c
   )
 
 add_library( nabto_device_api "${nabto_device_src}")
