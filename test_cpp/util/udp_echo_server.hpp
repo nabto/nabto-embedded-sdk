@@ -1,9 +1,10 @@
 #pragma once
 
-
 #include <lib/span.hpp>
 
 #include <boost/asio.hpp>
+
+#include <iostream>
 
 namespace nabto {
 namespace test {
@@ -24,6 +25,18 @@ class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
         return ptr;
     }
 
+    static std::shared_ptr<UdpEchoServer> create(boost::asio::io_context& io, uint16_t port)
+    {
+        auto ptr = std::make_shared<UdpEchoServer>(io);
+        auto ec = ptr->init(port);
+        if (ec) {
+            std::cerr << "Failed to start udp echo server " << ec.message() << std::endl;
+            return nullptr;
+        }
+        ptr->startRecv();
+        return ptr;
+    }
+
     void stop() {
         boost::system::error_code ec;
         socket_.close(ec);
@@ -33,6 +46,14 @@ class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
         boost::system::error_code ec;
         socket_.open(boost::asio::ip::udp::v6(), ec);
         socket_.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v6(), 0), ec);
+    }
+
+    boost::system::error_code init(uint16_t port)
+    {
+        boost::system::error_code ec;
+        socket_.open(boost::asio::ip::udp::v6(), ec);
+        socket_.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v6(), port), ec);
+        return ec;
     }
 
     uint16_t getPort()

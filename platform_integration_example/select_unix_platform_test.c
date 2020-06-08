@@ -12,14 +12,26 @@ static void future_test(void);
 static void event_queue_test(void);
 static void timestamp_test(void);
 static void dns_test(void);
+static void udp_test(const char* ip);
 
 
-int main() {
+int main(int argc, const char* argv[]) {
     logging_test();
     future_test();
     event_queue_test();
     timestamp_test();
     dns_test();
+
+
+    if (argc >= 2) {
+        // first arg is program name, seconds arg should be integration test server.
+
+        udp_test(argv[1]);
+
+    } else {
+        printf("Does not test network integration as no integration test server is specified.\n");
+    }
+
 }
 
 
@@ -104,6 +116,21 @@ void dns_test()
         printf("DNS test failed with error %s\n", nabto_device_error_get_string(ec));
     } else {
         printf("DNS test passed\n");
+    }
+    nabto_device_future_free(future);
+    nabto_device_free(device);
+}
+
+void udp_test(const char* ip)
+{
+    NabtoDevice* device = nabto_device_new();
+    NabtoDeviceFuture* future = nabto_device_future_new(device);
+    nabto_device_test_udp(device, ip, 1234, future);
+    NabtoDeviceError ec = nabto_device_future_wait(future);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("UDP IPv4 test failed with error %s\n", nabto_device_error_get_string(ec));
+    } else {
+        printf("UDP IPV4 test passed\n");
     }
     nabto_device_future_free(future);
     nabto_device_free(device);

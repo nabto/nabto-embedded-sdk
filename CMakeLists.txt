@@ -196,6 +196,7 @@ if (DEVICE_BUILD_EXAMPLES)
     add_subdirectory(examples/stream_echo)
     add_subdirectory(examples/hello_world)
   endif()
+  add_subdirectory(platform_integration_stub)
 endif()
 
 if (DEVICE_BUILD_APPS)

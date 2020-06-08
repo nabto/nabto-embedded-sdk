@@ -67,8 +67,8 @@ nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future);
  * This test connects to the udp server in the arguments and echoes
  * some data.
  */
-/* NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API */
-/* nabto_device_test_udp_ipv4(NabtoDevice* device, const char* ipv4Address, uint16_t port, NabtoDeviceFuture* future); */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
 
 
 

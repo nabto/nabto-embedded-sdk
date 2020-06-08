@@ -35,6 +35,7 @@ static void resolve_and_free_test(struct dns_test* t, np_error_code ec)
 {
     nabto_device_future_resolve(t->fut, nabto_device_error_core_to_api(ec));
     np_completion_event_deinit(&t->completionEvent);
+    free(t);
 }
 
 static void start_ipv4_test(struct dns_test* t)

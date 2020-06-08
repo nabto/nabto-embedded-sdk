@@ -103,6 +103,7 @@ set(ne_api_test_src
   ${root_dir}/src/api_test/nabto_device_test_event_queue.c
   ${root_dir}/src/api_test/nabto_device_test_timestamp.c
   ${root_dir}/src/api_test/nabto_device_test_dns.c
+  ${root_dir}/src/api_test/nabto_device_test_udp.c
   )
 
 set(ne_tinycbor_src
