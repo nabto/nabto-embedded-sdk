@@ -27,6 +27,8 @@ class StdoutDeviceEventHandler : public AbstractDeviceEventHandler
             std::cout << "Device is now attached" << std::endl;
         } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
             std::cout << "Device is now detached" << std::endl;
+        } else if (event == NABTO_DEVICE_EVENT_CLOSED) {
+            std::cout << "Device is now closed" << std::endl;
         } else {
             std::cout << "Unknown device event: " << event << std::endl;
         }

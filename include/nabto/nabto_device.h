@@ -419,6 +419,7 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener,
  * ```
  * NABTO_DEVICE_EVENT_ATTACHED
  * NABTO_DEVICE_EVENT_DETACHED
+ * NABTO_DEVICE_EVENT_CLOSED
  * ```
  */
 typedef int NabtoDeviceEvent;
@@ -1395,7 +1396,7 @@ typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
  * Set log callback if custom logging is desired
  *
  * @param device [in]  The device instance to set callback for
- * @param cb [in]      The function to be called on log event
+ * @param cb [in]      The function to be called on log event, or NULL to remove
  * @param data [in]    Void pointer passed to the callback when invoked
  * @return NABTO_DEVICE_EC_OK on success
  */
