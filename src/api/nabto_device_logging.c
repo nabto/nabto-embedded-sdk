@@ -72,7 +72,11 @@ void logging_log(uint32_t severity, uint32_t module,
 void nabto_device_logging_set_callback(NabtoDeviceLogCallback cb, void* data)
 {
     userData = data;
-    logCallback = cb;
+    if (cb) {
+        logCallback = cb;
+    } else {
+        logCallback = &default_log_callback;
+    }
 }
 
 #define NM_API_LOGGING_FILE_LENGTH 24
