@@ -27,8 +27,6 @@ Nabto needs to know about:
 7. MDNS - specify MDNS interface for local discovery
 
 
-
-
 ## Components which is needed for a custom platform.
 
 First of all, the Nabto Edge implementation files need to be included in the
@@ -41,28 +39,18 @@ Once this is done, the Nabt Edge system needs to be supplied with knowledge of t
 3 major files need to be examined for this.
 
 
-### `api/nabto_device_platform.h`
-
+### `api/nabto_device.h`
 This file contains 3 functions: an init, a deinit and a stop
 function. That is, functions needed for bootstrap and teardown of the system.
 These functions are called when a device is created,
-destroyed and stopped. 
+destroyed and stopped. The init function should call the appropriate setterfunctions to setup the integration modules for the platform.
 
-The purpose of these functions is to setup the
-`platform/np_platform.h` (described later) structs and to provide the overall functionality which
-is required to run such a platform. The actual initialization of the platform happens from the
-`nabto_device_init_platform` function. See `doc/np_platform.md` and the header file for further
-information.
+### `api/nabto_device_integration.h`
 
-### `platform/np_platform.h`
+The purpose of these functions is to be called from the `nabto_device_platform_init` function to setup the module struct of
+`src/platform/interfaces/*.h` (described later) via apropriate setter functions and to
+provide the overall functionality which is required to run on a specific platform.
 
-The `platform/np_platform.h` contains specification of all the platform specific implementations.
-These implentations consist of functions that are used by the core functionality inside Nabto Edge.
-The .h files consist of several independent modules encapsulated in structs.
-Each struct consists of a list of function pointers that needs to be setup in the bootstrap process (i.e the `nabto_device_init_platform` function).
-
-Each module in `np_platform.h` should be implemented or an implementation which
-is working on the desired platform should be choosen. 
 
 ### `api/nabto_device_threads.h`
 
