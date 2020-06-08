@@ -19,7 +19,7 @@ Details on these structs can be found in **src/platform/interface/**
 Nabto needs to know about: 
 
 1. DNS - how to resolve hostnames to ip addresses (both ipv4:A and ipv6:AAAA addresses)
-2. Timestamp - what is the time
+2. Timestamp - tools so that Nabto Edge knows about time for scheduling events
 3. Event Queue - put events on a queue for serialized (under mutex) execution, which minimizes/optimizes callstacks.
 4. TCP - specify tcp operations
 5. UDP - specify udp operations
