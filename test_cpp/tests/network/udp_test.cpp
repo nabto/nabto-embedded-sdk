@@ -9,7 +9,7 @@
 
 #include <util/io_service.hpp>
 #include <util/udp_echo_server.hpp>
-#include <lib/span.hpp>
+#include <util/span.hpp>
 
 #include <boost/asio.hpp>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lib/span.hpp>
+#include "span.hpp"
 
 #include <boost/asio.hpp>
 

@@ -10,7 +10,7 @@
 #include <api/nabto_device_defines.h>
 
 #include <util/io_service.hpp>
-#include <lib/span.hpp>
+#include <util/span.hpp>
 
 #include <boost/asio.hpp>
 

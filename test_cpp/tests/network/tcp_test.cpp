@@ -16,7 +16,7 @@
 
 #include <boost/asio.hpp>
 
-#include <lib/span.hpp>
+#include <util/span.hpp>
 
 #include <set>
 #include <memory>
