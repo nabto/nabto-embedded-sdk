@@ -28,7 +28,7 @@ set(test_src
   tests/api/private_key_test.cpp
   # TODO move the attach_test to somewhere else where the dtls server
   #exists or move the dtls server to this repository
-  #tests/attach/attach_test.cpp
+  tests/attach/attach_test.cpp
   tests/policies/condition_test.cpp
   tests/policies/condition_json_test.cpp
   tests/policies/statement_json_test.cpp
@@ -39,6 +39,9 @@ set(test_src
   )
 
 add_subdirectory(../nabto-common/3rdparty/boost boost)
+add_subdirectory(fixtures/udp_server)
+add_subdirectory(fixtures/coap_server)
+add_subdirectory(fixtures/dtls_server)
 
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test
@@ -49,7 +52,7 @@ target_link_libraries(embedded_unit_test
   nm_communication_buffer
   #common_util
   nc_core
-  #dtls
+  dtls_server_cpp
   nm_logging_test
   nm_policies
   nm_iam
@@ -66,7 +69,7 @@ if (HAVE_SELECT_UNIX)
     )
 endif()
 
-target_link_libraries(embedded_unit_test nm_libevent 3rdparty_libevent)
+target_link_libraries(embedded_unit_test nm_libevent 3rdparty_libevent 3rdparty_json)
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(embedded_unit_test PRIVATE platform)

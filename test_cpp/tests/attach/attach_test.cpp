@@ -1,13 +1,15 @@
 #include <boost/test/unit_test.hpp>
 
+#include <platform/np_event_queue_wrapper.h>
+
+#include <core/nc_attacher.h>
+#include <core/nc_device.h>
+
 #include <util/io_service.hpp>
-#include <util/test_logger.hpp>
-#include <dtls/test_certificates.hpp>
+#include <fixtures/dtls_server/test_certificates.hpp>
 
 #include "attach_server.hpp"
 #include <test_platform.hpp>
-#include <core/nc_attacher.h>
-#include <core/nc_device.h>
 
 namespace nabto {
 namespace test {
@@ -18,10 +20,9 @@ class AttachTest {
         : tp_(tp)
     {
         serverPort_ = port;
-        struct np_platform* pl = tp_.getPlatform()
+        struct np_platform* pl = tp_.getPlatform();
         np_event_queue_create_event(&pl->eq, &AttachTest::endEvent, this, &endEvent_);
         np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
-        pl->dns.create_resolver(pl, &dnsResolver_);
 
     }
 
@@ -48,7 +49,7 @@ class AttachTest {
 
     void startAttach() {
         nc_coap_client_init(tp_.getPlatform(), &coapClient_);
-        nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, dnsResolver_, &AttachTest::listener, this);
+        nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, &AttachTest::listener, this);
         nc_attacher_set_state_listener(&attach_, &AttachTest::stateListener, this);
         nc_attacher_set_keys(&attach_,
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str()), nabto::test::devicePublicKey.size(),
@@ -97,9 +98,7 @@ class AttachTest {
     }
 
     void end() {
-        struct np_platform* pl = tp_.getPlatform();
-        pl->dns.destroy_resolver(dnsResolver_);
-        np_event_queue_post(tp_.getPlatform(), endEvent_);
+        np_event_queue_post(&tp_.getPlatform()->eq, endEvent_);
     }
 
     static void endEvent(void* userData) {
@@ -124,8 +123,6 @@ class AttachTest {
 
     struct np_completion_event boundCompletionEvent;
 
-    struct np_dns_resolver* dnsResolver_;
-
     uint16_t serverPort_;
     const char* hostname_ = "localhost.nabto.net";
     const char* appName_ = "foo";
@@ -149,8 +146,7 @@ BOOST_AUTO_TEST_SUITE(attach)
 BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getPort());
@@ -167,8 +163,7 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
 BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     // means device detaches after ~200ms
     attachServer->setKeepAliveSettings(100, 50, 2);
@@ -193,9 +188,8 @@ BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
 BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
-    auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+    auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
     redirectServer->setRedirect("localhost.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
@@ -215,18 +209,17 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
 BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     // means device detaches after ~200ms
     attachServer->setKeepAliveSettings(100, 50, 2);
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getPort());
-    at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
+    at.start([&ioService, &attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
                 attachServer->stop();
-                attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+                attachServer = nabto::test::AttachServer::create(ioService->getIoService());
                 at.setDtlsPort(attachServer->getPort());
             }
             if (at.attachCount_ == 2 &&
@@ -243,12 +236,11 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
 BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
 {
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getPort());
-    at.start([&ioService, &testLogger, &attachServer](nabto::test::AttachTest& at){
+    at.start([&ioService, &attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
                 attachServer->niceClose();
             }
@@ -256,7 +248,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
                 at.detachCount_ == 1)
             {
                 attachServer->stop();
-                attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+                attachServer = nabto::test::AttachServer::create(ioService->getIoService());
                 at.setDtlsPort(attachServer->getPort());
             }
             if (at.attachCount_ == 2 &&
@@ -274,15 +266,14 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
 {
     // the device waits for dtls to timeout and retry again.
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
     std::shared_ptr<nabto::test::AttachServer> attachServer;
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, 4242);
 
-    std::thread t([&ioService, &testLogger, &attachServer, &at](){
+    std::thread t([&ioService, &attachServer, &at](){
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+            attachServer = nabto::test::AttachServer::create(ioService->getIoService());
             at.setDtlsPort(attachServer->getPort());
         });
     at.start([](nabto::test::AttachTest& at){
@@ -303,9 +294,8 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
 {
     // The redirect is invalid, go to retry
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
-    auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+    auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
     redirectServer->setRedirect("localhost.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
@@ -329,8 +319,7 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), testLogger);
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getPort());
@@ -352,8 +341,7 @@ BOOST_AUTO_TEST_CASE(access_denied)
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService(), testLogger);
+    auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
@@ -371,8 +359,7 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach)
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
-    auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService(), testLogger);
+    auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
@@ -393,9 +380,8 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break)
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
-    auto testLogger = nabto::test::TestLogger::create();
 
-    auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService(), testLogger);
+    auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
     redirectServer->setRedirect("localhost.nabto.net", redirectServer->getPort(), redirectServer->getFingerprint());
 
     auto tp = nabto::test::TestPlatform::create();
