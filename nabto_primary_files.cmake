@@ -94,7 +94,15 @@ set(ne_api
   ${root_dir}/src/api/nabto_device_tcp_tunnelling.c
   ${root_dir}/src/api/nabto_device_error.c
   ${root_dir}/src/api/nabto_device_integration.c
-)
+  )
+
+set(ne_api_test
+  ${root_dir}/src/api_test/nabto_device_test_logging.c
+  ${root_dir}/src/api_test/nabto_device_test_future_resolve.c
+  ${root_dir}/src/api_test/nabto_device_test_event_queue.c
+  ${root_dir}/src/api_test/nabto_device_test_timestamp.c
+  ${root_dir}/src/api_test/nabto_device_test_dns.c
+  )
 
 set(ne_tinycbor
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborparser_dup_string.c

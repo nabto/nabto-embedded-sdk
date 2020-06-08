@@ -8,32 +8,7 @@ set(src
   select_unix_event_queue.c
   )
 
-
-
-set(api_src_dir
-  ${CMAKE_CURRENT_SOURCE_DIR}/../src/api
-  )
-
-set(api_src
-  ${api_src_dir}/nabto_device.c
-  ${api_src_dir}/nabto_device_stream.c
-  ${api_src_dir}/nabto_device_coap.c
-  ${api_src_dir}/nabto_device_future.c
-  ${api_src_dir}/nabto_device_event_handler.c
-  ${api_src_dir}/nabto_device_future_queue.c
-  ${api_src_dir}/nabto_device_error.c
-  ${api_src_dir}/nabto_device_util.c
-  ${api_src_dir}/nabto_device_experimental.c
-  ${api_src_dir}/nabto_device_connection_events.c
-  ${api_src_dir}/nabto_device_events.c
-  ${api_src_dir}/nabto_device_authorization.c
-  ${api_src_dir}/nabto_device_authorization_events.c
-  ${api_src_dir}/nabto_device_tcp_tunnelling.c
-  ${api_src_dir}/nabto_device_logging.c
-  ${api_src_dir}/nabto_device_integration.c
-  )
-
-add_library(nabto_device_select_unix SHARED ${src} ${api_src})
+add_library(nabto_device_select_unix SHARED ${src} ${ne_api} ${ne_api_test})
 
 target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_SHARED)
@@ -54,3 +29,11 @@ target_link_libraries( nabto_device_select_unix
   3rdparty_mbedtls
   nm_threads_unix
   )
+
+
+set(test_src
+  select_unix_platform_test.c
+  )
+
+add_executable(select_unix_platform_test ${test_src})
+target_link_libraries(select_unix_platform_test nabto_device_select_unix)
