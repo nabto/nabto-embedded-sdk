@@ -6,11 +6,16 @@ new platform for Nabto Edge.
 
 ## Overall architecture
 
+<p align="center">
+<img border="1" src="images/platform_integration_overview.svg">
+</p>
+
 Nabto Edge needs to know about the underlying platform it is running on.
 The way to "inform" Nabto Edge about this platform is to implement a list
 of functions and supply Nabto Edge with these functions. The list consists of
 a list of functions defined in .h files and function pointers that are supplied to 
 Nabto Edge via setup of structs.
+
 
 
 ## Components which is needed for a custom platform.
