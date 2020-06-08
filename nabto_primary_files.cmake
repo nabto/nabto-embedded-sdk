@@ -2,19 +2,24 @@ set(root_dir ${CMAKE_CURRENT_LIST_DIR})
 
 message("Using embedded dir:" ${root_dir})
 
-set(ne_utils
-  ${root_dir}/nabto-common/components/stun/src/nabto_stun_log.c
-  ${root_dir}/nabto-common/components/stun/src/nabto_stun_client.c
-  ${root_dir}/nabto-common/components/stun/src/nabto_stun_message.c
+
+
+set(ne_nn_src
   ${root_dir}/nabto-common/components/nn/src/nn/llist.c
   ${root_dir}/nabto-common/components/nn/src/nn/vector.c
   ${root_dir}/nabto-common/components/nn/src/nn/string_set.c
   ${root_dir}/nabto-common/components/nn/src/nn/log.c
   ${root_dir}/nabto-common/components/nn/src/nn/string_map.c
+  )
+
+set(ne_utils_src
+  ${root_dir}/nabto-common/components/stun/src/nabto_stun_log.c
+  ${root_dir}/nabto-common/components/stun/src/nabto_stun_client.c
+  ${root_dir}/nabto-common/components/stun/src/nabto_stun_message.c
 )
 
 
-set(ne_streaming
+set(ne_streaming_src
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_congestion_control.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_window.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_log_helper.c
@@ -26,18 +31,14 @@ set(ne_streaming
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_memory.c
 )
 
-set(ne_mdns
-#  ${root_dir}/nabto-common/components/mdns/src/mdns_server.c
-)
-
-set(ne_coap
+set(ne_coap_src
   ${root_dir}/nabto-common/components/coap/src/nabto_coap.c
   ${root_dir}/nabto-common/components/coap/src/nabto_coap_client_impl.c
   ${root_dir}/nabto-common/components/coap/src/nabto_coap_server_impl_incoming.c
   ${root_dir}/nabto-common/components/coap/src/nabto_coap_server_impl.c
 )
 
-set(ne_platform
+set(ne_platform_src
   ${root_dir}/src/platform/np_error_code.c
   ${root_dir}/src/platform/np_completion_event.c
   ${root_dir}/src/platform/np_logging.c
@@ -51,7 +52,7 @@ set(ne_platform
   ${root_dir}/src/platform/np_local_ip_wrapper.c
 )
 
-set(ne_core
+set(ne_core_src
   ${root_dir}/src/core/nc_client_connection.c
   ${root_dir}/src/core/nc_coap_packet_printer.c
   ${root_dir}/src/core/nc_attacher_attach_start.c
@@ -77,7 +78,7 @@ set(ne_core
   ${root_dir}/src/core/nc_device.c
 )
 
-set(ne_api
+set(ne_api_src
   ${root_dir}/src/api/nabto_device_events.c
   ${root_dir}/src/api/nabto_device_stream.c
   ${root_dir}/src/api/nabto_device_future_queue.c
@@ -96,7 +97,7 @@ set(ne_api
   ${root_dir}/src/api/nabto_device_integration.c
   )
 
-set(ne_api_test
+set(ne_api_test_src
   ${root_dir}/src/api_test/nabto_device_test_logging.c
   ${root_dir}/src/api_test/nabto_device_test_future_resolve.c
   ${root_dir}/src/api_test/nabto_device_test_event_queue.c
@@ -104,7 +105,7 @@ set(ne_api_test
   ${root_dir}/src/api_test/nabto_device_test_dns.c
   )
 
-set(ne_tinycbor
+set(ne_tinycbor_src
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborparser_dup_string.c
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cbortojson.c
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborencoder.c
@@ -114,7 +115,7 @@ set(ne_tinycbor
   ${root_dir}/3rdparty/tinycbor/extra/cbor_encode_encoded_cbor.c
 )
 
-set(ne_mbedtls
+set(ne_mbedtls_src
   ${root_dir}/3rdparty/mbedtls/mbedtls/aes.c
   ${root_dir}/3rdparty/mbedtls/mbedtls/aesni.c
   ${root_dir}/3rdparty/mbedtls/mbedtls/asn1parse.c
@@ -150,7 +151,7 @@ set(ne_mbedtls
   ${root_dir}/3rdparty/mbedtls/mbedtls/sha256.c
 )
 
-set(ne_required
+set(ne_required_src
   ${ne_utils}
   ${ne_streaming}
   ${ne_mdns}

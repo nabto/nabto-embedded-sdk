@@ -8,7 +8,7 @@ set(src
   select_unix_event_queue.c
   )
 
-add_library(nabto_device_select_unix SHARED ${src} ${ne_api} ${ne_api_test})
+add_library(nabto_device_select_unix SHARED ${src} ${ne_api_src} ${ne_api_test_src})
 
 target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_SHARED)
