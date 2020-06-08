@@ -38,14 +38,17 @@ set(ne_coap
 )
 
 set(ne_platform
-  ${root_dir}/src/platform/np_udp.c
-  ${root_dir}/src/platform/np_event_queue.c
   ${root_dir}/src/platform/np_error_code.c
-  ${root_dir}/src/platform/np_timestamp.c
   ${root_dir}/src/platform/np_completion_event.c
   ${root_dir}/src/platform/np_logging.c
   ${root_dir}/src/platform/np_util.c
   ${root_dir}/src/platform/np_ip_address.c
+  ${root_dir}/src/platform/np_udp_wrapper.c
+  ${root_dir}/src/platform/np_event_queue_wrapper.c
+  ${root_dir}/src/platform/np_timestamp_wrapper.c
+  ${root_dir}/src/platform/np_dns_wrapper.c
+  ${root_dir}/src/platform/np_tcp_wrapper.c
+  ${root_dir}/src/platform/np_local_ip_wrapper.c
 )
 
 set(ne_core
@@ -90,6 +93,7 @@ set(ne_api
   ${root_dir}/src/api/nabto_device_future.c
   ${root_dir}/src/api/nabto_device_tcp_tunnelling.c
   ${root_dir}/src/api/nabto_device_error.c
+  ${root_dir}/src/api/nabto_device_integration.c
 )
 
 set(ne_tinycbor
@@ -156,8 +160,9 @@ set(ne_include_dirs
 set(ne_priv_include_dirs
   ${root_dir}/
   ${root_dir}/src
-  ${root_dir}/nabto-common-cpp/src
+  ${root_dir}/nabto-common/components/coap/include
+  ${root_dir}/nabto-common/components/streaming/include
+  ${root_dir}/nabto-common/components/stun/include
   ${root_dir}/3rdparty/tinycbor/extra
   ${root_dir}/3rdparty/tinycbor/tinycbor/src
 )
-

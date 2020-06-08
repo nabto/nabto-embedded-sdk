@@ -1,19 +1,3 @@
-set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(src
-  ${src_dir}/np_ip_address.c
-  ${src_dir}/np_logging.c
-  ${src_dir}/np_error_code.c
-  ${src_dir}/np_util.c
-  ${src_dir}/np_completion_event.c
-  ${src_dir}/np_timestamp_wrapper.c
-  ${src_dir}/np_udp_wrapper.c
-  ${src_dir}/np_dns_wrapper.c
-  ${src_dir}/np_tcp_wrapper.c
-  ${src_dir}/np_local_ip_wrapper.c
-  ${src_dir}/np_event_queue_wrapper.c
-
-  )
-
-add_library(np_platform STATIC "${src}")
+add_library(np_platform STATIC "${ne_platform}")
 target_link_libraries(np_platform nn)
