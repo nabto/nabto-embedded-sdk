@@ -1,8 +1,8 @@
 #include <nabto/nabto_device_test.h>
 
-#include "nabto_device_future.h"
-#include "nabto_device_defines.h"
-#include "nabto_device_error.h"
+#include <api/nabto_device_future.h>
+#include <api/nabto_device_defines.h>
+#include <api/nabto_device_error.h>
 
 #include <platform/np_dns_wrapper.h>
 #include <platform/np_ip_address.h>

@@ -1,6 +1,6 @@
 #include <nabto/nabto_device_test.h>
 
-#include "nabto_device_future.h"
+#include <api/nabto_device_future.h>
 
 void NABTO_DEVICE_API
 nabto_device_test_future_resolve(NabtoDevice* device, NabtoDeviceFuture* future)
