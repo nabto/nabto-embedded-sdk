@@ -464,12 +464,12 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener,
                                    NabtoDeviceEvent* event);
 
 
-/****************
- * Streaming API
- ****************/
+/***************
+ * Streams API
+ ***************/
 
 /**
- * @intro Streaming
+ * @intro Streams
  *
  * The Streaming API enables exchange of data between client and device on top of a Nabto
  * connection using a socket like abstraction. The stream is reliable and ensures data is received
