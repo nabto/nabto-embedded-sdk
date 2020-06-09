@@ -79,6 +79,17 @@ nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
 
+/**
+ * Local IP Test
+ *
+ * This test retrieves the local ip from the system and prints it to
+ * the log. The test passes if the correct local ip is written in the
+ * log.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_test_local_ip(NabtoDevice* device);
+
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

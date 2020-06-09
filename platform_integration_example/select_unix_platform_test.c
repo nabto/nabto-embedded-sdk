@@ -8,13 +8,15 @@
 #include <stdio.h>
 
 static void logging_test(void);
+static void timestamp_test(void);
 static void future_test(void);
 static void event_queue_test(void);
-static void timestamp_test(void);
 static void dns_test(void);
 static void udp_test(const char* ip, uint16_t port);
 static void tcp_test(const char* ip, uint16_t port);
+static void local_ip_test(void);
 
+static void log_callback(NabtoDeviceLogMessage* msg, void* data);
 
 int main(int argc, const char* argv[]) {
     logging_test();
@@ -37,6 +39,8 @@ int main(int argc, const char* argv[]) {
         printf("Does not test network integration as no integration test server is specified.\n");
     }
 
+    local_ip_test();
+
 }
 
 
@@ -49,10 +53,11 @@ void logging_test()
 {
     NabtoDevice* device = nabto_device_new();
     nabto_device_set_log_level(device, "trace");
-    nabto_device_set_log_std_out_callback(device);
+    nabto_device_set_log_callback(device, log_callback, NULL);
     nabto_device_test_logging(device);
+    nabto_device_set_log_level(device, "info");
     nabto_device_free(device);
-    printf("Logging test passed if logs were seen in the console output\n");
+    printf("Logging test passed if ERROR, WARN, INFO and TRACE logs were seen in the console output\n");
 }
 
 
@@ -150,4 +155,19 @@ void tcp_test(const char* ip, uint16_t port)
     }
     nabto_device_future_free(future);
     nabto_device_free(device);
+}
+
+void local_ip_test()
+{
+    NabtoDevice* device = nabto_device_new();
+    nabto_device_set_log_callback(device, log_callback, NULL);
+    nabto_device_set_log_level(device, "info");
+    nabto_device_test_local_ip(device);
+    nabto_device_free(device);
+    printf("Local IP test passed if the local ips were seen in the log output.\n");
+}
+
+void log_callback(NabtoDeviceLogMessage* msg, void* data)
+{
+    printf(" Log output: %5s %s\n", nabto_device_log_severity_as_string(msg->severity), msg->message);
 }

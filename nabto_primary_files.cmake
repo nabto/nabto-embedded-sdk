@@ -105,6 +105,7 @@ set(ne_api_test_src
   ${root_dir}/src/api_test/nabto_device_test_dns.c
   ${root_dir}/src/api_test/nabto_device_test_udp.c
   ${root_dir}/src/api_test/nabto_device_test_tcp.c
+  ${root_dir}/src/api_test/nabto_device_test_local_ip.c
   )
 
 set(ne_tinycbor_src
