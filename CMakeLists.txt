@@ -197,6 +197,7 @@ if (DEVICE_BUILD_EXAMPLES)
     add_subdirectory(examples/hello_world)
   endif()
   add_subdirectory(platform_integration_stub)
+  add_subdirectory(platform_integration_guide)
 endif()
 
 if (DEVICE_BUILD_APPS)

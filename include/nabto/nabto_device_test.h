@@ -13,6 +13,35 @@ extern "C" {
 #endif
 
 /**
+ * Create a new NabtoDevice instance which can only be used with
+ * tests.
+ *
+ * The test NabtoDevice is allowed to contain an incomplete platform
+ * implementation.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDevice* NABTO_DEVICE_API
+nabto_device_test_new(void);
+
+
+/**
+ * Free a test NabtoDevice instance.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_test_free(NabtoDevice* device);
+
+/**
+ * Stop a test NabtoDevice instance.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_test_stop(NabtoDevice* device);
+
+/**
+ * Test that the threads implementation works.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_test_threads(void);
+
+/**
  * Test that the log system works.
  *
  * The log system works. The test creates the following 4 log lines,

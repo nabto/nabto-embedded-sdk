@@ -98,6 +98,7 @@ set(ne_api_src
   )
 
 set(ne_api_test_src
+  ${root_dir}/src/api_test/nabto_device_test.c
   ${root_dir}/src/api_test/nabto_device_test_logging.c
   ${root_dir}/src/api_test/nabto_device_test_future_resolve.c
   ${root_dir}/src/api_test/nabto_device_test_event_queue.c
@@ -110,7 +111,7 @@ set(ne_api_test_src
 
 set(ne_tinycbor_src
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborparser_dup_string.c
-  ${root_dir}/3rdparty/tinycbor/tinycbor/src/cbortojson.c
+  #${root_dir}/3rdparty/tinycbor/tinycbor/src/cbortojson.c
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborencoder.c
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborparser.c
   ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborvalidation.c
@@ -119,50 +120,86 @@ set(ne_tinycbor_src
 )
 
 set(ne_mbedtls_src
-  ${root_dir}/3rdparty/mbedtls/mbedtls/aes.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/aesni.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/asn1parse.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/asn1write.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/base64.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/bignum.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/ccm.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/cipher.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/cipher_wrap.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/cmac.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/ctr_drbg.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/des.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/dhm.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/ecdh.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/ecdsa.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/ecp.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/ecp_curves.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/entropy.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/entropy_poll.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/error.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/havege.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/hmac_drbg.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/md.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/md_wrap.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/oid.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/pem.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/pk.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/pk_wrap.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/pkparse.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/pkwrite.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/platform.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/platform_util.c
-  ${root_dir}/3rdparty/mbedtls/mbedtls/sha256.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/aes.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/aesni.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/asn1parse.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/asn1write.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/base64.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/bignum.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ccm.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/cipher.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/cipher_wrap.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/cmac.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ctr_drbg.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/des.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/dhm.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ecdh.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ecdsa.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ecp.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ecp_curves.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/entropy.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/entropy_poll.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/error.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/havege.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/hmac_drbg.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/md.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/md_wrap.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/oid.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/pem.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/pk.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/pk_wrap.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/pkparse.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/pkwrite.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/platform.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/platform_util.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/sha256.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/certs.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/x509.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/x509_create.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/x509_crt.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/x509write_crt.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/debug.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ssl_cache.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ssl_ciphersuites.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ssl_cli.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ssl_cookie.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ssl_srv.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ssl_ticket.c
+  ${root_dir}/3rdparty/mbedtls/mbedtls/library/ssl_tls.c
 )
 
+set(ne_mbedtls_module_src
+  ${root_dir}/src/modules/mbedtls/nm_mbedtls_timer.c
+  ${root_dir}/src/modules/mbedtls/nm_mbedtls_util.c
+  ${root_dir}/src/modules/mbedtls/nm_mbedtls_cli.c
+  ${root_dir}/src/modules/mbedtls/nm_mbedtls_srv.c
+  ${root_dir}/src/modules/mbedtls/nm_mbedtls_random.c
+  )
+
+set(ne_tcp_tunnels_src
+  ${root_dir}/src/modules/tcp_tunnel/nm_tcp_tunnel_connection.c
+  ${root_dir}/src/modules/tcp_tunnel/nm_tcp_tunnel_coap.c
+  ${root_dir}/src/modules/tcp_tunnel/nm_tcp_tunnel.c
+  )
+
+set(ne_communication_buffer_src
+  ${root_dir}/src/modules/communication_buffer/nm_communication_buffer.c
+  )
+
 set(ne_required_src
-  ${ne_utils}
-  ${ne_streaming}
-  ${ne_mdns}
-  ${ne_coap}
-  ${ne_platform}
-  ${ne_core}
-  ${ne_api}
-  ${ne_tinycbor}
+  ${ne_utils_src}
+  ${ne_streaming_src}
+  ${ne_mdns_src}
+  ${ne_coap_src}
+  ${ne_platform_src}
+  ${ne_core_src}
+  ${ne_api_src}
+  ${ne_tinycbor_src}
+  ${ne_nn_src}
+  ${ne_mbedtls_src}
+  ${ne_mbedtls_module_src}
+  ${ne_tcp_tunnels_src}
+  ${ne_communication_buffer_src}
 )
 
 set(ne_include_dirs
@@ -175,6 +212,9 @@ set(ne_priv_include_dirs
   ${root_dir}/nabto-common/components/coap/include
   ${root_dir}/nabto-common/components/streaming/include
   ${root_dir}/nabto-common/components/stun/include
+  ${root_dir}/nabto-common/components/nn/include
   ${root_dir}/3rdparty/tinycbor/extra
   ${root_dir}/3rdparty/tinycbor/tinycbor/src
+  ${root_dir}/3rdparty/mbedtls/mbedtls/include
+  ${root_dir}/3rdparty/mbedtls/config
 )

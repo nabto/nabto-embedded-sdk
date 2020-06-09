@@ -1,7 +1,5 @@
 #include <api/nabto_device_threads.h>
 
-#include <platform/np_logging.h>
-
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -25,7 +23,6 @@ struct nabto_device_thread* nabto_device_threads_create_thread()
 {
     struct nabto_device_thread* thread = calloc(1, sizeof(struct nabto_device_thread));
     if (thread == NULL) {
-        NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
         return NULL;
     }
     return thread;
@@ -35,11 +32,9 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
 {
     struct nabto_device_mutex* mut = (struct nabto_device_mutex*)malloc(sizeof(struct nabto_device_mutex));
     if (mut == NULL) {
-        NABTO_LOG_ERROR(LOG, "Failed to allocate mutex");
         return NULL;
     }
     if (pthread_mutex_init(&mut->mut, NULL) != 0) {
-        NABTO_LOG_ERROR(LOG, "mutex init has failed");
         free(mut);
         return NULL;
     }
@@ -50,11 +45,9 @@ struct nabto_device_condition* nabto_device_threads_create_condition()
 {
     struct nabto_device_condition* cond = (struct nabto_device_condition*)malloc(sizeof(struct nabto_device_condition));
     if (cond == NULL) {
-        NABTO_LOG_ERROR(LOG, "Failed to allocate condition");
         return NULL;
     }
     if (pthread_cond_init(&cond->cond, NULL) != 0) {
-        NABTO_LOG_ERROR(LOG, "condition init has failed");
         free(cond);
         return NULL;
     }
@@ -96,7 +89,6 @@ void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 np_error_code nabto_device_threads_run(struct nabto_device_thread* thread, void *(*run_routine) (void *), void* data)
 {
     if (pthread_create(&thread->thread, NULL, run_routine, data) != 0) {
-        NABTO_LOG_ERROR(LOG, "Failed to create pthread");
         return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;

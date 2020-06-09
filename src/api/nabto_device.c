@@ -51,12 +51,11 @@ void nabto_device_new_resolve_failure(struct nabto_device_context* dev)
  */
 NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
-    struct nabto_device_context* dev = (struct nabto_device_context*)malloc(sizeof(struct nabto_device_context));
+    struct nabto_device_context* dev = calloc(1, sizeof(struct nabto_device_context));
     np_error_code ec;
     if (dev == NULL) {
         return NULL;
     }
-    memset(dev, 0, sizeof(struct nabto_device_context));
 
     dev->closing = false;
     dev->eventMutex = nabto_device_threads_create_mutex();
