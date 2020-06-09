@@ -34,10 +34,10 @@ class AttachCoapServer {
     void stop() {
         // TODO: Was this defferrence only needed in BS ?
         //nabto::TestFuture tf;
-        //io_.post([tf, this](){
-        //    dtlsServer_.stop();
-        //});
-        dtlsServer_.stop();
+        io_.post([this](){
+            dtlsServer_.stop();
+        });
+        //dtlsServer_.stop();
     }
 
     virtual void initCoapHandlers() = 0;

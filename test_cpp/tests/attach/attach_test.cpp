@@ -158,6 +158,7 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
@@ -183,6 +184,7 @@ BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
@@ -204,6 +206,7 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
 
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
     BOOST_TEST(redirectServer->redirectCount_ == (uint64_t)1);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
@@ -231,6 +234,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
 
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
@@ -260,6 +264,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
 
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
@@ -288,6 +293,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
 
     BOOST_TEST(at.attachCount_ == (uint64_t)1);
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
@@ -313,6 +319,7 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
     redirectServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
     BOOST_TEST(redirectServer->redirectCount_ == (uint64_t)2);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
@@ -335,6 +342,7 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)2);
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(access_denied)
@@ -353,6 +361,7 @@ BOOST_AUTO_TEST_CASE(access_denied)
              });
 
     accessDeniedServer->stop();
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(access_denied_reattach)
@@ -374,6 +383,7 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach)
              });
 
     accessDeniedServer->stop();
+    ioService->shutdown();
 }
 
 BOOST_AUTO_TEST_CASE(redirect_loop_break)
@@ -397,6 +407,7 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break)
 
     redirectServer->stop();
     BOOST_TEST(redirectServer->redirectCount_ <= (uint64_t)5);
+    ioService->shutdown();
 }
 
 
