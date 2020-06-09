@@ -105,8 +105,6 @@ void nm_mdns_deinit(struct nm_mdns_server* mdns)
 
     np_udp_destroy(&mdns->udp, mdns->socketv4);
     np_udp_destroy(&mdns->udp, mdns->socketv6);
-
-    free(mdns);
 }
 
 void nm_mdns_stop(struct nm_mdns_server* mdns)

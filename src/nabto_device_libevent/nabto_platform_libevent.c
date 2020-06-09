@@ -109,8 +109,13 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 
     nabto_device_threads_free_thread(platform->libeventThread);
 
+    nm_mdns_deinit(&platform->mdnsServer);
+
+    nm_libevent_deinit(&platform->libeventContext);
+
     event_free(platform->signalEvent);
     event_base_free(platform->eventBase);
+
     nm_libevent_global_deinit();
     free(platform);
 }
