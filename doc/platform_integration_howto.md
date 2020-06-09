@@ -71,9 +71,9 @@ This will at some point call the initialization of the integration interface (`n
 
 #### Platform specific data utillity functions `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data`
 
-When setting up the integration modules, the integrator will probably allocate different types of resources. These resources will need to be deallocated later on when/if the Nabto platform is stopped.
+When setting up the integration modules, the integrator will probably need allocate different types of resources. These resources will need to be deallocated later on when/if the Nabto platform is stopped.
 
-This can be accomplished by setting a pointer to the user specified data via the `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data` function which is reachable inside both the the `nabto_device_platform_init`, `nabto_device_platform_init` and `nabto_devcie_platform_stop` function. This way a pointer to the data can be created and stored in init and deallocated in deinit and stop.
+This can be accomplished by setting a pointer to the user specified data via the `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data` functions which are reachable inside both the the `nabto_device_platform_init`, `nabto_device_platform_init` and `nabto_devcie_platform_stop` function. This way a pointer to the data can be created and stored in init and deallocated in deinit and stop.
 
 If the integration is sure that only on instance of the nabto device is started on a specific device (via `nabto_device_new()`) this user specified data could reside in a static single allocated location (and there will be no need for either the `nabto_device_integration_set_platform_data` or `nabto_device_integration_get_platform_data`) but for the general case multiple devices could run inside the same environment and memory, so the functions are supplied.
 
