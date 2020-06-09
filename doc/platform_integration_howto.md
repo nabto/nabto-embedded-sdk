@@ -239,6 +239,8 @@ Note: if the ts.data is initialized with allocated user data, this data must be 
 
 The Nabto platform relies on DNS to resolve hostnames to ip addresses. This functionality is supplied to Nabto via the `struct np_dns` structure. Just like the `np_timestamp` structure the module consist of a pointer to possible userdata and a pointer to a function list providing needed DNS functionallity.
 
+All in all, the two important structs looks like this:
+
 ```
 struct np_dns {
     const struct np_dns_functions* vptr;
@@ -279,6 +281,126 @@ struct np_dns_functions {
 
 };
 ```
+Basically two functions above is doing somewhat the same, to lookup a hostname (`char* host`) and to return the resolved ip addresses in an given array (`struct np_ip_address* ips`) of a given size (`size_t ipsSize` ie. the maximal ip adresses that can be returned in the array) and return the number of resolved addresses (`size_t* ipsResolved`).
+So far so good, not much different than the timestamp interface. But since getting a timestamp is a local operation that generally is fast and non blocking and that the Nabto platform has to guarantee not to be blocking the system, the timestamp interface doesn't need more specification.
+
+The initialization etc. is not described here as it is the same as timestamp.
+
+The important difference to timestamp implementation is the `np_completion_event` and `async` notation. Since DNS resolving can be a blocking function with possible very long timeouts special care needs to be done. This is done via an async pattern using completion events. For the integrator the only important function is the `np_completion_event_resolve` :
+
+```
+/**
+ * Resolve a completion event.
+ *
+ * The completion event is resolved from the internal event queue.
+ *
+ * @param completionEvent  The completion event to resolve.
+ * @param ec  The error code
+ */
+void np_completion_event_resolve(struct np_completion_event* completionEvent, np_error_code ec);
+```
+
+The semantic of async functions is that they are called with a specific request (hostname and array to return resolved ip addresses) and the function can then start an asynchronous operation and return the execution thread back to the platform. But once the function has computed the result of the request, the contract is that the function then needs to call `resolve` function on the given `np_completion_event`.
+
+To implement this on Linux requires special care since the resolving of hostnames is a blocking operation. Therefore a producer/consumer pattern is used by which an "asynchronous" consumerthread (ie. it is not in sync with the caller thread) is consuming (hostname,resultarray,np_completion_events) from a queue and the callerthread is the producer of (hostnames,resultarray,np_completion_events) to this same queue. Once the consumer has resolved a hostname the solved adresses is entered into the resultarray and the np_completion_event_resolve function is called with completion_event informing the platform that the result is now ready. This text will not go deeper into the decription of the Linux implementation, but the implementation can be found in `modules/dns/unix/nm_unix_dns.c`.
+
+Instead an example of integration with the ESP32 LWIP DNS is given here. This example can be found in the github repository `nabto5-esp-eye` and in the source file: `common_components/nabto_device/src/esp32_dns.c`
+
+Both the v4 and v6 resolve function will use the same generic function with the nearly identic function signature except it has a `u8_t family` parameter that informs the function which IP type (v4 or v6) it needs to resolve.
+
+```
+struct nm_dns_resolve_event {
+
+    struct np_ip_address* ips;
+    size_t ipsSize;
+    size_t* ipsResolved;
+    const char* host;
+    u8_t family;
+    struct np_completion_event* completionEvent;
+};
+
+void esp32_async_resolve(struct np_dns_resolver* resolver, u8_t family, const char* host, struct np_ip_address* ips, size_t ipsSize, s
+ize_t* ipsResolved, struct np_completion_event* completionEvent)
+{
+
+    NABTO_LOG_TRACE(LOG, "esp_async_resolve:%s", host);
+    if (resolver->stopped) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_STOPPED);
+        return;
+    }
+    struct nm_dns_resolve_event* event = calloc(1,sizeof(struct nm_dns_resolve_event));
+    event->host = host;
+    event->ips = ips;
+    event->ipsSize = ipsSize;
+    event->ipsResolved = ipsResolved;
+    event->completionEvent = completionEvent;
+    event->family = family;
+    
+    ip_addr_t addr;
+    err_t status = dns_gethostbyname(host, &addr, esp32_dns_resolve_cb, event);
+    if (status == ERR_OK) {
+        *ipsResolved = 0;
+        free(event);
+        
+        // callback is not going to be called.
+        if(family == LWIP_DNS_ADDRTYPE_IPV4) {
+            memcpy(ips[0].ip.v4, &addr.u_addr.ip4.addr, 4);
+            *ipsResolved = 1;
+        }
+        np_completion_event_resolve(completionEvent, NABTO_EC_OK);
+        return;
+        
+    }  else if (status == ERR_INPROGRESS) {
+        // callback will be called.
+        return;
+    } else {
+        free(event);
+        np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
+    }
+    return;
+}
+```
+
+The function uses an utillity struct (`nm_dns_resolve_event`) which basically records the function parameters set. 
+Once this is done the function will try to resolve the given hostname by calling `dns_gethostbyname(host, &addr, esp32_dns_resolve_cb, event);` which on ESP32 either returns the answer straight away (because the answer has already been resolved and is located in the ESP32 DNS cache) or will return with an answer that it will start the operation and once the hostname is resolved it will call the given callback (with the supplied argument, which in the implementation is the event).
+In event of a fast return with the resolved hostname, the function is simple, copy the address to the result array, free the event struct and call `np_completion_event_resolve` with the given completionevent as argument. If the resolve happens via the callback it is a little more (but not much) complicated. The callback looks something like this:
+
+```
+void esp32_dns_resolve_cb(const char* name, const ip_addr_t* ipaddr, void* userData)
+{
+    struct nm_dns_resolve_event* event = userData;
+
+    struct np_ip_address* ips = event->ips;
+    struct np_completion_event* completionEvent = event->completionEvent;
+
+    NABTO_LOG_TRACE(LOG, "esp_async_resolve callback recieved");
+
+    
+    if (ipaddr == NULL) {
+        NABTO_LOG_TRACE(LOG, "esp_async_resolve callback - no adresses found");
+        free(event);
+        np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
+        return;
+
+    } else {
+        if(event->family == LWIP_DNS_ADDRTYPE_IPV4) {
+            NABTO_LOG_TRACE(LOG, "esp_async_resolve callback - found: %s",ipaddr_ntoa(ipaddr));
+            memcpy(ips[0].ip.v4, &ipaddr->u_addr.ip4.addr, 4);
+            *event->ipsResolved = 1;
+            free(event);
+            np_completion_event_resolve(completionEvent, NABTO_EC_OK);
+            return;
+        }
+    }
+    free(event);
+    *event->ipsResolved = 0;
+    np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
+
+}
+```
+
+The utillity event struct is given as argument to the callback. The resolved address is copied to the result array pointed to inside the event, the event is deallocated and the completionevent is resolved.
+
 
 
 # Integration procedure
