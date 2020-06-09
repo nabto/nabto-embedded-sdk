@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(test_src
   util/io_service.cpp
+  util/tcp_echo_server.cpp
   helper.cpp
   unit_test.cpp
   network/tcp_test.cpp

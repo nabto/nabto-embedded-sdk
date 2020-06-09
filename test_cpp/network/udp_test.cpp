@@ -21,10 +21,12 @@ class UdpEchoClientTest {
     UdpEchoClientTest(TestPlatform& tp)
         : tp_(tp), pl_(tp.getPlatform()), eq_(pl_->eq)
     {
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
     }
 
     ~UdpEchoClientTest()
     {
+        np_completion_event_deinit(&completionEvent_);
     }
 
     void start(uint16_t port) {
@@ -40,7 +42,7 @@ class UdpEchoClientTest {
         memcpy(ep_.ip.ip.v6, addr, 4);
         ep_.port = port;
 
-        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::created, this);
+        np_completion_event_reinit(&completionEvent_, &UdpEchoClientTest::created, this);
         np_udp_async_bind_port(&pl_->udp, socket_, 0, &completionEvent_);
 
         tp_.run();
@@ -55,7 +57,7 @@ class UdpEchoClientTest {
 
     void startSend()
     {
-        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::sent, this);
+        np_completion_event_reinit(&completionEvent_, &UdpEchoClientTest::sent, this);
         np_udp_async_send_to(&pl_->udp, socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
     }
 
@@ -68,7 +70,7 @@ class UdpEchoClientTest {
 
     void startRecv()
     {
-        np_completion_event_init(&eq_, &completionEvent_, &UdpEchoClientTest::received, this);
+        np_completion_event_reinit(&completionEvent_, &UdpEchoClientTest::received, this);
         np_udp_async_recv_wait(&pl_->udp, socket_, &completionEvent_);
     }
 

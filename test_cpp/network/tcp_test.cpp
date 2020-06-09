@@ -12,6 +12,7 @@
 
 
 #include <util/io_service.hpp>
+#include <util/tcp_echo_server.hpp>
 
 #include <boost/asio.hpp>
 
@@ -27,176 +28,16 @@ using namespace nabto;
 namespace nabto {
 namespace test {
 
-class TcpEchoServerImpl;
-
-class TcpEchoConnection : public std::enable_shared_from_this<TcpEchoConnection> {
- public:
-    TcpEchoConnection(std::shared_ptr<TcpEchoServerImpl> manager, boost::asio::io_context& io)
-        : manager_(manager), socket_(io)
-    {
-    }
-
-    ~TcpEchoConnection();
-
-    static std::shared_ptr<TcpEchoConnection> create(std::shared_ptr<TcpEchoServerImpl> manager, boost::asio::io_context& io)
-    {
-        auto c = std::make_shared<TcpEchoConnection>(manager, io);
-        return c;
-    }
-
-    boost::asio::ip::tcp::socket& getSocket()
-    {
-        return socket_;
-    }
-
-    void start();
-
-    void stopFromManager() {
-        boost::system::error_code ec;
-        socket_.close(ec);
-
-        socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-    }
-
-    void stopFromSelf();
-
-    void startRead() {
-        auto self = shared_from_this();
-        socket_.async_read_some(
-            boost::asio::buffer(recvBuffer_),
-            [self](const boost::system::error_code& ec, std::size_t transferred)
-            {
-                if (ec) {
-                    self->stopFromSelf();
-                    return;
-                }
-                boost::asio::async_write(
-                    self->socket_, boost::asio::buffer(self->recvBuffer_.data(), transferred),
-                    [self](const boost::system::error_code& ec, std::size_t transferred) {
-                        if (ec) {
-                            self->stopFromSelf();
-                            return;
-                        }
-                        self->startRead();
-                    });
-            });
-    }
-
- private:
-    std::shared_ptr<TcpEchoServerImpl> manager_;
-    boost::asio::ip::tcp::socket socket_;
-    std::array<uint8_t, 1500> recvBuffer_;
-
-};
-
-class TcpEchoServerImpl : public std::enable_shared_from_this<TcpEchoServerImpl> {
- public:
-    TcpEchoServerImpl(boost::asio::io_context& io)
-        : io_(io), acceptor_(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0))
-    {
-    }
-    static std::shared_ptr<TcpEchoServerImpl> create(boost::asio::io_context& io)
-    {
-        auto s = std::make_shared<TcpEchoServerImpl>(io);
-        s->init();
-        return s;
-    }
-
-    void init() {
-        startAccept();
-    }
-
-    void startAccept() {
-        auto self = shared_from_this();
-        auto c = TcpEchoConnection::create(shared_from_this(), io_);
-        acceptor_.async_accept(c->getSocket(), [self, c](const boost::system::error_code& ec) {
-                if (ec) {
-                    return;
-                }
-                self->connectionsCount_ += 1;
-                c->start();
-                self->startAccept();
-            });
-    }
-
-    void stop() {
-        auto self = shared_from_this();
-        io_.post([self](){
-                self->acceptor_.close();
-                for (auto c : self->connections_) {
-                    self->io_.post([c](){ c->stopFromManager(); });
-                }
-            });
-    }
-
-    uint16_t getPort() {
-        boost::system::error_code ec;
-        boost::asio::ip::tcp::endpoint ep = acceptor_.local_endpoint(ec);
-        return ep.port();
-    }
-
-    size_t getConnectionsCount() {
-        return connectionsCount_;
-    }
-
-    void removeConnection(std::shared_ptr<TcpEchoConnection> connection)
-    {
-        connections_.erase(connection);
-    }
-
-    void addConnection(std::shared_ptr<TcpEchoConnection> connection)
-    {
-        connections_.insert(connection);
-    }
- private:
-    boost::asio::io_context& io_;
-    boost::asio::ip::tcp::acceptor acceptor_;
-
-    std::atomic<std::size_t> connectionsCount_ = { 0 };
-    std::set<std::shared_ptr<TcpEchoConnection> > connections_;
-};
-
-class TcpEchoServer {
- public:
-    TcpEchoServer(boost::asio::io_context& io)
-    {
-        impl_ = TcpEchoServerImpl::create(io);
-    }
-    ~TcpEchoServer()
-    {
-        impl_->stop();
-    }
-    uint16_t getPort() {
-        return impl_->getPort();
-    }
-
-    size_t getConnectionsCount() {
-        return impl_->getConnectionsCount();
-    }
- private:
-    std::shared_ptr<TcpEchoServerImpl> impl_;
-};
-
-
-TcpEchoConnection::~TcpEchoConnection() {
-}
-
-void TcpEchoConnection::stopFromSelf()
-{
-    manager_->removeConnection(shared_from_this());
-}
-
-void TcpEchoConnection::start()
-{
-    manager_->addConnection(shared_from_this());
-    startRead();
-}
-
 class TcpEchoClientTest {
  public:
     TcpEchoClientTest(TestPlatform& tp)
         :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
+    }
+
+    ~TcpEchoClientTest() {
+        np_completion_event_deinit(&completionEvent_);
     }
 
     void start(uint16_t port) {
@@ -211,7 +52,7 @@ class TcpEchoClientTest {
             data_[i] = (uint8_t)i;
         }
 
-        np_completion_event_init(&eq_, &completionEvent_, &TcpEchoClientTest::connected, this);
+        np_completion_event_reinit(&completionEvent_, &TcpEchoClientTest::connected, this);
         np_tcp_async_connect(&tcp_, socket_, &address, port, &completionEvent_);
 
         tp_.run();
@@ -221,7 +62,7 @@ class TcpEchoClientTest {
     {
         auto test = (TcpEchoClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
-        np_completion_event_init(&test->eq_, &test->completionEvent_, &TcpEchoClientTest::hasWritten, test);
+        np_completion_event_reinit(&test->completionEvent_, &TcpEchoClientTest::hasWritten, test);
         np_tcp_async_write(&test->tcp_, test->socket_, test->data_.data(), test->data_.size(), &test->completionEvent_);
     }
 
@@ -230,7 +71,7 @@ class TcpEchoClientTest {
         auto test = (TcpEchoClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
         test->recvBuffer_.resize(test->data_.size());
-        np_completion_event_init(&test->eq_, &test->completionEvent_, &TcpEchoClientTest::hasReaden, test);
+        np_completion_event_reinit(&test->completionEvent_, &TcpEchoClientTest::hasReaden, test);
         np_tcp_async_read(&test->tcp_, test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &test->readLength_, &test->completionEvent_);
     }
 
@@ -268,6 +109,12 @@ class TcpCloseClientTest {
     TcpCloseClientTest(TestPlatform& tp)
         :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
+    }
+
+    ~TcpCloseClientTest()
+    {
+        np_completion_event_deinit(&completionEvent_);
     }
 
     void createSock() {
@@ -281,7 +128,7 @@ class TcpCloseClientTest {
         for (size_t i = 0; i < data_.size(); i++) {
             data_[i] = (uint8_t)i;
         }
-        np_completion_event_init(&eq_, &completionEvent_, &TcpCloseClientTest::connected, this);
+        np_completion_event_reinit(&completionEvent_, &TcpCloseClientTest::connected, this);
         np_tcp_async_connect(&tcp_, socket_, &address, port_, &completionEvent_);
     }
 
@@ -295,7 +142,7 @@ class TcpCloseClientTest {
     {
         auto test = (TcpCloseClientTest*)userData;
         BOOST_TEST(ec == NABTO_EC_OK);
-        np_completion_event_init(&test->eq_, &test->completionEvent_, &TcpCloseClientTest::hasReaden, test);
+        np_completion_event_reinit(&test->completionEvent_, &TcpCloseClientTest::hasReaden, test);
         np_tcp_async_read(&test->tcp_, test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &test->readLength_, &test->completionEvent_);
         np_tcp_abort(&test->tcp_, test->socket_);
     }
@@ -336,7 +183,7 @@ BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
 BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatform::multi(), tp)
 {
     auto ioService = IoService::create("test");
-    test::TcpEchoServer tcpServer(ioService->getIoService());
+    test::TcpEchoServer tcpServer(ioService->getIoService(), nullptr);
 
     test::TcpEchoClientTest client(*tp);
     client.start(tcpServer.getPort());
@@ -348,7 +195,7 @@ BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
 BOOST_DATA_TEST_CASE(close, nabto::test::TestPlatform::multi(), tp)
 {
     auto ioService = IoService::create("test");
-    test::TcpEchoServer tcpServer(ioService->getIoService());
+    test::TcpEchoServer tcpServer(ioService->getIoService(), nullptr);
 
     test::TcpCloseClientTest client(*tp);
     client.start(tcpServer.getPort());

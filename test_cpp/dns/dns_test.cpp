@@ -21,6 +21,10 @@ class DnsTest {
     {
         np_completion_event_init(&pl_->eq, &completionEvent_, &DnsTest::dnsCallback, this);
     }
+    ~DnsTest()
+    {
+        np_completion_event_deinit(&completionEvent_);
+    }
     static void dnsCallback(const np_error_code ec, void* data)
     {
         DnsTest* t = (DnsTest*)data;
