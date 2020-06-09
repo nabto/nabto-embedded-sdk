@@ -1424,6 +1424,12 @@ nabto_device_set_log_level(NabtoDevice* device, const char* level);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_std_out_callback(NabtoDevice* device);
 
+/**
+ * Convert the log level to a string
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity);
+
 /********
  * Misc
  ********/

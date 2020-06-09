@@ -122,3 +122,21 @@ void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* dat
            seconds, milliseconds,
            fileTmp, msg->line, level, msg->message);
 }
+
+const char* NABTO_DEVICE_API
+nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity)
+{
+    switch(severity) {
+        case NABTO_DEVICE_LOG_ERROR:
+            return "ERROR";
+        case NABTO_DEVICE_LOG_WARN:
+            return "WARN";
+        case NABTO_DEVICE_LOG_INFO:
+            return "INFO";
+        case NABTO_DEVICE_LOG_TRACE:
+            return "TRACE";
+        default:
+            // should not happen
+            return "NONE";
+    }
+}
