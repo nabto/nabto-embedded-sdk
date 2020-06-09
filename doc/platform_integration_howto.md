@@ -168,7 +168,9 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 }
 ```
 
-Not that the `nabto_device_integration_set_timestamp_impl` functions all copies the implementation structs even though they are pointers (to be sure that users does not make a mistake of .
+Not that the `nabto_device_integration_set_timestamp_impl` functions all copies the implementation structs even though they are pointers (to be sure that integrators does not make a mistake of deallocating it too soon).
+
+Note: if the ts.data is initialized with allocated user data, this data must be deallocated when the `nabto_device_platform_deinit` is called. Pointers to the allocated user data can be collected in a struct or similar and be kept via the the `nabto_device_integration_set_platform_data` utillity function and be reached by using the identical get function (see earlier explanation). 
 
 
 # Integration procedure
