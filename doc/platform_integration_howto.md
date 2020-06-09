@@ -18,13 +18,13 @@ Nabto Edge via setup of structs.
 Details on these structs can be found in **src/platform/interface/**
 Nabto needs to know about: 
 
-1. DNS - how to resolve hostnames to ip addresses (both ipv4:A and ipv6:AAAA addresses)
-2. Timestamp - tools so that Nabto Edge knows about time for scheduling events
+1. DNS - how the system resolves hostnames to ip addresses (both ipv4:A and ipv6:AAAA addresses)
+2. Timestamp - interface for Nabto Edge to know about the current time for scheduling events
 3. Event Queue - put events on a queue for serialized (under mutex) execution, which minimizes/optimizes callstacks.
-4. TCP - specify tcp operations
-5. UDP - specify udp operations
-6. Local ip - specify how to lookup the local-ip address(es) of the device
-7. MDNS - specify MDNS interface for local discovery
+4. TCP - specify TCP operations on the specific target
+5. UDP - specify UDP operations on the specific target
+6. Local ip - specify how to find the local-ip address(es) of the device (ie. which IP does the target have on the local network)
+7. MDNS - specify/setup MDNS interface for local discovery
 
 
 ## Components which is needed for a custom platform.
@@ -65,4 +65,24 @@ implementations in the `src/modules/threads` folder.
 
 In the directory `platform_integration_example` an example integration can be viewed. This example works on UNIX systems so
 modules which works on such a system has been choosen. 
+
+
+# Integration procedure
+
+Of course an integration procedure can be that all module functions are correctly implement from start to end and in the end everything is joined and everything works (big-bang integration). This mostly is a very very hard way to do an integration since it is wellknown that it is nearly impossible to write so much code without an error is sneaked in and this error will can be very very hard to located in a running system.
+
+Instead in Nabto Edge a integration procedure is laid out with supporting test code so that the integrator can create the integration interfaces one by one and get them tested. Thus once the overall integration is to be made, hopefully no errors (or only minor errors) will occur.
+
+The integration procedure with supporting tests are as follows:
+
+1. Log interface
+2. Timestamp interface
+3. Threads interface
+4. Event queue
+5. DNS interface
+6. UDP interface
+7. TCP interface
+8. LocalIP interface
+9. MDNS
+
 
