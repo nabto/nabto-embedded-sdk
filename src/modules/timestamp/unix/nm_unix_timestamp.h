@@ -2,7 +2,7 @@
 #define _NP_UNIX_TIMESTAMP_H_
 
 #include <platform/np_platform.h>
-#include <nabto_types.h>
+#include <platform/np_types.h>
 
 #ifdef __cplusplus
 extern "C" {

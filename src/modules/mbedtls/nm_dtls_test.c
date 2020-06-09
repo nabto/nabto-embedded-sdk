@@ -1,4 +1,4 @@
-#include <nabto_types.h>
+#include <platform/np_types.h>
 #include <platform/np_unit_test.h>
 #include "nm_mbedtls_util.h"
 #include "nm_mbedtls_cli.h"

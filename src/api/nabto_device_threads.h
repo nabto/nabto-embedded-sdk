@@ -2,7 +2,7 @@
 #define NABTO_DEVICE_THREADS_H
 
 #include <platform/np_error_code.h>
-#include <nabto_types.h>
+#include <platform/np_types.h>
 
 #ifdef __cplusplus
 extern "C" {

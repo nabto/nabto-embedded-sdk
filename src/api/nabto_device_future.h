@@ -6,8 +6,6 @@
 
 #include <nn/llist.h>
 
-#include <nabto_types.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

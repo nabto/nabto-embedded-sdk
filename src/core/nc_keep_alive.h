@@ -4,7 +4,7 @@
 #include <platform/np_platform.h>
 #include <platform/np_dtls_srv.h>
 
-#include <nabto_types.h>
+#include <platform/np_types.h>
 
 #ifndef NC_KEEP_ALIVE_MTU_MAX
 #define NC_KEEP_ALIVE_MTU_MAX 1400

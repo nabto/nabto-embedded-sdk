@@ -1,7 +1,7 @@
 #ifndef NP_COMMUNICATION_BUFFER_H
 #define NP_COMMUNICATION_BUFFER_H
 
-#include <nabto_types.h>
+#include <platform/np_types.h>
 
 /**
  * Communication buffer interface.

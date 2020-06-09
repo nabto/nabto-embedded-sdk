@@ -2,7 +2,7 @@
 #define _NP_LOGGING_H_
 
 #include <platform/np_logging_defines.h>
-#include <nabto_types.h>
+#include <platform/np_types.h>
 #include <stdarg.h>
 
 #ifdef __cplusplus

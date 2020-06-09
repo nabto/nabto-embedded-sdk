@@ -1,6 +1,6 @@
 
 #include "nm_unix_logging.h"
-#include <nabto_types.h>
+#include <platform/np_types.h>
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>

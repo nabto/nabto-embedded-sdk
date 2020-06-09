@@ -2,7 +2,7 @@
 #define _NP_UNIX_DNS_H_
 
 #include <platform/interfaces/np_dns.h>
-#include <nabto_types.h>
+#include <platform/np_types.h>
 
 #include <pthread.h>
 #include <nn/llist.h>

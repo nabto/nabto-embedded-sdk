@@ -207,8 +207,9 @@ set(ne_include_dirs
 )
 
 set(ne_priv_include_dirs
-  ${root_dir}/
+#  ${root_dir}/
   ${root_dir}/src
+  ${root_dir}/include
   ${root_dir}/nabto-common/components/coap/include
   ${root_dir}/nabto-common/components/streaming/include
   ${root_dir}/nabto-common/components/stun/include
