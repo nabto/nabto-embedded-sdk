@@ -8,14 +8,24 @@ bool np_hex_to_data(const char* hex, uint8_t* data, size_t dataLength)
 
 bool np_hex_to_data_length(const char* hex, size_t hexLength, uint8_t* data, size_t dataLength)
 {
-    if (hexLength != dataLength * 2) {
+    if (hexLength > dataLength * 2) {
         return false;
     }
     memset(data, 0, dataLength);
 
     size_t index = 0;
-    while (index < hexLength) {
-        char c = hex[index];
+
+    const char* end = hex + hexLength;
+    const char* ptr = hex;
+
+    if (hexLength % 2 == 1) {
+        // odd number of hexadecimal chars, assume the first is an implicit 0
+        // 0x1 = 0x01 = 1
+        index = 1;
+    }
+
+    while (ptr < end) {
+        char c = *ptr;
         int value = 0;
         if(c >= '0' && c <= '9')
           value = (c - '0');
@@ -31,6 +41,7 @@ bool np_hex_to_data_length(const char* hex, size_t hexLength, uint8_t* data, siz
         data[(index/2)] += value << (((index + 1) % 2) * 4);
 
         index++;
+        ptr++;
     }
 
     return true;

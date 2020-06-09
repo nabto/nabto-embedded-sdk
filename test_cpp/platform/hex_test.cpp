@@ -22,4 +22,20 @@ BOOST_AUTO_TEST_CASE(decode)
     BOOST_TEST(out == target);
 }
 
+BOOST_AUTO_TEST_CASE(decode_implicit_leading_zeroes)
+{
+    std::string hex = "24344454b";
+    std::vector<uint8_t> out(5);
+    std::vector<uint8_t> target = { 0x2, 0x43, 0x44, 0x45, 0x4b };
+    np_hex_to_data(hex.c_str(), out.data(), out.size());
+    BOOST_TEST(out == target);
+}
+
+BOOST_AUTO_TEST_CASE(decode_too_small_buffer)
+{
+    std::string hex = "4242";
+    std::vector<uint8_t> out(1);
+    BOOST_TEST(np_hex_to_data(hex.c_str(), out.data(), out.size()) == false);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
