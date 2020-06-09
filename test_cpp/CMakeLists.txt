@@ -12,6 +12,7 @@ set(test_src
   platform/test_platform_test.cpp
   platform/test_platform_event_queue.c
 
+  fixtures/coap_server/coap_server_test.cpp
   tests/network/tcp_test.cpp
   tests/network/udp_test.cpp
   tests/platform/hex_test.cpp
