@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <util/udp_echo_server.hpp>
+#include <fixtures/udp_echo_server.hpp>
 #include <util/tcp_echo_server.hpp>
 #include <util/io_service.hpp>
 #include <util/termination_waiter.hpp>
