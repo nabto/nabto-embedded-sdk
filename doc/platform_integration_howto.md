@@ -68,9 +68,6 @@ NabtoDevice* device = nabto_device_new();
 This will at some point call the initialization of the integration interface (nabto_devcie_platform_init) which has the responsibillity to setup the different integration modules (tcp, udp, mdns, timestamp etc.) via calling the appropriate nabto_device_interation_set_<modulename>_impl().
 
 
-
-
-
 ### `api/nabto_device_threads.h`
 
 The api `nabto/nabto_device.h` is a thread safe API, which also
@@ -84,6 +81,33 @@ implementations in the `src/modules/threads` folder.
 
 In the directory `platform_integration_example` an example integration can be viewed. This example works on UNIX systems so
 modules which works on such a system has been choosen. 
+
+## Example of a simple module - struct np_timestamp_functions
+
+This is one of the most simple integration interfaces, so it is a good place to start. 
+This interface tells Nabto Edge how to get the current time from the system. This is used to keep track of retransmissions of internet communication etc. The interface can be found in `nabto-embedded-sdk/src/platform/interfaces/np_timestamp.h` and looks like this:
+
+```
+struct np_timestamp_functions {
+    /**
+     * Return current timestamp as milliseconds the timestamp should
+     * be a monotonic value which wraps around whenever the value
+     * reaches 2^32. The precision is not critical.
+     *
+     * @param  data  The timestamp object data.
+     * @return  The current timestamp in milliseconds.
+     */
+    uint32_t (*now_ms)(struct np_timestamp* obj);
+}
+
+struct np_timestamp {
+    const struct np_timestamp_functions* vptr;
+    // Pointer to data which is implementation specific
+    void* data;
+};
+
+```
+
 
 
 # Integration procedure
