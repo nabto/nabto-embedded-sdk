@@ -8,7 +8,10 @@ bool np_hex_to_data(const char* hex, uint8_t* data, size_t dataLength)
 
 bool np_hex_to_data_length(const char* hex, size_t hexLength, uint8_t* data, size_t dataLength)
 {
-    if (hexLength > dataLength * 2) {
+    // hexLength should be 2*datalength or (2*dataLength - 1)
+    if (!(hexLength == dataLength * 2 ||
+          hexLength == ((dataLength * 2) - 1)))
+    {
         return false;
     }
     memset(data, 0, dataLength);
