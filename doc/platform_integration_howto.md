@@ -235,6 +235,51 @@ Not that the `nabto_device_integration_set_timestamp_impl` functions all copies 
 
 Note: if the ts.data is initialized with allocated user data, this data must be deallocated when the `nabto_device_platform_deinit` is called. Pointers to the allocated user data can be collected in a struct or similar and be kept via the the `nabto_device_integration_set_platform_data` utillity function and be reached by using the identical get function (see earlier explanation). 
 
+## Example of a module with medium complexity - struct np_dns_functions
+
+The Nabto platform relies on DNS to resolve hostnames to ip addresses. This functionality is supplied to Nabto via the `struct np_dns` structure. Just like the `np_timestamp` structure the module consist of a pointer to possible userdata and a pointer to a function list providing needed DNS functionallity.
+
+```
+struct np_dns {
+    const struct np_dns_functions* vptr;
+    // Pointer to implementation specific data.
+    void* data;
+};
+
+struct np_dns_functions {
+    /**
+     * Resolve ipv4 addresses for the host name.
+     *
+     * The completion event shall be resolved when the dns resolution
+     * has either failed or succeeded.
+     *
+     * @param obj  Dns implemetation object.
+     * @param host  The host to resolve.
+     * @param ips  The array to store the resolved ips in.
+     * @param ipsSize  The size of the ips array.
+     * @param ipsResolved  The number of ips put in the the ips array.
+     * @param completionEvent  The completion event.
+     */
+    void (*async_resolve_v4)(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+
+    /**
+     * Resolve ipv6 addresses for the host name.
+     *
+     * The completion event shall be resolved when the dns resolution
+     * has either failed or succeeded.
+     *
+     * @param obj  Dns implementation object.
+     * @param host  The host to resolve.
+     * @param ips  The array to store the resolved ips in.
+     * @param ipsSize  The size of the ips array.
+     * @param ipsResolved  The number of ips put in the the ips array.
+     * @param completionEvent  The completion event.
+     */
+    void (*async_resolve_v6)(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
+
+};
+```
+
 
 # Integration procedure
 
