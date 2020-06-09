@@ -15,8 +15,11 @@ The way to "inform" Nabto Edge about this platform is to implement a list
 of functions and supply Nabto Edge with these functions. The list consists of
 a list of functions defined in .h files and function pointers that are supplied to 
 Nabto Edge via setup of structs.
-Details on these structs can be found in **src/platform/interface/**
-Nabto needs to know about: 
+Details on these structs can be found in `src/platform/interface/`.
+The integration interface consist of three types. First type (nabto_device_platform.h which is not in the drawing) which is a list of functions that are only used to bootstrap and teardown the integraton interfaces. Another type (log and threads) which are a list of functions linked into the target that the Nabto platform uses at runtime. The last type is a type of functions and possible user data setup via structs and initialized and teardown by the first mentioned functions and used by the platform at runtime to interact with the underlying operating system (or/and hardware).
+
+
+For Nabto to run on a specific target it needs to know about: 
 
 1. DNS - how the system resolves hostnames to ip addresses (both ipv4:A and ipv6:AAAA addresses)
 2. Timestamp - interface for Nabto Edge to know about the current time for scheduling events
