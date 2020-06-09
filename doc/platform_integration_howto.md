@@ -153,6 +153,12 @@ struct np_timestamp nm_unix_ts_create()
 ```
 (note this implementation of np_timestamp does not use the user supplied data for anything since there's no need for it specific implmentation.)
 
+Calling the function above would setup a np_timestamp like this:
+
+<p align="center">
+<img border="1" src="images/np_timestamp_struct.svg">
+</p>
+
 To setup the timestamp integration modules the intergrator could now do something like:
 
 ```
