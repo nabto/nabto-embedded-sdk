@@ -39,7 +39,7 @@ Once this is done, the Nabt Edge system needs to be supplied with knowledge of t
 3 major files need to be examined for this.
 
 
-### `api/nabto_device.h`
+### `api/nabto_device_platform.h`
 This file contains 3 functions: an init, a deinit and a stop
 function. That is, functions needed for bootstrap and teardown of the system.
 These functions are called when a device is created,
@@ -50,6 +50,25 @@ destroyed and stopped. The init function should call the appropriate setterfunct
 The purpose of these functions is to be called from the `nabto_device_platform_init` function to setup the module struct of
 `src/platform/interfaces/*.h` (described later) via apropriate setter functions and to
 provide the overall functionality which is required to run on a specific platform.
+
+### Understanding nabto_device_platform.h and nabto_device_device_integration.h setup in an integration
+
+For better understanding the link between the initialisation of a device and the platform integration please refer to the next diagram.
+
+<p align="center">
+<img border="1" src="images/nabto_device_platform_cdiag.svg">
+</p>
+
+The call sequence and initialization of the integration modules will start when the main program initializes a new NabtoDevice, something like:
+
+```
+NabtoDevice* device = nabto_device_new();
+```
+
+This will at some point call the initialization of the integration interface (nabto_devcie_platform_init) which has the responsibillity to setup the different integration modules (tcp, udp, mdns, timestamp etc.) via calling the appropriate nabto_device_interation_set_<modulename>_impl().
+
+
+
 
 
 ### `api/nabto_device_threads.h`
