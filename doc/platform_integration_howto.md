@@ -65,7 +65,17 @@ The call sequence and initialization of the integration modules will start when 
 NabtoDevice* device = nabto_device_new();
 ```
 
-This will at some point call the initialization of the integration interface (nabto_devcie_platform_init) which has the responsibillity to setup the different integration modules (tcp, udp, mdns, timestamp etc.) via calling the appropriate nabto_device_interation_set_<modulename>_impl().
+This will at some point call the initialization of the integration interface (`nabto_devcie_platform_init`) which has the responsibillity to setup the different integration modules (tcp, udp, mdns, timestamp etc.) via calling the appropriate nabto_device_interation_set_<modulename>_impl().
+    
+
+
+#### Platform specific data utillity functions `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data`
+
+When setting up the integration modules, the integrator will probably allocate different types of resources. These resources will need to be deallocated later on when/if the Nabto platform is stopped.
+
+This can be accomplished by setting a pointer to the user specified data via the `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data` function which is reachable inside both the the `nabto_device_platform_init`, `nabto_device_platform_init` and `nabto_devcie_platform_stop` function. This way a pointer to the data can be created and stored in init and deallocated in deinit and stop.
+
+If the integration is sure that only on instance of the nabto device is started on a specific device (via `nabto_device_new()`) this user specified data could reside in a static single allocated location (and there will be no need for either the `nabto_device_integration_set_platform_data` or `nabto_device_integration_get_platform_data`) but for the general case multiple devices could run inside the same environment and memory, so the functions are supplied.
 
 
 ### `api/nabto_device_threads.h`
@@ -107,7 +117,58 @@ struct np_timestamp {
 };
 
 ```
+The np_timestamp struct defines the modules data (`void* data`) and the functions (`struct np_timestamp_functions* vptr`). The data section is a pointer that is fully up to the implementation integration to use and implement or not use at all.
 
+The `np_timestampe_functions` defines a set of functions that the integration modules supply. For the timestamp module this is very simple since it is only one function `uint32_t ts_now_ms(struct np_timestamp* obj)`
+
+On Linux this interface could be accomplished by making the following function (please refer to the `clock_gettime` function):
+
+```
+uint32_t ts_now_ms(struct np_timestamp* obj)
+{
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    return ((spec.tv_sec * 1000) + (spec.tv_nsec / 1000000));
+}
+```
+
+To create the np_timestamp_functions table you could do the following:
+
+```
+static struct np_timestamp_functions vtable = {
+    .now_ms               = &ts_now_ms
+};
+```
+
+And to make a function that setup the np_timestamp struct is would look like:
+
+```
+struct np_timestamp nm_unix_ts_create()
+{
+    struct np_timestamp ts;
+    ts.vptr = &vtable;
+    ts.data = NULL;
+    return ts;
+}
+```
+(note this implementation of np_timestamp does not use the user supplied data for anything since there's no need for it specific implmentation.)
+
+To setup the timestamp integration modules the intergrator could now do something like:
+
+```
+np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex) {
+
+    ...
+    
+    struct np_timestamp timestampImpl = nm_unix_ts_create();
+    nabto_device_integration_set_timestamp_impl(device, &timestampImpl);
+
+    ...
+    
+}
+```
+
+Not that the `nabto_device_integration_set_timestamp_impl` functions all copies the implementation structs even though they are pointers (to be sure that users does not make a mistake of .
 
 
 # Integration procedure
