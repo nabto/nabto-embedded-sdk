@@ -87,6 +87,60 @@ abstraction defines threads, muteces and condition variables. See
 the header file for more information or take a look at the existing
 implementations in the `src/modules/threads` folder.
 
+For Nabto Edge to run in it's current state the system needs an threads implementation, condition variables and mutexes. It is planned (the platform is made ready for) that in a future versions the platform can be run onto a single thread platform (which is the reason why integrations dependent on system calls which are explained later on are async and/or nonblocking).
+
+#### Threads
+
+The integration needs to supply the following function linked onto the platform:
+
+```
+struct nabto_device_thread* nabto_device_threads_create_thread(void);
+void nabto_device_threads_free_thread(struct nabto_device_thread* thread);
+void nabto_device_threads_join(struct nabto_device_thread* thread);
+np_error_code nabto_device_threads_run(struct nabto_device_thread* thread,
+                                       void *(*run_routine) (void *), void* data);
+
+```
+The above functions should somewhat already be understood by the integrator otherwise it would be a good idea to explore pthreads interface on Linux.
+
+* nabto_device_threads_create_thread : Shall allocate the needed resources for a new thread
+* nabto_device_threads_free_thread : Shall deallocate the resources allocated in the `create` function
+* nabto_device_threads_join : Shall make the current caller thread join the to the function given thread
+* nabto_device_threads_run : Shall start the given thread on the given function with the given data
+
+
+#### Condition variables
+
+Also the Nabto platform is dependent on condition variables for synchronization between threads.
+The functions needed at link time is:
+
+``` 
+struct nabto_device_condition* nabto_device_threads_create_condition(void);
+void nabto_device_threads_free_cond(struct nabto_device_condition* cond);
+void nabto_device_threads_cond_signal(struct nabto_device_condition* cond);
+void nabto_device_threads_cond_wait(struct nabto_device_condition* cond,
+                                    struct nabto_device_mutex* mut);
+void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
+                                          struct nabto_device_mutex* mut,
+                                          uint32_t ms);
+```
+
+The implementation should follow the pthread semantics of the similar functions.
+
+#### Mutex
+
+And last the Nabto platform needs an mutex abstraction to synchronize access to shared memory and variables.
+The function provided by the integration and needed at link time is:
+
+```
+struct nabto_device_mutex* nabto_device_threads_create_mutex(void);
+void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutext);
+void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex);
+void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex);
+```
+
+Just like the mutex abstraction, the function should follow the same semantik as in pthreads mutex abstraction. 
+
 ## Example integration
 
 In the directory `platform_integration_example` an example integration can be viewed. This example works on UNIX systems so
