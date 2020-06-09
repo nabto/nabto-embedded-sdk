@@ -62,7 +62,7 @@ nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future);
 
 
 /**
- * UDP ipv4 test
+ * UDP test
  *
  * This test connects to the udp server in the arguments and echoes
  * some data.
@@ -70,7 +70,14 @@ nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future);
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
 
-
+/**
+ * TCP test
+ *
+ * This test connects to a TCP echo server, sends some data and
+ * validates that the data is echoed back again.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
 
 #ifdef __cplusplus
 } // extern "C"

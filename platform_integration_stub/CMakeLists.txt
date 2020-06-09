@@ -5,6 +5,7 @@ set(src
   platform_integration_stub.cpp
   ../test_cpp/util/io_service.cpp
   ../nabto-common/components/nn/src/nn/log.c
+  ../test_cpp/util/tcp_echo_server.cpp
   )
 
 include_directories(../test_cpp)

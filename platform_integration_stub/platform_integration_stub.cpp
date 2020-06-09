@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <util/udp_echo_server.hpp>
+#include <util/tcp_echo_server.hpp>
 #include <util/io_service.hpp>
 #include <util/termination_waiter.hpp>
 
@@ -9,6 +10,7 @@
 #include <stdio.h>
 
 static uint16_t udpEchoServerPort = 1234;
+static uint16_t tcpEchoServerPort = 1234;
 
 
 
@@ -27,13 +29,22 @@ int main(int argc, const char* argv[])
 
     auto ioService = nabto::IoService::create("platform_integration_stub");
 
-    auto udpEchpServer = nabto::test::UdpEchoServer::create(ioService->getIoService(), &logger, udpEchoServerPort);
+    auto udpEchoServer = nabto::test::UdpEchoServer::create(ioService->getIoService(), &logger, udpEchoServerPort);
 
 
-    if (udpEchpServer) {
-        std::cout << "Udp echo server listening on port " << udpEchoServerPort << std::endl;
+    if (udpEchoServer) {
+        std::cout << "UDP echo server listening on port " << udpEchoServerPort << std::endl;
     }
+
+    nabto::test::TcpEchoServer tcpEchoServer(ioService->getIoService(), &logger, tcpEchoServerPort);
+
+    std::cout << "TCP echo server listening on port " << tcpEchoServerPort << std::endl;
 
     std::cout << "Waiting for CTRL-C" << std::endl;
     nabto::CtrlCWaiter::waitForTermination();
+
+    if (udpEchoServer) {
+        udpEchoServer->stop();
+    }
+
 }

@@ -12,7 +12,8 @@ static void future_test(void);
 static void event_queue_test(void);
 static void timestamp_test(void);
 static void dns_test(void);
-static void udp_test(const char* ip);
+static void udp_test(const char* ip, uint16_t port);
+static void tcp_test(const char* ip, uint16_t port);
 
 
 int main(int argc, const char* argv[]) {
@@ -24,9 +25,13 @@ int main(int argc, const char* argv[]) {
 
 
     if (argc >= 2) {
+        uint16_t udpEchoServerPort = 1234;
+        uint16_t tcpEchpServerPort = 1234;
+        const char* test_stub_ip = argv[1];
         // first arg is program name, seconds arg should be integration test server.
 
-        udp_test(argv[1]);
+        udp_test(test_stub_ip, udpEchoServerPort);
+        tcp_test(test_stub_ip, tcpEchpServerPort);
 
     } else {
         printf("Does not test network integration as no integration test server is specified.\n");
@@ -121,16 +126,31 @@ void dns_test()
     nabto_device_free(device);
 }
 
-void udp_test(const char* ip)
+void udp_test(const char* ip, uint16_t port)
 {
     NabtoDevice* device = nabto_device_new();
     NabtoDeviceFuture* future = nabto_device_future_new(device);
-    nabto_device_test_udp(device, ip, 1234, future);
+    nabto_device_test_udp(device, ip, port, future);
     NabtoDeviceError ec = nabto_device_future_wait(future);
     if (ec != NABTO_DEVICE_EC_OK) {
         printf("UDP IPv4 test failed with error %s\n", nabto_device_error_get_string(ec));
     } else {
         printf("UDP IPV4 test passed\n");
+    }
+    nabto_device_future_free(future);
+    nabto_device_free(device);
+}
+
+void tcp_test(const char* ip, uint16_t port)
+{
+    NabtoDevice* device = nabto_device_new();
+    NabtoDeviceFuture* future = nabto_device_future_new(device);
+    nabto_device_test_tcp(device, ip, port, future);
+    NabtoDeviceError ec = nabto_device_future_wait(future);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("TCP IPv4 test failed with error %s\n", nabto_device_error_get_string(ec));
+    } else {
+        printf("TCP IPV4 test passed\n");
     }
     nabto_device_future_free(future);
     nabto_device_free(device);
