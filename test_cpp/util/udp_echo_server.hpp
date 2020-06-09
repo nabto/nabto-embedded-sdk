@@ -4,30 +4,34 @@
 
 #include <boost/asio.hpp>
 
+#include <nn/log.h>
+
 #include <iostream>
+
+static const char* LOG = "udp_echo_server";
 
 namespace nabto {
 namespace test {
 
 class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
  public:
-    UdpEchoServer(boost::asio::io_context& io)
-        : io_(io), socket_(io)
+    UdpEchoServer(boost::asio::io_context& io, struct nn_log* logger)
+        : io_(io), socket_(io), logger_(logger)
     {
 
     }
 
     static std::shared_ptr<UdpEchoServer> create(boost::asio::io_context& io)
     {
-        auto ptr = std::make_shared<UdpEchoServer>(io);
+        auto ptr = std::make_shared<UdpEchoServer>(io, nullptr);
         ptr->init();
         ptr->startRecv();
         return ptr;
     }
 
-    static std::shared_ptr<UdpEchoServer> create(boost::asio::io_context& io, uint16_t port)
+    static std::shared_ptr<UdpEchoServer> create(boost::asio::io_context& io, struct nn_log* logger, uint16_t port)
     {
-        auto ptr = std::make_shared<UdpEchoServer>(io);
+        auto ptr = std::make_shared<UdpEchoServer>(io, logger);
         auto ec = ptr->init(port);
         if (ec) {
             std::cerr << "Failed to start udp echo server " << ec.message() << std::endl;
@@ -79,6 +83,7 @@ class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
                     // incorrectly handles too small recv buffer errors
                     return;
                 }
+                NN_LOG_TRACE(self->logger_, LOG, "Received UDP packet of size %d from %s", transferred, self->recvEp_.address().to_string().c_str());
                 self->packetCount_ += 1;
                 self->startSend(transferred);
             });
@@ -94,6 +99,7 @@ class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
                 if (ec) {
                     // Do nothing
                 }
+                NN_LOG_TRACE(self->logger_, LOG, "Sent UDP packet of size %d to %s", transferred, self->recvEp_.address().to_string().c_str());
                 self->startRecv();
             });
     }
@@ -104,6 +110,7 @@ class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
     std::array<uint8_t, 1500> recvBuffer_;
     boost::asio::ip::udp::endpoint recvEp_;
     std::atomic<uint64_t> packetCount_ = { 0 };
+    struct nn_log* logger_;
 };
 
 } } // namespace
