@@ -18,9 +18,9 @@ static void tcp_test(const char* ip, uint16_t port);
 
 int main(int argc, const char* argv[]) {
     logging_test();
+    timestamp_test();
     future_test();
     event_queue_test();
-    timestamp_test();
     dns_test();
 
 
@@ -96,15 +96,11 @@ void event_queue_test()
 void timestamp_test()
 {
     NabtoDevice* device = nabto_device_new();
-    NabtoDeviceFuture* future = nabto_device_future_new(device);
-    nabto_device_test_timestamp(device, future);
-    NabtoDeviceError ec = nabto_device_future_wait(future);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        printf("Timestamp test failed with error %s\n", nabto_device_error_get_string(ec));
-    } else {
-        printf("Timestamp test passed\n");
-    }
-    nabto_device_future_free(future);
+    uint32_t timestamp;
+
+    nabto_device_test_timestamp(device, &timestamp);
+
+    printf("Timestamp test. Timestamp in milliseconds %u\n", timestamp);
     nabto_device_free(device);
 }
 

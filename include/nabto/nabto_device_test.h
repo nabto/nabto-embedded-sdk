@@ -50,7 +50,7 @@ nabto_device_test_event_queue(NabtoDevice* device, NabtoDeviceFuture* future);
  * The test passes if the future resolves with NABTO_DEVICE_EC_OK
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_test_timestamp(NabtoDevice* device, NabtoDeviceFuture* future);
+nabto_device_test_timestamp(NabtoDevice* device, uint32_t* timestamp);
 
 /**
  * DNS test
