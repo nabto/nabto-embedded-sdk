@@ -165,6 +165,7 @@ np_error_code nm_dtls_util_create_private_key(char** privateKey)
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
     const char *pers = "gen_key";
+    np_error_code ec = NABTO_EC_OK;
 
     memset(output_buf, 0, 1024);
     mbedtls_pk_init( &key );
@@ -181,7 +182,7 @@ np_error_code nm_dtls_util_create_private_key(char** privateKey)
                               mbedtls_ctr_drbg_random, &ctr_drbg ) != 0) ||
         (mbedtls_pk_write_key_pem( &key, output_buf, 1024 ) != 0 ))
     {
-        // generating the private key failed
+        ec = NABTO_EC_UNKNOWN;
     } else {
         *privateKey = strdup((char*)output_buf);
     }
@@ -190,5 +191,5 @@ np_error_code nm_dtls_util_create_private_key(char** privateKey)
     mbedtls_ctr_drbg_free( &ctr_drbg );
     mbedtls_entropy_free( &entropy );
 
-    return NABTO_EC_OK;
+    return ec;
 }
