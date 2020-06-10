@@ -32,6 +32,11 @@ np_error_code nm_unix_dns_resolver_init(struct nm_unix_dns_resolver* resolver);
  */
 void nm_unix_dns_resolver_deinit(struct nm_unix_dns_resolver* resolver);
 
+/**
+ * Run the dns resolver
+ */
+void nm_unix_dns_resolver_run(struct nm_unix_dns_resolver* resolver);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

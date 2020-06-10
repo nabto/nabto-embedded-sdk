@@ -65,6 +65,7 @@ class TestPlatformLibevent : public TestPlatform {
 
     virtual void run()
     {
+        thread_event_queue_run(&eventQueue_);
         event_base_loop(eventBase_, EVLOOP_NO_EXIT_ON_EMPTY);
 
         // run last events after it has been stopped

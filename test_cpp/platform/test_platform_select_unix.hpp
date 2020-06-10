@@ -68,6 +68,9 @@ class TestPlatformSelectUnix : public TestPlatform {
 
     virtual void run()
     {
+        nm_unix_dns_resolver_run(&dns_);
+
+        thread_event_queue_run(&eventQueue_);
         int nfds;
         while (true) {
             if (stopped_) {

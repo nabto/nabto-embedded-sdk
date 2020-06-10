@@ -35,9 +35,14 @@ struct thread_event_queue {
 
 void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts);
 
+void thread_event_queue_deinit(struct thread_event_queue* queue);
+
+// start the thread
+void thread_event_queue_run(struct thread_event_queue* queue);
+
 struct np_event_queue thread_event_queue_get_impl(struct thread_event_queue* queue);
 
-void thread_event_queue_deinit(struct thread_event_queue* queue);
+
 
 void thread_event_queue_stop_blocking(struct thread_event_queue* queue);
 

@@ -98,6 +98,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     run_network_thread(platform);
 
     nm_unix_dns_resolver_init(&platform->dnsResolver);
+    nm_unix_dns_resolver_run(&platform->dnsResolver);
 
     struct np_udp udpImpl = nm_select_unix_udp_get_impl(&platform->selectUnix);
     struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->selectUnix);
@@ -110,6 +111,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // it. The event queue depends on the timestamp implementation hence it is
     // initialized a bit later.
     thread_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
+    thread_event_queue_run(&platform->eventQueue);
     struct np_event_queue eventQueueImpl = thread_event_queue_get_impl(&platform->eventQueue);
 
     // Create a mdns server. The mdns server depends on the event

@@ -134,7 +134,6 @@ np_error_code nm_unix_dns_resolver_init(struct nm_unix_dns_resolver* r)
 
     pthread_mutex_init(&r->mutex, NULL);
     pthread_cond_init(&r->condition, NULL);
-    pthread_create(&r->thread, NULL, &resolve_thread, r);
     return NABTO_EC_OK;
 }
 
@@ -143,6 +142,11 @@ void nm_unix_dns_resolver_deinit(struct nm_unix_dns_resolver* resolver)
     stop_resolver(resolver);
     pthread_mutex_destroy(&resolver->mutex);
     nn_llist_deinit(&resolver->events);
+}
+
+void nm_unix_dns_resolver_run(struct nm_unix_dns_resolver* r)
+{
+    pthread_create(&r->thread, NULL, &resolve_thread, r);
 }
 
 void stop_resolver(struct nm_unix_dns_resolver* resolver)
