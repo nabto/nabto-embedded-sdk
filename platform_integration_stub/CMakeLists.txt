@@ -13,3 +13,9 @@ include_directories(../nabto-common/components/nn/include)
 
 add_executable(platform_integration_stub ${src})
 target_link_libraries(platform_integration_stub 3rdparty_boost_system ${CMAKE_THREAD_LIBS_INIT})
+set_property(TARGET platform_integration_stub PROPERTY
+  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+install(TARGETS platform_integration_stub
+  RUNTIME DESTINATION bin
+  )
