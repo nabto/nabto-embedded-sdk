@@ -1,7 +1,6 @@
 #pragma once
 
 #include "test_platform.hpp"
-#include "test_platform_event_queue.h"
 
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
@@ -11,7 +10,7 @@
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/logging/test/nm_logging_test.h>
-#include <modules/libevent/nm_libevent.h>
+#include <modules/event_queue/thread_event_queue.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include <thread>
@@ -27,20 +26,17 @@ class TestPlatformSelectUnix : public TestPlatform {
  public:
 
     TestPlatformSelectUnix() {
-        nm_libevent_global_init();
-        eventBase_ = event_base_new();
         init();
     }
 
     ~TestPlatformSelectUnix() {
+        stop();
         deinit();
-        event_base_free(eventBase_);
-        nm_libevent_global_deinit();
     }
 
     virtual void init()
     {
-        eq_ = test_platform_event_queue_init(eventBase_);
+        mutex_ = nabto_device_threads_create_mutex();
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
         nm_select_unix_init(&selectCtx_);
@@ -48,10 +44,13 @@ class TestPlatformSelectUnix : public TestPlatform {
         nm_unix_dns_resolver_init(&dns_);
 
         pl_.timestamp = nm_unix_ts_get_impl();
+
+        thread_event_queue_init(&eventQueue_, mutex_, &pl_.timestamp);
+
         pl_.tcp = nm_select_unix_tcp_get_impl(&selectCtx_);
         pl_.udp = nm_select_unix_udp_get_impl(&selectCtx_);
         pl_.dns = nm_unix_dns_get_impl(&dns_);
-        pl_.eq = test_platform_event_queue_get_impl(eq_);
+        pl_.eq = thread_event_queue_get_impl(&eventQueue_);
 
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
@@ -64,36 +63,31 @@ class TestPlatformSelectUnix : public TestPlatform {
         if (networkThread_) {
             networkThread_->join();
         }
-        test_platform_event_queue_deinit(eq_);
+        thread_event_queue_deinit(&eventQueue_);
     }
 
     virtual void run()
     {
-        networkThread_ = std::make_unique<std::thread>(&TestPlatformSelectUnix::networkThread, this);
-        event_base_loop(eventBase_, EVLOOP_NO_EXIT_ON_EMPTY);
-        // run last events after it has been stopped
-        event_base_loop(eventBase_, EVLOOP_NONBLOCK);
-
-        stoppedPromise_.set_value();
-    }
-
-    static void networkThread(TestPlatformSelectUnix* tp)
-    {
         int nfds;
         while (true) {
-            if (tp->stopped_) {
+            if (stopped_) {
                 return;
             }
-            nfds = nm_select_unix_inf_wait(&tp->selectCtx_);
-            nm_select_unix_read(&tp->selectCtx_, nfds);
+            nfds = nm_select_unix_inf_wait(&selectCtx_);
+            nm_select_unix_read(&selectCtx_, nfds);
         }
     }
 
     virtual void stop()
     {
+        if (stopped_) {
+            return;
+        }
         stopped_ = true;
         nm_select_unix_notify(&selectCtx_);
-        event_base_loopbreak(eventBase_);
+        thread_event_queue_stop_blocking(&eventQueue_);
+
+        stoppedPromise_.set_value();
     }
 
     virtual void waitForStopped()
@@ -112,8 +106,9 @@ class TestPlatformSelectUnix : public TestPlatform {
     std::unique_ptr<std::thread> networkThread_;
     struct event_base* eventBase_;
     std::promise<void> stoppedPromise_;
-    struct test_platform_event_queue* eq_;
     struct nm_unix_dns_resolver dns_;
+    struct thread_event_queue eventQueue_;
+    struct nabto_device_mutex* mutex_;
 };
 
 

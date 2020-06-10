@@ -15,6 +15,11 @@
  * timed events is posted to the event queue such that they can be
  * handled if they are posted from the outside.
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nm_event_queue;
 struct np_platform;
 
@@ -36,6 +41,8 @@ void thread_event_queue_deinit(struct thread_event_queue* queue);
 
 void thread_event_queue_stop_blocking(struct thread_event_queue* queue);
 
-
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

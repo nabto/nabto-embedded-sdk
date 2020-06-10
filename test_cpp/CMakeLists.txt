@@ -10,7 +10,6 @@ set(test_src
 
   platform/test_platform.cpp
   platform/test_platform_test.cpp
-  platform/test_platform_event_queue.c
 
   fixtures/coap_server/coap_server_test.cpp
   tests/network/tcp_test.cpp
@@ -60,6 +59,7 @@ target_link_libraries(embedded_unit_test
   nabto_device_static
   3rdparty_boost_test
   np_platform
+  nm_event_queue
   )
 
 if (HAVE_SELECT_UNIX)

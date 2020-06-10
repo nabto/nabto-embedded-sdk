@@ -127,7 +127,7 @@ void post_timed_event(struct np_event* event, uint32_t milliseconds)
 {
     struct thread_event_queue* queue = event->queue;
 
-    uint32_t now = queue->ts.vptr->now_ms(queue->ts.data);
+    uint32_t now = np_timestamp_now_ms(&queue->ts);
     uint32_t timestamp = now + milliseconds;
     nabto_device_threads_mutex_lock(queue->queueMutex);
 
@@ -141,7 +141,7 @@ void* queue_thread(void* data)
     struct thread_event_queue* queue = data;
     while(true) {
         uint32_t nextEvent;
-        uint32_t now = queue->ts.vptr->now_ms(queue->ts.data);
+        uint32_t now = np_timestamp_now_ms(&queue->ts);
         struct nm_event_queue_event* event = NULL;
 
         nabto_device_threads_mutex_lock(queue->queueMutex);
