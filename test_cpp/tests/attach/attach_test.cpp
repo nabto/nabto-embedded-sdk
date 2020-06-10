@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
     ioService->shutdown();
 }
 
-BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
+BOOST_AUTO_TEST_CASE(reattach_after_close_from_server, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server)
     ioService->shutdown();
 }
 
-BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
+BOOST_AUTO_TEST_CASE(retry_after_server_unavailable, * boost::unit_test::timeout(300))
 {
     // the device waits for dtls to timeout and retry again.
     auto ioService = nabto::IoService::create("test");
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable)
     ioService->shutdown();
 }
 
-BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
+BOOST_AUTO_TEST_CASE(reject_invalid_redirect, * boost::unit_test::timeout(300))
 {
     // The redirect is invalid, go to retry
     auto ioService = nabto::IoService::create("test");
@@ -322,7 +322,7 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect)
     ioService->shutdown();
 }
 
-BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
+BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response, * boost::unit_test::timeout(300))
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response)
     ioService->shutdown();
 }
 
-BOOST_AUTO_TEST_CASE(access_denied)
+BOOST_AUTO_TEST_CASE(access_denied, * boost::unit_test::timeout(300))
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(access_denied)
     ioService->shutdown();
 }
 
-BOOST_AUTO_TEST_CASE(access_denied_reattach)
+BOOST_AUTO_TEST_CASE(access_denied_reattach, * boost::unit_test::timeout(300))
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach)
     ioService->shutdown();
 }
 
-BOOST_AUTO_TEST_CASE(redirect_loop_break)
+BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
 {
     // The attach did not succeeed, go to retry
     auto ioService = nabto::IoService::create("test");
