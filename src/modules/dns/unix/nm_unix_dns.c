@@ -131,6 +131,7 @@ np_error_code nm_unix_dns_resolver_init(struct nm_unix_dns_resolver* r)
     nn_llist_init(&r->events);
 
     r->stopped = false;
+    r->thread = 0;
 
     pthread_mutex_init(&r->mutex, NULL);
     pthread_cond_init(&r->condition, NULL);
@@ -167,7 +168,9 @@ void stop_resolver(struct nm_unix_dns_resolver* resolver)
 
     pthread_mutex_unlock(&resolver->mutex);
     pthread_cond_signal(&resolver->condition);
-    pthread_join(resolver->thread, NULL);
+    if (resolver->thread != 0) {
+        pthread_join(resolver->thread, NULL);
+    }
 }
 
 void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)

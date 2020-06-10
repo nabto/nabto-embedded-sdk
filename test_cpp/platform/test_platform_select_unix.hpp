@@ -26,17 +26,18 @@ class TestPlatformSelectUnix : public TestPlatform {
  public:
 
     TestPlatformSelectUnix() {
+        mutex_ = nabto_device_threads_create_mutex();
         init();
     }
 
     ~TestPlatformSelectUnix() {
+        nabto_device_threads_free_mutex(mutex_);
         stop();
         deinit();
     }
 
     virtual void init()
     {
-        mutex_ = nabto_device_threads_create_mutex();
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
         nm_select_unix_init(&selectCtx_);

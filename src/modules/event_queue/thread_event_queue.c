@@ -45,24 +45,29 @@ void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_devi
     queue->stopped = false;
     queue->mutex = mutex;
     queue->ts = *ts;
+    queue->queueThread = NULL;
     queue->queueMutex = nabto_device_threads_create_mutex();
     queue->condition = nabto_device_threads_create_condition();
 }
 
 void thread_event_queue_run(struct thread_event_queue* queue)
 {
+    nabto_device_threads_mutex_lock(queue->queueMutex);
     queue->queueThread = nabto_device_threads_create_thread();
     if (nabto_device_threads_run(queue->queueThread, queue_thread, queue) != 0) {
         // TODO
     }
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
 }
 
 void thread_event_queue_deinit(struct thread_event_queue* queue)
 {
+    nabto_device_threads_mutex_lock(queue->queueMutex);
     // stop queue
     if (queue->queueThread != NULL) {
         nabto_device_threads_free_thread(queue->queueThread);
     }
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_free_cond(queue->condition);
     nabto_device_threads_free_mutex(queue->queueMutex);
 }
