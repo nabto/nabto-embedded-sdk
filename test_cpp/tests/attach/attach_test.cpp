@@ -30,8 +30,11 @@ class AttachTest {
     {
         tp_.stop();
         tp_.waitForStopped();
+        nc_attacher_deinit(&attach_);
+        nc_coap_client_deinit(&coapClient_);
         nc_udp_dispatch_deinit(&udpDispatch_);
         np_completion_event_deinit(&boundCompletionEvent);
+        np_event_queue_destroy_event(&tp_.getPlatform()->eq, endEvent_);
     }
 
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
@@ -158,6 +161,12 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
 
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * shutdown the IO service nicely in all tests
+     ******************************************************************/
     ioService->shutdown();
 }
 
