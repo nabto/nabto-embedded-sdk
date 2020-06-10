@@ -5,7 +5,6 @@ project(select_unix_platform)
 
 set(src
   select_unix_platform.c
-  select_unix_event_queue.c
   )
 
 add_library(nabto_device_select_unix SHARED ${src} ${ne_api_src} ${ne_api_test_src})

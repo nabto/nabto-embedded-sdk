@@ -1,4 +1,4 @@
-#include "select_unix_event_queue.h"
+#include "thread_event_queue.h"
 
 #include <modules/event_queue/nm_event_queue.h>
 
@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 struct np_event {
-    struct select_unix_event_queue* queue;
+    struct thread_event_queue* queue;
     struct nm_event_queue_event event;
 };
 
@@ -31,7 +31,7 @@ static struct np_event_queue_functions vtable = {
     .post_timed = &post_timed_event,
 };
 
-struct np_event_queue select_unix_event_queue_get_impl(struct select_unix_event_queue* queue)
+struct np_event_queue thread_event_queue_get_impl(struct thread_event_queue* queue)
 {
     struct np_event_queue eq;
     eq.vptr = &vtable;
@@ -39,7 +39,7 @@ struct np_event_queue select_unix_event_queue_get_impl(struct select_unix_event_
     return eq;
 }
 
-void select_unix_event_queue_init(struct select_unix_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts)
+void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts)
 {
     nm_event_queue_init(&queue->eventQueue);
     queue->stopped = false;
@@ -55,7 +55,7 @@ void select_unix_event_queue_init(struct select_unix_event_queue* queue, struct 
 
 
 
-void select_unix_event_queue_deinit(struct select_unix_event_queue* queue)
+void thread_event_queue_deinit(struct thread_event_queue* queue)
 {
     // stop queue
 
@@ -66,7 +66,7 @@ void select_unix_event_queue_deinit(struct select_unix_event_queue* queue)
 
 
 
-void select_unix_event_queue_stop_blocking(struct select_unix_event_queue* queue)
+void thread_event_queue_stop_blocking(struct thread_event_queue* queue)
 {
     nabto_device_threads_mutex_lock(queue->queueMutex);
     queue->stopped = true;
@@ -90,7 +90,7 @@ np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, voi
 
 void destroy_event(struct np_event* event)
 {
-    struct select_unix_event_queue* eq = event->queue;
+    struct thread_event_queue* eq = event->queue;
     nabto_device_threads_mutex_lock(eq->queueMutex);
     nm_event_queue_event_deinit(&event->event);
     nabto_device_threads_mutex_unlock(eq->queueMutex);
@@ -99,7 +99,7 @@ void destroy_event(struct np_event* event)
 
 void post_event(struct np_event* event)
 {
-    struct select_unix_event_queue* queue = event->queue;
+    struct thread_event_queue* queue = event->queue;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     nm_event_queue_post_event(&queue->eventQueue, &event->event);
     nabto_device_threads_mutex_unlock(queue->queueMutex);
@@ -108,7 +108,7 @@ void post_event(struct np_event* event)
 
 void post_event_maybe_double(struct np_event* event)
 {
-    struct select_unix_event_queue* queue = event->queue;
+    struct thread_event_queue* queue = event->queue;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     nm_event_queue_post_event_maybe_double(&queue->eventQueue, &event->event);
     nabto_device_threads_mutex_unlock(queue->queueMutex);
@@ -117,7 +117,7 @@ void post_event_maybe_double(struct np_event* event)
 
 void cancel_event(struct np_event* event)
 {
-    struct select_unix_event_queue* queue = event->queue;
+    struct thread_event_queue* queue = event->queue;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     nm_event_queue_cancel_event(&event->event);
     nabto_device_threads_mutex_unlock(queue->queueMutex);
@@ -125,7 +125,7 @@ void cancel_event(struct np_event* event)
 
 void post_timed_event(struct np_event* event, uint32_t milliseconds)
 {
-    struct select_unix_event_queue* queue = event->queue;
+    struct thread_event_queue* queue = event->queue;
 
     uint32_t now = queue->ts.vptr->now_ms(queue->ts.data);
     uint32_t timestamp = now + milliseconds;
@@ -138,7 +138,7 @@ void post_timed_event(struct np_event* event, uint32_t milliseconds)
 
 void* queue_thread(void* data)
 {
-    struct select_unix_event_queue* queue = data;
+    struct thread_event_queue* queue = data;
     while(true) {
         uint32_t nextEvent;
         uint32_t now = queue->ts.vptr->now_ms(queue->ts.data);

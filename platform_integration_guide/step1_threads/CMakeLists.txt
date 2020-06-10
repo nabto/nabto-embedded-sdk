@@ -8,8 +8,13 @@ set(src
 
   # Needed utility function to run the test.
   ../../src/api/nabto_device_error.c
+
+  threads_test.c
   )
 
-add_executable(step1_test ${src} step1_test.c)
+include_directories(../../include)
+include_directories(../../src)
 
-target_link_libraries(step1_test pthread)
+add_executable(threads_test ${src})
+
+target_link_libraries(threads_test pthread)

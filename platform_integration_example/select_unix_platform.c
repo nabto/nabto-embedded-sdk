@@ -2,14 +2,10 @@
 #include <api/nabto_device_threads.h>
 #include <api/nabto_device_integration.h>
 
-#include "select_unix_event_queue.h"
-
-
-
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/select_unix/nm_select_unix_udp.h>
 #include <modules/select_unix/nm_select_unix_tcp.h>
-#include <modules/event_queue/nm_event_queue.h>
+#include <modules/event_queue/thread_event_queue.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
@@ -60,7 +56,7 @@ struct select_unix_platform
      * for this implementation. The purpose of the event queue is to
      * execute events.
      */
-    struct select_unix_event_queue eventQueue;
+    struct thread_event_queue eventQueue;
 
     /**
      * Context for the dns resolver
@@ -113,8 +109,8 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // event queue executes events and allow events to be posted to
     // it. The event queue depends on the timestamp implementation hence it is
     // initialized a bit later.
-    select_unix_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
-    struct np_event_queue eventQueueImpl = select_unix_event_queue_get_impl(&platform->eventQueue);
+    thread_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
+    struct np_event_queue eventQueueImpl = thread_event_queue_get_impl(&platform->eventQueue);
 
     // Create a mdns server. The mdns server depends on the event
     // queue, udp and local ip implementations.
@@ -151,7 +147,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     nm_mdns_deinit(&platform->mdnsServer);
-    select_unix_event_queue_deinit(&platform->eventQueue);
+    thread_event_queue_deinit(&platform->eventQueue);
     nm_unix_dns_resolver_deinit(&platform->dnsResolver);
     deinit_network_thread(platform);
     nm_select_unix_deinit(&platform->selectUnix);
@@ -167,7 +163,7 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     platform->stopped = true;
     stop_network_thread(platform);
-    select_unix_event_queue_stop_blocking(&platform->eventQueue);
+    thread_event_queue_stop_blocking(&platform->eventQueue);
 }
 
 np_error_code run_network_thread(struct select_unix_platform* platform)

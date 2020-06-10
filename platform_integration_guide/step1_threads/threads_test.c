@@ -1,4 +1,4 @@
-#include <nabto/nabto_device.h>
+#include <nabto/nabto_device_test.h>
 
 #include <stdio.h>
 

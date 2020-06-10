@@ -1,4 +1,5 @@
 set(src
+  thread_event_queue.c
   nm_event_queue.c
   )
 

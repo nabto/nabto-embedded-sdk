@@ -2,7 +2,7 @@
 #define _SELECT_UNIX_EVENT_QUEUE_H_
 
 #include <modules/event_queue/nm_event_queue.h>
-#include <src/api/nabto_device_threads.h>
+#include <api/nabto_device_threads.h>
 
 /**
  * Since we are running everything from one thread we can directly use
@@ -18,7 +18,7 @@
 struct nm_event_queue;
 struct np_platform;
 
-struct select_unix_event_queue {
+struct thread_event_queue {
     struct nabto_device_thread* queueThread;
     struct nabto_device_mutex* mutex;
     struct nabto_device_mutex* queueMutex;
@@ -28,13 +28,13 @@ struct select_unix_event_queue {
     bool stopped;
 };
 
-void select_unix_event_queue_init(struct select_unix_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts);
+void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts);
 
-struct np_event_queue select_unix_event_queue_get_impl(struct select_unix_event_queue* queue);
+struct np_event_queue thread_event_queue_get_impl(struct thread_event_queue* queue);
 
-void select_unix_event_queue_deinit(struct select_unix_event_queue* queue);
+void thread_event_queue_deinit(struct thread_event_queue* queue);
 
-void select_unix_event_queue_stop_blocking(struct select_unix_event_queue* queue);
+void thread_event_queue_stop_blocking(struct thread_event_queue* queue);
 
 
 
