@@ -46,6 +46,9 @@ BOOST_AUTO_TEST_CASE(deny_ssh)
     effect = nm_policy_eval(policy, "TcpTunnel:Connect", &attributes);
     BOOST_TEST(effect == NM_EFFECT_DENY);
 
+    nn_string_map_deinit(&attributes);
+    nm_policy_free(policy);
+    cJSON_Delete(json);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

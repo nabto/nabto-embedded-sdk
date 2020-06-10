@@ -43,6 +43,8 @@ BOOST_AUTO_TEST_CASE(parse_c1)
     BOOST_TEST(nn_string_set_contains(&c->values, "val1"));
     BOOST_TEST(nn_string_set_contains(&c->values, "val2"));
     BOOST_TEST(nn_string_set_contains(&c->values, "val3"));
+    nm_condition_free(c);
+    cJSON_Delete(json);
 }
 
 BOOST_AUTO_TEST_CASE(parse_c2)
@@ -55,6 +57,8 @@ BOOST_AUTO_TEST_CASE(parse_c2)
     BOOST_TEST(c->op == NM_CONDITION_OPERATOR_BOOL);
     BOOST_TEST(strcmp(c->key, "var1") == 0);
     BOOST_TEST(nn_string_set_contains(&c->values, "true"));
+    nm_condition_free(c);
+    cJSON_Delete(json);
 }
 
 BOOST_AUTO_TEST_CASE(parse_fail1)
@@ -64,6 +68,7 @@ BOOST_AUTO_TEST_CASE(parse_fail1)
     BOOST_TEST(json);
     c = nm_condition_from_json(json, NULL);
     BOOST_TEST(!c);
+    cJSON_Delete(json);
 }
 BOOST_AUTO_TEST_CASE(parse_fail2)
 {
@@ -72,6 +77,7 @@ BOOST_AUTO_TEST_CASE(parse_fail2)
     BOOST_TEST(json);
     c = nm_condition_from_json(json, NULL);
     BOOST_TEST(!c);
+    cJSON_Delete(json);
 }
 BOOST_AUTO_TEST_CASE(parse_fail3)
 {
@@ -80,6 +86,7 @@ BOOST_AUTO_TEST_CASE(parse_fail3)
     BOOST_TEST(json);
     c = nm_condition_from_json(json, NULL);
     BOOST_TEST(!c);
+    cJSON_Delete(json);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

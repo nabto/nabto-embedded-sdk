@@ -41,6 +41,7 @@ BOOST_DATA_TEST_CASE(stop_from_event, nabto::test::TestPlatform::multi(),tp)
     np_event_queue_create_event(eq, &stopFunction, tp.get(), &stopEvent);
     np_event_queue_post(eq, stopEvent);
     t.join();
+    np_event_queue_destroy_event(eq, stopEvent);
 }
 
 BOOST_DATA_TEST_CASE(stop_from_event_no_thread, nabto::test::TestPlatform::multi(),tp)
@@ -51,6 +52,7 @@ BOOST_DATA_TEST_CASE(stop_from_event_no_thread, nabto::test::TestPlatform::multi
     np_event_queue_create_event(eq, &stopFunction, tp.get(), &stopEvent);
     np_event_queue_post(eq, stopEvent);
     tp->run();
+    np_event_queue_destroy_event(eq, stopEvent);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
