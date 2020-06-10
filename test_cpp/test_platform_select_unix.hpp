@@ -47,10 +47,10 @@ class TestPlatformSelectUnix : public TestPlatform {
 
         nm_unix_dns_resolver_init(&dns_);
 
-        pl_.timestamp = nm_unix_ts_create();
+        pl_.timestamp = nm_unix_ts_get_impl();
         pl_.tcp = nm_select_unix_tcp_get_impl(&selectCtx_);
         pl_.udp = nm_select_unix_udp_get_impl(&selectCtx_);
-        pl_.dns = nm_unix_dns_create(&dns_);
+        pl_.dns = nm_unix_dns_get_impl(&dns_);
         pl_.eq = test_platform_event_queue_get_impl(eq_);
 
         nm_mbedtls_cli_init(&pl_);
@@ -60,7 +60,7 @@ class TestPlatformSelectUnix : public TestPlatform {
     void deinit()
     {
         nm_unix_dns_resolver_deinit(&dns_);
-        nm_select_unix_close(&selectCtx_);
+        nm_select_unix_deinit(&selectCtx_);
         if (networkThread_) {
             networkThread_->join();
         }

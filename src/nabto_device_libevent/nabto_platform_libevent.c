@@ -4,7 +4,6 @@
 #include "libevent_event_queue.h"
 
 #include <modules/libevent/nm_libevent.h>
-#include <modules/libevent/nm_libevent_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mdns/nm_mdns.h>
@@ -61,43 +60,46 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // module implementations.
     nm_libevent_init(&platform->libeventContext, platform->eventBase);
 
-    /**
-     * Store a pointer to the libevent_platform in the device, such
-     * that it can be retrieved in later lifecycle events.
-     */
-    nabto_device_integration_set_platform_data(device, platform);
 
     // Create libevent based implementations of udp, tcp, dns,
     // timestamp and local ip functionalities.
-    struct np_udp udp = nm_libevent_create_udp(&platform->libeventContext);
-    struct np_tcp tcp = nm_libevent_create_tcp(&platform->libeventContext);
-    struct np_timestamp timestamp = nm_libevent_create_timestamp(&platform->libeventContext);
-    struct np_dns dns = nm_libevent_dns_create_impl(&platform->libeventContext);
-    struct np_local_ip localIp = nm_libevent_create_local_ip(&platform->libeventContext);
+    struct np_udp udp = nm_libevent_udp_get_impl(&platform->libeventContext);
+    struct np_tcp tcp = nm_libevent_tcp_get_impl(&platform->libeventContext);
+    struct np_timestamp timestamp = nm_libevent_timestamp_get_impl(&platform->libeventContext);
+    struct np_dns dns = nm_libevent_dns_get_impl(&platform->libeventContext);
+    struct np_local_ip localIp = nm_libevent_local_ip_get_impl(&platform->libeventContext);
 
     // Create an event queue which is based on libevent.
     platform->eq = libevent_event_queue_create(platform->eventBase, eventMutex);
 
-    // Tell the device which implementations of the functionalities it
-    // should use.
-    nabto_device_integration_set_udp_impl(device, &udp);
-    nabto_device_integration_set_tcp_impl(device, &tcp);
-    nabto_device_integration_set_timestamp_impl(device, &timestamp);
-    nabto_device_integration_set_dns_impl(device, &dns);
-    nabto_device_integration_set_event_queue_impl(device, &platform->eq);
-    nabto_device_integration_set_local_ip_impl(device, &localIp);
 
     // Create a mdns server
     nm_mdns_init(&platform->mdnsServer, &platform->eq, &udp, &localIp);
-
     struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
-    nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
 
     // Start the thread where the libevent main loop runs.
     platform->libeventThread = nabto_device_threads_create_thread();
     if (nabto_device_threads_run(platform->libeventThread, libevent_thread, platform) != 0) {
         // TODO
     }
+
+    /**
+     * Store a pointer to the libevent_platform in the device, such
+     * that it can be retrieved in later lifecycle events.
+     */
+    nabto_device_integration_set_platform_data(device, platform);
+
+    /**
+     * Tell the device which implementations of the functionalities it
+     * should use.
+     */
+    nabto_device_integration_set_udp_impl(device, &udp);
+    nabto_device_integration_set_tcp_impl(device, &tcp);
+    nabto_device_integration_set_timestamp_impl(device, &timestamp);
+    nabto_device_integration_set_dns_impl(device, &dns);
+    nabto_device_integration_set_event_queue_impl(device, &platform->eq);
+    nabto_device_integration_set_local_ip_impl(device, &localIp);
+    nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
 
     return NABTO_EC_OK;
 }

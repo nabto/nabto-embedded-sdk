@@ -1,4 +1,3 @@
-#include "nm_libevent_dns.h"
 #include "nm_libevent.h"
 #include <event2/dns.h>
 
@@ -33,7 +32,7 @@ static struct np_dns_functions vtable = {
     &async_resolve_v6
 };
 
-struct np_dns nm_libevent_dns_create_impl(struct nm_libevent_context* ctx)
+struct np_dns nm_libevent_dns_get_impl(struct nm_libevent_context* ctx)
 {
     struct np_dns obj;
     obj.vptr = &vtable;

@@ -1,4 +1,3 @@
-#include "nm_libevent_tcp.h"
 #include "nm_libevent.h"
 
 #include <platform/np_logging.h>
@@ -63,7 +62,7 @@ static void resolve_tcp_read(struct np_tcp_socket* sock, np_error_code ec);
 static void resolve_tcp_write(struct np_tcp_socket* sock, np_error_code ec);
 static void tcp_eof(void* userData);
 
-static struct np_tcp_functions tcpVtbl = {
+static struct np_tcp_functions vtable = {
     .create = tcp_create,
     .destroy = tcp_destroy,
     .async_connect = tcp_async_connect,
@@ -73,9 +72,12 @@ static struct np_tcp_functions tcpVtbl = {
     .abort = tcp_abort
 };
 
-const struct np_tcp_functions* nm_libevent_tcp_functions()
+struct np_tcp nm_libevent_tcp_get_impl(struct nm_libevent_context* ctx)
 {
-    return &tcpVtbl;
+    struct np_tcp obj;
+    obj.vptr = &vtable;
+    obj.data = ctx;
+    return obj;
 }
 
 np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)

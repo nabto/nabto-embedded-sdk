@@ -25,6 +25,11 @@
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
+struct select_unix_platform;
+
+static void stop_network_thread(struct select_unix_platform* platform);
+static void deinit_network_thread(struct select_unix_platform* platform);
+static np_error_code run_network_thread(struct select_unix_platform* platform);
 static void* network_thread(void* data);
 
 struct select_unix_platform
@@ -57,8 +62,14 @@ struct select_unix_platform
      */
     struct select_unix_event_queue eventQueue;
 
+    /**
+     * Context for the dns resolver
+     */
     struct nm_unix_dns_resolver dnsResolver;
 
+    /**
+     * Mdns server context
+     */
     struct nm_mdns_server mdnsServer;
 
     /**
@@ -81,41 +92,55 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     platform->mutex = eventMutex;
     platform->stopped = false;
 
-    nabto_device_integration_set_platform_data(device, platform);
-
+    /**
+     * The folloing section initializes the modules which implements
+     * needed interfaces for the device.
+     */
     nm_select_unix_init(&platform->selectUnix);
+
+    // Further the select_unix module needs to be run by a thread
+    run_network_thread(platform);
 
     nm_unix_dns_resolver_init(&platform->dnsResolver);
 
     struct np_udp udpImpl = nm_select_unix_udp_get_impl(&platform->selectUnix);
     struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->selectUnix);
-    struct np_dns dnsImpl = nm_unix_dns_create(&platform->dnsResolver);
-    struct np_timestamp timestampImpl = nm_unix_ts_create();
+    struct np_dns dnsImpl = nm_unix_dns_get_impl(&platform->dnsResolver);
+    struct np_timestamp timestampImpl = nm_unix_ts_get_impl();
     struct np_local_ip localIpImpl = nm_unix_local_ip_get_impl();
 
+    // This platform integration uses the following event queue. The
+    // event queue executes events and allow events to be posted to
+    // it. The event queue depends on the timestamp implementation hence it is
+    // initialized a bit later.
+    select_unix_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
+    struct np_event_queue eventQueueImpl = select_unix_event_queue_get_impl(&platform->eventQueue);
+
+    // Create a mdns server. The mdns server depends on the event
+    // queue, udp and local ip implementations.
+    nm_mdns_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &localIpImpl);
+    struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
+
+    /**
+     * Store a pointer to the specific platform integration inside the
+     * device, such that it can be retrieved and used in the
+     * nabto_device_platform_deinit and
+     * nabto_device_platform_stop_blocking functions.
+     */
+    nabto_device_integration_set_platform_data(device, platform);
+
+    /**
+     * The following code sets the different interface implemetations
+     * into the device. The structs are being copied.
+     */
     nabto_device_integration_set_udp_impl(device, &udpImpl);
     nabto_device_integration_set_tcp_impl(device, &tcpImpl);
     nabto_device_integration_set_timestamp_impl(device, &timestampImpl);
     nabto_device_integration_set_dns_impl(device, &dnsImpl);
     nabto_device_integration_set_local_ip_impl(device, &localIpImpl);
-
-    // This platform integration uses the following event queue. The
-    // event queue executes events and allow events to be posted to
-    // it.
-    struct np_event_queue eventQueueImpl = select_unix_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
-
-    // Create a mdns server
-    nm_mdns_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &localIpImpl);
-
-    struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
     nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
-
     nabto_device_integration_set_event_queue_impl(device, &eventQueueImpl);
 
-    platform->networkThread = nabto_device_threads_create_thread();
-    if (nabto_device_threads_run(platform->networkThread, network_thread, platform) != 0) {
-        // TODO
-    }
     return NABTO_EC_OK;
 }
 
@@ -125,8 +150,11 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
+    nm_mdns_deinit(&platform->mdnsServer);
     select_unix_event_queue_deinit(&platform->eventQueue);
-    nabto_device_threads_free_thread(platform->networkThread);
+    nm_unix_dns_resolver_deinit(&platform->dnsResolver);
+    deinit_network_thread(platform);
+    nm_select_unix_deinit(&platform->selectUnix);
     free(platform);
 }
 
@@ -138,13 +166,27 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     platform->stopped = true;
+    stop_network_thread(platform);
+    select_unix_event_queue_stop_blocking(&platform->eventQueue);
+}
+
+np_error_code run_network_thread(struct select_unix_platform* platform)
+{
+    platform->networkThread = nabto_device_threads_create_thread();
+    np_error_code ec = nabto_device_threads_run(platform->networkThread, network_thread, platform);
+    return ec;
+}
+
+void deinit_network_thread(struct select_unix_platform* platform)
+{
+    nabto_device_threads_free_thread(platform->networkThread);
+}
+
+void stop_network_thread(struct select_unix_platform* platform)
+{
     nm_select_unix_notify(&platform->selectUnix);
     nabto_device_threads_join(platform->networkThread);
     nm_select_unix_notify(&platform->selectUnix);
-    select_unix_event_queue_stop_blocking(&platform->eventQueue);
-
-    nm_select_unix_close(&platform->selectUnix);
-
 }
 
 void* network_thread(void* data)

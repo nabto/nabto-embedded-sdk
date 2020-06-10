@@ -1,10 +1,6 @@
 #include "nm_libevent.h"
 
-#include "nm_libevent_dns.h"
-#include "nm_libevent_udp.h"
-#include "nm_libevent_tcp.h"
 #include "nm_libevent_get_local_ip.h"
-#include "nm_libevent_timestamp.h"
 
 #include <platform/np_platform.h>
 #include <event2/event.h>
@@ -53,28 +49,4 @@ void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventB
 void nm_libevent_deinit(struct nm_libevent_context* ctx)
 {
     evdns_base_free(ctx->dnsBase, 1);
-}
-
-struct np_udp nm_libevent_create_udp(struct nm_libevent_context* ctx)
-{
-    struct np_udp obj;
-    obj.vptr = nm_libevent_udp_functions();
-    obj.data = ctx;
-    return obj;
-}
-
-struct np_tcp nm_libevent_create_tcp(struct nm_libevent_context* ctx)
-{
-    struct np_tcp obj;
-    obj.vptr = nm_libevent_tcp_functions();
-    obj.data = ctx;
-    return obj;
-}
-
-struct np_timestamp nm_libevent_create_timestamp(struct nm_libevent_context* ctx)
-{
-    struct np_timestamp obj;
-    obj.vptr = nm_libevent_timestamp_functions();
-    obj.data = ctx;
-    return obj;
 }

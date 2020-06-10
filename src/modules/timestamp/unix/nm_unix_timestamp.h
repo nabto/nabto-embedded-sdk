@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-struct np_timestamp nm_unix_ts_create(void);
+struct np_timestamp nm_unix_ts_get_impl(void);
 
 #ifdef __cplusplus
 } //extern "C"

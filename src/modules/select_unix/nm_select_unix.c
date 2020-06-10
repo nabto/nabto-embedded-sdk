@@ -37,6 +37,12 @@ np_error_code nm_select_unix_init(struct nm_select_unix* ctx)
     return NABTO_EC_OK;
 }
 
+void nm_select_unix_deinit(struct nm_select_unix* ctx)
+{
+    close(ctx->pipefd[0]);
+    close(ctx->pipefd[1]);
+}
+
 int nm_select_unix_inf_wait(struct nm_select_unix* ctx)
 {
     int nfds;
@@ -79,12 +85,6 @@ void nm_select_unix_read(struct nm_select_unix* ctx, int nfds)
 
     nm_select_unix_udp_handle_select(ctx, nfds);
     nm_select_unix_tcp_handle_select(ctx, nfds);
-}
-
-void nm_select_unix_close(struct nm_select_unix* ctx)
-{
-    close(ctx->pipefd[0]);
-    close(ctx->pipefd[1]);
 }
 
 /**

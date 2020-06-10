@@ -1,4 +1,3 @@
-#include "nm_libevent_udp.h"
 #include "nm_libevent.h"
 #include "nm_libevent_types.h"
 #include "nm_libevent_mdns.h"
@@ -74,25 +73,25 @@ static np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_en
 static evutil_socket_t nonblocking_socket(int domain, int type);
 static void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec);
 
-const struct np_udp_functions* nm_libevent_udp_functions()
-{
-    static struct np_udp_functions f;
-    f.create               = &udp_create;
-    f.destroy              = &udp_destroy;
-    f.abort                = &udp_abort;
-    f.async_bind_port      = &udp_async_bind_port;
-    f.async_bind_mdns_ipv4 = &udp_async_bind_mdns_ipv4;
-    f.async_bind_mdns_ipv6 = &udp_async_bind_mdns_ipv6;
-    f.async_send_to        = &udp_async_send_to;
-    f.async_recv_wait      = &udp_async_recv_wait;
-    f.recv_from            = &udp_recv_from;
-    f.get_local_port       = &udp_get_local_port;
-    return &f;
-}
+static struct np_udp_functions vtable = {
+    .create               = &udp_create,
+    .destroy              = &udp_destroy,
+    .abort                = &udp_abort,
+    .async_bind_port      = &udp_async_bind_port,
+    .async_bind_mdns_ipv4 = &udp_async_bind_mdns_ipv4,
+    .async_bind_mdns_ipv6 = &udp_async_bind_mdns_ipv6,
+    .async_send_to        = &udp_async_send_to,
+    .async_recv_wait      = &udp_async_recv_wait,
+    .recv_from            = &udp_recv_from,
+    .get_local_port       = &udp_get_local_port
+};
 
-void nm_libevent_udp_deinit(struct np_platform* pl)
+struct np_udp nm_libevent_udp_get_impl(struct nm_libevent_context* ctx)
 {
-    // TODO
+    struct np_udp obj;
+    obj.vptr = &vtable;
+    obj.data = ctx;
+    return obj;
 }
 
 np_error_code udp_create(struct np_udp* obj, struct np_udp_socket** sock)

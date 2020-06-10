@@ -28,7 +28,9 @@ struct select_unix_event_queue {
     bool stopped;
 };
 
-struct np_event_queue select_unix_event_queue_init(struct select_unix_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts);
+void select_unix_event_queue_init(struct select_unix_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts);
+
+struct np_event_queue select_unix_event_queue_get_impl(struct select_unix_event_queue* queue);
 
 void select_unix_event_queue_deinit(struct select_unix_event_queue* queue);
 

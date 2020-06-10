@@ -39,11 +39,11 @@ class TestPlatformLibevent : public TestPlatform {
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
         nm_libevent_init(&libeventContext_, eventBase_);
-        pl_.dns = nm_libevent_dns_create_impl(&libeventContext_);
-        pl_.udp = nm_libevent_create_udp(&libeventContext_);
-        pl_.tcp = nm_libevent_create_tcp(&libeventContext_);
-        pl_.localIp = nm_libevent_create_local_ip(&libeventContext_);
-        pl_.timestamp = nm_libevent_create_timestamp(&libeventContext_);
+        pl_.dns = nm_libevent_dns_get_impl(&libeventContext_);
+        pl_.udp = nm_libevent_udp_get_impl(&libeventContext_);
+        pl_.tcp = nm_libevent_tcp_get_impl(&libeventContext_);
+        pl_.localIp = nm_libevent_local_ip_get_impl(&libeventContext_);
+        pl_.timestamp = nm_libevent_timestamp_get_impl(&libeventContext_);
 
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);

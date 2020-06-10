@@ -10,7 +10,7 @@ static struct np_timestamp_functions vtable = {
     .now_ms               = &ts_now_ms
 };
 
-struct np_timestamp nm_unix_ts_create()
+struct np_timestamp nm_unix_ts_get_impl()
 {
     struct np_timestamp ts;
     ts.vptr = &vtable;

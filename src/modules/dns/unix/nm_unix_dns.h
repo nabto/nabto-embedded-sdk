@@ -20,7 +20,7 @@ struct nm_unix_dns_resolver {
 };
 
 
-struct np_dns nm_unix_dns_create(struct nm_unix_dns_resolver* resolver);
+struct np_dns nm_unix_dns_get_impl(struct nm_unix_dns_resolver* resolver);
 
 /**
  * Initialize the dns resolver.

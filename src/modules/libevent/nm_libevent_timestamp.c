@@ -1,4 +1,3 @@
-#include "nm_libevent_timestamp.h"
 #include "nm_libevent.h"
 
 #include <platform/np_platform.h>
@@ -24,9 +23,12 @@ static const struct np_timestamp_functions vtable = {
 };
 
 
-const struct np_timestamp_functions* nm_libevent_timestamp_functions()
+struct np_timestamp nm_libevent_timestamp_get_impl(struct nm_libevent_context* ctx)
 {
-    return &vtable;
+    struct np_timestamp obj;
+    obj.vptr = &vtable;
+    obj.data = ctx;
+    return obj;
 }
 
 uint32_t ts_now_ms(struct np_timestamp* obj)

@@ -31,12 +31,16 @@ static struct np_event_queue_functions vtable = {
     .post_timed = &post_timed_event,
 };
 
-struct np_event_queue select_unix_event_queue_init(struct select_unix_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts)
+struct np_event_queue select_unix_event_queue_get_impl(struct select_unix_event_queue* queue)
 {
     struct np_event_queue eq;
     eq.vptr = &vtable;
     eq.data = queue;
+    return eq;
+}
 
+void select_unix_event_queue_init(struct select_unix_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts)
+{
     nm_event_queue_init(&queue->eventQueue);
     queue->stopped = false;
     queue->mutex = mutex;
@@ -47,7 +51,6 @@ struct np_event_queue select_unix_event_queue_init(struct select_unix_event_queu
     if (nabto_device_threads_run(queue->queueThread, queue_thread, queue) != 0) {
         // TODO
     }
-    return eq;
 }
 
 
