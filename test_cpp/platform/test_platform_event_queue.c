@@ -64,7 +64,7 @@ void test_platform_event_queue_deinit(struct test_platform_event_queue* eq)
 
 void handle_event(evutil_socket_t s, short events, void* data)
 {
-    NABTO_LOG_TRACE(LOG, "handle event");
+//    NABTO_LOG_TRACE(LOG, "handle event");
     struct np_event* event = data;
 //    struct np_platform* pl = event->pl;
 //    struct test_platform_event_queue* eq = pl->eqData;
@@ -95,7 +95,7 @@ void destroy_event(struct np_event* event)
 
 void post(struct np_event* event)
 {
-    NABTO_LOG_TRACE(LOG, "post event");
+    //NABTO_LOG_TRACE(LOG, "post event");
     //struct np_platform* pl = event->pl;
     //struct nabto_device_event_queue* eq = pl->eqData;
     event_active(&event->event, 0, 0);

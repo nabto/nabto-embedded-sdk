@@ -16,6 +16,9 @@
 #include <algorithm>
 #include <vector>
 
+#include <iostream>
+#include <string.h>
+
 namespace nabto {
 
 static void removeNewline(std::string &s) {
@@ -28,7 +31,18 @@ void mbedTlsLogger( void *ctx, int level,
                     const char *file, int line,
                     const char *str )
 {
-    // TODO: maybe add logging
+    size_t fileLen = strlen(file);
+    char fileTmp[32+4];
+    if(fileLen > 32) {
+        strcpy(fileTmp, "...");
+        strcpy(fileTmp + 3, file + fileLen - 32);
+    } else {
+        strcpy(fileTmp, file);
+    }
+    std::string dbgStr(str);
+    removeNewline(dbgStr);
+
+    std::cout << fileTmp << "(" << line << ")[" << level << "]" << dbgStr << std::endl;
 }
 
 std::string mbedTlsStrError(int ret)

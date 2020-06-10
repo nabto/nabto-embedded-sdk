@@ -465,6 +465,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             // Coap request payload could not be set maybe OOM
             // DTLS was closed while waiting for coap response, most likely closed by peer, wait to retry
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+            handle_state_change(ctx);
             break;
         case NC_ATTACHER_STATE_ATTACHED:
             // DTLS was closed while attached, closed by peer or keep alive timeout. Try reattach
@@ -472,6 +473,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
                 ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
             }
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+            handle_state_change(ctx);
             break;
         case NC_ATTACHER_STATE_REDIRECT:
             if (ctx->redirectAttempts >= MAX_REDIRECT_FOLLOW) {
@@ -480,6 +482,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
                 // DTLS closed since BS redirected us, resolve new BS.
                 ctx->state = NC_ATTACHER_STATE_DNS;
             }
+            handle_state_change(ctx);
             break;
         case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
 
@@ -489,9 +492,9 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             // states DNS, RETRY_WAIT, CLOSED does not have a DTLS connection which can be closed
             // If this impossible error happens, simply try reattach
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+            handle_state_change(ctx);
     }
 
-    handle_state_change(ctx);
 }
 
 void handle_dtls_connected(struct nc_attach_context* ctx)
