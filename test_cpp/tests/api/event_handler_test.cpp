@@ -1,6 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
-#include "../helper.hpp"
+#include <util/helper.hpp>
 
 #include <api/nabto_device_event_handler.h>
 #include <api/nabto_api_future_queue.h>
@@ -12,7 +12,7 @@
 #include <api/nabto_device_defines.h>
 
 #include <util/io_service.hpp>
-#include <lib/span.hpp>
+#include <util/span.hpp>
 
 #include <boost/asio.hpp>
 

@@ -1,10 +1,9 @@
 #pragma once
 
-#include <dtls/dtls_server.hpp>
+#include <fixtures/dtls_server/dtls_server.hpp>
 #include <boost/asio/io_service.hpp>
-#include <util/logger.hpp>
-#include <util/test_future.hpp>
-#include <dtls/mbedtls_util.hpp>
+//#include <util/test_future.hpp>
+#include <fixtures/dtls_server/mbedtls_util.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -15,8 +14,8 @@ namespace test {
 
 class AttachCoapServer {
  public:
-    AttachCoapServer(boost::asio::io_context& io, log::LoggerPtr logger)
-        : io_(io), logger_(logger), dtlsServer_(io, logger)
+    AttachCoapServer(boost::asio::io_context& io)
+        : io_(io), dtlsServer_(io)
     {
     }
     virtual ~AttachCoapServer() {}
@@ -33,10 +32,12 @@ class AttachCoapServer {
     }
 
     void stop() {
-        nabto::TestFuture tf;
-        io_.post([tf, this](){
+        // TODO: Was this defferrence only needed in BS ?
+        //nabto::TestFuture tf;
+        io_.post([this](){
             dtlsServer_.stop();
         });
+        //dtlsServer_.stop();
     }
 
     virtual void initCoapHandlers() = 0;
@@ -55,7 +56,6 @@ class AttachCoapServer {
     }
  protected:
     boost::asio::io_context& io_;
-    log::LoggerPtr logger_;
     DtlsServer dtlsServer_;
 
 };
@@ -64,14 +64,14 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
 {
  public:
 
-    AttachServer(boost::asio::io_context& io, log::LoggerPtr logger)
-        : AttachCoapServer(io, logger)
+    AttachServer(boost::asio::io_context& io)
+        : AttachCoapServer(io)
     {
     }
 
-    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io, log::LoggerPtr logger)
+    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io)
     {
-        auto ptr = std::make_shared<AttachServer>(io, logger);
+        auto ptr = std::make_shared<AttachServer>(io);
         ptr->init();
         return ptr;
     }
@@ -152,14 +152,14 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
 {
  public:
 
-    RedirectServer(boost::asio::io_context& io, log::LoggerPtr logger)
-        : AttachCoapServer(io, logger)
+    RedirectServer(boost::asio::io_context& io)
+        : AttachCoapServer(io)
     {
     }
 
-    static std::shared_ptr<RedirectServer> create(boost::asio::io_context& io, log::LoggerPtr logger)
+    static std::shared_ptr<RedirectServer> create(boost::asio::io_context& io)
     {
-        auto ptr = std::make_shared<RedirectServer>(io, logger);
+        auto ptr = std::make_shared<RedirectServer>(io);
         ptr->init();
         return ptr;
     }
@@ -238,14 +238,14 @@ class AccessDeniedServer : public AttachCoapServer, public std::enable_shared_fr
 {
  public:
 
-    AccessDeniedServer(boost::asio::io_context& io, log::LoggerPtr logger)
-        : AttachCoapServer(io, logger)
+    AccessDeniedServer(boost::asio::io_context& io)
+        : AttachCoapServer(io)
     {
     }
 
-    static std::shared_ptr<AccessDeniedServer> create(boost::asio::io_context& io, log::LoggerPtr logger)
+    static std::shared_ptr<AccessDeniedServer> create(boost::asio::io_context& io)
     {
-        auto ptr = std::make_shared<AccessDeniedServer>(io, logger);
+        auto ptr = std::make_shared<AccessDeniedServer>(io);
         ptr->init();
         return ptr;
     }
