@@ -2,10 +2,13 @@
 #include "nc_attacher.h"
 
 #include <core/nc_coap.h>
+#include <platform/np_logging.h>
 
 #include <cbor.h>
 
 #include <stdlib.h>
+
+#define LOG NABTO_LOG_MODULE_ATTACHER
 
 const char* sctUploadPath[2] = {"device", "sct"};
 
@@ -21,9 +24,11 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
 {
     struct nc_attacher_sct_context* sctCtx = &attacher->sctContext;
     if (sctCtx->version == sctCtx->synchronizedVersion) {
+        NABTO_LOG_TRACE(LOG, "SCT already synchronized no operation");
         return NABTO_EC_NO_OPERATION;
     }
     if (sctCtx->callback != NULL) {
+        NABTO_LOG_TRACE(LOG, "SCT operation in progress");
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
 
@@ -82,7 +87,9 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     if (nc_coap_is_status_ok(resCode)) {
         status = NABTO_EC_OK;
         sctCtx->synchronizedVersion = sctCtx->uploadingVersion;
+        NABTO_LOG_TRACE(LOG, "SCT version %u successfully uploaded", sctCtx->synchronizedVersion);
     } else {
+        NABTO_LOG_TRACE(LOG, "SCT uploaded failed: %u", resCode);
         status = NABTO_EC_UNKNOWN;
     }
     nabto_coap_client_request_free(request);

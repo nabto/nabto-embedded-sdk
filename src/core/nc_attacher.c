@@ -244,7 +244,7 @@ np_error_code nc_attacher_stop(struct nc_attach_context* ctx)
 np_error_code nc_attacher_add_server_connect_token(struct nc_attach_context* ctx, const char* token)
 {
     ctx->sctContext.version++;
-    if (nn_string_set_insert(&ctx->sctContext.scts, token) != NABTO_EC_OK)
+    if (!nn_string_set_insert(&ctx->sctContext.scts, token))
     {
         return NABTO_EC_OUT_OF_MEMORY;
     }
