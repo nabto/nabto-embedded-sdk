@@ -1,6 +1,6 @@
 #include "nc_device.h"
 #include <platform/np_logging.h>
-
+#include <platform/np_mdns_wrapper.h>
 #include <nn/llist.h>
 
 #define LOG NABTO_LOG_MODULE_CORE
@@ -160,7 +160,7 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 
     if (dev->enableMdns) {
         uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->udp);
-        pl->mdns.vptr->publish_service(&pl->mdns, localPort, dev->productId, dev->deviceId);
+        np_mdns_publish_service(&pl->mdns, localPort, dev->productId, dev->deviceId);
     }
 
     np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_udp_bound_cb, dev);

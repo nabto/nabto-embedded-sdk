@@ -38,7 +38,9 @@ The task here is to implement dns functionality.
 
 ## Step 7
 
-The task is to implement UDP and TCP networking.
+The task is to implement UDP and TCP networking. The test requires an
+udp and tcp echo server to be running somewhere else. We porovide such
+a utility for testing purposes.
 
 ## Step 8
 
@@ -47,4 +49,12 @@ system can be retrieved.
 
 ## Step 9
 
-The task is to implement mdns functionality.
+The task is to implement mdns functionality. The mdns functionality
+can be tested with a general mdns client.
+
+### List of useful mdns clients
+
+  * Mac: Use the dns-sd tool from a shell.
+  * Windows: install the bonjour sdk and use the dns-sd tool from a shell.
+  * Linux: install avahi-utils and use avahi-browse
+  * Android: service browser https://play.google.com/store/apps/details?id=com.druk.servicebrowser&hl=en

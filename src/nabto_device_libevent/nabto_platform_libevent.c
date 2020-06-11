@@ -6,11 +6,10 @@
 #include <modules/libevent/nm_libevent.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
-#include <modules/mdns/nm_mdns.h>
+#include <modules/mdns/nm_mdns_server.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
-#include <modules/mdns/nm_mdns.h>
 #include <api/nabto_device_threads.h>
 
 #include <event.h>
@@ -74,8 +73,8 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
 
     // Create a mdns server
-    nm_mdns_init(&platform->mdnsServer, &platform->eq, &udp, &localIp);
-    struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
+    nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &localIp);
+    struct np_mdns mdnsImpl = nm_mdns_server_get_impl(&platform->mdnsServer);
 
     // Start the thread where the libevent main loop runs.
     platform->libeventThread = nabto_device_threads_create_thread();
@@ -111,7 +110,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 
     nabto_device_threads_free_thread(platform->libeventThread);
 
-    nm_mdns_deinit(&platform->mdnsServer);
+    nm_mdns_server_deinit(&platform->mdnsServer);
 
     nm_libevent_deinit(&platform->libeventContext);
 

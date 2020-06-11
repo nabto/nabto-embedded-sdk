@@ -9,12 +9,11 @@
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
-#include <modules/mdns/nm_mdns.h>
+#include <modules/mdns/nm_mdns_server.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/unix/nm_unix_local_ip.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
-#include <modules/mdns/nm_mdns.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -92,8 +91,8 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     // Create a mdns server. The mdns server depends on the event
     // queue, udp and local ip implementations.
-    nm_mdns_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &localIpImpl);
-    struct np_mdns mdnsImpl = nm_mdns_get_impl(&platform->mdnsServer);
+    nm_mdns_server_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &localIpImpl);
+    struct np_mdns mdnsImpl = nm_mdns_server_get_impl(&platform->mdnsServer);
 
     /**
      * Store a pointer to the specific platform integration inside the
@@ -124,7 +123,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
-    nm_mdns_deinit(&platform->mdnsServer);
+    nm_mdns_server_deinit(&platform->mdnsServer);
     thread_event_queue_deinit(&platform->eventQueue);
     nm_unix_dns_resolver_deinit(&platform->dnsResolver);
     nm_select_unix_deinit(&platform->selectUnix);

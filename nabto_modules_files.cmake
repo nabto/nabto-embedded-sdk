@@ -1,5 +1,5 @@
 
-# Nabto mbedtls wrapper 
+# Nabto mbedtls wrapper
 set(ne_mbedtls_wrapper ${ne_dir}/src/modules/mbedtls)
 set(ne_dtls_common_src
   ${ne_mbedtls_wrapper}/nm_mbedtls_timer.c
@@ -55,7 +55,7 @@ set(ne_unix_dir ${ne_dir}/src/modules/unix/)
 # Nabto mdns impl.
 set(ne_mdns_dir ${ne_dir}/src/modules/mdns)
 set(ne_mdns_src
-  ${ne_mdns_dir}/nm_mdns.c
+  ${ne_mdns_dir}/nm_mdns_server.c
   ${ne_unix_dir}/nm_unix_mdns.c
 )
 
@@ -85,4 +85,3 @@ set(ne_tcp_tunnel_src
   ${ne_tcp_tunnel_dir}/nm_tcp_tunnel_coap.c
   ${ne_tcp_tunnel_dir}/nm_tcp_tunnel.c
 )
-

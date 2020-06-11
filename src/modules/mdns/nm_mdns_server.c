@@ -1,4 +1,4 @@
-#include "nm_mdns.h"
+#include "nm_mdns_server.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
@@ -30,7 +30,7 @@ static struct np_mdns_functions vtable = {
     .publish_service = publish_service
 };
 
-struct np_mdns nm_mdns_get_impl(struct nm_mdns_server* server)
+struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server)
 {
     struct np_mdns obj;
     obj.vptr = &vtable;
@@ -39,7 +39,7 @@ struct np_mdns nm_mdns_get_impl(struct nm_mdns_server* server)
 }
 
 // initialize the mdns server
-np_error_code nm_mdns_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp)
+np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp)
 {
     server->stopped = false;
     server->running = false;
@@ -92,7 +92,7 @@ np_error_code nm_mdns_init(struct nm_mdns_server* server, struct np_event_queue*
 }
 
 // deinitialize the mdns server
-void nm_mdns_deinit(struct nm_mdns_server* mdns)
+void nm_mdns_server_deinit(struct nm_mdns_server* mdns)
 {
     np_completion_event_deinit(&mdns->v4OpenedCompletionEvent);
     np_completion_event_deinit(&mdns->v6OpenedCompletionEvent);

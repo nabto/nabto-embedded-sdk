@@ -1,5 +1,5 @@
-#ifndef _NM_MDNS_H_
-#define _NM_MDNS_H_
+#ifndef _NM_MDNS_SERVER_H_
+#define _NM_MDNS_SERVER_H_
 
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
@@ -43,11 +43,11 @@ struct nm_mdns_server {
     struct np_completion_event v6SendCompletionEvent;
 };
 
-np_error_code nm_mdns_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp);
-void nm_mdns_deinit(struct nm_mdns_server* server);
+np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp);
+void nm_mdns_server_deinit(struct nm_mdns_server* server);
 
 
-struct np_mdns nm_mdns_get_impl(struct nm_mdns_server* server);
+struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server);
 
 
 #endif

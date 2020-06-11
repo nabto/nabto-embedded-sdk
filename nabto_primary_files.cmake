@@ -50,6 +50,7 @@ set(ne_platform_src
   ${root_dir}/src/platform/np_dns_wrapper.c
   ${root_dir}/src/platform/np_tcp_wrapper.c
   ${root_dir}/src/platform/np_local_ip_wrapper.c
+  ${root_dir}/src/platform/np_mdns_wrapper.c
 )
 
 set(ne_core_src
@@ -107,6 +108,7 @@ set(ne_api_test_src
   ${root_dir}/src/api_test/nabto_device_test_udp.c
   ${root_dir}/src/api_test/nabto_device_test_tcp.c
   ${root_dir}/src/api_test/nabto_device_test_local_ip.c
+  ${root_dir}/src/api_test/nabto_device_test_mdns_publish_service.c
   )
 
 set(ne_tinycbor_src
@@ -214,6 +216,7 @@ set(ne_priv_include_dirs
   ${root_dir}/nabto-common/components/streaming/include
   ${root_dir}/nabto-common/components/stun/include
   ${root_dir}/nabto-common/components/nn/include
+  ${root_dir}/nabto-common/components/mdns/include
   ${root_dir}/3rdparty/tinycbor/extra
   ${root_dir}/3rdparty/tinycbor/tinycbor/src
   ${root_dir}/3rdparty/mbedtls/mbedtls/include

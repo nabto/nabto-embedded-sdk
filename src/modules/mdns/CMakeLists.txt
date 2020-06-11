@@ -1,5 +1,5 @@
 set(src
-  nm_mdns.c
+  nm_mdns_server.c
   )
 
 add_library(nm_mdns ${src})

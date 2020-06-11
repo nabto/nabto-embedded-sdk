@@ -118,6 +118,16 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_test_local_ip(NabtoDevice* device);
 
+/**
+ * MDNS publish service test
+ *
+ * This test publishes a _nabto._udp MDNS service. The test passes if
+ * the service can be discovered by a MDNS client.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_test_mdns_publish_service(NabtoDevice* device);
+
+
 
 #ifdef __cplusplus
 } // extern "C"
