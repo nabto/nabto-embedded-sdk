@@ -538,7 +538,9 @@ void DtlsConnectionImpl::asyncSendApplicationData(lib::span<const uint8_t> data,
     } else {
         dtlsSentCount_++;
         io_.post([dsh](){ dsh(make_error_code(DtlsError::ok)); });
+        return;
     }
+    io_.post([dsh](){ dsh(make_error_code(DtlsError::write_failed)); });
 }
 
 void DtlsConnectionImpl::asyncSendRelayPacket(lib::span<const uint8_t> packet, DatagramSentHandler dsh)

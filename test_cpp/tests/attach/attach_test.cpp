@@ -152,9 +152,9 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
     /******************************************************************
      * attachServer->stop() must invoke stop on the DTLS server from
      * the IO service. To avoid implementing a blocking test future we
-     * shutdown the IO service nicely in all tests
+     * stop the IO service nicely in all tests
      ******************************************************************/
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
     at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
 
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
     BOOST_TEST(redirectServer->redirectCount_ == (uint64_t)1);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
     at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(reattach_after_close_from_server, * boost::unit_test::timeout(300))
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server, * boost::unit_test::timeo
     at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(retry_after_server_unavailable, * boost::unit_test::timeout(300))
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable, * boost::unit_test::timeout
 
     BOOST_TEST(at.attachCount_ == (uint64_t)1);
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(reject_invalid_redirect, * boost::unit_test::timeout(300))
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect, * boost::unit_test::timeout(300))
     redirectServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
     BOOST_TEST(redirectServer->redirectCount_ == (uint64_t)2);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response, * boost::unit_test::timeout(300))
@@ -340,7 +340,7 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response, * boost::unit_test::timeou
     at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)2);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(access_denied, * boost::unit_test::timeout(300))
@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE(access_denied, * boost::unit_test::timeout(300))
              });
     at.waitForTestEnd();
     accessDeniedServer->stop();
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(access_denied_reattach, * boost::unit_test::timeout(300))
@@ -381,7 +381,7 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach, * boost::unit_test::timeout(300))
              });
     at.waitForTestEnd();
     accessDeniedServer->stop();
-    ioService->shutdown();
+    ioService->stop();
 }
 
 BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
@@ -405,7 +405,7 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
     at.waitForTestEnd();
     redirectServer->stop();
     BOOST_TEST(redirectServer->redirectCount_ <= (uint64_t)5);
-    ioService->shutdown();
+    ioService->stop();
 }
 
 
