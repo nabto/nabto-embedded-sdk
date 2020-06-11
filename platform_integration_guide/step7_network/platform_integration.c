@@ -41,8 +41,8 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct np_udp udpImpl = nm_select_unix_udp_get_impl(&platform->networking);
     struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->networking);
 
-    // set the timestamp implementation in the device such that it can
-    // be used by the device api.
+    // set the implementations in the device such that they can be
+    // used by the device api.
     nabto_device_integration_set_timestamp_impl(device, &timestampImpl);
     nabto_device_integration_set_event_queue_impl(device, &eventQueueImpl);
     nabto_device_integration_set_dns_impl(device, &dnsImpl);

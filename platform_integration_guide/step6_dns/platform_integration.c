@@ -33,8 +33,8 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     nm_unix_dns_resolver_run(&platform->dnsResolver);
     struct np_dns dnsImpl = nm_unix_dns_resolver_get_impl(&platform->dnsResolver);
 
-    // set the timestamp implementation in the device such that it can
-    // be used by the device api.
+    // set the implementations in the device such that they can be
+    // used by the device api.
     nabto_device_integration_set_timestamp_impl(device, &timestampImpl);
     nabto_device_integration_set_event_queue_impl(device, &eventQueueImpl);
     nabto_device_integration_set_dns_impl(device, &dnsImpl);
