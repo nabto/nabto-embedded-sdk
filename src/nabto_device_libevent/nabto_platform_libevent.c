@@ -106,7 +106,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
     struct libevent_platform* platform = nabto_device_integration_get_platform_data(device);
-    libevent_event_queue_destroy(&platform->eq);
+
 
     nabto_device_threads_free_thread(platform->libeventThread);
 
@@ -115,6 +115,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     nm_libevent_deinit(&platform->libeventContext);
 
     event_free(platform->signalEvent);
+    libevent_event_queue_destroy(&platform->eq);
     event_base_free(platform->eventBase);
 
     nm_libevent_global_deinit();
@@ -127,6 +128,7 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
     if (platform->stopped) {
         return;
     }
+    nm_mdns_server_stop(&platform->mdnsServer);
     platform->stopped = true;
     event_active(platform->signalEvent, 0, 0);
     nabto_device_threads_join(platform->libeventThread);
