@@ -85,38 +85,6 @@ struct np_udp_functions {
     void (*async_bind_port)(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
 
     /**
-     * Optional function to bind a socket the mdns port and ipv4 mdns
-     * multicast group.  The socket is bound to 5353 and needs to have
-     * the equivalent of the REUSEPORT flag set.
-     *
-     * The completion event shall be resolved when a result for the
-     * operation is available.
-     *
-     * If the function is not implemented properly it needs to resolve
-     * the completion event with NABTO_EC_NOT_IMPLEMENTED.
-     *
-     * @param sock  The socket resource.
-     * @param completionEvent  The completion event to be resolved the socket is bound.
-     */
-    void (*async_bind_mdns_ipv4)(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
-
-    /**
-     * Optional function to bind a socket the mdns port and ipv6 mdns
-     * multicast group.  The socket is bound to 5353 and needs to have
-     * the equivalent of the REUSEPORT flag set.
-     *
-     * The completion event shall be resolved when a result for the
-     * operation is available.
-     *
-     * If the function is not implemented properly it needs to resolve
-     * the completion event with NABTO_EC_NOT_IMPLEMENTED.
-     *
-     * @param sock  The socket resource.
-     * @param completionEvent  The completion event to be resolved the socket is bound.
-     */
-    void (*async_bind_mdns_ipv6)(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
-
-    /**
      * Send packet async. It's the responsibility of the caller to
      * keep the ep and buffer alive until the completion event is
      * resolved.

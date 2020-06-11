@@ -4,6 +4,7 @@
 #include "libevent_event_queue.h"
 
 #include <modules/libevent/nm_libevent.h>
+#include <modules/libevent/nm_libevent_mdns_udp_bind.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mdns/nm_mdns_server.h>
@@ -73,7 +74,11 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
 
     // Create a mdns server
-    nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &localIp);
+    // the mdns server requires special udp bind functions.
+    struct nm_mdns_udp_bind mdnsUdpBind = nm_libevent_mdns_udp_bind_get_impl(&platform->libeventContext);
+
+
+    nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &mdnsUdpBind, &localIp);
     struct np_mdns mdnsImpl = nm_mdns_server_get_impl(&platform->mdnsServer);
 
     // Start the thread where the libevent main loop runs.

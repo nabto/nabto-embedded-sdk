@@ -4,6 +4,7 @@ set(select_unix_src
   nm_select_unix.c
   nm_select_unix_udp.c
   nm_select_unix_tcp.c
+  nm_select_unix_mdns_udp_bind.c
   )
 
 add_library( nm_select_unix STATIC "${select_unix_src}")

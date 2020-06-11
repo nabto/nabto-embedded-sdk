@@ -22,7 +22,6 @@
 static void build_fd_sets();
 static void* network_thread(void* data);
 
-static int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms);
 static int nm_select_unix_inf_wait(struct nm_select_unix* ctx);
 
 static void nm_select_unix_read(struct nm_select_unix* ctx, int nfds);

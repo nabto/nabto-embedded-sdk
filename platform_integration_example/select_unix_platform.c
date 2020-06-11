@@ -3,8 +3,7 @@
 #include <api/nabto_device_integration.h>
 
 #include <modules/select_unix/nm_select_unix.h>
-#include <modules/select_unix/nm_select_unix_udp.h>
-#include <modules/select_unix/nm_select_unix_tcp.h>
+#include <modules/select_unix/nm_select_unix_mdns_udp_bind.h>
 #include <modules/event_queue/thread_event_queue.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
@@ -91,7 +90,10 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     // Create a mdns server. The mdns server depends on the event
     // queue, udp and local ip implementations.
-    nm_mdns_server_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &localIpImpl);
+
+    struct nm_mdns_udp_bind mdnsUdpBindImpl = nm_select_unix_mdns_udp_bind_get_impl(&platform->selectUnix);
+
+    nm_mdns_server_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &mdnsUdpBindImpl, &localIpImpl);
     struct np_mdns mdnsImpl = nm_mdns_server_get_impl(&platform->mdnsServer);
 
     /**

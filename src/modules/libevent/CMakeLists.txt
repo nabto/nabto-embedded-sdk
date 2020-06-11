@@ -6,7 +6,7 @@ set(src
   nm_libevent_tcp.c
   nm_libevent_timestamp.c
   nm_libevent_get_local_ip.c
-  nm_libevent_mdns.c
+  nm_libevent_mdns_udp_bind.c
   )
 
 add_library(nm_libevent ${src})

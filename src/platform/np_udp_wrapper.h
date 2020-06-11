@@ -16,10 +16,6 @@ void np_udp_abort(struct np_udp* udp, struct np_udp_socket* sock);
 
 void np_udp_async_bind_port(struct np_udp* udp, struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
 
-void np_udp_async_bind_mdns_ipv4(struct np_udp* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
-
-void np_udp_async_bind_mdns_ipv6(struct np_udp* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
-
 void np_udp_async_send_to(struct np_udp* udp,
                           struct np_udp_socket* sock, struct np_udp_endpoint* ep,
                           uint8_t* buffer, uint16_t bufferSize,

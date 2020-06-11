@@ -1,6 +1,8 @@
 #ifndef _NM_MDNS_SERVER_H_
 #define _NM_MDNS_SERVER_H_
 
+#include "nm_mdns_udp_bind.h"
+
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
 #include <platform/np_udp_wrapper.h>
@@ -31,6 +33,7 @@ struct nm_mdns_server {
 
     struct np_event_queue eq;
     struct np_udp udp;
+    struct nm_mdns_udp_bind mdnsUdpBind;
     struct np_local_ip localIp;
 
 
@@ -43,7 +46,8 @@ struct nm_mdns_server {
     struct np_completion_event v6SendCompletionEvent;
 };
 
-np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp);
+np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct nm_mdns_udp_bind* mdnsUdpBind, struct np_local_ip* localIp);
+
 void nm_mdns_server_deinit(struct nm_mdns_server* server);
 
 void nm_mdns_server_stop(struct nm_mdns_server* mdns);
