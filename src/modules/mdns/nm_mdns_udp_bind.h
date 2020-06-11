@@ -1,5 +1,5 @@
-#ifndef _NM_MDNS_UDP_BIND
-#define _NM_MDNS_UDP_BIND
+#ifndef _NM_MDNS_UDP_BIND_H_
+#define _NM_MDNS_UDP_BIND_H_
 
 
 
@@ -56,7 +56,7 @@ struct nm_mdns_udp_bind_functions {
 // see above struct for documentation.
 void nm_mdns_udp_bind_async_ipv4(struct nm_mdns_udp_bind* mdnsUdpBind, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
-void np_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* mdnsUdpBind, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
+void nm_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* mdnsUdpBind, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
 
 #endif

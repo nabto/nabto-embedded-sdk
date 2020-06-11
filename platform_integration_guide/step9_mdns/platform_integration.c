@@ -7,6 +7,7 @@
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/unix/nm_unix_local_ip.h>
 #include <modules/mdns/nm_mdns_server.h>
+#include <modules/select_unix/nm_select_unix_mdns_udp_bind.h>
 
 #include <stdlib.h>
 
@@ -47,8 +48,14 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // Use the unix based local ip implementation.
     struct np_local_ip localIpImpl = nm_unix_local_ip_get_impl();
 
-    // Use the mdns server provided by nabto for the device
-    nm_mdns_server_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &localIpImpl);
+    // Use the mdns server provided by nabto for the device. This mdns
+    // server implementation needs a few extra udp functions for
+    // binding udp sockets to the MDNS multicast groups. this
+    // functionality is enclosed inside the `struct nm_mdns_udp_bind`
+    // interface.
+    struct nm_mdns_udp_bind mdnsUdpBindImpl = nm_select_unix_mdns_udp_bind_get_impl(&platform->networking);
+
+    nm_mdns_server_init(&platform->mdnsServer, &eventQueueImpl, &udpImpl, &mdnsUdpBindImpl, &localIpImpl);
     struct np_mdns mdnsImpl = nm_mdns_server_get_impl(&platform->mdnsServer);
 
     // set the implementations in the device such that they can be

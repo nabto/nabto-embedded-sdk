@@ -1,4 +1,5 @@
 #include "nm_mdns_server.h"
+#include "nm_mdns_udp_bind.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
@@ -327,4 +328,16 @@ void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData)
         NABTO_LOG_TRACE(LOG, "v6 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
     }
     nm_mdns_recv_packet_v6(mdns);
+}
+
+
+
+void nm_mdns_udp_bind_async_ipv4(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
+{
+    return udp->vptr->async_bind_mdns_ipv4(sock, completionEvent);
+}
+
+void nm_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
+{
+    return udp->vptr->async_bind_mdns_ipv6(sock, completionEvent);
 }

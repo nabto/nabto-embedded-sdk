@@ -29,6 +29,7 @@ set(src
 
   # The mdns server together with the mdns server from common
   ../../src/modules/mdns/nm_mdns_server.c
+  ../../src/modules/select_unix/nm_select_unix_mdns_udp_bind.c
   ../../nabto-common/components/mdns/src/mdns_server.c
 
   # And our test program of the simplest possible platform integration.
