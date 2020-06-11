@@ -50,7 +50,7 @@ class TestPlatformSelectUnix : public TestPlatform {
 
         pl_.tcp = nm_select_unix_tcp_get_impl(&selectCtx_);
         pl_.udp = nm_select_unix_udp_get_impl(&selectCtx_);
-        pl_.dns = nm_unix_dns_get_impl(&dns_);
+        pl_.dns = nm_unix_dns_resolver_get_impl(&dns_);
         pl_.eq = thread_event_queue_get_impl(&eventQueue_);
 
         nm_mbedtls_cli_init(&pl_);

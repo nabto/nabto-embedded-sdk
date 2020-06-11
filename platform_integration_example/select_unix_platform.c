@@ -102,7 +102,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     struct np_udp udpImpl = nm_select_unix_udp_get_impl(&platform->selectUnix);
     struct np_tcp tcpImpl = nm_select_unix_tcp_get_impl(&platform->selectUnix);
-    struct np_dns dnsImpl = nm_unix_dns_get_impl(&platform->dnsResolver);
+    struct np_dns dnsImpl = nm_unix_dns_resolver_get_impl(&platform->dnsResolver);
     struct np_timestamp timestampImpl = nm_unix_ts_get_impl();
     struct np_local_ip localIpImpl = nm_unix_local_ip_get_impl();
 
