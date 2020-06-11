@@ -401,6 +401,43 @@ void esp32_dns_resolve_cb(const char* name, const ip_addr_t* ipaddr, void* userD
 
 The utillity event struct is given as argument to the callback. The resolved address is copied to the result array pointed to inside the event, the event is deallocated and the completionevent is resolved.
 
+## Example of a module with high complexity - struct np_udp_functions / np_tcp_functions
+
+The integration interfaces for UDP and TCP communication is probably the most complicated integration. The semantics of each function is not hard to understand but since most operating systems offers blocking system calls they all require an extra wrapper layer to be implemented. Blocking functions is not friendly for embedded system/platforms that needs to be responsive, so Nabto relies on async implementations instead.
+
+Lets look at an example from the `np_tcp.h` interface. This interface defines an `async_read` function to be implemented.
+The contract for this function is "simple": Wait on the socket until the sender (other end) sends data to you and once this happens, resolve the completion event. Also, that you need to return the execution thread imediately (it is async) so that the platform can carry on other execution for maksimal responsivenes. Here's the definition:
+
+```
+    /**
+     * Read data from a socket.
+     *
+     * The completion event shall be resolved when a result of the
+     * operation is available.
+     *
+     * @param sock  The socket resource.
+     * @param buffer  The buffer to write data to.
+     * @param bufferLength  The length of the buffer.
+     * @param readLength  The length of received data.
+     * @param completionEvent  The completion event to resolve when data has been read.
+     */
+    void (*async_read)(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
+```
+
+To accomplish this on a posix like blocking system is a little more complicated (when first encountered) that the description/contract says. One way to implement this is to use the `select` function by which a thread can inform the operating system that it wish to know if something changes (for example new data is availabe for read) on a set of filedescriptors (sockets). The way to do this is to create a list of both UDP and TCP sockets that needs attention once new data is available on the sockets. In this implementation example both UDP and TCP sockets are put into a large list of filedescriptors and examined via one thread using the operating system `select` function. Instead a thread for each UDP and TCP could instead have been implemented (which would mean one more allocated thread).
+
+So the overall data structure and flow looks something like this:
+
+<p align="center">
+<img border="1" src="images/udp_tcp_functions_module.svg">
+</p>
+
+
+
+
+
+
+
 
 
 # Integration procedure
