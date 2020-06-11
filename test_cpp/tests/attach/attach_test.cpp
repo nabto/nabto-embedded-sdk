@@ -11,6 +11,8 @@
 #include "attach_server.hpp"
 #include <test_platform.hpp>
 
+#include <future>
+
 namespace nabto {
 namespace test {
 
@@ -21,20 +23,15 @@ class AttachTest {
     {
         serverPort_ = port;
         struct np_platform* pl = tp_.getPlatform();
-        np_event_queue_create_event(&pl->eq, &AttachTest::endEvent, this, &endEvent_);
         np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
-
     }
 
     ~AttachTest()
     {
-        tp_.stop();
-        tp_.waitForStopped();
         nc_attacher_deinit(&attach_);
         nc_coap_client_deinit(&coapClient_);
         nc_udp_dispatch_deinit(&udpDispatch_);
         np_completion_event_deinit(&boundCompletionEvent);
-        np_event_queue_destroy_event(&tp_.getPlatform()->eq, endEvent_);
     }
 
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
@@ -43,11 +40,6 @@ class AttachTest {
         BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
         nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
                                    &boundCompletionEvent);
-
-
-
-        // blocks until done
-        tp_.run();
     }
 
     void startAttach() {
@@ -101,22 +93,15 @@ class AttachTest {
     }
 
     void end() {
-        np_event_queue_post(&tp_.getPlatform()->eq, endEvent_);
+        nc_attacher_stop(&attach_);
+        nc_udp_dispatch_abort(&udpDispatch_);
+        testEnded_.set_value();
     }
 
-    static void endEvent(void* userData) {
-        AttachTest* at = (AttachTest*)userData;
-        at->ended_ = true;
-        nc_attacher_stop(&at->attach_);
-        nc_udp_dispatch_abort(&at->udpDispatch_);
-        at->tp_.stop();
+    void waitForTestEnd() {
+        std::future<void> fut = testEnded_.get_future();
+        fut.get();
     }
-    //    nc_attacher_deinit(&attach_);
-    //    nc_coap_client_deinit(&coapClient_);
-    //    nc_udp_dispatch_deinit(&udpDispatch_);
-        //std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    //}
 
     nabto::test::TestPlatform& tp_;
     struct nc_attach_context attach_;
@@ -139,6 +124,7 @@ class AttachTest {
 
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };
+    std::promise<void> testEnded_;
 
 };
 
@@ -159,6 +145,7 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
                  }
              },[](nabto::test::AttachTest& at){ });
 
+    at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
 
@@ -191,6 +178,7 @@ BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
             }
         },[](nabto::test::AttachTest& at){ });
 
+    at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
     ioService->shutdown();
@@ -209,7 +197,7 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
                      at.end();
                  }
         },[](nabto::test::AttachTest& at){ });
-
+    at.waitForTestEnd();
     attachServer->stop();
     redirectServer->stop();
 
@@ -240,7 +228,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
                 at.end();
             }
         },[](nabto::test::AttachTest& at){ });
-
+    at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
     ioService->shutdown();
@@ -270,7 +258,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server, * boost::unit_test::timeo
                 at.end();
             }
         },[](nabto::test::AttachTest& at){ });
-
+    at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(at.attachCount_ == (uint64_t)2);
     ioService->shutdown();
@@ -298,6 +286,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable, * boost::unit_test::timeout
         },[](nabto::test::AttachTest& at){ });
 
     t.join();
+    at.waitForTestEnd();
     attachServer->stop();
 
     BOOST_TEST(at.attachCount_ == (uint64_t)1);
@@ -323,7 +312,7 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect, * boost::unit_test::timeout(300))
                 at.end();
             }
         },[](nabto::test::AttachTest& at){ });
-
+    at.waitForTestEnd();
     attachServer->stop();
     redirectServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
@@ -348,7 +337,7 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response, * boost::unit_test::timeou
                 at.end();
             }
         },[](nabto::test::AttachTest& at){ });
-
+    at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)2);
     ioService->shutdown();
@@ -368,7 +357,7 @@ BOOST_AUTO_TEST_CASE(access_denied, * boost::unit_test::timeout(300))
                      at.end();
                  }
              });
-
+    at.waitForTestEnd();
     accessDeniedServer->stop();
     ioService->shutdown();
 }
@@ -390,7 +379,7 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach, * boost::unit_test::timeout(300))
                      at.end();
                  }
              });
-
+    at.waitForTestEnd();
     accessDeniedServer->stop();
     ioService->shutdown();
 }
@@ -413,7 +402,7 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
                     at.end();
                 }
              });
-
+    at.waitForTestEnd();
     redirectServer->stop();
     BOOST_TEST(redirectServer->redirectCount_ <= (uint64_t)5);
     ioService->shutdown();

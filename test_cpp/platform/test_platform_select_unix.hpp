@@ -55,6 +55,13 @@ class TestPlatformSelectUnix : public TestPlatform {
 
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
+
+        nm_unix_dns_resolver_run(&dns_);
+        thread_event_queue_run(&eventQueue_);
+
+        networkThread_ = std::make_unique<std::thread>([this](){
+                networkThread();
+            });
     }
 
     void deinit()
@@ -67,11 +74,8 @@ class TestPlatformSelectUnix : public TestPlatform {
         thread_event_queue_deinit(&eventQueue_);
     }
 
-    virtual void run()
+    void networkThread()
     {
-        nm_unix_dns_resolver_run(&dns_);
-
-        thread_event_queue_run(&eventQueue_);
         int nfds;
         while (true) {
             if (stopped_) {
@@ -90,14 +94,6 @@ class TestPlatformSelectUnix : public TestPlatform {
         stopped_ = true;
         nm_select_unix_notify(&selectCtx_);
         thread_event_queue_stop_blocking(&eventQueue_);
-
-        stoppedPromise_.set_value();
-    }
-
-    virtual void waitForStopped()
-    {
-        std::future<void> fut = stoppedPromise_.get_future();
-        fut.get();
     }
 
     struct np_platform* getPlatform() {
@@ -108,8 +104,6 @@ class TestPlatformSelectUnix : public TestPlatform {
     struct nm_select_unix selectCtx_;
     bool stopped_ = false;
     std::unique_ptr<std::thread> networkThread_;
-    struct event_base* eventBase_;
-    std::promise<void> stoppedPromise_;
     struct nm_unix_dns_resolver dns_;
     struct thread_event_queue eventQueue_;
     struct nabto_device_mutex* mutex_;

@@ -32,6 +32,15 @@ class DnsTest {
     }
 
     virtual void handleCallback(const np_error_code ec) = 0;
+
+    void waitForTestEnd() {
+        std::future<void> fut = testEnd_.get_future();
+        fut.get();
+    }
+    void testEnded()
+    {
+        testEnd_.set_value();
+    }
  protected:
     nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
@@ -39,6 +48,7 @@ class DnsTest {
     struct np_ip_address ips_[4];
     size_t ipsResolved_;
     struct np_completion_event completionEvent_;
+    std::promise<void> testEnd_;
 };
 
 
@@ -52,7 +62,6 @@ class DnsTestV4 : public DnsTest {
     void start()
     {
         np_dns_async_resolve_v4(&dns_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
-        tp_.run();
     }
 
     virtual void handleCallback(const np_error_code ec)
@@ -68,11 +77,7 @@ class DnsTestV4 : public DnsTest {
         BOOST_TEST(ips_[0].type == NABTO_IPV4);
 
         BOOST_TEST(memcmp(ips_[0].ip.v4, ipv4, 4) == 0);
-        end();
-    }
-
-    void end() {
-        tp_.stop();
+        testEnded();
     }
 
  private:
@@ -89,7 +94,6 @@ class DnsTestV6 : public DnsTest {
     void start()
     {
         np_dns_async_resolve_v6(&dns_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
-        tp_.run();
     }
 
     virtual void handleCallback(const np_error_code ec)
@@ -105,12 +109,7 @@ class DnsTestV6 : public DnsTest {
 
         BOOST_TEST(ips_[0].type == NABTO_IPV6);
         BOOST_TEST(memcmp(ips_[0].ip.v6, ipv6, 16) == 0);
-
-        end();
-    }
-
-    void end() {
-        tp_.stop();
+        testEnded();
     }
 
  private:
@@ -128,7 +127,6 @@ class DnsTestNoSuchDomain : public DnsTest {
     void start()
     {
         np_dns_async_resolve_v4(&dns_, dnsName_, ips_, 4, &ipsResolved_, &completionEvent_);
-        tp_.run();
     }
 
     virtual void handleCallback(const np_error_code ec)
@@ -138,12 +136,7 @@ class DnsTestNoSuchDomain : public DnsTest {
         } else {
             BOOST_TEST(ipsResolved_ == (size_t)0);
         }
-
-        end();
-    }
-
-    void end() {
-        tp_.stop();
+        testEnded();
     }
 
  private:
@@ -163,6 +156,8 @@ BOOST_DATA_TEST_CASE(resolve_v4, nabto::test::TestPlatformFactory::multi(), tpf)
     {
         DnsTestV4 dt(*tp);
         dt.start();
+
+        dt.waitForTestEnd();
     }
 }
 
@@ -172,6 +167,7 @@ BOOST_DATA_TEST_CASE(resolve_v6, nabto::test::TestPlatformFactory::multi(), tpf)
     {
         DnsTestV6 dt(*tp);
         dt.start();
+        dt.waitForTestEnd();
     }
 }
 BOOST_DATA_TEST_CASE(resolve_not_found, nabto::test::TestPlatformFactory::multi(), tpf)
@@ -180,6 +176,7 @@ BOOST_DATA_TEST_CASE(resolve_not_found, nabto::test::TestPlatformFactory::multi(
     {
         DnsTestNoSuchDomain dt(*tp);
         dt.start();
+        dt.waitForTestEnd();
     }
 }
 

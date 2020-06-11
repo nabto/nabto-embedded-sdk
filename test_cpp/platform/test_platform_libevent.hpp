@@ -54,6 +54,10 @@ class TestPlatformLibevent : public TestPlatform {
 
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
+
+        thread_event_queue_run(&eventQueue_);
+
+        libeventThread_ = std::make_unique<std::thread>([this](){ libeventThread(); });
     }
 
     void deinit()
@@ -63,15 +67,12 @@ class TestPlatformLibevent : public TestPlatform {
 
     }
 
-    virtual void run()
+    void libeventThread()
     {
-        thread_event_queue_run(&eventQueue_);
         event_base_loop(eventBase_, EVLOOP_NO_EXIT_ON_EMPTY);
 
         // run last events after it has been stopped
         event_base_loop(eventBase_, EVLOOP_NONBLOCK);
-
-        stoppedPromise_.set_value();
     }
 
     virtual void stop()
@@ -83,12 +84,10 @@ class TestPlatformLibevent : public TestPlatform {
         thread_event_queue_stop_blocking(&eventQueue_);
         event_base_loopbreak(eventBase_);
 
-    }
+        if (libeventThread_) {
+            libeventThread_->join();
+        }
 
-    virtual void waitForStopped()
-    {
-        std::future<void> fut = stoppedPromise_.get_future();
-        fut.get();
     }
 
     struct np_platform* getPlatform() {
@@ -104,6 +103,7 @@ class TestPlatformLibevent : public TestPlatform {
     nabto_device_mutex* mutex_;
 
     std::promise<void> stoppedPromise_;
+    std::unique_ptr<std::thread> libeventThread_;
 };
 
 class TestPlatformLibeventFactory : public TestPlatformFactory {

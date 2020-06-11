@@ -54,8 +54,6 @@ class TcpEchoClientTest {
 
         np_completion_event_reinit(&completionEvent_, &TcpEchoClientTest::connected, this);
         np_tcp_async_connect(&tcp_, socket_, &address, port, &completionEvent_);
-
-        tp_.run();
     }
 
     static void connected(np_error_code ec, void* userData)
@@ -90,8 +88,13 @@ class TcpEchoClientTest {
 
     void end() {
         np_tcp_destroy(&tcp_, socket_);
-        tp_.stop();
+        testEnded_.set_value();
     }
+    void waitForTestEnded() {
+        std::future<void> fut = testEnded_.get_future();
+        fut.get();
+    }
+
  private:
     TestPlatform& tp_;
     struct np_platform* pl_;
@@ -102,6 +105,7 @@ class TcpEchoClientTest {
     struct np_completion_event completionEvent_;
     struct np_tcp tcp_;
     struct np_event_queue eq_;
+    std::promise<void> testEnded_;
 };
 
 class TcpCloseClientTest {
@@ -135,7 +139,6 @@ class TcpCloseClientTest {
     void start(uint16_t port) {
         port_ = port;
         createSock();
-        tp_.run();
     }
 
     static void connected(np_error_code ec, void* userData)
@@ -156,7 +159,11 @@ class TcpCloseClientTest {
 
     void end() {
         np_tcp_destroy(&tcp_, socket_);
-        tp_.stop();
+        testEnded_.set_value();
+    }
+    void waitForTestEnded() {
+        std::future<void> fut = testEnded_.get_future();
+        fut.get();
     }
  private:
     TestPlatform& tp_;
@@ -170,6 +177,7 @@ class TcpCloseClientTest {
     struct np_completion_event completionEvent_;
     struct np_tcp tcp_;
     struct np_event_queue eq_;
+    std::promise<void> testEnded_;
 };
 
 } }
@@ -189,6 +197,8 @@ BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatformFactory::multi(), tpf)
     test::TcpEchoClientTest client(*tp);
     client.start(tcpServer.getPort());
 
+    client.waitForTestEnded();
+
     BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
 }
 
@@ -201,7 +211,7 @@ BOOST_DATA_TEST_CASE(close, nabto::test::TestPlatformFactory::multi(), tpf)
 
     test::TcpCloseClientTest client(*tp);
     client.start(tcpServer.getPort());
-
+    client.waitForTestEnded();
 //    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
 }
 

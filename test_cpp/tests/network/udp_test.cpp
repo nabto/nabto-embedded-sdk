@@ -44,8 +44,6 @@ class UdpEchoClientTest {
 
         np_completion_event_reinit(&completionEvent_, &UdpEchoClientTest::created, this);
         np_udp_async_bind_port(&pl_->udp, socket_, 0, &completionEvent_);
-
-        tp_.run();
     }
 
     static void created(const np_error_code ec, void* data)
@@ -94,7 +92,12 @@ class UdpEchoClientTest {
 
     void end() {
         np_udp_destroy(&pl_->udp, socket_);
-        tp_.stop();
+        testEnded_.set_value();
+    }
+
+    void waitForTestEnded() {
+        std::future<void> fut = testEnded_.get_future();
+        fut.get();
     }
 
  private:
@@ -106,6 +109,7 @@ class UdpEchoClientTest {
     std::array<uint8_t, 42> data_;
     std::vector<uint8_t> recvBuffer_;
     struct np_completion_event completionEvent_;
+    std::promise<void> testEnded_;
 
 };
 
@@ -125,6 +129,7 @@ BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatformFactory::multi(), tpf)
 
     nabto::test::UdpEchoClientTest client(*tp);
     client.start(udpServer->getPort());
+    client.waitForTestEnded();
 
     BOOST_TEST(udpServer->getPacketCount() > (uint64_t)0);
     udpServer->stop();
