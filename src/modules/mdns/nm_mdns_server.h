@@ -46,6 +46,7 @@ struct nm_mdns_server {
 np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp);
 void nm_mdns_server_deinit(struct nm_mdns_server* server);
 
+void nm_mdns_server_stop(struct nm_mdns_server* mdns);
 
 struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server);
 

@@ -107,7 +107,7 @@ void nm_mdns_server_deinit(struct nm_mdns_server* mdns)
     np_udp_destroy(&mdns->udp, mdns->socketv6);
 }
 
-void nm_mdns_stop(struct nm_mdns_server* mdns)
+void nm_mdns_server_stop(struct nm_mdns_server* mdns)
 {
     mdns->stopped = true;
     np_udp_abort(&mdns->udp, mdns->socketv4);

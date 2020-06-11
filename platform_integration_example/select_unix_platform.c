@@ -138,6 +138,7 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     platform->stopped = true;
+    nm_mdns_server_stop(&platform->mdnsServer);
     nm_select_unix_stop(&platform->selectUnix);
     thread_event_queue_stop_blocking(&platform->eventQueue);
 }
