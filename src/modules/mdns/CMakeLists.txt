@@ -1,5 +1,6 @@
 set(src
   nm_mdns_server.c
+  nm_mdns_udp_bind.c
   )
 
 add_library(nm_mdns ${src})

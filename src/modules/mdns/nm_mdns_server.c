@@ -39,7 +39,7 @@ struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server)
 }
 
 // initialize the mdns server
-np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct np_local_ip* localIp)
+np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct nm_mdns_udp_bind* mdnsUdpBind, struct np_local_ip* localIp)
 {
     server->stopped = false;
     server->running = false;
@@ -47,6 +47,7 @@ np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event
     server->v6Done = false;
     server->eq = *eq;
     server->udp = *udp;
+    server->mdnsUdpBind = *mdnsUdpBind;
     server->localIp = *localIp;
 
     np_error_code ec;
@@ -127,8 +128,8 @@ void publish_service(struct np_mdns* obj, uint16_t port, const char* productId, 
                            deviceId /*serviceName must be unique*/,
                            deviceId /*hostname must be unique*/);
 
-    np_udp_async_bind_mdns_ipv4(&server->udp, server->socketv4, &server->v4OpenedCompletionEvent);
-    np_udp_async_bind_mdns_ipv6(&server->udp, server->socketv6, &server->v6OpenedCompletionEvent);
+    nm_mdns_udp_bind_async_ipv4(&server->mdnsUdpBind, server->socketv4, &server->v4OpenedCompletionEvent);
+    nm_mdns_udp_bind_async_ipv6(&server->mdnsUdpBind, server->socketv6, &server->v6OpenedCompletionEvent);
 }
 
 void nm_mdns_update_local_ips(struct nm_mdns_server* mdns)

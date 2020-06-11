@@ -1,7 +1,16 @@
-#include "nm_libevent_mdns.h"
-#include "nm_libevent_types.h"
+#include "nm_libevent_mdns_udp_bind.h"
 
+#include "nm_libevent.h"
+#include "nm_libevent_udp.h"
+
+#include <platform/np_error_code.h>
+#include <platform/np_ip_address.h>
 #include <platform/np_logging.h>
+
+#include "nm_libevent_types.h"
+#include <event2/util.h>
+#include <event2/event.h>
+#include <event.h>
 
 #if defined(HAVE_SYS_SOCKET_H)
 #include <sys/socket.h>
@@ -10,8 +19,6 @@
 #if defined(HAVE_NETINET_IN_H)
 #include <netinet/in.h>
 #endif
-
-#include <string.h>
 
 #if defined(HAVE_IFADDRS_H)
 #include <ifaddrs.h>
@@ -31,9 +38,124 @@
 #include <ws2tcpip.h>
 #endif
 
-#include <event2/util.h>
+#include <string.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
+
+static void udp_async_bind_mdns_ipv4(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
+static void udp_async_bind_mdns_ipv6(struct np_udp_socket* sock, struct np_completion_event* completionEvent);
+
+static np_error_code udp_create_socket_ipv4(struct np_udp_socket* s);
+static np_error_code udp_create_socket_ipv6(struct np_udp_socket* s);
+
+
+static bool nm_libevent_init_mdns_ipv6_socket(int sock);
+static bool nm_libevent_init_mdns_ipv4_socket(int sock);
+
+static void nm_libevent_mdns_update_ipv4_socket_registration(int sock);
+static void nm_libevent_mdns_update_ipv6_socket_registration(int sock);
+
+static struct nm_mdns_udp_bind_functions vtable = {
+    .async_bind_mdns_ipv4 = udp_async_bind_mdns_ipv4,
+    .async_bind_mdns_ipv6 = udp_async_bind_mdns_ipv6
+};
+
+struct nm_mdns_udp_bind nm_libevent_mdns_udp_bind_get_impl(struct nm_libevent_context* libeventContext)
+{
+    struct nm_mdns_udp_bind obj;
+    obj.vptr = &vtable;
+    obj.data = libeventContext;
+    return obj;
+}
+np_error_code udp_async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
+{
+    if (sock->aborted) {
+        NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
+        return NABTO_EC_ABORTED;
+    }
+
+    np_error_code ec;
+    ec = udp_create_socket_ipv4(sock);
+
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    if (!nm_libevent_init_mdns_ipv4_socket(sock->sock)) {
+        evutil_closesocket(sock->sock);
+        return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
+    }
+
+    nm_libevent_mdns_update_ipv4_socket_registration(sock->sock);
+    nm_libevent_udp_add_to_libevent(sock);
+    return NABTO_EC_OK;
+}
+
+void udp_async_bind_mdns_ipv4(struct np_udp_socket* sock, struct np_completion_event* completionEvent)
+{
+    np_error_code ec = udp_async_bind_mdns_ipv4_ec(sock);
+    np_completion_event_resolve(completionEvent, ec);
+}
+
+np_error_code udp_async_bind_mdns_ipv6_ec(struct np_udp_socket* sock)
+{
+    if (sock->aborted) {
+        NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
+        return NABTO_EC_ABORTED;
+    }
+
+    np_error_code ec = udp_create_socket_ipv6(sock);
+    if (ec) {
+        return ec;
+    }
+
+    if (!nm_libevent_init_mdns_ipv6_socket(sock->sock)) {
+        evutil_closesocket(sock->sock);
+        return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
+    }
+
+    nm_libevent_mdns_update_ipv6_socket_registration(sock->sock);
+
+    nm_libevent_udp_add_to_libevent(sock);
+    return NABTO_EC_OK;
+}
+
+void udp_async_bind_mdns_ipv6(struct np_udp_socket* sock, struct np_completion_event* completionEvent)
+{
+    np_error_code ec = udp_async_bind_mdns_ipv6_ec(sock);
+    np_completion_event_resolve(completionEvent, ec);
+}
+
+
+np_error_code udp_create_socket_ipv6(struct np_udp_socket* s)
+{
+    evutil_socket_t sock = nm_libevent_udp_create_nonblocking_socket(AF_INET6, SOCK_DGRAM);
+    if (sock == NM_INVALID_SOCKET) {
+        return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
+    }
+
+    int no = 0;
+    int status = setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no));
+    if (status < 0) {
+        NABTO_LOG_ERROR(LOG, "Cannot set IPV6_V6ONLY");
+    }
+
+    s->type = NABTO_IPV6;
+    s->sock = sock;
+    return NABTO_EC_OK;
+}
+
+np_error_code udp_create_socket_ipv4(struct np_udp_socket* s)
+{
+    evutil_socket_t sock = nm_libevent_udp_create_nonblocking_socket(AF_INET, SOCK_DGRAM);
+    if (sock == NM_INVALID_SOCKET) {
+        return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
+    }
+    s->type = NABTO_IPV4;
+    s->sock = sock;
+    return NABTO_EC_OK;
+}
+
 
 bool nm_libevent_init_mdns_ipv6_socket(int sock)
 {
