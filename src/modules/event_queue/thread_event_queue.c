@@ -39,11 +39,11 @@ struct np_event_queue thread_event_queue_get_impl(struct thread_event_queue* que
     return eq;
 }
 
-void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts)
+void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* coreMutex, struct np_timestamp* ts)
 {
     nm_event_queue_init(&queue->eventQueue);
     queue->stopped = false;
-    queue->mutex = mutex;
+    queue->coreMutex = coreMutex;
     queue->ts = *ts;
     queue->queueThread = NULL;
     queue->queueMutex = nabto_device_threads_create_mutex();
@@ -175,9 +175,9 @@ void* queue_thread(void* data)
 
 
         if (event != NULL) {
-            nabto_device_threads_mutex_lock(queue->mutex);
+            nabto_device_threads_mutex_lock(queue->coreMutex);
             event->cb(event->data);
-            nabto_device_threads_mutex_unlock(queue->mutex);
+            nabto_device_threads_mutex_unlock(queue->coreMutex);
         }
 
 

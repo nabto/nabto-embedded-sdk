@@ -25,7 +25,13 @@ struct np_platform;
 
 struct thread_event_queue {
     struct nabto_device_thread* queueThread;
-    struct nabto_device_mutex* mutex;
+    // coreMutex is used to synchronize all access to the core of the
+    // platform. The coreMutex needs to be taken before event
+    // callbacks is executed.
+    struct nabto_device_mutex* coreMutex;
+
+    // The queueMutex protects the queue, The queue post function can
+    // be called without the coreMutex being taken.
     struct nabto_device_mutex* queueMutex;
     struct nabto_device_condition* condition;
     struct nm_event_queue eventQueue;
@@ -33,7 +39,7 @@ struct thread_event_queue {
     bool stopped;
 };
 
-void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* mutex, struct np_timestamp* ts);
+void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* coreMutex, struct np_timestamp* ts);
 
 void thread_event_queue_deinit(struct thread_event_queue* queue);
 

@@ -31,9 +31,9 @@ class TestPlatformSelectUnix : public TestPlatform {
     }
 
     ~TestPlatformSelectUnix() {
-        nabto_device_threads_free_mutex(mutex_);
         stop();
         deinit();
+        nabto_device_threads_free_mutex(mutex_);
     }
 
     virtual void init()

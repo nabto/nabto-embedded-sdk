@@ -17,9 +17,9 @@ int main()
 
     NabtoDeviceError ec = nabto_device_future_wait(future);
     if (ec == NABTO_DEVICE_EC_OK) {
-        printf("Event queue test has passed");
+        printf("Event queue test has passed\n");
     } else {
-        printf("Event queue test has failed");
+        printf("Event queue test has failed\n");
     }
 
     nabto_device_future_free(future);

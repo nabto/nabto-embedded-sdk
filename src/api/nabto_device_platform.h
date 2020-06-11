@@ -13,10 +13,10 @@ struct nabto_device_context;
  * This function is called from the nabto_device_new function.
  *
  * @param pl  The platform to initialize.
- * @param mutex  The mutex which is used to synchronize calls to functions in the `nabto_device.h` api and the internal event queue.
+ * @param coreMutex  The mutex which is used to synchronize calls to functions in the `nabto_device.h` api and the internal event queue, hence all functionality in the core is protected by this mutex.
  * @return NABTO_EC_OK  iff the platform is initialized.
  */
-np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* mutex);
+np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* coreMutex);
 
 /**
  * Deinit a platform, this function is called from the nabto_device_free function.
