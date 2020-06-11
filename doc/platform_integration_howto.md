@@ -432,12 +432,118 @@ So the overall data structure and flow looks something like this:
 <img border="1" src="images/udp_tcp_functions_module.svg">
 </p>
 
+Lets look at the implementation of the `create` function in the tcp module.
+
+```
+np_error_code create(struct np_tcp* obj, struct np_tcp_socket** sock)
+{
+    struct nm_select_unix* selectCtx = obj->data;
+    struct np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
+    s->fd = -1;
+    *sock = s;
+    s->selectCtx = selectCtx;
+
+    nn_llist_append(&selectCtx->tcpSockets, &s->tcpSocketsNode, s);
+
+    s->aborted = false;
+    return NABTO_EC_OK;
+}
+```
+
+Only two things happens. 
+
+1. Basic initialisation of the `nm_tcp_socket` structure 
+2. The structure is appended onto `tcpSockets` list (to be a candidate for `select`, if certain extra requirements is met)
+
+Let's look at how the `async_read` function then uses this strucuture:
+
+```
+void async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferSize, size_t* readLength, struct np_completion_event* completionEvent)
+{
+    if (sock->aborted) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+        return;
+    }
+    if (sock->read.completionEvent != NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
+    sock->read.buffer = buffer;
+    sock->read.bufferSize = bufferSize;
+    sock->read.readLength = readLength;
+    sock->read.completionEvent = completionEvent;
+    nm_select_unix_notify(sock->selectCtx);
+}
+```
+
+The most important line to notice is `sock->read.completionEvent = completionEvent;` which will be better understood by looking at how to module is building the fdset for select:
+
+```
+void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
+{
+    struct np_tcp_socket* s;
+    NN_LLIST_FOREACH(s, &ctx->tcpSockets)
+    {
+        if (s->read.completionEvent != NULL) {
+            FD_SET(s->fd, &ctx->readFds);
+            ctx->maxReadFd = NP_MAX(ctx->maxReadFd, s->fd);
+        }
+        if (s->write.completionEvent != NULL || s->connect.completionEvent != NULL) {
+            FD_SET(s->fd, &ctx->writeFds);
+            ctx->maxWriteFd = NP_MAX(ctx->maxWriteFd, s->fd);
+        }
+    }
+}
+```
+
+So by setting the `read.completionEvent` pointer, now the socket will be present in the FD fileset for select (`readFds`).
+
+At some point (an execise for the reader to look into), `select` has been called and returned with something to read for the system. This will then contribute to a call to the `nm_select_unix_tcp_handle_select` function.
 
 
+```
+void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
+{
+    struct np_tcp_socket* s;
+    NN_LLIST_FOREACH(s, &ctx->tcpSockets)
+    {
+        if (FD_ISSET(s->fd, &ctx->readFds)) {
+            tcp_do_read(s);
+        }
+        if (FD_ISSET(s->fd, &ctx->writeFds)) {
+            if (s->connect.completionEvent) {
+                is_connected(s);
+            }
+            if (s->write.completionEvent) {
+                tcp_do_write(s);
+            }
+        }
+    }
+}
+```
 
+Here the `tcp_do_read(s)` will be triggered and if we follow this:
 
+```
+void tcp_do_read(struct np_tcp_socket* sock)
+{
+    if (sock->read.completionEvent == NULL) {
+        return;
+    }
 
+    np_error_code ec = tcp_do_read_ec(sock);
 
+    if (ec != NABTO_EC_AGAIN) {
+        struct np_completion_event* ev = sock->read.completionEvent;
+        sock->read.completionEvent = NULL;
+        np_completion_event_resolve(ev, ec);
+    }
+}
+```
+
+It is obvious that the completion event will be resolved once something is available and read on the socket.
+
+It should be possible to port the unix select implementation to other systems that offers threads and select functionallity. An example is the Nabto5 ESP-IDF implementation which is a platform for the ESP32 WIFI modules. The only differnce
 
 
 # Integration procedure
