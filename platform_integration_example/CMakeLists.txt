@@ -23,6 +23,7 @@ target_link_libraries( nabto_device_select_unix
   nm_mdns
   nm_unix_timestamp
   nm_unix_dns
+  nm_unix
   nm_communication_buffer
   nm_tcp_tunnel
   3rdparty_mbedtls

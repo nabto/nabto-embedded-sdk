@@ -21,31 +21,8 @@
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 
-struct select_unix_platform;
-
-static void stop_network_thread(struct select_unix_platform* platform);
-static void deinit_network_thread(struct select_unix_platform* platform);
-static np_error_code run_network_thread(struct select_unix_platform* platform);
-static void* network_thread(void* data);
-
 struct select_unix_platform
 {
-    /**
-     * a reference to the platform. The np_platform is owned by the NabtoDevice object.
-     */
-    struct np_platform* pl;
-
-    /**
-     * The network thread is used for running the select loop.
-     */
-    struct nabto_device_thread* networkThread;
-
-    /**
-     * This mutex is used for protecting the system such that only one
-     * thread can make calls to the core at a time.
-     */
-    struct nabto_device_mutex* mutex;
-
     /**
      * The select unix module.
      */
@@ -82,10 +59,9 @@ struct select_unix_platform
  * <platform/np_platform.h> for a list of modules required for a
  * platform.
  */
-np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex)
+np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* coreMutex)
 {
     struct select_unix_platform* platform = calloc(1, sizeof(struct select_unix_platform));
-    platform->mutex = eventMutex;
     platform->stopped = false;
 
     /**
@@ -95,7 +71,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     nm_select_unix_init(&platform->selectUnix);
 
     // Further the select_unix module needs to be run by a thread
-    run_network_thread(platform);
+    nm_select_unix_run(&platform->selectUnix);
 
     nm_unix_dns_resolver_init(&platform->dnsResolver);
     nm_unix_dns_resolver_run(&platform->dnsResolver);
@@ -110,7 +86,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // event queue executes events and allow events to be posted to
     // it. The event queue depends on the timestamp implementation hence it is
     // initialized a bit later.
-    thread_event_queue_init(&platform->eventQueue, eventMutex, &timestampImpl);
+    thread_event_queue_init(&platform->eventQueue, coreMutex, &timestampImpl);
     thread_event_queue_run(&platform->eventQueue);
     struct np_event_queue eventQueueImpl = thread_event_queue_get_impl(&platform->eventQueue);
 
@@ -151,7 +127,6 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     nm_mdns_deinit(&platform->mdnsServer);
     thread_event_queue_deinit(&platform->eventQueue);
     nm_unix_dns_resolver_deinit(&platform->dnsResolver);
-    deinit_network_thread(platform);
     nm_select_unix_deinit(&platform->selectUnix);
     free(platform);
 }
@@ -164,43 +139,6 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
     struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
     platform->stopped = true;
-    stop_network_thread(platform);
+    nm_select_unix_stop(&platform->selectUnix);
     thread_event_queue_stop_blocking(&platform->eventQueue);
-}
-
-np_error_code run_network_thread(struct select_unix_platform* platform)
-{
-    platform->networkThread = nabto_device_threads_create_thread();
-    np_error_code ec = nabto_device_threads_run(platform->networkThread, network_thread, platform);
-    return ec;
-}
-
-void deinit_network_thread(struct select_unix_platform* platform)
-{
-    nabto_device_threads_free_thread(platform->networkThread);
-}
-
-void stop_network_thread(struct select_unix_platform* platform)
-{
-    nm_select_unix_notify(&platform->selectUnix);
-    nabto_device_threads_join(platform->networkThread);
-    nm_select_unix_notify(&platform->selectUnix);
-}
-
-void* network_thread(void* data)
-{
-    struct select_unix_platform* platform = data;
-
-    while(true) {
-        int nfds;
-
-        if (platform->stopped) {
-            return NULL;
-        } else {
-            // Wait for events.
-            nfds = nm_select_unix_inf_wait(&platform->selectUnix);
-            nm_select_unix_read(&platform->selectUnix, nfds);
-        }
-    }
-    return NULL;
 }

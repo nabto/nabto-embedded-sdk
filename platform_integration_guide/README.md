@@ -22,8 +22,25 @@ platform.
 
 ## Step 4
 
-The task for step 4 is to implement timestamps for the device.
+The task for step 4 is to implement timestamps.
 
 ## Step 5
 
-The task for step 5 is to implement an event queue for the device.
+The task for step 5 is to implement an event queue.
+
+## Step 6
+
+The task here is to implement dns functionality.
+
+## Step 7
+
+The task is to implement UDP and TCP networking.
+
+## Step 8
+
+The task is to implement functionality such that the local ip of the
+system can be retrieved.
+
+## Step 9
+
+The task is to implement mdns functionality.

@@ -59,31 +59,14 @@ class TestPlatformSelectUnix : public TestPlatform {
         nm_unix_dns_resolver_run(&dns_);
         thread_event_queue_run(&eventQueue_);
 
-        networkThread_ = std::make_unique<std::thread>([this](){
-                networkThread();
-            });
+        nm_select_unix_run(&selectCtx_);
     }
 
     void deinit()
     {
         nm_unix_dns_resolver_deinit(&dns_);
         nm_select_unix_deinit(&selectCtx_);
-        if (networkThread_) {
-            networkThread_->join();
-        }
         thread_event_queue_deinit(&eventQueue_);
-    }
-
-    void networkThread()
-    {
-        int nfds;
-        while (true) {
-            if (stopped_) {
-                return;
-            }
-            nfds = nm_select_unix_inf_wait(&selectCtx_);
-            nm_select_unix_read(&selectCtx_, nfds);
-        }
     }
 
     virtual void stop()
@@ -92,6 +75,7 @@ class TestPlatformSelectUnix : public TestPlatform {
             return;
         }
         stopped_ = true;
+        nm_select_unix_stop(&selectCtx_);
         nm_select_unix_notify(&selectCtx_);
         thread_event_queue_stop_blocking(&eventQueue_);
     }
@@ -103,7 +87,6 @@ class TestPlatformSelectUnix : public TestPlatform {
     struct np_platform pl_;
     struct nm_select_unix selectCtx_;
     bool stopped_ = false;
-    std::unique_ptr<std::thread> networkThread_;
     struct nm_unix_dns_resolver dns_;
     struct thread_event_queue eventQueue_;
     struct nabto_device_mutex* mutex_;

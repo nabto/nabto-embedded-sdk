@@ -8,6 +8,8 @@
 
 #include <nn/llist.h>
 
+#include <pthread.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,6 +67,9 @@ struct nm_select_unix {
     int pipefd[2];
     struct nn_llist udpSockets;
     struct nn_llist tcpSockets;
+
+    pthread_t thread;
+    bool stopped;
 };
 
 /**
@@ -73,10 +78,9 @@ struct nm_select_unix {
 np_error_code nm_select_unix_init(struct nm_select_unix* ctx);
 void nm_select_unix_deinit(struct nm_select_unix* ctx);
 
-int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms);
-int nm_select_unix_inf_wait(struct nm_select_unix* ctx);
+void nm_select_unix_run(struct nm_select_unix* ctx);
+void nm_select_unix_stop(struct nm_select_unix* ctx);
 
-void nm_select_unix_read(struct nm_select_unix* ctx, int nfds);
 
 /**
  * Functions only used internally in the module

@@ -13,9 +13,7 @@
 #include <errno.h>
 #include <string.h>
 
-#if defined(HAVE_NETINET_TCP_H)
 #include <netinet/tcp.h>
-#endif
 
 #define LOG NABTO_LOG_MODULE_TCP
 

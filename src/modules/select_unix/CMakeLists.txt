@@ -8,4 +8,4 @@ set(select_unix_src
 
 add_library( nm_select_unix STATIC "${select_unix_src}")
 
-target_link_libraries(nm_select_unix nm_unix np_platform)
+target_link_libraries(nm_select_unix np_platform)
