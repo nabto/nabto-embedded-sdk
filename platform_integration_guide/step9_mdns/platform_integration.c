@@ -70,13 +70,18 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
     struct platform_data* platform = nabto_device_integration_get_platform_data(device);
 
+    nm_mdns_server_deinit(&platform->mdnsServer);
+
     nm_unix_dns_resolver_deinit(&platform->dnsResolver);
 
     thread_event_queue_deinit(&platform->eventQueue);
+
 }
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
     struct platform_data* platform = nabto_device_integration_get_platform_data(device);
+
+    nm_mdns_server_stop(&platform->mdnsServer);
 
     // The event queue needs to be stopped, but we need to wait for
     // outstanding events to be finished first, hence the blocking
