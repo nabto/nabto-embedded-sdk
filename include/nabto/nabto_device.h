@@ -233,7 +233,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
 
 /**
- * Set the server port. If not set it will default to 4433.
+ * Set the server port. If not set it will default to 443.
  *
  * @param device [in]  The device
  * @param port [in]    The port number to set.

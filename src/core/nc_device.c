@@ -80,7 +80,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     nn_llist_init(&device->eventsListeners);
     nn_llist_init(&device->deviceEvents);
 
-    device->serverPort = 4433;
+    device->serverPort = 443;
 
     ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, &nc_device_udp_bound_cb, device);
     if (ec != NABTO_EC_OK) {
