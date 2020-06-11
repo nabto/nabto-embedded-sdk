@@ -180,8 +180,9 @@ BOOST_TEST_DONT_PRINT_LOG_VALUE( std::unique_ptr<nabto::test::TestPlatform>)
 BOOST_AUTO_TEST_SUITE(tcp)
 
 BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
-BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatform::multi(), tp)
+BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatformFactory::multi(), tpf)
 {
+    auto tp = tpf->create();
     auto ioService = IoService::create("test");
     test::TcpEchoServer tcpServer(ioService->getIoService(), nullptr);
 
@@ -192,8 +193,9 @@ BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatform::multi(), tp)
 }
 
 BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
-BOOST_DATA_TEST_CASE(close, nabto::test::TestPlatform::multi(), tp)
+BOOST_DATA_TEST_CASE(close, nabto::test::TestPlatformFactory::multi(), tpf)
 {
+    auto tp = tpf->create();
     auto ioService = IoService::create("test");
     test::TcpEchoServer tcpServer(ioService->getIoService(), nullptr);
 

@@ -116,10 +116,12 @@ class UdpEchoClientTest {
 BOOST_AUTO_TEST_SUITE(udp)
 
 BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
-BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatform::multi(), tp)
+BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatformFactory::multi(), tpf)
 {
     auto ioService = nabto::IoService::create("test");
     auto udpServer = nabto::test::UdpEchoServer::create(ioService->getIoService());
+
+    auto tp = tpf->create();
 
     nabto::test::UdpEchoClientTest client(*tp);
     client.start(udpServer->getPort());

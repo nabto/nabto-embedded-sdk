@@ -14,6 +14,8 @@
 namespace nabto {
 namespace test {
 
+
+
 std::unique_ptr<TestPlatform> TestPlatform::create()
 {
 #if defined(HAVE_LIBEVENT)
@@ -26,16 +28,18 @@ std::unique_ptr<TestPlatform> TestPlatform::create()
 #endif
 }
 
-std::vector<std::shared_ptr<TestPlatform> > TestPlatform::multi()
+std::vector<std::shared_ptr<TestPlatformFactory> > TestPlatformFactory::multi()
 {
-    std::vector<std::shared_ptr<TestPlatform> > platforms;
+    std::vector<std::shared_ptr<TestPlatformFactory> > factories;
 #if defined(HAVE_LIBEVENT)
-    platforms.push_back(std::make_shared<TestPlatformLibevent>());
+    factories.push_back(std::make_shared<TestPlatformLibeventFactory>());
 #endif
 #if defined(HAVE_SELECT_UNIX)
-    platforms.push_back(std::make_shared<TestPlatformSelectUnix>());
+    factories.push_back(std::make_shared<TestPlatformSelectUnixFactory>());
 #endif
-    return platforms;
+    return factories;
+
 }
+
 
 } }

@@ -13,8 +13,9 @@
 BOOST_AUTO_TEST_SUITE(timestamp)
 
 BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
-BOOST_DATA_TEST_CASE(expire, nabto::test::TestPlatform::multi(), tp)
+BOOST_DATA_TEST_CASE(expire, nabto::test::TestPlatformFactory::multi(), tps)
 {
+    auto tp = tps->create();
     struct np_platform* pl = tp->getPlatform();
     struct np_timestamp* ts = &pl->timestamp;
     uint32_t now = np_timestamp_now_ms(ts);

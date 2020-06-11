@@ -157,23 +157,26 @@ BOOST_AUTO_TEST_SUITE(dns)
 
 BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
 
-BOOST_DATA_TEST_CASE(resolve_v4, nabto::test::TestPlatform::multi(), tp)
+BOOST_DATA_TEST_CASE(resolve_v4, nabto::test::TestPlatformFactory::multi(), tpf)
 {
+    auto tp = tpf->create();
     {
         DnsTestV4 dt(*tp);
         dt.start();
     }
 }
 
-BOOST_DATA_TEST_CASE(resolve_v6, nabto::test::TestPlatform::multi(), tp)
+BOOST_DATA_TEST_CASE(resolve_v6, nabto::test::TestPlatformFactory::multi(), tpf)
 {
+    auto tp = tpf->create();
     {
         DnsTestV6 dt(*tp);
         dt.start();
     }
 }
-BOOST_DATA_TEST_CASE(resolve_not_found, nabto::test::TestPlatform::multi(), tp)
+BOOST_DATA_TEST_CASE(resolve_not_found, nabto::test::TestPlatformFactory::multi(), tpf)
 {
+    auto tp = tpf->create();
     {
         DnsTestNoSuchDomain dt(*tp);
         dt.start();

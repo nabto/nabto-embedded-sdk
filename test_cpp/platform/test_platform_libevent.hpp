@@ -106,4 +106,12 @@ class TestPlatformLibevent : public TestPlatform {
     std::promise<void> stoppedPromise_;
 };
 
+class TestPlatformLibeventFactory : public TestPlatformFactory {
+ public:
+    std::shared_ptr<TestPlatform> create()
+    {
+        return std::make_shared<TestPlatformLibevent>();
+    }
+};
+
 } } // namespace

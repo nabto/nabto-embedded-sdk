@@ -9,7 +9,14 @@ struct np_platform;
 namespace nabto {
 namespace test {
 
+class TestPlatform;
 
+class TestPlatformFactory {
+ public:
+    virtual ~TestPlatformFactory() {}
+    virtual std::shared_ptr<TestPlatform> create() = 0;
+    static std::vector<std::shared_ptr<TestPlatformFactory> > multi();
+};
 
 class TestPlatform {
  public:
@@ -17,7 +24,6 @@ class TestPlatform {
   * create an instance that matches the current system
   */
     static std::unique_ptr<TestPlatform> create();
-    static std::vector<std::shared_ptr<TestPlatform> > multi();
     virtual ~TestPlatform() {}
 
     virtual void run() = 0;

@@ -115,5 +115,11 @@ class TestPlatformSelectUnix : public TestPlatform {
     struct nabto_device_mutex* mutex_;
 };
 
+class TestPlatformSelectUnixFactory : public TestPlatformFactory {
+ public:
+    std::shared_ptr<TestPlatform> create() {
+        return std::make_shared<TestPlatformSelectUnix>();
+    }
+};
 
 } } // namespace
