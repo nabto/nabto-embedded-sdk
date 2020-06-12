@@ -581,7 +581,7 @@ The jobs of the MDNS discovery is:
 ### Requirement for Nabto Edge devices to be discovered via MDNS
 
 1. Provide discovable Service Type Identifier of : `_nabto._upd`
-2. Provide Text record with two key values
+2. Provide Text record with two key/values pairs:
     * `productid=<productId>`
     * `deviceid=<deviceId>`
 
