@@ -580,10 +580,10 @@ The jobs of the MDNS discovery is:
 
 ### Requirement for Nabto Edge devices to be discovered via MDNS
 
-> __1. Provide discovable Service Type Identifier of : `_nabto._upd`__
-> __2. Provide Text record with two key/values pairs:__
->    * __`productid=<productId>`__
->    * __`deviceid=<deviceId>`__
+> 1. Provide discovable Service Type Identifier of : `_nabto._upd`
+> 2. Provide Text record with two key/values pairs:
+>    * `productid=<productId>`
+>    * `deviceid=<deviceId>`
 
 The mDNS Instance Name of the device is not important since it basically is used to identify the device on the local network. Once a Nabto Edge connection has been established the client will lookup the device and product id and forwardly use those to locate and connect to the device.
 
