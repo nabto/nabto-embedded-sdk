@@ -98,6 +98,8 @@ The important file to examine is:
 
 This file links to all the basic files need for the Nabto Edge Platform. If your platform does not use cmake you will need to somehow copy the links to your IDE.
 
+Also the next steps will follow the structure of step2 of having a `basic_device_test.c` which is the test-runner (and the name will change for each step). Also the directory contains a `platform_integration.c` which is the platform bootstrap/setup (described [here](../doc/platform_integration_howto.md#apinabto_device_platformh). This file will contain more and more setup details regarding initialization of the system. You should be able to use `platform_integration.c` of higher steps (if the appropriate integration modules have been created and tested) for lower steps (ie. the `platform_integration.c` of step 8 should be able to be used in step 2).
+
 
 ## Step 3 - Logging
 
@@ -108,8 +110,9 @@ platform. This will be very usefull if something fails in the later step since y
 
 This is the first real integration module to be implemented.
 The task in this step is to implement timestamps.
+More detailed information about the [Timestamp Integration here](../doc/platform_integration_howto.md#example-of-a-simple-module---struct-np_timestamp_functions)
 
-[timestamp integration](../doc/platform_integration_howto.md#example-of-a-simple-module---struct-np_timestamp_functions)
+
 
 ## Step 5
 
