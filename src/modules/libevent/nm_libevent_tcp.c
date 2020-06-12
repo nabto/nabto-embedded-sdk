@@ -113,6 +113,7 @@ void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 
 void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
 {
+    NABTO_LOG_TRACE(LOG, "tcp_bufferevent_event_read");
     struct np_tcp_socket* sock = userData;
     if (sock->read.completionEvent != NULL) {
         size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
@@ -161,6 +162,7 @@ void resolve_tcp_write(struct np_tcp_socket* sock, np_error_code ec)
 
 void resolve_tcp_read(struct np_tcp_socket* sock, np_error_code ec)
 {
+    NABTO_LOG_TRACE(LOG, "resolve_tcp_read");
     if (sock->read.completionEvent != NULL) {
         struct np_completion_event* e = sock->read.completionEvent;
         sock->read.completionEvent = NULL;
@@ -242,7 +244,16 @@ void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLengt
     sock->read.bufferLength = bufferLength;
     sock->read.readLength = readLength;
 
-    bufferevent_enable(sock->bev, EV_READ);
+    size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
+    if (readDataSize > 0) {
+        *(sock->read.readLength) = readDataSize;
+        struct np_completion_event* e = sock->read.completionEvent;
+        sock->read.completionEvent = NULL;
+        bufferevent_disable(sock->bev, EV_READ);
+        np_completion_event_resolve(e, NABTO_EC_OK);
+    } else {
+        bufferevent_enable(sock->bev, EV_READ);
+    }
     return;
 }
 

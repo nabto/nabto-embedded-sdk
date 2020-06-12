@@ -80,7 +80,9 @@ np_error_code nm_select_unix_udp_create(struct np_udp* obj, struct np_udp_socket
     s->selectCtx = selectCtx;
     s->aborted = false;
 
+    nm_select_unix_lock(selectCtx);
     nn_llist_append(&selectCtx->udpSockets, &s->udpSocketsNode, s);
+    nm_select_unix_unlock(selectCtx);
 
     // add fd to select fd set.
     nm_select_unix_notify(selectCtx);
@@ -208,7 +210,9 @@ void nm_select_unix_udp_handle_event(struct np_udp_socket* sock)
 
 void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
 {
+    nm_select_unix_lock(sock->selectCtx);
     nn_llist_erase_node(&sock->udpSocketsNode);
+    nm_select_unix_unlock(sock->selectCtx);
 
     nm_select_unix_udp_abort(sock);
     shutdown(sock->sock, SHUT_RDWR);
@@ -219,7 +223,7 @@ void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
 void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
 {
     struct np_udp_socket* s;
-
+    nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->udpSockets)
     {
         if (s->recv.completionEvent && s->sock != -1) {
@@ -227,18 +231,21 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
             ctx->maxReadFd = NP_MAX(ctx->maxReadFd, s->sock);
         }
     }
+    nm_select_unix_unlock(ctx);
 }
 
 void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
     struct np_udp_socket* s;
 
+    nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->udpSockets)
     {
         if (s->sock != -1 && FD_ISSET(s->sock, &ctx->readFds)) {
             nm_select_unix_udp_handle_event(s);
         }
     }
+    nm_select_unix_unlock(ctx);
 }
 
 
