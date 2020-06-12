@@ -550,7 +550,17 @@ It should be possible to port the unix select implementation to other systems th
 
 One of the design goals of Nabto edge is to be highly responsive and thus not be blocking at any IO. Also it is a goal to not use too much memory (ie. to minimize callstacks). To do this an event queue is needed. The event queue preserves callstacks by executing new "events" from the same context. An example: If A computes data and then needs to call B who needs to call C who needs to call D, you will get a callstack of 4. If instead A computes the data and then tells the event queue to call B, the callstack will be flushed, B will then be called from the event queue and inform the event queue to call C, flush the stack and the event queue will call C etc. Also the event queue ensures that functions always are called from the same context (ie. the number of resources/mutex/locks aquired etc.).
 
-Fortunately the event queue can be 
+Fortunately the event queue only requires the basic functions from the thread interface, so if these functions already are supplied the event queue found in the modules directory can be used without any further adoption.
+But in the event that some systems can supply a highly optimized version or other reasons the interface has been exposed to that the integrator can chose.
+
+The event queue semantics if fairly simple. The user of the event queue can create a new event using the `create` function, suppling both a callback function (pointer) and a pointer to the user data that the callback should be invoked with. After this the user can call either a simple `post` by which the event queue will put the event on the internal queue for execution as soon as possible or `post_timed` which will also put the event on the internal queue but for execution after the supplied number of milliseconds has occured.
+
+<p align="center">
+<img border="1" src="images/event_queue.svg">
+</p>
+
+Since the event queue is already supplied, the interface will not be further elaborated.
+
 
 # Integration procedure
 
