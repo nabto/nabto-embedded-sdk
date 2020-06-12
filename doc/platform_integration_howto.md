@@ -706,4 +706,4 @@ Of course an integration procedure can be that all module functions are correctl
 
 Instead in Nabto Edge an integration procedure is laid out with supporting test code so that the integrator can create the integration interfaces one by one and get them tested. Thus once the overall integration is to be made, hopefully no errors (or only minor errors) will occur.
 
-More on this procedure can be found in the `nabto-embedded-sdk/platform_integration_guide` directory.
+More on this procedure can be found in the `nabto-embedded-sdk/platform_integration_steps` directory.
