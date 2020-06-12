@@ -620,25 +620,25 @@ Example scan for all nabto edge devices on the local network.
 C:\>dns-sd -B _nabto._udp
 Browsing for _nabto._udp
 Timestamp     A/R Flags if Domain                    Service Type              Instance Name
- 4:22:42.514  Add     2  4 local.                    _nabto._udp.              de-nhbpwxcx
+ 4:22:42.514  Add     2  4 local.                    _nabto._udp.              240ac4c1bc58
 ```
 
-Example show information about a specific device, the important
+Example: Show information about a specific device, the important
 information is the txt records and the port number.
 
 ```
-C:\>dns-sd -L de-nhbpwxcx _nabto._udp
-Lookup de-nhbpwxcx._nabto._udp.local
- 4:23:48.795  de-nhbpwxcx._nabto._udp.local. can be reached at de-nhbpwxcx.local.:49654 (interface 4)
+C:\>dns-sd -L 240ac4c1bc58 _nabto._udp
+Lookup 240ac4c1bc58._nabto._udp.local
+ 4:23:48.795  240ac4c1bc58._nabto._udp.local. can be reached at 240ac4c1bc58.local.:49654 (interface 4)
  deviceId=de-nhbpwxcx productId=pr-bqyh43fb
 ```
 
 Example: Get the ips for a device using dns-sd.
 ```
-C:\>dns-sd -G v4v6 de-nhbpwxcx.local.
+C:\>dns-sd -G v4v6 240ac4c1bc58.local.
 Timestamp     A/R Flags if Hostname                  Address                                      TTL
- 4:33:27.514  Add     3  4 de-nhbpwxcx.local.        192.168.123.117                              120
- 4:33:27.514  Add     2  4 de-nhbpwxcx.local.        2001:DB8:1234:0003:8D41:1F5C:3C08:2D3F%<0>   120
+ 4:33:27.514  Add     3  4 240ac4c1bc58.local.       192.168.123.117                              120
+ 4:33:27.514  Add     2  4 240ac4c1bc58.local.       2001:DB8:1234:0003:8D41:1F5C:3C08:2D3F%<0>   120
 ```
 
 Using this information we know that the device with the product id
