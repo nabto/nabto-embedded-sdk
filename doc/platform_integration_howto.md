@@ -553,7 +553,7 @@ One of the design goals of Nabto edge is to be highly responsive and thus not be
 Fortunately the event queue only requires the basic functions from the thread interface, so if these functions already are supplied the event queue found in the modules directory can be used without any further adoption.
 But in the event that some systems can supply a highly optimized version or other reasons the interface has been exposed to that the integrator can chose.
 
-The event queue semantics if fairly simple. The user of the event queue can create a new event using the `create` function, suppling both a callback function (pointer) and a pointer to the user data that the callback should be invoked with. After this the user can call either a simple `post` by which the event queue will put the event on the internal queue for execution as soon as possible or `post_timed` which will also put the event on the internal queue but for execution after the supplied number of milliseconds has occured.
+The event queue semantics if fairly simple. The user of the event queue can create a new event using the `create` function, suppling both a callback function (pointer) and a pointer to the user data that the callback should be invoked with. After this the user can call either a simple `post` by which the event queue will put the event on the internal queue for execution as soon as possible or `post_timed` which will also put the event on the internal queue but for execution after the supplied number of milliseconds has occured. In both circumstances af calling `post` or `post_timed` the execution thread will return to the user context.
 
 <p align="center">
 <img border="1" src="images/event_queue.svg">
