@@ -578,6 +578,16 @@ The jobs of the MDNS discovery is:
   2. Tell the client at which ip and port the Nabto EDGE service is
      running on the device.
 
+### Requirement for Nabto Edge devices to be discovered via MDNS
+
+1. Provide discovable Service Type Identifier of : `_nabto._upd`
+2. Provide Text recoderd with two key values
+  * productid=<productId>
+  * deviceid=<deviceId>`
+
+
+
+
 mDNS service discovery is built into the Nabto EDGE platform through
 the `np_mdns` interface. This interface have one function.
 
