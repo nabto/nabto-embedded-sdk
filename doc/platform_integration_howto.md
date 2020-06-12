@@ -13,12 +13,14 @@ Nabto Edge needs to know about the underlying platform it is running on.
 The way to "inform" Nabto Edge about this platform is to implement a list
 of functions and supply Nabto Edge with these functions. The functions are defined in .h files, function pointers are supplied to Nabto Edge via setup of structs.
 
-Details on these structs can be found in `src/platform/interface/`. The integration interface consists of three types:
+Details on these structs can be found in `src/platform/interface/`.
 
-1. `api/nabto_device_platform.h` (not shown in the drawing): used to bootstrap and teardown the integraton interfaces.
-2. `api/nabto_device_threads.h` and `api/nabto_device_logging.h`: Log and threads functions which are a list of functions linked into the target that the Nabto platform uses at runtime.
-3. `api/nabto_device_integration.h`: Functions setup via structs used by the platform at runtime to interact with the underlying operating system (or/and hardware). The setup/teardown functions mentioned above controls the lifecycle.
-
+The integration interface consist of three types. First type (nabto_device_platform.h which is not
+in the drawing) which is a list of functions that are only used to bootstrap and teardown the
+integration interfaces. Another type (log and threads) which is a list of functions linked into the
+target that the Nabto platform uses at runtime. The last type is a type of functions and possible
+user data setup via structs and initialized and torn down by the first mentioned functions and used
+by the platform at runtime to interact with the underlying operating system (or/and hardware).
 
 For Nabto to run on a specific target it needs to know about:
 
@@ -46,39 +48,38 @@ Once this is done, the Nabto Edge system needs to be supplied with knowledge of 
 This file contains 3 functions: an init, a deinit and a stop
 function. That is, functions needed for bootstrap and teardown of the system.
 These functions are called when a device is created,
-destroyed and stopped. The init function should call the appropriate setterfunctions to setup the integration modules for the platform.
+destroyed and stopped. The init function should call the appropriate setter functions to setup the integration modules for the platform.
 
 ### `api/nabto_device_integration.h`
 
 The purpose of these functions is to be called from the `nabto_device_platform_init` function to setup the module struct of
-`src/platform/interfaces/*.h` (described later) via apropriate setter functions and to
+`src/platform/interfaces/*.h` (described later) via appropriate setter functions and to
 provide the overall functionality which is required to run on a specific platform.
 
 ### Understanding nabto_device_platform.h and nabto_device_device_integration.h setup in an integration
 
-For better understanding the link between the initialisation of a device and the platform integration please refer to the next diagram.
+For better understanding the link between the initialization of a device and the platform integration, please refer to the next diagram.
 
 <p align="center">
 <img border="1" src="images/nabto_device_platform_cdiag.svg">
 </p>
 
-The call sequence and initialization of the integration modules will start when the main program initializes a new NabtoDevice, something like:
+The call sequence and initialization of the integration modules will start when the main program initializes a new `NabtoDevice`, something like:
 
 ```
 NabtoDevice* device = nabto_device_new();
 ```
 
-This will at some point call the initialization of the integration interface (`nabto_devcie_platform_init`) which has the responsibillity to setup the different integration modules (tcp, udp, mdns, timestamp etc.) via calling the appropriate nabto_device_interation_set_<modulename>_impl().
+This will at some point call the initialization of the integration interface (`nabto_devcie_platform_init`) which has the responsibillity to setup the different integration modules (tcp, udp, mdns, timestamp etc.) via calling the appropriate `nabto_device_interation_set_<modulename>_impl()`.
 
 
+#### Platform specific data utility functions `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data`
 
-#### Platform specific data utillity functions `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data`
+When setting up the integration modules, the integrator will probably need to allocate different types of resources. These resources will need to be deallocated later on when/if the Nabto platform is stopped.
 
-When setting up the integration modules, the integrator will probably need allocate different types of resources. These resources will need to be deallocated later on when/if the Nabto platform is stopped.
+This can be accomplished by setting a pointer to the user specified data via the `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data` functions which are reachable inside both the `nabto_device_platform_init`, `nabto_device_platform_init` and `nabto_devcie_platform_stop` function. This way a pointer to the data can be created and stored in init and deallocated in `deinit` and `stop`.
 
-This can be accomplished by setting a pointer to the user specified data via the `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data` functions which are reachable inside both the the `nabto_device_platform_init`, `nabto_device_platform_init` and `nabto_devcie_platform_stop` function. This way a pointer to the data can be created and stored in init and deallocated in deinit and stop.
-
-If the integration is sure that only on instance of the nabto device is started on a specific device (via `nabto_device_new()`) this user specified data could reside in a static single allocated location (and there will be no need for either the `nabto_device_integration_set_platform_data` or `nabto_device_integration_get_platform_data`) but for the general case multiple devices could run inside the same environment and memory, so the functions are supplied.
+If the integration is sure that only one instance of the nabto device is started on a specific device (via `nabto_device_new()`), this user specified data could reside in a static single allocated location (and there will be no need for either the `nabto_device_integration_set_platform_data` or `nabto_device_integration_get_platform_data`). For the general case multiple devices could run inside the same environment and memory, so the functions are supplied.
 
 
 ### `api/nabto_device_threads.h`
@@ -86,11 +87,15 @@ If the integration is sure that only on instance of the nabto device is started 
 The api `nabto/nabto_device.h` is a thread safe API, which also
 exposes functionality which can block the system. The system currently
 also need to have a thread implementation. The thread
-abstraction defines threads, muteces and condition variables. See
-the header file for more information or take a look at the existing
-implementations in the `src/modules/threads` folder.
+abstraction defines threads, muteces and condition variables.
 
-For Nabto Edge to run in it's current state the system needs an threads implementation, condition variables and mutexes. It is planned (the platform is made ready for) that in a future versions the platform can be run onto a single thread platform (which is the reason why integrations dependent on system calls which are explained later on are async and/or nonblocking).
+See the header file for more information or take a look at the existing implementations in the
+`src/modules/threads` folder.
+
+Currently, for Nabto Edge to run, the system needs a threads implementation, condition variables and
+muteces. It is planned (the platform is made ready for) that in future versions the platform can be
+run onto a single-thread platform. This is the reason why integrations dependent on system calls are
+asynchronous / nonblocking as explained later.
 
 #### Threads
 
@@ -104,17 +109,17 @@ np_error_code nabto_device_threads_run(struct nabto_device_thread* thread,
                                        void *(*run_routine) (void *), void* data);
 
 ```
-The above functions should somewhat already be understood by the integrator otherwise it would be a good idea to explore pthreads interface on Linux.
+The above functions are assumed to be well-known by the integrator - if not the case, it would be a good idea to explore pthreads interface on Linux.
 
-* nabto_device_threads_create_thread : Shall allocate the needed resources for a new thread
-* nabto_device_threads_free_thread : Shall deallocate the resources allocated in the `create` function
-* nabto_device_threads_join : Shall make the current caller thread join the to the function given thread
-* nabto_device_threads_run : Shall start the given thread on the given function with the given data
+* `nabto_device_threads_create_thread` : Shall allocate the needed resources for a new thread
+* `nabto_device_threads_free_thread` : Shall deallocate the resources allocated in the `create` function
+* `nabto_device_threads_join` : Shall make the current caller thread join the to the function given thread
+* `nabto_device_threads_run` : Shall start the given thread on the given function with the given data
 
 
 #### Condition variables
 
-Also the Nabto platform is dependent on condition variables for synchronization between threads.
+The Nabto platform is dependent on condition variables for synchronization between threads.
 The functions needed at link time is:
 
 ```
@@ -132,7 +137,7 @@ The implementation should follow the pthread semantics of the similar functions.
 
 #### Mutex
 
-And last the Nabto platform needs an mutex abstraction to synchronize access to shared memory and variables.
+The Nabto platform needs an mutex abstraction to synchronize access to shared memory and variables.
 The function provided by the integration and needed at link time is:
 
 ```
@@ -142,17 +147,19 @@ void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex);
 void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex);
 ```
 
-Just like the mutex abstraction, the function should follow the same semantik as in pthreads mutex abstraction.
+Just like the condition abstraction, the function should follow the same semantics as the pthreads mutex abstraction.
 
 ## Example integration
 
 In the directory `platform_integration_example` an example integration can be viewed. This example works on UNIX systems so
-modules which works on such a system has been choosen.
+modules which works on such a system have been choosen.
 
 ## Example of a simple module - struct np_timestamp_functions
 
-This is one of the most simple integration interfaces, so it is a good place to start.
-This interface tells Nabto Edge how to get the current time from the system. This is used to keep track of retransmissions of internet communication etc. The interface can be found in `nabto-embedded-sdk/src/platform/interfaces/np_timestamp.h` and looks like this:
+This is one of the most simple integration interfaces, so it is a good place to start.  This
+interface tells Nabto Edge how to get the current time from the system. This is used to keep track
+of retransmissions of internet communication etc. The interface can be found in
+`nabto-embedded-sdk/src/platform/interfaces/np_timestamp.h` and looks like this:
 
 ```
 struct np_timestamp_functions {
@@ -208,7 +215,8 @@ struct np_timestamp nm_unix_ts_create()
     return ts;
 }
 ```
-(note this implementation of np_timestamp does not use the user supplied data for anything since there's no need for it specific implmentation.)
+
+Note this implementation of np_timestamp does not use the user supplied data for anything.
 
 Calling the function above would setup a np_timestamp like this:
 
@@ -231,9 +239,9 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 }
 ```
 
-Not that the `nabto_device_integration_set_timestamp_impl` functions all copies the implementation structs even though they are pointers (to be sure that integrators does not make a mistake of deallocating it too soon).
+Not that the `nabto_device_integration_set_timestamp_impl` functions all copy the implementation structs even though they are pointers (to be sure that integrators do not make a mistake of deallocating them too soon).
 
-Note: if the ts.data is initialized with allocated user data, this data must be deallocated when the `nabto_device_platform_deinit` is called. Pointers to the allocated user data can be collected in a struct or similar and be kept via the the `nabto_device_integration_set_platform_data` utillity function and be reached by using the identical get function (see earlier explanation).
+Note: if the `ts.data` is initialized with allocated user data, this data must be deallocated when the `nabto_device_platform_deinit` is called. Pointers to the allocated user data can be collected in a struct or similar and be kept via the the `nabto_device_integration_set_platform_data` utility function and be reached by using the identical get function (see earlier explanation).
 
 ## Example of a module with medium complexity - struct np_dns_functions
 
@@ -281,12 +289,14 @@ struct np_dns_functions {
 
 };
 ```
-Basically two functions above is doing somewhat the same, to lookup a hostname (`char* host`) and to return the resolved ip addresses in an given array (`struct np_ip_address* ips`) of a given size (`size_t ipsSize` ie. the maximal ip adresses that can be returned in the array) and return the number of resolved addresses (`size_t* ipsResolved`).
+
+Basically two functions above are doing somewhat the same: Lookup a hostname (`char* host`) and return the resolved ip addresses in a given array (`struct np_ip_address* ips`) of a given size (`size_t ipsSize` ie. the maximal ip adresses that can be returned in the array) and return the number of resolved addresses (`size_t* ipsResolved`).
+
 So far so good, not much different than the timestamp interface. But since getting a timestamp is a local operation that generally is fast and non blocking and that the Nabto platform has to guarantee not to be blocking the system, the timestamp interface doesn't need more specification.
 
 The initialization etc. is not described here as it is the same as timestamp.
 
-The important difference to timestamp implementation is the `np_completion_event` and `async` notation. Since DNS resolving can be a blocking function with possible very long timeouts special care needs to be done. This is done via an async pattern using completion events. For the integrator the only important function is the `np_completion_event_resolve` :
+The important difference to the timestamp implementation is the `np_completion_event` and `async` notation. Since DNS resolving can be a blocking function with possible very long timeouts special care needs to be taken. This is done via an async pattern using completion events. For the integrator, the only important function is the `np_completion_event_resolve` :
 
 ```
 /**
@@ -300,13 +310,13 @@ The important difference to timestamp implementation is the `np_completion_event
 void np_completion_event_resolve(struct np_completion_event* completionEvent, np_error_code ec);
 ```
 
-The semantic of async functions is that they are called with a specific request (hostname and array to return resolved ip addresses) and the function can then start an asynchronous operation and return the execution thread back to the platform. But once the function has computed the result of the request, the contract is that the function then needs to call `resolve` function on the given `np_completion_event`.
+The semantics of async functions is that they are called with a specific request (hostname and array to return resolved ip addresses) and the function can then start an asynchronous operation and return the execution thread back to the platform. But once the function has computed the result of the request, the contract is that the function calls `resolve` function on the given `np_completion_event`.
 
-To implement this on Linux requires special care since the resolving of hostnames is a blocking operation. Therefore a producer/consumer pattern is used by which an "asynchronous" consumerthread (ie. it is not in sync with the caller thread) is consuming (hostname,resultarray,np_completion_events) from a queue and the callerthread is the producer of (hostnames,resultarray,np_completion_events) to this same queue. Once the consumer has resolved a hostname the solved adresses is entered into the resultarray and the np_completion_event_resolve function is called with completion_event informing the platform that the result is now ready. This text will not go deeper into the decription of the Linux implementation, but the implementation can be found in `modules/dns/unix/nm_unix_dns.c`.
+To implement this on Linux, requires special care since the resolving of hostnames is a blocking operation. Therefore a producer/consumer pattern is used by which an "asynchronous" consumer thread (ie. it is not in sync with the caller thread) is consuming (hostname,resultarray,np_completion_events) from a queue and the caller thread is the producer of (hostnames,resultarray,np_completion_events) to this same queue. Once the consumer has resolved a hostname, the solved adresses is entered into the resultarray and the np_completion_event_resolve function is called with completion_event informing the platform that the result is now ready. This document will not go deeper into the decription of the Linux implementation, but the implementation can be found in `modules/dns/unix/nm_unix_dns.c`.
 
 Instead an example of integration with the ESP32 LWIP DNS is given here. This example can be found in the github repository `nabto5-esp-eye` and in the source file: `common_components/nabto_device/src/esp32_dns.c`
 
-Both the v4 and v6 resolve function will use the same generic function with the nearly identic function signature except it has a `u8_t family` parameter that informs the function which IP type (v4 or v6) it needs to resolve.
+Both the v4 and v6 resolve function will use the same generic function with nearly identical function signatures except it has a `u8_t family` parameter that informs the function which IP type (v4 or v6) it needs to resolve.
 
 ```
 struct nm_dns_resolve_event {
@@ -361,9 +371,10 @@ ize_t* ipsResolved, struct np_completion_event* completionEvent)
 }
 ```
 
-The function uses an utillity struct (`nm_dns_resolve_event`) which basically records the function parameters set.
-Once this is done the function will try to resolve the given hostname by calling `dns_gethostbyname(host, &addr, esp32_dns_resolve_cb, event);` which on ESP32 either returns the answer straight away (because the answer has already been resolved and is located in the ESP32 DNS cache) or will return with an answer that it will start the operation and once the hostname is resolved it will call the given callback (with the supplied argument, which in the implementation is the event).
-In event of a fast return with the resolved hostname, the function is simple, copy the address to the result array, free the event struct and call `np_completion_event_resolve` with the given completionevent as argument. If the resolve happens via the callback it is a little more (but not much) complicated. The callback looks something like this:
+The function uses an utility struct (`nm_dns_resolve_event`) which basically records the function parameters set.
+Once this is done, the function will try to resolve the given hostname by calling `dns_gethostbyname(host, &addr, esp32_dns_resolve_cb, event);` which on ESP32 either returns the answer straight away (because the answer has already been resolved and is located in the ESP32 DNS cache) or will return with an answer that it will start the operation and once the hostname is resolved it will call the given callback (with the supplied argument, which in the implementation is the event).
+
+In event of a fast return with the resolved hostname, the function is simple, copy the address to the result array, free the event struct and call `np_completion_event_resolve` with the given completion event as argument. If the resolve happens via the callback, it is a little more (but not much) complicated. The callback looks something like this:
 
 ```
 void esp32_dns_resolve_cb(const char* name, const ip_addr_t* ipaddr, void* userData)
@@ -399,14 +410,13 @@ void esp32_dns_resolve_cb(const char* name, const ip_addr_t* ipaddr, void* userD
 }
 ```
 
-The utillity event struct is given as argument to the callback. The resolved address is copied to the result array pointed to inside the event, the event is deallocated and the completionevent is resolved.
+The utility event struct is given as argument to the callback. The resolved address is copied to the result array pointed to inside the event, the event is deallocated and the completionevent is resolved.
 
 ## Example of a module with high complexity - struct np_udp_functions / np_tcp_functions
 
-The integration interfaces for UDP and TCP communication is probably the most complicated integration. The semantics of each function is not hard to understand but since most operating systems offers blocking system calls they all require an extra wrapper layer to be implemented. Blocking functions is not friendly for embedded system/platforms that needs to be responsive, so Nabto relies on async implementations instead.
+The integration interfaces for UDP and TCP communication is probably the most complicated integration. The semantics of each function is not hard to understand but since most operating systems offers blocking system calls they all require an extra wrapper layer to be implemented. Blocking functions are not friendly for embedded system/platforms that needs to be responsive, so Nabto relies on async implementations instead.
 
-Lets look at an example from the `np_tcp.h` interface. This interface defines an `async_read` function to be implemented.
-The contract for this function is "simple": Wait on the socket until the sender (other end) sends data to you and once this happens, resolve the completion event. Also, that you need to return the execution thread imediately (it is async) so that the platform can carry on other execution for maksimal responsivenes. Here's the definition:
+Let's look at an example from the `np_tcp.h` interface. This interface defines an `async_read` function to be implemented. The contract for this function is "simple": Wait on the socket until the sender (other end) sends data to you and once this happens, resolve the completion event. Also, that you need to return the execution thread immediately (it is async) so that the platform can carry on other execution for maximum responsivenes. Here's the definition:
 
 ```
     /**
@@ -424,7 +434,9 @@ The contract for this function is "simple": Wait on the socket until the sender 
     void (*async_read)(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent);
 ```
 
-To accomplish this on a posix like blocking system is a little more complicated (when first encountered) that the description/contract says. One way to implement this is to use the `select` function by which a thread can inform the operating system that it wish to know if something changes (for example new data is availabe for read) on a set of filedescriptors (sockets). The way to do this is to create a list of both UDP and TCP sockets that needs attention once new data is available on the sockets. In this implementation example both UDP and TCP sockets are put into a large list of filedescriptors and examined via one thread using the operating system `select` function. Instead a thread for each UDP and TCP could instead have been implemented (which would mean one more allocated thread).
+To accomplish this on a posix like blocking system is a little more complicated (when first encountered) than the description/contract says. One way to implement this is to use the `select` function by which a thread can inform the operating system that it wishes to know if something changes (for example new data is available for read) on a set of file descriptors (sockets). The way to do this is to create a list of both UDP and TCP sockets that needs attention once new data is available on the sockets.
+
+In this implementation example both UDP and TCP sockets are put into a large list of file descriptors and examined via one thread using the operating system `select` function. Instead a thread for each UDP and TCP could instead have been implemented (which would mean one more allocated thread).
 
 So the overall data structure and flow looks something like this:
 
@@ -452,8 +464,8 @@ np_error_code create(struct np_tcp* obj, struct np_tcp_socket** sock)
 
 Only two things happens.
 
-1. Basic initialisation of the `nm_tcp_socket` structure
-2. The structure is appended onto `tcpSockets` list (to be a candidate for `select`, if certain extra requirements is met)
+1. Basic initialization of the `nm_tcp_socket` structure
+2. The structure is appended onto `tcpSockets` list (to be a candidate for `select`, if certain extra requirements are met)
 
 Let's look at how the `async_read` function then uses this strucuture:
 
@@ -543,28 +555,30 @@ void tcp_do_read(struct np_tcp_socket* sock)
 
 It is obvious that the completion event will be resolved once something is available and read on the socket.
 
-It should be possible to port the unix select implementation to other systems that offers threads and select functionallity. An example is the Nabto5 ESP-IDF implementation which is a platform for the ESP32 WIFI modules. The only differnce
+It should be possible to port the unix select implementation to other systems that offers threads and select functionallity. An example is the Nabto5 ESP-IDF implementation which is a platform for the ESP32 WIFI modules.
 
 
-## Event queue - struct np_event_queue_functions
+## Event queue - `struct np_event_queue_functions`
 
-One of the design goals of Nabto edge is to be highly responsive and thus not be blocking at any IO. Also it is a goal to not use too much memory (ie. to minimize callstacks). To do this an event queue is needed. The event queue preserves callstacks by executing new "events" from the same context. An example: If A computes data and then needs to call B who needs to call C who needs to call D, you will get a callstack of 4. If instead A computes the data and then tells the event queue to call B, the callstack will be flushed, B will then be called from the event queue and inform the event queue to call C, flush the stack and the event queue will call C etc. Also the event queue ensures that functions always are called from the same context (ie. the number of resources/mutex/locks aquired etc.).
+One of the design goals of Nabto edge is to be highly responsive and thus not be blocking at any IO. Also it is a goal to not use too much memory (ie. to minimize call stacks). To do this an _event queue_ is needed. The event queue preserves call stacks by executing new "events" from the same context. An example: If A computes data and then needs to call B who needs to call C who needs to call D, you will get a callstack of 4.
 
-Fortunately the event queue only requires the basic functions from the thread interface, so if these functions already are supplied the event queue found in the modules directory can be used without any further adoption.
-But in the event that some systems can supply a highly optimized version or other reasons the interface has been exposed to that the integrator can chose.
+If instead A computes the data and then tells the event queue to call B, the callstack will be flushed, B will then be called from the event queue and inform the event queue to call C, flush the stack and the event queue will call C etc. Also the event queue ensures that functions always are called from the same context (ie. the number of resources/mutex/locks acquired etc.).
 
-The event queue semantics if fairly simple. The user of the event queue can create a new event using the `create` function, suppling both a callback function (pointer) and a pointer to the user data that the callback should be invoked with. After this the user can call either a simple `post` by which the event queue will put the event on the internal queue for execution as soon as possible or `post_timed` which will also put the event on the internal queue but for execution after the supplied number of milliseconds has occured. In both circumstances af calling `post` or `post_timed` the execution thread will return to the user context.
+Fortunately the event queue only requires the basic functions from the thread interface, so if these functions already are supplied, the default event queue found in the modules directory can be used without any further adaptation.
+But in the event that some systems can supply a highly optimized version or other reasons, the interface has been exposed for custom implementation.
+
+The event queue semantics is fairly simple. The user of the event queue can create a new event using the `create` function, suppling both a callback function (pointer) and a pointer to the user data that the callback should be invoked with. After this, the user can call either a simple `post` by which the event queue will put the event on the internal queue for execution as soon as possible or `post_timed` which will also put the event on the internal queue but for execution after the supplied number of milliseconds has occured. In both circumstances, after calling `post` or `post_timed` the execution thread will return to the user context.
 
 <p align="center">
 <img border="1" src="images/event_queue.svg">
 </p>
 
-Since the event queue is already supplied, the interface will not be further elaborated.
+Since an event queue implementation is already supplied, the interface will not be further elaborated.
 
 ## mDNS - `struct np_mdns_functions`
 
-The Nabto EDGE platform uses mdns for disccovery on the local
-network. I.e. if a client needs to find a local device on the local
+The Nabto Edge platform uses mDNS for disccovery on the local
+network. That is, if a client needs to find a local device on the local
 network.
 
 Some systems comes with their own mDNS service, on these systems we
