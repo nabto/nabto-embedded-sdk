@@ -126,9 +126,9 @@ The task here is to implement dns functionality.
 The DNS test will resolve the hostname : `ip.test.dev.nabto.com` using the standard DNS service.
 Ie. the DNS client inside the integration target should be able to resolve this address.
 
-The IPv4 A record should resolve to : 1.2.3.4
+The IPv4 A record should resolve to : `1.2.3.4`
 
-The IPv6 AAAA record should resolve to : 2001:db8::1
+The IPv6 AAAA record should resolve to : `2001:db8::1`
 
 Please test that the target resolves the given hostname correctly.
 
