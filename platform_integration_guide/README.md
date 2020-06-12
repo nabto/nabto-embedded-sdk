@@ -143,7 +143,7 @@ Test passes if the returned timestamp is correct.
 ```
 
 
-## Step 5
+## Step 5 - Event queue
 
 The task in this step is to implement an event queue.
 If your integration step 1 has been completed correctly you should be able to just use the standard supplied event queue which is dependent only on the threads implementation.
@@ -153,7 +153,7 @@ Correct output:
 Event queue test has passed
 ```
 
-## Step 6
+## Step 6 - DNS
 
 The task here is to implement dns functionality.
 The DNS test will resolve the hostname : `ip.test.dev.nabto.com` using the standard DNS service.
@@ -165,7 +165,13 @@ The IPv6 AAAA record should resolve to : `2001:db8::1`
 
 Please test that the target resolves the given hostname correctly before you make the integration.
 
-## Step 7
+Correct output:
+```
+TBD
+```
+
+
+## Step 7 - Network
 
 The task is to implement UDP and TCP networking. 
 
@@ -188,16 +194,46 @@ Nabto provides such an echo-server utility for testing purposes (located in plat
 
 Another way is to setup an [echo server using ncat or socat](https://serverfault.com/questions/346481/echo-server-with-netcat-or-socat)
 
+Correct output:
+```
+UDP test has passed
+TCP test has passed
+```
 
-## Step 8
+Correct output from the `platform_integration_stub` (if this is the echo server used)
+```
+starting platform integration stub
+UDP echo server listening on port 1234
+TCP echo server listening on port 1234
+Waiting for CTRL-C
+Received UDP packet of size 4 from ::ffff:127.0.0.1
+Sent UDP packet of size 4 to ::ffff:127.0.0.1
+```
+
+
+## Step 8 - local ip
 
 The step implements and tests functionality such that the local ip of the
 system can be retrieved.
+
+Correct output (ip address(es) will change accordingly to the addresses of your target):
+```
+ Log output:  INFO Found 1 local ips
+ Log output:  INFO Local ip 0: 192.168.2.109
+Test is passed if the local ips is written to the console output
+```
+
 
 ## Step 9
 
 The task is to implement mdns functionality. The mdns functionality
 can be tested with a general mdns client. Please refer to [the integration howto](/doc/platform_integration_howto.md#mdns---struct-np_mdns_functions)
+
+Correct output:
+```
+Test passes if the _nabto._udp mdns service can be discovered by a mdns client
+```
+(see information on the link above)
 
 
 ### List of useful mdns clients
