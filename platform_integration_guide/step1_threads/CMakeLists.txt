@@ -1,3 +1,6 @@
+project(step1_threads)
+cmake_minimum_required(VERSION 3.2)
+
 set(src
   # we have cheated a bit and used an already existing implementation
   # of the threads interface.

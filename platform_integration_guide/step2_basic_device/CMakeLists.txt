@@ -1,4 +1,6 @@
 # Step 2 is a bit more complex regarding files needed. First we make a library called nabto_device_step2, which we then use in our test program
+project(step2_basic_device)
+cmake_minimum_required(VERSION 3.2)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../nabto_primary_files.cmake)
 

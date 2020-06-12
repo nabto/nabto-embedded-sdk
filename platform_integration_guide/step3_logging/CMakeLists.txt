@@ -1,4 +1,8 @@
+project(step3_logging)
+cmake_minimum_required(VERSION 3.2)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../nabto_primary_files.cmake)
+
 set(src
   ${ne_required_src}
 
