@@ -164,7 +164,7 @@ system can be retrieved.
 ## Step 9
 
 The task is to implement mdns functionality. The mdns functionality
-can be tested with a general mdns client. Please refer to [](/doc/platform_integration_howto.md#mdns---struct-np_mdns_functions)
+can be tested with a general mdns client. Please refer to [the integration howto](/doc/platform_integration_howto.md#mdns---struct-np_mdns_functions)
 
 
 ### List of useful mdns clients
