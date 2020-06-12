@@ -24,7 +24,11 @@ set(ne_mbedtls_random_src
 set(ne_eventqueue_dir ${ne_dir}/src/modules/event_queue)
 set(ne_event_queue_src
   ${ne_eventqueue_dir}/nm_event_queue.c
-)
+  )
+
+set(ne_thread_event_queue_src
+  ${ne_eventqueue_dir}/thread_event_queue.c
+  )
 
 # Nabto communications buffer
 set(ne_communication_buffer_dir ${ne_dir}/src/modules/communication_buffer)
