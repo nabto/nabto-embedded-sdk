@@ -167,8 +167,9 @@ Please test that the target resolves the given hostname correctly before you mak
 
 Correct output:
 ```
-TBD
+DNS test has passed
 ```
+(NOTE: requires both IPv4 and IPv6 resolving capabillity on the target)
 
 
 ## Step 7 - Network
