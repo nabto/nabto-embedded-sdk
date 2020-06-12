@@ -1,4 +1,3 @@
-
 # Platform Integration Howto
 
 This document is a short guide on how to create and integration to a
@@ -12,11 +11,13 @@ new platform for Nabto Edge.
 
 Nabto Edge needs to know about the underlying platform it is running on.
 The way to "inform" Nabto Edge about this platform is to implement a list
-of functions and supply Nabto Edge with these functions. The list consists of
-a list of functions defined in .h files and function pointers that are supplied to
-Nabto Edge via setup of structs.
-Details on these structs can be found in `src/platform/interface/`.
-The integration interface consist of three types. First type (nabto_device_platform.h which is not in the drawing) which is a list of functions that are only used to bootstrap and teardown the integraton interfaces. Another type (log and threads) which are a list of functions linked into the target that the Nabto platform uses at runtime. The last type is a type of functions and possible user data setup via structs and initialized and teardown by the first mentioned functions and used by the platform at runtime to interact with the underlying operating system (or/and hardware).
+of functions and supply Nabto Edge with these functions. The functions are defined in .h files, function pointers are supplied to Nabto Edge via setup of structs.
+
+Details on these structs can be found in `src/platform/interface/`. The integration interface consists of three types:
+
+1. `api/nabto_device_platform.h` (not shown in the drawing): used to bootstrap and teardown the integraton interfaces.
+2. `api/nabto_device_threads.h` and `api/nabto_device_logging.h`: Log and threads functions which are a list of functions linked into the target that the Nabto platform uses at runtime.
+3. `api/nabto_device_integration.h`: Functions setup via structs used by the platform at runtime to interact with the underlying operating system (or/and hardware). The setup/teardown functions mentioned above controls the lifecycle.
 
 
 For Nabto to run on a specific target it needs to know about:
@@ -30,17 +31,16 @@ For Nabto to run on a specific target it needs to know about:
 7. MDNS - specify/setup MDNS interface for local discovery
 
 
-## Components which is needed for a custom platform.
+## Components which are needed for a custom platform.
 
 First of all, the Nabto Edge implementation files need to be included in the
-development tool/ide of the new platform.
+development tool/IDE of the new platform.
 
-The specific needed list of files can be seen in nabto_files.cmake which also could be
+The specific needed list of files can be seen in `nabto_files.cmake` which also could be
 used for IDEs capable of using cmake.
 
-Once this is done, the Nabt Edge system needs to be supplied with knowledge of the platform/hardware it is running on.
-3 major files need to be examined for this.
-
+Once this is done, the Nabto Edge system needs to be supplied with knowledge of the platform/hardware it is running on.
+3 major files need to be examined for this:
 
 ### `api/nabto_device_platform.h`
 This file contains 3 functions: an init, a deinit and a stop
@@ -237,7 +237,7 @@ Note: if the ts.data is initialized with allocated user data, this data must be 
 
 ## Example of a module with medium complexity - struct np_dns_functions
 
-The Nabto platform relies on DNS to resolve hostnames to ip addresses. This functionality is supplied to Nabto via the `struct np_dns` structure. Just like the `np_timestamp` structure the module consist of a pointer to possible userdata and a pointer to a function list providing needed DNS functionallity.
+The Nabto platform relies on DNS to resolve hostnames to ip addresses. This functionality is supplied to Nabto via the `struct np_dns` structure. Just like the `np_timestamp` structure, the module consists of a pointer to possible userdata and a pointer to a function list providing needed DNS functionallity.
 
 All in all, the two important structs looks like this:
 
@@ -687,5 +687,3 @@ Of course an integration procedure can be that all module functions are correctl
 Instead in Nabto Edge a integration procedure is laid out with supporting test code so that the integrator can create the integration interfaces one by one and get them tested. Thus once the overall integration is to be made, hopefully no errors (or only minor errors) will occur.
 
 More on this procedure can be found in the `nabto-embedded-sdk/platform_integration_guide` directory.
-
-
