@@ -12,11 +12,14 @@ new platform for Nabto Edge.
 
 Nabto Edge needs to know about the underlying platform it is running on.
 The way to "inform" Nabto Edge about this platform is to implement a list
-of functions and supply Nabto Edge with these functions. The list consists of
-a list of functions defined in .h files and function pointers that are supplied to
-Nabto Edge via setup of structs.
+of functions and supply Nabto Edge with these functions. The functions are defined in .h files, function pointers are supplied to Nabto Edge via setup of structs.
+
 Details on these structs can be found in `src/platform/interface/`.
-The integration interface consist of three types. First type (nabto_device_platform.h which is not in the drawing) which is a list of functions that are only used to bootstrap and teardown the integraton interfaces. Another type (log and threads) which are a list of functions linked into the target that the Nabto platform uses at runtime. The last type is a type of functions and possible user data setup via structs and initialized and teardown by the first mentioned functions and used by the platform at runtime to interact with the underlying operating system (or/and hardware).
+The integration interface consist of three types:
+
+1. First type (nabto_device_platform.h which is not in the drawing) which is a list of functions that are only used to bootstrap and teardown the integraton interfaces.
+2. Another type (log and threads) which are a list of functions linked into the target that the Nabto platform uses at runtime.
+3. The last type is a type of functions and possible user data setup via structs and initialized and teardown by the first mentioned functions and used by the platform at runtime to interact with the underlying operating system (or/and hardware).
 
 
 For Nabto to run on a specific target it needs to know about:
@@ -30,16 +33,16 @@ For Nabto to run on a specific target it needs to know about:
 7. MDNS - specify/setup MDNS interface for local discovery
 
 
-## Components which is needed for a custom platform.
+## Components which are needed for a custom platform.
 
 First of all, the Nabto Edge implementation files need to be included in the
-development tool/ide of the new platform.
+development tool/IDE of the new platform.
 
-The specific needed list of files can be seen in nabto_files.cmake which also could be
+The specific needed list of files can be seen in `nabto_files.cmake` which also could be
 used for IDEs capable of using cmake.
 
-Once this is done, the Nabt Edge system needs to be supplied with knowledge of the platform/hardware it is running on.
-3 major files need to be examined for this.
+Once this is done, the Nabto Edge system needs to be supplied with knowledge of the platform/hardware it is running on.
+3 major files need to be examined for this:
 
 
 ### `api/nabto_device_platform.h`
