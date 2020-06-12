@@ -13,14 +13,20 @@ Nabto Edge needs to know about the underlying platform it is running on.
 The way to "inform" Nabto Edge about this platform is to implement a list
 of functions and supply Nabto Edge with these functions. The functions are defined in .h files, function pointers are supplied to Nabto Edge via setup of structs.
 
-Details on these structs can be found in `src/platform/interface/`.
+The integration consist of three types:
 
-The integration interface consist of three types. First type (nabto_device_platform.h which is not
-in the drawing) which is a list of functions that are only used to bootstrap and teardown the
-integration interfaces. Another type (log and threads) which is a list of functions linked into the
-target that the Nabto platform uses at runtime. The last type is a type of functions and possible
-user data setup via structs and initialized and torn down by the first mentioned functions and used
-by the platform at runtime to interact with the underlying operating system (or/and hardware).
+  1. First type (`src/api/nabto_device_platform.h` which is not in the
+drawing) which is a list of functions that are only used to bootstrap
+and teardown the integration interfaces.
+  2. Another type (threads `src/api/nabto_device_threads.h`) which is
+a list of functions linked into the target that the Nabto platform
+uses at runtime.
+  3. The last type is a type of functions and possible user data setup
+via structs and initialized and torn down by the first mentioned
+functions and used by the platform at runtime to interact with the
+underlying operating system (or/and hardware). These
+functions/interfaces can be found in the `src/platform/interfaces`
+folder.
 
 For Nabto to run on a specific target it needs to know about:
 
