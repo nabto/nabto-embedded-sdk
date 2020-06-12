@@ -80,6 +80,12 @@ interface which is used in a few places. The threads interface defines
 functionality to work with threads, mutexes and conditions.
 Please look above to see a description of how to integrate onto your own target.
 
+Correct output:
+```
+Threads test passed
+```
+
+
 ## Step 2 - basic device
 
 The task in step 2 is to create a platform adapter such that
@@ -100,11 +106,29 @@ This file links to all the basic files need for the Nabto Edge Platform. If your
 
 Also the next steps will follow the structure of step2 of having a `basic_device_test.c` which is the test-runner (and the name will change for each step). Also the directory contains a `platform_integration.c` which is the platform bootstrap/setup (described [here](../doc/platform_integration_howto.md#apinabto_device_platformh). This file will contain more and more setup details regarding initialization of the system. You should be able to use `platform_integration.c` of higher steps (if the appropriate integration modules have been created and tested) for lower steps (ie. the `platform_integration.c` of step 8 should be able to be used in step 2).
 
+Correct output:
+```
+Create device test passed
+Future resolve test has passed
+```
+
 
 ## Step 3 - Logging
 
 The task in this step 3 is to get log output to the console from the
 platform. This will be very usefull if something fails in the later step since you can setup Nabto Edge to log internally.
+
+Correct output:
+```
+ Log output: ERROR Test, int: 42, string: test, double: 42.200000
+ Log output:  WARN Test, int: 42, string: test, double: 42.200000
+ Log output:  INFO Test, int: 42, string: test, double: 42.200000
+ Log output: TRACE Test, int: 42, string: test, double: 42.200000
+Logging test passed if ERROR, WARN, INFO and TRACE logs were seen in the console output
+```
+
+You need to verify visually that your target logs the "ERROR, WARN, INFO and TRADE" lines correctly.
+
 
 ## Step 4 - timestamps
 
@@ -112,6 +136,11 @@ This is the first real integration module to be implemented.
 The task in this step is to implement timestamps.
 More detailed information about the [Timestamp Integration here](../doc/platform_integration_howto.md#example-of-a-simple-module---struct-np_timestamp_functions)
 
+Correct output (the timestamp will differ):
+```
+Timestamp in milliseconds is: 2835033081
+Test passes if the returned timestamp is correct.
+```
 
 
 ## Step 5
@@ -119,6 +148,10 @@ More detailed information about the [Timestamp Integration here](../doc/platform
 The task in this step is to implement an event queue.
 If your integration step 1 has been completed correctly you should be able to just use the standard supplied event queue which is dependent only on the threads implementation.
 
+Correct output:
+```
+Event queue test has passed
+```
 
 ## Step 6
 
