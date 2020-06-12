@@ -13,13 +13,13 @@ new platform for Nabto Edge.
 Nabto Edge needs to know about the underlying platform it is running on.
 The way to "inform" Nabto Edge about this platform is to implement a list
 of functions and supply Nabto Edge with these functions. The list consists of
-a list of functions defined in .h files and function pointers that are supplied to 
+a list of functions defined in .h files and function pointers that are supplied to
 Nabto Edge via setup of structs.
 Details on these structs can be found in `src/platform/interface/`.
 The integration interface consist of three types. First type (nabto_device_platform.h which is not in the drawing) which is a list of functions that are only used to bootstrap and teardown the integraton interfaces. Another type (log and threads) which are a list of functions linked into the target that the Nabto platform uses at runtime. The last type is a type of functions and possible user data setup via structs and initialized and teardown by the first mentioned functions and used by the platform at runtime to interact with the underlying operating system (or/and hardware).
 
 
-For Nabto to run on a specific target it needs to know about: 
+For Nabto to run on a specific target it needs to know about:
 
 1. DNS - how the system resolves hostnames to ip addresses (both ipv4:A and ipv6:AAAA addresses)
 2. Timestamp - interface for Nabto Edge to know about the current time for scheduling events
@@ -69,7 +69,7 @@ NabtoDevice* device = nabto_device_new();
 ```
 
 This will at some point call the initialization of the integration interface (`nabto_devcie_platform_init`) which has the responsibillity to setup the different integration modules (tcp, udp, mdns, timestamp etc.) via calling the appropriate nabto_device_interation_set_<modulename>_impl().
-    
+
 
 
 #### Platform specific data utillity functions `nabto_device_integration_set_platform_data` and `nabto_device_integration_get_platform_data`
@@ -84,7 +84,7 @@ If the integration is sure that only on instance of the nabto device is started 
 ### `api/nabto_device_threads.h`
 
 The api `nabto/nabto_device.h` is a thread safe API, which also
-exposes functionality which can block the system. The system currently 
+exposes functionality which can block the system. The system currently
 also need to have a thread implementation. The thread
 abstraction defines threads, muteces and condition variables. See
 the header file for more information or take a look at the existing
@@ -117,7 +117,7 @@ The above functions should somewhat already be understood by the integrator othe
 Also the Nabto platform is dependent on condition variables for synchronization between threads.
 The functions needed at link time is:
 
-``` 
+```
 struct nabto_device_condition* nabto_device_threads_create_condition(void);
 void nabto_device_threads_free_cond(struct nabto_device_condition* cond);
 void nabto_device_threads_cond_signal(struct nabto_device_condition* cond);
@@ -142,16 +142,16 @@ void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex);
 void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex);
 ```
 
-Just like the mutex abstraction, the function should follow the same semantik as in pthreads mutex abstraction. 
+Just like the mutex abstraction, the function should follow the same semantik as in pthreads mutex abstraction.
 
 ## Example integration
 
 In the directory `platform_integration_example` an example integration can be viewed. This example works on UNIX systems so
-modules which works on such a system has been choosen. 
+modules which works on such a system has been choosen.
 
 ## Example of a simple module - struct np_timestamp_functions
 
-This is one of the most simple integration interfaces, so it is a good place to start. 
+This is one of the most simple integration interfaces, so it is a good place to start.
 This interface tells Nabto Edge how to get the current time from the system. This is used to keep track of retransmissions of internet communication etc. The interface can be found in `nabto-embedded-sdk/src/platform/interfaces/np_timestamp.h` and looks like this:
 
 ```
@@ -222,18 +222,18 @@ To setup the timestamp integration modules the intergrator could now do somethin
 np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex) {
 
     ...
-    
+
     struct np_timestamp timestampImpl = nm_unix_ts_create();
     nabto_device_integration_set_timestamp_impl(device, &timestampImpl);
 
     ...
-    
+
 }
 ```
 
 Not that the `nabto_device_integration_set_timestamp_impl` functions all copies the implementation structs even though they are pointers (to be sure that integrators does not make a mistake of deallocating it too soon).
 
-Note: if the ts.data is initialized with allocated user data, this data must be deallocated when the `nabto_device_platform_deinit` is called. Pointers to the allocated user data can be collected in a struct or similar and be kept via the the `nabto_device_integration_set_platform_data` utillity function and be reached by using the identical get function (see earlier explanation). 
+Note: if the ts.data is initialized with allocated user data, this data must be deallocated when the `nabto_device_platform_deinit` is called. Pointers to the allocated user data can be collected in a struct or similar and be kept via the the `nabto_device_integration_set_platform_data` utillity function and be reached by using the identical get function (see earlier explanation).
 
 ## Example of a module with medium complexity - struct np_dns_functions
 
@@ -335,13 +335,13 @@ ize_t* ipsResolved, struct np_completion_event* completionEvent)
     event->ipsResolved = ipsResolved;
     event->completionEvent = completionEvent;
     event->family = family;
-    
+
     ip_addr_t addr;
     err_t status = dns_gethostbyname(host, &addr, esp32_dns_resolve_cb, event);
     if (status == ERR_OK) {
         *ipsResolved = 0;
         free(event);
-        
+
         // callback is not going to be called.
         if(family == LWIP_DNS_ADDRTYPE_IPV4) {
             memcpy(ips[0].ip.v4, &addr.u_addr.ip4.addr, 4);
@@ -349,7 +349,7 @@ ize_t* ipsResolved, struct np_completion_event* completionEvent)
         }
         np_completion_event_resolve(completionEvent, NABTO_EC_OK);
         return;
-        
+
     }  else if (status == ERR_INPROGRESS) {
         // callback will be called.
         return;
@@ -361,7 +361,7 @@ ize_t* ipsResolved, struct np_completion_event* completionEvent)
 }
 ```
 
-The function uses an utillity struct (`nm_dns_resolve_event`) which basically records the function parameters set. 
+The function uses an utillity struct (`nm_dns_resolve_event`) which basically records the function parameters set.
 Once this is done the function will try to resolve the given hostname by calling `dns_gethostbyname(host, &addr, esp32_dns_resolve_cb, event);` which on ESP32 either returns the answer straight away (because the answer has already been resolved and is located in the ESP32 DNS cache) or will return with an answer that it will start the operation and once the hostname is resolved it will call the given callback (with the supplied argument, which in the implementation is the event).
 In event of a fast return with the resolved hostname, the function is simple, copy the address to the result array, free the event struct and call `np_completion_event_resolve` with the given completionevent as argument. If the resolve happens via the callback it is a little more (but not much) complicated. The callback looks something like this:
 
@@ -375,7 +375,7 @@ void esp32_dns_resolve_cb(const char* name, const ip_addr_t* ipaddr, void* userD
 
     NABTO_LOG_TRACE(LOG, "esp_async_resolve callback recieved");
 
-    
+
     if (ipaddr == NULL) {
         NABTO_LOG_TRACE(LOG, "esp_async_resolve callback - no adresses found");
         free(event);
@@ -450,9 +450,9 @@ np_error_code create(struct np_tcp* obj, struct np_tcp_socket** sock)
 }
 ```
 
-Only two things happens. 
+Only two things happens.
 
-1. Basic initialisation of the `nm_tcp_socket` structure 
+1. Basic initialisation of the `nm_tcp_socket` structure
 2. The structure is appended onto `tcpSockets` list (to be a candidate for `select`, if certain extra requirements is met)
 
 Let's look at how the `async_read` function then uses this strucuture:
@@ -561,6 +561,114 @@ The event queue semantics if fairly simple. The user of the event queue can crea
 
 Since the event queue is already supplied, the interface will not be further elaborated.
 
+## mDNS - `struct np_mdns_functions`
+
+The Nabto EDGE platform uses mdns for disccovery on the local
+network. I.e. if a client needs to find a local device on the local
+network.
+
+Some systems comes with their own mDNS service, on these systems we
+recommend to use the system provided mDNS service. If a system does
+not provide a mDNS service, we have a generic service which is located
+in the `src/modules/mdns` folder.
+
+The jobs of the MDNS discovery is:
+
+  1. Inform a client about local devices with Nabto EDGE.
+  2. Tell the client at which ip and port the Nabto EDGE service is
+     running on the device.
+
+mDNS service discovery is built into the Nabto EDGE platform through
+the `np_mdns` interface. This interface have one function.
+
+```
+void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId);
+```
+
+This function is called a bit after the device has been started, since
+the device needs to have opened its local socket first and aquired the
+local port number of the local socket.
+
+When this function is called the mDNS implementation should register
+the service `_nabto._udp` as having the `port` port number on the
+device. Further two key value pairs should be registered for the
+service `productid=<productId>` and `deviceid=<deviceId>`.
+
+There exists several mDNS clients which can be used to test that a
+mDNS implementation works. On Windows and Mac it is recommended to use
+the dns-sd tool which comes from bonjour. On Windows this sdk can be
+downloaded from [https://developer.apple.com/bonjour/]. On Mac, the
+dns-sd tool is installed by default. On Linux the avahi-tools package
+can be used, it comes with the avahi-browse command (`avahi-browse -a -r`).
+
+Assuming there is a Nabto EDGE device running on the local network,
+then the dns-sd tool can be used as
+
+Example scan for all nabto edge devices on the local network.
+
+```
+C:\>dns-sd -B _nabto._udp
+Browsing for _nabto._udp
+Timestamp     A/R Flags if Domain                    Service Type              Instance Name
+ 4:22:42.514  Add     2  4 local.                    _nabto._udp.              de-nhbpwxcx
+```
+
+Example show information about a specific device, the important
+information is the txt records and the port number.
+
+```
+C:\>dns-sd -L de-nhbpwxcx _nabto._udp
+Lookup de-nhbpwxcx._nabto._udp.local
+ 4:23:48.795  de-nhbpwxcx._nabto._udp.local. can be reached at de-nhbpwxcx.local.:49654 (interface 4)
+ deviceId=de-nhbpwxcx productId=pr-bqyh43fb
+```
+
+Example: Get the ips for a device using dns-sd.
+```
+C:\>dns-sd -G v4v6 de-nhbpwxcx.local.
+Timestamp     A/R Flags if Hostname                  Address                                      TTL
+ 4:33:27.514  Add     3  4 de-nhbpwxcx.local.        192.168.123.117                              120
+ 4:33:27.514  Add     2  4 de-nhbpwxcx.local.        2001:DB8:1234:0003:8D41:1F5C:3C08:2D3F%<0>   120
+```
+
+Using this information we know that the device with the product id
+`pr-bqyh43fb` and the device id `de-nhbpwxcx` can be reached on the
+ips `192.168.123.117` and `2001:DB8:1234:0003:8D41:1F5C:3C08:2D3F` on
+UDP port `49654`
+
+
+
+### MDNS example implementation
+
+The ESP32 comes with a mdns server,
+[https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/protocols/mdns.html]
+
+Assuming the mdns server is started acording to the documentation, then the mdns integration is as follows.
+
+```
+static struct np_mdns_functions vtable = {
+    .publish_service = &publish_service
+};
+
+struct np_mdns esp32_mdns_get_impl()
+{
+    struct np_mdns obj;
+    obj.vptr = &vtable;
+    obj.data = NULL;
+    return obj;
+}
+
+void publish_service(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId)
+{
+    mdns_txt_item_t serviceTxtData[2] = {
+        {"productid",productId},
+        {"deviceid",deviceId}
+    };
+
+    mdns_service_add(NULL, "_nabto", "_udp", port, serviceTxtData, 2);
+}
+```
+
 
 # Integration procedure
 
@@ -579,5 +687,3 @@ The integration procedure with supporting tests are as follows:
 7. TCP interface
 8. LocalIP interface
 9. MDNS
-
-
