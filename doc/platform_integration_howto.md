@@ -580,10 +580,10 @@ The jobs of the MDNS discovery is:
 
 ### Requirement for Nabto Edge devices to be discovered via MDNS
 
-1. Provide discovable Service Type Identifier of : `_nabto._upd`
-2. Provide Text record with two key/values pairs:
-    * `productid=<productId>`
-    * `deviceid=<deviceId>`
+> 1. Provide discovable Service Type Identifier of : `_nabto._upd`
+> 2. Provide Text record with two key/values pairs:
+>    * `productid=<productId>`
+>    * `deviceid=<deviceId>`
 
 The mDNS Instance Name of the device is not important since it basically is used to identify the device on the local network. Once a Nabto Edge connection has been established the client will lookup the device and product id and forwardly use those to locate and connect to the device.
 
@@ -688,9 +688,9 @@ Instead in Nabto Edge a integration procedure is laid out with supporting test c
 
 The integration procedure with supporting tests are as follows:
 
-1. Log interface
-2. Timestamp interface
-3. Threads interface
+1. Threads interface
+2. Log interface
+3. Timestamp interface
 4. Event queue
 5. DNS interface
 6. UDP interface
