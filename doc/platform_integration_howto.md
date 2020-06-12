@@ -589,26 +589,27 @@ network.
 
 Some systems comes with their own mDNS service, on these systems we
 recommend to use the system provided mDNS service. If a system does
-not provide a mDNS service, we have a generic service which is located
+not provide an mDNS service, we have a generic service which is located
 in the `src/modules/mdns` folder.
 
 The jobs of the MDNS discovery is:
 
-  1. Inform a client about local devices with Nabto EDGE.
-  2. Tell the client at which ip and port the Nabto EDGE service is
+ 1. Inform a client about local devices with Nabto Edge.
+ 2. Tell the client at which ip and port the Nabto Edge service is
      running on the device.
 
 ### Requirement for Nabto Edge devices to be discovered via MDNS
 
-> 1. Provide discovable Service Type Identifier of : `_nabto._upd`
-> 2. Provide Text record with two key/values pairs:
->    * `productid=<productId>`
->    * `deviceid=<deviceId>`
+1. Provide discovable Service Type Identifier of : `_nabto._upd`
+2. Provide Text record with two key/values pairs:
+    * `productid=<productId>`
+    * `deviceid=<deviceId>`
 
-The mDNS Instance Name of the device is not important since it basically is used to identify the device on the local network. Once a Nabto Edge connection has been established the client will lookup the device and product id and forwardly use those to locate and connect to the device.
+The mDNS Instance Name of the device is not important since it basically is used to identify the
+device on the local network. Once a Nabto Edge connection has been established the client will
+lookup the device and product id and forwardly use those to locate and connect to the device.
 
-
-mDNS service discovery is built into the Nabto EDGE platform through
+mDNS service discovery is built into the Nabto Edge platform through
 the `np_mdns` interface. This interface have one function.
 
 ```
@@ -616,22 +617,22 @@ void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* productI
 ```
 
 This function is called a bit after the device has been started, since
-the device needs to have opened its local socket first and aquired the
+the device needs to have opened its local socket first and acquired the
 local port number of the local socket.
 
-When this function is called the mDNS implementation should register
+When this function is called, the mDNS implementation should register
 the service `_nabto._udp` as having the `port` port number on the
-device. Further two key value pairs should be registered for the
+device. Further, two key value pairs should be registered for the
 service `productid=<productId>` and `deviceid=<deviceId>`.
 
-There exists several mDNS clients which can be used to test that a
-mDNS implementation works. On Windows and Mac it is recommended to use
+Several mDNS clients exist which can be used to test that an
+mDNS implementation works. On Windows and Mac, it is recommended to use
 the dns-sd tool which comes from bonjour. On Windows this sdk can be
-downloaded from [https://developer.apple.com/bonjour/]. On Mac, the
+downloaded from https://developer.apple.com/bonjour/. On Mac, the
 dns-sd tool is installed by default. On Linux the avahi-tools package
 can be used, it comes with the avahi-browse command (`avahi-browse -a -r`).
 
-Assuming there is a Nabto EDGE device running on the local network,
+Assuming there is a Nabto Edge device running on the local network,
 then the dns-sd tool can be used as
 
 Example scan for all nabto edge devices on the local network.
@@ -643,7 +644,7 @@ Timestamp     A/R Flags if Domain                    Service Type              I
  4:22:42.514  Add     2  4 local.                    _nabto._udp.              de-nhbpwxcx
 ```
 
-Example show information about a specific device, the important
+The example shows information about a specific device, the important
 information is the txt records and the port number.
 
 ```
@@ -668,12 +669,11 @@ UDP port `49654`
 
 
 
-### MDNS example implementation
+### mDNS example implementation
 
-The ESP32 comes with a mdns server,
-[https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/protocols/mdns.html]
+The ESP32 comes with an mDNS server, https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/protocols/mdns.html.
 
-Assuming the mdns server is started acording to the documentation, then the mdns integration is as follows.
+Assuming the mDNS server is started acording to the documentation, then the mDNS integration is as follows.
 
 ```
 static struct np_mdns_functions vtable = {
@@ -702,8 +702,8 @@ void publish_service(struct np_mdns* obj, uint16_t port, const char* productId, 
 
 # Integration procedure with tools
 
-Of course an integration procedure can be that all module functions are correctly implement from start to end and in the end everything is joined and everything works (big-bang integration). This mostly is a very very hard way to do an integration since it is wellknown that it is nearly impossible to write so much code without an error is sneaked in and this error will can be very very hard to located in a running system.
+Of course an integration procedure can be that all module functions are correctly implemented from start to end and in the end, everything is linked and everything works (big-bang integration). This mostly is a very hard way to do an integration since it is nearly impossible to write so much code without errors.
 
-Instead in Nabto Edge a integration procedure is laid out with supporting test code so that the integrator can create the integration interfaces one by one and get them tested. Thus once the overall integration is to be made, hopefully no errors (or only minor errors) will occur.
+Instead in Nabto Edge an integration procedure is laid out with supporting test code so that the integrator can create the integration interfaces one by one and get them tested. Thus once the overall integration is to be made, hopefully no errors (or only minor errors) will occur.
 
 More on this procedure can be found in the `nabto-embedded-sdk/platform_integration_guide` directory.
