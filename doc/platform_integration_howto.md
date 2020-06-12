@@ -546,6 +546,12 @@ It is obvious that the completion event will be resolved once something is avail
 It should be possible to port the unix select implementation to other systems that offers threads and select functionallity. An example is the Nabto5 ESP-IDF implementation which is a platform for the ESP32 WIFI modules. The only differnce
 
 
+## Event queue - struct np_event_queue_functions
+
+One of the design goals of Nabto edge is to be highly responsive and thus not be blocking at any IO. Also it is a goal to not use too much memory (ie. to minimize callstacks). To do this an event queue is needed. The event queue preserves callstacks by executing new "events" from the same context. An example: If A computes data and then needs to call B who needs to call C who needs to call D, you will get a callstack of 4. If instead A computes the data and then tells the event queue to call B, the callstack will be flushed, B will then be called from the event queue and inform the event queue to call C, flush the stack and the event queue will call C etc. Also the event queue ensures that functions always are called from the same context (ie. the number of resources/mutex/locks aquired etc.).
+
+Fortunately the event queue can be 
+
 # Integration procedure
 
 Of course an integration procedure can be that all module functions are correctly implement from start to end and in the end everything is joined and everything works (big-bang integration). This mostly is a very very hard way to do an integration since it is wellknown that it is nearly impossible to write so much code without an error is sneaked in and this error will can be very very hard to located in a running system.
