@@ -54,6 +54,7 @@ struct np_tcp nm_select_unix_tcp_get_impl(struct nm_select_unix* ctx)
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
 {
     struct np_tcp_socket* s;
+    nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
         if (s->read.completionEvent != NULL) {
@@ -65,11 +66,14 @@ void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
             ctx->maxWriteFd = NP_MAX(ctx->maxWriteFd, s->fd);
         }
     }
+    nm_select_unix_unlock(ctx);
 }
 
 void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
 {
+    nm_select_unix_lock(sock->selectCtx);
     nn_llist_erase_node(&sock->tcpSocketsNode);
+    nm_select_unix_unlock(sock->selectCtx);
 
     tcp_abort(sock);
     shutdown(sock->fd, SHUT_RDWR);
@@ -81,6 +85,7 @@ void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
 void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
     struct np_tcp_socket* s;
+    nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
         if (FD_ISSET(s->fd, &ctx->readFds)) {
@@ -95,6 +100,7 @@ void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
             }
         }
     }
+    nm_select_unix_unlock(ctx);
 }
 
 
@@ -105,9 +111,9 @@ np_error_code create(struct np_tcp* obj, struct np_tcp_socket** sock)
     s->fd = -1;
     *sock = s;
     s->selectCtx = selectCtx;
-
+    nm_select_unix_lock(selectCtx);
     nn_llist_append(&selectCtx->tcpSockets, &s->tcpSocketsNode, s);
-
+    nm_select_unix_unlock(selectCtx);
     s->aborted = false;
     return NABTO_EC_OK;
 }

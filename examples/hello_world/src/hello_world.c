@@ -303,7 +303,7 @@ bool start_device(NabtoDevice* device)
         return false;
     }
 
-    printf("Device: %s.%s Started with fingerprint: %s", productId, deviceId, fp);
+    printf("Device: %s.%s Started with fingerprint: [%s]\n", productId, deviceId, fp);
     nabto_device_string_free(fp);
     return true;
 }

@@ -9,17 +9,6 @@
 
 #include <thread>
 
-namespace {
-
-void stopFunction(void* userData)
-{
-    nabto::test::TestPlatform* tp = (nabto::test::TestPlatform*)userData;
-    tp->stop();
-}
-
-}
-
-
 BOOST_AUTO_TEST_SUITE(test_platform)
 
 BOOST_DATA_TEST_CASE(start_stop, nabto::test::TestPlatformFactory::multi(),tpf)

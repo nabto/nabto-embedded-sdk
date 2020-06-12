@@ -3,6 +3,7 @@
 
 #include <platform/np_types.h>
 #include <platform/np_platform.h>
+#include <api/nabto_device_threads.h>
 
 #include <sys/select.h>
 
@@ -69,6 +70,8 @@ struct nm_select_unix {
     struct nn_llist tcpSockets;
 
     pthread_t thread;
+    // synchronize core thread and select thread access to the list of sockets.
+    pthread_mutex_t mutex;
     bool stopped;
 };
 
@@ -81,6 +84,8 @@ void nm_select_unix_deinit(struct nm_select_unix* ctx);
 void nm_select_unix_run(struct nm_select_unix* ctx);
 void nm_select_unix_stop(struct nm_select_unix* ctx);
 
+void nm_select_unix_lock(struct nm_select_unix* ctx);
+void nm_select_unix_unlock(struct nm_select_unix* ctx);
 
 /**
  * Functions only used internally in the module

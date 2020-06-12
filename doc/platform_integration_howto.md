@@ -580,10 +580,10 @@ The jobs of the MDNS discovery is:
 
 ### Requirement for Nabto Edge devices to be discovered via MDNS
 
-1. Provide discovable Service Type Identifier of : `_nabto._upd`
-2. Provide Text record with two key/values pairs:
-    * `productid=<productId>`
-    * `deviceid=<deviceId>`
+> 1. Provide discovable Service Type Identifier of : `_nabto._upd`
+> 2. Provide Text record with two key/values pairs:
+>    * `productid=<productId>`
+>    * `deviceid=<deviceId>`
 
 The mDNS Instance Name of the device is not important since it basically is used to identify the device on the local network. Once a Nabto Edge connection has been established the client will lookup the device and product id and forwardly use those to locate and connect to the device.
 
@@ -680,20 +680,12 @@ void publish_service(struct np_mdns* obj, uint16_t port, const char* productId, 
 ```
 
 
-# Integration procedure
+# Integration procedure with tools
 
 Of course an integration procedure can be that all module functions are correctly implement from start to end and in the end everything is joined and everything works (big-bang integration). This mostly is a very very hard way to do an integration since it is wellknown that it is nearly impossible to write so much code without an error is sneaked in and this error will can be very very hard to located in a running system.
 
 Instead in Nabto Edge a integration procedure is laid out with supporting test code so that the integrator can create the integration interfaces one by one and get them tested. Thus once the overall integration is to be made, hopefully no errors (or only minor errors) will occur.
 
-The integration procedure with supporting tests are as follows:
+More on this procedure can be found in the `nabto-embedded-sdk/platform_integration_guide` directory.
 
-1. Log interface
-2. Timestamp interface
-3. Threads interface
-4. Event queue
-5. DNS interface
-6. UDP interface
-7. TCP interface
-8. LocalIP interface
-9. MDNS
+

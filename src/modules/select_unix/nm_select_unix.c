@@ -36,6 +36,7 @@ np_error_code nm_select_unix_init(struct nm_select_unix* ctx)
     nn_llist_init(&ctx->tcpSockets);
     ctx->stopped = false;
     ctx->thread = 0;
+    pthread_mutex_init(&ctx->mutex, NULL);
     if (pipe(ctx->pipefd) == -1) {
         NABTO_LOG_ERROR(LOG, "Failed to create pipe %s", errno);
         return NABTO_EC_UNKNOWN;
@@ -128,6 +129,8 @@ void build_fd_sets(struct nm_select_unix* ctx)
     FD_SET(ctx->pipefd[1], &ctx->readFds);
     ctx->maxReadFd = NP_MAX(ctx->maxReadFd, ctx->pipefd[1]);
 
+    // ensure there isn't other threads manipulating the list of
+    // sockets.
     nm_select_unix_udp_build_fd_sets(ctx);
 
     nm_select_unix_tcp_build_fd_sets(ctx);
@@ -153,4 +156,16 @@ void* network_thread(void* data)
         }
     }
     return NULL;
+}
+
+
+
+void nm_select_unix_lock(struct nm_select_unix* ctx)
+{
+    pthread_mutex_lock(&ctx->mutex);
+}
+
+void nm_select_unix_unlock(struct nm_select_unix* ctx)
+{
+    pthread_mutex_unlock(&ctx->mutex);
 }
