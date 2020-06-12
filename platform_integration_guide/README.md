@@ -130,23 +130,42 @@ The IPv4 A record should resolve to : `1.2.3.4`
 
 The IPv6 AAAA record should resolve to : `2001:db8::1`
 
-Please test that the target resolves the given hostname correctly.
+Please test that the target resolves the given hostname correctly before you make the integration.
 
 ## Step 7
 
-The task is to implement UDP and TCP networking. The test requires an
-udp and tcp echo server to be running somewhere else. We porovide such
-a utility for testing purposes.
+The task is to implement UDP and TCP networking. 
+
+The test requires an udp and tcp echo server to be running as specified in the `network_test.c` template test.
+
+```
+int main()
+{
+    const char* testServerHost = "127.0.0.1";
+    uint16_t testServerPort = 1234;
+    udp_test(testServerHost, testServerPort);
+    tcp_test(testServerHost, testServerPort);
+}
+```
+
+For multiprocess operating systems like Linux/Windows/MacOS the echo server can run in a separate program on the same host on a local network interface. For an real embedded target the echo server should run on your PC and the embedded target should connect to the ip address of the PC.
+Adjust the `testServerHost` accordingly to your network setup (in which the testServerHost should be the IP address of your PC running the echo server) and remember to run your embedded target on the same network as your PC. Make sure your local network accepts local point to point communication (try to ping the embedded target from the PC before running the test).
+
+Nabto provides such an echo-server utility for testing purposes (located in platform_integration_stub directory). You can compile it yourself or contact Nabto and we will ship a precompiled version.
+
+Another way is to setup an [echo server using ncat or socat](https://serverfault.com/questions/346481/echo-server-with-netcat-or-socat)
+
 
 ## Step 8
 
-The task is to implement functionality such that the local ip of the
+The step implements and tests functionality such that the local ip of the
 system can be retrieved.
 
 ## Step 9
 
 The task is to implement mdns functionality. The mdns functionality
-can be tested with a general mdns client.
+can be tested with a general mdns client. Please refer to [](/doc/platform_integration_howto.md#mdns---struct-np_mdns_functions)
+
 
 ### List of useful mdns clients
 
