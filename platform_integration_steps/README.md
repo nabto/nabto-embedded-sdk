@@ -1,8 +1,8 @@
 
-# Platform Integration Guide
+# Platform Integration Step
 
-The platform integration guide consists of several steps. Each step
-introduces a bit more functionality. After the last step you have
+The platform integration steps consists of a process laid out by Nabto consting of several steps for easier integration.
+Each step introduces a bit more functionality. After the last step you have
 successfully created a platform integration for a nabto device
 library.
 
