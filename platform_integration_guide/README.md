@@ -169,7 +169,7 @@ Correct output:
 ```
 DNS test has passed
 ```
-(requires both IPv4 and IPv6 resolving capabillity on the target)
+(NOTE: requires both IPv4 and IPv6 resolving capabillity on the target)
 
 
 ## Step 7 - Network
