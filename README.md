@@ -21,6 +21,11 @@ library. The interface for that library is described in
 which implements the `nabto_device` library and apps/examples which
 are using the `nabto_device` library.
 
+For help on porting of the nabto_device.h interface to a new platform
+see `doc/platform_integration_howto.md` and
+`platform_integration_steps/README.md`
+
+
 ## Parts of this repository
 
 The source is split into several parts.
