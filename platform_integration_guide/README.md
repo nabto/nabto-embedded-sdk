@@ -73,28 +73,43 @@ The integration procedure with supporting tests are as follows:
 
 
 
-## Step 1
+## Step 1 - threads
 
 The task in step 1 is to create an implementation of the threads
 interface which is used in a few places. The threads interface defines
 functionality to work with threads, mutexes and conditions.
+Please look above to see a description of how to integrate onto your own target.
 
-
-## Step 2
+## Step 2 - basic device
 
 The task in step 2 is to create a platform adapter such that
 `nabto_device_test_new` and `nabto_device_test_free` can be
 called. Further if the threads from step 1 is indeed implemented
 properly we should also be able to see a working future test.
 
-## Step 3
+The goal of the test is mostly to test that the new integration setup has correctly included and linked all the files files.
+You will see a link error if all files needed from the Nabto Edge is not included.
+
+If the test passes, you will know that the basic Nabto Platform (without any integration other than threads) is up and running.
+
+The important file to examine is:
+
+```include(${CMAKE_CURRENT_SOURCE_DIR}/../../nabto_primary_files.cmake)```
+
+This file links to all the basic files need for the Nabto Edge Platform. If your platform does not use cmake you will need to somehow copy the links to your IDE.
+
+
+## Step 3 - Logging
 
 The task in this step 3 is to get log output to the console from the
-platform.
+platform. This will be very usefull if something fails in the later step since you can setup Nabto Edge to log internally.
 
-## Step 4
+## Step 4 - timestamps
 
+This is the first real integration module to be implemented.
 The task in this step is to implement timestamps.
+
+[timestamp integration](../doc/platform_integration_howto.md#example-of-a-simple-module---struct-np_timestamp_functions)
 
 ## Step 5
 
