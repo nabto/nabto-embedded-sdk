@@ -1,12 +1,12 @@
 
-# Platform Integration Step
+# Platform Integration Steps
 
-The platform integration steps consists of a process laid out by Nabto consting of several steps for easier integration.
+The _platform integration steps_ procedure is provided by Nabto for easier integration.
 Each step introduces a bit more functionality. After the last step you have
-successfully created a platform integration for a nabto device
+successfully created a platform integration for a Nabto device
 library.
 
-The integration procedure includes template tools to test the functions made. Since new integrations will be made on unknown systems/platforms (and possible not have a main() function as entrypoint and possible not have a printf function), the integrator will need to port the test templates, including setting up the files for compilation. 
+The integration procedure includes template tools to test the functions made. Since new integrations will be made on unknown systems/platforms (and possibly not have a main() function as entrypoint and possibly not have a `printf` function), the integrator will need to port the test templates, including setting up the files for compilation. 
 
 The templates have been made with simplicity in mind. As an example here is the step1_threads test:
 
