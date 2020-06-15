@@ -42,12 +42,10 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
  * though a socket only used for local traffic. This ensures the
  * device has not opened any connections through local firewall. Note
  * this assumes the device is behind a firewall. If the device is not
- * behind a firewall, or is located behind a fullcone NAT, it is
- * possible for a connection to be falsely considered local.
+ * behind a firewall, it is possible for a connection to be falsely
+ * considered local.
  *
- * If the local channel becomes unavailable, the client can seamlessly
- * switch to a remote channel to keep the connection running. For this
- * reason, the result of this query should not be cached.
+ * The result of this query should not be cached as it may change.
  *
  * @param device [in]  The device.
  * @param ref [in]     The connection reference to query.

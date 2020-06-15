@@ -225,6 +225,10 @@ NabtoDeviceError HeatPump::initDevice()
         return ec;
     }
 
+    if (!logLevel_.empty()) {
+        nabto_device_set_log_level(device_, logLevel_.c_str());
+    }
+
     // run application
     ec = nabto_device_start(device_);
     if (ec != NABTO_DEVICE_EC_OK) {
@@ -236,7 +240,7 @@ NabtoDeviceError HeatPump::initDevice()
 
 void HeatPump::setLogLevel(const std::string& logLevel)
 {
-    nabto_device_set_log_level(device_, logLevel.c_str());
+    logLevel_ = logLevel;
 }
 
 std::string HeatPump::getFingerprint()

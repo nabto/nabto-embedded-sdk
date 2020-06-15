@@ -342,8 +342,7 @@ np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_conne
 
 bool nc_client_connection_is_local(struct nc_client_connection* conn)
 {
-    // TODO: implement
-    return false;
+    return (&conn->device->localUdp == conn->currentChannel.sock);
 }
 
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event)

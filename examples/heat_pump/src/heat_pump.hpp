@@ -114,6 +114,7 @@ class HeatPump {
     nabto::examples::common::DeviceConfig& dc_;
 
     struct nn_log logger_;
+    std::string logLevel_;
     struct nm_iam iam_;
 
     std::unique_ptr<HeatPumpSetPower> coapSetPower_;
