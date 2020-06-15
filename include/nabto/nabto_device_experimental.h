@@ -35,6 +35,28 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, size_t keyLength);
 
 
+/**
+ * Query whether a given connection is local.
+ *
+ * A connection is considered local if it is currently communicating
+ * though a socket only used for local traffic. This ensures the
+ * device has not opened any connections through local firewall. Note
+ * this assumes the device is behind a firewall. If the device is not
+ * behind a firewall, or is located behind a fullcone NAT, it is
+ * possible for a connection to be falsely considered local.
+ *
+ * If the local channel becomes unavailable, the client can seamlessly
+ * switch to a remote channel to keep the connection running. For this
+ * reason, the result of this query should not be cached.
+ *
+ * @param device [in]  The device.
+ * @param ref [in]     The connection reference to query.
+ *
+ * @return true iff local, false otherwise
+ */
+NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+nabto_device_connection_is_local(NabtoDevice* device,
+                                 NabtoDeviceConnectionRef ref);
 
 #ifdef __cplusplus
 } // extern c

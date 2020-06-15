@@ -74,6 +74,8 @@ struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct n
 
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
 
+bool nc_client_connection_is_local(struct nc_client_connection* conn);
+
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event);
 
 #endif //_NC_CLIENT_CONNECTION_H_
