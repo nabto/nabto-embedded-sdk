@@ -114,8 +114,8 @@ bool run_heat_pump(const std::string& configFile, const std::string& stateFile, 
     {
 
         nabto::examples::heat_pump::HeatPump hp(device, privateKey, dc, stateFile);
-        hp.init();
         hp.setLogLevel(logLevel);
+        hp.init();
         if (dumpIam) {
             hp.dumpIam();
         }

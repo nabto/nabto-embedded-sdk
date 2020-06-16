@@ -95,6 +95,7 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
     if (buffer[16] == 22) {
         for (i = 0; i < NABTO_MAX_CLIENT_CONNECTIONS; i++) {
             if(!ctx->elms[i].active) {
+                NABTO_LOG_TRACE(LOG, "Open new connection");
                 np_error_code ec = nc_client_connection_open(ctx->pl, &ctx->elms[i].conn, ctx, ctx->device, sock, ep, buffer, bufferSize);
                 if (ec == NABTO_EC_OK) {
                     ctx->elms[i].active = true;

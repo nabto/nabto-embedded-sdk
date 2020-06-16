@@ -26,6 +26,11 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         nc_device_deinit(device);
         return ec;
     }
+    ec = nc_udp_dispatch_init(&device->localUdp, pl);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
 
     ec = pl->dtlsS.create(pl, &device->dtlsServer);
     if (ec != NABTO_EC_OK) {
@@ -108,6 +113,7 @@ void nc_device_deinit(struct nc_device_context* device) {
         pl->dtlsS.destroy(device->dtlsServer);
     }
     nc_udp_dispatch_deinit(&device->udp);
+    nc_udp_dispatch_deinit(&device->localUdp);
     nc_udp_dispatch_deinit(&device->secondaryUdp);
     np_completion_event_deinit(&device->socketBoundCompletionEvent);
 }
@@ -138,10 +144,36 @@ void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
 
 }
 
-void nc_device_udp_bound_cb(const np_error_code ec, void* data)
+void nc_device_local_udp_bound_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     struct np_platform* pl = dev->pl;
+    if (dev->state == NC_DEVICE_STATE_STOPPED) {
+        // abort
+        NABTO_LOG_TRACE(LOG, "Device state STOPPED while binding local socket");
+        return;
+    }
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "nc_device failed to bind local UDP socket. Device continues without local connections and mDNS. Error: %s", np_error_code_to_string(ec));
+        //dev->state = NC_DEVICE_STATE_STOPPED;
+        return;
+    } else if (dev->enableMdns) {
+        uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
+        NABTO_LOG_TRACE(LOG, "Local socket bound, starting mdns on %d", localPort);
+        np_mdns_publish_service(&pl->mdns, localPort, dev->productId, dev->deviceId);
+    } else {
+        NABTO_LOG_TRACE(LOG, "Local socket bound, no mDNS");
+    }
+    nc_udp_dispatch_set_client_connection_context(&dev->localUdp, &dev->clientConnect);
+    nc_udp_dispatch_start_recv(&dev->localUdp);
+
+    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_udp_bound_cb, dev);
+    nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &dev->socketBoundCompletionEvent);
+}
+
+void nc_device_udp_bound_cb(const np_error_code ec, void* data)
+{
+    struct nc_device_context* dev = (struct nc_device_context*)data;
     if (dev->state == NC_DEVICE_STATE_STOPPED) {
         // nothing is running just abort
         return;
@@ -158,13 +190,8 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 
     nc_udp_dispatch_start_recv(&dev->udp);
 
-    if (dev->enableMdns) {
-        uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->udp);
-        np_mdns_publish_service(&pl->mdns, localPort, dev->productId, dev->deviceId);
-    }
-
-    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_udp_bound_cb, dev);
-    nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &dev->socketBoundCompletionEvent);
+    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_local_udp_bound_cb, dev);
+    nc_udp_dispatch_async_bind(&dev->localUdp, dev->pl, dev->localPort, &dev->socketBoundCompletionEvent);
 }
 
 np_error_code nc_device_start(struct nc_device_context* dev,
@@ -180,17 +207,19 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->deviceId = deviceId;
     dev->hostname = hostname;
     dev->connectionRef = 0;
+    dev->localPort = port;
 
     nc_attacher_set_app_info(&dev->attacher, appName, appVersion);
     nc_attacher_set_device_info(&dev->attacher, productId, deviceId);
 
-    nc_udp_dispatch_async_bind(&dev->udp, pl, port, &dev->socketBoundCompletionEvent);
+    nc_udp_dispatch_async_bind(&dev->udp, pl, 0, &dev->socketBoundCompletionEvent);
     return NABTO_EC_OK;
 }
 
 void nc_device_attach_closed_cb(void* data) {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     nc_udp_dispatch_abort(&dev->udp);
+    nc_udp_dispatch_abort(&dev->localUdp);
     nc_udp_dispatch_abort(&dev->secondaryUdp);
     if (dev->closeCb) {
         nc_device_close_callback cb = dev->closeCb;

@@ -439,6 +439,21 @@ nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device, Nab
     return ec;
 }
 
+NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+nabto_device_connection_is_local(NabtoDevice* device,
+                                 NabtoDeviceConnectionRef ref)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    bool local = false;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
+    if (connection != NULL) {
+        local = nc_client_connection_is_local(connection);
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return local;
+}
+
 /**
  * Closing the device
  */

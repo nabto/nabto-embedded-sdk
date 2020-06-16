@@ -36,9 +36,13 @@ struct nc_device_context {
     bool clientConnsClosed;
     bool isDetached;
 
+    // This is the main socket
     struct nc_udp_dispatch_context udp;
     // this socket is used for the secondary stun socket.
     struct nc_udp_dispatch_context secondaryUdp;
+    // This socket is used for local client connections
+    struct nc_udp_dispatch_context localUdp;
+
     struct nc_attach_context attacher;
     struct nc_stream_manager_context streamManager;
     struct nc_client_connection_dispatch_context clientConnect;
@@ -63,6 +67,7 @@ struct nc_device_context {
     const char* hostname;
 
     uint16_t serverPort;
+    uint16_t localPort;
 
     nc_device_close_callback closeCb;
     void* closeCbData;
