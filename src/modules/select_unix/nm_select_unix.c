@@ -48,12 +48,12 @@ np_error_code nm_select_unix_init(struct nm_select_unix* ctx)
 void nm_select_unix_deinit(struct nm_select_unix* ctx)
 {
     nm_select_unix_stop(ctx);
-    close(ctx->pipefd[0]);
-    close(ctx->pipefd[1]);
 
     if (ctx->thread != 0) {
         pthread_join(ctx->thread, NULL);
     }
+    close(ctx->pipefd[0]);
+    close(ctx->pipefd[1]);
 }
 
 void nm_select_unix_run(struct nm_select_unix* ctx)
@@ -63,10 +63,9 @@ void nm_select_unix_run(struct nm_select_unix* ctx)
 
 void nm_select_unix_stop(struct nm_select_unix* ctx)
 {
-    if (ctx->stopped) {
-        return;
-    }
+    nm_select_unix_lock(ctx);
     ctx->stopped = true;
+    nm_select_unix_unlock(ctx);
     nm_select_unix_notify(ctx);
 }
 
@@ -146,8 +145,10 @@ void* network_thread(void* data)
     struct nm_select_unix* ctx = data;
     while(true) {
         int nfds;
-
-        if (ctx->stopped) {
+        nm_select_unix_lock(ctx);
+        bool stopped = ctx->stopped;
+        nm_select_unix_unlock(ctx);
+        if (stopped) {
             return NULL;
         } else {
             // Wait for events.
