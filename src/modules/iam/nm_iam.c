@@ -194,6 +194,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
 
     nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
+    nm_iam_pairing_local_init(&iam->coapPairingLocalPostHandler, iam->device, iam);
     nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
 
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
@@ -208,6 +209,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
 {
     nm_iam_coap_handler_deinit(&iam->coapPairingGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordPostHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingLocalPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingIsPairedGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingClientSettingsGetHandler);
 

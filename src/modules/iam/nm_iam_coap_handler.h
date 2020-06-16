@@ -33,6 +33,7 @@ void nm_iam_coap_handler_deinit(struct nm_iam_coap_handler* handler);
 // specific handler init functions
 NabtoDeviceError nm_iam_pairing_get_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_pairing_password_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
+NabtoDeviceError nm_iam_pairing_local_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_list_users_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_is_paired_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_client_settings_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);

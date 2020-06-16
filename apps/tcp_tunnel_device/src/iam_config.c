@@ -88,6 +88,14 @@ bool create_default_iam_config(const char* iamConfigFile)
         nm_policy_add_statement(passwordPairingPolicy, stmt);
     }
 
+    struct nm_policy* localPairingPolicy = nm_policy_new("LocalPairing");
+    {
+        struct nm_statement* stmt = nm_statement_new(NM_EFFECT_ALLOW);
+        nm_statement_add_action(stmt, "Pairing:Get");
+        nm_statement_add_action(stmt, "Pairing:Local");
+        nm_policy_add_statement(localPairingPolicy, stmt);
+    }
+
     struct nm_policy* tunnelAllPolicy = nm_policy_new("TunnelAll");
     {
         struct nm_statement* stmt = nm_statement_new(NM_EFFECT_ALLOW);
@@ -113,6 +121,7 @@ bool create_default_iam_config(const char* iamConfigFile)
 
     cJSON* policies = cJSON_CreateArray();
     cJSON_AddItemToArray(policies, nm_policy_to_json(passwordPairingPolicy));
+    cJSON_AddItemToArray(policies, nm_policy_to_json(localPairingPolicy));
     cJSON_AddItemToArray(policies, nm_policy_to_json(tunnelAllPolicy));
     cJSON_AddItemToArray(policies, nm_policy_to_json(pairedPolicy));
     cJSON_AddItemToObject(root, "Policies", policies);
@@ -120,6 +129,7 @@ bool create_default_iam_config(const char* iamConfigFile)
 
     struct nm_iam_role* unpairedRole = nm_iam_role_new("Unpaired");
     nm_iam_role_add_policy(unpairedRole, "PasswordPairing");
+    nm_iam_role_add_policy(unpairedRole, "LocalPairing");
 
     struct nm_iam_role* adminRole = nm_iam_role_new("Admin");
     nm_iam_role_add_policy(adminRole, "TunnelAll");
