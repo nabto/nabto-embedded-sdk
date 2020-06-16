@@ -7,6 +7,7 @@ set(src
   nm_iam_list_users.c
   nm_iam_pairing_get.c
   nm_iam_pairing_password.c
+  nm_iam_pairing_local.c
   nm_iam_auth_handler.c
   nm_iam_coap_handler.c
   nm_iam_is_paired.c
