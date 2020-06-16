@@ -13,5 +13,6 @@ np_error_code nc_coap_error_to_core(nabto_coap_error ec) {
 
 bool nc_coap_is_status_ok(uint16_t code)
 {
-    return ((code >= 0) && (code <= 300));
+
+    return ((code >= 200) && (code < 300));
 }

@@ -149,13 +149,13 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_ready(NabtoDeviceCo
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
-                                                              uint16_t* contentFormat)
+                                                                               uint16_t* contentFormat)
 {
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
     nabto_device_threads_mutex_lock(req->dev->eventMutex);
     int32_t cf = nabto_coap_server_request_get_content_format(req->req);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
-    if (contentFormat >= 0) {
+    if (cf >= 0) {
         *contentFormat = cf;
         return NABTO_DEVICE_EC_OK;
     } else {
