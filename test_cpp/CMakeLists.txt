@@ -26,8 +26,6 @@ set(test_src
   tests/api/new_free.cpp
   tests/api/create_sct.cpp
   tests/api/private_key_test.cpp
-  # TODO move the attach_test to somewhere else where the dtls server
-  #exists or move the dtls server to this repository
   tests/attach/attach_test.cpp
   tests/policies/condition_test.cpp
   tests/policies/condition_json_test.cpp
