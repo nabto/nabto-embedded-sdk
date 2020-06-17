@@ -19,13 +19,13 @@
  * request.
  *
  * mDNS uses a concept called service types. A service type is
- * e.g. _nabto._udp. The service type is concatenated with a domain,
- * e.g. `.local.` to create a domain name. This means that the service
+ * e.g. `_nabto._udp`. The service type is concatenated with a domain,
+ * e.g. `.local` to create a domain name. This means that the service
  * exposed by a mDNS server for the nabto service is
  * `_nabto._udp.local`.
  *
  * An mDNS server then listens for PTR queries. When a PTR request for
- * `_nabto._udp.local` is received the mdns server answers the request
+ * `_nabto._udp.local` is received the mDNS server answers the request
  * with the name of the nabto service on the device
  * e.g. `<device-id>._nabto._udp.local`.
  *
@@ -40,7 +40,7 @@
  * Implementations of this module should expose an mDNS service with
  * the following items:
  *
- * Service type: `_nabto._udp.`
+ * Service type: `_nabto._udp`
  * Txt records: `productid=<productid>, deviceid=<deviceid>`
  * Port number: `<the udp port number of the nabto service>`
  */
