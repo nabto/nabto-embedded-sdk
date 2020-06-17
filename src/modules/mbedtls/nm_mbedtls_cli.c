@@ -543,8 +543,14 @@ np_error_code dtls_cli_close(struct np_dtls_cli_context* ctx)
         return NABTO_EC_INVALID_ARGUMENT;
     }
     if ( ctx->state != CLOSING) {
+        NABTO_LOG_TRACE(LOG, "Closing DTLS cli from state: %u", ctx->state);
         ctx->state = CLOSING;
         mbedtls_ssl_close_notify(&ctx->ssl);
+        if (!ctx->sending) {
+            nm_dtls_do_close(ctx, /*unused*/ NABTO_EC_OK);
+        }
+    } else {
+        NABTO_LOG_TRACE(LOG, "Tried Closing DTLS cli but was already closed");
     }
     return NABTO_EC_OK;
 }
@@ -571,6 +577,9 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     if (data == NULL) {
         return;
     }
+    if (ctx->state == CLOSING) {
+        NABTO_LOG_TRACE(LOG, "udp send cb after close");
+    }
     ctx->sending = false;
     ctx->sslSendBufferSize = 0;
     if(ctx->state == CLOSING) {
@@ -587,6 +596,9 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
 {
     struct np_dtls_cli_context* ctx = data;
     struct np_platform* pl = ctx->pl;
+    if (ctx->state == CLOSING) {
+        NABTO_LOG_TRACE(LOG, "mbedtls want send after close");
+    }
     if (ctx->sslSendBufferSize == 0) {
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
@@ -595,6 +607,12 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
         if (ec != NABTO_EC_OK) {
             ctx->sending = false;
             ctx->sslSendBufferSize = 0;
+            if(ctx->state == CLOSING) {
+                nm_dtls_do_close(ctx, /* ec unused */NABTO_EC_OK);
+                if (ctx->destroyed) {
+                    nm_mbedtls_cli_do_free(ctx);
+                }
+            }
             return MBEDTLS_ERR_SSL_WANT_WRITE;
         }
         return bufferSize;
