@@ -583,24 +583,24 @@ Since an event queue implementation is already supplied, the interface will not 
 
 ## mDNS - `struct np_mdns_functions`
 
-The Nabto Edge platform uses mDNS for disccovery on the local
+The Nabto Edge platform uses mDNS for discovery on the local
 network. That is, if a client needs to find a local device on the local
 network.
 
-Some systems comes with their own mDNS service, on these systems we
+Some systems come with their own mDNS service, on these systems we
 recommend to use the system provided mDNS service. If a system does
 not provide an mDNS service, we have a generic service which is located
 in the `src/modules/mdns` folder.
 
-The jobs of the MDNS discovery is:
+The jobs of the mDNS discovery are:
 
  1. Inform a client about local devices with Nabto Edge.
  2. Tell the client at which ip and port the Nabto Edge service is
      running on the device.
 
-### Requirement for Nabto Edge devices to be discovered via MDNS
+### Requirement for Nabto Edge devices to be discovered via mDNS
 
-1. Provide discovable Service Type Identifier of : `_nabto._upd`
+1. Provide discovable Service Type Identifier of : `_nabto._udp`
 2. Provide Text record with two key/values pairs:
     * `productid=<productId>`
     * `deviceid=<deviceId>`
