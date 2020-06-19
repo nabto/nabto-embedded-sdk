@@ -1,4 +1,7 @@
 
+set(ne_dir ${CMAKE_CURRENT_LIST_DIR})
+
+
 # Nabto mbedtls wrapper
 set(ne_mbedtls_wrapper ${ne_dir}/src/modules/mbedtls)
 set(ne_dtls_common_src
@@ -88,4 +91,39 @@ set(ne_tcp_tunnel_src
   ${ne_tcp_tunnel_dir}/nm_tcp_tunnel_connection.c
   ${ne_tcp_tunnel_dir}/nm_tcp_tunnel_coap.c
   ${ne_tcp_tunnel_dir}/nm_tcp_tunnel.c
+)
+
+
+
+# Nabto iam impl.
+set(ne_iam_dir ${ne_dir}/src/modules/iam)
+set(ne_iam_src
+  ${ne_iam_dir}/nm_iam.c
+  ${ne_iam_dir}/nm_iam_role.c
+  ${ne_iam_dir}/nm_iam_user.c
+  ${ne_iam_dir}/nm_iam_to_json.c
+  ${ne_iam_dir}/nm_iam_from_json.c
+  ${ne_iam_dir}/nm_iam_list_users.c
+  ${ne_iam_dir}/nm_iam_pairing_get.c
+  ${ne_iam_dir}/nm_iam_pairing_password.c
+  ${ne_iam_dir}/nm_iam_pairing_local.c
+  ${ne_iam_dir}/nm_iam_auth_handler.c
+  ${ne_iam_dir}/nm_iam_coap_handler.c
+  ${ne_iam_dir}/nm_iam_is_paired.c
+  ${ne_iam_dir}/nm_iam_get_user.c
+  ${ne_iam_dir}/nm_iam_delete_user.c
+  ${ne_iam_dir}/nm_iam_list_roles.c
+  ${ne_iam_dir}/nm_iam_remove_role_from_user.c
+  ${ne_iam_dir}/nm_iam_add_role_to_user.c
+  ${ne_iam_dir}/nm_iam_client_settings.c
+)
+
+# Nabto policies impl.
+set(ne_policies_dir ${ne_dir}/src/modules/policies)
+set(ne_policies_src
+  ${ne_policies_dir}/nm_condition.c
+  ${ne_policies_dir}/nm_statement.c
+  ${ne_policies_dir}/nm_policy.c
+  ${ne_policies_dir}/nm_policies_from_json.c
+  ${ne_policies_dir}/nm_policies_to_json.c
 )
