@@ -30,24 +30,46 @@ see `doc/platform_integration_howto.md` and
 
 The source is split into several parts.
 
+### `src/api`
+
+This is an implementation of the thread/mutex based device api defined
+in `<nabto/nabto_device.h>`.
+
+### `src/api_test`
+
+This folder contains tests programs which can be used from the api
+layer. The tests is implementation of the test functions found in
+`<nabto/nabto_device_test.h>`. The idea is that these tests can
+be run on a custom platform integration for the `<nabto/nabto_device.h>`
+API.
+
+### `src/platform/interfaces`
+
+The platform interfaces folder contains platform interfaces for
+functionality like TCP, UDP, DNS, Event Queue, Timestamps, etc.
+
 ### `src/platform`
 
-The platform folder contains a platform which is used to run the
-core. The platform contains functionality for things like UDP, TCP,
-timestamps, DNS resolution, DTLS, etc. See
-`src/platform/np_platform.h` for futher information.
+The platform folder contains some utility functions and wrappers for
+the interfaces defined in `src/platform/interfaces`
 
 ### `src/core`
 
-The core is the nabto communication protocol, the core uses the
-platform and implements the core of the embedded nabto communication
-system.
+The core functionality of the Nabto Edge device is implemented
+here. This implements the communication protocols and inner working of
+the device, like connection management.
 
 ### `src/modules`
 
 Modules is the folder where modules for specific targets
 exists. Modules can be for encryption, networking, timing, logging
 etc.
+
+### `src/nabto_device_libevent`
+
+This is the default implementation of the `<nabto/nabto_device.h>` API
+for Linux, Windows and Mac. The implementation relies on libevent as
+the name suggests.
 
 ### `nabto-common`
 
