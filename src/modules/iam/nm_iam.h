@@ -81,13 +81,6 @@ bool nm_iam_enable_password_pairing(struct nm_iam* iam, const char* pairingPassw
 bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerConnectToken);
 
 /**
- * Enable client settings.
- *
- * This allows client settings to be provisioned by a coap request to the device
- */
-void nm_iam_enable_client_settings(struct nm_iam* iam, const char* clientServerUrl, const char* clientServerKey);
-
-/**
  * Set change callbacks such that state can be persisted
  */
 void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChange, void* data);

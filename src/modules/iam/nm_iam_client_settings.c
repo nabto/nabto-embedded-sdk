@@ -22,16 +22,6 @@ static size_t encode_response(struct nm_iam* iam, struct nm_iam_user* user, void
     CborEncoder map;
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
 
-    if (iam->clientServerKey != NULL) {
-        cbor_encode_text_stringz(&map, "ServerKey");
-        cbor_encode_text_stringz(&map, iam->clientServerKey);
-    }
-
-    if (iam->clientServerUrl != NULL) {
-        cbor_encode_text_stringz(&map, "ServerUrl");
-        cbor_encode_text_stringz(&map, iam->clientServerUrl);
-    }
-
     if (user->serverConnectToken != NULL) {
         cbor_encode_text_stringz(&map, "ServerConnectToken");
         cbor_encode_text_stringz(&map, user->serverConnectToken);

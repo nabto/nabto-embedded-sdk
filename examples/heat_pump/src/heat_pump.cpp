@@ -62,8 +62,6 @@ bool HeatPump::init()
 
     nm_iam_enable_password_pairing(&iam_, pairingPassword_.c_str());
 
-    nm_iam_enable_client_settings(&iam_, dc_.getClientServerUrl().c_str(), dc_.getClientServerKey().c_str());
-
     nm_iam_enable_remote_pairing(&iam_, pairingServerConnectToken_.c_str());
 
     initCoapHandlers();
@@ -204,10 +202,17 @@ NabtoDeviceError HeatPump::initDevice()
     if (ec) {
         return ec;
     }
-    ec = nabto_device_set_server_url(device_, dc_.getServer().c_str());
-    if (ec) {
-        return ec;
+    try {
+        std::string url = dc_.getServer();
+        ec = nabto_device_set_server_url(device_, url.c_str());
+        std::cout << "serverURL set to: " << url << std::endl;
+        if (ec) {
+            return ec;
+        }
+    } catch (...) {
+        // Ignore missing server, api will fix
     }
+
     ec = nabto_device_set_private_key(device_, privateKey_.c_str());
     if (ec) {
         return ec;
@@ -256,13 +261,11 @@ std::string HeatPump::createPairingLink()
 {
     std::stringstream ss;
     ss << "https://heatpump.nabto.com/pairing"
-       << "?ProductId=" << dc_.getProductId()
-       << "&DeviceId=" << dc_.getDeviceId()
-       << "&DeviceFingerprint=" << getFingerprint()
-       << "&ClientServerUrl=" << dc_.getClientServerUrl()
-       << "&ClientServerKey=" << dc_.getClientServerKey()
-       << "&PairingPassword=" << pairingPassword_
-       << "&ClientServerConnectToken=" << pairingServerConnectToken_;
+       << "?p=" << dc_.getProductId()
+       << "&d=" << dc_.getDeviceId()
+       << "&fp=" << getFingerprint()
+       << "&pwd=" << pairingPassword_
+       << "&sct=" << pairingServerConnectToken_;
     return ss.str();
 }
 
@@ -273,9 +276,10 @@ void HeatPump::printHeatpumpInfo()
     std::cout << "# Device ID:                  " << dc_.getDeviceId() << std::endl;
     std::cout << "# Fingerprint:                " << getFingerprint() << std::endl;
     std::cout << "# Pairing Password            " << pairingPassword_ << std::endl;
-    std::cout << "# Server:                     " << dc_.getServer() << std::endl;
-    std::cout << "# Client Server Url           " << dc_.getClientServerUrl() << std::endl;
-    std::cout << "# Client Server Key           " << dc_.getClientServerKey() << std::endl;
+    try {
+        std::string server = dc_.getServer();
+        std::cout << "# Server:                     " << server << std::endl;
+    } catch(...) {} // Ignore missing server
     std::cout << "# Client Server Connect Token " << pairingServerConnectToken_ << std::endl;
     std::cout << "# Version:                    " << nabto_device_version() << std::endl;
     std::cout << "# Pairing URL                 " << createPairingLink() << std::endl;
@@ -339,6 +343,7 @@ void HeatPump::loadIamPolicy()
         auto s = nm_statement_new(NM_EFFECT_ALLOW);
         nm_statement_add_action(s, "Pairing:Get");
         nm_statement_add_action(s, "Pairing:Password");
+        nm_statement_add_action(s, "Pairing:Local");
         nm_policy_add_statement(p,s);
         nm_iam_add_policy(&iam_, p);
     }

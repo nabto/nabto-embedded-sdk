@@ -25,8 +25,7 @@ class DeviceConfig
     {
         return
             config_["ProductId"].is_string() &&
-            config_["DeviceId"].is_string() &&
-            config_["Server"].is_string();
+            config_["DeviceId"].is_string();
     }
 
     std::string getProductId()
