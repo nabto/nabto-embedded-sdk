@@ -81,8 +81,8 @@ bool create_default_tcp_tunnel_state(const char* stateFile)
 {
     struct tcp_tunnel_state state;
     tcp_tunnel_state_init(&state);
-    state.pairingPassword = random_password(20);
-    state.pairingServerConnectToken = random_password(20);
+    state.pairingPassword = random_password(12);
+    state.pairingServerConnectToken = random_password(12);
 
 
     bool status = write_state_to_file(stateFile, &state);

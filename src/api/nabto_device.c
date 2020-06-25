@@ -559,10 +559,10 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
 
     struct np_platform* pl = &dev->pl;
 
-    char output[21];
-    memset(output, 0, 21);
+    char output[13];
+    memset(output, 0, 13);
     size_t generated = 0;
-    while (generated < 20) {
+    while (generated < 12) {
         uint8_t randByte;
 
         ec = pl->random.random(pl, &randByte, 1);
