@@ -328,7 +328,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
     if (dev->serverUrl == NULL) {
-        dev->serverUrl = malloc(strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
+        dev->serverUrl = calloc(1, strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
         if (dev->serverUrl == NULL) {
             return NABTO_DEVICE_EC_OUT_OF_MEMORY;
         }

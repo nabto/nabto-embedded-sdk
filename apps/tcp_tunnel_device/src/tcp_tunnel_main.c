@@ -100,9 +100,11 @@ void print_device_config_load_failed(const char* fileName)
 {
     printf("Could not open or parse the device config file (%s)." NEWLINE, fileName);
     printf("Please ensure the file exists and has the following format." NEWLINE);
+    printf("The Server field is optional." NEWLINE);
     printf("{" NEWLINE);
     printf("  \"ProductId\": \"pr-abcd1234\"," NEWLINE);
     printf("  \"DeviceId\": \"de-abcd1234\"," NEWLINE);
+    printf("  \"Server\": \"pr-abcd1234.devices.nabto.net or pr-abcd1234.devices.dev.nabto.net or something else.\"," NEWLINE);
     printf("}" NEWLINE);
 }
 
@@ -238,7 +240,7 @@ char* generate_pairing_url(const char* productId, const char* deviceId, const ch
 {
     char* buffer = calloc(1, 1024); // long enough!
 
-    sprintf(buffer, "https://tcp-tunnel.nabto.com/pairing?ProductId=%s&DeviceId=%s&DeviceFingerprint=%s&PairingPassword=%s&ClientServerConnectToken=%s",
+    sprintf(buffer, "https://tcp-tunnel.nabto.com/pairing?p=%s&d=%s&fp=%s&pwd=%s&sct=%s",
             productId,
             deviceId,
             deviceFingerprint,
