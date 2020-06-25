@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     options.add_options("General")
         ("h,help", "Show help")
         ("version", "Show version")
-        ("config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device_config.json"))
+        ("config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device.json"))
         ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("heat_pump_state.json"))
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
         ("dump-iam", "Print the iam configuration when the device is started, Policies, Roles Users");
@@ -95,6 +95,7 @@ bool run_heat_pump(const std::string& configFile, const std::string& stateFile, 
 
     if (!dc.isValid()) {
         print_invalid_device_config_help(configFile);
+        return false;
     }
 
     std::stringstream keyFileName;
