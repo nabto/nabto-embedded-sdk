@@ -9,8 +9,6 @@ struct device_config {
     char* productId;
     char* deviceId;
     char* server;
-    char* clientServerKey;
-    char* clientServerUrl;
 };
 
 void device_config_init(struct device_config* config);

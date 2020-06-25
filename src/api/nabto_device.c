@@ -31,6 +31,8 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
+static const char* defaultServerUrlSuffix = ".devices.nabto.net";
+
 void nabto_device_free_threads(struct nabto_device_context* dev);
 void nabto_device_do_stop(struct nabto_device_context* dev);
 
@@ -317,13 +319,24 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
-    if (dev->publicKey == NULL || dev->privateKey == NULL || dev->serverUrl == NULL) {
-        NABTO_LOG_ERROR(LOG, "Encryption key pair or server URL not set");
+    if (dev->publicKey == NULL || dev->privateKey == NULL) {
+        NABTO_LOG_ERROR(LOG, "Encryption key pair not set");
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
     if (dev->deviceId == NULL || dev->productId == NULL) {
         NABTO_LOG_ERROR(LOG, "Missing deviceId or productdId");
         return NABTO_DEVICE_EC_INVALID_STATE;
+    }
+    if (dev->serverUrl == NULL) {
+        dev->serverUrl = malloc(strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
+        if (dev->serverUrl == NULL) {
+            return NABTO_DEVICE_EC_OUT_OF_MEMORY;
+        }
+        char* ptr = dev->serverUrl;
+
+        strcpy(ptr, dev->productId);
+        ptr = ptr + strlen(dev->productId);
+        strcpy(ptr, defaultServerUrlSuffix);
     }
 
 

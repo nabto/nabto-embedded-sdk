@@ -12,7 +12,6 @@
 
 #include <nn/llist.h>
 
-
 struct nabto_device_coap_resource;
 struct nm_tcp_tunnels;
 

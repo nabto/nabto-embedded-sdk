@@ -62,8 +62,6 @@ bool HeatPump::init()
 
     nm_iam_enable_password_pairing(&iam_, pairingPassword_.c_str());
 
-    nm_iam_enable_client_settings(&iam_, dc_.getClientServerUrl().c_str(), dc_.getClientServerKey().c_str());
-
     nm_iam_enable_remote_pairing(&iam_, pairingServerConnectToken_.c_str());
 
     initCoapHandlers();

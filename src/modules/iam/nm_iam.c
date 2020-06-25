@@ -192,7 +192,7 @@ bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerC
 void init_coap_handlers(struct nm_iam* iam)
 {
     nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
-
+    nm_iam_client_settings_init(&iam->coapPairingClientSettingsGetHandler, iam->device, iam);
     nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
     nm_iam_pairing_local_init(&iam->coapPairingLocalPostHandler, iam->device, iam);
     nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
@@ -427,13 +427,6 @@ void nm_iam_delete_user(struct nm_iam* iam, const char* userId)
     }
 }
 
-
-void nm_iam_enable_client_settings(struct nm_iam* iam, const char* clientServerUrl, const char* clientServerKey)
-{
-    iam->clientServerUrl = strdup(clientServerUrl);
-    iam->clientServerKey = strdup(clientServerKey);
-    nm_iam_client_settings_init(&iam->coapPairingClientSettingsGetHandler, iam->device, iam);
-}
 
 void nm_iam_remove_role_from_user(struct nm_iam* iam, const char* userId, const char* roleId)
 {
