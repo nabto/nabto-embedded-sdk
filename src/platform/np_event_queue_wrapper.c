@@ -6,12 +6,12 @@
 
 np_error_code np_event_queue_create_event(struct np_event_queue* eq, np_event_callback cb, void* data, struct np_event** event)
 {
-    return eq->vptr->create(eq, cb, data, event);
+    return eq->mptr->create(eq, cb, data, event);
 }
 
 void np_event_queue_destroy_event(struct np_event_queue* eq, struct np_event* event)
 {
-    return eq->vptr->destroy(event);
+    return eq->mptr->destroy(event);
 }
 
 /**
@@ -19,7 +19,7 @@ void np_event_queue_destroy_event(struct np_event_queue* eq, struct np_event* ev
  */
 void np_event_queue_post(struct np_event_queue* eq, struct np_event* event)
 {
-    eq->vptr->post(event);
+    eq->mptr->post(event);
 }
 
 /**
@@ -28,15 +28,15 @@ void np_event_queue_post(struct np_event_queue* eq, struct np_event* event)
  */
 void np_event_queue_post_maybe_double(struct np_event_queue* eq, struct np_event* event)
 {
-    eq->vptr->post_maybe_double(event);
+    eq->mptr->post_maybe_double(event);
 }
 
 void np_event_queue_post_timed_event(struct np_event_queue* eq, struct np_event* event, uint32_t milliseconds)
 {
-    eq->vptr->post_timed(event, milliseconds);
+    eq->mptr->post_timed(event, milliseconds);
 }
 
 void np_event_queue_cancel_event(struct np_event_queue* eq, struct np_event* ev)
 {
-    eq->vptr->cancel(ev);
+    eq->mptr->cancel(ev);
 }

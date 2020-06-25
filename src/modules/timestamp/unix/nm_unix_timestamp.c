@@ -6,14 +6,14 @@
 
 static uint32_t ts_now_ms(struct np_timestamp* obj);
 
-static struct np_timestamp_functions vtable = {
+static struct np_timestamp_functions module = {
     .now_ms               = &ts_now_ms
 };
 
 struct np_timestamp nm_unix_ts_get_impl()
 {
     struct np_timestamp ts;
-    ts.vptr = &vtable;
+    ts.mptr = &module;
     ts.data = NULL;
     return ts;
 }

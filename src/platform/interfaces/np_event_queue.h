@@ -26,7 +26,7 @@ struct np_event;
 struct np_event_queue_functions;
 
 struct np_event_queue {
-    const struct np_event_queue_functions* vptr;
+    const struct np_event_queue_functions* mptr;
     // Pointer to implementation specific data.
     void* data;
 };

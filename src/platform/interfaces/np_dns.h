@@ -17,7 +17,7 @@ struct np_completion_event;
 struct np_dns_functions;
 
 struct np_dns {
-    const struct np_dns_functions* vptr;
+    const struct np_dns_functions* mptr;
     // Pointer to implementation specific data.
     void* data;
 };

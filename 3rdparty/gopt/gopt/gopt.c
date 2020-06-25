@@ -216,8 +216,8 @@ void *gopt_sort( int *argc, const char **argv, const void *opt_specs ){
   return opts;
 }
 
-size_t gopt( const void *vptr_opts, int key ){
-  const opt_t *opts= vptr_opts;
+size_t gopt( const void *mptr_opts, int key ){
+  const opt_t *opts= mptr_opts;
   size_t count= 0;
   for( ; opts-> key; ++opts )
     count+= opts-> key == key;
@@ -225,8 +225,8 @@ size_t gopt( const void *vptr_opts, int key ){
   return count;
 }
 
-size_t gopt_arg( const void *vptr_opts, int key, const char **arg ){
-  const opt_t *opts= vptr_opts;
+size_t gopt_arg( const void *mptr_opts, int key, const char **arg ){
+  const opt_t *opts= mptr_opts;
   size_t count= 0;
  
   for( ; opts-> key; ++opts )
@@ -238,8 +238,8 @@ size_t gopt_arg( const void *vptr_opts, int key, const char **arg ){
   return count;
 }
 
-const char *gopt_arg_i( const void *vptr_opts, int key, size_t i ){
-  const opt_t *opts= vptr_opts;
+const char *gopt_arg_i( const void *mptr_opts, int key, size_t i ){
+  const opt_t *opts= mptr_opts;
   
   for( ; opts-> key; ++opts )
     if( opts-> key == key ){
@@ -250,10 +250,10 @@ const char *gopt_arg_i( const void *vptr_opts, int key, size_t i ){
   return NULL;
 }
 
-size_t gopt_args( const void *vptr_opts, int key, const char **args, size_t args_len ){
+size_t gopt_args( const void *mptr_opts, int key, const char **args, size_t args_len ){
   const char **args_stop= args + args_len;
   const char **args_ptr= args;
-  const opt_t *opts= vptr_opts;
+  const opt_t *opts= mptr_opts;
 
   for( ; opts-> key; ++opts )
     if( opts-> key == key ){
@@ -267,6 +267,6 @@ size_t gopt_args( const void *vptr_opts, int key, const char **args, size_t args
   return args_ptr - args;
 }
 
-void gopt_free( void *vptr_opts ){
-  free( vptr_opts );
+void gopt_free( void *mptr_opts ){
+  free( mptr_opts );
 }

@@ -30,7 +30,7 @@ static void mdns_update_ipv4_socket_registration(int sock);
 static void mdns_update_ipv6_socket_registration(int sock);
 
 
-static struct nm_mdns_udp_bind_functions vtable = {
+static struct nm_mdns_udp_bind_functions module = {
     .async_bind_mdns_ipv4 = &nm_select_unix_async_bind_mdns_ipv4,
     .async_bind_mdns_ipv6 = &nm_select_unix_async_bind_mdns_ipv6
 };
@@ -38,7 +38,7 @@ static struct nm_mdns_udp_bind_functions vtable = {
 struct nm_mdns_udp_bind nm_select_unix_mdns_udp_bind_get_impl(struct nm_select_unix* ctx)
 {
     struct nm_mdns_udp_bind obj;
-    obj.vptr = &vtable;
+    obj.mptr = &module;
     obj.data = ctx;
     return obj;
 }
