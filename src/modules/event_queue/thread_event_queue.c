@@ -22,7 +22,7 @@ static void post_timed_event(struct np_event* event, uint32_t milliseconds);
 
 static void* queue_thread(void* data);
 
-static struct np_event_queue_functions vtable = {
+static struct np_event_queue_functions mtable = {
     .create = &create_event,
     .destroy = &destroy_event,
     .post = &post_event,
@@ -34,7 +34,7 @@ static struct np_event_queue_functions vtable = {
 struct np_event_queue thread_event_queue_get_impl(struct thread_event_queue* queue)
 {
     struct np_event_queue eq;
-    eq.vptr = &vtable;
+    eq.mptr = &mtable;
     eq.data = queue;
     return eq;
 }

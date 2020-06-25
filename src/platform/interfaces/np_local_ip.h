@@ -12,7 +12,7 @@ struct np_local_ip_functions;
 
 struct np_local_ip {
     // Pointer to a struct defining the local ip function.
-    const struct np_local_ip_functions* vptr;
+    const struct np_local_ip_functions* mptr;
     // Pointer to implementation specific data.
     void* data;
 };

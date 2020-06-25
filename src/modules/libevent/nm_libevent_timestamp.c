@@ -18,7 +18,7 @@
 
 static uint32_t ts_now_ms(struct np_timestamp* obj);
 
-static const struct np_timestamp_functions vtable = {
+static const struct np_timestamp_functions mtable = {
     .now_ms = &ts_now_ms
 };
 
@@ -26,7 +26,7 @@ static const struct np_timestamp_functions vtable = {
 struct np_timestamp nm_libevent_timestamp_get_impl(struct nm_libevent_context* ctx)
 {
     struct np_timestamp obj;
-    obj.vptr = &vtable;
+    obj.mptr = &mtable;
     obj.data = ctx;
     return obj;
 }

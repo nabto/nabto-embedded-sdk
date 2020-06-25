@@ -19,7 +19,7 @@ struct np_udp_endpoint {
 };
 
 struct np_udp {
-    const struct np_udp_functions* vptr;
+    const struct np_udp_functions* mptr;
     // Pointer to data which is implementation specific.
     void* data;
 };

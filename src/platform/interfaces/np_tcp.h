@@ -19,7 +19,7 @@ struct np_tcp_functions;
 
 
 struct np_tcp {
-    const struct np_tcp_functions* vptr;
+    const struct np_tcp_functions* mptr;
     // Pointer to data which is implementation specific
     void* data;
 };

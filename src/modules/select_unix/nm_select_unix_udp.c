@@ -46,7 +46,7 @@ static np_error_code create_socket_any(struct np_udp_socket* s);
 
 
 
-static struct np_udp_functions vtable = {
+static struct np_udp_functions mtable = {
     .create           = &nm_select_unix_udp_create,
     .destroy          = &nm_select_unix_udp_destroy,
     .abort            = &nm_select_unix_udp_abort,
@@ -61,7 +61,7 @@ static struct np_udp_functions vtable = {
 struct np_udp nm_select_unix_udp_get_impl(struct nm_select_unix* ctx)
 {
     struct np_udp obj;
-    obj.vptr = &vtable;
+    obj.mptr = &mtable;
     obj.data = ctx;
     return obj;
 }

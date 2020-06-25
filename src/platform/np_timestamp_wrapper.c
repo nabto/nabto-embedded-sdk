@@ -2,7 +2,7 @@
 
 uint32_t np_timestamp_now_ms(struct np_timestamp* obj)
 {
-    return obj->vptr->now_ms(obj);
+    return obj->mptr->now_ms(obj);
 }
 
 bool np_timestamp_passed_or_now(struct np_timestamp* obj, uint32_t stamp)

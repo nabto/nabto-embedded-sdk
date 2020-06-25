@@ -27,14 +27,14 @@ static void nm_mdns_update_local_ips(struct nm_mdns_server* mdns);
 
 static void publish_service(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId);
 
-static struct np_mdns_functions vtable = {
+static struct np_mdns_functions mtable = {
     .publish_service = publish_service
 };
 
 struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server)
 {
     struct np_mdns obj;
-    obj.vptr = &vtable;
+    obj.mptr = &mtable;
     obj.data = server;
     return obj;
 }
@@ -334,10 +334,10 @@ void nm_mdns_packet_sent_v6(const np_error_code ec, void* userData)
 
 void nm_mdns_udp_bind_async_ipv4(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
-    return udp->vptr->async_bind_mdns_ipv4(sock, completionEvent);
+    return udp->mptr->async_bind_mdns_ipv4(sock, completionEvent);
 }
 
 void nm_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
-    return udp->vptr->async_bind_mdns_ipv6(sock, completionEvent);
+    return udp->mptr->async_bind_mdns_ipv6(sock, completionEvent);
 }

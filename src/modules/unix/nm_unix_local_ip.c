@@ -11,14 +11,14 @@
 
 static size_t get_local_ips(struct np_local_ip* obj, struct np_ip_address *addrs, size_t addrsSize);
 
-static struct np_local_ip_functions vtable = {
+static struct np_local_ip_functions mtable = {
     .get_local_ips = get_local_ips
 };
 
 struct np_local_ip nm_unix_local_ip_get_impl()
 {
     struct np_local_ip obj;
-    obj.vptr = &vtable;
+    obj.mptr = &mtable;
     obj.data = NULL;
     return obj;
 }
