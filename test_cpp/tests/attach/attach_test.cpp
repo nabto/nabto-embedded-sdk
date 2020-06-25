@@ -64,6 +64,20 @@ class AttachTest {
         attach_.defaultPort = port;
     }
 
+    void niceClose(std::function<void (AttachTest& at)> cb)
+    {
+        closed_ = cb;
+        nc_attacher_async_close(&attach_, &AttachTest::closeCb, this);
+    }
+
+    static void closeCb(void* data)
+    {
+        AttachTest* at = (AttachTest*)data;
+        if (!at->ended_)  {
+            at->closed_(*at);
+        }
+    }
+
     static void stateListener(enum nc_attacher_attach_state state, void* data)
     {
         AttachTest* at = (AttachTest*)data;
@@ -119,6 +133,7 @@ class AttachTest {
     const char* deviceId_ = "devTest";
     std::function<void (AttachTest& at)> event_;
     std::function<void (AttachTest& at)> state_;
+    std::function<void (AttachTest& at)> closed_;
     bool ended_ = false;
     struct np_event* endEvent_;
 
@@ -131,6 +146,59 @@ class AttachTest {
 } }
 
 BOOST_AUTO_TEST_SUITE(attach)
+
+BOOST_AUTO_TEST_CASE(attach_close, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      at.end();
+                                  });
+                 }
+             },[](nabto::test::AttachTest& at){ });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * stop the IO service nicely in all tests
+     ******************************************************************/
+    ioService->stop();
+}
+
+BOOST_AUTO_TEST_CASE(attach_close_before_attach, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    at.start([](nabto::test::AttachTest& at){ },[](nabto::test::AttachTest& at){
+                 if (at.attach_.state == NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST) {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      at.end();
+                                  });
+                 }
+             });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * stop the IO service nicely in all tests
+     ******************************************************************/
+    ioService->stop();
+}
 
 BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
 {
