@@ -67,7 +67,7 @@ static np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port);
 static np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize);
 static void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec);
 
-static struct np_udp_functions mtable = {
+static struct np_udp_functions module = {
     .create               = &udp_create,
     .destroy              = &udp_destroy,
     .abort                = &udp_abort,
@@ -81,7 +81,7 @@ static struct np_udp_functions mtable = {
 struct np_udp nm_libevent_udp_get_impl(struct nm_libevent_context* ctx)
 {
     struct np_udp obj;
-    obj.mptr = &mtable;
+    obj.mptr = &module;
     obj.data = ctx;
     return obj;
 }

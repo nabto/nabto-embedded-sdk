@@ -205,7 +205,7 @@ uint32_t ts_now_ms(struct np_timestamp* obj)
 To create the np_timestamp_functions table you could do the following:
 
 ```
-static struct np_timestamp_functions mtable = {
+static struct np_timestamp_functions module = {
     .now_ms               = &ts_now_ms
 };
 ```
@@ -216,7 +216,7 @@ And to make a function that setup the np_timestamp struct is would look like:
 struct np_timestamp nm_unix_ts_create()
 {
     struct np_timestamp ts;
-    ts.mptr = &mtable;
+    ts.mptr = &module;
     ts.data = NULL;
     return ts;
 }
@@ -676,14 +676,14 @@ The ESP32 comes with an mDNS server, https://docs.espressif.com/projects/esp-idf
 Assuming the mDNS server is started acording to the documentation, then the mDNS integration is as follows.
 
 ```
-static struct np_mdns_functions mtable = {
+static struct np_mdns_functions module = {
     .publish_service = &publish_service
 };
 
 struct np_mdns esp32_mdns_get_impl()
 {
     struct np_mdns obj;
-    obj.mptr = &mtable;
+    obj.mptr = &module;
     obj.data = NULL;
     return obj;
 }

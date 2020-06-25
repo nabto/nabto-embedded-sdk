@@ -35,7 +35,7 @@ struct np_event {
     struct event event;
 };
 
-static struct np_event_queue_functions mtable = {
+static struct np_event_queue_functions module = {
     .create = &create,
     .destroy = &destroy,
     .post = &post,
@@ -50,7 +50,7 @@ struct np_event_queue libevent_event_queue_create(struct event_base* eventBase, 
     eq->eventBase = eventBase;
     eq->mutex = mutex;
     struct np_event_queue obj;
-    obj.mptr = &mtable;
+    obj.mptr = &module;
     obj.data = eq;
     return obj;
 }

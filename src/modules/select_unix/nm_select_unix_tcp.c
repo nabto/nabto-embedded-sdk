@@ -33,7 +33,7 @@ static void is_connected(struct np_tcp_socket* sock);
 static void tcp_do_write(struct np_tcp_socket* sock);
 static void tcp_do_read(struct np_tcp_socket* sock);
 
-static struct np_tcp_functions mtable = {
+static struct np_tcp_functions module = {
     .create = &create,
     .destroy = &destroy,
     .async_connect = &async_connect,
@@ -46,7 +46,7 @@ static struct np_tcp_functions mtable = {
 struct np_tcp nm_select_unix_tcp_get_impl(struct nm_select_unix* ctx)
 {
     struct np_tcp obj;
-    obj.mptr = &mtable;
+    obj.mptr = &module;
     obj.data = ctx;
     return obj;
 }

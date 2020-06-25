@@ -35,14 +35,14 @@
 static size_t get_local_ips(struct np_local_ip* obj, struct np_ip_address *addrs, size_t addrsSize);
 
 
-const struct np_local_ip_functions mtable = {
+const struct np_local_ip_functions module = {
     .get_local_ips = get_local_ips
 };
 
 struct np_local_ip nm_libevent_local_ip_get_impl(struct nm_libevent_context* ctx)
 {
     struct np_local_ip obj;
-    obj.mptr = &mtable;
+    obj.mptr = &module;
     obj.data = ctx;
     return obj;
 }

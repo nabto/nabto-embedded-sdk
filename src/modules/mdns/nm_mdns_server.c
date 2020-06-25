@@ -27,14 +27,14 @@ static void nm_mdns_update_local_ips(struct nm_mdns_server* mdns);
 
 static void publish_service(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId);
 
-static struct np_mdns_functions mtable = {
+static struct np_mdns_functions module = {
     .publish_service = publish_service
 };
 
 struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server)
 {
     struct np_mdns obj;
-    obj.mptr = &mtable;
+    obj.mptr = &module;
     obj.data = server;
     return obj;
 }
