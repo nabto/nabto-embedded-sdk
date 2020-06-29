@@ -23,7 +23,7 @@ const char* np_ip_address_to_string(const struct np_ip_address* address)
         sprintf(outputBuffer, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8, ip[0], ip[1], ip[2], ip[3]);
     } else if (address->type == NABTO_IPV6) {
         const uint8_t* ip = address->ip.v6;
-        sprintf(outputBuffer, "%02X%02X:" "%02X%02X:" "%02X%02X:" "%02X%02X:" "%02X%02X:" "%02X%02X:" "%02X%02X:" "%02X%02X", ip[0], ip[1], ip[2], ip[3], ip[4], ip[5], ip[6], ip[7], ip[8], ip[9], ip[10], ip[11], ip[12], ip[13], ip[14], ip[15]);
+        sprintf(outputBuffer, "%02x%02x:" "%02x%02x:" "%02x%02x:" "%02x%02x:" "%02x%02x:" "%02x%02x:" "%02x%02x:" "%02x%02x", ip[0], ip[1], ip[2], ip[3], ip[4], ip[5], ip[6], ip[7], ip[8], ip[9], ip[10], ip[11], ip[12], ip[13], ip[14], ip[15]);
     }
     return outputBuffer;
 }
