@@ -41,6 +41,7 @@ class DnsTest {
     {
         testEnd_.set_value();
     }
+
  protected:
     nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
@@ -101,14 +102,19 @@ class DnsTestV6 : public DnsTest {
         BOOST_TEST(ec == NABTO_EC_OK);
 
         BOOST_TEST(ipsResolved_ == (size_t)1);
-        // ipv6 addr: 2001:db8::1
-        uint8_t ipv6[16] = {0x20, 0x01, 0x0d, 0xb8,
-                            0x00, 0x00, 0x00, 0x00,
-                            0x00, 0x00, 0x00, 0x00,
-                            0x00, 0x00, 0x00, 0x01 };
+        BOOST_TEST((int)ips_[0].type == (int)NABTO_IPV6);
+        std::string resolvedIp(np_ip_address_to_string(&ips_[0]));
 
-        BOOST_TEST(ips_[0].type == NABTO_IPV6);
-        BOOST_TEST(memcmp(ips_[0].ip.v6, ipv6, 16) == 0);
+        // ipv6 addr: 2001:db8::1
+        std::string targetV6 = "2001:0db8:0000:0000:0000:0000:0000:0001";
+        std::string targetV6Mapped = "0000:0000:0000:0000:0000:ffff:0102:0304";
+
+        // on some systems without internet facing ipv4 the ipv6 address is resolved as the ipv6 mapped ipv4 address
+        if ((resolvedIp == targetV6) || (resolvedIp == targetV6Mapped)) {
+
+        } else {
+            BOOST_TEST(false, resolvedIp << "does not match the required ip");
+        }
         testEnded();
     }
 

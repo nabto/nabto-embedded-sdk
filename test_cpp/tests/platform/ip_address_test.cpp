@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(is_v4_mapped)
     BOOST_TEST(np_ip_is_v4_mapped(&v6));
 
     const char* str = np_ip_address_to_string(&v6);
-    BOOST_TEST(std::string(str) == "0000:0000:0000:0000:0000:FFFF:7F00:0001");
+    BOOST_TEST(std::string(str) == "0000:0000:0000:0000:0000:ffff:7f00:0001");
 }
 
 BOOST_AUTO_TEST_CASE(is_v4)
