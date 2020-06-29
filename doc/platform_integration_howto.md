@@ -181,13 +181,13 @@ struct np_timestamp_functions {
 }
 
 struct np_timestamp {
-    const struct np_timestamp_functions* vptr;
+    const struct np_timestamp_functions* mptr;
     // Pointer to data which is implementation specific
     void* data;
 };
 
 ```
-The np_timestamp struct defines the modules data (`void* data`) and the functions (`struct np_timestamp_functions* vptr`). The data section is a pointer that is fully up to the implementation integration to use and implement or not use at all.
+The np_timestamp struct defines the modules data (`void* data`) and the functions (`struct np_timestamp_functions* mptr`). The data section is a pointer that is fully up to the implementation integration to use and implement or not use at all.
 
 The `np_timestampe_functions` defines a set of functions that the integration modules supply. For the timestamp module this is very simple since it is only one function `uint32_t ts_now_ms(struct np_timestamp* obj)`
 
@@ -205,7 +205,7 @@ uint32_t ts_now_ms(struct np_timestamp* obj)
 To create the np_timestamp_functions table you could do the following:
 
 ```
-static struct np_timestamp_functions vtable = {
+static struct np_timestamp_functions module = {
     .now_ms               = &ts_now_ms
 };
 ```
@@ -216,7 +216,7 @@ And to make a function that setup the np_timestamp struct is would look like:
 struct np_timestamp nm_unix_ts_create()
 {
     struct np_timestamp ts;
-    ts.vptr = &vtable;
+    ts.mptr = &module;
     ts.data = NULL;
     return ts;
 }
@@ -257,7 +257,7 @@ All in all, the two important structs looks like this:
 
 ```
 struct np_dns {
-    const struct np_dns_functions* vptr;
+    const struct np_dns_functions* mptr;
     // Pointer to implementation specific data.
     void* data;
 };
@@ -676,14 +676,14 @@ The ESP32 comes with an mDNS server, https://docs.espressif.com/projects/esp-idf
 Assuming the mDNS server is started acording to the documentation, then the mDNS integration is as follows.
 
 ```
-static struct np_mdns_functions vtable = {
+static struct np_mdns_functions module = {
     .publish_service = &publish_service
 };
 
 struct np_mdns esp32_mdns_get_impl()
 {
     struct np_mdns obj;
-    obj.vptr = &vtable;
+    obj.mptr = &module;
     obj.data = NULL;
     return obj;
 }

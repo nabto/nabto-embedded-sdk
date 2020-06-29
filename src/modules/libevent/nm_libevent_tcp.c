@@ -62,7 +62,7 @@ static void resolve_tcp_read(struct np_tcp_socket* sock, np_error_code ec);
 static void resolve_tcp_write(struct np_tcp_socket* sock, np_error_code ec);
 static void tcp_eof(void* userData);
 
-static struct np_tcp_functions vtable = {
+static struct np_tcp_functions module = {
     .create = tcp_create,
     .destroy = tcp_destroy,
     .async_connect = tcp_async_connect,
@@ -75,7 +75,7 @@ static struct np_tcp_functions vtable = {
 struct np_tcp nm_libevent_tcp_get_impl(struct nm_libevent_context* ctx)
 {
     struct np_tcp obj;
-    obj.vptr = &vtable;
+    obj.mptr = &module;
     obj.data = ctx;
     return obj;
 }

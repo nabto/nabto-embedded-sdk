@@ -35,7 +35,7 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
 static void async_resolve_v6(struct np_dns*obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve(struct nm_unix_dns_resolver* resolver, int family, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
-static struct np_dns_functions vtable = {
+static struct np_dns_functions module = {
     .async_resolve_v4 = &async_resolve_v4,
     .async_resolve_v6 = &async_resolve_v6
 };
@@ -43,7 +43,7 @@ static struct np_dns_functions vtable = {
 struct np_dns nm_unix_dns_resolver_get_impl(struct nm_unix_dns_resolver* resolver)
 {
     struct np_dns dns;
-    dns.vptr = &vtable;
+    dns.mptr = &module;
     dns.data = resolver;
     return dns;
 }

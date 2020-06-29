@@ -55,7 +55,7 @@ static bool nm_libevent_init_mdns_ipv4_socket(int sock);
 static void nm_libevent_mdns_update_ipv4_socket_registration(int sock);
 static void nm_libevent_mdns_update_ipv6_socket_registration(int sock);
 
-static struct nm_mdns_udp_bind_functions vtable = {
+static struct nm_mdns_udp_bind_functions module = {
     .async_bind_mdns_ipv4 = udp_async_bind_mdns_ipv4,
     .async_bind_mdns_ipv6 = udp_async_bind_mdns_ipv6
 };
@@ -63,7 +63,7 @@ static struct nm_mdns_udp_bind_functions vtable = {
 struct nm_mdns_udp_bind nm_libevent_mdns_udp_bind_get_impl(struct nm_libevent_context* libeventContext)
 {
     struct nm_mdns_udp_bind obj;
-    obj.vptr = &vtable;
+    obj.mptr = &module;
     obj.data = libeventContext;
     return obj;
 }

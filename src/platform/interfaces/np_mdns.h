@@ -52,7 +52,7 @@ extern "C" {
 struct np_mdns_functions;
 
 struct np_mdns {
-    const struct np_mdns_functions* vptr;
+    const struct np_mdns_functions* mptr;
     void* data;
 };
 

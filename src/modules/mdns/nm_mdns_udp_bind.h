@@ -12,7 +12,7 @@ struct np_udp_socket;
 struct np_completion_event;
 
 struct nm_mdns_udp_bind {
-    struct nm_mdns_udp_bind_functions* vptr;
+    struct nm_mdns_udp_bind_functions* mptr;
     void* data;
 };
 

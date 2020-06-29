@@ -10,7 +10,7 @@ extern "C" {
 struct np_timestamp_functions;
 
 struct np_timestamp {
-    const struct np_timestamp_functions* vptr;
+    const struct np_timestamp_functions* mptr;
     // Pointer to data which is implementation specific
     void* data;
 };
