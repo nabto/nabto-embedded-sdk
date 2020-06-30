@@ -34,8 +34,8 @@ namespace nabto {
 namespace examples {
 namespace heat_pump {
 
-HeatPump::HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile)
-    : device_(device), privateKey_(privateKey), dc_(dc), stateFile_(stateFile)
+HeatPump::HeatPump(NabtoDevice* device, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile)
+    : device_(device), dc_(dc), stateFile_(stateFile)
 {
     logging_init(device_, &logger_, "error");
     nm_iam_init(&iam_, device_, &logger_);
@@ -211,11 +211,6 @@ NabtoDeviceError HeatPump::initDevice()
         }
     } catch (...) {
         // Ignore missing server, api will fix
-    }
-
-    ec = nabto_device_set_private_key(device_, privateKey_.c_str());
-    if (ec) {
-        return ec;
     }
 
     nabto_device_set_app_name(device_, appName_.c_str());

@@ -42,7 +42,7 @@ class HeatPumpGet;
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, const std::string& privateKey, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile);
+    HeatPump(NabtoDevice* device, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile);
 
     ~HeatPump();
 
@@ -110,7 +110,6 @@ class HeatPump {
     std::string createPairingLink();
 
     NabtoDevice* device_;
-    std::string privateKey_;
     nabto::examples::common::DeviceConfig& dc_;
 
     struct nn_log logger_;

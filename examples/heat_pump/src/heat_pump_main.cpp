@@ -2,7 +2,7 @@
 #include "json_config.hpp"
 
 #include <examples/common/device_config.hpp>
-#include <examples/common/private_key.hpp>
+#include <apps/common/private_key.h>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -98,23 +98,19 @@ bool run_heat_pump(const std::string& configFile, const std::string& stateFile, 
         return false;
     }
 
-    std::stringstream keyFileName;
-    keyFileName << dc.getProductId() << "_" << dc.getDeviceId() << ".key.json";
-
-    std::string privateKey;
-    if (!load_private_key(keyFileName.str(), privateKey)) {
-        return false;
-    }
-
     NabtoDevice* device = nabto_device_new();
     if (device == NULL) {
         std::cerr << "Device New Failed" << std::endl;
         return false;
     }
 
+    if (!load_or_create_private_key(device, "device.key", NULL)) {
+        return false;
+    }
+
     {
 
-        nabto::examples::heat_pump::HeatPump hp(device, privateKey, dc, stateFile);
+        nabto::examples::heat_pump::HeatPump hp(device, dc, stateFile);
         hp.setLogLevel(logLevel);
         hp.init();
         if (dumpIam) {

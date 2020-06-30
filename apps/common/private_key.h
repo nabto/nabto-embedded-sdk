@@ -7,6 +7,14 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 bool load_or_create_private_key(NabtoDevice* device, const char* filename, struct nn_log* logger);
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif
