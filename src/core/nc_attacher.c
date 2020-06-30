@@ -472,6 +472,7 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             if (ctx->listener) {
                 ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
             }
+            NABTO_LOG_INFO(LOG, "Device detached from basestation");
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
             handle_state_change(ctx);
             break;
@@ -630,6 +631,7 @@ void coap_attach_end_handler(np_error_code ec, void* data)
     ctx->state = NC_ATTACHER_STATE_ATTACHED;
     handle_state_change(ctx);
     if (ctx->listener) {
+        NABTO_LOG_INFO(LOG, "Device attached to basestation");
         ctx->listener(NC_DEVICE_EVENT_ATTACHED, ctx->listenerData);
     }
 
