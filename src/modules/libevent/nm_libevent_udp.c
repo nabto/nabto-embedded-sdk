@@ -288,10 +288,11 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
 
     if (res < 0) {
         int status = EVUTIL_SOCKET_ERROR();
-        NABTO_LOG_TRACE(LOG, "UDP returned error status (%d) %s", status, evutil_socket_error_to_string(status));
         if (ERR_IS_EAGAIN(status)) {
             // expected
             // just drop the packet and the upper layers will take care of retransmissions.
+            NABTO_LOG_TRACE(LOG, "Dropping udp packet, the packet will be retransmitted later (%d) %s", status, evutil_socket_error_to_string(status));
+            return NABTO_EC_OK;
         } else if (ERR_IS_EXPECTED(status)) {
             NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in udp_send_to", (int) status, strerror(status));
         } else {
