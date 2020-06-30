@@ -61,5 +61,6 @@ set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto
 install(TARGETS nabto_device
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
   PUBLIC_HEADER DESTINATION include/nabto
   )
