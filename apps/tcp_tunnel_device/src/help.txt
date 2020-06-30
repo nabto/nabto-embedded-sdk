@@ -29,11 +29,7 @@ The format of the json file is
 {
   "ProductId": "pr-abcd1234",
   "DeviceId": "de-abcd1234",
-  "Server": "pr-abcd1234.devices.nabto.net or pr-abcd1234.devices.dev.nabto.net or something else.",
-  "client": {
-    "ServerKey": "sk-...",
-    "ServerUrl": "https://pr-abcd1234.clients.dev.nabto.net or https://pr-abcd1234.clients.nabto.net or something else",
-  }
+  "Server": "optional server hostname"
 }
 ```
 
@@ -44,18 +40,8 @@ console.
 The `DeviceId` is the device id for this specific device. This device
 id found in the cloud console.
 
-The `Server` is the hostname of the server the device uses. This is
-either `<product-id>.devices.dev.nabto.net` or
-`<product-id>.devices.nabto.net`
-
-The `Client.ServerKey` is the `ServerKey` the client uses when making
-remote connections. This `ServerKey` can be found under Apps in the
-cloud console.
-
-The `Client.ServerUrl` is the `ServerUrl` which the client uses when
-making a remote connection to this device. This is either
-`https://<product-id>.clients.dev.nabto.net` or
-`https://<product-id>.clients.nabto.net`
+The `Server` is an optional hostname of the server the device uses. It
+not set the default server is used.
 
 ## `config/tcp_tunnel_iam.json`
 
