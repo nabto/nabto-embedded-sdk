@@ -30,6 +30,7 @@ set(test_src
   tests/policies/condition_test.cpp
   tests/policies/condition_json_test.cpp
   tests/policies/statement_json_test.cpp
+  tests/policies/statement_eval_test.cpp
   tests/policies/policy_json_test.cpp
   tests/policies/policy_deny_test.cpp
   tests/dns/dns_test.cpp

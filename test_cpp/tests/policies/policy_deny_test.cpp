@@ -23,6 +23,22 @@ std::string denyPolicy = R"(
 }
 )";
 
+std::string allowDenyPolicy = R"(
+{
+  "Id": "AllowDeny",
+  "Statements": [
+    {
+      "Effect": "Allow",
+      "Actions": ["TcpTunnel:Connect"]
+    },
+    {
+      "Effect": "Deny",
+      "Actions": ["TcpTunnel:Connect"]
+    }
+  ]
+}
+)";
+
 } // namespace
 
 BOOST_AUTO_TEST_SUITE(policies)
@@ -49,6 +65,22 @@ BOOST_AUTO_TEST_CASE(deny_ssh)
     nn_string_map_deinit(&attributes);
     nm_policy_free(policy);
     cJSON_Delete(json);
+}
+
+BOOST_AUTO_TEST_CASE(deny_trumps_allow)
+{
+    cJSON* json = cJSON_Parse(allowDenyPolicy.c_str());
+    BOOST_REQUIRE(json);
+    struct nm_policy* policy = nm_policy_from_json(json, NULL);
+    BOOST_REQUIRE(policy);
+
+    enum nm_effect effect;
+    effect = nm_policy_eval(policy, "TcpTunnel:Connect", NULL);
+    BOOST_TEST(effect == NM_EFFECT_DENY);
+
+    nm_policy_free(policy);
+    cJSON_Delete(json);
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
