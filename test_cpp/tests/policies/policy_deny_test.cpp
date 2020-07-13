@@ -53,14 +53,10 @@ BOOST_AUTO_TEST_CASE(deny_ssh)
     struct nn_string_map attributes;
     nn_string_map_init(&attributes);
 
-
-    enum nm_effect effect;
-    effect = nm_policy_eval(policy, "TcpTunnel:Connect", &attributes);
-    BOOST_TEST(effect == NM_EFFECT_NO_MATCH);
+    BOOST_TEST(nm_policy_eval_simple(policy, "TcpTunnel:Connect", &attributes) == NM_EFFECT_NO_MATCH);
 
     nn_string_map_insert(&attributes, "TcpTunnel:ServiceType", "ssh");
-    effect = nm_policy_eval(policy, "TcpTunnel:Connect", &attributes);
-    BOOST_TEST(effect == NM_EFFECT_DENY);
+    BOOST_TEST(nm_policy_eval_simple(policy, "TcpTunnel:Connect", &attributes) == NM_EFFECT_DENY);
 
     nn_string_map_deinit(&attributes);
     nm_policy_free(policy);
@@ -74,9 +70,7 @@ BOOST_AUTO_TEST_CASE(deny_trumps_allow)
     struct nm_policy* policy = nm_policy_from_json(json, NULL);
     BOOST_REQUIRE(policy);
 
-    enum nm_effect effect;
-    effect = nm_policy_eval(policy, "TcpTunnel:Connect", NULL);
-    BOOST_TEST(effect == NM_EFFECT_DENY);
+    BOOST_TEST(nm_policy_eval_simple(policy, "TcpTunnel:Connect", NULL) == NM_EFFECT_DENY);
 
     nm_policy_free(policy);
     cJSON_Delete(json);

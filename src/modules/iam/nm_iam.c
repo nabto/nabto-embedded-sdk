@@ -159,21 +159,17 @@ enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* 
 
 enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct nn_string_map* attributes)
 {
-    enum nm_effect result = NM_EFFECT_NO_MATCH;
+    struct nm_policy_eval_state state;
+    nm_policy_eval_init(&state);
+
     const char* policyStr;
     NN_STRING_SET_FOREACH(policyStr, &role->policies)
     {
         struct nm_policy* policy = nm_iam_find_policy(iam, policyStr);
-
-        enum nm_effect e = nm_policy_eval(policy, action, attributes);
-        if (e == NM_EFFECT_ERROR || e == NM_EFFECT_DENY) {
-            return e;
-        }
-        if (e == NM_EFFECT_ALLOW) {
-            result = NM_EFFECT_ALLOW;
-        }
+        nm_policy_eval(&state, policy, action, attributes);
     }
-    return result;
+
+    return nm_policy_eval_get_effect(&state);
 }
 
 bool nm_iam_enable_password_pairing(struct nm_iam* iam, const char* pairingPassword)
