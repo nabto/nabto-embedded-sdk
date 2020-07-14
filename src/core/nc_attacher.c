@@ -387,7 +387,7 @@ void dns_resolved_callback(const np_error_code ec, void* data)
     }
 
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Failed to resolve attach dispatcher host: (%u)%s", ec, np_error_code_to_string(ec));
+        NABTO_LOG_ERROR(LOG, "Failed to resolve attach dispatcher host: %s (%u)%s", ctx->dns, ec, np_error_code_to_string(ec));
         // No DTLS to close so we go directly to RETRY WAIT
         ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
         handle_state_change(ctx);
