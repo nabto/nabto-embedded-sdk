@@ -56,6 +56,17 @@ NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
 nabto_device_connection_is_local(NabtoDevice* device,
                                  NabtoDeviceConnectionRef ref);
 
+
+/**
+ * Limit memory usage for streaming
+ *
+ * This function limits the amount of segments which can be allocated
+ * for streaming. A segment is 256 bytes of data, so the max allocated
+ * memory for streaming is limit*256bytes.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
+
 #ifdef __cplusplus
 } // extern c
 #endif

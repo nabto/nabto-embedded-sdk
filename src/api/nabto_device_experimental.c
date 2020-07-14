@@ -1,6 +1,8 @@
 #include <nabto/nabto_device_experimental.h>
 #include "nabto_device_defines.h"
 
+#include <core/nc_stream_manager.h>
+
 #include <stdlib.h>
 
 #include <mbedtls/ecp.h>
@@ -83,4 +85,18 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
     mbedtls_mpi_free(&n);
 
     return nabto_device_set_private_key(device, (const char*)buffer);
+}
+
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    nc_stream_manager_set_max_segments(&dev->core.streamManager, limit);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    return NABTO_DEVICE_EC_OK;
 }

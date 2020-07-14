@@ -22,7 +22,7 @@ void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data);
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl)
 {
     ctx->pl = pl;
-
+    ctx->maxSegments = 1000000;
     nn_llist_init(&ctx->listeners);
 }
 
@@ -228,6 +228,10 @@ void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)
 
 struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
+    if (ctx->allocatedSegments >= ctx->maxSegments) {
+        return NULL;
+    }
+
     struct nabto_stream_send_segment* seg = calloc(1, sizeof(struct nabto_stream_send_segment));
     if (seg == NULL) {
         return NULL;
@@ -239,17 +243,26 @@ struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc
     }
     seg->buf = buf;
     seg->capacity = bufferSize;
+    ctx->allocatedSegments++;
     return seg;
 }
 
 void nc_stream_manager_free_send_segment(struct nc_stream_manager_context* ctx, struct nabto_stream_send_segment* segment)
 {
+    if (segment == NULL) {
+        return;
+    }
+    ctx->allocatedSegments--;
     free(segment->buf);
     free(segment);
 }
 
 struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
 {
+    if (ctx->allocatedSegments >= ctx->maxSegments) {
+        return NULL;
+    }
+
     struct nabto_stream_recv_segment* seg = calloc(1, sizeof(struct nabto_stream_recv_segment));
     if (seg == NULL) {
         return NULL;
@@ -261,11 +274,16 @@ struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc
     }
     seg->buf = buf;
     seg->capacity = bufferSize;
+    ctx->allocatedSegments++;
     return seg;
 }
 
 void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, struct nabto_stream_recv_segment* segment)
 {
+    if (segment == NULL) {
+        return;
+    }
+    ctx->allocatedSegments--;
     free(segment->buf);
     free(segment);
 }
@@ -318,4 +336,10 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
         }
     }
     return NABTO_EC_UNKNOWN;
+}
+
+
+void nc_stream_manager_set_max_segments(struct nc_stream_manager_context* ctx, size_t maxSegments)
+{
+    ctx->maxSegments = maxSegments;
 }

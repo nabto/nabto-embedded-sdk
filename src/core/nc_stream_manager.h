@@ -28,6 +28,8 @@ struct nc_stream_manager_context {
     struct nc_stream_context streams[NABTO_MAX_STREAMS];
     struct nc_client_connection* streamConns[NABTO_MAX_STREAMS];
     struct np_dtls_srv_send_context sendCtx;
+    size_t maxSegments;
+    size_t allocatedSegments;
 };
 
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl);
@@ -55,4 +57,7 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
 uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* stream);
 
 np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manager_context* ctx, uint32_t* port);
+
+void nc_stream_manager_set_max_segments(struct nc_stream_manager_context* ctx, size_t maxSegments);
+
 #endif
