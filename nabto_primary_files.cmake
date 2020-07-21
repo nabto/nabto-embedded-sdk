@@ -77,6 +77,7 @@ set(ne_core_src
   ${root_dir}/src/core/nc_attacher_attach_end.c
   ${root_dir}/src/core/nc_dns_multi_resolver.c
   ${root_dir}/src/core/nc_device.c
+  ${root_dir}/src/core/nc_spake2.c
 )
 
 set(ne_api_src
