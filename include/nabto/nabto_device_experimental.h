@@ -67,6 +67,44 @@ nabto_device_connection_is_local(NabtoDevice* device,
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
 
+
+
+
+
+/**
+ * PAKE
+ */
+typedef struct NabtoDevicePasswordAuthenticationRequest_ NabtoDevicePasswordAuthenticationRequest;
+
+/**
+ * Init a listener for password authentication requests.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_password_authentication_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
+
+/**
+ * listen for a new password authentication request.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDevicePasswordAuthenticationRequest** request);
+
+/**
+ * Get the username used in the password authentication request.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAuthenticationRequest* request);
+
+/**
+ * Set password for the user.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* passwd);
+
+/**
+ * Free a password authentication request.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDevicePasswordAuthenticationRequest* request);
+
 #ifdef __cplusplus
 } // extern c
 #endif
