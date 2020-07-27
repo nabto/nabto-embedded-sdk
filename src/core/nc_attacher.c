@@ -374,6 +374,7 @@ void handle_state_change(struct nc_attach_context* ctx)
 
 void dns_start_resolve(struct nc_attach_context* ctx)
 {
+    NABTO_LOG_TRACE(LOG, "Resolving Attach Server DNS name %s", ctx->dns);
     nc_dns_multi_resolver_resolve(&ctx->dnsMultiResolver, ctx->dns, ctx->resolvedIps, NC_ATTACHER_MAX_IPS, &ctx->resolvedIpsSize, &ctx->resolveCompletionEvent);
 }
 
