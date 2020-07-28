@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <nabto/nabto_device.h>
-#include "device_event_handler.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -12,9 +11,8 @@
 #include <stdio.h>
 #include <signal.h>
 
-char* productId = "pr-ndkobnzf";
-const char* deviceId = "de-74kprodc";
-const char* serverUrl = "a.devices.dev.nabto.net";
+const char* productId = "pr-f4nqpowq";
+const char* deviceId = "de-zqw7vehm";
 
 char* privateKey =
     "-----BEGIN EC PARAMETERS-----\n"
@@ -44,13 +42,11 @@ void signal_handler(int s);
 NabtoDevice* device_;
 
 int main(void) {
-    NabtoDeviceError ec;
     struct context ctx;
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
-    device_ = nabto_device_new();
-    if (device_ == NULL) {
+    if ((device_ = nabto_device_new()) == NULL) {
         handle_device_error(NULL, NULL, "Failed to allocate device");
         return -1;
     }
@@ -60,14 +56,12 @@ int main(void) {
         return -1;
     }
 
-    ctx.listener = nabto_device_listener_new(device_);
-    if (ctx.listener == NULL) {
+    if ((ctx.listener = nabto_device_listener_new(device_)) == NULL) {
         handle_device_error(device_, NULL, "Failed to allocate listener");
         return -1;
     }
 
-    ec = nabto_device_coap_init_listener(device_, ctx.listener, NABTO_DEVICE_COAP_GET, coapPath);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_coap_init_listener(device_, ctx.listener, NABTO_DEVICE_COAP_GET, coapPath) != NABTO_DEVICE_EC_OK) {
         handle_device_error(device_, ctx.listener, "CoAP listener initialization failed");
         return -1;
     }
@@ -102,53 +96,47 @@ void signal_handler(int s)
 }
 
 void wait_for_device_events(NabtoDevice* device) {
-    struct device_event_handler eventHandler;
-    device_event_handler_init(&eventHandler, device);
-    device_event_handler_blocking_listener(&eventHandler);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    NabtoDeviceListener* listener = nabto_device_listener_new(device);
+    NabtoDeviceEvent event;
+    nabto_device_device_events_init_listener(device, listener);
+    while(true) {
+        nabto_device_listener_device_event(listener, fut, &event);
+        if (nabto_device_future_wait(fut) != NABTO_DEVICE_EC_OK ||
+            event == NABTO_DEVICE_EVENT_CLOSED) {
+            break;
+        } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
+            printf("Attached to the basestation\n");
+        } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
+            printf("Detached from the basestation\n");
+        }
+    }
     nabto_device_stop(device);
-    device_event_handler_deinit(&eventHandler);
+    nabto_device_future_free(fut);
+    nabto_device_listener_free(listener);
 }
 
 bool start_device(NabtoDevice* device)
 {
     NabtoDeviceError ec;
     char* fp;
-    ec = nabto_device_set_private_key(device, privateKey);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    if ((ec = nabto_device_set_private_key(device, privateKey)) != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%d\n", ec);
         return false;
     }
 
-    ec = nabto_device_get_device_fingerprint_hex(device, &fp);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_get_device_fingerprint_hex(device, &fp) != NABTO_DEVICE_EC_OK) {
         return false;
     }
 
     printf("Device: %s.%s with fingerprint: [%s]\n", productId, deviceId, fp);
     nabto_device_string_free(fp);
 
-    ec = nabto_device_set_product_id(device, productId);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    ec = nabto_device_set_device_id(device, deviceId);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    ec = nabto_device_set_server_url(device, serverUrl);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    ec = nabto_device_enable_mdns(device);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    ec = nabto_device_set_log_std_out_callback(device);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        return false;
-    }
-    ec = nabto_device_start(device);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
+        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK ||
+        nabto_device_start(device) != NABTO_DEVICE_EC_OK) {
         return false;
     }
     return true;
@@ -174,10 +162,7 @@ void handle_coap_request(NabtoDeviceCoapRequest* request)
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
 
-    NabtoDeviceError ec = nabto_device_coap_response_set_payload(request, helloWorld, strlen(helloWorld));
-    if (ec != NABTO_DEVICE_EC_OK) {
-        nabto_device_coap_error_response(request, 500, NULL);
-    } else {
+    if (nabto_device_coap_response_set_payload(request, helloWorld, strlen(helloWorld)) == NABTO_DEVICE_EC_OK) {
         nabto_device_coap_response_ready(request);
     }
     printf("Responded to CoAP request\n");
