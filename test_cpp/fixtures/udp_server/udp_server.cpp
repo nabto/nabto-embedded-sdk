@@ -6,8 +6,19 @@ namespace nabto {
 
 UdpServer::UdpServer(boost::asio::io_context& ioContext)
     : //ioContext_(ioContext),
+    address_(boost::asio::ip::address_v6::any()),
+    socket_(ioContext)
+{
+}
+
+UdpServer::UdpServer(boost::asio::io_context& ioContext, std::string ip)
+    : //ioContext_(ioContext),
       socket_(ioContext)
 {
+    address_ = boost::asio::ip::make_address(ip);
+    if (address_.is_v4()) {
+        address_ = make_address_v6(boost::asio::ip::v4_mapped, address_.to_v4());
+    }
 }
 
 boost::system::error_code UdpServer::open(uint16_t port, boost::system::error_code& ec)
@@ -20,7 +31,7 @@ boost::system::error_code UdpServer::open(uint16_t port, boost::system::error_co
         return ec;
     }
 
-    boost::asio::ip::udp::endpoint ep(boost::asio::ip::udp::v6(), port);
+    boost::asio::ip::udp::endpoint ep(boost::asio::ip::address(address_), port);
     socket_.bind(ep, ec);
 
     return ec;

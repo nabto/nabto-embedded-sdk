@@ -60,6 +60,7 @@ typedef std::shared_ptr<CertificateContext> CertificateContextPtr;
 class DtlsServer {
  public:
     DtlsServer(boost::asio::io_context& io);
+    DtlsServer(boost::asio::io_context& io, std::string ip);
     ~DtlsServer();
 
     void stop();

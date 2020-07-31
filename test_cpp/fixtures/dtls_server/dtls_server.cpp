@@ -11,6 +11,12 @@ DtlsServer::DtlsServer(boost::asio::io_context& io)
 {
 }
 
+DtlsServer::DtlsServer(boost::asio::io_context& io, std::string ip)
+    : impl_(std::make_shared<DtlsServerImpl>(io, ip))
+{
+
+}
+
 DtlsServer::~DtlsServer()
 {
     impl_->stop();
