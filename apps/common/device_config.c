@@ -19,6 +19,7 @@ bool load_device_config(const char* fileName, struct device_config* dc, struct n
     cJSON* productId = cJSON_GetObjectItem(config, "ProductId");
     cJSON* deviceId = cJSON_GetObjectItem(config, "DeviceId");
     cJSON* server = cJSON_GetObjectItem(config, "Server");
+    cJSON* serverPort = cJSON_GetObjectItem(config, "ServerPort");
 
     if (!cJSON_IsString(productId) ||
         !cJSON_IsString(deviceId))
@@ -31,6 +32,9 @@ bool load_device_config(const char* fileName, struct device_config* dc, struct n
     dc->deviceId = strdup(deviceId->valuestring);
     if (cJSON_IsString(server)) {
         dc->server = strdup(server->valuestring);
+    }
+    if (cJSON_IsNumber(serverPort)) {
+        dc->serverPort = (uint16_t)serverPort->valuedouble;
     }
 
     cJSON_Delete(config);
