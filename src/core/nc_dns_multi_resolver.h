@@ -11,7 +11,7 @@
  * resulting addresses with alternating ipv4 and ipv6 addresses.
  */
 
-#define NC_DNS_MULTI_RESOLVER_MAX_IPS 1
+#define NC_DNS_MULTI_RESOLVER_MAX_IPS 4
 
 
 

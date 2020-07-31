@@ -648,14 +648,17 @@ void coap_attach_failed(struct nc_attach_context* ctx)
 void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize)
 {
     struct np_platform* pl = ctx->pl;
-    np_error_code ec = pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
-
+    // handle_packet can currently not fail, so checking its return
+    // value is futile. It will trigger responses to be sent, so we
+    // must set hasActiveEp before calling. if handle_packet becomes
+    // able to fail, hasActiveEp must either be reset after
+    // handle_packet, or the connection will be allowed to die and we
+    // will retry.
     if (!ctx->hasActiveEp) {
-        if (ec == NABTO_EC_OK) {
-            ctx->activeEp = *ep;
-            ctx->hasActiveEp = true;
-        }
+        ctx->activeEp = *ep;
+        ctx->hasActiveEp = true;
     }
+    pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
 }
 
 np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,

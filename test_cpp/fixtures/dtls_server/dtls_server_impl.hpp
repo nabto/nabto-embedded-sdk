@@ -189,6 +189,7 @@ class DtlsServerImpl : public std::enable_shared_from_this<DtlsServerImpl> {
  public:
 
     DtlsServerImpl(boost::asio::io_context& ioContext);
+    DtlsServerImpl(boost::asio::io_context& ioContext, std::string ip);
     ~DtlsServerImpl();
 
     typedef std::function<void (const std::string& sni)> sniCb;
