@@ -18,10 +18,18 @@ class AttachCoapServer {
         : io_(io), dtlsServer_(io)
     {
     }
+
+    AttachCoapServer(boost::asio::io_context& io, std::string ip, uint16_t port)
+        : io_(io), dtlsServer_(io, ip)
+    {
+        port_ = port;
+    }
+
     virtual ~AttachCoapServer() {}
+
     void init() {
         lib::error_code ec;
-        dtlsServer_.setPort(0);
+        dtlsServer_.setPort(port_);
         dtlsServer_.setAlpnProtocols({"n5"});
         dtlsServer_.setSniCallback([](const std::string& sni){
                 return DtlsServer::createCertificateContext(test::serverPrivateKey, test::serverPublicKey);
@@ -57,6 +65,7 @@ class AttachCoapServer {
  protected:
     boost::asio::io_context& io_;
     DtlsServer dtlsServer_;
+    uint16_t port_ = 0;
 
 };
 
@@ -69,9 +78,21 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     {
     }
 
+    AttachServer(boost::asio::io_context& io, std::string ip, uint16_t port)
+        : AttachCoapServer(io, ip, port)
+    {
+    }
+
     static std::shared_ptr<AttachServer> create(boost::asio::io_context& io)
     {
         auto ptr = std::make_shared<AttachServer>(io);
+        ptr->init();
+        return ptr;
+    }
+
+    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io, std::string ip, uint16_t port)
+    {
+        auto ptr = std::make_shared<AttachServer>(io, ip, port);
         ptr->init();
         return ptr;
     }

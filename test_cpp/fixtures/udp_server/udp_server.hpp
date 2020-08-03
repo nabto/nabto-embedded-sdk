@@ -48,6 +48,7 @@ namespace nabto {
 class UdpServer {
  public:
     UdpServer(boost::asio::io_context& ioContext);
+    UdpServer(boost::asio::io_context& ioContext, std::string ip);
 
 
     boost::system::error_code open(uint16_t port, boost::system::error_code& ec);
@@ -68,6 +69,7 @@ class UdpServer {
     }
  private:
     //boost::asio::io_context& ioContext_;
+    boost::asio::ip::address address_;
     boost::asio::ip::udp::socket socket_;
     std::unordered_set<boost::asio::ip::udp::endpoint> whiteList_;
     std::unordered_map<boost::asio::ip::udp::endpoint, int> epPacketCounter_;

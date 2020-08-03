@@ -152,6 +152,17 @@ DtlsServerImpl::DtlsServerImpl(boost::asio::io_context& ioContext)
     mbedtls_ctr_drbg_init( &ctr_drbg );
 }
 
+DtlsServerImpl::DtlsServerImpl(boost::asio::io_context& ioContext, std::string ip)
+    : ioContext_(ioContext),
+      udpServer_(ioContext, ip),
+      coapServer_(coap::CoapServer::create(ioContext))
+{
+    mbedtls_ssl_config_init( &conf_ );
+    mbedtls_ssl_cookie_init( &cookie_ctx );
+    mbedtls_entropy_init( &entropy );
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+}
+
 DtlsServerImpl::~DtlsServerImpl()
 {
     mbedtls_ctr_drbg_free( &ctr_drbg );

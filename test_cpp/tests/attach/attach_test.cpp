@@ -126,7 +126,7 @@ class AttachTest {
     struct np_completion_event boundCompletionEvent;
 
     uint16_t serverPort_;
-    const char* hostname_ = "localhost.nabto.net";
+    const char* hostname_ = "localhost-multi.nabto.net";
     const char* appName_ = "foo";
     const char* appVersion_ = "bar";
     const char* productId_ = "test";
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     auto ioService = nabto::IoService::create("test");
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
-    redirectServer->setRedirect("localhost.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
+    redirectServer->setRedirect("localhost-multi.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
     at.start([](nabto::test::AttachTest& at){
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect, * boost::unit_test::timeout(300))
     auto ioService = nabto::IoService::create("test");
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
-    redirectServer->setRedirect("localhost.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
+    redirectServer->setRedirect("localhost-multi.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
 
@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
     auto ioService = nabto::IoService::create("test");
 
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
-    redirectServer->setRedirect("localhost.nabto.net", redirectServer->getPort(), redirectServer->getFingerprint());
+    redirectServer->setRedirect("localhost-multi.nabto.net", redirectServer->getPort(), redirectServer->getFingerprint());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, redirectServer->getPort());
@@ -476,6 +476,36 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
     ioService->stop();
 }
 
+#ifdef __linux__
+BOOST_AUTO_TEST_CASE(attach_ha, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), "127.0.0.2", 0);
+    auto attachServer2 = nabto::test::AttachServer::create(ioService->getIoService(), "127.0.0.1", attachServer->getPort());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.end();
+                 }
+             },[](nabto::test::AttachTest& at){
+                   BOOST_TEST(at.attach_.state != NC_ATTACHER_STATE_RETRY_WAIT);
+               });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    attachServer2->stop();
+    BOOST_TEST(attachServer->attachCount_+attachServer2->attachCount_ == (uint64_t)1);
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * stop the IO service nicely in all tests
+     ******************************************************************/
+    ioService->stop();
+}
+#endif
 
 
 BOOST_AUTO_TEST_SUITE_END()
