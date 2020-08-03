@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
-## [5.1] - 2019-06-30
+## [5.1.1] - 2020-08-03
+### Changed
+ - Fixed attach issue if multiple basestations where available.
+
+## [5.1] - 2020-06-30
 
 ### Added
 
