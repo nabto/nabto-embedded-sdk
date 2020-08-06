@@ -11,17 +11,17 @@
 #include <stdio.h>
 #include <signal.h>
 
-const char* productId = "pr-f4nqpowq";
-const char* deviceId = "de-zqw7vehm";
+const char* productId = "pr-fatqcwj9";
+const char* deviceId = "de-3x4st7ru";
 
 char* privateKey =
     "-----BEGIN EC PARAMETERS-----\n"
     "BggqhkjOPQMBBw==\n"
     "-----END EC PARAMETERS-----\n"
     "-----BEGIN EC PRIVATE KEY-----\n"
-    "MHcCAQEEINc9q3Ku6iIHUh44y1/8zUAOYL2+f1JEd96so+D336KQoAoGCCqGSM49\n"
-    "AwEHoUQDQgAEx847zIaCSk8zvZ6XsQzBKyDiv5RrqtxLGQWvGl85lZjn6Y3gdU1a\n"
-    "YcJ7P/1GQlbCuorDFqtiWGEPpGoIju07mg==\n"
+    "MHcCAQEEIFQmyvnY2Z+aJ9ridYS8YNKkqu8N+sXmGkixc050nwuRoAoGCCqGSM49\n"
+    "AwEHoUQDQgAEptWJGX2AxsGwR405tPw9ljxHgzHYQvHHGpMBqoK8HGt5XPZ5xhtw\n"
+    "6vaMXlCRijop6BYK5gtrIQM7r8ys4JqKoQ==\n"
     "-----END EC PRIVATE KEY-----\n";
 
 const char* coapPath[] = { "hello-world", NULL };
@@ -125,7 +125,7 @@ bool start_device(NabtoDevice* device)
         return false;
     }
 
-    if (nabto_device_get_device_fingerprint_hex(device, &fp) != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_get_device_fingerprint_full_hex(device, &fp) != NABTO_DEVICE_EC_OK) {
         return false;
     }
 
