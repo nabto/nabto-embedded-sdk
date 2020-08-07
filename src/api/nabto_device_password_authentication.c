@@ -52,17 +52,29 @@ nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDevi
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_password_authentication_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener)
+nabto_device_password_authentication_request_init_listener(NabtoDevice* device, NabtoDeviceListener* passwordAuthenticationListener)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)passwordAuthenticationListener;
+    np_error_code ec = NABTO_EC_OK;
+
+    nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (dev->core.spake2.passwordRequest != NULL) {
-        return NABTO_DEVICE_EC_INVALID_STATE;
+        ec = NABTO_EC_IN_USE;
+    } else {
+
+
+
+        ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_PASSWORD_REQUESTS, &nabto_device_password_authentication_listener_resolve_event, NULL);
+
+        if (ec == NABTO_EC_OK) {
+            nc_spake2_set_password_request_callback(&dev->core.spake2, password_request_handler, listener);
+        }
     }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
 
-    nc_spake2_set_password_request_callback(&dev->core.spake2, password_request_handler, listener);
-
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 np_error_code password_request_handler(struct nc_spake2_password_request* req, void* data)
