@@ -123,6 +123,7 @@ nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAut
         ec = NABTO_DEVICE_EC_INVALID_STATE;
     } else {
         nc_spake2_password_ready(passwordRequest, password);
+        req->handled = true;
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ec;
