@@ -72,11 +72,15 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         nc_device_deinit(device);
         return ec;
     }
+
     ec = nc_stun_coap_init(&device->stunCoap, pl, &device->coapServer, &device->stun);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
+
+    nc_spake2_init(&device->spake2);
+    nc_spake2_coap_init(&device->spake2, &device->coapServer);
 
 
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);

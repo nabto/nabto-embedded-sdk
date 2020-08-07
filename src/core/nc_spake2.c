@@ -20,14 +20,17 @@ static int hashMpi(mbedtls_md_context_t* mdCtx, mbedtls_mpi* n);
 
 static int calculateKey(mbedtls_ecp_group* g, mbedtls_ecp_point* T, const char* password, uint8_t fingerprintClient[32], uint8_t fingerprintDevice[32], mbedtls_ecp_point* S, uint8_t* key);
 
-int nc_spake2_init(struct nc_spake2_module* module)
+void nc_spake2_init(struct nc_spake2_module* module)
 {
-    //nc_spake2_coap_init();
-    return 0;
+    module->passwordRequest = NULL;
+    module->passwordRequestData = NULL;
+    module->spake21 = NULL;
+    module->spake22 = NULL;
 }
 
 void nc_spake2_deinit(struct nc_spake2_module* config)
 {
+    // TODO deregister coap handlers
 }
 
 void nc_spake2_clear_password_request_callback(struct nc_spake2_module* module)

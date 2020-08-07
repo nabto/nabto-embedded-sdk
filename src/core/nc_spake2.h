@@ -47,7 +47,7 @@ struct nc_spake2_module {
     struct nabto_coap_server_resource* spake22;
 };
 
-int nc_spake2_init(struct nc_spake2_module* module);
+void nc_spake2_init(struct nc_spake2_module* module);
 void nc_spake2_deinit(struct nc_spake2_module* module);
 
 void nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap);
