@@ -23,14 +23,14 @@ np_error_code nabto_device_password_authentication_listener_resolve_event(const 
     } else if (ec == NABTO_EC_OUT_OF_MEMORY) {
         // ok dont care, password auth request returns 500.
     } else if (ec == NABTO_EC_ABORTED) {
-        struct nabto_device_context* dev = future->dev;
-        nc_spake2_clear_password_request_callback(&dev->core.spake2);
+        //struct nabto_device_context* dev = future->dev;
+        //nc_spake2_clear_password_request_callback(&dev->core.spake2);
 
         // the listener has been freed
         // dunno what to do
     } else if (ec == NABTO_EC_STOPPED) {
-        struct nabto_device_context* dev = future->dev;
-        nc_spake2_clear_password_request_callback(&dev->core.spake2);
+        //struct nabto_device_context* dev = future->dev;
+        //nc_spake2_clear_password_request_callback(&dev->core.spake2);
         //nc_spake2_set_password_request_callback(&dev->core.spake2, NULL, NULL);
     }
     return NABTO_EC_OK;
