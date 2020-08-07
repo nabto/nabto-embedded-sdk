@@ -170,7 +170,7 @@ void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
         void* item = nn_llist_get_item(&it);
         nn_llist_erase(&it);
 
-        listener->genericFutureResolverData = &item;
+        *listener->genericFutureResolverData = item;
         if (listener->cb) {
             ec = listener->cb(NABTO_EC_OK, listener->fut, item, listener->listenerData);
         }
