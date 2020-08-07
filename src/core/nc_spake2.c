@@ -144,10 +144,8 @@ int calculateKey(mbedtls_ecp_group* grp, mbedtls_ecp_point* T, const char* passw
     mbedtls_ecp_point_read_binary(grp, &N, Ndata, sizeof(Ndata));
 
     uint8_t passwordHash[32];
-    int status = 0;
-    status |= mbedtls_sha256_ret((const uint8_t*)password, strlen(password), passwordHash, 0);
 
-    status |= mbedtls_mpi_read_binary(&w, passwordHash, sizeof(passwordHash));
+    int status = 0;
 
     {
         mbedtls_entropy_context entropy;
@@ -157,6 +155,13 @@ int calculateKey(mbedtls_ecp_group* grp, mbedtls_ecp_point* T, const char* passw
         status |= mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
 
         status |= mbedtls_ecp_gen_keypair( grp, &y, &Y, mbedtls_ctr_drbg_random, &ctr_drbg);
+
+        if (password == NULL) {
+            status |= mbedtls_ctr_drbg_random(&ctr_drbg, passwordHash, 32);
+        } else {
+            status |= mbedtls_sha256_ret((const uint8_t*)password, strlen(password), passwordHash, 0);
+            status |= mbedtls_mpi_read_binary(&w, passwordHash, sizeof(passwordHash));
+        }
 
         mbedtls_entropy_free(&entropy);
         mbedtls_ctr_drbg_free(&ctr_drbg);
