@@ -85,6 +85,7 @@ np_error_code password_request_handler(struct nc_spake2_password_request* req, v
     }
     struct nabto_device_listener* listener = data;
     r->passwordRequest = req;
+    r->dev = listener->dev;
 
     np_error_code ec = nabto_device_listener_add_event(listener, &r->eventListNode, r);
     return ec;
@@ -94,7 +95,7 @@ const char* NABTO_DEVICE_API
 nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAuthenticationRequest* request)
 {
     struct nabto_device_password_authentication_request* req = (struct nabto_device_password_authentication_request*)request;
-    struct nabto_device_context* dev = req->device;
+    struct nabto_device_context* dev = req->dev;
     struct nc_spake2_password_request* passwordRequest = req->passwordRequest;
     const char* response;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -114,7 +115,7 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* password)
 {
     struct nabto_device_password_authentication_request* req = (struct nabto_device_password_authentication_request*)request;
-    struct nabto_device_context* dev = req->device;
+    struct nabto_device_context* dev = req->dev;
     struct nc_spake2_password_request* passwordRequest = req->passwordRequest;
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -135,7 +136,7 @@ nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAut
 void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDevicePasswordAuthenticationRequest* request)
 {
     struct nabto_device_password_authentication_request* req = (struct nabto_device_password_authentication_request*)request;
-    struct nabto_device_context* dev = req->device;
+    struct nabto_device_context* dev = req->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (!req->handled) {
         nc_spake2_password_ready(req->passwordRequest, NULL);

@@ -12,7 +12,7 @@ struct nabto_device_context;
 struct nc_spake2_password_request;
 
 struct nabto_device_password_authentication_request {
-    struct nabto_device_context* device;
+    struct nabto_device_context* dev;
     bool handled;
     struct nc_spake2_password_request* passwordRequest;
     struct nn_llist_node eventListNode;
