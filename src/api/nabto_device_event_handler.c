@@ -21,6 +21,7 @@ NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* dev
     listener->isInitialized = false;
     listener->type = NABTO_DEVICE_LISTENER_TYPE_NONE;
     listener->dev = dev;
+    listener->genericFutureResolverData = NULL;
 
     nn_llist_append(&dev->listeners, &listener->listenersItem, listener);
 
@@ -168,12 +169,13 @@ void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
         struct nn_llist_iterator it = nn_llist_begin(&listener->eventsList);
         void* item = nn_llist_get_item(&it);
         nn_llist_erase(&it);
+
+        listener->genericFutureResolverData = &item;
         if (listener->cb) {
             ec = listener->cb(NABTO_EC_OK, listener->fut, item, listener->listenerData);
         }
         nabto_device_future_resolve(listener->fut, nabto_device_error_core_to_api(ec));
         listener->fut = NULL;
-
     }
 }
 

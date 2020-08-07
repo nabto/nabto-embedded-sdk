@@ -27,6 +27,14 @@ struct nc_connection_id {
     uint8_t id[16];
 };
 
+enum nc_spake2_state {
+    NC_SPAKE2_STATE_INIT,
+    NC_SPAKE2_STATE_WAIT_PASSWORD,
+    NC_SPAKE2_STATE_WAIT_CONFIRMATION,
+    NC_SPAKE2_STATE_AUTHENTICATED,
+    NC_SPAKE2_STATE_ERROR
+};
+
 struct nc_client_connection {
     struct np_platform* pl;
     struct np_dtls_srv_connection* dtls;
@@ -48,6 +56,10 @@ struct nc_client_connection {
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_srv_send_context keepAliveSendCtx;
 
+    bool hasSpake2Key;  // true iff the key has been set
+    uint8_t spake2Key[32];
+    bool passwordAuthenticated; // true iff some password authentication request has succeeded on the connection.
+    size_t passwordAuthenticationRequests;
 };
 
 /**
@@ -110,9 +122,19 @@ struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct n
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
 
 /**
+ * Get device fingerprint from DTLS server.
+ */
+np_error_code nc_client_connection_get_device_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
+
+/**
  * Query if connection uses local socket or not. Used by API.
  */
 bool nc_client_connection_is_local(struct nc_client_connection* conn);
+
+/**
+ * Query if the connection is password authenticated or not. Used by API.
+ */
+bool nc_client_connection_is_password_authenticated(struct nc_client_connection* conn);
 
 /**
  * internal only called from self. Notifies nc_device of events.

@@ -90,20 +90,40 @@ nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* l
 
 /**
  * Get the username used in the password authentication request.
+ *
+ * @param request  The request
+ * @return The NULL terminated username.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAuthenticationRequest* request);
 
 /**
- * Set password for the user.
+ * Set password for the user. If no user with the given username is
+ * found supply NULL as the password.
+ *
+ * @param request  The request
+ * @param password Null terminated password string
+ * @return NABTO_DEVICE_EC_OK
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* passwd);
 
 /**
- * Free a password authentication request.
+ * Free a password authentication request. Before this function is
+ * called a password should be set for the request. If no password was
+ * set the effect is the same as setting the password to NULL in
+ * nabto_device_password_authentication_request_set_password.
+ *
+ * @param request  The request
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDevicePasswordAuthenticationRequest* request);
+
+/**
+ * return true iff the connection is password
+ * authenticated.
+ */
+NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDeviceConnectionRef ref);
 
 #ifdef __cplusplus
 } // extern c

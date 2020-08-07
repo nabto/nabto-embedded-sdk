@@ -340,9 +340,21 @@ np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_conne
     return conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
 }
 
+np_error_code nc_client_connection_get_device_fingerprint(struct nc_client_connection* conn, uint8_t* fp)
+{
+    return conn->pl->dtlsS.get_server_fingerprint(conn->device->dtlsServer, fp);
+}
+
+
+
 bool nc_client_connection_is_local(struct nc_client_connection* conn)
 {
     return (&conn->device->localUdp == conn->currentChannel.sock);
+}
+
+bool nc_client_connection_is_password_authenticated(struct nc_client_connection* conn)
+{
+    return conn->passwordAuthenticated;
 }
 
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event)

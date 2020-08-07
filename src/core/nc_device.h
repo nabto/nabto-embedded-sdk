@@ -10,6 +10,7 @@
 #include <core/nc_stun_coap.h>
 #include <core/nc_rendezvous_coap.h>
 #include <core/nc_connection_event.h>
+#include <core/nc_spake2.h>
 
 #include <platform/np_error_code.h>
 
@@ -75,6 +76,7 @@ struct nc_device_context {
     struct nn_llist eventsListeners;
     struct nn_llist deviceEvents;
     struct np_completion_event socketBoundCompletionEvent;
+    struct nc_spake2_module spake2;
 };
 
 np_error_code nc_device_init(struct nc_device_context* dev, struct np_platform* pl);

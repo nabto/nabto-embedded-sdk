@@ -26,6 +26,7 @@ set(test_src
   tests/api/new_free.cpp
   tests/api/create_sct.cpp
   tests/api/private_key_test.cpp
+  tests/api/password_authorization_request_test.cpp
   tests/attach/attach_test.cpp
   tests/policies/condition_test.cpp
   tests/policies/condition_json_test.cpp
