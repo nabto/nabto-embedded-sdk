@@ -55,6 +55,9 @@ struct np_dtls_srv_module {
                               const unsigned char* privateKeyL, size_t privateKeySize);
     void (*destroy)(struct np_dtls_srv* server);
 
+    np_error_code (*get_server_fingerprint)(struct np_dtls_srv* srv, uint8_t* fp);
+
+
     np_error_code (*create_connection)(struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
                                        np_dtls_srv_sender packetSender, np_dtls_srv_data_handler dataHandler,
                                        np_dtls_srv_event_handler eventHandler, void* data);

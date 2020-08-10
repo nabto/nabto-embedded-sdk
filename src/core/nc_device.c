@@ -72,7 +72,16 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         nc_device_deinit(device);
         return ec;
     }
+
     ec = nc_stun_coap_init(&device->stunCoap, pl, &device->coapServer, &device->stun);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
+
+    nc_spake2_init(&device->spake2);
+
+    ec = nc_spake2_coap_init(&device->spake2, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -109,6 +118,8 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
+    nc_spake2_coap_deinit(&device->spake2);
+    nc_spake2_deinit(&device->spake2);
     if (device->dtlsServer != NULL) { // was created
         pl->dtlsS.destroy(device->dtlsServer);
     }

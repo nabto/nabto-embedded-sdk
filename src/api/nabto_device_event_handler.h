@@ -48,7 +48,8 @@ enum nabto_device_listener_type {
     NABTO_DEVICE_LISTENER_TYPE_DEVICE_EVENTS,
     NABTO_DEVICE_LISTENER_TYPE_STREAMS,
     NABTO_DEVICE_LISTENER_TYPE_COAP,
-    NABTO_DEVICE_LISTENER_TYPE_AUTHORIZATION
+    NABTO_DEVICE_LISTENER_TYPE_AUTHORIZATION,
+    NABTO_DEVICE_LISTENER_TYPE_PASSWORD_REQUESTS
 };
 
 struct nabto_device_listener {
@@ -59,6 +60,9 @@ struct nabto_device_listener {
 
     nabto_device_listener_resolve_event cb;
     void* listenerData;
+
+    // many listeners do not need the listenerData but only needs to hold a pointer to the output of the listener.
+    void** genericFutureResolverData;
     struct nabto_device_future* fut;
     np_error_code ec;
     enum nabto_device_listener_type type;

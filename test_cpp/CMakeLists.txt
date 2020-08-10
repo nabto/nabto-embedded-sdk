@@ -26,6 +26,7 @@ set(test_src
   tests/api/new_free.cpp
   tests/api/create_sct.cpp
   tests/api/private_key_test.cpp
+  tests/api/password_authorization_request_test.cpp
   tests/attach/attach_test.cpp
   tests/policies/condition_test.cpp
   tests/policies/condition_json_test.cpp
@@ -34,7 +35,6 @@ set(test_src
   tests/policies/policy_json_test.cpp
   tests/policies/policy_deny_test.cpp
   tests/dns/dns_test.cpp
-
   )
 
 add_subdirectory(../nabto-common/3rdparty/boost boost)

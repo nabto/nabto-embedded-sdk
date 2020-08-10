@@ -77,6 +77,8 @@ set(ne_core_src
   ${root_dir}/src/core/nc_attacher_attach_end.c
   ${root_dir}/src/core/nc_dns_multi_resolver.c
   ${root_dir}/src/core/nc_device.c
+  ${root_dir}/src/core/nc_spake2.c
+  ${root_dir}/src/core/nc_spake2_coap.c
 )
 
 set(ne_api_src
@@ -96,6 +98,7 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_tcp_tunnelling.c
   ${root_dir}/src/api/nabto_device_error.c
   ${root_dir}/src/api/nabto_device_integration.c
+  ${root_dir}/src/api/nabto_device_password_authentication.c
   )
 
 set(ne_api_test_src

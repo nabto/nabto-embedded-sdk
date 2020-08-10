@@ -96,7 +96,7 @@ static np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct n
 
 static np_error_code nm_mbedtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                                  uint8_t* fp);
-
+static np_error_code nm_mbedtls_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp);
 
 //static void nm_mbedtls_srv_tls_logger( void *ctx, int level, const char *file, int line, const char *str );
 void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data);
@@ -137,6 +137,7 @@ np_error_code nm_mbedtls_srv_init(struct np_platform* pl)
     pl->dtlsS.create = &nm_mbedtls_srv_create;
     pl->dtlsS.destroy = &nm_mbedtls_srv_destroy;
     pl->dtlsS.set_keys = &nm_mbedtls_srv_set_keys;
+    pl->dtlsS.get_server_fingerprint = &nm_mbedtls_srv_get_server_fingerprint;
     pl->dtlsS.create_connection = &nm_mbedtls_srv_create_connection;
     pl->dtlsS.destroy_connection = &nm_mbedtls_srv_destroy_connection;
     pl->dtlsS.async_send_data = &nm_mbedtls_srv_async_send_data;
@@ -160,6 +161,11 @@ np_error_code nm_mbedtls_srv_get_fingerprint(struct np_platform* pl, struct np_d
         return NABTO_EC_UNKNOWN;
     }
     return nm_dtls_util_fp_from_crt(crt, fp);
+}
+
+np_error_code nm_mbedtls_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp)
+{
+    return nm_dtls_util_fp_from_crt(&server->publicKey, fp);
 }
 
 np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server)

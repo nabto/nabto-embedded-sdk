@@ -67,6 +67,103 @@ nabto_device_connection_is_local(NabtoDevice* device,
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
 
+
+
+
+/**
+ * Password Authentication
+ *
+ * Password authenticate the client and the device. The password
+ * authentication is bidirectional and based on PAKE, such that both
+ * the client and the device learns that the other end knows the
+ * password, without revealing the password to the other end.
+ * Password authentication.
+ *
+ * Usage:
+ *  1. Create a new listener. nabto_device_listener_new()
+ *  2. Init the listener to listen for password_authentication_requests. nabto_device_password_authentication_request_init_listener()
+ *  3. Listen for events on the listener. nabto_device_listener_new_password_authentication_request()
+ *  4. Handle the password authentication request
+ *  4a. Get the username used for the request. nabto_device_password_authentication_request_get_username()
+ *  4b. Set a password to use with the username. nabto_device_password_authentication_request_set_password()
+ *  4c. Free the password authentication request. nabto_device_password_authentication_request_free()
+ *  5. Later, use the state of the password exchange. nabto_device_connection_is_password_authenticated()
+ */
+
+typedef struct NabtoDevicePasswordAuthenticationRequest_ NabtoDevicePasswordAuthenticationRequest;
+
+/**
+ * Init a listener for password authentication request listener.
+ *
+ * @param device    The device.
+ * @param listener  The listener.
+ * @return NABTO_DEVICE_EC_OK  iff the listener is initialized
+ *         NABTO_DEVICE_EC_IN_USE if a password authentucation listener is already set up.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_password_authentication_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
+
+/**
+ * Listen for a new password authentication request.
+ *
+ * This follows the listener/future pattern of getting events
+ * asynchronously.
+ *
+ * @param listener  The listener
+ * @param future    The future to wait on.
+ * @param request   The resulting request if the future completes with NABTO_DEVICE_EC_OK.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDevicePasswordAuthenticationRequest** request);
+
+/**
+ * Get the username used in the password authentication request. The
+ * lifetime of the returned username is until
+ * nabto_device_password_authentication_request_free is called.
+ *
+ * @param request  The request
+ * @return The NULL terminated username.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAuthenticationRequest* request);
+
+/**
+ * Set password for the request. If password matching the request is
+ * found, supply NULL as the password. If NULL is provided, the
+ * password authentication protocol continues such that the client
+ * doesn't if the username or the password was invalid. The password
+ * pointer is not used after the call returns.
+ *
+ * @param request  The request
+ * @param password Null terminated password string
+ * @return NABTO_DEVICE_EC_OK
+ *         NABTO_DEVICE_EC_INVALID_STATE
+ *             if the function is called more than once for
+ *             a password authentication request.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* passwd);
+
+/**
+ * Free a password authentication request.
+ *
+ * Before this function is called a password should be set for the
+ * request. If no password was set the effect is the same as setting
+ * the password to NULL in
+ * nabto_device_password_authentication_request_set_password.
+ *
+ * @param request  The request
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDevicePasswordAuthenticationRequest* request);
+
+/**
+ * Test if the connection is password authenticated.
+ *
+ * @return true iff the connection is password authenticated.
+ */
+NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDeviceConnectionRef ref);
+
 #ifdef __cplusplus
 } // extern c
 #endif
