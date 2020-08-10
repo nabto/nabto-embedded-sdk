@@ -13,12 +13,12 @@ void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* da
 void nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap) {
     nabto_coap_error err;
     err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
-                                         (const char*[]){"spake2", "1", NULL},
+                                         (const char*[]){"p2p", "pwd-auth", "1", NULL},
                                          &nc_spake2_handle_coap_1, module,
                                          &module->spake21);
 
     err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
-                                         (const char*[]){"spake2", "2", NULL},
+                                         (const char*[]){"p2p", "pwd-auth", "2", NULL},
                                          &nc_spake2_handle_coap_2, module,
                                          &module->spake22);
 }
