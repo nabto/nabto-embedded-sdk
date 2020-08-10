@@ -15,6 +15,7 @@ static np_error_code password_request_handler(struct nc_spake2_password_request*
 
 np_error_code nabto_device_password_authentication_listener_resolve_event(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
+    struct nabto_device_listener* listener = listenerData;
     if (ec == NABTO_EC_OK) {
         // The item in eventData needs to be converted to data on the future.
         // eventData is a struct nabto_device_password_authentication_request
@@ -23,11 +24,8 @@ np_error_code nabto_device_password_authentication_listener_resolve_event(const 
     } else if (ec == NABTO_EC_OUT_OF_MEMORY) {
         // ok dont care, password auth request returns 500.
     } else if (ec == NABTO_EC_ABORTED) {
-        //struct nabto_device_context* dev = future->dev;
-        //nc_spake2_clear_password_request_callback(&dev->core.spake2);
-
-        // the listener has been freed
-        // dunno what to do
+        struct nabto_device_context* dev = listener->dev;
+        nc_spake2_clear_password_request_callback(&dev->core.spake2);
     } else if (ec == NABTO_EC_STOPPED) {
         //struct nabto_device_context* dev = future->dev;
         //nc_spake2_clear_password_request_callback(&dev->core.spake2);
@@ -60,13 +58,10 @@ nabto_device_password_authentication_request_init_listener(NabtoDevice* device, 
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    if (dev->core.spake2.passwordRequest != NULL) {
+    if (dev->core.spake2.passwordRequestHandler != NULL) {
         ec = NABTO_EC_IN_USE;
     } else {
-
-
-
-        ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_PASSWORD_REQUESTS, &nabto_device_password_authentication_listener_resolve_event, NULL);
+        ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_PASSWORD_REQUESTS, &nabto_device_password_authentication_listener_resolve_event, listener);
 
         if (ec == NABTO_EC_OK) {
             nc_spake2_set_password_request_callback(&dev->core.spake2, password_request_handler, listener);

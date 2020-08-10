@@ -7,9 +7,6 @@
 #include <platform/np_error_code.h>
 #include <coap/nabto_coap.h>
 
-//#include "nc_coap_server.h"
-//#include <coap/nabto_coap_server.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,6 +18,7 @@ struct nc_coap_server_context;
 #define NC_SPAKE2_USERNAME_MAX_LENGTH 64
 #define NC_SPAKE2_PASSWORD_MAX_LENGTH 64
 #define NC_SPAKE2_MAX_PASSWORD_AUTHENTICATION_REQUESTS 6
+
 /**
  * Coap req for the key exchange. The request comes in, a password is
  * found for the username and a response is generated.
@@ -40,8 +38,8 @@ typedef np_error_code (*nc_spake2_password_request_handler)(struct nc_spake2_pas
 
 struct nc_spake2_module {
     // if this is not set return 404.
-    nc_spake2_password_request_handler passwordRequest;
-    void* passwordRequestData;
+    nc_spake2_password_request_handler passwordRequestHandler;
+    void* passwordRequestHandlerData;
 
     struct nabto_coap_server_resource* spake21;
     struct nabto_coap_server_resource* spake22;
@@ -50,7 +48,8 @@ struct nc_spake2_module {
 void nc_spake2_init(struct nc_spake2_module* module);
 void nc_spake2_deinit(struct nc_spake2_module* module);
 
-void nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap);
+np_error_code nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap);
+void nc_spake2_coap_deinit(struct nc_spake2_module* module);
 
 void nc_spake2_clear_password_request_callback(struct nc_spake2_module* module);
 np_error_code nc_spake2_set_password_request_callback(struct nc_spake2_module* module, nc_spake2_password_request_handler passwordRequestFunction, void* data);

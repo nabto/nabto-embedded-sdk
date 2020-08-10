@@ -1,5 +1,6 @@
 
 #include "nc_spake2.h"
+#include "nc_coap.h"
 #include <coap/nabto_coap_server.h>
 #include <core/nc_coap_server.h>
 
@@ -10,7 +11,7 @@
 void nc_spake2_handle_coap_1(struct nabto_coap_server_request* request, void* data);
 void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* data);
 
-void nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap) {
+np_error_code nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap) {
     nabto_coap_error err;
     err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
                                          (const char*[]){"p2p", "pwd-auth", "1", NULL},
@@ -21,7 +22,22 @@ void nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_
                                          (const char*[]){"p2p", "pwd-auth", "2", NULL},
                                          &nc_spake2_handle_coap_2, module,
                                          &module->spake22);
+
+    return nc_coap_error_to_core(err);
 }
+
+void nc_spake2_coap_deinit(struct nc_spake2_module* module)
+{
+    if (module->spake21 != NULL) {
+        nabto_coap_server_remove_resource(module->spake21);
+        module->spake21 = NULL;
+    }
+    if (module->spake22 != NULL) {
+        nabto_coap_server_remove_resource(module->spake22);
+        module->spake22 = NULL;
+    }
+}
+
 
 bool read_text_string(CborValue* value, char* out, size_t maxLength)
 {
@@ -104,7 +120,7 @@ void nc_spake2_handle_coap_1(struct nabto_coap_server_request* request, void* da
     struct nc_spake2_password_request* passwordRequest = NULL;
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
 
-    if (spake2->passwordRequest == NULL) {
+    if (spake2->passwordRequestHandler == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,04), NULL);
     } else if (connection->passwordAuthenticationRequests > NC_SPAKE2_MAX_PASSWORD_AUTHENTICATION_REQUESTS) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,29), NULL);
@@ -121,7 +137,7 @@ void nc_spake2_handle_coap_1(struct nabto_coap_server_request* request, void* da
             if (!read_username_and_password(passwordRequest, payload, payloadLength)) {
                 nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
             } else {
-                spake2->passwordRequest(passwordRequest, spake2->passwordRequestData);
+                spake2->passwordRequestHandler(passwordRequest, spake2->passwordRequestHandlerData);
                 return;
             }
         }
@@ -143,7 +159,7 @@ void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* da
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
 
     connection->passwordAuthenticationRequests++;
-    if (spake2->passwordRequest == NULL) {
+    if (spake2->passwordRequestHandler == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,04), NULL);
     } else if (connection->passwordAuthenticationRequests > NC_SPAKE2_MAX_PASSWORD_AUTHENTICATION_REQUESTS) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,29), NULL);

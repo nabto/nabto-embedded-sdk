@@ -17,19 +17,18 @@ BOOST_AUTO_TEST_CASE(double_register)
     nabto_device_free(device);
 }
 
-// TODO
-// BOOST_AUTO_TEST_CASE(init_free_init_free)
-// {
-//     NabtoDevice* device = nabto_device_new();
-//     for (int i = 0; i < 2; i++)
-//     {
-//         NabtoDeviceListener* listener = nabto_device_listener_new(device);
-//         BOOST_TEST(nabto_device_password_authentication_request_init_listener(device, listener) == NABTO_DEVICE_EC_OK);
-//         nabto_device_listener_stop(listener);
-//         nabto_device_listener_free(listener);
-//     }
+BOOST_AUTO_TEST_CASE(init_free_init_free)
+{
+    NabtoDevice* device = nabto_device_new();
+    for (int i = 0; i < 2; i++)
+    {
+        NabtoDeviceListener* listener = nabto_device_listener_new(device);
+        BOOST_TEST(nabto_device_password_authentication_request_init_listener(device, listener) == NABTO_DEVICE_EC_OK);
+        nabto_device_listener_stop(listener);
+        nabto_device_listener_free(listener);
+    }
 
-//     nabto_device_free(device);
-// }
+    nabto_device_free(device);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
