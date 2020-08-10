@@ -147,12 +147,11 @@ int calculateKey(mbedtls_ecp_group* grp, mbedtls_ecp_point* T, const char* passw
     mbedtls_mpi_init(&y);
     mbedtls_mpi_init(&w);
 
-    mbedtls_ecp_point_read_binary(grp, &M, Mdata, sizeof(Mdata));
-    mbedtls_ecp_point_read_binary(grp, &N, Ndata, sizeof(Ndata));
+    int status = 0;
+    status |= mbedtls_ecp_point_read_binary(grp, &M, Mdata, sizeof(Mdata));
+    status |= mbedtls_ecp_point_read_binary(grp, &N, Ndata, sizeof(Ndata));
 
     uint8_t passwordHash[32];
-
-    int status = 0;
 
     {
         mbedtls_entropy_context entropy;
@@ -167,8 +166,8 @@ int calculateKey(mbedtls_ecp_group* grp, mbedtls_ecp_point* T, const char* passw
             status |= mbedtls_ctr_drbg_random(&ctr_drbg, passwordHash, 32);
         } else {
             status |= mbedtls_sha256_ret((const uint8_t*)password, strlen(password), passwordHash, 0);
-            status |= mbedtls_mpi_read_binary(&w, passwordHash, sizeof(passwordHash));
         }
+        status |= mbedtls_mpi_read_binary(&w, passwordHash, sizeof(passwordHash));
 
         mbedtls_entropy_free(&entropy);
         mbedtls_ctr_drbg_free(&ctr_drbg);
