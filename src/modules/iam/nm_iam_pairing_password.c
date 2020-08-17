@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_experimental.h>
 #include "nm_iam_coap_handler.h"
 
 #include "nm_iam.h"
@@ -17,7 +18,8 @@ NabtoDeviceError nm_iam_pairing_password_init(struct nm_iam_coap_handler* handle
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, ref, "Pairing:Password", NULL)) {
+    if (!nm_iam_check_access(handler->iam, ref, "Pairing:Password", NULL) ||
+        !nabto_device_connection_is_password_authenticated(handler->device, ref)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
@@ -38,23 +40,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* password = NULL;
-    char* name = NULL;
-
-    if (!nm_iam_cbor_decode_string(&value, &password) &&
-        !nm_iam_cbor_decode_kv_string(&value, "Password", &password))
-    {
-        // The password is required either as old or in the new format.
-        nabto_device_coap_error_response(request, 400, "Missing password");
-        return;
-    }
-
+    char *name = NULL;
     nm_iam_cbor_decode_kv_string(&value, "Name", &name);
-
-    if (strcmp(password, handler->iam->pairingPassword) != 0) {
-        nabto_device_coap_error_response(request, 401, "Wrong Password");
-        return;
-    }
 
     if (!nm_iam_pair_new_client(handler->iam, request, name)) {
         nabto_device_coap_error_response(request, 500, "Server error");
@@ -66,6 +53,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nabto_device_coap_response_ready(request);
 
     free(fingerprint);
-    free(password);
     free(name);
 }
