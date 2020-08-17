@@ -48,6 +48,9 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
     conn->rendezvous = &device->rendezvous;
+    conn->hasSpake2Key = false;
+    conn->passwordAuthenticated = false;
+    conn->passwordAuthenticationRequests = 0;
     ec = nc_device_next_connection_ref(device, &conn->connectionRef);
     if (ec != NABTO_EC_OK) {
         return NABTO_EC_UNKNOWN;
