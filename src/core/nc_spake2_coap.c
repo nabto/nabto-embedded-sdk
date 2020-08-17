@@ -176,6 +176,7 @@ void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* da
             if (memcmp(payload, hash2, 32) != 0) {
                 nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,01), NULL);
             } else {
+                connection->passwordAuthenticated = true;
                 nabto_coap_server_response_set_code_human(request, 201);
                 nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
                 nabto_coap_server_response_set_payload(request, hash1, 32);

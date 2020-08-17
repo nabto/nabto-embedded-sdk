@@ -12,7 +12,7 @@
 #include <signal.h>
 
 const char* productId = "pr-fatqcwj9";
-const char* deviceId = "de-3x4st7ru";
+const char* deviceId = "de-avmqjaxe";
 
 char* privateKey =
     "-----BEGIN EC PARAMETERS-----\n"
