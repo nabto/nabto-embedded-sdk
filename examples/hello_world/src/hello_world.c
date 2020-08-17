@@ -21,10 +21,18 @@
 // to the basestation, the private key here should be set to a valid
 // private key, and the fingerprint of the key must be configured in
 // the Nabto Cloud Console.
-const char* productId = "pr-abcd1234";
-const char* deviceId = "de-efgh5678";
-const char* serverUrl = "pr-abcd1234.devices.dev.nabto.net";
-char* privateKey = NULL;
+const char* productId = "pr-fatqcwj9";
+const char* deviceId = "de-3y4st7ru";
+const char* serverUrl = "pr-fatqcwj9.devices.nabto.net";
+char* privateKey =
+    "-----BEGIN EC PARAMETERS-----\n"
+    "BggqhkjOPQMBBw==\n"
+    "-----END EC PARAMETERS-----\n"
+    "-----BEGIN EC PRIVATE KEY-----\n"
+    "MHcCAQEEINf2qc5Jn4HmeMyPhRp4U+vWGyMBc8YB/hEEHfixnHLqoAoGCCqGSM49\n"
+    "AwEHoUQDQgAE9tHAO4K/CqmikrjontU3jGufe3DY3/zQSeEAlQDHk8XLowKENw5r\n"
+    "otnFBDUhE75fJPH30HhHekN34WsTgl6z2g==\n"
+    "-----END EC PRIVATE KEY-----\n";
 
 // CoAP endpoint data
 const char* coapPath[] = { "hello-world", NULL };
@@ -298,7 +306,7 @@ bool start_device(NabtoDevice* device)
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    ec = nabto_device_get_device_fingerprint_hex(device, &fp);
+    ec = nabto_device_get_device_fingerprint_full_hex(device, &fp);
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
