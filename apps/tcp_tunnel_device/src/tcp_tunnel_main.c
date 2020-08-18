@@ -100,7 +100,7 @@ void print_device_config_load_failed(const char* fileName)
 {
     printf("Could not open or parse the device config file (%s)." NEWLINE, fileName);
     printf("Please ensure the file exists and has the following format." NEWLINE);
-    printf("The Server field is optional." NEWLINE);
+    printf("The Server and ServerPort fields are optional." NEWLINE);
     printf("{" NEWLINE);
     printf("  \"ProductId\": \"pr-abcd1234\"," NEWLINE);
     printf("  \"DeviceId\": \"de-abcd1234\"," NEWLINE);
@@ -237,14 +237,13 @@ char* expand_file_name(const char* homeDir, const char* fileName)
     return fullFileName;
 }
 
-char* generate_pairing_url(const char* productId, const char* deviceId, const char* deviceFingerprint, const char* pairingPassword, const char* pairingServerConnectToken)
+char* generate_pairing_url(const char* productId, const char* deviceId, const char* pairingPassword, const char* pairingServerConnectToken)
 {
     char* buffer = calloc(1, 1024); // long enough!
 
-    sprintf(buffer, "https://tcp-tunnel.nabto.com/pairing?p=%s&d=%s&fp=%s&pwd=%s&sct=%s",
+    sprintf(buffer, "https://tcp-tunnel.nabto.com/pairing?p=%s&d=%s&pwd=%s&sct=%s",
             productId,
             deviceId,
-            deviceFingerprint,
             pairingPassword,
             pairingServerConnectToken);
 
@@ -414,7 +413,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
 
-    char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, deviceFingerprint, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
+    char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
 
     // add users to iam module.
     struct nm_iam_user* user;
@@ -443,11 +442,12 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);
     printf("# Device ID:         %s" NEWLINE, dc.deviceId);
-    printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
     printf("# Pairing password:  %s" NEWLINE, tcpTunnelState.pairingPassword);
     printf("# Paring SCT:        %s" NEWLINE, tcpTunnelState.pairingServerConnectToken);
-    printf("# Version:           %s" NEWLINE, nabto_device_version());
     printf("# Pairing URL:       %s" NEWLINE, pairingUrl);
+    printf("# " NEWLINE);
+    printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
+    printf("# Version:           %s" NEWLINE, nabto_device_version());
     printf("######## Configured TCP Services ########" NEWLINE);
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;
