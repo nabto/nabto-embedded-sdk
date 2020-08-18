@@ -4,6 +4,7 @@
 
 #include "nm_iam_coap_handler.h"
 #include "nm_iam_auth_handler.h"
+#include "nm_iam_pake_handler.h"
 
 #include <nn/log.h>
 
@@ -51,6 +52,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserRolesPutHandler;
 
     struct nm_iam_auth_handler authHandler;
+    struct nm_iam_pake_handler pakeHandler;
 
     struct nm_iam_change_callbacks changeCallbacks;
     char* pairingPassword;

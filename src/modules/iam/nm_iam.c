@@ -5,6 +5,7 @@
 
 #include "nm_iam_coap_handler.h"
 
+#include <nabto/nabto_device_experimental.h>
 #include <modules/policies/nm_effect.h>
 #include <modules/policies/nm_policy.h>
 
@@ -33,6 +34,7 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     nn_vector_init(&iam->roles, sizeof(void*));
     nn_vector_init(&iam->policies, sizeof(void*));
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
+    nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
 
     init_coap_handlers(iam);
 }
@@ -46,6 +48,7 @@ void nm_iam_deinit(struct nm_iam* iam)
     deinit_coap_handlers(iam);
 
     nm_iam_auth_handler_deinit(&iam->authHandler);
+    nm_iam_pake_handler_deinit(&iam->pakeHandler);
 
     struct nm_iam_user* user;
     NN_VECTOR_FOREACH(&user, &iam->users) {
