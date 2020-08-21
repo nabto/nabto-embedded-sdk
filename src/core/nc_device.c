@@ -15,6 +15,10 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     memset(device, 0, sizeof(struct nc_device_context));
     device->pl = pl;
     device->state = NC_DEVICE_STATE_SETUP;
+
+    device->localPort = 5592;
+    device->p2pPort = 5593;
+
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
     if (ec != NABTO_EC_OK) {
@@ -208,7 +212,7 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname, const uint16_t port, bool enableMdns)
+                              const char* hostname, bool enableMdns)
 {
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
@@ -218,12 +222,11 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     dev->deviceId = deviceId;
     dev->hostname = hostname;
     dev->connectionRef = 0;
-    dev->localPort = port;
 
     nc_attacher_set_app_info(&dev->attacher, appName, appVersion);
     nc_attacher_set_device_info(&dev->attacher, productId, deviceId);
 
-    nc_udp_dispatch_async_bind(&dev->udp, pl, 0, &dev->socketBoundCompletionEvent);
+    nc_udp_dispatch_async_bind(&dev->udp, pl, dev->p2pPort, &dev->socketBoundCompletionEvent);
     return NABTO_EC_OK;
 }
 

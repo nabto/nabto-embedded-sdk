@@ -68,7 +68,10 @@ struct nc_device_context {
     const char* hostname;
 
     uint16_t serverPort;
+
+    // Ports to bind the sockets to.
     uint16_t localPort;
+    uint16_t p2pPort;
 
     nc_device_close_callback closeCb;
     void* closeCbData;
@@ -87,7 +90,7 @@ void nc_device_set_keys(struct nc_device_context* device, const unsigned char* p
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname, const uint16_t port, bool enableMdns);
+                              const char* hostname, bool enableMdns);
 
 void nc_device_stop(struct nc_device_context* dev);
 
