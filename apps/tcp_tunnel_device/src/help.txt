@@ -1,13 +1,15 @@
 TCP Tunnel Device Help.
 
 # Arguments.
-  -h, --help       Print help
-  -v, --version    Print version
-  -H, --home-dir   Set alternative home dir, The default home dir is
-                   $HOME/.nabto/edge on linux and mac, and %APPDATA%\nabto\edge
-                   on windows
-      --log-level  Set the log level for the application the possible levels
-                   is error, warn, info and trace.
+  -h, --help          Print help
+  -v, --version       Print version
+  -H, --home-dir      Set alternative home dir, The default home dir is
+                      $HOME/.nabto/edge on linux and mac, and %APPDATA%\nabto\edge
+                      on windows
+      --log-level     Set the log level for the application the possible levels
+                      is error, warn, info and trace.
+      --random-ports  Bind the local and the p2p sockets to random UDP ports
+                      instead of the default UDP ports 5592 and 5593.
 
 # Files
 

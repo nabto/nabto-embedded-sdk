@@ -56,7 +56,8 @@ enum {
     OPTION_VERSION,
     OPTION_LOG_LEVEL,
     OPTION_SHOW_STATE,
-    OPTION_HOME_DIR
+    OPTION_HOME_DIR,
+    OPTION_RANDOM_PORTS
 };
 
 struct args {
@@ -65,6 +66,7 @@ struct args {
     bool showState;
     const char* logLevel;
     char* homeDir;
+    bool randomPorts;
 };
 
 
@@ -148,6 +150,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x3s[] = "";       const char* x3l[] = { "log-level", 0 };
     const char x4s[] = "";       const char* x4l[] = { "show-state", 0 };
     const char x5s[] = "H";      const char* x5l[] = { "home-dir", 0 };
+    const char x6s[] = "";       const char* x6l[] = { "random-ports", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -155,6 +158,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_LOG_LEVEL, GOPT_ARG, x3s, x3l },
         { OPTION_SHOW_STATE, GOPT_NOARG, x4s, x4l },
         { OPTION_HOME_DIR, GOPT_ARG, x5s, x5l },
+        { OPTION_RANDOM_PORTS, GOPT_NOARG, x6s, x6l },
         {0,0,0,0}
     };
 
@@ -168,6 +172,10 @@ static bool parse_args(int argc, char** argv, struct args* args)
     }
     if (gopt(options, OPTION_SHOW_STATE)) {
         args->showState = true;
+    }
+
+    if (gopt(options, OPTION_RANDOM_PORTS)) {
+        args->randomPorts = true;
     }
 
     if (gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel)) {
@@ -450,7 +458,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     nn_vector_clear(&iamConfig.policies);
     iam_config_deinit(&iamConfig);
 
-    uint16_t localPort = 5592;
+    if (args->randomPorts) {
+        nabto_device_set_local_port(device, 0);
+        nabto_device_set_p2p_port(device, 0);
+    }
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);
@@ -462,7 +473,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("# " NEWLINE);
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
-    printf("# Local UDP Port     %d" NEWLINE, localPort);
+    if (!args->randomPorts) {
+        printf("# Local UDP Port     %d" NEWLINE, 5592);
+    }
     printf("######## Configured TCP Services ########" NEWLINE);
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;
