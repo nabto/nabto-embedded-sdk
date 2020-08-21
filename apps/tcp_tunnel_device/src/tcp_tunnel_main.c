@@ -438,6 +438,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     nn_vector_clear(&iamConfig.policies);
     iam_config_deinit(&iamConfig);
 
+    uint16_t localPort = 5592;
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);
@@ -448,6 +449,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("# " NEWLINE);
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
+    printf("# Local UDP Port     %d" NEWLINE, localPort);
     printf("######## Configured TCP Services ########" NEWLINE);
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;

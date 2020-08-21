@@ -279,7 +279,17 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_version(NabtoDevice* device, const char* version);
 
 /**
- * Set local port to use. If unset or 0, an ephemeral (system chosen) port will be used.
+ * The device has two UDP sockets which is used for connection
+ * packets. One socket is used solely for local connections and one
+ * socket is used for internet facing p2p packets. These sockets are
+ * called the local socket and the p2p socket.
+ *
+ * This function sets the port number which the local socket is bound
+ * to. If this function is not called the port number 5592 is used. If
+ * this option is set to 0 a free port is choosen by the system.
+ *
+ * The port needs to be set before the function nabto_device_start is
+ * called.
  *
  * @param device [in]   The device instance to perform action on
  * @param port [in]     The port number to set
@@ -289,9 +299,29 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_local_port(NabtoDevice* device, uint16_t port);
 
 /**
- * Get the local port used by the device if ephemeral port is used by
- * the device. If set_local_port was used, the port set will be
- * returned.
+ * See nabto_device_set_local_port for a description of local and
+ * p2p sockets.
+ *
+ * This function sets the port number which the p2p socket is bound
+ * to. If this function is not called the port number 5593 is used. If
+ * this option is set to 0 a free port is choosen by the system.
+ *
+ * The port needs to be set before the function nabto_device_start is
+ * called.
+ *
+ * @param device [in]   The device
+ * @param port [in]     The port number to bind to
+ * @return NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_p2p_port(NabtoDevice* device, uint16_t port);
+
+
+/**
+ * See nabto_device_set_local_port for a description of local and
+ * p2p sockets.
+ *
+ * Get the port number used by the local socket.
  *
  * @param device [in]   The device instance to perform action on
  * @param port [out]    Reference port to set
@@ -300,6 +330,20 @@ nabto_device_set_local_port(NabtoDevice* device, uint16_t port);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
+
+/**
+ * See nabto_device_set_local_port for a description of local and
+ * p2p sockets.
+ *
+ * Get the port number used by the remote socket.
+ *
+ * @param device [in]   The device instance to perform action on
+ * @param port [out]    Reference port to set
+ * @return  NABTO_DEVICE_EC_OK on success
+ *          NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_get_p2p_port(NabtoDevice* device, uint16_t* port);
 
 /**
  * Utilitiy function to create a private key for a device. Once

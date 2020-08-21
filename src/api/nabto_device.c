@@ -282,12 +282,36 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_local_port(NabtoDevice* devic
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    dev->port = port;
+    dev->core.localPort = port;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_p2p_port(NabtoDevice* device, uint16_t port)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    dev->core.p2pPort = port;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_get_local_port(NabtoDevice* device, uint16_t* port)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    uint16_t p = 0;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    p = nc_udp_dispatch_get_local_port(&dev->core.localUdp);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    if (p == 0) {
+        return NABTO_DEVICE_EC_INVALID_STATE;
+    } else {
+        *port = p;
+    }
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_get_p2p_port(NabtoDevice* device, uint16_t* port)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     uint16_t p = 0;
@@ -345,7 +369,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
     nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
 
     // start the core
-    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, dev->port, dev->enableMdns);
+    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, dev->enableMdns);
 
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");
