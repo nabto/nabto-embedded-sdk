@@ -250,6 +250,17 @@ char* generate_pairing_url(const char* productId, const char* deviceId, const ch
     return buffer;
 }
 
+char* generate_pairing_string(const char* productId, const char* deviceId, const char* pairingPassword, const char* pairingServerConnectToken)
+{
+    char* buffer = calloc(1, 1024);
+    sprintf(buffer, "p=%s,d=%s,pwd=%s,sct=%s",
+            productId,
+            deviceId,
+            pairingPassword,
+            pairingServerConnectToken);
+    return buffer;
+}
+
 void print_item(const char* item)
 {
     size_t printSize = strlen(item);
@@ -414,6 +425,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
 
     char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
+    char* pairingString = generate_pairing_string(dc.productId, dc.deviceId, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
 
     // add users to iam module.
     struct nm_iam_user* user;
@@ -446,6 +458,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("# Pairing password:  %s" NEWLINE, tcpTunnelState.pairingPassword);
     printf("# Paring SCT:        %s" NEWLINE, tcpTunnelState.pairingServerConnectToken);
     printf("# Pairing URL:       %s" NEWLINE, pairingUrl);
+    printf("# Pairing string:    %s" NEWLINE, pairingString);
     printf("# " NEWLINE);
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
