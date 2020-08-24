@@ -212,6 +212,16 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_product_id(NabtoDevice* device, const char* productId);
 
 /**
+ * Get the product id.
+ *
+ * @param device [in]  The device
+ * @return The product id, or undefined if not set. The pointer
+ *         is valid until nabto_device_free is being called.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_get_product_id(NabtoDevice* device);
+
+/**
  * Set the device id. Required before calling nabto_device_start().
  *
  * @param device [in]   The device instance to perform action on
@@ -221,6 +231,16 @@ nabto_device_set_product_id(NabtoDevice* device, const char* productId);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_device_id(NabtoDevice* device, const char* deviceId);
+
+/**
+ * Get the device id.
+ *
+ * @param device [in]  The device
+ * @return The device id, or undefined if not set. The pointer
+ *         is valid until nabto_device_free is being called.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_get_device_id(NabtoDevice* device);
 
 /**
  * Set the server url. Required before calling nabto_device_start().

@@ -18,9 +18,13 @@ NabtoDeviceError nm_iam_pairing_password_init(struct nm_iam_coap_handler* handle
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, ref, "Pairing:Password", NULL) ||
-        !nabto_device_connection_is_password_authenticated(handler->device, ref)) {
+    if (!nm_iam_check_access(handler->iam, ref, "Pairing:Password", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
+        return;
+    }
+
+    if (!nabto_device_connection_is_password_authenticated(handler->device, ref)) {
+        nabto_device_coap_error_response(request, 401, "Access Denied");
         return;
     }
 

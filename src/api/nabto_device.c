@@ -189,6 +189,16 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_product_id(NabtoDevice* devic
     return ec;
 }
 
+const char* NABTO_DEVICE_API nabto_device_get_product_id(NabtoDevice* device)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    const char* ret = NULL;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    ret = dev->productId;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ret;
+}
+
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_device_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -202,6 +212,16 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_device_id(NabtoDevice* device
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ec;
+}
+
+const char* NABTO_DEVICE_API nabto_device_get_device_id(NabtoDevice* device)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    const char* ret = NULL;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    ret = dev->deviceId;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ret;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* device, const char* str)

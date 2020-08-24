@@ -27,6 +27,12 @@ static size_t encode_response(struct nm_iam* iam, struct nm_iam_user* user, void
         cbor_encode_text_stringz(&map, user->serverConnectToken);
     }
 
+    cbor_encode_text_stringz(&map, "ProductId");
+    cbor_encode_text_stringz(&map, nabto_device_get_product_id(iam->device));
+
+    cbor_encode_text_stringz(&map, "DeviceId");
+    cbor_encode_text_stringz(&map, nabto_device_get_device_id(iam->device));
+
     cbor_encoder_close_container(&encoder, &map);
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);

@@ -134,10 +134,14 @@ bool create_default_iam_config(const char* iamConfigFile)
     struct nm_iam_role* adminRole = nm_iam_role_new("Admin");
     nm_iam_role_add_policy(adminRole, "TunnelAll");
     nm_iam_role_add_policy(adminRole, "Paired");
+    nm_iam_role_add_policy(adminRole, "PasswordPairing");
+    nm_iam_role_add_policy(adminRole, "LocalPairing");
 
     struct nm_iam_role* userRole = nm_iam_role_new("User");
     nm_iam_role_add_policy(userRole, "TunnelAll");
     nm_iam_role_add_policy(userRole, "Paired");
+    nm_iam_role_add_policy(userRole, "PasswordPairing");
+    nm_iam_role_add_policy(userRole, "LocalPairing");
 
     cJSON* roles = cJSON_CreateArray();
     cJSON_AddItemToArray(roles, nm_iam_role_to_json(unpairedRole));
