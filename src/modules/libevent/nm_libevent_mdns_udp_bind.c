@@ -134,8 +134,8 @@ np_error_code udp_create_socket_ipv6(struct np_udp_socket* s)
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 
-    int no = 0;
-    int status = setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no));
+    int yes = 1;
+    int status = setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &yes, sizeof(yes));
     if (status < 0) {
         NABTO_LOG_ERROR(LOG, "Cannot set IPV6_V6ONLY");
     }

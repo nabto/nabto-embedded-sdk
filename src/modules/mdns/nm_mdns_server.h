@@ -16,34 +16,35 @@
 
 #define MDNS_MAX_LOCAL_IPS 2
 
+// v4 or v6 server
+struct nm_mdns_server_instance {
+    struct nm_mdns_server* server;
+    bool done;
+    struct np_udp_socket* socket;
+    struct np_udp_endpoint sendEp;
+    struct np_udp_endpoint recvEp;
+    uint8_t sendBuffer[1500];
+    uint8_t recvBuffer[1500];
+    struct np_completion_event openedCompletionEvent;
+    struct np_completion_event recvWaitCompletionEvent;
+    struct np_completion_event sendCompletionEvent;
+};
+
 struct nm_mdns_server {
     bool running;
     bool stopped;
-    bool v4Done;
-    bool v6Done;
     uint16_t port;
     struct nabto_mdns_server_context mdnsServer;
-    struct np_udp_socket* socketv4;
-    struct np_udp_socket* socketv6;
     struct nabto_mdns_ip_address localIps[MDNS_MAX_LOCAL_IPS];
     size_t localIpsSize;
-    uint8_t sendBufferV4[1500];
-    uint8_t sendBufferV6[1500];
-    uint8_t recvBuffer[1500];
 
     struct np_event_queue eq;
     struct np_udp udp;
     struct nm_mdns_udp_bind mdnsUdpBind;
     struct np_local_ip localIp;
 
-
-
-    struct np_completion_event v4OpenedCompletionEvent;
-    struct np_completion_event v6OpenedCompletionEvent;
-    struct np_completion_event v4RecvWaitCompletionEvent;
-    struct np_completion_event v6RecvWaitCompletionEvent;
-    struct np_completion_event v4SendCompletionEvent;
-    struct np_completion_event v6SendCompletionEvent;
+    struct nm_mdns_server_instance v4;
+    struct nm_mdns_server_instance v6;
 };
 
 np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct nm_mdns_udp_bind* mdnsUdpBind, struct np_local_ip* localIp);
