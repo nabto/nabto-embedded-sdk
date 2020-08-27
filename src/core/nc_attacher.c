@@ -555,6 +555,7 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
 
 void send_attach_sct_request(struct nc_attach_context* ctx)
 {
+    ctx->sctContext.synchronizedVersion = 0;
     np_error_code ec = nc_attacher_sct_upload(ctx, &send_attach_sct_request_callback, ctx);
     if (ec == NABTO_EC_NO_OPERATION) {
         send_attach_end_request(ctx);
