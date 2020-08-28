@@ -23,8 +23,6 @@ struct nabto_device_context {
 
     struct nn_llist listeners;
 
-    bool enableMdns;
-
     bool closing;
 
     struct nabto_device_future* queueHead;

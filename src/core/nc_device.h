@@ -14,6 +14,9 @@
 
 #include <platform/np_error_code.h>
 
+#include <nn/string_set.h>
+#include <nn/string_map.h>
+
 enum nc_device_state {
     NC_DEVICE_STATE_SETUP,
     NC_DEVICE_STATE_RUNNING,
@@ -58,6 +61,10 @@ struct nc_device_context {
     bool enableMdns;
     struct np_mdns_context* mdns;
 
+    struct nn_string_set mdnsSubtypes;
+    struct nn_string_map mdnsTxtItems;
+    char* mdnsInstanceName;
+
     // unique connectionReference for each connection
     uint64_t connectionRef;
 
@@ -90,7 +97,7 @@ void nc_device_set_keys(struct nc_device_context* device, const unsigned char* p
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname, bool enableMdns);
+                              const char* hostname);
 
 void nc_device_stop(struct nc_device_context* dev);
 

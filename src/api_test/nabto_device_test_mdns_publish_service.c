@@ -8,5 +8,5 @@ nabto_device_test_mdns_publish_service(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
-    np_mdns_publish_service(&dev->pl.mdns, 4242, "pr-demo1234", "de-demo1234");
+    np_mdns_publish_service(&dev->pl.mdns, 4242, "pr-12345678-de-abcdefgh", NULL, NULL);
 }

@@ -98,6 +98,10 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     nn_llist_init(&device->eventsListeners);
     nn_llist_init(&device->deviceEvents);
 
+    nn_string_set_init(&device->mdnsSubtypes);
+    nn_string_map_init(&device->mdnsTxtItems);
+
+
     device->serverPort = 443;
 
     ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, &nc_device_udp_bound_cb, device);
@@ -113,6 +117,11 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     struct np_platform* pl = device->pl;
 
+
+    nc_spake2_coap_deinit(&device->spake2);
+    nc_spake2_deinit(&device->spake2);
+
+
     nc_stream_manager_deinit(&device->streamManager);
     nc_client_connection_dispatch_deinit(&device->clientConnect);
     nc_stun_coap_deinit(&device->stunCoap);
@@ -122,11 +131,14 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
-    nc_spake2_coap_deinit(&device->spake2);
-    nc_spake2_deinit(&device->spake2);
     if (device->dtlsServer != NULL) { // was created
         pl->dtlsS.destroy(device->dtlsServer);
     }
+
+    nn_string_set_deinit(&device->mdnsSubtypes);
+    nn_string_map_deinit(&device->mdnsTxtItems);
+    free(device->mdnsInstanceName);
+
     nc_udp_dispatch_deinit(&device->udp);
     nc_udp_dispatch_deinit(&device->localUdp);
     nc_udp_dispatch_deinit(&device->secondaryUdp);
@@ -159,6 +171,42 @@ void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
 
 }
 
+static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
+{
+    // add txt records to mdns
+    struct nn_string_map_iterator it;
+    it = nn_string_map_insert(&device->mdnsTxtItems, "productid", device->productId);
+    if (nn_string_map_is_end(&it)) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    it = nn_string_map_insert(&device->mdnsTxtItems, "deviceid", device->deviceId);
+    if (nn_string_map_is_end(&it)) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    char uniqueId[64];
+    if (strlen(device->productId) + 1 + strlen(device->deviceId) > 63) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    char* ptr = uniqueId;
+    strcpy(ptr, device->productId);
+    ptr += strlen(device->productId);
+    strcpy(ptr, "-");
+    ptr += strlen("-");
+    strcpy(ptr, device->deviceId);
+    if (!nn_string_set_insert(&device->mdnsSubtypes, uniqueId)) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    device->mdnsInstanceName = strdup(uniqueId);
+    if (device->mdnsInstanceName == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    return NABTO_EC_OK;
+}
+
 void nc_device_local_udp_bound_cb(const np_error_code ec, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
@@ -175,7 +223,7 @@ void nc_device_local_udp_bound_cb(const np_error_code ec, void* data)
     } else if (dev->enableMdns) {
         uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
         NABTO_LOG_TRACE(LOG, "Local socket bound, starting mdns on %d", localPort);
-        np_mdns_publish_service(&pl->mdns, localPort, dev->productId, dev->deviceId);
+        np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
     } else {
         NABTO_LOG_TRACE(LOG, "Local socket bound, no mDNS");
     }
@@ -209,19 +257,25 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
     nc_udp_dispatch_async_bind(&dev->localUdp, dev->pl, dev->localPort, &dev->socketBoundCompletionEvent);
 }
 
+
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* appName, const char* appVersion,
                               const char* productId, const char* deviceId,
-                              const char* hostname, bool enableMdns)
+                              const char* hostname)
 {
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->state = NC_DEVICE_STATE_RUNNING;
-    dev->enableMdns = enableMdns;
     dev->productId = productId;
     dev->deviceId = deviceId;
     dev->hostname = hostname;
     dev->connectionRef = 0;
+
+    np_error_code ec;
+    ec = nc_device_populate_mdns(dev);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     nc_attacher_set_app_info(&dev->attacher, appName, appVersion);
     nc_attacher_set_device_info(&dev->attacher, productId, deviceId);

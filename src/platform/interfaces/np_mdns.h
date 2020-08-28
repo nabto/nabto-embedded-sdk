@@ -43,6 +43,7 @@
  * Service type: `_nabto._udp`
  * Txt records: `productid=<productid>, deviceid=<deviceid>`
  * Port number: `<the udp port number of the nabto service>`
+ * Sub type: `<productid>-<deviceid>._sub._nabto._udp.local.
  */
 
 #ifdef __cplusplus
@@ -50,6 +51,8 @@ extern "C" {
 #endif
 
 struct np_mdns_functions;
+struct nn_string_set;
+struct nn_string_map;
 
 struct np_mdns {
     const struct np_mdns_functions* mptr;
@@ -62,10 +65,11 @@ struct np_mdns_functions {
      *
      * @param obj  The mDNS server implementation.
      * @param port  The UDP port number to expose for the service.
-     * @param productId  The productId to expose in a TXT record.
-     * @param deviceId The device id to expose in a TXT record.
+     * @param instanceName  The instance portion of the service name
+     * @param subtypes  subtypes to expose
+     * @param txtItems  txt items to expose
      */
-    void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId);
+    void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* instanceName, struct nn_string_set* subtypes, struct nn_string_map* txtItems);
 };
 
 #ifdef __cplusplus

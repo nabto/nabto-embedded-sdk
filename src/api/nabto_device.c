@@ -351,7 +351,32 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_mdns(NabtoDevice* device)
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    dev->enableMdns = true;
+    dev->core.enableMdns = true;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_mdns_add_subtype(NabtoDevice* device, const char* subtype)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    if (!nn_string_set_insert(&dev->core.mdnsSubtypes, subtype)) {
+        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return ec;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char* value)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nn_string_map_iterator it = nn_string_map_insert(&dev->core.mdnsTxtItems, key, value);
+    if (nn_string_map_is_end(&it)) {
+        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ec;
 }
@@ -383,13 +408,12 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
         strcpy(ptr, defaultServerUrlSuffix);
     }
 
-
     nabto_device_threads_mutex_lock(dev->eventMutex);
     // Init platform
     nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
 
     // start the core
-    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl, dev->enableMdns);
+    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl);
 
     if ( ec != NABTO_EC_OK ) {
         NABTO_LOG_ERROR(LOG, "Failed to start device core");

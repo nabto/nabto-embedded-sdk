@@ -1518,6 +1518,25 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_mdns(NabtoDevice* device);
 
 /**
+ * Add an additional subtype to the mdns responses.
+ *
+ * The subtype <product-id>-<device-id> is added automatically. Other
+ * subtypes can be added, such as "heatpump" or "tcptunnel" can be
+ * added for easy filtering in the client applications. Subtypes needs
+ * to be added before nabto_device_start is called.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_mdns_add_subtype(NabtoDevice* device, const char* subtype);
+
+/**
+ * Add additional txt items to the mdns responses. By default the
+ * productid and deviceid is added to mdns responses.  Additional txt
+ * items needs to be added before nabto_device_start is called.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char* value);
+
+/**
  * Return the version of the nabto embedded library.
  *
  * @return Zero-terminated string with the device version
