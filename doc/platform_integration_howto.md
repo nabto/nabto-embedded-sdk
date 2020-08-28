@@ -613,7 +613,7 @@ mDNS service discovery is built into the Nabto Edge platform through
 the `np_mdns` interface. This interface have one function.
 
 ```
-void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId);
+void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* instanceName, struct nn_string_set* subtypes, struct nn_string_map* txtItems);
 ```
 
 This function is called a bit after the device has been started, since
@@ -621,9 +621,8 @@ the device needs to have opened its local socket first and acquired the
 local port number of the local socket.
 
 When this function is called, the mDNS implementation should register
-the service `_nabto._udp` as having the `port` port number on the
-device. Further, two key value pairs should be registered for the
-service `productid=<productId>` and `deviceid=<deviceId>`.
+the service of the type `_nabto._udp` as having the `port` port number on the
+device. Further the subtypes and txt items should be registered for the service.
 
 Several mDNS clients exist which can be used to test that an
 mDNS implementation works. On Windows and Mac, it is recommended to use
@@ -641,29 +640,40 @@ Example scan for all nabto edge devices on the local network.
 C:\>dns-sd -B _nabto._udp
 Browsing for _nabto._udp
 Timestamp     A/R Flags if Domain                    Service Type              Instance Name
- 4:22:42.514  Add     2  4 local.                    _nabto._udp.              de-nhbpwxcx
+ 4:22:42.514  Add     2  4 local.                    _nabto._udp.              pr-12345678-de-abcdefgh
 ```
 
-The example shows information about a specific device, the important
+Example scan for a specific device based on the subtype <productid>-<deviceid>._sub._nabto._udp.local
+```
+$ dns-sd -B _nabto._udp,pr-12345678-de-abcdefgh
+Browsing for _nabto._udp,pr-12345678-de-abcdefgh
+DATE: ---Fri 28 Aug 2020---
+11:06:41.826  ...STARTING...
+Timestamp     A/R    Flags  if Domain               Service Type         Instance Name
+11:06:41.829  Add        2   7 local.               _nabto._udp.         pr-12345678-de-abcdefgh
+```
+
+
+The example shows information about a specific service instance, the important
 information is the txt records and the port number.
 
 ```
-C:\>dns-sd -L de-nhbpwxcx _nabto._udp
-Lookup de-nhbpwxcx._nabto._udp.local
- 4:23:48.795  de-nhbpwxcx._nabto._udp.local. can be reached at de-nhbpwxcx.local.:49654 (interface 4)
- deviceId=de-nhbpwxcx productId=pr-bqyh43fb
+C:\>dns-sd -L pr-12345678-de-abcdefgh _nabto._udp
+Lookup pr-12345678-de-abcdefgh._nabto._udp.local
+ 4:23:48.795  pr-12345678-de-abcdefgh._nabto._udp.local. can be reached at pr-12345678-de-abcdefgh.local.:49654 (interface 4)
+ deviceId=de-abcdefgh productId=pr-12345678
 ```
 
 Example: Get the ips for a device using dns-sd.
 ```
-C:\>dns-sd -G v4v6 de-nhbpwxcx.local.
-Timestamp     A/R Flags if Hostname                  Address                                      TTL
- 4:33:27.514  Add     3  4 de-nhbpwxcx.local.        192.168.123.117                              120
- 4:33:27.514  Add     2  4 de-nhbpwxcx.local.        2001:DB8:1234:0003:8D41:1F5C:3C08:2D3F%<0>   120
+C:\>dns-sd -G v4v6 pr-12345678-de-abcdefgh.local.
+Timestamp     A/R Flags if Hostname                        Address                                      TTL
+ 4:33:27.514  Add     3  4 pr-12345678-de-abcdefgh.local.  192.168.123.117                              120
+ 4:33:27.514  Add     2  4 pr-12345678-de-abcdefgh.local.  2001:DB8:1234:0003:8D41:1F5C:3C08:2D3F%<0>   120
 ```
 
 Using this information we know that the device with the product id
-`pr-bqyh43fb` and the device id `de-nhbpwxcx` can be reached on the
+`pr-12345678` and the device id `de-abcdedfgh` can be reached on the
 ips `192.168.123.117` and `2001:DB8:1234:0003:8D41:1F5C:3C08:2D3F` on
 UDP port `49654`
 
