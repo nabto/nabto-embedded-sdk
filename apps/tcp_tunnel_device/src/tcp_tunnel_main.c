@@ -408,6 +408,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         nabto_device_set_server_port(device, dc.serverPort);
     }
     nabto_device_enable_mdns(device);
+    nabto_device_mdns_add_subtype(device, "tcptunnel");
+    nabto_device_mdns_add_txt_item(device, "fn", "tcp tunnel");
 
 
     struct nm_iam iam;
