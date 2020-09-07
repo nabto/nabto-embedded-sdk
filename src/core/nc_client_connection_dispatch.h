@@ -47,4 +47,6 @@ np_error_code nc_client_connection_dispatch_close_connection(struct nc_client_co
 
 struct nc_client_connection* nc_client_connection_dispatch_connection_from_ref(struct nc_client_connection_dispatch_context* ctx, uint64_t ref);
 
+bool nc_client_connection_dispatch_validate_connection_id(struct nc_client_connection_dispatch_context* ctx, const uint8_t* connectionId);
+
 #endif

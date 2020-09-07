@@ -16,6 +16,7 @@ struct nc_udp_dispatch_context {
     struct nc_client_connection_dispatch_context* cliConn;
     struct nc_attach_context* attacher;
     struct nc_stun_context* stun;
+    struct nc_rendezvous_context* rendezvous;
 
     struct np_communication_buffer* recvBuffer;
 
@@ -50,10 +51,15 @@ void nc_udp_dispatch_set_attach_context(struct nc_udp_dispatch_context* ctx,
 
 void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
                                       struct nc_stun_context* stun);
+void nc_udp_dispatch_set_rendezvous_context(struct nc_udp_dispatch_context* ctx,
+                                            struct nc_rendezvous_context* rendezvous);
+
+
 
 void nc_udp_dispatch_clear_client_connection_context(struct nc_udp_dispatch_context* ctx);
 void nc_udp_dispatch_clear_attacher_context(struct nc_udp_dispatch_context* ctx);
 void nc_udp_dispatch_clear_stun_context(struct nc_udp_dispatch_context* ctx);
+void nc_udp_dispatch_clear_rendezvous_context(struct nc_udp_dispatch_context* ctx);
 
 #ifdef __cplusplus
 } // extern c

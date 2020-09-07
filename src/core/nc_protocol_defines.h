@@ -21,7 +21,9 @@ enum keep_alive_content_type {
 enum rendezvous_content_type {
     CT_RENDEZVOUS_CLIENT_REQUEST  = 0x01,
     CT_RENDEZVOUS_CLIENT_RESPONSE = 0x02,
-    CT_RENDEZVOUS_DEVICE_REQUEST = 0x03
+    CT_RENDEZVOUS_DEVICE_REQUEST = 0x03,
+    CT_RENDEZVOUS_PING_REQUEST = 0x04,
+    CT_RENDEZVOUS_PING_RESPONSE = 0x05
 };
 
 enum attach_status {

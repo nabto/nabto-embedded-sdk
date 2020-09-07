@@ -11,6 +11,7 @@
 #include <core/nc_rendezvous_coap.h>
 #include <core/nc_connection_event.h>
 #include <core/nc_spake2.h>
+#include <core/nc_rendezvous.h>
 
 #include <platform/np_error_code.h>
 
