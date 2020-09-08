@@ -7,6 +7,7 @@
  - Custom mDNS txtItems
  - Custom mDNS subtypes
  - PAKE based password authentication
+ - Direct UDP ping to be used with direct candidates for a better user experience.
 
 ### Changed
 
