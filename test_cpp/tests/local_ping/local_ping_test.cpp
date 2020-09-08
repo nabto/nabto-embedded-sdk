@@ -17,6 +17,8 @@ BOOST_AUTO_TEST_CASE(ping_device, *boost::unit_test::timeout(300))
 
     nabto_device_set_product_id(device, "pr-abcdefgh");
     nabto_device_set_device_id(device, "de-12345678");
+    nabto_device_set_local_port(device, 0);
+    nabto_device_set_p2p_port(device, 0);
     char* key;
     nabto_device_create_private_key(device, &key);
     nabto_device_set_private_key(device, key);

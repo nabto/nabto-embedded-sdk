@@ -28,6 +28,8 @@ static NabtoDevice* createTestDevice()
     nabto_device_string_free(key);
     nabto_device_set_product_id(dev, "test");
     nabto_device_set_device_id(dev, "test");
+    nabto_device_set_local_port(dev, 0);
+    nabto_device_set_p2p_port(dev, 0);
     return dev;
 }
 
@@ -47,6 +49,8 @@ BOOST_AUTO_TEST_CASE(has_default_server_url)
     nabto_device_string_free(key);
     nabto_device_set_product_id(dev, "test");
     nabto_device_set_device_id(dev, "test");
+    nabto_device_set_local_port(dev, 0);
+    nabto_device_set_p2p_port(dev, 0);
     ec = nabto_device_start(dev);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
     struct nabto_device_context* d = (struct nabto_device_context*)dev;
