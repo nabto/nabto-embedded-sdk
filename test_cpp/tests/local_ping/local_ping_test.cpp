@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(ping_device, *boost::unit_test::timeout(300))
     auto ioService = nabto::IoService::create("test");
 
     boost::asio::ip::udp::socket socket(ioService->getIoService());
-    socket.open(boost::asio::ip::udp::v6());
+    socket.open(boost::asio::ip::udp::v4());
 
     std::vector<uint8_t> packet;
     packet.push_back(241);
