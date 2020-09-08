@@ -228,6 +228,7 @@ void nc_device_local_udp_bound_cb(const np_error_code ec, void* data)
         NABTO_LOG_TRACE(LOG, "Local socket bound, no mDNS");
     }
     nc_udp_dispatch_set_client_connection_context(&dev->localUdp, &dev->clientConnect);
+    nc_udp_dispatch_set_rendezvous_context(&dev->localUdp, &dev->rendezvous);
     nc_udp_dispatch_start_recv(&dev->localUdp);
 
     np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_udp_bound_cb, dev);
@@ -247,6 +248,7 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
         return;
     }
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
+    nc_udp_dispatch_set_rendezvous_context(&dev->udp, &dev->rendezvous);
     nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
 
     nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);

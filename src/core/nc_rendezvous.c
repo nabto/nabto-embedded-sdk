@@ -2,6 +2,7 @@
 
 #include <core/nc_packet.h>
 #include <core/nc_client_connection.h>
+#include <core/nc_client_connection_dispatch.h>
 #include <core/nc_udp_dispatch.h>
 
 
@@ -46,23 +47,12 @@ void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)
 
 void nc_rendezvous_set_udp_dispatch(struct nc_rendezvous_context* ctx, struct nc_udp_dispatch_context* udpDispatch)
 {
-    ctx->udpDispatch = udpDispatch;
+    ctx->defaultUdpDispatch = udpDispatch;
 }
 
 void nc_rendezvous_remove_udp_dispatch(struct nc_rendezvous_context* ctx)
 {
-    ctx->udpDispatch = NULL;
-}
-
-void nc_rendezvous_handle_client_request(struct nc_rendezvous_context* ctx,
-                                 struct np_udp_endpoint* ep,
-                                 uint8_t* connectionId)
-{
-    struct nc_rendezvous_send_packet packet;
-    packet.type = CT_RENDEZVOUS_CLIENT_RESPONSE;
-    memcpy(packet.connectionId, connectionId, 14);
-    packet.ep = *ep;
-    nc_rendezvous_send_rendezvous(ctx, &packet);
+    ctx->defaultUdpDispatch = NULL;
 }
 
 void nc_rendezvous_packet_sent(const np_error_code ec, void* data)
@@ -74,7 +64,7 @@ void nc_rendezvous_packet_sent(const np_error_code ec, void* data)
 
 void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 {
-    if (ctx->sendingDevReqs || !ctx->udpDispatch) {
+    if (ctx->sendingDevReqs) {
         return;
     }
     uint8_t* start = ctx->pl->buf.start(ctx->priBuf);
@@ -89,7 +79,7 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
     ptr++;
     memcpy(ptr, packet->connectionId, 14);
     ptr += 14;
-    *ptr = 0;
+    *ptr = packet->channelId;
     ptr++;
 
     *ptr = packet->type;
@@ -97,7 +87,7 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 
     ctx->sendingDevReqs = true;
     size_t used = ptr - start;
-    nc_udp_dispatch_async_send_to(ctx->udpDispatch, &packet->ep,
+    nc_udp_dispatch_async_send_to(packet->udpDispatch, &packet->ep,
                                   start, used, &ctx->sendCompletionEvent);
 
 }
@@ -109,12 +99,49 @@ void nc_rendezvous_send_rendezvous(struct nc_rendezvous_context* ctx, struct nc_
         return;
     }
 
-    if (!ctx->udpDispatch) {
-        // No way to send packets
-        return;
+    if (packet->udpDispatch == NULL) {
+
+        if (!ctx->defaultUdpDispatch) {
+            // No way to send packets
+            return;
+        }
+        packet->udpDispatch = ctx->defaultUdpDispatch;
     }
 
     ctx->packetList[ctx->packetIndex] = *packet;
     ctx->packetIndex++;
     nc_rendezvous_send_device_request(ctx);
+}
+
+void nc_rendezvous_handle_packet(
+    struct nc_rendezvous_context* ctx,
+    struct nc_udp_dispatch_context* udpDispatch,
+    struct nc_client_connection_dispatch_context* connectionDispatch,
+    struct np_udp_endpoint* ep,
+    uint8_t* buffer, uint16_t bufferSize)
+{
+    if (bufferSize < 17) {
+        return;
+    }
+    uint8_t type = buffer[16];
+    if (type == CT_RENDEZVOUS_CLIENT_REQUEST) {
+        // validate connection id and make a CT_RENDEZVOUS_CLIENT_RESPONSE
+        if (nc_client_connection_dispatch_validate_connection_id(connectionDispatch, buffer+1)) {
+            struct nc_rendezvous_send_packet packet;
+            packet.type = CT_RENDEZVOUS_CLIENT_RESPONSE;
+            memcpy(packet.connectionId, buffer+1, 14);
+            packet.channelId = buffer[15];
+            packet.udpDispatch = udpDispatch;
+            packet.ep = *ep;
+            nc_rendezvous_send_rendezvous(ctx, &packet);
+        }
+    } else if (type == CT_RENDEZVOUS_PING_REQUEST) {
+        struct nc_rendezvous_send_packet packet;
+        packet.type = CT_RENDEZVOUS_PING_RESPONSE;
+        memcpy(packet.connectionId, buffer+1, 14);
+        packet.channelId = buffer[15];
+        packet.udpDispatch = udpDispatch;
+        packet.ep = *ep;
+        nc_rendezvous_send_rendezvous(ctx, &packet);
+    }
 }

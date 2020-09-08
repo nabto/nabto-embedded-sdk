@@ -3,7 +3,6 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
-#include <core/nc_rendezvous.h>
 #include <core/nc_stream_manager.h>
 #include <core/nc_coap_server.h>
 #include <core/nc_keep_alive.h>
@@ -41,7 +40,6 @@ struct nc_client_connection {
     struct nc_client_connection_dispatch_context* dispatch;
     struct nc_stream_manager_context* streamManager;
     struct nc_stun_context* stun;
-    struct nc_rendezvous_context* rendezvous;
     struct nc_connection_id id;
     struct nc_connection_channel currentChannel;
     struct nc_connection_channel alternativeChannel;

@@ -7,6 +7,7 @@
 #include <core/nc_client_connection_dispatch.h>
 #include <core/nc_stun.h>
 #include <core/nc_attacher.h>
+#include <core/nc_rendezvous.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
 
@@ -36,7 +37,6 @@ void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)
         np_udp_destroy(&pl->udp, ctx->sock);
         pl->buf.free(ctx->recvBuffer);
         np_completion_event_deinit(&ctx->recvCompletionEvent);
-
     }
 }
 
@@ -109,11 +109,33 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
         nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
     }  else if (ctx->attacher != NULL && ((start[0] >= 20)  && (start[0] <= 64))) {
         nc_attacher_handle_dtls_packet(ctx->attacher, ep, buffer, bufferSize);
-    } else if (ctx->cliConn != NULL && (start[0] >= 240)) {
+    } else if (ctx->cliConn != NULL && (start[0] == 240)) {
         nc_client_connection_dispatch_handle_packet(ctx->cliConn, ctx, ep, buffer, bufferSize);
+    } else if (ctx->rendezvous != NULL && (start[0] == 241)) {
+        nc_rendezvous_handle_packet(ctx->rendezvous, ctx, ctx->cliConn, ep, buffer, bufferSize);
     } else {
         NABTO_LOG_ERROR(LOG, "Unable to dispatch packet with ID: %u", start[0]);
     }
+}
+
+void nc_udp_dispatch_handle_rendezvous_packet(
+    struct np_udp_endpoint* ep,
+    uint8_t* buffer, uint16_t bufferSize, struct nc_udp_dispatch_context* ctx)
+{
+    if (bufferSize < 17) {
+        return;
+    }
+    uint8_t type = buffer[16];
+    if (type == CT_RENDEZVOUS_CLIENT_REQUEST) {
+        // validate connection id and make a CT_RENDEZVOUS_CLIENT_RESPONSE
+        if (nc_client_connection_dispatch_validate_connection_id(ctx->cliConn, buffer+1)) {
+
+        }
+    }
+    if (type == CT_RENDEZVOUS_PING_REQUEST) {
+        // send a ping response.
+    }
+    // if the type is
 }
 
 void nc_udp_dispatch_set_client_connection_context(struct nc_udp_dispatch_context* ctx,
@@ -134,6 +156,12 @@ void nc_udp_dispatch_set_stun_context(struct nc_udp_dispatch_context* ctx,
     ctx->stun = stun;
 }
 
+void nc_udp_dispatch_set_rendezvous_context(struct nc_udp_dispatch_context* ctx,
+                                            struct nc_rendezvous_context* rendezvous)
+{
+    ctx->rendezvous = rendezvous;
+}
+
 void nc_udp_dispatch_clear_client_connection_context(struct nc_udp_dispatch_context* ctx)
 {
     ctx->cliConn = NULL;
@@ -147,4 +175,9 @@ void nc_udp_dispatch_clear_attacher_context(struct nc_udp_dispatch_context* ctx)
 void nc_udp_dispatch_clear_stun_context(struct nc_udp_dispatch_context* ctx)
 {
     ctx->stun = NULL;
+}
+
+void nc_udp_dispatch_clear_rendezvous_context(struct nc_udp_dispatch_context* ctx)
+{
+    ctx->rendezvous = NULL;
 }

@@ -47,7 +47,6 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->pl = pl;
     conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
-    conn->rendezvous = &device->rendezvous;
     conn->hasSpake2Key = false;
     conn->passwordAuthenticated = false;
     conn->passwordAuthenticationRequests = 0;
@@ -91,18 +90,6 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 {
     np_error_code ec;
     uint8_t* start = buffer;
-
-
-    if (bufferSize >= 17 &&
-        (start[0] == NABTO_PROTOCOL_PREFIX_RENDEZVOUS &&
-         start[16] == CT_RENDEZVOUS_CLIENT_REQUEST))
-    {
-        uint8_t connectionId[14];
-        memcpy(connectionId, conn->id.id+1, 14);
-        nc_rendezvous_handle_client_request(conn->rendezvous, ep, connectionId);
-        return NABTO_EC_OK;
-    }
-
 
     uint8_t channelId = *(start+15);
 

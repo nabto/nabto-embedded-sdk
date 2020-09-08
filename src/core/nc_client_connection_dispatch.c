@@ -132,3 +132,14 @@ struct nc_client_connection* nc_client_connection_dispatch_connection_from_ref(s
     }
     return NULL;
 }
+
+bool nc_client_connection_dispatch_validate_connection_id(struct nc_client_connection_dispatch_context* ctx, const uint8_t* connectionId)
+{
+    int i;
+    for (i = 0; i<NABTO_MAX_CLIENT_CONNECTIONS; i++) {
+        if (ctx->elms[i].active && (memcmp(ctx->elms[i].conn.id.id+1, connectionId, 14) == 0)) {
+            return true;
+        }
+    }
+    return false;
+}
