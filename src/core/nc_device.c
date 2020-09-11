@@ -214,8 +214,12 @@ void nc_device_local_socket_bound_cb(const np_error_code ec, void* data)
     }
     if (ec != NABTO_EC_OK) {
         dev->state = NC_DEVICE_STATE_STOPPED;
+        if (ec == NABTO_EC_ADDRESS_IN_USE) {
+            NABTO_LOG_ERROR(LOG, "The local socket could not be bound to the port %d", dev->localPort);
+        } else {
+            NABTO_LOG_ERROR(LOG, "nc_device failed to bind local UDP socket. Error: %s", np_error_code_to_string(ec));
+        }
         nc_device_resolve_start_close_callbacks(dev, ec);
-        NABTO_LOG_ERROR(LOG, "nc_device failed to bind local UDP socket. Error: %s", np_error_code_to_string(ec));
         return;
     }
 
@@ -231,7 +235,11 @@ void nc_device_p2p_socket_bound_cb(const np_error_code ec, void* data)
         return;
     }
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket, Nabto device not started!");
+        if (ec == NABTO_EC_ADDRESS_IN_USE) {
+            NABTO_LOG_ERROR(LOG, "The p2p socket could not be bound to the port %d", dev->p2pPort);
+        } else {
+            NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket, Nabto device not started!");
+        }
         dev->state = NC_DEVICE_STATE_STOPPED;
         nc_device_resolve_start_close_callbacks(dev, ec);
         return;

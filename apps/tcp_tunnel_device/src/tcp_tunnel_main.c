@@ -491,7 +491,15 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         NabtoDeviceError ec = nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
         if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Could not start the device %s" NEWLINE, nabto_device_error_get_message(ec));
+            if (ec == NABTO_DEVICE_EC_ADDRESS_IN_USE) {
+                printf("The device could not be started as one or more udp sockets" NEWLINE);
+                printf("could not be bound to the specified ports. This is most likely" NEWLINE);
+                printf("due to several devices running on the same machine. The problem" NEWLINE);
+                printf("can be mitigated by using the --random-ports option, this option" NEWLINE);
+                printf("does however limit the ability to use direct pairing based on ips." NEWLINE);
+            } else {
+                printf("Could not start the device %s" NEWLINE, nabto_device_error_get_message(ec));
+            }
             return false;
         }
 

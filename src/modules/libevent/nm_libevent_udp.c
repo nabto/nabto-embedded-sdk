@@ -367,7 +367,7 @@ np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port)
         return NABTO_EC_OK;
     } else {
         if (errno == EADDRINUSE) {
-            return NABTO_EC_ADDR_IN_USE;
+            return NABTO_EC_ADDRESS_IN_USE;
         }
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
