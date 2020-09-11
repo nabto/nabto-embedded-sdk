@@ -169,6 +169,7 @@ np_error_code udp_async_bind_port_ec(struct np_udp_socket* sock, uint16_t port)
     ec = udp_bind_port(sock, port);
     if (ec != NABTO_EC_OK) {
         evutil_closesocket(sock->sock);
+        return ec;
     }
     nm_libevent_udp_add_to_libevent(sock);
     return NABTO_EC_OK;
@@ -365,6 +366,9 @@ np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port)
     if (status == 0) {
         return NABTO_EC_OK;
     } else {
+        if (errno == EADDRINUSE) {
+            return NABTO_EC_ADDR_IN_USE;
+        }
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 }

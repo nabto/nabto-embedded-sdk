@@ -47,6 +47,8 @@ extern "C" {
         XX(OPERATION_STARTED, "Operation started")                      \
         XX(NO_OPERATION, "No operation neccessary")                     \
         XX(AGAIN, "No data available try again later")                  \
+        XX(ADDR_IN_USE, "Address already in use")            \
+
 
 
 #define XX_ERROR(name, _) NABTO_EC_##name,
