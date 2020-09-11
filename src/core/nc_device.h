@@ -34,6 +34,7 @@ struct nc_device_events_listener {
 };
 
 typedef void (*nc_device_close_callback)(const np_error_code ec, void* data);
+typedef void (*nc_device_start_callback)(const np_error_code ec, void* data);
 
 struct nc_device_context {
     struct np_platform* pl;
@@ -71,9 +72,12 @@ struct nc_device_context {
 
     const char* stunHost;
     uint16_t stunPort;
-    const char* productId;
-    const char* deviceId;
-    const char* hostname;
+    char* productId;
+    char* deviceId;
+    char* hostname;
+
+    char* appName;
+    char* appVersion;
 
     uint16_t serverPort;
 
@@ -83,6 +87,9 @@ struct nc_device_context {
 
     nc_device_close_callback closeCb;
     void* closeCbData;
+
+    nc_device_start_callback startCb;
+    void* startCbData;
 
     struct nn_llist eventsListeners;
     struct nn_llist deviceEvents;
@@ -96,9 +103,8 @@ void nc_device_deinit(struct nc_device_context* dev);
 void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize);
 
 np_error_code nc_device_start(struct nc_device_context* dev,
-                              const char* appName, const char* appVersion,
-                              const char* productId, const char* deviceId,
-                              const char* hostname);
+                              const char* hostname,
+                              nc_device_start_callback cb, void* userData);
 
 void nc_device_stop(struct nc_device_context* dev);
 
@@ -120,6 +126,14 @@ void nc_device_events_listener_notify(enum nc_device_event event, void* data);
 
 np_error_code nc_device_add_server_connect_token(struct nc_device_context* ctx, const char* token);
 np_error_code nc_device_is_server_connect_tokens_synchronized(struct nc_device_context* ctx);
+
+np_error_code nc_device_set_app_name(struct nc_device_context* ctx, const char* name);
+np_error_code nc_device_set_app_version(struct nc_device_context* ctx, const char* version);
+
+np_error_code nc_device_set_product_id(struct nc_device_context* ctx, const char* productId);
+np_error_code nc_device_set_device_id(struct nc_device_context* ctx, const char* deviceId);
+
+np_error_code nc_device_set_server_url(struct nc_device_context* ctx, const char* serverUrl);
 
 
 #endif // NC_DEVICE_H

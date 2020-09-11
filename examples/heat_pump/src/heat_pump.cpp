@@ -230,7 +230,12 @@ NabtoDeviceError HeatPump::initDevice()
     }
 
     // run application
-    ec = nabto_device_start(device_);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device_);
+    nabto_device_start(device_, fut);
+
+    ec = nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to start device" << std::endl;
         return ec;

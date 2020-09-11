@@ -245,19 +245,6 @@ char* expand_file_name(const char* homeDir, const char* fileName)
     return fullFileName;
 }
 
-char* generate_pairing_url(const char* productId, const char* deviceId, const char* pairingPassword, const char* pairingServerConnectToken)
-{
-    char* buffer = calloc(1, 1024); // long enough!
-
-    sprintf(buffer, "https://tcp-tunnel.nabto.com/pairing?p=%s&d=%s&pwd=%s&sct=%s",
-            productId,
-            deviceId,
-            pairingPassword,
-            pairingServerConnectToken);
-
-    return buffer;
-}
-
 char* generate_pairing_string(const char* productId, const char* deviceId, const char* pairingPassword, const char* pairingServerConnectToken)
 {
     char* buffer = calloc(1, 1024);
@@ -434,7 +421,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
 
-    char* pairingUrl = generate_pairing_url(dc.productId, dc.deviceId, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
     char* pairingString = generate_pairing_string(dc.productId, dc.deviceId, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
 
     // add users to iam module.
@@ -470,7 +456,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("# Device ID:         %s" NEWLINE, dc.deviceId);
     printf("# Pairing password:  %s" NEWLINE, tcpTunnelState.pairingPassword);
     printf("# Paring SCT:        %s" NEWLINE, tcpTunnelState.pairingServerConnectToken);
-    printf("# Pairing URL:       %s" NEWLINE, pairingUrl);
     printf("# Pairing string:    %s" NEWLINE, pairingString);
     printf("# " NEWLINE);
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
@@ -488,7 +473,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
     printf("########" NEWLINE);
 
-    free(pairingUrl);
     nabto_device_string_free(deviceFingerprint);
 
     tcp_tunnel_state_deinit(&tcpTunnelState);
@@ -502,7 +486,15 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
         nm_iam_set_user_changed_callback(&iam, iam_user_changed, tunnel);
 
-        nabto_device_start(device);
+        NabtoDeviceFuture* fut = nabto_device_future_new(device);
+        nabto_device_start(device, fut);
+        NabtoDeviceError ec = nabto_device_future_wait(fut);
+        nabto_device_future_free(fut);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Could not start the device %s" NEWLINE, nabto_device_error_get_message(ec));
+            return false;
+        }
+
         nm_iam_start(&iam);
 
         device_ = device;

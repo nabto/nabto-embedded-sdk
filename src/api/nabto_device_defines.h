@@ -27,16 +27,11 @@ struct nabto_device_context {
 
     struct nabto_device_future* queueHead;
 
-    char appName[33];
-    char appVersion[33];
-
-    char* productId;
-    char* deviceId;
-    char* serverUrl;
     char* publicKey;
     char* privateKey;
 
     struct nabto_device_future* closeFut;
+    struct nabto_device_future* startFut;
 
     struct nm_tcp_tunnels tcpTunnels;
 

@@ -160,13 +160,16 @@ nabto_device_new();
  * function.
  *
  * @param device [in]   The device instance to start
- * @return  NABTO_DEVICE_EC_OK on success
- *          NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
+ * @param future [in]   The future which is resolved when started.
+ * Future error codes:
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
  *             private key, server URL, device ID, or Product ID.
- *          NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
+ *   NABTO_DEVICE_EC_IN_USE  if a resource cannot be allocated because it is already used.
+ *   NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_start(NabtoDevice* device);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future);
 
 
 /**

@@ -255,10 +255,10 @@ size_t encode_cbor_request(CborEncoder* encoder, struct nc_attach_context* ctx)
     cbor_encode_text_stringz(&map, nc_version());
 
     cbor_encode_text_stringz(&map, "AppName");
-    cbor_encode_text_stringz(&map, ctx->appName);
+    cbor_encode_text_stringz(&map, ctx->appName?ctx->appName:"");
 
     cbor_encode_text_stringz(&map, "AppVersion");
-    cbor_encode_text_stringz(&map, ctx->appVersion);
+    cbor_encode_text_stringz(&map, ctx->appVersion?ctx->appVersion:"");
 
     cbor_encode_text_stringz(&map, "ProductId");
     cbor_encode_text_stringz(&map, ctx->productId);

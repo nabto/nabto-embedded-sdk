@@ -51,19 +51,24 @@ BOOST_AUTO_TEST_CASE(has_default_server_url)
     nabto_device_set_device_id(dev, "test");
     nabto_device_set_local_port(dev, 0);
     nabto_device_set_p2p_port(dev, 0);
-    ec = nabto_device_start(dev);
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
+    ec = nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
     struct nabto_device_context* d = (struct nabto_device_context*)dev;
-    BOOST_TEST(strcmp(d->serverUrl, "test.devices.nabto.net") == 0);
+    BOOST_TEST(strcmp(d->core.hostname, "test.devices.nabto.net") == 0);
     nabto_device_free(dev);
 }
 
 BOOST_AUTO_TEST_CASE(stop_without_close, *boost::unit_test::timeout(10))
 {
-    NabtoDeviceError ec;
     NabtoDevice* dev = nabto::test::createTestDevice();
-    ec = nabto_device_start(dev);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
+
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     nabto_device_stop(dev);
     nabto_device_free(dev);
@@ -73,8 +78,11 @@ BOOST_AUTO_TEST_CASE(stop_without_close_imediately, *boost::unit_test::timeout(1
 {
     NabtoDeviceError ec;
     NabtoDevice* dev = nabto::test::createTestDevice();
-    ec = nabto_device_start(dev);
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
+    ec = nabto_device_future_wait(fut);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
     nabto_device_stop(dev);
     nabto_device_free(dev);
 }

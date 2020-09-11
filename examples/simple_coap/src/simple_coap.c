@@ -135,10 +135,20 @@ bool start_device(NabtoDevice* device)
     if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
         nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_start(device) != NABTO_DEVICE_EC_OK) {
+        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK)
+    {
         return false;
     }
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_start(device, fut);
+
+    ec = nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
     return true;
 }
 

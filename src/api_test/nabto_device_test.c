@@ -79,9 +79,6 @@ void NABTO_DEVICE_API nabto_device_test_free(NabtoDevice* device)
     nm_mbedtls_random_deinit(&dev->pl);
     nabto_device_future_queue_deinit(&dev->futureQueue);
 
-    free(dev->productId);
-    free(dev->deviceId);
-    free(dev->serverUrl);
     free(dev->publicKey);
     free(dev->privateKey);
 

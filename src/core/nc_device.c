@@ -7,8 +7,11 @@
 
 void nc_device_attached_cb(const np_error_code ec, void* data);
 uint32_t nc_device_get_reattach_time(struct nc_device_context* ctx);
-static void nc_device_udp_bound_cb(const np_error_code ec, void* data);
-static void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data);
+static void nc_device_p2p_socket_bound_cb(const np_error_code ec, void* data);
+static void nc_device_local_socket_bound_cb(const np_error_code ec, void* data);
+static void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data);
+static void nc_device_sockets_bound(struct nc_device_context* dev);
+static void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec);
 
 np_error_code nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
@@ -18,6 +21,13 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 
     device->localPort = 5592;
     device->p2pPort = 5593;
+
+    device->appName = NULL;
+    device->appVersion = NULL;
+    device->productId = NULL;
+    device->deviceId = NULL;
+    device->hostname = NULL;
+    device->connectionRef = 0;
 
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
@@ -104,7 +114,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 
     device->serverPort = 443;
 
-    ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, &nc_device_udp_bound_cb, device);
+    ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -143,6 +153,32 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_udp_dispatch_deinit(&device->localUdp);
     nc_udp_dispatch_deinit(&device->secondaryUdp);
     np_completion_event_deinit(&device->socketBoundCompletionEvent);
+
+    free(device->productId);
+    free(device->deviceId);
+    free(device->appName);
+    free(device->appVersion);
+    free(device->hostname);
+}
+
+void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec)
+{
+    nc_device_close_callback closeCb = dev->closeCb;
+    dev->closeCb = NULL;
+    void* closeCbData = dev->closeCbData;
+
+    nc_device_close_callback startCb = dev->startCb;
+    dev->startCb = NULL;
+    void* startCbData = dev->startCbData;
+
+    if (closeCb != NULL) {
+        closeCb(ec, closeCbData);
+    }
+
+    if (startCb != NULL) {
+        startCb(ec, startCbData);
+    }
+
 }
 
 void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
@@ -152,24 +188,59 @@ void nc_device_set_keys(struct nc_device_context* device, const unsigned char* p
     pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
-void nc_device_secondary_udp_bound_cb(const np_error_code ec, void* data) {
+void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data) {
     struct nc_device_context* dev = (struct nc_device_context*)data;
     if (dev->state == NC_DEVICE_STATE_STOPPED) {
-        // abort
+        nc_device_resolve_start_close_callbacks(dev, NABTO_EC_STOPPED);
         return;
     }
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary UDP socket. Device continues without STUN");
+        dev->state = NC_DEVICE_STATE_STOPPED;
+        NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary stun UDP socket.");
+        nc_device_resolve_start_close_callbacks(dev, ec);
         return;
     }
-    nc_stun_set_sockets(&dev->stun, &dev->udp, &dev->secondaryUdp);
-
-    nc_udp_dispatch_set_stun_context(&dev->udp, &dev->stun);
-    nc_udp_dispatch_set_stun_context(&dev->secondaryUdp, &dev->stun);
-
-    nc_udp_dispatch_start_recv(&dev->secondaryUdp);
-
+    nc_device_sockets_bound(dev);
 }
+
+void nc_device_local_socket_bound_cb(const np_error_code ec, void* data)
+{
+    struct nc_device_context* dev = (struct nc_device_context*)data;
+    struct np_platform* pl = dev->pl;
+    if (dev->state == NC_DEVICE_STATE_STOPPED) {
+        nc_device_resolve_start_close_callbacks(dev, NABTO_EC_STOPPED);
+        NABTO_LOG_TRACE(LOG, "Device state STOPPED while binding local socket");
+        return;
+    }
+    if (ec != NABTO_EC_OK) {
+        dev->state = NC_DEVICE_STATE_STOPPED;
+        nc_device_resolve_start_close_callbacks(dev, ec);
+        NABTO_LOG_ERROR(LOG, "nc_device failed to bind local UDP socket. Error: %s", np_error_code_to_string(ec));
+        return;
+    }
+
+    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_stun_socket_bound_cb, dev);
+    nc_udp_dispatch_async_bind(&dev->secondaryUdp, pl, 0, &dev->socketBoundCompletionEvent);
+}
+
+void nc_device_p2p_socket_bound_cb(const np_error_code ec, void* data)
+{
+    struct nc_device_context* dev = (struct nc_device_context*)data;
+    if (dev->state == NC_DEVICE_STATE_STOPPED) {
+        nc_device_resolve_start_close_callbacks(dev, NABTO_EC_STOPPED);
+        return;
+    }
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket, Nabto device not started!");
+        dev->state = NC_DEVICE_STATE_STOPPED;
+        nc_device_resolve_start_close_callbacks(dev, ec);
+        return;
+    }
+    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_local_socket_bound_cb, dev);
+    nc_udp_dispatch_async_bind(&dev->localUdp, dev->pl, dev->localPort, &dev->socketBoundCompletionEvent);
+}
+
+
 
 static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
 {
@@ -207,46 +278,10 @@ static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
     return NABTO_EC_OK;
 }
 
-void nc_device_local_udp_bound_cb(const np_error_code ec, void* data)
+void nc_device_sockets_bound(struct nc_device_context* dev)
 {
-    struct nc_device_context* dev = (struct nc_device_context*)data;
     struct np_platform* pl = dev->pl;
-    if (dev->state == NC_DEVICE_STATE_STOPPED) {
-        // abort
-        NABTO_LOG_TRACE(LOG, "Device state STOPPED while binding local socket");
-        return;
-    }
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "nc_device failed to bind local UDP socket. Device continues without local connections and mDNS. Error: %s", np_error_code_to_string(ec));
-        //dev->state = NC_DEVICE_STATE_STOPPED;
-        return;
-    } else if (dev->enableMdns) {
-        uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
-        NABTO_LOG_TRACE(LOG, "Local socket bound, starting mdns on %d", localPort);
-        np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
-    } else {
-        NABTO_LOG_TRACE(LOG, "Local socket bound, no mDNS");
-    }
-    nc_udp_dispatch_set_client_connection_context(&dev->localUdp, &dev->clientConnect);
-    nc_udp_dispatch_set_rendezvous_context(&dev->localUdp, &dev->rendezvous);
-    nc_udp_dispatch_start_recv(&dev->localUdp);
-
-    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_secondary_udp_bound_cb, dev);
-    nc_udp_dispatch_async_bind(&dev->secondaryUdp, dev->pl, 0, &dev->socketBoundCompletionEvent);
-}
-
-void nc_device_udp_bound_cb(const np_error_code ec, void* data)
-{
-    struct nc_device_context* dev = (struct nc_device_context*)data;
-    if (dev->state == NC_DEVICE_STATE_STOPPED) {
-        // nothing is running just abort
-        return;
-    }
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket, Nabto device not started!");
-        dev->state = NC_DEVICE_STATE_STOPPED;
-        return;
-    }
+    // start receive on p2p socket
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
     nc_udp_dispatch_set_rendezvous_context(&dev->udp, &dev->rendezvous);
     nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
@@ -255,23 +290,57 @@ void nc_device_udp_bound_cb(const np_error_code ec, void* data)
 
     nc_udp_dispatch_start_recv(&dev->udp);
 
-    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_local_udp_bound_cb, dev);
-    nc_udp_dispatch_async_bind(&dev->localUdp, dev->pl, dev->localPort, &dev->socketBoundCompletionEvent);
+    // start recv on local socket
+    nc_udp_dispatch_set_client_connection_context(&dev->localUdp, &dev->clientConnect);
+    nc_udp_dispatch_set_rendezvous_context(&dev->localUdp, &dev->rendezvous);
+    nc_udp_dispatch_start_recv(&dev->localUdp);
+
+    // start mdns
+    if (dev->enableMdns) {
+        uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
+        NABTO_LOG_TRACE(LOG, "Local socket bound, starting mdns on %d", localPort);
+        np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
+    }
+
+    // start recv for the stun socket
+    nc_stun_set_sockets(&dev->stun, &dev->udp, &dev->secondaryUdp);
+
+    nc_udp_dispatch_set_stun_context(&dev->udp, &dev->stun);
+    nc_udp_dispatch_set_stun_context(&dev->secondaryUdp, &dev->stun);
+
+    nc_udp_dispatch_start_recv(&dev->secondaryUdp);
+
+    // device has been started
+    nc_device_resolve_start_close_callbacks(dev, NABTO_EC_OK);
 }
 
 
+
 np_error_code nc_device_start(struct nc_device_context* dev,
-                              const char* appName, const char* appVersion,
-                              const char* productId, const char* deviceId,
-                              const char* hostname)
+                              const char* defaultServerUrlSuffix,
+                              nc_device_start_callback cb, void* userData)
 {
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
     dev->state = NC_DEVICE_STATE_RUNNING;
-    dev->productId = productId;
-    dev->deviceId = deviceId;
-    dev->hostname = hostname;
-    dev->connectionRef = 0;
+
+
+    if (dev->deviceId == NULL || dev->productId == NULL) {
+        NABTO_LOG_ERROR(LOG, "Missing deviceId or productdId");
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    if (dev->hostname == NULL) {
+        dev->hostname = calloc(1, strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
+        if (dev->hostname == NULL) {
+            return NABTO_EC_OUT_OF_MEMORY;
+        }
+        char* ptr = dev->hostname;
+
+        strcpy(ptr, dev->productId);
+        ptr = ptr + strlen(dev->productId);
+        strcpy(ptr, defaultServerUrlSuffix);
+    }
 
     np_error_code ec;
     ec = nc_device_populate_mdns(dev);
@@ -279,9 +348,13 @@ np_error_code nc_device_start(struct nc_device_context* dev,
         return ec;
     }
 
-    nc_attacher_set_app_info(&dev->attacher, appName, appVersion);
-    nc_attacher_set_device_info(&dev->attacher, productId, deviceId);
+    nc_attacher_set_app_info(&dev->attacher, dev->appName, dev->appVersion);
+    nc_attacher_set_device_info(&dev->attacher, dev->productId, dev->deviceId);
 
+    dev->startCb = cb;
+    dev->startCbData = userData;
+
+    np_completion_event_reinit(&dev->socketBoundCompletionEvent, &nc_device_p2p_socket_bound_cb, dev);
     nc_udp_dispatch_async_bind(&dev->udp, pl, dev->p2pPort, &dev->socketBoundCompletionEvent);
     return NABTO_EC_OK;
 }
@@ -427,4 +500,54 @@ np_error_code nc_device_add_server_connect_token(struct nc_device_context* dev, 
 np_error_code nc_device_is_server_connect_tokens_synchronized(struct nc_device_context* dev)
 {
     return nc_attacher_is_server_connect_tokens_synchronized(&dev->attacher);
+}
+
+np_error_code nc_device_set_app_name(struct nc_device_context* dev, const char* name)
+{
+    free(dev->appName);
+    dev->appName = strdup(name);
+    if (dev->appName == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_device_set_app_version(struct nc_device_context* dev, const char* version)
+{
+    free(dev->appVersion);
+    dev->appVersion = strdup(version);
+    if (dev->appVersion == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_device_set_product_id(struct nc_device_context* dev, const char* productId)
+{
+    free(dev->productId);
+    dev->productId = strdup(productId);
+    if (dev->productId == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_device_set_device_id(struct nc_device_context* dev, const char* deviceId)
+{
+    free(dev->deviceId);
+    dev->deviceId = strdup(deviceId);
+    if (dev->deviceId == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_device_set_server_url(struct nc_device_context* dev, const char* serverUrl)
+{
+    free(dev->hostname);
+    dev->hostname = strdup(serverUrl);
+    if (dev->hostname == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
 }

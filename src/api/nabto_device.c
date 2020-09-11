@@ -156,16 +156,10 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
-    free(dev->productId);
-    free(dev->deviceId);
-    free(dev->serverUrl);
     free(dev->publicKey);
     free(dev->privateKey);
 
-
     free(dev);
-
-
 }
 
 /**
@@ -174,19 +168,11 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_product_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-
-    free(dev->productId);
-
-    dev->productId = strdup(str);
-    if (dev->productId == NULL) {
-        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    }
-
+    np_error_code ec = nc_device_set_product_id(&dev->core, str);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 const char* NABTO_DEVICE_API nabto_device_get_product_id(NabtoDevice* device)
@@ -194,7 +180,7 @@ const char* NABTO_DEVICE_API nabto_device_get_product_id(NabtoDevice* device)
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     const char* ret = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ret = dev->productId;
+    ret = dev->core.productId;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ret;
 }
@@ -202,16 +188,10 @@ const char* NABTO_DEVICE_API nabto_device_get_product_id(NabtoDevice* device)
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_device_id(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    free(dev->deviceId);
-
-    dev->deviceId = strdup(str);
-    if (dev->deviceId == NULL) {
-        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    }
+    np_error_code ec = nc_device_set_device_id(&dev->core, str);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 const char* NABTO_DEVICE_API nabto_device_get_device_id(NabtoDevice* device)
@@ -219,7 +199,7 @@ const char* NABTO_DEVICE_API nabto_device_get_device_id(NabtoDevice* device)
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     const char* ret = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ret = dev->deviceId;
+    ret = dev->core.deviceId;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ret;
 }
@@ -227,16 +207,10 @@ const char* NABTO_DEVICE_API nabto_device_get_device_id(NabtoDevice* device)
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_url(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    free(dev->serverUrl);
-
-    dev->serverUrl = strdup(str);
-    if (dev->serverUrl == NULL) {
-        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    }
+    np_error_code ec = nc_device_set_server_url(&dev->core, str);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_port(NabtoDevice* device, uint16_t port)
@@ -280,10 +254,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_name(NabtoDevice* device,
     if (strlen(name) > 32) {
         return NABTO_DEVICE_EC_STRING_TOO_LONG;
     }
+
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    memcpy(dev->appName, name, strlen(name));
+    np_error_code ec = nc_device_set_app_name(&dev->core, name);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* device, const char* version)
@@ -292,10 +267,11 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* devi
     if (strlen(version) > 32) {
         return NABTO_DEVICE_EC_STRING_TOO_LONG;
     }
+
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    memcpy(dev->appVersion, version, strlen(version));
+    np_error_code ec = nc_device_set_app_version(&dev->core, version);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_local_port(NabtoDevice* device, uint16_t port)
@@ -381,45 +357,44 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_mdns_add_txt_item(NabtoDevice* de
     return ec;
 }
 
+void nabto_device_start_cb(const np_error_code ec, void* data)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)data;
+    nabto_device_future_resolve(dev->startFut, nabto_device_error_core_to_api(ec));
+    // TODO nc_device_events_listener_notify(NC_DEVICE_EVENT_CLOSED, &dev->core);
+}
+
 /**
  * Starting the device
  */
-NabtoDeviceError NABTO_DEVICE_API nabto_device_start(NabtoDevice* device)
+void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
-    if (dev->publicKey == NULL || dev->privateKey == NULL) {
-        NABTO_LOG_ERROR(LOG, "Encryption key pair not set");
-        return NABTO_DEVICE_EC_INVALID_STATE;
-    }
-    if (dev->deviceId == NULL || dev->productId == NULL) {
-        NABTO_LOG_ERROR(LOG, "Missing deviceId or productdId");
-        return NABTO_DEVICE_EC_INVALID_STATE;
-    }
-    if (dev->serverUrl == NULL) {
-        dev->serverUrl = calloc(1, strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
-        if (dev->serverUrl == NULL) {
-            return NABTO_DEVICE_EC_OUT_OF_MEMORY;
-        }
-        char* ptr = dev->serverUrl;
+    struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    nabto_device_future_reset(fut);
 
-        strcpy(ptr, dev->productId);
-        ptr = ptr + strlen(dev->productId);
-        strcpy(ptr, defaultServerUrlSuffix);
-    }
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    // Init platform
-    nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
 
-    // start the core
-    ec = nc_device_start(&dev->core, dev->appName, dev->appVersion, dev->productId, dev->deviceId, dev->serverUrl);
 
-    if ( ec != NABTO_EC_OK ) {
-        NABTO_LOG_ERROR(LOG, "Failed to start device core");
+
+    dev->startFut = fut;
+
+    if (dev->publicKey == NULL || dev->privateKey == NULL) {
+        NABTO_LOG_ERROR(LOG, "Encryption key pair not set");
+        nabto_device_future_resolve(fut, NABTO_EC_INVALID_STATE);
+    } else {
+
+        // Init platform
+        nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
+
+        // start the core
+        np_error_code ec = nc_device_start(&dev->core, defaultServerUrlSuffix, &nabto_device_start_cb, dev);
+        if (ec != NABTO_EC_OK) {
+            nabto_device_future_resolve(fut, ec);
+        }
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return nabto_device_error_core_to_api(ec);
 }
 
 static char* toHex(uint8_t* data, size_t dataLength)

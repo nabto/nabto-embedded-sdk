@@ -302,7 +302,10 @@ bool start_device(NabtoDevice* device)
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    ec = nabto_device_start(device);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_start(device, fut);
+    ec = nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }

@@ -206,7 +206,11 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
     init_none_authorization(device);
 
     // run application
-    ec = nabto_device_start(device);
+    NabtoDeviceFuture* startFuture = nabto_device_future_new(device);
+    nabto_device_start(device, startFuture);
+
+    ec = nabto_device_future_wait(startFuture);
+    nabto_device_future_free(startFuture);
     if (ec != NABTO_DEVICE_EC_OK) {
         std::cerr << "Failed to start device" << std::endl;
         return;
