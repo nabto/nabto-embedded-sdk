@@ -14,6 +14,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef WIN32
+static std::string homeEnv = "APP_DATA";
+static std::string nabtoFolder = "nabto";
+#else
+static std::string homeEnv = "HOME";
+static std::string nabtoFolder = ".nabto";
+#endif
+
 /**
  * The first time the heatpump is started init is called and writes a
  * configuration file. The configuration file is used in subsequent
@@ -24,7 +32,7 @@ void my_handler(int s){
     printf("Caught signal %d\n",s);
 }
 
-bool run_heat_pump(const std::string& configFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam);
+bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool dumpIam, bool randomPorts);
 
 void print_missing_device_config_help(const std::string& filename)
 {
@@ -44,10 +52,12 @@ int main(int argc, char** argv) {
     options.add_options("General")
         ("h,help", "Show help")
         ("version", "Show version")
-        ("config", "Configuration for the device", cxxopts::value<std::string>()->default_value("device.json"))
-        ("state", "File containing the state of the tcptunnel", cxxopts::value<std::string>()->default_value("heat_pump_state.json"))
+        ("H,homedir", "Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %APP_DATA%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/heat_pump_device_state.json", cxxopts::value<std::string>())
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
-        ("dump-iam", "Print the iam configuration when the device is started, Policies, Roles Users");
+        ("random-ports", "Use random ports such that several devices can be running at the same time")
+        ;
+
+    // TOOD create directory structure.
 
     try {
 
@@ -65,11 +75,23 @@ int main(int argc, char** argv) {
             return 0;
         }
 
-        std::string configFile = result["config"].as<std::string>();
-        std::string stateFile = result["state"].as<std::string>();
+        std::string homedir;
+        if (result.count("home-dir")) {
+            homedir = result["home-dir"].as<std::string>();
+        } else {
+            const char* tmp = getenv(homeEnv.c_str());
+            if (!tmp) {
+                std::cerr << "The system does not have a variable set for the home dir" << std::endl;
+                homedir = ".";
+            } else {
+                homedir = std::string(tmp) + "/" + nabtoFolder + "/edge";
+            }
+        }
+
         std::string logLevel = result["log-level"].as<std::string>();
         bool dumpIam = (result.count("dump-iam") > 0);
-        if (!run_heat_pump(configFile, stateFile, logLevel, dumpIam)) {
+        bool randomPorts = (result.count("random-ports") > 0);
+        if (!run_heat_pump(homedir, logLevel, dumpIam, randomPorts)) {
             std::cerr << "Failed to run Heat Pump" << std::endl;
             return 3;
         }
@@ -85,8 +107,12 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-bool run_heat_pump(const std::string& configFile, const std::string& stateFile, const std::string& logLevel, bool dumpIam)
+bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool dumpIam, bool randomPorts)
 {
+    std::string configFile = homedir + "/config/device.json";
+    std::string deviceKeyFile = homedir + "/keys/device.key";
+    std::string stateFile = homedir + "/state/heat_pump_device_state.json";
+
     nabto::examples::common::DeviceConfig dc(configFile);
     if (!dc.load()) {
         print_missing_device_config_help(configFile);
@@ -104,7 +130,12 @@ bool run_heat_pump(const std::string& configFile, const std::string& stateFile, 
         return false;
     }
 
-    if (!load_or_create_private_key(device, "device.key", NULL)) {
+    if (randomPorts) {
+        nabto_device_set_local_port(device, 0);
+        nabto_device_set_p2p_port(device, 0);
+    }
+
+    if (!load_or_create_private_key(device, deviceKeyFile.c_str(), NULL)) {
         return false;
     }
 
