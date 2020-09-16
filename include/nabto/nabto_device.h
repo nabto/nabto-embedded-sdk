@@ -156,9 +156,12 @@ NABTO_DEVICE_DECL_PREFIX NabtoDevice* NABTO_DEVICE_API
 nabto_device_new();
 
 /**
- * Start the context, attach to some servers if possible, wait for client connections. All
- * configuration functions (such as nabto_device_set_device_id) must be called prior to invoke this
- * function.
+ * This function starts the device. It allocates the relevant
+ * resources and starts the attach process and makes the device accept
+ * connections. When the future resolves the context has been started
+ * but the device has not been attached to servers yet. All
+ * configuration functions (such as nabto_device_set_device_id) must
+ * be called prior to invoke this function.
  *
  * @param device [in]   The device instance to start
  * @param future [in]   The future which is resolved when started.
@@ -167,7 +170,7 @@ nabto_device_new();
  *   NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
  *             private key, server URL, device ID, or Product ID.
  *   NABTO_DEVICE_EC_IN_USE  if a resource cannot be allocated because it is already used.
- *   NABTO_DEVICE_EC_UNKNOWN if device threads could not be started
+ *   NABTO_DEVICE_EC_ADDRESS_IN_USE  if a socket cannot be bound to an address/port beacause it is already in use.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future);
