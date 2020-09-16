@@ -60,6 +60,11 @@ bool nm_statement_add_action(struct nm_statement* statement, const char* action)
     return nn_string_set_insert(&statement->actions, action);
 }
 
+bool nm_statement_add_condition(struct nm_statement* statement, struct nm_condition* condition)
+{
+    return nn_vector_push_back(&statement->conditions, &condition);
+}
+
 enum nm_condition_result match_conditions(const struct nm_statement* statement, const struct nn_string_map* attributes)
 {
     const struct nm_condition* condition;

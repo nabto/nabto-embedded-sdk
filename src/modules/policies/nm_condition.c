@@ -20,6 +20,17 @@ struct nm_condition* nm_condition_new(enum nm_condition_operator op)
     return c;
 }
 
+struct nm_condition* nm_condition_new_with_key(enum nm_condition_operator op, const char* key)
+{
+    struct nm_condition* c = nm_condition_new(op);
+    if (c == NULL) {
+        return c;
+    }
+    c->key = strdup(key);
+    return c;
+
+}
+
 void nm_condition_free(struct nm_condition* condition)
 {
     nm_condition_deinit(condition);
@@ -36,6 +47,11 @@ void nm_condition_deinit(struct nm_condition* condition)
     nn_string_set_deinit(&condition->values);
     free(condition->key);
     condition->key = NULL;
+}
+
+bool nm_condition_add_value(struct nm_condition* c, const char* value)
+{
+    return nn_string_set_insert(&c->values, value);
 }
 
 bool nm_condition_parse_bool(const char* value, bool* out)

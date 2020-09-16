@@ -14,8 +14,10 @@
 #include <modules/iam/nm_iam_to_json.h>
 #include <modules/iam/nm_iam_from_json.h>
 #include <modules/iam/nm_iam_role.h>
+
 #include <modules/policies/nm_statement.h>
 #include <modules/policies/nm_policy.h>
+#include <modules/policies/nm_condition.h>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -379,6 +381,23 @@ void HeatPump::loadIamPolicy()
     }
 
     {
+        auto p = nm_policy_new("ManageOwnUser");
+        auto s = nm_statement_new(NM_EFFECT_ALLOW);
+        nm_statement_add_action(s, "IAM:GetUser");
+        nm_statement_add_action(s, "IAM:DeleteUser");
+
+        // Create a condition such that only connections where the
+        // UserId matches the UserId of the operation is allowed. E.g. IAM:UserId == ${Connection:UserId}
+
+        auto c = nm_condition_new_with_key(NM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
+        nm_condition_add_value(c, "${Connection:UserId}");
+        nm_statement_add_condition(s, c);
+
+        nm_policy_add_statement(p, s);
+        nm_iam_add_policy(&iam_, p);
+    }
+
+    {
         auto r = nm_iam_role_new("Unpaired");
         nm_iam_role_add_policy(r, "Pairing");
         nm_iam_role_add_policy(r, "DeviceInfo");
@@ -394,6 +413,7 @@ void HeatPump::loadIamPolicy()
         nm_iam_role_add_policy(r, "HeatPumpControl");
         nm_iam_role_add_policy(r, "Pairing");
         nm_iam_role_add_policy(r, "DeviceInfo");
+        nm_iam_role_add_policy(r, "ManageOwnUser");
         nm_iam_add_role(&iam_, r);
     }
 

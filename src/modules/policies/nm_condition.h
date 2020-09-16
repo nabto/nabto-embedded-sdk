@@ -35,12 +35,15 @@ struct nm_condition {
 struct nn_string_map;
 
 struct nm_condition* nm_condition_new(enum nm_condition_operator op);
+struct nm_condition* nm_condition_new_with_key(enum nm_condition_operator op, const char* key);
 
 void nm_condition_free(struct nm_condition* condition);
 
 void nm_condition_init(struct nm_condition* c);
 
 void nm_condition_deinit(struct nm_condition* c);
+
+bool nm_condition_add_value(struct nm_condition* c, const char* value);
 
 bool nm_condition_parse_bool(const char* value, bool* out);
 
