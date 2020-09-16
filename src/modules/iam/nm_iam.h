@@ -58,6 +58,10 @@ struct nm_iam {
     char* pairingPassword;
     char* clientServerUrl;
     char* clientServerKey;
+
+    struct nn_string_set firstUserRoles;
+    struct nn_string_set secondaryUserRoles;
+    struct nn_string_set unpairedRoles;
 };
 
 /**
@@ -65,7 +69,7 @@ struct nm_iam {
  */
 void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger);
 
-void nm_iam_start(struct nm_iam* iam);
+bool nm_iam_start(struct nm_iam* iam);
 
 /**
  * Deinit the iam module
@@ -73,14 +77,59 @@ void nm_iam_start(struct nm_iam* iam);
 void nm_iam_deinit(struct nm_iam* iam);
 
 /**
- * Enable password pairing mode for the iam module
+ * Control how users is paired with the IAM module.
+ */
+
+/**
+ * Enable password pairing mode for the iam module.
+ *
+ * @param iam  The iam module,
+ * @param pairingPassword  The password which clients needs to specify to pair with the system. The string is copied into the module.
  */
 bool nm_iam_enable_password_pairing(struct nm_iam* iam, const char* pairingPassword);
 
 /**
- * Enable remote pairing for the iam module
+ * Enable remote pairing for the iam module. A client cannot make a
+ * remote pairing unless it has a valid server connect token. This
+ * sets that server connect token.
+ *
+ * @param iam  The IAM module.
+ * @param pairingServerConnectToken  The server connect token the client needs to use when pairing remotely with the system. The string is copied into the system.
  */
 bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerConnectToken);
+
+/**
+ * Add the roles for the first paired user. If no roles are added the system
+ * will probably not work.
+ *
+ * @param iam  The IAM module
+ * @param role  The role to add the the set of first user roles. The string is copied into the module.
+ * @return false iff the role was not added to the set.
+ */
+bool nm_iam_add_first_user_role(struct nm_iam* iam, const char* role);
+
+/**
+ * Add the roles for the secondary users on the system. If no roles
+ * are added, the system will probably not work.
+ *
+ * @param iam  The iam module
+ * @param role  The role to add to the set of secondary user roles. The string is copied into the module.
+ * @return false iff the role was not added to the set.
+ */
+bool nm_iam_add_secondary_user_role(struct nm_iam* iam, const char* role);
+
+/**
+ * Add the roles for unpaired connections on the system. The unpaired
+ * connections should probably be allowed to do pairings and get some
+ * public information.
+ *
+ * @param iam  The iam module.
+ * @param role  A role to add to the set of unpaired roles. The string is copied into the module.
+ * @return false iff the role was not added to the set.
+ */
+bool nm_iam_add_unpaired_roles(struct nm_iam* iam, const char* role);
+
+
 
 /**
  * Set change callbacks such that state can be persisted
@@ -140,6 +189,7 @@ void nm_iam_remove_role_from_user(struct nm_iam* iam, const char* userId, const 
  * Add a role to a user
  */
 bool nm_iam_add_role_to_user(struct nm_iam* iam, const char* userId, const char* roleId);
+
 
 #ifdef __cplusplus
 } //extern "C"

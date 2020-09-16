@@ -16,6 +16,7 @@
 static const char* LOGM = "iam";
 
 static enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct nn_string_map* attributes);
+static enum nm_effect nm_iam_check_access_roles(struct nm_iam* iam, struct nn_string_set* roles, const char* action, const struct nn_string_map* attributes);
 static enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct nn_string_map* attributes);
 
 static void init_coap_handlers(struct nm_iam* iam);
@@ -33,14 +34,40 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     nn_vector_init(&iam->users, sizeof(void*));
     nn_vector_init(&iam->roles, sizeof(void*));
     nn_vector_init(&iam->policies, sizeof(void*));
+
+    nn_string_set_init(&iam->firstUserRoles);
+    nn_string_set_init(&iam->secondaryUserRoles);
+    nn_string_set_init(&iam->unpairedRoles);
+
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
     nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
 
     init_coap_handlers(iam);
 }
 
-void nm_iam_start(struct nm_iam* iam)
+bool validate_role(struct nm_iam* iam, const char* role) {
+    if (nm_iam_find_role(iam, role) == NULL) {
+        NN_LOG_ERROR(iam->logger, LOGM, "The role '%s' does not exists in the system.\n", role);
+        return false;
+    }
+    return true;
+}
+
+bool nm_iam_start(struct nm_iam* iam)
 {
+    bool ret = true;
+    // validate that the pairing roles exists in the system
+    const char* role;
+    NN_STRING_SET_FOREACH(role, &iam->firstUserRoles) {
+        ret &= validate_role(iam, role);
+    }
+    NN_STRING_SET_FOREACH(role, &iam->secondaryUserRoles) {
+        ret &= validate_role(iam, role);
+    }
+    NN_STRING_SET_FOREACH(role, &iam->unpairedRoles) {
+        ret &= validate_role(iam, role);
+    }
+    return ret;
 }
 
 void nm_iam_deinit(struct nm_iam* iam)
@@ -67,6 +94,10 @@ void nm_iam_deinit(struct nm_iam* iam)
         nm_policy_free(policy);
     }
     nn_vector_deinit(&iam->policies);
+
+    nn_string_set_deinit(&iam->firstUserRoles);
+    nn_string_set_deinit(&iam->secondaryUserRoles);
+    nn_string_set_deinit(&iam->unpairedRoles);
 
     free(iam->pairingPassword);
     free(iam->clientServerUrl);
@@ -103,13 +134,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
         nn_string_map_insert(&attributes, "Connection:UserId", user->id);
         effect = nm_iam_check_access_user(iam, user, action, &attributes);
     } else {
-        struct nm_iam_role* unpaired = nm_iam_find_role(iam, "Unpaired");
-        if (unpaired == NULL) {
-            NN_LOG_ERROR(iam->logger, LOGM, "The role Unpaired does not exists, rejecting the request");
-            effect = NM_EFFECT_ERROR;
-        } else {
-            effect = nm_iam_check_access_role(iam, unpaired, action, &attributes);
-        }
+        effect = nm_iam_check_access_roles(iam, &iam->unpairedRoles, action, &attributes);
     }
 
     nn_string_map_deinit(&attributes);
@@ -135,11 +160,16 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 
 enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct nn_string_map* attributes)
 {
-    // go through all the users roles and associated policies, If atlease one policy ends in a rejection reject the access. If there's no rejections but an accept, then return accepted.
+    return nm_iam_check_access_roles(iam, &user->roles, action, attributes);
+}
+
+enum nm_effect nm_iam_check_access_roles(struct nm_iam* iam, struct nn_string_set* roles, const char* action, const struct nn_string_map* attributes)
+{
+    // go through all the roles and associated policies, If atleast one policy ends in a rejection reject the access. If there's no rejections but an accept, then return accepted.
 
     const char* roleStr;
     enum nm_effect result = NM_EFFECT_NO_MATCH;
-    NN_STRING_SET_FOREACH(roleStr, &user->roles)
+    NN_STRING_SET_FOREACH(roleStr, roles)
     {
         struct nm_iam_role* role = nm_iam_find_role(iam, roleStr);
         if (role == NULL) {
@@ -187,6 +217,20 @@ bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerC
     return true;
 }
 
+bool nm_iam_add_first_user_role(struct nm_iam* iam, const char* role)
+{
+    return nn_string_set_insert(&iam->firstUserRoles, role);
+}
+
+bool nm_iam_add_secondary_user_role(struct nm_iam* iam, const char* role)
+{
+    return nn_string_set_insert(&iam->secondaryUserRoles, role);
+}
+
+bool nm_iam_add_unpaired_roles(struct nm_iam* iam, const char* role)
+{
+    return nn_string_set_insert(&iam->unpairedRoles, role);
+}
 
 void init_coap_handlers(struct nm_iam* iam)
 {
@@ -272,18 +316,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
         return NULL;
     }
 
-    const char* roleStr;
-
-    if (nn_vector_size(&iam->users) == 0) {
-        roleStr = "Admin";
-    } else {
-        roleStr = "User";
-    }
-
-    if (nm_iam_find_role(iam, roleStr) == NULL) {
-        NN_LOG_ERROR(iam->logger, LOGM, "The role '%s' does not exists so the user cannot be paired.\n", roleStr);
-        return NULL;
-    }
+    bool firstUser = (nn_vector_size(&iam->users) == 0);
 
     char* sct;
     NabtoDeviceError ec = nabto_device_create_server_connect_token(iam->device, &sct);
@@ -295,7 +328,18 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
     struct nm_iam_user* user = nm_iam_user_new(nextId);
     free(nextId);
 
-    nn_string_set_insert(&user->roles, roleStr);
+    if (firstUser) {
+        const char* roleStr;
+        NN_STRING_SET_FOREACH(roleStr, &iam->firstUserRoles) {
+            nn_string_set_insert(&user->roles, roleStr);
+        }
+    } else {
+        const char* roleStr;
+        NN_STRING_SET_FOREACH(roleStr, &iam->secondaryUserRoles) {
+            nn_string_set_insert(&user->roles, roleStr);
+        }
+    }
+
     user->fingerprint = strdup(fingerprint);
     user->serverConnectToken = strdup(sct);
 

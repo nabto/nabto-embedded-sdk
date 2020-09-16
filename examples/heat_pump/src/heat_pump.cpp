@@ -60,6 +60,8 @@ bool HeatPump::init()
     loadIamPolicy();
     loadState();
 
+
+
     nm_iam_enable_password_pairing(&iam_, pairingPassword_.c_str());
 
     nm_iam_enable_remote_pairing(&iam_, pairingServerConnectToken_.c_str());
@@ -352,22 +354,9 @@ void HeatPump::loadIamPolicy()
         nm_iam_add_policy(&iam_, p);
     }
     {
-        auto p = nm_policy_new("Paired");
-        auto s = nm_statement_new(NM_EFFECT_ALLOW);
-        nm_statement_add_action(s, "Pairing:Get");
-        nm_policy_add_statement(p,s);
-        nm_iam_add_policy(&iam_, p);
-    }
-    {
-        auto p = nm_policy_new("HeatPumpRead");
+        auto p = nm_policy_new("HeatPumpControl");
         auto s = nm_statement_new(NM_EFFECT_ALLOW);
         nm_statement_add_action(s, "HeatPump:Get");
-        nm_policy_add_statement(p,s);
-        nm_iam_add_policy(&iam_, p);
-    }
-    {
-        auto p = nm_policy_new("HeatPumpWrite");
-        auto s = nm_statement_new(NM_EFFECT_ALLOW);
         nm_statement_add_action(s, "HeatPump:Set");
         nm_policy_add_statement(p,s);
         nm_iam_add_policy(&iam_, p);
@@ -393,21 +382,26 @@ void HeatPump::loadIamPolicy()
     }
     {
         auto r = nm_iam_role_new("Admin");
-        nm_iam_role_add_policy(r, "HeatPumpWrite");
-        nm_iam_role_add_policy(r, "HeatPumpRead");
-        nm_iam_role_add_policy(r, "Paired");
-        nm_iam_role_add_policy(r, "DeviceInfo");
         nm_iam_role_add_policy(r, "ManageUsers");
         nm_iam_add_role(&iam_, r);
     }
     {
         auto r = nm_iam_role_new("User");
-        nm_iam_role_add_policy(r, "HeatPumpRead");
-        nm_iam_role_add_policy(r, "Paired");
+        nm_iam_role_add_policy(r, "HeatPumpControl");
+        nm_iam_role_add_policy(r, "Pairing");
         nm_iam_role_add_policy(r, "DeviceInfo");
         nm_iam_add_role(&iam_, r);
     }
 
+    // The first user which is paired is both an admin and a user on the system
+    nm_iam_add_first_user_role(&iam_, "Admin");
+    nm_iam_add_first_user_role(&iam_, "User");
+
+    // The secondary users which is paired with the system does not get the admin permissions.
+    nm_iam_add_secondary_user_role(&iam_, "User");
+
+    // Connections which does not have a paired user in the system gets the Unpaired role.
+    nm_iam_add_unpaired_roles(&iam_, "Unpaired");
 }
 
 
