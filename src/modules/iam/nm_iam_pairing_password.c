@@ -44,18 +44,27 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char *name = NULL;
-    nm_iam_cbor_decode_kv_string(&value, "Name", &name);
+    char* name = NULL;
+    char* password = NULL;
 
-    if (!nm_iam_pair_new_client(handler->iam, request, name)) {
-        nabto_device_coap_error_response(request, 500, "Server error");
-        return;
+    if (nm_iam_cbor_decode_kv_string(&value, "Password", &password)) {
+        // If the user provides a password in the request the user
+        // uses a 5.1 client. This is not suported any more.
+        nabto_device_coap_error_response(request, 400, "5.1 clients are not supported for password pairing");
+    } else {
+
+        nm_iam_cbor_decode_kv_string(&value, "Name", &name);
+
+        if (!nm_iam_pair_new_client(handler->iam, request, name)) {
+            nabto_device_coap_error_response(request, 500, "Server error");
+        } else {
+            // OK response
+            nabto_device_coap_response_set_code(request, 201);
+            nabto_device_coap_response_ready(request);
+        }
     }
-
-    // OK response
-    nabto_device_coap_response_set_code(request, 201);
-    nabto_device_coap_response_ready(request);
 
     free(fingerprint);
     free(name);
+    free(password);
 }
