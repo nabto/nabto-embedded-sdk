@@ -70,6 +70,10 @@ bool HeatPump::init()
 
     nm_iam_set_user_changed_callback(&iam_, &HeatPump::iamUserChanged, this);
 
+    if (!nm_iam_start(&iam_)) {
+        return false;
+    }
+
     stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device_);
     stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device_);
     return true;

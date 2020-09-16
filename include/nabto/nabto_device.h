@@ -1503,14 +1503,16 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity);
 
 /********
- * Misc
+ * MDNS
  ********/
 
 /**
- * @intro Misc
+ * @intro mDNS
  *
- * Functions for starting the optional MDNS server, getting the SDK version, accessing error info
- * and freeing SDK allocated resources.
+ * The system discovers devices on the local network using mDNS. A
+ * device application can either use the built in mDNS functionality
+ * or use a third party mDNS implementation. These functions controls
+ * the built in mDNS functionality.
  */
 
 /**
@@ -1542,6 +1544,17 @@ nabto_device_mdns_add_subtype(NabtoDevice* device, const char* subtype);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char* value);
+
+/********
+ * Misc
+ ********/
+
+/**
+ * @intro Misc
+ *
+ * Functions for getting the SDK version, accessing error info and
+ * freeing SDK allocated resources.
+ */
 
 /**
  * Return the version of the nabto embedded library.
