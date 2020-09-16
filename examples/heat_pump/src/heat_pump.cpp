@@ -54,8 +54,8 @@ bool HeatPump::init()
         return false;
     }
 
-    pairingPassword_ = nabto::examples::common::random_string(20);
-    pairingServerConnectToken_ = nabto::examples::common::random_string(20);
+    pairingPassword_ = nabto::examples::common::random_string(12);
+    pairingServerConnectToken_ = nabto::examples::common::random_string(12);
 
     loadIamPolicy();
     loadState();
