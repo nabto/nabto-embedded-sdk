@@ -220,6 +220,12 @@ NabtoDeviceError HeatPump::initDevice()
     if (ec) {
         return ec;
     }
+
+    ec = nabto_device_mdns_add_subtype(device_, "heatpump");
+    if (ec) {
+        return ec;
+    }
+
     ec = nabto_device_set_log_std_out_callback(device_);
     if (ec) {
         return ec;
@@ -257,15 +263,13 @@ std::string HeatPump::getFingerprint()
     return fp;
 }
 
-std::string HeatPump::createPairingLink()
+std::string HeatPump::createPairingString()
 {
     std::stringstream ss;
-    ss << "https://heatpump.nabto.com/pairing"
-       << "?p=" << dc_.getProductId()
-       << "&d=" << dc_.getDeviceId()
-       << "&fp=" << getFingerprint()
-       << "&pwd=" << pairingPassword_
-       << "&sct=" << pairingServerConnectToken_;
+    ss << "p=" << dc_.getProductId()
+       << ",d=" << dc_.getDeviceId()
+       << ",pwd=" << pairingPassword_
+       << ",sct=" << pairingServerConnectToken_;
     return ss.str();
 }
 
@@ -282,7 +286,7 @@ void HeatPump::printHeatpumpInfo()
     } catch(...) {} // Ignore missing server
     std::cout << "# Client Server Connect Token " << pairingServerConnectToken_ << std::endl;
     std::cout << "# Version:                    " << nabto_device_version() << std::endl;
-    std::cout << "# Pairing URL                 " << createPairingLink() << std::endl;
+    std::cout << "# Pairing String              " << createPairingString() << std::endl;
     std::cout << "######## " << std::endl;
 }
 

@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     options.add_options("General")
         ("h,help", "Show help")
         ("version", "Show version")
-        ("H,homedir", "Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %APP_DATA%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/heat_pump_device_state.json", cxxopts::value<std::string>())
+        ("H,home-dir", "Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %APP_DATA%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/heat_pump_device_state.json", cxxopts::value<std::string>())
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
         ("random-ports", "Use random ports such that several devices can be running at the same time")
         ;

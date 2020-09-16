@@ -107,7 +107,7 @@ class HeatPump {
 
     void initCoapHandlers();
     std::string getFingerprint();
-    std::string createPairingLink();
+    std::string createPairingString();
 
     NabtoDevice* device_;
     nabto::examples::common::DeviceConfig& dc_;
