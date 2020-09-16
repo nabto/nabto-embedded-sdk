@@ -234,12 +234,14 @@ bool nm_iam_add_unpaired_roles(struct nm_iam* iam, const char* role)
 
 void init_coap_handlers(struct nm_iam* iam)
 {
+
     nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
     nm_iam_client_settings_init(&iam->coapPairingClientSettingsGetHandler, iam->device, iam);
     nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
     nm_iam_pairing_local_init(&iam->coapPairingLocalPostHandler, iam->device, iam);
     nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
 
+    nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
@@ -256,6 +258,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingIsPairedGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingClientSettingsGetHandler);
 
+    nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserGetHandler);
 

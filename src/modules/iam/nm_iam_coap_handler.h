@@ -10,6 +10,7 @@ struct nm_iam_coap_handler;
 typedef void (*nm_iam_coap_request_handler)(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
 struct nm_iam;
+struct nm_iam_user;
 
 struct nm_iam_coap_handler {
     NabtoDevice* device;
@@ -38,6 +39,7 @@ NabtoDeviceError nm_iam_list_users_init(struct nm_iam_coap_handler* handler, Nab
 NabtoDeviceError nm_iam_is_paired_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_client_settings_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
+NabtoDeviceError nm_iam_get_me_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_get_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
 NabtoDeviceError nm_iam_delete_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
@@ -52,5 +54,8 @@ bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser
 
 bool nm_iam_cbor_decode_string(CborValue* value, char** str);
 bool nm_iam_cbor_decode_kv_string(CborValue* map, const char* key, char** str);
+
+// used from GET /iam/users/:user and GET /iam/me
+size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bufferSize);
 
 #endif

@@ -1,4 +1,5 @@
 #include "nm_iam_coap_handler.h"
+#include "nm_iam_user.h"
 
 #include <stdlib.h>
 
@@ -114,4 +115,48 @@ bool nm_iam_cbor_decode_kv_string(CborValue* map, const char* key, char** str)
     CborValue nameValue;
     cbor_value_map_find_value(map, key, &nameValue);
     return nm_iam_cbor_decode_string(&nameValue, str);
+}
+
+size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bufferSize)
+{
+    CborEncoder encoder;
+    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
+    CborEncoder map;
+    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+
+    cbor_encode_text_stringz(&map, "Id");
+    cbor_encode_text_stringz(&map, user->id);
+
+    if (!nn_string_set_empty(&user->roles)) {
+        cbor_encode_text_stringz(&map, "Roles");
+        CborEncoder array;
+        cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
+        const char* r;
+        NN_STRING_SET_FOREACH(r, &user->roles) {
+            cbor_encode_text_stringz(&array, r);
+        }
+        cbor_encoder_close_container(&map, &array);
+    }
+    if (user->fingerprint != NULL) {
+        cbor_encode_text_stringz(&map, "Fingerprint");
+        cbor_encode_text_stringz(&map, user->fingerprint);
+    }
+
+    if (!nn_string_map_empty(&user->attributes)) {
+        cbor_encode_text_stringz(&map, "Attributes");
+        CborEncoder o;
+        cbor_encoder_create_map(&map, &o, CborIndefiniteLength);
+
+        struct nn_string_map_iterator it;
+        for (it = nn_string_map_begin(&user->attributes); !nn_string_map_is_end(&it); nn_string_map_next(&it)) {
+            cbor_encode_text_stringz(&o, nn_string_map_key(&it));
+            cbor_encode_text_stringz(&o, nn_string_map_value(&it));
+        }
+
+        cbor_encoder_close_container(&map, &o);
+    }
+
+    cbor_encoder_close_container(&encoder, &map);
+
+    return cbor_encoder_get_extra_bytes_needed(&encoder);
 }
