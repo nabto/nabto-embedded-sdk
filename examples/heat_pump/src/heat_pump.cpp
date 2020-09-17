@@ -62,8 +62,6 @@ bool HeatPump::init()
     loadIamPolicy();
     loadState();
 
-
-
     nm_iam_enable_password_pairing(&iam_, pairingPassword_.c_str());
 
     nm_iam_enable_remote_pairing(&iam_, pairingServerConnectToken_.c_str());
@@ -230,6 +228,11 @@ NabtoDeviceError HeatPump::initDevice()
     }
 
     ec = nabto_device_mdns_add_subtype(device_, "heatpump");
+    if (ec) {
+        return ec;
+    }
+
+    ec = nabto_device_mdns_add_txt_item(device_, "fn", "heatpump");
     if (ec) {
         return ec;
     }

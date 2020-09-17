@@ -5,17 +5,12 @@ This is an example application showing how a heat pump application can be made.
 ## Usage
 
 The demo needs a configuration file, the default configuration file is
-named device_config.json the structure of that file is this:
+named device.json the structure of that file is this:
 
 ```json
 {
   "ProductId": "...",
-  "DeviceId": "...",
-  "Server": "...",
-  "Client": {
-    "ServerKey": "...",
-    "ServerUrl": "..."
-  }
+  "DeviceId": "..."
 }
 ```
 

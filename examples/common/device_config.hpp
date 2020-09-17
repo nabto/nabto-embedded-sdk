@@ -40,34 +40,13 @@ class DeviceConfig
     {
         return config_["Server"].get<std::string>();
     }
-    std::string getClientServerUrl()
-    {
-        try {
-            return config_["Client"]["ServerUrl"].get<std::string>();
-        } catch (...) {
-            return "";
-        }
-    }
-    std::string getClientServerKey()
-    {
-        try {
-            return config_["Client"]["ServerKey"].get<std::string>();
-        } catch (...) {
-            return "";
-        }
-    }
 
     static std::string example()
     {
         std::string exampleDeviceConfig = R"(
 {
   "ProductId": "...",
-  "DeviceId": "...",
-  "Server": "...",
-  "Client": {
-    "ServerKey": "...",
-    "ServerUrl": "..."
-  }
+  "DeviceId": "..."
 }
 )";
         return exampleDeviceConfig;

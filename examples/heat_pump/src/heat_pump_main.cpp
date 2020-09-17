@@ -14,11 +14,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #ifdef WIN32
-static std::string homeEnv = "APP_DATA";
+static std::string homeDirEnvVariable = "APP_DATA";
 static std::string nabtoFolder = "nabto";
 #else
-static std::string homeEnv = "HOME";
+static std::string homeDirEnvVariable = "HOME";
 static std::string nabtoFolder = ".nabto";
 #endif
 
@@ -31,6 +34,36 @@ static std::string nabtoFolder = ".nabto";
 void my_handler(int s){
     printf("Caught signal %d\n",s);
 }
+
+bool makeDirectory(const std::string& directory)
+{
+    mkdir(directory.c_str(), 0777);
+    return true;
+}
+
+bool makeDirectories(const std::string& in)
+{
+    std::string homeDir;
+    if (in.empty()) {
+        char* tmp = getenv(homeDirEnvVariable.c_str());
+        if (tmp == NULL) {
+            return false;
+        }
+        std::string homeEnv = std::string(tmp);
+        makeDirectory(homeEnv + "/" + nabtoFolder);
+        makeDirectory(homeEnv + "/" + nabtoFolder + "/edge");
+        homeDir = homeEnv + "/" + nabtoFolder + "/edge";
+    } else {
+        homeDir = in;
+        makeDirectory(homeDir);
+    }
+
+    makeDirectory(homeDir+"/config");
+    makeDirectory(homeDir+"/state");
+    makeDirectory(homeDir+"/keys");
+    return true;
+}
+
 
 bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool dumpIam, bool randomPorts);
 
@@ -76,11 +109,17 @@ int main(int argc, char** argv) {
             return 0;
         }
 
+        if (result.count("home-dir")) {
+            makeDirectories(result["home-dir"].as<std::string>());
+        } else {
+            makeDirectories("");
+        }
+
         std::string homedir;
         if (result.count("home-dir")) {
             homedir = result["home-dir"].as<std::string>();
         } else {
-            const char* tmp = getenv(homeEnv.c_str());
+            const char* tmp = getenv(homeDirEnvVariable.c_str());
             if (!tmp) {
                 std::cerr << "The system does not have a variable set for the home dir" << std::endl;
                 homedir = ".";
@@ -151,7 +190,9 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
 
         nabto::examples::heat_pump::HeatPump hp(device, dc, stateFile);
         hp.setLogLevel(logLevel);
-        hp.init();
+        if (!hp.init()) {
+            return false;
+        }
         if (dumpIam) {
             hp.dumpIam();
         }
