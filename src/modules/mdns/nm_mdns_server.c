@@ -20,9 +20,11 @@ static void nm_mdns_packet_sent(const np_error_code ec, void* userData);
 static void nm_mdns_update_local_ips(struct nm_mdns_server* mdns);
 
 static void publish_service(struct np_mdns* obj, uint16_t port, const char* instanceName, struct nn_string_set* subtypes, struct nn_string_map* txtItems);
+static void unpublish_service(struct np_mdns* obj);
 
 static struct np_mdns_functions module = {
-    .publish_service = publish_service
+    .publish_service = publish_service,
+    .unpublish_service = unpublish_service
 };
 
 struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server)
@@ -119,17 +121,24 @@ void nm_mdns_server_stop(struct nm_mdns_server* server)
 void publish_service(struct np_mdns* obj, uint16_t port, const char* instanceName, struct nn_string_set* subtypes, struct nn_string_map* txtItems)
 {
     struct nm_mdns_server* server = obj->data;
-    if (server->running) {
-        // publishing more than one service is not supported
-        return;
+
+
+    if (!server->running) {
+        server->running = true;
+        nabto_mdns_server_init(&server->mdnsServer);
+
+        nm_mdns_udp_bind_async_ipv4(&server->mdnsUdpBind, server->v4.socket, &server->v4.openedCompletionEvent);
+        nm_mdns_udp_bind_async_ipv6(&server->mdnsUdpBind, server->v6.socket, &server->v6.openedCompletionEvent);
     }
-    server->running = true;
+
     server->port = port;
-    nabto_mdns_server_init(&server->mdnsServer);
     nabto_mdns_server_update_info(&server->mdnsServer, instanceName, subtypes, txtItems);
 
-    nm_mdns_udp_bind_async_ipv4(&server->mdnsUdpBind, server->v4.socket, &server->v4.openedCompletionEvent);
-    nm_mdns_udp_bind_async_ipv6(&server->mdnsUdpBind, server->v6.socket, &server->v6.openedCompletionEvent);
+}
+
+void unpublish_service(struct np_mdns* obj)
+{
+    // do nothing
 }
 
 void nm_mdns_update_local_ips(struct nm_mdns_server* mdns)

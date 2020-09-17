@@ -1539,8 +1539,12 @@ nabto_device_mdns_add_subtype(NabtoDevice* device, const char* subtype);
 
 /**
  * Add additional txt items to the mdns responses. By default the
- * productid and deviceid is added to mdns responses.  Additional txt
- * items needs to be added before nabto_device_start is called.
+ * productid and deviceid is added to mdns responses.
+ *
+ * If the device is running when txt records are added the service is
+ * unpublished and published again with the new items.
+ *
+ * If the key already exists it's overwritten with the new value.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char* value);

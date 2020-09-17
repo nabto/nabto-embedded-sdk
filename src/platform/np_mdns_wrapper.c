@@ -4,3 +4,8 @@ void np_mdns_publish_service(struct np_mdns* obj, uint16_t port, const char* ins
 {
     obj->mptr->publish_service(obj, port, instanceName, subtypes, txtItems);
 }
+
+void np_mdns_unpublish_service(struct np_mdns* obj)
+{
+    obj->mptr->unpublish_service(obj);
+}

@@ -61,6 +61,7 @@ struct nc_device_context {
     struct np_dtls_srv* dtlsServer;
 
     bool enableMdns;
+    bool mdnsPublished;
     struct np_mdns_context* mdns;
 
     struct nn_string_set mdnsSubtypes;
@@ -135,5 +136,10 @@ np_error_code nc_device_set_device_id(struct nc_device_context* ctx, const char*
 
 np_error_code nc_device_set_server_url(struct nc_device_context* ctx, const char* serverUrl);
 
+
+np_error_code nc_device_enable_mdns(struct nc_device_context* ctx);
+
+np_error_code nc_device_mdns_add_subtype(struct nc_device_context* ctx, const char* subtype);
+np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* ctx, const char* key, const char* value);
 
 #endif // NC_DEVICE_H

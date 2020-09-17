@@ -127,6 +127,9 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     struct np_platform* pl = device->pl;
 
+    if (device->mdnsPublished) {
+        np_mdns_unpublish_service(&pl->mdns);
+    }
 
     nc_spake2_coap_deinit(&device->spake2);
     nc_spake2_deinit(&device->spake2);
@@ -308,6 +311,7 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
         uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
         NABTO_LOG_TRACE(LOG, "Local socket bound, starting mdns on %d", localPort);
         np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
+        dev->mdnsPublished = true;
     }
 
     // start recv for the stun socket
@@ -557,5 +561,46 @@ np_error_code nc_device_set_server_url(struct nc_device_context* dev, const char
     if (dev->hostname == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
+    return NABTO_EC_OK;
+}
+
+
+static void reload_mdns(struct nc_device_context* dev)
+{
+    if (dev->mdnsPublished) {
+        struct np_platform* pl = dev->pl;
+        np_mdns_unpublish_service(&pl->mdns);
+        uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
+        np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
+    }
+}
+
+np_error_code nc_device_enable_mdns(struct nc_device_context* dev)
+{
+    if (dev->state != NC_DEVICE_STATE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
+    dev->enableMdns = true;
+    return NABTO_EC_OK;
+}
+
+np_error_code nc_device_mdns_add_subtype(struct nc_device_context* dev, const char* subtype)
+{
+    if (!nn_string_set_insert(&dev->mdnsSubtypes, subtype)) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    reload_mdns(dev);
+    return NABTO_EC_OK;
+}
+
+
+np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* dev, const char* key, const char* value)
+{
+    nn_string_map_erase(&dev->mdnsTxtItems, key);
+    struct nn_string_map_iterator it = nn_string_map_insert(&dev->mdnsTxtItems, key, value);
+    if (nn_string_map_is_end(&it)) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    reload_mdns(dev);
     return NABTO_EC_OK;
 }

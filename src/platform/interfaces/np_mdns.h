@@ -70,6 +70,17 @@ struct np_mdns_functions {
      * @param txtItems  txt items to expose
      */
     void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* instanceName, struct nn_string_set* subtypes, struct nn_string_map* txtItems);
+
+    /**
+     * Unpublish the mDNS service for the device.
+     *
+     * This is used if the service is updated, then the service is
+     * unpublished and published again. When the device is closed the
+     * service is also unpublished.
+     *
+     * @param obj  The mDNS server implementation
+     */
+    void (*unpublish_service)(struct np_mdns* obj);
 };
 
 #ifdef __cplusplus

@@ -325,36 +325,31 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_p2p_port(NabtoDevice* device,
 NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_mdns(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    dev->core.enableMdns = true;
+    ec = nc_device_enable_mdns(&dev->core);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_mdns_add_subtype(NabtoDevice* device, const char* subtype)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    if (!nn_string_set_insert(&dev->core.mdnsSubtypes, subtype)) {
-        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    }
+    ec = nc_device_mdns_add_subtype(&dev->core, subtype);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char* value)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nn_string_map_iterator it = nn_string_map_insert(&dev->core.mdnsTxtItems, key, value);
-    if (nn_string_map_is_end(&it)) {
-        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    }
+    ec = nc_device_mdns_add_txt_item(&dev->core, key, value);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return ec;
+    return nabto_device_error_core_to_api(ec);
 }
 
 void nabto_device_start_cb(const np_error_code ec, void* data)
