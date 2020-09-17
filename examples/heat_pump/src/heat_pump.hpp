@@ -34,6 +34,7 @@ namespace nabto {
 namespace examples {
 namespace heat_pump {
 
+class HeatPumpSetName;
 class HeatPumpSetPower;
 class HeatPumpSetTarget;
 class HeatPumpSetMode;
@@ -69,6 +70,7 @@ class HeatPump {
     void setMode(Mode mode);
     void setTarget(double target);
     void setPower(bool on);
+    void setName(const std::string& name);
     const char* modeToString(HeatPump::Mode mode);
     const char* getModeString();
 
@@ -80,6 +82,7 @@ class HeatPump {
         state["Target"] = target_;
         state["Power"] = power_;
         state["Temperature"] = 22.3;
+        state["Name"] = name_;
         return state;
     }
 
@@ -116,6 +119,7 @@ class HeatPump {
     std::string logLevel_;
     struct nm_iam iam_;
 
+    std::unique_ptr<HeatPumpSetName> coapSetName_;
     std::unique_ptr<HeatPumpSetPower> coapSetPower_;
     std::unique_ptr<HeatPumpSetTarget> coapSetTarget_;
     std::unique_ptr<HeatPumpSetMode> coapSetMode_;
@@ -134,6 +138,9 @@ class HeatPump {
 
     std::string pairingPassword_;
     std::string pairingServerConnectToken_;
+
+    // friendly name of the heatpump
+    std::string name_;
 
 
 };

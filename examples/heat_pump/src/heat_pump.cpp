@@ -1,6 +1,7 @@
 #include "heat_pump.hpp"
 #include "json_config.hpp"
 
+#include "heat_pump_set_name.hpp"
 #include "heat_pump_set_power.hpp"
 #include "heat_pump_set_target.hpp"
 #include "heat_pump_set_mode.hpp"
@@ -62,6 +63,8 @@ bool HeatPump::init()
     loadIamPolicy();
     loadState();
 
+    nabto_device_mdns_add_txt_item(device_, "fn", name_.c_str());
+
     nm_iam_enable_password_pairing(&iam_, pairingPassword_.c_str());
 
     nm_iam_enable_remote_pairing(&iam_, pairingServerConnectToken_.c_str());
@@ -96,11 +99,11 @@ void HeatPump::saveState()
     cJSON* state = cJSON_CreateObject();
     cJSON_AddItemToObject(state, "PairingPassword", cJSON_CreateString(pairingPassword_.c_str()));
     cJSON_AddItemToObject(state, "PairingServerConnectToken", cJSON_CreateString(pairingServerConnectToken_.c_str()));
-
     cJSON* heatPump = cJSON_CreateObject();
     cJSON_AddItemToObject(heatPump, "Mode", cJSON_CreateString(mode_.c_str()));
     cJSON_AddItemToObject(heatPump, "Power", cJSON_CreateBool(power_));
     cJSON_AddItemToObject(heatPump, "Target", cJSON_CreateNumber(target_));
+    cJSON_AddItemToObject(heatPump, "Name", cJSON_CreateString(name_.c_str()));
 
     cJSON_AddItemToObject(state, "HeatPump", heatPump);
 
@@ -145,10 +148,13 @@ void HeatPump::loadState()
     if (cJSON_IsString(pairingServerConnectToken)) {
         pairingServerConnectToken_ = std::string(pairingServerConnectToken->valuestring);
     }
+
     if (cJSON_IsObject(heatPump)) {
         cJSON* mode = cJSON_GetObjectItem(heatPump, "Mode");
         cJSON* power = cJSON_GetObjectItem(heatPump, "Power");
         cJSON* target = cJSON_GetObjectItem(heatPump, "Target");
+        cJSON* name = cJSON_GetObjectItem(heatPump, "Name");
+
         if (cJSON_IsString(mode)) {
             mode_ = std::string(mode->valuestring);
         }
@@ -163,6 +169,9 @@ void HeatPump::loadState()
             } else {
                 power_ = true;
             }
+        }
+        if (cJSON_IsString(name)) {
+            name_ = std::string(name->valuestring);
         }
     }
 
@@ -191,6 +200,7 @@ void HeatPump::createState()
 
 void HeatPump::initCoapHandlers()
 {
+    coapSetName_ = nabto::examples::heat_pump::HeatPumpSetName::create(*this, device_);
     coapSetPower_ = nabto::examples::heat_pump::HeatPumpSetPower::create(*this, device_);
     coapSetTarget_ = nabto::examples::heat_pump::HeatPumpSetTarget::create(*this, device_);
     coapSetMode_ = nabto::examples::heat_pump::HeatPumpSetMode::create(*this, device_);
@@ -232,10 +242,9 @@ NabtoDeviceError HeatPump::initDevice()
         return ec;
     }
 
-    ec = nabto_device_mdns_add_txt_item(device_, "fn", "heatpump");
-    if (ec) {
-        return ec;
-    }
+
+
+
 
     ec = nabto_device_set_log_std_out_callback(device_);
     if (ec) {
@@ -320,6 +329,13 @@ void HeatPump::setTarget(double target)
 void HeatPump::setPower(bool power)
 {
     power_ = power;
+    saveState();
+}
+
+void HeatPump::setName(const std::string& name)
+{
+    name_ = name;
+    nabto_device_mdns_add_txt_item(device_, "fn", name.c_str());
     saveState();
 }
 
