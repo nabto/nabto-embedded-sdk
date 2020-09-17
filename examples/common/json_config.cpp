@@ -44,3 +44,9 @@ bool json_config_save(const std::string& filename, const nlohmann::json& config)
     }
     return status;
 }
+
+bool json_config_clear(const std::string& filename)
+{
+    nlohmann::json root;
+    return json_config_save(filename, root);
+}

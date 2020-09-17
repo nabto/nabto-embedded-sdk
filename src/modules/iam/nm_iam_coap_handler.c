@@ -142,6 +142,11 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
         cbor_encode_text_stringz(&map, user->fingerprint);
     }
 
+    if (user->name != NULL) {
+        cbor_encode_text_stringz(&map, "Name");
+        cbor_encode_text_stringz(&map, user->name);
+    }
+
     if (!nn_string_map_empty(&user->attributes)) {
         cbor_encode_text_stringz(&map, "Attributes");
         CborEncoder o;
