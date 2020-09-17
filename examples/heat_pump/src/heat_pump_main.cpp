@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
         ("version", "Show version")
         ("H,home-dir", "Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %APP_DATA%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/heat_pump_device_state.json", cxxopts::value<std::string>())
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
-        ("random-ports", "Use random ports such that several devices can be running at the same time")
+        ("random-ports", "Use random ports such that several devices can be running at the same time. The device can still be discovered locally.")
         ("reset", "Reset pump state to factory defaults and remove all paired users.")
         ;
 
