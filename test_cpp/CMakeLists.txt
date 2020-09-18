@@ -36,6 +36,7 @@ set(test_src
   tests/policies/policy_deny_test.cpp
   tests/dns/dns_test.cpp
   tests/local_ping/local_ping_test.cpp
+  ../src/api_test/nabto_device_test_logging.c
   )
 
 add_subdirectory(../nabto-common/3rdparty/boost boost)

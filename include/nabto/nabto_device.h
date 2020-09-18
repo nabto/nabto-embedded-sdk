@@ -1465,7 +1465,9 @@ typedef struct NabtoDeviceLogMessage_ NabtoDeviceLogMessage;
 typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
 
 /**
- * Set log callback if custom logging is desired
+ * Set log callback if custom logging is desired.
+ *
+ * The log callback can be removed by setting the callback and userdata to NULL.
  *
  * @param device [in]  The device instance to set callback for
  * @param cb [in]      The function to be called on log event, or NULL to remove

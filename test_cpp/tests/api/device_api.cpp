@@ -1,6 +1,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_test.h>
+
 #include <api/nabto_device_defines.h>
 
 #include <thread>
@@ -59,6 +61,26 @@ BOOST_AUTO_TEST_CASE(has_default_server_url)
     struct nabto_device_context* d = (struct nabto_device_context*)dev;
     BOOST_TEST(strcmp(d->core.hostname, "test.devices.nabto.net") == 0);
     nabto_device_free(dev);
+}
+
+static void log_callback(NabtoDeviceLogMessage* msg, void* data)
+{
+    int* logLines = (int*)data;
+    (*logLines)++;
+}
+
+BOOST_AUTO_TEST_CASE(remove_log_callback)
+{
+    int logLines = 0;
+    NabtoDevice* dev = nabto::test::createTestDevice();
+    nabto_device_set_log_callback(dev, log_callback, &logLines);
+    nabto_device_test_logging(dev);
+    BOOST_TEST(logLines > 0);
+    nabto_device_set_log_callback(dev, NULL, NULL);
+    int cached = logLines;
+    nabto_device_test_logging(dev);
+    BOOST_TEST(logLines == cached);
+
 }
 
 BOOST_AUTO_TEST_CASE(stop_without_close, *boost::unit_test::timeout(10))
