@@ -2,12 +2,16 @@
 #define _IAM_CONFIG_H_
 
 #include <nn/vector.h>
+#include <nn/string_set.h>
 
 struct nn_log;
 
 struct iam_config {
     struct nn_vector roles;
     struct nn_vector policies;
+    struct nn_string_set unpairedRoles;
+    struct nn_string_set firstUserRoles;
+    struct nn_string_set secondaryUserRoles;
 };
 
 void iam_config_init(struct iam_config* iamConfig);

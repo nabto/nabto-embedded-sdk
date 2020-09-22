@@ -46,9 +46,9 @@
 #define HOMEDIR_EDGE_FOLDER HOMEDIR_NABTO_FOLDER "/edge"
 
 const char* DEVICE_CONFIG_FILE = "config/device.json";
-const char* TCP_TUNNEL_STATE_FILE = "state/tcp_tunnel_state.json";
-const char* TCP_TUNNEL_IAM_FILE = "config/tcp_tunnel_iam.json";
-const char* TCP_TUNNEL_SERVICES_FILE = "config/tcp_tunnel_services.json";
+const char* TCP_TUNNEL_STATE_FILE = "state/tcp_tunnel_device_state.json";
+const char* TCP_TUNNEL_IAM_FILE = "config/tcp_tunnel_device_iam.json";
+const char* TCP_TUNNEL_SERVICES_FILE = "config/tcp_tunnel_device_services.json";
 const char* DEVICE_KEY_FILE = "keys/device.key";
 
 enum {
@@ -57,7 +57,8 @@ enum {
     OPTION_LOG_LEVEL,
     OPTION_SHOW_STATE,
     OPTION_HOME_DIR,
-    OPTION_RANDOM_PORTS
+    OPTION_RANDOM_PORTS,
+    OPTION_RESET
 };
 
 struct args {
@@ -67,6 +68,7 @@ struct args {
     const char* logLevel;
     char* homeDir;
     bool randomPorts;
+    bool reset;
 };
 
 
@@ -151,6 +153,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x4s[] = "";       const char* x4l[] = { "show-state", 0 };
     const char x5s[] = "H";      const char* x5l[] = { "home-dir", 0 };
     const char x6s[] = "";       const char* x6l[] = { "random-ports", 0 };
+    const char x7s[] = "";       const char* x7l[] = { "reset", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -159,6 +162,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_SHOW_STATE, GOPT_NOARG, x4s, x4l },
         { OPTION_HOME_DIR, GOPT_ARG, x5s, x5l },
         { OPTION_RANDOM_PORTS, GOPT_NOARG, x6s, x6l },
+        { OPTION_RESET, GOPT_NOARG, x7s, x7l },
         {0,0,0,0}
     };
 
@@ -176,6 +180,10 @@ static bool parse_args(int argc, char** argv, struct args* args)
 
     if (gopt(options, OPTION_RANDOM_PORTS)) {
         args->randomPorts = true;
+    }
+
+    if (gopt(options, OPTION_RESET)) {
+        args->reset = true;
     }
 
     if (gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel)) {
@@ -347,6 +355,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     tunnel->servicesFile = expand_file_name(args->homeDir, TCP_TUNNEL_SERVICES_FILE);
     tunnel->privateKeyFile = expand_file_name(args->homeDir, DEVICE_KEY_FILE);
 
+    if (args->reset) {
+        printf("Resetting the state for the device." NEWLINE);
+        return reset_tcp_tunnel_state(tunnel->stateFile);
+    }
 
     /**
      * Load data files
@@ -432,18 +444,35 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     nn_vector_clear(&tcpTunnelState.users);
 
     // add roles to iam module
-    struct nm_iam_role* role;
-    NN_VECTOR_FOREACH(&role, &iamConfig.roles) {
-        nm_iam_add_role(&iam, role);
+    {
+        struct nm_iam_role* role;
+        NN_VECTOR_FOREACH(&role, &iamConfig.roles) {
+            nm_iam_add_role(&iam, role);
+        }
+        nn_vector_clear(&iamConfig.roles);
     }
-    nn_vector_clear(&iamConfig.roles);
-
     // add policies to iam module
-    struct nm_policy* policy;
-    NN_VECTOR_FOREACH(&policy, &iamConfig.policies) {
-        nm_iam_add_policy(&iam, policy);
+    {
+        struct nm_policy* policy;
+        NN_VECTOR_FOREACH(&policy, &iamConfig.policies) {
+            nm_iam_add_policy(&iam, policy);
+        }
+        nn_vector_clear(&iamConfig.policies);
     }
-    nn_vector_clear(&iamConfig.policies);
+
+    // add default pairing roles
+    {
+        const char* role;
+        NN_STRING_SET_FOREACH(role, &iamConfig.unpairedRoles) {
+            nm_iam_add_unpaired_roles(&iam, role);
+        }
+        NN_STRING_SET_FOREACH(role, &iamConfig.firstUserRoles) {
+            nm_iam_add_first_user_role(&iam, role);
+        }
+        NN_STRING_SET_FOREACH(role, &iamConfig.secondaryUserRoles) {
+            nm_iam_add_secondary_user_role(&iam, role);
+        }
+    }
     iam_config_deinit(&iamConfig);
 
     if (args->randomPorts) {

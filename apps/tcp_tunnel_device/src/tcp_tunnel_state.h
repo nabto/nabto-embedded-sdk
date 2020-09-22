@@ -19,4 +19,6 @@ bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile
 
 bool save_tcp_tunnel_state(const char* stateFile, struct tcp_tunnel_state* state);
 
+bool reset_tcp_tunnel_state(const char* stateFile);
+
 #endif

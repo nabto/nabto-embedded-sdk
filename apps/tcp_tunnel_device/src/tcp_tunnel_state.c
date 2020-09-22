@@ -114,6 +114,11 @@ bool write_state_to_file(const char* stateFile, struct tcp_tunnel_state* state)
     return true;
 }
 
+bool reset_tcp_tunnel_state(const char* stateFile)
+{
+    return create_default_tcp_tunnel_state(stateFile);
+}
+
 bool save_tcp_tunnel_state(const char* stateFile, struct tcp_tunnel_state* state)
 {
     return write_state_to_file(stateFile, state);
