@@ -277,7 +277,7 @@ void HeatPump::setLogLevel(const std::string& logLevel)
 std::string HeatPump::getFingerprint()
 {
     char* fpTemp;
-    nabto_device_get_device_fingerprint_full_hex(device_, &fpTemp);
+    nabto_device_get_device_fingerprint(device_, &fpTemp);
     std::string fp(fpTemp);
     nabto_device_string_free(fpTemp);
     return fp;

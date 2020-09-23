@@ -25,7 +25,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     NabtoDeviceError ec;
     char* fingerprint;
-    ec = nabto_device_connection_get_client_fingerprint_full_hex(handler->device, ref, &fingerprint);
+    ec = nabto_device_connection_get_client_fingerprint(handler->device, ref, &fingerprint);
     if (ec) {
         nabto_device_coap_error_response(request, 500, "Server error");
         return;

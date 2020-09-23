@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(fingerprints)
     char* truncatedFp;
     char* fullFp;
     BOOST_TEST(nabto_device_get_device_fingerprint_hex(dev, &truncatedFp) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(nabto_device_get_device_fingerprint_full_hex(dev, &fullFp) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_get_device_fingerprint(dev, &fullFp) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(strlen(truncatedFp) == (size_t)32);
     BOOST_TEST(strlen(fullFp) == (size_t)64);
 

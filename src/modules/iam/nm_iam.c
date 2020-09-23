@@ -108,7 +108,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 {
     NabtoDeviceError ec;
     char* fingerprint;
-    ec = nabto_device_connection_get_client_fingerprint_full_hex(iam->device, ref, &fingerprint);
+    ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
     if (ec) {
         return false;
     }
@@ -389,7 +389,7 @@ char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCoapReque
 
     NabtoDeviceError ec;
     char* fingerprint;
-    ec = nabto_device_connection_get_client_fingerprint_full_hex(iam->device, ref, &fingerprint);
+    ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
     if (ec != NABTO_DEVICE_EC_OK) {
         return NULL;
     }

@@ -431,7 +431,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
 
     char* deviceFingerprint;
-    nabto_device_get_device_fingerprint_full_hex(device, &deviceFingerprint);
+    nabto_device_get_device_fingerprint(device, &deviceFingerprint);
 
     char* pairingString = generate_pairing_string(dc.productId, dc.deviceId, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
 

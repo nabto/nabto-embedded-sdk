@@ -125,7 +125,7 @@ bool start_device(NabtoDevice* device)
         return false;
     }
 
-    if (nabto_device_get_device_fingerprint_full_hex(device, &fp) != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_get_device_fingerprint(device, &fp) != NABTO_DEVICE_EC_OK) {
         return false;
     }
 

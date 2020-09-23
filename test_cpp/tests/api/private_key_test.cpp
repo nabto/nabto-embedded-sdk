@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(check_fingerprint)
         NabtoDevice* device = nabto_device_new();
         nabto_device_set_private_key(device, testKey.c_str());
         char* fp;
-        nabto_device_get_device_fingerprint_full_hex(device, &fp);
+        nabto_device_get_device_fingerprint(device, &fp);
         fp1 = std::string(fp);
         nabto_device_string_free(fp);
         nabto_device_free(device);
@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(check_fingerprint)
         NabtoDevice* device = nabto_device_new();
         BOOST_TEST(nabto_device_set_private_key_secp256r1(device, testKeyRawPrivateKey.data(), testKeyRawPrivateKey.size()) == NABTO_DEVICE_EC_OK);
         char* fp;
-        nabto_device_get_device_fingerprint_full_hex(device, &fp);
+        nabto_device_get_device_fingerprint(device, &fp);
         fp2 = std::string(fp);
         nabto_device_string_free(fp);
         nabto_device_free(device);

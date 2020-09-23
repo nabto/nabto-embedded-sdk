@@ -387,7 +387,7 @@ nabto_device_create_private_key(NabtoDevice* device, char** key);
 
 
 /**
- * Get the truncated/full public key fingerprint of the device.  The fingerprint
+ * Get the public key fingerprint of the device.  The fingerprint
  * should be freed by calling nabto_device_string_free() afterwards.
  *
  * @param device [in]        The device
@@ -397,8 +397,19 @@ nabto_device_create_private_key(NabtoDevice* device, char** key);
  *         NABTO_DEVICE_EC_UNKNOWN on underlying DTLS module error
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_get_device_fingerprint(NabtoDevice* device, char** fingerprint);
+
+/**
+ * Get a truncated fingerprint of the device public key.
+ * @deprecated
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint);
 
+/**
+ * Same as nabto_device_get_device_fingerprint.
+ * @deprecated
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerprint);
 
@@ -415,7 +426,7 @@ nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerp
  */
 
 /**
- * Get the truncated/full fingerprint of the client assosiated with a given
+ * Get the fingerprint of the client assosiated with a given
  * connection. Free fp with nabto_device_string_free().
  *
  * @param device [in]  The device
@@ -424,10 +435,23 @@ nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerp
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_client_fingerprint(NabtoDevice* device,
+                                               NabtoDeviceConnectionRef ref,
+                                               char** fp);
+
+/**
+ * Get the truncated fingerprint of a clients public key.
+ * @deprecated
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device,
                                                    NabtoDeviceConnectionRef ref,
                                                    char** fp);
 
+/**
+ * Same as nabto_device_connection_get_client_fingerprint
+ * @deprecated
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device,
                                                         NabtoDeviceConnectionRef ref,

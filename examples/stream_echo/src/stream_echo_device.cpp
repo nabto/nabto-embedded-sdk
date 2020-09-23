@@ -121,7 +121,7 @@ bool init_stream_echo(const std::string& configFile, const std::string& productI
         std::cerr << "Error setting private key" << std::endl;
         return false;
     }
-    ec = nabto_device_get_device_fingerprint_full_hex(device, &fp);
+    ec = nabto_device_get_device_fingerprint(device, &fp);
     if (ec) {
         std::cerr << "Error getting Fingerprint" << std::endl;
         return false;
@@ -217,7 +217,7 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
     }
 
     char* fpTemp;
-    ec = nabto_device_get_device_fingerprint_full_hex(device, &fpTemp);
+    ec = nabto_device_get_device_fingerprint(device, &fpTemp);
     if (ec) {
         std::cerr << "Could not get fingerprint of the device" << std::endl;
     }

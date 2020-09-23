@@ -309,7 +309,7 @@ bool start_device(NabtoDevice* device)
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
-    ec = nabto_device_get_device_fingerprint_full_hex(device, &fp);
+    ec = nabto_device_get_device_fingerprint(device, &fp);
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
