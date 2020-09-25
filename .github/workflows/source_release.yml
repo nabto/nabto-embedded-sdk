@@ -35,11 +35,12 @@ jobs:
         with:
           path: ./
       - name: Upload Source Asset
+        run: ls -R
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: nabto-embedded-sdk.zip
+          asset_path: ./nabto-embedded-sdk.zip
           asset_name: nabto-embedded-sdk.zip
           asset_content_type: application/zip
