@@ -34,8 +34,9 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           path: ./
-      - name: Upload Source Asset
+      - name: list files
         run: ls -R
+      - name: Upload Source Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
