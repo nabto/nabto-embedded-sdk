@@ -21,8 +21,8 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: nabto-embedded-sdk.zip
-          path: ${{ github.workspace }}/artifacts
+          name: source
+          path: ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip
 
   release-assets:
     name: Release Assets
@@ -42,6 +42,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./nabto-embedded-sdk.zip
+          asset_path: ./source/nabto-embedded-sdk.zip
           asset_name: nabto-embedded-sdk.zip
           asset_content_type: application/zip
