@@ -1,0 +1,45 @@
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          path: nabto-embedded-sdk
+      - name: Generate src/core/nc_version.c
+        run: mkdir builddir && cd builddir && cmake ${{ github.workspace }}/nabto-embedded-sdk && make GENERATE_VERSION
+
+      - name: Create zip
+        run: mkdir -p ${{ github.workspace }}/artifacts && zip -r ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip nabto-embedded-sdk -x '*.git*' '*artifacts*'
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: nabto-embedded-sdk.zip
+          path: ${{ github.workspace }}/artifacts
+
+  release-assets:
+    name: Release Assets
+    needs: build
+    runs-on: ubuntu-18.04
+
+    if: github.event_name == 'release'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          path: ${{ github.workspace }}/artifacts
+      - name: Upload Source Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip
+          asset_name: nabto-embedded-sdk.zip
+          asset_content_type: application/zip
