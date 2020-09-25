@@ -34,6 +34,37 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     }
 
     cbor_encoder_close_container(&map, &array);
+
+    const char* nabtoVersion = nabto_device_version();
+    const char* appName = nabto_device_get_app_name(iam->device);
+    const char* appVersion = nabto_device_get_app_version(iam->device);
+    const char* productId = nabto_device_get_product_id(iam->device);
+    const char* deviceId = nabto_device_get_device_id(iam->device);
+
+    if (nabtoVersion) {
+        cbor_encode_text_stringz(&map, "NabtoVersion");
+        cbor_encode_text_stringz(&map, nabtoVersion);
+    }
+
+    if (appVersion) {
+        cbor_encode_text_stringz(&map, "AppVersion");
+        cbor_encode_text_stringz(&map, appVersion);
+    }
+
+    if (appName) {
+        cbor_encode_text_stringz(&map, "AppName");
+        cbor_encode_text_stringz(&map, appName);
+    }
+
+    if (productId) {
+        cbor_encode_text_stringz(&map, "ProductId");
+        cbor_encode_text_stringz(&map, productId);
+    }
+
+    if (deviceId) {
+        cbor_encode_text_stringz(&map, "DeviceId");
+        cbor_encode_text_stringz(&map, deviceId);
+    }
     cbor_encoder_close_container(&encoder, &map);
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);

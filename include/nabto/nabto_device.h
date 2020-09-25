@@ -295,6 +295,18 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_name(NabtoDevice* device, const char* name);
 
 /**
+ * Get the app name. If the app name is not set, return NULL.
+ *
+ * This function is not thread safe if set_app_name is called after
+ * or at the same time as this call.
+ *
+ * @param device [in]  The device.
+ * @return the app name or NULL if not set.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_get_app_name(NabtoDevice* device);
+
+/**
  * Set the application version the device.
  *
  * @param device [in]   The device instance to perform action on
@@ -304,6 +316,18 @@ nabto_device_set_app_name(NabtoDevice* device, const char* name);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_version(NabtoDevice* device, const char* version);
+
+/**
+ * Get the app version. If the app name is not set, return NULL.
+ *
+ * This function is not thread safe if set_app_version is called after
+ * or at the same time as this call.
+ *
+ * @param device [in]  The device.
+ * @return the app version or NULL if not set.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_get_app_version(NabtoDevice* device);
 
 /**
  * The device has two UDP sockets which is used for connection

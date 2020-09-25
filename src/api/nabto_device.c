@@ -261,6 +261,15 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_name(NabtoDevice* device,
     return nabto_device_error_core_to_api(ec);
 }
 
+const char* NABTO_DEVICE_API nabto_device_get_app_name(NabtoDevice* device)
+{
+    // it does not make sense to synchronize this as the result cannot
+    // be used in a thread safe manner where the app_name is changed
+    // while this function is called.
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    return nc_device_get_app_name(&dev->core);
+}
+
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* device, const char* version)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -272,6 +281,15 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* devi
     np_error_code ec = nc_device_set_app_version(&dev->core, version);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
+}
+
+const char* NABTO_DEVICE_API nabto_device_get_app_version(NabtoDevice* device)
+{
+    // it does not make sense to synchronize this as the result cannot
+    // be used in a thread safe manner where the app_name is changed
+    // while this function is called.
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    return nc_device_get_app_version(&dev->core);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_local_port(NabtoDevice* device, uint16_t port)

@@ -524,6 +524,11 @@ np_error_code nc_device_set_app_name(struct nc_device_context* dev, const char* 
     return NABTO_EC_OK;
 }
 
+const char* nc_device_get_app_name(struct nc_device_context* dev)
+{
+    return dev->appName;
+}
+
 np_error_code nc_device_set_app_version(struct nc_device_context* dev, const char* version)
 {
     free(dev->appVersion);
@@ -533,6 +538,12 @@ np_error_code nc_device_set_app_version(struct nc_device_context* dev, const cha
     }
     return NABTO_EC_OK;
 }
+
+const char* nc_device_get_app_version(struct nc_device_context* dev)
+{
+    return dev->appVersion;
+}
+
 
 np_error_code nc_device_set_product_id(struct nc_device_context* dev, const char* productId)
 {

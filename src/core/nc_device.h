@@ -129,7 +129,10 @@ np_error_code nc_device_add_server_connect_token(struct nc_device_context* ctx, 
 np_error_code nc_device_is_server_connect_tokens_synchronized(struct nc_device_context* ctx);
 
 np_error_code nc_device_set_app_name(struct nc_device_context* ctx, const char* name);
+const char* nc_device_get_app_name(struct nc_device_context* ctx);
+
 np_error_code nc_device_set_app_version(struct nc_device_context* ctx, const char* version);
+const char* nc_device_get_app_version(struct nc_device_context* ctx);
 
 np_error_code nc_device_set_product_id(struct nc_device_context* ctx, const char* productId);
 np_error_code nc_device_set_device_id(struct nc_device_context* ctx, const char* deviceId);
