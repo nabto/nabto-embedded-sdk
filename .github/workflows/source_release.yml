@@ -33,13 +33,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@v2
         with:
-          path: ${{ github.workspace }}/artifacts
+          path: ./
       - name: Upload Source Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip
+          asset_path: nabto-embedded-sdk.zip
           asset_name: nabto-embedded-sdk.zip
           asset_content_type: application/zip
