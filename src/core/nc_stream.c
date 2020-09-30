@@ -106,13 +106,10 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
 {
 
     nc_stream_stop(ctx);
-    if (!ctx->active) {
-        return;
-    }
-
     struct np_event_queue* eq = &ctx->pl->eq;
     np_event_queue_destroy_event(eq, ctx->ev);
     np_event_queue_destroy_event(eq, ctx->timer);
+
     nabto_stream_destroy(&ctx->stream);
 }
 
