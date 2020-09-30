@@ -86,6 +86,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
         return ec;
     }
 
+    ctx->stopped = false;
     ctx->active = true;
     ctx->dtls = dtls;
     ctx->streamId = streamId;
@@ -103,27 +104,11 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
 
 void nc_stream_destroy(struct nc_stream_context* ctx)
 {
+
+    nc_stream_stop(ctx);
     if (!ctx->active) {
         return;
     }
-    if (ctx->acceptCb) {
-        ctx->acceptCb(NABTO_EC_ABORTED, ctx->acceptUserData);
-    }
-    if (ctx->readAllCb) {
-        ctx->readAllCb(NABTO_EC_ABORTED, ctx->readUserData);
-    }
-    if (ctx->readSomeCb) {
-        ctx->readSomeCb(NABTO_EC_ABORTED, ctx->readUserData);
-    }
-    if (ctx->writeCb) {
-        ctx->writeCb(NABTO_EC_ABORTED, ctx->writeUserData);
-    }
-    if (ctx->closeCb) {
-        ctx->closeCb(NABTO_EC_ABORTED, ctx->closeUserData);
-    }
-    ctx->active = false;
-    ctx->dtls = NULL;
-    ctx->streamId = 0;
 
     struct np_event_queue* eq = &ctx->pl->eq;
     np_event_queue_destroy_event(eq, ctx->ev);
@@ -163,11 +148,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
             return;
         case ET_NOTHING:
             return;
-        case ET_RELEASED:
-            nc_stream_destroy(ctx);
-            return;
         case ET_CLOSED:
-            np_event_queue_cancel_event(&ctx->pl->eq, ctx->timer);
             return;
     }
 
@@ -207,18 +188,27 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
 void nc_stream_handle_timeout(void* data)
 {
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
+    if (ctx->stopped) {
+        return;
+    }
     ctx->currentExpiry = nabto_stream_stamp_infinite();
     nc_stream_event(ctx);
 }
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize)
 {
+    if (ctx->stopped) {
+        return;
+    }
     nabto_stream_handle_packet(&ctx->stream, buffer, bufferSize);
     nc_stream_event(ctx);
 }
 
 void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
 {
+    if (ctx->stopped) {
+        return;
+    }
     ctx->dtls = NULL;
     nabto_stream_connection_died(&ctx->stream);
     nc_stream_event(ctx);
@@ -329,6 +319,10 @@ void nc_stream_accept(struct nc_stream_context* stream)
 
 np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
 {
+    if (stream->stopped) {
+        return NABTO_EC_STOPPED;
+    }
+
     if (stream->acceptCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -341,6 +335,10 @@ np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream
 
 np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
 {
+    if (stream->stopped) {
+        return NABTO_EC_STOPPED;
+    }
+
     if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -357,6 +355,10 @@ np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* b
 
 np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
 {
+    if (stream->stopped) {
+        return NABTO_EC_STOPPED;
+    }
+
     if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -373,6 +375,10 @@ np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* 
 
 np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData)
 {
+    if (stream->stopped) {
+        return NABTO_EC_STOPPED;
+    }
+
     if (stream->writeCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -388,6 +394,10 @@ np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void
 
 np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
 {
+    if (stream->stopped) {
+        return NABTO_EC_STOPPED;
+    }
+
     if (stream->closeCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -540,12 +550,53 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
     }
 }
 
-void nc_stream_abort(struct nc_stream_context* stream)
+void nc_stream_stop(struct nc_stream_context* stream)
 {
-    nabto_stream_release(&stream->stream);
-}
+    if (stream->stopped) {
+        return;
+    }
 
-void nc_stream_release(struct nc_stream_context* stream)
-{
-    nabto_stream_release(&stream->stream);
+    stream->stopped = true;
+    if (nabto_stream_stop_should_send_rst(&stream->stream)) {
+        NABTO_LOG_TRACE(LOG, "Sending RST");
+        nc_stream_manager_send_rst(stream->streamManager, stream->dtls, stream->streamId);
+    }
+
+    struct np_platform* pl = stream->pl;
+    np_event_queue_cancel_event(&pl->eq, stream->timer);
+
+    nc_stream_callback acceptCb = stream->acceptCb;
+    stream->acceptCb = NULL;
+
+    nc_stream_callback readAllCb = stream->readAllCb;
+    stream->readAllCb = NULL;
+
+    nc_stream_callback readSomeCb = stream->readSomeCb;
+    stream->readSomeCb = NULL;
+
+    nc_stream_callback writeCb = stream->writeCb;
+    stream->writeCb = NULL;
+
+    nc_stream_callback closeCb = stream->closeCb;
+    stream->closeCb = NULL;
+
+    if (acceptCb) {
+        acceptCb(NABTO_EC_ABORTED, stream->acceptUserData);
+    }
+    if (readAllCb) {
+        readAllCb(NABTO_EC_ABORTED, stream->readUserData);
+    }
+    if (readSomeCb) {
+        readSomeCb(NABTO_EC_ABORTED, stream->readUserData);
+    }
+    if (writeCb) {
+        writeCb(NABTO_EC_ABORTED, stream->writeUserData);
+    }
+    if (closeCb) {
+        closeCb(NABTO_EC_ABORTED, stream->closeUserData);
+    }
+
+    stream->active = false;
+    stream->dtls = NULL;
+    stream->streamId = 0;
 }

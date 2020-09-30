@@ -27,6 +27,7 @@ struct nc_stream_context {
     struct nc_stream_manager_context* streamManager;
     struct np_event* ev;
     bool active;
+    bool stopped;
     uint64_t connectionRef;
 
     nabto_stream_stamp currentExpiry;
@@ -75,16 +76,15 @@ np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void
 np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
 
 /**
- * Abort a stream, means close all outstanding async operations. And
- * if neccessary mark the stream as aborted. If not all data was read
- * or wrote.
- */
-void nc_stream_abort(struct nc_stream_context* stream);
-
-/**
  * Release ownership of a streaming resource. The resource is then
  * cleaned up by the stream manager module.
  */
-void nc_stream_release(struct nc_stream_context* stream);
+void nc_stream_stop(struct nc_stream_context* stream);
+
+/**
+ * stop and free a streaming resource
+ */
+void nc_stream_destroy(struct nc_stream_context* stream);
+
 
 #endif // NC_STREAM_H

@@ -55,7 +55,7 @@ void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
     np_completion_event_deinit(&connection->readCompletionEvent);
     np_completion_event_deinit(&connection->writeCompletionEvent);
     if (connection->stream) {
-        nc_stream_release(connection->stream);
+        nc_stream_destroy(connection->stream);
     }
     free(connection);
 }
@@ -275,8 +275,7 @@ void abort_connection(struct nm_tcp_tunnel_connection* connection)
     struct np_platform* pl = connection->pl;
     np_tcp_abort(&pl->tcp, connection->socket);
     if (connection->stream) {
-        nc_stream_abort(connection->stream);
-        connection->stream = NULL;
+        nc_stream_stop(connection->stream);
     }
 }
 

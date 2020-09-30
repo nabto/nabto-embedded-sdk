@@ -16,8 +16,9 @@
 
 struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_client_connection* conn);
 struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
-void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
-void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data);
+
+static void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
+static void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data);
 
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl)
 {
@@ -114,7 +115,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 
     if (stream == NULL && ((flags & NABTO_STREAM_FLAG_RST) != NABTO_STREAM_FLAG_RST)) {
         // only send rst if it's not an rst packet
-        nc_stream_manager_send_rst(ctx, conn, streamId);
+        nc_stream_manager_send_rst_client_connection(ctx, conn, streamId);
         return;
     }
 
@@ -137,7 +138,8 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
             return;
         }
     }
-    nabto_stream_release(&stream->stream);
+    // no listener found free the stream and send an rst
+    nabto_stream_destroy(&stream->stream);
     return;
 }
 
@@ -186,12 +188,17 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
     return NULL;
 }
 
-void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
+void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
+{
+    struct np_dtls_srv_connection* dtls = nc_client_connection_get_dtls_connection(conn);
+    nc_stream_manager_send_rst(ctx, dtls, streamId);
+}
+
+void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np_dtls_srv_connection* dtls, uint64_t streamId)
 {
     uint8_t* start;
     uint8_t* ptr;
     size_t ret;
-    struct np_dtls_srv_connection* dtls = nc_client_connection_get_dtls_connection(conn);
     NABTO_LOG_TRACE(LOG, "Sending RST to streamId: %u", streamId);
     if (ctx->rstBuf != NULL) {
         NABTO_LOG_INFO(LOG, "RST is sending dropping to send a new rst");

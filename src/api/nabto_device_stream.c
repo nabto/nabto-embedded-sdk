@@ -108,7 +108,7 @@ void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     struct nabto_device_context* dev = str->dev;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    nc_stream_release(str->stream);
+    nc_stream_destroy(str->stream);
     free(str);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
@@ -118,7 +118,7 @@ void NABTO_DEVICE_API nabto_device_stream_abort(NabtoDeviceStream* stream)
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     struct nabto_device_context* dev = str->dev;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    nc_stream_abort(str->stream);
+    nc_stream_stop(str->stream);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
@@ -295,7 +295,7 @@ np_error_code nabto_device_stream_listener_callback(const np_error_code ec, stru
     } else {
         // In error state streams on the listener queue will not reach the user, so they cant call stream_free
         struct nabto_device_stream* str = (struct nabto_device_stream*)eventData;
-        nc_stream_release(str->stream);
+        nc_stream_destroy(str->stream);
         free(str);
         retEc = ec;
     }
@@ -313,7 +313,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
     if (ec == NABTO_EC_OK) {
         struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
         if (str == NULL) {
-            nc_stream_release(str->stream);
+            nc_stream_destroy(stream);
             return;
         }
         str->stream = stream;
@@ -321,7 +321,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
         // using the stream structure directly as listener event, this means we dont free event untill user calls stream_free()
         np_error_code ec = nabto_device_listener_add_event(listenerContext->listener, &str->eventListNode, str);
         if (ec != NABTO_EC_OK) {
-            nc_stream_release(str->stream);
+            nc_stream_destroy(str->stream);
             free(str);
         }
         return;

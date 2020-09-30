@@ -149,7 +149,7 @@ void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_
         }
 
         pl->authorization.discard_request(authReq);
-        nc_stream_release(stream);
+        nc_stream_destroy(stream);
     }
 }
 
@@ -160,19 +160,19 @@ void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWea
     struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service_by_weak_ptr(tunnels, serviceWeakPtr);
     if (service == NULL) {
         // service has been removed during the authorization request
-        nc_stream_release(stream);
+        nc_stream_destroy(stream);
         return;
     }
 
     if (!allow) {
-        nc_stream_release(stream);
+        nc_stream_destroy(stream);
         return;
     }
 
     struct nm_tcp_tunnel_connection* c = nm_tcp_tunnel_connection_new();
 
     if (c == NULL) {
-        nc_stream_release(stream);
+        nc_stream_destroy(stream);
         return;
     }
 
