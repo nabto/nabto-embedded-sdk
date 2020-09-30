@@ -309,7 +309,7 @@ void nc_stream_free_recv_segment(struct nabto_stream_recv_segment* segment, void
 
 static void nc_stream_do_read(struct nc_stream_context* stream);
 static void nc_stream_do_write_all(struct nc_stream_context* stream);
-static void nc_stream_handle_close(struct nc_stream_context* stream);
+static np_error_code nc_stream_handle_close(struct nc_stream_context* stream);
 
 void nc_stream_accept(struct nc_stream_context* stream)
 {
@@ -403,8 +403,13 @@ np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_
     }
     stream->closeCb = callback;
     stream->closeUserData = userData;
-    nc_stream_handle_close(stream);
-    return NABTO_EC_OK;
+    np_error_code ec = nc_stream_handle_close(stream);
+    if (ec != NABTO_EC_OK) {
+        // If close failed, throw away the callback
+        stream->closeCb = NULL;
+        stream->closeUserData = NULL;
+    }
+    return ec;
 }
 
 void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
@@ -485,19 +490,21 @@ void nc_stream_do_write_all(struct nc_stream_context* stream)
 
 }
 
-void nc_stream_handle_close(struct nc_stream_context* stream)
+np_error_code nc_stream_handle_close(struct nc_stream_context* stream)
 {
     if (!stream->closeCb) {
-        return;
+        return NABTO_EC_OK;
     }
     nabto_stream_status status = nabto_stream_close(&stream->stream);
     if (status == NABTO_STREAM_STATUS_OK) {
-        return;
+        return NABTO_EC_OK;
     } else if (status == NABTO_STREAM_STATUS_CLOSED) {
+        return NABTO_EC_CLOSED;
         nc_stream_callback cb = stream->closeCb;
         stream->closeCb = NULL;
         cb(NABTO_EC_OK, stream->closeUserData);
     } else {
+        return nc_stream_status_to_ec(status);
         nc_stream_callback cb = stream->closeCb;
         stream->closeCb = NULL;
         cb(nc_stream_status_to_ec(status), stream->closeUserData);
@@ -543,7 +550,12 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
                 cb(NABTO_EC_ABORTED, stream->acceptUserData);
             }
             nc_stream_do_read(stream);
-            nc_stream_handle_close(stream);
+            np_error_code ec = nc_stream_handle_close(stream);
+            if (ec != NABTO_EC_OK && stream->closeCb) {
+                nc_stream_callback cb = stream->closeCb;
+                stream->closeCb = NULL;
+                cb(ec, stream->closeUserData);
+            }
             break;
         default:
             NABTO_LOG_ERROR(LOG, "Unknown stream application event type %s", nabto_stream_application_event_type_to_string(eventType));

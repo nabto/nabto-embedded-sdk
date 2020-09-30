@@ -264,7 +264,7 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
     str->closeFut = fut;
     np_error_code ec = nc_stream_async_close(str->stream, &nabto_device_stream_close_callback, str);
     if (ec) {
-        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }

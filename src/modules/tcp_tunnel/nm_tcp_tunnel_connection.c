@@ -182,7 +182,11 @@ void tcp_readen(np_error_code ec, void* userData)
 void close_stream(struct nm_tcp_tunnel_connection* connection)
 {
     if (connection->stream) {
-        nc_stream_async_close(connection->stream, &stream_closed, connection);
+        np_error_code ec = nc_stream_async_close(connection->stream, &stream_closed, connection);
+        if (ec != NABTO_EC_OK) {
+            // if failed, we wont get callback. We do not have any async requirements, so we can invoke the callback without releasing Zalgo
+            stream_closed(NABTO_EC_OK /*unused*/, connection);
+        }
     } else {
         connection->tcpReadEnded = true;
         is_ended(connection);
