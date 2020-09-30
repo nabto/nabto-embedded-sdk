@@ -1,0 +1,59 @@
+name: CI
+
+on: push
+
+jobs:
+  build-and-test:
+    name: Build
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [windows-2019, ubuntu-16.04, macos-10.15]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Configure cmake
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
+
+      - name: Build
+        run: cmake --build build-dir --parallel
+
+      - name: Install
+        run: cmake --build build-dir --target install
+
+      - if: matrix.os == 'windows-2019'
+        name: Unblock firewall
+        run: netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\artifacts\bin\embedded_unit_test.exe" enable=yes
+
+      - name: Test run
+        run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test --log_format=JUNIT --log_sink=unit_test_${{matrix.os}}.xml --detect_memory_leaks=0
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit_test_${{matrix.os}}
+          path: ${{ github.workspace }}/unit_test_${{matrix.os}}.xml
+          if-no-files-found: warn
+
+  publish-test-results:
+    name: "Publish Unit Tests Results"
+    needs: build-and-test
+    runs-on: ubuntu-18.04
+    # the build-and-test job might be skipped, we don't need to run this job then
+    if: success() || failure()
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: test_reports
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1.2
+        with:
+          check_name: Unit Test Results
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: test_reports/**/*.xml

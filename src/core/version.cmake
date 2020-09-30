@@ -5,16 +5,21 @@ endif()
 
 execute_process(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  COMMAND bash -c "git rev-parse --is-inside-work-tree"
+  COMMAND git rev-parse --is-inside-work-tree
   RESULT_VARIABLE IS_GIT_REPOSITORY)
 
-if (IS_GIT_REPOSITORY EQUAL 0)
+if (NOT IS_GIT_REPOSITORY EQUAL 0)
+  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/nc_version.c)
+
+    message(FATAL_ERROR "No file ${CMAKE_CURRENT_SOURCE_DIR}/nc_version.c exists and it cannot be auto generated as it is either not inside a git repository or the git command is not available.")
+  endif()
+else()
   # A git repo, generate nc_version.c
 
   execute_process(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMAND bash -c "git diff --quiet --exit-code || echo .dirty"
-    OUTPUT_VARIABLE GIT_DIRTY)
+    COMMAND git diff --quiet --exit-code
+    RESULT_VARIABLE GIT_DIRTY)
   execute_process(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND git describe --exact-match --tags
@@ -32,12 +37,21 @@ if (IS_GIT_REPOSITORY EQUAL 0)
     COMMAND git rev-parse --short HEAD
     OUTPUT_VARIABLE GIT_HASH ERROR_QUIET)
 
+  if (GIT_DIRTY EQUAL 0)
+    set(GIT_DIRTY "")
+  else()
+    set(GIT_DIRTY ".dirty")
+  endif()
+
+
   string(STRIP "${GIT_DIRTY}" GIT_DIRTY)
   string(STRIP "${GIT_TAG}" GIT_TAG)
   string(STRIP "${GIT_BRANCH}" GIT_BRANCH)
   string(STRIP "${GIT_COUNT}" GIT_COUNT)
   string(STRIP "${GIT_BRANCH_COUNT}" GIT_BRANCH_COUNT)
   string(STRIP "${GIT_HASH}" GIT_HASH)
+
+  message("version.cmake variables: GIT_DIRTY ${GIT_DIRTY}, GIT_TAG ${GIT_TAG}, GIT_BRANCH ${GIT_BRANCH}, GIT_COUNT ${GIT_COUNT}, GIT_BRANCH_COUNT ${GIT_BRANCH_COUNT}, GIT_HASH: ${GIT_HASH}")
 
   set(VERSION_NUMBER "5.2.0")
 
@@ -51,6 +65,8 @@ if (IS_GIT_REPOSITORY EQUAL 0)
     # A feature branch
     set(VERSION "${VERSION_NUMBER}-${GIT_BRANCH}.${GIT_COUNT}+${GIT_HASH}${GIT_DIRTY}")
   endif()
+
+  message("Generated the version: ${VERSION} based on the git repository information")
 
   set(VERSION "#include \"nc_version.h\"\n
 static const char* nc_version_str = \"${VERSION}\"\n;
