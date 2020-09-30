@@ -12,7 +12,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'linux64.dockerfile'
-                            dir 'build/linux'
+                            dir 'build-scripts/linux'
                         }
                     }
                     environment {
@@ -34,7 +34,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'armhf.dockerfile'
-                            dir 'build/linux'
+                            dir 'build-scripts/linux'
                         }
                     }
                     environment {
@@ -81,7 +81,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'linux64.dockerfile'
-                            dir 'build/linux'
+                            dir 'build-scripts/linux'
                         }
                     }
                     steps {
