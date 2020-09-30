@@ -255,7 +255,7 @@ char* expand_file_name(const char* homeDir, const char* fileName)
 
 char* generate_pairing_string(const char* productId, const char* deviceId, const char* pairingPassword, const char* pairingServerConnectToken)
 {
-    char* buffer = calloc(1, 1024);
+    static char buffer[1024];
     sprintf(buffer, "p=%s,d=%s,pwd=%s,sct=%s",
             productId,
             deviceId,
