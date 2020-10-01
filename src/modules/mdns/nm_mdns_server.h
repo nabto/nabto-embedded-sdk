@@ -19,7 +19,7 @@
 // v4 or v6 server
 struct nm_mdns_server_instance {
     struct nm_mdns_server* server;
-    bool done;
+    bool sending;
     struct np_udp_socket* socket;
     struct np_udp_endpoint sendEp;
     struct np_udp_endpoint recvEp;

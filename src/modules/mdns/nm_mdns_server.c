@@ -39,7 +39,7 @@ static np_error_code instance_init(struct nm_mdns_server_instance* instance, str
 {
     np_error_code ec;
 
-    instance->done = false;
+    instance->sending = false;
 
     instance->server = server;
 
@@ -111,11 +111,45 @@ void nm_mdns_server_deinit(struct nm_mdns_server* server)
     instance_deinit(&server->v6);
 }
 
+void nm_mdns_goodbye_sent(const np_error_code ec, void* userData)
+{
+    struct nm_mdns_server_instance* instance = userData;
+    instance->sending = false;
+    np_udp_abort(&instance->server->udp, instance->socket);
+}
+
+void nm_mdns_send_goodbye(struct nm_mdns_server_instance* instance)
+{
+    size_t written;
+    uint16_t port = instance->server->port;
+    nm_mdns_update_local_ips(instance->server);
+
+    struct np_udp_endpoint* ep = &instance->sendEp;
+
+    np_completion_event_reinit(&instance->sendCompletionEvent, nm_mdns_goodbye_sent, instance);
+
+    if (port > 0) {
+        if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, 0, false, true, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
+        {
+            instance->sending = true;
+            np_udp_async_send_to(&instance->server->udp, instance->socket,
+                                 ep, instance->sendBuffer, (uint16_t)written,
+                                 &instance->sendCompletionEvent);
+            return;
+        }
+    }
+    np_udp_abort(&instance->server->udp, instance->socket);
+}
+
 void nm_mdns_server_stop(struct nm_mdns_server* server)
 {
     server->stopped = true;
-    np_udp_abort(&server->udp, server->v4.socket);
-    np_udp_abort(&server->udp, server->v6.socket);
+    if (!server->v4.sending) {
+        nm_mdns_send_goodbye(&server->v4);
+    }
+    if (!server->v6.sending) {
+        nm_mdns_send_goodbye(&server->v6);
+    }
 }
 
 void publish_service(struct np_mdns* obj, uint16_t port, const char* instanceName, struct nn_string_set* subtypes, struct nn_string_map* txtItems)
@@ -164,7 +198,6 @@ void nm_mdns_socket_opened(const np_error_code ec, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
     if (instance->server->stopped) {
-        instance->done = true;
         return;
     }
     if (ec == NABTO_EC_OK) {
@@ -172,7 +205,6 @@ void nm_mdns_socket_opened(const np_error_code ec, void* userData)
         nm_mdns_send_packet(instance, 0, false);
     } else {
         NABTO_LOG_TRACE(LOG, "socket open failed with (%u) %s", ec, np_error_code_to_string(ec));
-        instance->done = true;
     }
 }
 
@@ -184,7 +216,7 @@ void nm_mdns_recv_packet(struct nm_mdns_server_instance* instance)
 void nm_mdns_packet_recv_wait_completed(const np_error_code ec, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
-    if (ec == NABTO_EC_OK) {
+    if (ec == NABTO_EC_OK && !instance->server->stopped) {
         size_t recvSize;
         uint8_t* recvBuffer = instance->recvBuffer;
         size_t recvBufferSize = 1500;
@@ -212,7 +244,6 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ec, void* userData)
     }
 
     // an error occured
-    instance->done = true;
 }
 
 void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, bool unicastResponse)
@@ -227,8 +258,9 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
     }
 
     if (port > 0) {
-        if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, id, unicastResponse, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
+        if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, id, unicastResponse, false, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
         {
+            instance->sending = true;
             np_udp_async_send_to(&instance->server->udp, instance->socket,
                                  ep, instance->sendBuffer, (uint16_t)written,
                                  &instance->sendCompletionEvent);
@@ -241,13 +273,21 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
 void nm_mdns_packet_sent(const np_error_code ec, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
-    if (instance->server->stopped) {
-        instance->done = true;
-        return;
-    }
+    instance->sending = false;
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(LOG, "v4 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
+        if (instance->server->stopped) {
+            // if sending failed we should not try to send goodbye.
+            nm_mdns_goodbye_sent(NABTO_EC_OK, instance);
+            return;
+        }
+    } else if (instance->server->stopped) {
+        // we only get here if the instance was stopped while sending,
+        // so we send goodbye to start aborting.
+        nm_mdns_send_goodbye(instance);
+        return;
     }
+
     nm_mdns_recv_packet(instance);
 }
 
