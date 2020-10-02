@@ -174,7 +174,9 @@ void tcp_readen(np_error_code ec, void* userData)
         NABTO_LOG_ERROR(LOG, "Tcp read error");
         // something not EOF
         connection->tcpReadEnded = true;
-        return abort_connection(connection);
+        abort_connection(connection);
+        is_ended(connection);
+        return;
     }
     start_stream_write(connection, connection->readLength);
 }
