@@ -20,6 +20,21 @@ static const uint32_t ACCESS_DENIED_WAIT_TIME = 3600000; // one hour
 static const uint32_t RETRY_WAIT_TIME = 10000; // 10 seconds
 static const uint8_t MAX_REDIRECT_FOLLOW = 5;
 
+
+static const char* defaultRoots =
+    "-----BEGIN CERTIFICATE-----\n"
+"MIIBsjCCAVigAwIBAgIUIvFEVpiIaq68SzOjGA22IluC4x4wCgYIKoZIzj0EAwIw\n"
+"NzELMAkGA1UEBhMCREsxDjAMBgNVBAoMBU5hYnRvMRgwFgYDVQQDDA9OYWJ0byBS\n"
+"b290IENBIDEwHhcNMjAxMDAxMDAwMDAwWhcNNDkxMjMxMjM1OTU5WjA3MQswCQYD\n"
+"VQQGEwJESzEOMAwGA1UECgwFTmFidG8xGDAWBgNVBAMMD05hYnRvIFJvb3QgQ0Eg\n"
+"MTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABP/vVzsNjZzhXLpYRRqHtrBpVpAU\n"
+"p6FP2Daja92L05ybDKMYtVXVdD9flnlQG3sSO3heMT0ylJOHVzZtpCrjnYajQjBA\n"
+"MB0GA1UdDgQWBBQ01VjuiSzdE1us8ludSEMxSmcbrzAPBgNVHRMBAf8EBTADAQH/\n"
+"MA4GA1UdDwEB/wQEAwIBhjAKBggqhkjOPQQDAgNIADBFAiEAlFechrqxujXW7QYR\n"
+"sZ7YuikX7ipxkACmrnWQLJ/W5IgCIDVQt/J5XOrbLTpeo3awwOkRxxdO/cSYZC95\n"
+"MHEHKTvX\n"
+"-----END CERTIFICATE-----\n";
+
 /******************************
  * local function definitions *
  ******************************/
@@ -109,6 +124,12 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     if (ec != NABTO_EC_OK) {
         return ec;
     }
+
+    ec = ctx->pl->dtlsC.set_root_certs(ctx->dtls, defaultRoots);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     // Init keep alive with default values,
     ec = nc_keep_alive_init(&ctx->keepAlive, pl, keep_alive_event, ctx);
     if (ec != NABTO_EC_OK) {
@@ -173,6 +194,14 @@ np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx, const unsigned
         return NABTO_EC_INVALID_STATE;
     }
     return ctx->pl->dtlsC.set_keys(ctx->dtls, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+}
+
+np_error_code nc_attacher_set_root_certs(struct nc_attach_context* ctx, const char* roots)
+{
+    if (ctx->moduleState != NC_ATTACHER_MODULE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
+    return ctx->pl->dtlsC.set_root_certs(ctx->dtls, roots);
 }
 
 np_error_code nc_attacher_set_app_info(struct nc_attach_context* ctx, const char* appName, const char* appVersion)

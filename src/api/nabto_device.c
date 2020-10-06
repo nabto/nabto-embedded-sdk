@@ -657,3 +657,16 @@ void nabto_device_free_threads(struct nabto_device_context* dev)
         dev->eventMutex = NULL;
     }
 }
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_root_certs(NabtoDevice* device, const char* certs)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec;
+
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    ec = nc_attacher_set_root_certs(&dev->core.attacher, certs);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    return nabto_device_error_core_to_api(ec);
+}
