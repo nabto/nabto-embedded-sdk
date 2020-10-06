@@ -320,6 +320,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     const char* homeEnv = getenv(HOMEDIR_ENV_VARIABLE);
     if (args->homeDir != NULL) {
         // perfect just using the homeDir
+        make_directory(args->homeDir);
     } else if (homeEnv != NULL) {
         args->homeDir = expand_file_name(homeEnv, HOMEDIR_EDGE_FOLDER);
         char* dotNabto = expand_file_name(homeEnv, HOMEDIR_NABTO_FOLDER);

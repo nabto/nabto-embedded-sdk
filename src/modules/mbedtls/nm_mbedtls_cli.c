@@ -24,7 +24,7 @@
 #include <nn/llist.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 4
 
 const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
@@ -261,13 +261,9 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
     mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
 
     mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
-#endif
-
 
 #if defined(MBEDTLS_DEBUG_C)
-    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, stdout );
+    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, NULL);
 #endif
 
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,

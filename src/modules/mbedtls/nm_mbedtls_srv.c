@@ -541,7 +541,7 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
     mbedtls_ssl_conf_rng( &server->conf, mbedtls_ctr_drbg_random, &server->ctr_drbg );
 
 #if defined(MBEDTLS_DEBUG_C)
-    mbedtls_ssl_conf_dbg( &server->conf, &nm_mbedtls_srv_tls_logger, stdout );
+    mbedtls_ssl_conf_dbg( &server->conf, &nm_mbedtls_srv_tls_logger, NULL );
 #endif
 
     ret = mbedtls_x509_crt_parse( &server->publicKey, (const unsigned char*)publicKeyL, publicKeySize+1);
