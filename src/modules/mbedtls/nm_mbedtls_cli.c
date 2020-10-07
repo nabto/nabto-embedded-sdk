@@ -24,7 +24,7 @@
 #include <nn/llist.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
-#define DEBUG_LEVEL 4
+#define DEBUG_LEVEL 0
 
 const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
@@ -60,6 +60,7 @@ struct np_dtls_cli_context {
     mbedtls_x509_crt publicKey;
     mbedtls_pk_context privateKey;
     mbedtls_ssl_context ssl;
+    mbedtls_x509_crt rootCerts;
 
 };
 
@@ -74,6 +75,8 @@ static np_error_code nm_mbedtls_cli_set_sni(struct np_dtls_cli_context* ctx, con
 static np_error_code nm_mbedtls_cli_set_keys(struct np_dtls_cli_context* ctx,
                                           const unsigned char* publicKeyL, size_t publicKeySize,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
+
+static np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, const char* rootCerts);
 
 static np_error_code async_send_data(struct np_dtls_cli_context* ctx,
                                      struct np_dtls_cli_send_context* sendCtx);
@@ -144,7 +147,7 @@ static void my_debug( void *ctx, int level,
             break;
     }
 
-    NABTO_LOG_RAW(severity, NABTO_LOG_MODULE_DTLS_CLI, line, file, str );
+    NABTO_LOG_RAW(severity, LOG, line, file, str );
 }
 #endif
 
@@ -157,6 +160,7 @@ np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
     pl->dtlsC.destroy = &nm_mbedtls_cli_destroy;
     pl->dtlsC.set_sni = &nm_mbedtls_cli_set_sni;
     pl->dtlsC.set_keys = &nm_mbedtls_cli_set_keys;
+    pl->dtlsC.set_root_certs = &nm_mbedtls_cli_set_root_certs;
     pl->dtlsC.connect = &nm_dtls_connect;
     pl->dtlsC.reset = &nm_mbedtls_cli_reset;
     pl->dtlsC.async_send_data = &async_send_data;
@@ -186,6 +190,7 @@ np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_c
     mbedtls_entropy_init( &ctx->entropy );
     mbedtls_x509_crt_init( &ctx->publicKey );
     mbedtls_pk_init( &ctx->privateKey );
+    mbedtls_x509_crt_init(&ctx->rootCerts);
 
     ctx->sender = packetSender;
     ctx->dataHandler = dataHandler;
@@ -258,13 +263,15 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
                                   allowedCipherSuitesList);
 
     mbedtls_ssl_conf_alpn_protocols(&ctx->conf, nm_mbedtls_cli_alpnList );
-    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
+    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_REQUIRED );
 
     mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
 #if defined(MBEDTLS_DEBUG_C)
     mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, NULL);
 #endif
+
+    mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->rootCerts, NULL);
 
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
                          nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
@@ -312,6 +319,7 @@ void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx)
     pl->buf.free(ctx->sslRecvBuf);
     pl->buf.free(ctx->sslSendBuffer);
 
+    mbedtls_x509_crt_free(&ctx->rootCerts);
     mbedtls_pk_free(&ctx->privateKey);
     mbedtls_x509_crt_free(&ctx->publicKey );
     mbedtls_entropy_free( &ctx->entropy );
@@ -370,6 +378,16 @@ np_error_code nm_mbedtls_cli_set_keys(struct np_dtls_cli_context* ctx,
     return NABTO_EC_OK;
 }
 
+np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, const char* rootCerts)
+{
+    int ret;
+    ret = mbedtls_x509_crt_parse (&ctx->rootCerts, (const unsigned char *)rootCerts, strlen(rootCerts)+1);
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG,  "Failed to load root certs mbedtls_x509_crt_parse returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+    return NABTO_EC_OK;
+}
 
 /**
  * get peers fingerprint for given DTLS client context
@@ -424,7 +442,14 @@ void nm_dtls_event_do_one(void* data)
         } else {
             if( ret != 0 )
             {
-                NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
+                if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+                    char info[128];
+                    uint32_t validationStatus = mbedtls_ssl_get_verify_result(&ctx->ssl);
+                    mbedtls_x509_crt_verify_info(info, 128, "", validationStatus);
+                    NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
+                } else {
+                    NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %s", ret );
+                }
                 ctx->state = CLOSING;
                 nm_mbedtls_timer_cancel(&ctx->timer);
                 ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);

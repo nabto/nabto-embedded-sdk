@@ -16,12 +16,25 @@
 namespace nabto {
 namespace test {
 
+static std::string nabtoRootCA1 = R"(-----BEGIN CERTIFICATE-----
+MIIB2TCCAX6gAwIBAgIUUmg861HL9RvPvsLpRPtz4sAlLj0wCgYIKoZIzj0EAwIw
+NzELMAkGA1UEBhMCREsxDjAMBgNVBAoMBU5hYnRvMRgwFgYDVQQDDA9OYWJ0byBS
+b290IENBIDEwHhcNMjAxMDAyMjA1MzAzWhcNMjMxMDAyMjA1MzAzWjA5MQswCQYD
+VQQGEwJESzEOMAwGA1UECgwFTmFidG8xGjAYBgNVBAMMEU5hYnRvIFNlcnZlciBD
+QSAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELHA41RHIH5Wtoa4FVjL8GRO3
+QeiCFCnQLigy1w/NFc9Tu8b77exHkVUQX5/TXXg96etIQr0FRsXriCKxNOFSyqNm
+MGQwHQYDVR0OBBYEFE3qi2c0kMB4pIPTzQtYJLDTegDLMB8GA1UdIwQYMBaAFDTV
+WO6JLN0TW6zyW51IQzFKZxuvMBIGA1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/
+BAQDAgGGMAoGCCqGSM49BAMCA0kAMEYCIQDvemE0MvLMaFyPpP/GJ0aiTdxfjOUq
+zh41kuKNbT8VFwIhAOl8mF7nslw+4YIp7Wsw5vl74YRcw/j0CYCe3iFMkz2F
+-----END CERTIFICATE-----
+)";
+
 class AttachTest {
  public:
-    AttachTest(nabto::test::TestPlatform& tp, uint16_t port)
-        : tp_(tp)
+    AttachTest(nabto::test::TestPlatform& tp, const std::string& hostname, uint16_t port, const std::string& rootCerts)
+        : tp_(tp), hostname_(hostname), serverPort_(port), rootCerts_(rootCerts)
     {
-        serverPort_ = port;
         struct np_platform* pl = tp_.getPlatform();
         np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
     }
@@ -49,6 +62,7 @@ class AttachTest {
         nc_attacher_set_keys(&attach_,
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str()), nabto::test::devicePublicKey.size(),
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str()), nabto::test::devicePrivateKey.size());
+        nc_attacher_set_root_certs(&attach_, rootCerts_.c_str());
         nc_attacher_set_app_info(&attach_, appName_, appVersion_);
         nc_attacher_set_device_info(&attach_, productId_, deviceId_);
         // set timeout to approximately one seconds for the dtls handshake
@@ -56,7 +70,7 @@ class AttachTest {
         attach_.retryWaitTime = 100;
         attach_.accessDeniedWaitTime = 1000;
 
-        BOOST_TEST(nc_attacher_start(&attach_, hostname_, serverPort_, &udpDispatch_) == NABTO_EC_OK);
+        BOOST_TEST(nc_attacher_start(&attach_, hostname_.c_str(), serverPort_, &udpDispatch_) == NABTO_EC_OK);
     }
 
     void setDtlsPort(uint16_t port)
@@ -125,8 +139,9 @@ class AttachTest {
 
     struct np_completion_event boundCompletionEvent;
 
+    std::string hostname_;
     uint16_t serverPort_;
-    const char* hostname_ = "localhost-multi.nabto.net";
+    std::string rootCerts_;
     const char* appName_ = "foo";
     const char* appVersion_ = "bar";
     const char* productId_ = "test";
@@ -153,7 +168,7 @@ BOOST_AUTO_TEST_CASE(attach_close, * boost::unit_test::timeout(300))
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){
                  if (at.attachCount_ == (uint64_t)1) {
                      at.niceClose([](nabto::test::AttachTest& at) {
@@ -174,13 +189,68 @@ BOOST_AUTO_TEST_CASE(attach_close, * boost::unit_test::timeout(300))
     ioService->stop();
 }
 
+BOOST_AUTO_TEST_CASE(wrong_root_cert, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    // nabtoRootCA1 cannot validate the test certificate the test attach server is using.
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), nabto::test::nabtoRootCA1);
+    at.start([](nabto::test::AttachTest& at){},
+             [](nabto::test::AttachTest& at){
+                     if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
+                         at.end();
+                     }
+                 });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * stop the IO service nicely in all tests
+     ******************************************************************/
+    ioService->stop();
+}
+
+BOOST_AUTO_TEST_CASE(wrong_hostname, * boost::unit_test::timeout(300))
+{
+    // test that we cannot attach if the hostname does not match the certificate
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    // nabtoRootCA1 cannot validate the test certificate the test attach server is using.
+    nabto::test::AttachTest at(*tp, "localhost.nabto.net", attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+             },[](nabto::test::AttachTest& at){
+                     if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
+                         at.end();
+                     }
+                 });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * stop the IO service nicely in all tests
+     ******************************************************************/
+    ioService->stop();
+}
+
 BOOST_AUTO_TEST_CASE(attach_close_before_attach, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){ },[](nabto::test::AttachTest& at){
                  if (at.attach_.state == NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST) {
                      at.niceClose([](nabto::test::AttachTest& at) {
@@ -206,7 +276,7 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){
                  if (at.attachCount_ == (uint64_t)1) {
                      at.end();
@@ -234,7 +304,7 @@ BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
     attachServer->setKeepAliveSettings(100, 50, 2);
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([&attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
                 attachServer->stop();
@@ -259,7 +329,7 @@ BOOST_AUTO_TEST_CASE(redirect, * boost::unit_test::timeout(300))
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
     redirectServer->setRedirect("localhost-multi.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, redirectServer->getPort());
+    nabto::test::AttachTest at(*tp, redirectServer->getHostname(), redirectServer->getPort(), redirectServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){
                  if (at.attachCount_ == 1) {
                      at.end();
@@ -283,7 +353,7 @@ BOOST_AUTO_TEST_CASE(reattach, * boost::unit_test::timeout(300))
     attachServer->setKeepAliveSettings(100, 50, 2);
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([&ioService, &attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
                 attachServer->stop();
@@ -308,7 +378,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server, * boost::unit_test::timeo
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([&ioService, &attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
                 attachServer->niceClose();
@@ -339,7 +409,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable, * boost::unit_test::timeout
     std::shared_ptr<nabto::test::AttachServer> attachServer;
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, 4242);
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), 4242, attachServer->getRootCerts());
 
     std::thread t([&ioService, &attachServer, &at](){
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -370,7 +440,7 @@ BOOST_AUTO_TEST_CASE(reject_invalid_redirect, * boost::unit_test::timeout(300))
     auto redirectServer = nabto::test::RedirectServer::create(ioService->getIoService());
     redirectServer->setRedirect("localhost-multi.nabto.net", attachServer->getPort(), attachServer->getFingerprint());
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, redirectServer->getPort());
+    nabto::test::AttachTest at(*tp, redirectServer->getHostname(), redirectServer->getPort(), redirectServer->getRootCerts());
 
     redirectServer->invalidRedirect_ = 0;
 
@@ -395,7 +465,7 @@ BOOST_AUTO_TEST_CASE(reject_bad_coap_attach_response, * boost::unit_test::timeou
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
 
     attachServer->invalidAttach_ = 0;
 
@@ -418,7 +488,7 @@ BOOST_AUTO_TEST_CASE(access_denied, * boost::unit_test::timeout(300))
     auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
+    nabto::test::AttachTest at(*tp, accessDeniedServer->getHostname(), accessDeniedServer->getPort(), accessDeniedServer->getRootCerts());
 
     at.start([](nabto::test::AttachTest& at){ }, [](nabto::test::AttachTest& at){
                  if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT) {
@@ -437,7 +507,7 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach, * boost::unit_test::timeout(300))
     auto accessDeniedServer = nabto::test::AccessDeniedServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, accessDeniedServer->getPort());
+    nabto::test::AttachTest at(*tp, accessDeniedServer->getHostname(), accessDeniedServer->getPort(), accessDeniedServer->getRootCerts());
 
     at.start([](nabto::test::AttachTest& at){ }, [&accessDeniedServer](nabto::test::AttachTest& at){
                  if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT &&
@@ -461,8 +531,7 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
     redirectServer->setRedirect("localhost-multi.nabto.net", redirectServer->getPort(), redirectServer->getFingerprint());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, redirectServer->getPort());
-
+    nabto::test::AttachTest at(*tp, redirectServer->getHostname(), redirectServer->getPort(), redirectServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){ }, [](nabto::test::AttachTest& at){
                 if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
                     BOOST_TEST(at.attachCount_ == (uint64_t)0);
@@ -484,7 +553,7 @@ BOOST_AUTO_TEST_CASE(attach_ha, * boost::unit_test::timeout(300))
     auto attachServer2 = nabto::test::AttachServer::create(ioService->getIoService(), "127.0.0.1", attachServer->getPort());
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getPort());
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){
                  if (at.attachCount_ == (uint64_t)1) {
                      at.end();

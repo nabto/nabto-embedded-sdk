@@ -69,6 +69,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         nc_device_deinit(device);
         return ec;
     }
+
     ec = nc_rendezvous_init(&device->rendezvous, pl);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
