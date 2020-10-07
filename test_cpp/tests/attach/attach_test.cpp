@@ -16,6 +16,20 @@
 namespace nabto {
 namespace test {
 
+static std::string nabtoRootCA1 = R"(-----BEGIN CERTIFICATE-----
+MIIB2TCCAX6gAwIBAgIUUmg861HL9RvPvsLpRPtz4sAlLj0wCgYIKoZIzj0EAwIw
+NzELMAkGA1UEBhMCREsxDjAMBgNVBAoMBU5hYnRvMRgwFgYDVQQDDA9OYWJ0byBS
+b290IENBIDEwHhcNMjAxMDAyMjA1MzAzWhcNMjMxMDAyMjA1MzAzWjA5MQswCQYD
+VQQGEwJESzEOMAwGA1UECgwFTmFidG8xGjAYBgNVBAMMEU5hYnRvIFNlcnZlciBD
+QSAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELHA41RHIH5Wtoa4FVjL8GRO3
+QeiCFCnQLigy1w/NFc9Tu8b77exHkVUQX5/TXXg96etIQr0FRsXriCKxNOFSyqNm
+MGQwHQYDVR0OBBYEFE3qi2c0kMB4pIPTzQtYJLDTegDLMB8GA1UdIwQYMBaAFDTV
+WO6JLN0TW6zyW51IQzFKZxuvMBIGA1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/
+BAQDAgGGMAoGCCqGSM49BAMCA0kAMEYCIQDvemE0MvLMaFyPpP/GJ0aiTdxfjOUq
+zh41kuKNbT8VFwIhAOl8mF7nslw+4YIp7Wsw5vl74YRcw/j0CYCe3iFMkz2F
+-----END CERTIFICATE-----
+)";
+
 class AttachTest {
  public:
     AttachTest(nabto::test::TestPlatform& tp, const std::string& hostname, uint16_t port, const std::string& rootCerts)
@@ -48,7 +62,7 @@ class AttachTest {
         nc_attacher_set_keys(&attach_,
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str()), nabto::test::devicePublicKey.size(),
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str()), nabto::test::devicePrivateKey.size());
-        nc_attacher_set_root_certs(&attach_, rootCerts.c_str());
+        nc_attacher_set_root_certs(&attach_, rootCerts_.c_str());
         nc_attacher_set_app_info(&attach_, appName_, appVersion_);
         nc_attacher_set_device_info(&attach_, productId_, deviceId_);
         // set timeout to approximately one seconds for the dtls handshake
@@ -166,6 +180,61 @@ BOOST_AUTO_TEST_CASE(attach_close, * boost::unit_test::timeout(300))
     at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * stop the IO service nicely in all tests
+     ******************************************************************/
+    ioService->stop();
+}
+
+BOOST_AUTO_TEST_CASE(wrong_root_cert, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    // nabtoRootCA1 cannot validate the test certificate the test attach server is using.
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), nabto::test::nabtoRootCA1);
+    at.start([](nabto::test::AttachTest& at){},
+             [](nabto::test::AttachTest& at){
+                     if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
+                         at.end();
+                     }
+                 });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+
+    /******************************************************************
+     * attachServer->stop() must invoke stop on the DTLS server from
+     * the IO service. To avoid implementing a blocking test future we
+     * stop the IO service nicely in all tests
+     ******************************************************************/
+    ioService->stop();
+}
+
+BOOST_AUTO_TEST_CASE(wrong_hostname, * boost::unit_test::timeout(300))
+{
+    // test that we cannot attach if the hostname does not match the certificate
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    // nabtoRootCA1 cannot validate the test certificate the test attach server is using.
+    nabto::test::AttachTest at(*tp, "localhost.nabto.net", attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+             },[](nabto::test::AttachTest& at){
+                     if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
+                         at.end();
+                     }
+                 });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
 
     /******************************************************************
      * attachServer->stop() must invoke stop on the DTLS server from
