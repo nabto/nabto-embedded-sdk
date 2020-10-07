@@ -41,6 +41,7 @@ NabtoDeviceError nm_iam_client_settings_init(struct nm_iam_coap_handler* handler
 
 NabtoDeviceError nm_iam_get_me_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_get_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
+NabtoDeviceError nm_iam_create_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
 NabtoDeviceError nm_iam_delete_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_list_roles_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);

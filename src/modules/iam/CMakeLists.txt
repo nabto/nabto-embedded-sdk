@@ -14,6 +14,7 @@ set(src
   nm_iam_is_paired.c
   nm_iam_get_me.c
   nm_iam_get_user.c
+  nm_iam_create_user.c
   nm_iam_delete_user.c
   nm_iam_list_roles.c
   nm_iam_remove_role_from_user.c

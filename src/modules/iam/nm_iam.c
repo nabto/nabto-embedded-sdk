@@ -244,6 +244,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
+    nm_iam_create_user_init(&iam->coapIamUsersUserCreateHandler, iam->device, iam);
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
     nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
     nm_iam_remove_role_from_user_init(&iam->coapIamUsersUserRolesDeleteHandler, iam->device, iam);
