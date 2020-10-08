@@ -76,7 +76,7 @@ nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
  * @return NABTO_DEVICE_EC_OK iff ok
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_max_connections(NabtoDevice* device, size_t limit);
+nabto_device_limit_connections(NabtoDevice* device, size_t limit);
 
 /**
  * limit maximum number of concurrent streams.
@@ -89,7 +89,7 @@ nabto_device_limit_max_connections(NabtoDevice* device, size_t limit);
  * @return NABTO_DEVICE_EC_OK iff ok
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_max_streams(NabtoDevice* device, size_t limit);
+nabto_device_limit_streams(NabtoDevice* device, size_t limit);
 
 /**
  * Limit maximum number of concurrent coap server requests.
@@ -102,25 +102,8 @@ nabto_device_limit_max_streams(NabtoDevice* device, size_t limit);
  * @return NABTO_DEVICE_EC_OK iff ok
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_max_coap_server_requests(NabtoDevice* device, size_t limit);
+nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 
-/**
- * Set root certs
- *
- * By default the device is configured to trust "Nabto Root CA
- * 1". This behavior can be overridden by the following function. All
- * trusted root certs should be in the string and be encoded as
- * PEM. The certs are copied into the device so the string can be
- * freed after the call.
- *
- * Root certs are used to validate the connection to the basestation.
- *
- * @param device [in]  The device
- * @param roots [in]  Root certs encoded as pem.
- * @return NABTO_DEVICE_EC_OK iff ok
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_root_certs(NabtoDevice* device, const char* roots);
 
 
 #ifdef __cplusplus
