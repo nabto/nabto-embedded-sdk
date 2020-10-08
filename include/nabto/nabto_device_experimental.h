@@ -56,6 +56,19 @@ NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
 nabto_device_connection_is_local(NabtoDevice* device,
                                  NabtoDeviceConnectionRef ref);
 
+/**
+ * limit maximum number of concurrent streams.
+ *
+ * Clients can create streams. This limits the maximum amount of
+ * concurrent streams. Each tunnel connection uses a stream, so this
+ * option also has an effect on max allowed tunnel connections.
+ *
+ * @param device [in]  The device.
+ * @param limit [in]  The maximum number of concurrent streams.
+ * @return NABTO_DEVICE_EC_OK iff ok
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_streams(NabtoDevice* device, size_t limit);
 
 /**
  * Limit memory usage for streaming
@@ -78,18 +91,6 @@ nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_connections(NabtoDevice* device, size_t limit);
 
-/**
- * limit maximum number of concurrent streams.
- *
- * Clients can create streams. This limits the maximum amount of
- * concurrent streams.
- *
- * @param device [in]  The device.
- * @param limit [in]  The maximum number of concurrent streams.
- * @return NABTO_DEVICE_EC_OK iff ok
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_streams(NabtoDevice* device, size_t limit);
 
 /**
  * Limit maximum number of concurrent coap server requests.
@@ -103,8 +104,6 @@ nabto_device_limit_streams(NabtoDevice* device, size_t limit);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
-
-
 
 #ifdef __cplusplus
 } // extern c

@@ -8,6 +8,8 @@
 #include <core/nc_keep_alive.h>
 #include <core/nc_connection_event.h>
 
+#include <nn/llist.h>
+
 #define NC_CLIENT_CONNECTION_MAX_CHANNELS 16
 
 struct nc_stream_manager_context;
@@ -35,6 +37,7 @@ enum nc_spake2_state {
 };
 
 struct nc_client_connection {
+    struct nn_llist_node connectionsNode;
     struct np_platform* pl;
     struct np_dtls_srv_connection* dtls;
     struct nc_client_connection_dispatch_context* dispatch;

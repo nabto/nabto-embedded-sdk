@@ -127,11 +127,12 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
     nc_keep_alive_deinit(&conn->keepAlive);
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);
     nc_stream_manager_remove_connection(conn->streamManager, conn);
-    nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
+
     pl->dtlsS.destroy_connection(conn->dtls);
     np_completion_event_deinit(&conn->sendCompletionEvent);
 
-    memset(conn, 0, sizeof(struct nc_client_connection));
+    // this frees the connection
+    nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
 }
 
 void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
