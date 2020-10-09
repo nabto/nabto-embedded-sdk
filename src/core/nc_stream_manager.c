@@ -24,7 +24,9 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
 {
     ctx->pl = pl;
     ctx->maxSegments = 1000000;
+    ctx->maxStreams = SIZE_MAX;
     nn_llist_init(&ctx->listeners);
+    nn_llist_init(&ctx->streams);
 }
 
 void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)
@@ -139,32 +141,51 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
         }
     }
     // no listener found free the stream and send an rst
-    nabto_stream_destroy(&stream->stream);
+    nc_stream_stop(stream);
+    nc_stream_destroy(stream);
     return;
-}
-
-void nc_stream_manager_close_stream(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream)
-{
-    int i = 0;
-    for (i = 0; i < NABTO_MAX_STREAMS; i++) {
-        if (&ctx->streams[i] == stream) {
-            //memset(&ctx->streams[i], 0, sizeof(struct nc_stream_context));
-            ctx->streams[i].streamId = 0;
-            ctx->streamConns[i] = NULL;
-            return;
-        }
-    }
 }
 
 struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_client_connection* conn)
 {
-    int i = 0;
-    for (i = 0; i < NABTO_MAX_STREAMS; i++) {
-        if (ctx->streams[i].streamId == streamId && ctx->streamConns[i] == conn) {
-            return &ctx->streams[i];
+    struct nc_stream_context* stream;
+    NN_LLIST_FOREACH(stream, &ctx->streams) {
+        if (stream->streamId == streamId && stream->clientConn == conn) {
+            return stream;
         }
     }
     return NULL;
+}
+
+struct nc_stream_context* nc_stream_manager_alloc_stream(struct nc_stream_manager_context* ctx)
+{
+    if (ctx->currentStreams > ctx->maxStreams) {
+        return NULL;
+    }
+    struct nc_stream_context* stream = (struct nc_stream_context*)calloc(1, sizeof(struct nc_stream_context));
+
+    if (stream == NULL) {
+        return NULL;
+    }
+    stream->streamManager = ctx;
+    ctx->currentStreams++;
+
+    return stream;
+}
+
+void nc_stream_manager_free_stream(struct nc_stream_context* stream)
+{
+    struct nc_stream_manager_context* ctx = stream->streamManager;
+    ctx->currentStreams--;
+    free(stream);
+}
+
+void nc_stream_manager_stream_remove(struct nc_stream_context* stream)
+{
+    //struct nc_stream_manager_context* manager = stream->streamManager;
+    // remove the stream from the list of streams.
+    nn_llist_erase_node(&stream->streamsNode);
+    nc_stream_ref_count_dec(stream);
 }
 
 struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
@@ -172,18 +193,19 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
     if ( (streamId % 2) == 1) {
         return NULL;
     } else {
-        int i;
-        for (i = 0; i < NABTO_MAX_STREAMS; i++) {
-            if (ctx->streams[i].active == false) {
-                np_error_code ec;
-                ec = nc_stream_init(ctx->pl, &ctx->streams[i], streamId, nc_client_connection_get_dtls_connection(conn), ctx, conn->connectionRef);
-                if (ec != NABTO_EC_OK) {
-                    return NULL;
-                }
-                ctx->streamConns[i] = conn;
-                return &ctx->streams[i];
-            }
+        struct nc_stream_context* stream = nc_stream_manager_alloc_stream(ctx);
+        if (stream == NULL) {
+            return NULL;
         }
+        np_error_code ec;
+        ec = nc_stream_init(ctx->pl, stream, streamId, nc_client_connection_get_dtls_connection(conn), conn, ctx, conn->connectionRef);
+        if (ec != NABTO_EC_OK) {
+            nc_stream_manager_free_stream(stream);
+            return NULL;
+        }
+        nn_llist_append(&ctx->streams, &stream->streamsNode, stream);
+        nc_stream_ref_count_inc(stream);
+        return stream;
     }
     return NULL;
 }
@@ -297,21 +319,21 @@ void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, 
 
 void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* connection)
 {
-    int i;
-    for(i = 0; i < NABTO_MAX_STREAMS; i++) {
-        if (ctx->streamConns[i] == connection) {
-            ctx->streamConns[i] = NULL;
-            nc_stream_handle_connection_closed(&ctx->streams[i]);
+    struct nc_stream_context* stream;
+    NN_LLIST_FOREACH(stream, &ctx->streams) {
+        if (stream->clientConn == connection) {
+            stream->clientConn = NULL;
+            nc_stream_handle_connection_closed(stream);
         }
     }
 }
 
-uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* stream)
+uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* nabtoStream)
 {
-    for (int i = 0; i < NABTO_MAX_STREAMS; i++) {
-
-        if (ctx->streams[i].active && &ctx->streams[i].stream == stream) {
-            struct nc_client_connection* connection = ctx->streamConns[i];
+    struct nc_stream_context* stream;
+    NN_LLIST_FOREACH(stream, &ctx->streams) {
+        if (&stream->stream == nabtoStream) {
+            struct nc_client_connection* connection = stream->clientConn;
             if (connection == NULL) {
                 return 0;
             } else {

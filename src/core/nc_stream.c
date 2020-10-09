@@ -16,6 +16,7 @@ struct nabto_stream_module nc_stream_module;
 static void nc_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data);
 
 static void nc_stream_event_queue_callback(void* data);
+static void nc_stream_free(struct nc_stream_context* stream);
 
 void event(struct nc_stream_context* ctx);
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType);
@@ -66,7 +67,7 @@ uint32_t nc_stream_get_stamp(void* userData)
     return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager, uint64_t connectionRef)
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef)
 {
     nc_stream_module.get_stamp = &nc_stream_get_stamp;
     nc_stream_module.log = &nc_stream_log;
@@ -89,6 +90,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     ctx->stopped = false;
     ctx->active = true;
     ctx->dtls = dtls;
+    ctx->clientConn = clientConn;
     ctx->streamId = streamId;
     ctx->streamManager = streamManager;
     ctx->pl = pl;
@@ -104,13 +106,18 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
 
 void nc_stream_destroy(struct nc_stream_context* ctx)
 {
-
     nc_stream_stop(ctx);
+    nabto_stream_destroy(&ctx->stream);
+    nc_stream_manager_stream_remove(ctx);
+}
+
+void nc_stream_free(struct nc_stream_context* ctx)
+{
     struct np_event_queue* eq = &ctx->pl->eq;
     np_event_queue_destroy_event(eq, ctx->ev);
     np_event_queue_destroy_event(eq, ctx->timer);
 
-    nabto_stream_destroy(&ctx->stream);
+    nc_stream_manager_free_stream(ctx);
 }
 
 void nc_stream_event(struct nc_stream_context* ctx)
@@ -215,8 +222,11 @@ void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 {
     struct nc_stream_context* ctx = data;
     ctx->isSending = false;
-    nabto_stream_event_handled(&ctx->stream, ctx->sendEventType);
-    nc_stream_event(ctx);
+    if (!ctx->stopped) {
+        nabto_stream_event_handled(&ctx->stream, ctx->sendEventType);
+        nc_stream_event(ctx);
+    }
+    nc_stream_ref_count_dec(ctx);
 }
 
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType)
@@ -260,6 +270,8 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         NABTO_LOG_ERROR(LOG, "dtls send returned ec: %u", ec);
         nabto_stream_event_handled(&ctx->stream, eventType);
         np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
+    } else {
+        nc_stream_ref_count_inc(ctx);
     }
 }
 
@@ -608,4 +620,18 @@ void nc_stream_stop(struct nc_stream_context* stream)
     stream->active = false;
     stream->dtls = NULL;
     stream->streamId = 0;
+}
+
+
+void nc_stream_ref_count_inc(struct nc_stream_context* stream)
+{
+    stream->refCount++;
+}
+
+void nc_stream_ref_count_dec(struct nc_stream_context* stream)
+{
+    stream->refCount--;
+    if (stream->refCount == 0) {
+        nc_stream_free(stream);
+    }
 }
