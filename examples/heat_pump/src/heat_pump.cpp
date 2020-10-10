@@ -306,7 +306,7 @@ void HeatPump::printHeatpumpInfo()
         std::cout << "# Server:                     " << server << std::endl;
     } catch(...) {} // Ignore missing server
     std::cout << "# Version:                     " << nabto_device_version() << std::endl;
-    std::cout << "# Pairing Stri ng              " << createPairingString() << std::endl;
+    std::cout << "# Pairing String               " << createPairingString() << std::endl;
     std::cout << "######## " << std::endl;
 }
 
@@ -425,6 +425,8 @@ void HeatPump::loadIamPolicy()
     {
         auto r = nm_iam_role_new("Admin");
         nm_iam_role_add_policy(r, "ManageUsers");
+        nm_iam_role_add_policy(r, "Pairing");
+        nm_iam_role_add_policy(r, "HeatPumpControl");
         nm_iam_add_role(&iam_, r);
     }
     {
@@ -434,6 +436,13 @@ void HeatPump::loadIamPolicy()
         nm_iam_role_add_policy(r, "DeviceInfo");
         nm_iam_role_add_policy(r, "ManageOwnUser");
         nm_iam_add_role(&iam_, r);
+    }
+    {
+        auto r = nm_iam_role_new("Guest");
+        nm_iam_role_add_policy(r, "ManageOwnUser");
+        nm_iam_role_add_policy(r, "Pairing");
+        nm_iam_add_role(&iam_, r);
+
     }
 
     // The first user which is paired is both an admin and a user on the system
