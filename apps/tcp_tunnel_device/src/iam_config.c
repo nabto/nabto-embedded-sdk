@@ -12,6 +12,7 @@
 #include <modules/iam/nm_iam_from_json.h>
 
 #include <stdio.h>
+#include <string.h>
 
 static const char* LOGM = "iam_config";
 
@@ -19,36 +20,18 @@ static bool create_default_iam_config(const char* iamConfigFile);
 
 void iam_config_init(struct iam_config* iamConfig)
 {
+    memset(iamConfig, 0, sizeof(struct iam_config));
     nn_vector_init(&iamConfig->roles, sizeof(void*));
     nn_vector_init(&iamConfig->policies, sizeof(void*));
-    nn_string_set_init(&iamConfig->unpairedRoles);
-    nn_string_set_init(&iamConfig->firstUserRoles);
-    nn_string_set_init(&iamConfig->secondaryUserRoles);
 }
 
 void iam_config_deinit(struct iam_config* iamConfig)
 {
     nn_vector_deinit(&iamConfig->roles);
     nn_vector_deinit(&iamConfig->policies);
-    nn_string_set_deinit(&iamConfig->unpairedRoles);
-    nn_string_set_deinit(&iamConfig->firstUserRoles);
-    nn_string_set_deinit(&iamConfig->secondaryUserRoles);
-}
-
-static bool read_roles(struct nn_log* logger, cJSON* roles, struct nn_string_set* set)
-{
-    if (!cJSON_IsArray(roles)) {
-        return false;
-    }
-    size_t rolesSize = cJSON_GetArraySize(roles);
-    for(size_t i = 0; i < rolesSize; i++) {
-        cJSON* item = cJSON_GetArrayItem(roles, i);
-        if (!cJSON_IsString(item)) {
-            return false;
-        }
-        nn_string_set_insert(set, item->valuestring);
-    }
-    return true;
+    free(iamConfig->unpairedRole);
+    free(iamConfig->firstUserRole);
+    free(iamConfig->secondaryUserRole);
 }
 
 bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, struct nn_log* logger)
@@ -115,24 +98,33 @@ bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, st
         nn_vector_push_back(&iamConfig->roles, &role);
     }
 
-    cJSON* unpairedRoles = cJSON_GetObjectItem(config, "UnpairedRoles");
-    cJSON* firstUserRoles = cJSON_GetObjectItem(config, "FirstUserRoles");
-    cJSON* secondaryUserRoles = cJSON_GetObjectItem(config, "SecondaryUserRoles");
+    cJSON* unpairedRole = cJSON_GetObjectItem(config, "UnpairedRole");
+    cJSON* firstUserRole = cJSON_GetObjectItem(config, "FirstUserRole");
+    cJSON* secondaryUserRole = cJSON_GetObjectItem(config, "SecondaryUserRole");
 
-    if (unpairedRoles && !read_roles(logger, unpairedRoles, &iamConfig->unpairedRoles)) {
-        NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRoles has the wrong format.");
+    if (unpairedRole) {
+        if (!cJSON_IsString(unpairedRole)) {
+            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
+        } else {
+            iamConfig->unpairedRole = strdup(unpairedRole->valuestring);
+        }
     }
 
-    if (firstUserRoles && !read_roles(logger, firstUserRoles, &iamConfig->firstUserRoles)) {
-        NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRoles has the wrong format.");
+    if (firstUserRole) {
+        if (!cJSON_IsString(firstUserRole)) {
+            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
+        } else {
+            iamConfig->firstUserRole = strdup(firstUserRole->valuestring);
+        }
     }
 
-    if (secondaryUserRoles && !read_roles(logger, secondaryUserRoles, &iamConfig->secondaryUserRoles)) {
-        NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRoles has the wrong format.");
+    if (secondaryUserRole) {
+        if (!cJSON_IsString(secondaryUserRole)) {
+            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
+        } else {
+            iamConfig->secondaryUserRole = strdup(secondaryUserRole->valuestring);
+        }
     }
-
-
-
 
     cJSON_Delete(root);
     return true;
@@ -186,12 +178,17 @@ bool create_default_iam_config(const char* iamConfigFile)
 
     struct nm_iam_role* adminRole = nm_iam_role_new("Admin");
     nm_iam_role_add_policy(adminRole, "ManageUsers");
+    nm_iam_role_add_policy(adminRole, "Tunnelling");
+    nm_iam_role_add_policy(adminRole, "Pairing");
 
     struct nm_iam_role* userRole = nm_iam_role_new("User");
     nm_iam_role_add_policy(userRole, "Tunnelling");
     nm_iam_role_add_policy(userRole, "Pairing");
     nm_iam_role_add_policy(userRole, "ManageOwnUser");
 
+    struct nm_iam_role* guestRole = nm_iam_role_new("Guest");
+    nm_iam_role_add_policy(guestRole, "Pairing");
+    nm_iam_role_add_policy(guestRole, "ManageOwnUser");
 
     // Write Iam policies to json.
     cJSON* root = cJSON_CreateObject();
@@ -210,18 +207,15 @@ bool create_default_iam_config(const char* iamConfigFile)
     cJSON_AddItemToArray(roles, nm_iam_role_to_json(unpairedRole));
     cJSON_AddItemToArray(roles, nm_iam_role_to_json(adminRole));
     cJSON_AddItemToArray(roles, nm_iam_role_to_json(userRole));
+    cJSON_AddItemToArray(roles, nm_iam_role_to_json(guestRole));
     cJSON_AddItemToObject(root, "Roles", roles);
 
     // Write iam config to json
     cJSON* config = cJSON_CreateObject();
 
-    cJSON* unpairedRoles = cJSON_CreateStringArray((const char*[]){"Unpaired"}, 1);
-    cJSON* firstUserRoles = cJSON_CreateStringArray((const char*[]){"Admin", "User"}, 2);
-    cJSON* secondaryUserRoles = cJSON_CreateStringArray((const char*[]){"User"}, 1);
-
-    cJSON_AddItemToObject(config, "UnpairedRoles", unpairedRoles);
-    cJSON_AddItemToObject(config, "FirstUserRoles", firstUserRoles);
-    cJSON_AddItemToObject(config, "SecondaryUserRoles", secondaryUserRoles);
+    cJSON_AddStringToObject(config, "UnpairedRole", "Unpaired");
+    cJSON_AddStringToObject(config, "FirstUserRole", "Admin");
+    cJSON_AddStringToObject(config, "SecondaryUserRole", "Guest");
 
     cJSON_AddItemToObject(root, "Config", config);
 

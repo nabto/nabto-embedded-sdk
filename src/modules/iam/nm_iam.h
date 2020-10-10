@@ -49,8 +49,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserDeleteHandler;
     struct nm_iam_coap_handler coapIamRolesGetHandler;
-    struct nm_iam_coap_handler coapIamUsersUserRolesDeleteHandler;
-    struct nm_iam_coap_handler coapIamUsersUserRolesPutHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetRoleHandler;
 
     struct nm_iam_auth_handler authHandler;
     struct nm_iam_pake_handler pakeHandler;
@@ -60,9 +59,9 @@ struct nm_iam {
     char* clientServerUrl;
     char* clientServerKey;
 
-    struct nn_string_set firstUserRoles;
-    struct nn_string_set secondaryUserRoles;
-    struct nn_string_set unpairedRoles;
+    char* firstUserRole;
+    char* secondaryUserRole;
+    char* unpairedRole;
 };
 
 /**
@@ -107,7 +106,7 @@ bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerC
  * @param role  The role to add the the set of first user roles. The string is copied into the module.
  * @return false iff the role was not added to the set.
  */
-bool nm_iam_add_first_user_role(struct nm_iam* iam, const char* role);
+bool nm_iam_set_first_user_role(struct nm_iam* iam, const char* role);
 
 /**
  * Add the roles for the secondary users on the system. If no roles
@@ -117,7 +116,7 @@ bool nm_iam_add_first_user_role(struct nm_iam* iam, const char* role);
  * @param role  The role to add to the set of secondary user roles. The string is copied into the module.
  * @return false iff the role was not added to the set.
  */
-bool nm_iam_add_secondary_user_role(struct nm_iam* iam, const char* role);
+bool nm_iam_set_secondary_user_role(struct nm_iam* iam, const char* role);
 
 /**
  * Add the roles for unpaired connections on the system. The unpaired
@@ -128,7 +127,7 @@ bool nm_iam_add_secondary_user_role(struct nm_iam* iam, const char* role);
  * @param role  A role to add to the set of unpaired roles. The string is copied into the module.
  * @return false iff the role was not added to the set.
  */
-bool nm_iam_add_unpaired_roles(struct nm_iam* iam, const char* role);
+bool nm_iam_set_unpaired_role(struct nm_iam* iam, const char* role);
 
 
 
@@ -184,13 +183,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 /**
  * remove a role from a user.
  */
-void nm_iam_remove_role_from_user(struct nm_iam* iam, const char* userId, const char* roleId);
-
-/**
- * Add a role to a user
- */
-bool nm_iam_add_role_to_user(struct nm_iam* iam, const char* userId, const char* roleId);
-
+bool nm_iam_set_user_role(struct nm_iam* iam, const char* userId, const char* roleId);
 
 #ifdef __cplusplus
 } //extern "C"

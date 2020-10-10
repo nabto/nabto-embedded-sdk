@@ -47,7 +47,7 @@ NabtoDeviceError nm_iam_list_roles_init(struct nm_iam_coap_handler* handler, Nab
 NabtoDeviceError nm_iam_remove_role_from_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
 NabtoDeviceError nm_iam_add_role_to_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
-
+NabtoDeviceError nm_iam_set_user_role_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
 // utility functions
 bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue);

@@ -437,14 +437,13 @@ void HeatPump::loadIamPolicy()
     }
 
     // The first user which is paired is both an admin and a user on the system
-    nm_iam_add_first_user_role(&iam_, "Admin");
-    nm_iam_add_first_user_role(&iam_, "User");
+    nm_iam_set_first_user_role(&iam_, "Admin");
 
     // The secondary users which is paired with the system does not get the admin permissions.
-    nm_iam_add_secondary_user_role(&iam_, "User");
+    nm_iam_set_secondary_user_role(&iam_, "Guest");
 
     // Connections which does not have a paired user in the system gets the Unpaired role.
-    nm_iam_add_unpaired_roles(&iam_, "Unpaired");
+    nm_iam_set_unpaired_role(&iam_, "Unpaired");
 }
 
 
