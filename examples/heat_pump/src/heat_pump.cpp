@@ -61,7 +61,9 @@ bool HeatPump::init()
     pairingServerConnectToken_ = nabto::examples::common::random_string(12);
 
     loadIamPolicy();
-    loadState();
+    if (!loadState()) {
+        return false;
+    }
 
     nabto_device_mdns_add_txt_item(device_, "fn", name_.c_str());
 
@@ -97,6 +99,9 @@ void HeatPump::userChanged()
 void HeatPump::saveState()
 {
     cJSON* state = cJSON_CreateObject();
+
+    cJSON_AddNumberToObject(state, "Version", 1);
+
     cJSON_AddItemToObject(state, "PairingPassword", cJSON_CreateString(pairingPassword_.c_str()));
     cJSON_AddItemToObject(state, "PairingServerConnectToken", cJSON_CreateString(pairingServerConnectToken_.c_str()));
     cJSON* heatPump = cJSON_CreateObject();
@@ -128,15 +133,21 @@ void HeatPump::saveState()
     cJSON_Delete(state);
 }
 
-void HeatPump::loadState()
+bool HeatPump::loadState()
 {
     if (!json_config_exists(stateFile_.c_str())) {
         createState();
     }
     cJSON* json;
     if (!json_config_load(stateFile_.c_str(), &json, &logger_)) {
-        // log error
-        return;
+        NN_LOG_ERROR(&logger_, LOGM, "Cannot load state from file %s", stateFile_.c_str());
+        return false;
+    }
+
+    cJSON* version = cJSON_GetObjectItem(json, "Version");
+    if (!cJSON_IsNumber(version) || version->valueint != 1) {
+        NN_LOG_ERROR(&logger_, LOGM, "The version of the state file %s is not correct, delete it and start over", stateFile_.c_str());
+        return false;
     }
 
     cJSON* pairingPassword = cJSON_GetObjectItem(json, "PairingPassword");
@@ -188,6 +199,7 @@ void HeatPump::loadState()
         }
     }
     cJSON_Delete(json);
+    return true;
 
 }
 void HeatPump::createState()
@@ -392,8 +404,7 @@ void HeatPump::loadIamPolicy()
         nm_statement_add_action(s, "IAM:ListUsers");
         nm_statement_add_action(s, "IAM:GetUser");
         nm_statement_add_action(s, "IAM:DeleteUser");
-        nm_statement_add_action(s, "IAM:AddRoleToUser");
-        nm_statement_add_action(s, "IAM:RemoveRoleFromUser");
+        nm_statement_add_action(s, "IAM:SetUserRole");
         nm_statement_add_action(s, "IAM:ListRoles");
         nm_policy_add_statement(p, s);
         nm_iam_add_policy(&iam_, p);

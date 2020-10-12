@@ -105,7 +105,7 @@ class HeatPump {
     static void iamUserChanged(struct nm_iam* iam, const char* userId, void* userData);
     void userChanged();
     void saveState();
-    void loadState();
+    bool loadState();
     void createState();
 
     void initCoapHandlers();
