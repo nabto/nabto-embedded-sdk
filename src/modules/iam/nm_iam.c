@@ -262,6 +262,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserCreateHandler);
 
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserDeleteHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamRolesGetHandler);

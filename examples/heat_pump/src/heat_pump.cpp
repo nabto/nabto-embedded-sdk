@@ -296,17 +296,17 @@ std::string HeatPump::createPairingString()
 void HeatPump::printHeatpumpInfo()
 {
     std::cout << "######## Nabto heat pump device ########" << std::endl;
-    std::cout << "# Product ID:                  " << dc_.getProductId() << std::endl;
-    std::cout << "# Device ID:                   " << dc_.getDeviceId() << std::endl;
-    std::cout << "# Fingerprint:                 " << getFingerprint() << std::endl;
-    std::cout << "# Pairing Password             " << pairingPassword_ << std::endl;
-    std::cout << "# Pairing Server Connect Token " << pairingServerConnectToken_ << std::endl;
+    std::cout << "# Product ID:                   " << dc_.getProductId() << std::endl;
+    std::cout << "# Device ID:                    " << dc_.getDeviceId() << std::endl;
+    std::cout << "# Fingerprint:                  " << getFingerprint() << std::endl;
+    std::cout << "# Pairing Password:             " << pairingPassword_ << std::endl;
+    std::cout << "# Pairing Server Connect Token: " << pairingServerConnectToken_ << std::endl;
     try {
         std::string server = dc_.getServer();
-        std::cout << "# Server:                     " << server << std::endl;
+        std::cout << "# Server:                       " << server << std::endl;
     } catch(...) {} // Ignore missing server
-    std::cout << "# Version:                     " << nabto_device_version() << std::endl;
-    std::cout << "# Pairing Stri ng              " << createPairingString() << std::endl;
+    std::cout << "# Version:                      " << nabto_device_version() << std::endl;
+    std::cout << "# Pairing String:               " << createPairingString() << std::endl;
     std::cout << "######## " << std::endl;
 }
 
