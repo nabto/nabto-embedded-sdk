@@ -25,7 +25,7 @@ void nm_event_queue_event_init(struct nm_event_queue_event* event, np_event_call
 void nm_event_queue_event_deinit(struct nm_event_queue_event* event);
 
 void nm_event_queue_post_event(struct nm_event_queue* queue, struct nm_event_queue_event* event);
-void nm_event_queue_post_event_maybe_double(struct nm_event_queue* queue, struct nm_event_queue_event* event);
+bool nm_event_queue_post_event_maybe_double(struct nm_event_queue* queue, struct nm_event_queue_event* event);
 void nm_event_queue_cancel_event(struct nm_event_queue_event* event);
 
 void nm_event_queue_post_timed_event(struct nm_event_queue* queue, struct nm_event_queue_event* event, uint32_t milliseconds);

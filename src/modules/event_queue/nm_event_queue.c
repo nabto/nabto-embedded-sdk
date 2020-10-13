@@ -41,12 +41,13 @@ void nm_event_queue_post_event(struct nm_event_queue* queue, struct nm_event_que
     nn_llist_append(&queue->events, &event->eventsNode, event);
 }
 
-void nm_event_queue_post_event_maybe_double(struct nm_event_queue* queue, struct nm_event_queue_event* event)
+bool nm_event_queue_post_event_maybe_double(struct nm_event_queue* queue, struct nm_event_queue_event* event)
 {
     if (nn_llist_node_in_list(&event->eventsNode)) {
-        return;
+        return false;
     }
     nn_llist_append(&queue->events, &event->eventsNode, event);
+    return true;
 }
 
 void nm_event_queue_cancel_event(struct nm_event_queue_event* event)

@@ -14,7 +14,7 @@ struct np_event {
 static np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
 static void destroy_event(struct np_event* event);
 static void post_event(struct np_event* event);
-static void post_event_maybe_double(struct np_event* event);
+static bool post_event_maybe_double(struct np_event* event);
 
 static void cancel_event(struct np_event* event);
 
@@ -116,13 +116,15 @@ void post_event(struct np_event* event)
     nabto_device_threads_cond_signal(queue->condition);
 }
 
-void post_event_maybe_double(struct np_event* event)
+bool post_event_maybe_double(struct np_event* event)
 {
     struct thread_event_queue* queue = event->queue;
+    bool status;
     nabto_device_threads_mutex_lock(queue->queueMutex);
-    nm_event_queue_post_event_maybe_double(&queue->eventQueue, &event->event);
+    status = nm_event_queue_post_event_maybe_double(&queue->eventQueue, &event->event);
     nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    return status;
 }
 
 void cancel_event(struct np_event* event)

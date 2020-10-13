@@ -29,9 +29,11 @@ void np_event_queue_post(struct np_event_queue* eq, struct np_event* event);
 
 /**
  * Enqueue an event which maybe already is in the queue. If it is on
- * the queue it is not requeued. These events needs to be initialized with np_event_queue_init_event
+ * the queue it is not requeued.
+ *
+ * @return true if the event is enqueued
  */
-void np_event_queue_post_maybe_double(struct np_event_queue* eq, struct np_event* event);
+bool np_event_queue_post_maybe_double(struct np_event_queue* eq, struct np_event* event);
 
 void np_event_queue_post_timed_event(struct np_event_queue* eq, struct np_event* event, uint32_t milliseconds);
 

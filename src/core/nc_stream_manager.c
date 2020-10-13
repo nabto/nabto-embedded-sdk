@@ -320,7 +320,11 @@ void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, 
 void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* connection)
 {
     struct nc_stream_context* stream;
-    NN_LLIST_FOREACH(stream, &ctx->streams) {
+    struct nn_llist_iterator it = nn_llist_begin(&ctx->streams);
+    while (!nn_llist_is_end(&it)) {
+        stream = nn_llist_get_item(&it);
+        nn_llist_next(&it);
+
         if (stream->clientConn == connection) {
             stream->clientConn = NULL;
             nc_stream_handle_connection_closed(stream);

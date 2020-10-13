@@ -62,8 +62,9 @@ struct np_event_queue_functions {
      * executed.
      *
      * @param event  The event.
+     * @return true iff the event is scheduled ie not double posted.
      */
-    void (*post_maybe_double)(struct np_event* event);
+    bool (*post_maybe_double)(struct np_event* event);
 
     /**
      * Cancel an event, the event will not be executed.
