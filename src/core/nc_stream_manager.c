@@ -135,6 +135,9 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
     // application. nc_stream_destroy frees the owner ship
     // again.
     nc_stream_ref_count_inc(stream);
+    stream->accepted = true; // now it's the responsibility for the
+                             // application or this function to call
+                             // nc_stream_destroy
 
     uint32_t type = nabto_stream_get_content_type(&stream->stream);
 

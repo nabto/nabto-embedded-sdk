@@ -173,8 +173,8 @@ void tcp_readen(np_error_code ec, void* userData)
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Tcp read error");
         // something not EOF
-        connection->tcpReadEnded = true;
         abort_connection(connection);
+        connection->tcpReadEnded = true;
         is_ended(connection);
         return;
     }
@@ -204,7 +204,13 @@ void stream_closed(np_error_code ec, void* userData)
 
 void start_stream_write(struct nm_tcp_tunnel_connection* connection, size_t transferred)
 {
-    nc_stream_async_write(connection->stream, connection->tcpRecvBuffer, transferred, &stream_written, connection);
+    np_error_code ec = nc_stream_async_write(connection->stream, connection->tcpRecvBuffer, transferred, &stream_written, connection);
+    if (ec) {
+        abort_connection(connection);
+        connection->tcpReadEnded = true;
+        is_ended(connection);
+        return;
+    }
 }
 
 void stream_written(np_error_code ec, void* userData)
@@ -215,8 +221,8 @@ void stream_written(np_error_code ec, void* userData)
         // failed to write the data to the stream. In this scenario we
         // need to fail the connection since we cannot guarantee the
         // data was delivered.
-        connection->tcpReadEnded = true;
         abort_connection(connection);
+        connection->tcpReadEnded = true;
         is_ended(connection);
         return;
     }
@@ -225,7 +231,13 @@ void stream_written(np_error_code ec, void* userData)
 
 void start_stream_read(struct nm_tcp_tunnel_connection* connection)
 {
-    nc_stream_async_read_some(connection->stream, connection->streamRecvBuffer, connection->streamRecvBufferSize, &connection->streamReadSize, &stream_readen, connection);
+    np_error_code ec = nc_stream_async_read_some(connection->stream, connection->streamRecvBuffer, connection->streamRecvBufferSize, &connection->streamReadSize, &stream_readen, connection);
+    if (ec) {
+        abort_connection(connection);
+        connection->streamReadEnded = true;
+        is_ended(connection);
+        return;
+    }
 }
 
 void stream_readen(np_error_code ec, void* userData)
@@ -237,8 +249,8 @@ void stream_readen(np_error_code ec, void* userData)
     }
     if (ec) {
         //NABTO_LOG_ERROR(LOG, "tcp tunnel, stream read failed stopping the tcp tunnel connection");
-        connection->streamReadEnded = true;
         abort_connection(connection);
+        connection->streamReadEnded = true;
         is_ended(connection);
         return;
     }
@@ -267,8 +279,8 @@ void tcp_written(const np_error_code ec, void* userData)
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Could not write all the data to the tcp connection, closing the tcp tunnel connection");
         // unrecoverable error
-        connection->streamReadEnded = true;
         abort_connection(connection);
+        connection->streamReadEnded = true;
         is_ended(connection);
         return;
     }

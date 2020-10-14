@@ -97,6 +97,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     ctx->currentExpiry = nabto_stream_stamp_infinite();
     ctx->isSending = false;
     ctx->connectionRef = connectionRef;
+    ctx->accepted = false;
 
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
@@ -109,7 +110,6 @@ void nc_stream_destroy(struct nc_stream_context* ctx)
     // this is called after the stream ownership has been given to an application.
     nc_stream_ref_count_dec(ctx);
     nc_stream_stop(ctx);
-    nabto_stream_destroy(&ctx->stream);
     nc_stream_manager_stream_remove(ctx);
 }
 
@@ -223,8 +223,13 @@ void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
         return;
     }
     ctx->dtls = NULL;
-    nabto_stream_connection_died(&ctx->stream);
-    nc_stream_event(ctx);
+
+    nc_stream_stop(ctx);
+
+    if (!ctx->accepted) {
+        // the ownership hasn't been tranferred to an user application. free the stream from here.
+        nc_stream_manager_stream_remove(ctx);
+    }
 }
 
 void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
@@ -604,7 +609,7 @@ void nc_stream_stop(struct nc_stream_context* stream)
     }
 
     stream->stopped = true;
-    if (nabto_stream_stop_should_send_rst(&stream->stream)) {
+    if (nabto_stream_stop_should_send_rst(&stream->stream) && stream->dtls) {
         NABTO_LOG_TRACE(LOG, "Sending RST");
         nc_stream_manager_send_rst(stream->streamManager, stream->dtls, stream->streamId);
     }
@@ -657,6 +662,7 @@ void nc_stream_ref_count_dec(struct nc_stream_context* stream)
 {
     stream->refCount--;
     if (stream->refCount == 0) {
+        nabto_stream_destroy(&stream->stream);
         nc_stream_free(stream);
     }
 }

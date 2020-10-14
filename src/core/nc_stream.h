@@ -58,6 +58,7 @@ struct nc_stream_context {
     uint8_t sendBuffer[NC_STREAM_SEND_BUFFER_SIZE];
     enum nabto_stream_next_event_type sendEventType;
     size_t refCount;
+    bool accepted;
 };
 
 void nc_stream_ref_count_inc(struct nc_stream_context* stream);
