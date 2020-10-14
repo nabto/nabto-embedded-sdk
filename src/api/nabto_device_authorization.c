@@ -25,7 +25,6 @@ static void check_access(struct np_authorization_request* authorizationRequest, 
 /**
  * Helper functions
  */
-static void free_request_when_unused(struct nabto_device_authorization_request* request);
 static void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict);
 static void handle_verdict(void* userData);
 
@@ -35,10 +34,9 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     request->connectionReference = connectionRef;
     request->action = action;
     request->attributes = NULL;
-    request->apiDone = true;
-    request->platformDone = false;
     request->verdictDone = false;
     request->module = pl->authorizationData;
+    request->refCount = 0;
 
     np_error_code ec;
     ec = np_event_queue_create_event(&pl->eq, handle_verdict, request, &request->verdictEvent);
@@ -47,28 +45,24 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
         return NULL;
     }
 
-
+    // increment for the platform, either decremented by discard request or handle access
+    nabto_device_authorization_request_ref_inc(request);
     return (struct np_authorization_request*)request;
 }
 
 void discard_request(struct np_authorization_request* request)
 {
     struct nabto_device_authorization_request* r = (struct nabto_device_authorization_request*)request;
-    r->platformDone = true;
-    if (r->apiDone) {
 
-        free_request_when_unused(r);
-    }
+    // either the request is discarded or a verdict is made for the platform.
+    nabto_device_authorization_request_ref_dec(r);
 }
 
 void handle_verdict(void* userData)
 {
     struct nabto_device_authorization_request* authReq = userData;
     authReq->verdictCallback(authReq->verdict, authReq->verdictCallbackUserData1, authReq->verdictCallbackUserData2, authReq->verdictCallbackUserData3);
-    authReq->platformDone = true;
-    if (authReq->apiDone) {
-         free_request_when_unused(authReq);
-    }
+    nabto_device_authorization_request_ref_dec(authReq);
 }
 
 void check_access(struct np_authorization_request* authorizationRequest, np_authorization_request_callback callback, void* userData1, void* userData2, void* userData3)
@@ -96,7 +90,6 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     }
 
     // if we end here the request is not added to the listener.
-    authReq->apiDone = true;
     do_verdict(authReq, false);
 }
 
@@ -126,11 +119,8 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
         do_verdict(authReq, false);
     }
 
-    authReq->apiDone = true;
-
-    if (authReq->platformDone) {
-        free_request_when_unused(authReq);
-    }
+    // free is called from the user application it has a reference to the authreq
+    nabto_device_authorization_request_ref_dec(authReq);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
@@ -284,22 +274,6 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
     return ret;
 }
 
-static void free_request_when_unused(struct nabto_device_authorization_request* authReq)
-{
-    struct nabto_device_authorization_request_attribute* param = authReq->attributes;
-
-    for (size_t i = 0; param != NULL; i++) {
-        struct nabto_device_authorization_request_attribute* old = param;
-        param = param->next;
-        free_attribute(old);
-    }
-    struct np_platform* pl = authReq->module->pl;
-    struct np_event_queue* eq = &pl->eq;
-    np_event_queue_destroy_event(eq, authReq->verdictEvent);
-    free(authReq);
-}
-
-
 void nabto_device_authorization_init_module(struct nabto_device_context* context)
 {
     struct np_platform* pl = &context->pl;
@@ -317,4 +291,29 @@ void nabto_device_authorization_init_module(struct nabto_device_context* context
     pl->authorization.discard_request = discard_request;
     pl->authorization.add_string_attribute = add_string_attribute;
     pl->authorization.check_access = check_access;
+}
+
+
+void nabto_device_authorization_request_ref_inc(struct nabto_device_authorization_request* authReq)
+{
+    authReq->refCount++;
+}
+
+void nabto_device_authorization_request_ref_dec(struct nabto_device_authorization_request* authReq)
+{
+    authReq->refCount--;
+    if (authReq->refCount == 0) {
+        struct nabto_device_authorization_request_attribute* param = authReq->attributes;
+
+        for (size_t i = 0; param != NULL; i++) {
+            struct nabto_device_authorization_request_attribute* old = param;
+            param = param->next;
+            free_attribute(old);
+        }
+
+        struct np_platform* pl = authReq->module->pl;
+        struct np_event_queue* eq = &pl->eq;
+        np_event_queue_destroy_event(eq, authReq->verdictEvent);
+        free(authReq);
+    }
 }

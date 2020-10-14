@@ -13,6 +13,9 @@
 
 ### Breaking Changes
 
+  - IAM Password pairing is incompatible with earlier versions.
+  - `np_event_queue.h` `post_maybe_double` has changed from returning void to return bool.
+
 #### The mdns interface signature has been changed.
 
 The mdns signature is changed from

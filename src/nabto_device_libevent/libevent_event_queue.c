@@ -24,7 +24,6 @@ static void handle_event(evutil_socket_t s, short events, void* data);
 
 struct libevent_event_queue {
     struct nabto_device_mutex* mutex;
-    struct nabto_device_mutex* destroyMutex;
     struct nabto_device_thread* coreThread;
     struct event_base* eventBase;
 };
@@ -54,7 +53,6 @@ struct np_event_queue libevent_event_queue_create(struct event_base* eventBase, 
     struct np_event_queue obj;
     obj.mptr = &module;
     obj.data = eq;
-    eq->destroyMutex = nabto_device_threads_create_mutex();
     return obj;
 }
 
@@ -70,8 +68,8 @@ void handle_event(evutil_socket_t s, short events, void* data)
     struct libevent_event_queue* eq = event->eq;
 
     nabto_device_threads_mutex_lock(eq->mutex);
-    event->cb(event->data);
     event->posted = false;
+    event->cb(event->data);
     nabto_device_threads_mutex_unlock(eq->mutex);
 }
 
