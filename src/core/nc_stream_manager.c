@@ -131,6 +131,11 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 
 void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, struct nc_stream_context* stream)
 {
+    // Ownership of the stream has been given to the
+    // application. nc_stream_destroy frees the owner ship
+    // again.
+    nc_stream_ref_count_inc(stream);
+
     uint32_t type = nabto_stream_get_content_type(&stream->stream);
 
     struct nc_stream_listener* listener;
@@ -141,7 +146,6 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
         }
     }
     // no listener found free the stream and send an rst
-    nc_stream_stop(stream);
     nc_stream_destroy(stream);
     return;
 }

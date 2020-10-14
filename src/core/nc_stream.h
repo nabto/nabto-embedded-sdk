@@ -29,7 +29,6 @@ struct nc_stream_context {
     struct nc_client_connection* clientConn;
     struct nc_stream_manager_context* streamManager;
     struct np_event* ev;
-    bool active;
     bool stopped;
     uint64_t connectionRef;
 
