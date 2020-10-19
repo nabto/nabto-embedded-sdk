@@ -61,9 +61,11 @@ struct nm_iam {
     char* clientServerUrl;
     char* clientServerKey;
 
+    // TODO: Roles -> Role
     struct nn_string_set firstUserRoles;
     struct nn_string_set secondaryUserRoles;
     struct nn_string_set unpairedRoles;
+    char* unpairedRole;
 };
 
 /**
@@ -183,14 +185,9 @@ bool nm_iam_add_policy(struct nm_iam* iam, struct nm_policy* policy);
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributes);
 
 /**
- * remove a role from a user.
+ * Set a role to a user
  */
-void nm_iam_remove_role_from_user(struct nm_iam* iam, const char* userId, const char* roleId);
-
-/**
- * Add a role to a user
- */
-bool nm_iam_add_role_to_user(struct nm_iam* iam, const char* userId, const char* roleId);
+bool nm_iam_set_user_role(struct nm_iam* iam, const char* userId, const char* roleId);
 
 
 #ifdef __cplusplus

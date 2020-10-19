@@ -35,13 +35,8 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
         cJSON_AddItemToObject(root, "ServerConnectToken", cJSON_CreateString(user->serverConnectToken));
     }
 
-    if (!nn_string_set_empty(&user->roles)) {
-        cJSON* array = cJSON_CreateArray();
-        const char* role;
-        NN_STRING_SET_FOREACH(role, &user->roles) {
-            cJSON_AddItemToArray(array, cJSON_CreateString(role));
-        }
-        cJSON_AddItemToObject(root, "Roles", array);
+    if (user->role != NULL) {
+        cJSON_AddItemToObject(root, "role", cJSON_CreateString(user->role));
     }
 
     if (!nn_string_map_empty(&user->attributes)) {

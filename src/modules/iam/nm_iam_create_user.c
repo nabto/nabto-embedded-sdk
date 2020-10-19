@@ -47,7 +47,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* sct;
     NabtoDeviceError ec = nabto_device_create_server_connect_token(handler->iam->device, &sct);
     if (ec != NABTO_DEVICE_EC_OK) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+        nabto_device_coap_error_response(request, 500, "Server error");
         return;
     }
 
@@ -63,39 +63,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nm_iam_user_set_name(user, name);
     }
 
-
-    cbor_value_map_find_value(&value, "Roles", &roles);
-    if (cbor_value_is_array(&roles)) {
-        CborValue it;
-        if (!cbor_value_enter_container(&roles, &it)) {
-            free(fp); free(name);
-            nabto_device_coap_error_response(request, 400, "Bad request");
-            return;
-        }
-        while(!cbor_value_at_end(&it)) {
-            char* role;
-            if (!nm_iam_cbor_decode_string(&it, &role)) {
-                free(fp); free(name);
-                nabto_device_coap_error_response(request, 400, "Bad request");
-                return;
-            }
-            nn_string_set_insert(&user->roles, role);
-            free(role);
-            if (cbor_value_advance_fixed(&it)) {
-                free(fp); free(name);
-                nabto_device_coap_error_response(request, 400, "Bad request");
-                return;
-            }
-        }
-        if (!cbor_value_leave_container(&roles, &it)) {
-            free(fp); free(name);
-            nabto_device_coap_error_response(request, 400, "Bad request");
-            return;
-        }
-    } else {
+    char* role = NULL;
+    nm_iam_cbor_decode_kv_string(&value, "Role", &role);
+    if (role == NULL) {
+        // No role where provided, default to secondaryUserRoles
+        // TODO: secondaryUserRoles -> secondaryUserRole
         const char* roleStr;
         NN_STRING_SET_FOREACH(roleStr, &handler->iam->secondaryUserRoles) {
-            nn_string_set_insert(&user->roles, roleStr);
+            nm_iam_user_set_role(user, roleStr);
         }
     }
 
