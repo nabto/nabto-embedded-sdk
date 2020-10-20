@@ -27,7 +27,6 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     CborParser parser;
     CborValue value;
-    CborValue roles;
     CborValue attributes;
 
     if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
@@ -66,12 +65,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* role = NULL;
     nm_iam_cbor_decode_kv_string(&value, "Role", &role);
     if (role == NULL) {
-        // No role where provided, default to secondaryUserRoles
-        // TODO: secondaryUserRoles -> secondaryUserRole
-        const char* roleStr;
-        NN_STRING_SET_FOREACH(roleStr, &handler->iam->secondaryUserRoles) {
-            nm_iam_user_set_role(user, roleStr);
-        }
+        // No role where provided, default to secondaryUserRole
+        nm_iam_user_set_role(user, handler->iam->secondaryUserRole);
     }
 
     cbor_value_map_find_value(&value, "Attributes", &attributes);

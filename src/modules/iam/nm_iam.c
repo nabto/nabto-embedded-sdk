@@ -34,10 +34,6 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     nn_vector_init(&iam->roles, sizeof(void*));
     nn_vector_init(&iam->policies, sizeof(void*));
 
-    nn_string_set_init(&iam->firstUserRoles);
-    nn_string_set_init(&iam->secondaryUserRoles);
-    nn_string_set_init(&iam->unpairedRoles);
-
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
     nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
 
@@ -56,16 +52,9 @@ bool nm_iam_start(struct nm_iam* iam)
 {
     bool ret = true;
     // validate that the pairing roles exists in the system
-    const char* role;
-    NN_STRING_SET_FOREACH(role, &iam->firstUserRoles) {
-        ret &= validate_role(iam, role);
-    }
-    NN_STRING_SET_FOREACH(role, &iam->secondaryUserRoles) {
-        ret &= validate_role(iam, role);
-    }
-    NN_STRING_SET_FOREACH(role, &iam->unpairedRoles) {
-        ret &= validate_role(iam, role);
-    }
+    ret &= validate_role(iam, iam->firstUserRole);
+    ret &= validate_role(iam, iam->secondaryUserRole);
+    ret &= validate_role(iam, iam->unpairedRole);
     return ret;
 }
 
@@ -82,6 +71,10 @@ void nm_iam_deinit(struct nm_iam* iam)
     }
     nn_vector_deinit(&iam->users);
 
+    free(iam->firstUserRole);
+    free(iam->secondaryUserRole);
+    free(iam->unpairedRole);
+
     struct nm_iam_role* role;
     NN_VECTOR_FOREACH(&role, &iam->roles) {
         nm_iam_role_free(role);
@@ -93,10 +86,6 @@ void nm_iam_deinit(struct nm_iam* iam)
         nm_policy_free(policy);
     }
     nn_vector_deinit(&iam->policies);
-
-    nn_string_set_deinit(&iam->firstUserRoles);
-    nn_string_set_deinit(&iam->secondaryUserRoles);
-    nn_string_set_deinit(&iam->unpairedRoles);
 
     free(iam->pairingPassword);
     free(iam->clientServerUrl);
@@ -138,7 +127,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
             // TODO: NO_MATCH or DENY ?
             effect = NM_EFFECT_NO_MATCH;
         } else {
-            effect = nm_iam_check_access_role(iam, &iam->unpairedRoles, action, &attributes);
+            effect = nm_iam_check_access_role(iam, role, action, &attributes);
         }
     }
 
@@ -199,19 +188,31 @@ bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerC
     return true;
 }
 
-bool nm_iam_add_first_user_role(struct nm_iam* iam, const char* role)
+bool nm_iam_set_first_user_role(struct nm_iam* iam, const char* role)
 {
-    return nn_string_set_insert(&iam->firstUserRoles, role);
+    if (iam->firstUserRole != NULL) {
+        free(iam->firstUserRole);
+    }
+    iam->firstUserRole = strdup(role);
+    return (iam->firstUserRole != NULL);
 }
 
-bool nm_iam_add_secondary_user_role(struct nm_iam* iam, const char* role)
+bool nm_iam_set_secondary_user_role(struct nm_iam* iam, const char* role)
 {
-    return nn_string_set_insert(&iam->secondaryUserRoles, role);
+    if (iam->secondaryUserRole != NULL) {
+        free(iam->secondaryUserRole);
+    }
+    iam->secondaryUserRole = strdup(role);
+    return (iam->secondaryUserRole != NULL);
 }
 
-bool nm_iam_add_unpaired_roles(struct nm_iam* iam, const char* role)
+bool nm_iam_set_unpaired_role(struct nm_iam* iam, const char* role)
 {
-    return nn_string_set_insert(&iam->unpairedRoles, role);
+    if (iam->unpairedRole != NULL) {
+        free(iam->unpairedRole);
+    }
+    iam->unpairedRole = strdup(role);
+    return (iam->unpairedRole != NULL);
 }
 
 void init_coap_handlers(struct nm_iam* iam)
@@ -315,17 +316,9 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
     free(nextId);
 
     if (firstUser) {
-        const char* roleStr;
-        // TODO: roles -> role
-        NN_STRING_SET_FOREACH(roleStr, &iam->firstUserRoles) {
-            nm_iam_user_set_role(user, roleStr);
-        }
+        nm_iam_user_set_role(user, iam->firstUserRole);
     } else {
-        const char* roleStr;
-        // TODO: roles -> role
-        NN_STRING_SET_FOREACH(roleStr, &iam->secondaryUserRoles) {
-            nm_iam_user_set_role(user, roleStr);
-        }
+        nm_iam_user_set_role(user, iam->secondaryUserRole);
     }
 
     nm_iam_user_set_fingerprint(user, fingerprint);
