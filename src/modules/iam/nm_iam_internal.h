@@ -1,7 +1,7 @@
 #ifndef _NM_IAM_INTERNAL_H_
 #define _NM_IAM_INTERNAL_H_
 
-char* nm_iam_next_user_id(struct nm_iam* iam);
+char* nm_iam_make_user_id(struct nm_iam* iam);
 struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const char* fingerprint);
 struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* roleStr);
 struct nm_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyStr);

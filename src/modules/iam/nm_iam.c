@@ -12,6 +12,7 @@
 #include <nn/log.h>
 
 #include <stdlib.h>
+#include <time.h>
 
 static const char* LOGM = "iam";
 
@@ -28,6 +29,7 @@ static char* get_fingerprint_from_coap_request(struct nm_iam* iam, NabtoDeviceCo
 void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 {
     memset(iam, 0, sizeof(struct nm_iam));
+    srand(time(0));
     iam->device = device;
     iam->logger = logger;
     nn_vector_init(&iam->users, sizeof(void*));
@@ -311,7 +313,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
         return NULL;
     }
 
-    char* nextId = nm_iam_next_user_id(iam);
+    char* nextId = nm_iam_make_user_id(iam);
     struct nm_iam_user* user = nm_iam_user_new(nextId);
     free(nextId);
 
@@ -401,16 +403,16 @@ struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* id)
     return nm_iam_find_user_by_id(iam, id);
 }
 
-char* nm_iam_next_user_id(struct nm_iam* iam)
+char* nm_iam_make_user_id(struct nm_iam* iam)
 {
-    char* id = malloc(20);
-    int i = 0;
+    char* id = malloc(7);
 
     struct nm_iam_user* user;
     do {
-        memset(id, 0, 20);
-        i++;
-        sprintf(id, "%d", (int)i);
+        memset(id, 0, 7);
+        for (int i = 0; i<6; i++) {
+            sprintf(id, "%c", (char)('a'+rand()%26));
+        }
 
         user = nm_iam_find_user_by_id(iam, id);
     } while (user != NULL);

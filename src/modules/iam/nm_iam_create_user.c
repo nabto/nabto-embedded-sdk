@@ -50,7 +50,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* nextId = nm_iam_next_user_id(handler->iam);
+    char* nextId = nm_iam_make_user_id(handler->iam);
     struct nm_iam_user* user = nm_iam_user_new(nextId);
     free(nextId);
 
