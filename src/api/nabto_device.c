@@ -695,3 +695,15 @@ nabto_device_limit_streams(NabtoDevice* device, size_t limit)
     return nabto_device_error_core_to_api(NABTO_EC_OK);
 }
 
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    nc_coap_server_limit_requests(&dev->core.coapServer, limit);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    return nabto_device_error_core_to_api(NABTO_EC_OK);
+}
+

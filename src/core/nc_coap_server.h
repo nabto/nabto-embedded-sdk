@@ -36,4 +36,6 @@ struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server
 
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection);
 
+void nc_coap_server_limit_requests(struct nc_coap_server_context* ctx, size_t limit);
+
 #endif // NC_COAP_SERVER_H

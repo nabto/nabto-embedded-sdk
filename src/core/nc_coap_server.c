@@ -202,3 +202,8 @@ void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx)
     ctx->currentExpiry = nabto_coap_server_stamp_now(&ctx->server);
     ctx->currentExpiry += (1 << 29);
 }
+
+void nc_coap_server_limit_requests(struct nc_coap_server_context* ctx, size_t limit)
+{
+    nabto_coap_server_limit_requests(&ctx->server, limit);
+}
