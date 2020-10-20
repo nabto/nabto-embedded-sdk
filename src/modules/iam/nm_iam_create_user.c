@@ -27,48 +27,68 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     CborParser parser;
     CborValue value;
-    CborValue attributes;
 
     if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
 
-    char* fp = NULL;
     char* name = NULL;
+    char* role = NULL;
 
-    nm_iam_cbor_decode_kv_string(&value, "Fingerprint", &fp);
-    if (fp == NULL) {
+    nm_iam_cbor_decode_kv_string(&value, "Name", &name);
+    nm_iam_cbor_decode_kv_string(&value, "Role", &role);
+
+    if (role == NULL) {
+        role = handler->iam->secondaryUserRole;
+    }
+    if(nm_iam_find_role(handler->iam, role) == NULL || // the provided role does not exist
+       name == NULL) { // or name not provided
         nabto_device_coap_error_response(request, 400, "Bad request");
+        free(role);
+        free(name);
         return;
     }
 
-    char* sct;
-    NabtoDeviceError ec = nabto_device_create_server_connect_token(handler->iam->device, &sct);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        nabto_device_coap_error_response(request, 500, "Server error");
-        return;
-    }
+    char* userName = nm_iam_make_user_name(handler->iam, name);
+    free(name);
 
     char* nextId = nm_iam_make_user_id(handler->iam);
     struct nm_iam_user* user = nm_iam_user_new(nextId);
     free(nextId);
 
-    nm_iam_cbor_decode_kv_string(&value, "Name", &name);
+    char* fp = NULL;
+    char* password = NULL;
+    char* sct;
 
-    nm_iam_user_set_fingerprint(user, fp);
-    nm_iam_user_set_server_connect_token(user, sct);
-    if (name != NULL) {
-        nm_iam_user_set_name(user, name);
+    nm_iam_cbor_decode_kv_string(&value, "Fingerprint", &fp);
+    nm_iam_cbor_decode_kv_string(&value, "Password", &password);
+
+    if (nabto_device_create_server_connect_token(handler->iam->device, &sct) != NABTO_DEVICE_EC_OK ||
+        !nm_iam_user_set_server_connect_token(user, sct) ||
+        !nm_iam_user_set_fingerprint(user, fp) ||
+        !nm_iam_user_set_name(user, userName) ||
+        !nm_iam_user_set_role(user, role) ||
+        !nm_iam_user_set_password(user, password)) {
+
+        nabto_device_coap_error_response(request, 500, "Server error");
+
+        nabto_device_string_free(sct);
+        free(fp);
+        free(role);
+        free(password);
+        free(userName);
+        nm_iam_user_free(user);
+        return;
     }
+    nabto_device_string_free(sct);
+    free(fp);
+    free(role);
+    free(password);
+    free(userName);
 
-    char* role = NULL;
-    nm_iam_cbor_decode_kv_string(&value, "Role", &role);
-    if (role == NULL) {
-        // No role where provided, default to secondaryUserRole
-        nm_iam_user_set_role(user, handler->iam->secondaryUserRole);
-    }
 
+    CborValue attributes;
     cbor_value_map_find_value(&value, "Attributes", &attributes);
 
     if (cbor_value_is_map(&attributes)) {
@@ -80,8 +100,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nabto_device_coap_response_set_code(request, 201);
     nabto_device_coap_response_ready(request);
 
-    nabto_device_string_free(sct);
-    free(fp);
-    free(name);
 
 }

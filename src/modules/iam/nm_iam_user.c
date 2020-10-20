@@ -44,20 +44,47 @@ void nm_iam_user_free(struct nm_iam_user* user)
 
 bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint)
 {
-    if (user->fingerprint != NULL) {
+    if (fingerprint == NULL) {
         free(user->fingerprint);
+        user->fingerprint = NULL;
+        return true;
     }
-    user->fingerprint = strdup(fingerprint);
-    return (user->fingerprint != NULL);
+    char* tmp = strdup(fingerprint);
+    if (tmp != NULL) {
+        free(user->fingerprint);
+        user->fingerprint = tmp;
+    }
+    return (tmp != NULL);
 }
 
-bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken)
+bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
 {
-    if (user->serverConnectToken != NULL) {
-        free(user->serverConnectToken);
+    if (password == NULL) {
+        free(user->password);
+        user->password = NULL;
+        return true;
     }
-    user->serverConnectToken = strdup(serverConnectToken);
-    return (user->serverConnectToken != NULL);
+    char* tmp = strdup(password);
+    if (tmp != NULL) {
+        free(user->password);
+        user->password = tmp;
+    }
+    return (tmp != NULL);
+}
+
+bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* sct)
+{
+    if (sct == NULL) {
+        free(user->serverConnectToken);
+        user->serverConnectToken = NULL;
+        return true;
+    }
+    char* tmp = strdup(sct);
+    if (tmp != NULL) {
+        free(user->serverConnectToken);
+        user->serverConnectToken = tmp;
+    }
+    return (tmp != NULL);
 }
 
 bool nm_iam_user_set_name(struct nm_iam_user* user, const char* name)

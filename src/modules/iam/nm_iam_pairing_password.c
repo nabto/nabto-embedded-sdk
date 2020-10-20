@@ -54,8 +54,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     } else {
 
         nm_iam_cbor_decode_kv_string(&value, "Name", &name);
-
-        if (!nm_iam_pair_new_client(handler->iam, request, name)) {
+        if (name == NULL) {
+            nabto_device_coap_error_response(request, 400, "Bad request");
+        } else if (!nm_iam_pair_new_client(handler->iam, request, name)) {
             nabto_device_coap_error_response(request, 500, "Server error");
         } else {
             // OK response

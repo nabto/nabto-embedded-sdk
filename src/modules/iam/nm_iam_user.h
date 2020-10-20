@@ -12,6 +12,7 @@ struct nm_iam_user {
     char* id;
     char* name;
     char* role;
+    char* password;
     char* fingerprint;
     char* serverConnectToken;
     struct nn_string_map attributes;
@@ -27,6 +28,7 @@ bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerpri
 bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken);
 bool nm_iam_user_set_name(struct nm_iam_user* user, const char* name);
 bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId);
+bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password);
 
 #ifdef __cplusplus
 } //extern "C"

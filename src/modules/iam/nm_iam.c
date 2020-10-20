@@ -197,12 +197,11 @@ bool nm_iam_set_first_user_role(struct nm_iam* iam, const char* role)
         return true;
     }
     char* tmp = strdup(role);
-    if (tmp == NULL) {
-        return false;
+    if (tmp != NULL) {
+        free(iam->firstUserRole);
+        iam->firstUserRole = tmp;
     }
-    free(iam->firstUserRole);
-    iam->firstUserRole = tmp;
-    return true;
+    return (tmp != 0);
 }
 
 bool nm_iam_set_secondary_user_role(struct nm_iam* iam, const char* role)
@@ -444,6 +443,36 @@ char* nm_iam_make_user_id(struct nm_iam* iam)
     } while (user != NULL);
 
     return id;
+}
+
+struct nm_iam_user* nm_iam_find_user_by_name(struct nm_iam* iam, const char* name)
+{
+    struct nm_iam_user* user;
+    NN_VECTOR_FOREACH(&user, &iam->users) {
+        if (strcmp(user->name, name) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}
+
+char* nm_iam_make_user_name(struct nm_iam* iam, const char* suggested)
+{
+    if (nm_iam_find_user_by_name(iam, suggested) == NULL) {
+        return strdup(suggested);
+    }
+    char* name = malloc(strlen(suggested)+20);
+    strcpy(name, suggested);
+    char* suffix = name+strlen(suggested);
+    int i = 0;
+    struct nm_iam_user* user;
+    do {
+        memset(suffix, 0, 20);
+        i++;
+        sprintf(suffix, "-%d", (int)i);
+        user = nm_iam_find_user_by_name(iam, name);
+    } while (user != NULL);
+    return name;
 }
 
 void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChanged, void* data)
