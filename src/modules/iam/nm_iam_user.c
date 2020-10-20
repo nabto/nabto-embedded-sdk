@@ -37,6 +37,7 @@ void nm_iam_user_free(struct nm_iam_user* user)
     free(user->name);
     free(user->fingerprint);
     free(user->serverConnectToken);
+    free(user->role);
     nn_string_map_deinit(&user->attributes);
     free(user);
 }
@@ -61,18 +62,28 @@ bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* 
 
 bool nm_iam_user_set_name(struct nm_iam_user* user, const char* name)
 {
-    if (user->name != NULL) {
-        free(user->name);
+    if (name == NULL) {
+        return false; // A user must have a name
     }
-    user->name = strdup(name);
-    return (user->name != NULL);
+    char* tmp = strdup(name);
+    if (tmp == NULL) {
+        return false;
+    }
+    free(user->name);
+    user->name = tmp;
+    return true;
 }
 
 bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId)
 {
-    if (user->role != NULL) {
-        free(user->role);
+    if (roleId == NULL) {
+        return false; // A user must have a role
     }
-    user->role = strdup(roleId);
-    return (user->role != NULL);
+    char* tmp = strdup(roleId);
+    if (tmp == NULL) {
+        return false;
+    }
+    free(user->role);
+    user->role = tmp;
+    return true;
 }

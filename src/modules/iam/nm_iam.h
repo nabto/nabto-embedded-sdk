@@ -50,8 +50,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserCreateHandler;
     struct nm_iam_coap_handler coapIamUsersUserDeleteHandler;
     struct nm_iam_coap_handler coapIamRolesGetHandler;
-    struct nm_iam_coap_handler coapIamUsersUserRolesDeleteHandler;
-    struct nm_iam_coap_handler coapIamUsersUserRolesPutHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetRoleHandler;
 
     struct nm_iam_auth_handler authHandler;
     struct nm_iam_pake_handler pakeHandler;

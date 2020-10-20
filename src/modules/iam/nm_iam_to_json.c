@@ -36,7 +36,7 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
     }
 
     if (user->role != NULL) {
-        cJSON_AddItemToObject(root, "role", cJSON_CreateString(user->role));
+        cJSON_AddItemToObject(root, "Role", cJSON_CreateString(user->role));
     }
 
     if (!nn_string_map_empty(&user->attributes)) {
