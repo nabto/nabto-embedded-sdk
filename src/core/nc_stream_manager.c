@@ -166,7 +166,7 @@ struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager
 
 struct nc_stream_context* nc_stream_manager_alloc_stream(struct nc_stream_manager_context* ctx)
 {
-    if (ctx->currentStreams > ctx->maxStreams) {
+    if (ctx->currentStreams >= ctx->maxStreams) {
         return NULL;
     }
     struct nc_stream_context* stream = (struct nc_stream_context*)calloc(1, sizeof(struct nc_stream_context));
