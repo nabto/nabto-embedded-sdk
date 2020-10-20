@@ -14,6 +14,20 @@ struct nabto_device_authorization_request_attribute {
     char* value;
 };
 
+/**
+ * Lifetime of authorization requests.
+ *
+ * First the request is created the place which needs to make the
+ * access control request. Then the request is either freeed or put
+ * into the access control check queue.
+ *
+ * The request is then removed from the queue and given to a user
+ * application which makes a verdict and calls free on the request.
+ *
+ * The access control callback is then called to let the initiator
+ * know if the request was allowed or denied.
+ */
+
 struct nabto_device_authorization_request {
     struct nabto_device_authorization_module* module;
     struct nabto_device_authorization_request_attribute* attributes;
@@ -41,6 +55,9 @@ struct nabto_device_authorization_request {
     void* verdictCallbackUserData1;
     void* verdictCallbackUserData2;
     void* verdictCallbackUserData3;
+
+
+    size_t refCount;
 };
 
 struct nabto_device_authorization_module {
@@ -51,5 +68,8 @@ struct nabto_device_authorization_module {
 };
 
 void nabto_device_authorization_init_module(struct nabto_device_context* context);
+
+void nabto_device_authorization_request_ref_inc(struct nabto_device_authorization_request* authReq);
+void nabto_device_authorization_request_ref_dec(struct nabto_device_authorization_request* authReq);
 
 #endif

@@ -18,6 +18,8 @@ struct nc_client_connection_dispatch_context {
     size_t currentConnections;
     void* closeData;
     bool closing;
+    bool sendingInternalError;
+    struct np_completion_event sendCompletionEvent;
 };
 
 void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,

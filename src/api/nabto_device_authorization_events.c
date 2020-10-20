@@ -20,6 +20,7 @@ np_error_code nabto_device_authorization_listener_callback(const np_error_code e
     if (ec == NABTO_EC_OK) {
         // resolve authorization request to listeners request.
         struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)eventData;
+        nabto_device_authorization_request_ref_inc(authReq);
         *ctx->request = (NabtoDeviceAuthorizationRequest*)authReq;
     } else if (ec == NABTO_EC_OUT_OF_MEMORY) {
         // new auth request cannot be added to the auth queue.

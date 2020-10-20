@@ -15,7 +15,7 @@
 static np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event);
 static void destroy(struct np_event* event);
 static void post(struct np_event* event);
-static void post_maybe_double(struct np_event* event);
+static bool post_maybe_double(struct np_event* event);
 
 static void post_timed(struct np_event* event, uint32_t milliseconds);
 static void cancel(struct np_event* event);
@@ -33,6 +33,7 @@ struct np_event {
     np_event_callback cb;
     void* data;
     struct event event;
+    bool posted;
 };
 
 static struct np_event_queue_functions module = {
@@ -67,6 +68,7 @@ void handle_event(evutil_socket_t s, short events, void* data)
     struct libevent_event_queue* eq = event->eq;
 
     nabto_device_threads_mutex_lock(eq->mutex);
+    event->posted = false;
     event->cb(event->data);
     nabto_device_threads_mutex_unlock(eq->mutex);
 }
@@ -81,6 +83,7 @@ np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbD
     ev->eq = eq;
     ev->cb = cb;
     ev->data = cbData;
+    ev->posted = false;
 
     event_assign(&ev->event, eq->eventBase, -1, 0, &handle_event, ev);
 
@@ -102,12 +105,13 @@ void post(struct np_event* event)
     event_active(&event->event, 0, 0);
 }
 
-void post_maybe_double(struct np_event* event)
+bool post_maybe_double(struct np_event* event)
 {
-    // TODO
-    //struct np_platform* pl = event->pl;
-    //struct nabto_device_event_queue* eq = pl->eqData;
+    if (event->posted) {
+        return false;
+    }
     event_active(&event->event, 0, 0);
+    return true;
 }
 
 void post_timed(struct np_event* event, uint32_t milliseconds)

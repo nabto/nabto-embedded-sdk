@@ -1,4 +1,5 @@
 #include "nc_client_connection_dispatch.h"
+#include "nc_udp_dispatch.h"
 
 #include <platform/np_logging.h>
 #include <string.h>
@@ -6,6 +7,8 @@
 #include <limits.h>
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION_DISPATCH
+
+static void nc_client_connection_dispatch_send_internal_error_cb(np_error_code ec, void* data);
 
 void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
                                         struct np_platform* pl,
@@ -16,6 +19,13 @@ void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_con
     ctx->device = dev;
     ctx->pl = pl;
     ctx->closing = false;
+    ctx->sendingInternalError = false;
+    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, &nc_client_connection_dispatch_send_internal_error_cb, ctx);
+    if (ec != NABTO_EC_OK) {
+        // todo
+        //return ec;
+    }
+
 }
 
 void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_context* ctx)
@@ -33,6 +43,7 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
             nc_client_connection_destroy_connection(connection);
         }
     }
+    np_completion_event_deinit(&ctx->sendCompletionEvent);
 }
 
 void nc_client_connection_dispatch_try_close(struct nc_client_connection_dispatch_context* ctx)
@@ -89,6 +100,44 @@ void nc_client_connection_dispatch_free_connection(struct nc_client_connection_d
     ctx->currentConnections--;
 }
 
+static void nc_client_connection_dispatch_send_internal_error_cb(np_error_code ec, void* data)
+{
+    struct nc_client_connection_dispatch_context* ctx = (struct nc_client_connection_dispatch_context*)data;
+    ctx->sendingInternalError = false;
+}
+
+
+void nc_client_connection_dispatch_send_internal_error(struct nc_client_connection_dispatch_context *ctx,
+                                                       struct nc_udp_dispatch_context *sock, struct np_udp_endpoint *ep,
+                                                       uint8_t *buffer, uint16_t bufferSize)
+{
+    if (ctx->sendingInternalError) {
+        return;
+    }
+    if (bufferSize < 16) {
+        return;
+    }
+    static uint8_t responseBuffer[16+13+2];
+    uint8_t* ptr = responseBuffer;
+    // the following section constructs a dtls alert message saying internal error
+    memcpy(ptr, buffer, 16); ptr += 16;
+    *ptr = 21; ptr++; // alert content type
+    *ptr = 0xfe; ptr++; // version major
+    *ptr = 0xfd; ptr++; // version minor
+    for (size_t i = 0; i < 8; i++) {
+        *ptr = 0; ptr++; // epoch and sequence number
+    }
+    *ptr = 0; ptr++; // size
+    *ptr = 2; ptr++;
+    *ptr = 2; ptr++; // fatal alert
+    *ptr = 80; ptr++; // internal_error message
+
+    ctx->sendingInternalError = true;
+    nc_udp_dispatch_async_send_to(sock, ep,
+                                      responseBuffer, sizeof(responseBuffer),
+                                      &ctx->sendCompletionEvent);
+}
+
 /*//void nc_client_connect_dispatch_handle_packet(const np_error_code ec, struct np_udp_endpoint ep,
 //                                              np_communication_buffer* buffer, uint16_t bufferSize,
 //                                              void* data)*/
@@ -118,6 +167,7 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
     if (buffer[16] == 22) {
         struct nc_client_connection* connection = nc_client_connection_dispatch_alloc_connection(ctx);
         if (!connection) {
+            nc_client_connection_dispatch_send_internal_error(ctx, sock, ep, buffer, bufferSize);
             return;
         }
         NABTO_LOG_TRACE(LOG, "Open new connection");

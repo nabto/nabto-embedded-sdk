@@ -14,6 +14,7 @@
 #include <streaming/nabto_stream_log_helper.h>
 
 struct nc_stream_manager_context;
+struct nc_client_connection;
 
 typedef void (*nc_stream_callback)(const np_error_code ec, void* userData);
 
@@ -21,12 +22,13 @@ typedef void (*nc_stream_callback)(const np_error_code ec, void* userData);
 
 struct nc_stream_context {
     struct np_platform* pl;
+    struct nn_llist_node streamsNode;
     struct nabto_stream stream;
     uint64_t streamId;
     struct np_dtls_srv_connection* dtls;
+    struct nc_client_connection* clientConn;
     struct nc_stream_manager_context* streamManager;
     struct np_event* ev;
-    bool active;
     bool stopped;
     uint64_t connectionRef;
 
@@ -55,11 +57,15 @@ struct nc_stream_context {
     struct np_dtls_srv_send_context sendCtx;
     uint8_t sendBuffer[NC_STREAM_SEND_BUFFER_SIZE];
     enum nabto_stream_next_event_type sendEventType;
+    size_t refCount;
+    bool accepted;
 };
 
+void nc_stream_ref_count_inc(struct nc_stream_context* stream);
+void nc_stream_ref_count_dec(struct nc_stream_context* stream);
 
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_stream_manager_context* streamManager, uint64_t connectionRef);
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef);
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 

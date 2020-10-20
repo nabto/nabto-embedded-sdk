@@ -17,6 +17,8 @@ struct nabto_device_stream_listener_context {
     NabtoDeviceStream** stream;
 };
 
+static void nabto_device_stream_free_internal(struct nabto_device_stream* stream);
+
 /*******************************************
  * Streaming Api
  *******************************************/
@@ -108,8 +110,7 @@ void NABTO_DEVICE_API nabto_device_stream_free(NabtoDeviceStream* stream)
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
     struct nabto_device_context* dev = str->dev;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
-    nc_stream_destroy(str->stream);
-    free(str);
+    nabto_device_stream_free_internal(str);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
@@ -269,6 +270,11 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }
 
+void nabto_device_stream_free_internal(struct nabto_device_stream* str) {
+    nc_stream_destroy(str->stream);
+    free(str);
+}
+
 /*******************************************
  * Streaming Api End
  *******************************************/
@@ -295,15 +301,14 @@ np_error_code nabto_device_stream_listener_callback(const np_error_code ec, stru
     } else {
         // In error state streams on the listener queue will not reach the user, so they cant call stream_free
         struct nabto_device_stream* str = (struct nabto_device_stream*)eventData;
-        nc_stream_destroy(str->stream);
-        free(str);
+        nabto_device_stream_free_internal(str);
         retEc = ec;
     }
     return retEc;
 }
 
 
-
+// called from nc_stream_manager_resolve_listener
 void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_context* stream, void* data)
 {
     struct nabto_device_stream_listener_context* listenerContext = data;
@@ -321,8 +326,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
         // using the stream structure directly as listener event, this means we dont free event untill user calls stream_free()
         np_error_code ec = nabto_device_listener_add_event(listenerContext->listener, &str->eventListNode, str);
         if (ec != NABTO_EC_OK) {
-            nc_stream_destroy(str->stream);
-            free(str);
+            nabto_device_stream_free_internal(str);
         }
         return;
     } else {
