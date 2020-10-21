@@ -276,9 +276,12 @@ void deinit_coap_handlers(struct nm_iam* iam)
 
 struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const char* fingerprint)
 {
+    if (fingerprint == NULL) {
+        return NULL;
+    }
     struct nm_iam_user* user;
     NN_VECTOR_FOREACH(&user, &iam->users) {
-        if (strcmp(user->fingerprint, fingerprint) == 0) {
+        if (user->fingerprint != NULL && strcmp(user->fingerprint, fingerprint) == 0) {
             return user;
         }
     }
@@ -436,7 +439,7 @@ char* nm_iam_make_user_id(struct nm_iam* iam)
     do {
         memset(id, 0, 7);
         for (int i = 0; i<6; i++) {
-            sprintf(id, "%c", (char)('a'+rand()%26));
+            sprintf(id+i, "%c", (char)('a'+rand()%26));
         }
 
         user = nm_iam_find_user_by_id(iam, id);

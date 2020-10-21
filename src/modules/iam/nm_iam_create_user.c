@@ -97,8 +97,22 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     nm_iam_add_user(handler->iam, user);
 
+    size_t payloadSize = nm_iam_cbor_encode_user(user, NULL, 0);
+    uint8_t* payload = malloc(payloadSize);
+    if (payload == NULL) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        return;
+    }
+
+    nm_iam_cbor_encode_user(user, payload, payloadSize);
+
     nabto_device_coap_response_set_code(request, 201);
-    nabto_device_coap_response_ready(request);
-
-
+    nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    NabtoDeviceError ec = nabto_device_coap_response_set_payload(request, payload, payloadSize);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+    } else {
+        nabto_device_coap_response_ready(request);
+    }
+    free(payload);
 }
