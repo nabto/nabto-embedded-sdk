@@ -122,6 +122,11 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 
     if (user) {
         nn_string_map_insert(&attributes, "Connection:UserId", user->id);
+        if (nabto_device_connection_is_local(iam->device, ref)) {
+            nn_string_map_insert(&attributes, "Connection:IsLocal", "true");
+        } else {
+            nn_string_map_insert(&attributes, "Connection:IsLocal", "false");
+        }
         effect = nm_iam_check_access_user(iam, user, action, &attributes);
     } else {
         struct nm_iam_role* role = nm_iam_find_role(iam, iam->unpairedRole);

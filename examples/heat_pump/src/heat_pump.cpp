@@ -441,7 +441,7 @@ void HeatPump::loadIamPolicy()
         nm_iam_add_role(&iam_, r);
     }
     {
-        auto r = nm_iam_role_new("User");
+        auto r = nm_iam_role_new("Standard");
         nm_iam_role_add_policy(r, "HeatPumpControl");
         nm_iam_role_add_policy(r, "Pairing");
         nm_iam_role_add_policy(r, "DeviceInfo");
@@ -449,6 +449,7 @@ void HeatPump::loadIamPolicy()
         nm_iam_add_role(&iam_, r);
     }
     {
+        //TODO: guest should have access to LocalHeatpumpControl and LocalDeviceInfo
         auto r = nm_iam_role_new("Guest");
         nm_iam_role_add_policy(r, "ManageOwnUser");
         nm_iam_role_add_policy(r, "Pairing");

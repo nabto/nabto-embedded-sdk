@@ -38,6 +38,7 @@ void nm_iam_user_free(struct nm_iam_user* user)
     free(user->fingerprint);
     free(user->serverConnectToken);
     free(user->role);
+    free(user->password);
     nn_string_map_deinit(&user->attributes);
     free(user);
 }
