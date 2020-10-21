@@ -61,7 +61,9 @@ bool HeatPump::init()
     pairingServerConnectToken_ = nabto::examples::common::random_string(12);
 
     loadIamPolicy();
-    loadState();
+    if (!loadState()) {
+        return false;
+    }
 
     nabto_device_mdns_add_txt_item(device_, "fn", name_.c_str());
 
@@ -97,6 +99,9 @@ void HeatPump::userChanged()
 void HeatPump::saveState()
 {
     cJSON* state = cJSON_CreateObject();
+
+    cJSON_AddNumberToObject(state, "Version", 1);
+
     cJSON_AddItemToObject(state, "PairingPassword", cJSON_CreateString(pairingPassword_.c_str()));
     cJSON_AddItemToObject(state, "PairingServerConnectToken", cJSON_CreateString(pairingServerConnectToken_.c_str()));
     cJSON* heatPump = cJSON_CreateObject();
@@ -128,15 +133,21 @@ void HeatPump::saveState()
     cJSON_Delete(state);
 }
 
-void HeatPump::loadState()
+bool HeatPump::loadState()
 {
     if (!json_config_exists(stateFile_.c_str())) {
         createState();
     }
     cJSON* json;
     if (!json_config_load(stateFile_.c_str(), &json, &logger_)) {
-        // log error
-        return;
+        NN_LOG_ERROR(&logger_, LOGM, "Cannot load state from file %s", stateFile_.c_str());
+        return false;
+    }
+
+    cJSON* version = cJSON_GetObjectItem(json, "Version");
+    if (!cJSON_IsNumber(version) || version->valueint != 1) {
+        NN_LOG_ERROR(&logger_, LOGM, "The version of the state file %s is not correct, delete it and start over", stateFile_.c_str());
+        return false;
     }
 
     cJSON* pairingPassword = cJSON_GetObjectItem(json, "PairingPassword");
@@ -188,6 +199,7 @@ void HeatPump::loadState()
         }
     }
     cJSON_Delete(json);
+    return true;
 
 }
 void HeatPump::createState()
@@ -306,7 +318,7 @@ void HeatPump::printHeatpumpInfo()
         std::cout << "# Server:                     " << server << std::endl;
     } catch(...) {} // Ignore missing server
     std::cout << "# Version:                     " << nabto_device_version() << std::endl;
-    std::cout << "# Pairing Stri ng              " << createPairingString() << std::endl;
+    std::cout << "# Pairing String               " << createPairingString() << std::endl;
     std::cout << "######## " << std::endl;
 }
 
@@ -392,8 +404,7 @@ void HeatPump::loadIamPolicy()
         nm_statement_add_action(s, "IAM:ListUsers");
         nm_statement_add_action(s, "IAM:GetUser");
         nm_statement_add_action(s, "IAM:DeleteUser");
-        nm_statement_add_action(s, "IAM:AddRoleToUser");
-        nm_statement_add_action(s, "IAM:RemoveRoleFromUser");
+        nm_statement_add_action(s, "IAM:SetUserRole");
         nm_statement_add_action(s, "IAM:ListRoles");
         nm_policy_add_statement(p, s);
         nm_iam_add_policy(&iam_, p);
@@ -425,26 +436,35 @@ void HeatPump::loadIamPolicy()
     {
         auto r = nm_iam_role_new("Admin");
         nm_iam_role_add_policy(r, "ManageUsers");
+        nm_iam_role_add_policy(r, "Pairing");
+        nm_iam_role_add_policy(r, "HeatPumpControl");
         nm_iam_add_role(&iam_, r);
     }
     {
-        auto r = nm_iam_role_new("User");
+        auto r = nm_iam_role_new("Standard");
         nm_iam_role_add_policy(r, "HeatPumpControl");
         nm_iam_role_add_policy(r, "Pairing");
         nm_iam_role_add_policy(r, "DeviceInfo");
         nm_iam_role_add_policy(r, "ManageOwnUser");
         nm_iam_add_role(&iam_, r);
     }
+    {
+        //TODO: guest should have access to LocalHeatpumpControl and LocalDeviceInfo
+        auto r = nm_iam_role_new("Guest");
+        nm_iam_role_add_policy(r, "ManageOwnUser");
+        nm_iam_role_add_policy(r, "Pairing");
+        nm_iam_add_role(&iam_, r);
+
+    }
 
     // The first user which is paired is both an admin and a user on the system
-    nm_iam_add_first_user_role(&iam_, "Admin");
-    nm_iam_add_first_user_role(&iam_, "User");
+    nm_iam_set_first_user_role(&iam_, "Admin");
 
     // The secondary users which is paired with the system does not get the admin permissions.
-    nm_iam_add_secondary_user_role(&iam_, "User");
+    nm_iam_set_secondary_user_role(&iam_, "Guest");
 
     // Connections which does not have a paired user in the system gets the Unpaired role.
-    nm_iam_add_unpaired_roles(&iam_, "Unpaired");
+    nm_iam_set_unpaired_role(&iam_, "Unpaired");
 }
 
 

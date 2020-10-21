@@ -463,16 +463,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     // add default pairing roles
     {
-        const char* role;
-        NN_STRING_SET_FOREACH(role, &iamConfig.unpairedRoles) {
-            nm_iam_add_unpaired_roles(&iam, role);
-        }
-        NN_STRING_SET_FOREACH(role, &iamConfig.firstUserRoles) {
-            nm_iam_add_first_user_role(&iam, role);
-        }
-        NN_STRING_SET_FOREACH(role, &iamConfig.secondaryUserRoles) {
-            nm_iam_add_secondary_user_role(&iam, role);
-        }
+        nm_iam_set_unpaired_role(&iam, iamConfig.unpairedRole);
+        nm_iam_set_first_user_role(&iam, iamConfig.firstUserRole);
+        nm_iam_set_secondary_user_role(&iam, iamConfig.secondaryUserRole);
     }
     iam_config_deinit(&iamConfig);
 
