@@ -47,7 +47,10 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    if (!nm_iam_pair_new_client(handler->iam, request, name)) {
+    char* userName = nm_iam_make_user_name(handler->iam, name);
+    free(name);
+
+    if (!nm_iam_pair_new_client(handler->iam, request, userName)) {
         nabto_device_coap_error_response(request, 500, "Server error");
         return;
     }
@@ -57,5 +60,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nabto_device_coap_response_ready(request);
 
     free(fingerprint);
-    free(name);
+    free(userName);
 }

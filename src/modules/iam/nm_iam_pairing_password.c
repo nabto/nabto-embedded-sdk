@@ -56,12 +56,16 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nm_iam_cbor_decode_kv_string(&value, "Name", &name);
         if (name == NULL) {
             nabto_device_coap_error_response(request, 400, "Bad request");
-        } else if (!nm_iam_pair_new_client(handler->iam, request, name)) {
-            nabto_device_coap_error_response(request, 500, "Server error");
         } else {
-            // OK response
-            nabto_device_coap_response_set_code(request, 201);
-            nabto_device_coap_response_ready(request);
+            char* userName = nm_iam_make_user_name(handler->iam, name);
+            if (!nm_iam_pair_new_client(handler->iam, request, name)) {
+                nabto_device_coap_error_response(request, 500, "Server error");
+            } else {
+                // OK response
+                nabto_device_coap_response_set_code(request, 201);
+                nabto_device_coap_response_ready(request);
+            }
+            free(userName);
         }
     }
 
