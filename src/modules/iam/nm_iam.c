@@ -120,6 +120,13 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 
     enum nm_effect effect = NM_EFFECT_DENY;
 
+    if (!user && nabto_device_connection_is_password_authenticated(iam->device, ref)) {
+        const char* username = nabto_device_connection_get_password_authentication_username(iam->device, ref);
+        if (username != NULL) {
+            // authenticated with non-empty username
+            user = nm_iam_find_user_by_name(iam, username);
+        }
+    }
     if (user) {
         nn_string_map_insert(&attributes, "Connection:UserId", user->id);
         if (nabto_device_connection_is_local(iam->device, ref)) {
@@ -293,6 +300,20 @@ struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const ch
     return NULL;
 }
 
+struct nm_iam_user* nm_iam_find_user_by_name(struct nm_iam* iam, const char* name)
+{
+    if (name == NULL) {
+        return NULL;
+    }
+    struct nm_iam_user* user;
+    NN_VECTOR_FOREACH(&user, &iam->users) {
+        if (user->name != NULL && strcmp(user->name, name) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}
+
 struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* roleStr)
 {
     if (roleStr == NULL) {
@@ -451,17 +472,6 @@ char* nm_iam_make_user_id(struct nm_iam* iam)
     } while (user != NULL);
 
     return id;
-}
-
-struct nm_iam_user* nm_iam_find_user_by_name(struct nm_iam* iam, const char* name)
-{
-    struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &iam->users) {
-        if (strcmp(user->name, name) == 0) {
-            return user;
-        }
-    }
-    return NULL;
 }
 
 char* nm_iam_make_user_name(struct nm_iam* iam, const char* suggested)
