@@ -100,8 +100,7 @@ bool nm_iam_enable_password_pairing(struct nm_iam* iam, const char* pairingPassw
 bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerConnectToken);
 
 /**
- * Set the role for the first paired user. If no role is added the
- * system will probably not work.
+ * Set the role for the first paired user. Mandatory for the typical IAM use cases.
  *
  * @param iam  The IAM module
  * @param role  Set the role of first user role to pair. The string is copied into the module.
@@ -110,8 +109,8 @@ bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerC
 bool nm_iam_set_first_user_role(struct nm_iam* iam, const char* role);
 
 /**
- * Set the role for the secondary users on the system. If no role is
- * set, the system will probably not work.
+ * Set the role for the secondary users on the system. Mandatory if new users are allowed to pair
+ * autonomously. Not used if new users are by admin-invitation only ("Industrial pairing").
  *
  * @param iam  The iam module
  * @param role  Set the role of the secondary users. The string is copied into the module.
@@ -120,17 +119,14 @@ bool nm_iam_set_first_user_role(struct nm_iam* iam, const char* role);
 bool nm_iam_set_secondary_user_role(struct nm_iam* iam, const char* role);
 
 /**
- * Set the role for unpaired connections on the system. The unpaired
- * connections should probably be allowed to do pairings and get some
- * public information.
+ * Set the role for unpaired connections on the system to allow unknown users to connect and do
+ * pairing (and perhaps retrieve some public information).
  *
  * @param iam  The iam module.
  * @param role The role to set as the unpaired role. The string is copied into the module.
  * @return false iff the role was not set.
  */
 bool nm_iam_set_unpaired_role(struct nm_iam* iam, const char* role);
-
-
 
 /**
  * Set change callbacks such that state can be persisted
@@ -161,12 +157,10 @@ bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids);
 void nm_iam_delete_user(struct nm_iam* iam, const char* userId);
 
 /**
- * Add a role to the iam system.
- * The IAM system takes ownership of the role pointer.
+ * Add a role to the iam system. The role to add has been created `nm_iam_role_new`, see the nm_iam_role.h
+ * file. The IAM system takes ownership of the role pointer.
  */
 bool nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role);
-
-
 
 /**
  * Add a policy to the IAM system
