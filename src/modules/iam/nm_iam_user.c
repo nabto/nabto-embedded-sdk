@@ -6,13 +6,11 @@
 void nm_iam_user_init(struct nm_iam_user* user)
 {
     memset(user, 0, sizeof(struct nm_iam_user));
-    nn_string_set_init(&user->roles);
     nn_string_map_init(&user->attributes);
 }
 
 void nm_iam_user_deinit(struct nm_iam_user* user)
 {
-    nn_string_set_deinit(&user->roles);
     nn_string_map_deinit(&user->attributes);
 }
 
@@ -28,7 +26,6 @@ struct nm_iam_user* nm_iam_user_new(const char* idIn)
     }
 
     nn_string_map_init(&user->attributes);
-    nn_string_set_init(&user->roles);
     user->id = id;
 
     return user;
@@ -40,45 +37,81 @@ void nm_iam_user_free(struct nm_iam_user* user)
     free(user->name);
     free(user->fingerprint);
     free(user->serverConnectToken);
+    free(user->role);
+    free(user->password);
     nn_string_map_deinit(&user->attributes);
-    nn_string_set_deinit(&user->roles);
     free(user);
 }
 
 bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint)
 {
-    if (user->fingerprint != NULL) {
+    if (fingerprint == NULL) {
         free(user->fingerprint);
+        user->fingerprint = NULL;
+        return true;
     }
-    user->fingerprint = strdup(fingerprint);
-    return (user->fingerprint != NULL);
+    char* tmp = strdup(fingerprint);
+    if (tmp != NULL) {
+        free(user->fingerprint);
+        user->fingerprint = tmp;
+    }
+    return (tmp != NULL);
 }
 
-bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken)
+bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
 {
-    if (user->serverConnectToken != NULL) {
-        free(user->serverConnectToken);
+    if (password == NULL) {
+        free(user->password);
+        user->password = NULL;
+        return true;
     }
-    user->serverConnectToken = strdup(serverConnectToken);
-    return (user->serverConnectToken != NULL);
+    char* tmp = strdup(password);
+    if (tmp != NULL) {
+        free(user->password);
+        user->password = tmp;
+    }
+    return (tmp != NULL);
+}
+
+bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* sct)
+{
+    if (sct == NULL) {
+        free(user->serverConnectToken);
+        user->serverConnectToken = NULL;
+        return true;
+    }
+    char* tmp = strdup(sct);
+    if (tmp != NULL) {
+        free(user->serverConnectToken);
+        user->serverConnectToken = tmp;
+    }
+    return (tmp != NULL);
 }
 
 bool nm_iam_user_set_name(struct nm_iam_user* user, const char* name)
 {
-    if (user->name != NULL) {
-        free(user->name);
+    if (name == NULL) {
+        return false; // A user must have a name
     }
-    user->name = strdup(name);
-    return (user->name != NULL);
+    char* tmp = strdup(name);
+    if (tmp == NULL) {
+        return false;
+    }
+    free(user->name);
+    user->name = tmp;
+    return true;
 }
 
-
-bool nm_iam_user_add_role(struct nm_iam_user* user, const char* roleId)
+bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId)
 {
-    return nn_string_set_insert(&user->roles, roleId);
-}
-
-void nm_iam_user_remove_role(struct nm_iam_user* user, const char* roleId)
-{
-    nn_string_set_erase(&user->roles, roleId);
+    if (roleId == NULL) {
+        return false; // A user must have a role
+    }
+    char* tmp = strdup(roleId);
+    if (tmp == NULL) {
+        return false;
+    }
+    free(user->role);
+    user->role = tmp;
+    return true;
 }

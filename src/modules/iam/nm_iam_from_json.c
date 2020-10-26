@@ -52,7 +52,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     cJSON* serverConnectToken = cJSON_GetObjectItem(json, "ServerConnectToken");
     cJSON* fingerprint = cJSON_GetObjectItem(json, "Fingerprint");
     cJSON* attributes = cJSON_GetObjectItem(json, "Attributes");
-    cJSON* roles = cJSON_GetObjectItem(json, "Roles");
+    cJSON* role = cJSON_GetObjectItem(json, "Role");
 
     if (!cJSON_IsString(id)) {
         return NULL;
@@ -75,14 +75,8 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
         nm_iam_user_set_server_connect_token(user, serverConnectToken->valuestring);
     }
 
-    if (cJSON_IsArray(roles)) {
-        size_t rolesSize = cJSON_GetArraySize(roles);
-        for (size_t i = 0; i < rolesSize; i++) {
-            cJSON* item = cJSON_GetArrayItem(roles, i);
-            if (cJSON_IsString(item)) {
-                nn_string_set_insert(&user->roles, item->valuestring);
-            }
-        }
+    if (cJSON_IsString(role)) {
+        nm_iam_user_set_role(user, role->valuestring);
     }
 
     load_attributes(&user->attributes, attributes);
