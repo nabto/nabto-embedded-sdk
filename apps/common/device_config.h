@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct device_config {
     char* productId;
     char* deviceId;
@@ -17,5 +21,9 @@ void device_config_init(struct device_config* config);
 void device_config_deinit(struct device_config* config);
 
 bool load_device_config(const char* fileName, struct device_config* dc, struct nn_log* logger);
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif
