@@ -264,6 +264,9 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
     nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
     nm_iam_set_user_role_init(&iam->coapIamUsersUserSetRoleHandler, iam->device, iam);
+    nm_iam_set_user_name_init(&iam->coapIamUsersUserSetNameHandler, iam->device, iam);
+    nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
+    nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
@@ -282,6 +285,9 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserDeleteHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamRolesGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetRoleHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNameHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
 }
 
 
