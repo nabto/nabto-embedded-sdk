@@ -40,9 +40,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nm_iam_cbor_decode_kv_string(&value, "Role", &role);
 
     if (role == NULL) {
-        role = handler->iam->secondaryUserRole;
+        role = strdup(handler->iam->secondaryUserRole);
     }
-    if(nm_iam_find_role(handler->iam, role) == NULL || // the provided role does not exist
+    if(nm_iam_find_role(handler->iam, role) == NULL || // the provided role does not exist or strdup fail
        name == NULL) { // or name not provided
         nabto_device_coap_error_response(request, 400, "Bad request");
         free(role);

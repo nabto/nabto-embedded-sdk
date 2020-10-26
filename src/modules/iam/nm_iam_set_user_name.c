@@ -38,8 +38,10 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserName", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         free(name);
+        nn_string_map_deinit(&attributes);
         return;
     }
+    nn_string_map_deinit(&attributes);
 
     if (nm_iam_find_user_by_name(handler->iam, name) != NULL) {
         nabto_device_coap_error_response(request, 403, "Name in use");

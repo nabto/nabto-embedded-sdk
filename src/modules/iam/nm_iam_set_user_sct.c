@@ -36,9 +36,11 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserSct", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
+        nn_string_map_deinit(&attributes);
         free(sct);
         return;
     }
+    nn_string_map_deinit(&attributes);
 
     struct nm_iam_user* user = nm_iam_find_user(handler->iam, userId);
     if (user == NULL) {
