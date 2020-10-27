@@ -28,8 +28,10 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:DeleteUser", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
+        nn_string_map_deinit(&attributes);
         return;
     }
+    nn_string_map_deinit(&attributes);
 
     nm_iam_delete_user(handler->iam, userId);
 

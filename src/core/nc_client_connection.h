@@ -7,6 +7,7 @@
 #include <core/nc_coap_server.h>
 #include <core/nc_keep_alive.h>
 #include <core/nc_connection_event.h>
+#include <core/nc_spake2.h>
 
 #include <nn/llist.h>
 
@@ -60,6 +61,7 @@ struct nc_client_connection {
     bool hasSpake2Key;  // true iff the key has been set
     uint8_t spake2Key[32];
     bool passwordAuthenticated; // true iff some password authentication request has succeeded on the connection.
+    char username[NC_SPAKE2_USERNAME_MAX_LENGTH+1]; // username used for password authentication if passwordAuthentication was attempted
     size_t passwordAuthenticationRequests;
 };
 

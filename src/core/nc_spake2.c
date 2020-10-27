@@ -108,6 +108,7 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
 
         if (status == 0) {
             connection->hasSpake2Key = true;
+            strcpy(connection->username, req->username);
             // respond with S
             nabto_coap_server_response_set_payload(coap, buffer, olen);
             nabto_coap_server_response_set_code_human(coap, 201);

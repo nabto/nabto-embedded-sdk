@@ -120,6 +120,13 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 
     enum nm_effect effect = NM_EFFECT_DENY;
 
+    if (!user && nabto_device_connection_is_password_authenticated(iam->device, ref)) {
+        const char* username = nabto_device_connection_get_password_authentication_username(iam->device, ref);
+        if (username != NULL) {
+            // authenticated with non-empty username
+            user = nm_iam_find_user_by_name(iam, username);
+        }
+    }
     if (user) {
         nn_string_map_insert(&attributes, "Connection:UserId", user->id);
         if (nabto_device_connection_is_local(iam->device, ref)) {
@@ -257,6 +264,10 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
     nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
     nm_iam_set_user_role_init(&iam->coapIamUsersUserSetRoleHandler, iam->device, iam);
+    nm_iam_set_user_name_init(&iam->coapIamUsersUserSetNameHandler, iam->device, iam);
+    nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
+    nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
+    nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
@@ -275,6 +286,10 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserDeleteHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamRolesGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetRoleHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNameHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
 }
 
 
@@ -287,6 +302,20 @@ struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const ch
     struct nm_iam_user* user;
     NN_VECTOR_FOREACH(&user, &iam->users) {
         if (user->fingerprint != NULL && strcmp(user->fingerprint, fingerprint) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}
+
+struct nm_iam_user* nm_iam_find_user_by_name(struct nm_iam* iam, const char* name)
+{
+    if (name == NULL) {
+        return NULL;
+    }
+    struct nm_iam_user* user;
+    NN_VECTOR_FOREACH(&user, &iam->users) {
+        if (user->name != NULL && strcmp(user->name, name) == 0) {
             return user;
         }
     }
@@ -451,17 +480,6 @@ char* nm_iam_make_user_id(struct nm_iam* iam)
     } while (user != NULL);
 
     return id;
-}
-
-struct nm_iam_user* nm_iam_find_user_by_name(struct nm_iam* iam, const char* name)
-{
-    struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &iam->users) {
-        if (strcmp(user->name, name) == 0) {
-            return user;
-        }
-    }
-    return NULL;
 }
 
 char* nm_iam_make_user_name(struct nm_iam* iam, const char* suggested)

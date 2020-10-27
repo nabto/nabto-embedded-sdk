@@ -106,8 +106,12 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 
 /**
- * Get the username used for password authentication if
- * nabto_device_connection_is_password_authenticated() returns true.
+ * Get the username used for password authentication if it was
+ * attempted. The username is set during the authentication process,
+ * meaning the username should only be used if a prior call to
+ * nabto_device_connection_is_password_authenticated() returned
+ * true. The returned pointer is valid for the lifetime of the
+ * connection.
  *
  * @param device [in]  The device.
  * @param ref    [in]  The connection reference for which to get username.
