@@ -54,6 +54,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserSetNameHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetFingerprintHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetSctHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetPasswordHandler;
 
     struct nm_iam_auth_handler authHandler;
     struct nm_iam_pake_handler pakeHandler;

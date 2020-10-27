@@ -267,6 +267,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_set_user_name_init(&iam->coapIamUsersUserSetNameHandler, iam->device, iam);
     nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
+    nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
@@ -288,6 +289,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNameHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
 }
 
 

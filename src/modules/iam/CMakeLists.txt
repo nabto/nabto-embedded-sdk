@@ -21,6 +21,7 @@ set(src
   nm_iam_set_user_name.c
   nm_iam_set_user_fingerprint.c
   nm_iam_set_user_sct.c
+  nm_iam_set_user_password.c
   nm_iam_client_settings.c
   )
 
