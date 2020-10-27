@@ -44,18 +44,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nn_string_map_deinit(&attributes);
 
     if (nm_iam_find_user_by_fingerprint(handler->iam, fp) != NULL) {
-        nabto_device_coap_error_response(request, 403, "Fingerprint in use");
+        nabto_device_coap_error_response(request, 409, "Conflict");
         free(fp);
         return;
     }
     struct nm_iam_user* user = nm_iam_find_user(handler->iam, userId);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, NULL);
-        free(fp);
-        return;
-    }
-    if (user->fingerprint != NULL) {
-        nabto_device_coap_error_response(request, 403, "Already configured");
         free(fp);
         return;
     }

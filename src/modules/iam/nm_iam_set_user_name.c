@@ -44,7 +44,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nn_string_map_deinit(&attributes);
 
     if (nm_iam_find_user_by_name(handler->iam, name) != NULL) {
-        nabto_device_coap_error_response(request, 403, "Name in use");
+        nabto_device_coap_error_response(request, 409, "Conflict");
         free(name);
         return;
     }
