@@ -1,21 +1,20 @@
 #include "nm_policies_to_json.h"
 
-#include "nm_effect.h"
 #include "nm_statement.h"
 #include "nm_policy.h"
 #include "nm_condition.h"
 
-#include <nn/vector.h>
+#include <nn/llist.h>
 #include <nn/string_set.h>
 
-static cJSON* nm_condition_to_json(const struct nm_condition* condition);
-static cJSON* nm_conditions_to_json(const struct nn_vector* conditions);
+static cJSON* nm_condition_to_json(const struct nm_iam_condition* condition);
+static cJSON* nm_conditions_to_json(const struct nn_llist* conditions);
 static cJSON* nm_string_set_to_json(const struct nn_string_set* set);
-static cJSON* nm_statement_to_json(const struct nm_statement* statement);
-static cJSON* nm_statements_to_json(const struct nn_vector* statements);
+static cJSON* nm_statement_to_json(const struct nm_iam_statement* statement);
+static cJSON* nm_statements_to_json(const struct nn_llist* statements);
 
 
-cJSON* nm_policy_to_json(const struct nm_policy* policy)
+cJSON* nm_policy_to_json(const struct nm_iam_policy* policy)
 {
     cJSON* json = cJSON_CreateObject();
     cJSON_AddItemToObject(json, "Id", cJSON_CreateString(policy->id));
@@ -26,7 +25,7 @@ cJSON* nm_policy_to_json(const struct nm_policy* policy)
 
 // local functions
 
-cJSON* nm_condition_to_json(const struct nm_condition* condition)
+cJSON* nm_condition_to_json(const struct nm_iam_condition* condition)
 {
     cJSON* kv = cJSON_CreateObject();
     cJSON_AddItemToObject(kv, condition->key, nm_string_set_to_json(&condition->values));
@@ -36,11 +35,11 @@ cJSON* nm_condition_to_json(const struct nm_condition* condition)
     return op;
 }
 
-cJSON* nm_conditions_to_json(const struct nn_vector* conditions)
+cJSON* nm_conditions_to_json(const struct nn_llist* conditions)
 {
     cJSON* array = cJSON_CreateArray();
-    struct nm_condition* condition;
-    NN_VECTOR_FOREACH(&condition, conditions) {
+    struct nm_iam_condition* condition;
+    NN_LLIST_FOREACH(&condition, conditions) {
         cJSON_AddItemToArray(array, nm_condition_to_json(condition));
     }
     return array;
@@ -56,7 +55,7 @@ cJSON* nm_string_set_to_json(const struct nn_string_set* set)
     return array;
 }
 
-cJSON* nm_statement_to_json(const struct nm_statement* statement)
+cJSON* nm_statement_to_json(const struct nm_iam_statement* statement)
 {
     cJSON* json = cJSON_CreateObject();
     if (statement->effect == NM_EFFECT_ALLOW) {
@@ -67,18 +66,18 @@ cJSON* nm_statement_to_json(const struct nm_statement* statement)
 
     cJSON_AddItemToObject(json, "Actions", nm_string_set_to_json(&statement->actions));
 
-    if (!nn_vector_empty(&statement->conditions)) {
+    if (!nn_llist_empty(&statement->conditions)) {
         cJSON_AddItemToObject(json, "Conditions", nm_conditions_to_json(&statement->conditions));
     }
 
     return json;
 }
 
-cJSON* nm_statements_to_json(const struct nn_vector* statements)
+cJSON* nm_statements_to_json(const struct nn_llist* statements)
 {
     cJSON* array = cJSON_CreateArray();
-    struct nm_statement* statement;
-    NN_VECTOR_FOREACH(&statement, statements) {
+    struct nm_iam_statement* statement;
+    NN_LLIST_FOREACH(&statement, statements) {
         cJSON_AddItemToArray(array, nm_statement_to_json(statement));
     }
     return array;

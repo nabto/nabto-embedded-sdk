@@ -23,7 +23,12 @@ set(src
   coap_handler/nm_iam_set_user_fingerprint.c
   coap_handler/nm_iam_set_user_sct.c
   coap_handler/nm_iam_set_user_password.c
+  policies/nm_condition.c
+  policies/nm_statement.c
+  policies/nm_policy.c
+  policies/nm_policies_from_json.c
+  policies/nm_policies_to_json.c
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam nm_policies 3rdparty_cjson 3rdparty_tinycbor nn)
+target_link_libraries(nm_iam 3rdparty_cjson 3rdparty_tinycbor nn)

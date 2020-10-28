@@ -5,12 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs);
+static enum nm_condition_result match(enum nm_iam_condition_operator op, const char* lhs, const char* rhs);
 static bool resolve_value(const struct nn_string_map* attributes, const char* value, const char** out);
 
-struct nm_condition* nm_condition_new(enum nm_condition_operator op)
+struct nm_iam_condition* nm_condition_new(enum nm_iam_condition_operator op)
 {
-    struct nm_condition* c = calloc(1, sizeof(struct nm_condition));
+    struct nm_iam_condition* c = calloc(1, sizeof(struct nm_iam_condition));
     if (c == NULL) {
         return NULL;
     }
@@ -20,9 +20,9 @@ struct nm_condition* nm_condition_new(enum nm_condition_operator op)
     return c;
 }
 
-struct nm_condition* nm_condition_new_with_key(enum nm_condition_operator op, const char* key)
+struct nm_iam_condition* nm_condition_new_with_key(enum nm_iam_condition_operator op, const char* key)
 {
-    struct nm_condition* c = nm_condition_new(op);
+    struct nm_iam_condition* c = nm_condition_new(op);
     if (c == NULL) {
         return c;
     }
@@ -31,25 +31,27 @@ struct nm_condition* nm_condition_new_with_key(enum nm_condition_operator op, co
 
 }
 
-void nm_condition_free(struct nm_condition* condition)
+void nm_condition_free(struct nm_iam_condition* condition)
 {
     nm_condition_deinit(condition);
     free(condition);
 }
 
-void nm_condition_init(struct nm_condition* condition)
+void nm_condition_init(struct nm_iam_condition* condition)
 {
+    nn_llist_node_init(&p->listNode);
     nn_string_set_init(&condition->values);
 }
 
-void nm_condition_deinit(struct nm_condition* condition)
+void nm_condition_deinit(struct nm_iam_condition* condition)
 {
     nn_string_set_deinit(&condition->values);
+    nn_llist_node_deinit(&p->listNode);
     free(condition->key);
     condition->key = NULL;
 }
 
-bool nm_condition_add_value(struct nm_condition* c, const char* value)
+bool nm_condition_add_value(struct nm_iam_condition* c, const char* value)
 {
     return nn_string_set_insert(&c->values, value);
 }
@@ -86,7 +88,7 @@ static enum nm_condition_result status(bool s)
     }
 }
 
-enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operator op, const char* lhs, const char* rhs)
+enum nm_condition_result nm_condition_numeric_operator(enum nm_iam_condition_operator op, const char* lhs, const char* rhs)
 {
     double lhsDouble;
     double rhsDouble;
@@ -114,7 +116,7 @@ enum nm_condition_result nm_condition_numeric_operator(enum nm_condition_operato
     return NM_CONDITION_RESULT_ERROR;
 }
 
-enum nm_condition_result nm_condition_matches(const struct nm_condition* condition, const struct nn_string_map* attributes)
+enum nm_condition_result nm_condition_matches(const struct nm_iam_condition* condition, const struct nn_string_map* attributes)
 {
     struct nn_string_map_iterator it = nn_string_map_get(attributes, condition->key);
     if (nn_string_map_is_end(&it)) {
@@ -141,7 +143,7 @@ enum nm_condition_result nm_condition_matches(const struct nm_condition* conditi
 }
 
 
-bool nm_condition_parse_operator(const char* operation, enum nm_condition_operator* op)
+bool nm_condition_parse_operator(const char* operation, enum nm_iam_condition_operator* op)
 {
     if      (strcmp(operation, "StringEquals") == 0)             { *op = NM_CONDITION_OPERATOR_STRING_EQUALS; }
     else if (strcmp(operation, "StringNotEquals") == 0)          { *op = NM_CONDITION_OPERATOR_STRING_NOT_EQUALS; }
@@ -158,7 +160,7 @@ bool nm_condition_parse_operator(const char* operation, enum nm_condition_operat
     return true;
 }
 
-const char* nm_condition_operator_to_string(const enum nm_condition_operator op)
+const char* nm_condition_operator_to_string(const enum nm_iam_condition_operator op)
 {
     switch(op) {
         case NM_CONDITION_OPERATOR_STRING_EQUALS: return "StringEquals";
@@ -197,7 +199,7 @@ enum nm_condition_result string_not_equals(const char* lhs, const char* rhs)
     return status(strcmp(lhs, rhs) != 0);
 }
 
-static enum nm_condition_result match(enum nm_condition_operator op, const char* lhs, const char* rhs)
+static enum nm_condition_result match(enum nm_iam_condition_operator op, const char* lhs, const char* rhs)
 {
     switch (op) {
         case NM_CONDITION_OPERATOR_STRING_EQUALS:

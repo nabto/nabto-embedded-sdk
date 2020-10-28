@@ -31,22 +31,26 @@ struct nm_iam_condition {
     enum nm_iam_condition_operator op; // match operator
     char* key; // attribute key to match values
     struct nn_string_set values; // set of acceptable values
+    struct nn_llist_node listNode;
 };
 
 struct nm_iam_statement {
     enum nm_iam_effect effect;
     struct nn_string_set actions; // set of action strings
     struct nn_llist conditions; // Linked list of struct nm_iam_condition
+    struct nn_llist_node listNode;
 };
 
 struct nm_iam_policy {
     char* id; // Policy ID
     struct nn_llist statements; // Linked list of struct nm_iam_statement
+    struct nn_llist_node listNode;
 };
 
 struct nm_iam_role {
     char* id; // Role ID
     struct nn_string_set policies; // set of policy IDs
+    struct nn_llist_node listNode;
 };
 
 struct nm_iam_configuration {
@@ -75,21 +79,6 @@ struct nm_iam_configuration* nm_iam_configuration_new();
  * @param conf [in]  Configuration to free
  */
 void nm_iam_configuration_free(struct nm_iam_configuration* conf);
-
-/**
- * Initialize IAM configuration before building
- *
- * @param conf [in]  Configuration to initialize
- */
-void nm_iam_configuration_init(struct nm_iam_configuration* conf);
-
-/**
- * Deinitialize IAM configuration if the ownership was not transfered
- * to an IAM module with nm_iam_load_configuration()
- *
- * @param conf [in]  Configuration to deinitialize
- */
-void nm_iam_configuration_deinit(struct nm_iam_configuration* conf);
 
 /**
  * Set the role for the first paired user. Mandatory for the typical
@@ -157,7 +146,8 @@ bool nm_iam_configuration_add_role(struct nm_iam_configuration* conf, struct nm_
 struct nm_iam_policy* nm_iam_configuration_policy_new(const char* name);
 
 /**
- * Free policy created with nm_iam_configuration_policy_new().
+ * Free policy created with nm_iam_configuration_policy_new() if the
+ * ownership has not been transferred to an nm_iam_configuration.
  *
  * @param policy [in]   Policy to free
  */
@@ -171,7 +161,7 @@ void nm_iam_configuration_policy_free(struct nm_iam_policy* poilicy);
  * @return statement reference to use when adding actions or conditions. Reference is valid for the lifetime of the policy
  *         NULL if statement could not be created
  */
-struct nm_iam_statement* nm_iam_configuration_policy_create_statement(struct nm_iam_policy* policy, enum nm_effect effect);
+struct nm_iam_statement* nm_iam_configuration_policy_create_statement(struct nm_iam_policy* policy, enum nm_iam_effect effect);
 
 /**
  * Add action to a statement.
@@ -191,7 +181,7 @@ bool nm_iam_configuration_statement_add_action(struct nm_iam_statement* statemen
  * @return condition reference to use when adding values. Reference is valid for the lifetime of the policy.
  *         NULL if the condition could not be created
  */
-struct nm_iam_condition* nm_iam_configuration_statement_create_condition(struct nm_iam_statement* statement, enum nm_condition_operator op, const char* key);
+struct nm_iam_condition* nm_iam_configuration_statement_create_condition(struct nm_iam_statement* statement, enum nm_iam_condition_operator op, const char* key);
 
 /**
  * Add a value to the condition which will make the condition evaluate

@@ -2,10 +2,9 @@
 #include "nm_iam_internal.h"
 #include "nm_iam_user.h"
 #include "nm_iam_role.h"
+#include "policies/nm_policy.h"
 
 #include <nabto/nabto_device_experimental.h>
-#include <modules/policies/nm_effect.h>
-#include <modules/policies/nm_policy.h>
 
 #include <nn/log.h>
 
@@ -14,8 +13,8 @@
 
 static const char* LOGM = "iam";
 
-static enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct nn_string_map* attributes);
-static enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct nn_string_map* attributes);
+static enum nm_iam_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct nn_string_map* attributes);
+static enum nm_iam_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct nn_string_map* attributes);
 
 static void init_coap_handlers(struct nm_iam* iam);
 static void deinit_coap_handlers(struct nm_iam* iam);
@@ -81,7 +80,7 @@ void nm_iam_deinit(struct nm_iam* iam)
     }
     nn_vector_deinit(&iam->roles);
 
-    struct nm_policy* policy;
+    struct nm_iam_policy* policy;
     NN_VECTOR_FOREACH(&policy, &iam->policies) {
         nm_policy_free(policy);
     }
@@ -114,7 +113,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
     struct nm_iam_user* user = nm_iam_find_user_by_fingerprint(iam, fingerprint);
     nabto_device_string_free(fingerprint);
 
-    enum nm_effect effect = NM_EFFECT_DENY;
+    enum nm_iam_effect effect = NM_EFFECT_DENY;
 
     if (!user && nabto_device_connection_is_password_authenticated(iam->device, ref)) {
         const char* username = nabto_device_connection_get_password_authentication_username(iam->device, ref);
@@ -161,7 +160,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 }
 
 
-enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct nn_string_map* attributes)
+enum nm_iam_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* user, const char* action, const struct nn_string_map* attributes)
 {
     struct nm_iam_role* role = nm_iam_find_role(iam, user->role);
     if (role == NULL) {
@@ -170,7 +169,7 @@ enum nm_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_user* 
     return nm_iam_check_access_role(iam, role, action, attributes);
 }
 
-enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct nn_string_map* attributes)
+enum nm_iam_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct nn_string_map* attributes)
 {
     struct nm_policy_eval_state state;
     nm_policy_eval_init(&state);
@@ -178,7 +177,7 @@ enum nm_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_role* 
     const char* policyStr;
     NN_STRING_SET_FOREACH(policyStr, &role->policies)
     {
-        struct nm_policy* policy = nm_iam_find_policy(iam, policyStr);
+        struct nm_iam_policy* policy = nm_iam_find_policy(iam, policyStr);
         nm_policy_eval(&state, policy, action, attributes);
     }
 
@@ -333,12 +332,12 @@ struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* roleStr)
     return NULL;
 }
 
-struct nm_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyStr)
+struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyStr)
 {
     if (policyStr == NULL) {
         return NULL;
     }
-    struct nm_policy* policy;
+    struct nm_iam_policy* policy;
     NN_VECTOR_FOREACH(&policy, &iam->policies)
     {
         if (strcmp(policy->id, policyStr) == 0) {
@@ -415,7 +414,7 @@ bool nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role)
     return true;
 }
 
-bool nm_iam_add_policy(struct nm_iam* iam, struct nm_policy* policy)
+bool nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy)
 {
     nn_vector_push_back(&iam->policies, &policy);
     return true;

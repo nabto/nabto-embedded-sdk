@@ -7,12 +7,12 @@
 
 #include <string.h>
 
-static bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement, struct nn_log* logger);
-static bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition, struct nn_log* logger);
-static bool nm_policy_from_json_parse(const cJSON* json, struct nm_policy* policy, struct nn_log* logger);
+static bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_iam_statement* statement, struct nn_log* logger);
+static bool nm_condition_from_json_parse(const cJSON* kv, struct nm_iam_condition* condition, struct nn_log* logger);
+static bool nm_policy_from_json_parse(const cJSON* json, struct nm_iam_policy* policy, struct nn_log* logger);
 
 
-struct nm_condition* nm_condition_from_json(const cJSON* json, struct nn_log* logger)
+struct nm_iam_condition* nm_condition_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
         return NULL;
@@ -22,12 +22,12 @@ struct nm_condition* nm_condition_from_json(const cJSON* json, struct nn_log* lo
         return NULL;
     }
 
-    enum nm_condition_operator op;
+    enum nm_iam_condition_operator op;
     if (!nm_condition_parse_operator(operation->string, &op)) {
         return NULL;
     }
 
-    struct nm_condition* condition = nm_condition_new(op);
+    struct nm_iam_condition* condition = nm_condition_new(op);
     if (condition == NULL) {
         return NULL;
     }
@@ -38,7 +38,7 @@ struct nm_condition* nm_condition_from_json(const cJSON* json, struct nn_log* lo
     return NULL;
 }
 
-bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* condition, struct nn_log* logger)
+bool nm_condition_from_json_parse(const cJSON* kv, struct nm_iam_condition* condition, struct nn_log* logger)
 {
     // json = { "key": ["value1", "value2"] }
     // An object is also an iterable array
@@ -62,7 +62,7 @@ bool nm_condition_from_json_parse(const cJSON* kv, struct nm_condition* conditio
     return true;
 }
 
-struct nm_statement* nm_statement_from_json(const cJSON* json, struct nn_log* logger)
+struct nm_iam_statement* nm_statement_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
         return false;
@@ -79,7 +79,7 @@ struct nm_statement* nm_statement_from_json(const cJSON* json, struct nn_log* lo
     }
     char* effectString = effect->valuestring;
 
-    enum nm_effect e;
+    enum nm_iam_effect e;
 
     if (strcmp(effectString, "Allow") == 0) {
         e = NM_EFFECT_ALLOW;
@@ -89,7 +89,7 @@ struct nm_statement* nm_statement_from_json(const cJSON* json, struct nn_log* lo
         return NULL;
     }
 
-    struct nm_statement* s = nm_statement_new(e);
+    struct nm_iam_statement* s = nm_statement_new(e);
     if (s == NULL) {
         return NULL;
     }
@@ -102,7 +102,7 @@ struct nm_statement* nm_statement_from_json(const cJSON* json, struct nn_log* lo
     }
 }
 
-bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_statement* statement, struct nn_log* logger)
+bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_iam_statement* statement, struct nn_log* logger)
 {
     size_t actionsSize = cJSON_GetArraySize(actions);
     size_t i;
@@ -120,11 +120,11 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
         size_t conditionsSize = cJSON_GetArraySize(conditions);
         for (i = 0; i < conditionsSize; i++) {
             cJSON* c = cJSON_GetArrayItem(conditions, i);
-            struct nm_condition* tmp = nm_condition_from_json(c, logger);
+            struct nm_iam_condition* tmp = nm_condition_from_json(c, logger);
             if (tmp == NULL) {
                 return false;
             }
-            if (!nn_vector_push_back(&statement->conditions, &tmp)) {
+            if (!nn_llist_append(&statement->conditions, &tmp->listNode, &tmp)) {
                 return false;
             }
         }
@@ -132,7 +132,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
     return true;
 }
 
-struct nm_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logger)
+struct nm_iam_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
         return false;
@@ -145,7 +145,7 @@ struct nm_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logger)
         return false;
     }
 
-    struct nm_policy* policy = nm_policy_new(id->valuestring);
+    struct nm_iam_policy* policy = nm_policy_new(id->valuestring);
 
     if (policy == NULL) {
         return NULL;
@@ -158,17 +158,17 @@ struct nm_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logger)
     return NULL;
 }
 
-bool nm_policy_from_json_parse(const cJSON* statements, struct nm_policy* policy, struct nn_log* logger)
+bool nm_policy_from_json_parse(const cJSON* statements, struct nm_iam_policy* policy, struct nn_log* logger)
 {
     size_t count = cJSON_GetArraySize(statements);
     size_t i;
     for (i = 0; i < count; i++) {
         cJSON* statement = cJSON_GetArrayItem(statements, i);
-        struct nm_statement* s = nm_statement_from_json(statement, logger);
+        struct nm_iam_statement* s = nm_statement_from_json(statement, logger);
         if (s == NULL) {
             return false;
         }
-        nn_vector_push_back(&policy->statements, &s);
+        nn_llist_append(&policy->statements, &s->listNode, &s);
     }
     return true;
 }

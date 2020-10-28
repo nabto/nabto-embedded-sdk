@@ -21,7 +21,7 @@ extern "C" {
 
 // the iam module needs a list of users, roles, policies
 
-struct nm_policy;
+struct nm_iam_policy;
 struct nn_string_set;
 struct nm_iam_role;
 

@@ -21,6 +21,7 @@ struct nm_iam_role* nm_iam_role_new(const char* idIn)
         return NULL;
     }
     nn_string_set_init(&role->policies);
+    nn_llist_node_init(&role->listNode);
     role->id = id;
     return role;
 }
