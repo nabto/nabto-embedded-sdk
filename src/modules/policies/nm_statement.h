@@ -14,12 +14,6 @@ extern "C" {
 struct nn_string_map;
 struct nm_condition;
 
-struct nm_statement {
-    enum nm_effect effect;
-    struct nn_string_set actions;
-    struct nn_vector conditions;
-};
-
 struct nm_statement* nm_statement_new(enum nm_effect effect);
 
 void nm_statement_free(struct nm_statement* statement);

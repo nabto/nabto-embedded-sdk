@@ -12,11 +12,6 @@ extern "C" {
 
 struct nn_string_map;
 
-struct nm_policy {
-    char* id;
-    struct nn_vector statements;
-};
-
 struct nm_policy_eval_state {
     enum nm_effect effect;
 };

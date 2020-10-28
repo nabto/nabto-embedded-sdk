@@ -90,8 +90,6 @@ void nm_iam_deinit(struct nm_iam* iam)
     nn_vector_deinit(&iam->policies);
 
     free(iam->pairingPassword);
-    free(iam->clientServerUrl);
-    free(iam->clientServerKey);
 }
 
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)

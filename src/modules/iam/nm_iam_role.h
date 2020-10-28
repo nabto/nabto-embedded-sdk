@@ -7,11 +7,6 @@
 extern "C" {
 #endif
 
-struct nm_iam_role {
-    char* id;
-    struct nn_string_set policies;
-};
-
 /**
  * Create a new role with the specified name.
  */

@@ -7,31 +7,6 @@
 extern "C" {
 #endif
 
-enum nm_condition_operator {
-    NM_CONDITION_OPERATOR_STRING_EQUALS,
-    NM_CONDITION_OPERATOR_STRING_NOT_EQUALS,
-    NM_CONDITION_OPERATOR_NUMERIC_EQUALS,
-    NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS,
-    NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN,
-    NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS,
-    NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN,
-    NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS,
-    NM_CONDITION_OPERATOR_BOOL
-};
-
-enum nm_condition_result {
-    NM_CONDITION_RESULT_MATCH,
-    NM_CONDITION_RESULT_NO_MATCH,
-    NM_CONDITION_RESULT_ERROR
-};
-
-struct nm_condition {
-    enum nm_condition_operator op;
-    char* key;
-
-    struct nn_string_set values;
-};
-
 struct nn_string_map;
 
 struct nm_condition* nm_condition_new(enum nm_condition_operator op);
