@@ -4,7 +4,7 @@
 #include "nm_iam_configuration.h"
 #include "nm_iam_state.h"
 
-#include "nm_iam_coap_handler.h"
+#include "coap_handler/nm_iam_coap_handler.h"
 #include "nm_iam_auth_handler.h"
 #include "nm_iam_pake_handler.h"
 
@@ -27,7 +27,7 @@ struct nm_iam_role;
 
 typedef void (*nm_iam_user_changed)(struct nm_iam* iam, const char* userId, void* userData);
 
-struct nm_iam_change_callbacks {
+struct nm_iam_change_callback {
     // called if a user is inserted, updated or removed.
     nm_iam_user_changed userChanged;
     void* userChangedData;
@@ -58,7 +58,7 @@ struct nm_iam {
     struct nm_iam_auth_handler authHandler;
     struct nm_iam_pake_handler pakeHandler;
 
-    struct nm_iam_change_callbacks changeCallbacks;
+    struct nm_iam_change_callback changeCallback;
     struct nm_iam_configuration conf;
     struct nm_iam_state state;
 };

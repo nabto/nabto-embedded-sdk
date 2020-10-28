@@ -1,6 +1,7 @@
 #include "nm_iam_coap_handler.h"
-#include "nm_iam_user.h"
-#include "nm_iam.h"
+#include "../nm_iam_user.h"
+#include "../nm_iam_internal.h"
+#include "../nm_iam.h"
 
 #include <stdlib.h>
 
@@ -8,9 +9,9 @@
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
-NabtoDeviceError nm_iam_set_user_password_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
+NabtoDeviceError nm_iam_set_user_name_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "iam", "users", "{user}", "password", NULL };
+    const char* paths[] = { "iam", "users", "{user}", "name",  NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_PUT, paths, &handle_request);
 }
 
@@ -24,8 +25,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* pass = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &pass) || pass == NULL) {
+    char* name = NULL;
+    if (!nm_iam_cbor_decode_string(&value, &name) || name == NULL) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
@@ -34,26 +35,31 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nn_string_map_init(&attributes);
     nn_string_map_insert(&attributes, "IAM:UserId", userId);
 
-    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserPassword", &attributes)) {
+    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserName", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
+        free(name);
         nn_string_map_deinit(&attributes);
-        free(pass);
         return;
     }
     nn_string_map_deinit(&attributes);
 
+    if (nm_iam_find_user_by_name(handler->iam, name) != NULL) {
+        nabto_device_coap_error_response(request, 409, "Conflict");
+        free(name);
+        return;
+    }
     struct nm_iam_user* user = nm_iam_find_user(handler->iam, userId);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, NULL);
-        free(pass);
+        free(name);
         return;
     }
-    if (!nm_iam_user_set_password(user, pass)) {
+    if (!nm_iam_user_set_name(user, name)) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
-        free(pass);
+        free(name);
         return;
     }
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
-    free(pass);
+    free(name);
 }

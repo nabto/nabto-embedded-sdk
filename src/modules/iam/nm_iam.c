@@ -3,8 +3,6 @@
 #include "nm_iam_user.h"
 #include "nm_iam_role.h"
 
-#include "nm_iam_coap_handler.h"
-
 #include <nabto/nabto_device_experimental.h>
 #include <modules/policies/nm_effect.h>
 #include <modules/policies/nm_policy.h>
@@ -405,8 +403,8 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
         nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
     }
 
-    if (iam->changeCallbacks.userChanged) {
-        iam->changeCallbacks.userChanged(iam, user->id, iam->changeCallbacks.userChangedData);
+    if (iam->changeCallback.userChanged) {
+        iam->changeCallback.userChanged(iam, user->id, iam->changeCallback.userChangedData);
     }
     return true;
 }
@@ -501,8 +499,8 @@ char* nm_iam_make_user_name(struct nm_iam* iam, const char* suggested)
 
 void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChanged, void* data)
 {
-    iam->changeCallbacks.userChanged = userChanged;
-    iam->changeCallbacks.userChangedData = data;
+    iam->changeCallback.userChanged = userChanged;
+    iam->changeCallback.userChangedData = data;
 }
 
 bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids)
@@ -526,8 +524,8 @@ void nm_iam_delete_user(struct nm_iam* iam, const char* userId)
             nn_vector_erase(&iam->users, i);
             nm_iam_user_free(user);
 
-            if (iam->changeCallbacks.userChanged) {
-                iam->changeCallbacks.userChanged(iam, userId, iam->changeCallbacks.userChangedData);
+            if (iam->changeCallback.userChanged) {
+                iam->changeCallback.userChanged(iam, userId, iam->changeCallback.userChangedData);
             }
 
             return;
@@ -548,8 +546,8 @@ bool nm_iam_set_user_role(struct nm_iam* iam, const char* userId, const char* ro
     bool status = nm_iam_user_set_role(user, roleId);
 
     if (status == true) {
-        if (iam->changeCallbacks.userChanged) {
-            iam->changeCallbacks.userChanged(iam, userId, iam->changeCallbacks.userChangedData);
+        if (iam->changeCallback.userChanged) {
+            iam->changeCallback.userChanged(iam, userId, iam->changeCallback.userChangedData);
         }
     }
     return status;
