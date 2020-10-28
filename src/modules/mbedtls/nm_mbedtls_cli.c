@@ -448,7 +448,7 @@ void nm_dtls_event_do_one(void* data)
                     mbedtls_x509_crt_verify_info(info, 128, "", validationStatus);
                     NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
                 } else {
-                    NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %s", ret );
+                    NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %i", ret );
                 }
                 ctx->state = CLOSING;
                 nm_mbedtls_timer_cancel(&ctx->timer);
