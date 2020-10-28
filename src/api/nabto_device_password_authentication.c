@@ -49,6 +49,21 @@ nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDevi
     return passwordAuthenticated;
 }
 
+const char* NABTO_DEVICE_API
+nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    char* username = NULL;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
+    if (connection != NULL && connection->username[0] != 0) {
+        username = connection->username;
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return username;
+
+}
+
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_password_authentication_request_init_listener(NabtoDevice* device, NabtoDeviceListener* passwordAuthenticationListener)
 {

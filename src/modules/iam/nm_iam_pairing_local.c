@@ -10,7 +10,7 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 
 NabtoDeviceError nm_iam_pairing_local_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "pairing", "local", NULL };
+    const char* paths[] = { "iam", "pairing", "local", NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_POST, paths, &handle_request);
 
 }

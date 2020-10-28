@@ -1,5 +1,11 @@
 #include "nm_iam_pake_handler.h"
+#include "nm_iam_user.h"
+#include "nm_iam_internal.h"
 #include "nm_iam.h"
+
+#include <nn/log.h>
+
+static const char* LOGM = "iam";
 
 static void start_listen(struct nm_iam_pake_handler *handler);
 static void request_callback(NabtoDeviceFuture *future, NabtoDeviceError ec, void *userData);
@@ -13,7 +19,11 @@ NabtoDeviceError nm_iam_pake_handler_init(struct nm_iam_pake_handler *handler,
     handler->iam = iam;
     handler->listener = nabto_device_listener_new(device);
     handler->future = nabto_device_future_new(device);
-    nabto_device_password_authentication_request_init_listener(device, handler->listener);
+    NabtoDeviceError ec = nabto_device_password_authentication_request_init_listener(device, handler->listener);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        NN_LOG_ERROR(handler->iam->logger, LOGM, "Failed to initialize password authentication listener (%s)", nabto_device_error_get_string(ec));
+        return ec;
+    }
     start_listen(handler);
     return NABTO_DEVICE_EC_OK;
 }
@@ -33,7 +43,6 @@ void start_listen(struct nm_iam_pake_handler *handler)
 void request_callback(NabtoDeviceFuture *future, NabtoDeviceError ec, void *userData)
 {
     struct nm_iam_pake_handler *handler = userData;
-
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     } else {
@@ -51,6 +60,10 @@ void handle_request(struct nm_iam_pake_handler *handler, NabtoDevicePasswordAuth
         username && *username == '\0')
     {
         nabto_device_password_authentication_request_set_password(request, handler->iam->pairingPassword);
+    } else if (username) {
+        struct nm_iam_user* user = nm_iam_find_user_by_name(handler->iam, username);
+        if (user && user->password) {
+            nabto_device_password_authentication_request_set_password(request, user->password);
+        }
     }
 }
-

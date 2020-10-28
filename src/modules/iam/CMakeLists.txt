@@ -18,6 +18,10 @@ set(src
   nm_iam_delete_user.c
   nm_iam_list_roles.c
   nm_iam_set_user_role.c
+  nm_iam_set_user_name.c
+  nm_iam_set_user_fingerprint.c
+  nm_iam_set_user_sct.c
+  nm_iam_set_user_password.c
   nm_iam_client_settings.c
   )
 
