@@ -17,6 +17,7 @@ struct nm_dns_request {
     struct np_completion_event* completionEvent;
     struct np_ip_address* ips;
     struct evdns_request* req;
+    struct evdns_base* dnsBase;
     size_t ipsSize;
     size_t* ipsResolved;
 };
@@ -51,6 +52,7 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
+    dnsRequest->dnsBase = dnsBase;
     dnsRequest->req = evdns_base_resolve_ipv4(dnsBase, host, flags, dns_cb, dnsRequest);
 }
 
@@ -65,12 +67,26 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
+    dnsRequest->dnsBase = dnsBase;
     dnsRequest->req = evdns_base_resolve_ipv6(dnsBase, host, flags, dns_cb, dnsRequest);
 }
 
 void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg)
 {
     struct nm_dns_request* ctx = arg;
+
+    if (result == DNS_ERR_TIMEOUT) {
+        // maybe the system has changed nameservers, reload them
+        struct evdns_base* base = ctx->dnsBase;
+#ifdef _WIN32
+        evdns_base_clear_host_addresses(base);
+        evdns_base_config_windows_nameservers(base);
+#else
+        evdns_base_clear_host_addresses(base);
+        evdns_base_resolv_conf_parse(base, DNS_OPTION_NAMESERVERS, "/etc/resolv.conf");
+#endif
+    }
+
     if (result != DNS_ERR_NONE) {
         np_completion_event_resolve(ctx->completionEvent, NABTO_EC_UNKNOWN);
         free(ctx);
