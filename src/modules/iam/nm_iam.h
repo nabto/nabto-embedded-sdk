@@ -1,6 +1,8 @@
 #ifndef _NM_IAM_H_
 #define _NM_IAM_H_
 
+#include "nm_iam_configuration.h"
+#include "nm_iam_state.h"
 
 #include "nm_iam_coap_handler.h"
 #include "nm_iam_auth_handler.h"
@@ -35,7 +37,6 @@ struct nm_iam_change_callbacks {
 struct nm_iam {
     NabtoDevice* device;
     struct nn_log* logger;
-    struct nn_vector users;
 
     struct nm_iam_coap_handler coapIamUsersGetHandler;
     struct nm_iam_coap_handler coapPairingGetHandler;
@@ -59,6 +60,7 @@ struct nm_iam {
 
     struct nm_iam_change_callbacks changeCallbacks;
     struct nm_iam_configuration conf;
+    struct nm_iam_state state;
 };
 
 /**
@@ -73,10 +75,21 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
  * cannot be changed after device start.
  *
  * @param iam [in]           IAM module to load configuration into
- * @param configuration [in] Configuration to load. Configuration is copied into the module
+ * @param configuration [in] Configuration to load. The IAM module takes ownership of the configuration.
  * @return false iff the configuration could not be loaded
  */
 bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* configuration);
+
+/**
+ * Load a state into an IAM module. Must be called before
+ * nabto_device_start() to avoid concurrency issues. The state can
+ * only be modified by CoAP calls from the client after device start.
+ *
+ * @param iam [in]     IAM module to load state into
+ * @param state [in]   State to load. The IAM module takes ownership of the state.
+ * @return false iff the state could not be loaded
+ */
+bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state);
 
 bool nm_iam_start(struct nm_iam* iam);
 
@@ -96,12 +109,6 @@ void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed us
  * @return NULL if no such user exists.
  */
 struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* id);
-
-/**
- * Add a user to the iam system.
- * The system takes ownership of the user pointer.
- */
-bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user);
 
 /**
  * Get a list of all users in the system.

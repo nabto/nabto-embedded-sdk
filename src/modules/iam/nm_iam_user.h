@@ -8,16 +8,6 @@
 extern "C" {
 #endif
 
-struct nm_iam_user {
-    char* id;
-    char* name;
-    char* role;
-    char* password;
-    char* fingerprint;
-    char* serverConnectToken;
-    struct nn_string_map attributes;
-};
-
 void nm_iam_user_init(struct nm_iam_user* user);
 void nm_iam_user_deinit(struct nm_iam_user* user);
 

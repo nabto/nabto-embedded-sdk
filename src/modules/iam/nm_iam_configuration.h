@@ -1,5 +1,5 @@
-#ifndef _NM_IAM_SERIALIZER_H_
-#define _NM_IAM_SERIALIZER_H_
+#ifndef _NM_IAM_CONFIGURATION_H_
+#define _NM_IAM_CONFIGURATION_H_
 
 #include <nn/llist.h>
 #include <nn/string_set.h>
@@ -53,9 +53,6 @@ struct nm_iam_configuration {
     struct nn_llist roles; // linked list of struct nm_iam_role
     struct nn_llist policies; // linked list of struct nm_iam_policy
 
-    char* globalPairingPassword;
-    char* globalSct;
-
     char* firstUserRole;
     char* secondaryUserRole;
     char* unpairedRole;
@@ -64,27 +61,35 @@ struct nm_iam_configuration {
 /*************************
  * Configuration Builder *
  *************************/
+/**
+ * Create IAM configuration
+ *
+ * @return NULL iff the configuration could not be created
+ */
+struct nm_iam_configuration* nm_iam_configuration_new();
 
 /**
- * Set pairing password in the IAM configuration.
+ * Free IAM configuration if the ownership was not transfered to an
+ * IAM module with nm_iam_load_configuration()
  *
- * @param conf [in]      The IAM configuration,
- * @param password [in]  The password which clients needs to specify to pair with the system. The string is copied into the module. Password pairing can be disabled with the NULL password.
- * @return false iff the password was not set
+ * @param conf [in]  Configuration to free
  */
-bool nm_iam_configuration_set_pairing_password(struct nm_iam_configuration* conf, const char* password);
+void nm_iam_configuration_free(struct nm_iam_configuration* conf);
 
 /**
- * Set remote pairing server connect token in the IAM configuration. A
- * client cannot make a remote pairing unless it has a valid server
- * connect token. This sets that server connect token when the
- * configuration is loaded.
+ * Initialize IAM configuration before building
  *
- * @param conf [in]                The IAM configuration,
- * @param serverConnectToken [in]  The server connect token the client needs to use when pairing remotely with the system. The string is copied into the system.
- * @return false iff the server connect token was not set
+ * @param conf [in]  Configuration to initialize
  */
-bool nm_iam_configuration_set_pairing_server_connect_token(struct nm_iam_configuration* conf, const char* serverConnectToken);
+void nm_iam_configuration_init(struct nm_iam_configuration* conf);
+
+/**
+ * Deinitialize IAM configuration if the ownership was not transfered
+ * to an IAM module with nm_iam_load_configuration()
+ *
+ * @param conf [in]  Configuration to deinitialize
+ */
+void nm_iam_configuration_deinit(struct nm_iam_configuration* conf);
 
 /**
  * Set the role for the first paired user. Mandatory for the typical

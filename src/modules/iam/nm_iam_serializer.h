@@ -32,20 +32,20 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
  * resulting string must be freed with
  * nm_iam_serializer_string_free().
  *
- * @param iam [in]    IAM module to dump from
+ * @param state [in]  State to dump from
  * @param out [out]   Where to put serialized state
  * @return true iff the state was serialized successfully
  */
-bool nm_iam_serializer_state_dump(struct nm_iam* iam, char** out);
+bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out);
 
 /**
  * Load the IAM state from a JSON string.
  *
- * @param iam [in]    IAM module to load state into
- * @param conf [in]   JSON string to load
+ * @param state [in]  State to load into
+ * @param in [in]     JSON string to load
  * @return true iff the state was successfully loaded
  */
-bool nm_iam_serializer_state_load(struct nm_iam* iam, char* state);
+bool nm_iam_serializer_state_load_json(struct nm_iam_state* iam, char* in);
 
 /**
  * Free string returned by dump functions
