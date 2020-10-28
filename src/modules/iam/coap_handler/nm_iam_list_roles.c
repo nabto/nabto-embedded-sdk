@@ -2,8 +2,6 @@
 #include "../nm_iam_role.h"
 #include "../nm_iam.h"
 
-#include <nn/vector.h>
-
 #include <stdlib.h>
 
 #include <cbor.h>
@@ -23,9 +21,9 @@ static size_t encode_roles(struct nm_iam* iam, void* buffer, size_t bufferSize)
     CborEncoder array;
     cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
 
-    struct nn_vector* roles = &iam->roles;
+    struct nn_llist* roles = &iam->conf->roles;
     struct nm_iam_role* role;
-    NN_VECTOR_FOREACH(&role, roles) {
+    NN_LLIST_FOREACH(role, roles) {
         cbor_encode_text_stringz(&array, role->id);
     }
 

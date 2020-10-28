@@ -1,6 +1,8 @@
 #ifndef _NM_IAM_USER_H_
 #define _NM_IAM_USER_H_
 
+#include "nm_iam_state.h"
+
 #include <nn/string_set.h>
 #include <nn/string_map.h>
 

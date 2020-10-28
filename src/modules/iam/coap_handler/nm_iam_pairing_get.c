@@ -25,7 +25,7 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     CborEncoder array;
     cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
 
-    if (iam->pairingPassword != NULL) {
+    if (iam->state->globalPairingPassword != NULL) {
         cbor_encode_text_stringz(&array, "Password");
     }
 

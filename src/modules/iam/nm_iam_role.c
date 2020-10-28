@@ -1,5 +1,7 @@
 #include "nm_iam_role.h"
 
+#include <nn/llist.h>
+
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>

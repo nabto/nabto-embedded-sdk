@@ -19,7 +19,7 @@ struct nm_iam_statement* nm_statement_new(enum nm_iam_effect effect)
     }
     statement->effect = effect;
     nn_string_set_init(&statement->actions);
-    nn_llist_init(&statement->conditions, sizeof(void*));
+    nn_llist_init(&statement->conditions);
     nn_llist_node_init(&p->listNode);
     return statement;
 }
@@ -30,12 +30,11 @@ void nm_statement_free(struct nm_iam_statement* statement)
 
 
     struct nm_iam_condition* condition;
-    NN_LLIST_FOREACH(&condition, &statement->conditions) {
+    NN_LLIST_FOREACH(condition, &statement->conditions) {
         nm_condition_free(condition);
     }
 
     nn_llist_deinit(&statement->conditions);
-    nn_llist_node_deinit(&p->listNode);
     free(statement);
 }
 
@@ -71,7 +70,7 @@ bool nm_statement_add_condition(struct nm_iam_statement* statement, struct nm_ia
 enum nm_condition_result match_conditions(const struct nm_iam_statement* statement, const struct nn_string_map* attributes)
 {
     const struct nm_iam_condition* condition;
-    NN_LLIST_FOREACH(&condition, &statement->conditions)
+    NN_LLIST_FOREACH(condition, &statement->conditions)
     {
         enum nm_condition_result r = nm_condition_matches(condition, attributes);
         if (r == NM_CONDITION_RESULT_NO_MATCH || r == NM_CONDITION_RESULT_ERROR) {

@@ -39,7 +39,7 @@ cJSON* nm_conditions_to_json(const struct nn_llist* conditions)
 {
     cJSON* array = cJSON_CreateArray();
     struct nm_iam_condition* condition;
-    NN_LLIST_FOREACH(&condition, conditions) {
+    NN_LLIST_FOREACH(condition, conditions) {
         cJSON_AddItemToArray(array, nm_condition_to_json(condition));
     }
     return array;
@@ -77,7 +77,7 @@ cJSON* nm_statements_to_json(const struct nn_llist* statements)
 {
     cJSON* array = cJSON_CreateArray();
     struct nm_iam_statement* statement;
-    NN_LLIST_FOREACH(&statement, statements) {
+    NN_LLIST_FOREACH(statement, statements) {
         cJSON_AddItemToArray(array, nm_statement_to_json(statement));
     }
     return array;

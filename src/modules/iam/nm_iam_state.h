@@ -15,6 +15,7 @@ struct nm_iam_user {
     char* password;
     char* fingerprint;
     char* serverConnectToken;
+    struct nn_llist_node listNode;
 };
 
 struct nm_iam_state {
@@ -87,3 +88,9 @@ bool nm_iam_state_set_pairing_server_connect_token(struct nm_iam_state* state, c
  * @return false iff the user could not be added
  */
 bool nm_iam_state_add_user(struct nm_iam_state* state, struct nm_iam_user* user);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
+
+#endif

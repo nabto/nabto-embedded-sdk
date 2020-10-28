@@ -1,6 +1,7 @@
 #ifndef _NM_IAM_ROLE_H_
 #define _NM_IAM_ROLE_H_
 
+#include "nm_iam_configuration.h"
 #include <nn/string_set.h>
 
 #ifdef __cplusplus

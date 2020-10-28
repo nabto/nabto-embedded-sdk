@@ -59,8 +59,8 @@ struct nm_iam {
     struct nm_iam_pake_handler pakeHandler;
 
     struct nm_iam_change_callback changeCallback;
-    struct nm_iam_configuration conf;
-    struct nm_iam_state state;
+    struct nm_iam_configuration* conf;
+    struct nm_iam_state* state;
 };
 
 /**

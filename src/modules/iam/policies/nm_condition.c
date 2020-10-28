@@ -46,7 +46,6 @@ void nm_condition_init(struct nm_iam_condition* condition)
 void nm_condition_deinit(struct nm_iam_condition* condition)
 {
     nn_string_set_deinit(&condition->values);
-    nn_llist_node_deinit(&p->listNode);
     free(condition->key);
     condition->key = NULL;
 }

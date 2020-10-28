@@ -18,7 +18,7 @@ struct nm_iam_policy* nm_policy_new(const char* idIn)
         free(p);
         return NULL;
     }
-    nn_llist_init(&p->statements, sizeof(void*));
+    nn_llist_init(&p->statements);
     nn_llist_node_init(&p->listNode);
     p->id = id;
 
@@ -28,11 +28,10 @@ struct nm_iam_policy* nm_policy_new(const char* idIn)
 void nm_policy_free(struct nm_iam_policy* policy)
 {
     struct nm_iam_statement* stmt;
-    NN_LLIST_FOREACH(&stmt, &policy->statements) {
+    NN_LLIST_FOREACH(stmt, &policy->statements) {
         nm_statement_free(stmt);
     }
     nn_llist_deinit(&policy->statements);
-    nn_llist_node_deinit(&p->listNode);
     free(policy->id);
     free(policy);
 }
@@ -57,7 +56,7 @@ enum nm_iam_effect nm_policy_eval_get_effect(struct nm_policy_eval_state* state)
 void nm_policy_eval(struct nm_policy_eval_state* state, struct nm_iam_policy* policy, const char* action, const struct nn_string_map* attributes)
 {
     struct nm_iam_statement* stmt;
-    NN_LLIST_FOREACH(&stmt, &policy->statements) {
+    NN_LLIST_FOREACH(stmt, &policy->statements) {
         nm_policy_statement_eval(state, stmt, action, attributes);
     }
 }

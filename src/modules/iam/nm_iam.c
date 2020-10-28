@@ -29,9 +29,9 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     srand(time(0));
     iam->device = device;
     iam->logger = logger;
-    nn_vector_init(&iam->users, sizeof(void*));
-    nn_vector_init(&iam->roles, sizeof(void*));
-    nn_vector_init(&iam->policies, sizeof(void*));
+    nn_llist_init(&iam->state->users);
+    nn_llist_init(&iam->conf->roles);
+    nn_llist_init(&iam->conf->policies);
 
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
     nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
@@ -51,9 +51,9 @@ bool nm_iam_start(struct nm_iam* iam)
 {
     bool ret = true;
     // validate that the pairing roles exists in the system
-    ret &= validate_role(iam, iam->firstUserRole);
-    ret &= validate_role(iam, iam->secondaryUserRole);
-    ret &= validate_role(iam, iam->unpairedRole);
+    ret &= validate_role(iam, iam->conf->firstUserRole);
+    ret &= validate_role(iam, iam->conf->secondaryUserRole);
+    ret &= validate_role(iam, iam->conf->unpairedRole);
     return ret;
 }
 
@@ -65,28 +65,28 @@ void nm_iam_deinit(struct nm_iam* iam)
     nm_iam_pake_handler_deinit(&iam->pakeHandler);
 
     struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &iam->users) {
+    NN_LLIST_FOREACH(user, &iam->state->users) {
         nm_iam_user_free(user);
     }
-    nn_vector_deinit(&iam->users);
+    nn_llist_deinit(&iam->state->users);
 
-    free(iam->firstUserRole);
-    free(iam->secondaryUserRole);
-    free(iam->unpairedRole);
+    free(iam->conf->firstUserRole);
+    free(iam->conf->secondaryUserRole);
+    free(iam->conf->unpairedRole);
 
     struct nm_iam_role* role;
-    NN_VECTOR_FOREACH(&role, &iam->roles) {
+    NN_LLIST_FOREACH(role, &iam->conf->roles) {
         nm_iam_role_free(role);
     }
-    nn_vector_deinit(&iam->roles);
+    nn_llist_deinit(&iam->conf->roles);
 
     struct nm_iam_policy* policy;
-    NN_VECTOR_FOREACH(&policy, &iam->policies) {
+    NN_LLIST_FOREACH(policy, &iam->conf->policies) {
         nm_policy_free(policy);
     }
-    nn_vector_deinit(&iam->policies);
+    nn_llist_deinit(&iam->conf->policies);
 
-    free(iam->pairingPassword);
+    free(iam->state->globalPairingPassword);
 }
 
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)
@@ -131,7 +131,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
         }
         effect = nm_iam_check_access_user(iam, user, action, &attributes);
     } else {
-        struct nm_iam_role* role = nm_iam_find_role(iam, iam->unpairedRole);
+        struct nm_iam_role* role = nm_iam_find_role(iam, iam->conf->unpairedRole);
         if (role == NULL) {
             effect = NM_EFFECT_ERROR;
         } else {
@@ -182,65 +182,6 @@ enum nm_iam_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_ro
     }
 
     return nm_policy_eval_get_effect(&state);
-}
-
-bool nm_iam_enable_password_pairing(struct nm_iam* iam, const char* pairingPassword)
-{
-    iam->pairingPassword = strdup(pairingPassword);
-    return true;
-}
-
-bool nm_iam_enable_remote_pairing(struct nm_iam* iam, const char* pairingServerConnectToken)
-{
-    nabto_device_add_server_connect_token(iam->device, pairingServerConnectToken);
-    return true;
-}
-
-bool nm_iam_set_first_user_role(struct nm_iam* iam, const char* role)
-{
-    if (role == NULL) {
-        free(iam->firstUserRole);
-        iam->firstUserRole = NULL;
-        return true;
-    }
-    char* tmp = strdup(role);
-    if (tmp != NULL) {
-        free(iam->firstUserRole);
-        iam->firstUserRole = tmp;
-    }
-    return (tmp != 0);
-}
-
-bool nm_iam_set_secondary_user_role(struct nm_iam* iam, const char* role)
-{
-    if (role == NULL) {
-        free(iam->secondaryUserRole);
-        iam->secondaryUserRole = NULL;
-        return true;
-    }
-    char* tmp = strdup(role);
-    if (tmp == NULL) {
-        return false;
-    }
-    free(iam->secondaryUserRole);
-    iam->secondaryUserRole = tmp;
-    return true;
-}
-
-bool nm_iam_set_unpaired_role(struct nm_iam* iam, const char* role)
-{
-    if (role == NULL) {
-        free(iam->unpairedRole);
-        iam->unpairedRole = NULL;
-        return true;
-    }
-    char* tmp = strdup(role);
-    if (tmp == NULL) {
-        return false;
-    }
-    free(iam->unpairedRole);
-    iam->unpairedRole = tmp;
-    return true;
 }
 
 void init_coap_handlers(struct nm_iam* iam)
@@ -295,7 +236,7 @@ struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const ch
         return NULL;
     }
     struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &iam->users) {
+    NN_LLIST_FOREACH(user, &iam->state->users) {
         if (user->fingerprint != NULL && strcmp(user->fingerprint, fingerprint) == 0) {
             return user;
         }
@@ -309,7 +250,7 @@ struct nm_iam_user* nm_iam_find_user_by_name(struct nm_iam* iam, const char* nam
         return NULL;
     }
     struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &iam->users) {
+    NN_LLIST_FOREACH(user, &iam->state->users) {
         if (user->name != NULL && strcmp(user->name, name) == 0) {
             return user;
         }
@@ -323,7 +264,7 @@ struct nm_iam_role* nm_iam_find_role(struct nm_iam* iam, const char* roleStr)
         return NULL;
     }
     struct nm_iam_role* role;
-    NN_VECTOR_FOREACH(&role, &iam->roles)
+    NN_LLIST_FOREACH(role, &iam->conf->roles)
     {
         if (strcmp(role->id, roleStr) == 0) {
             return role;
@@ -338,7 +279,7 @@ struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyS
         return NULL;
     }
     struct nm_iam_policy* policy;
-    NN_VECTOR_FOREACH(&policy, &iam->policies)
+    NN_LLIST_FOREACH(policy, &iam->conf->policies)
     {
         if (strcmp(policy->id, policyStr) == 0) {
             return policy;
@@ -362,7 +303,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
         return NULL;
     }
 
-    bool firstUser = (nn_vector_size(&iam->users) == 0);
+    bool firstUser = nn_llist_empty(&iam->state->users);
 
     char* sct;
     NabtoDeviceError ec = nabto_device_create_server_connect_token(iam->device, &sct);
@@ -375,9 +316,9 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
     free(nextId);
 
     if (firstUser) {
-        nm_iam_user_set_role(user, iam->firstUserRole);
+        nm_iam_user_set_role(user, iam->conf->firstUserRole);
     } else {
-        nm_iam_user_set_role(user, iam->secondaryUserRole);
+        nm_iam_user_set_role(user, iam->conf->secondaryUserRole);
     }
 
     nm_iam_user_set_fingerprint(user, fingerprint);
@@ -396,7 +337,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
 
 bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
 {
-    nn_vector_push_back(&iam->users, &user);
+    nn_llist_append(&iam->state->users, &user->listNode, &user);
 
     if (user->serverConnectToken != NULL) {
         nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
@@ -405,18 +346,6 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
     if (iam->changeCallback.userChanged) {
         iam->changeCallback.userChanged(iam, user->id, iam->changeCallback.userChangedData);
     }
-    return true;
-}
-
-bool nm_iam_add_role(struct nm_iam* iam, struct nm_iam_role* role)
-{
-    nn_vector_push_back(&iam->roles, &role);
-    return true;
-}
-
-bool nm_iam_add_policy(struct nm_iam* iam, struct nm_iam_policy* policy)
-{
-    nn_vector_push_back(&iam->policies, &policy);
     return true;
 }
 
@@ -447,7 +376,7 @@ struct nm_iam_user* nm_iam_find_user_by_coap_request(struct nm_iam* iam, NabtoDe
 struct nm_iam_user* nm_iam_find_user_by_id(struct nm_iam* iam, const char* id)
 {
     struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &iam->users) {
+    NN_LLIST_FOREACH(user, &iam->state->users) {
         if (strcmp(user->id, id) == 0) {
             return user;
         }
@@ -505,7 +434,7 @@ void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed us
 bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids)
 {
     struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &iam->users)
+    NN_LLIST_FOREACH(user, &iam->state->users)
     {
         nn_string_set_insert(ids, user->id);
     }
@@ -514,13 +443,10 @@ bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids)
 
 void nm_iam_delete_user(struct nm_iam* iam, const char* userId)
 {
-    size_t s;
-    s = nn_vector_size(&iam->users);
-    for (size_t i = 0; i < s; i++) {
-        struct nm_iam_user* user;
-        nn_vector_get(&iam->users, i, &user);
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &iam->state->users) {
         if (strcmp(user->id, userId) == 0) {
-            nn_vector_erase(&iam->users, i);
+            nn_llist_erase_node(&user->listNode);
             nm_iam_user_free(user);
 
             if (iam->changeCallback.userChanged) {
@@ -529,6 +455,7 @@ void nm_iam_delete_user(struct nm_iam* iam, const char* userId)
 
             return;
         }
+
     }
 }
 

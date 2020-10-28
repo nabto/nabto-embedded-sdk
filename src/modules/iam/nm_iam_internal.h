@@ -1,6 +1,7 @@
 #ifndef _NM_IAM_INTERNAL_H_
 #define _NM_IAM_INTERNAL_H_
 
+bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user);
 char* nm_iam_make_user_name(struct nm_iam* iam, const char* suggested);
 char* nm_iam_make_user_id(struct nm_iam* iam);
 struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const char* fingerprint);

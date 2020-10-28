@@ -147,20 +147,6 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
         cbor_encode_text_stringz(&map, user->serverConnectToken);
     }
 
-    if (!nn_string_map_empty(&user->attributes)) {
-        cbor_encode_text_stringz(&map, "Attributes");
-        CborEncoder o;
-        cbor_encoder_create_map(&map, &o, CborIndefiniteLength);
-
-        struct nn_string_map_iterator it;
-        for (it = nn_string_map_begin(&user->attributes); !nn_string_map_is_end(&it); nn_string_map_next(&it)) {
-            cbor_encode_text_stringz(&o, nn_string_map_key(&it));
-            cbor_encode_text_stringz(&o, nn_string_map_value(&it));
-        }
-
-        cbor_encoder_close_container(&map, &o);
-    }
-
     cbor_encoder_close_container(&encoder, &map);
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);

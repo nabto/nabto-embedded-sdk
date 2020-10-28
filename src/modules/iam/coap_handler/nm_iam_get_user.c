@@ -2,8 +2,6 @@
 #include "../nm_iam_user.h"
 #include "../nm_iam.h"
 
-#include <nn/vector.h>
-
 #include <stdlib.h>
 
 #include <cbor.h>
