@@ -156,8 +156,7 @@ bool create_default_iam_config(const char* iamConfigFile)
         nm_statement_add_action(stmt, "IAM:ListUsers");
         nm_statement_add_action(stmt, "IAM:GetUser");
         nm_statement_add_action(stmt, "IAM:DeleteUser");
-        nm_statement_add_action(stmt, "IAM:AddRoleToUser");
-        nm_statement_add_action(stmt, "IAM:RemoveRoleFromUser");
+        nm_statement_add_action(stmt, "IAM:SetUserRole");
         nm_statement_add_action(stmt, "IAM:ListRoles");
         nm_policy_add_statement(manageUsers, stmt);
     }
