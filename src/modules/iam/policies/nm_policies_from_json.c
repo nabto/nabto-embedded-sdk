@@ -124,9 +124,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
             if (tmp == NULL) {
                 return false;
             }
-            if (!nn_llist_append(&statement->conditions, &tmp->listNode, &tmp)) {
-                return false;
-            }
+            nn_llist_append(&statement->conditions, &tmp->listNode, &tmp);
         }
     }
     return true;

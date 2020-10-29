@@ -3,6 +3,7 @@
 
 #include "../nm_iam_configuration.h"
 
+#include <nn/string_map.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus

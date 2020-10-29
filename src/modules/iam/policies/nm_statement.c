@@ -20,7 +20,7 @@ struct nm_iam_statement* nm_statement_new(enum nm_iam_effect effect)
     statement->effect = effect;
     nn_string_set_init(&statement->actions);
     nn_llist_init(&statement->conditions);
-    nn_llist_node_init(&p->listNode);
+    nn_llist_node_init(&statement->listNode);
     return statement;
 }
 
@@ -64,7 +64,8 @@ bool nm_statement_add_action(struct nm_iam_statement* statement, const char* act
 
 bool nm_statement_add_condition(struct nm_iam_statement* statement, struct nm_iam_condition* condition)
 {
-    return nn_llist_append(&statement->conditions, &condition->listNode, &condition);
+    nn_llist_append(&statement->conditions, &condition->listNode, &condition);
+    return true;
 }
 
 enum nm_condition_result match_conditions(const struct nm_iam_statement* statement, const struct nn_string_map* attributes)

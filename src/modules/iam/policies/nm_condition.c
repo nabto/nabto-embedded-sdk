@@ -39,7 +39,7 @@ void nm_condition_free(struct nm_iam_condition* condition)
 
 void nm_condition_init(struct nm_iam_condition* condition)
 {
-    nn_llist_node_init(&p->listNode);
+    nn_llist_node_init(&condition->listNode);
     nn_string_set_init(&condition->values);
 }
 
@@ -93,21 +93,21 @@ enum nm_condition_result nm_condition_numeric_operator(enum nm_iam_condition_ope
     double rhsDouble;
     if (nm_condition_parse_numeric(lhs, &lhsDouble) && nm_condition_parse_numeric(rhs, &rhsDouble)) {
         switch (op) {
-            case NM_CONDITION_OPERATOR_NUMERIC_EQUALS:
+            case NM_IAM_CONDITION_OPERATOR_NUMERIC_EQUALS:
                 return status(lhsDouble == rhsDouble);
-            case NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS:
+            case NM_IAM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS:
                 return status(lhsDouble != rhsDouble);
-            case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN:
+            case NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN:
                 return status(lhsDouble < rhsDouble);
-            case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS:
+            case NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS:
                 return status(lhsDouble <= rhsDouble);
-            case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN:
+            case NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN:
                 return status(lhsDouble > rhsDouble);
-            case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS:
+            case NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS:
                 return status(lhsDouble >= rhsDouble);
-            case NM_CONDITION_OPERATOR_STRING_EQUALS:
-            case NM_CONDITION_OPERATOR_STRING_NOT_EQUALS:
-            case NM_CONDITION_OPERATOR_BOOL:
+            case NM_IAM_CONDITION_OPERATOR_STRING_EQUALS:
+            case NM_IAM_CONDITION_OPERATOR_STRING_NOT_EQUALS:
+            case NM_IAM_CONDITION_OPERATOR_BOOL:
                 // We should never get here, this silences the compiler.
                 return NM_CONDITION_RESULT_ERROR;
         }
@@ -144,15 +144,15 @@ enum nm_condition_result nm_condition_matches(const struct nm_iam_condition* con
 
 bool nm_condition_parse_operator(const char* operation, enum nm_iam_condition_operator* op)
 {
-    if      (strcmp(operation, "StringEquals") == 0)             { *op = NM_CONDITION_OPERATOR_STRING_EQUALS; }
-    else if (strcmp(operation, "StringNotEquals") == 0)          { *op = NM_CONDITION_OPERATOR_STRING_NOT_EQUALS; }
-    else if (strcmp(operation, "NumericEquals") == 0)            { *op = NM_CONDITION_OPERATOR_NUMERIC_EQUALS; }
-    else if (strcmp(operation, "NumericNotEquals") == 0)         { *op = NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS; }
-    else if (strcmp(operation, "NumericLessThan") == 0)          { *op = NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN; }
-    else if (strcmp(operation, "NumericLessThanEquals") == 0)    { *op = NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS; }
-    else if (strcmp(operation, "NumericGreaterThan") == 0)       { *op = NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN; }
-    else if (strcmp(operation, "NumericGreaterThanEquals") == 0) { *op = NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS; }
-    else if (strcmp(operation, "Bool") == 0)                     { *op = NM_CONDITION_OPERATOR_BOOL; }
+    if      (strcmp(operation, "StringEquals") == 0)             { *op = NM_IAM_CONDITION_OPERATOR_STRING_EQUALS; }
+    else if (strcmp(operation, "StringNotEquals") == 0)          { *op = NM_IAM_CONDITION_OPERATOR_STRING_NOT_EQUALS; }
+    else if (strcmp(operation, "NumericEquals") == 0)            { *op = NM_IAM_CONDITION_OPERATOR_NUMERIC_EQUALS; }
+    else if (strcmp(operation, "NumericNotEquals") == 0)         { *op = NM_IAM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS; }
+    else if (strcmp(operation, "NumericLessThan") == 0)          { *op = NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN; }
+    else if (strcmp(operation, "NumericLessThanEquals") == 0)    { *op = NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS; }
+    else if (strcmp(operation, "NumericGreaterThan") == 0)       { *op = NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN; }
+    else if (strcmp(operation, "NumericGreaterThanEquals") == 0) { *op = NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS; }
+    else if (strcmp(operation, "Bool") == 0)                     { *op = NM_IAM_CONDITION_OPERATOR_BOOL; }
     else {
         return false;
     }
@@ -162,15 +162,15 @@ bool nm_condition_parse_operator(const char* operation, enum nm_iam_condition_op
 const char* nm_condition_operator_to_string(const enum nm_iam_condition_operator op)
 {
     switch(op) {
-        case NM_CONDITION_OPERATOR_STRING_EQUALS: return "StringEquals";
-        case NM_CONDITION_OPERATOR_STRING_NOT_EQUALS: return "StringNotEquals";
-        case NM_CONDITION_OPERATOR_NUMERIC_EQUALS: return "NumericEquals";
-        case NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS: return "NumericNotEquals";
-        case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN: return "NumericLessThan";
-        case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS: return "NumericLessThanEquals";
-        case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN: return "NumericGreaterThan";
-        case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS: return "NumericGreaterThanEquals";
-        case NM_CONDITION_OPERATOR_BOOL: return "Bool";
+        case NM_IAM_CONDITION_OPERATOR_STRING_EQUALS: return "StringEquals";
+        case NM_IAM_CONDITION_OPERATOR_STRING_NOT_EQUALS: return "StringNotEquals";
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_EQUALS: return "NumericEquals";
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS: return "NumericNotEquals";
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN: return "NumericLessThan";
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS: return "NumericLessThanEquals";
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN: return "NumericGreaterThan";
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS: return "NumericGreaterThanEquals";
+        case NM_IAM_CONDITION_OPERATOR_BOOL: return "Bool";
     }
     return "";
 }
@@ -201,18 +201,18 @@ enum nm_condition_result string_not_equals(const char* lhs, const char* rhs)
 static enum nm_condition_result match(enum nm_iam_condition_operator op, const char* lhs, const char* rhs)
 {
     switch (op) {
-        case NM_CONDITION_OPERATOR_STRING_EQUALS:
+        case NM_IAM_CONDITION_OPERATOR_STRING_EQUALS:
             return string_equals(lhs, rhs);
-        case NM_CONDITION_OPERATOR_STRING_NOT_EQUALS:
+        case NM_IAM_CONDITION_OPERATOR_STRING_NOT_EQUALS:
             return string_not_equals(lhs, rhs);
-        case NM_CONDITION_OPERATOR_NUMERIC_EQUALS:
-        case NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS:
-        case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN:
-        case NM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS:
-        case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN:
-        case NM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS:
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_EQUALS:
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS:
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN:
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_LESS_THAN_EQUALS:
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN:
+        case NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS:
             return nm_condition_numeric_operator(op, lhs, rhs);
-        case NM_CONDITION_OPERATOR_BOOL:
+        case NM_IAM_CONDITION_OPERATOR_BOOL:
             return bool_equals(lhs, rhs);
     }
     // we should never get here

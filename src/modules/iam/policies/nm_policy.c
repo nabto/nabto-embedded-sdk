@@ -39,7 +39,8 @@ void nm_policy_free(struct nm_iam_policy* policy)
 // Add statement to a policy, this takes ownership over the statement.
 bool nm_policy_add_statement(struct nm_iam_policy* policy, struct nm_iam_statement* stmt)
 {
-    return nn_llist_append(&policy->statements, &stmt->listNode, &stmt);
+    nn_llist_append(&policy->statements, &stmt->listNode, &stmt);
+    return true;
 }
 
 void nm_policy_eval_init(struct nm_policy_eval_state* state)
