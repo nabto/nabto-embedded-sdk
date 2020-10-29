@@ -10,7 +10,7 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 
 NabtoDeviceError nm_iam_pairing_password_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "pairing", "password", NULL };
+    const char* paths[] = { "iam", "pairing", "password", NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_POST, paths, &handle_request);
 
 }
@@ -18,7 +18,7 @@ NabtoDeviceError nm_iam_pairing_password_init(struct nm_iam_coap_handler* handle
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, ref, "Pairing:Password", NULL)) {
+    if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingPassword", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }

@@ -74,7 +74,7 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef conn = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, conn , "Pairing:Get", NULL)) {
+    if (!nm_iam_check_access(handler->iam, conn , "IAM:GetPairing", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }

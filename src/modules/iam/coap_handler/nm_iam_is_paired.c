@@ -11,13 +11,13 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 
 NabtoDeviceError nm_iam_is_paired_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "pairing", "is-paired", NULL };
+    const char* paths[] = { "iam", "pairing", "is-paired", NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "Pairing:Get", NULL)) {
+    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:GetPairing", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }

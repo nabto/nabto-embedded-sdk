@@ -18,7 +18,7 @@ NabtoDeviceError nm_iam_pairing_local_init(struct nm_iam_coap_handler* handler, 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, ref, "Pairing:Local", NULL) || !nabto_device_connection_is_local(handler->device, ref)) {
+    if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingLocal", NULL) || !nabto_device_connection_is_local(handler->device, ref)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
