@@ -19,6 +19,9 @@ struct nm_iam_configuration* nm_iam_configuration_new()
 
 void nm_iam_configuration_free(struct nm_iam_configuration* conf)
 {
+    if (conf == NULL) {
+        return;
+    }
     struct nn_llist_iterator it = nn_llist_begin(&conf->roles);
     while(!nn_llist_is_end(&it))
     {
@@ -117,7 +120,7 @@ bool nm_iam_configuration_statement_add_action(struct nm_iam_statement* statemen
 struct nm_iam_condition* nm_iam_configuration_statement_create_condition(struct nm_iam_statement* statement, enum nm_iam_condition_operator op, const char* key)
 {
     struct nm_iam_condition* c = nm_condition_new_with_key(op, key);
-    if (c == NULL || nm_statement_add_condition(statement, c)) {
+    if (c == NULL || !nm_statement_add_condition(statement, c)) {
         free(c);
         return NULL;
     }

@@ -16,6 +16,9 @@ struct nm_iam_state* nm_iam_state_new()
 
 void nm_iam_state_free(struct nm_iam_state* state)
 {
+    if (state == NULL) {
+        return;
+    }
     struct nn_llist_iterator it = nn_llist_begin(&state->users);
     while(!nn_llist_is_end(&it))
     {

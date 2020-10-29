@@ -12,13 +12,10 @@
 #include <examples/common/stdout_connection_event_handler.hpp>
 #include <examples/common/stdout_device_event_handler.hpp>
 
-#include <modules/iam/nm_iam_to_json.h>
-#include <modules/iam/nm_iam_from_json.h>
-#include <modules/iam/nm_iam_role.h>
-
-#include <modules/policies/nm_statement.h>
-#include <modules/policies/nm_policy.h>
-#include <modules/policies/nm_condition.h>
+#include <modules/iam/nm_iam.h>
+#include <modules/iam/nm_iam_serializer.h>
+#include <modules/iam/nm_iam_configuration.h>
+#include <modules/iam/nm_iam_state.h>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -57,27 +54,15 @@ bool HeatPump::init()
         return false;
     }
 
-    pairingPassword_ = nabto::examples::common::random_string(12);
-    pairingServerConnectToken_ = nabto::examples::common::random_string(12);
-
-    loadIamPolicy();
-    if (!loadState()) {
+    if (!loadIamPolicy() || !loadState()) {
         return false;
     }
 
     nabto_device_mdns_add_txt_item(device_, "fn", name_.c_str());
 
-    nm_iam_enable_password_pairing(&iam_, pairingPassword_.c_str());
-
-    nm_iam_enable_remote_pairing(&iam_, pairingServerConnectToken_.c_str());
-
     initCoapHandlers();
 
     nm_iam_set_user_changed_callback(&iam_, &HeatPump::iamUserChanged, this);
-
-    if (!nm_iam_start(&iam_)) {
-        return false;
-    }
 
     stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device_);
     stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device_);
@@ -100,10 +85,8 @@ void HeatPump::saveState()
 {
     cJSON* state = cJSON_CreateObject();
 
-    cJSON_AddNumberToObject(state, "Version", 1);
+    cJSON_AddNumberToObject(state, "Version", 2);
 
-    cJSON_AddItemToObject(state, "PairingPassword", cJSON_CreateString(pairingPassword_.c_str()));
-    cJSON_AddItemToObject(state, "PairingServerConnectToken", cJSON_CreateString(pairingServerConnectToken_.c_str()));
     cJSON* heatPump = cJSON_CreateObject();
     cJSON_AddItemToObject(heatPump, "Mode", cJSON_CreateString(mode_.c_str()));
     cJSON_AddItemToObject(heatPump, "Power", cJSON_CreateBool(power_));
@@ -112,21 +95,14 @@ void HeatPump::saveState()
 
     cJSON_AddItemToObject(state, "HeatPump", heatPump);
 
-    struct nn_string_set userIds;
-    nn_string_set_init(&userIds);
-    if (!nm_iam_get_users(&iam_, &userIds)) {
-        NN_LOG_ERROR(&logger_, LOGM, "Cannot get users from iam module");
-    }
 
-
-    cJSON* usersArray = cJSON_CreateArray();
-    const char* str;
-    NN_STRING_SET_FOREACH(str, &userIds) {
-        struct nm_iam_user* user = nm_iam_find_user(&iam_, str);
-        cJSON* encodedUser = nm_iam_user_to_json(user);
-        cJSON_AddItemToArray(usersArray, encodedUser);
+    char* iamState = NULL;
+    nm_iam_serializer_state_dump_json(iam_.state, &iamState);
+    if (iamState == NULL) {
+        NN_LOG_ERROR(&logger_, LOGM, "Failed to dump IAM state to string");
+    } else {
+        cJSON_AddItemToObject(state, "IamState", cJSON_CreateString(iamState));
     }
-    cJSON_AddItemToObject(state, "Users", usersArray);
 
     json_config_save(stateFile_.c_str(), state);
 
@@ -145,19 +121,34 @@ bool HeatPump::loadState()
     }
 
     cJSON* version = cJSON_GetObjectItem(json, "Version");
-    if (!cJSON_IsNumber(version) || version->valueint != 1) {
+    if (!cJSON_IsNumber(version) || version->valueint != 2) {
         NN_LOG_ERROR(&logger_, LOGM, "The version of the state file %s is not correct, delete it and start over", stateFile_.c_str());
         return false;
     }
 
-    cJSON* pairingPassword = cJSON_GetObjectItem(json, "PairingPassword");
-    cJSON* pairingServerConnectToken = cJSON_GetObjectItem(json, "PairingServerConnectToken");
+    cJSON* iamState = cJSON_GetObjectItem(json, "IamState");
     cJSON* heatPump = cJSON_GetObjectItem(json, "HeatPump");
-    if (cJSON_IsString(pairingPassword)) {
-        pairingPassword_ = std::string(pairingPassword->valuestring);
-    }
-    if (cJSON_IsString(pairingServerConnectToken)) {
-        pairingServerConnectToken_ = std::string(pairingServerConnectToken->valuestring);
+    if (cJSON_IsString(iamState)) {
+        struct nm_iam_state* is = nm_iam_state_new();
+        nm_iam_serializer_state_load_json(is, iamState->valuestring, &logger_);
+        if (!nm_iam_load_state(&iam_, is)) {
+            NN_LOG_ERROR(&logger_, LOGM, "Failed to load state into IAM module");
+            return false;
+        }
+        if (is->globalPairingPassword == NULL) {
+            pairingPassword_ = nabto::examples::common::random_string(12);
+            nm_iam_state_set_pairing_password(is, pairingPassword_.c_str());
+        } else {
+            pairingPassword_ = std::string(is->globalPairingPassword);
+        }
+
+        if (is->globalSct == NULL) {
+            pairingServerConnectToken_ = nabto::examples::common::random_string(12);
+            nm_iam_state_set_pairing_server_connect_token(is, pairingServerConnectToken_.c_str());
+        } else {
+            pairingServerConnectToken_ = std::string(is->globalSct);
+        }
+
     }
 
     if (cJSON_IsObject(heatPump)) {
@@ -186,18 +177,6 @@ bool HeatPump::loadState()
         }
     }
 
-    cJSON* users = cJSON_GetObjectItem(json, "Users");
-    if (cJSON_IsArray(users)) {
-
-        size_t usersSize = cJSON_GetArraySize(users);
-        for (size_t i = 0; i < usersSize; i++) {
-            cJSON* item = cJSON_GetArrayItem(users, i);
-            struct nm_iam_user* user = nm_iam_user_from_json(item);
-            if (user != NULL) {
-                nm_iam_add_user(&iam_, user);
-            }
-        }
-    }
     cJSON_Delete(json);
     return true;
 
@@ -311,11 +290,11 @@ void HeatPump::printHeatpumpInfo()
     std::cout << "# Product ID:                  " << dc_.getProductId() << std::endl;
     std::cout << "# Device ID:                   " << dc_.getDeviceId() << std::endl;
     std::cout << "# Fingerprint:                 " << getFingerprint() << std::endl;
-    std::cout << "# Pairing Password             " << pairingPassword_ << std::endl;
-    std::cout << "# Pairing Server Connect Token " << pairingServerConnectToken_ << std::endl;
+    std::cout << "# Pairing Password:            " << pairingPassword_ << std::endl;
+    std::cout << "# Pairing Server Connect Token:" << pairingServerConnectToken_ << std::endl;
     try {
         std::string server = dc_.getServer();
-        std::cout << "# Server:                     " << server << std::endl;
+        std::cout << "# Server:                      " << server << std::endl;
     } catch(...) {} // Ignore missing server
     std::cout << "# Version:                     " << nabto_device_version() << std::endl;
     std::cout << "# Pairing String               " << createPairingString() << std::endl;
@@ -372,99 +351,95 @@ bool HeatPump::checkAccess(NabtoDeviceCoapRequest* request, const std::string& a
     return true;
 }
 
-void HeatPump::loadIamPolicy()
+bool HeatPump::loadIamPolicy()
 {
+    struct nm_iam_configuration* conf = nm_iam_configuration_new();
     {
-        auto p = nm_policy_new("DeviceInfo");
-        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(s, "Info:Get");
-        nm_policy_add_statement(p,s);
-        nm_iam_add_policy(&iam_, p);
+        auto p = nm_iam_configuration_policy_new("DeviceInfo");
+        auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(s, "Info:Get");
+        nm_iam_configuration_add_policy(conf, p);
     }
     {
-        auto p = nm_policy_new("Pairing");
-        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(s, "Pairing:Get");
-        nm_statement_add_action(s, "Pairing:Password");
-        nm_statement_add_action(s, "Pairing:Local");
-        nm_policy_add_statement(p,s);
-        nm_iam_add_policy(&iam_, p);
+        auto p = nm_iam_configuration_policy_new("Pairing");
+        auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(s, "Pairing:Get");
+        nm_iam_configuration_statement_add_action(s, "Pairing:Password");
+        nm_iam_configuration_statement_add_action(s, "Pairing:Local");
+        nm_iam_configuration_add_policy(conf, p);
     }
     {
-        auto p = nm_policy_new("HeatPumpControl");
-        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(s, "HeatPump:Get");
-        nm_statement_add_action(s, "HeatPump:Set");
-        nm_policy_add_statement(p,s);
-        nm_iam_add_policy(&iam_, p);
+        auto p = nm_iam_configuration_policy_new("HeatPumpControl");
+        auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(s, "HeatPump:Get");
+        nm_iam_configuration_statement_add_action(s, "HeatPump:Set");
+        nm_iam_configuration_add_policy(conf, p);
     }
     {
-        auto p = nm_policy_new("ManageUsers");
-        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(s, "IAM:ListUsers");
-        nm_statement_add_action(s, "IAM:GetUser");
-        nm_statement_add_action(s, "IAM:DeleteUser");
-        nm_statement_add_action(s, "IAM:SetUserRole");
-        nm_statement_add_action(s, "IAM:ListRoles");
-        nm_policy_add_statement(p, s);
-        nm_iam_add_policy(&iam_, p);
+        auto p = nm_iam_configuration_policy_new("ManageUsers");
+        auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(s, "IAM:ListUsers");
+        nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
+        nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
+        nm_iam_configuration_statement_add_action(s, "IAM:SetUserRole");
+        nm_iam_configuration_statement_add_action(s, "IAM:ListRoles");
+        nm_iam_configuration_add_policy(conf, p);
     }
 
     {
-        auto p = nm_policy_new("ManageOwnUser");
-        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(s, "IAM:GetUser");
-        nm_statement_add_action(s, "IAM:DeleteUser");
+        auto p = nm_iam_configuration_policy_new("ManageOwnUser");
+        auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
+        nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
 
         // Create a condition such that only connections where the
         // UserId matches the UserId of the operation is allowed. E.g. IAM:UserId == ${Connection:UserId}
 
-        auto c = nm_condition_new_with_key(NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
-        nm_condition_add_value(c, "${Connection:UserId}");
-        nm_statement_add_condition(s, c);
-
-        nm_policy_add_statement(p, s);
-        nm_iam_add_policy(&iam_, p);
+        auto c = nm_iam_configuration_statement_create_condition(s, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
+        nm_iam_configuration_condition_add_value(c, "${Connection:UserId}");
+        nm_iam_configuration_add_policy(conf, p);
     }
 
     {
-        auto r = nm_iam_role_new("Unpaired");
-        nm_iam_role_add_policy(r, "Pairing");
-        nm_iam_role_add_policy(r, "DeviceInfo");
-        nm_iam_add_role(&iam_,r);
+        auto r = nm_iam_configuration_role_new("Unpaired");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_role_add_policy(r, "DeviceInfo");
+        nm_iam_configuration_add_role(conf,r);
     }
     {
-        auto r = nm_iam_role_new("Admin");
-        nm_iam_role_add_policy(r, "ManageUsers");
-        nm_iam_role_add_policy(r, "Pairing");
-        nm_iam_role_add_policy(r, "HeatPumpControl");
-        nm_iam_add_role(&iam_, r);
+        auto r = nm_iam_configuration_role_new("Admin");
+        nm_iam_configuration_role_add_policy(r, "ManageUsers");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_role_add_policy(r, "HeatPumpControl");
+        nm_iam_configuration_add_role(conf, r);
     }
     {
-        auto r = nm_iam_role_new("Standard");
-        nm_iam_role_add_policy(r, "HeatPumpControl");
-        nm_iam_role_add_policy(r, "Pairing");
-        nm_iam_role_add_policy(r, "DeviceInfo");
-        nm_iam_role_add_policy(r, "ManageOwnUser");
-        nm_iam_add_role(&iam_, r);
+        auto r = nm_iam_configuration_role_new("Standard");
+        nm_iam_configuration_role_add_policy(r, "HeatPumpControl");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_role_add_policy(r, "DeviceInfo");
+        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
+        nm_iam_configuration_add_role(conf, r);
     }
     {
         //TODO: guest should have access to LocalHeatpumpControl and LocalDeviceInfo
-        auto r = nm_iam_role_new("Guest");
-        nm_iam_role_add_policy(r, "ManageOwnUser");
-        nm_iam_role_add_policy(r, "Pairing");
-        nm_iam_add_role(&iam_, r);
+        auto r = nm_iam_configuration_role_new("Guest");
+        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_add_role(conf, r);
 
     }
 
     // The first user which is paired is both an admin and a user on the system
-    nm_iam_set_first_user_role(&iam_, "Admin");
+    nm_iam_configuration_set_first_user_role(conf, "Admin");
 
     // The secondary users which is paired with the system does not get the admin permissions.
-    nm_iam_set_secondary_user_role(&iam_, "Guest");
+    nm_iam_configuration_set_secondary_user_role(conf, "Guest");
 
     // Connections which does not have a paired user in the system gets the Unpaired role.
-    nm_iam_set_unpaired_role(&iam_, "Unpaired");
+    nm_iam_configuration_set_unpaired_role(conf, "Unpaired");
+
+    return nm_iam_load_configuration(&iam_, conf);
 }
 
 

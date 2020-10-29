@@ -45,7 +45,7 @@ bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out);
  * @param in [in]     JSON string to load
  * @return true iff the state was successfully loaded
  */
-bool nm_iam_serializer_state_load_json(struct nm_iam_state* iam, char* in);
+bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, char* in, struct nn_log* logger);
 
 /**
  * Free string returned by dump functions

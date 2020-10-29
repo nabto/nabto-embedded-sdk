@@ -29,9 +29,6 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     srand(time(0));
     iam->device = device;
     iam->logger = logger;
-    nn_llist_init(&iam->state->users);
-    nn_llist_init(&iam->conf->roles);
-    nn_llist_init(&iam->conf->policies);
 
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
     nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
@@ -39,22 +36,46 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     init_coap_handlers(iam);
 }
 
-bool validate_role(struct nm_iam* iam, const char* role) {
-    if (nm_iam_find_role(iam, role) == NULL) {
-        NN_LOG_ERROR(iam->logger, LOGM, "The role '%s' does not exists in the system.\n", role);
+bool validate_role_in_config(struct nm_iam_configuration* conf, const char* roleStr)
+{
+     if (roleStr == NULL) {
         return false;
     }
+    struct nm_iam_role* role;
+    NN_LLIST_FOREACH(role, &conf->roles)
+    {
+        if (strcmp(role->id, roleStr) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool validate_configuration(struct nm_iam_configuration* conf) {
+    return (validate_role_in_config(conf, conf->firstUserRole) &&
+            validate_role_in_config(conf, conf->secondaryUserRole) &&
+            validate_role_in_config(conf, conf->unpairedRole));
+}
+
+bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* conf)
+{
+    if (!validate_configuration(conf)) {
+        return false;
+    }
+    if (iam->conf != NULL) {
+        nm_iam_configuration_free(iam->conf);
+    }
+    iam->conf = conf;
     return true;
 }
 
-bool nm_iam_start(struct nm_iam* iam)
+bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state)
 {
-    bool ret = true;
-    // validate that the pairing roles exists in the system
-    ret &= validate_role(iam, iam->conf->firstUserRole);
-    ret &= validate_role(iam, iam->conf->secondaryUserRole);
-    ret &= validate_role(iam, iam->conf->unpairedRole);
-    return ret;
+    if (iam->state != NULL) {
+        nm_iam_state_free(iam->state);
+    }
+    iam->state = state;
+    return true;
 }
 
 void nm_iam_deinit(struct nm_iam* iam)
@@ -167,7 +188,6 @@ void init_coap_handlers(struct nm_iam* iam)
 {
 
     nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
-    nm_iam_client_settings_init(&iam->coapPairingClientSettingsGetHandler, iam->device, iam);
     nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
     nm_iam_pairing_local_init(&iam->coapPairingLocalPostHandler, iam->device, iam);
     nm_iam_is_paired_init(&iam->coapPairingIsPairedGetHandler, iam->device, iam);
@@ -191,7 +211,6 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingIsPairedGetHandler);
-    nm_iam_coap_handler_deinit(&iam->coapPairingClientSettingsGetHandler);
 
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
