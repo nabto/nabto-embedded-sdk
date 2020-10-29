@@ -10,9 +10,6 @@
 extern "C" {
 #endif
 
-void nm_iam_user_init(struct nm_iam_user* user);
-void nm_iam_user_deinit(struct nm_iam_user* user);
-
 struct nm_iam_user* nm_iam_user_new(const char* id);
 void nm_iam_user_free(struct nm_iam_user* user);
 

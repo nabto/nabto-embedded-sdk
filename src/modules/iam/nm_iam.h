@@ -68,6 +68,10 @@ struct nm_iam {
  */
 void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger);
 
+/**
+ * Deinit the iam module
+ */
+void nm_iam_deinit(struct nm_iam* iam);
 
 /**
  * Load a configuration into an IAM module. Must be called before
@@ -91,46 +95,16 @@ bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* 
  */
 bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state);
 
-bool nm_iam_start(struct nm_iam* iam);
-
-/**
- * Deinit the iam module
- */
-void nm_iam_deinit(struct nm_iam* iam);
-
 /**
  * Set change callbacks such that state can be persisted
  */
 void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChange, void* data);
 
 /**
- * Find a user by the user id.
- *
- * @return NULL if no such user exists.
- */
-struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* id);
-
-/**
- * Get a list of all users in the system.
- */
-bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids);
-
-/**
- * Delete an user.
- */
-void nm_iam_delete_user(struct nm_iam* iam, const char* userId);
-
-/**
  * Check if the given connection has access to do the given action
  * provided the given attributes.
  */
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributes);
-
-/**
- * Set a role to a user
- */
-bool nm_iam_set_user_role(struct nm_iam* iam, const char* userId, const char* roleId);
-
 
 #ifdef __cplusplus
 } //extern "C"

@@ -64,29 +64,8 @@ void nm_iam_deinit(struct nm_iam* iam)
     nm_iam_auth_handler_deinit(&iam->authHandler);
     nm_iam_pake_handler_deinit(&iam->pakeHandler);
 
-    struct nm_iam_user* user;
-    NN_LLIST_FOREACH(user, &iam->state->users) {
-        nm_iam_user_free(user);
-    }
-    nn_llist_deinit(&iam->state->users);
-
-    free(iam->conf->firstUserRole);
-    free(iam->conf->secondaryUserRole);
-    free(iam->conf->unpairedRole);
-
-    struct nm_iam_role* role;
-    NN_LLIST_FOREACH(role, &iam->conf->roles) {
-        nm_iam_role_free(role);
-    }
-    nn_llist_deinit(&iam->conf->roles);
-
-    struct nm_iam_policy* policy;
-    NN_LLIST_FOREACH(policy, &iam->conf->policies) {
-        nm_policy_free(policy);
-    }
-    nn_llist_deinit(&iam->conf->policies);
-
-    free(iam->state->globalPairingPassword);
+    nm_iam_state_free(iam->state);
+    nm_iam_configuration_free(iam->conf);
 }
 
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)
@@ -113,7 +92,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
     struct nm_iam_user* user = nm_iam_find_user_by_fingerprint(iam, fingerprint);
     nabto_device_string_free(fingerprint);
 
-    enum nm_iam_effect effect = NM_EFFECT_DENY;
+    enum nm_iam_effect effect = NM_IAM_EFFECT_DENY;
 
     if (!user && nabto_device_connection_is_password_authenticated(iam->device, ref)) {
         const char* username = nabto_device_connection_get_password_authentication_username(iam->device, ref);
@@ -133,7 +112,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
     } else {
         struct nm_iam_role* role = nm_iam_find_role(iam, iam->conf->unpairedRole);
         if (role == NULL) {
-            effect = NM_EFFECT_ERROR;
+            effect = NM_IAM_EFFECT_ERROR;
         } else {
             effect = nm_iam_check_access_role(iam, role, action, &attributes);
         }
@@ -143,7 +122,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
 
 
     bool verdict = false;
-    if (effect == NM_EFFECT_ALLOW) {
+    if (effect == NM_IAM_EFFECT_ALLOW) {
         verdict = true;
     }
 
@@ -164,7 +143,7 @@ enum nm_iam_effect nm_iam_check_access_user(struct nm_iam* iam, struct nm_iam_us
 {
     struct nm_iam_role* role = nm_iam_find_role(iam, user->role);
     if (role == NULL) {
-        return NM_EFFECT_NO_MATCH;
+        return NM_IAM_EFFECT_NO_MATCH;
     }
     return nm_iam_check_access_role(iam, role, action, attributes);
 }
@@ -337,7 +316,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
 
 bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
 {
-    nn_llist_append(&iam->state->users, &user->listNode, &user);
+    nn_llist_append(&iam->state->users, &user->listNode, user);
 
     if (user->serverConnectToken != NULL) {
         nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);

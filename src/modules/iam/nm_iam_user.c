@@ -3,16 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-void nm_iam_user_init(struct nm_iam_user* user)
-{
-    memset(user, 0, sizeof(struct nm_iam_user));
-}
-
-void nm_iam_user_deinit(struct nm_iam_user* user)
-{
-}
-
-
 struct nm_iam_user* nm_iam_user_new(const char* idIn)
 {
     char* id = strdup(idIn);

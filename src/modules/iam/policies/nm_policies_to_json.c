@@ -58,9 +58,9 @@ cJSON* nm_string_set_to_json(const struct nn_string_set* set)
 cJSON* nm_statement_to_json(const struct nm_iam_statement* statement)
 {
     cJSON* json = cJSON_CreateObject();
-    if (statement->effect == NM_EFFECT_ALLOW) {
+    if (statement->effect == NM_IAM_EFFECT_ALLOW) {
         cJSON_AddItemToObject(json, "Effect", cJSON_CreateString("Allow"));
-    } else if (statement->effect == NM_EFFECT_DENY) {
+    } else if (statement->effect == NM_IAM_EFFECT_DENY) {
         cJSON_AddItemToObject(json, "Effect", cJSON_CreateString("Deny"));
     }
 

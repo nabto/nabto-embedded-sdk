@@ -27,9 +27,13 @@ struct nm_iam_policy* nm_policy_new(const char* idIn)
 
 void nm_policy_free(struct nm_iam_policy* policy)
 {
-    struct nm_iam_statement* stmt;
-    NN_LLIST_FOREACH(stmt, &policy->statements) {
-        nm_statement_free(stmt);
+    struct nn_llist_iterator it = nn_llist_begin(&policy->statements);
+    while(!nn_llist_is_end(&it))
+    {
+        struct nm_iam_statement* s = nn_llist_get_item(&it);
+        nn_llist_erase_node(&s->listNode);
+        nm_statement_free(s);
+        it = nn_llist_begin(&policy->statements);
     }
     nn_llist_deinit(&policy->statements);
     free(policy->id);
@@ -39,13 +43,13 @@ void nm_policy_free(struct nm_iam_policy* policy)
 // Add statement to a policy, this takes ownership over the statement.
 bool nm_policy_add_statement(struct nm_iam_policy* policy, struct nm_iam_statement* stmt)
 {
-    nn_llist_append(&policy->statements, &stmt->listNode, &stmt);
+    nn_llist_append(&policy->statements, &stmt->listNode, stmt);
     return true;
 }
 
 void nm_policy_eval_init(struct nm_policy_eval_state* state)
 {
-    state->effect = NM_EFFECT_NO_MATCH;
+    state->effect = NM_IAM_EFFECT_NO_MATCH;
 }
 
 enum nm_iam_effect nm_policy_eval_get_effect(struct nm_policy_eval_state* state)
@@ -64,12 +68,12 @@ void nm_policy_eval(struct nm_policy_eval_state* state, struct nm_iam_policy* po
 
 void nm_policy_statement_eval(struct nm_policy_eval_state* state, struct nm_iam_statement* statement, const char* action, const struct nn_string_map* attributes)
 {
-    if (state->effect == NM_EFFECT_DENY || state->effect == NM_EFFECT_ERROR) {
+    if (state->effect == NM_IAM_EFFECT_DENY || state->effect == NM_IAM_EFFECT_ERROR) {
         // This is the final state.
         return;
     }
     enum nm_iam_effect e = nm_statement_eval(statement, action, attributes);
-    if (e == NM_EFFECT_ERROR || e == NM_EFFECT_DENY || e == NM_EFFECT_ALLOW) {
+    if (e == NM_IAM_EFFECT_ERROR || e == NM_IAM_EFFECT_DENY || e == NM_IAM_EFFECT_ALLOW) {
         state->effect = e;
     }
     // on no match do not change the state.

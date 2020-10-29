@@ -134,7 +134,7 @@ bool create_default_iam_config(const char* iamConfigFile)
 {
     struct nm_policy* pairingPolicy = nm_policy_new("Pairing");
     {
-        struct nm_statement* stmt = nm_statement_new(NM_EFFECT_ALLOW);
+        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(stmt, "Pairing:Get");
         nm_statement_add_action(stmt, "Pairing:Password");
         nm_statement_add_action(stmt, "Pairing:Local");
@@ -143,7 +143,7 @@ bool create_default_iam_config(const char* iamConfigFile)
 
     struct nm_policy* tunnellingPolicy = nm_policy_new("Tunnelling");
     {
-        struct nm_statement* stmt = nm_statement_new(NM_EFFECT_ALLOW);
+        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(stmt, "TcpTunnel:GetService");
         nm_statement_add_action(stmt, "TcpTunnel:Connect");
         nm_statement_add_action(stmt, "TcpTunnel:ListServices");
@@ -152,7 +152,7 @@ bool create_default_iam_config(const char* iamConfigFile)
 
     struct nm_policy* manageUsers = nm_policy_new("ManageUsers");
     {
-        struct nm_statement* stmt = nm_statement_new(NM_EFFECT_ALLOW);
+        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(stmt, "IAM:ListUsers");
         nm_statement_add_action(stmt, "IAM:GetUser");
         nm_statement_add_action(stmt, "IAM:DeleteUser");
@@ -163,7 +163,7 @@ bool create_default_iam_config(const char* iamConfigFile)
 
     struct nm_policy* manageOwnUser = nm_policy_new("ManageOwnUser");
     {
-        struct nm_statement* stmt = nm_statement_new(NM_EFFECT_ALLOW);
+        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(stmt, "IAM:GetUser");
         nm_statement_add_action(stmt, "IAM:DeleteUser");
         struct nm_condition* c = nm_condition_new_with_key(NM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");

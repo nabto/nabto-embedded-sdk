@@ -82,9 +82,9 @@ struct nm_iam_statement* nm_statement_from_json(const cJSON* json, struct nn_log
     enum nm_iam_effect e;
 
     if (strcmp(effectString, "Allow") == 0) {
-        e = NM_EFFECT_ALLOW;
+        e = NM_IAM_EFFECT_ALLOW;
     } else if (strcmp(effectString, "Deny") == 0) {
-        e = NM_EFFECT_DENY;
+        e = NM_IAM_EFFECT_DENY;
     } else {
         return NULL;
     }
@@ -124,7 +124,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
             if (tmp == NULL) {
                 return false;
             }
-            nn_llist_append(&statement->conditions, &tmp->listNode, &tmp);
+            nn_llist_append(&statement->conditions, &tmp->listNode, tmp);
         }
     }
     return true;
@@ -133,14 +133,14 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
 struct nm_iam_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
-        return false;
+        return NULL;
     }
     cJSON* id = cJSON_GetObjectItem(json, "Id");
     cJSON* statements = cJSON_GetObjectItem(json, "Statements");
     if (!cJSON_IsString(id) ||
         !cJSON_IsArray(statements))
     {
-        return false;
+        return NULL;
     }
 
     struct nm_iam_policy* policy = nm_policy_new(id->valuestring);
@@ -166,7 +166,7 @@ bool nm_policy_from_json_parse(const cJSON* statements, struct nm_iam_policy* po
         if (s == NULL) {
             return false;
         }
-        nn_llist_append(&policy->statements, &s->listNode, &s);
+        nn_llist_append(&policy->statements, &s->listNode, s);
     }
     return true;
 }

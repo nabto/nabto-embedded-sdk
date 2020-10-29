@@ -376,14 +376,14 @@ void HeatPump::loadIamPolicy()
 {
     {
         auto p = nm_policy_new("DeviceInfo");
-        auto s = nm_statement_new(NM_EFFECT_ALLOW);
+        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(s, "Info:Get");
         nm_policy_add_statement(p,s);
         nm_iam_add_policy(&iam_, p);
     }
     {
         auto p = nm_policy_new("Pairing");
-        auto s = nm_statement_new(NM_EFFECT_ALLOW);
+        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(s, "Pairing:Get");
         nm_statement_add_action(s, "Pairing:Password");
         nm_statement_add_action(s, "Pairing:Local");
@@ -392,7 +392,7 @@ void HeatPump::loadIamPolicy()
     }
     {
         auto p = nm_policy_new("HeatPumpControl");
-        auto s = nm_statement_new(NM_EFFECT_ALLOW);
+        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(s, "HeatPump:Get");
         nm_statement_add_action(s, "HeatPump:Set");
         nm_policy_add_statement(p,s);
@@ -400,7 +400,7 @@ void HeatPump::loadIamPolicy()
     }
     {
         auto p = nm_policy_new("ManageUsers");
-        auto s = nm_statement_new(NM_EFFECT_ALLOW);
+        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(s, "IAM:ListUsers");
         nm_statement_add_action(s, "IAM:GetUser");
         nm_statement_add_action(s, "IAM:DeleteUser");
@@ -412,14 +412,14 @@ void HeatPump::loadIamPolicy()
 
     {
         auto p = nm_policy_new("ManageOwnUser");
-        auto s = nm_statement_new(NM_EFFECT_ALLOW);
+        auto s = nm_statement_new(NM_IAM_EFFECT_ALLOW);
         nm_statement_add_action(s, "IAM:GetUser");
         nm_statement_add_action(s, "IAM:DeleteUser");
 
         // Create a condition such that only connections where the
         // UserId matches the UserId of the operation is allowed. E.g. IAM:UserId == ${Connection:UserId}
 
-        auto c = nm_condition_new_with_key(NM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
+        auto c = nm_condition_new_with_key(NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
         nm_condition_add_value(c, "${Connection:UserId}");
         nm_statement_add_condition(s, c);
 

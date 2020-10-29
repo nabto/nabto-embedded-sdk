@@ -9,10 +9,10 @@ extern "C" {
 #endif
 
 enum nm_iam_effect {
-    NM_EFFECT_ALLOW,
-    NM_EFFECT_DENY,
-    NM_EFFECT_NO_MATCH,
-    NM_EFFECT_ERROR
+    NM_IAM_EFFECT_ALLOW,
+    NM_IAM_EFFECT_DENY,
+    NM_IAM_EFFECT_NO_MATCH,
+    NM_IAM_EFFECT_ERROR
 };
 
 enum nm_iam_condition_operator {

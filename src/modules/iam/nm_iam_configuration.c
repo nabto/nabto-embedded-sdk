@@ -1,5 +1,10 @@
 #include "nm_iam_configuration.h"
+#include "nm_iam_role.h"
 #include "policies/nm_policy.h"
+#include "policies/nm_condition.h"
+#include "policies/nm_statement.h"
+
+#include <string.h>
 
 struct nm_iam_configuration* nm_iam_configuration_new()
 {
@@ -14,13 +19,22 @@ struct nm_iam_configuration* nm_iam_configuration_new()
 
 void nm_iam_configuration_free(struct nm_iam_configuration* conf)
 {
-    struct nm_iam_role* role;
-    NN_LLIST_FOREACH(role, &conf->roles) {
-        nm_iam_configuration_role_free(role);
+    struct nn_llist_iterator it = nn_llist_begin(&conf->roles);
+    while(!nn_llist_is_end(&it))
+    {
+        struct nm_iam_role* r = nn_llist_get_item(&it);
+        nn_llist_erase_node(&r->listNode);
+        nm_iam_configuration_role_free(r);
+        it = nn_llist_begin(&conf->roles);
     }
-    struct nm_iam_policy* policy;
-    NN_LLIST_FOREACH(policy, &conf->policy) {
-        nm_iam_configuration_policy_free(policy);
+
+    it = nn_llist_begin(&conf->policies);
+    while(!nn_llist_is_end(&it))
+    {
+        struct nm_iam_policy* p = nn_llist_get_item(&it);
+        nn_llist_erase_node(&p->listNode);
+        nm_iam_configuration_policy_free(p);
+        it = nn_llist_begin(&conf->policies);
     }
 
     nn_llist_deinit(&conf->roles);
@@ -65,13 +79,13 @@ bool nm_iam_configuration_set_unpaired_role(struct nm_iam_configuration* conf, c
 
 bool nm_iam_configuration_add_policy(struct nm_iam_configuration* conf, struct nm_iam_policy* policy)
 {
-    nn_llist_append(&conf->policies, &policy->node, policy);
+    nn_llist_append(&conf->policies, &policy->listNode, policy);
     return true;
 }
 
 bool nm_iam_configuration_add_role(struct nm_iam_configuration* conf, struct nm_iam_role* role)
 {
-    nn_llist_append(&conf->roles, &role->node, role);
+    nn_llist_append(&conf->roles, &role->listNode, role);
     return true;
 }
 
@@ -80,9 +94,9 @@ struct nm_iam_policy* nm_iam_configuration_policy_new(const char* name)
     return nm_policy_new(name);
 }
 
-void nm_iam_configuration_policy_free(struct nm_iam_policy* poilicy)
+void nm_iam_configuration_policy_free(struct nm_iam_policy* policy)
 {
-    return nm_policy_free(policy);
+    nm_policy_free(policy);
 }
 
 struct nm_iam_statement* nm_iam_configuration_policy_create_statement(struct nm_iam_policy* policy, enum nm_iam_effect effect)

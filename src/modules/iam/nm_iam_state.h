@@ -44,21 +44,6 @@ struct nm_iam_state* nm_iam_state_new();
 void nm_iam_state_free(struct nm_iam_state* state);
 
 /**
- * Initialize IAM state before building
- *
- * @param state [in]  State to initialize
- */
-void nm_iam_state_init(struct nm_iam_state* state);
-
-/**
- * Deinitialize IAM state if the ownership was not transfered
- * to an IAM module with nm_iam_load_state()
- *
- * @param state [in]  State to deinitialize
- */
-void nm_iam_state_deinit(struct nm_iam_state* state);
-
-/**
  * Set pairing password in the IAM state.
  *
  * @param state [in]     The IAM state,

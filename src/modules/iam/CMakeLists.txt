@@ -6,6 +6,8 @@ set(src
   nm_iam_from_json.c
   nm_iam_auth_handler.c
   nm_iam_pake_handler.c
+  nm_iam_configuration.c
+  nm_iam_state.c
   coap_handler/nm_iam_coap_handler.c
   coap_handler/nm_iam_pairing_get.c
   coap_handler/nm_iam_pairing_password.c
