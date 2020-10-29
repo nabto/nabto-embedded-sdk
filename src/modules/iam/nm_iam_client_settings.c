@@ -10,7 +10,7 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 
 NabtoDeviceError nm_iam_client_settings_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "pairing", "client-settings", NULL };
+    const char* paths[] = { "iam", "pairing", "client-settings", NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
 
