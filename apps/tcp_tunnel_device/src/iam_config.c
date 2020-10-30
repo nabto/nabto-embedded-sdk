@@ -68,7 +68,7 @@ bool create_default_iam_config(const char* iamConfigFile)
     }
 
     {
-        policy = nm_iam_configuration_policy_new("ManageOwnUsers");
+        policy = nm_iam_configuration_policy_new("ManageOwnUser");
         {
             stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
             nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");

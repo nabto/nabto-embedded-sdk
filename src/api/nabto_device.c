@@ -594,6 +594,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_std_out_callback(NabtoDev
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverConnectToken)
 {
+    if (serverConnectToken == NULL) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);

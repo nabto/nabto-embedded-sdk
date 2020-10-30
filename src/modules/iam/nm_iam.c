@@ -75,6 +75,13 @@ bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state)
         nm_iam_state_free(iam->state);
     }
     iam->state = state;
+
+    nabto_device_add_server_connect_token(iam->device, iam->state->globalSct);
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &iam->state->users) {
+        nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
+    }
+
     return true;
 }
 
@@ -201,6 +208,11 @@ enum nm_iam_effect nm_iam_check_access_role(struct nm_iam* iam, struct nm_iam_ro
     NN_STRING_SET_FOREACH(policyStr, &role->policies)
     {
         struct nm_iam_policy* policy = nm_iam_find_policy(iam, policyStr);
+        if (policy == NULL) {
+             NN_LOG_ERROR(iam->logger, LOGM, "The policy %s for the role %s does not exists", policyStr, role->id);
+
+            return NM_IAM_EFFECT_ERROR;
+        }
         nm_policy_eval(&state, policy, action, attributes);
     }
 
