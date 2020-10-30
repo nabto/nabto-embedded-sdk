@@ -14,7 +14,6 @@ set(src
   coap_handler/nm_iam_pairing_password.c
   coap_handler/nm_iam_pairing_local.c
   coap_handler/nm_iam_list_users.c
-  coap_handler/nm_iam_is_paired.c
   coap_handler/nm_iam_get_me.c
   coap_handler/nm_iam_get_user.c
   coap_handler/nm_iam_create_user.c
