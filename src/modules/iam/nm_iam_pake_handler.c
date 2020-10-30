@@ -28,6 +28,11 @@ NabtoDeviceError nm_iam_pake_handler_init(struct nm_iam_pake_handler *handler,
     return NABTO_DEVICE_EC_OK;
 }
 
+void nm_iam_pake_handler_stop(struct nm_iam_pake_handler* handler)
+{
+    nabto_device_listener_stop(handler->listener);
+}
+
 void nm_iam_pake_handler_deinit(struct nm_iam_pake_handler *handler)
 {
     nabto_device_future_free(handler->future);

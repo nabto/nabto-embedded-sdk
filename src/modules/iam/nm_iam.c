@@ -78,6 +78,30 @@ bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state)
     return true;
 }
 
+void nm_iam_stop(struct nm_iam* iam)
+{
+    nm_iam_coap_handler_stop(&iam->coapPairingGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingPasswordPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingLocalPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingIsPairedGetHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserCreateHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserDeleteHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamRolesGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetRoleHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetNameHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
+
+    nm_iam_auth_handler_stop(&iam->authHandler);
+    nm_iam_pake_handler_stop(&iam->pakeHandler);
+}
+
 void nm_iam_deinit(struct nm_iam* iam)
 {
     deinit_coap_handlers(iam);

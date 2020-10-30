@@ -17,6 +17,11 @@ NabtoDeviceError nm_iam_auth_handler_init(struct nm_iam_auth_handler* handler, N
     return NABTO_DEVICE_EC_OK;
 }
 
+void nm_iam_auth_handler_stop(struct nm_iam_auth_handler* handler)
+{
+    nabto_device_listener_stop(handler->listener);
+}
+
 void nm_iam_auth_handler_deinit(struct nm_iam_auth_handler* handler)
 {
     nabto_device_future_free(handler->future);
