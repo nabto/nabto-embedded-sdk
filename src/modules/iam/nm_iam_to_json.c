@@ -39,14 +39,5 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
         cJSON_AddItemToObject(root, "Role", cJSON_CreateString(user->role));
     }
 
-    if (!nn_string_map_empty(&user->attributes)) {
-        cJSON* kvPairs = cJSON_CreateObject();
-        struct nn_string_map_iterator it;
-        for (it = nn_string_map_begin(&user->attributes); !nn_string_map_is_end(&it); nn_string_map_next(&it))
-        {
-            cJSON_AddItemToObject(kvPairs, nn_string_map_key(&it), cJSON_CreateString(nn_string_map_value(&it)));
-        }
-        cJSON_AddItemToObject(root, "Attributes", kvPairs);
-    }
     return root;
 }

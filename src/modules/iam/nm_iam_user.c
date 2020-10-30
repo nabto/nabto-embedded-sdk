@@ -3,18 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-void nm_iam_user_init(struct nm_iam_user* user)
-{
-    memset(user, 0, sizeof(struct nm_iam_user));
-    nn_string_map_init(&user->attributes);
-}
-
-void nm_iam_user_deinit(struct nm_iam_user* user)
-{
-    nn_string_map_deinit(&user->attributes);
-}
-
-
 struct nm_iam_user* nm_iam_user_new(const char* idIn)
 {
     char* id = strdup(idIn);
@@ -25,7 +13,7 @@ struct nm_iam_user* nm_iam_user_new(const char* idIn)
         return NULL;
     }
 
-    nn_string_map_init(&user->attributes);
+    nn_llist_node_init(&user->listNode);
     user->id = id;
 
     return user;
@@ -39,7 +27,6 @@ void nm_iam_user_free(struct nm_iam_user* user)
     free(user->serverConnectToken);
     free(user->role);
     free(user->password);
-    nn_string_map_deinit(&user->attributes);
     free(user);
 }
 

@@ -1,16 +1,12 @@
 #ifndef _NM_IAM_ROLE_H_
 #define _NM_IAM_ROLE_H_
 
+#include "nm_iam_configuration.h"
 #include <nn/string_set.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct nm_iam_role {
-    char* id;
-    struct nn_string_set policies;
-};
 
 /**
  * Create a new role with the specified name.

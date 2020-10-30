@@ -98,7 +98,7 @@ class HeatPump {
 
     bool checkAccess(NabtoDeviceCoapRequest* request, const std::string& action);
 
-    void loadIamPolicy();
+    bool loadIamPolicy();
 
  private:
 

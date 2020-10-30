@@ -1,5 +1,7 @@
 #include "nm_iam_role.h"
 
+#include <nn/llist.h>
+
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
@@ -21,6 +23,7 @@ struct nm_iam_role* nm_iam_role_new(const char* idIn)
         return NULL;
     }
     nn_string_set_init(&role->policies);
+    nn_llist_node_init(&role->listNode);
     role->id = id;
     return role;
 }

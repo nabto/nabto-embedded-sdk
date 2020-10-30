@@ -1,6 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
-#include <modules/policies/nm_condition.h>
+#include <modules/iam/policies/nm_condition.h>
 
 #include <nn/string_map.h>
 
@@ -47,15 +47,15 @@ BOOST_AUTO_TEST_CASE(parse_numeric)
 
 BOOST_AUTO_TEST_CASE(parse_condition_operator)
 {
-    std::vector<std::pair<std::string, enum nm_condition_operator> > cases;
-    cases.push_back(std::make_pair("StringEquals", NM_CONDITION_OPERATOR_STRING_EQUALS));
-    cases.push_back(std::make_pair("StringNotEquals", NM_CONDITION_OPERATOR_STRING_NOT_EQUALS));
-    cases.push_back(std::make_pair("NumericEquals", NM_CONDITION_OPERATOR_NUMERIC_EQUALS));
-    cases.push_back(std::make_pair("NumericNotEquals", NM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS));
-    cases.push_back(std::make_pair("Bool", NM_CONDITION_OPERATOR_BOOL));
+    std::vector<std::pair<std::string, enum nm_iam_condition_operator> > cases;
+    cases.push_back(std::make_pair("StringEquals", NM_IAM_CONDITION_OPERATOR_STRING_EQUALS));
+    cases.push_back(std::make_pair("StringNotEquals", NM_IAM_CONDITION_OPERATOR_STRING_NOT_EQUALS));
+    cases.push_back(std::make_pair("NumericEquals", NM_IAM_CONDITION_OPERATOR_NUMERIC_EQUALS));
+    cases.push_back(std::make_pair("NumericNotEquals", NM_IAM_CONDITION_OPERATOR_NUMERIC_NOT_EQUALS));
+    cases.push_back(std::make_pair("Bool", NM_IAM_CONDITION_OPERATOR_BOOL));
 
     for (auto c : cases) {
-        enum nm_condition_operator op;
+        enum nm_iam_condition_operator op;
         BOOST_TEST(nm_condition_parse_operator(c.first.c_str(), &op) == true);
         BOOST_TEST(op == c.second);
     }
@@ -64,15 +64,15 @@ BOOST_AUTO_TEST_CASE(parse_condition_operator)
 
 BOOST_AUTO_TEST_CASE(parse_condition_operator_fail)
 {
-    enum nm_condition_operator op;
+    enum nm_iam_condition_operator op;
     BOOST_TEST(nm_condition_parse_operator("foo", &op) == false);
 }
 
 BOOST_AUTO_TEST_CASE(condition_match)
 {
-    struct nm_condition c;
+    struct nm_iam_condition c;
     nm_condition_init(&c);
-    c.op = NM_CONDITION_OPERATOR_STRING_EQUALS;
+    c.op = NM_IAM_CONDITION_OPERATOR_STRING_EQUALS;
     c.key = strdup("foo");
     nn_string_set_insert(&c.values, "bar");
 
@@ -103,11 +103,42 @@ BOOST_AUTO_TEST_CASE(condition_match)
     nm_condition_deinit(&c);
 }
 
+BOOST_AUTO_TEST_CASE(condition_alloc_match)
+{
+    struct nm_iam_condition* c = nm_condition_new_with_key(NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "foo");
+    nm_condition_add_value(c, "bar");
+    {
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
+
+        BOOST_TEST(nm_condition_matches(c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        nn_string_map_deinit(&attributes);
+    }
+
+    {
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
+        nn_string_map_insert(&attributes, "foo", "baz");
+        BOOST_TEST(nm_condition_matches(c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
+        nn_string_map_deinit(&attributes);
+    }
+
+    {
+        struct nn_string_map attributes;
+        nn_string_map_init(&attributes);
+
+        nn_string_map_insert(&attributes, "foo", "bar");
+        BOOST_TEST(nm_condition_matches(c, &attributes) == NM_CONDITION_RESULT_MATCH);
+        nn_string_map_deinit(&attributes);
+    }
+    nm_condition_free(c);
+}
+
 BOOST_AUTO_TEST_CASE(condition_variable)
 {
-    struct nm_condition c;
+    struct nm_iam_condition c;
     nm_condition_init(&c);
-    c.op = NM_CONDITION_OPERATOR_STRING_EQUALS;
+    c.op = NM_IAM_CONDITION_OPERATOR_STRING_EQUALS;
     c.key = strdup("IAM:UserId");
     nn_string_set_insert(&c.values, "${Connection:UserId}");
 

@@ -89,7 +89,7 @@ NabtoDevice* device_;
 
 static void signal_handler(int s);
 
-static void print_iam_state(struct nm_iam* iam);
+static void print_iam_state(struct nm_iam_state* state);
 static void iam_user_changed(struct nm_iam* iam, const char* id, void* userData);
 static bool make_directory(const char* directory);
 
@@ -372,18 +372,16 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
-    struct iam_config iamConfig;
-    iam_config_init(&iamConfig);
+    struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
 
-    if (!load_iam_config(&iamConfig, tunnel->iamConfigFile, &logger)) {
+    if (!load_iam_config(iamConfig, tunnel->iamConfigFile, &logger)) {
         print_iam_config_load_failed(tunnel->iamConfigFile);
         return false;
     }
 
-    struct tcp_tunnel_state tcpTunnelState;
-    tcp_tunnel_state_init(&tcpTunnelState);
+    struct nm_iam_state* tcpTunnelState = nm_iam_state_new();
 
-    if (!load_tcp_tunnel_state(&tcpTunnelState, tunnel->stateFile, &logger)) {
+    if (!load_tcp_tunnel_state(tcpTunnelState, tunnel->stateFile, &logger)) {
         print_tcp_tunnel_state_load_failed(tunnel->stateFile);
         return false;
     }
@@ -415,15 +413,17 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);
 
-    if (tcpTunnelState.pairingPassword != NULL) {
-        nm_iam_enable_password_pairing(&iam, tcpTunnelState.pairingPassword);
-        tunnel->pairingPassword = strdup(tcpTunnelState.pairingPassword);
+    if (tcpTunnelState->globalPairingPassword != NULL) {
+        tunnel->pairingPassword = strdup(tcpTunnelState->globalPairingPassword);
     }
 
-    if (tcpTunnelState.pairingServerConnectToken != NULL) {
-        nm_iam_enable_remote_pairing(&iam, tcpTunnelState.pairingServerConnectToken);
-        tunnel->pairingServerConnectToken = strdup(tcpTunnelState.pairingServerConnectToken);
+    if (tcpTunnelState->globalSct != NULL) {
+        tunnel->pairingServerConnectToken = strdup(tcpTunnelState->globalSct);
     }
+
+    nm_iam_load_configuration(&iam, iamConfig);
+    nm_iam_load_state(&iam, tcpTunnelState);
+
 
     struct tcp_tunnel_service* service;
     NN_VECTOR_FOREACH(&service, &tunnel->services)
@@ -434,40 +434,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint(device, &deviceFingerprint);
 
-    char* pairingString = generate_pairing_string(dc.productId, dc.deviceId, tcpTunnelState.pairingPassword, tcpTunnelState.pairingServerConnectToken);
-
-    // add users to iam module.
-    struct nm_iam_user* user;
-    NN_VECTOR_FOREACH(&user, &tcpTunnelState.users)
-    {
-        nm_iam_add_user(&iam, user);
-    }
-    nn_vector_clear(&tcpTunnelState.users);
-
-    // add roles to iam module
-    {
-        struct nm_iam_role* role;
-        NN_VECTOR_FOREACH(&role, &iamConfig.roles) {
-            nm_iam_add_role(&iam, role);
-        }
-        nn_vector_clear(&iamConfig.roles);
-    }
-    // add policies to iam module
-    {
-        struct nm_policy* policy;
-        NN_VECTOR_FOREACH(&policy, &iamConfig.policies) {
-            nm_iam_add_policy(&iam, policy);
-        }
-        nn_vector_clear(&iamConfig.policies);
-    }
-
-    // add default pairing roles
-    {
-        nm_iam_set_unpaired_role(&iam, iamConfig.unpairedRole);
-        nm_iam_set_first_user_role(&iam, iamConfig.firstUserRole);
-        nm_iam_set_secondary_user_role(&iam, iamConfig.secondaryUserRole);
-    }
-    iam_config_deinit(&iamConfig);
+    char* pairingString = generate_pairing_string(dc.productId, dc.deviceId, tcpTunnelState->globalPairingPassword, tcpTunnelState->globalSct);
 
     if (args->randomPorts) {
         nabto_device_set_local_port(device, 0);
@@ -477,8 +444,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);
     printf("# Device ID:         %s" NEWLINE, dc.deviceId);
-    printf("# Pairing password:  %s" NEWLINE, tcpTunnelState.pairingPassword);
-    printf("# Paring SCT:        %s" NEWLINE, tcpTunnelState.pairingServerConnectToken);
+    printf("# Pairing password:  %s" NEWLINE, tcpTunnelState->globalPairingPassword);
+    printf("# Paring SCT:        %s" NEWLINE, tcpTunnelState->globalSct);
     printf("# Pairing string:    %s" NEWLINE, pairingString);
     printf("# " NEWLINE);
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
@@ -498,10 +465,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     nabto_device_string_free(deviceFingerprint);
 
-    tcp_tunnel_state_deinit(&tcpTunnelState);
-
     if (args->showState) {
-        print_iam_state(&iam);
+        print_iam_state(tcpTunnelState);
     } else {
         struct device_event_handler eventHandler;
 
@@ -525,8 +490,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             }
             return false;
         }
-
-        nm_iam_start(&iam);
 
         device_ = device;
 
@@ -560,49 +523,20 @@ void signal_handler(int s)
 }
 
 
-void print_iam_state(struct nm_iam* iam)
+void print_iam_state(struct nm_iam_state* state)
 {
-    struct nn_string_set ss;
-    nn_string_set_init(&ss);
-    nm_iam_get_users(iam, &ss);
-
-    const char* id;
-    NN_STRING_SET_FOREACH(id, &ss)
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &state->users)
     {
-        struct nm_iam_user* user = nm_iam_find_user(iam, id);
         printf("User: %s, fingerprint: %s" NEWLINE, user->id, user->fingerprint);
     }
-    nn_string_set_deinit(&ss);
 }
 
 
 void iam_user_changed(struct nm_iam* iam, const char* id, void* userData)
 {
     struct tcp_tunnel* tcpTunnel = userData;
-
-    struct tcp_tunnel_state toWrite;
-
-    tcp_tunnel_state_init(&toWrite);
-    if (tcpTunnel->pairingPassword) {
-        toWrite.pairingPassword = strdup(tcpTunnel->pairingPassword);
-    }
-    if (tcpTunnel->pairingServerConnectToken) {
-        toWrite.pairingServerConnectToken = strdup(tcpTunnel->pairingServerConnectToken);
-    }
-
-    struct nn_string_set userIds;
-    nn_string_set_init(&userIds);
-    nm_iam_get_users(iam, &userIds);
-
-    const char* uid;
-    NN_STRING_SET_FOREACH(uid, &userIds)
-    {
-        struct nm_iam_user* user = nm_iam_find_user(iam, uid);
-        nn_vector_push_back(&toWrite.users, &user);
-    }
-    nn_string_set_deinit(&userIds);
-    save_tcp_tunnel_state(tcpTunnel->stateFile, &toWrite);
-    tcp_tunnel_state_deinit(&toWrite);
+    save_tcp_tunnel_state(tcpTunnel->stateFile, iam->state);
 }
 
 bool make_directory(const char* directory)

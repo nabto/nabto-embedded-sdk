@@ -27,12 +27,12 @@ BOOST_AUTO_TEST_SUITE(policy_json);
 
 BOOST_AUTO_TEST_CASE()
 {
-    struct nm_policy* p;
+    struct nm_iam_policy* p;
     cJSON* json = cJSON_Parse(c1.c_str());
     BOOST_TEST(json);
     c = nm_policy_from_json(json);
     BOOST_TEST(strcmp(c->id, "Policy1") == 0);
-    BOOST_TEST(nn_vector_size(&c->statements) == 2);
+    BOOST_TEST(nn_llist_size(&c->statements) == 2);
     nm_policy_free(c);
 }
 
