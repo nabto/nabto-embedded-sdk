@@ -62,8 +62,7 @@ bool create_default_iam_config(const char* iamConfigFile)
         nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers");
         nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
         nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:AddRoleToUser");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:RemoveRoleFromUser");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserRole");
         nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
