@@ -10,6 +10,8 @@ TCP Tunnel Device Help.
                       is error, warn, info and trace.
       --random-ports  Bind the local and the p2p sockets to random UDP ports
                       instead of the default UDP ports 5592 and 5593.
+      --auto          Create an IAM configuration file for autonomous pairing.
+      --invite        Create an IAM configuration file for invite-only pairing.
 
 # Files
 

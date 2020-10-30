@@ -15,6 +15,8 @@ void print_help() {
     printf("%s" NEWLINE, "                      is error, warn, info and trace.");
     printf("%s" NEWLINE, "      --random-ports  Bind the local and the p2p sockets to random UDP ports");
     printf("%s" NEWLINE, "                      instead of the default UDP ports 5592 and 5593.");
+    printf("%s" NEWLINE, "      --auto          Create an IAM configuration file for autonomous pairing.");
+    printf("%s" NEWLINE, "      --invite        Create an IAM configuration file for invite-only pairing.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "# Files");
     printf("%s" NEWLINE, "");

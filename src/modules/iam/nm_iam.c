@@ -39,7 +39,7 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 bool validate_role_in_config(struct nm_iam_configuration* conf, const char* roleStr)
 {
      if (roleStr == NULL) {
-        return false;
+        return true;
     }
     struct nm_iam_role* role;
     NN_LLIST_FOREACH(role, &conf->roles)
@@ -336,6 +336,17 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
 
     bool firstUser = nn_llist_empty(&iam->state->users);
 
+    const char* role = NULL;
+    if (firstUser) {
+        role = iam->conf->firstUserRole;
+    } else {
+        role = iam->conf->secondaryUserRole;
+    }
+
+    if (role == NULL) {
+        return NULL;
+    }
+
     char* sct;
     NabtoDeviceError ec = nabto_device_create_server_connect_token(iam->device, &sct);
     if (ec != NABTO_DEVICE_EC_OK) {
@@ -346,12 +357,8 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
     struct nm_iam_user* user = nm_iam_user_new(nextId);
     free(nextId);
 
-    if (firstUser) {
-        nm_iam_user_set_role(user, iam->conf->firstUserRole);
-    } else {
-        nm_iam_user_set_role(user, iam->conf->secondaryUserRole);
-    }
-
+    nm_iam_user_set_role(user, role);
+    
     nm_iam_user_set_fingerprint(user, fingerprint);
     nm_iam_user_set_server_connect_token(user, sct);
     if (name != NULL) {

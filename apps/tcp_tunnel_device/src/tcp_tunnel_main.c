@@ -58,7 +58,9 @@ enum {
     OPTION_SHOW_STATE,
     OPTION_HOME_DIR,
     OPTION_RANDOM_PORTS,
-    OPTION_RESET
+    OPTION_RESET,
+    OPTION_AUTO,
+    OPTION_INVITE
 };
 
 struct args {
@@ -69,6 +71,8 @@ struct args {
     char* homeDir;
     bool randomPorts;
     bool reset;
+    bool iamConfigAutonomous;
+    bool iamConfigInvite;
 };
 
 
@@ -154,6 +158,8 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x5s[] = "H";      const char* x5l[] = { "home-dir", 0 };
     const char x6s[] = "";       const char* x6l[] = { "random-ports", 0 };
     const char x7s[] = "";       const char* x7l[] = { "reset", 0 };
+    const char x8s[] = "";       const char* x8l[] = { "auto", 0 };
+    const char x9s[] = "";       const char* x9l[] = { "invite", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -163,6 +169,8 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_HOME_DIR, GOPT_ARG, x5s, x5l },
         { OPTION_RANDOM_PORTS, GOPT_NOARG, x6s, x6l },
         { OPTION_RESET, GOPT_NOARG, x7s, x7l },
+        { OPTION_AUTO, GOPT_NOARG, x8s, x8l },
+        { OPTION_INVITE, GOPT_NOARG, x9s, x9l },
         {0,0,0,0}
     };
 
@@ -184,6 +192,14 @@ static bool parse_args(int argc, char** argv, struct args* args)
 
     if (gopt(options, OPTION_RESET)) {
         args->reset = true;
+    }
+
+    if (gopt(options, OPTION_AUTO)) {
+        args->iamConfigAutonomous = true;
+    }
+
+    if (gopt(options, OPTION_INVITE)) {
+        args->iamConfigInvite = true;
     }
 
     if (gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel)) {
@@ -374,7 +390,18 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
 
-    if (!load_iam_config(iamConfig, tunnel->iamConfigFile, &logger)) {
+    if (!iam_config_exists(tunnel->iamConfigFile)) {
+        if (args->iamConfigAutonomous) {
+            iam_config_create_default_auto(tunnel->iamConfigFile);
+        } else if (args->iamConfigInvite) {
+            iam_config_create_default_invite(tunnel->iamConfigFile);
+        } else {
+            printf("No iam configuration file exits %s and neither the option --auto or --invite was specified." NEWLINE, tunnel->iamConfigFile);
+            return false;
+        }
+    }
+
+    if (!iam_config_load(iamConfig, tunnel->iamConfigFile, &logger)) {
         print_iam_config_load_failed(tunnel->iamConfigFile);
         return false;
     }
@@ -421,7 +448,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         tunnel->pairingServerConnectToken = strdup(tcpTunnelState->globalSct);
     }
 
-    nm_iam_load_configuration(&iam, iamConfig);
+    if(!nm_iam_load_configuration(&iam, iamConfig)) {
+        printf("Could not load iam configuration" NEWLINE);
+        return false;
+    }
     nm_iam_load_state(&iam, tcpTunnelState);
 
 

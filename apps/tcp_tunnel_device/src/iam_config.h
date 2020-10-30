@@ -6,7 +6,10 @@
 
 struct nn_log;
 
-bool load_iam_config(struct nm_iam_configuration* iamConfig, const char* iamConfigFile, struct nn_log* logger);
+bool iam_config_exists(const char* iamConfigFile);
+bool iam_config_load(struct nm_iam_configuration* iamConfig, const char* iamConfigFile, struct nn_log* logger);
+bool iam_config_create_default_auto(const char* iamConfigFile);
+bool iam_config_create_default_invite(const char* iamConfigFile);
 
 
 #endif
