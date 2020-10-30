@@ -83,7 +83,6 @@ void nm_iam_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapPairingGetHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingPasswordPostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingLocalPostHandler);
-    nm_iam_coap_handler_stop(&iam->coapPairingIsPairedGetHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
@@ -233,7 +232,6 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalPostHandler);
-    nm_iam_coap_handler_deinit(&iam->coapPairingIsPairedGetHandler);
 
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
