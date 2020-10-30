@@ -36,6 +36,13 @@ NabtoDeviceError nm_iam_coap_handler_init(
     return ec;
 }
 
+void nm_iam_coap_handler_stop(struct nm_iam_coap_handler* handler)
+{
+    if (handler->device != NULL) {
+        nabto_device_listener_stop(handler->listener);
+    }
+}
+
 void nm_iam_coap_handler_deinit(struct nm_iam_coap_handler* handler)
 {
     if (handler->device != NULL) {

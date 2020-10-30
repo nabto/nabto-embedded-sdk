@@ -63,12 +63,30 @@ struct nm_iam {
 };
 
 /**
- * Init the iam module
+ * Initialize the IAM module, must be called before the IAM module is
+ * used in any other functions.
+ *
+ * @param iam [in]    IAM module to initialize
+ * @param device [in] Nabto device used with the IAM module
+ * @param logger [in] Logging module to print log messages. Can be NULL.
  */
 void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger);
 
 /**
- * Deinit the iam module
+ * Stop the IAM module. This stops the NabtoDeviceListeners owned by
+ * the IAM module. These listeners can also be implicitly stopped
+ * using nabto_device_stop().
+ *
+ * @param iam [in]  IAM module to stop.
+ */
+void nm_iam_stop(struct nm_iam* iam);
+
+/**
+ * Deinitialize the IAM module. This must be called after
+ * nabto_device_stop() to ensure the NabtoDeviceListeners are not in
+ * use.
+ *
+ * @param iam [in]  IAM module to deinitialize.
  */
 void nm_iam_deinit(struct nm_iam* iam);
 

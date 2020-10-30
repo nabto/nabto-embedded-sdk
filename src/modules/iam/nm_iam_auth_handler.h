@@ -16,6 +16,7 @@ struct nm_iam_auth_handler {
 };
 
 NabtoDeviceError nm_iam_auth_handler_init(struct nm_iam_auth_handler* handler, NabtoDevice* device, struct nm_iam* iam);
+void nm_iam_auth_handler_stop(struct nm_iam_auth_handler* handler);
 void nm_iam_auth_handler_deinit(struct nm_iam_auth_handler* handler);
 
 

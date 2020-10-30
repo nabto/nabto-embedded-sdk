@@ -29,6 +29,7 @@ NabtoDeviceError nm_iam_coap_handler_init(
     const char** paths,
     nm_iam_coap_request_handler requestHandler);
 
+void nm_iam_coap_handler_stop(struct nm_iam_coap_handler* handler);
 void nm_iam_coap_handler_deinit(struct nm_iam_coap_handler* handler);
 
 // specific handler init functions
