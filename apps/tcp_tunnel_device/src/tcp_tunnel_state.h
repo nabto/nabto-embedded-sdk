@@ -1,23 +1,13 @@
 #ifndef _TCP_TUNNEL_STATE_H_
 #define _TCP_TUNNEL_STATE_H_
 
-#include <nn/vector.h>
-
-struct tcp_tunnel_state {
-    struct nn_vector users;
-    char* pairingPassword;
-    char* pairingServerConnectToken;
-};
+#include <modules/iam/nm_iam_state.h>
 
 struct nn_log;
 
-void tcp_tunnel_state_init(struct tcp_tunnel_state* state);
-void tcp_tunnel_state_deinit(struct tcp_tunnel_state* state);
+bool load_tcp_tunnel_state(struct nm_iam_state* state, const char* stateFile, struct nn_log* logger);
 
-bool load_tcp_tunnel_state(struct tcp_tunnel_state* state, const char* stateFile, struct nn_log* logger);
-
-
-bool save_tcp_tunnel_state(const char* stateFile, struct tcp_tunnel_state* state);
+bool save_tcp_tunnel_state(const char* stateFile, struct nm_iam_state* state);
 
 bool reset_tcp_tunnel_state(const char* stateFile);
 

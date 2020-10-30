@@ -1,15 +1,8 @@
 #include "iam_config.h"
 
-#include <apps/common/json_config.h>
+#include <apps/common/string_file.h>
 
-#include <modules/policies/nm_policy.h>
-#include <modules/policies/nm_statement.h>
-#include <modules/policies/nm_condition.h>
-#include <modules/policies/nm_policies_to_json.h>
-#include <modules/policies/nm_policies_from_json.h>
-#include <modules/iam/nm_iam_role.h>
-#include <modules/iam/nm_iam_to_json.h>
-#include <modules/iam/nm_iam_from_json.h>
+#include <modules/iam/nm_iam_serializer.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -18,209 +11,120 @@ static const char* LOGM = "iam_config";
 
 static bool create_default_iam_config(const char* iamConfigFile);
 
-void iam_config_init(struct iam_config* iamConfig)
+bool load_iam_config(struct nm_iam_configuration* iamConfig, const char* iamConfigFile, struct nn_log* logger)
 {
-    memset(iamConfig, 0, sizeof(struct iam_config));
-    nn_vector_init(&iamConfig->roles, sizeof(void*));
-    nn_vector_init(&iamConfig->policies, sizeof(void*));
-}
-
-void iam_config_deinit(struct iam_config* iamConfig)
-{
-    nn_vector_deinit(&iamConfig->roles);
-    nn_vector_deinit(&iamConfig->policies);
-    free(iamConfig->unpairedRole);
-    free(iamConfig->firstUserRole);
-    free(iamConfig->secondaryUserRole);
-}
-
-bool load_iam_config(struct iam_config* iamConfig, const char* iamConfigFile, struct nn_log* logger)
-{
-    if (!json_config_exists(iamConfigFile)) {
+    if (!string_file_exists(iamConfigFile)) {
         NN_LOG_INFO(logger, LOGM, "IAM configuration file (%s) does not exists creating a new default file.", iamConfigFile);
         create_default_iam_config(iamConfigFile);
     }
 
-    cJSON* root;
-    if (!json_config_load(iamConfigFile, &root, logger)) {
+    char* str;
+    if (!string_file_load(iamConfigFile, &str)) {
         return false;
     }
 
-    if (!cJSON_IsObject(root)) {
-        NN_LOG_ERROR(logger, LOGM, "Invalid IAM root format");
+    if (!nm_iam_serializer_configuration_load_json(iamConfig, str, logger)) {
+        NN_LOG_ERROR(logger, LOGM, "Loading config failed, try to delete %s to make a new default file", iamConfigFile);
+        free(str);
         return false;
     }
-
-    cJSON* version = cJSON_GetObjectItem(root, "Version");
-    cJSON* policies = cJSON_GetObjectItem(root, "Policies");
-    cJSON* roles = cJSON_GetObjectItem(root, "Roles");
-    cJSON* config = cJSON_GetObjectItem(root, "Config");
-
-    if (!cJSON_IsArray(policies) ||
-        !cJSON_IsArray(roles))
-    {
-        NN_LOG_ERROR(logger, LOGM, "missing policies or roles");
-        return false;
-    }
-
-    if (!cJSON_IsNumber(version)) {
-        NN_LOG_ERROR(logger, LOGM, "missing version in iam config, try to delete %s to make a new default file", iamConfigFile);
-        return false;
-    }
-
-    if (version->valueint != 1) {
-        NN_LOG_ERROR(logger, LOGM, "Unsupported iam config version. Version %d is not supported", version->valueint);
-        return false;
-    }
-
-
-    if (!cJSON_IsObject(config)) {
-        NN_LOG_ERROR(logger, LOGM, "Missing config");
-    }
-
-    size_t policiesSize = cJSON_GetArraySize(policies);
-    for (size_t i = 0; i < policiesSize; i++) {
-        cJSON* item = cJSON_GetArrayItem(policies, i);
-        struct nm_policy* policy = nm_policy_from_json(item, logger);
-        if (policy == NULL) {
-            return false;
-        }
-        nn_vector_push_back(&iamConfig->policies, &policy);
-    }
-
-    size_t rolesSize = cJSON_GetArraySize(roles);
-    for(size_t i = 0; i < rolesSize; i++) {
-        cJSON* item = cJSON_GetArrayItem(roles, i);
-        struct nm_iam_role* role = nm_iam_role_from_json(item);
-        if (role == NULL) {
-            return false;
-        }
-        nn_vector_push_back(&iamConfig->roles, &role);
-    }
-
-    cJSON* unpairedRole = cJSON_GetObjectItem(config, "UnpairedRole");
-    cJSON* firstUserRole = cJSON_GetObjectItem(config, "FirstUserRole");
-    cJSON* secondaryUserRole = cJSON_GetObjectItem(config, "SecondaryUserRole");
-
-    if (unpairedRole) {
-        if (!cJSON_IsString(unpairedRole)) {
-            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
-        } else {
-            iamConfig->unpairedRole = strdup(unpairedRole->valuestring);
-        }
-    }
-
-    if (firstUserRole) {
-        if (!cJSON_IsString(firstUserRole)) {
-            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
-        } else {
-            iamConfig->firstUserRole = strdup(firstUserRole->valuestring);
-        }
-    }
-
-    if (secondaryUserRole) {
-        if (!cJSON_IsString(secondaryUserRole)) {
-            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
-        } else {
-            iamConfig->secondaryUserRole = strdup(secondaryUserRole->valuestring);
-        }
-    }
-
-    cJSON_Delete(root);
+    free(str);
     return true;
 }
 
 bool create_default_iam_config(const char* iamConfigFile)
 {
-    struct nm_policy* pairingPolicy = nm_policy_new("Pairing");
+    struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
+
+    struct nm_iam_policy* policy;
+    struct nm_iam_statement* stmt;
     {
-        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(stmt, "Pairing:Get");
-        nm_statement_add_action(stmt, "Pairing:Password");
-        nm_statement_add_action(stmt, "Pairing:Local");
-        nm_policy_add_statement(pairingPolicy, stmt);
+        policy = nm_iam_configuration_policy_new("Pairing");
+        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(stmt, "Pairing:Get");
+        nm_iam_configuration_statement_add_action(stmt, "Pairing:Password");
+        nm_iam_configuration_statement_add_action(stmt, "Pairing:Local");
+        nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
-    struct nm_policy* tunnellingPolicy = nm_policy_new("Tunnelling");
     {
-        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(stmt, "TcpTunnel:GetService");
-        nm_statement_add_action(stmt, "TcpTunnel:Connect");
-        nm_statement_add_action(stmt, "TcpTunnel:ListServices");
-        nm_policy_add_statement(tunnellingPolicy, stmt);
+        policy = nm_iam_configuration_policy_new("Tunnelling");
+        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(stmt, "TcpTunnel:GetService");
+        nm_iam_configuration_statement_add_action(stmt, "TcpTunnel:Connect");
+        nm_iam_configuration_statement_add_action(stmt, "TcpTunnel:ListServices");
+        nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
-    struct nm_policy* manageUsers = nm_policy_new("ManageUsers");
     {
-        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(stmt, "IAM:ListUsers");
-        nm_statement_add_action(stmt, "IAM:GetUser");
-        nm_statement_add_action(stmt, "IAM:DeleteUser");
-        nm_statement_add_action(stmt, "IAM:SetUserRole");
-        nm_statement_add_action(stmt, "IAM:ListRoles");
-        nm_policy_add_statement(manageUsers, stmt);
+        policy = nm_iam_configuration_policy_new("ManageUsers");
+        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:AddRoleToUser");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:RemoveRoleFromUser");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
+        nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
-    struct nm_policy* manageOwnUser = nm_policy_new("ManageOwnUser");
     {
-        struct nm_statement* stmt = nm_statement_new(NM_IAM_EFFECT_ALLOW);
-        nm_statement_add_action(stmt, "IAM:GetUser");
-        nm_statement_add_action(stmt, "IAM:DeleteUser");
-        struct nm_condition* c = nm_condition_new_with_key(NM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
-        nm_condition_add_value(c, "${Connection:UserId}");
-        nm_statement_add_condition(stmt, c);
-        nm_policy_add_statement(manageOwnUser, stmt);
+        policy = nm_iam_configuration_policy_new("ManageOwnUsers");
+        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
+        struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
+        nm_iam_configuration_condition_add_value(c, "${Connection:UserId}");
+        nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
-    struct nm_iam_role* unpairedRole = nm_iam_role_new("Unpaired");
-    nm_iam_role_add_policy(unpairedRole, "Pairing");
+    struct nm_iam_role* r;
+    {
+        r = nm_iam_configuration_role_new("Unpaired");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_add_role(iamConfig, r);
+    }
 
-    struct nm_iam_role* adminRole = nm_iam_role_new("Admin");
-    nm_iam_role_add_policy(adminRole, "ManageUsers");
-    nm_iam_role_add_policy(adminRole, "Tunnelling");
-    nm_iam_role_add_policy(adminRole, "Pairing");
+    {
+        r = nm_iam_configuration_role_new("Admin");
+        nm_iam_configuration_role_add_policy(r, "ManageUsers");
+        nm_iam_configuration_role_add_policy(r, "Tunnelling");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_add_role(iamConfig, r);
+    }
 
-    struct nm_iam_role* userRole = nm_iam_role_new("User");
-    nm_iam_role_add_policy(userRole, "Tunnelling");
-    nm_iam_role_add_policy(userRole, "Pairing");
-    nm_iam_role_add_policy(userRole, "ManageOwnUser");
+    {
+        r = nm_iam_configuration_role_new("Standard");
+        nm_iam_configuration_role_add_policy(r, "Tunnelling");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
+        nm_iam_configuration_add_role(iamConfig, r);
+    }
 
-    struct nm_iam_role* guestRole = nm_iam_role_new("Guest");
-    nm_iam_role_add_policy(guestRole, "Pairing");
-    nm_iam_role_add_policy(guestRole, "ManageOwnUser");
+    {
+        r = nm_iam_configuration_role_new("Guest");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
+        nm_iam_configuration_add_role(iamConfig, r);
+    }
 
-    // Write Iam policies to json.
-    cJSON* root = cJSON_CreateObject();
+    nm_iam_configuration_set_unpaired_role(iamConfig, "Unpaired");
+    nm_iam_configuration_set_first_user_role(iamConfig, "Admin");
+    nm_iam_configuration_set_secondary_user_role(iamConfig, "Guest");
 
-    cJSON_AddNumberToObject(root, "Version", 1);
+    char* str;
+    if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str)) {
+        nm_iam_configuration_free(iamConfig);
+        return false;
+    }
 
-    cJSON* policies = cJSON_CreateArray();
-    cJSON_AddItemToArray(policies, nm_policy_to_json(pairingPolicy));
-    cJSON_AddItemToArray(policies, nm_policy_to_json(tunnellingPolicy));
-    cJSON_AddItemToArray(policies, nm_policy_to_json(manageUsers));
-    cJSON_AddItemToArray(policies, nm_policy_to_json(manageOwnUser));
-    cJSON_AddItemToObject(root, "Policies", policies);
+    if(!string_file_save(iamConfigFile, str)) {
+        nm_iam_serializer_string_free(str);
+        nm_iam_configuration_free(iamConfig);
+        return false;
+    }
 
-    // Write default roles to json
-    cJSON* roles = cJSON_CreateArray();
-    cJSON_AddItemToArray(roles, nm_iam_role_to_json(unpairedRole));
-    cJSON_AddItemToArray(roles, nm_iam_role_to_json(adminRole));
-    cJSON_AddItemToArray(roles, nm_iam_role_to_json(userRole));
-    cJSON_AddItemToArray(roles, nm_iam_role_to_json(guestRole));
-    cJSON_AddItemToObject(root, "Roles", roles);
-
-    // Write iam config to json
-    cJSON* config = cJSON_CreateObject();
-
-    cJSON_AddStringToObject(config, "UnpairedRole", "Unpaired");
-    cJSON_AddStringToObject(config, "FirstUserRole", "Admin");
-    cJSON_AddStringToObject(config, "SecondaryUserRole", "Guest");
-
-    cJSON_AddItemToObject(root, "Config", config);
-
-    json_config_save(iamConfigFile, root);
-
-    cJSON_Delete(root);
-
+    nm_iam_serializer_string_free(str);
+    nm_iam_configuration_free(iamConfig);
     return true;
 }
