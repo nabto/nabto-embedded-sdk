@@ -41,9 +41,9 @@ bool create_default_iam_config(const char* iamConfigFile)
     {
         policy = nm_iam_configuration_policy_new("Pairing");
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(stmt, "Pairing:Get");
-        nm_iam_configuration_statement_add_action(stmt, "Pairing:Password");
-        nm_iam_configuration_statement_add_action(stmt, "Pairing:Local");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPassword");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingLocal");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
@@ -69,11 +69,17 @@ bool create_default_iam_config(const char* iamConfigFile)
 
     {
         policy = nm_iam_configuration_policy_new("ManageOwnUsers");
-        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
-        struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
-        nm_iam_configuration_condition_add_value(c, "${Connection:UserId}");
+        {
+            stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
+            nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
+            nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
+            struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
+            nm_iam_configuration_condition_add_value(c, "${Connection:UserId}");
+        }
+        {
+            stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
+            nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
+        }
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 

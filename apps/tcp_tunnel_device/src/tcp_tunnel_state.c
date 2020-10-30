@@ -62,7 +62,7 @@ bool write_state_to_file(const char* stateFile, struct nm_iam_state* state)
     }
 
     nm_iam_serializer_string_free(str);
-    nm_iam_state_free(state);
+    //nm_iam_state_free(state);
     return true;
 }
 
