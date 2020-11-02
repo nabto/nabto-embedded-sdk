@@ -12,7 +12,6 @@ NabtoDeviceError nm_iam_pairing_local_init(struct nm_iam_coap_handler* handler, 
 {
     const char* paths[] = { "iam", "pairing", "local", NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_POST, paths, &handle_request);
-
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)

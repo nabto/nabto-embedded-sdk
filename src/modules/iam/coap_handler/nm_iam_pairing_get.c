@@ -2,6 +2,7 @@
 #include "nm_iam_coap_handler.h"
 
 #include "../nm_iam.h"
+#include "../nm_iam_pairing.h"
 
 #include <stdlib.h>
 
@@ -13,7 +14,7 @@ NabtoDeviceError nm_iam_pairing_get_init(struct nm_iam_coap_handler* handler, Na
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
 
-static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSize, bool isLocal)
+static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSize, NabtoDeviceConnectionRef conn)
 {
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
@@ -25,11 +26,11 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     CborEncoder array;
     cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
 
-    if (iam->state->globalPairingPassword != NULL) {
+    if (nm_iam_pairing_is_password_possible(iam, conn)) {
         cbor_encode_text_stringz(&array, "Password");
     }
 
-    if (isLocal) {
+    if (nm_iam_pairing_is_local_possible(iam, conn)) {
         cbor_encode_text_stringz(&array, "Local");
     }
 

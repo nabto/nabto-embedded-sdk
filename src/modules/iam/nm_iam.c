@@ -358,7 +358,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
     free(nextId);
 
     nm_iam_user_set_role(user, role);
-    
+
     nm_iam_user_set_fingerprint(user, fingerprint);
     nm_iam_user_set_server_connect_token(user, sct);
     if (name != NULL) {
