@@ -45,8 +45,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* sct;
     if (nabto_device_create_server_connect_token(handler->iam->device, &sct) != NABTO_DEVICE_EC_OK ||
         !nm_iam_user_set_server_connect_token(user, sct) ||
-        !nm_iam_user_set_name(user, userName) ||
-        !nm_iam_user_set_role(user, handler->iam->conf->secondaryUserRole)) {
+        !nm_iam_user_set_name(user, userName)) {
 
         nabto_device_coap_error_response(request, 500, "Server error");
 
