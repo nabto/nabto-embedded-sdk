@@ -32,6 +32,9 @@ bool nm_iam_pairing_is_password_possible(struct nm_iam* iam, NabtoDeviceConnecti
     if (!nm_iam_check_access(iam, ref, "IAM:PairingPassword", NULL)) {
         return false;
     }
+    if (iam->state->globalPairingPassword == NULL) {
+        return false;
+    }
     const char* role = nm_iam_pairing_get_role(iam);
     if(role == NULL) {
         return false;
