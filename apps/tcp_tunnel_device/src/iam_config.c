@@ -70,8 +70,8 @@ bool iam_config_create_default_auto(const char* iamConfigFile)
             stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
             nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
             nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
-            struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
-            nm_iam_configuration_condition_add_value(c, "${Connection:UserId}");
+            struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:Username");
+            nm_iam_configuration_condition_add_value(c, "${Connection:Username}");
         }
         {
             stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
@@ -172,8 +172,8 @@ bool iam_config_create_default_invite(const char* iamConfigFile)
             stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
             nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
             nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
-            struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
-            nm_iam_configuration_condition_add_value(c, "${Connection:UserId}");
+            struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:Username");
+            nm_iam_configuration_condition_add_value(c, "${Connection:Username}");
         }
         {
             stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);

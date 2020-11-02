@@ -9,8 +9,7 @@ extern "C" {
 #endif
 
 struct nm_iam_user {
-    char* id;
-    char* name;
+    char* username;
     char* role;
     char* password;
     char* fingerprint;

@@ -2,6 +2,7 @@
 #include "nm_iam_coap_handler.h"
 
 #include "../nm_iam.h"
+#include "../nm_iam_user.h"
 #include "../nm_iam_internal.h"
 
 #include <stdlib.h>
@@ -38,19 +39,25 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* name = NULL;
+    char* username = NULL;
 
-    nm_iam_cbor_decode_kv_string(&value, "Name", &name);
-    if (name == NULL) {
+    nm_iam_cbor_decode_kv_string(&value, "Username", &username);
+    if (username == NULL || !nm_iam_user_validate_username(username)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
 
-    char* userName = nm_iam_make_user_name(handler->iam, name);
-    free(name);
+    if (nm_iam_find_user(handler->iam, username) != NULL) {
+        nabto_device_coap_error_response(request, 409, "Conflict");
+        free(fingerprint);
+        free(username);
+        return;
+    }
 
-    if (!nm_iam_pair_new_client(handler->iam, request, userName)) {
+    if (!nm_iam_pair_new_client(handler->iam, request, username)) {
         nabto_device_coap_error_response(request, 500, "Server error");
+        free(fingerprint);
+        free(username);
         return;
     }
 
@@ -59,5 +66,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nabto_device_coap_response_ready(request);
 
     free(fingerprint);
-    free(userName);
+    free(username);
 }

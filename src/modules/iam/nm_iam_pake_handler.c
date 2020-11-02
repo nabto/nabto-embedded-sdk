@@ -66,7 +66,7 @@ void handle_request(struct nm_iam_pake_handler *handler, NabtoDevicePasswordAuth
     {
         nabto_device_password_authentication_request_set_password(request, handler->iam->state->globalPairingPassword);
     } else if (username) {
-        struct nm_iam_user* user = nm_iam_find_user_by_name(handler->iam, username);
+        struct nm_iam_user* user = nm_iam_find_user(handler->iam, username);
         if (user && user->password) {
             nabto_device_password_authentication_request_set_password(request, user->password);
         }

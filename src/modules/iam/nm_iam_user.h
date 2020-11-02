@@ -10,12 +10,14 @@
 extern "C" {
 #endif
 
-struct nm_iam_user* nm_iam_user_new(const char* id);
+struct nm_iam_user* nm_iam_user_new(const char* username);
 void nm_iam_user_free(struct nm_iam_user* user);
+
+bool nm_iam_user_validate_username(const char* username);
 
 bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint);
 bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken);
-bool nm_iam_user_set_name(struct nm_iam_user* user, const char* name);
+bool nm_iam_user_set_username(struct nm_iam_user* user, const char* username);
 bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId);
 bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password);
 
