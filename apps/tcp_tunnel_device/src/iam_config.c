@@ -163,6 +163,7 @@ bool iam_config_create_default_invite(const char* iamConfigFile)
         nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserRole");
         nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
         nm_iam_configuration_statement_add_action(stmt, "IAM:CreateUser");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserPassword");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
