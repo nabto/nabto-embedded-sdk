@@ -99,7 +99,7 @@ void nm_iam_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserDeleteHandler);
     nm_iam_coap_handler_stop(&iam->coapIamRolesGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetRoleHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetNameHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetUsernameHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
@@ -149,11 +149,11 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
         const char* username = nabto_device_connection_get_password_authentication_username(iam->device, ref);
         if (username != NULL) {
             // authenticated with non-empty username
-            user = nm_iam_find_user_by_name(iam, username);
+            user = nm_iam_find_user(iam, username);
         }
     }
     if (user) {
-        nn_string_map_insert(&attributes, "Connection:UserId", user->id);
+        nn_string_map_insert(&attributes, "Connection:Username", user->username);
         if (nabto_device_connection_is_local(iam->device, ref)) {
             nn_string_map_insert(&attributes, "Connection:IsLocal", "true");
         } else {
@@ -177,14 +177,14 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
         verdict = true;
     }
 
-    const char* userId;
+    const char* username;
     if (user) {
-        userId = user->id;
+        username = user->username;
     } else {
-        userId = "Not Paired";
+        username = "Not Paired";
     }
 
-    NN_LOG_INFO(iam->logger, LOGM, "IAM access from the user: %s, request action: %s, verdict: %s", userId, action, verdict?"ALLOW":"DENY");
+    NN_LOG_INFO(iam->logger, LOGM, "IAM access from the user: %s, request action: %s, verdict: %s", username, action, verdict?"ALLOW":"DENY");
 
     return verdict;
 }
@@ -233,7 +233,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
     nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
     nm_iam_set_user_role_init(&iam->coapIamUsersUserSetRoleHandler, iam->device, iam);
-    nm_iam_set_user_name_init(&iam->coapIamUsersUserSetNameHandler, iam->device, iam);
+    nm_iam_set_user_username_init(&iam->coapIamUsersUserSetUsernameHandler, iam->device, iam);
     nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
     nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
@@ -253,7 +253,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserDeleteHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamRolesGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetRoleHandler);
-    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNameHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetUsernameHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
@@ -275,14 +275,14 @@ struct nm_iam_user* nm_iam_find_user_by_fingerprint(struct nm_iam* iam, const ch
     return NULL;
 }
 
-struct nm_iam_user* nm_iam_find_user_by_name(struct nm_iam* iam, const char* name)
+struct nm_iam_user* nm_iam_find_user_by_username(struct nm_iam* iam, const char* username)
 {
-    if (name == NULL) {
+    if (username == NULL) {
         return NULL;
     }
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users) {
-        if (user->name != NULL && strcmp(user->name, name) == 0) {
+        if (user->username != NULL && strcmp(user->username, username) == 0) {
             return user;
         }
     }
@@ -319,7 +319,7 @@ struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyS
     return NULL;
 }
 
-struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* name)
+struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* username)
 {
     {
         struct nm_iam_user* user = nm_iam_find_user_by_coap_request(iam, request);
@@ -327,6 +327,10 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
             // user is already paired.
             return user;
         }
+    }
+
+    if (username != NULL) {
+        return NULL;
     }
 
     char* fingerprint = get_fingerprint_from_coap_request(iam, request);
@@ -353,17 +357,12 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
         return NULL;
     }
 
-    char* nextId = nm_iam_make_user_id(iam);
-    struct nm_iam_user* user = nm_iam_user_new(nextId);
-    free(nextId);
+    struct nm_iam_user* user = nm_iam_user_new(username);
 
     nm_iam_user_set_role(user, role);
 
     nm_iam_user_set_fingerprint(user, fingerprint);
     nm_iam_user_set_server_connect_token(user, sct);
-    if (name != NULL) {
-        nm_iam_user_set_name(user, name);
-    }
 
     nm_iam_add_user(iam, user);
 
@@ -382,7 +381,7 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
     }
 
     if (iam->changeCallback.userChanged) {
-        iam->changeCallback.userChanged(iam, user->id, iam->changeCallback.userChangedData);
+        iam->changeCallback.userChanged(iam, user->username, iam->changeCallback.userChangedData);
     }
     return true;
 }
@@ -411,56 +410,9 @@ struct nm_iam_user* nm_iam_find_user_by_coap_request(struct nm_iam* iam, NabtoDe
     return user;
 }
 
-struct nm_iam_user* nm_iam_find_user_by_id(struct nm_iam* iam, const char* id)
+struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* username)
 {
-    struct nm_iam_user* user;
-    NN_LLIST_FOREACH(user, &iam->state->users) {
-        if (strcmp(user->id, id) == 0) {
-            return user;
-        }
-    }
-    return NULL;
-}
-
-struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* id)
-{
-    return nm_iam_find_user_by_id(iam, id);
-}
-
-char* nm_iam_make_user_id(struct nm_iam* iam)
-{
-    char* id = malloc(7);
-
-    struct nm_iam_user* user;
-    do {
-        memset(id, 0, 7);
-        for (int i = 0; i<6; i++) {
-            sprintf(id+i, "%c", (char)('a'+rand()%26));
-        }
-
-        user = nm_iam_find_user_by_id(iam, id);
-    } while (user != NULL);
-
-    return id;
-}
-
-char* nm_iam_make_user_name(struct nm_iam* iam, const char* suggested)
-{
-    if (nm_iam_find_user_by_name(iam, suggested) == NULL) {
-        return strdup(suggested);
-    }
-    char* name = malloc(strlen(suggested)+20);
-    strcpy(name, suggested);
-    char* suffix = name+strlen(suggested);
-    int i = 0;
-    struct nm_iam_user* user;
-    do {
-        memset(suffix, 0, 20);
-        i++;
-        sprintf(suffix, "-%d", (int)i);
-        user = nm_iam_find_user_by_name(iam, name);
-    } while (user != NULL);
-    return name;
+    return nm_iam_find_user_by_username(iam, username);
 }
 
 void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChanged, void* data)
@@ -469,26 +421,26 @@ void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed us
     iam->changeCallback.userChangedData = data;
 }
 
-bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* ids)
+bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* usernames)
 {
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users)
     {
-        nn_string_set_insert(ids, user->id);
+        nn_string_set_insert(usernames, user->username);
     }
     return true;
 }
 
-void nm_iam_delete_user(struct nm_iam* iam, const char* userId)
+void nm_iam_delete_user(struct nm_iam* iam, const char* username)
 {
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users) {
-        if (strcmp(user->id, userId) == 0) {
+        if (strcmp(user->username, username) == 0) {
             nn_llist_erase_node(&user->listNode);
             nm_iam_user_free(user);
 
             if (iam->changeCallback.userChanged) {
-                iam->changeCallback.userChanged(iam, userId, iam->changeCallback.userChangedData);
+                iam->changeCallback.userChanged(iam, username, iam->changeCallback.userChangedData);
             }
 
             return;
@@ -498,9 +450,9 @@ void nm_iam_delete_user(struct nm_iam* iam, const char* userId)
 }
 
 
-bool nm_iam_set_user_role(struct nm_iam* iam, const char* userId, const char* roleId)
+bool nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* roleId)
 {
-    struct nm_iam_user* user = nm_iam_find_user(iam, userId);
+    struct nm_iam_user* user = nm_iam_find_user(iam, username);
     struct nm_iam_role* role = nm_iam_find_role(iam, roleId);
 
     if (user == NULL || role == NULL) {
@@ -511,7 +463,7 @@ bool nm_iam_set_user_role(struct nm_iam* iam, const char* userId, const char* ro
 
     if (status == true) {
         if (iam->changeCallback.userChanged) {
-            iam->changeCallback.userChanged(iam, userId, iam->changeCallback.userChangedData);
+            iam->changeCallback.userChanged(iam, username, iam->changeCallback.userChangedData);
         }
     }
     return status;

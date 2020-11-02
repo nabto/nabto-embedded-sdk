@@ -19,8 +19,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 {
     CborParser parser;
     CborValue value;
-    const char* userId = nabto_device_coap_request_get_parameter(request, "user");
-    if (userId == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
+    const char* username = nabto_device_coap_request_get_parameter(request, "user");
+    if (username == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
@@ -33,7 +33,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     struct nn_string_map attributes;
     nn_string_map_init(&attributes);
-    nn_string_map_insert(&attributes, "IAM:UserId", userId);
+    nn_string_map_insert(&attributes, "IAM:Username", username);
 
     if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserPassword", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
@@ -43,7 +43,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
     nn_string_map_deinit(&attributes);
 
-    struct nm_iam_user* user = nm_iam_find_user(handler->iam, userId);
+    struct nm_iam_user* user = nm_iam_find_user(handler->iam, username);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, NULL);
         free(pass);

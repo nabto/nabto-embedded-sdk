@@ -24,7 +24,7 @@ static size_t encode_users(struct nm_iam* iam, void* buffer, size_t bufferSize)
     struct nn_llist* users = &iam->state->users;
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, users) {
-        cbor_encode_text_stringz(&array, user->id);
+        cbor_encode_text_stringz(&array, user->username);
     }
 
     cbor_encoder_close_container(&encoder, &array);

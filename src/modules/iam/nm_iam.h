@@ -25,7 +25,7 @@ struct nm_iam_policy;
 struct nn_string_set;
 struct nm_iam_role;
 
-typedef void (*nm_iam_user_changed)(struct nm_iam* iam, const char* userId, void* userData);
+typedef void (*nm_iam_user_changed)(struct nm_iam* iam, const char* username, void* userData);
 
 struct nm_iam_change_callback {
     // called if a user is inserted, updated or removed.
@@ -48,7 +48,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserDeleteHandler;
     struct nm_iam_coap_handler coapIamRolesGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetRoleHandler;
-    struct nm_iam_coap_handler coapIamUsersUserSetNameHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetUsernameHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetFingerprintHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetSctHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetPasswordHandler;

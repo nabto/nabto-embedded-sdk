@@ -2,6 +2,7 @@
 #include "nm_iam_coap_handler.h"
 
 #include "../nm_iam.h"
+#include "../nm_iam_user.h"
 #include "../nm_iam_internal.h"
 
 #include <stdlib.h>
@@ -41,10 +42,11 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        free(fingerprint);
         return;
     }
 
-    char* name = NULL;
+    char* username = NULL;
     char* password = NULL;
 
     if (nm_iam_cbor_decode_kv_string(&value, "Password", &password)) {
@@ -53,23 +55,23 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_error_response(request, 400, "5.1 clients are not supported for password pairing");
     } else {
 
-        nm_iam_cbor_decode_kv_string(&value, "Name", &name);
-        if (name == NULL) {
+        nm_iam_cbor_decode_kv_string(&value, "Username", &username);
+        if (username == NULL || !nm_iam_user_validate_username(username)) {
             nabto_device_coap_error_response(request, 400, "Bad request");
+        } else if (nm_iam_find_user(handler->iam, username) != NULL) {
+            nabto_device_coap_error_response(request, 409, "Conflict");
         } else {
-            char* userName = nm_iam_make_user_name(handler->iam, name);
-            if (!nm_iam_pair_new_client(handler->iam, request, name)) {
+            if (!nm_iam_pair_new_client(handler->iam, request, username)) {
                 nabto_device_coap_error_response(request, 500, "Server error");
             } else {
                 // OK response
                 nabto_device_coap_response_set_code(request, 201);
                 nabto_device_coap_response_ready(request);
             }
-            free(userName);
         }
     }
 
     free(fingerprint);
-    free(name);
+    free(username);
     free(password);
 }

@@ -24,10 +24,8 @@ cJSON* nm_iam_role_to_json(struct nm_iam_role* role)
 cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
 {
     cJSON* root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "Id", cJSON_CreateString(user->id));
-    if (user->name != NULL) {
-        cJSON_AddItemToObject(root, "Name", cJSON_CreateString(user->name));
-    }
+    cJSON_AddItemToObject(root, "Username", cJSON_CreateString(user->username));
+
     if (user->fingerprint != NULL) {
         cJSON_AddItemToObject(root, "Fingerprint", cJSON_CreateString(user->fingerprint));
     }

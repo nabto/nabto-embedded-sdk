@@ -558,7 +558,7 @@ void print_iam_state(struct nm_iam_state* state)
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &state->users)
     {
-        printf("User: %s, fingerprint: %s" NEWLINE, user->id, user->fingerprint);
+        printf("User: %s, fingerprint: %s" NEWLINE, user->username, user->fingerprint);
     }
 }
 

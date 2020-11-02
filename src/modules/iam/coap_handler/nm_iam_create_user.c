@@ -31,31 +31,36 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* name = NULL;
+    char* username = NULL;
 
-    nm_iam_cbor_decode_kv_string(&value, "Name", &name);
+    nm_iam_cbor_decode_kv_string(&value, "Username", &username);
 
-    char* userName = nm_iam_make_user_name(handler->iam, name);
-    free(name);
+    if (username == NULL || !nm_iam_user_validate_username(username)) {
+        nabto_device_coap_error_response(request, 400, "Bad request");
+        return;
+    }
 
-    char* userId = nm_iam_make_user_id(handler->iam);
-    struct nm_iam_user* user = nm_iam_user_new(userId);
-    free(userId);
+    if (nm_iam_find_user(handler->iam, username) != NULL) {
+        nabto_device_coap_error_response(request, 409, "Conflict");
+        free(username);
+        return;
+    }
+
+    struct nm_iam_user* user = nm_iam_user_new(username);
 
     char* sct;
     if (nabto_device_create_server_connect_token(handler->iam->device, &sct) != NABTO_DEVICE_EC_OK ||
-        !nm_iam_user_set_server_connect_token(user, sct) ||
-        !nm_iam_user_set_name(user, userName)) {
+        !nm_iam_user_set_server_connect_token(user, sct)) {
 
         nabto_device_coap_error_response(request, 500, "Server error");
 
         nabto_device_string_free(sct);
-        free(userName);
+        free(username);
         nm_iam_user_free(user);
         return;
     }
     nabto_device_string_free(sct);
-    free(userName);
+    free(username);
 
     nm_iam_add_user(handler->iam, user);
 

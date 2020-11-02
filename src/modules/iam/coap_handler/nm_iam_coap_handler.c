@@ -131,8 +131,8 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     CborEncoder map;
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
 
-    cbor_encode_text_stringz(&map, "Id");
-    cbor_encode_text_stringz(&map, user->id);
+    cbor_encode_text_stringz(&map, "Username");
+    cbor_encode_text_stringz(&map, user->username);
 
     if (user->role != NULL) {
         cbor_encode_text_stringz(&map, "Role");
@@ -142,11 +142,6 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     if (user->fingerprint != NULL) {
         cbor_encode_text_stringz(&map, "Fingerprint");
         cbor_encode_text_stringz(&map, user->fingerprint);
-    }
-
-    if (user->name != NULL) {
-        cbor_encode_text_stringz(&map, "Name");
-        cbor_encode_text_stringz(&map, user->name);
     }
 
     if (user->serverConnectToken != NULL) {

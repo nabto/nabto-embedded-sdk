@@ -17,15 +17,15 @@ NabtoDeviceError nm_iam_delete_user_init(struct nm_iam_coap_handler* handler, Na
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    const char* userId = nabto_device_coap_request_get_parameter(request, "user");
-    if (userId == NULL) {
+    const char* username = nabto_device_coap_request_get_parameter(request, "user");
+    if (username == NULL) {
         nabto_device_coap_error_response(request, 500, NULL);
         return;
     }
 
     struct nn_string_map attributes;
     nn_string_map_init(&attributes);
-    nn_string_map_insert(&attributes, "IAM:UserId", userId);
+    nn_string_map_insert(&attributes, "IAM:Username", username);
 
     if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:DeleteUser", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
@@ -34,7 +34,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
     nn_string_map_deinit(&attributes);
 
-    nm_iam_delete_user(handler->iam, userId);
+    nm_iam_delete_user(handler->iam, username);
 
     nabto_device_coap_response_set_code(request, 202);
     nabto_device_coap_response_ready(request);
