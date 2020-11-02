@@ -30,7 +30,7 @@ struct nm_iam_role* nm_iam_role_from_json(const cJSON* json)
 
 struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
 {
-    cJSON* username = cJSON_GetObjectItem(json, "Name");
+    cJSON* username = cJSON_GetObjectItem(json, "Username");
     cJSON* serverConnectToken = cJSON_GetObjectItem(json, "ServerConnectToken");
     cJSON* fingerprint = cJSON_GetObjectItem(json, "Fingerprint");
     cJSON* role = cJSON_GetObjectItem(json, "Role");

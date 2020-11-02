@@ -329,7 +329,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
         }
     }
 
-    if (username != NULL) {
+    if (username == NULL) {
         return NULL;
     }
 
@@ -455,7 +455,12 @@ bool nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* 
     struct nm_iam_user* user = nm_iam_find_user(iam, username);
     struct nm_iam_role* role = nm_iam_find_role(iam, roleId);
 
-    if (user == NULL || role == NULL) {
+    if (user == NULL) {
+        NN_LOG_INFO(iam->logger, LOGM, "The username %s does not exists", username);
+        return false;
+    }
+    if (role == NULL) {
+        NN_LOG_INFO(iam->logger, LOGM, "The role %s does not exists", roleId);
         return false;
     }
 
