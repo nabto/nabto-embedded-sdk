@@ -84,13 +84,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    size_t payloadSize = encode_response(handler->iam, NULL, 0, nabto_device_connection_is_local(handler->device, conn));
+    size_t payloadSize = encode_response(handler->iam, NULL, 0, conn);
     uint8_t* payload = malloc(payloadSize);
     if (payload == NULL) {
         return;
     }
 
-    encode_response(handler->iam, payload, payloadSize, nabto_device_connection_is_local(handler->device, conn));
+    encode_response(handler->iam, payload, payloadSize, conn);
 
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
