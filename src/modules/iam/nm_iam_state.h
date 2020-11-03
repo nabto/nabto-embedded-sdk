@@ -10,6 +10,7 @@ extern "C" {
 
 struct nm_iam_user {
     char* username;
+    char* displayName;
     char* role;
     char* password;
     char* fingerprint;

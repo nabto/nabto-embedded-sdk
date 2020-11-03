@@ -29,6 +29,9 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
     if (user->fingerprint != NULL) {
         cJSON_AddItemToObject(root, "Fingerprint", cJSON_CreateString(user->fingerprint));
     }
+    if (user->displayName != NULL) {
+        cJSON_AddItemToObject(root, "DisplayName", cJSON_CreateString(user->displayName));
+    }
     if (user->serverConnectToken != NULL) {
         cJSON_AddItemToObject(root, "ServerConnectToken", cJSON_CreateString(user->serverConnectToken));
     }

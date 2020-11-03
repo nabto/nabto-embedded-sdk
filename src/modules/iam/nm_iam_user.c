@@ -104,6 +104,22 @@ bool nm_iam_user_set_username(struct nm_iam_user* user, const char* username)
     return true;
 }
 
+bool nm_iam_user_set_display_name(struct nm_iam_user* user, const char* displayName)
+{
+    if (displayName == NULL) {
+        free(user->displayName);
+        user->displayName = NULL;
+        return true;
+    }
+    char* tmp = strdup(displayName);
+    if (tmp == NULL) {
+        return false;
+    }
+    free(user->displayName);
+    user->displayName = tmp;
+    return true;
+}
+
 bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId)
 {
     if (roleId == NULL) {

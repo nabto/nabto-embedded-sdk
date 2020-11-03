@@ -22,6 +22,7 @@ set(src
   coap_handler/nm_iam_list_roles.c
   coap_handler/nm_iam_set_user_role.c
   coap_handler/nm_iam_set_user_name.c
+  coap_handler/nm_iam_set_user_display_name.c
   coap_handler/nm_iam_set_user_fingerprint.c
   coap_handler/nm_iam_set_user_sct.c
   coap_handler/nm_iam_set_user_password.c

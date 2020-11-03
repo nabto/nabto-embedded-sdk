@@ -100,6 +100,7 @@ void nm_iam_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapIamRolesGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetRoleHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetUsernameHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetDisplayNameHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
@@ -234,6 +235,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
     nm_iam_set_user_role_init(&iam->coapIamUsersUserSetRoleHandler, iam->device, iam);
     nm_iam_set_user_username_init(&iam->coapIamUsersUserSetUsernameHandler, iam->device, iam);
+    nm_iam_set_user_display_name_init(&iam->coapIamUsersUserSetDisplayNameHandler, iam->device, iam);
     nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
     nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
@@ -254,6 +256,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamRolesGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetRoleHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetUsernameHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetDisplayNameHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);

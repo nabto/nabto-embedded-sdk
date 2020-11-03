@@ -134,6 +134,11 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     cbor_encode_text_stringz(&map, "Username");
     cbor_encode_text_stringz(&map, user->username);
 
+    if (user->displayName != NULL) {
+        cbor_encode_text_stringz(&map, "DisplayName");
+        cbor_encode_text_stringz(&map, user->displayName);
+    }
+
     if (user->role != NULL) {
         cbor_encode_text_stringz(&map, "Role");
         cbor_encode_text_stringz(&map, user->role);

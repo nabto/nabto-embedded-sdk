@@ -31,6 +31,7 @@ struct nm_iam_role* nm_iam_role_from_json(const cJSON* json)
 struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
 {
     cJSON* username = cJSON_GetObjectItem(json, "Username");
+    cJSON* displayName = cJSON_GetObjectItem(json, "DisplayName");
     cJSON* serverConnectToken = cJSON_GetObjectItem(json, "ServerConnectToken");
     cJSON* fingerprint = cJSON_GetObjectItem(json, "Fingerprint");
     cJSON* role = cJSON_GetObjectItem(json, "Role");
@@ -42,6 +43,10 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     struct nm_iam_user* user = nm_iam_user_new(username->valuestring);
     if (user == NULL) {
         return NULL;
+    }
+
+    if (cJSON_IsString(displayName)) {
+        nm_iam_user_set_display_name(user, displayName->valuestring);
     }
 
     if (cJSON_IsString(fingerprint)) {
