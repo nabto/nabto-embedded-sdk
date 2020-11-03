@@ -27,11 +27,11 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
 
     if (nm_iam_pairing_is_password_possible(iam, conn)) {
-        cbor_encode_text_stringz(&array, "Password");
+        cbor_encode_text_stringz(&array, "PasswordOpen");
     }
 
     if (nm_iam_pairing_is_local_possible(iam, conn)) {
-        cbor_encode_text_stringz(&array, "Local");
+        cbor_encode_text_stringz(&array, "LocalOpen");
     }
 
     if (nm_iam_pairing_is_password_invite_possible(iam, conn)) {

@@ -17,7 +17,7 @@ bool nm_iam_pairing_is_local_possible(struct nm_iam* iam, NabtoDeviceConnectionR
     if (!nabto_device_connection_is_local(iam->device, ref)) {
         return false;
     }
-    if (!nm_iam_check_access(iam, ref, "IAM:PairingLocal", NULL)) {
+    if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalOpen", NULL)) {
         return false;
     }
     const char* role = nm_iam_pairing_get_role(iam);
@@ -29,7 +29,7 @@ bool nm_iam_pairing_is_local_possible(struct nm_iam* iam, NabtoDeviceConnectionR
 
 bool nm_iam_pairing_is_password_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
 {
-    if (!nm_iam_check_access(iam, ref, "IAM:PairingPassword", NULL)) {
+    if (!nm_iam_check_access(iam, ref, "IAM:PairingPasswordOpen", NULL)) {
         return false;
     }
     if (iam->state->globalPairingPassword == NULL) {

@@ -9,16 +9,16 @@
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
-NabtoDeviceError nm_iam_pairing_local_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
+NabtoDeviceError nm_iam_pairing_local_open_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "iam", "pairing", "local", NULL };
+    const char* paths[] = { "iam", "pairing", "local-open", NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_POST, paths, &handle_request);
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingLocal", NULL) || !nabto_device_connection_is_local(handler->device, ref)) {
+    if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingLocalOpen", NULL) || !nabto_device_connection_is_local(handler->device, ref)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
