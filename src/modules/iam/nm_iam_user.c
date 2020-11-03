@@ -38,6 +38,7 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 void nm_iam_user_free(struct nm_iam_user* user)
 {
     free(user->username);
+    free(user->displayName);
     free(user->fingerprint);
     free(user->serverConnectToken);
     free(user->role);
