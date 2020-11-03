@@ -5,5 +5,6 @@
 
 bool nm_iam_pairing_is_local_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
 bool nm_iam_pairing_is_password_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
+bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
 
 #endif

@@ -41,3 +41,18 @@ bool nm_iam_pairing_is_password_possible(struct nm_iam* iam, NabtoDeviceConnecti
     }
     return true;
 }
+
+bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
+{
+    if (!nm_iam_check_access(iam, ref, "IAM:PairingPasswordInvite", NULL)) {
+        return false;
+    }
+
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &iam->state->users) {
+        if (user->password != NULL) {
+            return true;
+        }
+    }
+    return false;
+}

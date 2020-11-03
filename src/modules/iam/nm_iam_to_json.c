@@ -35,6 +35,9 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
     if (user->serverConnectToken != NULL) {
         cJSON_AddItemToObject(root, "ServerConnectToken", cJSON_CreateString(user->serverConnectToken));
     }
+    if (user->password != NULL) {
+        cJSON_AddItemToObject(root, "Password", cJSON_CreateString(user->password));
+    }
 
     if (user->role != NULL) {
         cJSON_AddItemToObject(root, "Role", cJSON_CreateString(user->role));

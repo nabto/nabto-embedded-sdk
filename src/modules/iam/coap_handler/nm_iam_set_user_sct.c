@@ -54,6 +54,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         free(sct);
         return;
     }
+    nm_iam_user_has_changed(handler->iam, username);
+    nabto_device_add_server_connect_token(handler->iam->device, sct);
+    // TODO update SCT in the device.
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
     free(sct);
