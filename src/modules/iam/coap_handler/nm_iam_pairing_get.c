@@ -2,6 +2,7 @@
 #include "nm_iam_coap_handler.h"
 
 #include "../nm_iam.h"
+#include "../nm_iam_internal.h"
 #include "../nm_iam_pairing.h"
 
 #include <stdlib.h>
@@ -40,6 +41,10 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
 
     if (nm_iam_pairing_is_local_invite_possible(iam, conn)) {
         cbor_encode_text_stringz(&array, "LocalInvite"); 
+    }
+
+    if (nm_iam_pairing_is_local_initial_possible(iam, conn)) {
+        cbor_encode_text_stringz(&array, "LocalInitial"); 
     }
 
     cbor_encoder_close_container(&map, &array);

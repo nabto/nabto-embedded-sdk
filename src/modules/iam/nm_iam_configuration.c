@@ -48,7 +48,7 @@ void nm_iam_configuration_free(struct nm_iam_configuration* conf)
     free(conf);
 }
 
-bool set_role(char** dst, const char* role)
+bool set_string(char** dst, const char* role)
 {
     if (role == NULL) {
         free(*dst);
@@ -65,20 +65,24 @@ bool set_role(char** dst, const char* role)
 
 bool nm_iam_configuration_set_first_user_role(struct nm_iam_configuration* conf, const char* role)
 {
-    return set_role(&conf->firstUserRole, role);
+    return set_string(&conf->firstUserRole, role);
 }
 
 bool nm_iam_configuration_set_secondary_user_role(struct nm_iam_configuration* conf, const char* role)
 {
-    return set_role(&conf->secondaryUserRole, role);
+    return set_string(&conf->secondaryUserRole, role);
 }
 
 
 bool nm_iam_configuration_set_unpaired_role(struct nm_iam_configuration* conf, const char* role)
 {
-    return set_role(&conf->unpairedRole, role);
+    return set_string(&conf->unpairedRole, role);
 }
 
+bool nm_iam_configuration_set_initial_user_username(struct nm_iam_configuration* conf, const char* username)
+{
+    return set_string(&conf->initialUserUsername, username);
+}
 
 bool nm_iam_configuration_add_policy(struct nm_iam_configuration* conf, struct nm_iam_policy* policy)
 {

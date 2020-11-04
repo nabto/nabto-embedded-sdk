@@ -1,4 +1,6 @@
 #include "nm_iam_pairing.h"
+#include "nm_iam_internal.h"
+#include "nm_iam_user.h"
 
 const char* nm_iam_pairing_get_role(struct nm_iam* iam) {
     bool firstUser = nn_llist_empty(&iam->state->users);
@@ -70,4 +72,41 @@ bool nm_iam_pairing_is_local_invite_possible(struct nm_iam* iam, NabtoDeviceConn
         }
     }
     return false;
+}
+
+bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref) 
+{
+    if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalInitial", NULL)) {
+        return false;
+    }
+
+    const char* initialUserUsername = iam->conf->initialUserUsername;
+    struct nm_iam_user* initialUser = nm_iam_find_user_by_username(iam, initialUserUsername);
+    if (initialUser == NULL) {
+        return false;
+    } else {
+        if (nm_iam_pairing_is_user_paired(initialUser)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, NabtoDeviceConnectionRef ref)
+{
+    NabtoDeviceError ec;
+    char* fingerprint;
+    ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
+    if (ec) {
+        return false;
+    }
+
+    bool status = nm_iam_user_set_fingerprint(user, fingerprint);
+    nabto_device_string_free(fingerprint);
+    return status;
+}
+
+bool nm_iam_pairing_is_user_paired(struct nm_iam_user* user)
+{
+    return (user->fingerprint != NULL);
 }

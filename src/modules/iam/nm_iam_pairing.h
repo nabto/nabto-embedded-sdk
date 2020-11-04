@@ -7,5 +7,10 @@ bool nm_iam_pairing_is_local_possible(struct nm_iam* iam, NabtoDeviceConnectionR
 bool nm_iam_pairing_is_password_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
 bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
 bool nm_iam_pairing_is_local_invite_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
+bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
+
+// take the fingerprint from the connection and load it into the user.
+bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, NabtoDeviceConnectionRef ref);
+bool nm_iam_pairing_is_user_paired(struct nm_iam_user* user);
 
 #endif

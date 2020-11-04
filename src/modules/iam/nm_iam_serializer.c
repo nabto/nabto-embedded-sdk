@@ -117,6 +117,7 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
     cJSON* unpairedRole = cJSON_GetObjectItem(config, "UnpairedRole");
     cJSON* firstUserRole = cJSON_GetObjectItem(config, "FirstUserRole");
     cJSON* secondaryUserRole = cJSON_GetObjectItem(config, "SecondaryUserRole");
+    cJSON* initialUserUsername = cJSON_GetObjectItem(config, "InitialUserUsername");
 
     if (unpairedRole) {
         if (!cJSON_IsString(unpairedRole)) {
@@ -140,6 +141,14 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
         } else {
             nm_iam_configuration_set_secondary_user_role(conf, secondaryUserRole->valuestring);
         }
+    }
+
+    if (initialUserUsername) {
+        if (!cJSON_IsString(initialUserUsername)) {
+            NN_LOG_ERROR(logger, LOGM, "Config.InitialUserUsername has the wrong format.");
+        } else {
+            nm_iam_configuration_set_initial_user_username(conf, initialUserUsername->valuestring);
+        } 
     }
 
     cJSON_Delete(root);
