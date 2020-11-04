@@ -91,6 +91,7 @@ void nm_iam_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapPairingPasswordOpenPostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingPasswordInvitePostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingLocalOpenPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingLocalInvitePostHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
@@ -228,6 +229,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_pairing_password_open_init(&iam->coapPairingPasswordOpenPostHandler, iam->device, iam);
     nm_iam_pairing_password_invite_init(&iam->coapPairingPasswordInvitePostHandler, iam->device, iam);
     nm_iam_pairing_local_open_init(&iam->coapPairingLocalOpenPostHandler, iam->device, iam);
+    nm_iam_pairing_local_invite_init(&iam->coapPairingLocalInvitePostHandler, iam->device, iam);
 
     nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
@@ -249,6 +251,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordOpenPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordInvitePostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalOpenPostHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingLocalInvitePostHandler);
 
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);

@@ -20,6 +20,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 {
     struct nm_iam* iam = handler->iam;
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
+    
     if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingPasswordInvite", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
@@ -45,6 +46,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
                 if (!nm_iam_user_set_fingerprint(user, fp)) {
                     nabto_device_coap_error_response(request, 500, "Insufficient resources");
                 } else {
+                    nm_iam_user_set_password(user, NULL);
                     nm_iam_user_has_changed(iam, username);
                     nabto_device_coap_response_set_code(request, 201);
                     nabto_device_coap_response_ready(request);

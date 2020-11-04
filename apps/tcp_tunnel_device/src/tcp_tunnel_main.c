@@ -471,7 +471,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             printf("# Admin SCT:         %s" NEWLINE, adminUser->serverConnectToken);
         }
         // format the pairing string over the next couple of lines
-        printf("# Admin Pair Str:    p=%s,d=%s,u=%s", dc.productId, dc.deviceId, adminUser->username);
+        printf("# Admin Pair string: p=%s,d=%s,u=%s", dc.productId, dc.deviceId, adminUser->username);
         if (adminUser->password != NULL) {
             printf(",pwd=%s",adminUser->password);
         }
@@ -490,7 +490,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
     if (!args->randomPorts) {
-        printf("# Local UDP Port     %d" NEWLINE, 5592);
+        printf("# Local UDP Port:    %d" NEWLINE, 5592);
     }
     printf("######## Configured TCP Services ########" NEWLINE);
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);

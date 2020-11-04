@@ -38,6 +38,10 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
         cbor_encode_text_stringz(&array, "PasswordInvite");
     }
 
+    if (nm_iam_pairing_is_local_invite_possible(iam, conn)) {
+        cbor_encode_text_stringz(&array, "LocalInvite"); 
+    }
+
     cbor_encoder_close_container(&map, &array);
 
     const char* nabtoVersion = nabto_device_version();
