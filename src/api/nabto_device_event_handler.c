@@ -137,7 +137,9 @@ void nabto_device_listener_stop_all(struct nabto_device_context* dev)
     struct nabto_device_listener* listener;
     NN_LLIST_FOREACH(listener, &dev->listeners)
     {
+        nabto_device_threads_mutex_lock(listener->dev->eventMutex);
         nabto_device_listener_stop_internal(listener);
+        nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
     }
 }
 
