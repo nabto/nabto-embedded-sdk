@@ -1,6 +1,7 @@
 #include "tcp_tunnel_state.h"
 
 #include <modules/iam/nm_iam_serializer.h>
+#include <modules/iam/nm_iam_user.h>
 
 #include <apps/common/string_file.h>
 #include <apps/common/random_string.h>
@@ -42,8 +43,15 @@ bool load_tcp_tunnel_state(struct nm_iam_state* state, const char* stateFile, st
 bool create_default_tcp_tunnel_state(const char* stateFile)
 {
     struct nm_iam_state* state = nm_iam_state_new();
-    nm_iam_state_set_pairing_password(state, random_password(12));
-    nm_iam_state_set_pairing_server_connect_token(state, random_password(12));
+    
+    struct nm_iam_user* admin = nm_iam_user_new("admin");
+
+    nm_iam_user_set_role(admin, "Administrator");
+    nm_iam_user_set_password(admin, random_password(12));
+    nm_iam_user_set_server_connect_token(admin, random_password(12));
+
+    nm_iam_state_add_user(state, admin);
+
     return write_state_to_file(stateFile, state);
 }
 

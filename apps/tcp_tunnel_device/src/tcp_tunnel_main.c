@@ -71,8 +71,6 @@ struct args {
     char* homeDir;
     bool randomPorts;
     bool reset;
-    bool iamConfigAutonomous;
-    bool iamConfigInvite;
 };
 
 
@@ -192,14 +190,6 @@ static bool parse_args(int argc, char** argv, struct args* args)
 
     if (gopt(options, OPTION_RESET)) {
         args->reset = true;
-    }
-
-    if (gopt(options, OPTION_AUTO)) {
-        args->iamConfigAutonomous = true;
-    }
-
-    if (gopt(options, OPTION_INVITE)) {
-        args->iamConfigInvite = true;
     }
 
     if (gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel)) {
@@ -391,14 +381,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
 
     if (!iam_config_exists(tunnel->iamConfigFile)) {
-        if (args->iamConfigAutonomous) {
-            iam_config_create_default_auto(tunnel->iamConfigFile);
-        } else if (args->iamConfigInvite) {
-            iam_config_create_default_invite(tunnel->iamConfigFile);
-        } else {
-            printf("No iam configuration file exits %s and neither the option --auto or --invite was specified." NEWLINE, tunnel->iamConfigFile);
-            return false;
-        }
+        iam_config_create_default(tunnel->iamConfigFile);
     }
 
     if (!iam_config_load(iamConfig, tunnel->iamConfigFile, &logger)) {
@@ -440,13 +423,14 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);
 
-    if (tcpTunnelState->globalPairingPassword != NULL) {
-        tunnel->pairingPassword = strdup(tcpTunnelState->globalPairingPassword);
-    }
-
-    if (tcpTunnelState->globalSct != NULL) {
-        tunnel->pairingServerConnectToken = strdup(tcpTunnelState->globalSct);
-    }
+    struct nm_iam_user* adminUser;
+    struct nm_iam_user* user = NULL;
+    NN_LLIST_FOREACH(user, &tcpTunnelState->users) {
+        if (user->username != NULL && strcmp(user->username, "admin") == 0) {
+            adminUser = user;
+            break;
+        }
+    }    
 
     if(!nm_iam_load_configuration(&iam, iamConfig)) {
         printf("Could not load iam configuration" NEWLINE);
@@ -464,8 +448,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint(device, &deviceFingerprint);
 
-    char* pairingString = generate_pairing_string(dc.productId, dc.deviceId, tcpTunnelState->globalPairingPassword, tcpTunnelState->globalSct);
-
     if (args->randomPorts) {
         nabto_device_set_local_port(device, 0);
         nabto_device_set_p2p_port(device, 0);
@@ -474,9 +456,36 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);
     printf("# Device ID:         %s" NEWLINE, dc.deviceId);
-    printf("# Pairing password:  %s" NEWLINE, tcpTunnelState->globalPairingPassword);
-    printf("# Paring SCT:        %s" NEWLINE, tcpTunnelState->globalSct);
-    printf("# Pairing string:    %s" NEWLINE, pairingString);
+
+    if (adminUser && 
+        adminUser->fingerprint == NULL)
+    {
+
+        printf("# " NEWLINE);
+        printf("# The admin user has not been paired yet." NEWLINE);
+        printf("# Admin Usermame:    %s" NEWLINE, adminUser->username);
+        if (adminUser->password != NULL) {
+            printf("# Admin Password:    %s" NEWLINE, adminUser->password);
+        }
+        if (adminUser->serverConnectToken != NULL) {
+            printf("# Admin SCT:         %s" NEWLINE, adminUser->serverConnectToken);
+        }
+        // format the pairing string over the next couple of lines
+        printf("# Admin Pair Str:    p=%s,d=%s,u=%s", dc.productId, dc.deviceId, adminUser->username);
+        if (adminUser->password != NULL) {
+            printf(",pwd=%s",adminUser->password);
+        }
+        if (adminUser->serverConnectToken != NULL) {
+            printf(",sct=%s", adminUser->serverConnectToken);
+        }
+        printf("# " NEWLINE);
+
+    } else {
+        printf("# " NEWLINE);
+        printf("# The device is paired with an administrator. To get access" NEWLINE);
+        printf("# ask the administrator for an user account on the device." NEWLINE);
+    }
+
     printf("# " NEWLINE);
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
     printf("# Version:           %s" NEWLINE, nabto_device_version());

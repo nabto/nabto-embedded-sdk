@@ -29,7 +29,7 @@ bool iam_config_load(struct nm_iam_configuration* iamConfig, const char* iamConf
     return true;
 }
 
-bool iam_config_create_default_auto(const char* iamConfigFile)
+bool iam_config_create_default(const char* iamConfigFile)
 {
     struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
 
@@ -39,109 +39,6 @@ bool iam_config_create_default_auto(const char* iamConfigFile)
         policy = nm_iam_configuration_policy_new("Pairing");
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordOpen");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingLocalOpen");
-        nm_iam_configuration_add_policy(iamConfig, policy);
-    }
-
-    {
-        policy = nm_iam_configuration_policy_new("Tunnelling");
-        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(stmt, "TcpTunnel:GetService");
-        nm_iam_configuration_statement_add_action(stmt, "TcpTunnel:Connect");
-        nm_iam_configuration_statement_add_action(stmt, "TcpTunnel:ListServices");
-        nm_iam_configuration_add_policy(iamConfig, policy);
-    }
-
-    {
-        policy = nm_iam_configuration_policy_new("ManageUsers");
-        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserRole");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
-        nm_iam_configuration_add_policy(iamConfig, policy);
-    }
-
-    {
-        policy = nm_iam_configuration_policy_new("ManageOwnUser");
-        {
-            stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
-            nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
-            nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
-            struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:Username");
-            nm_iam_configuration_condition_add_value(c, "${Connection:Username}");
-        }
-        {
-            stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
-            nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
-        }
-        nm_iam_configuration_add_policy(iamConfig, policy);
-    }
-
-    struct nm_iam_role* r;
-    {
-        r = nm_iam_configuration_role_new("Unpaired");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_add_role(iamConfig, r);
-    }
-
-    {
-        r = nm_iam_configuration_role_new("Admin");
-        nm_iam_configuration_role_add_policy(r, "ManageUsers");
-        nm_iam_configuration_role_add_policy(r, "Tunnelling");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_add_role(iamConfig, r);
-    }
-
-    {
-        r = nm_iam_configuration_role_new("Standard");
-        nm_iam_configuration_role_add_policy(r, "Tunnelling");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_add_role(iamConfig, r);
-    }
-
-    {
-        r = nm_iam_configuration_role_new("Guest");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_add_role(iamConfig, r);
-    }
-
-    nm_iam_configuration_set_unpaired_role(iamConfig, "Unpaired");
-    nm_iam_configuration_set_first_user_role(iamConfig, "Admin");
-    nm_iam_configuration_set_secondary_user_role(iamConfig, "Guest");
-
-    char* str;
-    if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str)) {
-        nm_iam_configuration_free(iamConfig);
-        return false;
-    }
-
-    if(!string_file_save(iamConfigFile, str)) {
-        nm_iam_serializer_string_free(str);
-        nm_iam_configuration_free(iamConfig);
-        return false;
-    }
-
-    nm_iam_serializer_string_free(str);
-    nm_iam_configuration_free(iamConfig);
-    return true;
-}
-
-bool iam_config_create_default_invite(const char* iamConfigFile)
-{
-    struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
-
-    struct nm_iam_policy* policy;
-    struct nm_iam_statement* stmt;
-    {
-        policy = nm_iam_configuration_policy_new("Pairing");
-        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordOpen");
         nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordInvite");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
@@ -165,6 +62,7 @@ bool iam_config_create_default_invite(const char* iamConfigFile)
         nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
         nm_iam_configuration_statement_add_action(stmt, "IAM:CreateUser");
         nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserPassword");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserFriendlyName");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
@@ -174,6 +72,7 @@ bool iam_config_create_default_invite(const char* iamConfigFile)
             stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
             nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
             nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser");
+            nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserFriendlyName");
             struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(stmt, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:Username");
             nm_iam_configuration_condition_add_value(c, "${Connection:Username}");
         }
@@ -192,7 +91,7 @@ bool iam_config_create_default_invite(const char* iamConfigFile)
     }
 
     {
-        r = nm_iam_configuration_role_new("Admin");
+        r = nm_iam_configuration_role_new("Administrator");
         nm_iam_configuration_role_add_policy(r, "ManageUsers");
         nm_iam_configuration_role_add_policy(r, "Tunnelling");
         nm_iam_configuration_role_add_policy(r, "Pairing");
@@ -206,10 +105,9 @@ bool iam_config_create_default_invite(const char* iamConfigFile)
         nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
         nm_iam_configuration_add_role(iamConfig, r);
     }
-
+    
     nm_iam_configuration_set_unpaired_role(iamConfig, "Unpaired");
-    nm_iam_configuration_set_first_user_role(iamConfig, "Admin");
-
+    
     char* str;
     if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str)) {
         nm_iam_configuration_free(iamConfig);
