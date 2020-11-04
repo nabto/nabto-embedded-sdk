@@ -11,16 +11,29 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 
 NabtoDeviceError nm_iam_set_user_role_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "iam", "users", "{user}", "role", "{role}",  NULL };
+    const char* paths[] = { "iam", "users", "{user}", "role",  NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_PUT, paths, &handle_request);
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
+    CborParser parser;
+    CborValue value;
+    
     const char* username = nabto_device_coap_request_get_parameter(request, "user");
-    const char* roleId = nabto_device_coap_request_get_parameter(request, "role");
-    if (username == NULL || roleId == NULL) {
+    if (username == NULL) {
         nabto_device_coap_error_response(request, 500, NULL);
+        return;
+    }
+
+    if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
+        nabto_device_coap_error_response(request, 400, "Bad request");
+        return;
+    }
+
+    char* roleId = NULL;
+    if (!nm_iam_cbor_decode_string(&value, &roleId) || roleId == NULL) {
+        nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
 
