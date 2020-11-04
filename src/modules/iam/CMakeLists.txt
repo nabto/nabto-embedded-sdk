@@ -34,4 +34,4 @@ set(src
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam nabto_device 3rdparty_cjson 3rdparty_tinycbor nn)
+target_link_libraries(nm_iam 3rdparty_cjson 3rdparty_tinycbor nn)

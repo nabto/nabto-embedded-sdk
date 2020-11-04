@@ -56,8 +56,8 @@ target_link_libraries(embedded_unit_test
   nc_core
   dtls_server_cpp
   nm_logging_test
-  nm_iam
   nabto_device_static
+  nm_iam
   3rdparty_boost_test
   np_platform
   nm_event_queue
