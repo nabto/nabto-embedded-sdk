@@ -191,6 +191,41 @@ set(ne_communication_buffer_src
   ${root_dir}/src/modules/communication_buffer/nm_communication_buffer.c
   )
 
+set(ne_iam_src
+  ${root_dir}/src/modules/iam/nm_iam.c
+  ${root_dir}/src/modules/iam/nm_iam_role.c
+  ${root_dir}/src/modules/iam/nm_iam_user.c
+  ${root_dir}/src/modules/iam/nm_iam_to_json.c
+  ${root_dir}/src/modules/iam/nm_iam_from_json.c
+  ${root_dir}/src/modules/iam/nm_iam_auth_handler.c
+  ${root_dir}/src/modules/iam/nm_iam_pake_handler.c
+  ${root_dir}/src/modules/iam/nm_iam_configuration.c
+  ${root_dir}/src/modules/iam/nm_iam_state.c
+  ${root_dir}/src/modules/iam/nm_iam_serializer.c
+  ${root_dir}/src/modules/iam/nm_iam_pairing.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_coap_handler.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_get.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_password.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_local.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_list_users.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_get_me.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_get_user.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_create_user.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_delete_user.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_list_roles.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_role.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_name.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_display_name.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fingerprint.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_sct.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_password.c
+  ${root_dir}/src/modules/iam/policies/nm_condition.c
+  ${root_dir}/src/modules/iam/policies/nm_statement.c
+  ${root_dir}/src/modules/iam/policies/nm_policy.c
+  ${root_dir}/src/modules/iam/policies/nm_policies_from_json.c
+  ${root_dir}/src/modules/iam/policies/nm_policies_to_json.c
+  )
+
 set(ne_required_src
   ${ne_utils_src}
   ${ne_streaming_src}
