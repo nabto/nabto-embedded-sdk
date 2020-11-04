@@ -34,6 +34,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     cJSON* displayName = cJSON_GetObjectItem(json, "DisplayName");
     cJSON* serverConnectToken = cJSON_GetObjectItem(json, "ServerConnectToken");
     cJSON* fingerprint = cJSON_GetObjectItem(json, "Fingerprint");
+    cJSON* password = cJSON_GetObjectItem(json, "Password");
     cJSON* role = cJSON_GetObjectItem(json, "Role");
 
     if (!cJSON_IsString(username)) {
@@ -51,6 +52,10 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
 
     if (cJSON_IsString(fingerprint)) {
         nm_iam_user_set_fingerprint(user, fingerprint->valuestring);
+    }
+
+    if (cJSON_IsString(password)) {
+        nm_iam_user_set_password(user, password->valuestring);
     }
 
     if (cJSON_IsString(serverConnectToken)) {
