@@ -88,8 +88,9 @@ bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state)
 void nm_iam_stop(struct nm_iam* iam)
 {
     nm_iam_coap_handler_stop(&iam->coapPairingGetHandler);
-    nm_iam_coap_handler_stop(&iam->coapPairingPasswordPostHandler);
-    nm_iam_coap_handler_stop(&iam->coapPairingLocalPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingPasswordOpenPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingPasswordInvitePostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingLocalOpenPostHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
@@ -224,8 +225,9 @@ void init_coap_handlers(struct nm_iam* iam)
 {
 
     nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
-    nm_iam_pairing_password_init(&iam->coapPairingPasswordPostHandler, iam->device, iam);
-    nm_iam_pairing_local_init(&iam->coapPairingLocalPostHandler, iam->device, iam);
+    nm_iam_pairing_password_open_init(&iam->coapPairingPasswordOpenPostHandler, iam->device, iam);
+    nm_iam_pairing_password_invite_init(&iam->coapPairingPasswordInvitePostHandler, iam->device, iam);
+    nm_iam_pairing_local_open_init(&iam->coapPairingLocalOpenPostHandler, iam->device, iam);
 
     nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
@@ -244,8 +246,9 @@ void init_coap_handlers(struct nm_iam* iam)
 void deinit_coap_handlers(struct nm_iam* iam)
 {
     nm_iam_coap_handler_deinit(&iam->coapPairingGetHandler);
-    nm_iam_coap_handler_deinit(&iam->coapPairingPasswordPostHandler);
-    nm_iam_coap_handler_deinit(&iam->coapPairingLocalPostHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingPasswordOpenPostHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingPasswordInvitePostHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingLocalOpenPostHandler);
 
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
@@ -442,16 +445,19 @@ void nm_iam_delete_user(struct nm_iam* iam, const char* username)
             nn_llist_erase_node(&user->listNode);
             nm_iam_user_free(user);
 
-            if (iam->changeCallback.userChanged) {
-                iam->changeCallback.userChanged(iam, username, iam->changeCallback.userChangedData);
-            }
-
+            nm_iam_user_has_changed(iam, username);
             return;
         }
 
     }
 }
 
+void nm_iam_user_has_changed(struct nm_iam* iam, const char* username) 
+{
+    if (iam->changeCallback.userChanged) {
+        iam->changeCallback.userChanged(iam, username, iam->changeCallback.userChangedData);
+    }
+}
 
 bool nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* roleId)
 {

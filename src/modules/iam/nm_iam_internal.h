@@ -32,4 +32,7 @@ struct nm_iam_policy* nm_iam_find_policy(struct nm_iam* iam, const char* policyS
 
 struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* username);
 struct nm_iam_user* nm_iam_find_user_by_coap_request(struct nm_iam* iam, NabtoDeviceCoapRequest* request);
+
+void nm_iam_user_has_changed(struct nm_iam* iam, const char* username);
+
 #endif

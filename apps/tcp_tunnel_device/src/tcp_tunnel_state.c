@@ -51,13 +51,13 @@ bool write_state_to_file(const char* stateFile, struct nm_iam_state* state)
 {
     char* str;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
-        nm_iam_state_free(state);
+        //nm_iam_state_free(state);
         return false;
     }
 
     if(!string_file_save(stateFile, str)) {
         nm_iam_serializer_string_free(str);
-        nm_iam_state_free(state);
+        //nm_iam_state_free(state);
         return false;
     }
 

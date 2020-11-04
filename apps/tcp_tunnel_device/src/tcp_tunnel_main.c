@@ -566,7 +566,9 @@ void print_iam_state(struct nm_iam_state* state)
 void iam_user_changed(struct nm_iam* iam, const char* id, void* userData)
 {
     struct tcp_tunnel* tcpTunnel = userData;
-    save_tcp_tunnel_state(tcpTunnel->stateFile, iam->state);
+    if (!save_tcp_tunnel_state(tcpTunnel->stateFile, iam->state)) {
+        printf("Could not save tcp_tunnel state to %s", tcpTunnel->stateFile);
+    }
 }
 
 bool make_directory(const char* directory)

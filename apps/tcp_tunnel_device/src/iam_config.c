@@ -39,8 +39,8 @@ bool iam_config_create_default_auto(const char* iamConfigFile)
         policy = nm_iam_configuration_policy_new("Pairing");
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPassword");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingLocal");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordOpen");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingLocalOpen");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
@@ -141,7 +141,8 @@ bool iam_config_create_default_invite(const char* iamConfigFile)
         policy = nm_iam_configuration_policy_new("Pairing");
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing");
-        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPassword");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordOpen");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordInvite");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 

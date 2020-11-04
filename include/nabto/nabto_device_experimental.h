@@ -118,6 +118,7 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
  * @return username used for password authentication
  *         NULL if not authenticated
  */
+// TODO, we have no way to determine the lifetime of the connection. The username should be copied out instead.
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref);
 
