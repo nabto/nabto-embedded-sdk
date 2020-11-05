@@ -8,6 +8,28 @@
 extern "C" {
 #endif
 
+/*************************
+ * Structure Definitions *
+ *************************/
+
+/**
+ * Enum defining the effect of statements. The enum is also used to
+ * define the result of an evaluated statement. This is the purpose of
+ * the NO_MATCH and ERROR values. Only ALLOW and DENY should be used
+ * as configuration for a statement.
+ *
+ * @param ALLOW    Actions in this statement should be allowed
+ * JSON representation: { "Effect": "Allow" }
+ *
+ * @param DENY     Actions in this statement should be denied
+ * JSON representation: { "Effect": "Deny" }
+ *
+ * @param NO_MATCH Internal only: used to indicate the action was not covered by the statement
+ * JSON representation: N/A, not used for configuration
+ *
+ * @param ERROR    Internal only: an error occured during evaluation
+ * JSON representation: N/A, not used for configuration
+ */
 enum nm_iam_effect {
     NM_IAM_EFFECT_ALLOW,
     NM_IAM_EFFECT_DENY,
@@ -15,6 +37,30 @@ enum nm_iam_effect {
     NM_IAM_EFFECT_ERROR
 };
 
+/**
+ * Enum defining how to match a condition. When matching, a list of
+ * attributes are provided which is matched with the values configured
+ * in the condition. A condition is considered a match if an attribute
+ * with the same key as the condition key is provided and its value
+ * matches any value of the condition. That is eg. if using
+ * STRING_EQUALS, the attribute matching the condition key must be
+ * equal to one of the condition values. Whereas with
+ * STRING_NOT_EQUALS, the attribute value must not be equal to any of
+ * the condition values.
+ *
+ * To simplify the internal structure all values are stored as strings.
+ *
+ * JSON representations:
+ * @param STRING_EQUALS               {"StringEquals": {"<key>": [ "value1", ...]}}
+ * @param STRING_NOT_EQUALS           {"StringNotEquals": {"<key>": [ "value1", ...]}}
+ * @param NUMERIC_EQUALS              {"NumericEquals": {"<key>": [ "42.3"]}}
+ * @param NUMERIC_NOT_EQUALS          {"NumericNotEquals": {"<key>": [ "42.3"]}}
+ * @param NUMERIC_LESS_THAN           {"NumericLessThan": {"<key>": [ "42.3"]}}
+ * @param NUMERIC_LESS_THAN_EQUALS    {"NumericLessThanEquals": {"<key>": [ "42.3"]}}
+ * @param NUMERIC_GREATER_THAN        {"NumericGreaterThan": {"<key>": [ "42.3"]}}
+ * @param NUMERIC_GREATER_THAN_EQUALS {"NumericGreaterThanEquals": {"<key>": [ "42.3"]}}
+ * @param BOOL                        {"Bool": {"<key>": [ "true" || "false"]}}
+ */
 enum nm_iam_condition_operator {
     NM_IAM_CONDITION_OPERATOR_STRING_EQUALS,
     NM_IAM_CONDITION_OPERATOR_STRING_NOT_EQUALS,
@@ -26,6 +72,7 @@ enum nm_iam_condition_operator {
     NM_IAM_CONDITION_OPERATOR_NUMERIC_GREATER_THAN_EQUALS,
     NM_IAM_CONDITION_OPERATOR_BOOL
 };
+
 
 struct nm_iam_condition {
     enum nm_iam_condition_operator op; // match operator

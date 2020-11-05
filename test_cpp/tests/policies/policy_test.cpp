@@ -41,7 +41,7 @@ std::string allowDenyPolicy = R"(
 
 } // namespace
 
-BOOST_AUTO_TEST_SUITE(policies)
+BOOST_AUTO_TEST_SUITE(policy)
 
 BOOST_AUTO_TEST_CASE(deny_ssh)
 {

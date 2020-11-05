@@ -31,10 +31,10 @@ set(test_src
   tests/iam/serializer.cpp
   tests/policies/condition_test.cpp
   tests/policies/condition_json_test.cpp
+  tests/policies/statement_test.cpp
   tests/policies/statement_json_test.cpp
-  tests/policies/statement_eval_test.cpp
+  tests/policies/policy_test.cpp
   tests/policies/policy_json_test.cpp
-  tests/policies/policy_deny_test.cpp
   tests/dns/dns_test.cpp
   tests/local_ping/local_ping_test.cpp
   ../src/api_test/nabto_device_test_logging.c
