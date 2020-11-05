@@ -41,6 +41,7 @@ class AttachTest {
 
     ~AttachTest()
     {
+        tp_.stop();
         nc_attacher_deinit(&attach_);
         nc_coap_client_deinit(&coapClient_);
         nc_udp_dispatch_deinit(&udpDispatch_);
