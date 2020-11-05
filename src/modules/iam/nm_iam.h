@@ -43,7 +43,6 @@ struct nm_iam {
     struct nm_iam_coap_handler coapPairingPasswordOpenPostHandler;
     struct nm_iam_coap_handler coapPairingPasswordInvitePostHandler;
     struct nm_iam_coap_handler coapPairingLocalOpenPostHandler;
-    struct nm_iam_coap_handler coapPairingLocalInvitePostHandler;
     struct nm_iam_coap_handler coapPairingLocalInitialPostHandler;
     struct nm_iam_coap_handler coapIamMeGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserGetHandler;

@@ -50,6 +50,9 @@ bool create_default_tcp_tunnel_state(const char* stateFile)
     nm_iam_user_set_password(admin, random_password(12));
     nm_iam_user_set_server_connect_token(admin, random_password(12));
 
+    nm_iam_state_set_pairing_password(state, random_password(12));
+    nm_iam_state_set_pairing_server_connect_token(state, random_password(12));
+
     nm_iam_state_add_user(state, admin);
 
     return write_state_to_file(stateFile, state);

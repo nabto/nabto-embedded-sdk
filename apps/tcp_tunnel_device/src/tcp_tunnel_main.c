@@ -462,28 +462,39 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     {
 
         printf("# " NEWLINE);
-        printf("# The admin user has not been paired yet." NEWLINE);
-        printf("# Admin Usermame:    %s" NEWLINE, adminUser->username);
+        printf("# The initial user has not been paired yet." NEWLINE);
+        printf("# Initial Pairing Usermame:  %s" NEWLINE, adminUser->username);
         if (adminUser->password != NULL) {
-            printf("# Admin Password:    %s" NEWLINE, adminUser->password);
+            printf("# Initial Pairing Password:  %s" NEWLINE, adminUser->password);
         }
         if (adminUser->serverConnectToken != NULL) {
-            printf("# Admin SCT:         %s" NEWLINE, adminUser->serverConnectToken);
+            printf("# Initial Pairing SCT:       %s" NEWLINE, adminUser->serverConnectToken);
         }
         // format the pairing string over the next couple of lines
-        printf("# Admin Pair string: p=%s,d=%s,u=%s", dc.productId, dc.deviceId, adminUser->username);
+        printf("# Initial Pairing String:    p=%s,d=%s,u=%s", dc.productId, dc.deviceId, adminUser->username);
         if (adminUser->password != NULL) {
             printf(",pwd=%s",adminUser->password);
         }
         if (adminUser->serverConnectToken != NULL) {
             printf(",sct=%s", adminUser->serverConnectToken);
         }
-        printf("# " NEWLINE);
+        printf(NEWLINE);
 
     } else {
         printf("# " NEWLINE);
         printf("# The device is paired with an administrator. To get access" NEWLINE);
         printf("# ask the administrator for an user account on the device." NEWLINE);
+    }
+
+    if (nm_iam_check_access(&iam, 0, "IAM:PairingPasswordOpen", NULL) && iam.state->globalPairingPassword != NULL && iam.state->globalSct != NULL) {
+        printf("# " NEWLINE);
+        printf("# The device has enabled PasswordOpen pairing meaning that " NEWLINE);
+        printf("# by authenticating with the empty username and the below " NEWLINE);
+        printf("# password gives you access to the device such that you can " NEWLINE);
+        printf("# create a new user yourself." NEWLINE);
+        printf("# Open Pairing Password:  %s" NEWLINE, iam.state->globalPairingPassword);
+        printf("# Open Pairing SCT:       %s" NEWLINE, iam.state->globalSct);
+        printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, iam.state->globalPairingPassword, iam.state->globalSct);
     }
 
     printf("# " NEWLINE);

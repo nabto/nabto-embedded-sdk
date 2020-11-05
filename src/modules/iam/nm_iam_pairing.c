@@ -59,21 +59,6 @@ bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceC
     return false;
 }
 
-bool nm_iam_pairing_is_local_invite_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
-{
-    if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalInvite", NULL)) {
-        return false;
-    }
-
-    struct nm_iam_user* user;
-    NN_LLIST_FOREACH(user, &iam->state->users) {
-        if (user->fingerprint == NULL) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref) 
 {
     if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalInitial", NULL)) {
