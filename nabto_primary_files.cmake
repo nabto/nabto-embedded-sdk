@@ -208,6 +208,7 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_password_open.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_password_invite.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_local_open.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_local_initial.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_list_users.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_get_me.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_get_user.c
