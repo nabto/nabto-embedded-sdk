@@ -91,6 +91,7 @@ void nm_iam_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapPairingPasswordOpenPostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingPasswordInvitePostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingLocalOpenPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingLocalInitialPostHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
@@ -124,10 +125,12 @@ void nm_iam_deinit(struct nm_iam* iam)
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)
 {
     NabtoDeviceError ec;
-    char* fingerprint;
-    ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
-    if (ec) {
-        return false;
+    char* fingerprint = NULL;
+    if (ref != 0) {
+        ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
+        if (ec) {
+            return false;
+        }
     }
 
     struct nn_string_map attributes;
@@ -228,6 +231,7 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_pairing_password_open_init(&iam->coapPairingPasswordOpenPostHandler, iam->device, iam);
     nm_iam_pairing_password_invite_init(&iam->coapPairingPasswordInvitePostHandler, iam->device, iam);
     nm_iam_pairing_local_open_init(&iam->coapPairingLocalOpenPostHandler, iam->device, iam);
+    nm_iam_pairing_local_initial_init(&iam->coapPairingLocalInitialPostHandler, iam->device, iam);
 
     nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
@@ -249,6 +253,7 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordOpenPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordInvitePostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalOpenPostHandler);
+    nm_iam_coap_handler_deinit(&iam->coapPairingLocalInitialPostHandler);
 
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);

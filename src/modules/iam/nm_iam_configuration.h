@@ -103,10 +103,12 @@ struct nm_iam_role {
 struct nm_iam_configuration {
     struct nn_llist roles; // linked list of struct nm_iam_role
     struct nn_llist policies; // linked list of struct nm_iam_policy
+    struct nn_string_set pairingModes;
 
     char* firstUserRole;
     char* secondaryUserRole;
     char* unpairedRole;
+    char* initialUserUsername;
 };
 
 /*************************
@@ -158,6 +160,12 @@ bool nm_iam_configuration_set_secondary_user_role(struct nm_iam_configuration* c
  * @return false iff the role was not set.
  */
 bool nm_iam_configuration_set_unpaired_role(struct nm_iam_configuration* conf, const char* role);
+
+/**
+ * Set the username for the first user username. This is used to inform the
+ * client about what user it should use for the initial pairing.
+ */
+bool nm_iam_configuration_set_initial_user_username(struct nm_iam_configuration* conf, const char* initialUserUsername);
 
 /**
  * Add a policy to the IAM configuration. The ownership of the policy
