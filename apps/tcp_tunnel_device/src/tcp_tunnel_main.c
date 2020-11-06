@@ -1,5 +1,6 @@
 #include "iam_config.h"
 #include "help.h"
+#include "tcp_tunnel.h"
 #include "tcp_tunnel_state.h"
 #include "tcp_tunnel_services.h"
 #include "device_event_handler.h"
@@ -9,6 +10,7 @@
 #include <apps/common/device_config.h>
 #include <apps/common/private_key.h>
 #include <apps/common/logging.h>
+#include <apps/common/string_file.h>
 
 #include <modules/iam/nm_iam.h>
 #include <modules/iam/nm_iam_user.h>
@@ -59,8 +61,7 @@ enum {
     OPTION_HOME_DIR,
     OPTION_RANDOM_PORTS,
     OPTION_RESET,
-    OPTION_AUTO,
-    OPTION_INVITE
+    OPTION_INIT
 };
 
 struct args {
@@ -71,20 +72,7 @@ struct args {
     char* homeDir;
     bool randomPorts;
     bool reset;
-};
-
-
-struct tcp_tunnel {
-    char* pairingPassword;
-    char* pairingServerConnectToken;
-
-    char* deviceConfigFile;
-    char* stateFile;
-    char* iamConfigFile;
-    char* servicesFile;
-    char* privateKeyFile;
-
-    struct nn_vector services;
+    bool init;
 };
 
 NabtoDevice* device_;
@@ -92,7 +80,7 @@ NabtoDevice* device_;
 static void signal_handler(int s);
 
 static void print_iam_state(struct nm_iam_state* state);
-static void iam_user_changed(struct nm_iam* iam, const char* id, void* userData);
+static void iam_user_changed(struct nm_iam* iam, void* userData);
 static bool make_directory(const char* directory);
 
 
@@ -156,8 +144,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x5s[] = "H";      const char* x5l[] = { "home-dir", 0 };
     const char x6s[] = "";       const char* x6l[] = { "random-ports", 0 };
     const char x7s[] = "";       const char* x7l[] = { "reset", 0 };
-    const char x8s[] = "";       const char* x8l[] = { "auto", 0 };
-    const char x9s[] = "";       const char* x9l[] = { "invite", 0 };
+    const char x8s[] = "";       const char* x8l[] = { "init", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -167,8 +154,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_HOME_DIR, GOPT_ARG, x5s, x5l },
         { OPTION_RANDOM_PORTS, GOPT_NOARG, x6s, x6l },
         { OPTION_RESET, GOPT_NOARG, x7s, x7l },
-        { OPTION_AUTO, GOPT_NOARG, x8s, x8l },
-        { OPTION_INVITE, GOPT_NOARG, x9s, x9l },
+        { OPTION_INIT, GOPT_NOARG, x8s, x8l },
         {0,0,0,0}
     };
 
@@ -190,6 +176,10 @@ static bool parse_args(int argc, char** argv, struct args* args)
 
     if (gopt(options, OPTION_RESET)) {
         args->reset = true;
+    }
+
+    if (gopt(options, OPTION_INIT)) {
+        args->init = true;
     }
 
     if (gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel)) {
@@ -362,9 +352,30 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     tunnel->servicesFile = expand_file_name(args->homeDir, TCP_TUNNEL_SERVICES_FILE);
     tunnel->privateKeyFile = expand_file_name(args->homeDir, DEVICE_KEY_FILE);
 
-    if (args->reset) {
-        printf("Resetting the state for the device." NEWLINE);
-        return reset_tcp_tunnel_state(tunnel->stateFile);
+    if (args->init) {
+        if (!tcp_tunnel_config_interactive(tunnel)) {
+            printf("Init of the configuration and state failed" NEWLINE);
+            return false;
+        } else {
+            printf("The configuration and state has been initialized" NEWLINE);
+            return true;
+        }
+    } else {
+        // check that all files exists
+        if (!string_file_exists(tunnel->deviceConfigFile)) {
+            printf("Missing device config %s, initialize it with --init" NEWLINE, tunnel->deviceConfigFile);
+            return false;
+        }
+
+        if(!string_file_exists(tunnel->iamConfigFile)) {
+            printf("Missing IAM configuration file %s, create it with --init" NEWLINE, tunnel->iamConfigFile);
+            return false;
+        }
+
+        if (!string_file_exists(tunnel->stateFile)) {
+            printf("Missing IAM state file %s, create it with --init" NEWLINE, tunnel->stateFile);
+            return false;
+        }
     }
 
     /**
@@ -379,10 +390,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
 
     struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
-
-    if (!iam_config_exists(tunnel->iamConfigFile)) {
-        iam_config_create_default(tunnel->iamConfigFile);
-    }
 
     if (!iam_config_load(iamConfig, tunnel->iamConfigFile, &logger)) {
         print_iam_config_load_failed(tunnel->iamConfigFile);
@@ -522,7 +529,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
         device_event_handler_init(&eventHandler, device);
 
-        nm_iam_set_user_changed_callback(&iam, iam_user_changed, tunnel);
+        nm_iam_set_state_changed_callback(&iam, iam_user_changed, tunnel);
 
         NabtoDeviceFuture* fut = nabto_device_future_new(device);
         nabto_device_start(device, fut);
@@ -583,7 +590,7 @@ void print_iam_state(struct nm_iam_state* state)
 }
 
 
-void iam_user_changed(struct nm_iam* iam, const char* id, void* userData)
+void iam_user_changed(struct nm_iam* iam, void* userData)
 {
     struct tcp_tunnel* tcpTunnel = userData;
     if (!save_tcp_tunnel_state(tcpTunnel->stateFile, iam->state)) {

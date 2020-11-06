@@ -30,9 +30,6 @@ bool nm_iam_serializer_configuration_dump_json(struct nm_iam_configuration* conf
 
     cJSON* config = cJSON_CreateObject();
     cJSON_AddStringToObject(config, "UnpairedRole", conf->unpairedRole);
-    cJSON_AddStringToObject(config, "FirstUserRole", conf->firstUserRole);
-    cJSON_AddStringToObject(config, "SecondaryUserRole", conf->secondaryUserRole);
-
     cJSON_AddItemToObject(root, "Config", config);
 
     char* j = cJSON_PrintUnformatted(root);
@@ -115,9 +112,6 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
     }
 
     cJSON* unpairedRole = cJSON_GetObjectItem(config, "UnpairedRole");
-    cJSON* firstUserRole = cJSON_GetObjectItem(config, "FirstUserRole");
-    cJSON* secondaryUserRole = cJSON_GetObjectItem(config, "SecondaryUserRole");
-    cJSON* initialUserUsername = cJSON_GetObjectItem(config, "InitialUserUsername");
 
     if (unpairedRole) {
         if (!cJSON_IsString(unpairedRole)) {
@@ -125,30 +119,6 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
         } else {
             nm_iam_configuration_set_unpaired_role(conf, unpairedRole->valuestring);
         }
-    }
-
-    if (firstUserRole) {
-        if (!cJSON_IsString(firstUserRole)) {
-            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
-        } else {
-            nm_iam_configuration_set_first_user_role(conf, firstUserRole->valuestring);
-        }
-    }
-
-    if (secondaryUserRole) {
-        if (!cJSON_IsString(secondaryUserRole)) {
-            NN_LOG_ERROR(logger, LOGM, "Config.UnpairedRole has the wrong format.");
-        } else {
-            nm_iam_configuration_set_secondary_user_role(conf, secondaryUserRole->valuestring);
-        }
-    }
-
-    if (initialUserUsername) {
-        if (!cJSON_IsString(initialUserUsername)) {
-            NN_LOG_ERROR(logger, LOGM, "Config.InitialUserUsername has the wrong format.");
-        } else {
-            nm_iam_configuration_set_initial_user_username(conf, initialUserUsername->valuestring);
-        } 
     }
 
     cJSON_Delete(root);
@@ -178,6 +148,18 @@ bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out)
         }
         if (state->globalSct) {
             cJSON_AddItemToObject(json, "PairingServerConnectToken", cJSON_CreateString(state->globalSct));
+        }
+        cJSON_AddItemToObject(json, "LocalOpenPairing", cJSON_CreateBool(state->localOpenPairing));
+        cJSON_AddItemToObject(json, "PasswordOpenPairing", cJSON_CreateBool(state->passwordOpenPairing));
+        cJSON_AddItemToObject(json, "PasswordInvitePairing", cJSON_CreateBool(state->passwordInvitePairing));
+        cJSON_AddItemToObject(json, "LocalInitialPairing", cJSON_CreateBool(state->localInitialPairing));
+
+        if (state->openPairingRole) {
+            cJSON_AddItemToObject(json, "OpenPairingRole", cJSON_CreateString(state->openPairingRole));
+        }
+
+        if (state->initialPairingUsername) {
+            cJSON_AddItemToObject(json, "InitialPairingUsername", cJSON_CreateString(state->initialPairingUsername));
         }
 
         cJSON* usersArray = cJSON_CreateArray();
@@ -225,6 +207,13 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
     cJSON* version = cJSON_GetObjectItem(root, "Version");
     cJSON* pairingPassword = cJSON_GetObjectItem(root, "PairingPassword");
     cJSON* pairingServerConnectToken = cJSON_GetObjectItem(root, "PairingServerConnectToken");
+    cJSON* localOpenPairing = cJSON_GetObjectItem(root, "LocalOpenPairing");
+    cJSON* passwordOpenPairing = cJSON_GetObjectItem(root, "PasswordOpenPairing");
+    cJSON* passwordInvitePairing = cJSON_GetObjectItem(root, "PasswordInvitePairing");
+    cJSON* localInitialPairing = cJSON_GetObjectItem(root, "LocalInitialPairing");
+    cJSON* initialPairingUsername = cJSON_GetObjectItem(root, "InitialPairingUsername");
+    cJSON* openPairingRole = cJSON_GetObjectItem(root, "OpenPairingRole");
+
     cJSON* users = cJSON_GetObjectItem(root, "Users");
 
     if (!cJSON_IsNumber(version)) {
@@ -239,6 +228,29 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
 
     if (pairingServerConnectToken != NULL && cJSON_IsString(pairingServerConnectToken)) {
         nm_iam_state_set_pairing_server_connect_token(state, pairingServerConnectToken->valuestring);
+    }
+
+    if (localOpenPairing != NULL && cJSON_IsBool(localOpenPairing)) {
+        nm_iam_state_set_local_open_pairing(state, cJSON_IsTrue(localOpenPairing));
+    }
+
+    if (passwordOpenPairing != NULL && cJSON_IsBool(passwordOpenPairing)) {
+        nm_iam_state_set_password_open_pairing(state, cJSON_IsTrue(passwordOpenPairing));
+    }
+
+    if (passwordInvitePairing != NULL && cJSON_IsBool(passwordInvitePairing)) {
+        nm_iam_state_set_password_invite_pairing(state, cJSON_IsTrue(passwordInvitePairing));
+    }
+
+    if (localInitialPairing != NULL && cJSON_IsBool(localInitialPairing)) {
+        nm_iam_state_set_local_initial_pairing(state, cJSON_IsTrue(localInitialPairing));
+    }
+
+    if (initialPairingUsername != NULL && cJSON_IsString(initialPairingUsername)) {
+        nm_iam_state_set_initial_pairing_username(state, initialPairingUsername->valuestring);
+    }
+    if (openPairingRole != NULL && cJSON_IsString(openPairingRole)) {
+        nm_iam_state_set_open_pairing_role(state, openPairingRole->valuestring);
     }
 
     if (users != NULL && cJSON_IsArray(users)) {

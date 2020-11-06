@@ -52,9 +52,7 @@ bool validate_role_in_config(struct nm_iam_configuration* conf, const char* role
 }
 
 bool validate_configuration(struct nm_iam_configuration* conf) {
-    return (validate_role_in_config(conf, conf->firstUserRole) &&
-            validate_role_in_config(conf, conf->secondaryUserRole) &&
-            validate_role_in_config(conf, conf->unpairedRole));
+    return (validate_role_in_config(conf, conf->unpairedRole));
 }
 
 bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* conf)
@@ -106,6 +104,9 @@ void nm_iam_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamSettingsGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamSettingsSetHandler);
 
     nm_iam_auth_handler_stop(&iam->authHandler);
     nm_iam_pake_handler_stop(&iam->pakeHandler);
@@ -245,6 +246,8 @@ void init_coap_handlers(struct nm_iam* iam)
     nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
     nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
+    nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
+    nm_iam_settings_set_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
 }
 
 void deinit_coap_handlers(struct nm_iam* iam)
@@ -268,6 +271,8 @@ void deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamSettingsGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamSettingsSetHandler);
 }
 
 
@@ -349,14 +354,7 @@ struct nm_iam_user* nm_iam_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRe
         return NULL;
     }
 
-    bool firstUser = nn_llist_empty(&iam->state->users);
-
-    const char* role = NULL;
-    if (firstUser) {
-        role = iam->conf->firstUserRole;
-    } else {
-        role = iam->conf->secondaryUserRole;
-    }
+    const char* role = iam->state->openPairingRole;
 
     if (role == NULL) {
         return NULL;
@@ -391,8 +389,8 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
         nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
     }
 
-    if (iam->changeCallback.userChanged) {
-        iam->changeCallback.userChanged(iam, user->username, iam->changeCallback.userChangedData);
+    if (iam->changeCallback.stateChanged) {
+        iam->changeCallback.stateChanged(iam, iam->changeCallback.stateChangedData);
     }
     return true;
 }
@@ -426,10 +424,10 @@ struct nm_iam_user* nm_iam_find_user(struct nm_iam* iam, const char* username)
     return nm_iam_find_user_by_username(iam, username);
 }
 
-void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChanged, void* data)
+void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed stateChanged, void* data)
 {
-    iam->changeCallback.userChanged = userChanged;
-    iam->changeCallback.userChangedData = data;
+    iam->changeCallback.stateChanged = stateChanged;
+    iam->changeCallback.stateChangedData = data;
 }
 
 bool nm_iam_get_users(struct nm_iam* iam, struct nn_string_set* usernames)
@@ -450,17 +448,17 @@ void nm_iam_delete_user(struct nm_iam* iam, const char* username)
             nn_llist_erase_node(&user->listNode);
             nm_iam_user_free(user);
 
-            nm_iam_user_has_changed(iam, username);
+            nm_iam_state_has_changed(iam);
             return;
         }
 
     }
 }
 
-void nm_iam_user_has_changed(struct nm_iam* iam, const char* username) 
+void nm_iam_state_has_changed(struct nm_iam* iam) 
 {
-    if (iam->changeCallback.userChanged) {
-        iam->changeCallback.userChanged(iam, username, iam->changeCallback.userChangedData);
+    if (iam->changeCallback.stateChanged) {
+        iam->changeCallback.stateChanged(iam, iam->changeCallback.stateChangedData);
     }
 }
 
@@ -481,8 +479,8 @@ bool nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* 
     bool status = nm_iam_user_set_role(user, roleId);
 
     if (status == true) {
-        if (iam->changeCallback.userChanged) {
-            iam->changeCallback.userChanged(iam, username, iam->changeCallback.userChangedData);
+        if (iam->changeCallback.stateChanged) {
+            iam->changeCallback.stateChanged(iam, iam->changeCallback.stateChangedData);
         }
     }
     return status;

@@ -65,6 +65,53 @@ bool nm_iam_state_set_pairing_server_connect_token(struct nm_iam_state* state, c
     return (tmp != 0);
 }
 
+void nm_iam_state_set_password_open_pairing(struct nm_iam_state* state, bool b)
+{
+    state->passwordOpenPairing = b;
+}
+
+void nm_iam_state_set_local_open_pairing(struct nm_iam_state* state, bool b)
+{
+    state->localOpenPairing = b;
+}
+
+void nm_iam_state_set_password_invite_pairing(struct nm_iam_state* state, bool b)
+{
+    state->passwordInvitePairing = b;
+}
+
+void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b)
+{
+    state->localInitialPairing = b;
+}
+bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* username)
+{
+    if (username == NULL) {
+        free(state->initialPairingUsername);
+        state->initialPairingUsername = NULL;
+        return true;
+    }
+    char* tmp = strdup(username);
+    if (tmp != NULL) {
+        free(state->initialPairingUsername);
+        state->initialPairingUsername = tmp;
+    }
+    return (tmp != 0);
+}
+bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* role)
+{
+    if (role == NULL) {
+        free(state->openPairingRole);
+        state->openPairingRole = NULL;
+        return true;
+    }
+    char* tmp = strdup(role);
+    if (tmp != NULL) {
+        free(state->openPairingRole);
+        state->openPairingRole = tmp;
+    }
+    return (tmp != 0);
+}
 
 bool nm_iam_state_add_user(struct nm_iam_state* state, struct nm_iam_user* user)
 {

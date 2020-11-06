@@ -25,12 +25,12 @@ struct nm_iam_policy;
 struct nn_string_set;
 struct nm_iam_role;
 
-typedef void (*nm_iam_user_changed)(struct nm_iam* iam, const char* username, void* userData);
+typedef void (*nm_iam_state_changed)(struct nm_iam* iam, void* userData);
 
 struct nm_iam_change_callback {
     // called if a user is inserted, updated or removed.
-    nm_iam_user_changed userChanged;
-    void* userChangedData;
+    nm_iam_state_changed stateChanged;
+    void* stateChangedData;
 };
 
 
@@ -55,6 +55,9 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserSetFingerprintHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetSctHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetPasswordHandler;
+    struct nm_iam_coap_handler coapIamSettingsSetHandler;
+    struct nm_iam_coap_handler coapIamSettingsGetHandler;
+
 
     struct nm_iam_auth_handler authHandler;
     struct nm_iam_pake_handler pakeHandler;
@@ -117,7 +120,7 @@ bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state);
 /**
  * Set change callbacks such that state can be persisted
  */
-void nm_iam_set_user_changed_callback(struct nm_iam* iam, nm_iam_user_changed userChange, void* data);
+void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed userChange, void* data);
 
 /**
  * Check if the given connection has access to do the given action

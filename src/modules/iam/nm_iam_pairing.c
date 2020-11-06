@@ -2,42 +2,40 @@
 #include "nm_iam_internal.h"
 #include "nm_iam_user.h"
 
-const char* nm_iam_pairing_get_role(struct nm_iam* iam) {
-    bool firstUser = nn_llist_empty(&iam->state->users);
-
-    const char* role = NULL;
-    if (firstUser) {
-        role = iam->conf->firstUserRole;
-    } else {
-        role = iam->conf->secondaryUserRole;
-    }
-    return role;
+const char* nm_iam_pairing_open_get_role(struct nm_iam* iam) {
+    return iam->state->openPairingRole;
 }
 
-bool nm_iam_pairing_is_local_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
+bool nm_iam_pairing_is_local_open_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
 {
     if (!nabto_device_connection_is_local(iam->device, ref)) {
+        return false;
+    }
+    if (iam->state->localOpenPairing == false)  {
         return false;
     }
     if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalOpen", NULL)) {
         return false;
     }
-    const char* role = nm_iam_pairing_get_role(iam);
+    const char* role = nm_iam_pairing_open_get_role(iam);
     if(role == NULL) {
         return false;
     }
     return true;
 }
 
-bool nm_iam_pairing_is_password_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
+bool nm_iam_pairing_is_password_open_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
 {
     if (!nm_iam_check_access(iam, ref, "IAM:PairingPasswordOpen", NULL)) {
+        return false;
+    }
+    if (iam->state->passwordOpenPairing == false)  {
         return false;
     }
     if (iam->state->globalPairingPassword == NULL) {
         return false;
     }
-    const char* role = nm_iam_pairing_get_role(iam);
+    const char* role = nm_iam_pairing_open_get_role(iam);
     if(role == NULL) {
         return false;
     }
@@ -49,7 +47,9 @@ bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceC
     if (!nm_iam_check_access(iam, ref, "IAM:PairingPasswordInvite", NULL)) {
         return false;
     }
-
+    if (iam->state->passwordInvitePairing == false)  {
+        return false;
+    }
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users) {
         if (user->password != NULL) {
@@ -64,8 +64,10 @@ bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceCon
     if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalInitial", NULL)) {
         return false;
     }
-
-    const char* initialUserUsername = iam->conf->initialUserUsername;
+    if (iam->state->localInitialPairing == false)  {
+        return false;
+    }
+    const char* initialUserUsername = iam->state->initialPairingUsername;
     struct nm_iam_user* initialUser = nm_iam_find_user_by_username(iam, initialUserUsername);
     if (initialUser == NULL) {
         return false;
