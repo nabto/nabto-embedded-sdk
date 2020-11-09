@@ -59,7 +59,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         free(fp);
         return;
     }
-    nm_iam_user_has_changed(handler->iam, username);
+    nm_iam_state_has_changed(handler->iam);
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
     free(fp);

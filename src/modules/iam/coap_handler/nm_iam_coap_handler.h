@@ -53,11 +53,15 @@ NabtoDeviceError nm_iam_set_user_fingerprint_init(struct nm_iam_coap_handler* ha
 NabtoDeviceError nm_iam_set_user_sct_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_set_user_password_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
+NabtoDeviceError nm_iam_settings_set_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
+NabtoDeviceError nm_iam_settings_get_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
+
 
 // utility functions
 bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue);
 
 bool nm_iam_cbor_decode_string(CborValue* value, char** str);
+bool nm_iam_cbor_decode_bool(CborValue* value, bool* b);
 bool nm_iam_cbor_decode_kv_string(CborValue* map, const char* key, char** str);
 
 // used from GET /iam/users/:user and GET /iam/me

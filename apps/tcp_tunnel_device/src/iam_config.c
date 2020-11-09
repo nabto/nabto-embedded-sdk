@@ -40,6 +40,9 @@ bool iam_config_create_default(const char* iamConfigFile)
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing");
         nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordInvite");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingLocalInitial");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingLocalOpen");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:PairingPasswordOpen");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
@@ -106,6 +109,13 @@ bool iam_config_create_default(const char* iamConfigFile)
         nm_iam_configuration_add_role(iamConfig, r);
     }
     
+    {
+        r = nm_iam_configuration_role_new("Guest");
+        nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
+        nm_iam_configuration_add_role(iamConfig, r);
+    }
+
     nm_iam_configuration_set_unpaired_role(iamConfig, "Unpaired");
     
     char* str;

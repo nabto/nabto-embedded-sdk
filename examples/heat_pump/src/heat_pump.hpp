@@ -102,8 +102,8 @@ class HeatPump {
 
  private:
 
-    static void iamUserChanged(struct nm_iam* iam, const char* userId, void* userData);
-    void userChanged();
+    static void iamUserChanged(struct nm_iam* iam, void* userData);
+    void stateChanged();
     void saveState();
     bool loadState();
     void createState();

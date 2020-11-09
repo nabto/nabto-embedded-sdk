@@ -18,6 +18,11 @@ NabtoDeviceError nm_iam_pairing_password_open_init(struct nm_iam_coap_handler* h
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
+    struct nm_iam* iam = handler->iam;
+    if (iam->state->passwordOpenPairing == false) {
+        nabto_device_coap_error_response(request, 404, "Not Found");
+        return;
+    }
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
     if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingPasswordOpen", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");

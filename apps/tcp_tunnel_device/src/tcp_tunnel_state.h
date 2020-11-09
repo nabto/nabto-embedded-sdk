@@ -9,6 +9,4 @@ bool load_tcp_tunnel_state(struct nm_iam_state* state, const char* stateFile, st
 
 bool save_tcp_tunnel_state(const char* stateFile, struct nm_iam_state* state);
 
-bool reset_tcp_tunnel_state(const char* stateFile);
-
 #endif

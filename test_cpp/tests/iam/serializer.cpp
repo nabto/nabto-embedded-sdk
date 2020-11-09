@@ -30,7 +30,7 @@ std::string s1 = R"(
 std::string c1 = R"(
 {
   "Config": {
-    "FirstUserRole":"TestRole"
+    "UnpairedRole":"TestRole"
   },
   "Policies": [
     {
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(serialize_config_to_json, *boost::unit_test::timeout(180))
     }
 
     {
-        nm_iam_configuration_set_first_user_role(conf, "TestRole");
+        nm_iam_configuration_set_unpaired_role(conf, "TestRole");
     }
 
     char* iamConf;
@@ -88,8 +88,8 @@ BOOST_AUTO_TEST_CASE(serialize_config_to_json, *boost::unit_test::timeout(180))
 
     nlohmann::json j = nlohmann::json::parse(iamConf);
     BOOST_TEST(j["Config"].is_object());
-    BOOST_TEST(j["Config"]["FirstUserRole"].is_string());
-    BOOST_TEST(j["Config"]["FirstUserRole"].get<std::string>().compare("TestRole") == 0);
+    BOOST_TEST(j["Config"]["UnpairedRole"].is_string());
+    BOOST_TEST(j["Config"]["UnpairedRole"].get<std::string>().compare("TestRole") == 0);
 
     BOOST_TEST(j["Policies"].is_array());
     BOOST_TEST(j["Policies"].size() == (size_t)1);
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(deserialize_config_from_json, *boost::unit_test::timeout(18
     struct nm_iam_configuration* conf = nm_iam_configuration_new();
     BOOST_TEST(nm_iam_serializer_configuration_load_json(conf, c1.c_str(), NULL) == true);
 
-    BOOST_TEST(strcmp(conf->firstUserRole, "TestRole") == 0);
+    BOOST_TEST(strcmp(conf->unpairedRole, "TestRole") == 0);
 
     void* role;
     NN_LLIST_FOREACH(role, &conf->roles) {

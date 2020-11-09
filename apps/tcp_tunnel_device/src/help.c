@@ -15,8 +15,7 @@ void print_help() {
     printf("%s" NEWLINE, "                      is error, warn, info and trace.");
     printf("%s" NEWLINE, "      --random-ports  Bind the local and the p2p sockets to random UDP ports");
     printf("%s" NEWLINE, "                      instead of the default UDP ports 5592 and 5593.");
-    printf("%s" NEWLINE, "      --auto          Create an IAM configuration file for autonomous pairing.");
-    printf("%s" NEWLINE, "      --invite        Create an IAM configuration file for invite-only pairing.");
+    printf("%s" NEWLINE, "      --init          Interactively create configuration files the the tcp tunnel.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "# Files");
     printf("%s" NEWLINE, "");
@@ -38,7 +37,8 @@ void print_help() {
     printf("%s" NEWLINE, "{");
     printf("%s" NEWLINE, "  \"ProductId\": \"pr-abcd1234\",");
     printf("%s" NEWLINE, "  \"DeviceId\": \"de-abcd1234\",");
-    printf("%s" NEWLINE, "  \"Server\": \"optional server hostname\"");
+    printf("%s" NEWLINE, "  \"Server\": \"optional server hostname\",");
+    printf("%s" NEWLINE, "  \"ServerPort\": \"optional port number for the server\"");
     printf("%s" NEWLINE, "}");
     printf("%s" NEWLINE, "```");
     printf("%s" NEWLINE, "");
@@ -52,14 +52,14 @@ void print_help() {
     printf("%s" NEWLINE, "The `Server` is an optional hostname of the server the device uses. It");
     printf("%s" NEWLINE, "not set the default server is used.");
     printf("%s" NEWLINE, "");
-    printf("%s" NEWLINE, "## `config/tcp_tunnel_iam.json`");
+    printf("%s" NEWLINE, "## `config/tcp_tunnel_device_iam_config.json`");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "The `tcp_tunnel_iam.json` is an IAM policies file which contains the");
     printf("%s" NEWLINE, "policies and roles used by the system.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "TODO: link to further documentation of iam concepts.");
     printf("%s" NEWLINE, "");
-    printf("%s" NEWLINE, "## `state/tcp_tunnel_state.json`");
+    printf("%s" NEWLINE, "## `state/tcp_tunnel_device_iam_state.json`");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "A file containing the state of the application, this file is written");
     printf("%s" NEWLINE, "by the application. A custom state file can be added to devices in");

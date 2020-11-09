@@ -105,10 +105,7 @@ struct nm_iam_configuration {
     struct nn_llist policies; // linked list of struct nm_iam_policy
     struct nn_string_set pairingModes;
 
-    char* firstUserRole;
-    char* secondaryUserRole;
     char* unpairedRole;
-    char* initialUserUsername;
 };
 
 /*************************

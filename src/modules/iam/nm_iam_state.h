@@ -22,6 +22,12 @@ struct nm_iam_state {
     struct nn_llist users;
     char* globalPairingPassword;
     char* globalSct;
+    bool passwordOpenPairing;
+    bool localOpenPairing;
+    bool passwordInvitePairing;
+    bool localInitialPairing;
+    char* openPairingRole;
+    char* initialPairingUsername;
 };
 
 /*****************
@@ -63,6 +69,13 @@ bool nm_iam_state_set_pairing_password(struct nm_iam_state* state, const char* p
  * @return false iff the server connect token was not set
  */
 bool nm_iam_state_set_pairing_server_connect_token(struct nm_iam_state* state, const char* serverConnectToken);
+
+void nm_iam_state_set_password_open_pairing(struct nm_iam_state* state, bool b);
+void nm_iam_state_set_local_open_pairing(struct nm_iam_state* state, bool b);
+void nm_iam_state_set_password_invite_pairing(struct nm_iam_state* state, bool b);
+void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b);
+bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* openPairingRole);
+bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* initialPairingUsername);
 
 /**
  * Add a user to the IAM state. The state takes ownership of the user

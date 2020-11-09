@@ -42,6 +42,25 @@ bool load_device_config(const char* fileName, struct device_config* dc, struct n
     return true;
 }
 
+bool save_device_config(const char* fileName, struct device_config* dc)
+{
+    cJSON* config = cJSON_CreateObject();
+    if (dc->productId != NULL) {
+        cJSON_AddItemToObject(config, "ProductId", cJSON_CreateString(dc->productId));
+    }
+    if (dc->deviceId != NULL) {
+        cJSON_AddItemToObject(config, "DeviceId", cJSON_CreateString(dc->deviceId));
+    }
+    if (dc->server != NULL) {
+        cJSON_AddItemToObject(config, "Server", cJSON_CreateString(dc->server));
+    }
+    if (dc->serverPort != 0) {
+        cJSON_AddItemToObject(config, "ServerPort", cJSON_CreateNumber(dc->serverPort));
+    }
+    bool status = json_config_save(fileName, config);
+    cJSON_Delete(config);
+    return status;
+}
 
 void device_config_init(struct device_config* config)
 {

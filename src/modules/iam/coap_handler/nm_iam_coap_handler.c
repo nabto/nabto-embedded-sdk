@@ -114,6 +114,17 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
     return false;
 }
 
+bool nm_iam_cbor_decode_bool(CborValue* value, bool* b) 
+{
+    if (cbor_value_is_boolean(value)) {
+        CborError ec = cbor_value_get_boolean(value, b);
+        if (ec == CborNoError)  {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool nm_iam_cbor_decode_kv_string(CborValue* map, const char* key, char** str)
 {
     if (!cbor_value_is_map(map)) {

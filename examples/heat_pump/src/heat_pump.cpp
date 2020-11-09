@@ -62,7 +62,7 @@ bool HeatPump::init()
 
     initCoapHandlers();
 
-    nm_iam_set_user_changed_callback(&iam_, &HeatPump::iamUserChanged, this);
+    nm_iam_set_state_changed_callback(&iam_, &HeatPump::iamUserChanged, this);
 
     stdoutConnectionEventHandler_ = nabto::examples::common::StdoutConnectionEventHandler::create(device_);
     stdoutDeviceEventHandler_ = nabto::examples::common::StdoutDeviceEventHandler::create(device_);
@@ -70,13 +70,13 @@ bool HeatPump::init()
 
 }
 
-void HeatPump::iamUserChanged(struct nm_iam* iam, const char* userId, void* userData)
+void HeatPump::iamUserChanged(struct nm_iam* iam, void* userData)
 {
     HeatPump* hp = static_cast<HeatPump*>(userData);
-    hp->userChanged();
+    hp->stateChanged();
 }
 
-void HeatPump::userChanged()
+void HeatPump::stateChanged()
 {
     saveState();
 }
@@ -429,12 +429,6 @@ bool HeatPump::loadIamPolicy()
         nm_iam_configuration_add_role(conf, r);
 
     }
-
-    // The first user which is paired is both an admin and a user on the system
-    nm_iam_configuration_set_first_user_role(conf, "Admin");
-
-    // The secondary users which is paired with the system does not get the admin permissions.
-    nm_iam_configuration_set_secondary_user_role(conf, "Guest");
 
     // Connections which does not have a paired user in the system gets the Unpaired role.
     nm_iam_configuration_set_unpaired_role(conf, "Unpaired");

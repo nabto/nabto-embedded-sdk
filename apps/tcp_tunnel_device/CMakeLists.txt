@@ -4,6 +4,7 @@ set(csrc
   src/iam_config.c
   src/tcp_tunnel_state.c
   src/tcp_tunnel_services.c
+  src/tcp_tunnel_init.c
   src/device_event_handler.c
   src/help.c
   )

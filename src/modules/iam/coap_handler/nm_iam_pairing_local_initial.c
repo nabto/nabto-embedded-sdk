@@ -19,13 +19,19 @@ NabtoDeviceError nm_iam_pairing_local_initial_init(struct nm_iam_coap_handler* h
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     struct nm_iam* iam = handler->iam;
+
+    if (iam->state->localInitialPairing == false) {
+        nabto_device_coap_error_response(request, 404, "Not Found");
+        return;
+    }
+
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
     if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingLocalInitial", NULL) || !nabto_device_connection_is_local(handler->device, ref)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
 
-    const char* initialUserUsername = iam->conf->initialUserUsername;
+    const char* initialUserUsername = iam->state->initialPairingUsername;
     struct nm_iam_user* initialUser = nm_iam_find_user_by_username(iam, initialUserUsername);
     if (initialUser == NULL) {
         nabto_device_coap_error_response(request, 404, "Not available");
@@ -35,7 +41,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
             nabto_device_coap_error_response(request, 409, "Already paired");
         } else {
             if (nm_iam_pairing_pair_user(iam, initialUser, ref)) {
-                nm_iam_user_has_changed(iam, initialUser->username);
+                nm_iam_state_has_changed(iam);
                 nabto_device_coap_response_set_code(request, 201);
                 nabto_device_coap_response_ready(request);
             } else {

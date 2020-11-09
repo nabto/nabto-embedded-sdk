@@ -21,6 +21,7 @@ void device_config_init(struct device_config* config);
 void device_config_deinit(struct device_config* config);
 
 bool load_device_config(const char* fileName, struct device_config* dc, struct nn_log* logger);
+bool save_device_config(const char* fileName, struct device_config* dc);
 
 #ifdef __cplusplus
 } // extern c
