@@ -1,5 +1,7 @@
 #include "nm_iam_coap_handler.h"
 #include "../nm_iam_user.h"
+#include "../nm_iam.h"
+#include "../nm_iam_internal.h"
 
 #include <stdlib.h>
 
@@ -68,8 +70,12 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     } else {
+        struct nm_iam* iam = handler->iam;
+        nabto_device_threads_mutex_lock(iam->mutex);
         handler->requestHandler(handler, handler->request);
+        nabto_device_threads_mutex_unlock(iam->mutex);
         nabto_device_coap_request_free(handler->request);
+        nm_iam_internal_check_and_do_callbacks(handler->iam);
         start_listen(handler);
     }
 }

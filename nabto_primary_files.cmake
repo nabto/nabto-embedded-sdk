@@ -203,6 +203,7 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/nm_iam_state.c
   ${root_dir}/src/modules/iam/nm_iam_serializer.c
   ${root_dir}/src/modules/iam/nm_iam_pairing.c
+  ${root_dir}/src/modules/iam/nm_iam_internal.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_coap_handler.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_get.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_password_open.c

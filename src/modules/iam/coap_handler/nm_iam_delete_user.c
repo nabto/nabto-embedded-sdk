@@ -27,14 +27,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nn_string_map_init(&attributes);
     nn_string_map_insert(&attributes, "IAM:Username", username);
 
-    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:DeleteUser", &attributes)) {
+    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:DeleteUser", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         nn_string_map_deinit(&attributes);
         return;
     }
     nn_string_map_deinit(&attributes);
 
-    nm_iam_delete_user(handler->iam, username);
+    nm_iam_internal_delete_user(handler->iam, username);
 
     nabto_device_coap_response_set_code(request, 202);
     nabto_device_coap_response_ready(request);

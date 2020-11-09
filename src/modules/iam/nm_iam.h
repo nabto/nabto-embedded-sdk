@@ -1,6 +1,8 @@
 #ifndef _NM_IAM_H_
 #define _NM_IAM_H_
 
+#include <api/nabto_device_threads.h>
+
 #include "nm_iam_configuration.h"
 #include "nm_iam_state.h"
 
@@ -21,10 +23,17 @@ extern "C" {
 
 // the iam module needs a list of users, roles, policies
 
+/**
+ * Functions in this header must only be called from the places which does not hold the mutex
+ */
+
 struct nm_iam_policy;
 struct nn_string_set;
 struct nm_iam_role;
 
+/**
+ * This callback is always invoked without holding the mutex
+ */
 typedef void (*nm_iam_state_changed)(struct nm_iam* iam, void* userData);
 
 struct nm_iam_change_callback {
@@ -35,9 +44,14 @@ struct nm_iam_change_callback {
 
 
 struct nm_iam {
+    /**
+     * The mutex is provided such that the iam module can both be manipulated
+     * from the nabto device coap endpoints and from the nm_iam_* api.
+     */
+    struct nabto_device_mutex* mutex;
+
     NabtoDevice* device;
     struct nn_log* logger;
-
     struct nm_iam_coap_handler coapIamUsersGetHandler;
     struct nm_iam_coap_handler coapPairingGetHandler;
     struct nm_iam_coap_handler coapPairingPasswordOpenPostHandler;
@@ -65,7 +79,13 @@ struct nm_iam {
     struct nm_iam_change_callback changeCallback;
     struct nm_iam_configuration* conf;
     struct nm_iam_state* state;
+
+    // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
+    bool stateHasChanged;
 };
+
+void nm_iam_lock(struct nm_iam* iam);
+void nm_iam_unlock(struct nm_iam* iam);
 
 /**
  * Initialize the IAM module, must be called before the IAM module is
@@ -107,9 +127,7 @@ void nm_iam_deinit(struct nm_iam* iam);
 bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* configuration);
 
 /**
- * Load a state into an IAM module. Must be called before
- * nabto_device_start() to avoid concurrency issues. The state can
- * only be modified by CoAP calls from the client after device start.
+ * Load a state into an IAM module.
  *
  * @param iam [in]     IAM module to load state into
  * @param state [in]   State to load. The IAM module takes ownership of the state.
@@ -121,6 +139,11 @@ bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state);
  * Set change callbacks such that state can be persisted
  */
 void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed userChange, void* data);
+
+/**
+ * Dump a copy of the state
+ */
+struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 
 /**
  * Check if the given connection has access to do the given action

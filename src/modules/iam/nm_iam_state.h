@@ -87,6 +87,10 @@ bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const
  */
 bool nm_iam_state_add_user(struct nm_iam_state* state, struct nm_iam_user* user);
 
+struct nm_iam_user* nm_iam_state_find_user(struct nm_iam_state* state, const char* username);
+
+struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

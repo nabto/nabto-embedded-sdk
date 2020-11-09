@@ -134,3 +134,52 @@ bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId)
     user->role = tmp;
     return true;
 }
+
+struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
+{
+    struct nm_iam_user* copy = nm_iam_user_new(user->username);
+    if(copy == NULL) {
+        return NULL;
+    }
+    bool failed = false;
+    if (user->displayName != NULL) {
+        copy->displayName = strdup(user->displayName);
+        if (copy->displayName == NULL) {
+            failed = true;
+        }
+    }
+
+    if (user->fingerprint != NULL) {
+        copy->fingerprint = strdup(user->fingerprint);
+        if(copy->fingerprint == NULL) {
+            failed = true;
+        }
+    }
+
+    if (user->password != NULL) {
+        copy->password = strdup(user->password);
+        if(copy->password == NULL) {
+            failed = true;
+        }
+    }
+
+    if(user->role != NULL) {
+        copy->role = strdup(user->role);
+        if(copy->role == NULL) {
+            failed = true;
+        }
+    }
+
+    if(user->serverConnectToken != NULL) {
+        copy->serverConnectToken = strdup(user->serverConnectToken);
+        if(copy->serverConnectToken == NULL) {
+            failed = true;
+        }
+    }
+
+    if (failed) {
+        nm_iam_user_free(copy);
+        return NULL;
+    }
+    return copy;
+}

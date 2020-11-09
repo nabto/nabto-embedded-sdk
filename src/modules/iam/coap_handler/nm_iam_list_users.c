@@ -1,6 +1,7 @@
 #include "nm_iam_coap_handler.h"
 #include "../nm_iam_user.h"
 #include "../nm_iam.h"
+#include "../nm_iam_internal.h"
 
 #include <stdlib.h>
 
@@ -34,7 +35,7 @@ static size_t encode_users(struct nm_iam* iam, void* buffer, size_t bufferSize)
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:ListUsers", NULL)) {
+    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:ListUsers", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
