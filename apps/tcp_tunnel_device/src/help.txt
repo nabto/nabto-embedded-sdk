@@ -10,8 +10,7 @@ TCP Tunnel Device Help.
                       is error, warn, info and trace.
       --random-ports  Bind the local and the p2p sockets to random UDP ports
                       instead of the default UDP ports 5592 and 5593.
-      --auto          Create an IAM configuration file for autonomous pairing.
-      --invite        Create an IAM configuration file for invite-only pairing.
+      --init          Interactively create configuration files the the tcp tunnel.
 
 # Files
 
@@ -33,7 +32,8 @@ The format of the json file is
 {
   "ProductId": "pr-abcd1234",
   "DeviceId": "de-abcd1234",
-  "Server": "optional server hostname"
+  "Server": "optional server hostname",
+  "ServerPort": "optional port number for the server"
 }
 ```
 
@@ -47,14 +47,14 @@ id found in the cloud console.
 The `Server` is an optional hostname of the server the device uses. It
 not set the default server is used.
 
-## `config/tcp_tunnel_iam.json`
+## `config/tcp_tunnel_device_iam_config.json`
 
 The `tcp_tunnel_iam.json` is an IAM policies file which contains the
 policies and roles used by the system.
 
 TODO: link to further documentation of iam concepts.
 
-## `state/tcp_tunnel_state.json`
+## `state/tcp_tunnel_device_iam_state.json`
 
 A file containing the state of the application, this file is written
 by the application. A custom state file can be added to devices in

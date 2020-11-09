@@ -48,8 +48,8 @@
 #define HOMEDIR_EDGE_FOLDER HOMEDIR_NABTO_FOLDER "/edge"
 
 const char* DEVICE_CONFIG_FILE = "config/device.json";
-const char* TCP_TUNNEL_STATE_FILE = "state/tcp_tunnel_device_state.json";
-const char* TCP_TUNNEL_IAM_FILE = "config/tcp_tunnel_device_iam.json";
+const char* TCP_TUNNEL_STATE_FILE = "state/tcp_tunnel_device_iam_state.json";
+const char* TCP_TUNNEL_IAM_FILE = "config/tcp_tunnel_device_iam_config.json";
 const char* TCP_TUNNEL_SERVICES_FILE = "config/tcp_tunnel_device_services.json";
 const char* DEVICE_KEY_FILE = "keys/device.key";
 
@@ -480,7 +480,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     if (iam.state->passwordInvitePairing && initialUserNeedPairing)
     {
         printf("# " NEWLINE);
-        printf("# The initial user has not been paired yet. But you can pair with the device usign Password Invite Pairing." NEWLINE);
+        printf("# The initial user has not been paired yet. You can pair with the device usign Password Invite Pairing." NEWLINE);
         printf("# Initial Pairing Usermame:  %s" NEWLINE, initialUser->username);
         if (initialUser->password != NULL) {
             printf("# Initial Pairing Password:  %s" NEWLINE, initialUser->password);
