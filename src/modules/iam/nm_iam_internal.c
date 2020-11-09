@@ -186,7 +186,7 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
     nm_iam_user_set_fingerprint(user, fingerprint);
     nm_iam_user_set_server_connect_token(user, sct);
 
-    nm_iam_add_user(iam, user);
+    nm_iam_internal_add_user(iam, user);
 
     nabto_device_string_free(fingerprint);
     nabto_device_string_free(sct);
@@ -194,7 +194,7 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
     return user;
 }
 
-bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
+bool nm_iam_internal_add_user(struct nm_iam* iam, struct nm_iam_user* user)
 {
     nn_llist_append(&iam->state->users, &user->listNode, user);
 
@@ -202,9 +202,8 @@ bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user)
         nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
     }
 
-    if (iam->changeCallback.stateChanged) {
-        iam->changeCallback.stateChanged(iam, iam->changeCallback.stateChangedData);
-    }
+    nm_iam_internal_state_has_changed(iam);
+
     return true;
 }
 
@@ -305,9 +304,7 @@ bool nm_iam_internal_set_user_role(struct nm_iam* iam, const char* username, con
     bool status = nm_iam_user_set_role(user, roleId);
 
     if (status == true) {
-        if (iam->changeCallback.stateChanged) {
-            iam->changeCallback.stateChanged(iam, iam->changeCallback.stateChangedData);
-        }
+        nm_iam_internal_state_has_changed(iam);
     }
     return status;
 }
@@ -409,4 +406,33 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsSetHandler);
+}
+
+void nm_iam_internal_stop(struct nm_iam* iam)
+{
+    nm_iam_coap_handler_stop(&iam->coapPairingGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingPasswordOpenPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingPasswordInvitePostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingLocalOpenPostHandler);
+    nm_iam_coap_handler_stop(&iam->coapPairingLocalInitialPostHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserCreateHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserDeleteHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamRolesGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetRoleHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetUsernameHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetDisplayNameHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamSettingsGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamSettingsSetHandler);
+
+    nm_iam_auth_handler_stop(&iam->authHandler);
+    nm_iam_pake_handler_stop(&iam->pakeHandler);
 }

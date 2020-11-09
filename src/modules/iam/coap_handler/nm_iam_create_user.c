@@ -62,7 +62,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nabto_device_string_free(sct);
     free(username);
 
-    nm_iam_add_user(handler->iam, user);
+    nm_iam_internal_add_user(handler->iam, user);
 
     size_t payloadSize = nm_iam_cbor_encode_user(user, NULL, 0);
     uint8_t* payload = malloc(payloadSize);

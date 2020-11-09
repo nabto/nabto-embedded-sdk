@@ -146,26 +146,6 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
 struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 
 /**
- * Remove a user.
- */
-bool nm_iam_remove_user(struct nm_iam* iam, const char* username);
-
-/**
- * Add a user.
- */
-bool nm_iam_add_user(struct nm_iam* iam, struct nm_iam_user* user);
-
-/**
- * Enable/disable local open pairing
- */
-bool nm_iam_set_local_open_pairing(struct nm_iam* iam, bool enabled);
-
-/**
- * Enable/disable password open pairing
- */
-bool nm_iam_set_password_open_pairing(struct nm_iam* iam, bool enabled);
-
-/**
  * Check if the given connection has access to do the given action
  * provided the given attributes.
  */

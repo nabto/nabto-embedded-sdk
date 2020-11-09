@@ -14,6 +14,8 @@ bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state);
 bool nm_iam_internal_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* conf);
 void nm_iam_internal_init_coap_handlers(struct nm_iam* iam);
 void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam);
+void nm_iam_internal_stop(struct nm_iam* iam);
+
 enum nm_iam_effect nm_iam_internal_check_access_role(struct nm_iam* iam, struct nm_iam_role* role, const char* action, const struct nn_string_map* attributes);
 
 struct nm_iam_role* nm_iam_internal_find_role(struct nm_iam* iam, const char* role);

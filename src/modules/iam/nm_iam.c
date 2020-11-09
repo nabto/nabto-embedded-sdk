@@ -51,31 +51,7 @@ void nm_iam_deinit(struct nm_iam* iam)
 void nm_iam_stop(struct nm_iam* iam)
 {
     nm_iam_lock(iam);
-    nm_iam_coap_handler_stop(&iam->coapPairingGetHandler);
-    nm_iam_coap_handler_stop(&iam->coapPairingPasswordOpenPostHandler);
-    nm_iam_coap_handler_stop(&iam->coapPairingPasswordInvitePostHandler);
-    nm_iam_coap_handler_stop(&iam->coapPairingLocalOpenPostHandler);
-    nm_iam_coap_handler_stop(&iam->coapPairingLocalInitialPostHandler);
-
-    nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserGetHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserCreateHandler);
-
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserDeleteHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamRolesGetHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetRoleHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetUsernameHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetDisplayNameHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
-
-    nm_iam_coap_handler_stop(&iam->coapIamSettingsGetHandler);
-    nm_iam_coap_handler_stop(&iam->coapIamSettingsSetHandler);
-
-    nm_iam_auth_handler_stop(&iam->authHandler);
-    nm_iam_pake_handler_stop(&iam->pakeHandler);
+    nm_iam_internal_stop(iam);
     nm_iam_unlock(iam);
 }
 
