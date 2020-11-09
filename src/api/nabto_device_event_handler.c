@@ -134,12 +134,14 @@ np_error_code nabto_device_listener_get_status(struct nabto_device_listener* lis
 
 void nabto_device_listener_stop_all(struct nabto_device_context* dev)
 {
-    struct nabto_device_listener* listener;
-    NN_LLIST_FOREACH(listener, &dev->listeners)
+    struct nn_llist_iterator it = nn_llist_begin(&dev->listeners);
+    while(!nn_llist_is_end(&it))
     {
-        nabto_device_threads_mutex_lock(listener->dev->eventMutex);
-        nabto_device_listener_stop_internal(listener);
-        nabto_device_threads_mutex_unlock(listener->dev->eventMutex);
+        struct nabto_device_listener* l = nn_llist_get_item(&it);
+        nabto_device_threads_mutex_lock(l->dev->eventMutex);
+        nabto_device_listener_stop_internal(l);
+        nn_llist_next(&it);
+        nabto_device_threads_mutex_unlock(l->dev->eventMutex);
     }
 }
 
