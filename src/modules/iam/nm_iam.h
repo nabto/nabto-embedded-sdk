@@ -127,9 +127,7 @@ void nm_iam_deinit(struct nm_iam* iam);
 bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* configuration);
 
 /**
- * Load a state into an IAM module. Must be called before
- * nabto_device_start() to avoid concurrency issues. The state can
- * only be modified by CoAP calls from the client after device start.
+ * Load a state into an IAM module.
  *
  * @param iam [in]     IAM module to load state into
  * @param state [in]   State to load. The IAM module takes ownership of the state.

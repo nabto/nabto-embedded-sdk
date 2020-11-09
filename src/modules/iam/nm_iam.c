@@ -116,3 +116,11 @@ bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state)
     nm_iam_unlock(iam);
     return status;
 }
+
+struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam) 
+{
+    nm_iam_lock(iam);
+    struct nm_iam_state* copy = nm_iam_state_copy(iam->state);
+    nm_iam_unlock(iam);
+    return copy;
+}

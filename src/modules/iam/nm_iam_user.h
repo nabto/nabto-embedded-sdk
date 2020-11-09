@@ -22,6 +22,8 @@ bool nm_iam_user_set_display_name(struct nm_iam_user* user, const char* displayN
 bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId);
 bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password);
 
+struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

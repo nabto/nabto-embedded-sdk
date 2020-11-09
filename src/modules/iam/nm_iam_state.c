@@ -118,3 +118,62 @@ bool nm_iam_state_add_user(struct nm_iam_state* state, struct nm_iam_user* user)
     nn_llist_append(&state->users, &user->listNode, user);
     return true;
 }
+
+struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
+{
+    struct nm_iam_state* copy = nm_iam_state_new();
+    if (copy == NULL) {
+        return NULL;
+    }
+
+    bool failed = false;
+
+    if (state->globalPairingPassword != NULL) {
+        copy->globalPairingPassword = strdup(state->globalPairingPassword);
+        if (copy->globalPairingPassword == NULL) {
+            failed = true;
+        }
+    }
+
+    if (state->globalSct != NULL) {
+        copy->globalSct = strdup(state->globalSct);
+        if (copy->globalSct == NULL) {
+            failed = true;
+        }
+    }
+
+    copy->passwordOpenPairing = state->passwordOpenPairing;
+    copy->localOpenPairing = state->localOpenPairing;
+    copy->passwordInvitePairing = state->passwordInvitePairing;
+    copy->localInitialPairing = state->localInitialPairing;
+
+    if(state->openPairingRole != NULL) {
+        copy->openPairingRole = strdup(state->openPairingRole);
+        if (copy->openPairingRole == NULL) {
+            failed = true;
+        }
+    }
+
+    if(state->initialPairingUsername != NULL) {
+        copy->initialPairingUsername = strdup(state->initialPairingUsername);
+        if (copy->initialPairingUsername == NULL) {
+            failed = true;
+        }
+    }
+
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &state->users) {
+        struct nm_iam_user* userCopy = nm_iam_user_copy(user);
+        if (userCopy == NULL) {
+            failed = true;
+        } else {
+            nn_llist_append(&copy->users, &userCopy->listNode, userCopy);
+        }
+    }
+    if (failed) {
+        nm_iam_state_free(copy);
+        return NULL;
+    } else {
+        return copy;
+    }
+}
