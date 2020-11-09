@@ -430,15 +430,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);
 
-    struct nm_iam_user* adminUser;
-    struct nm_iam_user* user = NULL;
-    NN_LLIST_FOREACH(user, &tcpTunnelState->users) {
-        if (user->username != NULL && strcmp(user->username, "admin") == 0) {
-            adminUser = user;
-            break;
-        }
-    }    
-
     if(!nm_iam_load_configuration(&iam, iamConfig)) {
         printf("Could not load iam configuration" NEWLINE);
         return false;
@@ -463,53 +454,76 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
     printf("# Product ID:        %s" NEWLINE, dc.productId);
     printf("# Device ID:         %s" NEWLINE, dc.deviceId);
-
-    if (adminUser && 
-        adminUser->fingerprint == NULL)
-    {
-
-        printf("# " NEWLINE);
-        printf("# The initial user has not been paired yet." NEWLINE);
-        printf("# Initial Pairing Usermame:  %s" NEWLINE, adminUser->username);
-        if (adminUser->password != NULL) {
-            printf("# Initial Pairing Password:  %s" NEWLINE, adminUser->password);
-        }
-        if (adminUser->serverConnectToken != NULL) {
-            printf("# Initial Pairing SCT:       %s" NEWLINE, adminUser->serverConnectToken);
-        }
-        // format the pairing string over the next couple of lines
-        printf("# Initial Pairing String:    p=%s,d=%s,u=%s", dc.productId, dc.deviceId, adminUser->username);
-        if (adminUser->password != NULL) {
-            printf(",pwd=%s",adminUser->password);
-        }
-        if (adminUser->serverConnectToken != NULL) {
-            printf(",sct=%s", adminUser->serverConnectToken);
-        }
-        printf(NEWLINE);
-
-    } else {
-        printf("# " NEWLINE);
-        printf("# The device is paired with an administrator. To get access" NEWLINE);
-        printf("# ask the administrator for an user account on the device." NEWLINE);
-    }
-
-    if (nm_iam_check_access(&iam, 0, "IAM:PairingPasswordOpen", NULL) && iam.state->globalPairingPassword != NULL && iam.state->globalSct != NULL) {
-        printf("# " NEWLINE);
-        printf("# The device has enabled PasswordOpen pairing meaning that " NEWLINE);
-        printf("# by authenticating with the empty username and the below " NEWLINE);
-        printf("# password gives you access to the device such that you can " NEWLINE);
-        printf("# create a new user yourself." NEWLINE);
-        printf("# Open Pairing Password:  %s" NEWLINE, iam.state->globalPairingPassword);
-        printf("# Open Pairing SCT:       %s" NEWLINE, iam.state->globalSct);
-        printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, iam.state->globalPairingPassword, iam.state->globalSct);
-    }
-
-    printf("# " NEWLINE);
     printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
     printf("# Version:           %s" NEWLINE, nabto_device_version());
     if (!args->randomPorts) {
         printf("# Local UDP Port:    %d" NEWLINE, 5592);
     }
+
+    struct nm_iam_user* initialUser;
+    struct nm_iam_user* user = NULL;
+    NN_LLIST_FOREACH(user, &iam.state->users) {
+        if (user->username != NULL && strcmp(user->username, iam.state->initialPairingUsername) == 0) {
+            initialUser = user;
+            break;
+        }
+    }
+
+    bool initialUserNeedPairing = initialUser && initialUser->fingerprint == NULL;
+
+    if (iam.state->localInitialPairing && initialUserNeedPairing) {
+        printf("# " NEWLINE);
+        printf(" The device is not yet paired with the initial user. You can use Local Initial Pairing to get access." NEWLINE);
+    }
+
+
+    if (iam.state->passwordInvitePairing && initialUserNeedPairing)
+    {
+        printf("# " NEWLINE);
+        printf("# The initial user has not been paired yet. But you can pair with the device usign Password Invite Pairing." NEWLINE);
+        printf("# Initial Pairing Usermame:  %s" NEWLINE, initialUser->username);
+        if (initialUser->password != NULL) {
+            printf("# Initial Pairing Password:  %s" NEWLINE, initialUser->password);
+        }
+        if (initialUser->serverConnectToken != NULL) {
+            printf("# Initial Pairing SCT:       %s" NEWLINE, initialUser->serverConnectToken);
+        }
+        // format the pairing string over the next couple of lines
+        printf("# Initial Pairing String:    p=%s,d=%s,u=%s", dc.productId, dc.deviceId, initialUser->username);
+        if (initialUser->password != NULL) {
+            printf(",pwd=%s",initialUser->password);
+        }
+        if (initialUser->serverConnectToken != NULL) {
+            printf(",sct=%s", initialUser->serverConnectToken);
+        }
+        printf(NEWLINE);
+
+    }
+
+    if (!initialUserNeedPairing) {
+        //  we are past the initial user being paired.
+        if (iam.state->passwordInvitePairing)
+        {
+            printf("# " NEWLINE);
+            printf("# The device provides Password Invite Pairing, contact the administrator to access." NEWLINE);
+        }
+
+        if (iam.state->localOpenPairing) {
+            printf("# " NEWLINE);
+            printf("# The device offers Local Open Pairing" NEWLINE);
+        }
+
+
+        if (iam.state->passwordOpenPairing && iam.state->globalPairingPassword != NULL && iam.state->globalSct != NULL) {
+            printf("# " NEWLINE);
+            printf("# The device has Password Open Pairing enabled" NEWLINE);
+            printf("# Open Pairing Password:  %s" NEWLINE, iam.state->globalPairingPassword);
+            printf("# Open Pairing SCT:       %s" NEWLINE, iam.state->globalSct);
+            printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, iam.state->globalPairingPassword, iam.state->globalSct);
+        }
+    }
+
+    printf("# " NEWLINE);
     printf("######## Configured TCP Services ########" NEWLINE);
     printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
     struct tcp_tunnel_service* item;
