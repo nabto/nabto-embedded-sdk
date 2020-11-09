@@ -1,6 +1,7 @@
 #include "nm_iam_auth_handler.h"
 
 #include "nm_iam.h"
+#include "nm_iam_internal.h"
 
 static void start_listen(struct nm_iam_auth_handler* handler);
 static void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
@@ -59,7 +60,7 @@ void handle_request(struct nm_iam_auth_handler* handler, NabtoDeviceAuthorizatio
         nn_string_map_insert(&attributes, key, value);
     }
     NabtoDeviceConnectionRef ref = nabto_device_authorization_request_get_connection_ref(request);
-    bool verdict = nm_iam_check_access(handler->iam, ref, action, &attributes);
+    bool verdict = nm_iam_internal_check_access(handler->iam, ref, action, &attributes);
 
     nabto_device_authorization_request_verdict(request, verdict);
 

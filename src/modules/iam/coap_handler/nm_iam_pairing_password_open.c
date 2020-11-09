@@ -24,7 +24,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingPasswordOpen", NULL)) {
+    if (!nm_iam_internal_check_access(handler->iam, ref, "IAM:PairingPasswordOpen", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
@@ -63,10 +63,10 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nm_iam_cbor_decode_kv_string(&value, "Username", &username);
         if (username == NULL || !nm_iam_user_validate_username(username)) {
             nabto_device_coap_error_response(request, 400, "Bad request");
-        } else if (nm_iam_find_user(handler->iam, username) != NULL) {
+        } else if (nm_iam_internal_find_user(handler->iam, username) != NULL) {
             nabto_device_coap_error_response(request, 409, "Conflict");
         } else {
-            if (!nm_iam_pair_new_client(handler->iam, request, username)) {
+            if (!nm_iam_internal_pair_new_client(handler->iam, request, username)) {
                 nabto_device_coap_error_response(request, 500, "Server error");
             } else {
                 // OK response

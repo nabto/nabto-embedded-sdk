@@ -18,7 +18,7 @@ NabtoDeviceError nm_iam_create_user_init(struct nm_iam_coap_handler* handler, Na
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, ref, "IAM:CreateUser", NULL)) {
+    if (!nm_iam_internal_check_access(handler->iam, ref, "IAM:CreateUser", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
@@ -40,7 +40,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    if (nm_iam_find_user(handler->iam, username) != NULL) {
+    if (nm_iam_internal_find_user(handler->iam, username) != NULL) {
         nabto_device_coap_error_response(request, 409, "Conflict");
         free(username);
         return;

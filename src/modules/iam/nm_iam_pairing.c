@@ -14,7 +14,7 @@ bool nm_iam_pairing_is_local_open_possible(struct nm_iam* iam, NabtoDeviceConnec
     if (iam->state->localOpenPairing == false)  {
         return false;
     }
-    if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalOpen", NULL)) {
+    if (!nm_iam_internal_check_access(iam, ref, "IAM:PairingLocalOpen", NULL)) {
         return false;
     }
     const char* role = nm_iam_pairing_open_get_role(iam);
@@ -26,7 +26,7 @@ bool nm_iam_pairing_is_local_open_possible(struct nm_iam* iam, NabtoDeviceConnec
 
 bool nm_iam_pairing_is_password_open_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
 {
-    if (!nm_iam_check_access(iam, ref, "IAM:PairingPasswordOpen", NULL)) {
+    if (!nm_iam_internal_check_access(iam, ref, "IAM:PairingPasswordOpen", NULL)) {
         return false;
     }
     if (iam->state->passwordOpenPairing == false)  {
@@ -44,7 +44,7 @@ bool nm_iam_pairing_is_password_open_possible(struct nm_iam* iam, NabtoDeviceCon
 
 bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
 {
-    if (!nm_iam_check_access(iam, ref, "IAM:PairingPasswordInvite", NULL)) {
+    if (!nm_iam_internal_check_access(iam, ref, "IAM:PairingPasswordInvite", NULL)) {
         return false;
     }
     if (iam->state->passwordInvitePairing == false)  {
@@ -55,14 +55,14 @@ bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceC
 
 bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
 {
-    if (!nm_iam_check_access(iam, ref, "IAM:PairingLocalInitial", NULL)) {
+    if (!nm_iam_internal_check_access(iam, ref, "IAM:PairingLocalInitial", NULL)) {
         return false;
     }
     if (iam->state->localInitialPairing == false)  {
         return false;
     }
     const char* initialUserUsername = iam->state->initialPairingUsername;
-    struct nm_iam_user* initialUser = nm_iam_find_user_by_username(iam, initialUserUsername);
+    struct nm_iam_user* initialUser = nm_iam_internal_find_user_by_username(iam, initialUserUsername);
     if (initialUser == NULL) {
         return false;
     } else {

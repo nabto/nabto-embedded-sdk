@@ -19,7 +19,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 {
     struct nm_iam* iam = handler->iam;
     NabtoDeviceConnectionRef conn = nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_check_access(handler->iam, conn , "IAM:SetSettings", NULL)) {
+    if (!nm_iam_internal_check_access(handler->iam, conn , "IAM:SetSettings", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
@@ -46,7 +46,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         }
 
         nm_iam_state_set_password_open_pairing(iam->state, b);
-        nm_iam_state_has_changed(iam);
+        nm_iam_internal_state_has_changed(iam);
 
     } else if (strcmp("key", "LocalOpenPairing") == 0) {
         bool b;
@@ -55,7 +55,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
             return;
         }
         nm_iam_state_set_local_open_pairing(iam->state, b);
-        nm_iam_state_has_changed(iam);
+        nm_iam_internal_state_has_changed(iam);
     } else {
         nabto_device_coap_error_response(request, 404, "No such key");
         return;

@@ -42,14 +42,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nn_string_map_insert(&attributes, "IAM:Username", username);
     nn_string_map_insert(&attributes, "IAM:RoleId", roleId);
 
-    if (!nm_iam_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserRole", &attributes)) {
+    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserRole", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         nn_string_map_deinit(&attributes);
         return;
     }
     nn_string_map_deinit(&attributes);
 
-    if (!nm_iam_set_user_role(handler->iam, username, roleId)) {
+    if (!nm_iam_internal_set_user_role(handler->iam, username, roleId)) {
         nabto_device_coap_response_set_code(request, 404);
     } else {
         nabto_device_coap_response_set_code(request, 204);

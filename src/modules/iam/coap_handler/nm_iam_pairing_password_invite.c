@@ -27,7 +27,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
     
-    if (!nm_iam_check_access(handler->iam, ref, "IAM:PairingPasswordInvite", NULL)) {
+    if (!nm_iam_internal_check_access(handler->iam, ref, "IAM:PairingPasswordInvite", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
@@ -41,7 +41,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     if (username == NULL) {
         nabto_device_coap_error_response(request, 500, "Server error");
     } else {
-        struct nm_iam_user* user = nm_iam_find_user_by_username(iam, username);
+        struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
         if (user == NULL) {
             nabto_device_coap_error_response(request, 500, "Server error");
         } else {
@@ -53,7 +53,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
                     nabto_device_coap_error_response(request, 500, "Insufficient resources");
                 } else {
                     nm_iam_user_set_password(user, NULL);
-                    nm_iam_state_has_changed(iam);
+                    nm_iam_internal_state_has_changed(iam);
                     nabto_device_coap_response_set_code(request, 201);
                     nabto_device_coap_response_ready(request);
                 }
