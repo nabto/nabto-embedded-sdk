@@ -51,7 +51,10 @@ void request_callback(NabtoDeviceFuture *future, NabtoDeviceError ec, void *user
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     } else {
+        struct nm_iam* iam = handler->iam;
+        nm_iam_lock(iam);
         handle_request(handler, handler->request);
+        nm_iam_unlock(iam);
         nabto_device_password_authentication_request_free(handler->request);
         start_listen(handler);
     }
@@ -59,16 +62,27 @@ void request_callback(NabtoDeviceFuture *future, NabtoDeviceError ec, void *user
 
 void handle_request(struct nm_iam_pake_handler *handler, NabtoDevicePasswordAuthenticationRequest *request)
 {
+    struct nm_iam* iam = handler->iam;
     const char *username = nabto_device_password_authentication_request_get_username(request);
 
-    if (handler->iam->state->globalPairingPassword &&
-        username && *username == '\0')
-    {
-        nabto_device_password_authentication_request_set_password(request, handler->iam->state->globalPairingPassword);
-    } else if (username) {
-        struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
-        if (user && user->password) {
-            nabto_device_password_authentication_request_set_password(request, user->password);
+    if (username == NULL) {
+        return;
+    }
+
+    if (strcmp(username, "") == 0) {
+        // password open pairing
+        if (iam->state->passwordOpenPairing && 
+            iam->state->globalPairingPassword != NULL) 
+        {
+            nabto_device_password_authentication_request_set_password(request, handler->iam->state->globalPairingPassword);
+        }
+    } else {
+        // password invite pairing
+        if (iam->state->passwordInvitePairing) {
+            struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
+            if (user && user->password) {
+                nabto_device_password_authentication_request_set_password(request, user->password);
+            }
         }
     }
 }

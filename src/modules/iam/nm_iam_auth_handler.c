@@ -41,7 +41,10 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     } else {
+        struct nm_iam* iam = handler->iam;
+        nm_iam_lock(iam);
         handle_request(handler, handler->request);
+        nm_iam_unlock(iam);
         nabto_device_authorization_request_free(handler->request);
         start_listen(handler);
     }
