@@ -50,7 +50,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
     nn_string_map_deinit(&attributes);
 
-    if (!nm_iam_internal_set_user_role(handler->iam, username, roleId)) {
+    if (nm_iam_internal_set_user_role(handler->iam, username, roleId) != NM_IAM_ERROR_OK) {
         nabto_device_coap_response_set_code(request, 404);
     } else {
         nabto_device_coap_response_set_code(request, 204);
