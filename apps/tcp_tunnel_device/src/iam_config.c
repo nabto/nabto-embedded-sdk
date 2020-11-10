@@ -111,7 +111,7 @@ bool iam_config_create_default(const char* iamConfigFile)
         nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
         nm_iam_configuration_add_role(iamConfig, r);
     }
-    
+
     {
         r = nm_iam_configuration_role_new("Guest");
         nm_iam_configuration_role_add_policy(r, "Pairing");
@@ -120,20 +120,16 @@ bool iam_config_create_default(const char* iamConfigFile)
     }
 
     nm_iam_configuration_set_unpaired_role(iamConfig, "Unpaired");
-    
-    char* str;
-    if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str)) {
-        nm_iam_configuration_free(iamConfig);
-        return false;
-    }
 
-    if(!string_file_save(iamConfigFile, str)) {
-        nm_iam_serializer_string_free(str);
-        nm_iam_configuration_free(iamConfig);
-        return false;
+    bool status = true;
+    char* str = NULL;
+    if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str)) {
+        status = false;
+    } else if(!string_file_save(iamConfigFile, str)) {
+        status = false;
     }
 
     nm_iam_serializer_string_free(str);
     nm_iam_configuration_free(iamConfig);
-    return true;
+    return status;
 }

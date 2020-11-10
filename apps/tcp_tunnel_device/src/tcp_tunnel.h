@@ -4,9 +4,6 @@
 #include <nn/vector.h>
 
 struct tcp_tunnel {
-    char* pairingPassword;
-    char* pairingServerConnectToken;
-
     char* deviceConfigFile;
     char* stateFile;
     char* iamConfigFile;

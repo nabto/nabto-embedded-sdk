@@ -106,16 +106,7 @@ struct nm_iam_user* nm_iam_internal_find_user_by_fingerprint(struct nm_iam* iam,
 
 struct nm_iam_user* nm_iam_internal_find_user_by_username(struct nm_iam* iam, const char* username)
 {
-    if (username == NULL) {
-        return NULL;
-    }
-    struct nm_iam_user* user;
-    NN_LLIST_FOREACH(user, &iam->state->users) {
-        if (user->username != NULL && strcmp(user->username, username) == 0) {
-            return user;
-        }
-    }
-    return NULL;
+    return nm_iam_state_find_user_by_username(iam->state, username);
 }
 
 struct nm_iam_role* nm_iam_internal_find_role(struct nm_iam* iam, const char* roleStr)

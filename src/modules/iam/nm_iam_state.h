@@ -168,6 +168,11 @@ struct nm_iam_user* nm_iam_state_find_user(struct nm_iam_state* state, const cha
  */
 struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state);
 
+/**
+ * Comomn helper functions
+ */
+struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* state, const char* username);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

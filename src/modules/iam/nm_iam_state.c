@@ -214,3 +214,18 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
         return copy;
     }
 }
+
+
+struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* state, const char* username)
+{
+    if (username == NULL) {
+        return NULL;
+    }
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &state->users) {
+        if (user->username != NULL && strcmp(user->username, username) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}

@@ -60,7 +60,6 @@ enum {
     OPTION_SHOW_STATE,
     OPTION_HOME_DIR,
     OPTION_RANDOM_PORTS,
-    OPTION_RESET,
     OPTION_INIT
 };
 
@@ -71,7 +70,6 @@ struct args {
     const char* logLevel;
     char* homeDir;
     bool randomPorts;
-    bool reset;
     bool init;
 };
 
@@ -143,7 +141,6 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x4s[] = "";       const char* x4l[] = { "show-state", 0 };
     const char x5s[] = "H";      const char* x5l[] = { "home-dir", 0 };
     const char x6s[] = "";       const char* x6l[] = { "random-ports", 0 };
-    const char x7s[] = "";       const char* x7l[] = { "reset", 0 };
     const char x8s[] = "";       const char* x8l[] = { "init", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
@@ -153,7 +150,6 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_SHOW_STATE, GOPT_NOARG, x4s, x4l },
         { OPTION_HOME_DIR, GOPT_ARG, x5s, x5l },
         { OPTION_RANDOM_PORTS, GOPT_NOARG, x6s, x6l },
-        { OPTION_RESET, GOPT_NOARG, x7s, x7l },
         { OPTION_INIT, GOPT_NOARG, x8s, x8l },
         {0,0,0,0}
     };
@@ -172,10 +168,6 @@ static bool parse_args(int argc, char** argv, struct args* args)
 
     if (gopt(options, OPTION_RANDOM_PORTS)) {
         args->randomPorts = true;
-    }
-
-    if (gopt(options, OPTION_RESET)) {
-        args->reset = true;
     }
 
     if (gopt(options, OPTION_INIT)) {
@@ -225,8 +217,7 @@ void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)
     free(tunnel->iamConfigFile);
     free(tunnel->privateKeyFile);
     free(tunnel->servicesFile);
-    free(tunnel->pairingPassword);
-    free(tunnel->pairingServerConnectToken);
+
     struct tcp_tunnel_service* service;
     NN_VECTOR_FOREACH(&service, &tunnel->services)
     {
@@ -247,17 +238,6 @@ char* expand_file_name(const char* homeDir, const char* fileName)
 
     sprintf(fullFileName, "%s/%s", homeDir, fileName);
     return fullFileName;
-}
-
-char* generate_pairing_string(const char* productId, const char* deviceId, const char* pairingPassword, const char* pairingServerConnectToken)
-{
-    static char buffer[1024];
-    sprintf(buffer, "p=%s,d=%s,pwd=%s,sct=%s",
-            productId,
-            deviceId,
-            pairingPassword,
-            pairingServerConnectToken);
-    return buffer;
 }
 
 void print_item(const char* item)
@@ -424,8 +404,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
     nabto_device_enable_mdns(device);
     nabto_device_mdns_add_subtype(device, "tcptunnel");
-    nabto_device_mdns_add_txt_item(device, "fn", "tcp tunnel");
-
+    nabto_device_mdns_add_txt_item(device, "fn", "Tcp Tunnel");
 
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);
@@ -460,24 +439,24 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         printf("# Local UDP Port:    %d" NEWLINE, 5592);
     }
 
-    struct nm_iam_user* initialUser;
-    struct nm_iam_user* user = NULL;
-    NN_LLIST_FOREACH(user, &iam.state->users) {
-        if (user->username != NULL && strcmp(user->username, iam.state->initialPairingUsername) == 0) {
-            initialUser = user;
-            break;
-        }
+    // Create a copy of the state and print information from it.
+    struct nm_iam_state* state = nm_iam_dump_state(&iam);
+
+    if (state == NULL) {
+        return false;
     }
+
+    struct nm_iam_user* initialUser = nm_iam_state_find_user_by_username(state, state->initialPairingUsername);
 
     bool initialUserNeedPairing = initialUser && initialUser->fingerprint == NULL;
 
-    if (iam.state->localInitialPairing && initialUserNeedPairing) {
+    if (state->localInitialPairing && initialUserNeedPairing) {
         printf("# " NEWLINE);
         printf(" The device is not yet paired with the initial user. You can use Local Initial Pairing to get access." NEWLINE);
     }
 
 
-    if (iam.state->passwordInvitePairing && initialUserNeedPairing)
+    if (state->passwordInvitePairing && initialUserNeedPairing)
     {
         printf("# " NEWLINE);
         printf("# The initial user has not been paired yet. You can pair with the device using Password Invite Pairing." NEWLINE);
@@ -502,24 +481,24 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     if (!initialUserNeedPairing) {
         //  we are past the initial user being paired.
-        if (iam.state->passwordInvitePairing)
+        if (state->passwordInvitePairing)
         {
             printf("# " NEWLINE);
             printf("# The device provides Password Invite Pairing, contact the administrator to access." NEWLINE);
         }
 
-        if (iam.state->localOpenPairing) {
+        if (state->localOpenPairing) {
             printf("# " NEWLINE);
             printf("# The device offers Local Open Pairing" NEWLINE);
         }
 
 
-        if (iam.state->passwordOpenPairing && iam.state->passwordOpenPassword != NULL && iam.state->passwordOpenSct != NULL) {
+        if (state->passwordOpenPairing && state->passwordOpenPassword != NULL && state->passwordOpenSct != NULL) {
             printf("# " NEWLINE);
             printf("# The device has Password Open Pairing enabled" NEWLINE);
-            printf("# Open Pairing Password:  %s" NEWLINE, iam.state->passwordOpenPassword);
-            printf("# Open Pairing SCT:       %s" NEWLINE, iam.state->passwordOpenSct);
-            printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, iam.state->passwordOpenPassword, iam.state->passwordOpenSct);
+            printf("# Open Pairing Password:  %s" NEWLINE, state->passwordOpenPassword);
+            printf("# Open Pairing SCT:       %s" NEWLINE, state->passwordOpenSct);
+            printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, state->passwordOpenPassword, state->passwordOpenSct);
         }
     }
 
@@ -608,9 +587,12 @@ void iam_user_changed(struct nm_iam* iam, void* userData)
 {
     struct tcp_tunnel* tcpTunnel = userData;
     struct nm_iam_state* state = nm_iam_dump_state(iam);
-    if (!save_tcp_tunnel_state(tcpTunnel->stateFile, state)) {
-        printf("Could not save tcp_tunnel state to %s", tcpTunnel->stateFile);
+    if(state == NULL) {
+        printf("Error could not dump IAM state" NEWLINE);
+    } else if (!save_tcp_tunnel_state(tcpTunnel->stateFile, state)) {
+        printf("Could not save tcp_tunnel state to %s" NEWLINE, tcpTunnel->stateFile);
     }
+    nm_iam_state_free(state);
 }
 
 bool make_directory(const char* directory)
