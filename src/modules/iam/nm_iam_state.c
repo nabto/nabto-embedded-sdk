@@ -121,6 +121,41 @@ bool nm_iam_state_add_user(struct nm_iam_state* state, struct nm_iam_user* user)
     return true;
 }
 
+struct nm_iam_user* nm_iam_state_user_new(const char* username)
+{
+    return nm_iam_user_new(username);
+}
+
+void nm_iam_state_user_free(struct nm_iam_user* user)
+{
+    return nm_iam_user_free(user);
+}
+
+bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint)
+{
+    return nm_iam_user_set_fingerprint(user, fingerprint);
+}
+
+bool nm_iam_state_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken)
+{
+    return nm_iam_user_set_server_connect_token(user, serverConnectToken);
+}
+
+bool nm_iam_state_user_set_display_name(struct nm_iam_user* user, const char* displayName)
+{
+    return nm_iam_user_set_display_name(user, displayName);
+}
+
+bool nm_iam_state_user_set_role(struct nm_iam_user* user, const char* roleId)
+{
+    return nm_iam_user_set_role(user, roleId);
+}
+
+bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* password)
+{
+    return nm_iam_user_set_password(user, password);
+}
+
 struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
 {
     struct nm_iam_state* copy = nm_iam_state_new();

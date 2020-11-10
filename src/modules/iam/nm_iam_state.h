@@ -70,12 +70,42 @@ bool nm_iam_state_set_pairing_password(struct nm_iam_state* state, const char* p
  */
 bool nm_iam_state_set_pairing_server_connect_token(struct nm_iam_state* state, const char* serverConnectToken);
 
+/**
+ * Enable/disable pairing modes. Each pairing mode will be disabled by
+ * default if its corresponding set function is not called.
+ *
+ * @param state [in]  The IAM state
+ * @param b [in]      The boolean value to set
+ */
 void nm_iam_state_set_password_open_pairing(struct nm_iam_state* state, bool b);
 void nm_iam_state_set_local_open_pairing(struct nm_iam_state* state, bool b);
 void nm_iam_state_set_password_invite_pairing(struct nm_iam_state* state, bool b);
 void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b);
+
+/**
+ * Set the role to assign to new users paired through an open pairing
+ * mode. The role ID string is copied into the state.
+ *
+ * @param state [in]            The IAM state
+ * @param openPairingRole [in]  ID of the role to use.
+ * @return true iff the role was set.
+ */
 bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* openPairingRole);
+
+/**
+ * Set the username to pair as during local initial pairing. The role
+ * ID string is copied into the state.
+ *
+ * @param state [in]                   The IAM state
+ * @param initialPairingUsername [in]  ID of the role to use.
+ * @return true iff the username was set.
+ */
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* initialPairingUsername);
+
+
+/****************
+ * User Builder *
+ ****************/
 
 /**
  * Add a user to the IAM state. The state takes ownership of the user
@@ -87,8 +117,55 @@ bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const
  */
 bool nm_iam_state_add_user(struct nm_iam_state* state, struct nm_iam_user* user);
 
+/**
+ * Create a new user with the specified username. The username must
+ * only use the character set: ['a-z', '0-9','_','-','.'].
+ *
+ * @param username [in]  The username. The string is copied into the user.
+ * @return NULL iff the username was invalid or allocation failed
+ */
+struct nm_iam_user* nm_iam_state_user_new(const char* username);
+
+/**
+ * Free user created with nm_iam_state_user_new() if the ownership was
+ * has not been transferred to the state using
+ * nm_iam_state_add_user().
+ *
+ * @param user [in]  User to free
+ */
+void nm_iam_state_user_free(struct nm_iam_user* user);
+
+/**
+ * Set functions for modifying fingerprint, server connect token,
+ * display name, role, and password in a user. Strings are copied into
+ * the user when set.
+ *
+ * @param user [in]      User to set string in
+ * @param <string> [in]  The string to copy into the user
+ */
+bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint);
+bool nm_iam_state_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken);
+bool nm_iam_state_user_set_display_name(struct nm_iam_user* user, const char* displayName);
+bool nm_iam_state_user_set_role(struct nm_iam_user* user, const char* roleId);
+bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* password);
+
+/**
+ * Find a user with a given username in a state structure.
+ *
+ * @param state [in]     The state to look for the user in
+ * @param username [in]  The username to look for
+ * @return NULL iff the user could not be found
+ */
 struct nm_iam_user* nm_iam_state_find_user(struct nm_iam_state* state, const char* username);
 
+/**
+ * Copy a state object. The received copy must be freed with
+ * nm_iam_state_free() or the ownership must be transferred to an IAM
+ * module.
+ *
+ * @param state [in]  The state to copy
+ * @return NULL iff the state could not be copied
+ */
 struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state);
 
 #ifdef __cplusplus
