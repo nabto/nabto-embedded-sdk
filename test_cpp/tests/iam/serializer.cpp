@@ -11,8 +11,8 @@ namespace {
 
 std::string s1 = R"(
 {
-  "PairingPassword":"password",
-  "PairingServerConnectToken":"token",
+  "OpenPairingPassword":"password",
+  "OpenPairingSct":"token",
   "Users": [
     {
       "DisplayName":"Display Name",
@@ -143,11 +143,11 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
 
     nlohmann::json j = nlohmann::json::parse(jStr);
 
-    BOOST_TEST(j["PairingPassword"].is_string());
-    BOOST_TEST(j["PairingPassword"].get<std::string>().compare("password") == 0);
+    BOOST_TEST(j["OpenPairingPassword"].is_string());
+    BOOST_TEST(j["OpenPairingPassword"].get<std::string>().compare("password") == 0);
 
-    BOOST_TEST(j["PairingServerConnectToken"].is_string());
-    BOOST_TEST(j["PairingServerConnectToken"].get<std::string>().compare("token") == 0);
+    BOOST_TEST(j["OpenPairingSct"].is_string());
+    BOOST_TEST(j["OpenPairingSct"].get<std::string>().compare("token") == 0);
 
     BOOST_TEST(j["Users"].is_array());
     BOOST_TEST(j["Users"].size() == (size_t)1);

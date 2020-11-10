@@ -144,10 +144,10 @@ bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out)
 
     } else {
         if (state->passwordOpenPassword) {
-            cJSON_AddItemToObject(json, "PairingPassword", cJSON_CreateString(state->passwordOpenPassword));
+            cJSON_AddItemToObject(json, "OpenPairingPassword", cJSON_CreateString(state->passwordOpenPassword));
         }
         if (state->passwordOpenSct) {
-            cJSON_AddItemToObject(json, "PairingServerConnectToken", cJSON_CreateString(state->passwordOpenSct));
+            cJSON_AddItemToObject(json, "OpenPairingSct", cJSON_CreateString(state->passwordOpenSct));
         }
         cJSON_AddItemToObject(json, "LocalOpenPairing", cJSON_CreateBool(state->localOpenPairing));
         cJSON_AddItemToObject(json, "PasswordOpenPairing", cJSON_CreateBool(state->passwordOpenPairing));
@@ -205,8 +205,8 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
     }
 
     cJSON* version = cJSON_GetObjectItem(root, "Version");
-    cJSON* pairingPassword = cJSON_GetObjectItem(root, "PairingPassword");
-    cJSON* pairingServerConnectToken = cJSON_GetObjectItem(root, "PairingServerConnectToken");
+    cJSON* openPairingPassword = cJSON_GetObjectItem(root, "OpenPairingPassword");
+    cJSON* openPairingSct = cJSON_GetObjectItem(root, "OpenPairingSct");
     cJSON* localOpenPairing = cJSON_GetObjectItem(root, "LocalOpenPairing");
     cJSON* passwordOpenPairing = cJSON_GetObjectItem(root, "PasswordOpenPairing");
     cJSON* passwordInvitePairing = cJSON_GetObjectItem(root, "PasswordInvitePairing");
@@ -222,12 +222,12 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
         return false;
     }
 
-    if (pairingPassword != NULL && cJSON_IsString(pairingPassword)) {
-        nm_iam_state_set_password_open_password(state, pairingPassword->valuestring);
+    if (openPairingPassword != NULL && cJSON_IsString(openPairingPassword)) {
+        nm_iam_state_set_password_open_password(state, openPairingPassword->valuestring);
     }
 
-    if (pairingServerConnectToken != NULL && cJSON_IsString(pairingServerConnectToken)) {
-        nm_iam_state_set_password_open_sct(state, pairingServerConnectToken->valuestring);
+    if (openPairingSct != NULL && cJSON_IsString(openPairingSct)) {
+        nm_iam_state_set_password_open_sct(state, openPairingSct->valuestring);
     }
 
     if (localOpenPairing != NULL && cJSON_IsBool(localOpenPairing)) {

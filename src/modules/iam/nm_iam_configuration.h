@@ -103,7 +103,6 @@ struct nm_iam_role {
 struct nm_iam_configuration {
     struct nn_llist roles; // linked list of struct nm_iam_role
     struct nn_llist policies; // linked list of struct nm_iam_policy
-    struct nn_string_set pairingModes;
 
     char* unpairedRole;
 };
