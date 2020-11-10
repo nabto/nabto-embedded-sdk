@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 
 #include <cbor.h>
+#include <future>
 
 namespace nabto {
 namespace test {
@@ -85,12 +86,16 @@ class AttachCoapServer {
     }
 
     void stop() {
-        // TODO: Was this defferrence only needed in BS ?
-        //nabto::TestFuture tf;
+        if (stopped_) {
+            return;
+        }
+        stopped_ = true;
+        std::future<void> future = promise_.get_future();
         io_.post([this](){
-            dtlsServer_.stop();
-        });
-        //dtlsServer_.stop();
+                     dtlsServer_.stop();
+                     promise_.set_value();
+                 });
+        future.get();
     }
 
     virtual void initCoapHandlers() = 0;
@@ -119,6 +124,8 @@ class AttachCoapServer {
     boost::asio::io_context& io_;
     DtlsServer dtlsServer_;
     uint16_t port_ = 0;
+    std::promise<void> promise_;
+    bool stopped_ = false;
 
 };
 
