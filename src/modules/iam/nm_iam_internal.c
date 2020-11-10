@@ -249,9 +249,6 @@ bool nm_iam_internal_get_users(struct nm_iam* iam, struct nn_string_set* usernam
 void nm_iam_internal_state_has_changed(struct nm_iam* iam)
 {
     iam->stateHasChanged = true;
-    if (iam->changeCallback.stateChanged) {
-        iam->changeCallback.stateChanged(iam, iam->changeCallback.stateChangedData);
-    }
 }
 
 void nm_iam_internal_do_callbacks(struct nm_iam* iam)
@@ -415,7 +412,7 @@ enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* us
     }
     char* sct;
     if (nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
-        !nm_iam_user_set_sct(user, sct)) 
+        !nm_iam_user_set_sct(user, sct))
     {
         nabto_device_string_free(sct);
         nm_iam_user_free(user);

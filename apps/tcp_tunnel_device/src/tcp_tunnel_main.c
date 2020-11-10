@@ -607,7 +607,8 @@ void print_iam_state(struct nm_iam_state* state)
 void iam_user_changed(struct nm_iam* iam, void* userData)
 {
     struct tcp_tunnel* tcpTunnel = userData;
-    if (!save_tcp_tunnel_state(tcpTunnel->stateFile, iam->state)) {
+    struct nm_iam_state* state = nm_iam_dump_state(iam);
+    if (!save_tcp_tunnel_state(tcpTunnel->stateFile, state)) {
         printf("Could not save tcp_tunnel state to %s", tcpTunnel->stateFile);
     }
 }
