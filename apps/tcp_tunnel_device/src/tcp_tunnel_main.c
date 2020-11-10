@@ -480,7 +480,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     if (iam.state->passwordInvitePairing && initialUserNeedPairing)
     {
         printf("# " NEWLINE);
-        printf("# The initial user has not been paired yet. You can pair with the device usign Password Invite Pairing." NEWLINE);
+        printf("# The initial user has not been paired yet. You can pair with the device using Password Invite Pairing." NEWLINE);
         printf("# Initial Pairing Usermame:  %s" NEWLINE, initialUser->username);
         if (initialUser->password != NULL) {
             printf("# Initial Pairing Password:  %s" NEWLINE, initialUser->password);
