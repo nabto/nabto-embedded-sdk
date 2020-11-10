@@ -246,21 +246,6 @@ bool nm_iam_internal_get_users(struct nm_iam* iam, struct nn_string_set* usernam
     return true;
 }
 
-void nm_iam_internal_delete_user(struct nm_iam* iam, const char* username)
-{
-    struct nm_iam_user* user;
-    NN_LLIST_FOREACH(user, &iam->state->users) {
-        if (strcmp(user->username, username) == 0) {
-            nn_llist_erase_node(&user->listNode);
-            nm_iam_user_free(user);
-
-            nm_iam_internal_state_has_changed(iam);
-            return;
-        }
-
-    }
-}
-
 void nm_iam_internal_state_has_changed(struct nm_iam* iam)
 {
     iam->stateHasChanged = true;
@@ -269,7 +254,7 @@ void nm_iam_internal_state_has_changed(struct nm_iam* iam)
     }
 }
 
-void nm_iam_internal_check_and_do_callbacks(struct nm_iam* iam)
+void nm_iam_internal_do_callbacks(struct nm_iam* iam)
 {
     nm_iam_state_changed cb;
     void* userData;
@@ -285,28 +270,6 @@ void nm_iam_internal_check_and_do_callbacks(struct nm_iam* iam)
     if (doit && cb != NULL) {
         cb(iam, userData);
     }
-}
-
-bool nm_iam_internal_set_user_role(struct nm_iam* iam, const char* username, const char* roleId)
-{
-    struct nm_iam_user* user = nm_iam_internal_find_user(iam, username);
-    struct nm_iam_role* role = nm_iam_internal_find_role(iam, roleId);
-
-    if (user == NULL) {
-        NN_LOG_INFO(iam->logger, LOGM, "The username %s does not exists", username);
-        return false;
-    }
-    if (role == NULL) {
-        NN_LOG_INFO(iam->logger, LOGM, "The role %s does not exists", roleId);
-        return false;
-    }
-
-    bool status = nm_iam_user_set_role(user, roleId);
-
-    if (status == true) {
-        nm_iam_internal_state_has_changed(iam);
-    }
-    return status;
 }
 
 
@@ -435,4 +398,126 @@ void nm_iam_internal_stop(struct nm_iam* iam)
 
     nm_iam_auth_handler_stop(&iam->authHandler);
     nm_iam_pake_handler_stop(&iam->pakeHandler);
+}
+
+enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* username)
+{
+
+    struct nm_iam_user* user;
+    user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user != NULL) {
+        return NM_IAM_ERROR_USER_EXISTS;
+    }
+
+    user = nm_iam_user_new(username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_INTERNAL;
+    }
+    char* sct;
+    if (nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
+        !nm_iam_user_set_sct(user, sct)) 
+    {
+        nabto_device_string_free(sct);
+        nm_iam_user_free(user);
+        return NM_IAM_ERROR_INTERNAL;
+    }
+    nabto_device_string_free(sct);
+
+    nm_iam_internal_add_user(iam, user);
+    return NM_IAM_ERROR_OK;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    // todo handle invalid fingerprint format.
+    if (nm_iam_user_set_fingerprint(user, fingerprint)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_sct(struct nm_iam* iam, const char* username, const char* sct)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_sct(user, sct)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_password(struct nm_iam* iam, const char* username, const char* password)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_password(user, password)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_role(struct nm_iam* iam, const char* username, const char* roleStr)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    struct nm_iam_role* role = nm_iam_internal_find_role(iam, roleStr);
+    if (role == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_ROLE;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_role(user, roleStr)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_display_name(user, displayName)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_delete_user(struct nm_iam* iam, const char* username)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    nn_llist_erase_node(&user->listNode);
+    nm_iam_user_free(user);
+
+    nm_iam_internal_state_has_changed(iam);
+    return NM_IAM_ERROR_OK;
 }

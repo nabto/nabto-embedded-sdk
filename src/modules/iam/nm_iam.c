@@ -100,3 +100,90 @@ struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam)
     nm_iam_unlock(iam);
     return copy;
 }
+
+/**
+ * Enable/disalbe open pairing.
+ */
+void nm_iam_set_local_open_pairing(struct nm_iam* iam, bool enabled)
+{
+    nm_iam_lock(iam);
+    iam->state->localOpenPairing = enabled;
+    nm_iam_internal_state_has_changed(iam);
+    nm_iam_unlock(iam);
+    nm_iam_internal_do_callbacks(iam);
+}
+
+void nm_iam_set_password_open_pairing(struct nm_iam* iam, bool enabled)
+{
+    nm_iam_lock(iam);
+    iam->state->passwordOpenPairing = enabled;
+    nm_iam_internal_state_has_changed(iam);
+    nm_iam_unlock(iam);
+    nm_iam_internal_do_callbacks(iam);
+}
+
+/**
+ * Manage the user database at runtime from the application
+ */
+enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_create_user(iam, username);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_fingerprint(iam, username, fingerprint);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, const char* sct)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_sct(iam, username, sct);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* username, const char* password)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_password(iam, username, password);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* role)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_role(iam, username, role);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_display_name(iam, username, displayName);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_delete_user(iam, username);
+    nm_iam_unlock(iam);
+    return ec;   
+}

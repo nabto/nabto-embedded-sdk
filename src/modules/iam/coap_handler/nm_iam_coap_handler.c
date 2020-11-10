@@ -75,7 +75,7 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
         handler->requestHandler(handler, handler->request);
         nabto_device_threads_mutex_unlock(iam->mutex);
         nabto_device_coap_request_free(handler->request);
-        nm_iam_internal_check_and_do_callbacks(handler->iam);
+        nm_iam_internal_do_callbacks(handler->iam);
         start_listen(handler);
     }
 }
