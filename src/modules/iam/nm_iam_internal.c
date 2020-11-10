@@ -25,6 +25,11 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
             nn_string_map_insert(&attributes, nn_string_map_key(&it), nn_string_map_value(&it));
         }
     }
+    if (nabto_device_connection_is_local(iam->device, ref)) {
+        nn_string_map_insert(&attributes, "Connection:IsLocal", "true");
+    } else {
+        nn_string_map_insert(&attributes, "Connection:IsLocal", "false");
+    }
 
     struct nm_iam_user* user = nm_iam_internal_find_user_by_fingerprint(iam, fingerprint);
     nabto_device_string_free(fingerprint);
@@ -35,11 +40,6 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
 
     if (user) {
         nn_string_map_insert(&attributes, "Connection:Username", user->username);
-        if (nabto_device_connection_is_local(iam->device, ref)) {
-            nn_string_map_insert(&attributes, "Connection:IsLocal", "true");
-        } else {
-            nn_string_map_insert(&attributes, "Connection:IsLocal", "false");
-        }
         roleStr = user->role;
     }
     struct nm_iam_role* role = nm_iam_internal_find_role(iam, roleStr);
