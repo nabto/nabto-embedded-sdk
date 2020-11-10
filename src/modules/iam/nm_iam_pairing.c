@@ -32,7 +32,7 @@ bool nm_iam_pairing_is_password_open_possible(struct nm_iam* iam, NabtoDeviceCon
     if (iam->state->passwordOpenPairing == false)  {
         return false;
     }
-    if (iam->state->globalPairingPassword == NULL) {
+    if (iam->state->passwordOpenPassword == NULL) {
         return false;
     }
     const char* role = nm_iam_pairing_open_get_role(iam);

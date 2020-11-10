@@ -485,16 +485,16 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         if (initialUser->password != NULL) {
             printf("# Initial Pairing Password:  %s" NEWLINE, initialUser->password);
         }
-        if (initialUser->serverConnectToken != NULL) {
-            printf("# Initial Pairing SCT:       %s" NEWLINE, initialUser->serverConnectToken);
+        if (initialUser->sct != NULL) {
+            printf("# Initial Pairing SCT:       %s" NEWLINE, initialUser->sct);
         }
         // format the pairing string over the next couple of lines
         printf("# Initial Pairing String:    p=%s,d=%s,u=%s", dc.productId, dc.deviceId, initialUser->username);
         if (initialUser->password != NULL) {
             printf(",pwd=%s",initialUser->password);
         }
-        if (initialUser->serverConnectToken != NULL) {
-            printf(",sct=%s", initialUser->serverConnectToken);
+        if (initialUser->sct != NULL) {
+            printf(",sct=%s", initialUser->sct);
         }
         printf(NEWLINE);
 
@@ -514,12 +514,12 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         }
 
 
-        if (iam.state->passwordOpenPairing && iam.state->globalPairingPassword != NULL && iam.state->globalSct != NULL) {
+        if (iam.state->passwordOpenPairing && iam.state->passwordOpenPassword != NULL && iam.state->passwordOpenSct != NULL) {
             printf("# " NEWLINE);
             printf("# The device has Password Open Pairing enabled" NEWLINE);
-            printf("# Open Pairing Password:  %s" NEWLINE, iam.state->globalPairingPassword);
-            printf("# Open Pairing SCT:       %s" NEWLINE, iam.state->globalSct);
-            printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, iam.state->globalPairingPassword, iam.state->globalSct);
+            printf("# Open Pairing Password:  %s" NEWLINE, iam.state->passwordOpenPassword);
+            printf("# Open Pairing SCT:       %s" NEWLINE, iam.state->passwordOpenSct);
+            printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, iam.state->passwordOpenPassword, iam.state->passwordOpenSct);
         }
     }
 

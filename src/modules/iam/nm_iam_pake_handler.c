@@ -72,9 +72,9 @@ void handle_request(struct nm_iam_pake_handler *handler, NabtoDevicePasswordAuth
     if (strcmp(username, "") == 0) {
         // password open pairing
         if (iam->state->passwordOpenPairing && 
-            iam->state->globalPairingPassword != NULL) 
+            iam->state->passwordOpenPassword != NULL) 
         {
-            nabto_device_password_authentication_request_set_password(request, handler->iam->state->globalPairingPassword);
+            nabto_device_password_authentication_request_set_password(request, handler->iam->state->passwordOpenPassword);
         }
     } else {
         // password invite pairing

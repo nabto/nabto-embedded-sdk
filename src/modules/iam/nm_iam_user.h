@@ -16,7 +16,7 @@ void nm_iam_user_free(struct nm_iam_user* user);
 bool nm_iam_user_validate_username(const char* username);
 
 bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint);
-bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken);
+bool nm_iam_user_set_sct(struct nm_iam_user* user, const char* sct);
 bool nm_iam_user_set_username(struct nm_iam_user* user, const char* username);
 bool nm_iam_user_set_display_name(struct nm_iam_user* user, const char* displayName);
 bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId);

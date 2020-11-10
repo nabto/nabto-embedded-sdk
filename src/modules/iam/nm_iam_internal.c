@@ -184,7 +184,7 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
     nm_iam_user_set_role(user, role);
 
     nm_iam_user_set_fingerprint(user, fingerprint);
-    nm_iam_user_set_server_connect_token(user, sct);
+    nm_iam_user_set_sct(user, sct);
 
     nm_iam_internal_add_user(iam, user);
 
@@ -198,8 +198,8 @@ bool nm_iam_internal_add_user(struct nm_iam* iam, struct nm_iam_user* user)
 {
     nn_llist_append(&iam->state->users, &user->listNode, user);
 
-    if (user->serverConnectToken != NULL) {
-        nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
+    if (user->sct != NULL) {
+        nabto_device_add_server_connect_token(iam->device, user->sct);
     }
 
     nm_iam_internal_state_has_changed(iam);
@@ -349,10 +349,10 @@ bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
     }
     iam->state = state;
 
-    nabto_device_add_server_connect_token(iam->device, iam->state->globalSct);
+    nabto_device_add_server_connect_token(iam->device, iam->state->passwordOpenSct);
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users) {
-        nabto_device_add_server_connect_token(iam->device, user->serverConnectToken);
+        nabto_device_add_server_connect_token(iam->device, user->sct);
     }
 
     return true;

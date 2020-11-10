@@ -143,11 +143,11 @@ bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out)
         cJSON_AddItemToObject(json, "Users", usersArray);
 
     } else {
-        if (state->globalPairingPassword) {
-            cJSON_AddItemToObject(json, "PairingPassword", cJSON_CreateString(state->globalPairingPassword));
+        if (state->passwordOpenPassword) {
+            cJSON_AddItemToObject(json, "PairingPassword", cJSON_CreateString(state->passwordOpenPassword));
         }
-        if (state->globalSct) {
-            cJSON_AddItemToObject(json, "PairingServerConnectToken", cJSON_CreateString(state->globalSct));
+        if (state->passwordOpenSct) {
+            cJSON_AddItemToObject(json, "PairingServerConnectToken", cJSON_CreateString(state->passwordOpenSct));
         }
         cJSON_AddItemToObject(json, "LocalOpenPairing", cJSON_CreateBool(state->localOpenPairing));
         cJSON_AddItemToObject(json, "PasswordOpenPairing", cJSON_CreateBool(state->passwordOpenPairing));
@@ -223,11 +223,11 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
     }
 
     if (pairingPassword != NULL && cJSON_IsString(pairingPassword)) {
-        nm_iam_state_set_pairing_password(state, pairingPassword->valuestring);
+        nm_iam_state_set_password_open_password(state, pairingPassword->valuestring);
     }
 
     if (pairingServerConnectToken != NULL && cJSON_IsString(pairingServerConnectToken)) {
-        nm_iam_state_set_pairing_server_connect_token(state, pairingServerConnectToken->valuestring);
+        nm_iam_state_set_password_open_sct(state, pairingServerConnectToken->valuestring);
     }
 
     if (localOpenPairing != NULL && cJSON_IsBool(localOpenPairing)) {

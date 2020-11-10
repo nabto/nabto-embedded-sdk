@@ -49,7 +49,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         free(sct);
         return;
     }
-    if (!nm_iam_user_set_server_connect_token(user, sct)) {
+    if (!nm_iam_user_set_sct(user, sct)) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         free(sct);
         return;

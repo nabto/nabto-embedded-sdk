@@ -127,27 +127,6 @@ struct nm_iam_configuration* nm_iam_configuration_new();
 void nm_iam_configuration_free(struct nm_iam_configuration* conf);
 
 /**
- * Set the role for the first paired user. Mandatory for the typical
- * IAM use cases.
- *
- * @param conf [in]  The IAM configuration,
- * @param role [in]  The role of first user to pair. The string is copied into the module.
- * @return false iff the role was not set.
- */
-bool nm_iam_configuration_set_first_user_role(struct nm_iam_configuration* conf, const char* role);
-
-/**
- * Set the role for the secondary users on the system. Mandatory if
- * new users are allowed to pair autonomously. Not used if new users
- * are by admin-invitation only ("Industrial pairing").
- *
- * @param conf [in]  The IAM configuration,
- * @param role [in]  Set the role of the secondary users. The string is copied into the module.
- * @return false iff the role was not set.
- */
-bool nm_iam_configuration_set_secondary_user_role(struct nm_iam_configuration* conf, const char* role);
-
-/**
  * Set the role for unpaired connections on the system to allow
  * unknown users to connect and do pairing (and perhaps retrieve some
  * public information).
@@ -157,12 +136,6 @@ bool nm_iam_configuration_set_secondary_user_role(struct nm_iam_configuration* c
  * @return false iff the role was not set.
  */
 bool nm_iam_configuration_set_unpaired_role(struct nm_iam_configuration* conf, const char* role);
-
-/**
- * Set the username for the first user username. This is used to inform the
- * client about what user it should use for the initial pairing.
- */
-bool nm_iam_configuration_set_initial_user_username(struct nm_iam_configuration* conf, const char* initialUserUsername);
 
 /**
  * Add a policy to the IAM configuration. The ownership of the policy

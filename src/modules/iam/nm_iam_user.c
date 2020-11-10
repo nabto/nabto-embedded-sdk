@@ -40,7 +40,7 @@ void nm_iam_user_free(struct nm_iam_user* user)
     free(user->username);
     free(user->displayName);
     free(user->fingerprint);
-    free(user->serverConnectToken);
+    free(user->sct);
     free(user->role);
     free(user->password);
     free(user);
@@ -76,17 +76,17 @@ bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
     return (tmp != NULL);
 }
 
-bool nm_iam_user_set_server_connect_token(struct nm_iam_user* user, const char* sct)
+bool nm_iam_user_set_sct(struct nm_iam_user* user, const char* sct)
 {
     if (sct == NULL) {
-        free(user->serverConnectToken);
-        user->serverConnectToken = NULL;
+        free(user->sct);
+        user->sct = NULL;
         return true;
     }
     char* tmp = strdup(sct);
     if (tmp != NULL) {
-        free(user->serverConnectToken);
-        user->serverConnectToken = tmp;
+        free(user->sct);
+        user->sct = tmp;
     }
     return (tmp != NULL);
 }
@@ -170,9 +170,9 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
         }
     }
 
-    if(user->serverConnectToken != NULL) {
-        copy->serverConnectToken = strdup(user->serverConnectToken);
-        if(copy->serverConnectToken == NULL) {
+    if(user->sct != NULL) {
+        copy->sct = strdup(user->sct);
+        if(copy->sct == NULL) {
             failed = true;
         }
     }

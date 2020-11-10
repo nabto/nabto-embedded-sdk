@@ -135,18 +135,18 @@ bool HeatPump::loadState()
             NN_LOG_ERROR(&logger_, LOGM, "Failed to load state into IAM module");
             return false;
         }
-        if (is->globalPairingPassword == NULL) {
+        if (is->passwordOpenPassword == NULL) {
             pairingPassword_ = nabto::examples::common::random_string(12);
-            nm_iam_state_set_pairing_password(is, pairingPassword_.c_str());
+            nm_iam_state_set_password_open_password(is, pairingPassword_.c_str());
         } else {
-            pairingPassword_ = std::string(is->globalPairingPassword);
+            pairingPassword_ = std::string(is->passwordOpenPassword);
         }
 
-        if (is->globalSct == NULL) {
+        if (is->passwordOpenSct == NULL) {
             pairingServerConnectToken_ = nabto::examples::common::random_string(12);
-            nm_iam_state_set_pairing_server_connect_token(is, pairingServerConnectToken_.c_str());
+            nm_iam_state_set_password_open_sct(is, pairingServerConnectToken_.c_str());
         } else {
-            pairingServerConnectToken_ = std::string(is->globalSct);
+            pairingServerConnectToken_ = std::string(is->passwordOpenSct);
         }
 
     }

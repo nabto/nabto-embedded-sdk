@@ -29,40 +29,40 @@ void nm_iam_state_free(struct nm_iam_state* state)
     }
 
     nn_llist_deinit(&state->users);
-    free(state->globalPairingPassword);
-    free(state->globalSct);
+    free(state->passwordOpenPassword);
+    free(state->passwordOpenSct);
     free(state->openPairingRole);
     free(state->initialPairingUsername);
     free(state);
 }
 
-bool nm_iam_state_set_pairing_password(struct nm_iam_state* state, const char* password)
+bool nm_iam_state_set_password_open_password(struct nm_iam_state* state, const char* password)
 {
     if (password == NULL) {
-        free(state->globalPairingPassword);
-        state->globalPairingPassword = NULL;
+        free(state->passwordOpenPassword);
+        state->passwordOpenPassword = NULL;
         return true;
     }
     char* tmp = strdup(password);
     if (tmp != NULL) {
-        free(state->globalPairingPassword);
-        state->globalPairingPassword = tmp;
+        free(state->passwordOpenPassword);
+        state->passwordOpenPassword = tmp;
     }
     return (tmp != 0);
 }
 
 
-bool nm_iam_state_set_pairing_server_connect_token(struct nm_iam_state* state, const char* serverConnectToken)
+bool nm_iam_state_set_password_open_sct(struct nm_iam_state* state, const char* sct)
 {
-    if (serverConnectToken == NULL) {
-        free(state->globalSct);
-        state->globalSct = NULL;
+    if (sct == NULL) {
+        free(state->passwordOpenSct);
+        state->passwordOpenSct = NULL;
         return true;
     }
-    char* tmp = strdup(serverConnectToken);
+    char* tmp = strdup(sct);
     if (tmp != NULL) {
-        free(state->globalSct);
-        state->globalSct = tmp;
+        free(state->passwordOpenSct);
+        state->passwordOpenSct = tmp;
     }
     return (tmp != 0);
 }
@@ -136,9 +136,9 @@ bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fin
     return nm_iam_user_set_fingerprint(user, fingerprint);
 }
 
-bool nm_iam_state_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken)
+bool nm_iam_state_user_set_sct(struct nm_iam_user* user, const char* sct)
 {
-    return nm_iam_user_set_server_connect_token(user, serverConnectToken);
+    return nm_iam_user_set_sct(user, sct);
 }
 
 bool nm_iam_state_user_set_display_name(struct nm_iam_user* user, const char* displayName)
@@ -165,16 +165,16 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
 
     bool failed = false;
 
-    if (state->globalPairingPassword != NULL) {
-        copy->globalPairingPassword = strdup(state->globalPairingPassword);
-        if (copy->globalPairingPassword == NULL) {
+    if (state->passwordOpenPassword != NULL) {
+        copy->passwordOpenPassword = strdup(state->passwordOpenPassword);
+        if (copy->passwordOpenPassword == NULL) {
             failed = true;
         }
     }
 
-    if (state->globalSct != NULL) {
-        copy->globalSct = strdup(state->globalSct);
-        if (copy->globalSct == NULL) {
+    if (state->passwordOpenSct != NULL) {
+        copy->passwordOpenSct = strdup(state->passwordOpenSct);
+        if (copy->passwordOpenSct == NULL) {
             failed = true;
         }
     }

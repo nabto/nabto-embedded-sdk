@@ -14,14 +14,14 @@ struct nm_iam_user {
     char* role;
     char* password;
     char* fingerprint;
-    char* serverConnectToken;
+    char* sct;
     struct nn_llist_node listNode;
 };
 
 struct nm_iam_state {
     struct nn_llist users;
-    char* globalPairingPassword;
-    char* globalSct;
+    char* passwordOpenPassword;
+    char* passwordOpenSct;
     bool passwordOpenPairing;
     bool localOpenPairing;
     bool passwordInvitePairing;
@@ -56,7 +56,7 @@ void nm_iam_state_free(struct nm_iam_state* state);
  * @param password [in]  The password which clients needs to specify to pair with the system. The string is copied into the module. Password pairing can be disabled with the NULL password.
  * @return false iff the password was not set
  */
-bool nm_iam_state_set_pairing_password(struct nm_iam_state* state, const char* password);
+bool nm_iam_state_set_password_open_password(struct nm_iam_state* state, const char* password);
 
 /**
  * Set remote pairing server connect token in the IAM state. A client
@@ -65,10 +65,10 @@ bool nm_iam_state_set_pairing_password(struct nm_iam_state* state, const char* p
  * loaded.
  *
  * @param state [in]               The IAM state
- * @param serverConnectToken [in]  The server connect token the client needs to use when pairing remotely with the system. The string is copied into the system.
+ * @param sct [in]  The server connect token the client needs to use when pairing remotely with the system. The string is copied into the system.
  * @return false iff the server connect token was not set
  */
-bool nm_iam_state_set_pairing_server_connect_token(struct nm_iam_state* state, const char* serverConnectToken);
+bool nm_iam_state_set_password_open_sct(struct nm_iam_state* state, const char* sct);
 
 /**
  * Enable/disable pairing modes. Each pairing mode will be disabled by
@@ -144,7 +144,7 @@ void nm_iam_state_user_free(struct nm_iam_user* user);
  * @param <string> [in]  The string to copy into the user
  */
 bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint);
-bool nm_iam_state_user_set_server_connect_token(struct nm_iam_user* user, const char* serverConnectToken);
+bool nm_iam_state_user_set_sct(struct nm_iam_user* user, const char* sct);
 bool nm_iam_state_user_set_display_name(struct nm_iam_user* user, const char* displayName);
 bool nm_iam_state_user_set_role(struct nm_iam_user* user, const char* roleId);
 bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* password);

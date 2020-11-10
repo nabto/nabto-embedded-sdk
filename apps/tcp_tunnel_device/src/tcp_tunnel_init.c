@@ -142,12 +142,12 @@ bool create_state_interactive_custom(const char* file) {
 
     nm_iam_state_user_set_role(admin, "Administrator");
     nm_iam_state_user_set_password(admin, random_password(12));
-    nm_iam_state_user_set_server_connect_token(admin, random_password(12));
+    nm_iam_state_user_set_sct(admin, random_password(12));
 
     nm_iam_state_add_user(state, admin);
 
-    nm_iam_state_set_pairing_password(state, random_password(12));
-    nm_iam_state_set_pairing_server_connect_token(state, random_password(12));
+    nm_iam_state_set_password_open_password(state, random_password(12));
+    nm_iam_state_set_password_open_sct(state, random_password(12));
     nm_iam_state_set_initial_pairing_username(state, initialUsername);
     nm_iam_state_set_open_pairing_role(state, "Guest");
     nm_iam_state_set_password_invite_pairing(state, enablePasswordInvitePairing);
@@ -169,12 +169,12 @@ bool create_state_default(const char* file)
 
     nm_iam_state_user_set_role(admin, "Administrator");
     nm_iam_state_user_set_password(admin, random_password(12));
-    nm_iam_state_user_set_server_connect_token(admin, random_password(12));
+    nm_iam_state_user_set_sct(admin, random_password(12));
 
     nm_iam_state_add_user(state, admin);
 
-    nm_iam_state_set_pairing_password(state, random_password(12));
-    nm_iam_state_set_pairing_server_connect_token(state, random_password(12));
+    nm_iam_state_set_password_open_password(state, random_password(12));
+    nm_iam_state_set_password_open_sct(state, random_password(12));
 
     nm_iam_state_set_initial_pairing_username(state, initialUsername);
     nm_iam_state_set_open_pairing_role(state, "Guest");

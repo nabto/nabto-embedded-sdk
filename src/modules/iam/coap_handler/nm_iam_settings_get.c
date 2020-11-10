@@ -28,13 +28,13 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     cbor_encode_text_stringz(&map, "LocalOpenPairing");
     cbor_encode_boolean(&map, iam->state->localOpenPairing);
 
-    const char* sct = iam->state->globalSct;
+    const char* sct = iam->state->passwordOpenSct;
     if(sct) {
         cbor_encode_text_stringz(&map, "PasswordOpenSct");
         cbor_encode_text_stringz(&map, sct);
     }
 
-    const char* pwd = iam->state->globalPairingPassword;
+    const char* pwd = iam->state->passwordOpenPassword;
     if (pwd) {
         cbor_encode_text_stringz(&map, "PasswordOpenPassword");
         cbor_encode_text_stringz(&map, pwd);

@@ -126,13 +126,13 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
 {
     struct nm_iam_state* state = nm_iam_state_new();
     {
-        BOOST_TEST(nm_iam_state_set_pairing_password(state, "password") == true);
-        BOOST_TEST(nm_iam_state_set_pairing_server_connect_token(state, "token") == true);
+        BOOST_TEST(nm_iam_state_set_password_open_password(state, "password") == true);
+        BOOST_TEST(nm_iam_state_set_password_open_sct(state, "token") == true);
     }
     {
         struct nm_iam_user* u = nm_iam_user_new("username");
         BOOST_TEST(nm_iam_user_set_fingerprint(u, "fingerprint") == true);
-        BOOST_TEST(nm_iam_user_set_server_connect_token(u, "token2") == true);
+        BOOST_TEST(nm_iam_user_set_sct(u, "token2") == true);
         BOOST_TEST(nm_iam_user_set_display_name(u, "Display Name") == true);
         BOOST_TEST(nm_iam_user_set_role(u, "role1") == true);
         BOOST_TEST(nm_iam_user_set_password(u, "password2") == true);
@@ -204,14 +204,14 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
     struct nm_iam_state* state = nm_iam_state_new();
     BOOST_TEST(nm_iam_serializer_state_load_json(state, s1.c_str(), NULL) == true);
 
-    BOOST_TEST(strcmp(state->globalPairingPassword, "password") == 0);
-    BOOST_TEST(strcmp(state->globalSct, "token") == 0);
+    BOOST_TEST(strcmp(state->passwordOpenPassword, "password") == 0);
+    BOOST_TEST(strcmp(state->passwordOpenSct, "token") == 0);
 
     void* user;
     NN_LLIST_FOREACH(user, &state->users) {
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->username, "username") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fingerprint, "fingerprint") == 0);
-        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->serverConnectToken, "token2") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->sct, "token2") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->displayName, "Display Name") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->role, "role1") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->password, "password2") == 0);

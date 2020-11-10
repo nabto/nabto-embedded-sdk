@@ -166,9 +166,9 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
         cbor_encode_text_stringz(&map, user->fingerprint);
     }
 
-    if (user->serverConnectToken != NULL) {
+    if (user->sct != NULL) {
         cbor_encode_text_stringz(&map, "Sct");
-        cbor_encode_text_stringz(&map, user->serverConnectToken);
+        cbor_encode_text_stringz(&map, user->sct);
     }
 
     cbor_encoder_close_container(&encoder, &map);

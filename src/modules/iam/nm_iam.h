@@ -42,6 +42,13 @@ struct nm_iam_change_callback {
     void* stateChangedData;
 };
 
+enum nm_iam_error {
+    NM_IAM_ERROR_OK,
+    NM_IAM_ERROR_NO_SUCH_USER,
+    NM_IAM_ERROR_NO_SUCH_ROLE,
+    NM_IAM_ERROR_USER_EXISTS,
+    NM_IAM_ERROR_INVALID_FINGERPRINT
+};
 
 struct nm_iam {
     /**
@@ -150,6 +157,33 @@ struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
  * provided the given attributes.
  */
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributes);
+
+/*********
+ * Manage the IAM state while the system is running
+ *
+ * These function takes the lock and manipulates the state, When the state has
+ * been manipulated the state changed callback is invoked.
+ *********/
+
+/**
+ * Enable/disalbe open pairing.
+ */
+void nm_iam_set_local_open_pairing(struct nm_iam* iam, bool enabled);
+void nm_iam_set_password_open_pairing(struct nm_iam* iam, bool enabled);
+
+/**
+ * Manage the user database at runtime from the application
+ */
+enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
+
+enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint);
+enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, const char* sct);
+enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* username, const char* password);
+enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* role);
+enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName);
+
+enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username);
+
 
 #ifdef __cplusplus
 } //extern "C"
