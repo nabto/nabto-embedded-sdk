@@ -399,6 +399,7 @@ void nc_device_stop(struct nc_device_context* dev)
     nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
     nc_stun_remove_sockets(&dev->stun);
     nc_attacher_stop(&dev->attacher);
+    nc_coap_client_stop(&dev->coapClient);
 }
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)

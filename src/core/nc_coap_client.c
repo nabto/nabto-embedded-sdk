@@ -64,6 +64,12 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
     }
 }
 
+void nc_coap_client_stop(struct nc_coap_client_context* ctx)
+{
+    nabto_coap_client_stop(&ctx->client);
+    nc_coap_client_event(ctx);
+}
+
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
                                   uint8_t* buffer, uint16_t bufferSize, struct np_dtls_cli_context* dtls)
 {

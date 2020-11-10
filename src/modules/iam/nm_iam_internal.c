@@ -32,7 +32,7 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
     enum nm_iam_effect effect = NM_IAM_EFFECT_DENY;
 
     const char* roleStr = iam->conf->unpairedRole; // default if no user is found.
-    
+
     if (user) {
         nn_string_map_insert(&attributes, "Connection:Username", user->username);
         if (nabto_device_connection_is_local(iam->device, ref)) {
@@ -41,7 +41,7 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
             nn_string_map_insert(&attributes, "Connection:IsLocal", "false");
         }
         roleStr = user->role;
-    } 
+    }
     struct nm_iam_role* role = nm_iam_internal_find_role(iam, roleStr);
     if (role == NULL) {
         effect = NM_IAM_EFFECT_ERROR;
@@ -261,7 +261,7 @@ void nm_iam_internal_delete_user(struct nm_iam* iam, const char* username)
     }
 }
 
-void nm_iam_internal_state_has_changed(struct nm_iam* iam) 
+void nm_iam_internal_state_has_changed(struct nm_iam* iam)
 {
     iam->stateHasChanged = true;
     if (iam->changeCallback.stateChanged) {
@@ -380,7 +380,7 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
     nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
     nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
-    nm_iam_settings_set_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
+    nm_iam_settings_set_init(&iam->coapIamSettingsSetHandler, iam->device, iam);
 }
 
 void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)

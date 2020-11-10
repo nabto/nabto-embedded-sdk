@@ -31,6 +31,8 @@ void nm_iam_state_free(struct nm_iam_state* state)
     nn_llist_deinit(&state->users);
     free(state->globalPairingPassword);
     free(state->globalSct);
+    free(state->openPairingRole);
+    free(state->initialPairingUsername);
     free(state);
 }
 
