@@ -11,7 +11,7 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 
 NabtoDeviceError nm_iam_set_user_display_name_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "iam", "users", "{user}", "displayname",  NULL };
+    const char* paths[] = { "iam", "users", "{user}", "display-name",  NULL };
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_PUT, paths, &handle_request);
 }
 

@@ -167,7 +167,7 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     }
 
     if (user->serverConnectToken != NULL) {
-        cbor_encode_text_stringz(&map, "ServerConnectToken");
+        cbor_encode_text_stringz(&map, "Sct");
         cbor_encode_text_stringz(&map, user->serverConnectToken);
     }
 

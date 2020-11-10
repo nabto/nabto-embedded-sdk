@@ -30,7 +30,7 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
 
     const char* sct = iam->state->globalSct;
     if(sct) {
-        cbor_encode_text_stringz(&map, "PasswordOpenServerConnectToken");
+        cbor_encode_text_stringz(&map, "PasswordOpenSct");
         cbor_encode_text_stringz(&map, sct);
     }
 
