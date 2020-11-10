@@ -171,6 +171,7 @@ bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const
  */
 void nm_iam_set_local_open_pairing(struct nm_iam* iam, bool enabled);
 void nm_iam_set_password_open_pairing(struct nm_iam* iam, bool enabled);
+void nm_iam_set_local_intiial_pairing(struct nm_iam* iam, bool enabled);
 
 /**
  * Manage the user database at runtime from the application

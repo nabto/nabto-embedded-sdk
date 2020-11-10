@@ -122,6 +122,15 @@ void nm_iam_set_password_open_pairing(struct nm_iam* iam, bool enabled)
     nm_iam_internal_do_callbacks(iam);
 }
 
+void nm_iam_set_local_initial_pairing(struct nm_iam* iam, bool enabled)
+{
+    nm_iam_lock(iam);
+    iam->state->localInitialPairing = enabled;
+    nm_iam_internal_state_has_changed(iam);
+    nm_iam_unlock(iam);
+    nm_iam_internal_do_callbacks(iam);
+}
+
 /**
  * Manage the user database at runtime from the application
  */
