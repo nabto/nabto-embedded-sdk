@@ -422,7 +422,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     if (dc.serverPort != 0) {
         nabto_device_set_server_port(device, dc.serverPort);
     }
-    nabto_device_disable_remote_access(device);
     nabto_device_enable_mdns(device);
     nabto_device_mdns_add_subtype(device, "tcptunnel");
     nabto_device_mdns_add_txt_item(device, "fn", "tcp tunnel");
