@@ -4,7 +4,6 @@
 #include <apps/common/string_file.h>
 #include <apps/common/device_config.h>
 #include <modules/iam/nm_iam_state.h>
-#include <modules/iam/nm_iam_user.h>
 #include <apps/common/random_string.h>
 #include <modules/iam/nm_iam_serializer.h>
 
@@ -41,7 +40,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
         printf("The IAM configuration %s does not exists. Creating a new IAM configuration.\n", tcpTunnel->deviceConfigFile);
         createIamConfig = true;
     }
-    
+
     if (createIamConfig) {
         if (!iam_config_create_default(tcpTunnel->iamConfigFile)) {
             printf("The IAM configuration file %s could not be created.\n", tcpTunnel->iamConfigFile);
@@ -95,7 +94,7 @@ bool yes_no() {
         } else {
             printf("[y/n]: ");
         }
-        
+
         scanf("%c", &yn);
         if (yn == 'y' || yn == 'Y') {
             return true;
@@ -106,7 +105,7 @@ bool yes_no() {
     } while( true );
 }
 
-bool create_state_interactive(const char* file) 
+bool create_state_interactive(const char* file)
 {
     printf("Do you want to create a custom IAM State? ");
     bool createCustomIam = yes_no();
@@ -136,14 +135,14 @@ bool create_state_interactive_custom(const char* file) {
     enablePasswordOpenPairing = yes_no();
 
     struct nm_iam_state* state = nm_iam_state_new();
-    
+
     const char* initialUsername = "admin";
 
-    struct nm_iam_user* admin = nm_iam_user_new(initialUsername);
+    struct nm_iam_user* admin = nm_iam_state_user_new(initialUsername);
 
-    nm_iam_user_set_role(admin, "Administrator");
-    nm_iam_user_set_password(admin, random_password(12));
-    nm_iam_user_set_server_connect_token(admin, random_password(12));
+    nm_iam_state_user_set_role(admin, "Administrator");
+    nm_iam_state_user_set_password(admin, random_password(12));
+    nm_iam_state_user_set_server_connect_token(admin, random_password(12));
 
     nm_iam_state_add_user(state, admin);
 
@@ -163,14 +162,14 @@ bool create_state_interactive_custom(const char* file) {
 bool create_state_default(const char* file)
 {
     struct nm_iam_state* state = nm_iam_state_new();
-    
+
     const char* initialUsername = "admin";
 
-    struct nm_iam_user* admin = nm_iam_user_new(initialUsername);
+    struct nm_iam_user* admin = nm_iam_state_user_new(initialUsername);
 
-    nm_iam_user_set_role(admin, "Administrator");
-    nm_iam_user_set_password(admin, random_password(12));
-    nm_iam_user_set_server_connect_token(admin, random_password(12));
+    nm_iam_state_user_set_role(admin, "Administrator");
+    nm_iam_state_user_set_password(admin, random_password(12));
+    nm_iam_state_user_set_server_connect_token(admin, random_password(12));
 
     nm_iam_state_add_user(state, admin);
 
