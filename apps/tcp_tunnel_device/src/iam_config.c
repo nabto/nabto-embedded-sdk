@@ -56,7 +56,7 @@ bool iam_config_create_default(const char* iamConfigFile)
     }
 
     {
-        policy = nm_iam_configuration_policy_new("ManageUsers");
+        policy = nm_iam_configuration_policy_new("ManageIAM");
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers");
         nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser");
@@ -66,6 +66,8 @@ bool iam_config_create_default(const char* iamConfigFile)
         nm_iam_configuration_statement_add_action(stmt, "IAM:CreateUser");
         nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserPassword");
         nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserFriendlyName");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:SetSettings");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:GetSettings");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
@@ -82,6 +84,7 @@ bool iam_config_create_default(const char* iamConfigFile)
         {
             stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
             nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles");
+            nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers");
         }
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
@@ -95,7 +98,7 @@ bool iam_config_create_default(const char* iamConfigFile)
 
     {
         r = nm_iam_configuration_role_new("Administrator");
-        nm_iam_configuration_role_add_policy(r, "ManageUsers");
+        nm_iam_configuration_role_add_policy(r, "ManageIAM");
         nm_iam_configuration_role_add_policy(r, "Tunnelling");
         nm_iam_configuration_role_add_policy(r, "Pairing");
         nm_iam_configuration_add_role(iamConfig, r);
