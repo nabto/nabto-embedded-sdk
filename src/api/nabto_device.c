@@ -283,6 +283,17 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_app_version(NabtoDevice* devi
     return nabto_device_error_core_to_api(ec);
 }
 
+NabtoDeviceError NABTO_DEVICE_API nabto_device_disable_remote_access(NabtoDevice* device)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    np_error_code ec = nc_device_disable_remote_access(&dev->core);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+
+}
+
+
 const char* NABTO_DEVICE_API nabto_device_get_app_version(NabtoDevice* device)
 {
     // it does not make sense to synchronize this as the result cannot
@@ -709,4 +720,3 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit)
 
     return nabto_device_error_core_to_api(NABTO_EC_OK);
 }
-

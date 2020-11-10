@@ -123,6 +123,21 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref);
 
 
+/**
+ * Disable remote access. When disabled, the device will not attempt
+ * to connect to the Nabto Basestation and clients will only be able
+ * to connect to the device directly (local connection using mdns
+ * discovery or with direct candidates). This function must be called
+ * before nabto_device_start();
+ *
+ * @param device [in]  The device.
+ * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_INVALID_STATE if device is started
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_disable_remote_access(NabtoDevice* device);
+
+
 #ifdef __cplusplus
 } // extern c
 #endif

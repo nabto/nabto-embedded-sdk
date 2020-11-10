@@ -28,6 +28,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     device->deviceId = NULL;
     device->hostname = NULL;
     device->connectionRef = 0;
+    device->enableRemote = true;
 
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
@@ -298,7 +299,9 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
     nc_udp_dispatch_set_rendezvous_context(&dev->udp, &dev->rendezvous);
     nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
 
-    nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
+    if (dev->enableRemote) {
+        nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
+    }
 
     nc_udp_dispatch_start_recv(&dev->udp);
 
@@ -586,6 +589,15 @@ static void reload_mdns(struct nc_device_context* dev)
         uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
         np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
     }
+}
+
+np_error_code nc_device_disable_remote_access(struct nc_device_context* dev)
+{
+    if (dev->state != NC_DEVICE_STATE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
+    dev->enableRemote = false;
+    return NABTO_EC_OK;
 }
 
 np_error_code nc_device_enable_mdns(struct nc_device_context* dev)
