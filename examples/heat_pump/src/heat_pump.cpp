@@ -1,14 +1,15 @@
 #include "heat_pump.hpp"
 #include "json_config.hpp"
 
-#include "heat_pump_set_name.hpp"
 #include "heat_pump_set_power.hpp"
 #include "heat_pump_set_target.hpp"
 #include "heat_pump_set_mode.hpp"
 #include "heat_pump_get.hpp"
+#include "heat_pump_state.hpp"
 
 #include <apps/common/logging.h>
 #include <apps/common/json_config.h>
+#include <apps/common/string_file.h>
 #include <examples/common/stdout_connection_event_handler.hpp>
 #include <examples/common/stdout_device_event_handler.hpp>
 
@@ -34,8 +35,8 @@ namespace nabto {
 namespace examples {
 namespace heat_pump {
 
-HeatPump::HeatPump(NabtoDevice* device, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile)
-    : device_(device), dc_(dc), stateFile_(stateFile)
+HeatPump::HeatPump(NabtoDevice* device, nabto::examples::common::DeviceConfig& dc, const std::string& iamStateFile, const std::string& hpStateFile)
+    : device_(device), dc_(dc), iamStateFile_(iamStateFile), hpStateFile_(hpStateFile)
 {
     logging_init(device_, &logger_, "error");
     nm_iam_init(&iam_, device_, &logger_);
@@ -54,11 +55,11 @@ bool HeatPump::init()
         return false;
     }
 
-    if (!loadIamPolicy() || !loadState()) {
+    if (!loadIamPolicy() || !loadHpState() || !loadIamState()) {
         return false;
     }
 
-    nabto_device_mdns_add_txt_item(device_, "fn", name_.c_str());
+    nabto_device_mdns_add_txt_item(device_, "fn", "Heat Pump");
 
     initCoapHandlers();
 
@@ -73,89 +74,94 @@ bool HeatPump::init()
 void HeatPump::iamUserChanged(struct nm_iam* iam, void* userData)
 {
     HeatPump* hp = static_cast<HeatPump*>(userData);
-    hp->stateChanged();
+    hp->iamStateChanged();
 }
 
-void HeatPump::stateChanged()
+void HeatPump::iamStateChanged()
 {
-    saveState();
+    saveIamState();
 }
 
-void HeatPump::saveState()
+void HeatPump::saveIamState() 
+{
+    struct nm_iam_state* state = nm_iam_dump_state(&iam_);
+    if (state == NULL) {
+        return;
+    }
+    save_iam_state(iamStateFile_.c_str(), state, &logger_);
+    nm_iam_state_free(state);
+}
+
+void HeatPump::saveIamState(struct nm_iam_state* state) 
+{
+    char* str = NULL;
+    if (!nm_iam_serializer_state_dump_json(state, &str)) {
+    } else if (!string_file_save(iamStateFile_.c_str(), str)) {
+    }
+
+    nm_iam_serializer_string_free(str);
+}
+
+bool HeatPump::loadIamState() 
+{
+    bool status = true;
+    char* str = NULL;
+    if (!string_file_load(iamStateFile_.c_str(), &str)) {
+        return false;
+    }
+    struct nm_iam_state* is = nm_iam_state_new();
+    nm_iam_serializer_state_load_json(is, str, &logger_);
+    if (!nm_iam_load_state(&iam_, is)) {
+        NN_LOG_ERROR(&logger_, LOGM, "Failed to load state into IAM module");
+        nm_iam_state_free(is);
+        is = NULL;
+        status = false;
+    }
+    free(str);
+    return status;
+}
+
+void HeatPump::saveHpState()
 {
     cJSON* state = cJSON_CreateObject();
 
-    cJSON_AddNumberToObject(state, "Version", 2);
+    cJSON_AddNumberToObject(state, "Version", 3);
 
     cJSON* heatPump = cJSON_CreateObject();
     cJSON_AddItemToObject(heatPump, "Mode", cJSON_CreateString(mode_.c_str()));
     cJSON_AddItemToObject(heatPump, "Power", cJSON_CreateBool(power_));
     cJSON_AddItemToObject(heatPump, "Target", cJSON_CreateNumber(target_));
-    cJSON_AddItemToObject(heatPump, "Name", cJSON_CreateString(name_.c_str()));
 
     cJSON_AddItemToObject(state, "HeatPump", heatPump);
 
-
-    char* iamState = NULL;
-    nm_iam_serializer_state_dump_json(iam_.state, &iamState);
-    if (iamState == NULL) {
-        NN_LOG_ERROR(&logger_, LOGM, "Failed to dump IAM state to string");
-    } else {
-        cJSON_AddItemToObject(state, "IamState", cJSON_CreateString(iamState));
-    }
-
-    json_config_save(stateFile_.c_str(), state);
+    json_config_save(hpStateFile_.c_str(), state);
 
     cJSON_Delete(state);
 }
 
-bool HeatPump::loadState()
+bool HeatPump::loadHpState()
 {
-    if (!json_config_exists(stateFile_.c_str())) {
-        createState();
+    if (!json_config_exists(hpStateFile_.c_str())) {
+        createHpState();
     }
     cJSON* json;
-    if (!json_config_load(stateFile_.c_str(), &json, &logger_)) {
-        NN_LOG_ERROR(&logger_, LOGM, "Cannot load state from file %s", stateFile_.c_str());
+    if (!json_config_load(hpStateFile_.c_str(), &json, &logger_)) {
+        NN_LOG_ERROR(&logger_, LOGM, "Cannot load state from file %s", hpStateFile_.c_str());
         return false;
     }
 
     cJSON* version = cJSON_GetObjectItem(json, "Version");
     if (!cJSON_IsNumber(version) || version->valueint != 2) {
-        NN_LOG_ERROR(&logger_, LOGM, "The version of the state file %s is not correct, delete it and start over", stateFile_.c_str());
+        NN_LOG_ERROR(&logger_, LOGM, "The version of the state file %s is not correct, delete it and start over", hpStateFile_.c_str());
         return false;
     }
 
-    cJSON* iamState = cJSON_GetObjectItem(json, "IamState");
     cJSON* heatPump = cJSON_GetObjectItem(json, "HeatPump");
-    if (cJSON_IsString(iamState)) {
-        struct nm_iam_state* is = nm_iam_state_new();
-        nm_iam_serializer_state_load_json(is, iamState->valuestring, &logger_);
-        if (!nm_iam_load_state(&iam_, is)) {
-            NN_LOG_ERROR(&logger_, LOGM, "Failed to load state into IAM module");
-            return false;
-        }
-        if (is->passwordOpenPassword == NULL) {
-            pairingPassword_ = nabto::examples::common::random_string(12);
-            nm_iam_state_set_password_open_password(is, pairingPassword_.c_str());
-        } else {
-            pairingPassword_ = std::string(is->passwordOpenPassword);
-        }
-
-        if (is->passwordOpenSct == NULL) {
-            pairingServerConnectToken_ = nabto::examples::common::random_string(12);
-            nm_iam_state_set_password_open_sct(is, pairingServerConnectToken_.c_str());
-        } else {
-            pairingServerConnectToken_ = std::string(is->passwordOpenSct);
-        }
-
-    }
 
     if (cJSON_IsObject(heatPump)) {
         cJSON* mode = cJSON_GetObjectItem(heatPump, "Mode");
         cJSON* power = cJSON_GetObjectItem(heatPump, "Power");
         cJSON* target = cJSON_GetObjectItem(heatPump, "Target");
-        cJSON* name = cJSON_GetObjectItem(heatPump, "Name");
 
         if (cJSON_IsString(mode)) {
             mode_ = std::string(mode->valuestring);
@@ -172,26 +178,38 @@ bool HeatPump::loadState()
                 power_ = true;
             }
         }
-        if (cJSON_IsString(name)) {
-            name_ = std::string(name->valuestring);
-        }
     }
 
     cJSON_Delete(json);
     return true;
-
 }
-void HeatPump::createState()
+
+void HeatPump::createHpState()
 {
     // the heatpump starts with the default state so it can just be
     // saved to create a persisted default state.
-    saveState();
+    saveHpState();
+}
+
+void HeatPump::createIamState()
+{
+    struct nm_iam_state* state = nm_iam_state_new();
+    struct nm_iam_user* user = nm_iam_state_user_new("admin");
+    std::string sct = nabto::examples::common::random_string(12);
+    nm_iam_state_user_set_sct(user, sct.c_str());
+    nm_iam_state_user_set_role(user, "Administrator");
+    nm_iam_state_add_user(state, user);
+    nm_iam_state_set_initial_pairing_username(state, "admin");
+    nm_iam_state_set_local_initial_pairing(state, true);
+    nm_iam_state_set_local_open_pairing(state, true);
+    nm_iam_state_set_open_pairing_role(state, "Guest");
+    saveIamState(state);
+    nm_iam_state_free(state);
 }
 
 
 void HeatPump::initCoapHandlers()
 {
-    coapSetName_ = nabto::examples::heat_pump::HeatPumpSetName::create(*this, device_);
     coapSetPower_ = nabto::examples::heat_pump::HeatPumpSetPower::create(*this, device_);
     coapSetTarget_ = nabto::examples::heat_pump::HeatPumpSetTarget::create(*this, device_);
     coapSetMode_ = nabto::examples::heat_pump::HeatPumpSetMode::create(*this, device_);
@@ -309,25 +327,18 @@ void HeatPump::dumpIam()
 void HeatPump::setMode(Mode mode)
 {
     mode_ = modeToString(mode);
-    saveState();
+    saveHpState();
 }
 void HeatPump::setTarget(double target)
 {
     target_ = target;
-    saveState();
+    saveHpState();
 }
 
 void HeatPump::setPower(bool power)
 {
     power_ = power;
-    saveState();
-}
-
-void HeatPump::setName(const std::string& name)
-{
-    name_ = name;
-    nabto_device_mdns_add_txt_item(device_, "fn", name.c_str());
-    saveState();
+    saveHpState();
 }
 
 const char* HeatPump::modeToString(HeatPump::Mode mode)
@@ -355,17 +366,13 @@ bool HeatPump::loadIamPolicy()
 {
     struct nm_iam_configuration* conf = nm_iam_configuration_new();
     {
-        auto p = nm_iam_configuration_policy_new("DeviceInfo");
-        auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(s, "Info:Get");
-        nm_iam_configuration_add_policy(conf, p);
-    }
-    {
         auto p = nm_iam_configuration_policy_new("Pairing");
         auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(s, "Pairing:Get");
-        nm_iam_configuration_statement_add_action(s, "Pairing:Password");
-        nm_iam_configuration_statement_add_action(s, "Pairing:Local");
+        nm_iam_configuration_statement_add_action(s, "Pairing:PasswordOpen");
+        nm_iam_configuration_statement_add_action(s, "Pairing:PasswordInvite");
+        nm_iam_configuration_statement_add_action(s, "Pairing:LocalInitial");
+        nm_iam_configuration_statement_add_action(s, "Pairing:LocalOpen");
         nm_iam_configuration_add_policy(conf, p);
     }
     {
@@ -376,39 +383,50 @@ bool HeatPump::loadIamPolicy()
         nm_iam_configuration_add_policy(conf, p);
     }
     {
-        auto p = nm_iam_configuration_policy_new("ManageUsers");
+        auto p = nm_iam_configuration_policy_new("ManageIam");
         auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(s, "IAM:ListUsers");
         nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
         nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
         nm_iam_configuration_statement_add_action(s, "IAM:SetUserRole");
         nm_iam_configuration_statement_add_action(s, "IAM:ListRoles");
+        nm_iam_configuration_statement_add_action(s, "IAM:SetSettings");
+        nm_iam_configuration_statement_add_action(s, "IAM:GetSettings");
+        
         nm_iam_configuration_add_policy(conf, p);
     }
 
     {
         auto p = nm_iam_configuration_policy_new("ManageOwnUser");
-        auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
-        nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
+        {
+            auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+            nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
+            nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
+            nm_iam_configuration_statement_add_action(s, "IAM:SetDisplayName");
 
-        // Create a condition such that only connections where the
-        // UserId matches the UserId of the operation is allowed. E.g. IAM:UserId == ${Connection:UserId}
+            // Create a condition such that only connections where the
+            // UserId matches the UserId of the operation is allowed. E.g. IAM:Username == ${Connection:Username}
 
-        auto c = nm_iam_configuration_statement_create_condition(s, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:UserId");
-        nm_iam_configuration_condition_add_value(c, "${Connection:UserId}");
+            auto c = nm_iam_configuration_statement_create_condition(s, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:Username");
+            nm_iam_configuration_condition_add_value(c, "${Connection:Username}");
+        }
+        {
+            auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+            nm_iam_configuration_statement_add_action(s, "IAM:ListUsers");
+            nm_iam_configuration_statement_add_action(s, "IAM:ListRoles");
+        }
+
         nm_iam_configuration_add_policy(conf, p);
     }
 
     {
         auto r = nm_iam_configuration_role_new("Unpaired");
         nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_role_add_policy(r, "DeviceInfo");
         nm_iam_configuration_add_role(conf,r);
     }
     {
-        auto r = nm_iam_configuration_role_new("Admin");
-        nm_iam_configuration_role_add_policy(r, "ManageUsers");
+        auto r = nm_iam_configuration_role_new("Administrator");
+        nm_iam_configuration_role_add_policy(r, "ManageIam");
         nm_iam_configuration_role_add_policy(r, "Pairing");
         nm_iam_configuration_role_add_policy(r, "HeatPumpControl");
         nm_iam_configuration_add_role(conf, r);
@@ -417,7 +435,6 @@ bool HeatPump::loadIamPolicy()
         auto r = nm_iam_configuration_role_new("Standard");
         nm_iam_configuration_role_add_policy(r, "HeatPumpControl");
         nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_role_add_policy(r, "DeviceInfo");
         nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
         nm_iam_configuration_add_role(conf, r);
     }

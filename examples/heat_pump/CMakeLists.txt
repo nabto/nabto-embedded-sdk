@@ -6,6 +6,7 @@ set(src
   ${ne_iam_src}
   src/heat_pump_main.cpp
   src/heat_pump.cpp
+  src/heat_pump_state.cpp
   )
 
 add_executable(heat_pump_device ${src})

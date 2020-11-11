@@ -43,7 +43,7 @@ class HeatPumpGet;
 class HeatPump {
   public:
 
-    HeatPump(NabtoDevice* device, nabto::examples::common::DeviceConfig& dc, const std::string& stateFile);
+    HeatPump(NabtoDevice* device, nabto::examples::common::DeviceConfig& dc, const std::string& iamStateFile, const std::string& hpStateFile);
 
     ~HeatPump();
 
@@ -82,18 +82,7 @@ class HeatPump {
         state["Target"] = target_;
         state["Power"] = power_;
         state["Temperature"] = 22.3;
-        state["Name"] = name_;
         return state;
-    }
-
-    nlohmann::json getInfo()
-    {
-        nlohmann::json info;
-        std::string nabtoVersion(nabto_device_version());
-        info["NabtoVersion"] = nabtoVersion;
-        info["AppName"] = appName_;
-        info["AppVersion"] = appVersion_;
-        return info;
     }
 
     bool checkAccess(NabtoDeviceCoapRequest* request, const std::string& action);
@@ -103,10 +92,17 @@ class HeatPump {
  private:
 
     static void iamUserChanged(struct nm_iam* iam, void* userData);
-    void stateChanged();
-    void saveState();
-    bool loadState();
-    void createState();
+    void iamStateChanged();
+    void hpStateChanged();
+
+    void saveIamState();
+    void saveIamState(struct nm_iam_state* state);
+    bool loadIamState();
+    void createIamState();
+    
+    void saveHpState();
+    bool loadHpState();
+    void createHpState();
 
     void initCoapHandlers();
     std::string getFingerprint();
@@ -119,7 +115,6 @@ class HeatPump {
     std::string logLevel_;
     struct nm_iam iam_;
 
-    std::unique_ptr<HeatPumpSetName> coapSetName_;
     std::unique_ptr<HeatPumpSetPower> coapSetPower_;
     std::unique_ptr<HeatPumpSetTarget> coapSetTarget_;
     std::unique_ptr<HeatPumpSetMode> coapSetMode_;
@@ -131,18 +126,14 @@ class HeatPump {
     std::string appName_ = "HeatPump";
     std::string appVersion_ = "1.0.0";
 
-    std::string stateFile_;
+    std::string iamStateFile_;
+    std::string hpStateFile_;
     bool power_ = false;
     double target_ = 22.3;
     std::string mode_ = "COOL";
 
     std::string pairingPassword_;
     std::string pairingServerConnectToken_;
-
-    // friendly name of the heatpump
-    std::string name_;
-
-
 };
 
 } } } // namespace

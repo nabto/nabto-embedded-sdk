@@ -85,10 +85,10 @@ int main(int argc, char** argv) {
     options.add_options("General")
         ("h,help", "Show help")
         ("version", "Show version")
-        ("H,home-dir", "Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %APP_DATA%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/heat_pump_device_state.json", cxxopts::value<std::string>())
+        ("H,home-dir", "Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %APP_DATA%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/heat_pump_device_iam_state.json, $homedir/state/heat_pump_device_state.json", cxxopts::value<std::string>())
         ("log-level", "Log level to log (error|info|trace|debug)", cxxopts::value<std::string>()->default_value("error"))
         ("random-ports", "Use random ports such that several devices can be running at the same time. The device can still be discovered locally.")
-        ("reset", "Reset pump state to factory defaults and remove all paired users.")
+        ("init", "Reset pump state to factory defaults and remove all paired users.")
         ;
 
     // TOOD create directory structure.
@@ -128,9 +128,12 @@ int main(int argc, char** argv) {
             }
         }
 
-        if (result.count("reset")) {
-            std::string stateFile = homedir + "/state/heat_pump_device_state.json";
-            json_config_clear(stateFile);
+        if (result.count("init")) {
+            std::string iamStateFile = homedir + "/state/heat_pump_device_iam_state.json";
+            std::string hpStateFile = homedir + "/state/heat_pump_device_state.json";
+
+            json_config_clear(iamStateFile);
+            json_config_clear(hpStateFile);
             std::cout << "Removed paired users and the heatpump state" << std::endl;
             return 0;
         }
@@ -158,7 +161,8 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
 {
     std::string configFile = homedir + "/config/device.json";
     std::string deviceKeyFile = homedir + "/keys/device.key";
-    std::string stateFile = homedir + "/state/heat_pump_device_state.json";
+    std::string iamStateFile = homedir + "/state/heat_pump_device_iam_state.json";
+    std::string hpStateFile = homedir + "/state/heat_pump_device_state.json";
 
     nabto::examples::common::DeviceConfig dc(configFile);
     if (!dc.load()) {
@@ -188,7 +192,7 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
 
     {
 
-        nabto::examples::heat_pump::HeatPump hp(device, dc, stateFile);
+        nabto::examples::heat_pump::HeatPump hp(device, dc, iamStateFile, hpStateFile);
         hp.setLogLevel(logLevel);
         if (!hp.init()) {
             return false;
