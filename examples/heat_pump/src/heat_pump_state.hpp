@@ -2,6 +2,7 @@
 
 #include <modules/iam/nm_iam_state.h>
 #include <string>
+#include <nn/log.h>
 
 
 namespace nabto {
