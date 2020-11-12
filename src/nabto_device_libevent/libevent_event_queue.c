@@ -102,6 +102,7 @@ void post(struct np_event* event)
     //NABTO_LOG_TRACE(LOG, "post event");
     //struct np_platform* pl = event->pl;
     //struct nabto_device_event_queue* eq = pl->eqData;
+    event->posted = true;
     event_active(&event->event, 0, 0);
 }
 
@@ -110,6 +111,7 @@ bool post_maybe_double(struct np_event* event)
     if (event->posted) {
         return false;
     }
+    event->posted = true;
     event_active(&event->event, 0, 0);
     return true;
 }
