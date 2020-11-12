@@ -82,7 +82,7 @@ void HeatPump::iamStateChanged()
     saveIamState();
 }
 
-void HeatPump::saveIamState() 
+void HeatPump::saveIamState()
 {
     struct nm_iam_state* state = nm_iam_dump_state(&iam_);
     if (state == NULL) {
@@ -92,7 +92,7 @@ void HeatPump::saveIamState()
     nm_iam_state_free(state);
 }
 
-void HeatPump::saveIamState(struct nm_iam_state* state) 
+void HeatPump::saveIamState(struct nm_iam_state* state)
 {
     char* str = NULL;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
@@ -102,7 +102,7 @@ void HeatPump::saveIamState(struct nm_iam_state* state)
     nm_iam_serializer_string_free(str);
 }
 
-bool HeatPump::loadIamState() 
+bool HeatPump::loadIamState()
 {
     bool status = true;
     char* str = NULL;
@@ -123,20 +123,7 @@ bool HeatPump::loadIamState()
 
 void HeatPump::saveHpState()
 {
-    cJSON* state = cJSON_CreateObject();
-
-    cJSON_AddNumberToObject(state, "Version", 3);
-
-    cJSON* heatPump = cJSON_CreateObject();
-    cJSON_AddItemToObject(heatPump, "Mode", cJSON_CreateString(mode_.c_str()));
-    cJSON_AddItemToObject(heatPump, "Power", cJSON_CreateBool(power_));
-    cJSON_AddItemToObject(heatPump, "Target", cJSON_CreateNumber(target_));
-
-    cJSON_AddItemToObject(state, "HeatPump", heatPump);
-
-    json_config_save(hpStateFile_.c_str(), state);
-
-    cJSON_Delete(state);
+    save_heat_pump_state(hpStateFile_.c_str(), state_);
 }
 
 bool HeatPump::loadHpState()
@@ -151,7 +138,7 @@ bool HeatPump::loadHpState()
     }
 
     cJSON* version = cJSON_GetObjectItem(json, "Version");
-    if (!cJSON_IsNumber(version) || version->valueint != 2) {
+    if (!cJSON_IsNumber(version) || version->valueint != 3) {
         NN_LOG_ERROR(&logger_, LOGM, "The version of the state file %s is not correct, delete it and start over", hpStateFile_.c_str());
         return false;
     }
@@ -164,18 +151,18 @@ bool HeatPump::loadHpState()
         cJSON* target = cJSON_GetObjectItem(heatPump, "Target");
 
         if (cJSON_IsString(mode)) {
-            mode_ = std::string(mode->valuestring);
+            state_.mode_ = std::string(mode->valuestring);
         }
 
         if (cJSON_IsNumber(target)) {
-            target_ = mode->valuedouble;
+            state_.target_ = target->valuedouble;
         }
 
         if (cJSON_IsBool(power)) {
             if (power->type == cJSON_False) {
-                power_ = false;
+                state_.power_ = false;
             } else {
-                power_ = true;
+                state_.power_ = true;
             }
         }
     }
@@ -292,52 +279,34 @@ std::string HeatPump::getFingerprint()
     return fp;
 }
 
-std::string HeatPump::createPairingString()
-{
-    std::stringstream ss;
-    ss << "p=" << dc_.getProductId()
-       << ",d=" << dc_.getDeviceId()
-       << ",pwd=" << pairingPassword_
-       << ",sct=" << pairingServerConnectToken_;
-    return ss.str();
-}
-
 void HeatPump::printHeatpumpInfo()
 {
     std::cout << "######## Nabto heat pump device ########" << std::endl;
     std::cout << "# Product ID:                  " << dc_.getProductId() << std::endl;
     std::cout << "# Device ID:                   " << dc_.getDeviceId() << std::endl;
     std::cout << "# Fingerprint:                 " << getFingerprint() << std::endl;
-    std::cout << "# Pairing Password:            " << pairingPassword_ << std::endl;
-    std::cout << "# Pairing Server Connect Token:" << pairingServerConnectToken_ << std::endl;
     try {
         std::string server = dc_.getServer();
         std::cout << "# Server:                      " << server << std::endl;
     } catch(...) {} // Ignore missing server
     std::cout << "# Version:                     " << nabto_device_version() << std::endl;
-    std::cout << "# Pairing String               " << createPairingString() << std::endl;
     std::cout << "######## " << std::endl;
-}
-
-void HeatPump::dumpIam()
-{
-    // TODO
 }
 
 void HeatPump::setMode(Mode mode)
 {
-    mode_ = modeToString(mode);
+    state_.mode_ = modeToString(mode);
     saveHpState();
 }
 void HeatPump::setTarget(double target)
 {
-    target_ = target;
+    state_.target_ = target;
     saveHpState();
 }
 
 void HeatPump::setPower(bool power)
 {
-    power_ = power;
+    state_.power_ = power;
     saveHpState();
 }
 
@@ -368,11 +337,11 @@ bool HeatPump::loadIamPolicy()
     {
         auto p = nm_iam_configuration_policy_new("Pairing");
         auto s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(s, "Pairing:Get");
-        nm_iam_configuration_statement_add_action(s, "Pairing:PasswordOpen");
-        nm_iam_configuration_statement_add_action(s, "Pairing:PasswordInvite");
-        nm_iam_configuration_statement_add_action(s, "Pairing:LocalInitial");
-        nm_iam_configuration_statement_add_action(s, "Pairing:LocalOpen");
+        nm_iam_configuration_statement_add_action(s, "IAM:GetPairing");
+        nm_iam_configuration_statement_add_action(s, "IAM:PairingPasswordOpen");
+        nm_iam_configuration_statement_add_action(s, "IAM:PairingPasswordInvite");
+        nm_iam_configuration_statement_add_action(s, "IAM:PairingLocalInitial");
+        nm_iam_configuration_statement_add_action(s, "IAM:PairingLocalOpen");
         nm_iam_configuration_add_policy(conf, p);
     }
     {
@@ -392,7 +361,7 @@ bool HeatPump::loadIamPolicy()
         nm_iam_configuration_statement_add_action(s, "IAM:ListRoles");
         nm_iam_configuration_statement_add_action(s, "IAM:SetSettings");
         nm_iam_configuration_statement_add_action(s, "IAM:GetSettings");
-        
+
         nm_iam_configuration_add_policy(conf, p);
     }
 

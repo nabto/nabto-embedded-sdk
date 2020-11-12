@@ -1,6 +1,8 @@
 #ifndef _HEAT_PUMP_HPP_
 #define _HEAT_PUMP_HPP_
 
+#include "heat_pump_state.hpp"
+
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
@@ -50,7 +52,6 @@ class HeatPump {
     bool init();
 
     void printHeatpumpInfo();
-    void dumpIam();
     void setLogLevel(const std::string& logLevel);
 
     NabtoDeviceError initDevice();
@@ -78,9 +79,9 @@ class HeatPump {
     nlohmann::json getState()
     {
         nlohmann::json state;
-        state["Mode"] = mode_;
-        state["Target"] = target_;
-        state["Power"] = power_;
+        state["Mode"] = state_.mode_;
+        state["Target"] = state_.target_;
+        state["Power"] = state_.power_;
         state["Temperature"] = 22.3;
         return state;
     }
@@ -128,9 +129,8 @@ class HeatPump {
 
     std::string iamStateFile_;
     std::string hpStateFile_;
-    bool power_ = false;
-    double target_ = 22.3;
-    std::string mode_ = "COOL";
+
+    HeatPumpState state_;
 
     std::string pairingPassword_;
     std::string pairingServerConnectToken_;

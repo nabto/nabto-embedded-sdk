@@ -1,11 +1,15 @@
 
 #include <apps/common/string_file.h>
 #include <examples/common/random_string.hpp>
+#include <apps/common/json_config.h>
+
 
 #include "heat_pump_state.hpp"
 
 
 #include <modules/iam/nm_iam_serializer.h>
+
+#include <cjson/cJSON.h>
 
 
 namespace nabto {
@@ -22,8 +26,22 @@ void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_
 }
 void save_heat_pump_state(const char* filename, const HeatPumpState& state)
 {
+    cJSON* root = cJSON_CreateObject();
 
+    cJSON_AddNumberToObject(root, "Version", 3);
+
+    cJSON* heatPump = cJSON_CreateObject();
+    cJSON_AddItemToObject(heatPump, "Mode", cJSON_CreateString(state.mode_.c_str()));
+    cJSON_AddItemToObject(heatPump, "Power", cJSON_CreateBool(state.power_));
+    cJSON_AddItemToObject(heatPump, "Target", cJSON_CreateNumber(state.target_));
+
+    cJSON_AddItemToObject(root, "HeatPump", heatPump);
+
+    json_config_save(filename, root);
+
+    cJSON_Delete(root);
 }
+
 void create_default_iam_state(const char* filename)
 {
     struct nm_iam_state* state = nm_iam_state_new();
@@ -41,7 +59,8 @@ void create_default_iam_state(const char* filename)
 }
 void create_default_heat_pump_state(const char* filename)
 {
-
+    HeatPumpState state;
+    save_heat_pump_state(filename, state);
 }
 
 } } }

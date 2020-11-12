@@ -65,7 +65,7 @@ bool makeDirectories(const std::string& in)
 }
 
 
-bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool dumpIam, bool randomPorts);
+bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool randomPorts);
 
 void print_missing_device_config_help(const std::string& filename)
 {
@@ -132,16 +132,15 @@ int main(int argc, char** argv) {
             std::string iamStateFile = homedir + "/state/heat_pump_device_iam_state.json";
             std::string hpStateFile = homedir + "/state/heat_pump_device_state.json";
 
-            json_config_clear(iamStateFile);
-            json_config_clear(hpStateFile);
+            nabto::examples::heat_pump::create_default_iam_state(iamStateFile.c_str());
+            nabto::examples::heat_pump::create_default_heat_pump_state(hpStateFile.c_str());
             std::cout << "Removed paired users and the heatpump state" << std::endl;
             return 0;
         }
 
         std::string logLevel = result["log-level"].as<std::string>();
-        bool dumpIam = (result.count("dump-iam") > 0);
         bool randomPorts = (result.count("random-ports") > 0);
-        if (!run_heat_pump(homedir, logLevel, dumpIam, randomPorts)) {
+        if (!run_heat_pump(homedir, logLevel, randomPorts)) {
             std::cerr << "Failed to run Heat Pump" << std::endl;
             return 3;
         }
@@ -157,7 +156,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool dumpIam, bool randomPorts)
+bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool randomPorts)
 {
     std::string configFile = homedir + "/config/device.json";
     std::string deviceKeyFile = homedir + "/keys/device.key";
@@ -196,9 +195,6 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
         hp.setLogLevel(logLevel);
         if (!hp.init()) {
             return false;
-        }
-        if (dumpIam) {
-            hp.dumpIam();
         }
         hp.printHeatpumpInfo();
 
