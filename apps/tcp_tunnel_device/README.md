@@ -19,10 +19,10 @@ TCP Client <-- tcp connection --> TCP Tunnel Client App <-- tcp encapsulated int
 
 The tcptunnel uses several configuration files.
 
-### `tcp_tunnel_services.json`
+### `tcp_tunnel_device_services.json`
 
 This file defines the services which the tunnel exposes.  A service
-consists of a service id, a service type a host as an ip address and a
+consists of a service ID, a service type, a host as an IP address, and a
 port number.
 
 Example services file
@@ -49,33 +49,30 @@ Example services file
 ]
 ```
 
-The id and type is sent to the Authorization requests in the IAM
+The ID and type is sent to the Authorization requests in the IAM
 system, such that it is possible to limit a group of users to certain
 types of services or specific services.
 
-### `device_config.json`
+### `device.json`
 
-The device config is a static file containing the configuration like
-device id and which server to use.
+The device config is a static file containing the configuration of
+device ID, product ID and which server to use. For normal use, the Server will
+default to the Nabto basestations and does not need to be provided.
 
 ```json
 {
   "ProductId": "...",
   "DeviceId": "...",
-  "Server": "...",
-  "Client": {
-    "ServerKey": "...",
-    "ServerUrl": "..."
-  }
+  "Server": "..."
 }
 ```
 
-### `tcp_tunnel_policies.json`
+### `tcp_tunnel_device_iam_config.json`
 
-This is a file which is generated the first time the TCP Tunnel is
-started. It is populated with default IAM policies. If another IAM
-configuration is wanted this file can be modified to reflect
-that. This file is not updated by the application.
+This is a file can be generated using the `--init` argument for the
+TCP Tunnel, provided from elsewhere for custom IAM configuration, or
+modified after creation. It contains IAM policies and roles. This file
+is not updated by the application.
 
 Example policy which only accepts connections to Services of type RTSP
 
@@ -96,23 +93,47 @@ Example policy which only accepts connections to Services of type RTSP
 }
 ```
 
+Example Role using the policy:
 
-### `tcp_tunnel_state.json`
+```
+{
+  "Id": "Tunneller",
+  "Policies": [
+    "TunnelRTSP"
+  ]
+}
+```
 
-The state of the tcptunnel. This file is updated by the application at
-runtime.
 
-### `<product_id>_<device_id>.key`
+### `tcp_tunnel_device_iam_state.json`
+
+The state of the TCP Tunnel. This file is also generated with the
+`--init` argument to set initial values for state parameters. This
+file is updated by the application at runtime.
+
+### `device.key`
 
 Key file for the device. If this file does not exists, it's
 created. This file is not updated by the application afterwards.
 
 ## Usage
 
-First time a TCP Tunnel Device is run several configuration files is
-created if they do not exists beforehand. These configuration files
-can then be edited such that the device exposes the right services and
-has the right policies to enforce access to these.
+A detailed walk through of using TCP Tunnels in Nabto Edge can be
+found on
+our
+[Documentation site](http://docs.dev.nabto.com/developer/guides/get-started/tunnels/intro.html).
 
-The first user which is paired with the system gets the role `Admin`
-the next users which pairs with the system gets the role `User`.
+The TCP Tunnel Device should first be run with the `--init` argument
+to generate the configuration files described above. If desired, these
+files can then be modified so the device exposes the right services
+and has the right policies to enforce access to these.
+
+Finally, start the device without the `--init` argument to start it.
+
+The device is now ready to accept connections from clients. The first
+connection should be used to pair an Administrator with the
+device. This can either be done using `initial local pairing` or
+`invite-only password pairing` modes. To connect to the device,
+the
+[Nabto Client Edge Tunnel](https://github.com/nabto/nabto-client-edge-tunnel) can
+be used.

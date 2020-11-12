@@ -25,6 +25,9 @@ For help on porting of the nabto_device.h interface to a new platform
 see `doc/platform_integration_howto.md` and
 `platform_integration_steps/README.md`
 
+For details on using the Nabto IAM module for user access and
+management, see `src/modules/iam/README.md`.
+
 
 ## Parts of this repository
 
@@ -87,7 +90,8 @@ This folder contains examples for how the platform can be used.
 
 ### `apps`
 
-This folder contains applications which can be used as they are.
+This folder contains production ready applications which can be used
+as they are.
 
 ### `platform_integration_example`
 
