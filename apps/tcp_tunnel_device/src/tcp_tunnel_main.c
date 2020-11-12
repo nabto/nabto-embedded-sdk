@@ -515,6 +515,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     nabto_device_string_free(deviceFingerprint);
 
+    nm_iam_state_free(state);
+
     if (args->showState) {
         print_iam_state(tcpTunnelState);
     } else {
