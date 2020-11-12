@@ -5,11 +5,11 @@ Nabto embedded SDK
 ## Building and Testing
 
 ```
-mkdir build_dir
-cd build_dir
-cmake ..
-make
-./test_cpp/embedded_unit_test
+mkdir _build
+cd _build
+cmake -DCMAKE_INSTALL_PREFIX=../_install ..
+cmake --build . --config Release --target install
+../_install/bin/embedded_unit_test -p
 ```
 
 
@@ -62,7 +62,7 @@ the device, like connection management.
 ### `src/modules`
 
 Modules is the folder where modules for specific targets
-exists. Modules can be for encryption, networking, timing, logging
+exists. Modules can be for IAM, encryption, networking, timing, logging
 etc.
 
 ### `src/nabto_device_libevent`

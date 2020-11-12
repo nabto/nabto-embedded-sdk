@@ -102,11 +102,6 @@ bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* 
  */
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* initialPairingUsername);
 
-
-/****************
- * User Builder *
- ****************/
-
 /**
  * Add a user to the IAM state. The state takes ownership of the user
  * pointer.
@@ -116,6 +111,11 @@ bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const
  * @return false iff the user could not be added
  */
 bool nm_iam_state_add_user(struct nm_iam_state* state, struct nm_iam_user* user);
+
+
+/****************
+ * User Builder *
+ ****************/
 
 /**
  * Create a new user with the specified username. The username must
