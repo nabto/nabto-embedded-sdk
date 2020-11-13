@@ -55,6 +55,9 @@ bool nm_iam_pairing_is_password_invite_possible(struct nm_iam* iam, NabtoDeviceC
 
 bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
 {
+    if (!nabto_device_connection_is_local(iam->device, ref)) {
+        return false;
+    }
     if (!nm_iam_internal_check_access(iam, ref, "IAM:PairingLocalInitial", NULL)) {
         return false;
     }
