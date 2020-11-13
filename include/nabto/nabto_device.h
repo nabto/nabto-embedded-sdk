@@ -499,6 +499,28 @@ nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device,
                                                         NabtoDeviceConnectionRef ref,
                                                         char** fp);
 
+
+/**
+ * Query whether a given connection is local.
+ *
+ * A connection is considered local if it is currently communicating
+ * though a socket only used for local traffic. This ensures the
+ * device has not opened any connections through local firewall. Note
+ * this assumes the device is behind a firewall. If the device is not
+ * behind a firewall, it is possible for a connection to be falsely
+ * considered local.
+ *
+ * The result of this query should not be cached as it may change.
+ *
+ * @param device [in]  The device.
+ * @param ref [in]     The connection reference to query.
+ *
+ * @return true iff local, false otherwise
+ */
+NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+nabto_device_connection_is_local(NabtoDevice* device,
+                                 NabtoDeviceConnectionRef ref);
+
 /**
  * Connection events relevant for the application.
  * ```
