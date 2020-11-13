@@ -49,19 +49,28 @@ nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDevi
     return passwordAuthenticated;
 }
 
-const char* NABTO_DEVICE_API
-nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref)
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** username)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    char* username = NULL;
+    NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+    *username = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
-    if (connection != NULL && connection->username[0] != 0) {
-        username = connection->username;
+    if (connection == NULL) {
+        ec = NABTO_DEVICE_EC_INVALID_CONNECTION;
+    } else if (connection->username[0] == 0) {
+        ec = NABTO_DEVICE_EC_INVALID_STATE;
+    } else {
+        *username = strdup(connection->username);
+        if (*username == NULL) {
+            ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+        } else {
+            ec = NABTO_DEVICE_EC_OK;
+        }
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return username;
-
+    return ec;
 }
 
 NabtoDeviceError NABTO_DEVICE_API
