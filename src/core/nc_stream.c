@@ -108,9 +108,9 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
 void nc_stream_destroy(struct nc_stream_context* ctx)
 {
     // this is called after the stream ownership has been given to an application.
-    nc_stream_ref_count_dec(ctx);
     nc_stream_stop(ctx);
     nc_stream_manager_stream_remove(ctx);
+    nc_stream_ref_count_dec(ctx);
 }
 
 void nc_stream_free(struct nc_stream_context* ctx)

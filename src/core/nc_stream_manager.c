@@ -122,7 +122,9 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     }
 
     if ( stream != NULL ) {
+        nc_stream_ref_count_inc(stream);
         nc_stream_handle_packet(stream, ptr, bufferSize-(ptr-start));
+        nc_stream_ref_count_dec(stream);
     } else {
         NABTO_LOG_TRACE(LOG, "unable to handle packet of type %s, for stream ID %u no such stream", nabto_stream_flags_to_string(flags), streamId);
     }
@@ -334,7 +336,9 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
 
         if (stream->clientConn == connection) {
             stream->clientConn = NULL;
+            nc_stream_ref_count_inc(stream);
             nc_stream_handle_connection_closed(stream);
+            nc_stream_ref_count_dec(stream);
         }
     }
 }
