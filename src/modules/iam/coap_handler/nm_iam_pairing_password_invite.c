@@ -37,9 +37,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    const char* username;
+    char* username;
 
-    if (nabto_device_connection_get_password_authentication_username(iam->device, ref, username) != NABTO_DEVICE_EC_OKA) {
+    if (nabto_device_connection_get_password_authentication_username(iam->device, ref, &username) != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 500, "Server error");
     } else {
         struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
