@@ -3,9 +3,8 @@ set(src
   )
 
 add_executable(simple_coap_device "${src}")
+target_link_libraries(simple_coap_device nabto_device_static)
 
 install(TARGETS simple_coap_device
   RUNTIME DESTINATION bin
   )
-
-target_link_libraries(simple_coap_device nabto_device)

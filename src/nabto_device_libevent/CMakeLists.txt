@@ -31,6 +31,10 @@ target_link_libraries(nabto_device_static
   3rdparty_mbedtls
   )
 
+target_link_libraries( nabto_device_static ${CMAKE_THREAD_LIBS_INIT} )
+
+target_link_libraries(nabto_device_static nm_libevent event_core)
+
 
 add_library( nabto_device SHARED "${src}" "${ne_api_src}")
 
