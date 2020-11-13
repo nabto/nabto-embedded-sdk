@@ -333,11 +333,18 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     tunnel->privateKeyFile = expand_file_name(args->homeDir, DEVICE_KEY_FILE);
 
     if (args->init) {
+        if (!load_or_create_private_key(device, tunnel->privateKeyFile, &logger)) {
+            print_private_key_file_load_failed(tunnel->privateKeyFile);
+            return false;
+        }
         if (!tcp_tunnel_config_interactive(tunnel)) {
             printf("Init of the configuration and state failed" NEWLINE);
             return false;
         } else {
+            char* deviceFingerprint;
+            nabto_device_get_device_fingerprint(device, &deviceFingerprint);
             printf("The configuration and state has been initialized" NEWLINE);
+            printf("The device Fingerprint is: %s" NEWLINE, deviceFingerprint);
             return true;
         }
     } else {
@@ -452,7 +459,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     if (state->localInitialPairing && initialUserNeedPairing) {
         printf("# " NEWLINE);
-        printf(" The device is not yet paired with the initial user. You can use Local Initial Pairing to get access." NEWLINE);
+        printf("# The device is not yet paired with the initial user. You can use Local Initial Pairing to get access." NEWLINE);
     }
 
 
