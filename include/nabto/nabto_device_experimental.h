@@ -84,25 +84,6 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 
 /**
- * Get the username used for password authentication if it was
- * attempted. The username is set during the authentication process,
- * meaning the username should only be used if a prior call to
- * nabto_device_connection_is_password_authenticated() returned
- * true. The returned string must be freed using
- * nabto_device_string_free().
- *
- * @param device [in]    The device.
- * @param ref    [in]    The connection reference for which to get username.
- * @param username [out] Where to put the username string.
- * @return NABTO_DEVICE_EC_INVALID_CONNECTION iff connection does not exist
- *         NABTO_DEVICE_EC_INVALID_STATE iff password authentication not performed
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY iff string could not be allocated
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** username);
-
-
-/**
  * Disable remote access. When disabled, the device will not attempt
  * to connect to the Nabto Basestation and clients will only be able
  * to connect to the device directly (local connection using mdns

@@ -524,6 +524,34 @@ nabto_device_connection_is_local(NabtoDevice* device,
                                  NabtoDeviceConnectionRef ref);
 
 /**
+ * Test if the connection is password authenticated.
+ *
+ * @return true iff the connection is password authenticated.
+ */
+NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
+nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDeviceConnectionRef ref);
+
+
+/**
+ * Get the username used for password authentication if it was
+ * attempted. The username is set during the authentication process,
+ * meaning the username should only be used if a prior call to
+ * nabto_device_connection_is_password_authenticated() returned
+ * true. The returned string must be freed using
+ * nabto_device_string_free().
+ *
+ * @param device [in]    The device.
+ * @param ref    [in]    The connection reference for which to get username.
+ * @param username [out] Where to put the username string.
+ * @return NABTO_DEVICE_EC_INVALID_CONNECTION iff connection does not exist
+ *         NABTO_DEVICE_EC_INVALID_STATE iff password authentication not performed
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY iff string could not be allocated
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** username);
+
+
+/**
  * Connection events relevant for the application.
  * ```
  * NABTO_DEVICE_CONNECTION_EVENT_OPENED;
@@ -1305,6 +1333,7 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request,
                                                        size_t index);
 
+
 /******************************
  * Password Authentication API
  ******************************/
@@ -1394,15 +1423,6 @@ nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAut
  * @param request  The request
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDevicePasswordAuthenticationRequest* request);
-
-/**
- * Test if the connection is password authenticated.
- *
- * @return true iff the connection is password authenticated.
- */
-NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
-nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDeviceConnectionRef ref);
-
 
 /**************
  * Futures API
