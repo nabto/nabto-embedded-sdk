@@ -26,7 +26,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
-    
+
     if (!nm_iam_internal_check_access(handler->iam, ref, "IAM:PairingPasswordInvite", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
@@ -37,8 +37,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    const char* username = nabto_device_connection_get_password_authentication_username(iam->device, ref);
-    if (username == NULL) {
+    const char* username;
+
+    if (nabto_device_connection_get_password_authentication_username(iam->device, ref, username) != NABTO_DEVICE_EC_OKA) {
         nabto_device_coap_error_response(request, 500, "Server error");
     } else {
         struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
