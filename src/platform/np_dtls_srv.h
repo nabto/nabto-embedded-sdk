@@ -61,6 +61,12 @@ struct np_dtls_srv_module {
     np_error_code (*create_connection)(struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
                                        np_dtls_srv_sender packetSender, np_dtls_srv_data_handler dataHandler,
                                        np_dtls_srv_event_handler eventHandler, void* data);
+
+    /**
+     * Destroy a connection, a connection can be destroyed when no more
+     * unresolved async send callbacks exists. Such a state can be obtained by
+     * calling async_close.
+     */
     void (*destroy_connection)(struct np_dtls_srv_connection* connection);
 
     /**
