@@ -63,14 +63,25 @@ struct np_dtls_srv_module {
                                        np_dtls_srv_event_handler eventHandler, void* data);
     void (*destroy_connection)(struct np_dtls_srv_connection* connection);
 
+    /**
+     * Send data.
+     */
     np_error_code (*async_send_data)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                      struct np_dtls_srv_send_context* sendCtx);
 
     np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                    uint8_t channelId, uint8_t* buffer, uint16_t bufferSize);
 
+    /**
+     * Async Close a dtls connection. The callback is called when the connection
+     * has been closed and no more data is sent. No more data can be sent after
+     * close has been called. The function is async such that the dtls
+     * connection has time to send the last dtls close notify packet.
+     * Outstanding async send operations will be resolved before close returns.
+     * Destroy connection can be invoked from the close callback.
+     */
     np_error_code (*async_close)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                 np_dtls_close_callback cb, void* data);
+                                 struct np_completion_event* completionEvent);
 
     np_error_code (*get_fingerprint)(struct np_platform* pl, struct np_dtls_srv_connection* ctx, uint8_t* fp);
 

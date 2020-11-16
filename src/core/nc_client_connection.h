@@ -54,6 +54,7 @@ struct nc_client_connection {
     void* sentData;
     uint64_t connectionRef;
     struct np_completion_event sendCompletionEvent;
+    struct np_completion_event closeCompletionEvent;
 
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_srv_send_context keepAliveSendCtx;

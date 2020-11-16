@@ -66,6 +66,11 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
         return ec;
     }
 
+    ec = np_completion_event_init(&pl->eq, &conn->closeCompletionEvent, &nc_client_connection_dtls_closed_cb, conn);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
 
     ec = pl->dtlsS.create_connection(device->dtlsServer, &conn->dtls,
                                      &nc_client_connection_async_send_to_udp,
@@ -116,7 +121,7 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
 
 void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
-    conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connection_dtls_closed_cb, conn);
+    conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &conn->closeCompletionEvent);
 }
 
 void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
@@ -130,6 +135,7 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
 
     pl->dtlsS.destroy_connection(conn->dtls);
     np_completion_event_deinit(&conn->sendCompletionEvent);
+    np_completion_event_deinit(&conn->closeCompletionEvent);
 
     // this frees the connection
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
@@ -139,7 +145,7 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
     if (event == NP_DTLS_SRV_EVENT_CLOSED) {
-        nc_client_connection_dtls_closed_cb(NABTO_EC_OK, data);
+        nc_client_connection_close_connection(conn);
     } else if (event == NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE) {
         // test fingerprint and alpn
         // if ok try to assign user to connection.
@@ -148,7 +154,7 @@ void nc_client_connection_handle_event(enum np_dtls_srv_event event, void* data)
 
         if (conn->pl->dtlsS.get_alpn_protocol(conn->dtls) == NULL) {
             NABTO_LOG_ERROR(LOG, "DTLS server Application Layer Protocol Negotiation failed");
-            conn->pl->dtlsS.async_close(conn->pl, conn->dtls, &nc_client_connection_dtls_closed_cb, conn);
+            nc_client_connection_close_connection(conn);
             return;
         }
 
