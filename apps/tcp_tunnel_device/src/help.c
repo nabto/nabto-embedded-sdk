@@ -67,7 +67,7 @@ void print_help() {
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "## `keys/device.key`");
     printf("%s" NEWLINE, "");
-    printf("%s" NEWLINE, "The device key file is created if it does not exists.");
+    printf("%s" NEWLINE, "The device key file is created if it does not exist.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "END OF GENERIC HELP");
 }

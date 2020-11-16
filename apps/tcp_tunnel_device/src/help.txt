@@ -6,21 +6,20 @@ TCP Tunnel Device Help.
   -H, --home-dir      Set alternative home dir, The default home dir is
                       $HOME/.nabto/edge on linux and mac, and %APPDATA%\nabto\edge
                       on windows
-      --log-level     Set the log level for the application the possible levels
-                      is error, warn, info and trace.
+      --log-level     Set the log level for the application; the possible levels
+                      are error, warn, info and trace.
       --random-ports  Bind the local and the p2p sockets to random UDP ports
                       instead of the default UDP ports 5592 and 5593.
       --init          Interactively create configuration files the the tcp tunnel.
 
 # Files
 
-The application uses several files. The are located in subfolders of
-the homedir. Namely config, state and keys.
+The application uses several files. They are located in subfolders of
+the homedir: config, state and keys.
 
-The files is by default located in the folder unix:
-`$HOME/.nabto/edge`, windows `%APPDATA%\nabto\edge`. The location can
-be overriden by the home-dir option. In this case basefolder is
-`${home-dir}`.
+The files are by default located in the folder `$HOME/.nabto/edge` on Linux/macOS and
+`%APPDATA%\nabto\edge` on Windows. The location can be overriden by the home-dir option. In this
+case basefolder is `${home-dir}`.
 
 ## `config/device.json`
 
@@ -38,21 +37,21 @@ The format of the json file is
 ```
 
 The `ProductId` in the configuration is the product is which is
-configured for the group of devices. The product id found in the cloud
+configured for the group of devices. The product id is found in the cloud
 console.
 
 The `DeviceId` is the device id for this specific device. This device
 id found in the cloud console.
 
-The `Server` is an optional hostname of the server the device uses. It
-not set the default server is used.
+The `Server` is an optional hostname of the server the device uses. If
+not set, the default server is used.
 
 ## `config/tcp_tunnel_device_iam_config.json`
 
 The `tcp_tunnel_iam.json` is an IAM policies file which contains the
 policies and roles used by the system.
 
-TODO: link to further documentation of iam concepts.
+Read more about the IAM module on http://docs.nabto.com/developer/guides/iam/intro.html.
 
 ## `state/tcp_tunnel_device_iam_state.json`
 
@@ -62,6 +61,6 @@ production such that the devices comes e.g. with some default state.
 
 ## `keys/device.key`
 
-The device key file is created if it does not exists.
+The device key file is created if it does not exist.
 
 END OF GENERIC HELP
