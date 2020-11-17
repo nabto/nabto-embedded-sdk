@@ -23,7 +23,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
         printf("The device configuration %s already exists do you want to recreate it? ", tcpTunnel->deviceConfigFile);
         createDeviceConfig = yes_no();
     } else {
-        printf("The device configuration %s does not exists. Creating a new config.\n", tcpTunnel->deviceConfigFile);
+        printf("The device configuration %s does not exist. Creating a new config.\n", tcpTunnel->deviceConfigFile);
         createDeviceConfig = true;
     }
     if (createDeviceConfig) {
@@ -37,7 +37,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
         printf("The IAM configuration %s already exists do you want to recreate it? ", tcpTunnel->iamConfigFile);
         createIamConfig = yes_no();
     } else {
-        printf("The IAM configuration %s does not exists. Creating a new IAM configuration.\n", tcpTunnel->deviceConfigFile);
+        printf("The IAM configuration %s does not exist. Creating a new IAM configuration.\n", tcpTunnel->deviceConfigFile);
         createIamConfig = true;
     }
 

@@ -4,6 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
+#include <platform/np_completion_event.h>
 #include <core/nc_version.h>
 
 #include <mbedtls/entropy.h>
@@ -40,7 +41,6 @@ struct np_dtls_srv_connection {
     struct np_communication_buffer* sslSendBuffer;
     size_t sslSendBufferSize;
     struct nm_mbedtls_timer timer;
-    struct np_event* closeEv;
 
     np_dtls_close_callback closeCb;
     void* closeCbData;
@@ -50,8 +50,6 @@ struct np_dtls_srv_connection {
 
     struct nn_llist sendList;
     struct np_event* startSendEvent;
-    struct np_event* deferredEventEvent;
-    enum np_dtls_srv_event deferredEvent;
 
     np_dtls_srv_sender sender;
     np_dtls_srv_data_handler dataHandler;
@@ -59,6 +57,8 @@ struct np_dtls_srv_connection {
     void* senderData;
     bool sending;
     uint8_t channelId;
+
+    struct np_completion_event* closeCompletionEvent;
 };
 
 struct np_dtls_srv {
@@ -91,8 +91,8 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
 static np_error_code nm_mbedtls_srv_async_send_data(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                                  struct np_dtls_srv_send_context* sendCtx);
 
-static np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                             np_dtls_close_callback cb, void* data);
+static np_error_code nm_mbedtls_srv_async_close(struct np_platform *pl, struct np_dtls_srv_connection *ctx,
+                                                struct np_completion_event *completionEvent);
 
 static np_error_code nm_mbedtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                                  uint8_t* fp);
@@ -112,9 +112,11 @@ int nm_mbedtls_srv_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferS
 static void nm_mbedtls_srv_timed_event_do_one(void* userData);
 
 void nm_mbedtls_srv_event_send_to(void* data);
-void deferred_event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event);
+void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event);
 void nm_mbedtls_srv_do_event_callback(void* data);
-static void nm_mbedtls_srv_event_close(void* data);
+
+static void nm_mbedtls_srv_is_closed(struct np_dtls_srv_connection* ctx);
+
 
 // Get the packet counters for given dtls_cli_context
 np_error_code nm_mbedtls_srv_get_packet_count(struct np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount)
@@ -236,15 +238,6 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
         return ec;
     }
 
-    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_srv_do_event_callback, ctx, &ctx->deferredEventEvent);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_srv_event_close, ctx, &ctx->closeEv);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-
     ec = nm_mbedtls_timer_init(&ctx->timer, ctx->pl, &nm_mbedtls_srv_timed_event_do_one, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
@@ -291,8 +284,10 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
 {
     struct np_platform* pl = connection->pl;
     struct np_dtls_srv_connection* ctx = connection;
-    ctx->state = CLOSING;
     // remove the first element until the list is empty
+    if (!nn_llist_empty(&ctx->sendList)) {
+        NABTO_LOG_ERROR(LOG, "invalid state the sendlist must be empty when calling destroy.");
+    }
     while(!nn_llist_empty(&ctx->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
         struct np_dtls_srv_send_context* first = nn_llist_get_item(&it);
@@ -302,9 +297,7 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
     nm_mbedtls_timer_cancel(&ctx->timer);
     nm_mbedtls_timer_deinit(&ctx->timer);
     struct np_event_queue* eq = &pl->eq;
-    np_event_queue_destroy_event(eq, ctx->closeEv);
     np_event_queue_destroy_event(eq, ctx->startSendEvent);
-    np_event_queue_destroy_event(eq, ctx->deferredEventEvent);
     pl->buf.free(connection->sslRecvBuf);
     pl->buf.free(connection->sslSendBuffer);
     mbedtls_ssl_free(&connection->ssl);
@@ -339,18 +332,16 @@ void nm_mbedtls_srv_do_one(void* data)
             // keep state as CONNECTING
         } else if (ret == MBEDTLS_ERR_SSL_TIMEOUT) {
             nm_mbedtls_timer_cancel(&ctx->timer);
-            ctx->state = CLOSING;
-            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
         } else if (ret == 0) {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
 
             ctx->state = DATA;
-            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE);
+            event_callback(ctx, NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE);
         } else {
             NABTO_LOG_ERROR(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
             nm_mbedtls_timer_cancel(&ctx->timer);
-            ctx->state = CLOSING;
-            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
             return;
         }
     } else if (ctx->state == DATA) {
@@ -358,8 +349,8 @@ void nm_mbedtls_srv_do_one(void* data)
         ret = mbedtls_ssl_read(&ctx->ssl, ctx->pl->buf.start(ctx->sslRecvBuf), ctx->pl->buf.size(ctx->sslRecvBuf) );
         if (ret == 0) {
             // EOF
-            ctx->state = CLOSING;
-            NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
+            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            NABTO_LOG_TRACE(LOG, "Received EOF");
         } else if (ret > 0) {
             uint64_t seq = *((uint64_t*)ctx->ssl.in_ctr);
             ctx->recvCount++;
@@ -372,32 +363,20 @@ void nm_mbedtls_srv_do_one(void* data)
             // OK
         } else if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
             // expected to happen on a connection,
-            ctx->state = CLOSING;
-            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
         } else {
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
-            ctx->state = CLOSING;
-            deferred_event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
         }
     }
 }
 
-void deferred_event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event)
+void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event)
 {
-    struct np_platform* pl = ctx->pl;
-    ctx->deferredEvent = event;
-    np_event_queue_post(&pl->eq, ctx->deferredEventEvent);
-}
-
-void nm_mbedtls_srv_do_event_callback(void* data)
-{
-    struct np_dtls_srv_connection* ctx = data;
-    if (ctx->state == CLOSING && ctx->sending) {
-
-        np_event_queue_post(&ctx->pl->eq, ctx->deferredEventEvent);
-    } else {
-        ctx->eventHandler(ctx->deferredEvent, ctx->senderData);
-    }
+    ctx->eventHandler(event, ctx->senderData);
+    // struct np_platform* pl = ctx->pl;
+    // ctx->deferredEvent = event;
+    // np_event_queue_post(&pl->eq, ctx->deferredEventEvent);
 }
 
 void nm_mbedtls_srv_start_send(struct np_dtls_srv_connection* ctx)
@@ -414,6 +393,7 @@ void nm_mbedtls_srv_start_send_deferred(void* data)
 
     if (nn_llist_empty(&ctx->sendList)) {
         // empty send queue
+        nm_mbedtls_srv_is_closed(ctx);
         return;
     }
 
@@ -451,37 +431,43 @@ np_error_code nm_mbedtls_srv_async_send_data(struct np_platform* pl, struct np_d
     return NABTO_EC_OK;
 }
 
-void nm_mbedtls_srv_event_close(void* data){
-    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-    if (ctx->sending) {
-        np_event_queue_post(&ctx->pl->eq, ctx->closeEv);
+void nm_mbedtls_srv_is_closed(struct np_dtls_srv_connection* ctx)
+{
+    if (ctx->state != CLOSING) {
         return;
     }
-    nm_mbedtls_timer_cancel(&ctx->timer);
-    np_event_queue_cancel_event(&ctx->pl->eq, ctx->closeEv);
-    np_event_queue_cancel_event(&ctx->pl->eq, ctx->startSendEvent);
-    np_event_queue_cancel_event(&ctx->pl->eq, ctx->deferredEventEvent);
-
-    np_dtls_close_callback cb = ctx->closeCb;
-    void* cbData = ctx->closeCbData;
-    ctx->closeCb = NULL;
-    if(cb != NULL) {
-        cb(NABTO_EC_OK, cbData);
+    if (ctx->sending) {
+        return;
+    }
+    if (!nn_llist_empty(&ctx->sendList)) {
+        return;
+    }
+    /**
+     * When all outstanding data is sent all we can resolve the close completion
+     * event which will probably trigger that the connection is destroyed.
+     */
+    if (ctx->closeCompletionEvent != NULL) {
+        struct np_completion_event* completionEvent = ctx->closeCompletionEvent;
+        ctx->closeCompletionEvent = NULL;
+        np_completion_event_resolve(completionEvent, NABTO_EC_OK);
     }
 }
 
 np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                      np_dtls_close_callback cb, void* data)
+                                         struct np_completion_event* completionEvent)
 {
-    if (!ctx || ctx->state == CLOSING) {
+    if (ctx->closeCompletionEvent != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+    if (ctx->state == CLOSING) {
         return NABTO_EC_OK;
     }
-    ctx->closeCb = cb;
-    ctx->closeCbData = data;
+    ctx->closeCompletionEvent = completionEvent;
     ctx->state = CLOSING;
+    nm_mbedtls_timer_cancel(&ctx->timer);
     mbedtls_ssl_close_notify(&ctx->ssl);
-    np_event_queue_post(&ctx->pl->eq, ctx->closeEv);
-    return NABTO_EC_OK;
+    nm_mbedtls_srv_is_closed(ctx);
+    return NABTO_EC_OPERATION_STARTED;
 }
 
 #if defined(MBEDTLS_DEBUG_C)
@@ -600,14 +586,9 @@ void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data)
         return;
     }
     ctx->sending = false;
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Connection Async Send failed with code: %u", ec);
-        return;
-    }
+
     ctx->sslSendBufferSize = 0;
-    if(ctx->state == CLOSING) {
-        return;
-    }
+
     nm_mbedtls_srv_do_one(ctx);
     nm_mbedtls_srv_start_send(ctx);
 }

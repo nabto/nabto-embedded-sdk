@@ -79,7 +79,7 @@ enum nm_iam_effect nm_iam_internal_check_access_role(struct nm_iam* iam, struct 
     {
         struct nm_iam_policy* policy = nm_iam_internal_find_policy(iam, policyStr);
         if (policy == NULL) {
-             NN_LOG_ERROR(iam->logger, LOGM, "The policy %s for the role %s does not exists", policyStr, role->id);
+             NN_LOG_ERROR(iam->logger, LOGM, "The policy %s for the role %s does not exist", policyStr, role->id);
 
             return NM_IAM_EFFECT_ERROR;
         }

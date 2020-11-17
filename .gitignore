@@ -5,3 +5,5 @@
 /src/core/nc_version.c
 *.gdb_history
 build
+callgrind*
+perf.stat*

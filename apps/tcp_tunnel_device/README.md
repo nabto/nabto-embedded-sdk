@@ -1,11 +1,11 @@
 # TCP Tunnel Device
 
-The TCP Tunnel Device App is an implementation of a TCP Tunnelling
-device. The implementation both exists as an reference implementation
-for a TCP tunnelling process and a production ready tcp tunnelling
+The TCP Tunnel Device app is an implementation of a TCP tunnelling
+device. The implementation both exist as a reference implementation
+for a TCP tunnelling process and a production ready TCP tunnelling
 device application which can be installed on a fleet of devices.
 
-TCP Tunnelling in nabto is the concept of having a client which wants
+TCP tunnelling in Nabto is the concept of having a client which wants
 to access a TCP server on a device.
 
 An example could be a device having a HTTP API which the client wants
@@ -15,9 +15,11 @@ to consume.
 TCP Client <-- tcp connection --> TCP Tunnel Client App <-- tcp encapsulated into a nabto stream --> TCP Tunnel Device <-- tcp connection --> TCP Server
 ```
 
+See the [Nabto Edge Tunnel intro](/developer/guides/get-started/tunnels/intro.html) for more information.
+
 ## Configuration files
 
-The tcptunnel uses several configuration files.
+The TCP tunnel uses several configuration files.
 
 ### `tcp_tunnel_device_services.json`
 
@@ -49,14 +51,14 @@ Example services file
 ]
 ```
 
-The ID and type is sent to the Authorization requests in the IAM
+The ID and type are sent to the Authorization requests in the IAM
 system, such that it is possible to limit a group of users to certain
 types of services or specific services.
 
 ### `device.json`
 
 The device config is a static file containing the configuration of
-device ID, product ID and which server to use. For normal use, the Server will
+device ID, product ID and which server to use. For normal use, the server will
 default to the Nabto basestations and does not need to be provided.
 
 ```json
@@ -70,7 +72,7 @@ default to the Nabto basestations and does not need to be provided.
 ### `tcp_tunnel_device_iam_config.json`
 
 This is a file can be generated using the `--init` argument for the
-TCP Tunnel, provided from elsewhere for custom IAM configuration, or
+TCP tunnel, provided from elsewhere for custom IAM configuration, or
 modified after creation. It contains IAM policies and roles. This file
 is not updated by the application.
 
@@ -113,12 +115,12 @@ file is updated by the application at runtime.
 
 ### `device.key`
 
-Key file for the device. If this file does not exists, it's
+Key file for the device. If this file does not exist, it is
 created. This file is not updated by the application afterwards.
 
 ## Usage
 
-A detailed walk through of using TCP Tunnels in Nabto Edge can be
+A detailed walk through of using TCP tunnels in Nabto Edge can be
 found on
 our
 [Documentation site](http://docs.dev.nabto.com/developer/guides/get-started/tunnels/intro.html).
