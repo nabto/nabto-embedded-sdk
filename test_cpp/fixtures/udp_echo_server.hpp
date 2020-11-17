@@ -17,7 +17,7 @@ namespace test {
 class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
  public:
     UdpEchoServer(boost::asio::io_context& io, struct nn_log* logger)
-        : io_(io), socket_(io), logger_(logger)
+        : socket_(io), logger_(logger)
     {
 
     }
@@ -106,7 +106,6 @@ class UdpEchoServer : public std::enable_shared_from_this<UdpEchoServer> {
     }
 
  private:
-    boost::asio::io_context& io_;
     boost::asio::ip::udp::socket socket_;
     std::array<uint8_t, 1500> recvBuffer_;
     boost::asio::ip::udp::endpoint recvEp_;

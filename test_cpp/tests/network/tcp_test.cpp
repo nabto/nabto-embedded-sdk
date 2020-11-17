@@ -31,7 +31,7 @@ namespace test {
 class TcpEchoClientTest {
  public:
     TcpEchoClientTest(TestPlatform& tp)
-        :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
+        : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
         np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
     }
@@ -96,7 +96,6 @@ class TcpEchoClientTest {
     }
 
  private:
-    TestPlatform& tp_;
     struct np_platform* pl_;
     struct np_tcp_socket* socket_;
     std::array<uint8_t, 42> data_;
@@ -111,7 +110,7 @@ class TcpEchoClientTest {
 class TcpCloseClientTest {
  public:
     TcpCloseClientTest(TestPlatform& tp)
-        :tp_(tp), pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
+        : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
         np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
     }
@@ -166,7 +165,6 @@ class TcpCloseClientTest {
         fut.get();
     }
  private:
-    TestPlatform& tp_;
     struct np_platform* pl_;
 
     struct np_tcp_socket* socket_;

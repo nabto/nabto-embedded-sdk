@@ -19,7 +19,7 @@ namespace test {
 class UdpEchoClientTest {
  public:
     UdpEchoClientTest(TestPlatform& tp)
-        : tp_(tp), pl_(tp.getPlatform()), eq_(pl_->eq)
+        : pl_(tp.getPlatform()), eq_(pl_->eq)
     {
         np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
     }
@@ -101,7 +101,6 @@ class UdpEchoClientTest {
     }
 
  private:
-    nabto::test::TestPlatform& tp_;
     struct np_platform* pl_;
     struct np_event_queue eq_;
     struct np_udp_endpoint ep_;
