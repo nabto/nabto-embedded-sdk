@@ -298,7 +298,6 @@ np_error_code nm_mbedtls_cli_reset(struct np_dtls_cli_context* ctx)
     ctx->recvBufferSize = 0;
 
     nm_mbedtls_timer_cancel(&ctx->timer);
-    np_event_queue_cancel_event(&ctx->pl->eq, ctx->startSendEvent);
     return NABTO_EC_OK;
 }
 

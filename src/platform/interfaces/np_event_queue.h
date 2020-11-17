@@ -69,6 +69,9 @@ struct np_event_queue_functions {
     /**
      * Cancel an event, the event will not be executed.
      *
+     * Only timed events will be cancelled. Since cancellation of non timed
+     * events leads to missing callbacks and invalid program state.
+     *
      * @param event  The event.
      */
     void (*cancel)(struct np_event* event);

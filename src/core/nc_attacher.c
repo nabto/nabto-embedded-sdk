@@ -340,7 +340,6 @@ void resolve_close(void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     np_event_queue_cancel_event(&ctx->pl->eq, ctx->reattachTimer);
-    np_event_queue_cancel_event(&ctx->pl->eq, ctx->closeEv);
     if (ctx->closedCb) {
         nc_attacher_closed_callback cb = ctx->closedCb;
         ctx->closedCb = NULL;
