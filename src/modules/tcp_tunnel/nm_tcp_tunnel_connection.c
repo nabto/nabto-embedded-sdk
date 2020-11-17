@@ -300,6 +300,9 @@ void abort_connection(struct nm_tcp_tunnel_connection* connection)
 void is_ended(struct nm_tcp_tunnel_connection* connection)
 {
     if (connection->tcpReadEnded && connection->streamReadEnded) {
+        // if we are here both callbacks related to tcp reading and stream
+        // reading has been called and are not outstanding any longer. So it's
+        // safe to free the resources.
         NABTO_LOG_TRACE(LOG, "Both tcp and stream read has ended");
         the_end(connection);
     }
