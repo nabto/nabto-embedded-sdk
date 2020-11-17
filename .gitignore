@@ -6,4 +6,4 @@
 *.gdb_history
 build
 callgrind*
-perf.stat*
+perf.data*
