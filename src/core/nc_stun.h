@@ -21,6 +21,7 @@
 typedef void (*nc_stun_analyze_callback)(const np_error_code ec, const struct nabto_stun_result* res, void* data);
 
 struct nc_stun_callback {
+    struct nn_llist_node callbackNode;
     nc_stun_analyze_callback cb;
     void* data;
 };
@@ -32,7 +33,6 @@ enum nc_stun_state {
     NC_STUN_STATE_ABORTED
 };
 
-
 struct nc_stun_context {
     struct np_platform* pl;
     struct nc_udp_dispatch_context* priUdp;
@@ -40,7 +40,9 @@ struct nc_stun_context {
     struct nabto_stun stun;
     struct nabto_stun_module stunModule;
 
-    struct nc_stun_callback cbs[NC_STUN_MAX_CALLBACKS];
+    // list of callbacks once a result is known
+    struct nn_llist cbs;
+
     enum nc_stun_state state;
     np_error_code ec;
     const struct nabto_stun_result* res;
@@ -64,6 +66,8 @@ struct nc_stun_context {
 np_error_code nc_stun_init(struct nc_stun_context* ctx,
                            struct np_platform* pl);
 
+void nc_stun_stop(struct nc_stun_context* ctx);
+
 void nc_stun_set_sockets(struct nc_stun_context* ctx, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp);
 void nc_stun_set_host(struct nc_stun_context* ctx, const char* hostname, uint16_t port);
 
@@ -71,8 +75,8 @@ void nc_stun_remove_sockets(struct nc_stun_context* ctx);
 
 void nc_stun_deinit(struct nc_stun_context* ctx);
 
-np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
-                                    nc_stun_analyze_callback cb, void* data);
+np_error_code nc_stun_async_analyze_simple(struct nc_stun_context* ctx, struct nc_stun_callback* callback,
+                                           nc_stun_analyze_callback cb, void* data);
 
 void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            struct np_udp_endpoint* ep,

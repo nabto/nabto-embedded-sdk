@@ -400,6 +400,7 @@ void nc_device_stop(struct nc_device_context* dev)
     nc_udp_dispatch_abort(&dev->udp);
     nc_udp_dispatch_abort(&dev->secondaryUdp);
     nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
+    nc_stun_stop(&dev->stun);
     nc_stun_remove_sockets(&dev->stun);
     nc_attacher_stop(&dev->attacher);
     nc_coap_client_stop(&dev->coapClient);

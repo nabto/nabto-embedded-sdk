@@ -13,7 +13,7 @@
 #endif
 
 // util functions
-void nc_stun_resolve_callbacks(void* data);
+void nc_stun_resolve_callbacks(struct nc_stun_context* ctx);
 size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
                                struct nabto_stun_endpoint* eps, size_t epsSize,
                                uint16_t port);
@@ -96,7 +96,17 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
         return ec;
     }
 
+    nn_llist_init(&ctx->cbs);
+
     return NABTO_EC_OK;
+}
+
+void nc_stun_stop(struct nc_stun_context* ctx) 
+{
+    // TODO stop current stun requests if any
+    ctx->state = NC_STUN_STATE_ABORTED;
+    ctx->ec = NABTO_EC_ABORTED;
+    nc_stun_resolve_callbacks(ctx);
 }
 
 void nc_stun_deinit(struct nc_stun_context* ctx)
@@ -131,11 +141,12 @@ void nc_stun_remove_sockets(struct nc_stun_context* ctx)
 }
 
 // analyze function
-np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
-                                    nc_stun_analyze_callback cb, void* data)
+np_error_code nc_stun_async_analyze_simple(struct nc_stun_context* ctx, struct nc_stun_callback* callback,
+                                           nc_stun_analyze_callback cb, void* data)
 {
-    int i;
-    bool found = false;
+    callback->cb = cb;
+    callback->data = data;
+
     if (ctx->state == NC_STUN_STATE_ABORTED) {
         return NABTO_EC_ABORTED;
     }
@@ -144,24 +155,14 @@ np_error_code nc_stun_async_analyze(struct nc_stun_context* ctx, bool simple,
         NABTO_LOG_ERROR(LOG, "Stun analysis started before host was configured");
         return NABTO_EC_INVALID_STATE;
     }
-    for (i = 0; i < NC_STUN_MAX_CALLBACKS; i++) {
-        if (ctx->cbs[i].cb == NULL) {
-            ctx->cbs[i].cb = cb;
-            ctx->cbs[i].data = data;
-            found  = true;
-            break;
-        }
-    }
-    if (!found) {
-        NABTO_LOG_ERROR(LOG, "Out of callbacks");
-        return NABTO_EC_UNKNOWN;
-    }
+    nn_llist_append(&ctx->cbs, &callback->callbackNode, callback);
+
     if (ctx->state == NC_STUN_STATE_RUNNING) {
         NABTO_LOG_INFO(LOG, "Stun already running, adding callback");
         return NABTO_EC_OK;
     }
 
-    ctx->simple = simple;
+    ctx->simple = true;
     ctx->state = NC_STUN_STATE_RUNNING;
     nc_dns_multi_resolver_resolve(&ctx->dnsMultiResolver, ctx->hostname, ctx->resolvedIps, NC_STUN_MAX_ENDPOINTS, &ctx->resolvedIpsSize, &ctx->dnsCompletionEvent);
 
@@ -341,17 +342,15 @@ void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result*
 
 // util functions
 
-void nc_stun_resolve_callbacks(void* data)
+void nc_stun_resolve_callbacks(struct nc_stun_context* ctx)
 {
-    struct nc_stun_context* ctx = (struct nc_stun_context*)data;
-    int i;
-    nc_stun_analyze_callback cb;
-    for (i = 0; i < NC_STUN_MAX_CALLBACKS; i++) {
-        if (ctx->cbs[i].cb != NULL) {
-            cb = ctx->cbs[i].cb;
-            ctx->cbs[i].cb = NULL;
-            cb(ctx->ec, ctx->res, ctx->cbs[i].data);
-        }
+    struct nn_llist_iterator it = nn_llist_begin(&ctx->cbs);
+    
+    while(!nn_llist_is_end(&it)) {
+        struct nc_stun_callback* cb = nn_llist_get_item(&it);
+        nn_llist_next(&it);
+        nn_llist_erase_node(&cb->callbackNode);
+        cb->cb(ctx->ec, ctx->res, cb->data);
     }
 }
 
