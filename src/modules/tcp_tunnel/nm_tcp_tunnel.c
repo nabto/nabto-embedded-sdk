@@ -56,6 +56,9 @@ void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
 struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels)
 {
     struct nm_tcp_tunnel_service* service = calloc(1, sizeof(struct nm_tcp_tunnel_service));
+    if (service == NULL) {
+        return service;
+    }
 
     service->tunnels = tunnels;
     tunnels->weakPtrCounter++;
@@ -91,11 +94,14 @@ np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, 
     service->address = *address;
     service->port = port;
 
-    np_error_code ec = nm_tcp_tunnel_service_init_stream_listener(service);
-    if (ec != NABTO_EC_OK) {
-        return ec;
+    if (service->id == NULL || service->type == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
     }
-    nn_llist_append(&tunnels->services, &service->servicesListItem, service);
+
+    np_error_code ec = nm_tcp_tunnel_service_init_stream_listener(service);
+    if (ec == NABTO_EC_OK) {
+        nn_llist_append(&tunnels->services, &service->servicesListItem, service);
+    }
     return ec;
 }
 
