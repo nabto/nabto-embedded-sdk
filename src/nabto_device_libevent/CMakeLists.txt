@@ -58,6 +58,7 @@ target_link_libraries(nabto_device nm_libevent event_core)
 
 if (HAVE_WINDOWS_H)
   target_link_libraries(nabto_device ws2_32)
+  target_link_libraries(nabto_device_static ws2_32)
 endif()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")
