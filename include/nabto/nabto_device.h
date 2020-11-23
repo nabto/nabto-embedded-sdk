@@ -1266,6 +1266,9 @@ nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
  * application, making it possible to retrieve details about the
  * remote peer as input in the authorization decision process.
  *
+ * An Authorization request is requesting access to one of the following
+ * actions:
+ *
  * ```
  * Actions:
  *  TcpTunnel:ListServices  CoAP request to list services
@@ -1273,10 +1276,13 @@ nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
  *  TcpTunnel:Connect       See note below
  * ```
  *
+ * All Authorization requests for `TcpTunnel:*` actions contains the following
+ * attributes:
+ *
  * ```
  * Attributes:
- *   TcpTunnel:ServiceId   The id of the service.
- *   TcpTunnel:ServiceType The type of the service.
+ *   TcpTunnel:ServiceId    The id of the service.
+ *   TcpTunnel:ServiceType  The type of the service.
  * ```
  */
 
