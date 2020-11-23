@@ -659,6 +659,9 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (ec == NABTO_EC_OK) {
         *serverConnectToken = strdup(output);
+        if (*serverConnectToken == NULL) {
+            ec = NABTO_EC_OUT_OF_MEMORY;
+        }
     }
     return nabto_device_error_core_to_api(ec);
 }

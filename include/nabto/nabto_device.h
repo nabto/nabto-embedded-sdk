@@ -109,6 +109,8 @@ typedef uint64_t NabtoDeviceConnectionRef;
  * NABTO_DEVICE_EC_INVALID_ARGUMENT
  * NABTO_DEVICE_EC_INVALID_CONNECTION
  * NABTO_DEVICE_EC_NO_DATA
+ * NABTO_DEVICE_EC_IN_USE
+ * NABTO_DEVICE_EC_ADDRESS_IN_USE
  * ```
  */
 typedef int NabtoDeviceError;
@@ -252,7 +254,8 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_get_device_id(NabtoDevice* device);
 
 /**
- * Set the server url. Required before calling nabto_device_start().
+ * Set the server url. If not set it will default to <Product
+ * ID>.devices.nabto.net. Cannot be called after nabto_device_start().
  *
  * @param device [in]    The device instance to perform action on
  * @param serverUrl [in] The url of the basestation attach node to set e.g. foo.bar.baz
@@ -273,7 +276,8 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
 
 /**
- * Set the private key from the device. Required before calling nabto_device_start().
+ * Set the private key from the device. Required before calling
+ * nabto_device_start().
  *
  * @param device [in]   The device instance to perform action on
  * @param privKey [in]  The private key to set
@@ -297,6 +301,7 @@ nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
  * @param device [in]  The device
  * @param roots [in]  Root certs encoded as pem.
  * @return NABTO_DEVICE_EC_OK iff ok
+ *         NABTO_DEVICE_INVALID_STATE if device is started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_root_certs(NabtoDevice* device, const char* roots);
@@ -359,7 +364,7 @@ nabto_device_get_app_version(NabtoDevice* device);
  * to. If this function is not called the port number 5592 is used. If
  * this option is set to 0 a free port is choosen by the system.
  *
- * The port needs to be set before the function nabto_device_start is
+ * The port needs to be set before the function nabto_device_start() is
  * called.
  *
  * @param device [in]   The device instance to perform action on
@@ -370,14 +375,14 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_local_port(NabtoDevice* device, uint16_t port);
 
 /**
- * See nabto_device_set_local_port for a description of local and
+ * See nabto_device_set_local_port() for a description of local and
  * p2p sockets.
  *
  * This function sets the port number which the p2p socket is bound
  * to. If this function is not called the port number 5593 is used. If
  * this option is set to 0 a free port is choosen by the system.
  *
- * The port needs to be set before the function nabto_device_start is
+ * The port needs to be set before the function nabto_device_start() is
  * called.
  *
  * @param device [in]   The device
@@ -389,7 +394,7 @@ nabto_device_set_p2p_port(NabtoDevice* device, uint16_t port);
 
 
 /**
- * See nabto_device_set_local_port for a description of local and
+ * See nabto_device_set_local_port() for a description of local and
  * p2p sockets.
  *
  * Get the port number used by the local socket.
@@ -403,10 +408,10 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
 
 /**
- * See nabto_device_set_local_port for a description of local and
+ * See nabto_device_set_local_port() for a description of local and
  * p2p sockets.
  *
- * Get the port number used by the remote socket.
+ * Get the port number used by the p2p socket.
  *
  * @param device [in]   The device instance to perform action on
  * @param port [out]    Reference port to set
@@ -516,7 +521,6 @@ nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device,
  *
  * @param device [in]  The device.
  * @param ref [in]     The connection reference to query.
- *
  * @return true iff local, false otherwise
  */
 NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
@@ -526,6 +530,8 @@ nabto_device_connection_is_local(NabtoDevice* device,
 /**
  * Test if the connection is password authenticated.
  *
+ * @param device [in]  The device
+ * @param ref [in]     The connection reference to query
  * @return true iff the connection is password authenticated.
  */
 NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
@@ -620,7 +626,7 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACH
 // The device is detached after it has been attached.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
 
-// The device has been closed by a call to nabto_device_close
+// The device has been closed by a call to nabto_device_close()
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CLOSED;
 
 /**
@@ -668,11 +674,12 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener,
  *
  * Streaming enables tight integration with both the client and device application. For simpler
  * integration of streaming capabilities, consider the [TCP tunnel
- * feature](/developer/api-reference/embedded-device-sdk/tcp_tunnelling/Introduction.html) feature.
+ * feature](/developer/api-reference/embedded-device-sdk/tcp_tunnelling/Introduction.html).
  */
 
 /**
- * Initialize a listener for new streams.
+ * Initialize a listener for new streams on a given port. A port can
+ * only have one listener.
  *
  * @param device [in]    device
  * @param listener [in]  Listener to initialize for streaming
@@ -694,6 +701,8 @@ nabto_device_stream_init_listener(NabtoDevice* device,
  * @param listener [in]  Listener to initialize for streaming
  * @param port [out]     Where to put the chosen port number
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the port number has an active listener
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_stream_init_listener_ephemeral(NabtoDevice* device,
@@ -734,10 +743,10 @@ nabto_device_stream_free(NabtoDeviceStream* stream);
 /**
  * Accept a stream.
  *
- * When a stream new stream is coming from the listener the stream is
- * not accepted yet. If the application does not want to handle the
- * stream it can just free it, else it has to call accept to finish
- * the handshake. The future returns the status of the handshake.
+ * When a new stream is coming from the listener the stream is not
+ * accepted yet. If the application does not want to handle the stream
+ * it can just free it, else it has to call accept to finish the
+ * handshake. The future returns the status of the handshake.
  *
  * @param stream [in]  the stream to accept
  * @param future [in]  future which resolved when the stream is accepted
@@ -751,7 +760,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_accept(NabtoDeviceStream* stream, NabtoDeviceFuture* future);
 
 /**
- * Get the id for the underlying connection
+ * Get a reference to the underlying connection.
  *
  * @param stream [in]  the stream to get connection from
  * @return Connection reference of the stream
@@ -760,15 +769,15 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
 nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
 
 /**
- * Read exactly n bytes from a stream
+ * Read exactly bufferLength bytes from a stream.
  *
  * if (readLength != bufferLength) the stream has reached a state
  * where no more bytes can be read.
  *
  * @param stream [in]         The stream to read bytes from.
  * @param future [in]         Future to resolve with the result of the operation.
- * @param buffer [out]        The buffer to put data into.
- * @param bufferLength [out]  The length of the output buffer.
+ * @param buffer [out]        The output buffer to put data into.
+ * @param bufferLength [in]   The length of the output buffer and number of bytes to read.
  * @param readLength [out]    The actual number of bytes read.
  *
  * Future status:
@@ -792,8 +801,8 @@ nabto_device_stream_read_all(NabtoDeviceStream* stream,
  *
  * @param stream [in]         The stream to read bytes from.
  * @param future [in]         Future to resolve with the result of the operation.
- * @param buffer [out]        The buffer to put data into.
- * @param bufferLength [out]  The length of the output buffer.
+ * @param buffer [out]        The output buffer to put data into.
+ * @param bufferLength [out]  The length of the output buffer and max bytes to read.
  * @param readLength [out]    The actual number of bytes read.
  *
  * Future status:
@@ -817,8 +826,8 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream,
  * return a number of actual bytes written in case of error since it
  * says nothing about the number of acked bytes. To ensure that
  * written bytes have been acked, a succesful call to
- * nabto_device_stream_close is neccessary after last call to
- * nabto_device_stream_write.
+ * nabto_device_stream_close() is neccessary after last call to
+ * nabto_device_stream_write().
  *
  * @param stream [in]        The stream to write data to.
  * @param future [in]        Future to resolve with the result of the operation.
@@ -842,7 +851,7 @@ nabto_device_stream_write(NabtoDeviceStream* stream,
  * be written to the stream. Data can however still be read from the
  * stream until the other peer closes the stream.
  *
- * When close returns all written data has been acknowledged by the
+ * When close resolves all written data has been acknowledged by the
  * other peer.
  *
  * @param stream [in]  The stream to close.
@@ -862,7 +871,7 @@ nabto_device_stream_close(NabtoDeviceStream* stream, NabtoDeviceFuture* future);
  * will be resolved. Once all futures are resolved
  * nabto_device_stream_free() can be called.
  *
- * @param stream [in]   The stream to close.
+ * @param stream [in]   The stream to abort.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_abort(NabtoDeviceStream* stream);
@@ -911,9 +920,15 @@ typedef struct NabtoDeviceCoapRequest_ NabtoDeviceCoapRequest;
 typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, void* userData);
 
 /**
- * Initialize listener for a new CoAP resource. Once a CoAP resource is
- * added, incoming requests will resolve futures retrieved through
- * nabto_device_listener_new_coap_request().
+ * Initialize listener for a new CoAP resource. Once a CoAP resource is added,
+ * incoming requests will resolve futures retrieved through
+ * nabto_device_listener_new_coap_request(). There should never be more than one
+ * listener for the same combination of method and pathSegments. The following
+ * resources and all their sub-resources are reserved by Nabto:
+ *
+ * - {"p2p", NULL}
+ * - {"tcp-tunnels", NULL}
+ * - {"iam", NULL}
  *
  * @param device [in]      The device
  * @param listener [in]    The listener to initialize as CoAP.
@@ -943,7 +958,7 @@ nabto_device_coap_init_listener(NabtoDevice* device,
  *
  * @param listener [in]   Listener on which to listen
  * @param future [in]     Future which resolves when a new request is available or an error occurs
- * @param request [in]    Where to reference an incoming request
+ * @param request [out]   Where to reference an incoming request
  *
  * Future status:
  *   NABTO_DEVICE_EC_OK if request is ready
@@ -979,7 +994,7 @@ nabto_device_coap_request_free(NabtoDeviceCoapRequest* request);
  *
  * @param request [in]  The request for which to create a response
  * @param code [in]     The status code for the response in standard HTTP
- *                      status code format (eg. 200 for success)
+ *                      status code format (eg. 404 for not found)
  * @param message [in]  zero terminated UTF8 string message. If Nabto
  *                      failed to allocated memory for the message, an
  *                      error is returned and no response is sent. If NULL
@@ -1037,8 +1052,8 @@ nabto_device_coap_response_set_content_format(NabtoDeviceCoapRequest* request, u
  * Mark a response as ready. Once ready, the response will be sent to
  * the client. If a previous call to
  * nabto_device_coap_response_set_payload() returned with an error,
- * setting the response ready will send the response to the client
- * with an empty payload.
+ * setting the response ready will still send the response to the
+ * client but with an empty payload.
  *
  * @param request [in]  The request to respond to
  *
@@ -1106,16 +1121,25 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
 /**
  * @intro TCP Tunnelling
  *
- * TCP tunnelling allows clients to tunnel TCP traffic over a Nabto connection to the device.
+ * TCP tunnelling allows clients to tunnel TCP traffic over a Nabto
+ * connection to the device. The TCP Tunnel module uses the
+ * Authorization API to determine if actions are allowed on a given
+ * connection. An Authorization Request listener must therefore be
+ * configured when using TCP tunnelling. It is recomended to use the
+ * [Nabto IAM module](/developer/guides/iam/intro.html) to handle
+ * Authorization Requests.
  *
- * A TCP tunnel client first makes a CoAP request: `GET /tcptunnels/connect/:serviceId` - this will
- * check that the given connection is authorized to create a connection to the specific TCP Service
- * and return the `StreamPort` the client needs to use for that connection.
+ * A TCP tunnel client first makes a CoAP request: `GET
+ * /tcptunnels/connect/:serviceId` - this will check that the given
+ * connection is authorized to create a connection to the specific TCP
+ * Service and return the `StreamPort` the client needs to use for
+ * that connection.
  *
- * Later, when a TCP connection is made through the client, a new stream is created to the
- * `StreamPort` obtained in the previous step. When this happens, the device makes another
- * authorization request which again checks that the given connection is allowed to connect to the
- * specific TCP Service.
+ * Later, when a TCP connection is made through the client, a new
+ * stream is created to the `StreamPort` obtained in the previous
+ * step. When this happens, the device makes another authorization
+ * request which again checks that the given connection is allowed to
+ * connect to the specific TCP Service.
  *
  * The TCP tunnelling module has the following authorization actions:
  *
@@ -1126,9 +1150,10 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  *  TcpTunnel:Connect       See note below
  * ```
  *
- * Note on the `TcpTunnel:Connect` action: When used in CoAP context, it is used to test permissions
- * for establishing a stream connection and to get information about the connection. When used in
- * Streaming context, it is used to authorize an actual stream connection.
+ * Note on the `TcpTunnel:Connect` action: When used in CoAP context,
+ * it is used to test permissions for establishing a stream connection
+ * and to get information about the connection. When used in Streaming
+ * context, it is used to authorize an actual stream connection.
  *
  * The TCP Tunnelling module has the following authorization attributes:
  *
@@ -1142,12 +1167,14 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
 /**
  * Add a TCP tunnel service to the device. Can be invoked multiple times to add multiple services.
  *
- * @param device              The device instance to add TCP tunnel service on
- * @param serviceId           The unique id of the service.
- * @param serviceType         The type of the service, e.g. ssh, rtsp, http,...
- * @param host                The ip address of the host to connect to e.g. "127.0.0.1"
- * @param port                port number 22, 80, 554 etc
+ * @param device [in]        The device instance to add TCP tunnel service on
+ * @param serviceId [in]     The unique id of the service.
+ * @param serviceType [in]   The type of the service, e.g. ssh, rtsp, http,...
+ * @param host [in]          The IPv4 address of the host to connect to e.g. "127.0.0.1"
+ * @param port [in]          Port number 22, 80, 554 etc
  * @return NABTO_DEVICE_EC_OK  iff the service was added.
+ *         NABTO_DEVICE_EC_INVALID_ARGUMENT if the host could not be parsed as IPv4
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the underlying structure could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
@@ -1159,9 +1186,10 @@ nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
 /**
  * Remove a tunnel service from the device
  *
- * @param device
- * @param serviceId
+ * @param device [in]     The device instance
+ * @param serviceId [in]  ID of service to remove
  * @return NABTO_DEVICE_EC_OK if the service was removed
+ *         NABTO_DEVICE_EC_NOT_FOUND if the service ID was not found
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceId);
@@ -1173,32 +1201,33 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
 /**
  * @intro Server Connect Tokens
  *
- * Server connect tokens enable the device to decide who can
+ * Server Connect Tokens (SCTs) enable the device to decide who can
  * access it through the server (basestation). The tokens should not
  * be used as the only authorization mechanism but be seen as a filter
- * for which connections is allowed from the internet to the
- * device, e.g. to prevent DoS attacks on devices.
+ * for which connections is allowed from the Internet to the device,
+ * e.g. to prevent DoS attacks on devices.
  */
 
 /**
  * Generate a sufficiently strong random server connect token.
  *
- * The token is NOT added to the system.
- * the resulting token needs to be freed with nabto_device_string_free.
+ * The token is NOT added to the system. The resulting token needs to
+ * be freed with nabto_device_string_free().
  *
- * @param [in] device
- * @param [out] serverConnectToken
- * @return NABTO_DEVICE_EC_OK if the token is created and a reference is put into serverConnectToken
+ * @param device [in]              The device instance
+ * @param serverConnectToken [out] Where to put to Server Connect Token (SCT)
+ * @return NABTO_DEVICE_EC_OK iff the token is created and a reference is put into serverConnectToken
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the serverConnectToken could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConnectToken);
 
 /**
- * Add a server connect token to the server (basestation) which the
- * device uses.
+ * Add a Server Connect Token (SCT) to the server (basestation) which
+ * the device uses.
  *
- * @param device
- * @param serverConnectToken  The utf8 encoded token which is added to the basestation.
+ * @param device [in]             The device instance
+ * @param serverConnectToken [in] The utf8 encoded token which is added to the basestation.
  * @return NABTO_DEVICE_EC_OK if the token is added.
  *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the token cannot be stored in the device.
  */
@@ -1208,10 +1237,10 @@ nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverCon
 /**
  * Get synchronization state of the tokens.
  *
- * The future return ok if sync went ok or we are not attached such that
- * sync is not neccessary.
+ * The future return ok if synchronization went ok or we are not
+ * attached such that synchronization is not neccessary.
  *
- * @param device
+ * @param device [in]   The device instance
  * @return NABTO_DEVICE_EC_OK if they are synced
  *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synced
  */
@@ -1225,14 +1254,30 @@ nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
 /**
  * @intro Authorization
  *
- * The Authorization API allows the application to make authorization decisions for the core. That
- * is, the core asks the application to decide if a given authorization request should be approved
- * or rejected.
+ * The Authorization API allows the application to make authorization
+ * decisions for the core. That is, the core asks the application to
+ * decide if a given authorization request should be allowed or
+ * denied. An Authorization request listener must be created to use
+ * the TCP Tunnelling feature.
  *
- * The application has access to details from the authorization request through attributes. The
- * connection on which the authorization request takes place is also available for the application,
- * making it possible to retrieve details about the remote peer as input in the authorization
- * decision process.
+ * The application has access to details from the authorization
+ * request through attributes. The connection on which the
+ * authorization request takes place is also available for the
+ * application, making it possible to retrieve details about the
+ * remote peer as input in the authorization decision process.
+ *
+ * ```
+ * Actions:
+ *  TcpTunnel:ListServices  CoAP request to list services
+ *  TcpTunnel:GetService    CoAP request to get information for a specific service
+ *  TcpTunnel:Connect       See note below
+ * ```
+ *
+ * ```
+ * Attributes:
+ *   TcpTunnel:ServiceId   The id of the service.
+ *   TcpTunnel:ServiceType The type of the service.
+ * ```
  */
 
 /**
@@ -1241,21 +1286,30 @@ nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
 typedef struct NabtoDeviceAuthorizationRequest_ NabtoDeviceAuthorizationRequest;
 
 /**
- * Init an authorization request listener to get notifications on incoming authorization
- * requests. This follows the generic listener pattern in the device.
+ * Init an authorization request listener to get notifications on
+ * incoming authorization requests. This follows the generic listener
+ * pattern in the device. Only one authorization listener can exist on
+ * the system.
  *
- * @param device    The device
- * @param listener  The listener.
+ * @param device [in]   The device instance
+ * @param listener [in] The listener to initialize
+ * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ *         NABTO_DEVICE_EC_IN_USE if an authorization listener exists
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
 
 /**
- * Wait for a new authorization request.
+ * Start listening for a new authorization request.
  *
- * @param listener
- * @param future
- * @param request  Where the new request is stored when the future resolves.
+ * @param listener [in]   Listener to get new requests from
+ * @param future [in]     Future which resolves when a new request is ready
+ * @param request [out]   Where the new request is stored when the future resolves.
+ *
+ * Future status:
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener,
@@ -1263,50 +1317,54 @@ nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener,
                                                 NabtoDeviceAuthorizationRequest** request);
 
 /**
- * Free an authorization request.
+ * Free an authorization request. If called without prior call to
+ * nabto_device_authorization_request_verdict(), the request will be
+ * denied.
  *
- * @param request  The request to free.
+ * @param request [in]  The request to free.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * The application calls this function to inform the core that the authorization request has been
- * approved or rejected. This happens on incoming authorization requests, ie when the auth request
- * listener future resolves.
+ * The application calls this function to inform the core that the
+ * authorization request has been allowed or denied. This happens on
+ * incoming authorization requests (ie. when the authorization request
+ * listener future resolves).
  *
- * @param request The request to approve or reject
- * @param approved The verdict for the request, if true the request is approved, if false the request is rejected.
+ * @param request [in]  The request to approve or reject
+ * @param allowed [in]  The verdict for the request, if true the request is allowed, if false the request is denied.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool approved);
+nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* request, bool allowed);
 
 /**
  * Get the action associated with the request.
  *
  * The string should not be freed and the lifetime is limited by the
- * call to nabto_device_authorization_request_free
+ * call to nabto_device_authorization_request_free()
  *
- * @param request  The request
+ * @param request [in]  The authorization request
  * @return The action string.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_authorization_request_get_action(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * Get the connection reference this authorization request originates from.
+ * Get the connection reference this authorization request originates
+ * from.
  *
- * @param   request  The authorization request.
- * @return  The connection reference, 0 if the connection is gone.
+ * @param   request [in]  The authorization request
+ * @return  The connection reference, 0 if the connection is gone
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
 nabto_device_authorization_request_get_connection_ref(NabtoDeviceAuthorizationRequest* request);
 
 /**
- * Get the amount of attributes this authorization request contains.
+ * Get the number of attributes this authorization request contains.
  *
- * @param   request
- * @return  the number og attributes the request contains.
+ * @param   request [in]  The authorization request
+ * @return  The number of attributes the request contains.
  */
 NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
 nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationRequest* request);
@@ -1314,7 +1372,7 @@ nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationR
 /**
  * Get attribute name
  *
- * @param request [in]  The request
+ * @param request [in]  The authorization request
  * @param index [in]    The index of the attribute to return the name of.
  * @return the name of the attribute.
  */
@@ -1323,11 +1381,12 @@ nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRe
                                                       size_t index);
 
 /**
- * Retrieve a string value for a key.
+ * Get string value of an authorization request attribute. The provided index
+ * must exist.
  *
- * @param request [in]  The request.
- * @paran index         The index of the attribute to get the value of.
- * @return              The value for the attribute.
+ * @param request [in]  The authorization request.
+ * @param index [in]    The index of the attribute to get the value of.
+ * @return The value for the attribute.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationRequest* request,
@@ -1344,8 +1403,9 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
  * Password authenticate the client and the device. The password
  * authentication is bidirectional and based on PAKE, such that both
  * the client and the device learns that the other end knows the
- * password, without revealing the password to the other end.
- * Password authentication.
+ * password, without revealing the password to the other end. Only one
+ * password authentication listener can exist on the system. The Nabto
+ * IAM module can be used to handle password authorization requests.
  *
  * Usage:
  *  1. Create a new listener. nabto_device_listener_new()
@@ -1357,14 +1417,13 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
  *  4c. Free the password authentication request. nabto_device_password_authentication_request_free()
  *  5. Later, use the state of the password exchange. nabto_device_connection_is_password_authenticated()
  */
-
 typedef struct NabtoDevicePasswordAuthenticationRequest_ NabtoDevicePasswordAuthenticationRequest;
 
 /**
  * Init a listener for password authentication request listener.
  *
- * @param device    The device.
- * @param listener  The listener.
+ * @param device [in]    The device instance.
+ * @param listener [in]  The listener to initialize.
  * @return NABTO_DEVICE_EC_OK  iff the listener is initialized
  *         NABTO_DEVICE_EC_IN_USE if a password authentucation listener is already set up.
  */
@@ -1377,9 +1436,15 @@ nabto_device_password_authentication_request_init_listener(NabtoDevice* device, 
  * This follows the listener/future pattern of getting events
  * asynchronously.
  *
- * @param listener  The listener
- * @param future    The future to wait on.
- * @param request   The resulting request if the future completes with NABTO_DEVICE_EC_OK.
+ * @param listener [in]  The listener to get request from
+ * @param future [in]    The future which resolves when a request is ready
+ * @param request [in]   The resulting request if the future completes with NABTO_DEVICE_EC_OK
+ *
+ * Future status:
+ *   NABTO_DEVICE_EC_OK on success
+ *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDevicePasswordAuthenticationRequest** request);
@@ -1387,30 +1452,29 @@ nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* l
 /**
  * Get the username used in the password authentication request. The
  * lifetime of the returned username is until
- * nabto_device_password_authentication_request_free is called.
+ * nabto_device_password_authentication_request_free() is called.
  *
- * @param request  The request
+ * @param request [in]  The password authorization request
  * @return The NULL terminated username.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAuthenticationRequest* request);
 
 /**
- * Set password for the request. If password matching the request is
- * found, supply NULL as the password. If NULL is provided, the
+ * Set password for the request. If no password matching the request
+ * is found, supply NULL as the password. If NULL is provided, the
  * password authentication protocol continues such that the client
- * doesn't if the username or the password was invalid. The password
- * pointer is not used after the call returns.
+ * does not know if the request failed because of the username or the
+ * password being invalid. The password pointer is not used after the
+ * call returns.
  *
- * @param request  The request
- * @param password Null terminated password string
- * @return NABTO_DEVICE_EC_OK
- *         NABTO_DEVICE_EC_INVALID_STATE
- *             if the function is called more than once for
- *             a password authentication request.
+ * @param request [in]   The password authentication request
+ * @param password [in]  NULL terminated password string
+ * @return NABTO_DEVICE_EC_OK iff the password was set
+ *         NABTO_DEVICE_EC_INVALID_STATE if the function is called multiple times on the same request
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* passwd);
+nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* password);
 
 /**
  * Free a password authentication request.
@@ -1418,9 +1482,9 @@ nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAut
  * Before this function is called a password should be set for the
  * request. If no password was set the effect is the same as setting
  * the password to NULL in
- * nabto_device_password_authentication_request_set_password.
+ * nabto_device_password_authentication_request_set_password().
  *
- * @param request  The request
+ * @param request [in]  The password authentication request
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDevicePasswordAuthenticationRequest* request);
 
@@ -1431,18 +1495,23 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authenticat
 /**
  * @intro Futures
  *
- * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a
- * future resolves once such function has completed. For more details about this topic, see the
- * [Futures Guide](/developer/guides/overview/nabto_futures.html).
+ * Nabto Edge uses `Futures` to manage return values and completion of
+ * asynchronous API-functions; a future resolves once such function
+ * has completed. For more details about this topic, see the [Futures
+ * Guide](/developer/guides/overview/nabto_futures.html).
  *
- * Futures are introduced to unify the way return values and completion of asynchronous functions
- * are handled and to minimize the number of specialized functions required in the APIs: Instead of
- * having an asynchronous and synchronous version of all functions, the API instead provides a
- * single version returning a future: For asynchronous behavior, a callback can then be configured
- * on the future - for synchronous behavior, the future provides a `wait` function.
+ * Futures are introduced to unify the way return values and
+ * completion of asynchronous functions are handled and to minimize
+ * the number of specialized functions required in the APIs: Instead
+ * of having an asynchronous and synchronous version of all functions,
+ * the API instead provides a single version returning a future: For
+ * asynchronous behavior, a callback can then be configured on the
+ * future - for synchronous behavior, the future provides a `wait`
+ * function.
  *
- * In addition to futures, asynchronous functions that are expected to be invoked recurringly
- * introduces the concept of `listeners`, also elaborated in the [Futures
+ * In addition to futures, asynchronous functions that are expected to
+ * be invoked recurringly introduces the concept of `listeners`, also
+ * elaborated in the [Futures
  * Guide](/developer/guides/overview/nabto_futures.html).
  */
 
@@ -1460,8 +1529,8 @@ typedef void (*NabtoDeviceFutureCallback)(NabtoDeviceFuture* fut, NabtoDeviceErr
  * polled to not being in the state
  * NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED.
  *
- * @param device [in]  the device.
- * @return Non null if the future was created appropriately.
+ * @param device [in]  The device instance
+ * @return Non-NULL iff the future was created appropriately.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceFuture* NABTO_DEVICE_API
 nabto_device_future_new(NabtoDevice* device);
@@ -1500,7 +1569,7 @@ nabto_device_future_ready(NabtoDeviceFuture* future);
  *
  * @param future [in]   The future instance to set callback on
  * @param callback [in] The function to be called when the future resolves
- * @param data [in]     Void pointer passed to the callback once invoked
+ * @param data [in]     Void pointer passed to the callback when invoked
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_future_set_callback(NabtoDeviceFuture* future,
@@ -1509,14 +1578,15 @@ nabto_device_future_set_callback(NabtoDeviceFuture* future,
 /**
  * Wait until a future is resolved.
  *
- * This function must not be called before the async operation has been started.
+ * This function must not be called before the async operation has
+ * been started.
  *
  * Valid example:
  * nabto_device_stream_read_some(stream, future, ....);
  * nabto_device_future_wait(future);
  *
- * @param future [in]  The future to wait for.
- * @return the error code of the async operation.
+ * @param future [in]  The future to wait for
+ * @return the error code of the async operation
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_future_wait(NabtoDeviceFuture* future);
@@ -1531,8 +1601,8 @@ nabto_device_future_wait(NabtoDeviceFuture* future);
  * nabto_device_stream_read_some(stream, future, ....);
  * nabto_device_future_timed_wait(future, 42);
  *
- * @param future [in]  The future.
- * @param duration [in]  The maximum time to wait in milliseconds.
+ * @param future [in]    The future to wait for
+ * @param duration [in]  The maximum time to wait in milliseconds
  * @return NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED if the future was
  *         not resolved within the given time. If the future is
  *         ready, the return value is whatever the underlying
@@ -1543,7 +1613,7 @@ nabto_device_future_timed_wait(NabtoDeviceFuture* future, nabto_device_duration_
 
 /**
  * Get the error code of the resolved future, if the future is not
- * ready, NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED is returned.
+ * resolved, NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED is returned.
  *
  * @param future [in]  The future.
  * @return NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED if the future was
@@ -1575,21 +1645,19 @@ nabto_device_future_error_code(NabtoDeviceFuture* future);
  */
 
 /**
- * Create a new listener. After creation, a listener should be
- * initialized for a purpose (e.g. as a stream listener through
- * nabto_device_stream_init_listener()). Once initialized, a listener
- * can only be used for the purpose for which it was initialized.
+ * Create a new listener. After creation, a listener should be initialized for a
+ * purpose (e.g. as a stream listener through
+ * nabto_device_stream_init_listener()). Once initialized, a listener can only
+ * be used for the purpose for which it was initialized.
  *
- * @param device [in]  The device
- * @return The created listener, NULL on allocation errors.
+ * @param device [in]  The device instance
+ * @return The created listener, NULL on allocation errors
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceListener* NABTO_DEVICE_API
 nabto_device_listener_new(NabtoDevice* device);
 
 /**
- * Free a listener, effectivly cancelling active listening on a
- * resource. To ensure there is no concurrency issues, this should
- * be called while resolving a future for this listener.
+ * Free a stopped listener.
  *
  * @param listener [in]  Listener to be freed
  */
@@ -1597,10 +1665,8 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_free(NabtoDeviceListener* listener);
 
 /**
- * Stop a listener, effectivly cancelling active listening on a
- * resource. This is concurrency safe, and can be called
- * anywhere. This will trigger an event with error code
- * NABTO_DEVICE_EC_STOPPED.
+ * Stop a listener, effectivly cancelling active listening on a resource. This
+ * will trigger an event with error code NABTO_DEVICE_EC_STOPPED.
  *
  * @param listener [in]  Listener to be stopped
  * @return NABTO_EC_OK on success
@@ -1708,13 +1774,16 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_std_out_callback(NabtoDevice* device);
 
 /**
- * Convert the log level to a string
+ * Convert the log level to a string. The returned pointer must not be freed.
+ *
+ * @param severity [in]  The severity.
+ * @return the null terminated string representation of the severity.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity);
 
 /********
- * MDNS
+ * mDNS
  ********/
 
 /**
@@ -1727,35 +1796,44 @@ nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity);
  */
 
 /**
- * Enable the optional mdns server/responder. The server is started when the
- * device is started. Mdns has to be enabled before the device is
+ * Enable the optional mDNS server/responder. The server is started when the
+ * device is started. mDNS has to be enabled before the device is
  * started. The responder is stopped when the device is closed.
  *
- * @param device [in]  The device
+ * @param device [in]  The device instance
  * @return NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_enable_mdns(NabtoDevice* device);
 
 /**
- * Add an additional subtype to the mdns responses.
+ * Add an additional subtype to the mDNS responses.
  *
  * The subtype <product-id>-<device-id> is added automatically. Other
  * subtypes can be added, such as "heatpump" or "tcptunnel" can be
  * added for easy filtering in the client applications. Subtypes needs
- * to be added before nabto_device_start is called.
+ * to be added before nabto_device_start() is called.
+ *
+ * @param device [in]   The device instance
+ * @param subtype [in]  The subtype to add
+ * @return NABTO_DEVICE_EC_OK iff the subtype is added.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_mdns_add_subtype(NabtoDevice* device, const char* subtype);
 
 /**
- * Add additional txt items to the mdns responses. By default the
- * productid and deviceid is added to mdns responses.
+ * Add additional txt items to the mDNS responses. By default the
+ * productid and deviceid is added to mDNS responses.
  *
  * If the device is running when txt records are added the service is
  * unpublished and published again with the new items.
  *
- * If the key already exists it's overwritten with the new value.
+ * If the key already exists it is overwritten with the new value.
+ *
+ * @param device [in]  The device instance
+ * @param key [in]     The txt item key
+ * @param value [in]   The txt item value
+ * @return NABTO_DEVICE_EC_OK  Iff the txt item was added to the list of txt items
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char* value);
@@ -1772,7 +1850,7 @@ nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char*
  */
 
 /**
- * Return the version of the nabto embedded library.
+ * Return the version of the Nabto embedded library. The returned pointer must not be freed.
  *
  * @return Zero-terminated string with the device version
  */
@@ -1780,7 +1858,7 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_version();
 
 /**
- * Get message assosiated with an error code.
+ * Get message assosiated with an error code. The returned pointer must not be freed.
  *
  * @param error [in]  The error code.
  * @return Zero-terminated string describing the error.
@@ -1789,7 +1867,12 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_error_get_message(NabtoDeviceError error);
 
 /**
- * Get the error code as a string
+ * Get the error code as a string. The returned pointer must not be freed.
+ *
+ * E.g. NABTO_DEVICE_EC_OK is translated to the string "NABTO_DEVICE_EC_OK"
+ *
+ * @param error [in]  The error code.
+ * @return the NULL terminated string representation.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_error_get_string(NabtoDeviceError error);
