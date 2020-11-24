@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-16.04
     strategy:
       matrix:
-        binary: [tcp_tunnel_device, heat_pump_device]
+        binary: [tcp_tunnel_device]
     if: github.event_name == 'release' && success()
     steps:
       - uses: actions/download-artifact@v2
