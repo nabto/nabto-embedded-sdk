@@ -186,6 +186,7 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
     }
 
     if (!load_or_create_private_key(device, deviceKeyFile.c_str(), NULL)) {
+        std::cerr << "Could not load or create the private key" << std::endl;
         return false;
     }
 

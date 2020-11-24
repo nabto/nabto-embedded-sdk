@@ -51,13 +51,28 @@ HeatPump::~HeatPump()
 
 bool HeatPump::init()
 {
-    if (initDevice() != NABTO_DEVICE_EC_OK) {
+    NabtoDeviceError ec;
+    ec = initDevice();
+    if (ec != NABTO_DEVICE_EC_OK) {
+        std::cerr << "Init device failed: " << nabto_device_error_get_message(ec) << std::endl;
         return false;
     }
 
-    if (!loadIamPolicy() || !loadHpState() || !loadIamState()) {
+    if (!loadIamPolicy()) {
+        std::cerr << "Could not load iam policy" << std::endl;
         return false;
     }
+
+    if (!loadHpState()) {
+        std::cerr << "Could not load heat pump state" << std::endl;
+        return false;
+    }
+
+    if (!loadIamState()) {
+        std::cerr << "Could not load iam state" << std::endl;
+        return false;
+    }
+
 
     nabto_device_mdns_add_txt_item(device_, "fn", "Heat Pump");
 
@@ -104,6 +119,10 @@ void HeatPump::saveIamState(struct nm_iam_state* state)
 
 bool HeatPump::loadIamState()
 {
+    if (!string_file_exists(iamStateFile_.c_str())) {
+        create_default_iam_state(iamStateFile_.c_str());
+    }
+
     bool status = true;
     char* str = NULL;
     if (!string_file_load(iamStateFile_.c_str(), &str)) {
@@ -177,23 +196,6 @@ void HeatPump::createHpState()
     // saved to create a persisted default state.
     saveHpState();
 }
-
-void HeatPump::createIamState()
-{
-    struct nm_iam_state* state = nm_iam_state_new();
-    struct nm_iam_user* user = nm_iam_state_user_new("admin");
-    std::string sct = nabto::examples::common::random_string(12);
-    nm_iam_state_user_set_sct(user, sct.c_str());
-    nm_iam_state_user_set_role(user, "Administrator");
-    nm_iam_state_add_user(state, user);
-    nm_iam_state_set_initial_pairing_username(state, "admin");
-    nm_iam_state_set_local_initial_pairing(state, true);
-    nm_iam_state_set_local_open_pairing(state, true);
-    nm_iam_state_set_open_pairing_role(state, "Guest");
-    saveIamState(state);
-    nm_iam_state_free(state);
-}
-
 
 void HeatPump::initCoapHandlers()
 {
