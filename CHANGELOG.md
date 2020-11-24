@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [5.2.0] - 2020-10-24
 
 ### Added
 
@@ -22,13 +22,13 @@ IAM was included in 5.1 as an experimental feature, we have had some feedback an
 The event queue function which can double post events has changed signature.
 Before the function returned void now it returns a boolean describing if the event was posted to the event queue or discarded because it was double posted.
 
-``` 
+```
 void (*post_maybe_double)(struct np_event* event);
 ```
 
 to
 
-``` 
+```
 bool (*post_maybe_double)(struct np_event* event);
 ```
 
@@ -38,13 +38,13 @@ This should give a compile time error/warning.
 
 The mdns signature is changed from
 
-``` 
+```
 void (*publish_service)(struct np_mdns* obj, uint16_t port, const char* productId, const char* deviceId);
 ```
 
 to
 
-``` 
+```
 void(*publish_service)(struct np_mdns* obj, uint16_t port, const char* instanceName, struct nn_string_set* subtypes, struct nn_string_map* txtItems);
 ```
 
