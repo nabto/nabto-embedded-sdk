@@ -53,7 +53,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-18.04
     # the build-and-test job might be skipped, we don't need to run this job then
-    if: success() || failure()
+    if: github.event_name != 'release' && (success() || failure())
 
     steps:
       - name: Download Artifacts
