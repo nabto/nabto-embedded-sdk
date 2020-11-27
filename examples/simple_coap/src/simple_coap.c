@@ -14,7 +14,6 @@
 
 const char* productId = "pr-vpjqpkfu";
 const char* deviceId = "de-pxitdrkk";
-const char* serverUrl = "pr-vpjqpkfu.devices.dev.nabto.net";
 const char* keyFile = "device.key";
 
 const char* coapPath[] = { "hello-world", NULL };
@@ -148,8 +147,7 @@ bool start_device(NabtoDevice* device)
     if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
         nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_server_url(device, serverUrl) != NABTO_DEVICE_EC_OK)
+        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK)
     {
         return false;
     }

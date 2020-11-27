@@ -2,7 +2,6 @@
 #include <nabto/nabto_device_experimental.h>
 
 #include "json_config.hpp"
-#include "none_authorization.h"
 
 #include <iostream>
 #include <cxxopts.hpp>
@@ -203,8 +202,6 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
         std::cerr << "Failed to enable stdour logging" << std::endl;
     }
 
-    init_none_authorization(device);
-
     // run application
     NabtoDeviceFuture* startFuture = nabto_device_future_new(device);
     nabto_device_start(device, startFuture);
@@ -256,8 +253,6 @@ void run_stream_echo(const std::string& configFile, const std::string& logLevel)
 
     pause();
     closing = true;
-
-    deinit_none_authorization();
 
     /**
      * WARNING:
