@@ -7,3 +7,4 @@
 build
 callgrind*
 perf.data*
+device.key
