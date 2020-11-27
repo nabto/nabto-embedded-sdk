@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <nabto/nabto_device.h>
+#include <apps/common/string_file.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -11,15 +12,10 @@
 #include <stdio.h>
 #include <signal.h>
 
-const char* productId = "pr-fatqcwj9";
-const char* deviceId = "de-avmqjaxe";
-
-char* privateKey =
-    "-----BEGIN EC PRIVATE KEY-----\n"
-    "MHcCAQEEIFQmyvnY2Z+aJ9ridYS8YNKkqu8N+sXmGkixc050nwuRoAoGCCqGSM49\n"
-    "AwEHoUQDQgAEptWJGX2AxsGwR405tPw9ljxHgzHYQvHHGpMBqoK8HGt5XPZ5xhtw\n"
-    "6vaMXlCRijop6BYK5gtrIQM7r8ys4JqKoQ==\n"
-    "-----END EC PRIVATE KEY-----\n";
+const char* productId = "pr-vpjqpkfu";
+const char* deviceId = "de-pxitdrkk";
+const char* serverUrl = "pr-vpjqpkfu.devices.dev.nabto.net";
+const char* keyFile = "device.key";
 
 const char* coapPath[] = { "hello-world", NULL };
 const char* helloWorld = "Hello world";
@@ -116,9 +112,29 @@ void wait_for_device_events(NabtoDevice* device) {
 bool start_device(NabtoDevice* device)
 {
     NabtoDeviceError ec;
+    char* privateKey;
     char* fp;
+
+    if (!string_file_exists(keyFile)) {
+        if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {
+            printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
+            return false;
+        }
+        if (!string_file_save(keyFile, privateKey)) {
+            printf("Failed to persist private key to file: %s\n", keyFile);
+            nabto_device_string_free(privateKey);
+            return false;
+        }
+        nabto_device_string_free(privateKey);
+    }
+
+    if (!string_file_load(keyFile, &privateKey)) {
+        printf("Failed to load private key from file: %s\n", keyFile);
+        return false;
+    }
+
     if ((ec = nabto_device_set_private_key(device, privateKey)) != NABTO_DEVICE_EC_OK) {
-        printf("Failed to set private key, ec=%d\n", ec);
+        printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }
 
@@ -132,7 +148,8 @@ bool start_device(NabtoDevice* device)
     if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
         nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK)
+        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_server_url(device, serverUrl) != NABTO_DEVICE_EC_OK)
     {
         return false;
     }
