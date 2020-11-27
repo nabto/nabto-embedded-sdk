@@ -15,9 +15,6 @@ const char* productId = "pr-fatqcwj9";
 const char* deviceId = "de-avmqjaxe";
 
 char* privateKey =
-    "-----BEGIN EC PARAMETERS-----\n"
-    "BggqhkjOPQMBBw==\n"
-    "-----END EC PARAMETERS-----\n"
     "-----BEGIN EC PRIVATE KEY-----\n"
     "MHcCAQEEIFQmyvnY2Z+aJ9ridYS8YNKkqu8N+sXmGkixc050nwuRoAoGCCqGSM49\n"
     "AwEHoUQDQgAEptWJGX2AxsGwR405tPw9ljxHgzHYQvHHGpMBqoK8HGt5XPZ5xhtw\n"
