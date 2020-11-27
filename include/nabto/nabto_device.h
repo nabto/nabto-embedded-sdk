@@ -1273,10 +1273,10 @@ nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
  * Actions:
  *  TcpTunnel:ListServices  CoAP request to list services
  *  TcpTunnel:GetService    CoAP request to get information for a specific service
- *  TcpTunnel:Connect       See note below
+ *  TcpTunnel:Connect       CoAP request to test access permissions, or new stream opened on a tunnel
  * ```
  *
- * All Authorization requests for `TcpTunnel:*` actions contains the following
+ * The Authorization requests `TcpTunnel:GetService` and `TcpTunnel:Connect` actions contains the following
  * attributes:
  *
  * ```
