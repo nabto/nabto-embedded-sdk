@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <nabto/nabto_device.h>
 #include <apps/common/string_file.h>
 
