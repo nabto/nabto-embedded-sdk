@@ -69,6 +69,8 @@ int main() {
         goto cleanup;
     }
 
+    nabto_device_enable_mdns(device);
+
     nabto_device_set_log_std_out_callback(device);
 
     /**
