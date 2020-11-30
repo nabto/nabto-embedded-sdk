@@ -12,17 +12,26 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#if defined(_WIN32)
+#include <direct.h>
+#endif
+
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#endif
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #ifdef WIN32
-static std::string homeDirEnvVariable = "APP_DATA";
+static std::string homeDirEnvVariable = "APPDATA";
 static std::string nabtoFolder = "nabto";
+#define NEWLINE "\r\n"
 #else
 static std::string homeDirEnvVariable = "HOME";
 static std::string nabtoFolder = ".nabto";
+#define NEWLINE "\n"
 #endif
 
 /**
@@ -31,13 +40,21 @@ static std::string nabtoFolder = ".nabto";
  * runs of the heatpump.
  */
 
-void my_handler(int s){
-    printf("Caught signal %d\n",s);
+
+NabtoDevice* device = NULL;
+
+void signal_handler(int s){
+    printf("Caught signal %d, stopping the device" NEWLINE,s);
+    nabto_device_stop(device);
 }
 
 bool makeDirectory(const std::string& directory)
 {
+#if defined(_WIN32)
+    _mkdir(directory.c_str());
+#else 
     mkdir(directory.c_str(), 0777);
+#endif
     return true;
 }
 
@@ -174,7 +191,7 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
         return false;
     }
 
-    NabtoDevice* device = nabto_device_new();
+    device = nabto_device_new();
     if (device == NULL) {
         std::cerr << "Device New Failed" << std::endl;
         return false;
@@ -202,15 +219,27 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
 
         // Wait for the user to press Ctrl-C
 
-        struct sigaction sigIntHandler;
+        signal(SIGINT, &signal_handler);
 
-        sigIntHandler.sa_handler = my_handler;
-        sigemptyset(&sigIntHandler.sa_mask);
-        sigIntHandler.sa_flags = 0;
-
-        sigaction(SIGINT, &sigIntHandler, NULL);
-
-        pause();
+        // todo wait for the device to stop.
+        {
+            NabtoDeviceListener* listener = nabto_device_listener_new(device);
+            NabtoDeviceFuture* future = nabto_device_future_new(device);
+            nabto_device_device_events_init_listener(device, listener);
+            NabtoDeviceEvent event;
+            while(true) {
+                nabto_device_listener_device_event(listener, future, &event);
+                NabtoDeviceError ec = nabto_device_future_wait(future);
+                if (ec != NABTO_DEVICE_EC_OK) {
+                    break;
+                }
+                if (event == NABTO_DEVICE_EVENT_CLOSED) {
+                    break;
+                }
+            }
+            nabto_device_future_free(future);
+            nabto_device_listener_free(listener);
+        }
         NabtoDeviceFuture* fut = nabto_device_future_new(device);
         nabto_device_close(device, fut);
         nabto_device_future_wait(fut);
