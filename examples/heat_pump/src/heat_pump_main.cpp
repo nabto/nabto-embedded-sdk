@@ -212,6 +212,7 @@ bool run_heat_pump(const std::string& homedir, const std::string& logLevel, bool
         nabto::examples::heat_pump::HeatPump hp(device, dc, iamStateFile, hpStateFile);
         hp.setLogLevel(logLevel);
         if (!hp.init()) {
+            std::cerr << "Failed to init heat pump" << std::endl;
             return false;
         }
         hp.printHeatpumpInfo();
