@@ -126,7 +126,12 @@ bool HeatPump::loadIamState()
     bool status = true;
     char* str = NULL;
     if (!string_file_load(iamStateFile_.c_str(), &str)) {
-        return false;
+        NN_LOG_INFO(&logger_, LOGM, "IAM state file (%s) does not exist, creating new default state. ", iamStateFile_.c_str());
+        create_default_iam_state(iamStateFile_.c_str());
+        if (!string_file_load(iamStateFile_.c_str(), &str)) {
+            NN_LOG_ERROR(&logger_, LOGM, "Load IAM state file (%s) failed. Ensure the file is available for read/write. ", iamStateFile_.c_str());
+            return false;
+        }
     }
     struct nm_iam_state* is = nm_iam_state_new();
     nm_iam_serializer_state_load_json(is, str, &logger_);
