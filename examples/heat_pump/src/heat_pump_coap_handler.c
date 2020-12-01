@@ -45,7 +45,6 @@ void heat_pump_coap_handler_stop(struct heat_pump_coap_handler* handler)
 void heat_pump_coap_handler_deinit(struct heat_pump_coap_handler* handler)
 {
     if (handler->device != NULL) {
-        nabto_device_listener_stop(handler->listener);
         nabto_device_future_free(handler->future);
         nabto_device_listener_free(handler->listener);
         handler->device = NULL;

@@ -43,6 +43,7 @@ void heat_pump_deinit(struct heat_pump* heatPump)
     heat_pump_coap_handler_deinit(&heatPump->coapSetMode);
     heat_pump_coap_handler_deinit(&heatPump->coapSetPower);
     heat_pump_coap_handler_deinit(&heatPump->coapSetTarget);
+    nm_iam_deinit(&heatPump->iam);
 }
 
 void heat_pump_start(struct heat_pump* heatPump) {

@@ -2,6 +2,7 @@
 
 #include <apps/common/device_config.h>
 #include <apps/common/private_key.h>
+#include <apps/common/logging.h>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -113,6 +114,9 @@ bool run_heat_pump(const struct args* args)
     struct heat_pump heatPump;
     heat_pump_init(&heatPump);
     heatPump.device = device;
+    struct nn_log logger;
+    logging_init(device, &logger, args->logLevel);
+    heatPump.logger = &logger;
 
     bool status = run_heat_pump_device(device, &heatPump, args);
 
@@ -185,13 +189,10 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
     nabto_device_set_app_name(device, "HeatPump");
     nabto_device_set_app_version(device, heatPumpVersion);
 
-    nabto_device_set_log_level(device, args->logLevel);
     nabto_device_enable_mdns(device);
     nabto_device_mdns_add_subtype(device, "heatpump");
     nabto_device_mdns_add_txt_item(device, "fn", "Heat Pump");
     
-    
-    nabto_device_set_log_std_out_callback(device);
     heat_pump_start(heatPump);
     
     // run application
@@ -207,21 +208,18 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
         return false;
     }
 
-    // TODO print info
-/*     void HeatPump::printHeatpumpInfo()
-{
-    std::cout << "######## Nabto heat pump device ########" << std::endl;
-    std::cout << "# Product ID:                  " << dc_.getProductId() << std::endl;
-    std::cout << "# Device ID:                   " << dc_.getDeviceId() << std::endl;
-    std::cout << "# Fingerprint:                 " << getFingerprint() << std::endl;
-    try {
-        std::string server = dc_.getServer();
-        std::cout << "# Server:                      " << server << std::endl;
-    } catch(...) {} // Ignore missing server
-    std::cout << "# Version:                     " << nabto_device_version() << std::endl;
-    std::cout << "######## " << std::endl;
-}
- */    
+    char* deviceFingerprint;
+    nabto_device_get_device_fingerprint(device, &deviceFingerprint);
+
+
+    printf("######## Nabto heat pump device ########" NEWLINE);
+    printf("# Product ID:                  %s" NEWLINE, nabto_device_get_product_id(device));
+    printf("# Device ID:                   %s" NEWLINE, nabto_device_get_device_id(device));
+    printf("# Fingerprint:                 %s" NEWLINE, deviceFingerprint);
+    printf("# Nabto Version:               %s" NEWLINE, nabto_device_version());
+    printf("######## " NEWLINE);
+
+    nabto_device_string_free(deviceFingerprint);
     {
         // Wait for the user to press Ctrl-C
 
@@ -241,6 +239,10 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
                 }
                 if (event == NABTO_DEVICE_EVENT_CLOSED) {
                     break;
+                } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
+                    printf("Attached to the basestation" NEWLINE);
+                } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
+                    printf("Detached from the basestation" NEWLINE);
                 }
             }
             nabto_device_future_free(future);
@@ -251,8 +253,6 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
         nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
     }
-    nabto_device_stop(device);
-    nabto_device_free(device);
     return true;
 }
 
