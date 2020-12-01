@@ -184,6 +184,12 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
         return false;
     }
 
+    if (args->init) {
+        printf("Resetting IAM state" NEWLINE);
+        heat_pump_reinit_state(heatPump);
+        return true;
+    }
+
     nabto_device_set_app_name(device, "HeatPump");
     nabto_device_set_app_version(device, heatPumpVersion);
 
@@ -191,7 +197,10 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
     nabto_device_mdns_add_subtype(device, "heatpump");
     nabto_device_mdns_add_txt_item(device, "fn", "Heat Pump");
     
+    
+
     // run application
+    heat_pump_start(heatPump);
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_start(device, fut);
 
@@ -232,7 +241,7 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
                     break;
                 }
                 if (event == NABTO_DEVICE_EVENT_CLOSED) {
-                    break;
+                    nabto_device_listener_stop(listener);
                 } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
                     printf("Attached to the basestation" NEWLINE);
                 } else if (event == NABTO_DEVICE_EVENT_DETACHED) {

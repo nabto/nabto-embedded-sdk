@@ -31,6 +31,8 @@ struct heat_pump {
 void heat_pump_init(struct heat_pump* heatPump, NabtoDevice* device, struct nn_log* logger);
 void heat_pump_deinit(struct heat_pump* heatPump);
 
+void heat_pump_reinit_state(struct heat_pump* heatPump);
+
 void heat_pump_start(struct heat_pump* heatPump);
 void heat_pump_stop(struct heat_pump* heatPump);
 
