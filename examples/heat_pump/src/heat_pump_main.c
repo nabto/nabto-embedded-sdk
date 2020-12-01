@@ -75,7 +75,6 @@ static bool make_directories(const char* in);
 static bool run_heat_pump(const struct args* args);
 static bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const struct args* args);
 static void print_missing_device_config_help(const char* filename);
-static void print_invalid_device_config_help(const char* filename);
 static void print_help();
 static void print_version();
 
@@ -111,15 +110,13 @@ int main(int argc, char** argv) {
 bool run_heat_pump(const struct args* args) 
 {
     device = nabto_device_new();
-    struct heat_pump heatPump;
-    heat_pump_init(&heatPump);
-    heatPump.device = device;
     struct nn_log logger;
     logging_init(device, &logger, args->logLevel);
-    heatPump.logger = &logger;
+    
+    struct heat_pump heatPump;
+    heat_pump_init(&heatPump, device, &logger);
 
     bool status = run_heat_pump_device(device, &heatPump, args);
-
     
     nabto_device_stop(device);
     heat_pump_deinit(&heatPump);
@@ -159,7 +156,8 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
     
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
-    if (!load_device_config(heatPump->deviceConfigFile, &deviceConfig, NULL)) {
+    if (!load_device_config(heatPump->deviceConfigFile, &deviceConfig, heatPump->logger)) {
+        print_missing_device_config_help(heatPump->deviceConfigFile);
         return false;
     }
 
@@ -181,7 +179,7 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
         nabto_device_set_p2p_port(device, 0);
     }
 
-    if (!load_or_create_private_key(device, heatPump->deviceKeyFile, NULL)) {
+    if (!load_or_create_private_key(device, heatPump->deviceKeyFile, heatPump->logger)) {
         printf("Could not load or create the private key" NEWLINE);
         return false;
     }
@@ -192,8 +190,6 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
     nabto_device_enable_mdns(device);
     nabto_device_mdns_add_subtype(device, "heatpump");
     nabto_device_mdns_add_txt_item(device, "fn", "Heat Pump");
-    
-    heat_pump_start(heatPump);
     
     // run application
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
@@ -224,8 +220,6 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
         // Wait for the user to press Ctrl-C
 
         signal(SIGINT, &signal_handler);
-
-        // todo wait for the device to stop.
         {
             NabtoDeviceListener* listener = nabto_device_listener_new(device);
             NabtoDeviceFuture* future = nabto_device_future_new(device);
@@ -321,8 +315,12 @@ bool parse_args(int argc, char** argv, struct args* args)
 }
 
 void signal_handler(int s) {
-    printf("Caught signal %d, stopping the device" NEWLINE,s);
-    nabto_device_stop(device);
+    // the \r is supposed to fix "^CCaught sig...." it will maybe not work on some platforms.
+    printf("\rCaught signal %d, stopping the device" NEWLINE,s);
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
 }
 
 bool make_directory(const char* directory)
@@ -376,14 +374,11 @@ bool make_directories(const char* in)
 
 void print_missing_device_config_help(const char* filename)
 {
-//    std::cout << "The device config is missing (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
-//    std::cout << nabto::examples::common::DeviceConfig::example() << std::endl;
-}
-
-void print_invalid_device_config_help(const char* filename)
-{
-//    std::cout << "The device config is invalid (" << filename << "). Provide a file named " << filename << " with the following format" << std::endl;
-//    std::cout << nabto::examples::common::DeviceConfig::example() << std::endl;
+    printf("The device config is missing (%s). Provide a file with the following format" NEWLINE, filename);
+    printf("{" NEWLINE);
+    printf("   \"ProductId\": \"pr-12345678\"" NEWLINE);
+    printf("   \"DeviceId\": \"de-abcdefgh\"" NEWLINE);
+    printf("}" NEWLINE);
 }
 
 void print_help() {

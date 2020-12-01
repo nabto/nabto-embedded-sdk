@@ -28,7 +28,7 @@ struct heat_pump {
     struct heat_pump_coap_handler coapSetTarget;
 };
 
-void heat_pump_init(struct heat_pump* heatPump);
+void heat_pump_init(struct heat_pump* heatPump, NabtoDevice* device, struct nn_log* logger);
 void heat_pump_deinit(struct heat_pump* heatPump);
 
 void heat_pump_start(struct heat_pump* heatPump);

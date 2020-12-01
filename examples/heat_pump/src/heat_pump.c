@@ -28,9 +28,16 @@ static bool load_iam_state(struct heat_pump* heatPump);
 static void heat_pump_state_changed(struct nm_iam* iam, void* userData);
 static NabtoDeviceError heat_pump_init_coap_handlers(struct heat_pump* heatPump);
 
-void heat_pump_init(struct heat_pump* heatPump)
+void heat_pump_init(struct heat_pump* heatPump, NabtoDevice* device, struct nn_log* logger)
 {
     memset(heatPump, 0, sizeof(struct heat_pump));
+    heatPump->device = device;
+    heatPump->logger = logger;
+    
+    nm_iam_init(&heatPump->iam, heatPump->device, heatPump->logger);
+    load_iam_policy(heatPump);
+    nm_iam_set_state_changed_callback(&heatPump->iam, heat_pump_state_changed, heatPump);
+    heat_pump_init_coap_handlers(heatPump);
 }
 
 void heat_pump_deinit(struct heat_pump* heatPump)
@@ -47,14 +54,9 @@ void heat_pump_deinit(struct heat_pump* heatPump)
 }
 
 void heat_pump_start(struct heat_pump* heatPump) {
-    nm_iam_init(&heatPump->iam, heatPump->device, NULL);
-    load_iam_policy(heatPump);
+    // these needs to be called after init since the filenames are not ready yet in init.
     load_heat_pump_state(heatPump->heatPumpStateFile, &heatPump->state, heatPump->logger);
-
     load_iam_state(heatPump);
-
-    nm_iam_set_state_changed_callback(&heatPump->iam, heat_pump_state_changed, heatPump);
-    heat_pump_init_coap_handlers(heatPump);
 }
 
 void heat_pump_stop(struct heat_pump* heatPump)
@@ -85,14 +87,14 @@ void heat_pump_state_changed(struct nm_iam* iam, void* userData)
 bool load_iam_state(struct heat_pump* heatPump)
 {
     if (!string_file_exists(heatPump->iamStateFile)) {
-        create_default_iam_state(heatPump->iamStateFile);
+        create_default_iam_state(heatPump->device, heatPump->iamStateFile, heatPump->logger);
     }
 
     bool status = true;
     char* str = NULL;
     if (!string_file_load(heatPump->iamStateFile, &str)) {
         NN_LOG_INFO(heatPump->logger, LOGM, "IAM state file (%s) does not exist, creating new default state. ", heatPump->iamStateFile);
-        create_default_iam_state(heatPump->iamStateFile);
+        create_default_iam_state(heatPump->device, heatPump->iamStateFile, heatPump->logger);
         if (!string_file_load(heatPump->iamStateFile, &str)) {
             NN_LOG_ERROR(heatPump->logger, LOGM, "Load IAM state file (%s) failed. Ensure the file is available for read/write. ", heatPump->iamStateFile);
             return false;
@@ -254,6 +256,6 @@ bool load_iam_policy(struct heat_pump* heatPump)
 
 void heat_pump_reinit_state(struct heat_pump* heatPump)
 {
-    create_default_iam_state(heatPump->iamStateFile);
+    create_default_iam_state(heatPump->device, heatPump->iamStateFile, heatPump->logger);
     create_default_heat_pump_state(heatPump->heatPumpStateFile);
 }

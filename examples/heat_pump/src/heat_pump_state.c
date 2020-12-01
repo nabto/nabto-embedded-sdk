@@ -105,20 +105,22 @@ bool load_heat_pump_state(const char* filename, struct heat_pump_state* state, s
 
 }
 
-void create_default_iam_state(const char* filename)
+void create_default_iam_state(NabtoDevice* device, const char* filename, struct nn_log* logger)
 {
     struct nm_iam_state* state = nm_iam_state_new();
     struct nm_iam_user* user = nm_iam_state_user_new("admin");
     // TODO create sct
-    const char* sct = "1234";
+    char* sct = NULL;
+    nabto_device_create_server_connect_token(device, &sct);
     nm_iam_state_user_set_sct(user, sct);
+    nabto_device_string_free(sct);
     nm_iam_state_user_set_role(user, "Administrator");
     nm_iam_state_add_user(state, user);
     nm_iam_state_set_initial_pairing_username(state, "admin");
     nm_iam_state_set_local_initial_pairing(state, true);
     nm_iam_state_set_local_open_pairing(state, true);
     nm_iam_state_set_open_pairing_role(state, "Guest");
-    save_iam_state(filename, state, NULL);
+    save_iam_state(filename, state, logger);
     nm_iam_state_free(state);
 }
 void create_default_heat_pump_state(const char* filename)
