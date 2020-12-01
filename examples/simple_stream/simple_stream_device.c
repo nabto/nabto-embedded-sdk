@@ -12,8 +12,9 @@
 #include <stdio.h>
 #include <signal.h>
 
-const char* productId = "pr-vpjqpkfu";
-const char* deviceId = "de-pxitdrkk";
+const char* productId = "pr-12345678";
+const char* deviceId = "de-abcdefgh";
+
 const char* keyFile = "device.key";
 
 #define READ_BUFFER_SIZE 1024

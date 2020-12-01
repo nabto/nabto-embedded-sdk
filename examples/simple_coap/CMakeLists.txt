@@ -1,5 +1,5 @@
 set(src
-  src/simple_coap.c
+  simple_coap_device.c
   )
 
 add_executable(simple_coap_device "${src}")

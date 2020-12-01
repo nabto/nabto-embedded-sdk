@@ -1,5 +1,5 @@
 set(src
-  src/stream_echo_device.c
+  simple_stream_device.c
   )
 
 add_executable(simple_stream_device "${src}")

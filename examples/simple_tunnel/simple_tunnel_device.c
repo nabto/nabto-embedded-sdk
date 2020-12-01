@@ -9,6 +9,7 @@
 // replace these ids with ids from the nabto cloud console.
 const char* productId = "pr-12345678";
 const char* deviceId = "de-abcdefgh";
+
 const char* appName = "simple_tunnel";
 
 // TCP tunnel configuration.
