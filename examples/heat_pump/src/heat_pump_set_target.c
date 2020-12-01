@@ -3,6 +3,7 @@
 #include "heat_pump.h"
 
 #include <cbor.h>
+#include <cbor_extra.h>
 
 static void handle_request(struct heat_pump_coap_handler* handler, NabtoDeviceCoapRequest* request);
 

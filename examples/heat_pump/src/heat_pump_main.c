@@ -109,9 +109,10 @@ int main(int argc, char** argv) {
 
 bool run_heat_pump(const struct args* args) 
 {
-    NabtoDevice* device = nabto_device_new();
+    device = nabto_device_new();
     struct heat_pump heatPump;
     heat_pump_init(&heatPump);
+    heatPump.device = device;
 
     bool status = run_heat_pump_device(device, &heatPump, args);
 

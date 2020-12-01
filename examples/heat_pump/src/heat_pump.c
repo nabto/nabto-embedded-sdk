@@ -48,7 +48,7 @@ void heat_pump_deinit(struct heat_pump* heatPump)
 void heat_pump_start(struct heat_pump* heatPump) {
     nm_iam_init(&heatPump->iam, heatPump->device, NULL);
     load_iam_policy(heatPump);
-    load_heat_pump_state(heatPump->heatPumpStateFile, heatPump, heatPump->logger);
+    load_heat_pump_state(heatPump->heatPumpStateFile, &heatPump->state, heatPump->logger);
 
     load_iam_state(heatPump);
 
@@ -198,7 +198,7 @@ bool load_iam_policy(struct heat_pump* heatPump)
     {
         struct nm_iam_policy* p = nm_iam_configuration_policy_new("ManageOwnUser");
         {
-            struct nm_iam_policy* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
+            struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
             nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
             nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
             nm_iam_configuration_statement_add_action(s, "IAM:SetDisplayName");
