@@ -139,6 +139,12 @@ int main() {
 
 void signal_handler(int s)
 {
+    printf("Got signal %d" NEWLINE, s);
+    NabtoDeviceFuture* future = nabto_device_future_new(device);
+    nabto_device_close(device, future);
+    nabto_device_future_wait(future);
+    nabto_device_future_free(future);
+    // also stops the authorization listener.
     nabto_device_stop(device);
 }
 

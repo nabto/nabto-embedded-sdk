@@ -5,6 +5,7 @@
 /src/core/nc_version.c
 *.gdb_history
 build
+_*
 callgrind*
 perf.data*
 device.key
