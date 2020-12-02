@@ -31,6 +31,9 @@ int main() {
     NabtoDeviceListener* authorizationListener = NULL;
     NabtoDeviceAuthorizationRequest* authorizationRequest = NULL;
     char* deviceFingerprint = NULL;
+
+    printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
+
     device = nabto_device_new();
     future = nabto_device_future_new(device);
     authorizationListener = nabto_device_listener_new(device);
@@ -38,7 +41,7 @@ int main() {
     if (device == NULL || future == NULL || authorizationListener == NULL) {
         printf("Could not allocate resources" NEWLINE);
         goto cleanup;
-    }    
+    }
 
     ec = load_or_create_private_key();
     if (ec != NABTO_DEVICE_EC_OK) {
@@ -100,8 +103,8 @@ int main() {
         printf("could not start the device. %s" NEWLINE, nabto_device_error_get_message(ec));
         goto cleanup;
     }
-    
-    // wait for ctrl+c 
+
+    // wait for ctrl+c
     signal(SIGINT, &signal_handler);
 
     // When a tunnel is created an authorization request is made, allow all
@@ -160,4 +163,4 @@ NabtoDeviceError load_or_create_private_key()
     ec = nabto_device_set_private_key(device, privateKey);
     free(privateKey);
     return ec;
-}   
+}
