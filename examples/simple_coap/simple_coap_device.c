@@ -3,16 +3,15 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#define NEWLINE "\r\n"
 #else
 #include <unistd.h>
+#define NEWLINE "\n"
 #endif
 
 #include <stdbool.h>
 #include <stdio.h>
 #include <signal.h>
-
-const char* productId = "pr-12345678";
-const char* deviceId = "de-abcdefgh";
 
 const char* keyFile = "device.key";
 
@@ -25,7 +24,7 @@ struct context {
 };
 
 void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
-bool start_device(NabtoDevice* device);
+bool start_device(NabtoDevice* device, const char* productId, const char* deviceId);
 void handle_coap_request(NabtoDeviceCoapRequest* request);
 void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg);
 void wait_for_device_events(NabtoDevice* device);
@@ -33,7 +32,16 @@ void signal_handler(int s);
 
 NabtoDevice* device_;
 
-int main(void) {
+int main(int argc, char* argv[]) {
+
+    if (argc != 3) {
+        printf("The example takes exactly two arguments. %s <product-id> <device-id>" NEWLINE, argv[0]);
+        return -1;
+    }
+
+    char* productId = argv[1];
+    char* deviceId = argv[2];
+
     struct context ctx;
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
@@ -43,7 +51,7 @@ int main(void) {
         return -1;
     }
 
-    if (!start_device(device_)) {
+    if (!start_device(device_, productId, deviceId)) {
         handle_device_error(device_, NULL, "Failed to start device");
         return -1;
     }
@@ -108,7 +116,7 @@ void wait_for_device_events(NabtoDevice* device) {
     nabto_device_listener_free(listener);
 }
 
-bool start_device(NabtoDevice* device)
+bool start_device(NabtoDevice* device, const char* productId, const char* deviceId)
 {
     NabtoDeviceError ec;
     char* privateKey;

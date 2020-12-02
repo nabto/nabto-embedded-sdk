@@ -6,10 +6,6 @@
 #include <signal.h>
 #include <stdlib.h>
 
-// replace these ids with ids from the nabto cloud console.
-const char* productId = "pr-12345678";
-const char* deviceId = "de-abcdefgh";
-
 const char* appName = "simple_tunnel";
 
 // TCP tunnel configuration.
@@ -25,12 +21,20 @@ NabtoDeviceError load_or_create_private_key();
 
 NabtoDevice* device = NULL;
 
-int main() {
+int main(int argc, char** argv) {
     NabtoDeviceError ec;
     NabtoDeviceFuture* future = NULL;
     NabtoDeviceListener* authorizationListener = NULL;
     NabtoDeviceAuthorizationRequest* authorizationRequest = NULL;
     char* deviceFingerprint = NULL;
+
+    if (argc != 3) {
+        printf("The example takes exactly two arguments. %s <product-id> <device-id>" NEWLINE, argv[0]);
+        return -1;
+    }
+
+    char* productId = argv[1];
+    char* deviceId = argv[2];
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 

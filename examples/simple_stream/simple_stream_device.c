@@ -12,8 +12,11 @@
 #include <stdio.h>
 #include <signal.h>
 
-const char* productId = "pr-12345678";
-const char* deviceId = "de-abcdefgh";
+#if defined(WIN32)
+#define NEWLINE "\r\n"
+#else 
+#define NEWLINE "\n"
+#endif
 
 const char* keyFile = "device.key";
 
@@ -32,7 +35,7 @@ struct StreamEchoState head;
 
 NabtoDevice* device;
 
-bool start_device(NabtoDevice* device);
+bool start_device(NabtoDevice* device, const char* productId, const char* deviceId);
 void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg);
 static void streamAccepted(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 static void startRead(struct StreamEchoState* state);
@@ -58,10 +61,18 @@ int main(int argc, char** argv)
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     head.next = NULL;
 
+    if (argc != 3) {
+        printf("The example takes exactly two arguments. %s <product-id> <device-id>" NEWLINE, argv[0]);
+        return -1;
+    }
+
+    char* productId = argv[1];
+    char* deviceId = argv[2];
+
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
     if ((device = nabto_device_new()) == NULL ||
-        !start_device(device)) {
+        !start_device(device, productId, deviceId)) {
         handle_device_error(device, NULL, "Failed to start device");
         return -1;
     }
@@ -184,7 +195,7 @@ void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 }
 
 
-bool start_device(NabtoDevice* device)
+bool start_device(NabtoDevice* device, const char* productId, const char* deviceId)
 {
     NabtoDeviceError ec;
     char* privateKey;
