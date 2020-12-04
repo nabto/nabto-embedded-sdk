@@ -27,7 +27,7 @@ jobs:
         run: cmake --build build-dir --target install
 
       - if: matrix.os == 'windows-2019'
-        name: Unblock firewall
+        name: Test run
         run: |
           netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\artifacts\bin\embedded_unit_test.exe" enable=yes
           ${{ github.workspace }}/artifacts/bin/embedded_unit_test --log_format=JUNIT --detect_memory_leaks=0 | tee -filepath unit_test_${{matrix.os}}.xml
