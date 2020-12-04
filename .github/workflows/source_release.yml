@@ -13,6 +13,7 @@ jobs:
         with:
           submodules: recursive
           path: nabto-embedded-sdk
+          fetch-depth: 0
       - name: Generate src/core/nc_version.c
         run: mkdir builddir && cd builddir && cmake ${{ github.workspace }}/nabto-embedded-sdk && make GENERATE_VERSION
 
