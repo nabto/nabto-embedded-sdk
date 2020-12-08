@@ -1,5 +1,8 @@
 # Calculate the version from the current git repository.
 
+# This script is copied from/maintained at https://github.com/nabto/nabto-embedded-sdk
+# Script version 2020-12-08
+
 function(nabto_version master_version version_var error_var)
 
   find_program(GIT "git")
