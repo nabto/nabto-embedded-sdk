@@ -72,11 +72,9 @@ function(nabto_version master_version version_var error_var)
     # replace new lines with ; such that it becomes a cmake list.
     string(REPLACE "\r\n" ";" GIT_TAGS ${GIT_TAGS})
     string(REPLACE "\n" ";" GIT_TAGS ${GIT_TAGS})
-    message(tags "${GIT_TAGS}")
     # Filter the list such that all tags not matching the branch and the format vmajor.minor.patch is filtered away. 
     set(MATCH_STRING "^v${GIT_BRANCH}\\.[0-9]*$")
     list(FILTER GIT_TAGS INCLUDE REGEX ${MATCH_STRING})
-    message(tags "${GIT_TAGS}")
     list(LENGTH GIT_TAGS GIT_TAGS_LENGTH)
     # if the list is empty use the default branch version
     if (GIT_TAGS_LENGTH EQUAL "0") 
