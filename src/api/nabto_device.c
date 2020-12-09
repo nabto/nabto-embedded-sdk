@@ -723,3 +723,16 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit)
 
     return nabto_device_error_core_to_api(NABTO_EC_OK);
 }
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_fcm_send(NabtoDevice* device, const char* project, const char* notification)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    nc_attacher_fcm_send(&dev->core.attacher, project, notification);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    return nabto_device_error_core_to_api(NABTO_EC_OK);
+
+}

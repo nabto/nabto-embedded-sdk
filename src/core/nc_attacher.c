@@ -92,6 +92,32 @@ static void sct_deinit(struct nc_attach_context* ctx);
 /*****************
  * API functions *
  *****************/
+// TODO: fix
+static void coap_fcm_send_handler(struct nabto_coap_client_request* request, void* data)
+{
+    struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
+    uint16_t resCode = nabto_coap_client_response_get_code(res);
+    NABTO_LOG_ERROR(LOG, "fcm returned %d", resCode);
+    nabto_coap_client_request_free(request);
+}
+
+char pushProject[64];
+const char* pushPath[] = {"device", "fcm", pushProject};
+np_error_code nc_attacher_fcm_send(struct nc_attach_context* ctx, const char* project, const char* notification)
+{
+    struct nabto_coap_client_request* req;
+    memcpy(pushProject, project, strlen(project));
+    req = nabto_coap_client_request_new(nc_coap_client_get_client(ctx->coapClient),
+                                        NABTO_COAP_METHOD_POST,
+                                        3, pushPath,
+                                        &coap_fcm_send_handler,
+                                        ctx, ctx->dtls);
+    nabto_coap_client_request_set_content_format(req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_JSON);
+    nabto_coap_error err = nabto_coap_client_request_set_payload(req, notification, strlen(notification));
+    nabto_coap_client_request_send(req);
+    return NABTO_EC_OK;
+}
+
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
     np_error_code ec;

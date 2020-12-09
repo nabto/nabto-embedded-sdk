@@ -218,6 +218,11 @@ np_error_code nc_attacher_attach_end_request(struct nc_attach_context* attacher,
 
 void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize);
 
+
+// TODO: fix
+np_error_code nc_attacher_fcm_send(struct nc_attach_context* ctx, const char* project, const char* notification);
+
+
 #ifdef __cplusplus
 } // extern c
 #endif

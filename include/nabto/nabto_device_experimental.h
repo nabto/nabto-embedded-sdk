@@ -98,6 +98,11 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
 
 
+// TODO: change to NabtoDeviceFcmNotification struct
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_fcm_send(NabtoDevice* device, const char* project, const char* notification);
+
+
 #ifdef __cplusplus
 } // extern c
 #endif
