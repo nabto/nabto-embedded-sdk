@@ -99,7 +99,18 @@ nabto_device_disable_remote_access(NabtoDevice* device);
 
 
 /**
- * Opaque fcm notification.
+ * Firebase Cloud Messaging(FCM) notifications.
+ *
+ * This functionality makes it possible to send FCM notifications through the
+ * connection which exists between the device and the basestation.
+ * 
+ * See .... for further explanation
+ */
+
+/**
+ * FCM Notification. This is an object holding the FCM notification request and
+ * after the basestation api has been invoked the response from the invocation
+ * also exists in the object.
  */
 typedef struct NabtoDeviceFcmNotification_ NabtoDeviceFcmNotification;
 
@@ -116,7 +127,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification);
 
 /**
- * Set a project id on a notification
+ * Set the FCM project id on a notification
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API 
 nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notification, const char* projectId);
@@ -130,11 +141,16 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
 
 /**
  * Send a notification.
+ *
+ * The future returns NABTO_DEVICE_EC_OK iff the invocation of the basestation
+ * went ok. If the invocation went ok the firebase response can be found using
+ * nabto_device_fcm_notification_get_response_status_code and
+ * nabto_device_fcm_notification_get_response_body. The response status code is
+ * generally enough to determine if a message went ok or not. The response body
+ * can be used to get a detailed description in the case an error occurs.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
-
-
 
 /**
  * Get the response status code from the FCM invocation in case the send went ok.
@@ -147,7 +163,7 @@ nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFutur
  * See https://firebase.google.com/docs/reference/fcm/rest/v1/ErrorCode for detailed description of the errors.
  */
 NABTO_DEVICE_DECL_PREFIX uint16_t NABTO_DEVICE_API
-nabto_device_fcm_notification_get_status_code(NabtoDeviceFcmNotification* notification);
+nabto_device_fcm_notification_get_response_status_code(NabtoDeviceFcmNotification* notification);
 
 /**
  * Get the response body of the request to fcm. If an error occured this will
@@ -155,13 +171,20 @@ nabto_device_fcm_notification_get_status_code(NabtoDeviceFcmNotification* notifi
  * which is the id of the sent message.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_fcm_notification_get_body(NabtoDeviceFcmNotification* notification);
+nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* notification);
 
 /**
  * FCM Last will and testament. This allows registration of some notifications
  * which will be fulfilled by the basestation in the case where a device goes
- * unexpected offline. This will be notifications like "Your alarm system has
- * lost the internet connection".
+ * unexpected offline. An example of such notification is "Your alarm system has
+ * lost the internet connection". The concept LWT comes from MQTT and is not a
+ * feature which is built into firebase, but a feature Nabto provides.
+ *
+ * This feature is implemented such that when nabto_device_fcm_lwt_add is called
+ * the basestation invokes the firebase api with  "validate_only": true, this
+ * validates the message structure and registration tokens. When a device later
+ * goes offline in some unintended way, the LWT notifications which is stored in
+ * the basestation is sent.
  */
 
 /**
@@ -171,9 +194,10 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_lwt_reset(NabtoDevice* device, NabtoDeviceFuture* future);
 
 /**
- * Add a notification to LWT. The notification is copied to the system. 
+ * Add a LWT notification.
  *
- * @return NABTO_DEVICE_EC_OK iff added.
+ * Nearly same semantics as nabto_device_fcm_send except that the message is
+ * saved in the basestation such that it can be sent at a later time.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API 
 nabto_device_fcm_lwt_add(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
