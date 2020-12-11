@@ -98,9 +98,76 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
 
 
-// TODO: change to NabtoDeviceFcmNotification struct
+/**
+ * Opaque fcm notification.
+ */
+typedef struct NabtoDeviceFcmNotification_ NabtoDeviceFcmNotification;
+
+/**
+ * Create a new FCM Notification
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceFcmNotification* NABTO_DEVICE_API 
+nabto_device_fcm_notification_new(NabtoDevice* device);
+
+/**
+ * Free a FCM notification
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API 
+nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification);
+
+/**
+ * Set a project id on a notification
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API 
+nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notification, const char* projectId);
+
+/**
+ * Set a JSON document/payload according to the format
+ * https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API 
+nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notification, const char* payload);
+
+/**
+ * Send a notification.
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_fcm_send(NabtoDevice* device, const char* project, const char* notification);
+nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
+
+/**
+ * FCM Last will and testament. This allows registration of some notifications
+ * which will be fulfilled by the basestation in the case where a device goes
+ * unexpected offline. This will be notifications like "Your alarm system has
+ * lost the internet connection".
+ * 
+ * Usage:
+ * nabto_device_fcm_lwt_reset(device);
+ * foreach lwt notification in the system:
+ *   nabto_device_fcm_lwt_add(device, notification);
+ * nabto_device_fcm_lwt_sync(device);
+ */
+
+/**
+ * reset the internal list of lwts.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API 
+nabto_device_fcm_lwt_reset(NabtoDevice* device);
+
+/**
+ * Add a notification to LWT. The notification is copied to the system. 
+ *
+ * @return NABTO_DEVICE_EC_OK iff added.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API 
+nabto_device_fcm_lwt_add(NabtoDevice* device, NabtoDeviceFcmNotification* notification);
+
+/**
+ * Synchronize the current list of lwts with the basestation. If the device is
+ * attached a sync is scheduled. If the device is not attached lwts will be
+ * synchronized the next time the device goes online.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API 
+nabto_device_fcm_lwt_sync(NabtoDevice* device);
 
 
 #ifdef __cplusplus
