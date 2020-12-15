@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_ATTACHED;
+
 /**
  * Set a private key for the device.
  *
@@ -148,6 +150,17 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
  * nabto_device_fcm_notification_get_response_body. The response status code is
  * generally enough to determine if a message went ok or not. The response body
  * can be used to get a detailed description in the case an error occurs.
+ *
+ * Future resolves with:
+ *
+ *   NABTO_DEVICE_EC_OK if the notification is delivered to FCM, but not
+ *   neccessarily has been processed by fcm. see the response status code and
+ *   response body for the actual status of the notification.
+ * 
+ *   NABTO_DEVICE_EC_STOPPED if the operation is stopped.
+ *   NABTO_DEVICE_EC_NOT_ATTACHED  if the device is currently not attached to the basestation.
+ *   NABTO_DEVICE_EC_INVALID_STATE  if vital data is missing e.g. the project id or the body of the notification.
+ *
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);

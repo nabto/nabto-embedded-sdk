@@ -501,20 +501,6 @@ BOOST_AUTO_TEST_CASE(redirect_loop_break, * boost::unit_test::timeout(300))
     BOOST_TEST(redirectServer->redirectCount_ <= (uint64_t)5);
 }
 
-BOOST_AUTO_TEST_CASE(send_fcm, * boost::unit_test::timeout(300))
-{
-    auto ioService = nabto::IoService::create("test");
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
-
-    auto tp = nabto::test::TestPlatform::create();
-
-
-
-    attachServer->stop();
-    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
-}
-
-
 #ifdef __linux__
 BOOST_AUTO_TEST_CASE(attach_ha, * boost::unit_test::timeout(300))
 {

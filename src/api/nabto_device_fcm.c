@@ -27,6 +27,9 @@ void NABTO_DEVICE_API
 nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification)
 {
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
+    free(n->fcmSend.fcmRequest.payload);
+    free(n->fcmSend.fcmRequest.projectId);
+    free(n->fcmSend.fcmResponse.body);
     free(n);
 }
 
@@ -64,6 +67,7 @@ void NABTO_DEVICE_API
 nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future)
 {
     struct nabto_device_future* f = (struct nabto_device_future*)future;
+    nabto_device_future_reset(f);
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     if (n->future != NULL) {
         nabto_device_future_resolve(f, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
@@ -73,11 +77,9 @@ nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFutur
     struct nabto_device_context* dev = n->dev;
     n->future = f;
 
-    nc_attacher_fcm_send(&dev->core.attacher, &n->fcmSend, fcm_send_callback, n);
-
-    nabto_device_future_resolve(f, NABTO_DEVICE_EC_NOT_IMPLEMENTED);
-    if (n->future != NULL) {
-        nabto_device_future_resolve(f, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+    np_error_code ec = nc_attacher_fcm_send(&dev->core.attacher, &n->fcmSend, fcm_send_callback, n);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_future_resolve(f, ec);
     }
 }
 

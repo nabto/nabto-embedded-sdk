@@ -37,6 +37,7 @@ struct nc_attacher_fcm_send_context {
     struct nc_attacher_fcm_request fcmRequest;
     struct nc_attacher_fcm_response fcmResponse;
 
+    const char* pathSegments[3];
     struct nabto_coap_client_request* coapRequest;
     nc_attacher_fcm_send_callback cb;
     void* cbData;
