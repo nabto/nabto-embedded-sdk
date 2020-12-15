@@ -1,4 +1,5 @@
 #include "nc_attacher.h"
+#include "nc_coap.h"
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
 #include <coap/nabto_coap_client.h>
@@ -28,6 +29,8 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);        
     }
+    fcmContext->cb = cb;
+    fcmContext->cbData = userData;
     nabto_coap_client_request_send(fcmContext->coapRequest);
     return NABTO_EC_OK;
 }
@@ -36,11 +39,25 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
 static void coap_handler(struct nabto_coap_client_request* request, void* data)
 {
     struct nc_attacher_fcm_send_context* ctx = data;
-    struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
+    enum nabto_coap_client_status status = nabto_coap_client_request_get_status(request);
+    np_error_code ec = NABTO_EC_OK;
+    if (status != NABTO_COAP_CLIENT_STATUS_OK) {
+        ec = NABTO_EC_UNKNOWN;
+    } else {
+        struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
 
-    uint16_t resCode = nabto_coap_client_response_get_code(res);
-    NABTO_LOG_ERROR(LOG, "fcm returned %d", resCode);
+        uint16_t resCode = nabto_coap_client_response_get_code(res);
+
+        if (resCode == 201) {
+            ec = NABTO_EC_OK;
+            // todo parse response
+        } else {
+            ec = NABTO_EC_UNKNOWN;
+        }
+    }
     nabto_coap_client_request_free(request);
+
+    ctx->cb(ec, ctx->cbData);
 }
 
 void nc_attacher_fcm_send_stop(struct nc_attacher_fcm_send_context* fcmSend)

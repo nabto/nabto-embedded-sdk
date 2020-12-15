@@ -115,7 +115,7 @@ class AttachCoapServer {
 
     std::array<uint8_t, 16> getFingerprint()
     {
-        auto fp = getFingerprintFromPem(test::serverPublicKey);
+        auto fp = getFingerprintFromPem(certChain);
         std::array<uint8_t, 16> ret;
         memcpy(ret.data(), fp->data(), 16);
         return ret;
@@ -172,7 +172,7 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
                 //self->attachCount_ += 1;
                 return;
             });
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/fcm/send/{projectId}", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/fcm/{projectId}", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
                 std::string projectId = request->getParameter("projectId");
                 response->setCode(201);
                 return;
