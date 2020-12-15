@@ -111,7 +111,14 @@ void wait_for_device_events(NabtoDevice* device) {
             break;
         } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
             printf("Attached to the basestation\n");
-            nabto_device_fcm_send(device, projectId, notification);
+            NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(device);
+            nabto_device_fcm_notification_set_project_id(n, projectId);
+            nabto_device_fcm_notification_set_payload(n, notification);
+            NabtoDeviceFuture* f = nabto_device_future_new(device);
+            nabto_device_fcm_send(n, f);
+            nabto_device_future_wait(f);
+            nabto_device_future_free(f);
+            nabto_device_fcm_notification_free(n);
         } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
             printf("Detached from the basestation\n");
         }

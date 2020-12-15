@@ -19,6 +19,29 @@ extern "C" {
 
 enum nc_device_event;
 
+struct nabto_coap_client_request;
+
+typedef void (*nc_attacher_fcm_send_callback)(const np_error_code ec, void* userData);
+
+struct nc_attacher_fcm_request {
+    char* projectId;
+    char* payload;
+};
+
+struct nc_attacher_fcm_response {
+    char* body;
+    uint16_t statusCode;
+};
+
+struct nc_attacher_fcm_send_context {
+    struct nc_attacher_fcm_request fcmRequest;
+    struct nc_attacher_fcm_response fcmResponse;
+
+    struct nabto_coap_client_request* coapRequest;
+    nc_attacher_fcm_send_callback cb;
+    void* cbData;
+};
+
 typedef void (*nc_attacher_closed_callback)(void* data);
 typedef void (*nc_attacher_event_listener)(enum nc_device_event event, void* data);
 
@@ -220,8 +243,9 @@ void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp
 
 
 // TODO: fix
-np_error_code nc_attacher_fcm_send(struct nc_attach_context* ctx, const char* project, const char* notification);
+np_error_code nc_attacher_fcm_send(struct nc_attach_context* attacher, struct nc_attacher_fcm_send_context* fcmSend, nc_attacher_fcm_send_callback cb, void* userData);
 
+void nc_attacher_fcm_send_stop(struct nc_attacher_fcm_send_context* fcmSend);
 
 #ifdef __cplusplus
 } // extern c

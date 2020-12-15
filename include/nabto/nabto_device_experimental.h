@@ -103,7 +103,7 @@ nabto_device_disable_remote_access(NabtoDevice* device);
  *
  * This functionality makes it possible to send FCM notifications through the
  * connection which exists between the device and the basestation.
- * 
+ *
  * See .... for further explanation
  */
 
@@ -117,26 +117,26 @@ typedef struct NabtoDeviceFcmNotification_ NabtoDeviceFcmNotification;
 /**
  * Create a new FCM Notification
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceFcmNotification* NABTO_DEVICE_API 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceFcmNotification* NABTO_DEVICE_API
 nabto_device_fcm_notification_new(NabtoDevice* device);
 
 /**
  * Free a FCM notification
  */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API 
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification);
 
 /**
  * Set the FCM project id on a notification
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notification, const char* projectId);
 
 /**
  * Set a JSON document/payload according to the format
  * https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API 
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notification, const char* payload);
 
 /**
@@ -153,13 +153,21 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
 
 /**
+ * Stop an ongoing FCM request. If stop is used there are no guarantee whether a
+ * notification has been sent or not sent. It can be used to stop the async
+ * operation before it completes or a timeout happens.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_fcm_stop(NabtoDeviceFcmNotification* notification);
+
+/**
  * Get the response status code from the FCM invocation in case the send went ok.
- * 
+ *
  * 200, If the notification was sent ok.
  * 400, If the notification has an invalid format.
  * 403, If the notification could bot be sent due to missing authorization.
  * 404, If the token is expired.
- * 
+ *
  * See https://firebase.google.com/docs/reference/fcm/rest/v1/ErrorCode for detailed description of the errors.
  */
 NABTO_DEVICE_DECL_PREFIX uint16_t NABTO_DEVICE_API
@@ -190,7 +198,7 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
 /**
  * Reset the list of Lwts in the basestation
  */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API 
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_lwt_reset(NabtoDevice* device, NabtoDeviceFuture* future);
 
 /**
@@ -199,7 +207,7 @@ nabto_device_fcm_lwt_reset(NabtoDevice* device, NabtoDeviceFuture* future);
  * Nearly same semantics as nabto_device_fcm_send except that the message is
  * saved in the basestation such that it can be sent at a later time.
  */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API 
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_lwt_add(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
 
 

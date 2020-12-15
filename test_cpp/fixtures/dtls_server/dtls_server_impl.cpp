@@ -54,6 +54,15 @@ class CoapServerRequestImpl : public CoapServerRequest {
         return nabto_coap_server_request_get_content_format(request_);
     }
 
+    virtual std::string getParameter(const std::string& id)
+    {
+        const char* v = nabto_coap_server_request_get_parameter(request_, id.c_str());
+        if (v != NULL) {
+            return std::string(v);
+        }
+        return "";
+    }
+
  private:
     struct nabto_coap_server_request* request_;
 };
