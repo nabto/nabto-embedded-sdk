@@ -39,12 +39,18 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
 static void coap_handler(struct nabto_coap_client_request* request, void* data)
 {
     struct nc_attacher_fcm_send_context* ctx = data;
-    enum nabto_coap_client_status status = nabto_coap_client_request_get_status(request);
+    enum nabto_coap_client_status status =
+        nabto_coap_client_request_get_status(request);
     np_error_code ec = NABTO_EC_OK;
-    if (status != NABTO_COAP_CLIENT_STATUS_OK) {
+    if (status == NABTO_COAP_CLIENT_STATUS_STOPPED) {
+        ec = NABTO_EC_STOPPED;
+    } else if (status == NABTO_COAP_CLIENT_STATUS_TIMEOUT) {
+        ec = NABTO_EC_TIMEOUT;
+    } else if (status != NABTO_COAP_CLIENT_STATUS_OK) {
         ec = NABTO_EC_UNKNOWN;
     } else {
-        struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
+        struct nabto_coap_client_response* res =
+            nabto_coap_client_request_get_response(request);
 
         uint16_t resCode = nabto_coap_client_response_get_code(res);
 

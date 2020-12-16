@@ -228,5 +228,28 @@ BOOST_AUTO_TEST_CASE(notification_send_ok)
     nabto_device_fcm_notification_free(n);
 }
 
+BOOST_AUTO_TEST_CASE(notification_send_stop)
+{
+    FcmTestDevice fcmTestDevice;
+
+    fcmTestDevice.attach(getHostname(), getPort(), getRootCerts());
+    
+    NabtoDevice* dev = fcmTestDevice.device();
+
+    const char* projectId = "foobar";
+
+    NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(dev);
+    BOOST_REQUIRE(n != NULL);
+    BOOST_TEST(nabto_device_fcm_notification_set_project_id(n, projectId) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_fcm_notification_set_payload(n, testFcmPayload.c_str()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_fcm_send(n, f);
+    nabto_device_fcm_stop(n);
+    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_STOPPED));
+
+    nabto_device_future_free(f);
+    nabto_device_fcm_notification_free(n);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
