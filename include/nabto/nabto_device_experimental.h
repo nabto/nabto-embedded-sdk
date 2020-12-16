@@ -84,11 +84,16 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 
 /**
- * Disable remote access. When disabled, the device will not attempt
- * to connect to the Nabto Basestation and clients will only be able
- * to connect to the device directly (local connection using mdns
- * discovery or with direct candidates). This function must be called
- * before nabto_device_start();
+ * Disable remote access. When disabled, the device will not attempt to connect to the Nabto
+ * Basestation and clients will only be able to connect to the device directly (local connection
+ * using mdns discovery or with direct candidates). This function must be called before
+ * nabto_device_start();
+ *
+ * This function is in the experimental header as a more clean approach that supports explicit
+ * enabling/disabling at runtime will be added in a future release. Currently, to enable again, you
+ * will have to stop and start the device instance.
+ *
+ * TODO: change name to nabto_device_disable_basestation_attach
  *
  * @param device [in]  The device.
  * @return NABTO_DEVICE_EC_OK on success
