@@ -46,7 +46,7 @@ class FcmTestDevice {
         nabto_device_free(device_);
     }
 
-    NabtoDeviceError attach(const std::string& hostname, uint16_t port, const std::string& rootCerts) 
+    NabtoDeviceError attach(const std::string& hostname, uint16_t port, const std::string& rootCerts)
     {
         nabto_device_set_server_url(device_, hostname.c_str());
         nabto_device_set_server_port(device_, port);
@@ -63,7 +63,7 @@ class FcmTestDevice {
     }
 
 
-    NabtoDeviceError noAttach() 
+    NabtoDeviceError noAttach()
     {
         nabto_device_set_server_url(device_, "localhost");
         nabto_device_set_server_port(device_, 4242);
@@ -74,7 +74,7 @@ class FcmTestDevice {
         // start the device and wait for it ot be attached to the basestation
         return NABTO_DEVICE_EC_OK;
     }
-    
+
 
     void listenForEvents() {
         nabto_device_device_events_init_listener(device_, eventListener_);
@@ -117,11 +117,11 @@ class FcmTestDevice {
 
 class BasestationFixture {
  public:
-    BasestationFixture() 
+    BasestationFixture()
         : ioService_(nabto::IoService::create("basestationFixture")), attachServer_(nabto::test::AttachServer::create(ioService_->getIoService()))
     {
     }
-    ~BasestationFixture()  
+    ~BasestationFixture()
     {
         attachServer_->stop();
     }
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(notification_set)
     FcmTestDevice fcmTestDevice;
 
     fcmTestDevice.attach(getHostname(), getPort(), getRootCerts());
-    
+
     NabtoDevice* dev = fcmTestDevice.device();
 
     const char* projectId = "foobar";
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(notification_send_not_attached)
     FcmTestDevice fcmTestDevice;
 
     fcmTestDevice.noAttach();
-    
+
     NabtoDevice* dev = fcmTestDevice.device();
 
     const char* projectId = "foobar";
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE(notification_send_ok)
     FcmTestDevice fcmTestDevice;
 
     fcmTestDevice.attach(getHostname(), getPort(), getRootCerts());
-    
+
     NabtoDevice* dev = fcmTestDevice.device();
 
     const char* projectId = "foobar";
@@ -224,6 +224,16 @@ BOOST_AUTO_TEST_CASE(notification_send_ok)
     nabto_device_fcm_send(n, f);
     BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_OK));
 
+
+    BOOST_TEST(nabto_device_fcm_notification_get_response_status_code(n) == 200);
+
+    const char* responseBody = nabto_device_fcm_notification_get_response_body(n);
+    BOOST_REQUIRE(responseBody != NULL);
+
+    auto root = nlohmann::json::parse(responseBody);
+    std::string name = root["name"].get<std::string>();
+    BOOST_TEST(!name.empty());
+
     nabto_device_future_free(f);
     nabto_device_fcm_notification_free(n);
 }
@@ -233,7 +243,7 @@ BOOST_AUTO_TEST_CASE(notification_send_stop)
     FcmTestDevice fcmTestDevice;
 
     fcmTestDevice.attach(getHostname(), getPort(), getRootCerts());
-    
+
     NabtoDevice* dev = fcmTestDevice.device();
 
     const char* projectId = "foobar";

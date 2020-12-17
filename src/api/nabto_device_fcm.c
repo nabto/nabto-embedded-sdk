@@ -89,3 +89,17 @@ nabto_device_fcm_stop(NabtoDeviceFcmNotification* notification)
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     nc_attacher_fcm_send_stop(&n->fcmSend);
 }
+
+uint16_t NABTO_DEVICE_API
+nabto_device_fcm_notification_get_response_status_code(NabtoDeviceFcmNotification* notification)
+{
+    struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
+    return n->fcmSend.fcmResponse.statusCode;
+}
+
+const char* NABTO_DEVICE_API
+nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* notification)
+{
+    struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
+    return n->fcmSend.fcmResponse.body;
+}
