@@ -2,6 +2,7 @@
 #include "../nm_iam_user.h"
 #include "../nm_iam.h"
 #include "../nm_iam_internal.h"
+#include <nn/string_set.h>
 
 #include <stdlib.h>
 
@@ -120,6 +121,26 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
     return false;
 }
 
+bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set)
+{
+    if (!cbor_value_is_array(value)) {
+        return false;
+    }
+    CborValue item;
+    cbor_value_enter_container(value, &item);
+    while(!cbor_value_at_end(&item)) {
+        char* s = NULL;
+        if (nm_iam_cbor_decode_string(&item, &s) && nn_string_set_insert(set, s)) {
+            free(s);
+        } else {
+            free(s);
+            return false;
+        }
+        cbor_value_advance(&item);
+    }
+    return true;
+}
+
 bool nm_iam_cbor_decode_bool(CborValue* value, bool* b) 
 {
     if (cbor_value_is_boolean(value)) {
@@ -169,6 +190,22 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     if (user->sct != NULL) {
         cbor_encode_text_stringz(&map, "Sct");
         cbor_encode_text_stringz(&map, user->sct);
+    }
+
+    if (user->fcmToken != NULL) {
+        cbor_encode_text_stringz(&map, "FcmToken");
+        cbor_encode_text_stringz(&map, user->fcmToken);
+    }
+
+    {
+        cbor_encode_text_stringz(&map, "NotificationCategories");
+        CborEncoder array;
+        cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
+        const char* c;
+        NN_STRING_SET_FOREACH(c, &user->notificationCategories) {
+            cbor_encode_text_stringz(&array, c);
+        }
+        cbor_encoder_close_container(&map, &array);
     }
 
     cbor_encoder_close_container(&encoder, &map);

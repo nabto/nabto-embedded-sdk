@@ -15,7 +15,9 @@ struct nm_iam_user {
     char* password;
     char* fingerprint;
     char* sct;
+    char* fcmToken;
     struct nn_llist_node listNode;
+    struct nn_string_set notificationCategories;
 };
 
 struct nm_iam_state {

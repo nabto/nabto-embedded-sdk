@@ -6,6 +6,7 @@
 #include <cbor.h>
 
 struct nm_iam_coap_handler;
+struct nn_string_set;
 
 typedef void (*nm_iam_coap_request_handler)(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
@@ -52,6 +53,7 @@ NabtoDeviceError nm_iam_set_user_display_name_init(struct nm_iam_coap_handler* h
 NabtoDeviceError nm_iam_set_user_fingerprint_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_set_user_sct_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_set_user_password_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
+NabtoDeviceError nm_iam_set_user_fcm_token_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
 NabtoDeviceError nm_iam_settings_set_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_settings_get_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
@@ -61,6 +63,7 @@ NabtoDeviceError nm_iam_settings_get_init(struct nm_iam_coap_handler* handler, N
 bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue);
 
 bool nm_iam_cbor_decode_string(CborValue* value, char** str);
+bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set);
 bool nm_iam_cbor_decode_bool(CborValue* value, bool* b);
 bool nm_iam_cbor_decode_kv_string(CborValue* map, const char* key, char** str);
 

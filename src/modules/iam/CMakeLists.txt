@@ -29,6 +29,7 @@ set(src
   coap_handler/nm_iam_set_user_fingerprint.c
   coap_handler/nm_iam_set_user_sct.c
   coap_handler/nm_iam_set_user_password.c
+  coap_handler/nm_iam_set_user_fcm_token.c
   policies/nm_condition.c
   policies/nm_statement.c
   policies/nm_policy.c

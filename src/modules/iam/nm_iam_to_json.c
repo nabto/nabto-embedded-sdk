@@ -43,5 +43,16 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
         cJSON_AddItemToObject(root, "Role", cJSON_CreateString(user->role));
     }
 
+    if (user->fcmToken != NULL) {
+        cJSON_AddItemToObject(root, "FcmToken", cJSON_CreateString(user->fcmToken));
+    }
+
+    cJSON* notificationCategories = cJSON_CreateArray();
+    const char* s;
+    NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
+        cJSON_AddItemToArray(notificationCategories, cJSON_CreateString(s));
+    }
+    cJSON_AddItemToObject(root, "NotificationCategories", notificationCategories);
+
     return root;
 }

@@ -224,6 +224,8 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fingerprint.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_sct.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_password.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fcm_token.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_notification_categories.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_get.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_set.c
   ${root_dir}/src/modules/iam/policies/nm_condition.c

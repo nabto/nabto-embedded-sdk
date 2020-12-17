@@ -76,6 +76,31 @@ bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
     return (tmp != NULL);
 }
 
+bool nm_iam_user_set_fcm_token(struct nm_iam_user* user, const char* fcmToken)
+{
+    if (fcmToken == NULL) {
+        free(user->fcmToken);
+        user->fcmToken = NULL;
+        return true;
+    }
+    char* tmp = strdup(fcmToken);
+    if (tmp != NULL) {
+        free(user->fcmToken);
+        user->fcmToken = tmp;
+    }
+    return (tmp != NULL);
+}
+
+bool nm_iam_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories)
+{
+    nn_string_set_clear(&user->notificationCategories);
+    const char* s;
+    NN_STRING_SET_FOREACH(s, categories) {
+        nn_string_set_insert(&user->notificationCategories, s);
+    }
+    return true;
+}
+
 bool nm_iam_user_set_sct(struct nm_iam_user* user, const char* sct)
 {
     if (sct == NULL) {
