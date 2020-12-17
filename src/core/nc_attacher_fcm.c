@@ -48,7 +48,6 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
     return NABTO_EC_OK;
 }
 
-// TODO: fix
 static void coap_handler(struct nabto_coap_client_request* request, void* data)
 {
     struct nc_attacher_fcm_send_context* ctx = data;
@@ -158,4 +157,4 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
 
     response->statusCode = (uint16_t)tmp;
     return true;
-};
+}
