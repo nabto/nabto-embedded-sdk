@@ -129,6 +129,12 @@ class AttachCoapServer {
 
 };
 
+static const std::string firebaseOkResponse = R"(
+{
+    "name": "foobar"
+}
+)";
+
 class AttachServer : public AttachCoapServer, public std::enable_shared_from_this<AttachServer>
 {
  public:
@@ -172,9 +178,14 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
                 //self->attachCount_ += 1;
                 return;
             });
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/fcm/{projectId}", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
-                std::string projectId = request->getParameter("projectId");
+        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/fcm/send", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
                 response->setCode(201);
+                response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+                nlohmann::json root;
+                root["StatusCode"] = 200;
+                root["Body"] = firebaseOkResponse;
+                std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+                response->setPayload(b);
                 return;
             });
     }
