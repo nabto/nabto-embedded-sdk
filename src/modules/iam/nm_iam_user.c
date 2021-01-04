@@ -31,7 +31,7 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 
     nn_llist_node_init(&user->listNode);
     user->username = username;
-
+    nn_string_set_init(&user->notificationCategories);
     return user;
 }
 
@@ -43,6 +43,9 @@ void nm_iam_user_free(struct nm_iam_user* user)
     free(user->sct);
     free(user->role);
     free(user->password);
+    free(user->fcmToken);
+    free(user->fcmProjectId);
+    nn_string_set_deinit(&user->notificationCategories);
     free(user);
 }
 
@@ -87,6 +90,21 @@ bool nm_iam_user_set_fcm_token(struct nm_iam_user* user, const char* fcmToken)
     if (tmp != NULL) {
         free(user->fcmToken);
         user->fcmToken = tmp;
+    }
+    return (tmp != NULL);
+}
+
+bool nm_iam_user_set_fcm_project_id(struct nm_iam_user* user, const char* projectId)
+{
+    if (projectId == NULL) {
+        free(user->fcmProjectId);
+        user->fcmProjectId = NULL;
+        return true;
+    }
+    char* tmp = strdup(projectId);
+    if (tmp != NULL) {
+        free(user->fcmProjectId);
+        user->fcmProjectId = tmp;
     }
     return (tmp != NULL);
 }

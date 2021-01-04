@@ -192,9 +192,20 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
         cbor_encode_text_stringz(&map, user->sct);
     }
 
-    if (user->fcmToken != NULL) {
-        cbor_encode_text_stringz(&map, "FcmToken");
-        cbor_encode_text_stringz(&map, user->fcmToken);
+    if (user->fcmToken != NULL || user->fcmProjectId != NULL) {
+
+        cbor_encode_text_stringz(&map, "Fcm");
+        CborValue fcm;
+        cbor_encoder_create_map(&map, &fcm, CborIndefiniteLength);
+        if (user->fcmToken != NULL) {
+            cbor_encode_text_stringz(&fcm, "Token");
+            cbor_encode_text_stringz(&fcm, user->fcmToken);
+        }
+        if (user->fcmProjectId != NULL) {
+            cbor_encode_text_stringz(&fcm, "ProjectId");
+            cbor_encode_text_stringz(&fcm, user->fcmProjectId);
+        }
+        cbor_encoder_close_container(&map, &fcm);
     }
 
     {

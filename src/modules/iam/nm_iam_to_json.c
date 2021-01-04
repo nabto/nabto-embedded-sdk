@@ -43,16 +43,25 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
         cJSON_AddItemToObject(root, "Role", cJSON_CreateString(user->role));
     }
 
-    if (user->fcmToken != NULL) {
-        cJSON_AddItemToObject(root, "FcmToken", cJSON_CreateString(user->fcmToken));
+    if (user->fcmToken != NULL || user->fcmProjectId != NULL) {
+        cJSON* fcm = cJSON_CreateObject();
+        if (user->fcmToken != NULL) {
+            cJSON_AddItemToObject(fcm, "Token", cJSON_CreateString(user->fcmToken));
+        }
+        if (user->fcmProjectId != NULL) {
+            cJSON_AddItemToObject(fcm, "ProjectId", cJSON_CreateString(user->fcmProjectId));
+        }
+        cJSON_AddItemToObject(root, "Fcm", fcm);
     }
 
-    cJSON* notificationCategories = cJSON_CreateArray();
-    const char* s;
-    NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
-        cJSON_AddItemToArray(notificationCategories, cJSON_CreateString(s));
+    if (!nn_string_set_empty(&user->notificationCategories)) {
+        cJSON* notificationCategories = cJSON_CreateArray();
+        const char* s;
+        NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
+            cJSON_AddItemToArray(notificationCategories, cJSON_CreateString(s));
+        }
+        cJSON_AddItemToObject(root, "NotificationCategories", notificationCategories);
     }
-    cJSON_AddItemToObject(root, "NotificationCategories", notificationCategories);
 
     return root;
 }

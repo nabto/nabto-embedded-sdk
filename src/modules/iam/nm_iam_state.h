@@ -16,8 +16,10 @@ struct nm_iam_user {
     char* fingerprint;
     char* sct;
     char* fcmToken;
-    struct nn_llist_node listNode;
+    char* fcmProjectId;
     struct nn_string_set notificationCategories;
+
+    struct nn_llist_node listNode;
 };
 
 struct nm_iam_state {
