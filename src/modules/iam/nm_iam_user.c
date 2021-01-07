@@ -220,6 +220,27 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
         }
     }
 
+    if(user->fcmToken != NULL) {
+        copy->fcmToken = strdup(user->fcmToken);
+        if(copy->fcmToken == NULL) {
+            failed = true;
+        }
+    }
+
+    if(user->fcmProjectId != NULL) {
+        copy->fcmProjectId = strdup(user->fcmProjectId);
+        if(copy->fcmProjectId == NULL) {
+            failed = true;
+        }
+    }
+
+    const char* p;
+    NN_STRING_SET_FOREACH(p, &user->notificationCategories) {
+        if (!nn_string_set_insert(&copy->notificationCategories, p)) {
+            failed = true;
+        }
+    }
+
     if (failed) {
         nm_iam_user_free(copy);
         return NULL;

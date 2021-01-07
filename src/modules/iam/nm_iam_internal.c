@@ -331,6 +331,8 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
     nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
     nm_iam_set_user_fcm_token_init(&iam->coapIamUsersUserSetFcmTokenHandler, iam->device, iam);
+    nm_iam_set_user_notification_categories_init(&iam->coapIamUsersUserSetNotificationCategoriesHandler,
+                                                 iam->device, iam);
     nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
     nm_iam_settings_set_init(&iam->coapIamSettingsSetHandler, iam->device, iam);
 }
@@ -357,6 +359,7 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFcmTokenHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNotificationCategoriesHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsSetHandler);
 }
@@ -383,6 +386,7 @@ void nm_iam_internal_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFcmTokenHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetNotificationCategoriesHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamSettingsSetHandler);

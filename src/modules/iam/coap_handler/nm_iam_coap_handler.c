@@ -141,7 +141,7 @@ bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set)
     return true;
 }
 
-bool nm_iam_cbor_decode_bool(CborValue* value, bool* b) 
+bool nm_iam_cbor_decode_bool(CborValue* value, bool* b)
 {
     if (cbor_value_is_boolean(value)) {
         CborError ec = cbor_value_get_boolean(value, b);
@@ -195,7 +195,7 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     if (user->fcmToken != NULL || user->fcmProjectId != NULL) {
 
         cbor_encode_text_stringz(&map, "Fcm");
-        CborValue fcm;
+        CborEncoder fcm;
         cbor_encoder_create_map(&map, &fcm, CborIndefiniteLength);
         if (user->fcmToken != NULL) {
             cbor_encode_text_stringz(&fcm, "Token");
