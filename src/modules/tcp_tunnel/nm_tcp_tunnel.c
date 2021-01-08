@@ -126,7 +126,7 @@ np_error_code nm_tcp_tunnel_service_init_stream_listener(struct nm_tcp_tunnel_se
     if (!ec) {
         service->streamPort = service->streamListener.type;
     }
-    NABTO_LOG_TRACE(LOG, "Begin listening for streams on port %" PRIu32, service->streamListener.type);
+    NABTO_LOG_TRACE(LOG, "Begin listening for streams on port %" NABTO_LOG_PRIu32, service->streamListener.type);
     return ec;
 }
 

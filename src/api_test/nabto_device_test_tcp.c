@@ -51,21 +51,25 @@ static void data_ready(np_error_code ec, void* data)
 {
     struct tcp_test* t = data;
     if (ec) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
     t->bytesRead += t->readLength;
     if (t->bytesRead > sizeof(t->readBuffer)) {
         NABTO_LOG_ERROR(LOG, "The amount of data read is larger than the size of the buffer.");
-        return resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        return;
     }
     if (t->bytesRead < sizeof(t->readBuffer)) {
-        return start_read(t);
+        start_read(t);
+        return;
     }
 
     // else all data is read
     if (memcmp(t->readBuffer, sendBuffer, sizeof(sendBuffer)) != 0) {
         NABTO_LOG_ERROR(LOG, "Received TCP data does not match the data sent.");
-        return resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        return;
     }
 
     resolve_and_free_test(t, NABTO_EC_OK);
@@ -84,7 +88,8 @@ static void data_sent(np_error_code ec, void* data)
 {
     struct tcp_test* t = data;
     if (ec) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
     start_read(t);
 }
@@ -93,7 +98,8 @@ static void socket_connected(np_error_code ec, void* data)
 {
     struct tcp_test* t = data;
     if (ec) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
     np_completion_event_reinit(&t->completionEvent, &data_sent, t);
     np_tcp_async_write(&t->tcp, t->sock, sendBuffer, sizeof(sendBuffer), &t->completionEvent);
@@ -106,12 +112,14 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct tcp_test* t = calloc(1, sizeof(struct tcp_test));
     if (t == NULL) {
-        return nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+        return;
     }
 
     if (!np_ip_address_read_v4(ip, &t->ip))
     {
-        return resolve_and_free_test(t, NABTO_EC_INVALID_ARGUMENT);
+        resolve_and_free_test(t, NABTO_EC_INVALID_ARGUMENT);
+        return;
     }
 
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -123,17 +131,20 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     np_error_code ec;
     ec = np_tcp_create(&t->tcp, &t->sock);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
 
     ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, &socket_connected, t);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
 
     ec = np_event_queue_create_event(&t->eq, timeout, t, &t->timeoutEvent);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
 
     np_tcp_async_connect(&t->tcp, t->sock, &t->ip, port, &t->completionEvent);

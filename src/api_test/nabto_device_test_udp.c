@@ -47,25 +47,29 @@ static void packet_ready(np_error_code ec, void* data)
 {
     struct udp_test* t = data;
     if (ec) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
     struct np_udp_endpoint recvEp;
     uint8_t recvBuffer[1500];
     size_t recvSize;
     np_error_code recvEc = np_udp_recv_from(&t->udp, t->sock, &recvEp, recvBuffer, 1500, &recvSize);
     if (recvEc != NABTO_EC_OK) {
-        return resolve_and_free_test(t, recvEc);
+        resolve_and_free_test(t, recvEc);
+        return;
     }
 
     size_t sendSize = sizeof(sendBuffer);
     if (recvSize != sendSize) {
         NABTO_LOG_ERROR(LOG, "Invalid size of received udp packet");
-        return resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        return;
     }
 
     if (memcmp(recvBuffer, sendBuffer, sendSize) != 0) {
         NABTO_LOG_ERROR(LOG, "Received udp data does not match the data sent.");
-        return resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
+        return;
     }
 
     resolve_and_free_test(t, NABTO_EC_OK);
@@ -75,7 +79,8 @@ static void packet_sent(np_error_code ec, void* data)
 {
     struct udp_test* t = data;
     if (ec) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
     np_completion_event_reinit(&t->completionEvent, &packet_ready, t);
     np_udp_async_recv_wait(&t->udp, t->sock, &t->completionEvent);
@@ -85,7 +90,8 @@ static void socket_bound(np_error_code ec, void* data)
 {
     struct udp_test* t = data;
     if (ec) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
     np_completion_event_reinit(&t->completionEvent, &packet_sent, t);
     np_udp_async_send_to(&t->udp, t->sock, &t->ep, sendBuffer, sizeof(sendBuffer), &t->completionEvent);
@@ -98,12 +104,14 @@ nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct udp_test* t = calloc(1, sizeof(struct udp_test));
     if (t == NULL) {
-        return nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+        return;
     }
 
     if (!np_ip_address_read_v4(ip, &t->ep.ip))
     {
-        return resolve_and_free_test(t, NABTO_EC_INVALID_ARGUMENT);
+        resolve_and_free_test(t, NABTO_EC_INVALID_ARGUMENT);
+        return;
     }
 
     t->ep.port = port;
@@ -117,17 +125,20 @@ nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     np_error_code ec;
     ec = np_udp_create(&t->udp, &t->sock);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
 
     ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, &socket_bound, t);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
 
     ec = np_event_queue_create_event(&t->eq, timeout, t, &t->timeoutEvent);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
 
     np_udp_async_bind_port(&t->udp, t->sock, 0, &t->completionEvent);

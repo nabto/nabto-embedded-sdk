@@ -169,7 +169,7 @@ void nabto_device_listener_try_resolve(struct nabto_device_listener* listener)
     // try to resolve the front item
 
     if (listener->fut && !nn_llist_empty(&listener->eventsList)) {
-        np_error_code ec = NABTO_DEVICE_EC_UNKNOWN;
+        np_error_code ec = NABTO_EC_UNKNOWN;
         struct nn_llist_iterator it = nn_llist_begin(&listener->eventsList);
         void* item = nn_llist_get_item(&it);
         nn_llist_erase(&it);

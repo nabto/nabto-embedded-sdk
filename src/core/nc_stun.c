@@ -1,4 +1,5 @@
 #include "nc_stun.h"
+#include "nc_device.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
@@ -32,23 +33,6 @@ uint32_t nc_stun_get_stamp(void* data)
     return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
-void nc_stun_log(const char* file, int line, enum nabto_stun_log_level level,
-                 const char* fmt, va_list args, void* data)
-{
-    if (level == NABTO_STUN_LOG_LEVEL_INFO) {
-        np_log.log(NABTO_LOG_SEVERITY_INFO, LOG, line, file, fmt, args);
-    } else if (level == NABTO_STUN_LOG_LEVEL_TRACE) {
-        np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
-
-    } else if (level == NABTO_STUN_LOG_LEVEL_DEBUG) {
-        np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
-
-    } else if (level == NABTO_STUN_LOG_LEVEL_ERROR) {
-        np_log.log(NABTO_LOG_SEVERITY_ERROR, LOG, line, file, fmt, args);
-
-    }
-}
-
 bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
@@ -63,6 +47,7 @@ bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 
 // init function
 np_error_code nc_stun_init(struct nc_stun_context* ctx,
+                           struct nc_device_context* device,
                            struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_stun_context));
@@ -76,7 +61,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->pl = pl;
     ctx->state = NC_STUN_STATE_NONE;
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
-    ctx->stunModule.log = &nc_stun_log;
+    ctx->stunModule.logger = &device->moduleLogger;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
     np_error_code ec;
     ec = np_event_queue_create_event(eq, &nc_stun_handle_timeout, ctx, &ctx->toEv);
@@ -101,7 +86,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     return NABTO_EC_OK;
 }
 
-void nc_stun_stop(struct nc_stun_context* ctx) 
+void nc_stun_stop(struct nc_stun_context* ctx)
 {
     // TODO stop current stun requests if any
     ctx->state = NC_STUN_STATE_ABORTED;
@@ -345,7 +330,7 @@ void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result*
 void nc_stun_resolve_callbacks(struct nc_stun_context* ctx)
 {
     struct nn_llist_iterator it = nn_llist_begin(&ctx->cbs);
-    
+
     while(!nn_llist_is_end(&it)) {
         struct nc_stun_callback* cb = nn_llist_get_item(&it);
         nn_llist_next(&it);

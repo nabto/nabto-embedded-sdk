@@ -97,6 +97,8 @@ struct nc_device_context {
     struct nn_llist deviceEvents;
     struct np_completion_event socketBoundCompletionEvent;
     struct nc_spake2_module spake2;
+    // logger which can be provided for some modules.
+    struct nn_log moduleLogger;
 };
 
 np_error_code nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
