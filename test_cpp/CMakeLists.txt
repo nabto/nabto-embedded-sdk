@@ -29,6 +29,7 @@ set(test_src
   tests/api/password_authorization_request_test.cpp
   tests/api/fcm_test.cpp
   tests/attach/attach_test.cpp
+  tests/iam/state.cpp
   tests/iam/serializer.cpp
   tests/policies/condition_test.cpp
   tests/policies/condition_json_test.cpp

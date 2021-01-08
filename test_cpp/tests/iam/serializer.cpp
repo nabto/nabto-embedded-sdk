@@ -237,6 +237,21 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->displayName, "Display Name") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->role, "role1") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->password, "password2") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fcmToken, "fcm_token") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fcmProjectId, "fcm_project") == 0);
+        const char* p;
+        bool cat1 = false; bool cat2 = false;
+        NN_STRING_SET_FOREACH(p, &((struct nm_iam_user*)user)->notificationCategories) {
+            if (strcmp(p, "cat1") == 0) {
+                cat1 = true;
+            } else if (strcmp(p, "cat2") == 0) {
+                cat2 = true;
+            } else {
+                BOOST_CHECK_MESSAGE(false, "Unexpected notification category: " << p << " found");
+            }
+        }
+        BOOST_TEST(cat1);
+        BOOST_TEST(cat2);
     }
     nm_iam_state_free(state);
 }

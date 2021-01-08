@@ -36,7 +36,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     cJSON* fingerprint = cJSON_GetObjectItem(json, "Fingerprint");
     cJSON* password = cJSON_GetObjectItem(json, "Password");
     cJSON* role = cJSON_GetObjectItem(json, "Role");
-    cJSON* fcm = cJSON_GetObjectItem(json, "FcmToken");
+    cJSON* fcm = cJSON_GetObjectItem(json, "Fcm");
     cJSON* notificationCategories = cJSON_GetObjectItem(json, "NotificationCategories");
     cJSON* fcmToken = NULL;
     cJSON* fcmProjectId = NULL;
