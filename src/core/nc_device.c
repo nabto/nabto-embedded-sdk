@@ -13,6 +13,9 @@ static void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, voi
 static void nc_device_sockets_bound(struct nc_device_context* dev);
 static void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec);
 
+// log function for nn_log
+static void module_logger(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args);
+
 np_error_code nc_device_init(struct nc_device_context* device, struct np_platform* pl)
 {
     memset(device, 0, sizeof(struct nc_device_context));
@@ -29,6 +32,8 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     device->hostname = NULL;
     device->connectionRef = 0;
     device->enableRemote = true;
+
+    nn_log_init(&device->moduleLogger, module_logger, device);
 
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
@@ -83,7 +88,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     }
 
 
-    ec = nc_stun_init(&device->stun, pl);
+    ec = nc_stun_init(&device->stun, device, pl);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -103,9 +108,8 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-
     nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
-    nc_stream_manager_init(&device->streamManager, pl);
+    nc_stream_manager_init(&device->streamManager, pl, &device->moduleLogger);
 
     nn_llist_init(&device->eventsListeners);
     nn_llist_init(&device->deviceEvents);
@@ -629,4 +633,20 @@ np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* dev, const c
     }
     reload_mdns(dev);
     return NABTO_EC_OK;
+}
+
+void module_logger(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args)
+{
+     if (severity == NN_LOG_SEVERITY_INFO) {
+        np_log.log(NABTO_LOG_SEVERITY_INFO, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
+    } else if (severity == NN_LOG_SEVERITY_TRACE) {
+        np_log.log(NABTO_LOG_SEVERITY_TRACE, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
+
+    } else if (severity == NN_LOG_SEVERITY_WARN) {
+        np_log.log(NABTO_LOG_SEVERITY_WARN, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
+
+    } else if (severity == NN_LOG_SEVERITY_ERROR) {
+        np_log.log(NABTO_LOG_SEVERITY_ERROR, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
+
+    }
 }

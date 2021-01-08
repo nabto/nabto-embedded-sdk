@@ -18,6 +18,8 @@
 #define NC_STUN_PORT 3478
 #endif
 
+struct nc_device_context;
+
 typedef void (*nc_stun_analyze_callback)(const np_error_code ec, const struct nabto_stun_result* res, void* data);
 
 struct nc_stun_callback {
@@ -63,8 +65,9 @@ struct nc_stun_context {
     struct np_completion_event dnsCompletionEvent;
 };
 
-np_error_code nc_stun_init(struct nc_stun_context* ctx,
-                           struct np_platform* pl);
+np_error_code nc_stun_init(struct nc_stun_context *ctx,
+                           struct nc_device_context *device,
+                           struct np_platform *pl);
 
 void nc_stun_stop(struct nc_stun_context* ctx);
 

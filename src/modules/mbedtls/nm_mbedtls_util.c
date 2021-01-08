@@ -118,7 +118,7 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
                                          mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
         if (ret != 0) {
-            return false;
+            return NABTO_EC_UNKNOWN;
         }
         *publicKey = strdup(buffer);
     }

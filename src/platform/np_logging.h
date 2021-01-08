@@ -4,10 +4,17 @@
 #include <platform/np_logging_defines.h>
 #include <platform/np_types.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define NABTO_LOG_PRIu8  PRIu8
+#define NABTO_LOG_PRIu16 PRIu16
+#define NABTO_LOG_PRIu32 PRIu32
+#define NABTO_LOG_PRIu64 PRIu64
+#define NABTO_LOG_PRIsize PRIsize
 
 void np_default_log(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
 
@@ -44,7 +51,7 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #endif
 
 #ifndef NABTO_LOG_ERROR
-#  ifdef HAS_NO_VARADIC_MACROS
+#  ifdef HAS_NO_VARIADIC_MACROS
 #    define NABTO_LOG_ERROR np_error_adapter
 #  else
 #    define NABTO_LOG_ERROR(module, fmt, ...) np_error_adapter(NABTO_LOG_SEVERITY_ERROR, module, __LINE__, __FILE__, fmt VA_ARGS(__VA_ARGS__));
@@ -52,7 +59,7 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #endif
 
 #ifndef NABTO_LOG_WARN
-#  ifdef HAS_NO_VARADIC_MACROS
+#  ifdef HAS_NO_VARIADIC_MACROS
 #    define NABTO_LOG_WARN np_warn_adapter
 #  else
 #    define NABTO_LOG_WARN(module, fmt, ...) np_warn_adapter(NABTO_LOG_SEVERITY_WARN, module, __LINE__, __FILE__, fmt VA_ARGS(__VA_ARGS__));
@@ -60,7 +67,7 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #endif
 
 #ifndef NABTO_LOG_INFO
-#  ifdef HAS_NO_VARADIC_MACROS
+#  ifdef HAS_NO_VARIADIC_MACROS
 #    define NABTO_LOG_INFO np_info_adapter
 #  else
 #    define NABTO_LOG_INFO(module, fmt, ...) np_info_adapter(NABTO_LOG_SEVERITY_INFO, module, __LINE__, __FILE__, fmt VA_ARGS(__VA_ARGS__));
@@ -68,7 +75,7 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #endif
 
 #ifndef NABTO_LOG_TRACE
-#  ifdef HAS_NO_VARADIC_MACROS
+#  ifdef HAS_NO_VARIADIC_MACROS
 #    define NABTO_LOG_TRACE np_trace_adapter
 #  else
 #    define NABTO_LOG_TRACE(module, fmt, ...) np_trace_adapter(NABTO_LOG_SEVERITY_TRACE, module, __LINE__, __FILE__, fmt VA_ARGS(__VA_ARGS__));
@@ -76,9 +83,9 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #endif
 
 #ifndef NABTO_LOG_RAW
-#  ifdef HAS_NO_VARADIC_MACROS
+#  ifdef HAS_NO_VARIADIC_MACROS
 // RAW logging requires varadic macros
-#    define NABTO_LOG_RAW
+#    define NABTO_LOG_RAW(severity, module, line, file, fmt, ...)
 #  else
 #    define NABTO_LOG_RAW(severity, module, line, file, fmt, ...) np_raw_adapter(severity, module, line, file, fmt VA_ARGS(__VA_ARGS__));
 #  endif

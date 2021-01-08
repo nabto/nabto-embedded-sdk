@@ -78,7 +78,7 @@ void list_services(struct nabto_coap_server_request* request, void* data)
 
     // Could not make the iam request
     pl->authorization.discard_request(authReq);
-    nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Out of resources");
+    nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), "Out of resources");
     nabto_coap_server_request_free(request);
 }
 
@@ -131,7 +131,7 @@ void list_services_iam(bool allow, void* userData1, void* userData2, void* userD
     struct nabto_coap_server_request* request = userData2;
 
     if (!allow) {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(4,03)), NULL);
         nabto_coap_server_request_free(request);
         return;
     }
@@ -139,18 +139,18 @@ void list_services_iam(bool allow, void* userData1, void* userData2, void* userD
     size_t bufferSize = encode_services_list(tunnels, NULL, 0);
     uint8_t* buffer = malloc(bufferSize);
     if (buffer == NULL) {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
         nabto_coap_server_request_free(request);
         return;
     }
 
     encode_services_list(tunnels, buffer, bufferSize);
 
-    nabto_coap_server_response_set_code(request, NABTO_COAP_CODE(2,05));
+    nabto_coap_server_response_set_code(request, (nabto_coap_code)(NABTO_COAP_CODE(2,05)));
     nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
     nabto_coap_error err = nabto_coap_server_response_set_payload(request, buffer, bufferSize);
     if (err != NABTO_COAP_ERROR_OK) {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
     } else {
         nabto_coap_server_response_ready(request);
     }
@@ -175,7 +175,7 @@ void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp
     struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, nabto_coap_server_request_get_parameter(request, "id"));
     if (service == NULL) {
         // OOM impossible with NULL message
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(4,04)), NULL);
         nabto_coap_server_request_free(request);
         return;
     }
@@ -194,7 +194,7 @@ void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp
 
     // Could not make the iam request
     pl->authorization.discard_request(authReq);
-    nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+    nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
     nabto_coap_server_request_free(request);
 }
 
@@ -204,14 +204,14 @@ void get_service_iam(bool allow, void* userData1, void* userData2, void* userDat
     struct nabto_coap_server_request* request = userData2;
 
     if (!allow) {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,03), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(4,03)), NULL);
         nabto_coap_server_request_free(request);
         return;
     }
 
     struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, nabto_coap_server_request_get_parameter(request, "id"));
     if (service == NULL) {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(4,04), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(4,04)), NULL);
         nabto_coap_server_request_free(request);
         return;
     }
@@ -219,18 +219,18 @@ void get_service_iam(bool allow, void* userData1, void* userData2, void* userDat
     size_t bufferSize = encode_service(service, NULL, 0);
     uint8_t* buffer = malloc(bufferSize);
     if (buffer == NULL) {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
         nabto_coap_server_request_free(request);
         return;
     }
 
     encode_service(service, buffer, bufferSize);
 
-    nabto_coap_server_response_set_code(request, NABTO_COAP_CODE(2,05));
+    nabto_coap_server_response_set_code(request, (nabto_coap_code)(NABTO_COAP_CODE(2,05)));
     nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
     nabto_coap_error err = nabto_coap_server_response_set_payload(request, buffer, bufferSize);
     if (err != NABTO_COAP_ERROR_OK) {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), NULL);
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
     } else {
         nabto_coap_server_response_ready(request);
     }

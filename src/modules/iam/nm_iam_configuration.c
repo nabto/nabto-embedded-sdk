@@ -125,7 +125,7 @@ struct nm_iam_role* nm_iam_configuration_role_new(const char* name)
 
 void nm_iam_configuration_role_free(struct nm_iam_role* role)
 {
-    return nm_iam_role_free(role);
+    nm_iam_role_free(role);
 }
 
 bool nm_iam_configuration_role_add_policy(struct nm_iam_role* role, const char* policy)

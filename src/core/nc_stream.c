@@ -28,28 +28,6 @@ void nc_stream_free_send_segment(struct nabto_stream_send_segment* segment, void
 struct nabto_stream_recv_segment* nc_stream_alloc_recv_segment(size_t bufferSize, void* userData);
 void nc_stream_free_recv_segment(struct nabto_stream_recv_segment* segment, void* userData);
 
-
-void nc_stream_log(const char* file, int line, enum nabto_stream_log_level level, const char* fmt, va_list args, void* userData)
-{
-    switch(level) {
-        case NABTO_STREAM_LOG_LEVEL_INFO:
-            np_log.log(NABTO_LOG_SEVERITY_INFO, LOG, line, file, fmt, args);
-            break;
-        case NABTO_STREAM_LOG_LEVEL_TRACE:
-            np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
-            break;
-        case NABTO_STREAM_LOG_LEVEL_DEBUG:
-            np_log.log(NABTO_LOG_SEVERITY_TRACE, LOG, line, file, fmt, args);
-            break;
-        case NABTO_STREAM_LOG_LEVEL_ERROR:
-            np_log.log(NABTO_LOG_SEVERITY_ERROR, LOG, line, file, fmt, args);
-            break;
-        default:
-            np_log.log(NABTO_LOG_SEVERITY_ERROR, LOG, line, file, fmt, args);
-            break;
-    }
-}
-
 np_error_code nc_stream_status_to_ec(nabto_stream_status status)
 {
     switch(status) {
@@ -67,10 +45,10 @@ uint32_t nc_stream_get_stamp(void* userData)
     return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef)
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger)
 {
     nc_stream_module.get_stamp = &nc_stream_get_stamp;
-    nc_stream_module.log = &nc_stream_log;
+    nc_stream_module.logger = logger;
     nc_stream_module.alloc_send_segment = &nc_stream_alloc_send_segment;
     nc_stream_module.free_send_segment = &nc_stream_free_send_segment;
     nc_stream_module.alloc_recv_segment = &nc_stream_alloc_recv_segment;
