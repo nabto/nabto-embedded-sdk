@@ -14,22 +14,8 @@
 #include <stdio.h>
 #include <signal.h>
 
-const char* rootCert =
-    "-----BEGIN CERTIFICATE-----\n"
-    "MIIBpTCCAUqgAwIBAgIUev5miQGPmjlHmisQJ5iYiq+Lf0kwCgYIKoZIzj0EAwIw\n"
-    "MDELMAkGA1UEBhMCREsxDTALBgNVBAoMBFRlc3QxEjAQBgNVBAMMCVRlc3QgUm9v\n"
-    "dDAeFw0yMDA2MjAwMDAwMDBaFw00OTEyMzEyMzU5NTlaMDAxCzAJBgNVBAYTAkRL\n"
-    "MQ0wCwYDVQQKDARUZXN0MRIwEAYDVQQDDAlUZXN0IFJvb3QwWTATBgcqhkjOPQIB\n"
-    "BggqhkjOPQMBBwNCAATWs9bVLhO8o+42UrDFZocbMjvt20ODDwjxjC5/lSKo8KU6\n"
-    "yPcBsI6IMg+CfMfQpza7V5m9c/mHXw1r8iiOrizio0IwQDAdBgNVHQ4EFgQUcqIP\n"
-    "gyPbvPkv4JCNZ/Al3yXTvI4wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC\n"
-    "AYYwCgYIKoZIzj0EAwIDSQAwRgIhAKjXktlBZjxURdyDvlvPUn73cNz8MOTs7wl3\n"
-    "ogsvei0AAiEA4r6s8iI6b37agG6zXsPKXwjTw3jS4acs1feiZ4Vo1NE=\n"
-    "-----END CERTIFICATE-----\n";
-
-const char* projectId = "edge-push-guide-example";
-// Working token for edge-push-guide-example
-const char* notification = "{\"message\": { \"notification\": { \"title\": \"Hello\", \"body\": \"World\" }, \"token\": \"fDD8WUAQRn2PxfC1vxvHCt:APA91bGP0RIxSGGDQroOte6XsKAteuyDvw5CwZyyaK0JRdElvBivAFBqiVjyfjUzmSS_Ekq68sNNeK7swED9Wn8qn-1OYcKuc49Jq0y6AcJ1UVjjzR23EHqXt9RVcfOGszMlp2pqBZIa\" } }";
+const char* projectId = "<INSERT_PROJECT_ID>";
+const char* notification = "{\"message\": { \"notification\": { \"title\": \"Hello\", \"body\": \"World\" }, \"token\": \"<INSERT_TOKEN>\" } }";
 
 const char* keyFile = "device.key";
 
@@ -185,10 +171,6 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
     {
         return false;
     }
-
-    nabto_device_set_server_url(device, "localhost.nabto.net");
-    nabto_device_set_server_port(device, 4433);
-    nabto_device_set_root_certs(device, rootCert);
 
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_start(device, fut);
