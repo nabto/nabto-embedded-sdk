@@ -156,6 +156,21 @@ bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* passwo
     return nm_iam_user_set_password(user, password);
 }
 
+bool nm_iam_state_user_set_fcm_token(struct nm_iam_user* user, const char* token)
+{
+    return nm_iam_user_set_fcm_token(user, token);
+}
+
+bool nm_iam_state_user_set_fcm_project_id(struct nm_iam_user* user, const char* id)
+{
+    return nm_iam_user_set_fcm_project_id(user, id);
+}
+
+bool nm_iam_state_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories)
+{
+    return nm_iam_user_set_notification_categories(user, categories);
+}
+
 struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
 {
     struct nm_iam_state* copy = nm_iam_state_new();

@@ -152,6 +152,19 @@ bool nm_iam_state_user_set_sct(struct nm_iam_user* user, const char* sct);
 bool nm_iam_state_user_set_display_name(struct nm_iam_user* user, const char* displayName);
 bool nm_iam_state_user_set_role(struct nm_iam_user* user, const char* roleId);
 bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* password);
+bool nm_iam_state_user_set_fcm_token(struct nm_iam_user* user, const char* token);
+bool nm_iam_state_user_set_fcm_project_id(struct nm_iam_user* user, const char* id);
+
+
+/**
+ * Set notification categories in a user. The contents of the string
+ * set is copied into the string set of the user leaving ownership of
+ * the provided string set to the caller.
+ *
+ * @param user [in]       User to set notification categories in
+ * @param categories [in] Set of categories to copy into the user
+ */
+bool nm_iam_state_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories);
 
 /**
  * Find a user with a given username in a state structure.
