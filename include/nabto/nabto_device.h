@@ -195,7 +195,8 @@ nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
 /**
  * Stop a device. This function blocks until all futures, events and
  * timed events has been handled, and the device core has been
- * stopped.
+ * stopped. After this returns, only calls to free functions are
+ * allowed.
  *
  * @param device [in]   The device instance to free
  */

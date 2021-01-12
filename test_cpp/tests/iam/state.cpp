@@ -93,9 +93,9 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
     BOOST_CHECK(strcmp(state->openPairingRole, dump->openPairingRole) == 0);
     BOOST_CHECK(strcmp(state->initialPairingUsername, dump->initialPairingUsername) == 0);
 
-    BOOST_TEST(nn_llist_size(&state->users) == (size_t)1);
+    BOOST_TEST(nn_llist_size(&dump->users) == (size_t)1);
     void* u;
-    NN_LLIST_FOREACH(u, &state->users) {
+    NN_LLIST_FOREACH(u, &dump->users) {
         struct nm_iam_user* user = (struct nm_iam_user*)u;
         BOOST_CHECK(strcmp(user->username, "username") == 0);
         BOOST_CHECK(strcmp(user->displayName, "Display Name") == 0);
@@ -108,6 +108,86 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat1"));
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat2"));
     }
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
+{
+    NabtoDevice* d = nabto_device_new();
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        nabto_device_set_log_level(d, logLevel);
+        nabto_device_set_log_std_out_callback(d);
+    }
+    struct nm_iam iam;
+    nm_iam_init(&iam, d, NULL);
+
+    struct nm_iam_state* state = nabto::test::initState();
+    BOOST_REQUIRE(nm_iam_load_state(&iam, state));
+
+    BOOST_CHECK(nm_iam_create_user(&iam, "newuser") == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_fingerprint(&iam, "newuser", "fingerprint42") == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_sct(&iam, "newuser", "token42") == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_password(&iam, "newuser", "password42") == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_role(&iam, "newuser", "role42") == NM_IAM_ERROR_NO_SUCH_ROLE);
+    BOOST_CHECK(nm_iam_set_user_display_name(&iam, "newuser", "New Display Name") == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_fcm_token(&iam, "newuser", "fcm_token_42") == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_fcm_project_id(&iam, "newuser", "fcm_project_42") == NM_IAM_ERROR_OK);
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat42");
+    nn_string_set_insert(&cats, "cat43");
+    BOOST_CHECK(nm_iam_set_user_notification_categories(&iam, "newuser", &cats) == NM_IAM_ERROR_OK);
+    nn_string_set_deinit(&cats);
+
+    struct nm_iam_state* dump = nm_iam_dump_state(&iam);
+
+    BOOST_TEST(nn_llist_size(&dump->users) == (size_t)2);
+    void* u;
+    bool found = false;
+    NN_LLIST_FOREACH(u, &dump->users) {
+        struct nm_iam_user* user = (struct nm_iam_user*)u;
+        if (strcmp(user->username, "newuser") == 0) {
+            found = true;
+            BOOST_CHECK(strcmp(user->username, "newuser") == 0);
+            BOOST_CHECK(strcmp(user->displayName, "New Display Name") == 0);
+            BOOST_CHECK(user->role == NULL);
+            BOOST_CHECK(strcmp(user->password, "password42") == 0);
+            BOOST_CHECK(strcmp(user->fingerprint, "fingerprint42") == 0);
+            BOOST_CHECK(strcmp(user->sct, "token42") == 0);
+            BOOST_CHECK(strcmp(user->fcmToken, "fcm_token_42") == 0);
+            BOOST_CHECK(strcmp(user->fcmProjectId, "fcm_project_42") == 0);
+            BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat42"));
+            BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat43"));
+        }
+    }
+    BOOST_CHECK(found);
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+BOOST_AUTO_TEST_CASE(runtime_delete_user, *boost::unit_test::timeout(180))
+{
+    NabtoDevice* d = nabto_device_new();
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        nabto_device_set_log_level(d, logLevel);
+        nabto_device_set_log_std_out_callback(d);
+    }
+    struct nm_iam iam;
+    nm_iam_init(&iam, d, NULL);
+
+    struct nm_iam_state* state = nabto::test::initState();
+    BOOST_REQUIRE(nm_iam_load_state(&iam, state));
+
+    nm_iam_delete_user(&iam, "username");
+
+    struct nm_iam_state* dump = nm_iam_dump_state(&iam);
+
+    BOOST_TEST(nn_llist_size(&dump->users) == (size_t)0);
     nabto_device_stop(d);
     nm_iam_deinit(&iam);
     nabto_device_free(d);

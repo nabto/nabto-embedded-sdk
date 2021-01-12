@@ -185,6 +185,9 @@ enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, 
 enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* username, const char* password);
 enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* role);
 enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName);
+enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token);
+enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id);
+enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories);
 
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username);
 

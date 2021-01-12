@@ -503,6 +503,51 @@ enum nm_iam_error nm_iam_internal_set_user_display_name(struct nm_iam* iam, cons
     return ec;
 }
 
+enum nm_iam_error nm_iam_internal_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_fcm_token(user, token)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_fcm_project_id(user, id)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_notification_categories(user, categories)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
 enum nm_iam_error nm_iam_internal_delete_user(struct nm_iam* iam, const char* username)
 {
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);

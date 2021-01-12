@@ -26,6 +26,9 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     iam->device = device;
     iam->logger = logger;
 
+    iam->state = nm_iam_state_new();
+    iam->conf = nm_iam_configuration_new();
+
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
     nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
 
@@ -188,11 +191,40 @@ enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* u
     return ec;
 }
 
+enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_fcm_token(iam, username, token);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_fcm_project_id(iam, username, id);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_notification_categories(iam, username, categories);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+
+
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username)
 {
     enum nm_iam_error ec;
     nm_iam_lock(iam);
     ec = nm_iam_internal_delete_user(iam, username);
     nm_iam_unlock(iam);
-    return ec;   
+    return ec;
 }
