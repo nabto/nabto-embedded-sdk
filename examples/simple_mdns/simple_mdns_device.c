@@ -46,7 +46,10 @@ int main(int argc, char* argv[]) {
         die("Allocation error");
     }
 
-    if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
+    char *key;
+    if (nabto_device_create_private_key(device, &key) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_private_key(device, key) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_log_level(device, "trace") != NABTO_DEVICE_EC_OK ||
         nabto_device_set_local_port(device, 5592) != NABTO_DEVICE_EC_OK ||
@@ -55,6 +58,7 @@ int main(int argc, char* argv[]) {
         nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
         nabto_device_mdns_add_subtype(device, subType) != NABTO_DEVICE_EC_OK ||
         nabto_device_mdns_add_txt_item(device, txtKey, txtVal) != NABTO_DEVICE_EC_OK)
+
     {
         die("Device setup error");
     }
@@ -63,10 +67,16 @@ int main(int argc, char* argv[]) {
     nabto_device_start(device, fut);
 
     NabtoDeviceError ec = nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
     if (ec != NABTO_DEVICE_EC_OK) {
         die("Start failed");
     }
+
+    printf("Device is now mDNS discoverable, press enter to cleanly stop.\n");
+    getchar();
+
+    nabto_device_stop(device);
+    nabto_device_free(device);
+    nabto_device_future_free(fut);
 
     printf("Device cleaned up and closing\n");
     return 0;
