@@ -1,4 +1,5 @@
 set(src
+  ${ne_iam_src}
   simple_push_device.c
   )
 

@@ -109,6 +109,7 @@ nabto_device_disable_remote_access(NabtoDevice* device);
  * See .... for further explanation
  */
 
+// TODO: document if this object can be reused or must be reallocated for each notification
 /**
  * FCM Notification. This is an object holding the FCM notification request and
  * after the basestation api has been invoked the response from the invocation
@@ -156,7 +157,7 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
  *   NABTO_DEVICE_EC_OK if the notification is delivered to FCM, but not
  *   neccessarily has been processed by fcm. see the response status code and
  *   response body for the actual status of the notification.
- * 
+ *
  *   NABTO_DEVICE_EC_STOPPED if the operation is stopped.
  *   NABTO_DEVICE_EC_NOT_ATTACHED  if the device is currently not attached to the basestation.
  *   NABTO_DEVICE_EC_INVALID_STATE  if vital data is missing e.g. the project id or the body of the notification.
@@ -187,9 +188,11 @@ NABTO_DEVICE_DECL_PREFIX uint16_t NABTO_DEVICE_API
 nabto_device_fcm_notification_get_response_status_code(NabtoDeviceFcmNotification* notification);
 
 /**
- * Get the response body of the request to fcm. If an error occured this will
- * contain the description. If the send went ok the body will contain a name
- * which is the id of the sent message.
+ * Get the response body of the request to fcm. If an error occured
+ * this will contain the description. If the send went ok the body
+ * will contain a name which is the id of the sent message. The
+ * returned string is valid for the lifetime of the notification
+ * object.
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* notification);
