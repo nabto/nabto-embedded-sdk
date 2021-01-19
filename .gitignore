@@ -9,3 +9,4 @@ _*
 callgrind*
 perf.data*
 device.key
+simple_push_state.json

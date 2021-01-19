@@ -26,7 +26,10 @@ const char* stateFile = "simple_push_state.json";
 
 const char* userPushPath[] = { "push", "{username}", NULL };
 const char* helloWorld = "Hello world";
-enum nn_log_severity logLevel = 0;
+
+//const char* server = "pr-bqyh43fb.devices.dev.nabto.net";
+
+enum nn_log_severity logLevel = NN_LOG_SEVERITY_TRACE;
 
 struct context {
     NabtoDeviceCoapRequest* request;
@@ -206,11 +209,11 @@ void read_push_trigger(NabtoDevice* device, struct nm_iam* iam)
         }
         scanf("%c", &cat);
         if (cat == 'i') {
-            send_notification_to_category(device, iam, "info");
+            send_notification_to_category(device, iam, "Info");
         } else if (cat == 'w') {
-            send_notification_to_category(device, iam, "warn");
+            send_notification_to_category(device, iam, "Warn");
         } else if (cat == 'a') {
-            send_notification_to_category(device, iam, "alert");
+            send_notification_to_category(device, iam, "Alert");
         } else if (cat == 'q') {
             return;
         } else if (cat != '\n') {
@@ -313,10 +316,13 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
 
     if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK)
+        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
+        nabto_device_mdns_add_subtype(device, "simplepush") != NABTO_DEVICE_EC_OK)
     {
         return false;
     }
+
+    //nabto_device_set_server_url(device, server);
 
     char* envLogLevel = getenv("NABTO_LOG_LEVEL");
     if (envLogLevel) {
