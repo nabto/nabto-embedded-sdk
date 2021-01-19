@@ -57,7 +57,8 @@ int main(int argc, char* argv[]) {
         // mDNS specifics:
         nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
         nabto_device_mdns_add_subtype(device, subType) != NABTO_DEVICE_EC_OK ||
-        nabto_device_mdns_add_txt_item(device, txtKey, txtVal) != NABTO_DEVICE_EC_OK)
+        nabto_device_mdns_add_txt_item(device, txtKey, txtVal) != NABTO_DEVICE_EC_OK ||
+        nabto_device_mdns_add_txt_item(device, "nabto_version", nabto_device_version()) != NABTO_DEVICE_EC_OK)
 
     {
         die("Device setup error");
@@ -74,6 +75,7 @@ int main(int argc, char* argv[]) {
     printf("Device is now mDNS discoverable, press enter to cleanly stop.\n");
     getchar();
 
+    nabto_device_string_free(key);
     nabto_device_stop(device);
     nabto_device_free(device);
     nabto_device_future_free(fut);
