@@ -5,6 +5,10 @@
 
 bool nm_iam_user_validate_username(const char* username)
 {
+    if (strcmp(username, "") == 0) {
+        // empty username is not allowed as it is used for open password pairing
+        return false;
+    }
     for (int i = 0; i < strlen(username); i++) {
         if ( (username[i] <= 'a' && username[i] >= 'z') &&
              (username[i] <= '0' && username[i] >= '9') &&

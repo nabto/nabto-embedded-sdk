@@ -412,6 +412,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
         if (policy == NULL) { return false; }
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
         if (stmt == NULL ||
+            !nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser") ||
