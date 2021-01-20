@@ -169,6 +169,26 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     nabto_device_free(d);
 }
 
+BOOST_AUTO_TEST_CASE(empty_username_is_invalid, *boost::unit_test::timeout(180))
+{
+    NabtoDevice* d = nabto_device_new();
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        nabto_device_set_log_level(d, logLevel);
+        nabto_device_set_log_std_out_callback(d);
+    }
+    struct nm_iam iam;
+    nm_iam_init(&iam, d, NULL);
+
+    struct nm_iam_state* state = nabto::test::initState();
+    BOOST_REQUIRE(nm_iam_load_state(&iam, state));
+
+    BOOST_CHECK(nm_iam_create_user(&iam, "") == NM_IAM_ERROR_INTERNAL);
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
 BOOST_AUTO_TEST_CASE(runtime_delete_user, *boost::unit_test::timeout(180))
 {
     NabtoDevice* d = nabto_device_new();
