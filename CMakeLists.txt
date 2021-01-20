@@ -188,15 +188,16 @@ endif()
 
 if (DEVICE_BUILD_EXAMPLES)
   if (NOT WIN32)
-  
+
     add_subdirectory(platform_integration_example)
   endif()
   add_subdirectory(examples/heat_pump)
   add_subdirectory(examples/simple_stream)
   add_subdirectory(examples/futures)
   add_subdirectory(examples/simple_coap)
+  add_subdirectory(examples/simple_mdns)
   add_subdirectory(examples/simple_tunnel)
-    
+
   add_subdirectory(platform_integration_stub)
 #  add_subdirectory(platform_integration_guide)
 endif()
