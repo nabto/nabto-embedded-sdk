@@ -44,15 +44,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
     nn_string_map_deinit(&attributes);
 
-    struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
-    if (user == NULL) {
+    enum nm_iam_error err = nm_iam_internal_set_user_notification_categories(handler->iam, username, &categories);
+    if (err == NM_IAM_ERROR_NO_SUCH_USER) {
         nabto_device_coap_error_response(request, 404, NULL);
-    } else if (!nm_iam_user_set_notification_categories(user, &categories)) {
-        nabto_device_coap_error_response(request, 500, "Insufficient resources");
-    } else {
-        nm_iam_internal_state_has_changed(handler->iam);
+    } else if (err == NM_IAM_ERROR_OK) {
         nabto_device_coap_response_set_code(request, 204);
         nabto_device_coap_response_ready(request);
+    } else {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
     }
     nn_string_set_deinit(&categories);
 }

@@ -79,6 +79,12 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
     nm_iam_init(&iam, d, NULL);
 
     struct nm_iam_state* state = nabto::test::initState();
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat1");
+    nn_string_set_insert(&cats, "cat2");
+    BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
+    nn_string_set_deinit(&cats);
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));
     struct nm_iam_state* dump = nm_iam_dump_state(&iam);
 
@@ -125,6 +131,15 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     struct nm_iam iam;
     nm_iam_init(&iam, d, NULL);
 
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat1");
+    nn_string_set_insert(&cats, "cat2");
+    nn_string_set_insert(&cats, "cat42");
+    nn_string_set_insert(&cats, "cat43");
+    BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
+    nn_string_set_deinit(&cats);
+
     struct nm_iam_state* state = nabto::test::initState();
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));
 
@@ -136,7 +151,6 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     BOOST_CHECK(nm_iam_set_user_display_name(&iam, "newuser", "New Display Name") == NM_IAM_ERROR_OK);
     BOOST_CHECK(nm_iam_set_user_fcm_token(&iam, "newuser", "fcm_token_42") == NM_IAM_ERROR_OK);
     BOOST_CHECK(nm_iam_set_user_fcm_project_id(&iam, "newuser", "fcm_project_42") == NM_IAM_ERROR_OK);
-    struct nn_string_set cats;
     nn_string_set_init(&cats);
     nn_string_set_insert(&cats, "cat42");
     nn_string_set_insert(&cats, "cat43");
@@ -182,6 +196,13 @@ BOOST_AUTO_TEST_CASE(empty_username_is_invalid, *boost::unit_test::timeout(180))
     struct nm_iam iam;
     nm_iam_init(&iam, d, NULL);
 
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat1");
+    nn_string_set_insert(&cats, "cat2");
+    BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
+    nn_string_set_deinit(&cats);
+
     struct nm_iam_state* state = nabto::test::initState();
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));
 
@@ -201,6 +222,13 @@ BOOST_AUTO_TEST_CASE(username_is_invalid, *boost::unit_test::timeout(180))
     }
     struct nm_iam iam;
     nm_iam_init(&iam, d, NULL);
+
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat1");
+    nn_string_set_insert(&cats, "cat2");
+    BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
+    nn_string_set_deinit(&cats);
 
     struct nm_iam_state* state = nabto::test::initState();
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));
@@ -223,6 +251,13 @@ BOOST_AUTO_TEST_CASE(runtime_delete_user, *boost::unit_test::timeout(180))
     }
     struct nm_iam iam;
     nm_iam_init(&iam, d, NULL);
+
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat1");
+    nn_string_set_insert(&cats, "cat2");
+    BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
+    nn_string_set_deinit(&cats);
 
     struct nm_iam_state* state = nabto::test::initState();
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));

@@ -303,6 +303,13 @@ bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
     nabto_device_add_server_connect_token(iam->device, iam->state->passwordOpenSct);
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users) {
+        const char* s;
+        NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
+            if (!nn_string_set_contains(&iam->notificationCategories, s)) {
+                iam->state = nm_iam_state_new();
+                return false;
+            }
+        }
         nabto_device_add_server_connect_token(iam->device, user->sct);
     }
 
@@ -538,6 +545,13 @@ enum nm_iam_error nm_iam_internal_set_user_notification_categories(struct nm_iam
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    const char* s;
+    NN_STRING_SET_FOREACH(s, categories) {
+        if (!nn_string_set_contains(&iam->notificationCategories, s)) {
+            return NM_IAM_ERROR_NO_SUCH_CATEGORY;
+        }
     }
 
     enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;

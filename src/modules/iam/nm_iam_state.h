@@ -157,7 +157,10 @@ bool nm_iam_state_user_set_fcm_project_id(struct nm_iam_user* user, const char* 
 
 
 /**
- * Set notification categories in a user. The contents of the string
+ * Set notification categories in a user. Categories set on a user
+ * must exist in the IAM module, since this function only builds the
+ * state structure, setting an invalid category will not fail untill
+ * the state is loaded into the IAM module. The contents of the string
  * set is copied into the string set of the user leaving ownership of
  * the provided string set to the caller.
  *
