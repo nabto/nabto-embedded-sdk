@@ -108,6 +108,7 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat1"));
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat2"));
     }
+    nm_iam_state_free(dump);
     nabto_device_stop(d);
     nm_iam_deinit(&iam);
     nabto_device_free(d);
@@ -166,6 +167,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     BOOST_CHECK(found);
     nabto_device_stop(d);
     nm_iam_deinit(&iam);
+    nm_iam_state_free(dump);
     nabto_device_free(d);
 }
 
@@ -232,6 +234,7 @@ BOOST_AUTO_TEST_CASE(runtime_delete_user, *boost::unit_test::timeout(180))
     BOOST_TEST(nn_llist_size(&dump->users) == (size_t)0);
     nabto_device_stop(d);
     nm_iam_deinit(&iam);
+    nm_iam_state_free(dump);
     nabto_device_free(d);
 }
 

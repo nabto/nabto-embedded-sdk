@@ -89,6 +89,7 @@ struct nm_iam {
     struct nm_iam_change_callback changeCallback;
     struct nm_iam_configuration* conf;
     struct nm_iam_state* state;
+    struct nn_string_set notificationCategories;
 
     // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
     bool stateHasChanged;
@@ -154,6 +155,18 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
  * Dump a copy of the state
  */
 struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
+
+/**
+ * Set the list of notification categories users can subscribe
+ * to. Trying to set a notification category that is not included in
+ * this set will result in an error. The categories are copied into
+ * IAM.
+ *
+ * @param iam [in]        IAM module to set categories in
+ * @param categories [in] Set of notification categories to set
+ * @return NM_IAM_ERROR_OK if the categories was set.
+ */
+enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct nn_string_set* categories);
 
 /**
  * Check if the given connection has access to do the given action

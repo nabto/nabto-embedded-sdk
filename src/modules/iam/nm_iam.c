@@ -28,6 +28,7 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 
     iam->state = nm_iam_state_new();
     iam->conf = nm_iam_configuration_new();
+    nn_string_set_init(&iam->notificationCategories);
 
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
     nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
@@ -45,6 +46,7 @@ void nm_iam_deinit(struct nm_iam* iam)
 
     nm_iam_state_free(iam->state);
     nm_iam_configuration_free(iam->conf);
+    nn_string_set_deinit(&iam->notificationCategories);
     nm_iam_unlock(iam);
 
     nabto_device_threads_free_mutex(iam->mutex);
@@ -103,6 +105,23 @@ struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam)
     nm_iam_unlock(iam);
     return copy;
 }
+
+enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct nn_string_set* categories)
+{
+    nm_iam_lock(iam);
+    nn_string_set_clear(&iam->notificationCategories);
+    const char* s;
+    NN_STRING_SET_FOREACH(s, categories) {
+        if (!nn_string_set_insert(&iam->notificationCategories, s)) {
+            nn_string_set_clear(&iam->notificationCategories);
+            nm_iam_unlock(iam);
+            return NM_IAM_ERROR_INTERNAL;
+        }
+    }
+    nm_iam_unlock(iam);
+    return NM_IAM_ERROR_OK;
+}
+
 
 /**
  * Enable/disalbe open pairing.
