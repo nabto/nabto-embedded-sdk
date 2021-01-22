@@ -387,6 +387,14 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
     iamLogger_->logPrint = &iam_logger;
     nm_iam_init(iam, device, iamLogger_);
 
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "Info");
+    nn_string_set_insert(&cats, "Warn");
+    nn_string_set_insert(&cats, "Alert");
+    if(nm_iam_set_notification_categories(iam, &cats) != NM_IAM_ERROR_OK) { return false; }
+    nn_string_set_deinit(&cats);
+
     struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
     if (iamConfig == NULL) { return false; }
 
