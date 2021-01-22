@@ -40,6 +40,8 @@ NabtoDeviceError nm_iam_pairing_password_invite_init(struct nm_iam_coap_handler*
 NabtoDeviceError nm_iam_pairing_local_open_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_pairing_local_initial_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
+NabtoDeviceError nm_iam_get_notification_categories_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
+
 NabtoDeviceError nm_iam_list_users_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_get_me_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 NabtoDeviceError nm_iam_get_user_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);

@@ -325,6 +325,8 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
     nm_iam_pairing_local_open_init(&iam->coapPairingLocalOpenPostHandler, iam->device, iam);
     nm_iam_pairing_local_initial_init(&iam->coapPairingLocalInitialPostHandler, iam->device, iam);
 
+    nm_iam_get_notification_categories_init(&iam->coapIamNotificationCategoriesGetHandler, iam->device, iam);
+
     nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
@@ -352,6 +354,8 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalOpenPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalInitialPostHandler);
 
+    nm_iam_coap_handler_deinit(&iam->coapIamNotificationCategoriesGetHandler);
+
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserGetHandler);
@@ -378,6 +382,8 @@ void nm_iam_internal_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapPairingPasswordInvitePostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingLocalOpenPostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingLocalInitialPostHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamNotificationCategoriesGetHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
