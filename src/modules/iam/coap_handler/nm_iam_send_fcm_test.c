@@ -7,12 +7,15 @@
 
 #include <cbor.h>
 
-const char* noti1 = "{\"message\": { \"notification\": { \"title\": \"Test notification\", \"body\": \"Notifications are working\" }, \"token\": \"";
-const char* noti2 = "\" } }";
+static const char* LOGM = "iam";
+
+static const char* noti1 = "{\"message\": { \"notification\": { \"title\": \"Test notification\", \"body\": \"Notifications are working\" }, \"token\": \"";
+static const char* noti2 = "\" } }";
 
 struct nm_iam_fcm_ctx {
     NabtoDeviceCoapRequest* req;
     NabtoDeviceFcmNotification* msg;
+    struct nm_iam_coap_handler* handler;
 };
 
 
@@ -21,7 +24,9 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 NabtoDeviceError nm_iam_send_fcm_test_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
     const char* paths[] = { "iam", "fcm-push", "{user}", NULL };
-    return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_POST, paths, &handle_request);
+    NabtoDeviceError ec = nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_POST, paths, &handle_request);
+    nm_iam_coap_handler_set_async(handler, true);
+    return ec;
 }
 
 size_t encode_response(struct nm_iam_fcm_ctx* ctx, void* buffer, size_t bufferSize)
@@ -46,9 +51,9 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     if (ec != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(ctx->req, 503, "Failed to send to basestation");
         nabto_device_fcm_notification_free(ctx->msg);
-        nabto_device_coap_request_free(ctx->req);
         free(ctx);
         nabto_device_future_free(fut);
+        nm_iam_coap_handler_async_request_end(ctx->handler);
         return;
     }
 
@@ -57,9 +62,9 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     if (payload == NULL) {
         nabto_device_coap_error_response(ctx->req, 500, "Insufficient resources");
         nabto_device_fcm_notification_free(ctx->msg);
-        nabto_device_coap_request_free(ctx->req);
         free(ctx);
         nabto_device_future_free(fut);
+        nm_iam_coap_handler_async_request_end(ctx->handler);
         return;
     }
 
@@ -75,19 +80,20 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     }
     free(payload);
     nabto_device_fcm_notification_free(ctx->msg);
-    nabto_device_coap_request_free(ctx->req);
     free(ctx);
     nabto_device_future_free(fut);
-
+    nm_iam_coap_handler_async_request_end(ctx->handler);
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
+    NN_LOG_INFO(handler->iam->logger, LOGM, "Handling fcm send request");
     CborParser parser;
     CborValue value;
     const char* username = nabto_device_coap_request_get_parameter(request, "user");
     if (username == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        nm_iam_coap_handler_async_request_end(handler);
         return;
     }
 
@@ -98,6 +104,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SendFcmPush", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         nn_string_map_deinit(&attributes);
+        nm_iam_coap_handler_async_request_end(handler);
         return;
     }
     nn_string_map_deinit(&attributes);
@@ -105,11 +112,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, "No such user");
+        nm_iam_coap_handler_async_request_end(handler);
         return;
     }
 
     if (user->fcmToken == NULL || user->fcmProjectId == NULL) {
         nabto_device_coap_error_response(request, 404, "User FCM config not found");
+        nm_iam_coap_handler_async_request_end(handler);
         return;
     }
 
@@ -120,20 +129,25 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         (payload = calloc(1, strlen(noti1) + strlen(noti2) + strlen(user->fcmToken))) == NULL ||
         (ctx->msg = nabto_device_fcm_notification_new(handler->iam->device)) == NULL)
     {
+        NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc. ctx: %p, payload: %p, ctx->msg: %p", ctx, payload, ctx->msg);
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         free(ctx);
         free(payload);
+        nm_iam_coap_handler_async_request_end(handler);
         return;
     }
 
     ctx->req = request;
+    ctx->handler = handler;
 
     NabtoDeviceFuture* fut = nabto_device_future_new(handler->iam->device);
     if (fut == NULL) {
         nabto_device_fcm_notification_free(ctx->msg);
         free(ctx);
         free(payload);
+        NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc future");
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        nm_iam_coap_handler_async_request_end(handler);
         return;
     }
 
@@ -149,7 +163,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_fcm_notification_free(ctx->msg);
         free(ctx);
         nabto_device_future_free(fut);
+        NN_LOG_INFO(handler->iam->logger, LOGM, "failed to set payload or project ID");
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        nm_iam_coap_handler_async_request_end(handler);
         return;
     }
     free(payload);

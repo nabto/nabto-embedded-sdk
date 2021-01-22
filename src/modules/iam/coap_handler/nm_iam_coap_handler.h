@@ -20,6 +20,9 @@ struct nm_iam_coap_handler {
     NabtoDeviceListener* listener;
     NabtoDeviceCoapRequest* request;
     nm_iam_coap_request_handler requestHandler;
+    bool async;
+    bool asyncStopped;
+    bool locked;
 };
 
 NabtoDeviceError nm_iam_coap_handler_init(
@@ -29,6 +32,9 @@ NabtoDeviceError nm_iam_coap_handler_init(
     NabtoDeviceCoapMethod method,
     const char** paths,
     nm_iam_coap_request_handler requestHandler);
+
+void nm_iam_coap_handler_set_async(struct nm_iam_coap_handler* handler, bool async);
+void nm_iam_coap_handler_async_request_end(struct nm_iam_coap_handler* handler);
 
 void nm_iam_coap_handler_stop(struct nm_iam_coap_handler* handler);
 void nm_iam_coap_handler_deinit(struct nm_iam_coap_handler* handler);

@@ -73,8 +73,29 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     } else {
         struct nm_iam* iam = handler->iam;
         nabto_device_threads_mutex_lock(iam->mutex);
+        handler->asyncStopped = false;
+        handler->locked = true;
         handler->requestHandler(handler, handler->request);
+        handler->locked = false;
         nabto_device_threads_mutex_unlock(iam->mutex);
+        if (!handler->async || handler->asyncStopped) {
+            nabto_device_coap_request_free(handler->request);
+            nm_iam_internal_do_callbacks(handler->iam);
+            start_listen(handler);
+        }
+    }
+}
+
+void nm_iam_coap_handler_set_async(struct nm_iam_coap_handler* handler, bool async)
+{
+    handler->async = async;
+}
+
+void nm_iam_coap_handler_async_request_end(struct nm_iam_coap_handler* handler)
+{
+    if (handler->locked) {
+        handler->asyncStopped = true;
+    } else {
         nabto_device_coap_request_free(handler->request);
         nm_iam_internal_do_callbacks(handler->iam);
         start_listen(handler);
