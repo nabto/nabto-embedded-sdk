@@ -197,36 +197,6 @@ nabto_device_fcm_notification_get_response_status_code(NabtoDeviceFcmNotificatio
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* notification);
 
-/**
- * FCM Last will and testament. This allows registration of some notifications
- * which will be fulfilled by the basestation in the case where a device goes
- * unexpected offline. An example of such notification is "Your alarm system has
- * lost the internet connection". The concept LWT comes from MQTT and is not a
- * feature which is built into firebase, but a feature Nabto provides.
- *
- * This feature is implemented such that when nabto_device_fcm_lwt_add is called
- * the basestation invokes the firebase api with  "validate_only": true, this
- * validates the message structure and registration tokens. When a device later
- * goes offline in some unintended way, the LWT notifications which is stored in
- * the basestation is sent.
- */
-
-/**
- * Reset the list of Lwts in the basestation
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_fcm_lwt_reset(NabtoDevice* device, NabtoDeviceFuture* future);
-
-/**
- * Add a LWT notification.
- *
- * Nearly same semantics as nabto_device_fcm_send except that the message is
- * saved in the basestation such that it can be sent at a later time.
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_fcm_lwt_add(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
-
-
 #ifdef __cplusplus
 } // extern c
 #endif
