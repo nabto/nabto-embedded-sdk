@@ -88,10 +88,8 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NN_LOG_INFO(handler->iam->logger, LOGM, "Handling fcm send request");
-    CborParser parser;
-    CborValue value;
     const char* username = nabto_device_coap_request_get_parameter(request, "user");
-    if (username == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
+    if (username == NULL) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         nm_iam_coap_handler_async_request_end(handler);
         return;

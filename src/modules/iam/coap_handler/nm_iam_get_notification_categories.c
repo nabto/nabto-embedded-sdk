@@ -31,7 +31,7 @@ static size_t encode_categories(struct nm_iam* iam, void* buffer, size_t bufferS
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:GetNotificationCategories", NULL)) {
+    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:ListNotificationCategories", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }

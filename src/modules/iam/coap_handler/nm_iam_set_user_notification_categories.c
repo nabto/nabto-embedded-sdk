@@ -50,6 +50,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     } else if (err == NM_IAM_ERROR_OK) {
         nabto_device_coap_response_set_code(request, 204);
         nabto_device_coap_response_ready(request);
+    } else if (err == NM_IAM_ERROR_NO_SUCH_CATEGORY) {
+        nabto_device_coap_error_response(request, 400, "One or more categories are invalid");
     } else {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
     }

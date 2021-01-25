@@ -422,6 +422,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
         if (stmt == NULL ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:GetPairing") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers") ||
+            !nm_iam_configuration_statement_add_action(stmt, "IAM:ListNotificationCategories") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:GetUser") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:DeleteUser") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserRole") ||
@@ -435,6 +436,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
             !nm_iam_configuration_statement_add_action(stmt, "IAM:CreateUser") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles") ||
             !nm_iam_configuration_statement_add_action(stmt, "Push:Send") ||
+            !nm_iam_configuration_statement_add_action(stmt, "IAM:SendFcmPush") ||
             !nm_iam_configuration_add_policy(iamConfig, policy))
         { return false; }
     }
