@@ -436,7 +436,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
             !nm_iam_configuration_statement_add_action(stmt, "IAM:CreateUser") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles") ||
             !nm_iam_configuration_statement_add_action(stmt, "Push:Send") ||
-            !nm_iam_configuration_statement_add_action(stmt, "IAM:SendFcmPush") ||
+            !nm_iam_configuration_statement_add_action(stmt, "IAM:SendUserFcmTest") ||
             !nm_iam_configuration_add_policy(iamConfig, policy))
         { return false; }
     }
