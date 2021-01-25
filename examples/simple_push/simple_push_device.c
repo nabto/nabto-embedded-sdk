@@ -314,7 +314,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
             !nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserSct") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserPassword") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserNotificationCategories") ||
-            !nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserFcmToken") ||
+            !nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserFcm") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:CreateUser") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:SendUserFcmTest") ||

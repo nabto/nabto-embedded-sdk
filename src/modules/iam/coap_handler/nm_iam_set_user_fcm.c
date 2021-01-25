@@ -58,7 +58,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nn_string_map_init(&attributes);
     nn_string_map_insert(&attributes, "IAM:Username", username);
 
-    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserFcmToken", &attributes)) {
+    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserFcm", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         nn_string_map_deinit(&attributes);
         return;
