@@ -24,28 +24,15 @@ const char* notification = "{\"message\": { \"notification\": { \"title\": \"Hel
 const char* keyFile = "device.key";
 const char* stateFile = "simple_push_state.json";
 
-const char* userPushPath[] = { "push", "{username}", NULL };
-const char* helloWorld = "Hello world";
-
-//const char* server = "pr-bqyh43fb.devices.dev.nabto.net";
 
 enum nn_log_severity logLevel = NN_LOG_SEVERITY_TRACE;
 
-struct context {
-    NabtoDeviceCoapRequest* request;
-    NabtoDeviceListener* listener;
-    struct nm_iam* iam;
-    NabtoDeviceFcmNotification* notification;
-};
-
-void username_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
-void username_push_resolved(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 void send_notification_to_category(NabtoDevice* device, struct nm_iam* iam, const char* category);
 void read_push_trigger(NabtoDevice* device, struct nm_iam* iam);
 bool build_fcm_for_user(NabtoDevice* device, NabtoDeviceFcmNotification* fcm, struct nm_iam_user* user, const char* title, const char* body);
 bool start_device(NabtoDevice* device, const char* productId, const char* deviceId, struct nm_iam* iam);
 bool setup_iam(NabtoDevice* device, struct nm_iam* iam);
-void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg);
+void handle_device_error(NabtoDevice* d, char* msg);
 void iam_logger(void* data, enum nn_log_severity severity, const char* module,
                 const char* file, int line,
                 const char* fmt, va_list args);
@@ -65,43 +52,22 @@ int main(int argc, char* argv[]) {
     char* deviceId = argv[2];
 
     struct nm_iam iam;
-    struct context coapCtx;
-
-    coapCtx.iam = &iam;
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
     if ((device_ = nabto_device_new()) == NULL) {
-        handle_device_error(NULL, NULL, "Failed to allocate device");
+        handle_device_error(NULL, "Failed to allocate device");
         return -1;
     }
 
     if (!start_device(device_, productId, deviceId, &iam)) {
-        handle_device_error(device_, NULL, "Failed to start device");
+        handle_device_error(device_, "Failed to start device");
         return -1;
     }
-
-    if ((coapCtx.listener = nabto_device_listener_new(device_)) == NULL ||
-        nabto_device_coap_init_listener(device_, coapCtx.listener,
-                                        NABTO_DEVICE_COAP_POST, userPushPath) != NABTO_DEVICE_EC_OK) {
-        handle_device_error(device_, NULL, "Failed to initialize username push listener");
-        return -1;
-    }
-
-    NabtoDeviceFuture* future = nabto_device_future_new(device_);
-    if (future == NULL) {
-        handle_device_error(device_, coapCtx.listener, "Failed to allocate futures");
-        return -1;
-    }
-
-    nabto_device_listener_new_coap_request(coapCtx.listener, future, &coapCtx.request);
-    nabto_device_future_set_callback(future, &username_request_callback, &coapCtx);
 
     read_push_trigger(device_, &iam);
 
     nabto_device_stop(device_);
-    nabto_device_future_free(future);
-    nabto_device_listener_free(coapCtx.listener);
     nm_iam_deinit(&iam);
     nabto_device_free(device_);
     if (iamLogger_) {
@@ -110,90 +76,6 @@ int main(int argc, char* argv[]) {
     }
 
     printf("Device cleaned up and closing\n");
-}
-
-void username_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
-{
-    struct context* ctx = (struct context*)data;
-    if (ec == NABTO_DEVICE_EC_OK) {
-        if (!nm_iam_check_access(ctx->iam, nabto_device_coap_request_get_connection_ref(ctx->request), "Push:Send", NULL)) {
-            nabto_device_coap_error_response(ctx->request, 403, "Access denied");
-            nabto_device_coap_request_free(ctx->request);
-            nabto_device_listener_new_coap_request(ctx->listener, fut, &(ctx->request));
-            nabto_device_future_set_callback(fut, &username_request_callback, ctx);
-            return;
-        }
-
-        const char* username = nabto_device_coap_request_get_parameter(ctx->request, "username");
-        if (username == NULL) {
-            nabto_device_coap_error_response(ctx->request, 400, "invalid username provided");
-        }
-        struct nm_iam_state* state = nm_iam_dump_state(ctx->iam);
-
-        void* u;
-        NN_LLIST_FOREACH(u, &state->users) {
-            struct nm_iam_user* user = (struct nm_iam_user*)u;
-            if (strcmp(user->username, username) == 0) {
-                ctx->notification = nabto_device_fcm_notification_new(device_);
-                if (build_fcm_for_user(device_, ctx->notification, user, "test", "Send to user test")) {
-                    nabto_device_fcm_send(ctx->notification, fut);
-                    nabto_device_future_set_callback(fut, &username_push_resolved, ctx);
-                    nm_iam_state_free(state);
-                    return;
-                } else {
-                    nabto_device_coap_error_response(ctx->request, 500, "Failed to set FCM payload or project ID");
-                    nabto_device_fcm_notification_free(ctx->notification);
-                    nm_iam_state_free(state);
-                    nabto_device_coap_request_free(ctx->request);
-                    nabto_device_listener_new_coap_request(ctx->listener, fut, &(ctx->request));
-                    nabto_device_future_set_callback(fut, &username_request_callback, ctx);
-                    return;
-                }
-            }
-        }
-        // username not found
-        nabto_device_coap_error_response(ctx->request, 404, "No such user");
-        nm_iam_state_free(state);
-        nabto_device_coap_request_free(ctx->request);
-        nabto_device_listener_new_coap_request(ctx->listener, fut, &(ctx->request));
-        nabto_device_future_set_callback(fut, &username_request_callback, ctx);
-        return;
-    } else if (ec == NABTO_DEVICE_EC_STOPPED) {
-        // stop invoked - cleanup triggered from main
-    } else {
-        printf("An error occurred when handling CoAP request, ec=%d\n", ec);
-        // main should still handle cleanup
-    }
-}
-
-void username_push_resolved(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
-{
-    struct context* ctx = (struct context*)data;
-    if (ec == NABTO_DEVICE_EC_OK) {
-        cJSON* body = cJSON_CreateObject();
-        cJSON_AddItemToObject(body, "statusCode", cJSON_CreateNumber(nabto_device_fcm_notification_get_response_status_code(ctx->notification)));
-        cJSON_AddItemToObject(body, "body", cJSON_CreateString(nabto_device_fcm_notification_get_response_body(ctx->notification)));
-        char* jsonStr = cJSON_PrintUnformatted(body);
-        if ( nabto_device_coap_response_set_payload(ctx->request, jsonStr, strlen(jsonStr)) == NABTO_DEVICE_EC_OK) {
-            nabto_device_coap_response_set_code(ctx->request, 200);
-            nabto_device_coap_response_set_content_format(ctx->request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_JSON);
-            nabto_device_coap_response_ready(ctx->request);
-        }
-        // If set_payload() fails and response_ready() is not called, request_free() implicitly sends an error response with code 500
-        free(jsonStr);
-        cJSON_Delete(body);
-    } else {
-        printf("Failed to send FCM notification: %s \n", nabto_device_error_get_string(ec));
-        // if coap_error_response() fails, we rely on the implicit
-        // error response generated by coap_request_free() which is
-        // called in any case, so we ignore the return value.
-        nabto_device_coap_error_response(ctx->request, 500, "Failed to send FCM notification to basestation");
-    }
-    printf("Responded to CoAP request\n");
-    nabto_device_coap_request_free(ctx->request);
-    nabto_device_fcm_notification_free(ctx->notification);
-    nabto_device_listener_new_coap_request(ctx->listener, fut, &(ctx->request));
-    nabto_device_future_set_callback(fut, &username_request_callback, ctx);
 }
 
 void read_push_trigger(NabtoDevice* device, struct nm_iam* iam)
@@ -303,6 +185,7 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
 
     if ((ec = nabto_device_set_private_key(device, privateKey)) != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
+        free(privateKey);
         return false;
     }
     free(privateKey);
@@ -322,7 +205,6 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
-    //nabto_device_set_server_url(device, server);
 
     char* envLogLevel = getenv("NABTO_LOG_LEVEL");
     if (envLogLevel) {
@@ -435,7 +317,6 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
             !nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserFcmToken") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:CreateUser") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:ListRoles") ||
-            !nm_iam_configuration_statement_add_action(stmt, "Push:Send") ||
             !nm_iam_configuration_statement_add_action(stmt, "IAM:SendUserFcmTest") ||
             !nm_iam_configuration_add_policy(iamConfig, policy))
         { return false; }
@@ -489,7 +370,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
     return true;
 }
 
-void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg)
+void handle_device_error(NabtoDevice* d, char* msg)
 {
     NabtoDeviceFuture* f = nabto_device_future_new(d);
     if (d) {
@@ -500,9 +381,6 @@ void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg)
     }
     if (f) {
         nabto_device_future_free(f);
-    }
-    if (l) {
-        nabto_device_listener_free(l);
     }
     if (iamLogger_) {
         free(iamLogger_);
