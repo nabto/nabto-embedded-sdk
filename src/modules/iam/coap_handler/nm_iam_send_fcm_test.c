@@ -23,7 +23,7 @@ static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapR
 
 NabtoDeviceError nm_iam_send_fcm_test_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
-    const char* paths[] = { "iam", "fcm-push", "{user}", NULL };
+    const char* paths[] = { "iam", "users", "{user}", "fcm-test", NULL };
     NabtoDeviceError ec = nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_POST, paths, &handle_request);
     nm_iam_coap_handler_set_async(handler, true);
     return ec;
@@ -49,6 +49,7 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
 {
     struct nm_iam_fcm_ctx* ctx = (struct nm_iam_fcm_ctx*)data;
     if (ec != NABTO_DEVICE_EC_OK) {
+        NN_LOG_ERROR(ctx->handler->iam->logger, LOGM, "FCM request failed. Basestation returned: %s", nabto_device_error_get_string(ec));
         nabto_device_coap_error_response(ctx->req, 503, "Failed to send to basestation");
         nabto_device_fcm_notification_free(ctx->msg);
         free(ctx);
@@ -99,7 +100,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nn_string_map_init(&attributes);
     nn_string_map_insert(&attributes, "IAM:Username", username);
 
-    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SendFcmPush", &attributes)) {
+    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SendUserFcmTest", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         nn_string_map_deinit(&attributes);
         nm_iam_coap_handler_async_request_end(handler);
