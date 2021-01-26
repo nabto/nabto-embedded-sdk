@@ -152,6 +152,22 @@ BOOST_AUTO_TEST_CASE(create_destroy_notification)
     nabto_device_free(dev);
 }
 
+BOOST_AUTO_TEST_CASE(multi_set_on_notification)
+{
+    std::string s1 = "some string";
+    std::string s2 = "some other string";
+
+    NabtoDevice* dev = nabto_device_new();
+
+    NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(dev);
+    nabto_device_fcm_notification_set_payload(n, s1.c_str());
+    nabto_device_fcm_notification_set_payload(n, s2.c_str());
+    nabto_device_fcm_notification_set_project_id(n, s1.c_str());
+    nabto_device_fcm_notification_set_project_id(n, s2.c_str());
+    nabto_device_fcm_notification_free(n);
+    nabto_device_free(dev);
+}
+
 std::string testFcmPayload = R"(
 {
     "message":{
