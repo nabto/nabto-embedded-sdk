@@ -356,8 +356,10 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
     if (state == NULL) { return false; }
     if (!nm_iam_serializer_state_load_json(state, stateStr, iamLogger_)) {
         printf("Failed to deserialize IAM state from string: %s\n", stateStr);
+        free(stateStr);
         return false;
     }
+    free(stateStr);
 
     if (!nm_iam_load_configuration(iam, iamConfig) ||
         !nm_iam_load_state(iam, state)) {

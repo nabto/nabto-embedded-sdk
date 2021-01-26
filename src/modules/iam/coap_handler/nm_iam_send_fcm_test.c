@@ -81,9 +81,10 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     }
     free(payload);
     nabto_device_fcm_notification_free(ctx->msg);
+    struct nm_iam_coap_handler* h = ctx->handler;
     free(ctx);
     nabto_device_future_free(fut);
-    nm_iam_coap_handler_async_request_end(ctx->handler);
+    nm_iam_coap_handler_async_request_end(h);
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
@@ -125,7 +126,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* payload;
 
     if ((ctx = (struct nm_iam_fcm_ctx*)calloc(1, sizeof(struct nm_iam_fcm_ctx))) == NULL ||
-        (payload = calloc(1, strlen(noti1) + strlen(noti2) + strlen(user->fcmToken))) == NULL ||
+        (payload = calloc(1, strlen(noti1) + strlen(noti2) + strlen(user->fcmToken)+1)) == NULL ||
         (ctx->msg = nabto_device_fcm_notification_new(handler->iam->device)) == NULL)
     {
         NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc. ctx: %p, payload: %p, ctx->msg: %p", ctx, payload, ctx->msg);
