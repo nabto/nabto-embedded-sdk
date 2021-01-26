@@ -177,13 +177,15 @@ nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* p
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_PASSWORD_REQUESTS) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_ARGUMENT);
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_ARGUMENT);
+        return;
     }
 
     np_error_code ec = nabto_device_listener_get_status(listener);
     if (ec != NABTO_EC_OK) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        return;
     }
 
     ec = nabto_device_listener_init_future(listener, fut);

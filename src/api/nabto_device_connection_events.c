@@ -114,11 +114,13 @@ void NABTO_DEVICE_API nabto_device_listener_connection_event(NabtoDeviceListener
     np_error_code ec = nabto_device_listener_get_status(listener);
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_ARGUMENT);
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_ARGUMENT);
+        return;
     }
     if (ec != NABTO_EC_OK) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        return;
     }
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)nabto_device_listener_get_listener_data(listener);
     ec = nabto_device_listener_init_future(listener, fut);

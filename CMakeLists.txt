@@ -195,6 +195,7 @@ if (DEVICE_BUILD_EXAMPLES)
   add_subdirectory(examples/simple_stream)
   add_subdirectory(examples/futures)
   add_subdirectory(examples/simple_coap)
+  add_subdirectory(examples/simple_mdns)
   add_subdirectory(examples/simple_tunnel)
   add_subdirectory(examples/simple_push)
 

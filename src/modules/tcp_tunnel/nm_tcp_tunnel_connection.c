@@ -168,7 +168,8 @@ void tcp_readen(np_error_code ec, void* userData)
         NABTO_LOG_TRACE(LOG, "TCP EOF received");
         // Close stream, aka signal that we will not write any
         // more data to the stream.
-        return close_stream(connection);
+        close_stream(connection);
+        return;
     }
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Tcp read error");
@@ -245,7 +246,8 @@ void stream_readen(np_error_code ec, void* userData)
     struct nm_tcp_tunnel_connection* connection = userData;
     if (connection->streamReadSize == 0 || ec == NABTO_EC_EOF) {
         NABTO_LOG_TRACE(LOG, "tcp tunnel stream read EOF.");
-        return close_tcp(connection);
+        close_tcp(connection);
+        return;
     }
     if (ec) {
         //NABTO_LOG_ERROR(LOG, "tcp tunnel, stream read failed stopping the tcp tunnel connection");

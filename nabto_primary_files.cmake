@@ -13,7 +13,6 @@ set(ne_nn_src
   )
 
 set(ne_utils_src
-  ${root_dir}/nabto-common/components/stun/src/nabto_stun_log.c
   ${root_dir}/nabto-common/components/stun/src/nabto_stun_client.c
   ${root_dir}/nabto-common/components/stun/src/nabto_stun_message.c
 )
@@ -23,7 +22,6 @@ set(ne_streaming_src
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_congestion_control.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_window.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_log_helper.c
-  ${root_dir}/nabto-common/components/streaming/src/nabto_stream_log.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_util.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_packet.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream.c

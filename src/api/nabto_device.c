@@ -226,13 +226,13 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_server_port(NabtoDevice* devi
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* device, const char* str)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec = NABTO_DEVICE_EC_OK;
+    np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     free(dev->privateKey);
 
     dev->privateKey = strdup(str);
     if (dev->privateKey == NULL) {
-        ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+        ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
         char* crt;
         ec = nm_dtls_create_crt_from_private_key(dev->privateKey, &crt);
@@ -444,7 +444,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint(NabtoDevic
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
-        ec = NABTO_DEVICE_EC_INVALID_STATE;
+        ec = NABTO_EC_INVALID_STATE;
     }
     uint8_t hash[32];
     ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, hash);
@@ -463,7 +463,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
     np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
-        ec = NABTO_DEVICE_EC_INVALID_STATE;
+        ec = NABTO_EC_INVALID_STATE;
     }
     uint8_t hash[32];
     ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, hash);

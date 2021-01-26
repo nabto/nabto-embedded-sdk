@@ -7,6 +7,7 @@
 #include <api/nabto_device_event_handler.h>
 #include <api/nabto_device_future.h>
 #include <api/nabto_device_error.h>
+#include <core/nc_coap.h>
 #include <platform/np_logging.h>
 
 #include <stdlib.h>
@@ -14,16 +15,6 @@
 #define LOG NABTO_LOG_MODULE_API
 
 np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
-
-NabtoDeviceError nabto_device_coap_error_module_to_api(nabto_coap_error ec) {
-    switch(ec) {
-        case NABTO_COAP_ERROR_OK: return NABTO_DEVICE_EC_OK;
-        case NABTO_COAP_ERROR_OUT_OF_MEMORY: return NABTO_DEVICE_EC_OUT_OF_MEMORY;
-        case NABTO_COAP_ERROR_NO_CONNECTION: return NABTO_DEVICE_EC_ABORTED;
-        case NABTO_COAP_ERROR_INVALID_PARAMETER: return NABTO_DEVICE_EC_INVALID_ARGUMENT;
-        default: return NABTO_DEVICE_EC_UNKNOWN;
-    }
-}
 
 /*******************************************
  * COAP API Start
@@ -51,7 +42,7 @@ nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* device
         nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res, &res->resource);
         if (err != NABTO_COAP_ERROR_OK) {
             free(res);
-            ec = nabto_device_coap_error_module_to_api(err);
+            ec = nc_coap_error_to_core(err);
         }
     }
 
@@ -70,12 +61,14 @@ nabto_device_listener_new_coap_request(NabtoDeviceListener* deviceListener, Nabt
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (nabto_device_listener_get_type(listener) != NABTO_DEVICE_LISTENER_TYPE_COAP) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_ARGUMENT);
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_ARGUMENT);
+        return;
     }
     np_error_code ec = nabto_device_listener_get_status(listener);
     if (ec != NABTO_EC_OK) {
         nabto_device_threads_mutex_unlock(dev->eventMutex);
-        return nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        return;
     }
     struct nabto_device_coap_resource* res = (struct nabto_device_coap_resource*)nabto_device_listener_get_listener_data(listener);
     ec = nabto_device_listener_init_future(listener, fut);
@@ -106,7 +99,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_error_response(NabtoDeviceCo
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     nabto_device_threads_mutex_lock(req->dev->eventMutex);
     nabto_coap_error err = nabto_coap_server_send_error_response(req->req, nabto_coap_uint16_to_code(code), message);
-    ec = nabto_device_coap_error_module_to_api(err);
+    ec = nc_coap_error_to_core(err);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
     return ec;
 }
@@ -127,7 +120,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_payload(NabtoDe
     nabto_device_threads_mutex_lock(req->dev->eventMutex);
     nabto_coap_error err = nabto_coap_server_response_set_payload(req->req, data, dataSize);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
-    return nabto_device_coap_error_module_to_api(err);
+    return nabto_device_error_core_to_api(nc_coap_error_to_core(err));
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_set_content_format(NabtoDeviceCoapRequest* request, uint16_t format)
@@ -145,7 +138,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_response_ready(NabtoDeviceCo
     nabto_device_threads_mutex_lock(req->dev->eventMutex);
     nabto_coap_error err = nabto_coap_server_response_ready(req->req);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
-    return nabto_device_coap_error_module_to_api(err);
+    return nabto_device_error_core_to_api(nc_coap_error_to_core(err));
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
@@ -224,7 +217,7 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
             NABTO_LOG_ERROR(LOG, "Tried to resolve new COAP request future, but request reference was invalid");
             retEc = NABTO_EC_UNKNOWN;
             // If this fails we should just keep cleaning up
-            nabto_coap_server_send_error_response(req->req, NABTO_COAP_CODE(5,03), "Handler unavailable");
+            nabto_coap_server_send_error_response(req->req, (nabto_coap_code)(NABTO_COAP_CODE(5,03)), "Handler unavailable");
             free(req);
         }
         // using the coap request structure as event structure means it will be freed when user sends the response
@@ -236,7 +229,7 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
         // In error state requests on the listener queue will not reach the user, so they cant resolve the request
         struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)eventData;
         // if this fails we should just keep cleaning up
-        nabto_coap_server_send_error_response(req->req, NABTO_COAP_CODE(5,03), "Handler unavailable");
+        nabto_coap_server_send_error_response(req->req, (nabto_coap_code)(NABTO_COAP_CODE(5,03)), "Handler unavailable");
         free(req);
         retEc = ec;
     }
@@ -251,7 +244,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
 
     if (req == NULL) {
         // ignore errors, we cannot do more than set the listener error code which is already done
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Insufficient resources");
+        nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), "Insufficient resources");
         nabto_coap_server_request_free(request);
     } else {
         req->dev = dev;
@@ -266,7 +259,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
         np_error_code ec = nabto_device_listener_add_event(resource->listener, &req->eventListNode, req);
         if (ec != NABTO_EC_OK) {
             // since we are out of resources, this probably fails. Either way we keep cleaning up
-            nabto_coap_server_send_error_response(request, NABTO_COAP_CODE(5,00), "Insufficient resources");
+            nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), "Insufficient resources");
             nabto_coap_server_request_free(request);
             free(req);
         }

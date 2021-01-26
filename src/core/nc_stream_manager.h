@@ -23,13 +23,14 @@ struct nc_stream_manager_context {
     struct np_communication_buffer* rstBuf;
     struct nn_llist streams;
     struct np_dtls_srv_send_context sendCtx;
+    struct nn_log* logger;
     size_t maxSegments;
     size_t allocatedSegments;
     size_t maxStreams;
     size_t currentStreams;
 };
 
-void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl);
+void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl, struct nn_log* logger);
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx);
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data);
 void nc_stream_manager_remove_listener(struct nc_stream_listener* listener);

@@ -128,7 +128,7 @@ struct nm_iam_user* nm_iam_state_user_new(const char* username)
 
 void nm_iam_state_user_free(struct nm_iam_user* user)
 {
-    return nm_iam_user_free(user);
+    nm_iam_user_free(user);
 }
 
 bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint)

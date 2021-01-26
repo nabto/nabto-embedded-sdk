@@ -77,11 +77,13 @@ nabto_device_test_event_queue(NabtoDevice* device, NabtoDeviceFuture* future)
     t->timestamp = dev->pl.timestamp;
     np_error_code ec = np_event_queue_create_event(eq, handle_event_callback, t, &t->event);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
     ec = np_event_queue_create_event(eq, handle_timed_event_callback, t, &t->timedEvent);
     if (ec != NABTO_EC_OK) {
-        return resolve_and_free_test(t, ec);
+        resolve_and_free_test(t, ec);
+        return;
     }
 
     np_event_queue_post(eq, t->event);
