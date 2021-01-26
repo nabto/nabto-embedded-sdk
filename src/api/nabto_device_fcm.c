@@ -39,11 +39,14 @@ nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification)
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notification, const char* projectId)
 {
-    // TODO: free project ID if this function is called twice
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     struct nabto_device_context* dev = n->dev;
     NabtoDeviceError ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    if (n->fcmSend.fcmRequest.projectId != NULL) {
+        free(n->fcmSend.fcmRequest.projectId);
+    }
 
     n->fcmSend.fcmRequest.projectId = strdup(projectId);
     if (n->fcmSend.fcmRequest.projectId == NULL) {
@@ -58,11 +61,14 @@ nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notific
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notification, const char* payload)
 {
-    // TODO: free payload if this function is called twice
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     struct nabto_device_context* dev = n->dev;
     NabtoDeviceError ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    if (n->fcmSend.fcmRequest.payload != NULL) {
+        free(n->fcmSend.fcmRequest.payload);
+    }
 
     n->fcmSend.fcmRequest.payload = strdup(payload);
     if (n->fcmSend.fcmRequest.payload == NULL) {

@@ -1115,6 +1115,152 @@ nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request);
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName);
 
+/********************
+ * FCM notifications
+ ********************/
+
+/**
+ * @intro Firebase Cloud Messaging notifications
+ *
+ * Integration with Firebase Cloud Messaging(FCM) notifications allows
+ * the device to send push notifications to clients. The integration
+ * is transparent meaning the Nabto platform forwards the provided
+ * payload directly to FCM, and so it must follow the format defined
+ * by FCM. Sending push notifications requires a Firebase project
+ * which can be created using the guide: <Link TBD>.
+ *
+ * Sending a notification from the device starts by creating a
+ * NabtoDeviceFcmNotification object. Then the payload and project ID
+ * must be set on the object before sending. When the send function is
+ * called, the device will send the notification to the Nabto
+ * Basestation which forwards it to FCM through its REST API. When FCM
+ * has provided a response, the basestation returns the response to
+ * the device, and the NabtoDeviceFuture of the send function
+ * resolves. Now the FCM status code and response body can be read
+ * from the notification object. Finally, the notification object must
+ * be freed.
+ */
+
+/**
+ * FCM Notification. This is an object holding the FCM notification request and
+ * after the basestation api has been invoked the response from the invocation
+ * also exists in the object.
+ */
+typedef struct NabtoDeviceFcmNotification_ NabtoDeviceFcmNotification;
+
+/**
+ * Create a new FCM Notification. The returned object must be freed
+ * when no longer used, and can not be reused for multiple
+ * notifications.
+ *
+ * @param device [in]  The device
+ * @return Non-NULL if the notification was created successfully
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceFcmNotification* NABTO_DEVICE_API
+nabto_device_fcm_notification_new(NabtoDevice* device);
+
+/**
+ * Free a FCM notification. If called after nabto_device_fcm_send(),
+ * the future must be resolved first (by the device finishing handling
+ * the notification, or by nabto_device_fcm_stop())
+ *
+ * @param notification [in]  The notification to free
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification);
+
+/**
+ * Set the FCM project id on a notification. The project ID must be
+ * created and configured in FCM through the guide <Link TBD>. The
+ * project ID is copied into the notification.
+ *
+ * @param notification [in]  The notification to set project ID in
+ * @param projectId [in]     The project ID to set
+ * @return NABTO_DEVICE_EC_OK iff the project ID was set
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if allocation failed
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notification, const char* projectId);
+
+/**
+ * Set a JSON document/payload according to the format
+ * https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send
+ *
+ * @param notification [in]  The notification to set payload in
+ * @param payload [in]       The payload to set
+ * @return NABTO_DEVICE_EC_OK iff the payload was set
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY if allocation failed
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notification, const char* payload);
+
+/**
+ * Send a notification.
+ *
+ * The future returns NABTO_DEVICE_EC_OK iff the invocation of the
+ * basestation went OK. A successful invocation of the basestation
+ * does not mean a successful invocation of FCM. On OK, the FCM
+ * response should evaluated using
+ * nabto_device_fcm_notification_get_response_status_code() and
+ * nabto_device_fcm_notification_get_response_body(). The response
+ * status code is generally enough to determine if a message went OK
+ * or not. The response body can be used to get a detailed description
+ * in the case an error occurs.
+ *
+ * @param notification [in]  The notification to send
+ * @param future [in]        Future which resolves when sending has been concluded
+ *
+ * Future resolves with:
+ *   NABTO_DEVICE_EC_OK if the notification is delivered to FCM.
+ *   NABTO_DEVICE_EC_STOPPED if the operation is stopped.
+ *   NABTO_DEVICE_EC_NOT_ATTACHED  if the device is currently not attached to the basestation.
+ *   NABTO_DEVICE_EC_INVALID_STATE  if vital data is missing e.g. the project id or the body of the notification.
+ *
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
+
+/**
+ * Stop an ongoing FCM request. If stop is used there are no guarantee whether a
+ * notification has been sent or not sent. It can be used to stop the async
+ * operation before it completes or a timeout happens.
+ *
+ * @param notification [in]  The notification to stop
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_fcm_stop(NabtoDeviceFcmNotification* notification);
+
+/**
+ * Get the response status code from the FCM invocation in case the send resolved with NABTO_DEVICE_EC_OK.
+ *
+ * 200, If the notification was sent ok.
+ * 400, If the notification has an invalid format.
+ * 403, If the notification could bot be sent due to missing authorization.
+ * 404, If the token is expired.
+ *
+ * See https://firebase.google.com/docs/reference/fcm/rest/v1/ErrorCode for detailed description of the errors.
+ *
+ * @param notification [in]  The notification to get status code from
+ * @return status code from the FCM request sent by the basestation. 0 if send has not resolved with NABTO_DEVICE_EC_OK
+ */
+NABTO_DEVICE_DECL_PREFIX uint16_t NABTO_DEVICE_API
+nabto_device_fcm_notification_get_response_status_code(NabtoDeviceFcmNotification* notification);
+
+/**
+ * Get the response body of the request to FCM. If an error occured
+ * this will contain the description. If the send went OK the body
+ * will contain a name which is the ID of the sent message. The
+ * returned string is valid for the lifetime of the notification
+ * object.
+ *
+ * @param notification [in]  The notification to get response body from
+ * @return The response body string. NULL if send has not resolved with NABTO_DEVICE_EC_OK
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* notification);
+
+
+
 /******************
  * TCP Tunnelling
  ******************/
