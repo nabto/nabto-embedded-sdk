@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_ATTACHED;
-
 /**
  * Set a private key for the device.
  *

@@ -111,6 +111,7 @@ typedef uint64_t NabtoDeviceConnectionRef;
  * NABTO_DEVICE_EC_NO_DATA
  * NABTO_DEVICE_EC_IN_USE
  * NABTO_DEVICE_EC_ADDRESS_IN_USE
+ * NABTO_DEVICE_EC_NOT_ATTACHED
  * ```
  */
 typedef int NabtoDeviceError;
@@ -134,6 +135,7 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_INVALID_C
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NO_DATA;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_IN_USE;
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_ADDRESS_IN_USE;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_NOT_ATTACHED;
 
 
 /**********************

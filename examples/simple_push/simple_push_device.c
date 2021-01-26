@@ -18,9 +18,6 @@
 #include <stdio.h>
 #include <signal.h>
 
-const char* projectId = "<INSERT_PROJECT_ID>";
-const char* notification = "{\"message\": { \"notification\": { \"title\": \"Hello\", \"body\": \"World\" }, \"token\": \"<INSERT_TOKEN>\" } }";
-
 const char* keyFile = "device.key";
 const char* stateFile = "simple_push_state.json";
 
