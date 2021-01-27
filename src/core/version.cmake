@@ -1,6 +1,8 @@
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake-scripts/nabto_version.cmake")
+cmake_policy(SET CMP0007 NEW)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" version_from_file)
 
-set(master_version "5.2.0")
+list(GET version_from_file 0 master_version)
 
 nabto_version(${master_version} version_out version_error)
 
