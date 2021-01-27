@@ -1,5 +1,27 @@
 # Changelog
 
+## [5.3.0] - 2021-01-27
+
+### Added
+
+ - Simple MDNS example
+ - Simple Push Device example
+
+#### Feature: Push Notifications through FCM
+
+The device has been given the functionality to send push notifications to
+subscribing clients. The system is using FCM to send the actual messages. It is
+implemented transparent such that most options from FCM send is available to the
+device sending the push notifications.
+
+### Changes
+
+ - FCM Token, project id and notification categories has been added to IAM users
+   and serialization formats for the IAM persistence functionality.
+
+#### Breaking Changes
+
+
 ## [5.2.0] - 2020-10-24
 
 ### Added
