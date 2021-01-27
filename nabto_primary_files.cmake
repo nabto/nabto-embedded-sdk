@@ -60,6 +60,7 @@ set(ne_core_src
   ${root_dir}/src/core/nc_coap.c
   ${root_dir}/src/core/nc_coap_server.c
   ${root_dir}/src/core/nc_attacher_sct.c
+  ${root_dir}/src/core/nc_attacher_fcm.c
   ${root_dir}/src/core/nc_coap_rest_error.c
   ${root_dir}/src/core/nc_rendezvous.c
   ${root_dir}/src/core/nc_stun.c
@@ -88,6 +89,7 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_authorization_events.c
   ${root_dir}/src/api/nabto_device_logging.c
   ${root_dir}/src/api/nabto_device_experimental.c
+  ${root_dir}/src/api/nabto_device_fcm.c
   ${root_dir}/src/api/nabto_device_util.c
   ${root_dir}/src/api/nabto_device_event_handler.c
   ${root_dir}/src/api/nabto_device_connection_events.c
@@ -208,6 +210,8 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_password_invite.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_local_open.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_pairing_local_initial.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_get_notification_categories.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_send_fcm_test.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_list_users.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_get_me.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_get_user.c
@@ -220,6 +224,8 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fingerprint.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_sct.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_password.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fcm.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_notification_categories.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_get.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_set.c
   ${root_dir}/src/modules/iam/policies/nm_condition.c

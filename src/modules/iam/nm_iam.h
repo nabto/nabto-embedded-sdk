@@ -48,6 +48,7 @@ enum nm_iam_error {
     NM_IAM_ERROR_NO_SUCH_ROLE,
     NM_IAM_ERROR_USER_EXISTS,
     NM_IAM_ERROR_INVALID_FINGERPRINT,
+    NM_IAM_ERROR_NO_SUCH_CATEGORY,
     NM_IAM_ERROR_INTERNAL
 };
 
@@ -66,6 +67,8 @@ struct nm_iam {
     struct nm_iam_coap_handler coapPairingPasswordInvitePostHandler;
     struct nm_iam_coap_handler coapPairingLocalOpenPostHandler;
     struct nm_iam_coap_handler coapPairingLocalInitialPostHandler;
+    struct nm_iam_coap_handler coapIamNotificationCategoriesGetHandler;
+    struct nm_iam_coap_handler coapIamSendFcmTestPostHandler;
     struct nm_iam_coap_handler coapIamMeGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserGetHandler;
     struct nm_iam_coap_handler coapIamUsersUserCreateHandler;
@@ -77,6 +80,8 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserSetFingerprintHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetSctHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetPasswordHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetFcmTokenHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetNotificationCategoriesHandler;
     struct nm_iam_coap_handler coapIamSettingsSetHandler;
     struct nm_iam_coap_handler coapIamSettingsGetHandler;
 
@@ -87,6 +92,7 @@ struct nm_iam {
     struct nm_iam_change_callback changeCallback;
     struct nm_iam_configuration* conf;
     struct nm_iam_state* state;
+    struct nn_string_set notificationCategories;
 
     // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
     bool stateHasChanged;
@@ -154,6 +160,18 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
 struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 
 /**
+ * Set the list of notification categories users can subscribe
+ * to. Trying to set a notification category that is not included in
+ * this set will result in an error. The categories are copied into
+ * IAM.
+ *
+ * @param iam [in]        IAM module to set categories in
+ * @param categories [in] Set of notification categories to set
+ * @return NM_IAM_ERROR_OK if the categories was set.
+ */
+enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct nn_string_set* categories);
+
+/**
  * Check if the given connection has access to do the given action
  * provided the given attributes.
  */
@@ -183,6 +201,9 @@ enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, 
 enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* username, const char* password);
 enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* role);
 enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName);
+enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token);
+enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id);
+enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories);
 
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username);
 

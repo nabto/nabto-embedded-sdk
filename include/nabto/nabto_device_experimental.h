@@ -102,7 +102,6 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
 
-
 #ifdef __cplusplus
 } // extern c
 #endif

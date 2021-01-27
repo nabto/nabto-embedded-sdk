@@ -541,9 +541,11 @@ void nm_mbedtls_cli_start_send_deferred(void* data)
 np_error_code async_send_data(struct np_dtls_cli_context* ctx,
                               struct np_dtls_cli_send_context* sendCtx)
 {
-
     if (ctx->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
+    }
+    if (ctx->state != DATA) {
+        return NABTO_EC_INVALID_STATE;
     }
     nn_llist_append(&ctx->sendList, &sendCtx->sendListNode, sendCtx);
     nm_mbedtls_cli_start_send(ctx);

@@ -92,6 +92,7 @@ static void sct_deinit(struct nc_attach_context* ctx);
 /*****************
  * API functions *
  *****************/
+
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
     np_error_code ec;

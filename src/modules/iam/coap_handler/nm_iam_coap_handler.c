@@ -2,6 +2,7 @@
 #include "../nm_iam_user.h"
 #include "../nm_iam.h"
 #include "../nm_iam_internal.h"
+#include <nn/string_set.h>
 
 #include <stdlib.h>
 
@@ -72,8 +73,29 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     } else {
         struct nm_iam* iam = handler->iam;
         nabto_device_threads_mutex_lock(iam->mutex);
+        handler->asyncStopped = false;
+        handler->locked = true;
         handler->requestHandler(handler, handler->request);
+        handler->locked = false;
         nabto_device_threads_mutex_unlock(iam->mutex);
+        if (!handler->async || handler->asyncStopped) {
+            nabto_device_coap_request_free(handler->request);
+            nm_iam_internal_do_callbacks(handler->iam);
+            start_listen(handler);
+        }
+    }
+}
+
+void nm_iam_coap_handler_set_async(struct nm_iam_coap_handler* handler, bool async)
+{
+    handler->async = async;
+}
+
+void nm_iam_coap_handler_async_request_end(struct nm_iam_coap_handler* handler)
+{
+    if (handler->locked) {
+        handler->asyncStopped = true;
+    } else {
         nabto_device_coap_request_free(handler->request);
         nm_iam_internal_do_callbacks(handler->iam);
         start_listen(handler);
@@ -120,7 +142,27 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
     return false;
 }
 
-bool nm_iam_cbor_decode_bool(CborValue* value, bool* b) 
+bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set)
+{
+    if (!cbor_value_is_array(value)) {
+        return false;
+    }
+    CborValue item;
+    cbor_value_enter_container(value, &item);
+    while(!cbor_value_at_end(&item)) {
+        char* s = NULL;
+        if (nm_iam_cbor_decode_string(&item, &s) && nn_string_set_insert(set, s)) {
+            free(s);
+        } else {
+            free(s);
+            return false;
+        }
+        cbor_value_advance(&item);
+    }
+    return true;
+}
+
+bool nm_iam_cbor_decode_bool(CborValue* value, bool* b)
 {
     if (cbor_value_is_boolean(value)) {
         CborError ec = cbor_value_get_boolean(value, b);
@@ -169,6 +211,33 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     if (user->sct != NULL) {
         cbor_encode_text_stringz(&map, "Sct");
         cbor_encode_text_stringz(&map, user->sct);
+    }
+
+    if (user->fcmToken != NULL || user->fcmProjectId != NULL) {
+
+        cbor_encode_text_stringz(&map, "Fcm");
+        CborEncoder fcm;
+        cbor_encoder_create_map(&map, &fcm, CborIndefiniteLength);
+        if (user->fcmToken != NULL) {
+            cbor_encode_text_stringz(&fcm, "Token");
+            cbor_encode_text_stringz(&fcm, user->fcmToken);
+        }
+        if (user->fcmProjectId != NULL) {
+            cbor_encode_text_stringz(&fcm, "ProjectId");
+            cbor_encode_text_stringz(&fcm, user->fcmProjectId);
+        }
+        cbor_encoder_close_container(&map, &fcm);
+    }
+
+    {
+        cbor_encode_text_stringz(&map, "NotificationCategories");
+        CborEncoder array;
+        cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
+        const char* c;
+        NN_STRING_SET_FOREACH(c, &user->notificationCategories) {
+            cbor_encode_text_stringz(&array, c);
+        }
+        cbor_encoder_close_container(&map, &array);
     }
 
     cbor_encoder_close_container(&encoder, &map);

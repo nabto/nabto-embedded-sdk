@@ -36,6 +36,16 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     cJSON* fingerprint = cJSON_GetObjectItem(json, "Fingerprint");
     cJSON* password = cJSON_GetObjectItem(json, "Password");
     cJSON* role = cJSON_GetObjectItem(json, "Role");
+    cJSON* fcm = cJSON_GetObjectItem(json, "Fcm");
+    cJSON* notificationCategories = cJSON_GetObjectItem(json, "NotificationCategories");
+    cJSON* fcmToken = NULL;
+    cJSON* fcmProjectId = NULL;
+
+    if (cJSON_IsObject(fcm)) {
+        fcmToken = cJSON_GetObjectItem(fcm, "Token");
+        fcmProjectId = cJSON_GetObjectItem(fcm, "ProjectId");
+    }
+
 
     if (!cJSON_IsString(username)) {
         return NULL;
@@ -66,5 +76,25 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
         nm_iam_user_set_role(user, role->valuestring);
     }
 
+    if (cJSON_IsString(fcmToken)) {
+        nm_iam_user_set_fcm_token(user, fcmToken->valuestring);
+    }
+
+    if (cJSON_IsString(fcmProjectId)) {
+        nm_iam_user_set_fcm_project_id(user, fcmProjectId->valuestring);
+    }
+
+    if (cJSON_IsArray(notificationCategories)) {
+        cJSON* element;
+        struct nn_string_set cs;
+        nn_string_set_init(&cs);
+        cJSON_ArrayForEach(element, notificationCategories) {
+            if (cJSON_IsString(element)) {
+                nn_string_set_insert(&cs, element->valuestring);
+            }
+        }
+        nm_iam_user_set_notification_categories(user, &cs);
+        nn_string_set_deinit(&cs);
+    }
     return user;
 }

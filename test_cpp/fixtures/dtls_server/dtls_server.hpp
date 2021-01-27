@@ -41,6 +41,7 @@ class CoapServerRequest {
     virtual ~CoapServerRequest() {}
     virtual std::vector<uint8_t> getPayload() = 0;
     virtual int32_t getContentFormat() = 0;
+    virtual std::string getParameter(const std::string& id) = 0;
 };
 
 class CoapServerResponse {

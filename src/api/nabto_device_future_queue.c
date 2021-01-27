@@ -23,7 +23,6 @@ np_error_code nabto_device_future_queue_init(struct nabto_device_future_queue* q
 void nabto_device_future_queue_deinit(struct nabto_device_future_queue* queue)
 {
     nabto_device_future_queue_stop(queue);
-    nabto_device_threads_join(queue->thread);
     nabto_device_threads_free_cond(queue->condition);
     nabto_device_threads_free_mutex(queue->mutex);
     nabto_device_threads_free_thread(queue->thread);
@@ -32,9 +31,13 @@ void nabto_device_future_queue_deinit(struct nabto_device_future_queue* queue)
 void nabto_device_future_queue_stop(struct nabto_device_future_queue* queue)
 {
     nabto_device_threads_mutex_lock(queue->mutex);
+    if (queue->stopped) {
+        return;
+    }
     queue->stopped = true;
     nabto_device_threads_mutex_unlock(queue->mutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_join(queue->thread);
 }
 
 void nabto_device_future_queue_post(struct nabto_device_future_queue* queue, struct nabto_device_future* fut)

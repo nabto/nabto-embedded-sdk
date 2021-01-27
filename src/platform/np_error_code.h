@@ -47,7 +47,10 @@ extern "C" {
         XX(OPERATION_STARTED, "Operation started")                      \
         XX(NO_OPERATION, "No operation neccessary")                     \
         XX(AGAIN, "No data available try again later")                  \
-        XX(ADDRESS_IN_USE, "Address already in use")            \
+        XX(ADDRESS_IN_USE, "Address already in use")                    \
+        XX(NOT_ATTACHED, "Not attached")                                \
+        XX(TIMEOUT, "Timeout")                                          \
+        XX(BAD_RESPONSE, "Bad response")                                \
 
 
 

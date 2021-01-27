@@ -20,7 +20,12 @@ std::string s1 = R"(
       "Role":"role1",
       "ServerConnectToken":"token2",
       "Password":"password2",
-      "Username":"username"
+      "Username":"username",
+      "Fcm": {
+        "Token":"fcm_token",
+        "ProjectId":"fcm_project"
+      },
+      "NotificationCategories": ["cat1","cat2"]
     }
   ],
   "Version":1
@@ -130,13 +135,21 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
         BOOST_TEST(nm_iam_state_set_password_open_sct(state, "token") == true);
     }
     {
+        struct nn_string_set cats;
+        nn_string_set_init(&cats);
+        nn_string_set_insert(&cats, "cat1");
+        nn_string_set_insert(&cats, "cat2");
         struct nm_iam_user* u = nm_iam_user_new("username");
         BOOST_TEST(nm_iam_user_set_fingerprint(u, "fingerprint") == true);
         BOOST_TEST(nm_iam_user_set_sct(u, "token2") == true);
         BOOST_TEST(nm_iam_user_set_display_name(u, "Display Name") == true);
         BOOST_TEST(nm_iam_user_set_role(u, "role1") == true);
         BOOST_TEST(nm_iam_user_set_password(u, "password2") == true);
+        BOOST_TEST(nm_iam_user_set_fcm_token(u, "fcm_token") == true);
+        BOOST_TEST(nm_iam_user_set_fcm_project_id(u, "fcm_project") == true);
+        BOOST_TEST(nm_iam_user_set_notification_categories(u, &cats) == true);
         BOOST_TEST(nm_iam_state_add_user(state, u) == true);
+        nn_string_set_deinit(&cats);
     }
     char* jStr;
     BOOST_TEST(nm_iam_serializer_state_dump_json(state, &jStr) == true);
@@ -163,6 +176,15 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
     BOOST_TEST(j["Users"][0]["Role"].get<std::string>().compare("role1") == 0);
     BOOST_TEST(j["Users"][0]["Password"].is_string());
     BOOST_TEST(j["Users"][0]["Password"].get<std::string>().compare("password2") == 0);
+    BOOST_TEST(j["Users"][0]["Fcm"]["Token"].is_string());
+    BOOST_TEST(j["Users"][0]["Fcm"]["Token"].get<std::string>().compare("fcm_token") == 0);
+    BOOST_TEST(j["Users"][0]["Fcm"]["ProjectId"].is_string());
+    BOOST_TEST(j["Users"][0]["Fcm"]["ProjectId"].get<std::string>().compare("fcm_project") == 0);
+    BOOST_TEST(j["Users"][0]["NotificationCategories"].is_array());
+    BOOST_TEST(j["Users"][0]["NotificationCategories"][0].is_string());
+    BOOST_TEST(j["Users"][0]["NotificationCategories"][0].get<std::string>().compare("cat1") == 0);
+    BOOST_TEST(j["Users"][0]["NotificationCategories"][1].is_string());
+    BOOST_TEST(j["Users"][0]["NotificationCategories"][1].get<std::string>().compare("cat2") == 0);
     nm_iam_state_free(state);
     nm_iam_serializer_string_free(jStr);
 }
@@ -215,6 +237,21 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->displayName, "Display Name") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->role, "role1") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->password, "password2") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fcmToken, "fcm_token") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fcmProjectId, "fcm_project") == 0);
+        const char* p;
+        bool cat1 = false; bool cat2 = false;
+        NN_STRING_SET_FOREACH(p, &((struct nm_iam_user*)user)->notificationCategories) {
+            if (strcmp(p, "cat1") == 0) {
+                cat1 = true;
+            } else if (strcmp(p, "cat2") == 0) {
+                cat2 = true;
+            } else {
+                BOOST_CHECK_MESSAGE(false, "Unexpected notification category: " << p << " found");
+            }
+        }
+        BOOST_TEST(cat1);
+        BOOST_TEST(cat2);
     }
     nm_iam_state_free(state);
 }

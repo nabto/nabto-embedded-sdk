@@ -115,7 +115,7 @@ class AttachCoapServer {
 
     std::array<uint8_t, 16> getFingerprint()
     {
-        auto fp = getFingerprintFromPem(test::serverPublicKey);
+        auto fp = getFingerprintFromPem(certChain);
         std::array<uint8_t, 16> ret;
         memcpy(ret.data(), fp->data(), 16);
         return ret;
@@ -128,6 +128,12 @@ class AttachCoapServer {
     bool stopped_ = false;
 
 };
+
+static const std::string firebaseOkResponse = R"(
+{
+    "name": "foobar"
+}
+)";
 
 class AttachServer : public AttachCoapServer, public std::enable_shared_from_this<AttachServer>
 {
@@ -170,6 +176,16 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-end", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
                 response->setCode(201);
                 //self->attachCount_ += 1;
+                return;
+            });
+        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/fcm/send", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+                response->setCode(201);
+                response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+                nlohmann::json root;
+                root["StatusCode"] = 200;
+                root["Body"] = firebaseOkResponse;
+                std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+                response->setPayload(b);
                 return;
             });
     }

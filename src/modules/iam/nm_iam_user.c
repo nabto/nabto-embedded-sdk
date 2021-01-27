@@ -5,9 +5,14 @@
 
 bool nm_iam_user_validate_username(const char* username)
 {
+    if (strcmp(username, "") == 0) {
+        // empty username is not allowed as it is used for open password pairing
+        return false;
+    }
+
     for (int i = 0; i < strlen(username); i++) {
-        if ( (username[i] <= 'a' && username[i] >= 'z') &&
-             (username[i] <= '0' && username[i] >= '9') &&
+        if ( (username[i] < 'a' || username[i] > 'z') &&
+             (username[i] < '0' || username[i] > '9') &&
              (username[i] != '_') &&
              (username[i] != '.') &&
              (username[i] != '-') )
@@ -31,7 +36,7 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 
     nn_llist_node_init(&user->listNode);
     user->username = username;
-
+    nn_string_set_init(&user->notificationCategories);
     return user;
 }
 
@@ -43,6 +48,9 @@ void nm_iam_user_free(struct nm_iam_user* user)
     free(user->sct);
     free(user->role);
     free(user->password);
+    free(user->fcmToken);
+    free(user->fcmProjectId);
+    nn_string_set_deinit(&user->notificationCategories);
     free(user);
 }
 
@@ -74,6 +82,46 @@ bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
         user->password = tmp;
     }
     return (tmp != NULL);
+}
+
+bool nm_iam_user_set_fcm_token(struct nm_iam_user* user, const char* fcmToken)
+{
+    if (fcmToken == NULL) {
+        free(user->fcmToken);
+        user->fcmToken = NULL;
+        return true;
+    }
+    char* tmp = strdup(fcmToken);
+    if (tmp != NULL) {
+        free(user->fcmToken);
+        user->fcmToken = tmp;
+    }
+    return (tmp != NULL);
+}
+
+bool nm_iam_user_set_fcm_project_id(struct nm_iam_user* user, const char* projectId)
+{
+    if (projectId == NULL) {
+        free(user->fcmProjectId);
+        user->fcmProjectId = NULL;
+        return true;
+    }
+    char* tmp = strdup(projectId);
+    if (tmp != NULL) {
+        free(user->fcmProjectId);
+        user->fcmProjectId = tmp;
+    }
+    return (tmp != NULL);
+}
+
+bool nm_iam_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories)
+{
+    nn_string_set_clear(&user->notificationCategories);
+    const char* s;
+    NN_STRING_SET_FOREACH(s, categories) {
+        nn_string_set_insert(&user->notificationCategories, s);
+    }
+    return true;
 }
 
 bool nm_iam_user_set_sct(struct nm_iam_user* user, const char* sct)
@@ -173,6 +221,27 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
     if(user->sct != NULL) {
         copy->sct = strdup(user->sct);
         if(copy->sct == NULL) {
+            failed = true;
+        }
+    }
+
+    if(user->fcmToken != NULL) {
+        copy->fcmToken = strdup(user->fcmToken);
+        if(copy->fcmToken == NULL) {
+            failed = true;
+        }
+    }
+
+    if(user->fcmProjectId != NULL) {
+        copy->fcmProjectId = strdup(user->fcmProjectId);
+        if(copy->fcmProjectId == NULL) {
+            failed = true;
+        }
+    }
+
+    const char* p;
+    NN_STRING_SET_FOREACH(p, &user->notificationCategories) {
+        if (!nn_string_set_insert(&copy->notificationCategories, p)) {
             failed = true;
         }
     }

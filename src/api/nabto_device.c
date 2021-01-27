@@ -133,8 +133,8 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 
 void nabto_device_do_stop(struct nabto_device_context* dev)
 {
-    nabto_device_future_queue_stop(&dev->futureQueue);
     nabto_device_platform_stop_blocking(dev);
+    nabto_device_future_queue_stop(&dev->futureQueue);
 }
 
 /**

@@ -303,6 +303,13 @@ bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
     nabto_device_add_server_connect_token(iam->device, iam->state->passwordOpenSct);
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users) {
+        const char* s;
+        NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
+            if (!nn_string_set_contains(&iam->notificationCategories, s)) {
+                iam->state = nm_iam_state_new();
+                return false;
+            }
+        }
         nabto_device_add_server_connect_token(iam->device, user->sct);
     }
 
@@ -318,6 +325,9 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
     nm_iam_pairing_local_open_init(&iam->coapPairingLocalOpenPostHandler, iam->device, iam);
     nm_iam_pairing_local_initial_init(&iam->coapPairingLocalInitialPostHandler, iam->device, iam);
 
+    nm_iam_get_notification_categories_init(&iam->coapIamNotificationCategoriesGetHandler, iam->device, iam);
+    nm_iam_send_fcm_test_init(&iam->coapIamSendFcmTestPostHandler, iam->device, iam);
+
     nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
     nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
     nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
@@ -330,6 +340,9 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
     nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
     nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
+    nm_iam_set_user_fcm_token_init(&iam->coapIamUsersUserSetFcmTokenHandler, iam->device, iam);
+    nm_iam_set_user_notification_categories_init(&iam->coapIamUsersUserSetNotificationCategoriesHandler,
+                                                 iam->device, iam);
     nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
     nm_iam_settings_set_init(&iam->coapIamSettingsSetHandler, iam->device, iam);
 }
@@ -341,6 +354,9 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapPairingPasswordInvitePostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalOpenPostHandler);
     nm_iam_coap_handler_deinit(&iam->coapPairingLocalInitialPostHandler);
+
+    nm_iam_coap_handler_deinit(&iam->coapIamNotificationCategoriesGetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamSendFcmTestPostHandler);
 
     nm_iam_coap_handler_deinit(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersGetHandler);
@@ -355,6 +371,8 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFcmTokenHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNotificationCategoriesHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsSetHandler);
 }
@@ -366,6 +384,9 @@ void nm_iam_internal_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapPairingPasswordInvitePostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingLocalOpenPostHandler);
     nm_iam_coap_handler_stop(&iam->coapPairingLocalInitialPostHandler);
+
+    nm_iam_coap_handler_stop(&iam->coapIamNotificationCategoriesGetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamSendFcmTestPostHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamMeGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersGetHandler);
@@ -380,6 +401,8 @@ void nm_iam_internal_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFcmTokenHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetNotificationCategoriesHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamSettingsSetHandler);
@@ -490,6 +513,58 @@ enum nm_iam_error nm_iam_internal_set_user_display_name(struct nm_iam* iam, cons
 
     enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     if (nm_iam_user_set_display_name(user, displayName)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_fcm_token(user, token)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_fcm_project_id(user, id)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    const char* s;
+    NN_STRING_SET_FOREACH(s, categories) {
+        if (!nn_string_set_contains(&iam->notificationCategories, s)) {
+            return NM_IAM_ERROR_NO_SUCH_CATEGORY;
+        }
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_notification_categories(user, categories)) {
         ec = NM_IAM_ERROR_OK;
     }
     nm_iam_internal_state_has_changed(iam);
