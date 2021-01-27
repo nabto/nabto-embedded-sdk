@@ -33,6 +33,8 @@ NabtoDeviceError nm_iam_coap_handler_init(
     const char** paths,
     nm_iam_coap_request_handler requestHandler);
 
+// Async does currently only allow one request at a time. For more serious usage
+// than the current POST /iam/users/{user}/fcm-test consider a redesign
 void nm_iam_coap_handler_set_async(struct nm_iam_coap_handler* handler, bool async);
 void nm_iam_coap_handler_async_request_end(struct nm_iam_coap_handler* handler);
 
