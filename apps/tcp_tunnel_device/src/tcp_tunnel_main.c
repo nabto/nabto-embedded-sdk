@@ -498,15 +498,14 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             printf("# " NEWLINE);
             printf("# The device offers Local Open Pairing" NEWLINE);
         }
+    }
 
-
-        if (state->passwordOpenPairing && state->passwordOpenPassword != NULL && state->passwordOpenSct != NULL) {
-            printf("# " NEWLINE);
-            printf("# The device has Password Open Pairing enabled" NEWLINE);
-            printf("# Open Pairing Password:  %s" NEWLINE, state->passwordOpenPassword);
-            printf("# Open Pairing SCT:       %s" NEWLINE, state->passwordOpenSct);
-            printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, state->passwordOpenPassword, state->passwordOpenSct);
-        }
+    if (state->passwordOpenPairing && state->passwordOpenPassword != NULL && state->passwordOpenSct != NULL) {
+        printf("# " NEWLINE);
+        printf("# The device has Password Open Pairing enabled" NEWLINE);
+        printf("# Open Pairing Password:  %s" NEWLINE, state->passwordOpenPassword);
+        printf("# Open Pairing SCT:       %s" NEWLINE, state->passwordOpenSct);
+        printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, state->passwordOpenPassword, state->passwordOpenSct);
     }
 
     printf("# " NEWLINE);
