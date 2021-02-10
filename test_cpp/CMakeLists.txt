@@ -28,6 +28,7 @@ set(test_src
   tests/api/private_key_test.cpp
   tests/api/password_authorization_request_test.cpp
   tests/api/fcm_test.cpp
+  tests/api/service_invoke_test.cpp
   tests/attach/attach_test.cpp
   tests/iam/iam.cpp
   tests/iam/state.cpp
