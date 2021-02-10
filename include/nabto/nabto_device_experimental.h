@@ -102,8 +102,77 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
 
+/**
+ * Service invocation api
+ *
+ * This makes it possible to instruct the basestation to invoke an https service
+ * on behalf of the device. The basestation has validated the product id and the
+ * device id so if the service integration is used together with basic auth the
+ * https service can be certain that a specific device id and product id is the
+ * originator of a https request.
+ */
+typedef struct NabtoDeviceServiceInvoke_ NabtoDeviceServiceInvoke;
+
+/**
+ * Create a new service invoke object.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceServiceInvoke* NABTO_DEVICE_API
+nabto_device_service_invoke_new(NabtoDevice* device);
+
+/**
+ * Free a service invoke object
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_service_invoke_free(NabtoDeviceServiceInvoke* serviceInvoke);
+
+/**
+ * Stop a service invocation.
+ * If a coap request is in progress this request will be stopped.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_service_invoke_stop(NabtoDeviceServiceInvoke* serviceInvoke);
+
+/**
+ * Set the service id to invoke. The service id is configured in the nabto cloud console.
+ *
+ * @param serviceInvoke  The service invoke object
+ * @param serviceId  The service id
+ * @return NABTO_DEVICE_EC_OK  iff the serviceId is set.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_service_invoke_set_service_id(NabtoDeviceServiceInvoke* serviceInvoke, const char* serviceId);
+
+/**
+ * Set the message for the service invocation
+ *
+ * @param serviceInvoke  The service invoke object
+ * @param message  The message
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_service_invoke_set_message(NabtoDeviceServiceInvoke* serviceInvoke, const char* message);
+
+/**
+ * Invoke a service. The future resolves with the status of the operation.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_service_invoke_execute(NabtoDeviceServiceInvoke* serviceInvoke, NabtoDeviceFuture* future);
+
+/**
+ * Get the status code from the service invocation, the behavior is undefined if
+ * the invocation failed.
+ */
+NABTO_DEVICE_DECL_PREFIX uint16_t NABTO_DEVICE_API
+nabto_device_service_invoke_get_response_status_code(NabtoDeviceServiceInvoke* serviceInvoke);
+
+/**
+ * Get the response message from the service invocation. The message is undefined
+ * if the service invocation failed.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_service_invoke_get_response_message(NabtoDeviceServiceInvoke* serviceInvoke);
+
 #ifdef __cplusplus
-} // extern c
+} // extern c #endif
 #endif
 
 #endif
