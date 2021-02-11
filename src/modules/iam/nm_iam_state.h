@@ -75,15 +75,35 @@ bool nm_iam_state_set_password_open_password(struct nm_iam_state* state, const c
 bool nm_iam_state_set_password_open_sct(struct nm_iam_state* state, const char* sct);
 
 /**
- * Enable/disable pairing modes. Each pairing mode will be disabled by
- * default if its corresponding set function is not called.
+ * Enable/disable password open pairing mode. Disabled per default.
  *
  * @param state [in]  The IAM state
  * @param b [in]      The boolean value to set
  */
 void nm_iam_state_set_password_open_pairing(struct nm_iam_state* state, bool b);
+
+/**
+ * Enable/disable local open pairing modes. Disabled per default.
+ *
+ * @param state [in]  The IAM state
+ * @param b [in]      The boolean value to set
+ */
 void nm_iam_state_set_local_open_pairing(struct nm_iam_state* state, bool b);
+
+/**
+ * Enable/disable password invite pairing mode. Disabled per default.
+ *
+ * @param state [in]  The IAM state
+ * @param b [in]      The boolean value to set
+ */
 void nm_iam_state_set_password_invite_pairing(struct nm_iam_state* state, bool b);
+
+/**
+ * Enable/disable local initial pairing mode. Disabled per default.
+ *
+ * @param state [in]  The IAM state
+ * @param b [in]      The boolean value to set
+ */
 void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b);
 
 /**
