@@ -18,16 +18,16 @@ extern "C" {
  * the NO_MATCH and ERROR values. Only ALLOW and DENY should be used
  * as configuration for a statement.
  *
- * @param ALLOW    Actions in this statement should be allowed
- * JSON representation: { "Effect": "Allow" }
+ * `ALLOW`: Actions in this statement should be allowed
+ *  JSON representation: `{ "Effect": "Allow" }`
  *
- * @param DENY     Actions in this statement should be denied
- * JSON representation: { "Effect": "Deny" }
+ * `DENY`: Actions in this statement should be denied
+ * JSON representation: `{ "Effect": "Deny" }`
  *
- * @param NO_MATCH Internal only: used to indicate the action was not covered by the statement
+ * `NO_MATCH`: Internal only: used to indicate the action was not covered by the statement
  * JSON representation: N/A, not used for configuration
  *
- * @param ERROR    Internal only: an error occured during evaluation
+ * `ERROR`    Internal only: an error occured during evaluation
  * JSON representation: N/A, not used for configuration
  */
 enum nm_iam_effect {
@@ -40,13 +40,12 @@ enum nm_iam_effect {
 /**
  * Enum defining how to match a condition. When matching, a list of
  * attributes are provided which is matched with the values configured
- * in the condition. A condition is considered a match if an attribute
- * with the same key as the condition key is provided and its value
- * matches any value of the condition. That is eg. if using
- * STRING_EQUALS, the attribute matching the condition key must be
- * equal to one of the condition values. Whereas with
- * STRING_NOT_EQUALS, the attribute value must not be equal to any of
- * the condition values.
+ * in the condition.
+ *
+ * A condition is considered a match if an attribute with the same key as the condition key is
+ * provided and its value matches any value of the condition. That is eg. if using STRING_EQUALS,
+ * the attribute matching the condition key must be equal to one of the condition values. Whereas
+ * with STRING_NOT_EQUALS, the attribute value must not be equal to any of the condition values.
  *
  * To simplify the internal structure all values are stored as strings.
  *
