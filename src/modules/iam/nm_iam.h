@@ -39,7 +39,7 @@ struct nn_string_set;
 struct nm_iam_role;
 
 /**
- * @intro IAM Life Cycle
+ * @intro Life Cycle and Types
  *
  * Manage the IAM module's life cycle: Initialize, deinitialize, load configuration, load full state,
  * dump full state.
@@ -257,7 +257,7 @@ enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, 
  *
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the user
- * @param sct [in] the password to set for the user
+ * @param password [in] the password to set for the user
  * @return NM_IAM_ERROR_OK if password was set successfully for the user.
  *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
  */

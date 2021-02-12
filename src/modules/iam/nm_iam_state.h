@@ -47,7 +47,7 @@ struct nm_iam_state* nm_iam_state_new();
 
 /**
  * Free IAM state if the ownership was not transfered to an
- * IAM module with nm_iam_load_state()
+ * IAM module instance with nm_iam_load_state()
  *
  * @param state [in]  State to free
  */
@@ -160,17 +160,49 @@ struct nm_iam_user* nm_iam_state_user_new(const char* username);
 void nm_iam_state_user_free(struct nm_iam_user* user);
 
 /**
- * Set functions for modifying fingerprint, server connect token,
- * display name, role, and password in a user. Strings are copied into
- * the user when set.
+ * Set the public key fingerprint for user.
  *
- * @param user [in]      User to set string in
- * @param <string> [in]  The string to copy into the user
+ * @param user [in] the user to set fingerprint on
+ * @param fingerprint [in] hex encoded public key fingerprint
+ * @return true iff operation completed successfully
  */
 bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint);
+
+/**
+ * Set an SCT for the specified user while the system is running.
+ *
+ * @param user [in] the user to set SCT on
+ * @param sct [in] the sct to set for the user
+ * @return true iff operation completed successfully
+ */
 bool nm_iam_state_user_set_sct(struct nm_iam_user* user, const char* sct);
+
+/**
+ * Set display name for the specified user.
+ *
+ * @param user [in] the username of the user
+ * @param displayName [in] the display name to set for the user
+ * @return true iff operation completed successfully
+ */
 bool nm_iam_state_user_set_display_name(struct nm_iam_user* user, const char* displayName);
+
+/**
+ * Set role for the specified user.
+ *
+ * @param user [in] the username of the user
+ * @param role [in] the role id to set for the user
+ * @return true iff operation completed successfully
+ */
 bool nm_iam_state_user_set_role(struct nm_iam_user* user, const char* roleId);
+
+/**
+ * Set password for the specified user.
+ *
+ * @param user [in] the username of the user
+ * @param password [in] the password to set for the user
+ * @return NM_IAM_ERROR_OK if password was set successfully for the user.
+ *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ */
 bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* password);
 bool nm_iam_state_user_set_fcm_token(struct nm_iam_user* user, const char* token);
 bool nm_iam_state_user_set_fcm_project_id(struct nm_iam_user* user, const char* id);
@@ -196,22 +228,17 @@ bool nm_iam_state_user_set_notification_categories(struct nm_iam_user* user, str
  * @param username [in]  The username to look for
  * @return NULL iff the user could not be found
  */
-struct nm_iam_user* nm_iam_state_find_user(struct nm_iam_state* state, const char* username);
+struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* state, const char* username);
 
 /**
  * Copy a state object. The received copy must be freed with
  * nm_iam_state_free() or the ownership must be transferred to an IAM
- * module.
+ * module instance.
  *
  * @param state [in]  The state to copy
  * @return NULL iff the state could not be copied
  */
 struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state);
-
-/**
- * Comomn helper functions
- */
-struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* state, const char* username);
 
 #ifdef __cplusplus
 } //extern "C"
