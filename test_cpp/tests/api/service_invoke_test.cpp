@@ -26,10 +26,11 @@ BOOST_AUTO_TEST_CASE(set_value_multiple_times)
     NabtoDevice* device = nabto_device_new();
     NabtoDeviceServiceInvoke* s = nabto_device_service_invoke_new(device);
     BOOST_TEST((s != NULL));
+
     BOOST_TEST(nabto_device_service_invoke_set_service_id(s, "foo") == NABTO_DEVICE_EC_OK);
     BOOST_TEST(nabto_device_service_invoke_set_service_id(s, "bar") == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(nabto_device_service_invoke_set_message(s, "foo") == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(nabto_device_service_invoke_set_message(s, "bar") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_service_invoke_set_message(s, (const uint8_t*)"foo", 3) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_service_invoke_set_message(s, (const uint8_t*)"bar", 3) == NABTO_DEVICE_EC_OK);
 
     nabto_device_service_invoke_free(s);
     nabto_device_free(device);
@@ -48,7 +49,7 @@ BOOST_AUTO_TEST_CASE(not_attached)
 
     NabtoDeviceServiceInvoke* s = nabto_device_service_invoke_new(dev);
     nabto_device_service_invoke_set_service_id(s, serviceId);
-    nabto_device_service_invoke_set_message(s, message);
+    nabto_device_service_invoke_set_message(s, (uint8_t*)message, strlen(message));
 
     NabtoDeviceFuture* f = nabto_device_future_new(dev);
     nabto_device_service_invoke_execute(s, f);
@@ -71,7 +72,7 @@ BOOST_AUTO_TEST_CASE(notification_send_ok)
 
     NabtoDeviceServiceInvoke* s = nabto_device_service_invoke_new(dev);
     nabto_device_service_invoke_set_service_id(s, serviceId);
-    nabto_device_service_invoke_set_message(s, message);
+    nabto_device_service_invoke_set_message(s, (uint8_t*)message, strlen(message));
 
     NabtoDeviceFuture* f = nabto_device_future_new(dev);
     nabto_device_service_invoke_execute(s, f);
@@ -79,7 +80,9 @@ BOOST_AUTO_TEST_CASE(notification_send_ok)
 
     BOOST_TEST(nabto_device_service_invoke_get_response_status_code(s) == 200);
     std::string desiredResponse = R"({"hello": "world"})";
-    BOOST_TEST(nabto_device_service_invoke_get_response_message(s) == desiredResponse);
+    const uint8_t* responseData = nabto_device_service_invoke_get_response_message_data(s);
+    size_t responseDataLength = nabto_device_service_invoke_get_response_message_size(s);
+    BOOST_TEST(std::string(reinterpret_cast<const char*>(responseData), responseDataLength) == desiredResponse);
 
     nabto_device_future_free(f);
     nabto_device_service_invoke_free(s);

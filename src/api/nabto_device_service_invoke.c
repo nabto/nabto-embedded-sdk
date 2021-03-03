@@ -59,7 +59,7 @@ nabto_device_service_invoke_set_service_id(NabtoDeviceServiceInvoke* serviceInvo
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_service_invoke_set_message(NabtoDeviceServiceInvoke* serviceInvoke, const char* message)
+nabto_device_service_invoke_set_message(NabtoDeviceServiceInvoke* serviceInvoke, const uint8_t* message, size_t messageLength)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
@@ -70,11 +70,13 @@ nabto_device_service_invoke_set_message(NabtoDeviceServiceInvoke* serviceInvoke,
         free(s->serviceInvoke.serviceInvokeRequest.message);
     }
 
-    s->serviceInvoke.serviceInvokeRequest.message = strdup(message);
+    s->serviceInvoke.serviceInvokeRequest.message = malloc(messageLength);
     if (s->serviceInvoke.serviceInvokeRequest.message == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {
         ec = NABTO_DEVICE_EC_OK;
+        memcpy(s->serviceInvoke.serviceInvokeRequest.message, message, messageLength);
+        s->serviceInvoke.serviceInvokeRequest.messageLength = messageLength;
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ec;
@@ -126,9 +128,16 @@ nabto_device_service_invoke_get_response_status_code(NabtoDeviceServiceInvoke* s
     return s->serviceInvoke.serviceInvokeResponse.statusCode;
 }
 
-const char* NABTO_DEVICE_API
-nabto_device_service_invoke_get_response_message(NabtoDeviceServiceInvoke* serviceInvoke)
+const uint8_t* NABTO_DEVICE_API
+nabto_device_service_invoke_get_response_message_data(NabtoDeviceServiceInvoke* serviceInvoke)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     return s->serviceInvoke.serviceInvokeResponse.message;
+}
+
+size_t NABTO_DEVICE_API
+nabto_device_service_invoke_get_response_message_size(NabtoDeviceServiceInvoke* serviceInvoke)
+{
+    struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
+    return s->serviceInvoke.serviceInvokeResponse.messageLength;
 }

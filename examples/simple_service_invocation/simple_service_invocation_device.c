@@ -78,7 +78,7 @@ void service_invocation(NabtoDevice* device)
 {
     NabtoDeviceServiceInvoke* invocation = nabto_device_service_invoke_new(device);
     nabto_device_service_invoke_set_service_id(invocation, serviceId_);
-    nabto_device_service_invoke_set_message(invocation, message_);
+    nabto_device_service_invoke_set_message(invocation, (const uint8_t*)message_, sizeof(message_));
     NabtoDeviceFuture* future = nabto_device_future_new(device);
     nabto_device_service_invoke_execute(invocation, future);
     NabtoDeviceError ec = nabto_device_future_wait(future);
@@ -86,8 +86,9 @@ void service_invocation(NabtoDevice* device)
         printf("Service invocation failed %s\n", nabto_device_error_get_message(ec));
     } else {
         uint16_t statusCode = nabto_device_service_invoke_get_response_status_code(invocation);
-        //const char* message = nabto_device_service_invoke_get_message(invocation);
-        printf("Service invocation ok. StatusCode %d\n", statusCode);
+        const uint8_t* message = nabto_device_service_invoke_get_response_message_data(invocation);
+        size_t messageLength = nabto_device_service_invoke_get_response_message_size(invocation);
+        printf("Service invocation ok. StatusCode: %d, MessageLength: %d \n", statusCode, messageLength);
     }
 }
 

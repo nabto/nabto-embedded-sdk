@@ -13,4 +13,9 @@
  * @return true iff the text string is copied to out and it is shorter than maxLength.
  */
 bool nc_cbor_copy_text_string(CborValue* s, char** out, size_t maxLength);
+
+/**
+ * copy a byte string into a buffer
+ */
+bool nc_cbor_copy_byte_string(CborValue* s, uint8_t** out, size_t* outLength, size_t maxLength);
 #endif

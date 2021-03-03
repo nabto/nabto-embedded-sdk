@@ -108,7 +108,7 @@ size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_
     cbor_encode_text_stringz(&map, request->serviceId);
 
     cbor_encode_text_stringz(&map, "Message");
-    cbor_encode_text_stringz(&map, request->message);
+    cbor_encode_byte_string(&map, request->message, request->messageLength);
 
     cbor_encoder_close_container(&encoder, &map);
 
@@ -127,7 +127,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     cbor_value_map_find_value(&map, "StatusCode", &statusCode);
     cbor_value_map_find_value(&map, "Message", &message);
 
-    if (!nc_cbor_copy_text_string(&message, &response->message, 4096)) {
+    if (!nc_cbor_copy_byte_string(&message, &response->message, &response->messageLength, 65536) ) {
         return false;
     }
 

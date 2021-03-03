@@ -47,11 +47,13 @@ typedef void (*nc_attacher_service_invoke_callback)(const np_error_code ec, void
 
 struct nc_attacher_service_invoke_request {
     char* serviceId;
-    char* message;
+    uint8_t* message;
+    size_t messageLength;
 };
 
 struct nc_attacher_service_invoke_response {
-    char* message;
+    uint8_t* message;
+    size_t messageLength;
     uint16_t statusCode;
 };
 

@@ -149,7 +149,7 @@ nabto_device_service_invoke_set_service_id(NabtoDeviceServiceInvoke* serviceInvo
  * @param message  The message
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_service_invoke_set_message(NabtoDeviceServiceInvoke* serviceInvoke, const char* message);
+nabto_device_service_invoke_set_message(NabtoDeviceServiceInvoke* serviceInvoke, const uint8_t* message, size_t messageLength);
 
 /**
  * Invoke a service. The future resolves with the status of the operation.
@@ -168,8 +168,15 @@ nabto_device_service_invoke_get_response_status_code(NabtoDeviceServiceInvoke* s
  * Get the response message from the service invocation. The message is undefined
  * if the service invocation failed.
  */
-NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_service_invoke_get_response_message(NabtoDeviceServiceInvoke* serviceInvoke);
+NABTO_DEVICE_DECL_PREFIX const uint8_t* NABTO_DEVICE_API
+nabto_device_service_invoke_get_response_message_data(NabtoDeviceServiceInvoke* serviceInvoke);
+
+/**
+ * Get the length of the response message from the service invocation. Undefined if the invocation failed.
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_service_invoke_get_response_message_size(NabtoDeviceServiceInvoke* serviceInvoke);
+
 
 #ifdef __cplusplus
 } // extern c #endif
