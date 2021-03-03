@@ -63,7 +63,7 @@ function(nabto_version master_version version_var error_var)
   string(STRIP "${GIT_HASH}" GIT_HASH)
 
   message("version.cmake variables: GIT_DIRTY ${GIT_DIRTY}, GIT_TAG ${GIT_TAG}, GIT_BRANCH ${GIT_BRANCH}, GIT_COUNT ${GIT_COUNT}, GIT_BRANCH_COUNT ${GIT_BRANCH_COUNT}, GIT_HASH: ${GIT_HASH}")
-  
+
   if (GIT_TAG AND NOT GIT_DIRTY)
     # string v4.5.6 -> 4.5.6
     string(SUBSTRING ${GIT_TAG} 1 -1 VERSION)
@@ -73,14 +73,14 @@ function(nabto_version master_version version_var error_var)
     # a release tag is e.g. v5.1.1
 
     # replace new lines with ; such that it becomes a cmake list.
-    string(REPLACE "\r\n" ";" GIT_TAGS ${GIT_TAGS})
-    string(REPLACE "\n" ";" GIT_TAGS ${GIT_TAGS})
-    # Filter the list such that all tags not matching the branch and the format vmajor.minor.patch is filtered away. 
+    string(REPLACE "\r\n" ";" GIT_TAGS "${GIT_TAGS}")
+    string(REPLACE "\n" ";" GIT_TAGS "${GIT_TAGS}")
+    # Filter the list such that all tags not matching the branch and the format vmajor.minor.patch is filtered away.
     set(MATCH_STRING "^v${GIT_BRANCH}\\.[0-9]*$")
     list(FILTER GIT_TAGS INCLUDE REGEX ${MATCH_STRING})
     list(LENGTH GIT_TAGS GIT_TAGS_LENGTH)
     # if the list is empty use the default branch version
-    if (GIT_TAGS_LENGTH EQUAL "0") 
+    if (GIT_TAGS_LENGTH EQUAL "0")
       set(VERSION_NUMBER "${GIT_BRANCH}.0")
     else()
       # MAX_TAG is on the form v5.1.1 get the last number and bump it by one.
@@ -100,4 +100,3 @@ function(nabto_version master_version version_var error_var)
   message("Generated the version: ${VERSION} based on the git repository information")
   set(${version_var} ${VERSION} PARENT_SCOPE)
 endfunction()
-
