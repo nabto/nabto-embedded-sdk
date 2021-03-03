@@ -198,6 +198,7 @@ if (DEVICE_BUILD_EXAMPLES)
   add_subdirectory(examples/simple_mdns)
   add_subdirectory(examples/simple_tunnel)
   add_subdirectory(examples/simple_push)
+  add_subdirectory(examples/simple_service_invocation)
 
   add_subdirectory(platform_integration_stub)
 #  add_subdirectory(platform_integration_guide)
