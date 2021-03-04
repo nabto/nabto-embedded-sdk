@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
 
 /**
  * Simple service invocation device.
@@ -88,7 +89,7 @@ void service_invocation(NabtoDevice* device)
         uint16_t statusCode = nabto_device_service_invoke_get_response_status_code(invocation);
         const uint8_t* message = nabto_device_service_invoke_get_response_message_data(invocation);
         size_t messageLength = nabto_device_service_invoke_get_response_message_size(invocation);
-        printf("Service invocation ok. StatusCode: %d, MessageLength: %d \n", statusCode, messageLength);
+        printf("Service invocation ok. StatusCode: %d, MessageLength: %d\n", statusCode, (int)messageLength);
     }
 }
 
@@ -157,6 +158,11 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK)
     {
         return false;
+    }
+
+    const char* server = getenv("NABTO_SERVER");
+    if (server) {
+        nabto_device_set_server_url(device, server);
     }
 
     NabtoDeviceFuture* fut = nabto_device_future_new(device);

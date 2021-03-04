@@ -14,7 +14,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data);
 static size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_t* buffer, size_t bufferSize);
 static bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response);
 
-const char* serviceInvokePath[] = { "device", "service-invoke" };
+const char* serviceInvokePath[] = { "device", "services", "invoke" };
 
 np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attacher, struct nc_attacher_service_invoke_context *serviceInvokeContext, nc_attacher_service_invoke_callback cb, void *userData)
 {
@@ -24,7 +24,7 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
 
     serviceInvokeContext->coapRequest = nabto_coap_client_request_new(nc_coap_client_get_client(attacher->coapClient),
                                                               NABTO_COAP_METHOD_POST,
-                                                              2, serviceInvokePath,
+                                                              3, serviceInvokePath,
                                                               &coap_handler,
                                                               serviceInvokeContext, attacher->dtls);
     nabto_coap_client_request_set_content_format(serviceInvokeContext->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
@@ -73,15 +73,20 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         size_t payloadLength = 0;
         nabto_coap_client_response_get_payload(res, &payload, &payloadLength);
 
-        if (resCode == 201 && contentFormat == NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR && payload != NULL) {
+        ec = NABTO_EC_BAD_RESPONSE;
+        if (resCode != 201) {
+            NABTO_LOG_ERROR(LOG, "Expected 201 got %d", resCode);
+        } else if (contentFormat == NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
+            NABTO_LOG_ERROR(LOG, "Unexpected content format");
+        } else if (payload == NULL) {
+            NABTO_LOG_ERROR(LOG, "Expected a payload in the response");
+        } else {
             if (parse_response(payload, payloadLength, &ctx->serviceInvokeResponse)) {
                 ec = NABTO_EC_OK;
             } else {
+                NABTO_LOG_ERROR(LOG, "Could not parse cbor response from basestation");
                 ec = NABTO_EC_BAD_RESPONSE;
             }
-
-        } else {
-            ec = NABTO_EC_BAD_RESPONSE;
         }
     }
     nabto_coap_client_request_free(request);
