@@ -14,7 +14,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data);
 static size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_t* buffer, size_t bufferSize);
 static bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response);
 
-const char* serviceInvokePath[] = { "device", "services", "invoke" };
+const char* serviceInvokePath[] = { "device", "service", "invoke" };
 
 np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attacher, struct nc_attacher_service_invoke_context *serviceInvokeContext, nc_attacher_service_invoke_callback cb, void *userData)
 {
@@ -76,7 +76,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         ec = NABTO_EC_BAD_RESPONSE;
         if (resCode != 201) {
             NABTO_LOG_ERROR(LOG, "Expected 201 got %d", resCode);
-        } else if (contentFormat == NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
+        } else if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
             NABTO_LOG_ERROR(LOG, "Unexpected content format");
         } else if (payload == NULL) {
             NABTO_LOG_ERROR(LOG, "Expected a payload in the response");
