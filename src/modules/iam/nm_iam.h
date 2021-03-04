@@ -158,7 +158,7 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
  *
  * Query and manage the IAM state while the system is running.
  *
- * These function manipulates the IAM state in a thread safe manner. Note that when state has been
+ * These functions manipulate the IAM state in a thread safe manner. Note that when state has been
  * manipulated the state changed callback is invoked.
  */
 

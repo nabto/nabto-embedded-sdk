@@ -117,11 +117,11 @@ void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b);
 bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* openPairingRole);
 
 /**
- * Set the username to pair as during local initial pairing. The role
- * ID string is copied into the state.
+ * Set the username to pair as during local initial pairing. The username 
+ * string is copied into the state.
  *
  * @param state [in]                   The IAM state
- * @param initialPairingUsername [in]  ID of the role to use.
+ * @param initialPairingUsername [in]  The username
  * @return true iff the username was set.
  */
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* initialPairingUsername);
