@@ -1715,7 +1715,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authenticat
  * Nabto Edge uses `Futures` to manage return values and completion of
  * asynchronous API-functions; a future resolves once such function
  * has completed. For more details about this topic, see the [Futures
- * Guide](/developer/guides/overview/nabto_futures.html).
+ * Guide](/developer/guides/get-started/embedded/nabto_futures.html).
  *
  * Futures are introduced to unify the way return values and
  * completion of asynchronous functions are handled and to minimize
@@ -1729,7 +1729,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authenticat
  * In addition to futures, asynchronous functions that are expected to
  * be invoked recurringly introduces the concept of `listeners`, also
  * elaborated in the [Futures
- * Guide](/developer/guides/overview/nabto_futures.html).
+ * Guide](/developer/guides/get-started/embedded/nabto_futures.html).
  */
 
 /**
@@ -1850,13 +1850,13 @@ nabto_device_future_error_code(NabtoDeviceFuture* future);
  * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a
  * future resolves once such function has completed. Additionally, the Listener API supports
  * asynchronous functions that are expected to be invoked recurringly (see the [Futures
- * Guide](/developer/guides/overview/nabto_futures.html) for details).
+ * Guide](/developer/guides/get-started/embedded/nabto_futures.html) for details).
  *
  * Listeners are created and freed through this general API. Once created, a listener is initialized
  * for use with a specific purpose, e.g. to listen for [incoming coap
  * requests](/developer/api-reference/embedded-device-sdk/coap/nabto_device_coap_init_listener.html),
  * [incoming stream
- * requests](/developer/api-reference/embedded-device-sdk/streaming/nabto_device_stream_init_listener.html)
+ * requests](/developer/api-reference/embedded-device-sdk/streams/nabto_device_stream_init_listener.html)
  * or [general device
  * events](/developer/api-reference/embedded-device-sdk/context/nabto_device_device_events_init_listener.html).
  */
