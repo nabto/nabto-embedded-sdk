@@ -12,19 +12,19 @@ struct nabto_device_service_invoke {
     struct nabto_device_future* future;
 };
 
-NabtoDeviceServiceInvoke* NABTO_DEVICE_API
-nabto_device_service_invoke_new(NabtoDevice* device)
+NabtoDeviceServiceInvocation* NABTO_DEVICE_API
+nabto_device_service_invocation_new(NabtoDevice* device)
 {
     struct nabto_device_service_invoke* s = calloc(1, sizeof(struct nabto_device_service_invoke));
     if (s != NULL) {
         struct nabto_device_context* dev = (struct nabto_device_context*)device;
         s->dev = dev;
     }
-    return (NabtoDeviceServiceInvoke*)s;
+    return (NabtoDeviceServiceInvocation*)s;
 }
 
 void NABTO_DEVICE_API
-nabto_device_service_invoke_free(NabtoDeviceServiceInvoke* serviceInvoke)
+nabto_device_service_invocation_free(NabtoDeviceServiceInvocation* serviceInvoke)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
@@ -37,7 +37,7 @@ nabto_device_service_invoke_free(NabtoDeviceServiceInvoke* serviceInvoke)
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_service_invoke_set_service_id(NabtoDeviceServiceInvoke* serviceInvoke, const char* serviceId)
+nabto_device_service_invocation_set_service_id(NabtoDeviceServiceInvocation* serviceInvoke, const char* serviceId)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
@@ -59,7 +59,7 @@ nabto_device_service_invoke_set_service_id(NabtoDeviceServiceInvoke* serviceInvo
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_service_invoke_set_message(NabtoDeviceServiceInvoke* serviceInvoke, const uint8_t* message, size_t messageLength)
+nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* serviceInvoke, const uint8_t* message, size_t messageLength)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
@@ -89,7 +89,7 @@ static void service_invoke_send_callback(np_error_code ec, void* userData)
 }
 
 void NABTO_DEVICE_API
-nabto_device_service_invoke_execute(NabtoDeviceServiceInvoke* serviceInvoke, NabtoDeviceFuture* future)
+nabto_device_service_invocation_execute(NabtoDeviceServiceInvocation* serviceInvoke, NabtoDeviceFuture* future)
 {
     struct nabto_device_future* f = (struct nabto_device_future*)future;
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
@@ -111,7 +111,7 @@ nabto_device_service_invoke_execute(NabtoDeviceServiceInvoke* serviceInvoke, Nab
 }
 
 void NABTO_DEVICE_API
-nabto_device_service_invoke_stop(NabtoDeviceServiceInvoke* serviceInvoke)
+nabto_device_service_invocation_stop(NabtoDeviceServiceInvocation* serviceInvoke)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
@@ -122,21 +122,21 @@ nabto_device_service_invoke_stop(NabtoDeviceServiceInvoke* serviceInvoke)
 }
 
 uint16_t NABTO_DEVICE_API
-nabto_device_service_invoke_get_response_status_code(NabtoDeviceServiceInvoke* serviceInvoke)
+nabto_device_service_invocation_get_response_status_code(NabtoDeviceServiceInvocation* serviceInvoke)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     return s->serviceInvoke.serviceInvokeResponse.statusCode;
 }
 
 const uint8_t* NABTO_DEVICE_API
-nabto_device_service_invoke_get_response_message_data(NabtoDeviceServiceInvoke* serviceInvoke)
+nabto_device_service_invocation_get_response_message_data(NabtoDeviceServiceInvocation* serviceInvoke)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     return s->serviceInvoke.serviceInvokeResponse.message;
 }
 
 size_t NABTO_DEVICE_API
-nabto_device_service_invoke_get_response_message_size(NabtoDeviceServiceInvoke* serviceInvoke)
+nabto_device_service_invocation_get_response_message_size(NabtoDeviceServiceInvocation* serviceInvoke)
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     return s->serviceInvoke.serviceInvokeResponse.messageLength;
