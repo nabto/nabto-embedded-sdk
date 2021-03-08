@@ -1,6 +1,7 @@
 #include "nc_attacher.h"
 #include "nc_coap.h"
 #include "nc_cbor.h"
+#include "nc_coap_rest_error.h"
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
 #include <coap/nabto_coap_client.h>
@@ -75,7 +76,9 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
 
         ec = NABTO_EC_BAD_RESPONSE;
         if (resCode != 201) {
-            NABTO_LOG_ERROR(LOG, "Expected 201 got %d", resCode);
+            struct nc_coap_rest_error error;
+            nc_coap_rest_error_decode_response(res, &error);
+            NABTO_LOG_ERROR(LOG, "Failed to invoke service. %s", error.message);
         } else if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
             NABTO_LOG_ERROR(LOG, "Unexpected content format");
         } else if (payload == NULL) {
