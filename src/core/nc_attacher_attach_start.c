@@ -1,30 +1,33 @@
-#include "nc_attacher.h"
-
-#include <platform/np_logging.h>
-#include <core/nc_coap.h>
-#include <core/nc_version.h>
-#include <core/nc_coap_rest_error.h>
-
 #include <cbor.h>
+#include <core/nc_coap.h>
+#include <core/nc_coap_rest_error.h>
+#include <core/nc_version.h>
+#include <platform/np_logging.h>
 #include <stdlib.h>
 
+#include "nc_attacher.h"
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 const char* attachStartPath[] = {"device", "attach-start"};
 
+static void coap_attach_start_handler(struct nabto_coap_client_request* request,
+                                      void* data);
 
+static size_t encode_cbor_request(CborEncoder* encoder,
+                                  struct nc_attach_context* ctx);
 
-static void coap_attach_start_handler(struct nabto_coap_client_request* request, void* data);
+static enum nc_attacher_status coap_attach_start_handle_response(
+    struct nabto_coap_client_request* request, struct nc_attach_context* ctx);
 
-static size_t encode_cbor_request(CborEncoder* encoder, struct nc_attach_context* ctx);
+static enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
+                                               CborValue* root);
+static enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
+                                               CborValue* root);
 
-static enum nc_attacher_status coap_attach_start_handle_response(struct nabto_coap_client_request* request,  struct nc_attach_context* ctx);
-
-static enum nc_attacher_status handle_attached(struct nc_attach_context* ctx, CborValue* root);
-static enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx, CborValue* root);
-
-np_error_code nc_attacher_attach_start_request(struct nc_attach_context* ctx, nc_attacher_attach_start_callback startCallback, void* userData)
+np_error_code nc_attacher_attach_start_request(
+    struct nc_attach_context* ctx,
+    nc_attacher_attach_start_callback startCallback, void* userData)
 {
     if (ctx->startCallback != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
@@ -43,11 +46,9 @@ np_error_code nc_attacher_attach_start_request(struct nc_attach_context* ctx, nc
     }
 
     struct nabto_coap_client_request* req;
-    req = nabto_coap_client_request_new(nc_coap_client_get_client(ctx->coapClient),
-                                        NABTO_COAP_METHOD_POST,
-                                        2, attachStartPath,
-                                        &coap_attach_start_handler,
-                                        ctx, ctx->dtls);
+    req = nabto_coap_client_request_new(
+        nc_coap_client_get_client(ctx->coapClient), NABTO_COAP_METHOD_POST, 2,
+        attachStartPath, &coap_attach_start_handler, ctx, ctx->dtls);
 
     if (req == NULL) {
         free(buffer);
@@ -61,8 +62,10 @@ np_error_code nc_attacher_attach_start_request(struct nc_attach_context* ctx, nc
     }
 
     np_error_code ec = NABTO_EC_OPERATION_STARTED;
-    nabto_coap_client_request_set_content_format(req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    nabto_coap_error err = nabto_coap_client_request_set_payload(req, buffer, bufferSize);
+    nabto_coap_client_request_set_content_format(
+        req, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+    nabto_coap_error err =
+        nabto_coap_client_request_set_payload(req, buffer, bufferSize);
     if (err != NABTO_COAP_ERROR_OK) {
         ec = nc_coap_error_to_core(err);
         nabto_coap_client_request_free(req);
@@ -75,28 +78,48 @@ np_error_code nc_attacher_attach_start_request(struct nc_attach_context* ctx, nc
     return ec;
 }
 
-enum nc_attacher_status coap_attach_start_handle_response(struct nabto_coap_client_request* request,  struct nc_attach_context* ctx)
+enum nc_attacher_status coap_attach_start_handle_response(
+    struct nabto_coap_client_request* request, struct nc_attach_context* ctx)
 {
-    struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
+    struct nabto_coap_client_response* res =
+        nabto_coap_client_request_get_response(request);
     if (!res) {
         return NC_ATTACHER_STATUS_ERROR;
     }
     uint16_t resCode = nabto_coap_client_response_get_code(res);
     if (!nc_coap_is_status_ok(resCode)) {
-        enum nc_coap_rest_error err = nc_coap_rest_error_handle_response(res);
-        switch (err) {
-            case NC_COAP_REST_ERROR_UNKNOWN_DEVICE_FINGERPRINT:
-                NABTO_LOG_ERROR(LOG, "The server does not recognize the fingerprint of the device. Check that the fingerprint is in sync with the server");
+        struct nc_coap_rest_error error;
+        nc_coap_rest_error_decode_response(res, &error);
+
+        switch (error.nabtoErrorCode) {
+            case NABTO_PROTOCOL_UNKNOWN_DEVICE_FINGERPRINT:
+                NABTO_LOG_ERROR(LOG,
+                                "The server does not recognize the "
+                                "fingerprint of the device. Check that the "
+                                "fingerprint is in sync with the server");
                 break;
-            case NC_COAP_REST_ERROR_WRONG_PRODUCT_ID:
-                NABTO_LOG_ERROR(LOG, "The product id on the server for the key/fingerprint used by this device does not match the product id configured in this device");
+            case NABTO_PROTOCOL_WRONG_PRODUCT_ID:
+                NABTO_LOG_ERROR(
+                    LOG,
+                    "The product id on the server for the key/fingerprint "
+                    "used by this device does not match the product id "
+                    "configured in this device");
                 break;
-            case NC_COAP_REST_ERROR_WRONG_DEVICE_ID:
-                NABTO_LOG_ERROR(LOG, "The device id on the server for the key/fingerprint used by this device does not match the device id configured in this device");
+            case NABTO_PROTOCOL_WRONG_DEVICE_ID:
+                NABTO_LOG_ERROR(
+                    LOG,
+                    "The device id on the server for the key/fingerprint "
+                    "used by this device does not match the device id "
+                    "configured in this device");
                 break;
             default:
-                NABTO_LOG_ERROR(LOG, "Attach failed with code %d", resCode);
+                NABTO_LOG_ERROR(LOG,
+                                "Attach failed with coap code %d, error "
+                                "code %d, message: %s, ",
+                                error.coapResponseCode, error.nabtoErrorCode,
+                                error.message);
         }
+        nc_coap_rest_error_deinit(&error);
         return NC_ATTACHER_STATUS_ERROR;
     }
     const uint8_t* payload;
@@ -138,7 +161,8 @@ enum nc_attacher_status coap_attach_start_handle_response(struct nabto_coap_clie
     }
 }
 
-enum nc_attacher_status handle_attached(struct nc_attach_context* ctx, CborValue* root)
+enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
+                                        CborValue* root)
 {
     CborValue keepAlive;
     cbor_value_map_find_value(root, "KeepAlive", &keepAlive);
@@ -153,8 +177,7 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx, CborValue
 
         if (cbor_value_is_unsigned_integer(&interval) &&
             cbor_value_is_unsigned_integer(&retryInterval) &&
-            cbor_value_is_unsigned_integer(&maxRetries))
-        {
+            cbor_value_is_unsigned_integer(&maxRetries)) {
             uint64_t i;
             uint64_t ri;
             uint64_t mr;
@@ -162,7 +185,9 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx, CborValue
             cbor_value_get_uint64(&retryInterval, &ri);
             cbor_value_get_uint64(&maxRetries, &mr);
 
-            NABTO_LOG_TRACE(LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u", i, ri, mr);
+            NABTO_LOG_TRACE(
+                LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u",
+                i, ri, mr);
             nc_keep_alive_set_settings(&ctx->keepAlive, i, ri, mr);
         }
     }
@@ -179,8 +204,12 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx, CborValue
             cbor_value_is_unsigned_integer(&port)) {
             uint64_t p;
             size_t stringLength;
-            if(cbor_value_calculate_string_length(&host, &stringLength) != CborNoError || stringLength > sizeof(ctx->stunHost)-1) {
-                NABTO_LOG_ERROR(LOG, "Basestation reported invalid STUN host, STUN will be impossible");
+            if (cbor_value_calculate_string_length(&host, &stringLength) !=
+                    CborNoError ||
+                stringLength > sizeof(ctx->stunHost) - 1) {
+                NABTO_LOG_ERROR(LOG,
+                                "Basestation reported invalid STUN host, STUN "
+                                "will be impossible");
             } else {
                 size_t len = sizeof(ctx->stunHost);
                 memset(ctx->stunHost, 0, sizeof(ctx->stunHost));
@@ -189,15 +218,20 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx, CborValue
                 ctx->stunPort = (uint16_t)p;
             }
         } else {
-            NABTO_LOG_ERROR(LOG, "Basestation reported invalid STUN information, STUN will be impossible");
+            NABTO_LOG_ERROR(LOG,
+                            "Basestation reported invalid STUN information, "
+                            "STUN will be impossible");
         }
     } else {
-        NABTO_LOG_ERROR(LOG, "Basestation did not report STUN information, STUN will be impossible");
+        NABTO_LOG_ERROR(LOG,
+                        "Basestation did not report STUN information, STUN "
+                        "will be impossible");
     }
     return NC_ATTACHER_STATUS_ATTACHED;
 }
 
-enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx, CborValue* root)
+enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
+                                        CborValue* root)
 {
     CborValue host;
     CborValue port;
@@ -207,18 +241,18 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx, CborValue
     cbor_value_map_find_value(root, "Port", &port);
     cbor_value_map_find_value(root, "Fingerprint", &fingerprint);
 
-
     if (cbor_value_is_text_string(&host) &&
         cbor_value_is_unsigned_integer(&port) &&
-        cbor_value_is_byte_string(&fingerprint))
-    {
+        cbor_value_is_byte_string(&fingerprint)) {
         uint64_t p;
         size_t hostLength;
         cbor_value_get_string_length(&host, &hostLength);
         cbor_value_get_uint64(&port, &p);
 
         if (hostLength < 1 || hostLength > 256) {
-            NABTO_LOG_ERROR(LOG, "Redirect response had invalid hostname length: %u", hostLength);
+            NABTO_LOG_ERROR(LOG,
+                            "Redirect response had invalid hostname length: %u",
+                            hostLength);
             return NC_ATTACHER_STATUS_ERROR;
         }
 
@@ -232,13 +266,15 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx, CborValue
     return NC_ATTACHER_STATUS_REDIRECT;
 }
 
-void coap_attach_start_handler(struct nabto_coap_client_request* request, void* data)
+void coap_attach_start_handler(struct nabto_coap_client_request* request,
+                               void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     nc_attacher_attach_start_callback cb = ctx->startCallback;
     void* userData = ctx->startCallbackUserData;
 
-    enum nc_attacher_status result = coap_attach_start_handle_response(request, ctx);
+    enum nc_attacher_status result =
+        coap_attach_start_handle_response(request, ctx);
 
     nabto_coap_client_request_free(request);
     ctx->startCallback = NULL;
@@ -255,10 +291,10 @@ size_t encode_cbor_request(CborEncoder* encoder, struct nc_attach_context* ctx)
     cbor_encode_text_stringz(&map, nc_version());
 
     cbor_encode_text_stringz(&map, "AppName");
-    cbor_encode_text_stringz(&map, ctx->appName?ctx->appName:"");
+    cbor_encode_text_stringz(&map, ctx->appName ? ctx->appName : "");
 
     cbor_encode_text_stringz(&map, "AppVersion");
-    cbor_encode_text_stringz(&map, ctx->appVersion?ctx->appVersion:"");
+    cbor_encode_text_stringz(&map, ctx->appVersion ? ctx->appVersion : "");
 
     cbor_encode_text_stringz(&map, "ProductId");
     cbor_encode_text_stringz(&map, ctx->productId);

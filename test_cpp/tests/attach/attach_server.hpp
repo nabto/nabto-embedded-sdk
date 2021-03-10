@@ -188,6 +188,17 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
                 response->setPayload(b);
                 return;
             });
+        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/service/invoke", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+                response->setCode(201);
+                response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+                nlohmann::json root;
+                root["StatusCode"] = 200;
+                std::string hw = "{\"hello\": \"world\"}";
+                root["Message"] = nlohmann::json::binary_t(std::vector<uint8_t>(reinterpret_cast<const uint8_t*>(hw.data()),reinterpret_cast<const uint8_t*>(hw.data()+ hw.size())));
+                std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+                response->setPayload(b);
+                return;
+            });
     }
 
     void handleDeviceAttach(DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response)

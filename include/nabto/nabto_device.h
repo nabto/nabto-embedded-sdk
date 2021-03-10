@@ -1993,6 +1993,113 @@ nabto_device_mdns_add_subtype(NabtoDevice* device, const char* subtype);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char* value);
 
+
+/*************
+ * Service Invocation
+ *************/
+
+/**
+ * @intro Service Invocation
+ *
+ * Service invocation is allowing the device to invoke a service which is
+ * configured in the basestation. This makes it possible to integrate with
+ * services without needing a client initiated connection to the device.
+ */
+typedef struct NabtoDeviceServiceInvocation_ NabtoDeviceServiceInvocation;
+
+/**
+ * Create a new service invocation object.
+ *
+ * @param device  The device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceServiceInvocation* NABTO_DEVICE_API
+nabto_device_service_invocation_new(NabtoDevice* device);
+
+/**
+ * Free a service invocation object
+ *
+ * @param serviceInvocation  The service invocation object.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_service_invocation_free(NabtoDeviceServiceInvocation* serviceInvocation);
+
+/**
+ * Stop a service invocation.
+ * If a coap request is in progress this request will be stopped.
+ *
+ * @param serviceInvocation  The service invocation object.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_service_invocation_stop(NabtoDeviceServiceInvocation* serviceInvocation);
+
+/**
+ * Set the service id to invoke. The service id is configured in the nabto cloud console.
+ *
+ * @param serviceInvocation  The service invocation object.
+ * @param serviceId  The service id.
+ * @return NABTO_DEVICE_EC_OK  iff the serviceId is set.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_service_invocation_set_service_id(NabtoDeviceServiceInvocation* serviceInvocation, const char* serviceId);
+
+/**
+ * Set the message for the service invocation. The message is handled as binary data.
+ *
+ * @param serviceInvocation  The service invocation object.
+ * @param message  The message.
+ * @param messageLength  Length of the message.
+ * @return NABTO_DEVICE_EC_OK  iff the message is set.
+ *         NABTO_DEVICE_EC_OUT_OF_MEMORY  if memory allocation failed.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* serviceInvocation, const uint8_t* message, size_t messageLength);
+
+/**
+ * Invoke a service. The future resolves with the status of the operation. After
+ * the invocation has succeeded the response message and status code can be read
+ * from the object.
+ *
+ * The future status is
+ *  - NABTO_DEVICE_EC_OK if the invocation succeeded.
+ *  - NABTO_DEVICE_EC_FAILED if the invocation failed, see the log for further
+ *    error diagnosis.
+ *
+ * @param serviceInvocation  The service invocation object.
+ * @param future  The future which is resolved when the result is ready.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_service_invocation_execute(NabtoDeviceServiceInvocation* serviceInvocation, NabtoDeviceFuture* future);
+
+/**
+ * Get the status code from the service invocation, the behavior is undefined if
+ * the invocation failed or has not yet been invoked.
+ *
+ * @param serviceInvocation  The service invocation object.
+ * @return  the statusCode
+ */
+NABTO_DEVICE_DECL_PREFIX uint16_t NABTO_DEVICE_API
+nabto_device_service_invocation_get_response_status_code(NabtoDeviceServiceInvocation* serviceInvocation);
+
+/**
+ * Get the response message from the service invocation. The message is undefined
+ * if the service invocation failed.
+ *
+ * @param serviceInvocation  The service invocation object.
+ * @return  A pointer to the start of the response message. This pointer is alive until the service invocation object is freed.
+ */
+NABTO_DEVICE_DECL_PREFIX const uint8_t* NABTO_DEVICE_API
+nabto_device_service_invocation_get_response_message_data(NabtoDeviceServiceInvocation* serviceInvocation);
+
+/**
+ * Get the length of the response message from the service invocation. Undefined if the invocation failed.
+ *
+ * @param serviceInvocation  The service invocation object.
+ * @return  The length of the response message.
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_service_invocation_get_response_message_size(NabtoDeviceServiceInvocation* serviceInvocation);
+
+
 /********
  * Misc
  ********/

@@ -1,8 +1,10 @@
 #include "nc_attacher.h"
 #include "nc_coap.h"
+#include "nc_cbor.h"
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
 #include <coap/nabto_coap_client.h>
+
 
 #include "cbor.h"
 
@@ -114,23 +116,6 @@ size_t encode_request(struct nc_attacher_fcm_request* request, uint8_t* buffer, 
     return cbor_encoder_get_extra_bytes_needed(&encoder);
 }
 
-bool copy_text_string(CborValue* s, char** out, size_t maxLength) {
-    if (!cbor_value_is_text_string(s)) {
-        return false;
-    }
-    size_t length;
-    if (cbor_value_calculate_string_length(s, &length) != CborNoError) {
-        return false;
-    }
-    if (length > maxLength) {
-        return false;
-    }
-    length += 1; // room for null byte
-    *out = malloc(length+1);
-    cbor_value_copy_text_string(s, *out, &length, NULL);
-    return true;
-}
-
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_fcm_response* response) {
     CborParser parser;
     CborValue map;
@@ -143,7 +128,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     cbor_value_map_find_value(&map, "StatusCode", &statusCode);
     cbor_value_map_find_value(&map, "Body", &body);
 
-    if (!copy_text_string(&body, &response->body, 4096)) {
+    if (!nc_cbor_copy_text_string(&body, &response->body, 4096)) {
         return false;
     }
 

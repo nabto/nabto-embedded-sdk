@@ -17,7 +17,6 @@ set(ne_utils_src
   ${root_dir}/nabto-common/components/stun/src/nabto_stun_message.c
 )
 
-
 set(ne_streaming_src
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_congestion_control.c
   ${root_dir}/nabto-common/components/streaming/src/nabto_stream_window.c
@@ -61,6 +60,7 @@ set(ne_core_src
   ${root_dir}/src/core/nc_coap_server.c
   ${root_dir}/src/core/nc_attacher_sct.c
   ${root_dir}/src/core/nc_attacher_fcm.c
+  ${root_dir}/src/core/nc_attacher_service_invoke.c
   ${root_dir}/src/core/nc_coap_rest_error.c
   ${root_dir}/src/core/nc_rendezvous.c
   ${root_dir}/src/core/nc_stun.c
@@ -78,6 +78,7 @@ set(ne_core_src
   ${root_dir}/src/core/nc_device.c
   ${root_dir}/src/core/nc_spake2.c
   ${root_dir}/src/core/nc_spake2_coap.c
+  ${root_dir}/src/core/nc_cbor.c
 )
 
 set(ne_api_src
@@ -90,6 +91,7 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_logging.c
   ${root_dir}/src/api/nabto_device_experimental.c
   ${root_dir}/src/api/nabto_device_fcm.c
+  ${root_dir}/src/api/nabto_device_service_invocation.c
   ${root_dir}/src/api/nabto_device_util.c
   ${root_dir}/src/api/nabto_device_event_handler.c
   ${root_dir}/src/api/nabto_device_connection_events.c

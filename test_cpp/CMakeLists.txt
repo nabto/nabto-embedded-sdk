@@ -28,6 +28,7 @@ set(test_src
   tests/api/private_key_test.cpp
   tests/api/password_authorization_request_test.cpp
   tests/api/fcm_test.cpp
+  tests/api/service_invoke_test.cpp
   tests/attach/attach_test.cpp
   tests/iam/iam.cpp
   tests/iam/state.cpp
@@ -40,6 +41,7 @@ set(test_src
   tests/policies/policy_json_test.cpp
   tests/dns/dns_test.cpp
   tests/local_ping/local_ping_test.cpp
+  tests/core/nc_coap_rest_error_test.cpp
   ../src/api_test/nabto_device_test_logging.c
   )
 
