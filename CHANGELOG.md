@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.5.0] - 2021-03-10
+
+### Added
+
+ - Service invocation api
+ - Service invocation example
+
+#### Feature: Service Invocation
+
+A feature has been added such that the device can invoke an https service
+through the basestation. The device uses the connection between the device and
+the basestation to instruct the basestation to invoke an https service. The
+service which is invoked is configured in the nabto cloud console.
+
+
 ## [5.3.0] - 2021-01-27
 
 ### Added
