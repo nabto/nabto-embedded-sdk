@@ -74,15 +74,18 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         size_t payloadLength = 0;
         nabto_coap_client_response_get_payload(res, &payload, &payloadLength);
 
-        ec = NABTO_EC_BAD_RESPONSE;
+        ec = NABTO_EC_UNKNOWN;
         if (resCode != 201) {
             struct nc_coap_rest_error error;
             nc_coap_rest_error_decode_response(res, &error);
             NABTO_LOG_ERROR(LOG, "Failed to invoke service. %s", error.message);
+            ec = NABTO_EC_FAILED;
         } else if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
             NABTO_LOG_ERROR(LOG, "Unexpected content format");
+            ec = NABTO_EC_BAD_RESPONSE;
         } else if (payload == NULL) {
             NABTO_LOG_ERROR(LOG, "Expected a payload in the response");
+            ec = NABTO_EC_BAD_RESPONSE;
         } else {
             if (parse_response(payload, payloadLength, &ctx->serviceInvokeResponse)) {
                 ec = NABTO_EC_OK;

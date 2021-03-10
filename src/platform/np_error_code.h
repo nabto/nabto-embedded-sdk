@@ -51,6 +51,7 @@ extern "C" {
         XX(NOT_ATTACHED, "Not attached")                                \
         XX(TIMEOUT, "Timeout")                                          \
         XX(BAD_RESPONSE, "Bad response")                                \
+        XX(FAILED, "Operation failed, look at the log for more information.") \
 
 
 
