@@ -138,7 +138,6 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
 struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 
 /**
-<<<<<<< HEAD
  * Set the list of notification categories users can subscribe
  * to. Trying to set a notification category that is not included in
  * this set will result in an error. The categories are copied into
@@ -151,9 +150,6 @@ struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct nn_string_set* categories);
 
 /**
- * Check if the given connection has access to do the given action
- * provided the given attributes.
-=======
  * @intro Runtime State
  *
  * Query and manage the IAM state while the system is running.
@@ -170,7 +166,6 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
  * @param action [in] the action to check if it is allowed
  * @param attributes [in] optional attributes to reference from policies (can be NULL)
  * @return true if the requested action is allowed, false if not
->>>>>>> 08c1228d... add more documentation, add intros, reorder
  */
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributes);
 
