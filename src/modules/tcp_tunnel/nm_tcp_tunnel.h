@@ -53,6 +53,7 @@ struct nm_tcp_tunnel_service {
 
     char* id;
     char* type;
+    int connectionsLimit;
 
     void* weakPtr;
 };
@@ -68,7 +69,7 @@ struct nm_tcp_tunnels {
 
 np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device);
 void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels);
-
+np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_id(struct nm_tcp_tunnels* tunnels, const char* serviceId, int limit);
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels);
 
@@ -80,5 +81,7 @@ np_error_code nm_tcp_tunnel_init_stream_listener(struct nm_tcp_tunnel_service* s
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels* tunnels, const char* id);
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr);
+
+np_error_code nm_tcp_tunnel_service_limit_concurrent_connections(struct nm_tcp_tunnel_service* service, int limit);
 
 #endif
