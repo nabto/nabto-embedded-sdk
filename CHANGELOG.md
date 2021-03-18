@@ -1,5 +1,20 @@
 # Changelog
 
+## [unreleasd]
+
+### Added
+
+#### Feature: Limit number of concurrent connections on a tunnel
+
+We have added a feature such that the amount of concurrent connections on a tcp
+tunnel can be limited. The limit is based on the tcp tunnel service id. This
+feature can be used on devices where certain tcp tunnels needs to be limited. It
+could be a device which both have RTSP and HTTP services where RTSP needs to be
+limited to a single connections while HTTP can have many connections. The
+feature can be controlled with the function
+`nabto_device_tcp_tunnel_service_limit_concurrent_connections` which currently
+resides in nabto_device_experimental.h
+
 ## [5.5.0] - 2021-03-10
 
 ### Added
