@@ -61,6 +61,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels
     }
 
     service->tunnels = tunnels;
+    service->connectionsLimit = -1;
     tunnels->weakPtrCounter++;
     service->weakPtr = tunnels->weakPtrCounter;
     nn_llist_init(&service->connections);
@@ -77,6 +78,17 @@ np_error_code nm_tcp_tunnel_service_destroy_by_id(struct nm_tcp_tunnels* tunnels
     nm_tcp_tunnel_service_destroy(service);
     return NABTO_EC_OK;
 }
+
+np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_id(struct nm_tcp_tunnels* tunnels, const char* id, int limit)
+{
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, id);
+    if (service == NULL) {
+        return NABTO_EC_NOT_FOUND;
+    }
+    nm_tcp_tunnel_service_limit_concurrent_connections(service, limit);
+    return NABTO_EC_OK;
+}
+
 
 void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service)
 {
@@ -175,6 +187,16 @@ void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWea
         return;
     }
 
+    int connectionsLimit = service->connectionsLimit;
+    if (connectionsLimit >= 0) {
+        size_t connectionsSize = nn_llist_size(&service->connections);
+        if (connectionsSize >= connectionsLimit) {
+            // too many connections
+            nc_stream_destroy(stream);
+            return;
+        }
+    }
+
     struct nm_tcp_tunnel_connection* c = nm_tcp_tunnel_connection_new();
 
     if (c == NULL) {
@@ -215,4 +237,10 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_
         }
     }
     return NULL;
+}
+
+np_error_code nm_tcp_tunnel_service_limit_concurrent_connections(struct nm_tcp_tunnel_service* service, int limit)
+{
+    service->connectionsLimit = limit;
+    return NABTO_EC_OK;
 }
