@@ -8,6 +8,7 @@
 #include <core/nc_device.h>
 
 #include <nn/llist.h>
+#include <nn/string_int_map.h>
 
 struct nabto_stream;
 struct nc_device_context;
@@ -53,7 +54,6 @@ struct nm_tcp_tunnel_service {
 
     char* id;
     char* type;
-    int connectionsLimit;
 
     void* weakPtr;
 };
@@ -61,6 +61,7 @@ struct nm_tcp_tunnel_service {
 struct nm_tcp_tunnels {
     struct nc_device_context* device;
     struct nn_llist services;
+    struct nn_string_int_map limitsByType;
     uint8_t* weakPtrCounter;
 
     struct nabto_coap_server_resource* coapListServices;
@@ -69,7 +70,7 @@ struct nm_tcp_tunnels {
 
 np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device);
 void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels);
-np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_id(struct nm_tcp_tunnels* tunnels, const char* serviceId, int limit);
+np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type, int limit);
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels);
 
@@ -82,6 +83,6 @@ np_error_code nm_tcp_tunnel_init_stream_listener(struct nm_tcp_tunnel_service* s
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels* tunnels, const char* id);
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr);
 
-np_error_code nm_tcp_tunnel_service_limit_concurrent_connections(struct nm_tcp_tunnel_service* service, int limit);
+size_t nm_tcp_tunnel_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type);
 
 #endif

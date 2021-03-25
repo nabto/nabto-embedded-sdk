@@ -25,6 +25,7 @@ np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_devi
         return NABTO_EC_RESOURCE_EXISTS;
     }
     nn_llist_init(&tunnels->services);
+    nn_string_int_map_init(&tunnels->limitsByType);
     tunnels->device = device;
     tunnels->weakPtrCounter = (void*)(1);
 
@@ -51,6 +52,7 @@ void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
 
         nm_tcp_tunnel_coap_deinit(tunnels);
     }
+    nn_string_int_map_deinit(&tunnels->limitsByType);
 }
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels)
@@ -61,7 +63,6 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels
     }
 
     service->tunnels = tunnels;
-    service->connectionsLimit = -1;
     tunnels->weakPtrCounter++;
     service->weakPtr = tunnels->weakPtrCounter;
     nn_llist_init(&service->connections);
@@ -79,13 +80,12 @@ np_error_code nm_tcp_tunnel_service_destroy_by_id(struct nm_tcp_tunnels* tunnels
     return NABTO_EC_OK;
 }
 
-np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_id(struct nm_tcp_tunnels* tunnels, const char* id, int limit)
+np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type, int limit)
 {
-    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, id);
-    if (service == NULL) {
-        return NABTO_EC_NOT_FOUND;
+    nn_string_int_map_erase(&tunnels->limitsByType, type);
+    if (limit != -1) {
+        nn_string_int_map_insert(&tunnels->limitsByType, type, limit);
     }
-    nm_tcp_tunnel_service_limit_concurrent_connections(service, limit);
     return NABTO_EC_OK;
 }
 
@@ -187,10 +187,12 @@ void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWea
         return;
     }
 
-    int connectionsLimit = service->connectionsLimit;
-    if (connectionsLimit >= 0) {
-        size_t connectionsSize = nn_llist_size(&service->connections);
-        if (connectionsSize >= connectionsLimit) {
+
+    struct nn_string_int_map_iterator limit = nn_string_int_map_get(&tunnels->limitsByType, service->type);
+    if (!nn_string_int_map_is_end(&limit)) {
+        int connectionsLimit = nn_string_int_map_value(&limit);
+        size_t connectionsByType = nm_tcp_tunnel_connections_by_type(tunnels, service->type);
+        if ((int)connectionsByType >= connectionsLimit) {
             // too many connections
             nc_stream_destroy(stream);
             return;
@@ -239,8 +241,15 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_
     return NULL;
 }
 
-np_error_code nm_tcp_tunnel_service_limit_concurrent_connections(struct nm_tcp_tunnel_service* service, int limit)
+size_t nm_tcp_tunnel_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type)
 {
-    service->connectionsLimit = limit;
-    return NABTO_EC_OK;
+    size_t connections = 0;
+    struct nm_tcp_tunnel_service* service;
+    NN_LLIST_FOREACH(service, &tunnels->services)
+    {
+        if (strcmp(service->type, type) == 0) {
+            connections += nn_llist_size(&service->connections);
+        }
+    }
+    return connections;
 }

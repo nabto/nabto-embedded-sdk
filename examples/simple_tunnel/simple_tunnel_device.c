@@ -1,4 +1,5 @@
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_experimental.h>
 
 #include <apps/common/string_file.h>
 
@@ -87,6 +88,12 @@ int main(int argc, char** argv) {
     ec = nabto_device_add_tcp_tunnel_service(device, serviceId, serviceType, serviceHost, servicePort);
     if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to add the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
+        goto cleanup;
+    }
+
+    ec = nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(device, serviceType, 1);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Failed to limit the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
         goto cleanup;
     }
 
