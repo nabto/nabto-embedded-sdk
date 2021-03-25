@@ -42,13 +42,13 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
 
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_tcp_tunnel_service_limit_concurrent_connections(NabtoDevice* device, const char* serviceId, int limit)
+nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(NabtoDevice* device, const char* type, int limit)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ec = nm_tcp_tunnel_limit_concurrent_connections_by_id(&dev->tcpTunnels, serviceId, limit);
+    ec = nm_tcp_tunnel_limit_concurrent_connections_by_type(&dev->tcpTunnels, type, limit);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return nabto_device_error_core_to_api(ec);

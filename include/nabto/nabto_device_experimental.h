@@ -104,24 +104,23 @@ nabto_device_disable_remote_access(NabtoDevice* device);
 
 
 /**
- * Limit concurrent tunnels of a specific id.
+ * Limit concurrent tunnels of a specific type.
  *
  * Sometimes a device is resource limited, and one wants to limit the number of
- * rtsp connections to 1 and http connections to 10. This feature can be used to
- * limit the amount of tunnels which can be created based on their id.
+ * rtsp connections to 1. This feature can be used to
+ * limit the amount of tunnels which can be created based on their type.
  *
  * Open tunnel connections are not affected but new connections will be rejected
  * if the limit has been exceeded.
  *
  * @param device [in]     The device instance
- * @param serviceId [in]  ID of service to remove
+ * @param serviceId [in]  Type of services to limit.
  * @param limit [in]      The new limit for the tunnel service. -1 means
  * unlimited.
- * @return NABTO_DEVICE_EC_OK if the service was removed
- *         NABTO_DEVICE_EC_NOT_FOUND if the service ID was not found
+ * @return NABTO_DEVICE_EC_OK if the limit is set
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_tcp_tunnel_service_limit_concurrent_connections(NabtoDevice* device, const char* serviceId, int limit);
+nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(NabtoDevice* device, const char* type, int limit);
 
 #ifdef __cplusplus
 } // extern c #endif
