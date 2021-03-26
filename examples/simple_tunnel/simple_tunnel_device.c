@@ -14,6 +14,7 @@ const char* serviceHost = "127.0.0.1";
 uint16_t    servicePort = 22;
 const char* serviceId   = "ssh";
 const char* serviceType = "ssh";
+int         serviceConcurrentConnectionsLimit = -1;
 
 #define NEWLINE "\n"
 
@@ -91,7 +92,7 @@ int main(int argc, char** argv) {
         goto cleanup;
     }
 
-    ec = nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(device, serviceType, 1);
+    ec = nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(device, serviceType, serviceConcurrentConnectionsLimit);
     if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to limit the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
         goto cleanup;
