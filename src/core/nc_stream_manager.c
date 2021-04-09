@@ -20,12 +20,15 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
 static void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
 static void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data);
 
+static uint64_t nc_stream_manager_get_next_nonce(struct nc_stream_manager_context* ctx);
+
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl, struct nn_log* logger)
 {
     ctx->pl = pl;
     ctx->logger = logger;
     ctx->maxSegments = 1000000;
     ctx->maxStreams = SIZE_MAX;
+    ctx->nonceCounter = 0;
     nn_llist_init(&ctx->listeners);
     nn_llist_init(&ctx->streams);
 }
@@ -207,8 +210,11 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         if (stream == NULL) {
             return NULL;
         }
+
+        uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
+
         np_error_code ec;
-        ec = nc_stream_init(ctx->pl, stream, streamId, nc_client_connection_get_dtls_connection(conn), conn, ctx, conn->connectionRef, ctx->logger);
+        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, nc_client_connection_get_dtls_connection(conn), conn, ctx, conn->connectionRef, ctx->logger);
         if (ec != NABTO_EC_OK) {
             nc_stream_manager_free_stream(stream);
             return NULL;
@@ -387,4 +393,11 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
 void nc_stream_manager_set_max_segments(struct nc_stream_manager_context* ctx, size_t maxSegments)
 {
     ctx->maxSegments = maxSegments;
+}
+
+uint64_t nc_stream_manager_get_next_nonce(struct nc_stream_manager_context* ctx)
+{
+    uint64_t nonce = ctx->nonceCounter;
+    ctx->nonceCounter++;
+    return nonce;
 }

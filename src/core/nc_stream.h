@@ -65,7 +65,7 @@ void nc_stream_ref_count_inc(struct nc_stream_context* stream);
 void nc_stream_ref_count_dec(struct nc_stream_context* stream);
 
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, struct np_dtls_srv_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger);
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct np_dtls_srv_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger);
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 

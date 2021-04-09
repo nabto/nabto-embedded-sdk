@@ -28,6 +28,7 @@ struct nc_stream_manager_context {
     size_t allocatedSegments;
     size_t maxStreams;
     size_t currentStreams;
+    uint64_t nonceCounter;
 };
 
 void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl, struct nn_log* logger);
