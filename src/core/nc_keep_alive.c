@@ -33,12 +33,16 @@ void nc_keep_alive_deinit(struct nc_keep_alive_context* ctx)
 
 void nc_keep_alive_stop(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_cancel_event(&ctx->pl->eq, ctx->keepAliveEvent);
+    if (ctx->keepAliveEvent) {
+        np_event_queue_cancel_event(&ctx->pl->eq, ctx->keepAliveEvent);
+    }
 }
 
 void nc_keep_alive_reset(struct nc_keep_alive_context* ctx)
 {
-    np_event_queue_cancel_event(&ctx->pl->eq, ctx->keepAliveEvent);
+    if (ctx->keepAliveEvent) {
+        np_event_queue_cancel_event(&ctx->pl->eq, ctx->keepAliveEvent);
+    }
     ctx->kaInterval = NC_KEEP_ALIVE_DEFAULT_INTERVAL;
     ctx->kaRetryInterval = NC_KEEP_ALIVE_DEFAULT_RETRY_INTERVAL;
     ctx->kaMaxRetries = NC_KEEP_ALIVE_DEFAULT_MAX_RETRIES;

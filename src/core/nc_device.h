@@ -60,7 +60,7 @@ struct nc_device_context {
     struct nc_rendezvous_coap_context rendezvousCoap;
     struct np_dtls_srv* dtlsServer;
 
-    bool enableRemote;
+    bool enableAttach;
     bool enableMdns;
     bool mdnsPublished;
     struct np_mdns_context* mdns;
@@ -144,6 +144,7 @@ np_error_code nc_device_set_server_url(struct nc_device_context* ctx, const char
 
 
 np_error_code nc_device_disable_remote_access(struct nc_device_context* ctx);
+np_error_code nc_device_set_basestation_attach(struct nc_device_context* ctx, bool enable);
 np_error_code nc_device_enable_mdns(struct nc_device_context* ctx);
 
 np_error_code nc_device_mdns_add_subtype(struct nc_device_context* ctx, const char* subtype);
