@@ -369,6 +369,7 @@ np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port)
         if (errno == EADDRINUSE) {
             return NABTO_EC_ADDRESS_IN_USE;
         }
+        NABTO_LOG_TRACE(LOG, "Could not create UDP socket, errno is %d", errno);
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 }
