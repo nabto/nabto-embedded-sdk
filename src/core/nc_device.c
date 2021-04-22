@@ -247,7 +247,7 @@ void nc_device_p2p_socket_bound_cb(const np_error_code ec, void* data)
         if (ec == NABTO_EC_ADDRESS_IN_USE) {
             NABTO_LOG_ERROR(LOG, "The p2p socket could not be bound to the port %d", dev->p2pPort);
         } else {
-            NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket, Nabto device not started!");
+            NABTO_LOG_ERROR(LOG, "nc_device failed to bind primary UDP socket, error: %s - Nabto device not started!", np_error_code_to_string(ec));
         }
         dev->state = NC_DEVICE_STATE_STOPPED;
         nc_device_resolve_start_close_callbacks(dev, ec);
