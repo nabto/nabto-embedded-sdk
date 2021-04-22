@@ -80,7 +80,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
     nabto_stream_set_application_event_callback(&ctx->stream, &nc_stream_application_event_callback, ctx);
-    uint8_t* noncePtr = &nonce;
+    uint8_t* noncePtr = (uint8_t*)&nonce;
     nabto_stream_init_responder(&ctx->stream, noncePtr);
     return NABTO_EC_OK;
 }
