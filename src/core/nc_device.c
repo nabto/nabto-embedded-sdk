@@ -31,7 +31,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     device->deviceId = NULL;
     device->hostname = NULL;
     device->connectionRef = 0;
-    device->enableRemote = true;
+    device->enableAttach = true;
 
     nn_log_init(&device->moduleLogger, module_logger, device);
 
@@ -303,7 +303,7 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
     nc_udp_dispatch_set_rendezvous_context(&dev->udp, &dev->rendezvous);
     nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
 
-    if (dev->enableRemote) {
+    if (dev->enableAttach) {
         nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
     }
 
@@ -601,8 +601,29 @@ np_error_code nc_device_disable_remote_access(struct nc_device_context* dev)
     if (dev->state != NC_DEVICE_STATE_SETUP) {
         return NABTO_EC_INVALID_STATE;
     }
-    dev->enableRemote = false;
+    dev->enableAttach = false;
     return NABTO_EC_OK;
+}
+
+void nc_device_attach_disabled_cb(void* data) {
+    nc_device_events_listener_notify(NC_DEVICE_EVENT_DETACHED, data);
+}
+
+np_error_code nc_device_set_basestation_attach(struct nc_device_context* dev, bool enabled)
+{
+    if (dev->state == NC_DEVICE_STATE_SETUP) {
+        dev->enableAttach = false;
+        return NABTO_EC_OK;
+    } else if (dev->state == NC_DEVICE_STATE_RUNNING && enabled && !dev->enableAttach) {
+        dev->enableAttach = true;
+        return nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
+    } else if (dev->state == NC_DEVICE_STATE_RUNNING && enabled) {
+        return nc_attacher_restart(&dev->attacher);
+    } else if (dev->state == NC_DEVICE_STATE_RUNNING && !enabled) {
+        return nc_attacher_async_close(&dev->attacher, nc_device_attach_disabled_cb, dev);
+    } else { // NC_DEVICE_STATE_CLOSED
+        return NABTO_EC_INVALID_STATE;
+    }
 }
 
 np_error_code nc_device_enable_mdns(struct nc_device_context* dev)
