@@ -23,6 +23,11 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
+    if (nn_llist_size(&handler->iam->state->users) >= handler->iam->maxUsers) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        return;
+    }
+
     CborParser parser;
     CborValue value;
 
@@ -35,7 +40,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     nm_iam_cbor_decode_kv_string(&value, "Username", &username);
 
-    if (username == NULL || !nm_iam_user_validate_username(username)) {
+    if (username == NULL || !nm_iam_user_validate_username(username) || strlen(username) > handler->iam->usernameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
@@ -50,6 +55,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     char* sct;
     if (nabto_device_create_server_connect_token(handler->iam->device, &sct) != NABTO_DEVICE_EC_OK ||
+        strlen(sct) > handler->iam->sctMaxLength ||
         !nm_iam_user_set_sct(user, sct)) {
 
         nabto_device_coap_error_response(request, 500, "Server error");
