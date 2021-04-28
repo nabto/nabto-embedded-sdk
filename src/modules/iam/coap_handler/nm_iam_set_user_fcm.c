@@ -33,7 +33,7 @@ bool handle_request_data(struct nm_iam* iam, CborValue* map, struct nm_iam_user*
     nm_iam_cbor_decode_string(&token, &t);
     nm_iam_cbor_decode_string(&projectId, &p);
 
-    if (t != NULL && p != NULL && strlen(t) > iam->fcmTokenMaxLength && strlen(p) > iam->fcmProjectIdMaxLength) {
+    if (t != NULL && p != NULL && strlen(t) < iam->fcmTokenMaxLength && strlen(p) < iam->fcmProjectIdMaxLength) {
         nm_iam_user_set_fcm_token(user, t);
         nm_iam_user_set_fcm_project_id(user, p);
     } else {

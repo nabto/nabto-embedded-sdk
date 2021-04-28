@@ -299,9 +299,9 @@ bool nm_iam_internal_load_configuration(struct nm_iam* iam, struct nm_iam_config
 
 bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     if (nn_llist_size(&state->users) > iam->maxUsers ||
-        strlen(state->passwordOpenPassword) > iam->passwordMaxLength ||
-        strlen(state->passwordOpenSct) > iam->sctMaxLength ||
-        strlen(state->initialPairingUsername) > iam->usernameMaxLength
+        (state->passwordOpenPassword != NULL && strlen(state->passwordOpenPassword) > iam->passwordMaxLength) ||
+        (state->passwordOpenSct != NULL && strlen(state->passwordOpenSct) > iam->sctMaxLength) ||
+        (state->initialPairingUsername != NULL && strlen(state->initialPairingUsername) > iam->usernameMaxLength)
         ) {
         NN_LOG_ERROR(iam->logger, LOGM,
                      "One of the following length checks failed. maxUsers: %d>%d, passwordOpenPassword: %d>%d, passwordOpenSct: %d>%d, initialPairingUsername: %d>%d",
@@ -315,22 +315,22 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &state->users) {
         if (strlen(user->username) > iam->usernameMaxLength ||
-            (user->displayName == NULL || strlen(user->displayName) > iam->displayNameMaxLength) ||
-            (user->password == NULL || strlen(user->password) > iam->passwordMaxLength) ||
-            (user->fingerprint == NULL || strlen(user->fingerprint) != 64) ||
-            (user->sct == NULL || strlen(user->sct) > iam->sctMaxLength) ||
-            (user->fcmToken == NULL || strlen(user->fcmToken) > iam->fcmTokenMaxLength) ||
-            (user->fcmProjectId == NULL || strlen(user->fcmProjectId) > iam->fcmProjectIdMaxLength)
+            (user->displayName != NULL && strlen(user->displayName) > iam->displayNameMaxLength) ||
+            (user->password != NULL && strlen(user->password) > iam->passwordMaxLength) ||
+            (user->fingerprint != NULL && strlen(user->fingerprint) != 64) ||
+            (user->sct != NULL && strlen(user->sct) > iam->sctMaxLength) ||
+            (user->fcmToken != NULL && strlen(user->fcmToken) > iam->fcmTokenMaxLength) ||
+            (user->fcmProjectId != NULL && strlen(user->fcmProjectId) > iam->fcmProjectIdMaxLength)
             ) {
             NN_LOG_ERROR(iam->logger, LOGM,
                          "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d, fingerprint: %d!=%d, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d",
-                         strlen(user->username), iam->usernameMaxLength,
-                         strlen(user->displayName), iam->displayNameMaxLength,
-                         strlen(user->password), iam->passwordMaxLength,
-                         strlen(user->fingerprint), 64,
-                         strlen(user->sct), iam->usernameMaxLength,
-                         strlen(user->fcmToken), iam->fcmTokenMaxLength,
-                         strlen(user->fcmProjectId), iam->fcmProjectIdMaxLength);
+                         (user->username == NULL) ? 0 : strlen(user->username), iam->usernameMaxLength,
+                         (user->displayName == NULL) ? 0 : strlen(user->displayName), iam->displayNameMaxLength,
+                         (user->password == NULL) ? 0 : strlen(user->password), iam->passwordMaxLength,
+                         (user->fingerprint == NULL) ? 0 : strlen(user->fingerprint), 64,
+                         (user->sct == NULL) ? 0 : strlen(user->sct), iam->usernameMaxLength,
+                         (user->fcmToken == NULL) ? 0 : strlen(user->fcmToken), iam->fcmTokenMaxLength,
+                         (user->fcmProjectId == NULL) ? 0 : strlen(user->fcmProjectId), iam->fcmProjectIdMaxLength);
             return false;
         }
         const char* s;
@@ -346,22 +346,25 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
 bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
 {
     if (!validate_state(iam, state)) {
+        NN_LOG_ERROR(iam->logger, LOGM, "Failed to validate state");
         return false;
     }
 
-    if (iam->state != NULL) {
-        nm_iam_state_free(iam->state);
-    }
-
-    if (nabto_device_add_server_connect_token(iam->device, state->passwordOpenSct) != NABTO_DEVICE_EC_OK) {
+    if (state->passwordOpenSct != NULL && nabto_device_add_server_connect_token(iam->device, state->passwordOpenSct) != NABTO_DEVICE_EC_OK) {
+        NN_LOG_ERROR(iam->logger, LOGM, "Failed to add password open pairing SCT");
         return false;
     }
 
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &state->users) {
-        if (nabto_device_add_server_connect_token(iam->device, user->sct) != NABTO_DEVICE_EC_OK) {
+        if (user->sct != NULL && nabto_device_add_server_connect_token(iam->device, user->sct) != NABTO_DEVICE_EC_OK) {
+            NN_LOG_ERROR(iam->logger, LOGM, "Failed to add user SCT");
             return false;
         }
+    }
+
+    if (iam->state != NULL) {
+        nm_iam_state_free(iam->state);
     }
     iam->state = state;
 
