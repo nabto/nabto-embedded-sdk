@@ -421,4 +421,116 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     nabto_device_free(d);
 }
 
+
+BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
+{
+    NabtoDevice* d = nabto_device_new();
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        nabto_device_set_log_level(d, logLevel);
+        nabto_device_set_log_std_out_callback(d);
+    }
+    struct nm_iam iam;
+    nm_iam_init(&iam, d, NULL);
+
+    struct nn_string_set cats;
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat1");
+    nn_string_set_insert(&cats, "cat2");
+    BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
+    nn_string_set_deinit(&cats);
+
+    struct nm_iam_state* state = nm_iam_state_new();
+    nm_iam_state_set_password_open_password(state, "password");
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_password_open_sct(state, "token");
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_password_open_pairing(state, true);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_local_open_pairing(state, true);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_password_invite_pairing(state, true);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_local_initial_pairing(state, true);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_open_pairing_role(state, "role1");
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_initial_pairing_username(state, "username");
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    struct nm_iam_user* usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_fingerprint(usr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_sct(usr, "token2");
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_display_name(usr, "Display Name");
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_role(usr, "role1");
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_password(usr, "password2");
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_fcm_token(usr, "fcm_token");
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_fcm_project_id(usr, "fcm_project");
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nn_string_set_init(&cats);
+    nn_string_set_insert(&cats, "cat1");
+    nn_string_set_insert(&cats, "cat2");
+    nm_iam_state_user_set_notification_categories(usr, &cats);
+    nn_string_set_deinit(&cats);
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+}
+
+
 BOOST_AUTO_TEST_SUITE_END();
