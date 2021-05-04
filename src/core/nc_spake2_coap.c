@@ -119,17 +119,12 @@ void nc_spake2_handle_coap_1(struct nabto_coap_server_request* request, void* da
         return;
     }
 
-    struct nc_client_connection* connection = nabto_coap_server_request_get_connection(request);
-    connection->passwordAuthenticationRequests++;
-
     int32_t contentFormat = nabto_coap_server_request_get_content_format(request);
     struct nc_spake2_password_request* passwordRequest = NULL;
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
 
     if (spake2->passwordRequestHandler == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,04), NULL);
-    } else if (connection->passwordAuthenticationRequests > NC_SPAKE2_MAX_PASSWORD_AUTHENTICATION_REQUESTS) {
-        nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,29), NULL);
     } else if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,15), NULL);
     } else if (payload == NULL) {
@@ -170,11 +165,8 @@ void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* da
 
     nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
 
-    connection->passwordAuthenticationRequests++;
     if (spake2->passwordRequestHandler == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,04), NULL);
-    } else if (connection->passwordAuthenticationRequests > NC_SPAKE2_MAX_PASSWORD_AUTHENTICATION_REQUESTS) {
-        nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,29), NULL);
     } else if (payload == NULL || payloadLength != 32) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
     } else {

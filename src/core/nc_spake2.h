@@ -18,7 +18,6 @@ struct nabto_coap_server_resource;
 struct nc_coap_server_context;
 
 #define NC_SPAKE2_USERNAME_MAX_LENGTH 32
-#define NC_SPAKE2_MAX_PASSWORD_AUTHENTICATION_REQUESTS 6
 #define NC_SPAKE2_MAX_TOKENS 10
 #define NC_SPAKE2_TOKEN_INTERVAL 1000 // ms
 /**
