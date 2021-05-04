@@ -71,6 +71,7 @@ enum nm_iam_error {
     NM_IAM_ERROR_USER_EXISTS,
     NM_IAM_ERROR_INVALID_FINGERPRINT,
     NM_IAM_ERROR_NO_SUCH_CATEGORY,
+    NM_IAM_ERROR_INVALID_ARGUMENT,
     NM_IAM_ERROR_INTERNAL
 };
 
@@ -150,6 +151,31 @@ struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct nn_string_set* categories);
 
 /**
+ * Set the max lengths of strings stored by the IAM module to limit the size of storage needed to
+ * store the IAM state and configuration. These functions do not enforce the limits and must be
+ * called before nm_iam_load_state(). SCTs created automatically by the IAM module has length 12
+ * which its limit must allow. Default lengths are: username: 64, display name: 64, password: 64,
+ * fcm token: 1024, fcm project id: 256, sct: 64.
+ *
+ * @param iam [in]  IAM module to set length in
+ * @param len [in]  Length to set
+ */
+void nm_iam_set_username_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_display_name_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len);
+
+/**
+ * Set the max number of users allowed in the IAM module.
+ *
+ * @param iam [in]  IAM module to set length in
+ * @param n [in]    Max number of users to set. Default: SIZE_MAX
+ */
+void nm_iam_set_max_users(struct nm_iam* iam, size_t n);
+
+/**
  * @intro Runtime State
  *
  * Query and manage the IAM state while the system is running.
@@ -218,6 +244,8 @@ void nm_iam_set_local_initial_pairing(struct nm_iam* iam, bool enabled);
  * @param username [in] the username of the new user
  * @return NM_IAM_ERROR_USER_EXISTS if the specified user already exists.
            NM_IAM_ERROR_OK if the user was created successfully.
+           NM_IAM_ERROR_INVALID_ARGUMENT if the username was too long or invalid.
+           NM_IAM_ERROR_INTERNAL if allocation failed
  */
 enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
 
@@ -229,6 +257,7 @@ enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
  * @param fingerprint [in] hex encoded public key fingerprint
  * @return NM_IAM_ERROR_INVALID_FINGERPRINT if the specified fingerprint is invalid.
  *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ *         NM_IAM_ERROR_INVALID_ARGUMENT if the fingerprint length was not 64.
  *         NM_IAM_ERROR_OK if the fingerprint was set successfully for the user.
  */
 enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint);
@@ -244,6 +273,7 @@ enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* us
  * @param sct [in] the sct to set for the user
  * @return NM_IAM_ERROR_OK if the SCT was set successfully for the user.
  *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ *         NM_IAM_ERROR_INVALID_ARGUMENT if the sct was too long.
  */
 enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, const char* sct);
 
@@ -255,6 +285,7 @@ enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, 
  * @param password [in] the password to set for the user
  * @return NM_IAM_ERROR_OK if password was set successfully for the user.
  *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ *         NM_IAM_ERROR_INVALID_ARGUMENT if the password was too long.
  */
 enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* username, const char* password);
 
@@ -266,6 +297,7 @@ enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* usern
  * @param role [in] the role id to set for the user
  * @return NM_IAM_ERROR_OK if role was set successfully for the user.
  *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ *         NM_IAM_ERROR_NO_SUCH_ROLE if the role does not exist.
  */
 enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* role);
 
@@ -277,6 +309,7 @@ enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username,
  * @param displayName [in] the display name to set for the user
  * @return NM_IAM_ERROR_OK if display name was set successfully for the user.
  *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ *         NM_IAM_ERROR_INVALID_ARGUMENT if the display name was too long.
  */
 enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName);
 enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token);
@@ -348,6 +381,14 @@ struct nm_iam {
     struct nm_iam_configuration* conf;
     struct nm_iam_state* state;
     struct nn_string_set notificationCategories;
+
+    size_t usernameMaxLength;
+    size_t displayNameMaxLength;
+    size_t passwordMaxLength;
+    size_t fcmTokenMaxLength;
+    size_t fcmProjectIdMaxLength;
+    size_t sctMaxLength;
+    size_t maxUsers;
 
     // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
     bool stateHasChanged;

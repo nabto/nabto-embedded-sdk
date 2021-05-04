@@ -26,8 +26,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* displayName = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &displayName) || displayName == NULL) {
+    if (!nm_iam_cbor_decode_string(&value, &displayName) || displayName == NULL || strlen(displayName) > handler->iam->displayNameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        free(displayName);
         return;
     }
 

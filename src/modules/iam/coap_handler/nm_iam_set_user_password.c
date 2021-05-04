@@ -26,8 +26,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* pass = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &pass) || pass == NULL) {
+    if (!nm_iam_cbor_decode_string(&value, &pass) || pass == NULL || strlen(pass) > handler->iam->passwordMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        free(pass);
         return;
     }
 
