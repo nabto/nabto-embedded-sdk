@@ -244,8 +244,8 @@ void nm_iam_set_local_initial_pairing(struct nm_iam* iam, bool enabled);
  * @param username [in] the username of the new user
  * @return NM_IAM_ERROR_USER_EXISTS if the specified user already exists.
            NM_IAM_ERROR_OK if the user was created successfully.
-           NM_IAM_ERROR_INVALID_ARGUMENT if the username was too long.
-           NM_IAM_ERROR_INTERNAL if allocation failed or username was invalid
+           NM_IAM_ERROR_INVALID_ARGUMENT if the username was too long or invalid.
+           NM_IAM_ERROR_INTERNAL if allocation failed
  */
 enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
 

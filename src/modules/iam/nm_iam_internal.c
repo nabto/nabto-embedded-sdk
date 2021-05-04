@@ -149,39 +149,35 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
         }
     }
 
-    if (username == NULL) {
+    const char* role = iam->state->openPairingRole;
+    if (username == NULL || role == NULL) {
         return NULL;
     }
 
     char* fingerprint = nm_iam_internal_get_fingerprint_from_coap_request(iam, request);
-    if (fingerprint == NULL) {
-        return NULL;
-    }
-
-    const char* role = iam->state->openPairingRole;
-
-    if (role == NULL) {
-        return NULL;
-    }
-
     char* sct;
-    NabtoDeviceError ec = nabto_device_create_server_connect_token(iam->device, &sct);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    struct nm_iam_user* user;
+    if (fingerprint == NULL ||
+        nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
+        strlen(sct) > iam->sctMaxLength ||
+        (user = nm_iam_user_new(username)) == NULL)
+    {
+        nabto_device_string_free(fingerprint);
+        nabto_device_string_free(sct);
         return NULL;
     }
 
-    if (strlen(sct) > iam->sctMaxLength) {
+    if (!nm_iam_user_set_role(user, role) ||
+        !nm_iam_user_set_fingerprint(user, fingerprint) ||
+        !nm_iam_user_set_sct(user, sct) ||
+        !nm_iam_internal_add_user(iam, user) )
+    {
+        nabto_device_string_free(fingerprint);
+        nabto_device_string_free(sct);
+        nm_iam_user_free(user);
         return NULL;
     }
 
-    struct nm_iam_user* user = nm_iam_user_new(username);
-
-    nm_iam_user_set_role(user, role);
-
-    nm_iam_user_set_fingerprint(user, fingerprint);
-    nm_iam_user_set_sct(user, sct);
-
-    nm_iam_internal_add_user(iam, user);
 
     nabto_device_string_free(fingerprint);
     nabto_device_string_free(sct);
@@ -191,11 +187,13 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
 
 bool nm_iam_internal_add_user(struct nm_iam* iam, struct nm_iam_user* user)
 {
-    nn_llist_append(&iam->state->users, &user->listNode, user);
-
-    if (user->sct != NULL) {
-        nabto_device_add_server_connect_token(iam->device, user->sct);
+    if (user->sct != NULL &&
+        nabto_device_add_server_connect_token(iam->device, user->sct) != NABTO_DEVICE_EC_OK
+        ) {
+        return false;
     }
+
+    nn_llist_append(&iam->state->users, &user->listNode, user);
 
     nm_iam_internal_state_has_changed(iam);
 
@@ -468,7 +466,7 @@ void nm_iam_internal_stop(struct nm_iam* iam)
 
 enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* username)
 {
-    if (strlen(username) > iam->usernameMaxLength) {
+    if (strlen(username) > iam->usernameMaxLength || !nm_iam_user_validate_username(username)) {
         return NM_IAM_ERROR_INVALID_ARGUMENT;
     }
     if (nn_llist_size(&iam->state->users) >= iam->maxUsers) {

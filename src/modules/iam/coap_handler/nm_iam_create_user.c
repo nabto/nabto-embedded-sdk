@@ -42,6 +42,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (username == NULL || !nm_iam_user_validate_username(username) || strlen(username) > handler->iam->usernameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        free(username);
         return;
     }
 

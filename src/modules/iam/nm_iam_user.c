@@ -28,6 +28,7 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 {
     char* username = strdup(usernameIn);
     struct nm_iam_user* user = calloc(1, sizeof(struct nm_iam_user));
+    // TODO: new should not validate, ensure validate is called everywhere new is used, and remove from here
     if (username == NULL || user == NULL || !nm_iam_user_validate_username(username)) {
         free(username);
         free(user);
@@ -42,16 +43,18 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 
 void nm_iam_user_free(struct nm_iam_user* user)
 {
-    free(user->username);
-    free(user->displayName);
-    free(user->fingerprint);
-    free(user->sct);
-    free(user->role);
-    free(user->password);
-    free(user->fcmToken);
-    free(user->fcmProjectId);
-    nn_string_set_deinit(&user->notificationCategories);
-    free(user);
+    if (user != NULL) {
+        free(user->username);
+        free(user->displayName);
+        free(user->fingerprint);
+        free(user->sct);
+        free(user->role);
+        free(user->password);
+        free(user->fcmToken);
+        free(user->fcmProjectId);
+        nn_string_set_deinit(&user->notificationCategories);
+        free(user);
+    }
 }
 
 bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint)

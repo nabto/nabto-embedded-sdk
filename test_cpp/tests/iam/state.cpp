@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(empty_username_is_invalid, *boost::unit_test::timeout(180))
     struct nm_iam_state* state = nabto::test::initState();
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));
 
-    BOOST_CHECK(nm_iam_create_user(&iam, "") == NM_IAM_ERROR_INTERNAL);
+    BOOST_CHECK(nm_iam_create_user(&iam, "") == NM_IAM_ERROR_INVALID_ARGUMENT);
     nabto_device_stop(d);
     nm_iam_deinit(&iam);
     nabto_device_free(d);
@@ -288,9 +288,9 @@ BOOST_AUTO_TEST_CASE(username_is_invalid, *boost::unit_test::timeout(180))
     struct nm_iam_state* state = nabto::test::initState();
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));
 
-    BOOST_TEST(nm_iam_create_user(&iam, "Foobar") == NM_IAM_ERROR_INTERNAL);
-    BOOST_TEST(nm_iam_create_user(&iam, "foo=bar") == NM_IAM_ERROR_INTERNAL);
-    BOOST_TEST(nm_iam_create_user(&iam, " foobar") == NM_IAM_ERROR_INTERNAL);
+    BOOST_TEST(nm_iam_create_user(&iam, "Foobar") == NM_IAM_ERROR_INVALID_ARGUMENT);
+    BOOST_TEST(nm_iam_create_user(&iam, "foo=bar") == NM_IAM_ERROR_INVALID_ARGUMENT);
+    BOOST_TEST(nm_iam_create_user(&iam, " foobar") == NM_IAM_ERROR_INVALID_ARGUMENT);
     nabto_device_stop(d);
     nm_iam_deinit(&iam);
     nabto_device_free(d);
