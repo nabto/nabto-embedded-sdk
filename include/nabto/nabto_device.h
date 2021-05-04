@@ -1568,7 +1568,9 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
  * cracks. Throttling is done using a token bucket of size 10 and rate 1. This allows 10 incorrect
  * attempts without throttling, after which only 1 attempt pr. second is allowed. After 10 seconds
  * of inactivity, the token bucket is fully replenished. Throttled requests are rejected with status
- * code 429.
+ * code 429. Additionally, a single connection only allows 6 CoAP requests to PAKE endpoints before
+ * a new connection must be established (a complete password authentication requires 2 CoAP
+ * requests).
  *
  * Usage:
  *  1. Create a new listener. nabto_device_listener_new()
