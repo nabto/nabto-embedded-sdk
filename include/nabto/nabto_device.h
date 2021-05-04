@@ -1565,8 +1565,10 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
  *
  * Internally, the Nabto device core supports PAKE through CoAP endpoints. Access to these endpoints
  * are throttled if a client provides an invalid username/password to prevent brute force password
- * cracks. When throtteling, incoming requests are rejected with status code 429 for exponentially
- * increasing periods following successive failed attempt (`min(300, 2^(n-1))`s).
+ * cracks. Throttling is done using a token bucket of size 10 and rate 1. This allows 10 incorrect
+ * attempts without throttling, after which only 1 attempt pr. second is allowed. After 10 seconds
+ * of inactivity, the token bucket is fully replenished. Throttled requests are rejected with status
+ * code 429.
  *
  * Usage:
  *  1. Create a new listener. nabto_device_listener_new()
