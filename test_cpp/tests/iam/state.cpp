@@ -376,6 +376,10 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
     nm_iam_set_max_users(&iam, 64);
 
     BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
@@ -530,6 +534,10 @@ BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
     nn_string_set_deinit(&cats);
     nm_iam_state_add_user(state, usr);
     BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
 }
 
 
