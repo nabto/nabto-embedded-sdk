@@ -26,6 +26,7 @@ class CoapServer : public CoapPacketHandler, public std::enable_shared_from_this
     {}
 
     ~CoapServer() {
+        nabto_coap_server_requests_destroy(&requests_);
         nabto_coap_server_destroy(&server_);
     };
 
@@ -85,6 +86,7 @@ class CoapServer : public CoapPacketHandler, public std::enable_shared_from_this
     boost::asio::io_context& io_;
     boost::asio::steady_timer timer_;
     struct nabto_coap_server server_;
+    struct nabto_coap_server_requests requests_;
 
     std::array<uint8_t, 1500> sendBuffer_;
     uint32_t currentExpiry_;

@@ -11,6 +11,7 @@
 struct nc_coap_server_context {
     struct np_platform* pl;
     struct nabto_coap_server server;
+    struct nabto_coap_server_requests requests;
     uint32_t currentExpiry;
     struct np_event* ev;
     struct np_event* timer;

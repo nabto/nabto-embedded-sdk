@@ -22,7 +22,7 @@ void CoapServer::handlePacket(std::shared_ptr<coap::CoapConnection> connection, 
 {
     void* c = connection.get();
     connections_[c] = connection;
-    nabto_coap_server_handle_packet(&server_, c, data.data(), data.size());
+    nabto_coap_server_handle_packet(&requests_, c, data.data(), data.size());
     event();
 }
 
@@ -30,7 +30,7 @@ void CoapServer::removeConnection(std::shared_ptr<coap::CoapConnection> connecti
 {
     void* c = connection.get();
     connections_.erase(c);
-    nabto_coap_server_remove_connection(&server_, c);
+    nabto_coap_server_remove_connection(&requests_, c);
     event();
 }
 
@@ -44,7 +44,8 @@ std::shared_ptr<CoapServer> CoapServer::create(boost::asio::io_context& io)
 void CoapServer::init()
 {
     // init can only fail with oom, assuming this cannot happen in C++
-    nabto_coap_server_init(&server_, &Callbacks::getStamp, &Callbacks::notifyEvent, this);
+    nabto_coap_server_init(&server_);
+    nabto_coap_server_requests_init(&requests_, &server_, &Callbacks::getStamp, &Callbacks::notifyEvent, this);
     setInfiniteStamp();
 }
 
@@ -56,7 +57,7 @@ void CoapServer::notifyEvent()
 
 void CoapServer::event()
 {
-    enum nabto_coap_server_next_event nextEvent = nabto_coap_server_next_event(&server_);
+    enum nabto_coap_server_next_event nextEvent = nabto_coap_server_next_event(&requests_);
     switch (nextEvent) {
         case NABTO_COAP_SERVER_NEXT_EVENT_SEND:
             handleSend();
@@ -76,7 +77,7 @@ void CoapServer::handleSend()
         // will trigger a new handleSend if it's still needed.
         return;
     }
-    void* connection = nabto_coap_server_get_connection_send(&server_);
+    void* connection = nabto_coap_server_get_connection_send(&requests_);
     if (!connection) {
         // this should not happen
         event();
@@ -93,7 +94,7 @@ void CoapServer::handleSend()
     size_t mtu = c->getMtu();
 
     uint8_t* end = sendBuffer_.data() + std::min(mtu, sendBuffer_.size());
-    uint8_t* ptr = nabto_coap_server_handle_send(&server_, sendBuffer_.data(), end);
+    uint8_t* ptr = nabto_coap_server_handle_send(&requests_, sendBuffer_.data(), end);
 
     if (ptr == NULL || ptr < sendBuffer_.data()) {
         // this should not happen
@@ -126,10 +127,10 @@ void CoapServer::handleWait()
     }
     auto self = shared_from_this();
     uint32_t nextStamp;
-    nabto_coap_server_get_next_timeout(&server_, &nextStamp);
+    nabto_coap_server_get_next_timeout(&requests_, &nextStamp);
     if (nabto_coap_is_stamp_less(nextStamp, currentExpiry_)) {
         currentExpiry_ = nextStamp;
-        uint32_t now = nabto_coap_server_stamp_now(&server_);
+        uint32_t now = nabto_coap_server_stamp_now(&requests_);
         int32_t diff = nabto_coap_stamp_diff(nextStamp, now);
         timer_.expires_from_now(std::chrono::milliseconds(diff));
         timer_.async_wait([self](const boost::system::error_code& ec) {
@@ -144,13 +145,13 @@ void CoapServer::handleWait()
 void CoapServer::handleTimeout()
 {
     setInfiniteStamp();
-    nabto_coap_server_handle_timeout(&server_);
+    nabto_coap_server_handle_timeout(&requests_);
     event();
 }
 
 void CoapServer::setInfiniteStamp()
 {
-    currentExpiry_ = nabto_coap_server_stamp_now(&server_);
+    currentExpiry_ = nabto_coap_server_stamp_now(&requests_);
     currentExpiry_ += (1 << 29);
 }
 
