@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE(no_content_type_no_message)
 
     BOOST_TEST(nc_coap_rest_error_decode_response(response, &error) == true);
     nc_coap_rest_error_deinit(&error);
-//    nabto_coap_client_test_response_free(response);
+    nabto_coap_client_test_response_free(response);
 }
 
 BOOST_AUTO_TEST_CASE(no_content_type_with_message)
@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(no_content_type_with_message)
 
     BOOST_TEST(std::string(error.message) == std::string(message));
     nc_coap_rest_error_deinit(&error);
-//    nabto_coap_client_test_response_free(response);
+    nabto_coap_client_test_response_free(response);
 }
 
 BOOST_AUTO_TEST_CASE(cbor_error_code_and_message)
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(cbor_error_code_and_message)
     BOOST_TEST(error.nabtoErrorCode == c);
 
     nc_coap_rest_error_deinit(&error);
-//    nabto_coap_client_test_response_free(response);
+    nabto_coap_client_test_response_free(response);
 }
 
 
