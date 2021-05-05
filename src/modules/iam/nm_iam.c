@@ -26,6 +26,14 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     iam->device = device;
     iam->logger = logger;
 
+    iam->usernameMaxLength = 64;
+    iam->displayNameMaxLength = 64;
+    iam->passwordMaxLength = 64;
+    iam->fcmTokenMaxLength = 1024;
+    iam->fcmProjectIdMaxLength = 256;
+    iam->sctMaxLength = 64;
+    iam->maxUsers = SIZE_MAX;
+
     iam->state = nm_iam_state_new();
     iam->conf = nm_iam_configuration_new();
     nn_string_set_init(&iam->notificationCategories);
@@ -122,6 +130,45 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
     return NM_IAM_ERROR_OK;
 }
 
+void nm_iam_set_username_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->usernameMaxLength = len;
+}
+
+
+void nm_iam_set_display_name_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->displayNameMaxLength = len;
+}
+
+
+void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->passwordMaxLength = len;
+}
+
+
+void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->fcmTokenMaxLength = len;
+}
+
+
+void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->fcmProjectIdMaxLength = len;
+}
+
+
+void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->sctMaxLength = len;
+}
+
+void nm_iam_set_max_users(struct nm_iam* iam, size_t n)
+{
+    iam->maxUsers = n;
+}
 
 /**
  * Enable/disalbe open pairing.

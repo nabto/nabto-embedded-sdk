@@ -252,6 +252,21 @@ np_error_code nc_attacher_start(struct nc_attach_context* ctx, const char* hostn
     return NABTO_EC_OK;
 }
 
+np_error_code nc_attacher_restart(struct nc_attach_context* ctx)
+{
+    if (ctx->moduleState != NC_ATTACHER_MODULE_CLOSED) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    ctx->moduleState = NC_ATTACHER_MODULE_RUNNING;
+    // If state CLOSED we reattach
+    if (ctx->state ==  NC_ATTACHER_STATE_CLOSED) {
+        reattach(ctx);
+    }
+    // else if closing is in progress, setting the moduleState above will cause the module to reattach automatically
+    return NABTO_EC_OK;
+}
+
 np_error_code nc_attacher_async_close(struct nc_attach_context* ctx, nc_attacher_closed_callback callback, void* userData)
 {
     ctx->closedCb = callback;

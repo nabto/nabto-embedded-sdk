@@ -26,8 +26,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* sct = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &sct) || sct == NULL) {
+    if (!nm_iam_cbor_decode_string(&value, &sct) || sct == NULL || strlen(sct) > handler->iam->sctMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        free(sct);
         return;
     }
 
@@ -55,8 +56,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
     nm_iam_internal_state_has_changed(handler->iam);
+    // TODO this can return OOM
     nabto_device_add_server_connect_token(handler->iam->device, sct);
-    // TODO update SCT in the device.
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
     free(sct);

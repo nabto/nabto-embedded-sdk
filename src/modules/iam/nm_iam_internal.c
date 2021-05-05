@@ -149,35 +149,35 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
         }
     }
 
-    if (username == NULL) {
+    const char* role = iam->state->openPairingRole;
+    if (username == NULL || role == NULL) {
         return NULL;
     }
 
     char* fingerprint = nm_iam_internal_get_fingerprint_from_coap_request(iam, request);
-    if (fingerprint == NULL) {
-        return NULL;
-    }
-
-    const char* role = iam->state->openPairingRole;
-
-    if (role == NULL) {
-        return NULL;
-    }
-
     char* sct;
-    NabtoDeviceError ec = nabto_device_create_server_connect_token(iam->device, &sct);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    struct nm_iam_user* user;
+    if (fingerprint == NULL ||
+        nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
+        strlen(sct) > iam->sctMaxLength ||
+        (user = nm_iam_user_new(username)) == NULL)
+    {
+        nabto_device_string_free(fingerprint);
+        nabto_device_string_free(sct);
         return NULL;
     }
 
-    struct nm_iam_user* user = nm_iam_user_new(username);
+    if (!nm_iam_user_set_role(user, role) ||
+        !nm_iam_user_set_fingerprint(user, fingerprint) ||
+        !nm_iam_user_set_sct(user, sct) ||
+        !nm_iam_internal_add_user(iam, user) )
+    {
+        nabto_device_string_free(fingerprint);
+        nabto_device_string_free(sct);
+        nm_iam_user_free(user);
+        return NULL;
+    }
 
-    nm_iam_user_set_role(user, role);
-
-    nm_iam_user_set_fingerprint(user, fingerprint);
-    nm_iam_user_set_sct(user, sct);
-
-    nm_iam_internal_add_user(iam, user);
 
     nabto_device_string_free(fingerprint);
     nabto_device_string_free(sct);
@@ -187,11 +187,13 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
 
 bool nm_iam_internal_add_user(struct nm_iam* iam, struct nm_iam_user* user)
 {
-    nn_llist_append(&iam->state->users, &user->listNode, user);
-
-    if (user->sct != NULL) {
-        nabto_device_add_server_connect_token(iam->device, user->sct);
+    if (user->sct != NULL &&
+        nabto_device_add_server_connect_token(iam->device, user->sct) != NABTO_DEVICE_EC_OK
+        ) {
+        return false;
     }
+
+    nn_llist_append(&iam->state->users, &user->listNode, user);
 
     nm_iam_internal_state_has_changed(iam);
 
@@ -293,25 +295,76 @@ bool nm_iam_internal_load_configuration(struct nm_iam* iam, struct nm_iam_config
     return true;
 }
 
+bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
+    if (nn_llist_size(&state->users) > iam->maxUsers ||
+        (state->passwordOpenPassword != NULL && strlen(state->passwordOpenPassword) > iam->passwordMaxLength) ||
+        (state->passwordOpenSct != NULL && strlen(state->passwordOpenSct) > iam->sctMaxLength) ||
+        (state->initialPairingUsername != NULL && strlen(state->initialPairingUsername) > iam->usernameMaxLength)
+        ) {
+        NN_LOG_ERROR(iam->logger, LOGM,
+                     "One of the following length checks failed. maxUsers: %d>%d, passwordOpenPassword: %d>%d, passwordOpenSct: %d>%d, initialPairingUsername: %d>%d",
+                     nn_llist_size(&state->users), iam->maxUsers,
+                     strlen(state->passwordOpenPassword), iam->passwordMaxLength,
+                     strlen(state->passwordOpenSct), iam->sctMaxLength,
+                     strlen(state->initialPairingUsername), iam->usernameMaxLength);
+        return false;
+    }
+
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &state->users) {
+        if (strlen(user->username) > iam->usernameMaxLength ||
+            (user->displayName != NULL && strlen(user->displayName) > iam->displayNameMaxLength) ||
+            (user->password != NULL && strlen(user->password) > iam->passwordMaxLength) ||
+            (user->fingerprint != NULL && strlen(user->fingerprint) != 64) ||
+            (user->sct != NULL && strlen(user->sct) > iam->sctMaxLength) ||
+            (user->fcmToken != NULL && strlen(user->fcmToken) > iam->fcmTokenMaxLength) ||
+            (user->fcmProjectId != NULL && strlen(user->fcmProjectId) > iam->fcmProjectIdMaxLength)
+            ) {
+            NN_LOG_ERROR(iam->logger, LOGM,
+                         "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d, fingerprint: %d!=%d, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d",
+                         (user->username == NULL) ? 0 : strlen(user->username), iam->usernameMaxLength,
+                         (user->displayName == NULL) ? 0 : strlen(user->displayName), iam->displayNameMaxLength,
+                         (user->password == NULL) ? 0 : strlen(user->password), iam->passwordMaxLength,
+                         (user->fingerprint == NULL) ? 0 : strlen(user->fingerprint), 64,
+                         (user->sct == NULL) ? 0 : strlen(user->sct), iam->usernameMaxLength,
+                         (user->fcmToken == NULL) ? 0 : strlen(user->fcmToken), iam->fcmTokenMaxLength,
+                         (user->fcmProjectId == NULL) ? 0 : strlen(user->fcmProjectId), iam->fcmProjectIdMaxLength);
+            return false;
+        }
+        const char* s;
+        NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
+            if (!nn_string_set_contains(&iam->notificationCategories, s)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
 {
+    if (!validate_state(iam, state)) {
+        NN_LOG_ERROR(iam->logger, LOGM, "Failed to validate state");
+        return false;
+    }
+
+    if (state->passwordOpenSct != NULL && nabto_device_add_server_connect_token(iam->device, state->passwordOpenSct) != NABTO_DEVICE_EC_OK) {
+        NN_LOG_ERROR(iam->logger, LOGM, "Failed to add password open pairing SCT");
+        return false;
+    }
+
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &state->users) {
+        if (user->sct != NULL && nabto_device_add_server_connect_token(iam->device, user->sct) != NABTO_DEVICE_EC_OK) {
+            NN_LOG_ERROR(iam->logger, LOGM, "Failed to add user SCT");
+            return false;
+        }
+    }
+
     if (iam->state != NULL) {
         nm_iam_state_free(iam->state);
     }
     iam->state = state;
-
-    nabto_device_add_server_connect_token(iam->device, iam->state->passwordOpenSct);
-    struct nm_iam_user* user;
-    NN_LLIST_FOREACH(user, &iam->state->users) {
-        const char* s;
-        NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
-            if (!nn_string_set_contains(&iam->notificationCategories, s)) {
-                iam->state = nm_iam_state_new();
-                return false;
-            }
-        }
-        nabto_device_add_server_connect_token(iam->device, user->sct);
-    }
 
     return true;
 }
@@ -413,7 +466,12 @@ void nm_iam_internal_stop(struct nm_iam* iam)
 
 enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* username)
 {
-
+    if (strlen(username) > iam->usernameMaxLength || !nm_iam_user_validate_username(username)) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
+    if (nn_llist_size(&iam->state->users) >= iam->maxUsers) {
+        return NM_IAM_ERROR_INTERNAL;
+    }
     struct nm_iam_user* user;
     user = nm_iam_internal_find_user_by_username(iam, username);
     if (user != NULL) {
@@ -440,6 +498,10 @@ enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* us
 
 enum nm_iam_error nm_iam_internal_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint)
 {
+    if (strlen(fingerprint) != 64) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
+
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;
@@ -456,6 +518,9 @@ enum nm_iam_error nm_iam_internal_set_user_fingerprint(struct nm_iam* iam, const
 
 enum nm_iam_error nm_iam_internal_set_user_sct(struct nm_iam* iam, const char* username, const char* sct)
 {
+    if (strlen(sct) > iam->sctMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;
@@ -471,6 +536,9 @@ enum nm_iam_error nm_iam_internal_set_user_sct(struct nm_iam* iam, const char* u
 
 enum nm_iam_error nm_iam_internal_set_user_password(struct nm_iam* iam, const char* username, const char* password)
 {
+    if (strlen(password) > iam->passwordMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;
@@ -506,6 +574,9 @@ enum nm_iam_error nm_iam_internal_set_user_role(struct nm_iam* iam, const char* 
 
 enum nm_iam_error nm_iam_internal_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName)
 {
+    if (strlen(displayName) > iam->displayNameMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;
@@ -521,6 +592,9 @@ enum nm_iam_error nm_iam_internal_set_user_display_name(struct nm_iam* iam, cons
 
 enum nm_iam_error nm_iam_internal_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token)
 {
+    if (strlen(token) > iam->fcmTokenMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;
@@ -536,6 +610,9 @@ enum nm_iam_error nm_iam_internal_set_user_fcm_token(struct nm_iam* iam, const c
 
 enum nm_iam_error nm_iam_internal_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id)
 {
+    if (strlen(id) > iam->fcmProjectIdMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;

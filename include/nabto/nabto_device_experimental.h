@@ -84,6 +84,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 
 /**
+ * @Deprecated
  * Disable remote access. When disabled, the device will not attempt to connect to the Nabto
  * Basestation and clients will only be able to connect to the device directly (local connection
  * using mdns discovery or with direct candidates). This function must be called before
@@ -101,6 +102,22 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
+
+
+/**
+ * Enable/disable basestation attach. When disabled, the device will not attempt to connect to the
+ * Nabto Basestation and clients will only be able to connect to the device directly (local
+ * connection using mdns discovery or with direct candidates). This function can be called both
+ * before and after nabto_device_start(), but not after nabto_device_close(). If uncalled before
+ * nabto_device_start() attach will default to enabled.
+ *
+ * @param device [in]  The device.
+ * @param enable [in]  if True the device will attach to the basestation.
+ * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_INVALID_STATE if device closed
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_basestation_attach(NabtoDevice* device, bool enable);
 
 
 /**

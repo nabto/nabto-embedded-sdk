@@ -15,7 +15,7 @@ NabtoDeviceError nm_iam_set_user_fcm_token_init(struct nm_iam_coap_handler* hand
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_PUT, paths, &handle_request);
 }
 
-bool handle_request_data(CborValue* map, struct nm_iam_user* user)
+bool handle_request_data(struct nm_iam* iam, CborValue* map, struct nm_iam_user* user)
 {
     if (!cbor_value_is_map(map)) {
         return false;
@@ -33,7 +33,7 @@ bool handle_request_data(CborValue* map, struct nm_iam_user* user)
     nm_iam_cbor_decode_string(&token, &t);
     nm_iam_cbor_decode_string(&projectId, &p);
 
-    if (t != NULL && p != NULL) {
+    if (t != NULL && p != NULL && strlen(t) < iam->fcmTokenMaxLength && strlen(p) < iam->fcmProjectIdMaxLength) {
         nm_iam_user_set_fcm_token(user, t);
         nm_iam_user_set_fcm_project_id(user, p);
     } else {
@@ -68,7 +68,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, NULL);
-    } else if (!handle_request_data(&value, user)) {
+    } else if (!handle_request_data(handler->iam, &value, user)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
     } else {
         nm_iam_internal_state_has_changed(handler->iam);

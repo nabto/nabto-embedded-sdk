@@ -72,6 +72,7 @@ class AttachTest {
         attach_.accessDeniedWaitTime = 1000;
 
         BOOST_TEST(nc_attacher_start(&attach_, hostname_.c_str(), serverPort_, &udpDispatch_) == NABTO_EC_OK);
+        state_(*this);
     }
 
     void setDtlsPort(uint16_t port)
@@ -178,6 +179,106 @@ BOOST_AUTO_TEST_CASE(attach_close, * boost::unit_test::timeout(300))
                  }
              },[](nabto::test::AttachTest& at){ });
 
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
+
+BOOST_AUTO_TEST_CASE(attach_close_start, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      BOOST_TEST(nc_attacher_start(&at.attach_, at.hostname_.c_str(), at.serverPort_, &at.udpDispatch_) == NABTO_EC_INVALID_STATE);
+                                      at.end();
+                                  });
+                 }
+             },[](nabto::test::AttachTest& at){ });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
+
+BOOST_AUTO_TEST_CASE(attach_close_restart, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      BOOST_TEST(nc_attacher_restart(&at.attach_) == NABTO_EC_OK);
+                                  });
+                 } else {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      at.end();
+                                  });
+                 }
+             },[](nabto::test::AttachTest& at){ });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)2);
+}
+
+BOOST_AUTO_TEST_CASE(restart_from_dns_state, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      at.end();
+                                  });
+                 }
+
+             },
+        [=](nabto::test::AttachTest& at){
+            if (at.attach_.state == NC_ATTACHER_STATE_DNS) {
+                nc_attacher_stop(&at.attach_);
+                BOOST_TEST(nc_attacher_restart(&at.attach_) == NABTO_EC_OK);
+            }
+        });
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
+
+BOOST_AUTO_TEST_CASE(restart_from_dtls_req, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    bool first = true;
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      at.end();
+                                  });
+                 }
+
+             },
+        [=, &first](nabto::test::AttachTest& at){
+            if (first && at.attach_.state == NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST) {
+                first = false;
+                nc_attacher_stop(&at.attach_);
+                BOOST_TEST(nc_attacher_restart(&at.attach_) == NABTO_EC_OK);
+            }
+        });
     at.waitForTestEnd();
     attachServer->stop();
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);

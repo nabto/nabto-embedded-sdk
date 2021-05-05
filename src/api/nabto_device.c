@@ -293,6 +293,14 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_disable_remote_access(NabtoDevice
 
 }
 
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_basestation_attach(NabtoDevice* device, bool enable)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    np_error_code ec = nc_device_set_basestation_attach(&dev->core, enable);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return nabto_device_error_core_to_api(ec);
+}
 
 const char* NABTO_DEVICE_API nabto_device_get_app_version(NabtoDevice* device)
 {

@@ -195,12 +195,14 @@ nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
 
 
 /**
- * Stop a device. This function blocks until all futures, events and
- * timed events has been handled, and the device core has been
- * stopped. After this returns, only calls to free functions are
- * allowed.
+ * Stop a device. This function blocks until all futures, events and timed
+ * events has been handled, and the device core has been stopped.
  *
- * @param device [in]   The device instance to free
+ * After this function returns, only calls to free functions are allowed. This
+ * means that to restart a device, it must be stopped, freed, allocated (with
+ * nabto_device_new) and started again.
+ *
+ * @param device [in]   The device instance to stop
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stop(NabtoDevice* device);

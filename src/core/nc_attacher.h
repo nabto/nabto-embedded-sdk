@@ -234,10 +234,14 @@ np_error_code nc_attacher_set_handshake_timeout(struct nc_attach_context* ctx,
                                                 uint32_t minTimeoutMilliseconds, uint32_t maxTimeoutMilliseconds);
 
 // Start the attach module
+// Cannot be called twice
 np_error_code nc_attacher_start(struct nc_attach_context* ctx,
                                 const char* hostname,
                                 uint16_t serverPort,
                                 struct nc_udp_dispatch_context* udp);
+
+// restart the attach module after having been closed
+np_error_code nc_attacher_restart(struct nc_attach_context* ctx);
 
 // Close the module nicely
 np_error_code nc_attacher_async_close(struct nc_attach_context* ctx,
