@@ -61,6 +61,7 @@ struct np_dtls_cli_module {
                               const unsigned char* privateKeyL, size_t privateKeySize);
 
     np_error_code (*set_root_certs)(struct np_dtls_cli_context* ctx, const char* rootCerts);
+    np_error_code (*disable_certificate_validation)(struct np_dtls_cli_context* ctx);
     np_error_code (*reset)(struct np_dtls_cli_context* ctx);
     np_error_code (*connect)(struct np_dtls_cli_context* ctx);
     np_error_code (*async_send_data)(struct np_dtls_cli_context* ctx,

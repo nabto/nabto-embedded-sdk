@@ -77,6 +77,7 @@ static np_error_code nm_mbedtls_cli_set_keys(struct np_dtls_cli_context* ctx,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
 
 static np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, const char* rootCerts);
+static np_error_code nm_mbedtls_cli_disable_certificate_validation(struct np_dtls_cli_context* ctx);
 
 static np_error_code async_send_data(struct np_dtls_cli_context* ctx,
                                      struct np_dtls_cli_send_context* sendCtx);
@@ -161,6 +162,7 @@ np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
     pl->dtlsC.set_sni = &nm_mbedtls_cli_set_sni;
     pl->dtlsC.set_keys = &nm_mbedtls_cli_set_keys;
     pl->dtlsC.set_root_certs = &nm_mbedtls_cli_set_root_certs;
+    pl->dtlsC.disable_certificate_validation = &nm_mbedtls_cli_disable_certificate_validation;
     pl->dtlsC.connect = &nm_dtls_connect;
     pl->dtlsC.reset = &nm_mbedtls_cli_reset;
     pl->dtlsC.async_send_data = &async_send_data;
@@ -385,6 +387,12 @@ np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, con
         NABTO_LOG_ERROR(LOG,  "Failed to load root certs mbedtls_x509_crt_parse returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
+    return NABTO_EC_OK;
+}
+
+np_error_code nm_mbedtls_cli_disable_certificate_validation(struct np_dtls_cli_context* ctx)
+{
+    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_NONE );
     return NABTO_EC_OK;
 }
 

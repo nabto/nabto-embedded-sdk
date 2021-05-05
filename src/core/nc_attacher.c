@@ -837,3 +837,9 @@ void sct_deinit(struct nc_attach_context* ctx)
 {
     nn_string_set_deinit(&ctx->sctContext.scts);
 }
+
+void nc_attacher_disable_certificate_validation(struct nc_attach_context* ctx)
+{
+    struct np_platform* pl = ctx->pl;
+    pl->dtlsC.disable_certificate_validation(ctx->dtls);
+}

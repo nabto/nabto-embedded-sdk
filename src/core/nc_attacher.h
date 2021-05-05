@@ -274,6 +274,8 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context* attac
 
 void nc_attacher_service_invoke_stop(struct nc_attacher_service_invoke_context* serviceInvoke);
 
+void nc_attacher_disable_certificate_validation(struct nc_attach_context* attacher);
+
 #ifdef __cplusplus
 } // extern c
 #endif
