@@ -28,16 +28,22 @@ static int hashMpi(mbedtls_md_context_t* mdCtx, mbedtls_mpi* n);
 
 static int calculateKey(mbedtls_ecp_group* g, mbedtls_ecp_point* T, const char* password, uint8_t fingerprintClient[32], uint8_t fingerprintDevice[32], mbedtls_ecp_point* S, uint8_t* key);
 
-void nc_spake2_init(struct nc_spake2_module* module)
+void newTokenEvent(void* data);
+
+void nc_spake2_init(struct nc_spake2_module* module, struct np_platform* pl)
 {
     module->passwordRequestHandler = NULL;
     module->passwordRequestHandlerData = NULL;
     module->spake21 = NULL;
     module->spake22 = NULL;
+    module->tokens = NC_SPAKE2_MAX_TOKENS;
+    module->pl = pl;
+    np_event_queue_create_event(&pl->eq, &newTokenEvent, module, &module->tbEvent);
 }
 
 void nc_spake2_deinit(struct nc_spake2_module* config)
 {
+    np_event_queue_destroy_event(&config->pl->eq, config->tbEvent);
 }
 
 void nc_spake2_clear_password_request_callback(struct nc_spake2_module* module)
@@ -126,6 +132,24 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
     nabto_coap_server_request_free(coap);
     nc_spake2_password_request_free(req);
 }
+
+void newTokenEvent(void* data)
+{
+    struct nc_spake2_module* module = (struct nc_spake2_module*)data;
+    module->tokens++;
+    if (module->tokens < NC_SPAKE2_MAX_TOKENS) { // if not at max, add another token later
+        np_event_queue_post_timed_event(&module->pl->eq, module->tbEvent, NC_SPAKE2_TOKEN_INTERVAL);
+    }
+}
+
+void nc_spake2_spend_token(struct nc_spake2_module* module)
+{
+    if (module->tokens == NC_SPAKE2_MAX_TOKENS) { // if not at max, the event is already scheduled
+        np_event_queue_post_timed_event(&module->pl->eq, module->tbEvent, NC_SPAKE2_TOKEN_INTERVAL);
+    }
+    module->tokens--;
+}
+
 
 /**
  * Calculate S and the key.

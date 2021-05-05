@@ -5,6 +5,8 @@
 #include <mbedtls/ecp.h>
 
 #include <platform/np_error_code.h>
+#include <platform/np_event_queue_wrapper.h>
+#include <platform/np_platform.h>
 #include <coap/nabto_coap.h>
 
 #ifdef __cplusplus
@@ -16,8 +18,8 @@ struct nabto_coap_server_resource;
 struct nc_coap_server_context;
 
 #define NC_SPAKE2_USERNAME_MAX_LENGTH 32
-#define NC_SPAKE2_MAX_PASSWORD_AUTHENTICATION_REQUESTS 6
-
+#define NC_SPAKE2_MAX_TOKENS 10
+#define NC_SPAKE2_TOKEN_INTERVAL 1000 // ms
 /**
  * Coap req for the key exchange. The request comes in, a password is
  * found for the username and a response is generated.
@@ -42,9 +44,12 @@ struct nc_spake2_module {
 
     struct nabto_coap_server_resource* spake21;
     struct nabto_coap_server_resource* spake22;
+    size_t tokens;
+    struct np_event* tbEvent;
+    struct np_platform* pl;
 };
 
-void nc_spake2_init(struct nc_spake2_module* module);
+void nc_spake2_init(struct nc_spake2_module* module, struct np_platform* pl);
 void nc_spake2_deinit(struct nc_spake2_module* module);
 
 np_error_code nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap);
@@ -61,6 +66,7 @@ void nc_spake2_password_request_free(struct nc_spake2_password_request* password
 
 struct nc_spake2_password_request* nc_spake2_password_request_new();
 
+void nc_spake2_spend_token(struct nc_spake2_module* module);
 
 
 
