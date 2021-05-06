@@ -105,39 +105,21 @@ nabto_device_disable_remote_access(NabtoDevice* device);
 
 
 /**
- * Enable/disable basestation attach. When disabled, the device will not attempt to connect to the
- * Nabto Basestation and clients will only be able to connect to the device directly (local
- * connection using mdns discovery or with direct candidates). This function can be called both
- * before and after nabto_device_start(), but not after nabto_device_close(). If uncalled before
- * nabto_device_start() attach will default to enabled.
- *
- * @param device [in]  The device.
- * @param enable [in]  if True the device will attach to the basestation.
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_INVALID_STATE if device closed
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_basestation_attach(NabtoDevice* device, bool enable);
-
-
-/**
- * Limit concurrent tunnels of a specific type.
- *
- * Sometimes a device is resource limited, and one wants to limit the number of
- * rtsp connections to 1. This feature can be used to
- * limit the amount of tunnels which can be created based on their type.
+ * Limit concurrent tunnel streams of a specific service type. The tunnel stream is opened when a
+ * TCP connection is established through a tunnel. This means clients will be able to open new
+ * tunnels to the device even if the limit is reached, however, new TCP connections through any
+ * tunnel will fail if the limit is reached.
  *
  * Open tunnel connections are not affected but new connections will be rejected
  * if the limit has been exceeded.
  *
- * @param device [in]     The device instance
- * @param serviceId [in]  Type of services to limit.
- * @param limit [in]      The new limit for the tunnel service. -1 means
- * unlimited.
+ * @param device [in]      The device instance
+ * @param serviceType [in] Type of services to limit.
+ * @param limit [in]       The new limit for the tunnel service. -1 for unlimited.
  * @return NABTO_DEVICE_EC_OK if the limit is set
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(NabtoDevice* device, const char* type, int limit);
+nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(NabtoDevice* device, const char* serviceType, int limit);
 
 #ifdef __cplusplus
 } // extern c #endif
