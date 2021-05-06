@@ -402,6 +402,7 @@ void nc_device_stop(struct nc_device_context* dev)
 {
     dev->state = NC_DEVICE_STATE_STOPPED;
     nc_udp_dispatch_abort(&dev->udp);
+    nc_udp_dispatch_abort(&dev->localUdp);
     nc_udp_dispatch_abort(&dev->secondaryUdp);
     nc_rendezvous_remove_udp_dispatch(&dev->rendezvous);
     nc_stun_stop(&dev->stun);

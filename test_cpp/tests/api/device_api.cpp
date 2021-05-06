@@ -128,4 +128,59 @@ BOOST_AUTO_TEST_CASE(fingerprints)
 
 }
 
+BOOST_AUTO_TEST_CASE(new_device_after_free, *boost::unit_test::timeout(10))
+{
+    NabtoDeviceError ec;
+    NabtoDevice* dev = nabto_device_new();
+    BOOST_TEST(dev);
+    char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        ec = nabto_device_set_log_std_out_callback(dev);
+        ec = nabto_device_set_log_level(dev, logLevel);
+    }
+
+    ec = nabto_device_set_server_url(dev, "server.foo.bar");
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    char* key;
+    nabto_device_create_private_key(dev, &key);
+    ec = nabto_device_set_private_key(dev, key);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    nabto_device_string_free(key);
+    nabto_device_set_product_id(dev, "test");
+    nabto_device_set_device_id(dev, "test");
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
+
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
+    nabto_device_stop(dev);
+    nabto_device_free(dev);
+
+    dev = nabto_device_new();
+    BOOST_TEST(dev);
+    if (logLevel != NULL) {
+        ec = nabto_device_set_log_std_out_callback(dev);
+        ec = nabto_device_set_log_level(dev, logLevel);
+    }
+
+    ec = nabto_device_set_server_url(dev, "server.foo.bar");
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    nabto_device_create_private_key(dev, &key);
+    ec = nabto_device_set_private_key(dev, key);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    nabto_device_string_free(key);
+    nabto_device_set_product_id(dev, "test");
+    nabto_device_set_device_id(dev, "test");
+
+    fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
+
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
+    nabto_device_stop(dev);
+    nabto_device_free(dev);
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
