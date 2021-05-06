@@ -115,7 +115,6 @@ void udp_abort(struct np_udp_socket* sock)
     }
     sock->aborted = true;
     complete_recv_wait(sock, NABTO_EC_ABORTED);
-    evutil_closesocket(sock->sock);
 }
 
 void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec)
@@ -149,6 +148,7 @@ void udp_destroy(struct np_udp_socket* sock)
         event_free(sock->event);
         sock->event = NULL;
     }
+    evutil_closesocket(sock->sock);
     free(sock);
 }
 
