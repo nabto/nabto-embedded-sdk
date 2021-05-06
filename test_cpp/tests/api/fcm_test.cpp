@@ -12,7 +12,7 @@
 #include <thread>
 #include <future>
 
-BOOST_FIXTURE_TEST_SUITE(fcm, nabto::test::BasestationFixture)
+BOOST_AUTO_TEST_SUITE(fcm)
 
 BOOST_AUTO_TEST_CASE(create_destroy_notification)
 {
@@ -20,6 +20,7 @@ BOOST_AUTO_TEST_CASE(create_destroy_notification)
 
     NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(dev);
     nabto_device_fcm_notification_free(n);
+    nabto_device_stop(dev);
     nabto_device_free(dev);
 }
 
@@ -36,8 +37,11 @@ BOOST_AUTO_TEST_CASE(multi_set_on_notification)
     nabto_device_fcm_notification_set_project_id(n, s1.c_str());
     nabto_device_fcm_notification_set_project_id(n, s2.c_str());
     nabto_device_fcm_notification_free(n);
+    nabto_device_stop(dev);
     nabto_device_free(dev);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
 
 std::string testFcmPayload = R"(
 {
@@ -50,6 +54,8 @@ std::string testFcmPayload = R"(
     }
 }
 )";
+
+BOOST_FIXTURE_TEST_SUITE(fcm, nabto::test::BasestationFixture)
 
 BOOST_AUTO_TEST_CASE(notification_set)
 {
@@ -66,29 +72,6 @@ BOOST_AUTO_TEST_CASE(notification_set)
     BOOST_TEST(nabto_device_fcm_notification_set_project_id(n, projectId) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(nabto_device_fcm_notification_set_payload(n, testFcmPayload.c_str()) == NABTO_DEVICE_EC_OK);
 
-    nabto_device_fcm_notification_free(n);
-}
-
-BOOST_AUTO_TEST_CASE(notification_send_not_attached)
-{
-    nabto::test::AttachedTestDevice attachedTestDevice;
-
-    attachedTestDevice.noAttach();
-
-    NabtoDevice* dev = attachedTestDevice.device();
-
-    const char* projectId = "foobar";
-
-    NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(dev);
-    BOOST_REQUIRE(n != NULL);
-    BOOST_TEST(nabto_device_fcm_notification_set_project_id(n, projectId) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(nabto_device_fcm_notification_set_payload(n, testFcmPayload.c_str()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* f = nabto_device_future_new(dev);
-    nabto_device_fcm_send(n, f);
-    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_NOT_ATTACHED));
-
-    nabto_device_future_free(f);
     nabto_device_fcm_notification_free(n);
 }
 
@@ -123,6 +106,37 @@ BOOST_AUTO_TEST_CASE(notification_send_ok)
 
     nabto_device_future_free(f);
     nabto_device_fcm_notification_free(n);
+}
+
+BOOST_AUTO_TEST_CASE(notification_send_not_attached)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    nabto_device_set_server_url(dev, getHostname().c_str());
+    nabto_device_set_server_port(dev, getPort());
+    nabto_device_set_root_certs(dev, getRootCerts().c_str());
+    attachedTestDevice.noAttach();
+
+
+    const char* projectId = "foobar";
+
+    NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(dev);
+    BOOST_REQUIRE(n != NULL);
+    BOOST_TEST(nabto_device_fcm_notification_set_project_id(n, projectId) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_fcm_notification_set_payload(n, testFcmPayload.c_str()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_fcm_send(n, f);
+    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_NOT_ATTACHED));
+
+    nabto_device_future_free(f);
+    nabto_device_fcm_notification_free(n);
+
+    // TODO: BS test fixture hangs in stop() if no device attaches to it and it is running after another test which used the fixture. Fix test fixture so BS can stop without hanging, then remove this pointless attach.
+    nabto_device_set_basestation_attach(dev, true);
+    attachedTestDevice.waitForAttached();
 }
 
 BOOST_AUTO_TEST_CASE(notification_send_stop)

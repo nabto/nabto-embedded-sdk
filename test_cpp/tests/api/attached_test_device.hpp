@@ -61,8 +61,7 @@ class AttachedTestDevice {
 
     NabtoDeviceError noAttach()
     {
-        nabto_device_set_server_url(device_, "localhost");
-        nabto_device_set_server_port(device_, 4242);
+        nabto_device_set_basestation_attach(device_, false);
         listenForEvents();
         nabto_device_start(device_, future_);
 
@@ -71,6 +70,11 @@ class AttachedTestDevice {
         return NABTO_DEVICE_EC_OK;
     }
 
+    void waitForAttached()
+    {
+        std::future<void> f = isAttached_.get_future();
+        f.get();
+    }
 
     void listenForEvents() {
         nabto_device_device_events_init_listener(device_, eventListener_);
