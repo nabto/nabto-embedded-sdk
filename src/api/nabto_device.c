@@ -731,13 +731,3 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit)
 
     return nabto_device_error_core_to_api(NABTO_EC_OK);
 }
-
-void NABTO_DEVICE_API
-nabto_device_disable_certificate_validation(NabtoDevice* device)
-{
-    struct nabto_device_context* dev = (struct nabto_device_context*)device;
-
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_attacher_disable_certificate_validation(&dev->core.attacher);
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
-}

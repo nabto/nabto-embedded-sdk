@@ -101,6 +101,7 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_error.c
   ${root_dir}/src/api/nabto_device_integration.c
   ${root_dir}/src/api/nabto_device_password_authentication.c
+  ${root_dir}/src/api/nabto_device_internal.c
   )
 
 set(ne_api_test_src

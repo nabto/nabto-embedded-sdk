@@ -139,14 +139,6 @@ nabto_device_set_basestation_attach(NabtoDevice* device, bool enable);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(NabtoDevice* device, const char* type, int limit);
 
-/**
- * Disable basestation certificate validation.
- *
- * This should only be used for testing.
- */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_disable_certificate_validation(NabtoDevice* device);
-
 #ifdef __cplusplus
 } // extern c #endif
 #endif
