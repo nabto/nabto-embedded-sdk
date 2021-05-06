@@ -27,6 +27,7 @@ BOOST_AUTO_TEST_CASE(ping_device, *boost::unit_test::timeout(300))
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_start(device, fut);
     BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
 
     auto ioService = nabto::IoService::create("test");
 

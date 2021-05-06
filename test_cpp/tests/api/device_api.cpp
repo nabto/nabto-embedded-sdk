@@ -80,7 +80,8 @@ BOOST_AUTO_TEST_CASE(remove_log_callback)
     int cached = logLines;
     nabto_device_test_logging(dev);
     BOOST_TEST(logLines == cached);
-
+    nabto_device_stop(dev);
+    nabto_device_free(dev);
 }
 
 BOOST_AUTO_TEST_CASE(stop_without_close, *boost::unit_test::timeout(10))

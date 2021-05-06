@@ -100,7 +100,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-    nc_spake2_init(&device->spake2);
+    nc_spake2_init(&device->spake2, pl);
 
     ec = nc_spake2_coap_init(&device->spake2, &device->coapServer);
     if (ec != NABTO_EC_OK) {

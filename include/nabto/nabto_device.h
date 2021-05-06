@@ -1557,12 +1557,18 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
 /**
  * @intro Password Authentication
  *
- * Password authenticate the client and the device. The password
- * authentication is bidirectional and based on PAKE, such that both
- * the client and the device learns that the other end knows the
- * password, without revealing the password to the other end. Only one
- * password authentication listener can exist on the system. The Nabto
- * IAM module can be used to handle password authorization requests.
+ * Password authenticate the client and the device. The password authentication is bidirectional and
+ * based on PAKE, such that both the client and the device learns that the other end knows the
+ * password, without revealing the password to the other end. Only one password authentication
+ * listener can exist on the system. The Nabto IAM module can be used to handle password
+ * authorization requests.
+ *
+ * Internally, the Nabto device core supports PAKE through CoAP endpoints. Access to these endpoints
+ * are throttled if a client provides an invalid username/password to prevent brute force password
+ * cracks. Throttling is done using a token bucket of size 10 and rate 1. This allows 10 incorrect
+ * attempts without throttling, after which only 1 attempt pr. second is allowed. After 10 seconds
+ * of inactivity, the token bucket is fully replenished. Throttled requests are rejected with status
+ * code 429.
  *
  * Usage:
  *  1. Create a new listener. nabto_device_listener_new()
