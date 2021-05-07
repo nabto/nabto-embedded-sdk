@@ -4,6 +4,17 @@
 
 ### Added
 
+### Changed
+
+#### Breaking Changes
+
+### Removed
+
+## [5.6.0] - 2021-05-07
+
+### Added
+ - added protection against replay attacks in streams
+
 #### Feature: Limit number of concurrent tcp tunnelling connections
 
 We have added a feature such that the amount of concurrent tcp tunnelling
@@ -14,6 +25,38 @@ services where RTSP needs to be limited to a single connections while HTTP can
 have many connections. The feature can be controlled with the function
 `nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type` which
 currently resides in nabto_device_experimental.h
+
+#### Feature: size limits in the IAM module
+
+We have added max lengths to strings users can store in the IAM module to nm_iam.h to enable
+developers to put a bound on the persistant storage space needed for the module. The number of users
+that can be stored in the IAM module can also be limited.
+
+#### Feature: control basestation attach
+
+The `nabto_device_set_basestation_attach()` function is added to the API. This can be used to turn
+basestation attach on or off both before `nabto_device_start()` and at runtime. This replaces the
+`nabto_device_disable_remote_access()` function from the experimental header, which did not work at
+runtime, and could not enable attach. This is useful in some user privacy situations where user
+acceptance is required before contacting a remote server. In that case, attach would be disabled
+before starting the device, but can then be enabled later without the requirement of starting a new
+device.
+
+### Changed
+#### Password guess throttle
+
+Password authentication towards the device is now throttled using a device global token bucket
+filter instead of limiting attempts pr. connection. The token bucket has a default max size 10 and
+only decreased by a client providing an invalid username or password. Meaning no throttling will
+occur before 10 incorrect attempts has been made. After this, tokens are replenished at a default
+rate of 1 pr. sec. This will increase usability connections no longer needs to be reconnected after
+3 invalid attempts, while providing better protection against brute force password crack attacks.
+
+#### Breaking Changes
+`nabto_device_disable_remote_access()` in the experimental header is now deprecated. This being an
+experimental function, it is likely to be removed completely in the near future.
+
+### Removed
 
 ## [5.5.0] - 2021-03-10
 
