@@ -61,5 +61,6 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
                 nabto_device_string_free(fp);
             }
         }
+        nabto_device_string_free(username);
     }
 }
