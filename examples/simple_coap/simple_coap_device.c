@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
 
 const char* keyFile = "device.key";
 
@@ -144,6 +145,8 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }
+
+    free(privateKey);
 
     if (nabto_device_get_device_fingerprint(device, &fp) != NABTO_DEVICE_EC_OK) {
         return false;
