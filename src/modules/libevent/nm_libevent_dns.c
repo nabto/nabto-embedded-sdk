@@ -13,16 +13,15 @@
 
 struct nm_dns_request {
     struct np_platform* pl;
-    struct evdns_request* request;
+    struct evdns_getaddrinfo_request* req;
     struct np_completion_event* completionEvent;
     struct np_ip_address* ips;
-    struct evdns_request* req;
     struct evdns_base* dnsBase;
     size_t ipsSize;
     size_t* ipsResolved;
 };
 
-static void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg);
+static void dns_cb(int result, struct evutil_addrinfo *res, void *arg);
 
 
 static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
@@ -45,7 +44,6 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
 {
     struct nm_libevent_context* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
-    int flags = 0;
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
@@ -79,14 +77,19 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
     dnsRequest->dnsBase = dnsBase;
-    dnsRequest->req = evdns_base_resolve_ipv4(dnsBase, host, flags, dns_cb, dnsRequest);
+    struct evutil_addrinfo hints;
+    memset(&hints, 0, sizeof(struct evutil_addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
+    hints.ai_socktype = SOCK_DGRAM;
+    const char* service = "443";
+    dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
 }
 
 static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
     struct nm_libevent_context* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
-    int flags = 0;
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
@@ -120,14 +123,20 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
     dnsRequest->dnsBase = dnsBase;
-    dnsRequest->req = evdns_base_resolve_ipv6(dnsBase, host, flags, dns_cb, dnsRequest);
+    struct evutil_addrinfo hints;
+    memset(&hints, 0, sizeof(struct evutil_addrinfo));
+    hints.ai_family = AF_INET6;
+    hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
+    hints.ai_socktype = SOCK_DGRAM;
+    const char* service = "443";
+    dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
 }
 
-void dns_cb(int result, char type, int count, int ttl, void *addresses, void *arg)
+void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
 {
     struct nm_dns_request* ctx = arg;
 
-    if (result == DNS_ERR_TIMEOUT) {
+    if (result == EVUTIL_EAI_FAIL) {
         // maybe the system has changed nameservers, reload them
         struct evdns_base* base = ctx->dnsBase;
 #ifdef _WIN32
@@ -139,27 +148,29 @@ void dns_cb(int result, char type, int count, int ttl, void *addresses, void *ar
 #endif
     }
 
-    if (result != DNS_ERR_NONE) {
+    if (result != 0) {
         np_completion_event_resolve(ctx->completionEvent, NABTO_EC_UNKNOWN);
         free(ctx);
         return;
     }
 
-    int i;
     size_t resolved = 0;
-    for (i = 0; i < count && resolved < ctx->ipsSize; i++) {
-        if (type == DNS_IPv4_A) {
+    while (res != NULL && resolved < ctx->ipsSize) {
+        if (res->ai_family == AF_INET) {
             ctx->ips[resolved].type = NABTO_IPV4;
-            uint8_t* addressStart = ((uint8_t*)addresses) + i*4;
-            memcpy(ctx->ips[resolved].ip.v4, addressStart, 4);
+            struct sockaddr_in* addr = (struct sockaddr_in*)res->ai_addr;
+            memcpy(ctx->ips[resolved].ip.v4, (uint8_t*)(&addr->sin_addr.s_addr),
+                   4);
             resolved++;
-        } else if (type == DNS_IPv6_AAAA) {
+        } else if (res->ai_family == AF_INET6) {
             ctx->ips[resolved].type = NABTO_IPV6;
-            uint8_t* addressStart = ((uint8_t*)addresses) + i*16;
-            memcpy(ctx->ips[resolved].ip.v6, addressStart, 16);
+            struct sockaddr_in6* addr = (struct sockaddr_in6*)res->ai_addr;
+            memcpy(ctx->ips[resolved].ip.v6, &addr->sin6_addr, 16);
             resolved++;
         }
+        res = res->ai_next;
     }
+
     if (resolved == 0) {
         np_completion_event_resolve(ctx->completionEvent, NABTO_EC_NO_DATA);
     } else {
