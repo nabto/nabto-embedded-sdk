@@ -165,7 +165,7 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
         } else if (res->ai_family == AF_INET6) {
             ctx->ips[resolved].type = NABTO_IPV6;
             struct sockaddr_in6* addr = (struct sockaddr_in6*)res->ai_addr;
-            memcpy(ctx->ips[resolved].ip.v6, addr->sin6_addr.__in6_u.__u6_addr8, 16);
+            memcpy(ctx->ips[resolved].ip.v6, &addr->sin6_addr, 16);
             resolved++;
         }
         res = res->ai_next;
