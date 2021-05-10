@@ -25,6 +25,9 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     cbor_encode_text_stringz(&map, "PasswordOpenPairing");
     cbor_encode_boolean(&map, iam->state->passwordOpenPairing);
 
+    cbor_encode_text_stringz(&map, "PasswordInvitePairing");
+    cbor_encode_boolean(&map, iam->state->passwordInvitePairing);
+
     cbor_encode_text_stringz(&map, "LocalOpenPairing");
     cbor_encode_boolean(&map, iam->state->localOpenPairing);
 

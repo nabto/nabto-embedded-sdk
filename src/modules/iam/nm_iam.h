@@ -224,6 +224,20 @@ void nm_iam_set_local_open_pairing(struct nm_iam* iam, bool enabled);
 void nm_iam_set_password_open_pairing(struct nm_iam* iam, bool enabled);
 
 /**
+ * Enable/disable the password invite pairing mode.
+ *
+ * To allow the client to perform password invite pairing, the mode must be enabled with this function
+ * AND the client must be allowed to perform the `IAM:PairingPasswordInvite` IAM action. That is, the
+ * client must have a role associated with a policy associated with this action.
+ *
+ * See https://docs.nabto.com/developer/guides/iam/pairing.html#invite-password for more information.
+ *
+ * @param iam [in] IAM module to enable pairing mode on
+ * @param enabled [in] is the pairing mode enabled
+ */
+void nm_iam_set_password_invite_pairing(struct nm_iam* iam, bool enabled);
+
+/**
  * Enable/disable the local initial pairing mode.
  *
  * To allow the client to perform local initial pairing, the mode must be enabled with this function
