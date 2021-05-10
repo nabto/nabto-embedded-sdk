@@ -46,6 +46,32 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     struct nm_libevent_context* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
 
+    if (ipsSize == 0) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+        return;
+    }
+
+    {
+        struct in6_addr dst;
+        if (evutil_inet_pton(AF_INET6, host, &dst) == 1) {
+            // this is an ipv6 address do not try to resolve it as ipv4.
+            np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+            return;
+        }
+    }
+
+    {
+        struct in_addr dst;
+        if (evutil_inet_pton(AF_INET, host, &dst) == 1) {
+            // this is an ipv4 address do not try to resolve it as ipv6.
+            ips[0].type = NABTO_IPV4;
+            memcpy(ips[0].ip.v4, &dst, 4);
+            *ipsResolved = 1;
+            np_completion_event_resolve(completionEvent, NABTO_EC_OK);
+            return;
+        }
+    }
+
     struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
@@ -65,6 +91,32 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
 {
     struct nm_libevent_context* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
+
+    if (ipsSize == 0) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+        return;
+    }
+
+    {
+        struct in_addr dst;
+        if (evutil_inet_pton(AF_INET, host, &dst) == 1) {
+            // this is an ipv4 address do not try to resolve it as ipv6.
+            np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+            return;
+        }
+    }
+
+    {
+        struct in6_addr dst;
+        if (evutil_inet_pton(AF_INET6, host, &dst) == 1) {
+            // this is an ipv6 address just resolve it as such.
+            ips[0].type = NABTO_IPV6;
+            memcpy(ips[0].ip.v6, &dst, 16);
+            *ipsResolved = 1;
+            np_completion_event_resolve(completionEvent, NABTO_EC_OK);
+            return;
+        }
+    }
 
     struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
     dnsRequest->completionEvent = completionEvent;
