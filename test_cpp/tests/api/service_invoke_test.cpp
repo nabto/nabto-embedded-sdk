@@ -10,7 +10,7 @@
 #include <future>
 
 
-BOOST_FIXTURE_TEST_SUITE(service_invoke, nabto::test::BasestationFixture)
+BOOST_AUTO_TEST_SUITE(service_invoke)
 
 BOOST_AUTO_TEST_CASE(create_destroy)
 {
@@ -36,13 +36,22 @@ BOOST_AUTO_TEST_CASE(set_value_multiple_times)
     nabto_device_free(device);
 }
 
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_FIXTURE_TEST_SUITE(service_invoke, nabto::test::BasestationFixture)
+
 BOOST_AUTO_TEST_CASE(not_attached)
 {
     nabto::test::AttachedTestDevice attachedTestDevice;
 
-    attachedTestDevice.noAttach();
-
     NabtoDevice* dev = attachedTestDevice.device();
+
+    // TODO: Remove with below comment
+    nabto_device_set_server_url(dev, getHostname().c_str());
+    nabto_device_set_server_port(dev, getPort());
+    nabto_device_set_root_certs(dev, getRootCerts().c_str());
+
+    attachedTestDevice.noAttach();
 
     const char* serviceId = "foobar";
     const char* message = "foo";
@@ -57,6 +66,10 @@ BOOST_AUTO_TEST_CASE(not_attached)
 
     nabto_device_future_free(f);
     nabto_device_service_invocation_free(s);
+
+    // TODO: BS test fixture hangs in stop() if no device attaches to it and it is running after another test which used the fixture. Fix test fixture so BS can stop without hanging, then remove this pointless attach.
+    nabto_device_set_basestation_attach(dev, true);
+    attachedTestDevice.waitForAttached();
 }
 
 BOOST_AUTO_TEST_CASE(notification_send_ok)

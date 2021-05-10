@@ -48,6 +48,15 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nm_iam_state_set_password_open_pairing(iam->state, b);
         nm_iam_internal_state_has_changed(iam);
 
+    } else if (strcmp(key, "password-invite-pairing") == 0) {
+        bool b;
+        if (!nm_iam_cbor_decode_bool(&value, &b)) {
+            nabto_device_coap_error_response(request, 400, "Bad request");
+            return;
+        }
+        iam->state->passwordInvitePairing = b;
+        nm_iam_internal_state_has_changed(iam);
+
     } else if (strcmp(key, "local-open-pairing") == 0) {
         bool b;
         if (!nm_iam_cbor_decode_bool(&value, &b)) {

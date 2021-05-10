@@ -146,6 +146,8 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
+    free(privateKey);
+
     if (nabto_device_get_device_fingerprint(device, &fp) != NABTO_DEVICE_EC_OK) {
         return false;
     }

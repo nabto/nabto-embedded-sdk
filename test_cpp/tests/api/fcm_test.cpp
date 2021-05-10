@@ -114,9 +114,11 @@ BOOST_AUTO_TEST_CASE(notification_send_not_attached)
 
     NabtoDevice* dev = attachedTestDevice.device();
 
+    // TODO: Remove with below comment
     nabto_device_set_server_url(dev, getHostname().c_str());
     nabto_device_set_server_port(dev, getPort());
     nabto_device_set_root_certs(dev, getRootCerts().c_str());
+
     attachedTestDevice.noAttach();
 
 
