@@ -9,6 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_WINDOWS_H
+#include <winsock2.h>
+#include <Ws2tcpip.h>
+#endif
+
+
 #define DNS_RECORDS_SIZE 4
 
 struct nm_dns_request {
@@ -51,8 +57,8 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     }
 
     {
-        struct in6_addr dst;
-        if (evutil_inet_pton(AF_INET6, host, &dst) == 1) {
+        uint8_t dst[16];
+        if (evutil_inet_pton(AF_INET6, host, dst) == 1) {
             // this is an ipv6 address do not try to resolve it as ipv4.
             np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
             return;
@@ -60,11 +66,11 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     }
 
     {
-        struct in_addr dst;
-        if (evutil_inet_pton(AF_INET, host, &dst) == 1) {
+        uint8_t dst[4];
+        if (evutil_inet_pton(AF_INET, host, dst) == 1) {
             // this is an ipv4 address do not try to resolve it as ipv6.
             ips[0].type = NABTO_IPV4;
-            memcpy(ips[0].ip.v4, &dst, 4);
+            memcpy(ips[0].ip.v4, dst, 4);
             *ipsResolved = 1;
             np_completion_event_resolve(completionEvent, NABTO_EC_OK);
             return;
@@ -97,8 +103,8 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     }
 
     {
-        struct in_addr dst;
-        if (evutil_inet_pton(AF_INET, host, &dst) == 1) {
+        uint8_t dst[4];
+        if (evutil_inet_pton(AF_INET, host, dst) == 1) {
             // this is an ipv4 address do not try to resolve it as ipv6.
             np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
             return;
@@ -106,11 +112,11 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     }
 
     {
-        struct in6_addr dst;
-        if (evutil_inet_pton(AF_INET6, host, &dst) == 1) {
+        uint8_t dst[16];
+        if (evutil_inet_pton(AF_INET6, host, dst) == 1) {
             // this is an ipv6 address just resolve it as such.
             ips[0].type = NABTO_IPV6;
-            memcpy(ips[0].ip.v6, &dst, 16);
+            memcpy(ips[0].ip.v6, dst, 16);
             *ipsResolved = 1;
             np_completion_event_resolve(completionEvent, NABTO_EC_OK);
             return;
