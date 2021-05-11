@@ -139,6 +139,8 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
     nabto_device_threads_join(platform->libeventThread);
 }
 
+#include <signal.h>
+
 /*
  * Thread running the network
  */
@@ -148,6 +150,17 @@ void* libevent_thread(void* data)
     if (platform->stopped == true) {
         return NULL;
     }
+
+    sigset_t set;
+    int s;
+
+    sigemptyset(&set);
+    sigaddset(&set, SIGPIPE);
+    s = pthread_sigmask(SIG_BLOCK, &set, NULL);
+    if (s != 0) {
+        NABTO_LOG_ERROR( NABTO_LOG_MODULE_EVENT_QUEUE, "Failed to create sigmask: %d", s);
+    }
+
     event_base_loop(platform->eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
     return NULL;
 }
