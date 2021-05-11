@@ -151,6 +151,7 @@ void* libevent_thread(void* data)
         return NULL;
     }
 
+#ifdef HAVE_PTHREAD_H
     sigset_t set;
     int s;
 
@@ -160,7 +161,7 @@ void* libevent_thread(void* data)
     if (s != 0) {
         NABTO_LOG_ERROR( NABTO_LOG_MODULE_EVENT_QUEUE, "Failed to create sigmask: %d", s);
     }
-
+#endif
     event_base_loop(platform->eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
     return NULL;
 }
