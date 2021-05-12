@@ -93,14 +93,6 @@ np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
     s->aborted = false;
     s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 
-#ifdef SO_NOSIGPIPE
-    evutil_socket_t fd = bufferevent_getfd(s->bev);
-    if (fd > 0) {
-        int value = 1;
-        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &value, sizeof(value));
-    }
-#endif
-
     *sock = s;
 
     return NABTO_EC_OK;
@@ -225,7 +217,7 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
         int value = 1;
         setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &value, sizeof(value));
     } else {
-        NABTO_LOG_ERROR(LOG, "Failed to get filedescriptor");
+        NABTO_LOG_INFO(LOG, "Failed to get TCP filedescriptor, SIGPIPE can occur");
     }
 #endif
 
