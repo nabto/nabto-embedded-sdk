@@ -219,6 +219,16 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
         memcpy((void*)&in.sin_addr, address->ip.v4, sizeof(in.sin_addr));
         bufferevent_socket_connect(sock->bev, (struct sockaddr*)&in, sizeof(struct sockaddr_in));
     }
+#ifdef SO_NOSIGPIPE
+    evutil_socket_t fd = bufferevent_getfd(sock->bev);
+    if (fd > 0) {
+        int value = 1;
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &value, sizeof(value));
+    } else {
+        NABTO_LOG_ERROR(LOG, "Failed to get filedescriptor");
+    }
+#endif
+
 }
 
 void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
