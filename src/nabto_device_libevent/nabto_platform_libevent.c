@@ -152,6 +152,10 @@ void* libevent_thread(void* data)
     }
 
 #ifdef HAVE_PTHREAD_H
+#ifndef SO_NOSIGPIPE
+    // On Linux we block TCP SIGPIPE on the thread as POSIX.1-2004 or later requires it to be
+    // delivered to the offending thread. Linux with POSIX.1-2001 or earlier can cause SIGPIPE.
+    // Mac uses the SO_NOSIGPIPE socket option at socket creation.
     sigset_t set;
     int s;
 
@@ -161,6 +165,7 @@ void* libevent_thread(void* data)
     if (s != 0) {
         NABTO_LOG_ERROR( NABTO_LOG_MODULE_EVENT_QUEUE, "Failed to create sigmask: %d", s);
     }
+#endif
 #endif
     event_base_loop(platform->eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
     return NULL;
