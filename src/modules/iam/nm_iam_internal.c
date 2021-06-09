@@ -155,8 +155,8 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
     }
 
     char* fingerprint = nm_iam_internal_get_fingerprint_from_coap_request(iam, request);
-    char* sct;
-    struct nm_iam_user* user;
+    char* sct = NULL;
+    struct nm_iam_user* user = NULL;
     if (fingerprint == NULL ||
         nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
         strlen(sct) > iam->sctMaxLength ||

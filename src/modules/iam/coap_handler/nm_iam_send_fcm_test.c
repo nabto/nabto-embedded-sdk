@@ -122,8 +122,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    struct nm_iam_fcm_ctx* ctx;
-    char* payload;
+    struct nm_iam_fcm_ctx* ctx = NULL;
+    char* payload = NULL;
 
     if ((ctx = (struct nm_iam_fcm_ctx*)calloc(1, sizeof(struct nm_iam_fcm_ctx))) == NULL ||
         (payload = calloc(1, strlen(noti1) + strlen(noti2) + strlen(user->fcmToken)+1)) == NULL ||
