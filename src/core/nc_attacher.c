@@ -480,6 +480,7 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
             ctx->pl->dtlsC.close(ctx->dtls);
         } else {
             nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
+            nc_keep_alive_reset(&ctx->keepAlive);
             np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
             if (ec != NABTO_EC_OK) {
                 NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
