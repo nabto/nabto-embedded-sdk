@@ -5,6 +5,7 @@
 ### Added
 
 ### Changed
+ * Fixed issues with attacher not resetting properly when disabling/enabling attach using `nabto_device_set_basestation_attach()`.
 
 #### Breaking Changes
 
