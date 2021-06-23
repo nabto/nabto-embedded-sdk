@@ -15,6 +15,7 @@ struct nabto_device_listen_new_authorization_request_context {
 
 np_error_code nabto_device_authorization_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
+    (void)future;
     np_error_code retEc = NABTO_EC_OK;
     struct nabto_device_authorization_module* ctx = (struct nabto_device_authorization_module*)listenerData;
     if (ec == NABTO_EC_OK) {

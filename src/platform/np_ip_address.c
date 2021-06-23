@@ -115,10 +115,10 @@ bool np_ip_address_read_v4(const char* str, struct np_ip_address* ip)
     ptr++;
     ptr = read_number(ptr, &d);
 
-    ip->ip.v4[0] = a;
-    ip->ip.v4[1] = b;
-    ip->ip.v4[2] = c;
-    ip->ip.v4[3] = d;
+    ip->ip.v4[0] = (uint8_t)a;
+    ip->ip.v4[1] = (uint8_t)b;
+    ip->ip.v4[2] = (uint8_t)c;
+    ip->ip.v4[3] = (uint8_t)d;
 
     ip->type = NABTO_IPV4;
     return true;

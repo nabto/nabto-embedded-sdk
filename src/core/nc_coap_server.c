@@ -119,7 +119,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 //    sendCtx->dtls.buffer = ctx->pl->buf.start(ctx->sendBuffer);
     struct np_dtls_srv_send_context* sendCtx = &ctx->sendCtx;
     sendCtx->buffer = sendBuffer;
-    sendCtx->bufferSize = sendEnd - sendBuffer;
+    sendCtx->bufferSize = (uint16_t)(sendEnd - sendBuffer);
     sendCtx->cb = &nc_coap_server_send_to_callback;
     sendCtx->data = ctx;
     sendCtx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
@@ -159,6 +159,7 @@ struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_contex
 
 void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request, uint8_t* connectionId)
 {
+    (void)ctx;
     struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request);
     memcpy(connectionId, conn->id.id+1, 14);
 
@@ -166,6 +167,7 @@ void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_cont
 
 struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request)
 {
+    (void)ctx;
     return (struct nc_client_connection*)nabto_coap_server_request_get_connection(request);
 }
 
@@ -177,6 +179,7 @@ void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct
 // ========= UTIL FUNCTIONS ============= //
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_coap_server_context* ctx = data;
     ctx->isSending = false;
     nc_coap_server_event(ctx);

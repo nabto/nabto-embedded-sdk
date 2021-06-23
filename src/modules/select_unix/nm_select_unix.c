@@ -103,10 +103,10 @@ void nm_select_unix_read(struct nm_select_unix* ctx, int nfds)
     NABTO_LOG_TRACE(LOG, "read: %i", nfds);
 
     if (FD_ISSET(ctx->pipefd[0], &ctx->readFds)) {
-        read(ctx->pipefd[0], &one, 1);
+        (void)read(ctx->pipefd[0], &one, 1);
     }
     if (FD_ISSET(ctx->pipefd[1], &ctx->readFds)) {
-        read(ctx->pipefd[1], &one, 1);
+        (void)read(ctx->pipefd[1], &one, 1);
     }
 
     nm_select_unix_udp_handle_select(ctx, nfds);
@@ -137,7 +137,7 @@ void build_fd_sets(struct nm_select_unix* ctx)
 
 void nm_select_unix_notify(struct nm_select_unix* ctx)
 {
-    write(ctx->pipefd[1], "1", 1);
+    (void)write(ctx->pipefd[1], "1", 1);
 }
 
 void* network_thread(void* data)

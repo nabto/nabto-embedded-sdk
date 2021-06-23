@@ -31,6 +31,7 @@ void mbedTlsLogger( void *ctx, int level,
                     const char *file, int line,
                     const char *str )
 {
+    (void)ctx;
     size_t fileLen = strlen(file);
     char fileTmp[32+4];
     if(fileLen > 32) {

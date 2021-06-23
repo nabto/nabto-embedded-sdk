@@ -35,6 +35,7 @@ class AuthorizationDecider {
 
     static void authorizationRequestCallback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
     {
+        (void)future;
         AuthorizationDecider* decider = (AuthorizationDecider*)userData;
         decider->handleCallback(ec);
     }

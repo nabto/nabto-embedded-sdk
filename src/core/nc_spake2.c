@@ -265,7 +265,7 @@ int hashLength(mbedtls_md_context_t* mdCtx, uint32_t val)
 int hashData(mbedtls_md_context_t* mdCtx, uint8_t* data, size_t dataLength)
 {
     int status = 0;
-    status |= hashLength(mdCtx, dataLength);
+    status |= hashLength(mdCtx, (uint32_t)dataLength);
     status |= mbedtls_md_update(mdCtx, data, dataLength);
     return status;
 }

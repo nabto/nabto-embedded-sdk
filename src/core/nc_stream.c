@@ -214,6 +214,7 @@ void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
 
 void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_stream_context* ctx = data;
     ctx->isSending = false;
     if (!ctx->stopped) {
@@ -258,7 +259,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         ctx->isSending = false;
         return;
     }
-    ctx->sendCtx.bufferSize = ptr-start+packetSize;
+    ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+packetSize);
     ctx->sendCtx.cb = &nc_stream_dtls_send_callback;
     ctx->sendCtx.data = ctx;
     ctx->sendCtx.channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
@@ -288,6 +289,7 @@ void nc_stream_event_queue_callback(void* data)
 // been read.
 void nc_stream_event_callback(enum nabto_stream_module_event event, void* data)
 {
+    (void)event;
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
     if (ctx->stopped) {
         return;
@@ -520,14 +522,8 @@ np_error_code nc_stream_handle_close(struct nc_stream_context* stream)
         return NABTO_EC_OK;
     } else if (status == NABTO_STREAM_STATUS_CLOSED) {
         return NABTO_EC_CLOSED;
-        nc_stream_callback cb = stream->closeCb;
-        stream->closeCb = NULL;
-        cb(NABTO_EC_OK, stream->closeUserData);
     } else {
         return nc_stream_status_to_ec(status);
-        nc_stream_callback cb = stream->closeCb;
-        stream->closeCb = NULL;
-        cb(nc_stream_status_to_ec(status), stream->closeUserData);
     }
 }
 

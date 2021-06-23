@@ -20,4 +20,4 @@ BOOST_AUTO_TEST_CASE(create_sct, *boost::unit_test::timeout(180))
     nabto_device_free(device);
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()

@@ -709,7 +709,7 @@ void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp
         ctx->activeEp = *ep;
         ctx->hasActiveEp = true;
     }
-    pl->dtlsC.handle_packet(ctx->dtls, buffer, bufferSize);
+    pl->dtlsC.handle_packet(ctx->dtls, buffer, (uint16_t)bufferSize);
 }
 
 np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
@@ -751,13 +751,14 @@ void send_initial_packet(struct nc_attach_context* ctx)
     }
     np_completion_event_reinit(&ctx->senderCompletionEvent, &initial_packet_sent, ctx);
     nc_udp_dispatch_async_send_to(ctx->udp, &ctx->initialPacket.endpoints[ctx->initialPacket.endpointsIndex],
-                                  ctx->initialPacket.buffer, ctx->initialPacket.bufferSize,
+                                  ctx->initialPacket.buffer, (uint16_t)ctx->initialPacket.bufferSize,
                                   &ctx->senderCompletionEvent);
     ctx->initialPacket.endpointsIndex++;
 }
 
 void initial_packet_sent(const np_error_code ec, void* userData)
 {
+    (void)ec;
     struct nc_attach_context* ctx = userData;
     // do not care about send errors
     send_initial_packet(ctx);

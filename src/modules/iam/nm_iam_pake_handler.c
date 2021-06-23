@@ -47,6 +47,7 @@ void start_listen(struct nm_iam_pake_handler *handler)
 
 void request_callback(NabtoDeviceFuture *future, NabtoDeviceError ec, void *userData)
 {
+    (void)future;
     struct nm_iam_pake_handler *handler = userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         return;

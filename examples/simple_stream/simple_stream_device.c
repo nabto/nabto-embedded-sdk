@@ -14,7 +14,7 @@
 
 #if defined(WIN32)
 #define NEWLINE "\r\n"
-#else 
+#else
 #define NEWLINE "\n"
 #endif
 
@@ -47,6 +47,7 @@ static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
 
 void signal_handler(int s)
 {
+    (void)s;
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
@@ -187,6 +188,7 @@ void startClose(struct StreamEchoState* state)
 
 void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
+    (void)ec;
     nabto_device_future_free(future);
     struct StreamEchoState* state = (struct StreamEchoState*)userData;
 

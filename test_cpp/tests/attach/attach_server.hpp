@@ -78,6 +78,7 @@ class AttachCoapServer {
         dtlsServer_.setPort(port_);
         dtlsServer_.setAlpnProtocols({"n5"});
         dtlsServer_.setSniCallback([](const std::string& sni){
+                (void)sni;
                 return DtlsServer::createCertificateContext(privateKey, certChain);
             });
 
@@ -174,11 +175,13 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
                 self->attachCount_ += 1;
             });
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-end", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+                (void)connection; (void)request;
                 response->setCode(201);
                 //self->attachCount_ += 1;
                 return;
             });
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/fcm/send", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+                (void)connection; (void)request;
                 response->setCode(201);
                 response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
                 nlohmann::json root;
@@ -189,6 +192,7 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
                 return;
             });
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/service/invoke", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+                (void)connection; (void)request;
                 response->setCode(201);
                 response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
                 nlohmann::json root;
@@ -203,6 +207,7 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
 
     void handleDeviceAttach(DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response)
     {
+        (void)connection; (void)request;
         nlohmann::json root;
         root["Status"] = 0;
         nlohmann::json ka;
@@ -224,6 +229,7 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
 
     void handleDeviceAttachWrongResponse(DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response)
     {
+        (void)connection; (void)request;
         nlohmann::json root;
         root["FOOBAR"] = "BAZ";
 
@@ -243,6 +249,7 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
 
     void niceClose() {
         dtlsServer_.asyncNiceClose([](const lib::error_code& ec){
+                (void)ec;
                 // all current connections is closed nicely.
             });
     }
@@ -275,6 +282,7 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
     void initCoapHandlers() {
         auto self = shared_from_this();
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-start", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+                (void)connection; (void)request;
                 if (self->invalidRedirect_ == self->redirectCount_) {
                     self->handleDeviceRedirectInvalidResponse(connection, response);
                 } else {
@@ -286,12 +294,14 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
 
     void handleDeviceRedirectInvalidResponse(DtlsConnectionPtr connection, std::shared_ptr<CoapServerResponse> response)
     {
+        (void)connection;
         response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
         response->setCode(201);
     }
 
     void handleDeviceRedirect(DtlsConnectionPtr connection, std::shared_ptr<CoapServerResponse> response)
     {
+        (void)connection;
         uint8_t buffer[128];
 
         CborEncoder encoder;
@@ -361,6 +371,7 @@ class AccessDeniedServer : public AttachCoapServer, public std::enable_shared_fr
     void initCoapHandlers() {
         auto self = shared_from_this();
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-start", [self](DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+                (void)response; (void)request;
                 connection->accessDenied();
                 self->coapRequestCount_++;
             });

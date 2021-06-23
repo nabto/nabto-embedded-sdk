@@ -134,7 +134,7 @@ static void my_debug( void *ctx, int level,
                       const char *file, int line,
                       const char *str )
 {
-    ((void) level);
+    ((void) level); (void)ctx;
     uint32_t severity;
     switch (level) {
         case 1:
@@ -476,7 +476,7 @@ void nm_dtls_event_do_one(void* data)
         } else if (ret > 0) {
             ctx->recvCount++;
 
-            ctx->dataHandler(pl->buf.start(ctx->sslRecvBuf), ret, ctx->callbackData);
+            ctx->dataHandler(pl->buf.start(ctx->sslRecvBuf), (uint16_t)ret, ctx->callbackData);
             return;
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -561,6 +561,7 @@ np_error_code async_send_data(struct np_dtls_cli_context* ctx,
 }
 
 void nm_dtls_do_close(void* data, np_error_code ec){
+    (void)ec;
     struct np_dtls_cli_context* ctx = data;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
     nm_mbedtls_timer_cancel(&ctx->timer);
@@ -603,6 +604,7 @@ np_error_code handle_packet(struct np_dtls_cli_context* ctx,
 
 void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct np_dtls_cli_context* ctx = data;
     if (data == NULL) {
         return;
@@ -633,7 +635,7 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
         ctx->sending = true;
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
         ctx->sslSendBufferSize = bufferSize;
-        np_error_code ec = ctx->sender(pl->buf.start(ctx->sslSendBuffer), bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
+        np_error_code ec = ctx->sender(pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
         if (ec != NABTO_EC_OK) {
             ctx->sending = false;
             ctx->sslSendBufferSize = 0;
@@ -643,11 +645,11 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
                     nm_mbedtls_cli_do_free(ctx);
                 }
             }
-            return MBEDTLS_ERR_SSL_WANT_WRITE;
+            return (int)MBEDTLS_ERR_SSL_WANT_WRITE;
         }
         return bufferSize;
     } else {
-        return MBEDTLS_ERR_SSL_WANT_WRITE;
+        return (int)MBEDTLS_ERR_SSL_WANT_WRITE;
     }
 }
 

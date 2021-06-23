@@ -16,6 +16,7 @@ void nm_event_queue_init(struct nm_event_queue* queue)
 
 void nm_event_queue_deinit(struct nm_event_queue* queue)
 {
+    (void)queue;
 
 }
 

@@ -40,6 +40,7 @@ struct nm_iam_condition* nm_condition_from_json(const cJSON* json, struct nn_log
 
 bool nm_condition_from_json_parse(const cJSON* kv, struct nm_iam_condition* condition, struct nn_log* logger)
 {
+    (void)logger;
     // json = { "key": ["value1", "value2"] }
     // An object is also an iterable array
     // string = "key", type = "array"

@@ -84,6 +84,7 @@ void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
 
 void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
+    (void)nfds;
     struct np_tcp_socket* s;
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->tcpSockets)
@@ -316,7 +317,7 @@ np_error_code tcp_do_write_ec(struct np_tcp_socket* sock)
             return NABTO_EC_UNKNOWN;
         }
     } else {
-        sock->write.data += sent;
+        sock->write.data = (uint8_t*)sock->write.data + sent;
         sock->write.dataLength -= sent;
         if (sock->write.dataLength > 0) {
             // Wait for next event which triggers write.

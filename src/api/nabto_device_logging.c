@@ -10,7 +10,7 @@ static uint32_t level_ = NABTO_LOG_SEVERITY_LEVEL_INFO;
 
 static void default_log_callback(NabtoDeviceLogMessage* msg, void* data)
 {
-
+    (void)msg; (void)data;
 }
 
 static void logging_log(uint32_t severity, uint32_t module,
@@ -33,6 +33,7 @@ void logging_log(uint32_t severity, uint32_t module,
                 uint32_t line, const char* file,
                 const char* fmt, va_list args)
 {
+    (void)module;
     if (level_ & severity) {
         NabtoDeviceLogMessage msg;
         char log[256];

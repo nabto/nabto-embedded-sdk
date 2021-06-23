@@ -32,4 +32,4 @@ BOOST_AUTO_TEST_CASE(set_notification_categories, *boost::unit_test::timeout(180
     nabto_device_free(d);
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()

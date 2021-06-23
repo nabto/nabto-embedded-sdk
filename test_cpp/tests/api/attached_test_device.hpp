@@ -87,6 +87,7 @@ class AttachedTestDevice {
     }
 
     static void newEvent(NabtoDeviceFuture* future, NabtoDeviceError ec, void* data) {
+        (void)future;
         AttachedTestDevice* device = (AttachedTestDevice*)(data);
         if (ec != NABTO_DEVICE_EC_OK) {
             return;

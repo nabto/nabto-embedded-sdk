@@ -62,6 +62,7 @@ void start_listen(struct heat_pump_coap_handler* handler)
 
 void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
+    (void)future;
     struct heat_pump_coap_handler* handler = userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         return;

@@ -102,6 +102,7 @@ static void tcp_eof(void* userData);
 
 void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 {
+    (void)bev;
     struct np_tcp_socket* sock = userData;
     NABTO_LOG_TRACE(LOG, "bufferevent event %i", event);
     if (event & BEV_EVENT_CONNECTED) {
@@ -113,6 +114,7 @@ void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 
 void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
 {
+    (void)bev;
     NABTO_LOG_TRACE(LOG, "tcp_bufferevent_event_read");
     struct np_tcp_socket* sock = userData;
     if (sock->read.completionEvent != NULL) {
@@ -129,6 +131,7 @@ void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
 
 void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData)
 {
+    (void)bev;
     struct np_tcp_socket* sock = userData;
     NABTO_LOG_TRACE(LOG, "tcp_written_data");
 

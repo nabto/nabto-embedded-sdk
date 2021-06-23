@@ -7,6 +7,7 @@
 void NABTO_DEVICE_API
 nabto_device_test_logging(NabtoDevice* device)
 {
+    (void)device;
     int i = 42;
     const char* str = "test";
     double d = 42.2;

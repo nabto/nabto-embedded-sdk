@@ -113,6 +113,7 @@ void nm_mdns_server_deinit(struct nm_mdns_server* server)
 
 void nm_mdns_goodbye_sent(const np_error_code ec, void* userData)
 {
+    (void)ec;
     struct nm_mdns_server_instance* instance = userData;
     instance->sending = false;
     np_udp_abort(&instance->server->udp, instance->socket);
@@ -172,6 +173,7 @@ void publish_service(struct np_mdns* obj, uint16_t port, const char* instanceNam
 
 void unpublish_service(struct np_mdns* obj)
 {
+    (void)obj;
     // do nothing
 }
 
@@ -213,10 +215,10 @@ void nm_mdns_recv_packet(struct nm_mdns_server_instance* instance)
     np_udp_async_recv_wait(&instance->server->udp, instance->socket, &instance->recvWaitCompletionEvent);
 }
 
-void nm_mdns_packet_recv_wait_completed(const np_error_code ec, void* userData)
+void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
-    if (ec == NABTO_EC_OK && !instance->server->stopped) {
+    if (ecIn == NABTO_EC_OK && !instance->server->stopped) {
         size_t recvSize;
         uint8_t* recvBuffer = instance->recvBuffer;
         size_t recvBufferSize = 1500;

@@ -20,6 +20,7 @@ struct np_timestamp nm_unix_ts_get_impl()
 
 uint32_t ts_now_ms(struct np_timestamp* obj)
 {
+    (void)obj;
     struct timespec spec;
     clock_gettime(CLOCK_REALTIME, &spec);
     return ((spec.tv_sec * 1000) + (spec.tv_nsec / 1000000));

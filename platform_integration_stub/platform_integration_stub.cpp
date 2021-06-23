@@ -16,12 +16,14 @@ static uint16_t tcpEchoServerPort = 1234;
 
 void log_print(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args)
 {
+    (void)userData; (void)severity; (void)module; (void)line; (void)file;
     vprintf(fmt, args);
     std::cout << std::endl;
 }
 
 int main(int argc, const char* argv[])
 {
+    (void)argc; (void)argv;
     std::cout << "starting platform integration stub" << std::endl;
 
     struct nn_log logger;

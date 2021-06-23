@@ -44,6 +44,7 @@ void start_listen(struct device_event_handler* handler)
 
 void callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
+    (void)future;
     struct device_event_handler* handler = userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
@@ -54,6 +55,7 @@ void callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 
 void handle_event(struct device_event_handler* handler, NabtoDeviceEvent event)
 {
+    (void)handler;
     if (event == NABTO_DEVICE_EVENT_ATTACHED) {
         printf("Attached to the basestation\n");
     } else if (event == NABTO_DEVICE_EVENT_DETACHED) {

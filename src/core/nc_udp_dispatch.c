@@ -90,7 +90,7 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     size_t recvLength;
     np_error_code recvEc = np_udp_recv_from(&ctx->pl->udp, ctx->sock, &ep, bufferStart, bufferLength, &recvLength);
     if (recvEc == NABTO_EC_OK) {
-        nc_udp_dispatch_handle_packet(&ep, bufferStart, recvLength, ctx);
+        nc_udp_dispatch_handle_packet(&ep, bufferStart, (uint16_t)recvLength, ctx);
     }
 
     if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
@@ -116,26 +116,6 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
     } else {
         NABTO_LOG_ERROR(LOG, "Unable to dispatch packet with ID: %u", start[0]);
     }
-}
-
-void nc_udp_dispatch_handle_rendezvous_packet(
-    struct np_udp_endpoint* ep,
-    uint8_t* buffer, uint16_t bufferSize, struct nc_udp_dispatch_context* ctx)
-{
-    if (bufferSize < 17) {
-        return;
-    }
-    uint8_t type = buffer[16];
-    if (type == CT_RENDEZVOUS_CLIENT_REQUEST) {
-        // validate connection id and make a CT_RENDEZVOUS_CLIENT_RESPONSE
-        if (nc_client_connection_dispatch_validate_connection_id(ctx->cliConn, buffer+1)) {
-
-        }
-    }
-    if (type == CT_RENDEZVOUS_PING_REQUEST) {
-        // send a ping response.
-    }
-    // if the type is
 }
 
 void nc_udp_dispatch_set_client_connection_context(struct nc_udp_dispatch_context* ctx,

@@ -69,4 +69,4 @@ BOOST_AUTO_TEST_CASE(ping_device, *boost::unit_test::timeout(300))
     nabto_device_free(device);
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()

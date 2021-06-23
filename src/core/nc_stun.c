@@ -160,6 +160,7 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
                            uint8_t* buffer,
                            uint16_t bufferSize)
 {
+    (void)ep;
     if (ctx->state == NC_STUN_STATE_ABORTED) {
         NABTO_LOG_ERROR(LOG, "Stun packet received for deinitialized stun context");
         return;
@@ -292,13 +293,14 @@ void nc_stun_dns_cb(const np_error_code ec, void* data)
         return;
     }
     ctx->numEps = nc_stun_convert_ep_list(ctx->resolvedIps, ctx->resolvedIpsSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, ctx->priPort);
-    nabto_stun_init(&ctx->stun, &ctx->stunModule, ctx, ctx->eps, ctx->numEps);
+    nabto_stun_init(&ctx->stun, &ctx->stunModule, ctx, ctx->eps, (uint8_t)ctx->numEps);
     nabto_stun_async_analyze(&ctx->stun, ctx->simple);
     nc_stun_event(ctx);
 }
 
 void nc_stun_send_to_cb(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
     // send errors is ok in stun context
     nc_stun_event(ctx);

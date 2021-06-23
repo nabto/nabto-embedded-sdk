@@ -39,6 +39,7 @@ struct nabto_device_listen_connection_context {
 
 np_error_code nabto_device_connection_events_listener_cb(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
+    (void)future;
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)listenerData;
     np_error_code retEc;
     if (ec == NABTO_EC_OK) {

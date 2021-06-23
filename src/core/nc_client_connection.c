@@ -271,6 +271,7 @@ void nc_client_connection_keep_alive_send_response(struct nc_client_connection* 
 
 void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_client_connection* cc =  (struct nc_client_connection*)data;
     nc_client_connection_destroy_connection(cc);
 }
@@ -324,6 +325,7 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
 
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data)
 {
+    (void)data;
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "MTU discovery failed with %s. mtu is %u", np_error_code_to_string(ec), mtu);
     } else {

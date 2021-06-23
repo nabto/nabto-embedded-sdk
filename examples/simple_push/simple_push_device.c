@@ -86,7 +86,7 @@ void read_push_trigger(NabtoDevice* device, struct nm_iam* iam)
             printf("[a] alert category\n");
             printf("[q] Close the device and quit\n");
         }
-        scanf("%c", &cat);
+        (void)scanf("%c", &cat);
         if (cat == 'i') {
             send_notification_to_category(device, iam, "Info");
         } else if (cat == 'w') {
@@ -132,6 +132,7 @@ void send_notification_to_category(NabtoDevice* device, struct nm_iam* iam, cons
 
 bool build_fcm_for_user(NabtoDevice* device, NabtoDeviceFcmNotification* fcm, struct nm_iam_user* user, const char* title, const char* body)
 {
+    (void)device;
     cJSON* root = cJSON_CreateObject();
     cJSON* message = cJSON_CreateObject();
     cJSON* notification = cJSON_CreateObject();
@@ -244,6 +245,7 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
 
 void iam_user_changed(struct nm_iam* iam, void* userData)
 {
+    (void)userData;
     struct nm_iam_state* state = nm_iam_dump_state(iam);
     char* stateStr;
     nm_iam_serializer_state_dump_json(state, &stateStr);
@@ -392,6 +394,7 @@ void iam_logger(void* data, enum nn_log_severity severity, const char* module,
                 const char* file, int line,
                 const char* fmt, va_list args)
 {
+    (void)data; (void)module;
     if (logLevel > 0 && severity <= logLevel) {
         char log[256];
         int ret;

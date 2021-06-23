@@ -14,6 +14,7 @@
 
 void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_log* logger)
 {
+    (void)logger;
     char* str = NULL;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
     } else if (!string_file_save(filename, str)) {

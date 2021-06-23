@@ -71,7 +71,7 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
 
                 uint64_t p;
                 cbor_value_get_uint64(&port, &p);
-                packet.ep.port = p;
+                packet.ep.port = (uint16_t)p;
 
                 size_t ipLength;
                 cbor_value_get_string_length(&ip, &ipLength);

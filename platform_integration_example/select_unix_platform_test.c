@@ -169,5 +169,6 @@ void local_ip_test()
 
 void log_callback(NabtoDeviceLogMessage* msg, void* data)
 {
+    (void)data;
     printf(" Log output: %5s %s\n", nabto_device_log_severity_as_string(msg->severity), msg->message);
 }

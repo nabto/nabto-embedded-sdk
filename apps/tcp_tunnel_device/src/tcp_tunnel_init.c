@@ -95,7 +95,7 @@ bool yes_no() {
             printf("[y/n]: ");
         }
 
-        scanf("%c", &yn);
+        (void)scanf("%c", &yn);
         if (yn == 'y' || yn == 'Y') {
             return true;
         }

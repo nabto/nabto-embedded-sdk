@@ -49,11 +49,11 @@ static np_error_code udp_create_socket_ipv4(struct np_udp_socket* s);
 static np_error_code udp_create_socket_ipv6(struct np_udp_socket* s);
 
 
-static bool nm_libevent_init_mdns_ipv6_socket(int sock);
-static bool nm_libevent_init_mdns_ipv4_socket(int sock);
+static bool nm_libevent_init_mdns_ipv6_socket(evutil_socket_t sock);
+static bool nm_libevent_init_mdns_ipv4_socket(evutil_socket_t sock);
 
-static void nm_libevent_mdns_update_ipv4_socket_registration(int sock);
-static void nm_libevent_mdns_update_ipv6_socket_registration(int sock);
+static void nm_libevent_mdns_update_ipv4_socket_registration(evutil_socket_t sock);
+static void nm_libevent_mdns_update_ipv6_socket_registration(evutil_socket_t sock);
 
 static struct nm_mdns_udp_bind_functions module = {
     .async_bind_mdns_ipv4 = udp_async_bind_mdns_ipv4,
@@ -157,7 +157,7 @@ np_error_code udp_create_socket_ipv4(struct np_udp_socket* s)
 }
 
 
-bool nm_libevent_init_mdns_ipv6_socket(int sock)
+bool nm_libevent_init_mdns_ipv6_socket(evutil_socket_t sock)
 {
     int reuse = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0) {
@@ -195,7 +195,7 @@ bool nm_libevent_init_mdns_ipv6_socket(int sock)
 }
 
 
-bool nm_libevent_init_mdns_ipv4_socket(int sock)
+bool nm_libevent_init_mdns_ipv4_socket(evutil_socket_t sock)
 {
     int reuse = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)) < 0) {
@@ -231,7 +231,7 @@ bool nm_libevent_init_mdns_ipv4_socket(int sock)
 }
 
 
-void nm_libevent_mdns_update_ipv4_socket_registration(int sock)
+void nm_libevent_mdns_update_ipv4_socket_registration(evutil_socket_t sock)
 {
 #if defined(HAVE_IFADDRS_H)
     struct ifaddrs* interfaces = NULL;
@@ -267,7 +267,7 @@ void nm_libevent_mdns_update_ipv4_socket_registration(int sock)
 #endif
 }
 
-void nm_libevent_mdns_update_ipv6_socket_registration(int sock)
+void nm_libevent_mdns_update_ipv6_socket_registration(evutil_socket_t sock)
 {
 #if defined(HAVE_IFADDRS_H)
     struct ifaddrs* interfaces = NULL;

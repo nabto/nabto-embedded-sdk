@@ -127,7 +127,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 
     if ( stream != NULL ) {
         nc_stream_ref_count_inc(stream);
-        nc_stream_handle_packet(stream, ptr, bufferSize-(ptr-start));
+        nc_stream_handle_packet(stream, ptr, (uint16_t)(bufferSize-(ptr-start)));
         nc_stream_ref_count_dec(stream);
     } else {
         NABTO_LOG_TRACE(LOG, "unable to handle packet of type %s, for stream ID %u no such stream", nabto_stream_flags_to_string(flags), streamId);
@@ -223,7 +223,6 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         nc_stream_ref_count_inc(stream);
         return stream;
     }
-    return NULL;
 }
 
 void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
@@ -257,7 +256,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np
     ret = nabto_stream_create_rst_packet(ptr, ctx->pl->buf.size(ctx->rstBuf) - (ptr - start));
 
     ctx->sendCtx.buffer = start;
-    ctx->sendCtx.bufferSize = ptr-start+ret;
+    ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+ret);
     ctx->sendCtx.cb = &nc_stream_manager_send_rst_callback;
     ctx->sendCtx.data = ctx;
     ctx->sendCtx.channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
@@ -266,6 +265,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_stream_manager_context* ctx = (struct nc_stream_manager_context*)data;
     ctx->pl->buf.free(ctx->rstBuf);
     ctx->rstBuf = NULL;
@@ -287,7 +287,7 @@ struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc
         return NULL;
     }
     seg->buf = buf;
-    seg->capacity = bufferSize;
+    seg->capacity = (uint16_t)bufferSize;
     ctx->allocatedSegments++;
     return seg;
 }
@@ -318,7 +318,7 @@ struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc
         return NULL;
     }
     seg->buf = buf;
-    seg->capacity = bufferSize;
+    seg->capacity = (uint16_t)bufferSize;
     ctx->allocatedSegments++;
     return seg;
 }

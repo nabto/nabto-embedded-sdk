@@ -581,12 +581,14 @@ void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture*
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data)
 {
+    (void)device;
     nabto_device_logging_set_callback(cb, data);
     return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_level(NabtoDevice* device, const char* level)
 {
+    (void)device;
     uint32_t l = 0;
     if (strcmp(level, "error") == 0) {
         l = NABTO_LOG_SEVERITY_LEVEL_ERROR;

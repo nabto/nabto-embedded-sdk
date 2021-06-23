@@ -127,6 +127,7 @@ static size_t encode_service(struct nm_tcp_tunnel_service* service, uint8_t* buf
 
 void list_services_iam(bool allow, void* userData1, void* userData2, void* userData3)
 {
+    (void)userData3;
     struct nm_tcp_tunnels* tunnels = userData1;
     struct nabto_coap_server_request* request = userData2;
 
@@ -200,6 +201,7 @@ void get_service_action(struct nabto_coap_server_request* request, struct nm_tcp
 
 void get_service_iam(bool allow, void* userData1, void* userData2, void* userData3)
 {
+    (void)userData3;
     struct nm_tcp_tunnels* tunnels = userData1;
     struct nabto_coap_server_request* request = userData2;
 

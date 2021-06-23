@@ -188,7 +188,7 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
             NABTO_LOG_TRACE(
                 LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u",
                 i, ri, mr);
-            nc_keep_alive_set_settings(&ctx->keepAlive, i, ri, mr);
+            nc_keep_alive_set_settings(&ctx->keepAlive, (uint32_t)i, (uint32_t)ri, (uint32_t)mr);
         }
     }
 
@@ -257,7 +257,7 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         }
 
         cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL);
-        ctx->currentPort = p;
+        ctx->currentPort = (uint16_t)p;
 
     } else {
         NABTO_LOG_ERROR(LOG, "Redirect response not understood");

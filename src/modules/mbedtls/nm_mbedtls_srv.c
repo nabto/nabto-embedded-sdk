@@ -156,6 +156,7 @@ np_error_code nm_mbedtls_srv_init(struct np_platform* pl)
  */
 np_error_code nm_mbedtls_srv_get_fingerprint(struct np_platform* pl, struct np_dtls_srv_connection* ctx, uint8_t* fp)
 {
+    (void)pl;
     const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&ctx->ssl);
     if (crt == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to get peer cert from mbedtls");
@@ -172,6 +173,7 @@ np_error_code nm_mbedtls_srv_get_server_fingerprint(struct np_dtls_srv* server, 
 
 np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server)
 {
+    (void)pl;
     *server = calloc(1, sizeof(struct np_dtls_srv));
     if (*server == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -307,6 +309,7 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
 np_error_code nm_mbedtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
                                         uint8_t channelId, uint8_t* buffer, uint16_t bufferSize)
 {
+    (void)pl;
     ctx->currentChannelId = channelId;
     ctx->recvBuffer = buffer;
     ctx->recvBufferSize = bufferSize;
@@ -355,7 +358,7 @@ void nm_mbedtls_srv_do_one(void* data)
             uint64_t seq = *((uint64_t*)ctx->ssl.in_ctr);
             ctx->recvCount++;
             ctx->dataHandler(ctx->currentChannelId, seq,
-                             pl->buf.start(ctx->sslRecvBuf), ret, ctx->senderData);
+                             pl->buf.start(ctx->sslRecvBuf), (uint16_t)ret, ctx->senderData);
             return;
         } else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                    ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -423,6 +426,7 @@ void nm_mbedtls_srv_start_send_deferred(void* data)
 np_error_code nm_mbedtls_srv_async_send_data(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                           struct np_dtls_srv_send_context* sendCtx)
 {
+    (void)pl;
     if (ctx->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
@@ -456,6 +460,7 @@ void nm_mbedtls_srv_is_closed(struct np_dtls_srv_connection* ctx)
 np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                          struct np_completion_event* completionEvent)
 {
+    (void)pl;
     if (ctx->closeCompletionEvent != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
@@ -476,6 +481,7 @@ static void nm_mbedtls_srv_tls_logger( void *ctx, int level,
                                     const char *str )
 {
     ((void) level);
+    ((void) ctx);
     uint32_t severity;
     switch (level) {
         case 1:
@@ -564,16 +570,16 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     struct np_platform* pl = ctx->pl;
     if (!ctx->sending) {
-        memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
+        memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, (uint16_t)bufferSize);
         ctx->sslSendBufferSize = bufferSize;
         ctx->sending = true;
-        np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), bufferSize, &nm_mbedtls_srv_connection_send_callback, ctx, ctx->senderData);
+        np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &nm_mbedtls_srv_connection_send_callback, ctx, ctx->senderData);
         if (ec != NABTO_EC_OK) {
             ctx->sending = false;
             ctx->sslSendBufferSize = 0;
             return MBEDTLS_ERR_SSL_WANT_WRITE;
         }
-        return bufferSize;
+        return (int)bufferSize;
     } else {
         return MBEDTLS_ERR_SSL_WANT_WRITE;
     }
@@ -581,6 +587,7 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
 
 void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (data == NULL) {
         return;
@@ -604,7 +611,7 @@ int nm_mbedtls_srv_mbedtls_recv(void* data, unsigned char* buffer, size_t buffer
         size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
         memcpy(buffer, ctx->recvBuffer, maxCp);
         ctx->recvBufferSize = 0;
-        return maxCp;
+        return (int)maxCp;
     }
 }
 

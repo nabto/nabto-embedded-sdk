@@ -65,6 +65,7 @@ BOOST_AUTO_TEST_CASE(has_default_server_url)
 
 static void log_callback(NabtoDeviceLogMessage* msg, void* data)
 {
+    (void)msg;
     int* logLines = (int*)data;
     (*logLines)++;
 }

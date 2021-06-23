@@ -236,6 +236,7 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
 
 void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
+    (void)nfds;
     struct np_udp_socket* s;
 
     nm_select_unix_lock(ctx);

@@ -173,6 +173,7 @@ void* libevent_thread(void* data)
 
 void signal_event(evutil_socket_t s, short event, void* userData)
 {
+    (void)s; (void)event;
     struct libevent_platform* platform = userData;
     event_base_loopbreak(platform->eventBase);
 }

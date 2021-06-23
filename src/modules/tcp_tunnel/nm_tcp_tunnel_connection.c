@@ -105,6 +105,7 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
 
 void nm_tcp_tunnel_connection_start(struct nm_tcp_tunnel_connection* connection, struct nm_tcp_tunnel_service* service)
 {
+    (void)service;
     NABTO_LOG_TRACE(LOG, "nm_tcp_tunnel_connection_start");
     // accept the stream
     nc_stream_accept(connection->stream);
@@ -198,6 +199,7 @@ void close_stream(struct nm_tcp_tunnel_connection* connection)
 
 void stream_closed(np_error_code ec, void* userData)
 {
+    (void)ec;
     struct nm_tcp_tunnel_connection* connection = userData;
     connection->tcpReadEnded = true;
     is_ended(connection);

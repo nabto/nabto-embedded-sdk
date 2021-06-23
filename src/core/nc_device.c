@@ -463,6 +463,7 @@ void nc_device_add_connection_events_listener(struct nc_device_context* dev, str
 
 void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener)
 {
+    (void)dev;
     nn_llist_erase_node(&listener->eventListenersNode);
 }
 
@@ -490,6 +491,7 @@ void nc_device_add_device_events_listener(struct nc_device_context* dev, struct 
 
 void nc_device_remove_device_events_listener(struct nc_device_context* dev, struct nc_device_events_listener* listener)
 {
+    (void)dev;
     nn_llist_erase_node(&listener->eventsListenersNode);
 }
 
@@ -659,6 +661,7 @@ np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* dev, const c
 
 void module_logger(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args)
 {
+    (void)userData; (void)module;
      if (severity == NN_LOG_SEVERITY_INFO) {
         np_log.log(NABTO_LOG_SEVERITY_INFO, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
     } else if (severity == NN_LOG_SEVERITY_TRACE) {

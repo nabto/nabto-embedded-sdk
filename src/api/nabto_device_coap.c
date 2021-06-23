@@ -205,6 +205,7 @@ nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method)
 
 np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
+    (void)future;
     struct nabto_device_coap_resource* res = (struct nabto_device_coap_resource*)listenerData;
     np_error_code retEc;
     if (ec == NABTO_EC_OK) {

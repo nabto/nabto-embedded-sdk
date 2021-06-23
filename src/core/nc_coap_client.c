@@ -106,7 +106,7 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         ctx->isSending = true;
         sendCtx->cb = &nc_coap_client_send_to_callback;
         sendCtx->data = ctx;
-        sendCtx->bufferSize = used;
+        sendCtx->bufferSize = (uint16_t)used;
 
         struct np_dtls_cli_context* dtls = connection;
         ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
@@ -170,6 +170,7 @@ void nc_coap_client_event(struct nc_coap_client_context* ctx)
 
 void nc_coap_client_send_to_callback(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_coap_client_context* ctx = data;
     ctx->isSending = false;
     nc_coap_client_event(ctx);

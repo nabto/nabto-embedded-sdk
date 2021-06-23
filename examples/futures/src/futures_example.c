@@ -48,7 +48,7 @@ void do_important_work();
 void handle_coap_request(NabtoDeviceCoapRequest* request);
 void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 
-int main(int argc, char** argv)
+int main()
 {
     NabtoDeviceError ec;
 
@@ -219,6 +219,7 @@ void handle_coap_request(NabtoDeviceCoapRequest* request)
 
 void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
 {
+    (void)fut;
     // data is the request pointer we provided as context, let's cast
     // it.
     NabtoDeviceCoapRequest* req = (NabtoDeviceCoapRequest*)data;

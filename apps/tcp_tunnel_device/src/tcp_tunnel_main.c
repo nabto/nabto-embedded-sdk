@@ -113,6 +113,7 @@ void print_tcp_tunnel_state_load_failed(const char* fileName)
 
 void print_start_text(struct args* args)
 {
+    (void)args;
     printf("TCP Tunnel Device" NEWLINE);
 }
 
@@ -574,6 +575,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
 void signal_handler(int s)
 {
+    (void)s;
     NabtoDeviceFuture* fut = nabto_device_future_new(device_);
     nabto_device_close(device_, fut);
     nabto_device_future_wait(fut);

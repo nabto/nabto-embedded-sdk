@@ -128,6 +128,7 @@ void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec)
 
 void udp_ready_callback(evutil_socket_t s, short events, void* userData)
 {
+    (void)s;
     struct np_udp_socket* sock = userData;
     if (events & EV_READ) {
         complete_recv_wait(sock, NABTO_EC_OK);
@@ -312,14 +313,14 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
     if (sock->type == NABTO_IPV6) {
         struct sockaddr_in6 sa;
         socklen_type addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, buffer, bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, buffer, (ssize_type)bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep->ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep->ip.ip.v6));
         ep->port = ntohs(sa.sin6_port);
         ep->ip.type = NABTO_IPV6;
     } else {
         struct sockaddr_in sa;
         socklen_type addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, buffer, bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, buffer, (ssize_type)bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep->ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep->ip.ip.v4));
         ep->port = ntohs(sa.sin_port);
         ep->ip.type = NABTO_IPV4;

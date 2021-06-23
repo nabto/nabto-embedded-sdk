@@ -26,7 +26,7 @@ std::string p1 = R"(
 } // namespace
 
 
-BOOST_AUTO_TEST_SUITE(policy_json);
+BOOST_AUTO_TEST_SUITE(policy_json)
 
 BOOST_AUTO_TEST_CASE(parse1)
 {

@@ -14,6 +14,7 @@ struct print pnt;
 
 void test_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
+    (void)line; (void)file;
     pnt.severity = severity;
     pnt.module = module;
     pnt.fmt[63] = '\0';

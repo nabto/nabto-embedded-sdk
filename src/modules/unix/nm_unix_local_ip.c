@@ -25,6 +25,7 @@ struct np_local_ip nm_unix_local_ip_get_impl()
 
 size_t get_local_ips(struct np_local_ip* obj, struct np_ip_address *addrs, size_t addrsSize)
 {
+    (void)obj;
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;
     struct in_addr v4any;

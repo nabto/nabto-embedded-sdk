@@ -29,7 +29,7 @@ bool np_hex_to_data_length(const char* hex, size_t hexLength, uint8_t* data, siz
 
     while (ptr < end) {
         char c = *ptr;
-        int value = 0;
+        uint8_t value = 0;
         if(c >= '0' && c <= '9')
           value = (c - '0');
         else if (c >= 'A' && c <= 'F')

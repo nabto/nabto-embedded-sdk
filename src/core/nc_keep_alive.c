@@ -116,6 +116,7 @@ bool nc_keep_alive_handle_request(struct nc_keep_alive_context* ctx, uint8_t* re
 
 void nc_keep_alive_packet_sent(const np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_keep_alive_context* ctx = data;
     ctx->isSending = false;
 }

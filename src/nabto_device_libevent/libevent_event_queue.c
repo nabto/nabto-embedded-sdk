@@ -63,6 +63,7 @@ void libevent_event_queue_destroy(struct np_event_queue* obj)
 
 void handle_event(evutil_socket_t s, short events, void* data)
 {
+    (void)s; (void)events;
 //    NABTO_LOG_TRACE(LOG, "handle event");
     struct np_event* event = data;
     struct libevent_event_queue* eq = event->eq;

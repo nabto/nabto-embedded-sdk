@@ -33,7 +33,7 @@ void heat_pump_init(struct heat_pump* heatPump, NabtoDevice* device, struct nn_l
     memset(heatPump, 0, sizeof(struct heat_pump));
     heatPump->device = device;
     heatPump->logger = logger;
-    
+
     nm_iam_init(&heatPump->iam, heatPump->device, heatPump->logger);
     load_iam_policy(heatPump);
     nm_iam_set_state_changed_callback(&heatPump->iam, heat_pump_state_changed, heatPump);
@@ -70,6 +70,7 @@ void heat_pump_stop(struct heat_pump* heatPump)
 
 void heat_pump_state_changed(struct nm_iam* iam, void* userData)
 {
+    (void)iam;
     struct heat_pump* heatPump = userData;
     struct nm_iam_state* state = nm_iam_dump_state(&heatPump->iam);
     if (state == NULL) {

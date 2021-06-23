@@ -14,6 +14,7 @@ void iam_logger(void* data, enum nn_log_severity severity, const char* module,
                 const char* file, int line,
                 const char* fmt, va_list args)
 {
+    (void)data; (void)module;
     const char* logLevelCStr = getenv("NABTO_LOG_LEVEL");
     if(logLevelCStr == NULL) { return; }
     std::string logLevelStr(logLevelCStr);
@@ -541,4 +542,4 @@ BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
 }
 
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()

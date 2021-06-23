@@ -26,6 +26,7 @@
 #include <winsock2.h>
 #include <ws2def.h>
 #include <ws2ipdef.h>
+#include <ws2tcpip.h>
 #endif
 
 #include <event2/util.h>
@@ -49,6 +50,7 @@ struct np_local_ip nm_libevent_local_ip_get_impl(struct nm_libevent_context* ctx
 
 size_t get_local_ips(struct np_local_ip* obj, struct np_ip_address *addrs, size_t addrsSize)
 {
+    (void)obj;
     struct sockaddr_in si_me, si_other;
     struct sockaddr_in6 si6_me, si6_other;
     struct in_addr v4any;
@@ -60,7 +62,7 @@ size_t get_local_ips(struct np_local_ip* obj, struct np_ip_address *addrs, size_
     if (addrsSize < 1) {
         return 0;
     }
-    int s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    evutil_socket_t s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s != NM_INVALID_SOCKET) {
         memset(&si_me, 0, sizeof(si_me));
         memset(&si_other, 0, sizeof(si_me));

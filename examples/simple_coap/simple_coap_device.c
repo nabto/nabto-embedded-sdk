@@ -90,6 +90,7 @@ int main(int argc, char* argv[]) {
 
 void signal_handler(int s)
 {
+    (void)s;
     NabtoDeviceFuture* fut = nabto_device_future_new(device_);
     nabto_device_close(device_, fut); // triggers NABTO_DEVICE_EVENT_CLOSED in event listener
     nabto_device_future_wait(fut);

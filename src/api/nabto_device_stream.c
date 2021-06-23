@@ -283,6 +283,7 @@ void nabto_device_stream_free_internal(struct nabto_device_stream* str) {
 
 np_error_code nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
+    (void)future;
     struct nabto_device_stream_listener_context* listenerContext = (struct nabto_device_stream_listener_context*)listenerData;
     np_error_code retEc;
     if (ec == NABTO_EC_OK) {
@@ -326,7 +327,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
         str->stream = stream;
         str->dev = dev;
         // using the stream structure directly as listener event, this means we dont free event untill user calls stream_free()
-        np_error_code ec = nabto_device_listener_add_event(listenerContext->listener, &str->eventListNode, str);
+        ec = nabto_device_listener_add_event(listenerContext->listener, &str->eventListNode, str);
         if (ec != NABTO_EC_OK) {
             nabto_device_stream_free_internal(str);
         }

@@ -102,6 +102,7 @@ void nc_client_connection_dispatch_free_connection(struct nc_client_connection_d
 
 static void nc_client_connection_dispatch_send_internal_error_cb(np_error_code ec, void* data)
 {
+    (void)ec;
     struct nc_client_connection_dispatch_context* ctx = (struct nc_client_connection_dispatch_context*)data;
     ctx->sendingInternalError = false;
 }
@@ -165,7 +166,7 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
     // 1 = client hello on position x maybe ~14
     // the first 16 bytes is the connection header
     if (buffer[16] == 22) {
-        struct nc_client_connection* connection = nc_client_connection_dispatch_alloc_connection(ctx);
+        connection = nc_client_connection_dispatch_alloc_connection(ctx);
         if (!connection) {
             nc_client_connection_dispatch_send_internal_error(ctx, sock, ep, buffer, bufferSize);
             return;

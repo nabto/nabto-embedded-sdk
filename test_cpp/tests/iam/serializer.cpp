@@ -256,4 +256,4 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
     nm_iam_state_free(state);
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()

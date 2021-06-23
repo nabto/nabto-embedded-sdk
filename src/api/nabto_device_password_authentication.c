@@ -15,6 +15,7 @@ static np_error_code password_request_handler(struct nc_spake2_password_request*
 
 np_error_code nabto_device_password_authentication_listener_resolve_event(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
+    (void)future; (void)eventData;
     struct nabto_device_listener* listener = listenerData;
     if (ec == NABTO_EC_OK) {
         // The item in eventData needs to be converted to data on the future.

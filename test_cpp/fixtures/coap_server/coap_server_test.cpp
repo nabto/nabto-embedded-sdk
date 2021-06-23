@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(add_resource, * boost::unit_test::timeout(300))
 
     const char* echo[] = {"echo", NULL};
     struct nabto_coap_server_resource* r;
-    server->addResource(NABTO_COAP_CODE_GET, echo, [](struct nabto_coap_server_request* request, void* userData){}, NULL, &r );
+    server->addResource(NABTO_COAP_CODE_GET, echo, [](struct nabto_coap_server_request* request, void* userData){(void)request; (void)userData; }, NULL, &r );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
