@@ -19,7 +19,7 @@ struct nm_iam_role* nm_iam_role_from_json(const cJSON* json)
     struct nm_iam_role* role = nm_iam_role_new(id->valuestring);
     size_t policiesSize = cJSON_GetArraySize(policies);
     for (size_t i = 0; i < policiesSize; i++) {
-        cJSON* p = cJSON_GetArrayItem(policies, i);
+        cJSON* p = cJSON_GetArrayItem(policies, (int)i);
         // todo handle non strings.
         if (cJSON_IsString(p)) {
             nn_string_set_insert(&role->policies, p->valuestring);

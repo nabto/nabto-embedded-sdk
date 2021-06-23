@@ -645,11 +645,11 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferS
                     nm_mbedtls_cli_do_free(ctx);
                 }
             }
-            return (int)MBEDTLS_ERR_SSL_WANT_WRITE;
+            return MBEDTLS_ERR_SSL_WANT_WRITE;
         }
-        return bufferSize;
+        return (int)bufferSize;
     } else {
-        return (int)MBEDTLS_ERR_SSL_WANT_WRITE;
+        return MBEDTLS_ERR_SSL_WANT_WRITE;
     }
 }
 
@@ -662,7 +662,7 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
         size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
         memcpy(buffer, ctx->recvBuffer, maxCp);
         ctx->recvBufferSize = 0;
-        return maxCp;
+        return (int)maxCp;
     }
 }
 

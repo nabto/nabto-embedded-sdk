@@ -183,7 +183,7 @@ void nm_mdns_update_local_ips(struct nm_mdns_server* mdns)
     size_t ipsFound = np_local_ip_get_local_ips(&mdns->localIp, ips, MAX_LOCAL_IPS);
 
     mdns->localIpsSize = ipsFound;
-    for(int i = 0; i < ipsFound; i++) {
+    for(size_t i = 0; i < ipsFound; i++) {
         struct np_ip_address* ip = &ips[i];
         struct nabto_mdns_ip_address* mdnsIp = &mdns->localIps[i];
         if (ip->type == NABTO_IPV4) {

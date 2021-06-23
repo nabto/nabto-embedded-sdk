@@ -10,7 +10,7 @@ bool nm_iam_user_validate_username(const char* username)
         return false;
     }
 
-    for (int i = 0; i < strlen(username); i++) {
+    for (size_t i = 0; i < strlen(username); i++) {
         if ( (username[i] < 'a' || username[i] > 'z') &&
              (username[i] < '0' || username[i] > '9') &&
              (username[i] != '_') &&

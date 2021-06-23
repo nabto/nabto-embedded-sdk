@@ -149,7 +149,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(N
     int32_t cf = nabto_coap_server_request_get_content_format(req->req);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
     if (cf >= 0) {
-        *contentFormat = cf;
+        *contentFormat = (uint16_t)cf;
         return NABTO_DEVICE_EC_OK;
     } else {
         return NABTO_DEVICE_EC_UNKNOWN;
