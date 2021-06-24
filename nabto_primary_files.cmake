@@ -10,6 +10,7 @@ set(ne_nn_src
   ${root_dir}/nabto-common/components/nn/src/nn/string_set.c
   ${root_dir}/nabto-common/components/nn/src/nn/log.c
   ${root_dir}/nabto-common/components/nn/src/nn/string_map.c
+  ${root_dir}/nabto-common/components/nn/src/nn/string_int_map.c
   )
 
 set(ne_utils_src
