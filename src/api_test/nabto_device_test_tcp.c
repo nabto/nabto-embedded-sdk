@@ -116,6 +116,7 @@ static void create_destroy_test(struct tcp_test* t)
     np_error_code ec = np_tcp_create(&t->tcp, &t->sock);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
+        return;
     }
     np_tcp_destroy(&t->tcp, t->sock);
     create_destroy_test_done(t);
@@ -137,10 +138,11 @@ void tcp_rst_connected(np_error_code ec, void* userData)
     struct tcp_test* t = userData;
     if (ec == NABTO_EC_ABORTED) {
         rst_test_done(t);
-        resolve_and_free_test(t, NABTO_EC_OK);
+        return;
     } else {
         NABTO_LOG_ERROR(LOG, "Expected %s got, %s", np_error_code_to_string(NABTO_EC_ABORTED), np_error_code_to_string(ec));
         resolve_and_free_test(t, NABTO_EC_FAILED);
+        return;
     }
 }
 

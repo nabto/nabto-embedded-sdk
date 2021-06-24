@@ -99,6 +99,7 @@ np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
 }
 
 static void tcp_eof(void* userData);
+static void tcp_error(void* userData);
 
 void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 {
@@ -107,8 +108,10 @@ void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
     NABTO_LOG_TRACE(LOG, "bufferevent event %i", event);
     if (event & BEV_EVENT_CONNECTED) {
         resolve_tcp_connect(sock, NABTO_EC_OK);
-    } else if (event & BEV_EVENT_EOF || event & BEV_EVENT_ERROR) {
+    } else if (event & BEV_EVENT_EOF) {
         tcp_eof(sock);
+    } else if (event & BEV_EVENT_ERROR) {
+        tcp_error(sock);
     }
 }
 
@@ -179,6 +182,14 @@ void tcp_eof(void* userData)
     NABTO_LOG_TRACE(LOG, "tcp_eof");
     resolve_tcp_connect(sock, NABTO_EC_EOF);
     resolve_tcp_read(sock, NABTO_EC_EOF);
+}
+
+void tcp_error(void* userData)
+{
+    struct np_tcp_socket* sock = userData;
+    NABTO_LOG_TRACE(LOG, "tcp_error");
+    resolve_tcp_connect(sock, NABTO_EC_ABORTED);
+    resolve_tcp_read(sock, NABTO_EC_ABORTED);
 }
 
 void tcp_destroy(struct np_tcp_socket* sock)

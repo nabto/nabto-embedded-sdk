@@ -33,6 +33,8 @@ void logging_test() {
 
 
     nabto_device_test_logging(device);
+    nabto_device_set_log_level(device, "info");
+
     nabto_device_test_free(device);
 }
 
