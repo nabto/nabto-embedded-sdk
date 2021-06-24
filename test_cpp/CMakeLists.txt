@@ -1,11 +1,14 @@
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(test_src
+set(util_src
   util/io_service.cpp
   util/tcp_echo_server.cpp
   util/helper.cpp
 
+)
+
+set(test_src
   unit_test.cpp
 
   platform/test_platform.cpp
@@ -45,10 +48,16 @@ set(test_src
   ../src/api_test/nabto_device_test_logging.c
   )
 
+
 add_subdirectory(../nabto-common/3rdparty/boost boost)
 add_subdirectory(fixtures/udp_server)
 add_subdirectory(fixtures/coap_server)
 add_subdirectory(fixtures/dtls_server)
+
+add_library(test_util ${util_src})
+target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_util 3rdparty_boost_asio nn)
+
 
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test
@@ -66,6 +75,7 @@ target_link_libraries(embedded_unit_test
   3rdparty_boost_test
   np_platform
   nm_event_queue
+  test_util
   )
 
 if (HAVE_SELECT_UNIX)

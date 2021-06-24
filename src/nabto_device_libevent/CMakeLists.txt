@@ -15,7 +15,7 @@ else()
   message(error "missing thread library")
 endif()
 
-add_library( nabto_device_static STATIC "${src}" "${ne_api_src}")
+add_library( nabto_device_static STATIC "${src}" "${ne_api_src}" "${ne_api_test_src}")
 target_compile_definitions(nabto_device_static PRIVATE NABTO_DEVICE_WIN32_API_STATIC)
 target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
 
@@ -36,7 +36,7 @@ target_link_libraries( nabto_device_static ${CMAKE_THREAD_LIBS_INIT} )
 target_link_libraries(nabto_device_static nm_libevent event_core)
 
 
-add_library( nabto_device SHARED "${src}" "${ne_api_src}")
+add_library( nabto_device SHARED "${src}" "${ne_api_src}" "${ne_api_test_src}")
 
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
@@ -69,3 +69,11 @@ install(TARGETS nabto_device
   ARCHIVE DESTINATION lib
   PUBLIC_HEADER DESTINATION include/nabto
   )
+
+set(integration_test_src
+    nabto_device_libevent_integration_test.cpp
+  )
+
+add_executable(nabto_device_libevent_integration_test ${integration_test_src})
+target_include_directories(nabto_device_libevent_integration_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../test_cpp)
+target_link_libraries(nabto_device_libevent_integration_test nabto_device_static test_util)

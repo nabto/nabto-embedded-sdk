@@ -109,6 +109,15 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
 
 /**
+ * TCP connect rst
+ *
+ * This tests tries to connect to a closed port such that the device gets an
+ * RST in response to the TCP SYN packet.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_test_tcp_rst(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
+
+/**
  * Local IP Test
  *
  * This test retrieves the local ip from the system and prints it to

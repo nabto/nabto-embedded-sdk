@@ -48,6 +48,10 @@ struct np_tcp_functions {
      * The completion event shall be resolved when a result of the
      * operation is available.
      *
+     * Completion event error codes:
+     *   NABTO_EC_OK: Connected ok.
+     *   NABTO_EC_ABORTED: If the socket could not be connected to the destination.
+     *
      * @param sock  The socket resource.
      * @param address  The address to connect to.
      * @param port  The port to connect to.
