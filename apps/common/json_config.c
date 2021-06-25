@@ -24,13 +24,17 @@ static bool load_from_file(FILE* f, cJSON** config, struct nn_log* logger)
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
+    if (fsize < 0) {
+        return false;
+    }
+
     char *string = malloc(fsize + 1);
     if (string == NULL) {
         return false;
     }
 
     size_t read = fread(string, 1, fsize, f);
-    if (read != fsize) {
+    if (read != (size_t)fsize) {
         return false;
     }
 

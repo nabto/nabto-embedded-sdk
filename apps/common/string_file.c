@@ -30,13 +30,17 @@ static bool load_from_file(FILE* f, char** out)
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
+    if (fsize < 0) {
+        return false;
+    }
+
     char* content = malloc(fsize + 1);
     if (content == NULL) {
         return false;
     }
 
     size_t read = fread(content, 1, fsize, f);
-    if (read != fsize) {
+    if (read != (size_t)fsize) {
         free(content);
         return false;
     }
