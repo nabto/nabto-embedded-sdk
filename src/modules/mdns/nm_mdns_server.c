@@ -185,13 +185,13 @@ void nm_mdns_update_local_ips(struct nm_mdns_server* mdns)
     mdns->localIpsSize = ipsFound;
     for(size_t i = 0; i < ipsFound; i++) {
         struct np_ip_address* ip = &ips[i];
-        struct nabto_mdns_ip_address* mdnsIp = &mdns->localIps[i];
+        struct nn_ip_address* mdnsIp = &mdns->localIps[i];
         if (ip->type == NABTO_IPV4) {
-            mdnsIp->type = NABTO_MDNS_IPV4;
-            memcpy(mdnsIp->v4.addr, ip->ip.v4, 4);
+            mdnsIp->type = NN_IPV4;
+            memcpy(mdnsIp->ip.v4, ip->ip.v4, 4);
         } else {
-            mdnsIp->type = NABTO_MDNS_IPV6;
-            memcpy(mdnsIp->v6.addr, ip->ip.v6, 16);
+            mdnsIp->type = NN_IPV6;
+            memcpy(mdnsIp->ip.v6, ip->ip.v6, 16);
         }
     }
 }

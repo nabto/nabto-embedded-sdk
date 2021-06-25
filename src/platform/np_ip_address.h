@@ -2,71 +2,31 @@
 #define NP_IP_ADDRESS_H
 
 #include <platform/np_types.h>
+#include <nn/ip_address.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-enum np_ip_address_type {
-    NABTO_IPV4,
-    NABTO_IPV6
-};
-
-
-// network order ip address
-struct np_ipv4_address {
-    uint8_t addr[4];
-};
-
-// network order ipv6 address
-struct np_ipv6_address {
-    uint8_t addr[16];
-};
-
-struct np_ip_address {
-    enum np_ip_address_type type;
-    union {
-        uint8_t v4[4];
-        uint8_t v6[16];
-    } ip;
-};
-
-bool np_ip_is_v4(const struct np_ip_address* ip);
-
-bool np_ip_is_v6(const struct np_ip_address* ip);
-
 /**
- * Return true if the ip address is an ipv4 mapped ipv6 address.
- */
-bool np_ip_is_v4_mapped(const struct np_ip_address* ip);
+ * IP address moved to common, this maps names so I do not have fo change the name everywhere
+ **/
 
-/**
- * Convert an ipv4 address to an ipv6 mapped ipv4 address.
- */
-void np_ip_convert_v4_to_v4_mapped(const struct np_ip_address* v4, struct np_ip_address* v6);
+#define NABTO_IPV4 NN_IPV4
+#define NABTO_IPV6 NN_IPV6
 
-/**
- * Convert an v4 mapped ipv6 address to an ipv4 address.
- */
-void np_ip_convert_v4_mapped_to_v4(const struct np_ip_address* v6, struct np_ip_address* v4);
+#define np_ip_address_type nn_ip_address_type
+#define np_ip_address nn_ip_address
 
-/**
- * print the ip into a null terminated static buffer. This buffer is
-overwritten next time this function is called.
-*/
-const char* np_ip_address_to_string(const struct np_ip_address* ip);
+#define np_ip_is_v4 nn_ip_is_v4
+#define np_ip_is_v6 nn_ip_is_v6
 
-/**
- * assign ipv4 address in host byte order to the ip address.
- */
-void np_ip_address_assign_v4(struct np_ip_address* ip, uint32_t address);
-
-/**
- * Read an ipv4 address from a string on the form a.b.c.d
- *
- * @return true iff the ip is read from the string.
- */
-bool np_ip_address_read_v4(const char* str, struct np_ip_address* ip);
+#define np_ip_is_v4_mapped nn_ip_is_v4_mapped
+#define np_ip_convert_v4_to_v4_mapped nn_ip_convert_v4_to_v4_mapped
+#define np_ip_convert_v4_mapped_to_v4 nn_ip_convert_v4_mapped_to_v4
+#define np_ip_address_to_string nn_ip_address_to_string
+#define np_ip_address_assign_v4 nn_ip_address_assign_v4
+#define np_ip_address_read_v4 nn_ip_address_read_v4
 
 #ifdef __cplusplus
 } //extern "C"

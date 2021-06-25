@@ -7,6 +7,7 @@
 
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_dns_multi_resolver.h>
+#include <nn/ip_address.h>
 
 #ifndef NC_STUN_MAX_CALLBACKS
 #define NC_STUN_MAX_CALLBACKS 10
@@ -50,7 +51,7 @@ struct nc_stun_context {
     const struct nabto_stun_result* res;
     const char* hostname;
     uint16_t priPort;
-    struct nabto_stun_endpoint eps[NC_STUN_MAX_ENDPOINTS];
+    struct nn_endpoint eps[NC_STUN_MAX_ENDPOINTS];
     size_t numEps;
     struct np_event* toEv;
 
@@ -88,6 +89,6 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
 
 uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx);
 
-void nc_stun_convert_ep(const struct nabto_stun_endpoint* stunEp, struct np_udp_endpoint* npEp );
+void nc_stun_convert_ep(const struct nn_endpoint* stunEp, struct np_udp_endpoint* npEp );
 
 #endif // NC_STUN_H

@@ -16,7 +16,7 @@
 // util functions
 void nc_stun_resolve_callbacks(struct nc_stun_context* ctx);
 size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
-                               struct nabto_stun_endpoint* eps, size_t epsSize,
+                               struct nn_endpoint* eps, size_t epsSize,
                                uint16_t port);
 void nc_stun_event(struct nc_stun_context* ctx);
 
@@ -171,15 +171,15 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
 
 }
 
-void nc_stun_convert_ep(const struct nabto_stun_endpoint* stunEp, struct np_udp_endpoint* npEp )
+void nc_stun_convert_ep(const struct nn_endpoint* stunEp, struct np_udp_endpoint* npEp )
 {
     npEp->port = stunEp->port;
-    if (stunEp->addr.type == NABTO_STUN_IPV4) {
+    if (stunEp->ip.type == NN_IPV4) {
         npEp->ip.type = NABTO_IPV4;
-        memcpy(npEp->ip.ip.v4, stunEp->addr.v4.addr, 4);
+        memcpy(npEp->ip.ip.v4, stunEp->ip.ip.v4, 4);
     } else {
         npEp->ip.type = NABTO_IPV6;
-        memcpy(npEp->ip.ip.v6, stunEp->addr.v6.addr, 16);
+        memcpy(npEp->ip.ip.v6, stunEp->ip.ip.v6, 16);
     }
 }
 
@@ -204,7 +204,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 nc_stun_resolve_callbacks(ctx);
                 return;
             }
-            struct nabto_stun_endpoint stunEp;
+            struct nn_endpoint stunEp;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
                 NABTO_LOG_ERROR(LOG, "get endpoint failed");
@@ -213,12 +213,12 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 return;
             }
             ctx->sendEp.port = stunEp.port;
-            if (stunEp.addr.type == NABTO_STUN_IPV4) {
+            if (stunEp.ip.type == NN_IPV4) {
                 ctx->sendEp.ip.type = NABTO_IPV4;
-                memcpy(ctx->sendEp.ip.ip.v4, stunEp.addr.v4.addr, 4);
+                memcpy(ctx->sendEp.ip.ip.v4, stunEp.ip.ip.v4, 4);
             } else {
                 ctx->sendEp.ip.type = NABTO_IPV6;
-                memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
+                memcpy(ctx->sendEp.ip.ip.v6, stunEp.ip.ip.v6, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
             nc_udp_dispatch_async_send_to(ctx->priUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &ctx->sendCompletionEvent);
@@ -232,7 +232,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 nc_stun_resolve_callbacks(ctx);
                 return;
             }
-            struct nabto_stun_endpoint stunEp;
+            struct nn_endpoint stunEp;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
                 NABTO_LOG_ERROR(LOG, "get endpoint failed");
@@ -241,12 +241,12 @@ void nc_stun_event(struct nc_stun_context* ctx)
                 return;
             }
             ctx->sendEp.port = stunEp.port;
-            if (stunEp.addr.type == NABTO_STUN_IPV4) {
+            if (stunEp.ip.type == NN_IPV4) {
                 ctx->sendEp.ip.type = NABTO_IPV4;
-                memcpy(ctx->sendEp.ip.ip.v4, stunEp.addr.v4.addr, 4);
+                memcpy(ctx->sendEp.ip.ip.v4, stunEp.ip.ip.v4, 4);
             } else {
                 ctx->sendEp.ip.type = NABTO_IPV6;
-                memcpy(ctx->sendEp.ip.ip.v6, stunEp.addr.v6.addr, 16);
+                memcpy(ctx->sendEp.ip.ip.v6, stunEp.ip.ip.v6, 16);
             }
             uint16_t wrote = nabto_stun_get_send_data(&ctx->stun, buffer, NABTO_STUN_BUFFER_SIZE);
             nc_udp_dispatch_async_send_to(ctx->secUdp, &ctx->sendEp, pl->buf.start(ctx->sendBuf), wrote, &ctx->sendCompletionEvent);
@@ -341,20 +341,20 @@ void nc_stun_resolve_callbacks(struct nc_stun_context* ctx)
     }
 }
 
-void nc_stun_set_endpoint(struct nabto_stun_endpoint* ep, struct np_ip_address* ip, uint16_t port)
+void nc_stun_set_endpoint(struct nn_endpoint* ep, struct np_ip_address* ip, uint16_t port)
 {
     if (ip->type == NABTO_IPV4) {
-        ep->addr.type = NABTO_STUN_IPV4;
-        memcpy(ep->addr.v4.addr, ip->ip.v6, 4);
+        ep->ip.type = NN_IPV4;
+        memcpy(ep->ip.ip.v4, ip->ip.v6, 4);
     } else if (ip->type == NABTO_IPV6) {
-        ep->addr.type = NABTO_STUN_IPV6;
-        memcpy(ep->addr.v6.addr, ip->ip.v6, 16);
+        ep->ip.type = NN_IPV6;
+        memcpy(ep->ip.ip.v6, ip->ip.v6, 16);
     }
     ep->port = port;
 }
 
 size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
-                               struct nabto_stun_endpoint* eps, size_t epsSize,
+                               struct nn_endpoint* eps, size_t epsSize,
                                uint16_t port)
 {
     size_t i;

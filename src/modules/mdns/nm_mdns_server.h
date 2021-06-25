@@ -35,7 +35,7 @@ struct nm_mdns_server {
     bool stopped;
     uint16_t port;
     struct nabto_mdns_server_context mdnsServer;
-    struct nabto_mdns_ip_address localIps[MDNS_MAX_LOCAL_IPS];
+    struct nn_ip_address localIps[MDNS_MAX_LOCAL_IPS];
     size_t localIpsSize;
 
     struct np_event_queue eq;
