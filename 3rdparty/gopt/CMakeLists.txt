@@ -4,5 +4,9 @@ set(src
 
 
 add_library(3rdparty_gopt ${src})
-target_compile_options(3rdparty_gopt INTERFACE -w)
+if (WIN32)
+  target_compile_options(3rdparty_gopt INTERFACE /w)
+else()
+  target_compile_options(3rdparty_gopt INTERFACE -w)
+endif()
 target_include_directories(3rdparty_gopt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
