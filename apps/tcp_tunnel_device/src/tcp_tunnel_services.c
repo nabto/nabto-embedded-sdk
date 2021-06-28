@@ -61,7 +61,7 @@ bool load_services_from_json(struct nn_vector* services, cJSON* json, struct nn_
 
     size_t items = cJSON_GetArraySize(json);
     for (size_t i = 0; i < items; i++) {
-        cJSON* service = cJSON_GetArrayItem(json, i);
+        cJSON* service = cJSON_GetArrayItem(json, (int)i);
         struct tcp_tunnel_service* s = service_from_json(service, logger);
         if (s) {
             nn_vector_push_back(services, &s);

@@ -116,7 +116,6 @@ bool create_state_interactive(const char* file)
         printf("Use default iam\n");
         return create_state_default(file);
     }
-    return false;
 }
 
 bool create_state_interactive_custom(const char* file) {

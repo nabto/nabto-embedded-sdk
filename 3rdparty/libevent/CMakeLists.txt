@@ -11,6 +11,8 @@ add_subdirectory(libevent EXCLUDE_FROM_ALL)
 
 add_library(3rdparty_libevent INTERFACE)
 
+target_compile_options(3rdparty_libevent INTERFACE -w)
+
 target_link_libraries(3rdparty_libevent INTERFACE event_core event_extra)
 
 if (NOT WIN32)

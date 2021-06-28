@@ -9,4 +9,5 @@ set(src
   )
 
 add_library(3rdparty_tinycbor ${src})
+target_compile_options(3rdparty_tinycbor INTERFACE -w)
 target_include_directories(3rdparty_tinycbor PUBLIC tinycbor/src extra)
