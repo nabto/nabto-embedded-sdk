@@ -32,14 +32,15 @@
 
 #include <stdbool.h>
 
-#include <sys/stat.h>
 #include <sys/types.h>
 
 #if defined(_WIN32)
+#include <direct.h>
 #define HOMEDIR_ENV_VARIABLE "APPDATA"
 #define HOMEDIR_NABTO_FOLDER "nabto"
 #define NEWLINE "\r\n"
 #else
+#include <sys/stat.h>
 #define HOMEDIR_ENV_VARIABLE "HOME"
 #define HOMEDIR_NABTO_FOLDER ".nabto"
 #define NEWLINE "\n"
