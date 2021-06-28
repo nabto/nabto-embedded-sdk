@@ -7,15 +7,15 @@ set(EVENT__DISABLE_SAMPLES ON CACHE BOOL "disable libevent samples")
 set(EVENT__LIBRARY_TYPE STATIC CACHE STRING "libevent library type")
 
 include_directories(libevent/include)
+if (WIN32)
+  add_definitions(/w)
+else()
+  add_definitions(-w)
+endif()
+
 add_subdirectory(libevent EXCLUDE_FROM_ALL)
 
 add_library(3rdparty_libevent INTERFACE)
-
-if (WIN32)
-  target_compile_options(3rdparty_libevent INTERFACE /w)
-else()
-  target_compile_options(3rdparty_libevent INTERFACE -w)
-endif()
 
 target_link_libraries(3rdparty_libevent INTERFACE event_core event_extra)
 
