@@ -197,14 +197,14 @@ void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 }
 
 
-bool start_device(NabtoDevice* device, const char* productId, const char* deviceId)
+bool start_device(NabtoDevice* dev, const char* productId, const char* deviceId)
 {
     NabtoDeviceError ec;
     char* privateKey;
     char* fp;
 
     if (!string_file_exists(keyFile)) {
-        if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {
+        if ((ec = nabto_device_create_private_key(dev, &privateKey)) != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
@@ -221,29 +221,29 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
-    if ((ec = nabto_device_set_private_key(device, privateKey)) != NABTO_DEVICE_EC_OK) {
+    if ((ec = nabto_device_set_private_key(dev, privateKey)) != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }
     free(privateKey);
 
-    if (nabto_device_get_device_fingerprint(device, &fp) != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_get_device_fingerprint(dev, &fp) != NABTO_DEVICE_EC_OK) {
         return false;
     }
 
     printf("Device: %s.%s with fingerprint: [%s]\n", productId, deviceId, fp);
     nabto_device_string_free(fp);
 
-    if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK)
+    if (nabto_device_set_product_id(dev, productId) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_device_id(dev, deviceId) != NABTO_DEVICE_EC_OK ||
+        nabto_device_enable_mdns(dev) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_log_std_out_callback(dev) != NABTO_DEVICE_EC_OK)
     {
         return false;
     }
 
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_start(device, fut);
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
 
     ec = nabto_device_future_wait(fut);
     nabto_device_future_free(fut);

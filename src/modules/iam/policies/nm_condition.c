@@ -117,12 +117,12 @@ enum nm_condition_result nm_condition_numeric_operator(enum nm_iam_condition_ope
 
 enum nm_condition_result nm_condition_matches(const struct nm_iam_condition* condition, const struct nn_string_map* attributes)
 {
-    struct nn_string_map_iterator it = nn_string_map_get(attributes, condition->key);
-    if (nn_string_map_is_end(&it)) {
+    struct nn_string_map_iterator iter = nn_string_map_get(attributes, condition->key);
+    if (nn_string_map_is_end(&iter)) {
         return NM_CONDITION_RESULT_NO_MATCH;
     }
 
-    const char* attributeValue = nn_string_map_value(&it);
+    const char* attributeValue = nn_string_map_value(&iter);
 
     const char* v;
     NN_STRING_SET_FOREACH(v, &condition->values) {

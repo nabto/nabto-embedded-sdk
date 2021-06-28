@@ -91,7 +91,7 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
 
     size_t policiesSize = cJSON_GetArraySize(policies);
     for (size_t i = 0; i < policiesSize; i++) {
-        cJSON* item = cJSON_GetArrayItem(policies, i);
+        cJSON* item = cJSON_GetArrayItem(policies, (int)i);
         struct nm_iam_policy* policy = nm_policy_from_json(item, logger);
         if (policy == NULL) {
             cJSON_Delete(root);
@@ -102,7 +102,7 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
 
     size_t rolesSize = cJSON_GetArraySize(roles);
     for(size_t i = 0; i < rolesSize; i++) {
-        cJSON* item = cJSON_GetArrayItem(roles, i);
+        cJSON* item = cJSON_GetArrayItem(roles, (int)i);
         struct nm_iam_role* role = nm_iam_role_from_json(item);
         if (role == NULL) {
             cJSON_Delete(root);
@@ -257,7 +257,7 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
 
         size_t usersSize = cJSON_GetArraySize(users);
         for (size_t i = 0; i < usersSize; i++) {
-            cJSON* item = cJSON_GetArrayItem(users, i);
+            cJSON* item = cJSON_GetArrayItem(users, (int)i);
             struct nm_iam_user* user = nm_iam_user_from_json(item);
             if (user != NULL) {
                 nm_iam_state_add_user(state, user);

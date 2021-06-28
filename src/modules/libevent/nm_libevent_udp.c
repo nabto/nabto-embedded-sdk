@@ -278,7 +278,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
         srv_addr.sin_family = AF_INET;
         srv_addr.sin_port = htons (ep->port);
         memcpy((void*)&srv_addr.sin_addr, sendIp.ip.v4, sizeof(srv_addr.sin_addr));
-        res = sendto (s->sock, buffer, bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        res = sendto (s->sock, (buf_type*)buffer, bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     } else { // IPv6
         struct sockaddr_in6 srv_addr;
         srv_addr.sin6_family = AF_INET6;
@@ -286,7 +286,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
         srv_addr.sin6_scope_id = 0;
         srv_addr.sin6_port = htons (ep->port);
         memcpy((void*)&srv_addr.sin6_addr,sendIp.ip.v6, sizeof(srv_addr.sin6_addr));
-        res = sendto (s->sock, buffer, bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+        res = sendto (s->sock, (buf_type*)buffer, bufferSize, 0, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
     }
 
     if (res < 0) {
@@ -313,14 +313,14 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
     if (sock->type == NABTO_IPV6) {
         struct sockaddr_in6 sa;
         socklen_type addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, buffer, (ssize_type)bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, (buf_type*)buffer, (ssize_type)bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep->ip.ip.v6, &sa.sin6_addr.s6_addr, sizeof(ep->ip.ip.v6));
         ep->port = ntohs(sa.sin6_port);
         ep->ip.type = NABTO_IPV6;
     } else {
         struct sockaddr_in sa;
         socklen_type addrlen = sizeof(sa);
-        recvLength = recvfrom(sock->sock, buffer, (ssize_type)bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
+        recvLength = recvfrom(sock->sock, (buf_type*)buffer, (ssize_type)bufferSize, 0, (struct sockaddr*)&sa, &addrlen);
         memcpy(&ep->ip.ip.v4, &sa.sin_addr.s_addr, sizeof(ep->ip.ip.v4));
         ep->port = ntohs(sa.sin_port);
         ep->ip.type = NABTO_IPV4;

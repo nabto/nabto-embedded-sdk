@@ -51,8 +51,8 @@ bool nm_condition_from_json_parse(const cJSON* kv, struct nm_iam_condition* cond
     condition->key = strdup(kv->string);
 
     size_t valuesSize = cJSON_GetArraySize(kv);
-    size_t i;
-    for (i = 0; i < valuesSize; i++) {
+    int i;
+    for (i = 0; i < (int)valuesSize; i++) {
         cJSON* value = cJSON_GetArrayItem(kv, i);
         if (!cJSON_IsString(value)) {
             return false;
@@ -106,8 +106,8 @@ struct nm_iam_statement* nm_statement_from_json(const cJSON* json, struct nn_log
 bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_iam_statement* statement, struct nn_log* logger)
 {
     size_t actionsSize = cJSON_GetArraySize(actions);
-    size_t i;
-    for (i = 0; i < actionsSize; i++) {
+    int i;
+    for (i = 0; i < (int)actionsSize; i++) {
         cJSON* action = cJSON_GetArrayItem(actions, i);
         if (!cJSON_IsString(action)) {
             return false;
@@ -119,7 +119,7 @@ bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions,
 
     if (cJSON_IsArray(conditions)) {
         size_t conditionsSize = cJSON_GetArraySize(conditions);
-        for (i = 0; i < conditionsSize; i++) {
+        for (i = 0; i < (int)conditionsSize; i++) {
             cJSON* c = cJSON_GetArrayItem(conditions, i);
             struct nm_iam_condition* tmp = nm_condition_from_json(c, logger);
             if (tmp == NULL) {
@@ -160,8 +160,8 @@ struct nm_iam_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logg
 bool nm_policy_from_json_parse(const cJSON* statements, struct nm_iam_policy* policy, struct nn_log* logger)
 {
     size_t count = cJSON_GetArraySize(statements);
-    size_t i;
-    for (i = 0; i < count; i++) {
+    int i;
+    for (i = 0; i < (int)count; i++) {
         cJSON* statement = cJSON_GetArrayItem(statements, i);
         struct nm_iam_statement* s = nm_statement_from_json(statement, logger);
         if (s == NULL) {

@@ -32,8 +32,8 @@ zh41kuKNbT8VFwIhAOl8mF7nslw+4YIp7Wsw5vl74YRcw/j0CYCe3iFMkz2F
 
 class AttachTest {
  public:
-    AttachTest(nabto::test::TestPlatform& tp, const std::string& hostname, uint16_t port, const std::string& rootCerts)
-        : tp_(tp), hostname_(hostname), serverPort_(port), rootCerts_(rootCerts)
+    AttachTest(nabto::test::TestPlatform& tp, const std::string& hostname, uint16_t port, const std::string& rcs)
+        : tp_(tp), hostname_(hostname), serverPort_(port), rootCerts_(rcs)
     {
         struct np_platform* pl = tp_.getPlatform();
         np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);

@@ -56,7 +56,7 @@ add_subdirectory(fixtures/dtls_server)
 
 add_library(test_util ${util_src})
 target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(test_util 3rdparty_boost_asio nn)
+target_link_libraries(test_util 3rdparty_boost_asio nn nabto_device_static)
 
 
 add_executable(embedded_unit_test "${test_src}")

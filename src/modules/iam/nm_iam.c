@@ -22,7 +22,7 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 {
     memset(iam, 0, sizeof(struct nm_iam));
     iam->mutex = nabto_device_threads_create_mutex();
-    srand(time(0));
+    srand((unsigned)time(0));
     iam->device = device;
     iam->logger = logger;
 

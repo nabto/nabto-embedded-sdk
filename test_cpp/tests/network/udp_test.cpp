@@ -56,7 +56,7 @@ class UdpEchoClientTest {
     void startSend()
     {
         np_completion_event_reinit(&completionEvent_, &UdpEchoClientTest::sent, this);
-        np_udp_async_send_to(&pl_->udp, socket_, &ep_, data_.data(), data_.size(), &completionEvent_);
+        np_udp_async_send_to(&pl_->udp, socket_, &ep_, data_.data(), (uint16_t)data_.size(), &completionEvent_);
     }
 
     static void sent(np_error_code ec, void* data)

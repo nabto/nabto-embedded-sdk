@@ -18,9 +18,11 @@
 #ifdef HAVE_WINSOCK2_H
 typedef int ssize_type;
 typedef int socklen_type;
+typedef char buf_type;
 #else
 typedef ssize_t ssize_type;
 typedef socklen_t socklen_type;
+typedef void buf_type;
 #endif
 
 #ifdef HAVE_WINSOCK2_H

@@ -107,24 +107,24 @@ int main(int argc, char** argv) {
     }
 }
 
-bool run_heat_pump(const struct args* args) 
+bool run_heat_pump(const struct args* args)
 {
     device = nabto_device_new();
     struct nn_log logger;
     logging_init(device, &logger, args->logLevel);
-    
+
     struct heat_pump heatPump;
     heat_pump_init(&heatPump, device, &logger);
 
     bool status = run_heat_pump_device(device, &heatPump, args);
-    
+
     nabto_device_stop(device);
     heat_pump_deinit(&heatPump);
     nabto_device_free(device);
     return status;
 }
 
-bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const struct args* args)
+bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const struct args* args)
 {
     char buffer[512];
     memset(buffer, 0, 512);
@@ -153,7 +153,7 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
             heatPump->heatPumpStateFile = strdup(buffer);
         }
     }
-    
+
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
     if (!load_device_config(heatPump->deviceConfigFile, &deviceConfig, heatPump->logger)) {
@@ -161,25 +161,25 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
         return false;
     }
 
-    nabto_device_set_product_id(device, deviceConfig.productId);
-    nabto_device_set_device_id(device, deviceConfig.deviceId);
-    
+    nabto_device_set_product_id(dev, deviceConfig.productId);
+    nabto_device_set_device_id(dev, deviceConfig.deviceId);
+
     if (deviceConfig.server != NULL) {
-        nabto_device_set_server_url(device, deviceConfig.server);
+        nabto_device_set_server_url(dev, deviceConfig.server);
     }
 
     if (deviceConfig.serverPort != 0) {
-        nabto_device_set_server_port(device, deviceConfig.serverPort);
+        nabto_device_set_server_port(dev, deviceConfig.serverPort);
     }
 
     device_config_deinit(&deviceConfig);
 
     if (args->randomPorts) {
-        nabto_device_set_local_port(device, 0);
-        nabto_device_set_p2p_port(device, 0);
+        nabto_device_set_local_port(dev, 0);
+        nabto_device_set_p2p_port(dev, 0);
     }
 
-    if (!load_or_create_private_key(device, heatPump->deviceKeyFile, heatPump->logger)) {
+    if (!load_or_create_private_key(dev, heatPump->deviceKeyFile, heatPump->logger)) {
         printf("Could not load or create the private key" NEWLINE);
         return false;
     }
@@ -190,19 +190,19 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
         return true;
     }
 
-    nabto_device_set_app_name(device, "HeatPump");
-    nabto_device_set_app_version(device, heatPumpVersion);
+    nabto_device_set_app_name(dev, "HeatPump");
+    nabto_device_set_app_version(dev, heatPumpVersion);
 
-    nabto_device_enable_mdns(device);
-    nabto_device_mdns_add_subtype(device, "heatpump");
-    nabto_device_mdns_add_txt_item(device, "fn", "Heat Pump");
-    
-    
+    nabto_device_enable_mdns(dev);
+    nabto_device_mdns_add_subtype(dev, "heatpump");
+    nabto_device_mdns_add_txt_item(dev, "fn", "Heat Pump");
+
+
 
     // run application
     heat_pump_start(heatPump);
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_start(device, fut);
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
 
     NabtoDeviceError ec;
     ec = nabto_device_future_wait(fut);
@@ -214,12 +214,12 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
     }
 
     char* deviceFingerprint;
-    nabto_device_get_device_fingerprint(device, &deviceFingerprint);
+    nabto_device_get_device_fingerprint(dev, &deviceFingerprint);
 
 
     printf("######## Nabto heat pump device ########" NEWLINE);
-    printf("# Product ID:                  %s" NEWLINE, nabto_device_get_product_id(device));
-    printf("# Device ID:                   %s" NEWLINE, nabto_device_get_device_id(device));
+    printf("# Product ID:                  %s" NEWLINE, nabto_device_get_product_id(dev));
+    printf("# Device ID:                   %s" NEWLINE, nabto_device_get_device_id(dev));
     printf("# Fingerprint:                 %s" NEWLINE, deviceFingerprint);
     printf("# Nabto Version:               %s" NEWLINE, nabto_device_version());
     printf("######## " NEWLINE);
@@ -230,13 +230,13 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
 
         signal(SIGINT, &signal_handler);
         {
-            NabtoDeviceListener* listener = nabto_device_listener_new(device);
-            NabtoDeviceFuture* future = nabto_device_future_new(device);
+            NabtoDeviceListener* listener = nabto_device_listener_new(dev);
+            NabtoDeviceFuture* future = nabto_device_future_new(dev);
             nabto_device_device_events_init_listener(device, listener);
             NabtoDeviceEvent event;
             while(true) {
                 nabto_device_listener_device_event(listener, future, &event);
-                NabtoDeviceError ec = nabto_device_future_wait(future);
+                ec = nabto_device_future_wait(future);
                 if (ec != NABTO_DEVICE_EC_OK) {
                     break;
                 }
@@ -251,8 +251,8 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
             nabto_device_future_free(future);
             nabto_device_listener_free(listener);
         }
-        NabtoDeviceFuture* fut = nabto_device_future_new(device);
-        nabto_device_close(device, fut);
+        fut = nabto_device_future_new(dev);
+        nabto_device_close(dev, fut);
         nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
     }
@@ -262,7 +262,7 @@ bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const
 
 void args_init(struct args* args)
 {
-    memset(args, 0, sizeof(struct args));    
+    memset(args, 0, sizeof(struct args));
 }
 
 void args_deinit(struct args* args)
@@ -298,7 +298,7 @@ bool parse_args(int argc, char** argv, struct args* args)
     if (gopt(options, OPTION_VERSION)) {
         args->showVersion = true;
     }
-    
+
     if (gopt(options, OPTION_RANDOM_PORTS)) {
         args->randomPorts = true;
     }
@@ -336,7 +336,7 @@ bool make_directory(const char* directory)
 {
 #if defined(_WIN32)
     _mkdir(directory);
-#else 
+#else
     mkdir(directory, 0777);
 #endif
     return true;
@@ -344,7 +344,7 @@ bool make_directory(const char* directory)
 
 bool make_directories(const char* in)
 {
-  
+
     char buffer[512];
     memset(buffer, 0, 512);
     if (in == NULL) {
@@ -354,16 +354,16 @@ bool make_directories(const char* in)
         }
         snprintf(buffer, 511, "%s/%s", homeEnv, nabtoFolder);
         make_directory(buffer);
-        
+
         snprintf(buffer, 511, "%s/%s/edge", homeEnv, nabtoFolder);
         make_directory(buffer);
 
         snprintf(buffer, 511, "%s/%s/edge/config", homeEnv, nabtoFolder);
         make_directory(buffer);
-        
+
         snprintf(buffer, 511, "%s/%s/edge/state", homeEnv, nabtoFolder);
         make_directory(buffer);
-        
+
         snprintf(buffer, 511, "%s/%s/edge/keys", homeEnv, nabtoFolder);
         make_directory(buffer);
     } else {
@@ -371,12 +371,12 @@ bool make_directories(const char* in)
 
         snprintf(buffer, 511, "%s/config", in);
         make_directory(buffer);
-        
+
         snprintf(buffer, 511, "%s/state", in);
         make_directory(buffer);
 
         snprintf(buffer, 511, "%s/keys", in);
-        make_directory(buffer);        
+        make_directory(buffer);
     }
     return true;
 }

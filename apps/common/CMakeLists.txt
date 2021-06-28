@@ -8,4 +8,4 @@ set(src
   )
 
 add_library(apps_common ${src})
-target_link_libraries(apps_common 3rdparty_cjson 3rdparty_mbedtls nn)
+target_link_libraries(apps_common nabto_device_static 3rdparty_cjson 3rdparty_mbedtls nn)

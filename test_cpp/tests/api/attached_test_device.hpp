@@ -18,10 +18,10 @@ class AttachedTestDevice {
 
         nabto_device_set_product_id(device_, productId_.c_str());
         nabto_device_set_device_id(device_, deviceId_.c_str());
-        char* privateKey;
-        nabto_device_create_private_key(device_, &privateKey);
-        nabto_device_set_private_key(device_, privateKey);
-        nabto_device_string_free(privateKey);
+        char* pk;
+        nabto_device_create_private_key(device_, &pk);
+        nabto_device_set_private_key(device_, pk);
+        nabto_device_string_free(pk);
 
         nabto_device_set_local_port(device_, 0);
         nabto_device_set_p2p_port(device_, 0);
@@ -42,11 +42,11 @@ class AttachedTestDevice {
         nabto_device_free(device_);
     }
 
-    NabtoDeviceError attach(const std::string& hostname, uint16_t port, const std::string& rootCerts)
+    NabtoDeviceError attach(const std::string& hostname, uint16_t port, const std::string& rcs)
     {
         nabto_device_set_server_url(device_, hostname.c_str());
         nabto_device_set_server_port(device_, port);
-        nabto_device_set_root_certs(device_, rootCerts.c_str());
+        nabto_device_set_root_certs(device_, rcs.c_str());
         listenForEvents();
         nabto_device_start(device_, future_);
 
