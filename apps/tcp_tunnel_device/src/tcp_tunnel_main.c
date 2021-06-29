@@ -608,6 +608,10 @@ void iam_user_changed(struct nm_iam* iam, void* userData)
 
 bool make_directory(const char* directory)
 {
+#if defined(_WIN32)
+    _mkdir(directory);
+#else
     mkdir(directory, 0777);
+#endif
     return true;
 }
