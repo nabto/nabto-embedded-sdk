@@ -615,7 +615,7 @@ void nc_device_attach_disabled_cb(void* data) {
 np_error_code nc_device_set_basestation_attach(struct nc_device_context* dev, bool enabled)
 {
     if (dev->state == NC_DEVICE_STATE_SETUP) {
-        dev->enableAttach = false;
+        dev->enableAttach = enabled;
         return NABTO_EC_OK;
     } else if (dev->state == NC_DEVICE_STATE_RUNNING && enabled && !dev->enableAttach) {
         dev->enableAttach = true;
