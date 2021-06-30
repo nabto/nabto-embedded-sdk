@@ -60,5 +60,11 @@ void handle_event(struct device_event_handler* handler, NabtoDeviceEvent event)
         printf("Attached to the basestation\n");
     } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
         printf("Detached from the basestation\n");
+    } else if (event == NABTO_DEVICE_EVENT_INVALID_FINGERPRINT) {
+        printf("The device fingerprint is not known by the basestation\n");
+    } else if (event == NABTO_DEVICE_EVENT_INVALID_PRODUCT_ID) {
+        printf("The provided Product ID is not known by the basestation\n");
+    } else if (event == NABTO_DEVICE_EVENT_INVALID_DEVICE_ID) {
+        printf("The provided Device ID is not known by the basestation\n");
     }
 }

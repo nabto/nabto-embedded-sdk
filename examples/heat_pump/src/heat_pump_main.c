@@ -246,6 +246,12 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
                     printf("Attached to the basestation" NEWLINE);
                 } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
                     printf("Detached from the basestation" NEWLINE);
+                } else if (event == NABTO_DEVICE_EVENT_INVALID_FINGERPRINT) {
+                    printf("The device fingerprint is not known by the basestation" NEWLINE);
+                } else if (event == NABTO_DEVICE_EVENT_INVALID_PRODUCT_ID) {
+                    printf("The provided Product ID is not known by the basestation" NEWLINE);
+                } else if (event == NABTO_DEVICE_EVENT_INVALID_DEVICE_ID) {
+                    printf("The provided Device ID is not known by the basestation" NEWLINE);
                 }
             }
             nabto_device_future_free(future);

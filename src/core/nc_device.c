@@ -342,7 +342,6 @@ np_error_code nc_device_start(struct nc_device_context* dev,
 {
     struct np_platform* pl = dev->pl;
     NABTO_LOG_INFO(LOG, "Starting Nabto Device");
-    dev->state = NC_DEVICE_STATE_RUNNING;
 
 
     if (dev->deviceId == NULL || dev->productId == NULL) {
@@ -368,6 +367,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
         return ec;
     }
 
+    dev->state = NC_DEVICE_STATE_RUNNING;
     nc_attacher_set_app_info(&dev->attacher, dev->appName, dev->appVersion);
     nc_attacher_set_device_info(&dev->attacher, dev->productId, dev->deviceId);
 

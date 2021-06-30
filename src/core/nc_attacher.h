@@ -96,7 +96,10 @@ struct nc_attach_endpoint_context {
 enum nc_attacher_status {
     NC_ATTACHER_STATUS_ATTACHED,
     NC_ATTACHER_STATUS_REDIRECT,
-    NC_ATTACHER_STATUS_ERROR
+    NC_ATTACHER_STATUS_ERROR,
+    NC_ATTACHER_STATUS_INVALID_FINGERPRINT,
+    NC_ATTACHER_STATUS_INVALID_PRODUCT_ID,
+    NC_ATTACHER_STATUS_INVALID_DEVICE_ID
 };
 
 typedef void (*nc_attacher_attach_start_callback)(enum nc_attacher_status status, void* userData);
