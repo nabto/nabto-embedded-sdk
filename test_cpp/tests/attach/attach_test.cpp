@@ -644,7 +644,7 @@ BOOST_AUTO_TEST_CASE(attach_wrong_fp, * boost::unit_test::timeout(300))
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){
-                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_INVALID_FINGERPRINT);
+                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_UNKNOWN_FINGERPRINT);
                  at.niceClose([](nabto::test::AttachTest& at) {
                                   at.end();
                               });
@@ -665,7 +665,7 @@ BOOST_AUTO_TEST_CASE(attach_wrong_device_id, * boost::unit_test::timeout(300))
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){
-                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_INVALID_DEVICE_ID);
+                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_WRONG_DEVICE_ID);
                  at.niceClose([](nabto::test::AttachTest& at) {
                                   at.end();
                               });
@@ -686,7 +686,7 @@ BOOST_AUTO_TEST_CASE(attach_wrong_product_id, * boost::unit_test::timeout(300))
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){
-                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_INVALID_PRODUCT_ID);
+                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_WRONG_PRODUCT_ID);
                  at.niceClose([](nabto::test::AttachTest& at) {
                                   at.end();
                               });

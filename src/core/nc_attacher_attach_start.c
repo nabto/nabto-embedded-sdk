@@ -98,7 +98,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
                                 "The server does not recognize the "
                                 "fingerprint of the device. Check that the "
                                 "fingerprint is in sync with the server");
-                ec = NC_ATTACHER_STATUS_INVALID_FINGERPRINT;
+                ec = NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT;
                 break;
             case NABTO_PROTOCOL_WRONG_PRODUCT_ID:
                 NABTO_LOG_ERROR(
@@ -106,7 +106,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
                     "The product id on the server for the key/fingerprint "
                     "used by this device does not match the product id "
                     "configured in this device");
-                ec = NC_ATTACHER_STATUS_INVALID_PRODUCT_ID;
+                ec = NC_ATTACHER_STATUS_WRONG_PRODUCT_ID;
                 break;
             case NABTO_PROTOCOL_WRONG_DEVICE_ID:
                 NABTO_LOG_ERROR(
@@ -114,7 +114,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
                     "The device id on the server for the key/fingerprint "
                     "used by this device does not match the device id "
                     "configured in this device");
-                ec = NC_ATTACHER_STATUS_INVALID_DEVICE_ID;
+                ec = NC_ATTACHER_STATUS_WRONG_DEVICE_ID;
                 break;
             default:
                 NABTO_LOG_ERROR(LOG,

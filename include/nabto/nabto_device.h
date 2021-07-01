@@ -640,9 +640,9 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener,
  * NABTO_DEVICE_EVENT_ATTACHED
  * NABTO_DEVICE_EVENT_DETACHED
  * NABTO_DEVICE_EVENT_CLOSED
- * NABTO_DEVICE_EVENT_INVALID_FINGERPRINT
- * NABTO_DEVICE_EVENT_INVALID_PRODUCT_ID
- * NABTO_DEVICE_EVENT_INVALID_DEVICE_ID
+ * NABTO_DEVICE_EVENT_UNKNOWN_FINGERPRINT
+ * NABTO_DEVICE_EVENT_WRONG_PRODUCT_ID
+ * NABTO_DEVICE_EVENT_WRONG_DEVICE_ID
  * ```
  */
 typedef int NabtoDeviceEvent;
@@ -657,13 +657,13 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACH
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CLOSED;
 
 // The device attach attempt failed. The basestation did not recognize the fingerprint
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_INVALID_FINGERPRINT;
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_UNKNOWN_FINGERPRINT;
 
-// The device attach attempt failed. The basestation did not recognize the Product ID
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_INVALID_PRODUCT_ID;
+// The device attach attempt failed. The Product ID did not match the fingerprint in the basestation
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_WRONG_PRODUCT_ID;
 
-// The device attach attempt failed. The basestation did not recognize the Device ID
-NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_INVALID_DEVICE_ID;
+// The device attach attempt failed. The Device ID did not match the fingerprint in the basestation
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_WRONG_DEVICE_ID;
 
 /**
  * Initialize a listener for device events.

@@ -600,12 +600,12 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
         ctx->redirectAttempts++;
         ctx->pl->dtlsC.close(ctx->dtls);
         return;
-    } else if (status == NC_ATTACHER_STATUS_INVALID_FINGERPRINT && ctx->listener) {
-        ctx->listener(NC_DEVICE_EVENT_INVALID_FINGERPRINT, ctx->listenerData);
-    } else if (status == NC_ATTACHER_STATUS_INVALID_PRODUCT_ID && ctx->listener) {
-        ctx->listener(NC_DEVICE_EVENT_INVALID_PRODUCT_ID, ctx->listenerData);
-    } else if (status == NC_ATTACHER_STATUS_INVALID_DEVICE_ID && ctx->listener) {
-        ctx->listener(NC_DEVICE_EVENT_INVALID_DEVICE_ID, ctx->listenerData);
+    } else if (status == NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT && ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_UNKNOWN_FINGERPRINT, ctx->listenerData);
+    } else if (status == NC_ATTACHER_STATUS_WRONG_PRODUCT_ID && ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_WRONG_PRODUCT_ID, ctx->listenerData);
+    } else if (status == NC_ATTACHER_STATUS_WRONG_DEVICE_ID && ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_WRONG_DEVICE_ID, ctx->listenerData);
     }
     coap_attach_failed(ctx);
 }
