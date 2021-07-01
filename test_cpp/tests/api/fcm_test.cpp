@@ -4,7 +4,6 @@
 #include <nabto/nabto_device_experimental.h>
 
 #include "../../util/helper.hpp"
-#include "../attach/attach_server.hpp"
 #include "../../util/io_service.hpp"
 #include "attached_test_device.hpp"
 #include "../attach/basestation_fixture.hpp"
