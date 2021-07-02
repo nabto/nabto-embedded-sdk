@@ -111,6 +111,12 @@ void wait_for_device_events(NabtoDevice* device) {
             service_invocation(device_);
         } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
             printf("Detached from the basestation\n");
+        } else if (event == NABTO_DEVICE_EVENT_UNKNOWN_FINGERPRINT) {
+            printf("The device fingerprint is not known by the basestation\n");
+        } else if (event == NABTO_DEVICE_EVENT_WRONG_PRODUCT_ID) {
+            printf("The provided Product ID did not match the fingerprint\n");
+        } else if (event == NABTO_DEVICE_EVENT_WRONG_DEVICE_ID) {
+            printf("The provided Device ID did not match the fingerprint\n");
         }
     }
     nabto_device_stop(device);

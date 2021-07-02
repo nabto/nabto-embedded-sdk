@@ -74,6 +74,8 @@ set(integration_test_src
     nabto_device_libevent_integration_test.cpp
   )
 
-add_executable(nabto_device_libevent_integration_test ${integration_test_src})
-target_include_directories(nabto_device_libevent_integration_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../test_cpp)
-target_link_libraries(nabto_device_libevent_integration_test nabto_device_static test_util)
+if (DEVICE_BUILD_TESTS)
+  add_executable(nabto_device_libevent_integration_test ${integration_test_src})
+  target_include_directories(nabto_device_libevent_integration_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../test_cpp)
+  target_link_libraries(nabto_device_libevent_integration_test nabto_device_static test_util)
+endif()

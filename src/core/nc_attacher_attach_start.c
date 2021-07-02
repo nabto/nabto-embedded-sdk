@@ -90,6 +90,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
     if (!nc_coap_is_status_ok(resCode)) {
         struct nc_coap_rest_error error;
         nc_coap_rest_error_decode_response(res, &error);
+        enum nc_attacher_status ec = NC_ATTACHER_STATUS_ERROR;
 
         switch (error.nabtoErrorCode) {
             case NABTO_PROTOCOL_UNKNOWN_DEVICE_FINGERPRINT:
@@ -97,6 +98,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
                                 "The server does not recognize the "
                                 "fingerprint of the device. Check that the "
                                 "fingerprint is in sync with the server");
+                ec = NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT;
                 break;
             case NABTO_PROTOCOL_WRONG_PRODUCT_ID:
                 NABTO_LOG_ERROR(
@@ -104,6 +106,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
                     "The product id on the server for the key/fingerprint "
                     "used by this device does not match the product id "
                     "configured in this device");
+                ec = NC_ATTACHER_STATUS_WRONG_PRODUCT_ID;
                 break;
             case NABTO_PROTOCOL_WRONG_DEVICE_ID:
                 NABTO_LOG_ERROR(
@@ -111,6 +114,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
                     "The device id on the server for the key/fingerprint "
                     "used by this device does not match the device id "
                     "configured in this device");
+                ec = NC_ATTACHER_STATUS_WRONG_DEVICE_ID;
                 break;
             default:
                 NABTO_LOG_ERROR(LOG,
@@ -118,9 +122,11 @@ enum nc_attacher_status coap_attach_start_handle_response(
                                 "code %d, message: %s, ",
                                 error.coapResponseCode, error.nabtoErrorCode,
                                 error.message);
+                ec = NC_ATTACHER_STATUS_ERROR;
+
         }
         nc_coap_rest_error_deinit(&error);
-        return NC_ATTACHER_STATUS_ERROR;
+        return ec;
     }
     const uint8_t* payload;
     size_t payloadSize;

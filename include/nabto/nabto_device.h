@@ -628,14 +628,21 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener,
  ********************/
 
 /**
- * General events relevant for the application. Currently only events for when a device is
- * successfully attached to the basestation, ie registered with the Nabto servers (and
- * detached/disconnected).
+ * General events relevant for the application. Events provides information about the device
+ * connection to the basestation, ie registration with the Nabto servers. Only when the device is
+ * attached to the basestation will remote connections to the device be possible. If the attach
+ * procedure fails due to basestation not recognizing the Product ID, Device ID, or Fingerprint
+ * configured for the device, an event is also emitted. If the connection to the basestation is
+ * lost, a dettached event is emitted. Unless closed by the user, the device will automatically
+ * attempt to reattach to the basestation after a non-successful attach.
  *
  * ```
  * NABTO_DEVICE_EVENT_ATTACHED
  * NABTO_DEVICE_EVENT_DETACHED
  * NABTO_DEVICE_EVENT_CLOSED
+ * NABTO_DEVICE_EVENT_UNKNOWN_FINGERPRINT
+ * NABTO_DEVICE_EVENT_WRONG_PRODUCT_ID
+ * NABTO_DEVICE_EVENT_WRONG_DEVICE_ID
  * ```
  */
 typedef int NabtoDeviceEvent;
@@ -648,6 +655,15 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACH
 
 // The device has been closed by a call to nabto_device_close()
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CLOSED;
+
+// The device attach attempt failed. The basestation did not recognize the fingerprint
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_UNKNOWN_FINGERPRINT;
+
+// The device attach attempt failed. The Product ID did not match the fingerprint in the basestation
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_WRONG_PRODUCT_ID;
+
+// The device attach attempt failed. The Device ID did not match the fingerprint in the basestation
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_WRONG_DEVICE_ID;
 
 /**
  * Initialize a listener for device events.

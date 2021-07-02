@@ -58,6 +58,58 @@ ogsvei0AAiEA4r6s8iI6b37agG6zXsPKXwjTw3jS4acs1feiZ4Vo1NE=
 )";
 
 static std::string serverHostname = "localhost-multi.nabto.net";
+
+enum class ServiceErrorCode {
+    NONE = 0, // never sent on the protocol.
+    INVALID_JWT_TOKEN = 1,
+    DEVICE_NOT_ATTACHED = 2, // used when the device is known by the basestation, but it is not attached.
+    UNKNOWN_PRODUCT_ID = 3, // used when the product id does not exists in the basestation.
+    UNKNOWN_DEVICE_ID = 4, // used when the device id does not exists in the basestation.
+    UNKNOWN_DEVICE_FINGERPRINT = 5, // used when the basestation does not know the public key which the device is using.
+    REJECTED_SERVER_CONNECT_TOKEN = 6, // used when the basestation rejects a client for not having a valid SCT.
+    WRONG_PRODUCT_ID = 7, // used when the product id does not match the id configured in the basestation.
+    WRONG_DEVICE_ID = 8, // used when the device id does not match the device id configured in the basestation.
+    AUTHORIZATION_TYPE_MISMATCH = 9, // used when the server key does not match the authorization type the client is using.
+    UNKNOWN_SERVER_KEY = 10 // used when the server key is not known to the basestation.
+};
+
+class CoapError {
+ public:
+    CoapError(int coapErrorCode, ServiceErrorCode nabtoErrorCode, const std::string& message)
+        : coapErrorCode_(coapErrorCode), nabtoErrorCode_(nabtoErrorCode), message_(message)
+    {
+
+    }
+
+    CoapError(int coapErrorCode, const std::string& message)
+        : coapErrorCode_(coapErrorCode), message_(message)
+    {
+
+    }
+
+    void createCborError(std::shared_ptr<CoapServerResponse> response) const
+    {
+        nlohmann::json root;
+        if (!message_.empty()) {
+            root["Error"]["Message"] = message_;
+        }
+        if (nabtoErrorCode_) {
+            root["Error"]["Code"] = static_cast<int>(*nabtoErrorCode_);
+        }
+        if (!root.empty()) {
+            response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+            std::vector<uint8_t> cbor = nlohmann::json::to_cbor(root);
+            response->setPayload(cbor);
+        }
+        response->setCode(coapErrorCode_);
+    }
+
+ private:
+    int coapErrorCode_;
+    lib::optional<ServiceErrorCode> nabtoErrorCode_;
+    std::string message_;
+};
+
 class AttachCoapServer {
  public:
     AttachCoapServer(boost::asio::io_context& io)
@@ -169,10 +221,10 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-start", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
                 if (self->attachCount_ == self->invalidAttach_) {
                     self->handleDeviceAttachWrongResponse(connection, request, response);
+                    self->attachCount_ += 1;
                 } else {
                     self->handleDeviceAttach(connection, request, response);
                 }
-                self->attachCount_ += 1;
             });
         dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-end", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
                 (void)connection; (void)request;
@@ -208,6 +260,33 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     void handleDeviceAttach(DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response)
     {
         (void)connection; (void)request;
+        nlohmann::json req = nlohmann::json::from_cbor(request->getPayload());
+
+        if (deviceFp_) {
+            std::array<uint8_t, 32> fp = *(connection->getOtherPeerFingerprint());
+            for (size_t i = 0; i < 32; i++) {
+                if (*(deviceFp_+i) != fp[i]) {
+                    CoapError err = CoapError(404, ServiceErrorCode::UNKNOWN_DEVICE_FINGERPRINT, "Unknown device fingerprint");
+                    err.createCborError(response);
+                    return;
+                }
+            }
+        }
+
+        if (deviceId_ && req["DeviceId"].get<std::string>().compare(deviceId_) != 0) {
+            CoapError err = CoapError(400, ServiceErrorCode::WRONG_DEVICE_ID, "Wrong device ID");
+            err.createCborError(response);
+            return;
+        }
+
+        if (productId_ && req["ProductId"].get<std::string>().compare(productId_) != 0) {
+            std::ostringstream oss;
+            oss << "Wrong product ID. Got: \"" << req["ProductId"].get<std::string>() << "\" expected: \"" << productId_ << "\"";
+            CoapError err = CoapError(400, ServiceErrorCode::WRONG_PRODUCT_ID, oss.str());
+            err.createCborError(response);
+            return;
+        }
+
         nlohmann::json root;
         root["Status"] = 0;
         nlohmann::json ka;
@@ -225,6 +304,7 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
         response->setPayload(cbor);
         response->setCode(201);
+        attachCount_ += 1;
     }
 
     void handleDeviceAttachWrongResponse(DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response)
@@ -260,6 +340,9 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
 
     std::atomic<uint64_t> attachCount_ = { 0 };
     uint64_t invalidAttach_ = 42;
+    uint8_t* deviceFp_ = NULL;
+    const char* deviceId_ = NULL;
+    const char* productId_ = NULL;
 };
 
 

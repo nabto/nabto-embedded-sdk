@@ -65,7 +65,7 @@ class AttachTest {
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str()), nabto::test::devicePrivateKey.size());
         nc_attacher_set_root_certs(&attach_, rootCerts_.c_str());
         nc_attacher_set_app_info(&attach_, appName_, appVersion_);
-        nc_attacher_set_device_info(&attach_, productId_, deviceId_);
+        nc_attacher_set_device_info(&attach_, productId_.c_str(), deviceId_.c_str());
         // set timeout to approximately one seconds for the dtls handshake
         nc_attacher_set_handshake_timeout(&attach_, 50, 500);
         attach_.retryWaitTime = 100;
@@ -106,6 +106,7 @@ class AttachTest {
     static void listener(enum nc_device_event event, void* data)
     {
         AttachTest* at = (AttachTest*)data;
+        at->lastDevEvent_ = event;
         if (event == NC_DEVICE_EVENT_ATTACHED) {
             at->attachCount_++;
         } else if (event == NC_DEVICE_EVENT_DETACHED) {
@@ -147,13 +148,19 @@ class AttachTest {
     std::string rootCerts_;
     const char* appName_ = "foo";
     const char* appVersion_ = "bar";
-    const char* productId_ = "test";
-    const char* deviceId_ = "devTest";
+    std::string productId_ = "test";
+    std::string deviceId_ = "devTest";
+    const unsigned char* devPupKey_ = reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str());
+    size_t devPubKeySize_ = nabto::test::devicePublicKey.size();
+    const unsigned char* devPrivKey_ = reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str());
+    size_t devPrivKeySize_ = nabto::test::devicePrivateKey.size();
+
     std::function<void (AttachTest& at)> event_;
     std::function<void (AttachTest& at)> state_;
     std::function<void (AttachTest& at)> closed_;
     bool ended_ = false;
     struct np_event* endEvent_;
+    enum nc_device_event lastDevEvent_ = NC_DEVICE_EVENT_DETACHED;
 
     std::atomic<uint64_t> attachCount_ = { 0 };
     std::atomic<uint64_t> detachCount_ = { 0 };
@@ -625,6 +632,96 @@ BOOST_AUTO_TEST_CASE(attach_ha, * boost::unit_test::timeout(300))
     BOOST_TEST(attachServer->attachCount_+attachServer2->attachCount_ == (uint64_t)1);
 }
 #endif
+
+BOOST_AUTO_TEST_CASE(attach_wrong_fp, * boost::unit_test::timeout(300))
+{
+    std::array<uint8_t,32> fp;
+    fp.fill(42);
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+    attachServer->deviceFp_ = fp.data();
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_UNKNOWN_FINGERPRINT);
+                 at.niceClose([](nabto::test::AttachTest& at) {
+                                  at.end();
+                              });
+             },[](nabto::test::AttachTest& at){(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+}
+
+BOOST_AUTO_TEST_CASE(attach_wrong_device_id, * boost::unit_test::timeout(300))
+{
+    const char* dId = "not_correct_device_id";
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+    attachServer->deviceId_ = dId;
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_WRONG_DEVICE_ID);
+                 at.niceClose([](nabto::test::AttachTest& at) {
+                                  at.end();
+                              });
+             },[](nabto::test::AttachTest& at){(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+}
+
+BOOST_AUTO_TEST_CASE(attach_wrong_product_id, * boost::unit_test::timeout(300))
+{
+    const char* pId = "not_correct_product_id";
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+    attachServer->productId_ = pId;
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_WRONG_PRODUCT_ID);
+                 at.niceClose([](nabto::test::AttachTest& at) {
+                                  at.end();
+                              });
+             },[](nabto::test::AttachTest& at){(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+}
+
+BOOST_AUTO_TEST_CASE(attach_correct_info, * boost::unit_test::timeout(300))
+{
+    // Test to validate that fp, deviceId, ProductId can be set in the attachServer and attach
+    // succeeds. This tests the test code to have more confidence in the 3 previous tests.
+    std::array<uint8_t, 32> fp = {221, 95, 236, 79, 39, 181, 101, 124, 183, 94, 94, 36, 127, 231, 146, 204, 9, 106, 220, 54, 112, 137, 118, 96, 148, 98, 120, 214, 125, 157, 149, 247};
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    attachServer->productId_ = at.productId_.c_str();
+    attachServer->deviceId_ = at.deviceId_.c_str();
+    attachServer->deviceFp_ = fp.data();
+
+    at.start([](nabto::test::AttachTest& at){
+                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_ATTACHED);
+                 at.niceClose([](nabto::test::AttachTest& at) {
+                                  at.end();
+                              });
+             },[](nabto::test::AttachTest& at){(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
 
 
 BOOST_AUTO_TEST_SUITE_END()

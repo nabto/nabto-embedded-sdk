@@ -594,13 +594,20 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
 
     if (status == NC_ATTACHER_STATUS_ATTACHED) {
         send_attach_sct_request(ctx);
+        return;
     } else if (status == NC_ATTACHER_STATUS_REDIRECT) {
         ctx->state = NC_ATTACHER_STATE_REDIRECT;
         ctx->redirectAttempts++;
         ctx->pl->dtlsC.close(ctx->dtls);
-    } else {
-        coap_attach_failed(ctx);
+        return;
+    } else if (status == NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT && ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_UNKNOWN_FINGERPRINT, ctx->listenerData);
+    } else if (status == NC_ATTACHER_STATUS_WRONG_PRODUCT_ID && ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_WRONG_PRODUCT_ID, ctx->listenerData);
+    } else if (status == NC_ATTACHER_STATUS_WRONG_DEVICE_ID && ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_WRONG_DEVICE_ID, ctx->listenerData);
     }
+    coap_attach_failed(ctx);
 }
 
 void send_attach_sct_request(struct nc_attach_context* ctx)
