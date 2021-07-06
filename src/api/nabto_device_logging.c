@@ -4,14 +4,14 @@
 #include <platform/np_platform.h>
 #include <platform/np_timestamp_wrapper.h>
 
-NabtoDeviceLogCallback logCallback;
-void* userData;
-static uint32_t level_ = NABTO_LOG_SEVERITY_LEVEL_INFO;
-
 static void default_log_callback(NabtoDeviceLogMessage* msg, void* data)
 {
     (void)msg; (void)data;
 }
+
+static NabtoDeviceLogCallback logCallback = &default_log_callback;
+static void* userData = NULL;
+static uint32_t level_ = NABTO_LOG_SEVERITY_LEVEL_INFO;
 
 static void logging_log(uint32_t severity, uint32_t module,
                         uint32_t line, const char* file,
@@ -20,8 +20,6 @@ static void logging_log(uint32_t severity, uint32_t module,
 void nabto_device_logging_init()
 {
     np_log.log = &logging_log;
-    logCallback = &default_log_callback;
-    userData = NULL;
 }
 
 void nabto_device_logging_set_level(uint32_t level)

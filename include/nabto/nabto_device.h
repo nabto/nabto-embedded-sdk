@@ -1878,8 +1878,10 @@ nabto_device_listener_stop(NabtoDeviceListener* listener);
  * @intro Logging
  *
  * The logging API allows the application to retrieve log messages from the core SDK and configure
- * the desired core log level.
-  */
+ * the desired core log level. The log callback and level are stored in the Nabto Device as global
+ * variables which must be taken into account if multiple Nabto Device instances is running in the
+ * same process.
+ */
 
 enum NabtoDeviceLogLevel_ {
     NABTO_DEVICE_LOG_FATAL = 0x00000001ul,
@@ -1934,9 +1936,13 @@ typedef struct NabtoDeviceLogMessage_ NabtoDeviceLogMessage;
 typedef void (*NabtoDeviceLogCallback)(NabtoDeviceLogMessage* msg, void* data);
 
 /**
- * Set log callback if custom logging is desired.
+ * Set log callback if custom logging is desired. The log callback is stored globally, and so, the
+ * device reference is unused. This also means if multiple Nabto Device instances is running in the
+ * same process, this function configures the callback for all instances. Since the device reference
+ * is unused, this function can be called before `nabto_device_new()` to enable logging of module
+ * initialization, particularly useful when integrating a new embedded platform.
  *
- * The log callback can be removed by setting the callback and userdata to NULL.
+ * The log callback can be removed by setting the callback and data to NULL.
  *
  * @param device [in]  The device instance to set callback for
  * @param cb [in]      The function to be called on log event, or NULL to remove
@@ -1947,7 +1953,9 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data);
 
 /**
- * Set log level of device.
+ * Set log level of device. The log level is stored globally, and so, the device reference is
+ * unused. This also means if multiple Nabto Device instances is running in the same process, this
+ * function configures the level for all instances.
  *
  * @param device [in]  The device instance to set level on
  * @param level [in]   The log level to set, available levels are:
@@ -1959,7 +1967,12 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_level(NabtoDevice* device, const char* level);
 
 /**
- * Set log callback to write logging directly to std out.
+ * Set log callback to write logging directly to std out. This configures the log callback to an
+ * internally defined function handling the write to std out. As the log callback is stored
+ * globally, this is configured for all Nabto Device instances running in the same process. The log
+ * callback formats log lines to start with a timestamp, retrieved from the timestamp module of
+ * Nabto Device platform. As the callback is stored globally, the Nabto Device platform must remain
+ * alive until all Nabto Device instances has stopped using the callback.
  *
  * @param device [in]  The device instance for which to retrieve call log callback invocations.
  * @return NABTO_DEVICE_EC_OK on success
