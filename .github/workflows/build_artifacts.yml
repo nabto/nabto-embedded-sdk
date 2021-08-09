@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-16.04, macos-10.15]
+        os: [windows-2019, ubuntu-18.04, macos-10.15]
 
     steps:
       - uses: actions/checkout@v2
@@ -75,7 +75,7 @@ jobs:
   release-assets:
     name: Release Assets
     needs: build-and-test
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     strategy:
       matrix:
         binary: [tcp_tunnel_device]
@@ -83,7 +83,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v2
         with:
-          name: artifacts_ubuntu-16.04
+          name: artifacts_ubuntu-18.04
           path: linux
       - uses: actions/download-artifact@v2
         with:
