@@ -391,7 +391,7 @@ void print_missing_device_config_help(const char* filename)
 {
     printf("The device config is missing (%s). Provide a file with the following format" NEWLINE, filename);
     printf("{" NEWLINE);
-    printf("   \"ProductId\": \"pr-12345678\"" NEWLINE);
+    printf("   \"ProductId\": \"pr-12345678\"," NEWLINE);
     printf("   \"DeviceId\": \"de-abcdefgh\"" NEWLINE);
     printf("}" NEWLINE);
 }
