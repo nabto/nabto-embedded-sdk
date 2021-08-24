@@ -339,7 +339,7 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
         }
     }
     *readLength = recvLength;
-    NABTO_LOG_TRACE(LOG, "Received udp packet of size %d", recvLength);
+    NABTO_LOG_TRACE(LOG, "Received udp packet of size %d, from %s, port %d ", recvLength, np_ip_address_to_string(&ep->ip), ep->port);
     return NABTO_EC_OK;
 }
 
