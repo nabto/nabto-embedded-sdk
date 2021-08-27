@@ -15,9 +15,7 @@ bool np_timestamp_passed_or_now(struct np_timestamp* obj, uint32_t stamp)
  */
 bool np_timestamp_less_or_equal(uint32_t t1, uint32_t t2)
 {
-    int32_t v1 = (int32_t)t1;
-    int32_t v2 = (int32_t)t2;
-    return (v1 - v2) <= 0;
+    return ((int32_t)(t1 - t2) <= 0);
 }
 
 uint32_t np_timestamp_future(struct np_timestamp* obj, uint32_t ms)
@@ -28,8 +26,5 @@ uint32_t np_timestamp_future(struct np_timestamp* obj, uint32_t ms)
 
 int32_t np_timestamp_difference(uint32_t t1, uint32_t t2)
 {
-    int32_t v1 = (int32_t)t1;
-    int32_t v2 = (int32_t)t2;
-
-    return v1 - v2;
+    return (int32_t)(t1 - t2);
 }
