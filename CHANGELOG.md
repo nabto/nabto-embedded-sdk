@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleasd]
+## [unreleased]
 
 ### Added
 
