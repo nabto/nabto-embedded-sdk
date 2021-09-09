@@ -87,9 +87,9 @@ class AttachCoapServer {
         lib::error_code ec;
         dtlsServer_.setPort(port_);
         dtlsServer_.setAlpnProtocols({"n5"});
-        dtlsServer_.setSniCallback([](const std::string& sni){
+        dtlsServer_.setSniCallback([this](const std::string& sni){
                 (void)sni;
-                return DtlsServer::createCertificateContext(privateKey, {localhostMultiNabtoNetCert, testIntermediateCert});
+                return DtlsServer::createCertificateContext(privateKey_, certificateChain_);
             });
 
         ec = dtlsServer_.init();
@@ -121,15 +121,19 @@ class AttachCoapServer {
     }
 
     std::string getRootCerts() {
-        return testRootCa;
+        return rootCert_;
     }
 
     std::array<uint8_t, 16> getFingerprint()
     {
-        auto fp = getFingerprintFromPem(localhostMultiNabtoNetCert);
+        auto fp = getFingerprintFromPem(certificateChain_[0]);
         std::array<uint8_t, 16> ret;
         memcpy(ret.data(), fp->data(), 16);
         return ret;
+    }
+
+    void setCertificateChain(const std::vector<std::string>& certificateChain) {
+        certificateChain_ = certificateChain;
     }
  protected:
     boost::asio::io_context& io_;
@@ -137,6 +141,9 @@ class AttachCoapServer {
     uint16_t port_ = 0;
     std::promise<void> promise_;
     bool stopped_ = false;
+    std::string privateKey_ = privateKey;
+    std::vector<std::string> certificateChain_ = {localhostMultiNabtoNetCert, testIntermediateCert};
+    std::string rootCert_ = testRootCa;
 
 };
 
@@ -155,6 +162,11 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     {
     }
 
+    AttachServer(boost::asio::io_context& io, const std::vector<std::string>& certificateChain)
+        : AttachCoapServer(io)
+    {
+    }
+
     AttachServer(boost::asio::io_context& io, std::string ip, uint16_t port)
         : AttachCoapServer(io, ip, port)
     {
@@ -163,6 +175,14 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     static std::shared_ptr<AttachServer> create(boost::asio::io_context& io)
     {
         auto ptr = std::make_shared<AttachServer>(io);
+        ptr->init();
+        return ptr;
+    }
+
+    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io, std::vector<std::string> certificateChain)
+    {
+        auto ptr = std::make_shared<AttachServer>(io);
+        ptr->setCertificateChain(certificateChain);
         ptr->init();
         return ptr;
     }

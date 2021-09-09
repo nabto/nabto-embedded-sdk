@@ -463,14 +463,13 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable, * boost::unit_test::timeout
 {
     // the device waits for dtls to timeout and retry again.
     auto ioService = nabto::IoService::create("test");
-    std::shared_ptr<nabto::test::AttachServer> attachServer;
+    std::shared_ptr<nabto::test::AttachServer> attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getHostname(), 4242, attachServer->getRootCerts());
 
     std::thread t([&ioService, &attachServer, &at](){
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            attachServer = nabto::test::AttachServer::create(ioService->getIoService());
             at.setDtlsPort(attachServer->getPort());
         });
     at.start([](nabto::test::AttachTest& at){
@@ -710,5 +709,24 @@ BOOST_AUTO_TEST_CASE(attach_correct_info, * boost::unit_test::timeout(300))
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
 }
 
+BOOST_AUTO_TEST_CASE(attach_expired_certificate, *boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), {nabto::test::expiredLocalhostMultiNabtoNetCert, nabto::test::testIntermediateCert });
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.niceClose([](nabto::test::AttachTest& at) {
+                                      at.end();
+                                  });
+                 }
+             },[](nabto::test::AttachTest& at){(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -41,6 +41,7 @@
 /* System support */
 #define MBEDTLS_HAVE_ASM
 #define MBEDTLS_HAVE_TIME
+#define MBEDTLS_HAVE_TIME_DATE
 
 #if defined(_WIN32)
 #define MBEDTLS_PLATFORM_C
