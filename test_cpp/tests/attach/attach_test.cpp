@@ -13,22 +13,10 @@
 
 #include <future>
 
+#include "certificates.hpp"
+
 namespace nabto {
 namespace test {
-
-static std::string nabtoRootCA1 = R"(-----BEGIN CERTIFICATE-----
-MIIB2TCCAX6gAwIBAgIUUmg861HL9RvPvsLpRPtz4sAlLj0wCgYIKoZIzj0EAwIw
-NzELMAkGA1UEBhMCREsxDjAMBgNVBAoMBU5hYnRvMRgwFgYDVQQDDA9OYWJ0byBS
-b290IENBIDEwHhcNMjAxMDAyMjA1MzAzWhcNMjMxMDAyMjA1MzAzWjA5MQswCQYD
-VQQGEwJESzEOMAwGA1UECgwFTmFidG8xGjAYBgNVBAMMEU5hYnRvIFNlcnZlciBD
-QSAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELHA41RHIH5Wtoa4FVjL8GRO3
-QeiCFCnQLigy1w/NFc9Tu8b77exHkVUQX5/TXXg96etIQr0FRsXriCKxNOFSyqNm
-MGQwHQYDVR0OBBYEFE3qi2c0kMB4pIPTzQtYJLDTegDLMB8GA1UdIwQYMBaAFDTV
-WO6JLN0TW6zyW51IQzFKZxuvMBIGA1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/
-BAQDAgGGMAoGCCqGSM49BAMCA0kAMEYCIQDvemE0MvLMaFyPpP/GJ0aiTdxfjOUq
-zh41kuKNbT8VFwIhAOl8mF7nslw+4YIp7Wsw5vl74YRcw/j0CYCe3iFMkz2F
------END CERTIFICATE-----
-)";
 
 class AttachTest {
  public:
@@ -319,7 +307,6 @@ BOOST_AUTO_TEST_CASE(wrong_hostname, * boost::unit_test::timeout(300))
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
 
     auto tp = nabto::test::TestPlatform::create();
-    // nabtoRootCA1 cannot validate the test certificate the test attach server is using.
     nabto::test::AttachTest at(*tp, "localhost.nabto.net", attachServer->getPort(), attachServer->getRootCerts());
     at.start([](nabto::test::AttachTest& at){(void)at;},[](nabto::test::AttachTest& at){
                      if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
