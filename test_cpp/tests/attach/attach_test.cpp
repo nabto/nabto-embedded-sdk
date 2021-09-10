@@ -113,6 +113,7 @@ class AttachTest {
     }
 
     void end() {
+        ended_ = true;
         nc_attacher_stop(&attach_);
         nc_udp_dispatch_abort(&udpDispatch_);
         testEnded_.set_value();
@@ -697,12 +698,13 @@ BOOST_AUTO_TEST_CASE(attach_correct_info, * boost::unit_test::timeout(300))
     attachServer->deviceId_ = at.deviceId_.c_str();
     attachServer->deviceFp_ = fp.data();
 
-    at.start([](nabto::test::AttachTest& at){
-                 BOOST_TEST(at.lastDevEvent_ == NC_DEVICE_EVENT_ATTACHED);
-                 at.niceClose([](nabto::test::AttachTest& at) {
-                                  at.end();
-                              });
-             },[](nabto::test::AttachTest& at){(void)at; });
+    at.start(
+        [](nabto::test::AttachTest& at) {
+            if (at.lastDevEvent_ == NC_DEVICE_EVENT_ATTACHED) {
+                at.niceClose([](nabto::test::AttachTest& at) { at.end(); });
+            }
+        },
+        [](nabto::test::AttachTest& at) { (void)at; });
 
     at.waitForTestEnd();
     attachServer->stop();
@@ -715,18 +717,19 @@ BOOST_AUTO_TEST_CASE(attach_expired_certificate, *boost::unit_test::timeout(300)
     auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), {nabto::test::expiredLocalhostMultiNabtoNetCert, nabto::test::testIntermediateCert });
 
     auto tp = nabto::test::TestPlatform::create();
-    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
-    at.start([](nabto::test::AttachTest& at){
-                 if (at.attachCount_ == (uint64_t)1) {
-                     at.niceClose([](nabto::test::AttachTest& at) {
-                                      at.end();
-                                  });
-                 }
-             },[](nabto::test::AttachTest& at){(void)at; });
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(),
+                               attachServer->getPort(),
+                               attachServer->getRootCerts());
+    at.start(
+        [](nabto::test::AttachTest& at) {
+            BOOST_TEST(at.lastDevEvent_ ==
+                       NC_DEVICE_EVENT_CERTIFICATE_VALIDATION_FAILED);
+            at.niceClose([](nabto::test::AttachTest& at) { at.end(); });
+        },
+        [](nabto::test::AttachTest& at) { (void)at; });
 
     at.waitForTestEnd();
     attachServer->stop();
-    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

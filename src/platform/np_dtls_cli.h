@@ -24,9 +24,10 @@ struct np_platform;
 struct nc_udp_dispatch_context;
 
 enum np_dtls_cli_event {
-    NP_DTLS_CLI_EVENT_CLOSED,
+    NP_DTLS_CLI_EVENT_CLOSED, // The connection is closed
     NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE,
-    NP_DTLS_CLI_EVENT_ACCESS_DENIED
+    NP_DTLS_CLI_EVENT_ACCESS_DENIED, // The connection got an access denied alert. The connection is closed.
+    NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED // The certificate could not be validated. The connection is closed.
 };
 
 typedef void (*np_dtls_cli_send_callback)(const np_error_code ec, void* data);
