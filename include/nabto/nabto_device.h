@@ -665,6 +665,10 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_WRONG_
 // The device attach attempt failed. The Device ID did not match the fingerprint in the basestation
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_WRONG_DEVICE_ID;
 
+// The device attach attempt failed. The validation of the basestation certificate failed. See the log for more details.
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CERTIFICATE_VALIDATION_FAILED;
+
+
 /**
  * Initialize a listener for device events.
  *
