@@ -90,6 +90,8 @@ int main(int argc, char** argv) {
     if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to add the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
         goto cleanup;
+    } else {
+        printf("Added a TCP Tunnel service. Id: %s, type: %s, host: %s, port: %d" NEWLINE, serviceId, serviceType, serviceHost, servicePort);
     }
 
     ec = nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(device, serviceType, serviceConcurrentConnectionsLimit);
