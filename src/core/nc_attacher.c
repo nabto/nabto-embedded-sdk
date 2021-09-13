@@ -45,8 +45,10 @@ static void resolve_close(void* data);
 static void handle_state_change(struct nc_attach_context* ctx);
 static void handle_dtls_closed(struct nc_attach_context* ctx);
 static void handle_dtls_connected(struct nc_attach_context* ctx);
+static void reset_dtls_connection(struct nc_attach_context* ctx);
 static void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 static void handle_dtls_access_denied(struct nc_attach_context* ctx);
+static void handle_dtls_certificate_verification_failed(struct nc_attach_context* ctx);
 static np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_callback cb, void* data, void* senderData);
 static void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
@@ -479,12 +481,7 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
         if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
             ctx->pl->dtlsC.close(ctx->dtls);
         } else {
-            nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
-            nc_keep_alive_reset(&ctx->keepAlive);
-            np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
-            if (ec != NABTO_EC_OK) {
-                NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
-            }
+            reset_dtls_connection(ctx);
             ctx->state = NC_ATTACHER_STATE_CLOSED;
             handle_state_change(ctx);
         }
@@ -494,22 +491,42 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
     if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
         handle_dtls_connected(ctx);
     } else if (event == NP_DTLS_CLI_EVENT_CLOSED) {
-        nc_keep_alive_reset(&ctx->keepAlive);
         handle_dtls_closed(ctx);
     } else if (event == NP_DTLS_CLI_EVENT_ACCESS_DENIED) {
-        nc_keep_alive_reset(&ctx->keepAlive);
         handle_dtls_access_denied(ctx);
+    } else if (event == NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED) {
+        handle_dtls_certificate_verification_failed(ctx);
     }
 }
 
-void handle_dtls_closed(struct nc_attach_context* ctx)
+/**
+ * Method which resets the associated state with a dtls connection whenever the
+ * connection is closed expectedly or by an unexpected error.
+ */
+void reset_dtls_connection(struct nc_attach_context* ctx)
 {
+    nc_keep_alive_reset(&ctx->keepAlive);
     nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
     np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
     }
-    // dtls_event_handler() only calls this after moduleState has been check so we dont need to here
+    if (ctx->request != NULL) {
+        nabto_coap_client_request_free(ctx->request);
+        ctx->request = NULL;
+    }
+    if (ctx->state == NC_ATTACHER_STATE_ATTACHED) {
+        if (ctx->listener) {
+            ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
+        }
+        NABTO_LOG_INFO(LOG, "Device detached from basestation");
+    }
+}
+
+void handle_dtls_closed(struct nc_attach_context* ctx)
+{
+    reset_dtls_connection(ctx);
+    // dtls_event_handler() only calls this after moduleState has been checked so we dont need to here
     switch(ctx->state) {
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
             // DTLS connect failed and dtls was closed, wait to retry
@@ -520,10 +537,6 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             break;
         case NC_ATTACHER_STATE_ATTACHED:
             // DTLS was closed while attached, closed by peer or keep alive timeout. Try reattach
-            if (ctx->listener) {
-                ctx->listener(NC_DEVICE_EVENT_DETACHED, ctx->listenerData);
-            }
-            NABTO_LOG_INFO(LOG, "Device detached from basestation");
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
             handle_state_change(ctx);
             break;
@@ -546,7 +559,6 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
             handle_state_change(ctx);
     }
-
 }
 
 void handle_dtls_connected(struct nc_attach_context* ctx)
@@ -562,16 +574,22 @@ void handle_dtls_connected(struct nc_attach_context* ctx)
 void handle_dtls_access_denied(struct nc_attach_context* ctx)
 {
     NABTO_LOG_TRACE(LOG, "Received access denied from state: %u", ctx->state);
-    nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
-    np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
-    }
-    if (ctx->request != NULL) {
-        nabto_coap_client_request_free(ctx->request);
-        ctx->request = NULL;
-    }
+    reset_dtls_connection(ctx);
+
     ctx->state = NC_ATTACHER_STATE_ACCESS_DENIED_WAIT;
+    handle_state_change(ctx);
+}
+
+void handle_dtls_certificate_verification_failed(struct nc_attach_context* ctx)
+{
+    NABTO_LOG_TRACE(LOG, "Received certificate verification failed from state: %u", ctx->state);
+    reset_dtls_connection(ctx);
+
+    if (ctx->listener) {
+        ctx->listener(NC_DEVICE_EVENT_CERTIFICATE_VALIDATION_FAILED, ctx->listenerData);
+    }
+
+    ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
     handle_state_change(ctx);
 }
 

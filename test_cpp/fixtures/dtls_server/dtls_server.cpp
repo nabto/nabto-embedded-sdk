@@ -81,6 +81,15 @@ CertificateContextPtr DtlsServer::createCertificateContext(const std::string& pr
     return CertificateContext::create(privateKey, publicKey);
 }
 
+CertificateContextPtr DtlsServer::createCertificateContext(const std::string& privateKey, const std::vector<std::string>& certificateChain)
+{
+    std::stringstream ss;
+    for(auto cert : certificateChain) {
+        ss << cert;
+    }
+    return CertificateContext::create(privateKey, ss.str());
+}
+
 
 
 } // namespace

@@ -449,17 +449,19 @@ void nm_dtls_event_do_one(void* data)
         } else {
             if( ret != 0 )
             {
+                enum np_dtls_cli_event event = NP_DTLS_CLI_EVENT_CLOSED;
                 if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
                     char info[128];
                     uint32_t validationStatus = mbedtls_ssl_get_verify_result(&ctx->ssl);
                     mbedtls_x509_crt_verify_info(info, 128, "", validationStatus);
                     NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
+                    event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else {
                     NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %i", ret );
                 }
                 ctx->state = CLOSING;
                 nm_mbedtls_timer_cancel(&ctx->timer);
-                ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
+                ctx->eventHandler(event, ctx->callbackData);
                 return;
             }
             NABTO_LOG_TRACE(LOG, "State changed to DATA");

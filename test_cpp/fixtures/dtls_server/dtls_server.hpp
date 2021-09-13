@@ -10,6 +10,8 @@
 
 #include "keep_alive.hpp"
 
+#include <vector>
+
 namespace nabto {
 
 class DtlsServerImpl;
@@ -82,6 +84,8 @@ class DtlsServer {
     void setHandshakeTimeout(uint32_t min, uint32_t max);
 
     static std::shared_ptr<CertificateContext> createCertificateContext(const std::string& privateKey, const std::string& publicKey);
+    static std::shared_ptr<CertificateContext> createCertificateContext(const std::string& privateKey, const std::vector<std::string>& certificateChain);
+
 
     typedef std::function<CertificateContextPtr (const std::string& sni)> SniCallback;
 

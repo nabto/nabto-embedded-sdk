@@ -1,5 +1,7 @@
 #pragma once
 
+#include "certificates.hpp"
+
 #include <fixtures/dtls_server/dtls_server.hpp>
 #include <boost/asio/io_service.hpp>
 //#include <util/test_future.hpp>
@@ -12,50 +14,6 @@
 
 namespace nabto {
 namespace test {
-
-static std::string privateKey = R"(-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIMdRmzNQrp+WRBwt9WXxZQSqe+ZQEtEuAQRZqwuB8nX9oAoGCCqGSM49
-AwEHoUQDQgAEShTBGm7dCj1JBJHF82g53jeaz2afIlktXYqHy1FcUzTeV7c9+Lk7
-W0AlwL/AcMp+rBJbjFaCdG7NYjNKhK0Atw==
------END EC PRIVATE KEY-----
-)";
-
-static std::string certChain = R"(-----BEGIN CERTIFICATE-----
-MIIBcjCCARkCFHgBfGhVNbsaSoZeagEOtzZFSQBqMAoGCCqGSM49BAMCMDgxCzAJ
-BgNVBAYTAkRLMQ0wCwYDVQQKDARUZXN0MRowGAYDVQQDDBFUZXN0IEludGVybWVk
-aWF0ZTAeFw0yMDEwMDYxMzQzNDlaFw0yMjEyMTUxMzQzNDlaMEAxCzAJBgNVBAYT
-AkRLMQ0wCwYDVQQKDARUZXN0MSIwIAYDVQQDDBlsb2NhbGhvc3QtbXVsdGkubmFi
-dG8ubmV0MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEShTBGm7dCj1JBJHF82g5
-3jeaz2afIlktXYqHy1FcUzTeV7c9+Lk7W0AlwL/AcMp+rBJbjFaCdG7NYjNKhK0A
-tzAKBggqhkjOPQQDAgNHADBEAiB5m5zntsiAW7G+heAwPZJYdlPxarzlDgHSEOZY
-7EMuXQIgC8+2s4VAwdeBYtqQlIihXonTDxa7w4Mzhm+T/rKThIc=
------END CERTIFICATE-----
------BEGIN CERTIFICATE-----
-MIIB0DCCAXagAwIBAgIUDt0M/PE8dqdWT7ru86Bl4Ff8kh0wCgYIKoZIzj0EAwIw
-MDELMAkGA1UEBhMCREsxDTALBgNVBAoMBFRlc3QxEjAQBgNVBAMMCVRlc3QgUm9v
-dDAeFw0yMDEwMDUxOTE5MTJaFw0yMzEwMDUxOTE5MTJaMDgxCzAJBgNVBAYTAkRL
-MQ0wCwYDVQQKDARUZXN0MRowGAYDVQQDDBFUZXN0IEludGVybWVkaWF0ZTBZMBMG
-ByqGSM49AgEGCCqGSM49AwEHA0IABB/ceDZO2PN7gT5TuggLGXbS96jJ/orkTgXX
-MsQ8E+aImQDyKhHC9cWhwclKso7gyQIeAcqiyMrpDBnqKgktjfijZjBkMB0GA1Ud
-DgQWBBT3JkWHFo2+s0tr+kiy+00penDxDTAfBgNVHSMEGDAWgBRyog+DI9u8+S/g
-kI1n8CXfJdO8jjASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjAK
-BggqhkjOPQQDAgNIADBFAiEAmw9lGNV7DWqVkp0T2xh9xKiLSaBu361DQydrZvng
-R5ICIGv8BpMSs5QYJ6T03+5ZS3A0sVGcnEsUPmcK3XWi4CTl
------END CERTIFICATE-----
-)";
-
-static std::string rootCerts = R"(-----BEGIN CERTIFICATE-----
-MIIBpTCCAUqgAwIBAgIUev5miQGPmjlHmisQJ5iYiq+Lf0kwCgYIKoZIzj0EAwIw
-MDELMAkGA1UEBhMCREsxDTALBgNVBAoMBFRlc3QxEjAQBgNVBAMMCVRlc3QgUm9v
-dDAeFw0yMDA2MjAwMDAwMDBaFw00OTEyMzEyMzU5NTlaMDAxCzAJBgNVBAYTAkRL
-MQ0wCwYDVQQKDARUZXN0MRIwEAYDVQQDDAlUZXN0IFJvb3QwWTATBgcqhkjOPQIB
-BggqhkjOPQMBBwNCAATWs9bVLhO8o+42UrDFZocbMjvt20ODDwjxjC5/lSKo8KU6
-yPcBsI6IMg+CfMfQpza7V5m9c/mHXw1r8iiOrizio0IwQDAdBgNVHQ4EFgQUcqIP
-gyPbvPkv4JCNZ/Al3yXTvI4wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-AYYwCgYIKoZIzj0EAwIDSQAwRgIhAKjXktlBZjxURdyDvlvPUn73cNz8MOTs7wl3
-ogsvei0AAiEA4r6s8iI6b37agG6zXsPKXwjTw3jS4acs1feiZ4Vo1NE=
------END CERTIFICATE-----
-)";
 
 static std::string serverHostname = "localhost-multi.nabto.net";
 
@@ -129,9 +87,9 @@ class AttachCoapServer {
         lib::error_code ec;
         dtlsServer_.setPort(port_);
         dtlsServer_.setAlpnProtocols({"n5"});
-        dtlsServer_.setSniCallback([](const std::string& sni){
+        dtlsServer_.setSniCallback([this](const std::string& sni){
                 (void)sni;
-                return DtlsServer::createCertificateContext(privateKey, certChain);
+                return DtlsServer::createCertificateContext(privateKey_, certificateChain_);
             });
 
         ec = dtlsServer_.init();
@@ -163,15 +121,19 @@ class AttachCoapServer {
     }
 
     std::string getRootCerts() {
-        return rootCerts;
+        return rootCert_;
     }
 
     std::array<uint8_t, 16> getFingerprint()
     {
-        auto fp = getFingerprintFromPem(certChain);
+        auto fp = getFingerprintFromPem(certificateChain_[0]);
         std::array<uint8_t, 16> ret;
         memcpy(ret.data(), fp->data(), 16);
         return ret;
+    }
+
+    void setCertificateChain(const std::vector<std::string>& certificateChain) {
+        certificateChain_ = certificateChain;
     }
  protected:
     boost::asio::io_context& io_;
@@ -179,6 +141,9 @@ class AttachCoapServer {
     uint16_t port_ = 0;
     std::promise<void> promise_;
     bool stopped_ = false;
+    std::string privateKey_ = privateKey;
+    std::vector<std::string> certificateChain_ = {localhostMultiNabtoNetCert, testIntermediateCert};
+    std::string rootCert_ = testRootCa;
 
 };
 
@@ -197,6 +162,11 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     {
     }
 
+    AttachServer(boost::asio::io_context& io, const std::vector<std::string>& certificateChain)
+        : AttachCoapServer(io)
+    {
+    }
+
     AttachServer(boost::asio::io_context& io, std::string ip, uint16_t port)
         : AttachCoapServer(io, ip, port)
     {
@@ -205,6 +175,14 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
     static std::shared_ptr<AttachServer> create(boost::asio::io_context& io)
     {
         auto ptr = std::make_shared<AttachServer>(io);
+        ptr->init();
+        return ptr;
+    }
+
+    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io, std::vector<std::string> certificateChain)
+    {
+        auto ptr = std::make_shared<AttachServer>(io);
+        ptr->setCertificateChain(certificateChain);
         ptr->init();
         return ptr;
     }
