@@ -170,6 +170,15 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        if (nabto_device_set_log_level(device, logLevel) != NABTO_DEVICE_EC_OK) {
+            printf("Could not set loglevel to %s\n", logLevel);
+            return false;
+        }
+    }
+
+
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_start(device, fut);
 
@@ -224,5 +233,5 @@ void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg)
     if (l) {
         nabto_device_listener_free(l);
     }
-    printf("%s", msg);
+    printf("%s\n", msg);
 }
