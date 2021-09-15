@@ -40,10 +40,25 @@ void nm_libevent_global_deinit()
     }
 }
 
-void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase)
+bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase)
 {
     ctx->eventBase = eventBase;
-    ctx->dnsBase = evdns_base_new(eventBase, EVDNS_BASE_INITIALIZE_NAMESERVERS);
+    ctx->dnsBase = evdns_base_new(eventBase, 0);
+    if (ctx->dnsBase == NULL) {
+        return false;
+    }
+    int r;
+#if _WIN32
+    r = evdns_base_config_windows_nameservers(base);
+#else
+    int opts = DNS_OPTION_NAMESERVERS | DNS_OPTION_HOSTSFILE;
+    r = evdns_base_resolv_conf_parse(ctx->dnsBase, opts, "/etc/resolv.conf");
+#endif
+    if (r != 0) {
+        evdns_base_free(ctx->dnsBase, 1);
+        return false;
+    }
+    return true;
 }
 
 void nm_libevent_deinit(struct nm_libevent_context* ctx)

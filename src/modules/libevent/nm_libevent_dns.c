@@ -5,6 +5,7 @@
 #include <platform/interfaces/np_dns.h>
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_error_code.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -141,6 +142,9 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
 void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
 {
     struct nm_dns_request* ctx = arg;
+    np_error_code ec = NABTO_EC_OK;
+    size_t resolved = 0;
+    struct evutil_addrinfo* origRes = res;
 
     if (result == EVUTIL_EAI_FAIL) {
         // maybe the system has changed nameservers, reload them
@@ -155,33 +159,29 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     }
 
     if (result != 0) {
-        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_UNKNOWN);
-        free(ctx);
-        return;
-    }
-
-    size_t resolved = 0;
-    while (res != NULL && resolved < ctx->ipsSize) {
-        if (res->ai_family == AF_INET) {
-            ctx->ips[resolved].type = NABTO_IPV4;
-            struct sockaddr_in* addr = (struct sockaddr_in*)res->ai_addr;
-            memcpy(ctx->ips[resolved].ip.v4, (uint8_t*)(&addr->sin_addr.s_addr),
-                   4);
-            resolved++;
-        } else if (res->ai_family == AF_INET6) {
-            ctx->ips[resolved].type = NABTO_IPV6;
-            struct sockaddr_in6* addr = (struct sockaddr_in6*)res->ai_addr;
-            memcpy(ctx->ips[resolved].ip.v6, &addr->sin6_addr, 16);
-            resolved++;
-        }
-        res = res->ai_next;
-    }
-
-    if (resolved == 0) {
-        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_NO_DATA);
+        ec = NABTO_EC_UNKNOWN;
     } else {
-        *ctx->ipsResolved = resolved;
-        np_completion_event_resolve(ctx->completionEvent, NABTO_EC_OK);
+        while (res != NULL && resolved < ctx->ipsSize) {
+            if (res->ai_family == AF_INET) {
+                ctx->ips[resolved].type = NABTO_IPV4;
+                struct sockaddr_in* addr = (struct sockaddr_in*)res->ai_addr;
+                memcpy(ctx->ips[resolved].ip.v4,
+                       (uint8_t*)(&addr->sin_addr.s_addr), 4);
+                resolved++;
+            } else if (res->ai_family == AF_INET6) {
+                ctx->ips[resolved].type = NABTO_IPV6;
+                struct sockaddr_in6* addr = (struct sockaddr_in6*)res->ai_addr;
+                memcpy(ctx->ips[resolved].ip.v6, &addr->sin6_addr, 16);
+                resolved++;
+            }
+            res = res->ai_next;
+        }
+        if (resolved == 0) {
+            ec = NABTO_EC_NO_DATA;
+        }
     }
+    *ctx->ipsResolved = resolved;
+    np_completion_event_resolve(ctx->completionEvent, ec);
+    evutil_freeaddrinfo(origRes);
     free(ctx);
 }
