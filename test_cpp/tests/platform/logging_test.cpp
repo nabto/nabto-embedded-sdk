@@ -23,6 +23,15 @@ void test_log (uint32_t severity, uint32_t module, uint32_t line, const char* fi
     pnt.arg2 = (char)va_arg(args, uint32_t);
 }
 
+void test_log_no_args (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
+{
+    (void)line; (void)file;
+    pnt.severity = severity;
+    pnt.module = module;
+    pnt.fmt[63] = '\0';
+    strncpy(pnt.fmt, fmt, 63);
+}
+
 bool check_pnt(uint32_t s, uint32_t m, const char* fmt, uint32_t a1, char a2)
 {
     if (s != pnt.severity) {
@@ -75,6 +84,7 @@ BOOST_AUTO_TEST_CASE(severity)
     NABTO_LOG_TRACE(47, "%d:%c", 24, 'a');
     BOOST_TEST(check_pnt(NABTO_LOG_SEVERITY_TRACE, 47, "%d:%c", 24 , 'a'));
     reset_pnt();
+    np_log.log=&test_log_no_args;
     NABTO_LOG_INFO(48, "test with no variadic arguments");
     BOOST_TEST(pnt.severity == NABTO_LOG_SEVERITY_INFO);
     BOOST_TEST((int)pnt.module == (int)48);
