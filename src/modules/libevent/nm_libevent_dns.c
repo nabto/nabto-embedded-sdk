@@ -182,6 +182,8 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     }
     *ctx->ipsResolved = resolved;
     np_completion_event_resolve(ctx->completionEvent, ec);
-    evutil_freeaddrinfo(origRes);
+    if (origRes != NULL) {
+        evutil_freeaddrinfo(origRes);
+    }
     free(ctx);
 }
