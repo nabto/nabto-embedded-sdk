@@ -14,7 +14,7 @@ set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER_USE_AFTER_RETURN ON)
 include(CheckIncludeFiles)
 include(${CMAKE_CURRENT_SOURCE_DIR}/nabto_primary_files.cmake)
 
-
+message("CMake Version: ${CMAKE_VERSION}")
 
 # build all of nabto on linux, windows, mac
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
