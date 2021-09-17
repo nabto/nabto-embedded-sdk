@@ -59,7 +59,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // The libevent module comes with UDP, TCP, local ip and timestamp
     // module implementations.
     if (!nm_libevent_init(&platform->libeventContext, platform->eventBase)) {
-        return false;
+        return NABTO_EC_FAILED;
     }
 
 

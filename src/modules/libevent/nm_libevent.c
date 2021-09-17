@@ -3,6 +3,7 @@
 #include "nm_libevent_get_local_ip.h"
 
 #include <platform/np_platform.h>
+#include <platform/np_logging.h>
 #include <event2/event.h>
 #include <event2/thread.h>
 #include <event2/dns.h>
@@ -10,6 +11,8 @@
 #if defined(HAVE_WINSOCK2_H)
 #include <winsock2.h>
 #endif
+
+#define LOG NABTO_LOG_MODULE_PLATFORM
 
 static int useCount = 0;
 
@@ -55,6 +58,7 @@ bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventB
     r = evdns_base_resolv_conf_parse(ctx->dnsBase, opts, "/etc/resolv.conf");
 #endif
     if (r != 0) {
+        NABTO_LOG_ERROR(LOG, "Could not configure name servers %d", r);
         evdns_base_free(ctx->dnsBase, 1);
         return false;
     }
