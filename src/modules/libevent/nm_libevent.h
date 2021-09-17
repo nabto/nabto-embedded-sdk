@@ -17,7 +17,7 @@ struct nm_libevent_context {
 
 void nm_libevent_global_init();
 void nm_libevent_global_deinit();
-void nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase);
+bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase);
 void nm_libevent_deinit(struct nm_libevent_context* ctx);
 
 struct np_udp nm_libevent_udp_get_impl(struct nm_libevent_context* ctx);

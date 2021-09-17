@@ -28,6 +28,7 @@
 #define NABTO_LOG_MODULE_TUNNEL                  0x00100000ul
 #define NABTO_LOG_MODULE_MDNS                    0x00200000u
 #define NABTO_LOG_MODULE_TEST                    0x00400000ul
+#define NABTO_LOG_MODULE_PLATFORM                0x00800000ul
 
 // Severity definitions
 #define NABTO_LOG_SEVERITY_NONE                  0x00000000ul

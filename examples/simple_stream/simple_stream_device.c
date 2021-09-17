@@ -45,19 +45,18 @@ static void wrote(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData
 static void startClose(struct StreamEchoState* state);
 static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 
+static NabtoDeviceListener* listener = NULL;
+
 void signal_handler(int s)
 {
     (void)s;
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
-    nabto_device_stop(device);
+    if (listener != NULL) {
+        nabto_device_listener_stop(listener);
+    }
 }
 
 int main(int argc, char** argv)
 {
-    NabtoDeviceListener* listener;
     NabtoDeviceFuture* listenerFuture;
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     head.next = NULL;
@@ -106,9 +105,14 @@ int main(int argc, char** argv)
 
         nabto_device_future_set_callback(acceptFuture, streamAccepted, state);
     }
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
 
     nabto_device_future_free(listenerFuture);
     nabto_device_listener_free(listener);
+    nabto_device_stop(device);
     nabto_device_free(device);
 
     printf("Device cleaned up and closed\n");

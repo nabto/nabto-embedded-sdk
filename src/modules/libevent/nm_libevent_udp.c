@@ -297,9 +297,9 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
             NABTO_LOG_TRACE(LOG, "Dropping udp packet, the packet will be retransmitted later (%d) %s", status, evutil_socket_error_to_string(status));
             return NABTO_EC_OK;
         } else if (ERR_IS_EXPECTED(status)) {
-            NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in udp_send_to", (int) status, strerror(status));
+            NABTO_LOG_TRACE(LOG,"expected sendto status: (%i) '%s'", (int) status, ERR_TO_STRING(status));
         } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in udp_send_to", (int) status, strerror(status));
+            NABTO_LOG_ERROR(LOG,"unexpected sendto status (%i) '%s'", (int) status, ERR_TO_STRING(status));
         }
         return NABTO_EC_FAILED_TO_SEND_PACKET;
     }
@@ -400,20 +400,20 @@ uint16_t udp_get_local_port(struct np_udp_socket* s)
 np_error_code udp_create_socket_any(struct np_udp_socket* s)
 {
     evutil_socket_t sock = nm_libevent_udp_create_nonblocking_socket(AF_INET6, SOCK_DGRAM);
+    enum np_ip_address_type type = NABTO_IPV6;
     if (sock == NM_INVALID_SOCKET) {
         sock = nm_libevent_udp_create_nonblocking_socket(AF_INET, SOCK_DGRAM);
+        type = NABTO_IPV4;
         if (s->sock == NM_INVALID_SOCKET) {
             int e = EVUTIL_SOCKET_ERROR();
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, evutil_socket_error_to_string(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         } else {
             NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
-            s->type = NABTO_IPV4;
         }
     } else {
         NABTO_LOG_TRACE(LOG, "Opened socket %d", sock);
         int no = 0;
-        s->type = NABTO_IPV6;
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void* ) &no, sizeof(no)))
         {
             int e = EVUTIL_SOCKET_ERROR();
@@ -424,5 +424,6 @@ np_error_code udp_create_socket_any(struct np_udp_socket* s)
         }
     }
     s->sock = sock;
+    s->type = type;
     return NABTO_EC_OK;
 }

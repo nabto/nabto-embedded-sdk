@@ -6,8 +6,15 @@ cmake_policy(SET CMP0063 NEW)
 
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
+
+set(CMAKE_XCODE_GENERATE_SCHEME ON)
+set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER ON)
+set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER_USE_AFTER_RETURN ON)
+
 include(CheckIncludeFiles)
 include(${CMAKE_CURRENT_SOURCE_DIR}/nabto_primary_files.cmake)
+
+message("CMake Version: ${CMAKE_VERSION}")
 
 # build all of nabto on linux, windows, mac
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
