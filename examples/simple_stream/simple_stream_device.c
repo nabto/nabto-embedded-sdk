@@ -45,19 +45,22 @@ static void wrote(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData
 static void startClose(struct StreamEchoState* state);
 static void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 
+static NabtoDeviceListener* listener = NULL;
+
 void signal_handler(int s)
 {
     (void)s;
+    if (listener != NULL) {
+        nabto_device_listener_stop(listener);
+    }
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
+    nabto_device_close(device, fut); // triggers NABTO_DEVICE_EVENT_CLOSED in event listener
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
-    nabto_device_stop(device);
 }
 
 int main(int argc, char** argv)
 {
-    NabtoDeviceListener* listener;
     NabtoDeviceFuture* listenerFuture;
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     head.next = NULL;
