@@ -53,10 +53,6 @@ void signal_handler(int s)
     if (listener != NULL) {
         nabto_device_listener_stop(listener);
     }
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut); // triggers NABTO_DEVICE_EVENT_CLOSED in event listener
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
 }
 
 int main(int argc, char** argv)
@@ -109,9 +105,14 @@ int main(int argc, char** argv)
 
         nabto_device_future_set_callback(acceptFuture, streamAccepted, state);
     }
+    NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    nabto_device_close(device, fut);
+    nabto_device_future_wait(fut);
+    nabto_device_future_free(fut);
 
     nabto_device_future_free(listenerFuture);
     nabto_device_listener_free(listener);
+    nabto_device_stop(device);
     nabto_device_free(device);
 
     printf("Device cleaned up and closed\n");
