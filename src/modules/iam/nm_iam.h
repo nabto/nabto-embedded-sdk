@@ -138,7 +138,7 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
  */
 struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 
-/**
+/*
  * Set the list of notification categories users can subscribe
  * to. Trying to set a notification category that is not included in
  * this set will result in an error. The categories are copied into
@@ -326,6 +326,7 @@ enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username,
  *         NM_IAM_ERROR_INVALID_ARGUMENT if the display name was too long.
  */
 enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName);
+
 enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token);
 enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id);
 enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories);
