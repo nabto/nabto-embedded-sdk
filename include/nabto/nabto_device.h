@@ -1159,25 +1159,44 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  ********************/
 
 /**
- * @intro Firebase Cloud Messaging notifications
+ * @intro FCM Notifications
  *
- * Integration with Firebase Cloud Messaging(FCM) notifications allows
- * the device to send push notifications to clients. The integration
- * is transparent meaning the Nabto platform forwards the provided
- * payload directly to FCM, and so it must follow the format defined
- * by FCM. Sending push notifications requires a Firebase project
- * which can be created using the guide: <Link TBD>.
+ * Integration with Firebase Cloud Messaging (FCM) notifications allows the
+ * device to send push notifications to clients. The integration is transparent
+ * meaning the Nabto platform forwards the provided payload directly to FCM, and
+ * so it must follow the format defined by FCM. Sending push notifications
+ * requires a Firebase project, detail guide will be provided soon.
  *
- * Sending a notification from the device starts by creating a
- * NabtoDeviceFcmNotification object. Then the payload and project ID
- * must be set on the object before sending. When the send function is
- * called, the device will send the notification to the Nabto
- * Basestation which forwards it to FCM through its REST API. When FCM
- * has provided a response, the basestation returns the response to
- * the device, and the NabtoDeviceFuture of the send function
- * resolves. Now the FCM status code and response body can be read
- * from the notification object. Finally, the notification object must
- * be freed.
+ * Sending a notification from the device is initiated by the device creating a
+ * NabtoDeviceFcmNotification object. Then the payload and project ID must be
+ * set on the object before sending.
+ *
+ * When the send function is called, the device will send the notification to
+ * the Nabto Basestation which forwards it to FCM through its REST API.
+ *
+ * When FCM has provided a response, the basestation returns the response to the
+ * device, and the NabtoDeviceFuture of the send function resolves. Now the FCM
+ * status code and response body can be read from the notification
+ * object. Finally, the notification object must be freed.
+ *
+ * To setup FCM in your project, follow the general guidelines from Google. You must allow Nabto to
+ * send push notifications through your FCM project:
+ *
+ * 1. login to the Google Cloud Console
+ *
+ * 2. Open the "IAM & Admin" page
+ *
+ * 3. Add the Nabto Edge push service account `sender@nabto-fcm-prod.iam.gserviceaccount.com` as a
+ * member with the role “Firebase SDK Provisioning Service Agent”.
+ *
+ * In the last step, the only permission needed is `cloudmessaging.messages.create` so you can also
+ * create a custom role with only this privilege.
+ *
+ * The Nabto Edge IAM module provides helper functionality to manage FCM tokens and manage
+ * subscription categories, see the simple_push example for how to use this on the device side. The
+ * IAM documentation at https://docs.nabto.com/developer/api-reference/coap/iam/users-put-user.html
+ * describes how the client invokes the IAM module. Also see the full Android client example at
+ * https://github.com/nabto/android-simple-push
  */
 
 /**
