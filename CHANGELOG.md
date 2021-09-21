@@ -1,11 +1,15 @@
 # Changelog
 
-## [unreleased]
+## [5.7.0] - 2021-09-21
 
 ### Added
+ * 3 new device events for failed attach attempts, `UNKNOWN_FINGERPRINT`, `WRONG_PRODUCT_ID`, `WRONG_DEVICE_ID`
 
 ### Changed
  * Fixed issues with attacher not resetting properly when disabling/enabling attach using `nabto_device_set_basestation_attach()`.
+ * Fixed handling of sigpipe in TCP tunnels
+ * fix several minor leaks/bugs
+
 
 #### Breaking Changes
 
