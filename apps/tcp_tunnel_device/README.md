@@ -1,21 +1,14 @@
 # TCP Tunnel Device
 
-The TCP Tunnel Device app is an implementation of a TCP tunnelling
-device. The implementation both exist as a reference implementation
-for a TCP tunnelling process and a production ready TCP tunnelling
-device application which can be installed on a fleet of devices.
+The Nabto Edge TCP Tunnel Device app is installed in front of existing TCP services to allow remote
+access from a remote TCP client:
 
-TCP tunnelling in Nabto is the concept of having a client which wants
-to access a TCP server on a device.
+![TCP Client <-- tcp connection --> TCP Tunnel Client App <-- tcp encapsulated into a nabto stream --> TCP Tunnel Device <-- tcp connection --> TCP Server](https://docs.nabto.com/images/tunnel-overview.png)
 
-An example could be a device having a HTTP API which the client wants
-to consume.
+This app provides a full, production ready implementation with all Nabto Edge
+[access control capabilities](https://docs.nabto.com/developer/guides/iam/intro.html). Read the detailed [tunnel step-by-step guide](https://docs.nabto.com/developer/guides/get-started/tunnels/quickstart.html) for thorough instructions.
 
-```
-TCP Client <-- tcp connection --> TCP Tunnel Client App <-- tcp encapsulated into a nabto stream --> TCP Tunnel Device <-- tcp connection --> TCP Server
-```
-
-See the [Nabto Edge Tunnel intro](/developer/guides/get-started/tunnels/intro.html) for more information.
+For a quick proof-of-concept evaluation where it makes sense to disable access control to just evaluate performance, you can also consider the much simpler [`simple_tunnel`](https://github.com/nabto/nabto-embedded-sdk/tree/master/examples/simple_tunnel) example app. That simpler tunnel can also be used if your solution already includes access control at the application level. That is, if you just need Nabto to establish an encrypted communication layer.
 
 ## Configuration files
 
@@ -123,7 +116,7 @@ created. This file is not updated by the application afterwards.
 A detailed walk through of using TCP tunnels in Nabto Edge can be
 found on
 our
-[Documentation site](http://docs.dev.nabto.com/developer/guides/get-started/tunnels/intro.html).
+[Documentation site](http://docs.nabto.com/developer/guides/get-started/tunnels/intro.html).
 
 The TCP Tunnel Device should first be run with the `--init` argument
 to generate the configuration files described above. If desired, these
