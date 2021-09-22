@@ -1,6 +1,6 @@
-# nabto-embedded-sdk
+# Nabto Edge Embedded SDK
 
-Nabto embedded SDK
+The Nabto Edge platform makes it possible to communicate _directly_ between two entities: Instead of interacting indirectly with a device through a cloud service, the platform makes it simple to communicate directly with the actual device to invoke services or transfer data - also through firewalls. Read more on [docs.nabto.com](https://docs.nabto.com/developer/guides/overview/platform-overview.html)!
 
 ## Building and Testing
 
