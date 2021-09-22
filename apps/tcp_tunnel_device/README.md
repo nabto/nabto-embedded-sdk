@@ -4,7 +4,7 @@ The Nabto Edge TCP Tunnel Device app is installed in front of existing TCP servi
 access from a remote TCP client:
 
 <p align="center">
-  <img alt="TCP Client <-- tcp connection --> TCP Tunnel Client App <-- tcp encapsulated into a nabto stream --> TCP Tunnel Device <-- tcp connection --> TCP Server" src="https://docs.nabto.com/images/tunnel-overview.png" width="640"/>
+  <img alt="TCP Client ‹-- tcp connection --› TCP Tunnel Client App ‹-- tcp encapsulated into a nabto stream --› TCP Tunnel Device ‹-- tcp connection --› TCP Server" src="https://docs.nabto.com/images/tunnel-overview.png" width="640"/>
 </p>
 
 This app provides a full, production ready implementation with all Nabto Edge
