@@ -3,7 +3,9 @@
 The Nabto Edge TCP Tunnel Device app is installed in front of existing TCP services to allow remote
 access from a remote TCP client:
 
-![TCP Client <-- tcp connection --> TCP Tunnel Client App <-- tcp encapsulated into a nabto stream --> TCP Tunnel Device <-- tcp connection --> TCP Server](https://docs.nabto.com/images/tunnel-overview.png)
+<p align="center">
+  <img alt="TCP Client <-- tcp connection --> TCP Tunnel Client App <-- tcp encapsulated into a nabto stream --> TCP Tunnel Device <-- tcp connection --> TCP Server" src="https://docs.nabto.com/images/tunnel-overview.png" width="640"/>
+</p>
 
 This app provides a full, production ready implementation with all Nabto Edge
 [access control capabilities](https://docs.nabto.com/developer/guides/iam/intro.html). Read the detailed [tunnel step-by-step guide](https://docs.nabto.com/developer/guides/get-started/tunnels/quickstart.html) for thorough instructions.
