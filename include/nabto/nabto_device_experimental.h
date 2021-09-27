@@ -62,6 +62,20 @@ nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
 /**
  * Limit maximum number of concurrent client connections.
  *
+ * If the connection limit is reached, a DTLS alert "internal_error" is returned
+ * to the client. The client sdk returns INTERNAL_ERROR.
+ *
+ * Dtls "internal_error" is defined in RFC 8446 as
+ *
+ * "internal_error:  An internal error unrelated to the peer or the correctness
+ * of the protocol (such as a memory allocation failure) makes it impossible to
+ * continue."
+ *
+ * In practice this means it will only occur when the device runs out of
+ * resources. The device could run out of resources without the connection limit
+ * being reached if the limit is larger than available memory at the time of the
+ * connection.
+ *
  * @param device [in]  The device.
  * @param limit [in]  The maximum number of concurrent connections.
  * @return NABTO_DEVICE_EC_OK iff ok
