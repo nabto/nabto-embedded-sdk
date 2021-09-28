@@ -80,11 +80,16 @@ np_error_code nm_tcp_tunnel_service_destroy_by_id(struct nm_tcp_tunnels* tunnels
     return NABTO_EC_OK;
 }
 
-np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type, int limit)
+np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type, size_t limit)
 {
     nn_string_int_map_erase(&tunnels->limitsByType, type);
-    if (limit != -1) {
-        nn_string_int_map_insert(&tunnels->limitsByType, type, limit);
+    if (limit > INT_MAX) {
+        // handle it as unlimited
+        return NABTO_EC_OK;
+    }
+    struct nn_string_int_map_iterator it = nn_string_int_map_insert(&tunnels->limitsByType, type, limit);
+    if (nn_string_int_map_is_end(&it)) {
+        return NABTO_EC_OUT_OF_MEMORY;
     }
     return NABTO_EC_OK;
 }

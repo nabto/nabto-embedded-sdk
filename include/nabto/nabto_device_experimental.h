@@ -34,68 +34,6 @@ extern "C" {
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, size_t keyLength);
 
-/**
- * limit maximum number of concurrent streams.
- *
- * Clients can create streams. This limits the maximum amount of
- * concurrent streams. Each tunnel connection uses a stream, so this
- * option also has an effect on max allowed tunnel connections.
- *
- * @param device [in]  The device.
- * @param limit [in]  The maximum number of concurrent streams.
- * @return NABTO_DEVICE_EC_OK iff ok
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_streams(NabtoDevice* device, size_t limit);
-
-/**
- * Limit memory usage for streaming
- *
- * This function limits the amount of segments which can be allocated
- * for streaming. A segment is 256 bytes of data, so the max allocated
- * memory for streaming is limit*256bytes.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
-
-
-/**
- * Limit maximum number of concurrent client connections.
- *
- * If the connection limit is reached, a DTLS alert "internal_error" is returned
- * to the client. The client sdk returns INTERNAL_ERROR.
- *
- * Dtls "internal_error" is defined in RFC 8446 as
- *
- * "internal_error:  An internal error unrelated to the peer or the correctness
- * of the protocol (such as a memory allocation failure) makes it impossible to
- * continue."
- *
- * In practice this means it will only occur when the device runs out of
- * resources. The device could run out of resources without the connection limit
- * being reached if the limit is larger than available memory at the time of the
- * connection.
- *
- * @param device [in]  The device.
- * @param limit [in]  The maximum number of concurrent connections.
- * @return NABTO_DEVICE_EC_OK iff ok
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_connections(NabtoDevice* device, size_t limit);
-
-
-/**
- * Limit maximum number of concurrent coap server requests.
- *
- * Clients can make make requests to coap server. This defines the
- * maximum allowed number of concurrent requests.
- *
- * @param device [in]  The device.
- * @param limit [in]  The maximum number of concurrent coap server requests.
- * @return NABTO_DEVICE_EC_OK iff ok
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 
 /**
  * @Deprecated
@@ -116,24 +54,6 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
-
-
-/**
- * Limit concurrent tunnel streams of a specific service type. The tunnel stream is opened when a
- * TCP connection is established through a tunnel. This means clients will be able to open new
- * tunnels to the device even if the limit is reached, however, new TCP connections through any
- * tunnel will fail if the limit is reached.
- *
- * Open tunnel connections are not affected but new connections will be rejected
- * if the limit has been exceeded.
- *
- * @param device [in]      The device instance
- * @param serviceType [in] Type of services to limit.
- * @param limit [in]       The new limit for the tunnel service. -1 for unlimited.
- * @return NABTO_DEVICE_EC_OK if the limit is set
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(NabtoDevice* device, const char* serviceType, int limit);
 
 #ifdef __cplusplus
 } // extern c #endif
