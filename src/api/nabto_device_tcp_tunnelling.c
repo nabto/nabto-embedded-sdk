@@ -42,7 +42,7 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
 
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type(NabtoDevice* device, const char* type, int limit)
+nabto_device_limit_tcp_tunnel_service_by_type(NabtoDevice* device, const char* type, size_t limit)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
