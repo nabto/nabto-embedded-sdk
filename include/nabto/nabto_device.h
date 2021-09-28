@@ -2262,23 +2262,27 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
 
 /**
- * Limit concurrent tcp tunnel stream/tcp-connection of a specific service type.
- * The tunnel stream is opened when a TCP connection is established through a
- * tunnel. This means clients will be able to open new tunnels(not tcp
- * connections) to the device even if the limit is reached, however, new TCP
- * connections through any tunnel will fail if the limit is reached.
+ * Limit concurrent TCP tunnel connections of a specific service type.
  *
- * Open tunnel connections are not affected but new connections will be rejected
- * if the limit has been exceeded.
+ * Tcp tunnel connections are opened when a TCP connection is established
+ * through a TCP tunnel.
+ *
+ * If the limit is reached new TCP tunnels can still be created by the clients
+ * as they do not create a connection imediately.
+ *
+ * If the limit is decreased after TCP tunnel connections has been made, the
+ * existing tcp tunnel connections are not closed but new TCP tunnel connections
+ * will be subject to the limit and old tcp tunnel connections count towards the
+ * limit.
  *
  * @param device [in]      The device instance
  * @param serviceType [in] Type of services to limit.
- * @param limit [in]       The new limit for the tunnel service.
- * @return NABTO_DEVICE_EC_OK if the limit is set
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the limit could not be added to the internal data structure.
+ * @param limit [in]       The new limit for TCP tunnel connections of the specific type.
+ * @return NABTO_DEVICE_EC_OK if the limit is set NABTO_DEVICE_EC_OUT_OF_MEMORY
+ *         if the limit could not be added to the internal data structure.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_limit_tcp_tunnel_service_by_type(NabtoDevice* device, const char* serviceType, size_t limit);
+nabto_device_limit_tcp_tunnel_connections(NabtoDevice* device, const char* serviceType, size_t limit);
 
 
 /********
