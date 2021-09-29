@@ -70,7 +70,7 @@ struct nm_tcp_tunnels {
 
 np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device);
 void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels);
-np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type, int limit);
+np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type, size_t limit);
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels);
 

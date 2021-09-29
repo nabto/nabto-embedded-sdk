@@ -2174,6 +2174,116 @@ nabto_device_service_invocation_get_response_message_data(NabtoDeviceServiceInvo
 NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
 nabto_device_service_invocation_get_response_message_size(NabtoDeviceServiceInvocation* serviceInvocation);
 
+/********
+ * Limits
+ ********/
+
+/**
+ * @intro Limits
+ *
+ * Functions for limiting the amount of resources the sdk is using.
+ *
+ * Generally limits are a size_t, unlimited is set by using the value SIZE_MAX.
+ */
+
+/**
+ * limit maximum number of concurrent streams.
+ *
+ * Clients can create streams. This limits the maximum amount of concurrent
+ * streams. Each tunnel connection uses a stream, so this option also has an
+ * effect on max allowed tunnel connections.
+ *
+ * If the limit is reached the client will get NABTO_CLIENT_EC_ABORTED when
+ * trying to make a new stream.
+ *
+ * @param device [in]  The device.
+ * @param limit [in]  The maximum number of concurrent streams.
+ * @return NABTO_DEVICE_EC_OK iff ok
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_streams(NabtoDevice* device, size_t limit);
+
+/**
+ * Limit memory usage for streaming
+ *
+ * This function limits the amount of segments which can be allocated for
+ * streaming. A segment is 256 bytes of data, so the max allocated memory for
+ * streaming is limit*256bytes.
+ *
+ * If the limit is reached no new segments can be allocated until there again
+ * are free segments available. The streams are built to survive a case where no
+ * more segments can be allocated. But the performance will be affacted.
+ *
+ * @param device [in]  The device.
+ * @param limit [in]  The maximum number of stream segments used by the device.
+ * @return NABTO_DEVICE_EC_OK iff ok.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
+
+/**
+ * Limit maximum number of concurrent client connections.
+ *
+ * If the connection limit is reached, a DTLS alert "internal_error" is returned
+ * to the client. The client sdk returns NABTO_CLIENT_EC_DEVICE_INTERNAL_ERROR.
+ *
+ * Dtls "internal_error" is defined in RFC 8446 as
+ *
+ * "internal_error:  An internal error unrelated to the peer or the correctness
+ * of the protocol (such as a memory allocation failure) makes it impossible to
+ * continue."
+ *
+ * In practice this means it will only occur when the device runs out of
+ * resources. The device could run out of resources without the connection limit
+ * being reached if the limit is larger than available memory at the time of the
+ * connection.
+ *
+ * @param device [in]  The device.
+ * @param limit [in]  The maximum number of concurrent connections.
+ * @return NABTO_DEVICE_EC_OK iff ok
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_connections(NabtoDevice* device, size_t limit);
+
+/**
+ * Limit maximum number of concurrent coap server requests.
+ *
+ * Clients can make make requests to the coap server. This defines the maximum
+ * allowed number of concurrent requests.
+ *
+ * If the limit is reached the clients coap requests will fail with coap status
+ * SERVICE_UNAVAILABLE 5.03 with an appropriate error description.
+ *
+ * @param device [in]  The device.
+ * @param limit [in]  The maximum number of concurrent coap server requests.
+ * @return NABTO_DEVICE_EC_OK iff ok
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
+
+/**
+ * Limit concurrent TCP tunnel connections of a specific service type.
+ *
+ * Tcp tunnel connections are opened when a TCP connection is established
+ * through a TCP tunnel.
+ *
+ * If the limit is reached new TCP tunnels can still be created by the clients
+ * as they do not create a connection imediately.
+ *
+ * If the limit is decreased after TCP tunnel connections has been made, the
+ * existing tcp tunnel connections are not closed but new TCP tunnel connections
+ * will be subject to the limit and old tcp tunnel connections count towards the
+ * limit.
+ *
+ * @param device [in]      The device instance
+ * @param serviceType [in] Type of services to limit.
+ * @param limit [in]       The new limit for TCP tunnel connections of the specific type.
+ * @return NABTO_DEVICE_EC_OK if the limit is set NABTO_DEVICE_EC_OUT_OF_MEMORY
+ *         if the limit could not be added to the internal data structure.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_tcp_tunnel_connections(NabtoDevice* device, const char* serviceType, size_t limit);
+
 
 /********
  * Misc
