@@ -1,4 +1,4 @@
-5.7.0
+5.7.1
 
 The first line in this file is the current master version. Whenever a release is
 made, this number should be bumped to the next major/minor version candidate

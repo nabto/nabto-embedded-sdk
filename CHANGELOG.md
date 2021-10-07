@@ -1,5 +1,21 @@
 # Changelog
 
+## [5.7.1] - 2021-10-07
+
+### Added
+#### Limit functions moved out of experimental
+Functions to limit resources used by the SDK previously found in the experimental header is moved to the main header. The added functions are:
+* `nabto_device_limit_streams()`
+* `nabto_device_limit_stream_segments()`
+* `nabto_device_limit_connections()`
+* `nabto_device_limit_coap_server_requests()`
+* `nabto_device_limit_tcp_tunnel_connections()`
+
+Note: In the move from the experimental header, `nabto_device_tcp_tunnel_service_limit_concurrent_connections_by_type` has changed name to `nabto_device_limit_tcp_tunnel_connections()`.
+
+### Changed
+ * Fixed integer overflow arithmetics for modern macOS architectures.
+
 ## [5.7.0] - 2021-09-21
 
 ### Added
