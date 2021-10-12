@@ -13,7 +13,11 @@ extern "C" {
 #define NABTO_LOG_PRIu8  PRIu8
 #define NABTO_LOG_PRIu16 PRIu16
 #define NABTO_LOG_PRIu32 PRIu32
+#if defined(PRIu64)
 #define NABTO_LOG_PRIu64 PRIu64
+#else
+#define NABTO_LOG_PRIu64 "llu"
+#endif
 #define NABTO_LOG_PRIsize PRIsize
 
 void np_default_log(uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
