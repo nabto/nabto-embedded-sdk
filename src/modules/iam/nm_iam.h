@@ -138,7 +138,7 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
  */
 struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
 
-/*
+/**
  * Set the list of notification categories users can subscribe
  * to. Trying to set a notification category that is not included in
  * this set will result in an error. The categories are copied into
@@ -150,12 +150,16 @@ struct nm_iam_state* nm_iam_dump_state(struct nm_iam* iam);
  */
 enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct nn_string_set* categories);
 
-/**
+/*
  * Set the max lengths of strings stored by the IAM module to limit the size of storage needed to
- * store the IAM state and configuration. These functions do not enforce the limits and must be
- * called before nm_iam_load_state(). SCTs created automatically by the IAM module has length 12
- * which its limit must allow. Default lengths are: username: 64, display name: 64, password: 64,
- * fcm token: 1024, fcm project id: 256, sct: 64.
+ * store the IAM state and configuration. These must be called before nm_iam_load_state(). The
+ * limits are enforced when updating state through the Runtime State API.
+ *
+ * Note: SCTs created automatically by the IAM module has length 12 which its limit must
+ * allow.
+ *
+ * Default lengths are: username: 64, display name: 64, password: 64, fcm token: 1024, fcm project
+ * id: 256, sct: 64.
  *
  * @param iam [in]  IAM module to set length in
  * @param len [in]  Length to set
@@ -167,7 +171,7 @@ void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len);
 
-/**
+/*
  * Set the max number of users allowed in the IAM module.
  *
  * @param iam [in]  IAM module to set length in
