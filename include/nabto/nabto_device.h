@@ -1165,7 +1165,7 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  * device to send push notifications to clients. The integration is transparent
  * meaning the Nabto platform forwards the provided payload directly to FCM, and
  * so it must follow the format defined by FCM. Sending push notifications
- * requires a Firebase project, detail guide will be provided soon.
+ * requires a Firebase project, a detailed guide will be provided in Q4 2021.
  *
  * Sending a notification from the device is initiated by the device creating a
  * NabtoDeviceFcmNotification object. Then the payload and project ID must be
@@ -1182,7 +1182,7 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  * To setup FCM in your project, follow the general guidelines from Google. You must allow Nabto to
  * send push notifications through your FCM project:
  *
- * 1. login to the Google Cloud Console
+ * 1. Login to the Google Cloud Console
  *
  * 2. Open the "IAM & Admin" page
  *
@@ -2181,19 +2181,19 @@ nabto_device_service_invocation_get_response_message_size(NabtoDeviceServiceInvo
 /**
  * @intro Limits
  *
- * Functions for limiting the amount of resources the sdk is using.
+ * Functions for limiting the amount of resources the SDK is using.
  *
- * Generally limits are a size_t, unlimited is set by using the value SIZE_MAX.
+ * Generally limits are a `size_t`, unlimited is set by using the value `SIZE_MAX`.
  */
 
 /**
- * limit maximum number of concurrent streams.
+ * Limit maximum number of concurrent streams.
  *
- * Clients can create streams. This limits the maximum amount of concurrent
- * streams. Each tunnel connection uses a stream, so this option also has an
- * effect on max allowed tunnel connections.
+ * Clients can create streams. This function limits the maximum amount of concurrent streams. Each
+ * tunnel connection uses a stream, so this option also has an effect on max allowed tunnel
+ * connections.
  *
- * If the limit is reached the client will get NABTO_CLIENT_EC_ABORTED when
+ * If the limit is reached, the client will get `NABTO_CLIENT_EC_ABORTED` when
  * trying to make a new stream.
  *
  * @param device [in]  The device.
@@ -2225,7 +2225,7 @@ nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit);
  * Limit maximum number of concurrent client connections.
  *
  * If the connection limit is reached, a DTLS alert "internal_error" is returned
- * to the client. The client sdk returns NABTO_CLIENT_EC_DEVICE_INTERNAL_ERROR.
+ * to the client. The client sdk returns `NABTO_CLIENT_EC_DEVICE_INTERNAL_ERROR`.
  *
  * Dtls "internal_error" is defined in RFC 8446 as
  *
@@ -2252,7 +2252,7 @@ nabto_device_limit_connections(NabtoDevice* device, size_t limit);
  * allowed number of concurrent requests.
  *
  * If the limit is reached the clients coap requests will fail with coap status
- * SERVICE_UNAVAILABLE 5.03 with an appropriate error description.
+ * `SERVICE_UNAVAILABLE 5.03` with an appropriate error description.
  *
  * @param device [in]  The device.
  * @param limit [in]  The maximum number of concurrent coap server requests.
@@ -2267,10 +2267,10 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
  * Tcp tunnel connections are opened when a TCP connection is established
  * through a TCP tunnel.
  *
- * If the limit is reached new TCP tunnels can still be created by the clients
- * as they do not create a connection imediately.
+ * If the limit is reached, new TCP tunnels can still be created by the clients
+ * as they do not create a connection immediately.
  *
- * If the limit is decreased after TCP tunnel connections has been made, the
+ * If the limit is decreased after TCP tunnel connections have been made, the
  * existing tcp tunnel connections are not closed but new TCP tunnel connections
  * will be subject to the limit and old tcp tunnel connections count towards the
  * limit.
