@@ -1855,8 +1855,7 @@ nabto_device_future_error_code(NabtoDeviceFuture* future);
  * Listeners are created and freed through this general API. Once created, a listener is initialized
  * for use with a specific purpose, e.g. to listen for [incoming coap
  * requests](/developer/api-reference/embedded-device-sdk/coap/nabto_device_coap_init_listener.html),
- * [incoming stream
- * requests](/developer/api-reference/embedded-device-sdk/streams/nabto_device_stream_init_listener.html)
+ * [incoming requests](/developer/api-reference/embedded-device-sdk/streams/nabto_device_stream_init_listener.html)
  * or [general device
  * events](/developer/api-reference/embedded-device-sdk/context/nabto_device_device_events_init_listener.html).
  */
