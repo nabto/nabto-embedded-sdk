@@ -1,10 +1,7 @@
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake-scripts/nabto_version.cmake")
 cmake_policy(SET CMP0007 NEW)
-file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION.txt" version_from_file)
 
-list(GET version_from_file 0 master_version)
-
-nabto_version(${master_version} version_out version_error)
+nabto_version(version_out version_error)
 
 if (NOT version_out)
   if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/nc_version.c)

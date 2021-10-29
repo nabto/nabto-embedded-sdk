@@ -1,9 +1,0 @@
-5.8.0
-
-The first line in this file is the current master version. Whenever a release is
-made, this number should be bumped to the next major/minor version candidate
-which is being worked on.
-
-This version number is used in master and feature branches. Release branches
-gets their version from their branch name and releases gets their version from the
-tag.
