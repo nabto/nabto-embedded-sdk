@@ -554,6 +554,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
         device_ = device;
 
+        fflush(stdout); // flush all printed messages during the startup
+
         // Wait for the user to press Ctrl-C
         signal(SIGINT, &signal_handler);
 
