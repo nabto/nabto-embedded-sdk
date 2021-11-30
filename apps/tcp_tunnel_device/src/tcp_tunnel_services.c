@@ -2,12 +2,9 @@
 
 #include <apps/common/json_config.h>
 
-#include <cjson/cJSON.h>
-
 #include <stdlib.h>
 #include <string.h>
 
-static bool create_default_services_file(const char* servicesFile);
 static bool load_services_from_json(struct nn_vector* services, cJSON* json, struct nn_log* logger);
 static struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger);
 
@@ -30,7 +27,7 @@ void tcp_tunnel_service_free(struct tcp_tunnel_service* service)
 bool load_tcp_tunnel_services(struct nn_vector* services, const char* servicesFile, struct nn_log* logger)
 {
     if (!json_config_exists(servicesFile)) {
-        if (!create_default_services_file(servicesFile)) {
+        if (!tcp_tunnel_create_default_services_file(servicesFile)) {
             NN_LOG_ERROR(logger, LOGM, "Cannot create default services file");
             return false;
         }
@@ -98,7 +95,7 @@ struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger)
 }
 
 
-cJSON* service_as_json(struct tcp_tunnel_service* service)
+cJSON* tcp_tunnel_service_as_json(struct tcp_tunnel_service* service)
 {
     cJSON* root = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "Id", cJSON_CreateString(service->id));
@@ -108,7 +105,7 @@ cJSON* service_as_json(struct tcp_tunnel_service* service)
     return root;
 }
 
-bool create_default_services_file(const char* servicesFile)
+bool tcp_tunnel_create_default_services_file(const char* servicesFile)
 {
     cJSON* root = cJSON_CreateArray();
 
@@ -119,7 +116,7 @@ bool create_default_services_file(const char* servicesFile)
     ssh.host = "127.0.0.1";
     ssh.port = 22;
 
-    cJSON_AddItemToArray(root, service_as_json(&ssh));
+    cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(&ssh));
 
     return json_config_save(servicesFile, root);
 }
