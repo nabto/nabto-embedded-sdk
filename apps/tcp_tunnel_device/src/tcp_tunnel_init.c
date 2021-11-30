@@ -261,7 +261,7 @@ bool createService(cJSON* root)
     char id[20];
     char host[20];
     uint16_t port;
-    printf("Service ID (max 20chars): ");
+    printf("Service ID (max 20 characters): ");
     if (scanf("%20s", id) != 1) {
         char i=0;
         while (i != '\n') { (void)scanf("%c", &i); }
@@ -269,7 +269,7 @@ bool createService(cJSON* root)
         return false;
     }
 
-    printf("Service Host (max 20chars): ");
+    printf("Service Host (max 20 characters) (e.g. 127.0.0.1): ");
     if (scanf("%20s", host) != 1) {
         char i=0;
         while (i != '\n') { (void)scanf("%c", &i); }
