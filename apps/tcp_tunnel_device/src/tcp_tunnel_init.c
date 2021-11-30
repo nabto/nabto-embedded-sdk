@@ -91,8 +91,8 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
             printf("Could not create the service configuration %s" NEWLINE, tcpTunnel->servicesFile);
             return false;
         }
-        printf(NEWLINE);
     }
+    printf(NEWLINE);
 
     return true;
 }

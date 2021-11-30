@@ -346,6 +346,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             char* deviceFingerprint;
             nabto_device_get_device_fingerprint(device, &deviceFingerprint);
             printf("The configuration and state has been initialized" NEWLINE);
+            printf("The Fingerprint must be configured for this device in the Nabto Cloud Console before it will be allowed to attach to the Basestation. If you want to reuse an already configured fingerprint, you can copy the corresponding private key to %s" NEWLINE, tunnel->privateKeyFile);
             printf("The device Fingerprint is: %s" NEWLINE, deviceFingerprint);
             return true;
         }
