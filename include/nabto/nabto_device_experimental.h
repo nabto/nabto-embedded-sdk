@@ -55,6 +55,20 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
 
+
+/**
+ * Crypto Speed test
+ *
+ * this test the performance of some of the crucial crypto operations used in
+ * the nabto platform. The speedtest prints the result using info log
+ * statements. The timing information relies on the underlying timestamp
+ * integration which is not neccessary guaranteed to be super precise so use the
+ * result wisely.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_crypto_speed_test(NabtoDevice* device);
+
+
 #ifdef __cplusplus
 } // extern c #endif
 #endif
