@@ -120,6 +120,7 @@ void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* dat
     printf("%02u.%02u %s(%03u)[%s] %s\n",
            seconds, milliseconds,
            fileTmp, msg->line, level, msg->message);
+    fflush(stdout);
 }
 
 const char* NABTO_DEVICE_API
