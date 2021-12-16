@@ -111,12 +111,6 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
-    if (pl->localIp.mptr == NULL) {
-        NABTO_LOG_ERROR(LOG, "Failed to initialize platform, missing localIp module");
-        nabto_device_new_resolve_failure(dev);
-        return NULL;
-    }
-
     nabto_device_authorization_init_module(dev);
 
     ec = nc_device_init(&dev->core, &dev->pl);
