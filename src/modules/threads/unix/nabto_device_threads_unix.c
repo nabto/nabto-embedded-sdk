@@ -30,7 +30,7 @@ struct nabto_device_thread* nabto_device_threads_create_thread()
 
 struct nabto_device_mutex* nabto_device_threads_create_mutex()
 {
-    struct nabto_device_mutex* mut = (struct nabto_device_mutex*)malloc(sizeof(struct nabto_device_mutex));
+    struct nabto_device_mutex* mut = (struct nabto_device_mutex*)calloc(1, sizeof(struct nabto_device_mutex));
     if (mut == NULL) {
         return NULL;
     }
@@ -43,7 +43,7 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
 
 struct nabto_device_condition* nabto_device_threads_create_condition()
 {
-    struct nabto_device_condition* cond = (struct nabto_device_condition*)malloc(sizeof(struct nabto_device_condition));
+    struct nabto_device_condition* cond = (struct nabto_device_condition*)calloc(1, sizeof(struct nabto_device_condition));
     if (cond == NULL) {
         return NULL;
     }

@@ -138,7 +138,7 @@ void list_services_iam(bool allow, void* userData1, void* userData2, void* userD
     }
 
     size_t bufferSize = encode_services_list(tunnels, NULL, 0);
-    uint8_t* buffer = malloc(bufferSize);
+    uint8_t* buffer = calloc(1, bufferSize);
     if (buffer == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
         nabto_coap_server_request_free(request);
@@ -219,7 +219,7 @@ void get_service_iam(bool allow, void* userData1, void* userData2, void* userDat
     }
 
     size_t bufferSize = encode_service(service, NULL, 0);
-    uint8_t* buffer = malloc(bufferSize);
+    uint8_t* buffer = calloc(1, bufferSize);
     if (buffer == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
         nabto_coap_server_request_free(request);

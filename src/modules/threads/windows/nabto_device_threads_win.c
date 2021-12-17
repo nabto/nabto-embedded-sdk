@@ -26,7 +26,7 @@ struct nabto_device_condition {
 
 struct nabto_device_thread* nabto_device_threads_create_thread()
 {
-    struct nabto_device_thread* thread = (struct nabto_device_thread*)malloc(sizeof(struct nabto_device_thread));
+    struct nabto_device_thread* thread = (struct nabto_device_thread*)calloc(1, sizeof(struct nabto_device_thread));
     if (thread == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
         return NULL;
@@ -37,7 +37,7 @@ struct nabto_device_thread* nabto_device_threads_create_thread()
 
 struct nabto_device_mutex* nabto_device_threads_create_mutex()
 {
-    struct nabto_device_mutex* mutex = (struct nabto_device_mutex*)malloc(sizeof(struct nabto_device_mutex));
+    struct nabto_device_mutex* mutex = (struct nabto_device_mutex*)calloc(1, sizeof(struct nabto_device_mutex));
     if (mutex == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate mutex");
         return NULL;
@@ -48,7 +48,7 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
 
 struct nabto_device_condition* nabto_device_threads_create_condition()
 {
-    struct nabto_device_condition* cond = (struct nabto_device_condition*)malloc(sizeof(struct nabto_device_condition));
+    struct nabto_device_condition* cond = (struct nabto_device_condition*)calloc(1, sizeof(struct nabto_device_condition));
     if (cond == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate condition");
         return NULL;

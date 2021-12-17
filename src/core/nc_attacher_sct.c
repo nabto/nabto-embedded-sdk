@@ -38,7 +38,7 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
         cbor_encoder_init(&encoder, NULL, 0, 0);
         bufferSize = encode_scts(&encoder, &sctCtx->scts);
     }
-    uint8_t* buffer = malloc(bufferSize);
+    uint8_t* buffer = calloc(1, bufferSize);
     if (!buffer) {
         return NABTO_EC_OUT_OF_MEMORY;
     }

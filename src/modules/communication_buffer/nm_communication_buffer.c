@@ -34,12 +34,12 @@ void nm_communication_buffer_init(struct np_platform* pl)
 
 struct np_communication_buffer* buf_allocate()
 {
-    struct np_communication_buffer* buf = (struct np_communication_buffer*)malloc(sizeof(struct np_communication_buffer));
+    struct np_communication_buffer* buf = (struct np_communication_buffer*)calloc(1, sizeof(struct np_communication_buffer));
     if (!buf) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer structure");
         return NULL;
     }
-    buf->buf = (uint8_t*)malloc(NABTO_COMMUNICATION_BUFFER_LENGTH);
+    buf->buf = (uint8_t*)calloc(1, NABTO_COMMUNICATION_BUFFER_LENGTH);
     if (!buf->buf) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer");
         free(buf);

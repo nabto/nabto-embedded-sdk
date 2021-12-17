@@ -432,11 +432,10 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
 static char* toHex(uint8_t* data, size_t dataLength)
 {
     size_t outputLength = dataLength*2 + 1;
-    char* output = (char*)malloc(outputLength);
+    char* output = (char*)calloc(1, outputLength);
     if (output == NULL) {
         return output;
     }
-    memset(output,0,outputLength);
     size_t i;
     for (i = 0; i < dataLength; i++) {
         size_t outputOffset = i*2;

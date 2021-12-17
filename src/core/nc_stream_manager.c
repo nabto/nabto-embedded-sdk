@@ -281,7 +281,7 @@ struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc
     if (seg == NULL) {
         return NULL;
     }
-    uint8_t* buf = (uint8_t*)malloc(bufferSize);
+    uint8_t* buf = (uint8_t*)calloc(1, bufferSize);
     if (buf == NULL) {
         free(seg);
         return NULL;
@@ -312,7 +312,7 @@ struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc
     if (seg == NULL) {
         return NULL;
     }
-    uint8_t* buf = (uint8_t*)malloc(bufferSize);
+    uint8_t* buf = (uint8_t*)calloc(1, bufferSize);
     if (buf == NULL) {
         free(seg);
         return NULL;

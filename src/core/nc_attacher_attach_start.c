@@ -40,7 +40,7 @@ np_error_code nc_attacher_attach_start_request(
         bufferSize = encode_cbor_request(&encoder, ctx);
     }
 
-    uint8_t* buffer = malloc(bufferSize);
+    uint8_t* buffer = calloc(1, bufferSize);
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }

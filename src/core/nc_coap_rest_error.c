@@ -49,8 +49,7 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         size_t payloadLength;
         if(nabto_coap_client_response_get_payload(response, &payload, &payloadLength)) {
             if (payloadLength < 1024) {
-                error->message = malloc(payloadLength+1);
-                memset(error->message, 0, payloadLength+1);
+                error->message = calloc(1, payloadLength+1);
                 memcpy(error->message, payload, payloadLength);
             }
         }

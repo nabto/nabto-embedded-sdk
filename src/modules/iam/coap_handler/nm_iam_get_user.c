@@ -41,7 +41,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     size_t payloadSize = nm_iam_cbor_encode_user(user, NULL, 0);
-    uint8_t* payload = malloc(payloadSize);
+    uint8_t* payload = calloc(1, payloadSize);
     if (payload == NULL) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         return;

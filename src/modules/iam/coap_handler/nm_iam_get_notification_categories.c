@@ -37,7 +37,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     size_t payloadSize = encode_categories(handler->iam, NULL, 0);
-    uint8_t* payload = malloc(payloadSize);
+    uint8_t* payload = calloc(1, payloadSize);
     if (payload == NULL) {
         return;
     }

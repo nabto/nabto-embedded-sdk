@@ -241,7 +241,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
 {
     struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)userData;
     struct nabto_device_context* dev = resource->dev;
-    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)malloc(sizeof(struct nabto_device_coap_request));
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)calloc(1, sizeof(struct nabto_device_coap_request));
 
     if (req == NULL) {
         // ignore errors, we cannot do more than set the listener error code which is already done

@@ -70,7 +70,7 @@ nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* servic
         free(s->serviceInvoke.serviceInvokeRequest.message);
     }
 
-    s->serviceInvoke.serviceInvokeRequest.message = malloc(messageLength);
+    s->serviceInvoke.serviceInvokeRequest.message = calloc(1, messageLength);
     if (s->serviceInvoke.serviceInvokeRequest.message == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {

@@ -59,7 +59,7 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     }
 
     size_t payloadSize = encode_response(ctx, NULL, 0);
-    uint8_t* payload = malloc(payloadSize);
+    uint8_t* payload = calloc(1, payloadSize);
     if (payload == NULL) {
         nabto_device_coap_error_response(ctx->req, 500, "Insufficient resources");
         nabto_device_fcm_notification_free(ctx->msg);
