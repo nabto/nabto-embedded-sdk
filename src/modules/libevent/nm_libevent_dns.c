@@ -6,6 +6,7 @@
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
 #include <platform/np_error_code.h>
+#include <platform/np_heap.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -78,7 +79,7 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
         }
     }
 
-    struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
+    struct nm_dns_request* dnsRequest = np_calloc(1, sizeof(struct nm_dns_request));
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
@@ -124,7 +125,7 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
         }
     }
 
-    struct nm_dns_request* dnsRequest = calloc(1, sizeof(struct nm_dns_request));
+    struct nm_dns_request* dnsRequest = np_calloc(1, sizeof(struct nm_dns_request));
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
@@ -185,5 +186,5 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     if (origRes != NULL) {
         evutil_freeaddrinfo(origRes);
     }
-    free(ctx);
+    np_free(ctx);
 }

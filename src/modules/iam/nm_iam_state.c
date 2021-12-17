@@ -1,11 +1,13 @@
 #include "nm_iam_state.h"
 #include "nm_iam_user.h"
 
+#include <platform/np_heap.h>
+
 #include <string.h>
 
 struct nm_iam_state* nm_iam_state_new()
 {
-    struct nm_iam_state* s = calloc(1, sizeof(struct nm_iam_state));
+    struct nm_iam_state* s = np_calloc(1, sizeof(struct nm_iam_state));
     if (s == NULL) {
         return NULL;
     }
@@ -29,23 +31,23 @@ void nm_iam_state_free(struct nm_iam_state* state)
     }
 
     nn_llist_deinit(&state->users);
-    free(state->passwordOpenPassword);
-    free(state->passwordOpenSct);
-    free(state->openPairingRole);
-    free(state->initialPairingUsername);
-    free(state);
+    np_free(state->passwordOpenPassword);
+    np_free(state->passwordOpenSct);
+    np_free(state->openPairingRole);
+    np_free(state->initialPairingUsername);
+    np_free(state);
 }
 
 bool nm_iam_state_set_password_open_password(struct nm_iam_state* state, const char* password)
 {
     if (password == NULL) {
-        free(state->passwordOpenPassword);
+        np_free(state->passwordOpenPassword);
         state->passwordOpenPassword = NULL;
         return true;
     }
     char* tmp = strdup(password);
     if (tmp != NULL) {
-        free(state->passwordOpenPassword);
+        np_free(state->passwordOpenPassword);
         state->passwordOpenPassword = tmp;
     }
     return (tmp != 0);
@@ -55,13 +57,13 @@ bool nm_iam_state_set_password_open_password(struct nm_iam_state* state, const c
 bool nm_iam_state_set_password_open_sct(struct nm_iam_state* state, const char* sct)
 {
     if (sct == NULL) {
-        free(state->passwordOpenSct);
+        np_free(state->passwordOpenSct);
         state->passwordOpenSct = NULL;
         return true;
     }
     char* tmp = strdup(sct);
     if (tmp != NULL) {
-        free(state->passwordOpenSct);
+        np_free(state->passwordOpenSct);
         state->passwordOpenSct = tmp;
     }
     return (tmp != 0);
@@ -89,13 +91,13 @@ void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b)
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* username)
 {
     if (username == NULL) {
-        free(state->initialPairingUsername);
+        np_free(state->initialPairingUsername);
         state->initialPairingUsername = NULL;
         return true;
     }
     char* tmp = strdup(username);
     if (tmp != NULL) {
-        free(state->initialPairingUsername);
+        np_free(state->initialPairingUsername);
         state->initialPairingUsername = tmp;
     }
     return (tmp != 0);
@@ -103,13 +105,13 @@ bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const
 bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* role)
 {
     if (role == NULL) {
-        free(state->openPairingRole);
+        np_free(state->openPairingRole);
         state->openPairingRole = NULL;
         return true;
     }
     char* tmp = strdup(role);
     if (tmp != NULL) {
-        free(state->openPairingRole);
+        np_free(state->openPairingRole);
         state->openPairingRole = tmp;
     }
     return (tmp != 0);

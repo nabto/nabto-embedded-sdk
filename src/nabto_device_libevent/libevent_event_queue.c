@@ -4,6 +4,7 @@
 #include <api/nabto_device_future.h>
 
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #include <stdlib.h>
 
@@ -47,7 +48,7 @@ static struct np_event_queue_functions module = {
 
 struct np_event_queue libevent_event_queue_create(struct event_base* eventBase, struct nabto_device_mutex* mutex)
 {
-    struct libevent_event_queue* eq = calloc(1, sizeof(struct libevent_event_queue));
+    struct libevent_event_queue* eq = np_calloc(1, sizeof(struct libevent_event_queue));
     eq->eventBase = eventBase;
     eq->mutex = mutex;
     struct np_event_queue obj;
@@ -58,7 +59,7 @@ struct np_event_queue libevent_event_queue_create(struct event_base* eventBase, 
 
 void libevent_event_queue_destroy(struct np_event_queue* obj)
 {
-    free(obj->data);
+    np_free(obj->data);
 }
 
 void handle_event(evutil_socket_t s, short events, void* data)
@@ -76,7 +77,7 @@ void handle_event(evutil_socket_t s, short events, void* data)
 
 np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event)
 {
-    struct np_event* ev = calloc(1, sizeof(struct np_event));
+    struct np_event* ev = np_calloc(1, sizeof(struct np_event));
     if (ev == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -95,7 +96,7 @@ np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbD
 void destroy(struct np_event* event)
 {
     cancel(event);
-    free(event);
+    np_free(event);
 }
 
 void post(struct np_event* event)

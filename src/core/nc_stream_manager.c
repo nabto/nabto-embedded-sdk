@@ -5,6 +5,7 @@
 #include <core/nc_client_connection.h>
 
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #include <streaming/nabto_stream_log_helper.h>
 
@@ -175,7 +176,7 @@ struct nc_stream_context* nc_stream_manager_alloc_stream(struct nc_stream_manage
     if (ctx->currentStreams >= ctx->maxStreams) {
         return NULL;
     }
-    struct nc_stream_context* stream = (struct nc_stream_context*)calloc(1, sizeof(struct nc_stream_context));
+    struct nc_stream_context* stream = (struct nc_stream_context*)np_calloc(1, sizeof(struct nc_stream_context));
 
     if (stream == NULL) {
         return NULL;
@@ -190,7 +191,7 @@ void nc_stream_manager_free_stream(struct nc_stream_context* stream)
 {
     struct nc_stream_manager_context* ctx = stream->streamManager;
     ctx->currentStreams--;
-    free(stream);
+    np_free(stream);
 }
 
 void nc_stream_manager_stream_remove(struct nc_stream_context* stream)
@@ -277,13 +278,13 @@ struct nabto_stream_send_segment* nc_stream_manager_alloc_send_segment(struct nc
         return NULL;
     }
 
-    struct nabto_stream_send_segment* seg = calloc(1, sizeof(struct nabto_stream_send_segment));
+    struct nabto_stream_send_segment* seg = np_calloc(1, sizeof(struct nabto_stream_send_segment));
     if (seg == NULL) {
         return NULL;
     }
-    uint8_t* buf = (uint8_t*)calloc(1, bufferSize);
+    uint8_t* buf = (uint8_t*)np_calloc(1, bufferSize);
     if (buf == NULL) {
-        free(seg);
+        np_free(seg);
         return NULL;
     }
     seg->buf = buf;
@@ -298,8 +299,8 @@ void nc_stream_manager_free_send_segment(struct nc_stream_manager_context* ctx, 
         return;
     }
     ctx->allocatedSegments--;
-    free(segment->buf);
-    free(segment);
+    np_free(segment->buf);
+    np_free(segment);
 }
 
 struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc_stream_manager_context* ctx, size_t bufferSize)
@@ -308,13 +309,13 @@ struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc
         return NULL;
     }
 
-    struct nabto_stream_recv_segment* seg = calloc(1, sizeof(struct nabto_stream_recv_segment));
+    struct nabto_stream_recv_segment* seg = np_calloc(1, sizeof(struct nabto_stream_recv_segment));
     if (seg == NULL) {
         return NULL;
     }
-    uint8_t* buf = (uint8_t*)calloc(1, bufferSize);
+    uint8_t* buf = (uint8_t*)np_calloc(1, bufferSize);
     if (buf == NULL) {
-        free(seg);
+        np_free(seg);
         return NULL;
     }
     seg->buf = buf;
@@ -329,8 +330,8 @@ void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, 
         return;
     }
     ctx->allocatedSegments--;
-    free(segment->buf);
-    free(segment);
+    np_free(segment->buf);
+    np_free(segment);
 }
 
 void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* connection)

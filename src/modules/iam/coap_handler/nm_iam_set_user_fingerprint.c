@@ -5,6 +5,8 @@
 
 #include <stdlib.h>
 
+#include <platform/np_heap.h>
+
 #include <cbor.h>
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
@@ -37,7 +39,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserFingerprint", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
-        free(fp);
+        np_free(fp);
         nn_string_map_deinit(&attributes);
         return;
     }
@@ -45,22 +47,22 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (nm_iam_internal_find_user_by_fingerprint(handler->iam, fp) != NULL) {
         nabto_device_coap_error_response(request, 409, "Conflict");
-        free(fp);
+        np_free(fp);
         return;
     }
     struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, NULL);
-        free(fp);
+        np_free(fp);
         return;
     }
     if (!nm_iam_user_set_fingerprint(user, fp)) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
-        free(fp);
+        np_free(fp);
         return;
     }
     nm_iam_internal_state_has_changed(handler->iam);
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
-    free(fp);
+    np_free(fp);
 }

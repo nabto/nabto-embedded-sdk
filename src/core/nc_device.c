@@ -1,6 +1,7 @@
 #include "nc_device.h"
 #include <platform/np_logging.h>
 #include <platform/np_mdns_wrapper.h>
+#include <platform/np_heap.h>
 #include <nn/llist.h>
 
 #define LOG NABTO_LOG_MODULE_CORE
@@ -156,18 +157,18 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     nn_string_set_deinit(&device->mdnsSubtypes);
     nn_string_map_deinit(&device->mdnsTxtItems);
-    free(device->mdnsInstanceName);
+    np_free(device->mdnsInstanceName);
 
     nc_udp_dispatch_deinit(&device->udp);
     nc_udp_dispatch_deinit(&device->localUdp);
     nc_udp_dispatch_deinit(&device->secondaryUdp);
     np_completion_event_deinit(&device->socketBoundCompletionEvent);
 
-    free(device->productId);
-    free(device->deviceId);
-    free(device->appName);
-    free(device->appVersion);
-    free(device->hostname);
+    np_free(device->productId);
+    np_free(device->deviceId);
+    np_free(device->appName);
+    np_free(device->appVersion);
+    np_free(device->hostname);
 }
 
 void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec)
@@ -350,7 +351,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     }
 
     if (dev->hostname == NULL) {
-        dev->hostname = calloc(1, strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
+        dev->hostname = np_calloc(1, strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
         if (dev->hostname == NULL) {
             return NABTO_EC_OUT_OF_MEMORY;
         }
@@ -529,7 +530,7 @@ np_error_code nc_device_is_server_connect_tokens_synchronized(struct nc_device_c
 
 np_error_code nc_device_set_app_name(struct nc_device_context* dev, const char* name)
 {
-    free(dev->appName);
+    np_free(dev->appName);
     dev->appName = strdup(name);
     if (dev->appName == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -544,7 +545,7 @@ const char* nc_device_get_app_name(struct nc_device_context* dev)
 
 np_error_code nc_device_set_app_version(struct nc_device_context* dev, const char* version)
 {
-    free(dev->appVersion);
+    np_free(dev->appVersion);
     dev->appVersion = strdup(version);
     if (dev->appVersion == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -560,7 +561,7 @@ const char* nc_device_get_app_version(struct nc_device_context* dev)
 
 np_error_code nc_device_set_product_id(struct nc_device_context* dev, const char* productId)
 {
-    free(dev->productId);
+    np_free(dev->productId);
     dev->productId = strdup(productId);
     if (dev->productId == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -570,7 +571,7 @@ np_error_code nc_device_set_product_id(struct nc_device_context* dev, const char
 
 np_error_code nc_device_set_device_id(struct nc_device_context* dev, const char* deviceId)
 {
-    free(dev->deviceId);
+    np_free(dev->deviceId);
     dev->deviceId = strdup(deviceId);
     if (dev->deviceId == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -580,7 +581,7 @@ np_error_code nc_device_set_device_id(struct nc_device_context* dev, const char*
 
 np_error_code nc_device_set_server_url(struct nc_device_context* dev, const char* serverUrl)
 {
-    free(dev->hostname);
+    np_free(dev->hostname);
     dev->hostname = strdup(serverUrl);
     if (dev->hostname == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;

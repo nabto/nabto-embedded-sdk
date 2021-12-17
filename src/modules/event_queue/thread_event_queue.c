@@ -3,6 +3,7 @@
 #include <modules/event_queue/nm_event_queue.h>
 
 #include <platform/np_timestamp_wrapper.h>
+#include <platform/np_heap.h>
 
 #include <stdlib.h>
 
@@ -88,7 +89,7 @@ void thread_event_queue_stop_blocking(struct thread_event_queue* queue)
 
 np_error_code create_event(struct np_event_queue* obj, np_event_callback cb, void* cbData, struct np_event** event)
 {
-    struct np_event* ev = calloc(1, sizeof(struct np_event));
+    struct np_event* ev = np_calloc(1, sizeof(struct np_event));
     if (ev == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -103,7 +104,7 @@ void destroy_event(struct np_event* event)
     struct thread_event_queue* eq = event->queue;
     nabto_device_threads_mutex_lock(eq->queueMutex);
     nm_event_queue_event_deinit(&event->event);
-    free(event);
+    np_free(event);
     nabto_device_threads_mutex_unlock(eq->queueMutex);
 }
 

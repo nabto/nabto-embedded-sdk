@@ -1,6 +1,7 @@
 #include "nc_spake2.h"
 #include "nc_client_connection.h"
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 
 #include <mbedtls/sha256.h>
@@ -64,7 +65,7 @@ np_error_code nc_spake2_set_password_request_callback(struct nc_spake2_module* m
 
 struct nc_spake2_password_request* nc_spake2_password_request_new()
 {
-    struct nc_spake2_password_request* passwordRequest = calloc(1, sizeof(struct nc_spake2_password_request));
+    struct nc_spake2_password_request* passwordRequest = np_calloc(1, sizeof(struct nc_spake2_password_request));
     if (passwordRequest == NULL) {
         return NULL;
     }
@@ -81,7 +82,7 @@ void nc_spake2_password_request_free(struct nc_spake2_password_request* password
     }
     mbedtls_ecp_point_free(&passwordRequest->T);
     mbedtls_ecp_group_free(&passwordRequest->grp);
-    free(passwordRequest);
+    np_free(passwordRequest);
 }
 
 void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char* password)

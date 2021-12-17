@@ -9,6 +9,7 @@
 #include <api/nabto_device_error.h>
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #include <stdlib.h>
 
@@ -25,7 +26,7 @@ nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* device
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    struct nabto_device_coap_resource* res = calloc(1,sizeof(struct nabto_device_coap_resource));
+    struct nabto_device_coap_resource* res = np_calloc(1,sizeof(struct nabto_device_coap_resource));
     if (res == NULL) {
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
@@ -35,13 +36,13 @@ nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* device
     nabto_device_threads_mutex_lock(dev->eventMutex);
     ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_COAP, &nabto_device_coap_listener_callback, res);
     if (ec) {
-        free(res);
+        np_free(res);
     } else {
         res->listener = listener;
 
         nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(&dev->core.coapServer), nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res, &res->resource);
         if (err != NABTO_COAP_ERROR_OK) {
-            free(res);
+            np_free(res);
             ec = nc_coap_error_to_core(err);
         }
     }
@@ -88,7 +89,7 @@ void NABTO_DEVICE_API nabto_device_coap_request_free(NabtoDeviceCoapRequest* req
     struct nabto_device_context* dev = req->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     nabto_coap_server_request_free(req->req);
-    free(req);
+    np_free(req);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
@@ -219,19 +220,19 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
             retEc = NABTO_EC_UNKNOWN;
             // If this fails we should just keep cleaning up
             nabto_coap_server_send_error_response(req->req, (nabto_coap_code)(NABTO_COAP_CODE(5,03)), "Handler unavailable");
-            free(req);
+            np_free(req);
         }
         // using the coap request structure as event structure means it will be freed when user sends the response
     } else if (ec == NABTO_EC_ABORTED) {
         retEc = ec;
         nabto_coap_server_remove_resource(res->resource);
-        free(res);
+        np_free(res);
     } else {
         // In error state requests on the listener queue will not reach the user, so they cant resolve the request
         struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)eventData;
         // if this fails we should just keep cleaning up
         nabto_coap_server_send_error_response(req->req, (nabto_coap_code)(NABTO_COAP_CODE(5,03)), "Handler unavailable");
-        free(req);
+        np_free(req);
         retEc = ec;
     }
     return retEc;
@@ -241,7 +242,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
 {
     struct nabto_device_coap_resource* resource = (struct nabto_device_coap_resource*)userData;
     struct nabto_device_context* dev = resource->dev;
-    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)calloc(1, sizeof(struct nabto_device_coap_request));
+    struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)np_calloc(1, sizeof(struct nabto_device_coap_request));
 
     if (req == NULL) {
         // ignore errors, we cannot do more than set the listener error code which is already done
@@ -262,7 +263,7 @@ void nabto_device_coap_resource_handler(struct nabto_coap_server_request* reques
             // since we are out of resources, this probably fails. Either way we keep cleaning up
             nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), "Insufficient resources");
             nabto_coap_server_request_free(request);
-            free(req);
+            np_free(req);
         }
     }
 }

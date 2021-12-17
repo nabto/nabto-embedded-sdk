@@ -1,5 +1,7 @@
 #include "nm_condition.h"
 
+#include <platform/np_heap.h>
+
 #include <nn/string_map.h>
 
 #include <stdlib.h>
@@ -10,7 +12,7 @@ static bool resolve_value(const struct nn_string_map* attributes, const char* va
 
 struct nm_iam_condition* nm_condition_new(enum nm_iam_condition_operator op)
 {
-    struct nm_iam_condition* c = calloc(1, sizeof(struct nm_iam_condition));
+    struct nm_iam_condition* c = np_calloc(1, sizeof(struct nm_iam_condition));
     if (c == NULL) {
         return NULL;
     }
@@ -34,7 +36,7 @@ struct nm_iam_condition* nm_condition_new_with_key(enum nm_iam_condition_operato
 void nm_condition_free(struct nm_iam_condition* condition)
 {
     nm_condition_deinit(condition);
-    free(condition);
+    np_free(condition);
 }
 
 void nm_condition_init(struct nm_iam_condition* condition)
@@ -46,7 +48,7 @@ void nm_condition_init(struct nm_iam_condition* condition)
 void nm_condition_deinit(struct nm_iam_condition* condition)
 {
     nn_string_set_deinit(&condition->values);
-    free(condition->key);
+    np_free(condition->key);
     condition->key = NULL;
 }
 

@@ -6,6 +6,8 @@
 
 #include <core/nc_attacher.h>
 
+#include <platform/np_heap.h>
+
 struct nabto_device_service_invoke {
     struct nabto_device_context* dev;
     struct nc_attacher_service_invoke_context serviceInvoke;
@@ -15,7 +17,7 @@ struct nabto_device_service_invoke {
 NabtoDeviceServiceInvocation* NABTO_DEVICE_API
 nabto_device_service_invocation_new(NabtoDevice* device)
 {
-    struct nabto_device_service_invoke* s = calloc(1, sizeof(struct nabto_device_service_invoke));
+    struct nabto_device_service_invoke* s = np_calloc(1, sizeof(struct nabto_device_service_invoke));
     if (s != NULL) {
         struct nabto_device_context* dev = (struct nabto_device_context*)device;
         s->dev = dev;
@@ -29,10 +31,10 @@ nabto_device_service_invocation_free(NabtoDeviceServiceInvocation* serviceInvoke
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    free(s->serviceInvoke.serviceInvokeRequest.serviceId);
-    free(s->serviceInvoke.serviceInvokeRequest.message);
-    free(s->serviceInvoke.serviceInvokeResponse.message);
-    free(s);
+    np_free(s->serviceInvoke.serviceInvokeRequest.serviceId);
+    np_free(s->serviceInvoke.serviceInvokeRequest.message);
+    np_free(s->serviceInvoke.serviceInvokeResponse.message);
+    np_free(s);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
@@ -45,7 +47,7 @@ nabto_device_service_invocation_set_service_id(NabtoDeviceServiceInvocation* ser
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (s->serviceInvoke.serviceInvokeRequest.serviceId != NULL) {
-        free(s->serviceInvoke.serviceInvokeRequest.serviceId);
+        np_free(s->serviceInvoke.serviceInvokeRequest.serviceId);
     }
 
     s->serviceInvoke.serviceInvokeRequest.serviceId = strdup(serviceId);
@@ -67,10 +69,10 @@ nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* servic
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (s->serviceInvoke.serviceInvokeRequest.message != NULL) {
-        free(s->serviceInvoke.serviceInvokeRequest.message);
+        np_free(s->serviceInvoke.serviceInvokeRequest.message);
     }
 
-    s->serviceInvoke.serviceInvokeRequest.message = calloc(1, messageLength);
+    s->serviceInvoke.serviceInvokeRequest.message = np_calloc(1, messageLength);
     if (s->serviceInvoke.serviceInvokeRequest.message == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {

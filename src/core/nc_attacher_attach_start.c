@@ -3,6 +3,7 @@
 #include <core/nc_coap_rest_error.h>
 #include <core/nc_version.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 #include <stdlib.h>
 
 #include "nc_attacher.h"
@@ -40,7 +41,7 @@ np_error_code nc_attacher_attach_start_request(
         bufferSize = encode_cbor_request(&encoder, ctx);
     }
 
-    uint8_t* buffer = calloc(1, bufferSize);
+    uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -51,7 +52,7 @@ np_error_code nc_attacher_attach_start_request(
         attachStartPath, &coap_attach_start_handler, ctx, ctx->dtls);
 
     if (req == NULL) {
-        free(buffer);
+        np_free(buffer);
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
@@ -74,7 +75,7 @@ np_error_code nc_attacher_attach_start_request(
         ctx->startCallbackUserData = userData;
         nabto_coap_client_request_send(req);
     }
-    free(buffer);
+    np_free(buffer);
     return ec;
 }
 

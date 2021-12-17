@@ -4,6 +4,8 @@
 #include "../nm_iam_internal.h"
 #include <nn/string_set.h>
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 static void start_listen(struct nm_iam_coap_handler* handler);
@@ -130,7 +132,7 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
         size_t nameLength;
         cbor_value_calculate_string_length (value, &nameLength);
         if (nameLength < 1024) {
-            *str = calloc(1, nameLength+1);
+            *str = np_calloc(1, nameLength+1);
             if (*str == NULL) {
                 return false;
             }
@@ -153,9 +155,9 @@ bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set)
     while(!cbor_value_at_end(&item)) {
         char* s = NULL;
         if (nm_iam_cbor_decode_string(&item, &s) && nn_string_set_insert(set, s)) {
-            free(s);
+            np_free(s);
         } else {
-            free(s);
+            np_free(s);
             return false;
         }
         cbor_value_advance(&item);

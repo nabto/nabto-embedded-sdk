@@ -5,6 +5,8 @@
 #include "../nm_iam_internal.h"
 #include "../nm_iam_pairing.h"
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
@@ -90,7 +92,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     size_t payloadSize = encode_response(handler->iam, NULL, 0, conn);
-    uint8_t* payload = calloc(1, payloadSize);
+    uint8_t* payload = np_calloc(1, payloadSize);
     if (payload == NULL) {
         return;
     }
@@ -105,5 +107,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     } else {
         nabto_device_coap_response_ready(request);
     }
-    free(payload);
+    np_free(payload);
 }

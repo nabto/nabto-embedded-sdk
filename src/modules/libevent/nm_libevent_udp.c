@@ -4,6 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_heap.h>
 
 #include <event2/util.h>
 #include <event2/event.h>
@@ -88,7 +89,7 @@ struct np_udp nm_libevent_udp_get_impl(struct nm_libevent_context* ctx)
 
 np_error_code udp_create(struct np_udp* obj, struct np_udp_socket** sock)
 {
-    struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
+    struct np_udp_socket* s = np_calloc(1, sizeof(struct np_udp_socket));
     if (s == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -150,7 +151,7 @@ void udp_destroy(struct np_udp_socket* sock)
         sock->event = NULL;
     }
     evutil_closesocket(sock->sock);
-    free(sock);
+    np_free(sock);
 }
 
 np_error_code udp_async_bind_port_ec(struct np_udp_socket* sock, uint16_t port)

@@ -4,6 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
+#include <platform/np_heap.h>
 
 #include "nabto_device_authorization.h"
 #include "nabto_device_defines.h"
@@ -30,7 +31,7 @@ static void handle_verdict(void* userData);
 
 struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action)
 {
-    struct nabto_device_authorization_request* request = calloc(1, sizeof(struct nabto_device_authorization_request));
+    struct nabto_device_authorization_request* request = np_calloc(1, sizeof(struct nabto_device_authorization_request));
     request->connectionReference = connectionRef;
     request->action = action;
     request->attributes = NULL;
@@ -41,7 +42,7 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     np_error_code ec;
     ec = np_event_queue_create_event(&pl->eq, handle_verdict, request, &request->verdictEvent);
     if (ec != NABTO_EC_OK) {
-        free(request);
+        np_free(request);
         return NULL;
     }
 
@@ -167,9 +168,9 @@ static void free_attribute(struct nabto_device_authorization_request_attribute* 
         return;
     }
 
-    free(attribute->value);
-    free(attribute->key);
-    free(attribute);
+    np_free(attribute->value);
+    np_free(attribute->key);
+    np_free(attribute);
 }
 
 
@@ -181,7 +182,7 @@ np_error_code add_string_attribute(struct np_authorization_request* request, con
 
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
 
-    struct nabto_device_authorization_request_attribute* attribute = calloc(1, sizeof(struct nabto_device_authorization_request_attribute));
+    struct nabto_device_authorization_request_attribute* attribute = np_calloc(1, sizeof(struct nabto_device_authorization_request_attribute));
 
     if (attribute == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -314,6 +315,6 @@ void nabto_device_authorization_request_ref_dec(struct nabto_device_authorizatio
         struct np_platform* pl = authReq->module->pl;
         struct np_event_queue* eq = &pl->eq;
         np_event_queue_destroy_event(eq, authReq->verdictEvent);
-        free(authReq);
+        np_free(authReq);
     }
 }

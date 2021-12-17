@@ -5,6 +5,8 @@
 #include <nn/string_map.h>
 #include <nn/llist.h>
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 
@@ -13,7 +15,7 @@ static enum nm_condition_result match_conditions(const struct nm_iam_statement* 
 
 struct nm_iam_statement* nm_statement_new(enum nm_iam_effect effect)
 {
-    struct nm_iam_statement* statement = calloc(1, sizeof(struct nm_iam_statement));
+    struct nm_iam_statement* statement = np_calloc(1, sizeof(struct nm_iam_statement));
     if (statement == NULL) {
         return NULL;
     }
@@ -38,7 +40,7 @@ void nm_statement_free(struct nm_iam_statement* statement)
     }
 
     nn_llist_deinit(&statement->conditions);
-    free(statement);
+    np_free(statement);
 }
 
 enum nm_iam_effect nm_statement_eval(const struct nm_iam_statement* statement, const char* action, const struct nn_string_map* attributes)

@@ -1,5 +1,7 @@
 #include "nm_iam_user.h"
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,11 +29,11 @@ bool nm_iam_user_validate_username(const char* username)
 struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 {
     char* username = strdup(usernameIn);
-    struct nm_iam_user* user = calloc(1, sizeof(struct nm_iam_user));
+    struct nm_iam_user* user = np_calloc(1, sizeof(struct nm_iam_user));
     // TODO: new should not validate, ensure validate is called everywhere new is used, and remove from here
     if (username == NULL || user == NULL || !nm_iam_user_validate_username(username)) {
-        free(username);
-        free(user);
+        np_free(username);
+        np_free(user);
         return NULL;
     }
 
@@ -44,29 +46,29 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 void nm_iam_user_free(struct nm_iam_user* user)
 {
     if (user != NULL) {
-        free(user->username);
-        free(user->displayName);
-        free(user->fingerprint);
-        free(user->sct);
-        free(user->role);
-        free(user->password);
-        free(user->fcmToken);
-        free(user->fcmProjectId);
+        np_free(user->username);
+        np_free(user->displayName);
+        np_free(user->fingerprint);
+        np_free(user->sct);
+        np_free(user->role);
+        np_free(user->password);
+        np_free(user->fcmToken);
+        np_free(user->fcmProjectId);
         nn_string_set_deinit(&user->notificationCategories);
-        free(user);
+        np_free(user);
     }
 }
 
 bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint)
 {
     if (fingerprint == NULL) {
-        free(user->fingerprint);
+        np_free(user->fingerprint);
         user->fingerprint = NULL;
         return true;
     }
     char* tmp = strdup(fingerprint);
     if (tmp != NULL) {
-        free(user->fingerprint);
+        np_free(user->fingerprint);
         user->fingerprint = tmp;
     }
     return (tmp != NULL);
@@ -75,13 +77,13 @@ bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerpri
 bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
 {
     if (password == NULL) {
-        free(user->password);
+        np_free(user->password);
         user->password = NULL;
         return true;
     }
     char* tmp = strdup(password);
     if (tmp != NULL) {
-        free(user->password);
+        np_free(user->password);
         user->password = tmp;
     }
     return (tmp != NULL);
@@ -90,13 +92,13 @@ bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
 bool nm_iam_user_set_fcm_token(struct nm_iam_user* user, const char* fcmToken)
 {
     if (fcmToken == NULL) {
-        free(user->fcmToken);
+        np_free(user->fcmToken);
         user->fcmToken = NULL;
         return true;
     }
     char* tmp = strdup(fcmToken);
     if (tmp != NULL) {
-        free(user->fcmToken);
+        np_free(user->fcmToken);
         user->fcmToken = tmp;
     }
     return (tmp != NULL);
@@ -105,13 +107,13 @@ bool nm_iam_user_set_fcm_token(struct nm_iam_user* user, const char* fcmToken)
 bool nm_iam_user_set_fcm_project_id(struct nm_iam_user* user, const char* projectId)
 {
     if (projectId == NULL) {
-        free(user->fcmProjectId);
+        np_free(user->fcmProjectId);
         user->fcmProjectId = NULL;
         return true;
     }
     char* tmp = strdup(projectId);
     if (tmp != NULL) {
-        free(user->fcmProjectId);
+        np_free(user->fcmProjectId);
         user->fcmProjectId = tmp;
     }
     return (tmp != NULL);
@@ -130,13 +132,13 @@ bool nm_iam_user_set_notification_categories(struct nm_iam_user* user, struct nn
 bool nm_iam_user_set_sct(struct nm_iam_user* user, const char* sct)
 {
     if (sct == NULL) {
-        free(user->sct);
+        np_free(user->sct);
         user->sct = NULL;
         return true;
     }
     char* tmp = strdup(sct);
     if (tmp != NULL) {
-        free(user->sct);
+        np_free(user->sct);
         user->sct = tmp;
     }
     return (tmp != NULL);
@@ -151,7 +153,7 @@ bool nm_iam_user_set_username(struct nm_iam_user* user, const char* username)
     if (tmp == NULL) {
         return false;
     }
-    free(user->username);
+    np_free(user->username);
     user->username = tmp;
     return true;
 }
@@ -159,7 +161,7 @@ bool nm_iam_user_set_username(struct nm_iam_user* user, const char* username)
 bool nm_iam_user_set_display_name(struct nm_iam_user* user, const char* displayName)
 {
     if (displayName == NULL) {
-        free(user->displayName);
+        np_free(user->displayName);
         user->displayName = NULL;
         return true;
     }
@@ -167,7 +169,7 @@ bool nm_iam_user_set_display_name(struct nm_iam_user* user, const char* displayN
     if (tmp == NULL) {
         return false;
     }
-    free(user->displayName);
+    np_free(user->displayName);
     user->displayName = tmp;
     return true;
 }
@@ -181,7 +183,7 @@ bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId)
     if (tmp == NULL) {
         return false;
     }
-    free(user->role);
+    np_free(user->role);
     user->role = tmp;
     return true;
 }

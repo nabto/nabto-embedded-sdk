@@ -5,6 +5,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_heap.h>
 #include <core/nc_version.h>
 
 #include <mbedtls/entropy.h>
@@ -174,7 +175,7 @@ np_error_code nm_mbedtls_srv_get_server_fingerprint(struct np_dtls_srv* server, 
 np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server)
 {
     (void)pl;
-    *server = calloc(1, sizeof(struct np_dtls_srv));
+    *server = np_calloc(1, sizeof(struct np_dtls_srv));
     if (*server == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -195,7 +196,7 @@ void nm_mbedtls_srv_destroy(struct np_dtls_srv* server)
     mbedtls_x509_crt_free( &server->publicKey );
     mbedtls_pk_free( &server->privateKey );
 
-    free(server);
+    np_free(server);
 }
 
 np_error_code nm_mbedtls_srv_set_keys(struct np_dtls_srv* server,
@@ -212,14 +213,14 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
                                             np_dtls_srv_event_handler eventHandler, void* data)
 {
     int ret;
-    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)calloc(1, sizeof(struct np_dtls_srv_connection));
+    struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)np_calloc(1, sizeof(struct np_dtls_srv_connection));
     if(!ctx) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
     ctx->sslRecvBuf = server->pl->buf.allocate();
     ctx->sslSendBuffer = server->pl->buf.allocate();
     if (!ctx->sslRecvBuf || !ctx->sslSendBuffer) {
-        free(ctx);
+        np_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
     ctx->pl = server->pl;
@@ -303,7 +304,7 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
     pl->buf.free(connection->sslRecvBuf);
     pl->buf.free(connection->sslSendBuffer);
     mbedtls_ssl_free(&connection->ssl);
-    free(connection);
+    np_free(connection);
 }
 
 np_error_code nm_mbedtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,

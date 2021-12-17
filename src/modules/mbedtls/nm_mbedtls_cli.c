@@ -4,6 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
+#include <platform/np_heap.h>
 
 #include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>
@@ -181,7 +182,7 @@ np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_c
                                  np_dtls_cli_event_handler eventHandler, void* data)
 {
     *client = NULL;
-    struct np_dtls_cli_context* ctx = calloc(1, sizeof(struct np_dtls_cli_context));
+    struct np_dtls_cli_context* ctx = np_calloc(1, sizeof(struct np_dtls_cli_context));
     if (ctx == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -328,7 +329,7 @@ void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx)
     mbedtls_ssl_config_free( &ctx->conf );
     mbedtls_ssl_free( &ctx->ssl );
 
-    free(ctx);
+    np_free(ctx);
 }
 
 void nm_mbedtls_cli_destroy(struct np_dtls_cli_context* ctx)

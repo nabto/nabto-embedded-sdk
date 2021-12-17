@@ -3,6 +3,7 @@
 #include <platform/np_util.h>
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_heap.h>
 
 
 #include <stdlib.h>
@@ -78,7 +79,7 @@ void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
     tcp_abort(sock);
     shutdown(sock->fd, SHUT_RDWR);
     close(sock->fd);
-    free(sock);
+    np_free(sock);
 
 }
 
@@ -108,7 +109,7 @@ void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 np_error_code create(struct np_tcp* obj, struct np_tcp_socket** sock)
 {
     struct nm_select_unix* selectCtx = obj->data;
-    struct np_tcp_socket* s = calloc(1,sizeof(struct np_tcp_socket));
+    struct np_tcp_socket* s = np_calloc(1,sizeof(struct np_tcp_socket));
     s->fd = -1;
     *sock = s;
     s->selectCtx = selectCtx;

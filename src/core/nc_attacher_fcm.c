@@ -3,6 +3,7 @@
 #include "nc_cbor.h"
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 #include <coap/nabto_coap_client.h>
 
 
@@ -32,14 +33,14 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
 
     size_t bufferSize = encode_request(&fcmContext->fcmRequest, NULL, 0);
 
-    uint8_t* buffer = calloc(1, bufferSize);
+    uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
     encode_request(&fcmContext->fcmRequest, buffer, bufferSize);
 
     nabto_coap_error err = nabto_coap_client_request_set_payload(fcmContext->coapRequest, buffer, bufferSize);
-    free(buffer);
+    np_free(buffer);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);
     }

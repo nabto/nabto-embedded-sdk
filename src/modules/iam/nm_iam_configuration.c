@@ -4,11 +4,13 @@
 #include "policies/nm_condition.h"
 #include "policies/nm_statement.h"
 
+#include <platform/np_heap.h>
+
 #include <string.h>
 
 struct nm_iam_configuration* nm_iam_configuration_new()
 {
-    struct nm_iam_configuration* c = calloc(1, sizeof(struct nm_iam_configuration));
+    struct nm_iam_configuration* c = np_calloc(1, sizeof(struct nm_iam_configuration));
     if (c == NULL) {
         return NULL;
     }
@@ -42,20 +44,20 @@ void nm_iam_configuration_free(struct nm_iam_configuration* conf)
 
     nn_llist_deinit(&conf->roles);
     nn_llist_deinit(&conf->policies);
-    free(conf->unpairedRole);
-    free(conf);
+    np_free(conf->unpairedRole);
+    np_free(conf);
 }
 
 bool set_string(char** dst, const char* role)
 {
     if (role == NULL) {
-        free(*dst);
+        np_free(*dst);
         *dst = NULL;
         return true;
     }
     char* tmp = strdup(role);
     if (tmp != NULL) {
-        free(*dst);
+        np_free(*dst);
         *dst = tmp;
     }
     return (tmp != 0);
@@ -92,7 +94,7 @@ struct nm_iam_statement* nm_iam_configuration_policy_create_statement(struct nm_
 {
     struct nm_iam_statement* stmt = nm_statement_new(effect);
     if(stmt == NULL || !nm_policy_add_statement(policy, stmt)) {
-        free(stmt);
+        np_free(stmt);
         return NULL;
     }
     return stmt;
@@ -107,7 +109,7 @@ struct nm_iam_condition* nm_iam_configuration_statement_create_condition(struct 
 {
     struct nm_iam_condition* c = nm_condition_new_with_key(op, key);
     if (c == NULL || !nm_statement_add_condition(statement, c)) {
-        free(c);
+        np_free(c);
         return NULL;
     }
     return c;

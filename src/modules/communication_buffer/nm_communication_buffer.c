@@ -3,6 +3,7 @@
 #include <platform/np_communication_buffer.h>
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #include <stdlib.h>
 
@@ -34,15 +35,15 @@ void nm_communication_buffer_init(struct np_platform* pl)
 
 struct np_communication_buffer* buf_allocate()
 {
-    struct np_communication_buffer* buf = (struct np_communication_buffer*)calloc(1, sizeof(struct np_communication_buffer));
+    struct np_communication_buffer* buf = (struct np_communication_buffer*)np_calloc(1, sizeof(struct np_communication_buffer));
     if (!buf) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer structure");
         return NULL;
     }
-    buf->buf = (uint8_t*)calloc(1, NABTO_COMMUNICATION_BUFFER_LENGTH);
+    buf->buf = (uint8_t*)np_calloc(1, NABTO_COMMUNICATION_BUFFER_LENGTH);
     if (!buf->buf) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate communication buffer");
-        free(buf);
+        np_free(buf);
         return NULL;
     }
     buf->size = NABTO_COMMUNICATION_BUFFER_LENGTH;
@@ -54,8 +55,8 @@ void buf_free(struct np_communication_buffer* buf)
     if (buf == NULL) {
         return;
     }
-    free(buf->buf);
-    free(buf);
+    np_free(buf->buf);
+    np_free(buf);
 }
 
 uint8_t* buf_start(struct np_communication_buffer* buf)

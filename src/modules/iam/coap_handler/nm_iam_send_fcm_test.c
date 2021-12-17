@@ -3,6 +3,8 @@
 #include "../nm_iam.h"
 #include "../nm_iam_internal.h"
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 #include <cbor.h>
@@ -52,18 +54,18 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
         NN_LOG_ERROR(ctx->handler->iam->logger, LOGM, "FCM request failed. Basestation returned: %s", nabto_device_error_get_string(ec));
         nabto_device_coap_error_response(ctx->req, 503, "Failed to send to basestation");
         nabto_device_fcm_notification_free(ctx->msg);
-        free(ctx);
+        np_free(ctx);
         nabto_device_future_free(fut);
         nm_iam_coap_handler_async_request_end(ctx->handler);
         return;
     }
 
     size_t payloadSize = encode_response(ctx, NULL, 0);
-    uint8_t* payload = calloc(1, payloadSize);
+    uint8_t* payload = np_calloc(1, payloadSize);
     if (payload == NULL) {
         nabto_device_coap_error_response(ctx->req, 500, "Insufficient resources");
         nabto_device_fcm_notification_free(ctx->msg);
-        free(ctx);
+        np_free(ctx);
         nabto_device_future_free(fut);
         nm_iam_coap_handler_async_request_end(ctx->handler);
         return;
@@ -79,10 +81,10 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     } else {
         nabto_device_coap_response_ready(ctx->req);
     }
-    free(payload);
+    np_free(payload);
     nabto_device_fcm_notification_free(ctx->msg);
     struct nm_iam_coap_handler* h = ctx->handler;
-    free(ctx);
+    np_free(ctx);
     nabto_device_future_free(fut);
     nm_iam_coap_handler_async_request_end(h);
 }
@@ -125,14 +127,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     struct nm_iam_fcm_ctx* ctx = NULL;
     char* payload = NULL;
 
-    if ((ctx = (struct nm_iam_fcm_ctx*)calloc(1, sizeof(struct nm_iam_fcm_ctx))) == NULL ||
-        (payload = calloc(1, strlen(noti1) + strlen(noti2) + strlen(user->fcmToken)+1)) == NULL ||
+    if ((ctx = (struct nm_iam_fcm_ctx*)np_calloc(1, sizeof(struct nm_iam_fcm_ctx))) == NULL ||
+        (payload = np_calloc(1, strlen(noti1) + strlen(noti2) + strlen(user->fcmToken)+1)) == NULL ||
         (ctx->msg = nabto_device_fcm_notification_new(handler->iam->device)) == NULL)
     {
         NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc. ctx: %p, payload: %p, ctx->msg: %p", ctx, payload, ctx->msg);
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
-        free(ctx);
-        free(payload);
+        np_free(ctx);
+        np_free(payload);
         nm_iam_coap_handler_async_request_end(handler);
         return;
     }
@@ -143,8 +145,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     NabtoDeviceFuture* fut = nabto_device_future_new(handler->iam->device);
     if (fut == NULL) {
         nabto_device_fcm_notification_free(ctx->msg);
-        free(ctx);
-        free(payload);
+        np_free(ctx);
+        np_free(payload);
         NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc future");
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         nm_iam_coap_handler_async_request_end(handler);
@@ -159,16 +161,16 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     if (nabto_device_fcm_notification_set_payload(ctx->msg, payload) != NABTO_DEVICE_EC_OK ||
         nabto_device_fcm_notification_set_project_id(ctx->msg, user->fcmProjectId) != NABTO_DEVICE_EC_OK)
     {
-        free(payload);
+        np_free(payload);
         nabto_device_fcm_notification_free(ctx->msg);
-        free(ctx);
+        np_free(ctx);
         nabto_device_future_free(fut);
         NN_LOG_INFO(handler->iam->logger, LOGM, "failed to set payload or project ID");
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         nm_iam_coap_handler_async_request_end(handler);
         return;
     }
-    free(payload);
+    np_free(payload);
 
     nabto_device_fcm_send(ctx->msg, fut);
     nabto_device_future_set_callback(fut, &msg_sent_callback, ctx);

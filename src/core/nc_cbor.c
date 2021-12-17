@@ -1,5 +1,7 @@
 #include "nc_cbor.h"
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 bool nc_cbor_copy_text_string(CborValue* s, char** out, size_t maxLength) {
@@ -14,7 +16,7 @@ bool nc_cbor_copy_text_string(CborValue* s, char** out, size_t maxLength) {
         return false;
     }
     length += 1; // room for null byte
-    *out = calloc(1, length+1);
+    *out = np_calloc(1, length+1);
     cbor_value_copy_text_string(s, *out, &length, NULL);
     return true;
 }
@@ -30,7 +32,7 @@ bool nc_cbor_copy_byte_string(CborValue* s, uint8_t** out, size_t* outLength, si
     if (length > maxLength) {
         return false;
     }
-    *out = calloc(1, length);
+    *out = np_calloc(1, length);
     if (*out == NULL) {
         return false;
     }

@@ -5,6 +5,8 @@
 #include "../nm_iam_user.h"
 #include "../nm_iam_internal.h"
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
@@ -47,7 +49,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
         nabto_device_coap_error_response(request, 400, "Bad request");
-        free(fingerprint);
+        np_free(fingerprint);
         return;
     }
 
@@ -76,7 +78,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         }
     }
 
-    free(fingerprint);
-    free(username);
-    free(password);
+    np_free(fingerprint);
+    np_free(username);
+    np_free(password);
 }

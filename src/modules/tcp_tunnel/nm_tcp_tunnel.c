@@ -6,6 +6,7 @@
 #include <core/nc_stream_manager.h>
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
+#include <platform/np_heap.h>
 
 #include <nn/llist.h>
 
@@ -57,7 +58,7 @@ void nm_tcp_tunnels_deinit(struct nm_tcp_tunnels* tunnels)
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels* tunnels)
 {
-    struct nm_tcp_tunnel_service* service = calloc(1, sizeof(struct nm_tcp_tunnel_service));
+    struct nm_tcp_tunnel_service* service = np_calloc(1, sizeof(struct nm_tcp_tunnel_service));
     if (service == NULL) {
         return service;
     }
@@ -98,9 +99,9 @@ np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_t
 void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service)
 {
     nn_llist_erase_node(&service->servicesListItem);
-    free(service->id);
-    free(service->type);
-    free(service);
+    np_free(service->id);
+    np_free(service->type);
+    np_free(service);
 }
 
 np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port)

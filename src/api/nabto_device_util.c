@@ -8,12 +8,14 @@
 
 #include <modules/mbedtls/nm_mbedtls_util.h>
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 
 void NABTO_DEVICE_API nabto_device_string_free(char* str)
 {
-    free(str);
+    np_free(str);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_create_private_key(NabtoDevice* device, char** privateKey)

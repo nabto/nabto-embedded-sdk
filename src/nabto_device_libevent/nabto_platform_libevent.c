@@ -17,6 +17,8 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
+#include <platform/np_heap.h>
+
 #include <stdlib.h>
 
 static void signal_event(evutil_socket_t s, short event, void* userData);
@@ -50,7 +52,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // Create a new platform object. The platform is providing all the
     // functionality which can change between the nabto_device
     // implementations.
-    struct libevent_platform* platform = calloc(1, sizeof(struct libevent_platform));
+    struct libevent_platform* platform = np_calloc(1, sizeof(struct libevent_platform));
 
 
     platform->eventBase = event_base_new();
@@ -126,7 +128,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     event_base_free(platform->eventBase);
 
     nm_libevent_global_deinit();
-    free(platform);
+    np_free(platform);
 }
 
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device)

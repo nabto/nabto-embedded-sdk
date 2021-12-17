@@ -8,6 +8,7 @@
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_completion_event.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #include <stdlib.h>
 
@@ -33,7 +34,7 @@ static void resolve_and_free_test(struct udp_test* t, np_error_code ec)
     np_completion_event_deinit(&t->completionEvent);
     np_event_queue_destroy_event(&t->eq, t->timeoutEvent);
     np_udp_destroy(&t->udp, t->sock);
-    free(t);
+    np_free(t);
 }
 
 static void timeout(void* data)
@@ -102,7 +103,7 @@ void NABTO_DEVICE_API
 nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    struct udp_test* t = calloc(1, sizeof(struct udp_test));
+    struct udp_test* t = np_calloc(1, sizeof(struct udp_test));
     if (t == NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
         return;

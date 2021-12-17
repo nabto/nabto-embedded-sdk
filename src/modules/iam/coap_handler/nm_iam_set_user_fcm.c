@@ -5,6 +5,8 @@
 
 #include <stdlib.h>
 
+#include <platform/np_heap.h>
+
 #include <cbor.h>
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
@@ -39,8 +41,8 @@ bool handle_request_data(struct nm_iam* iam, CborValue* map, struct nm_iam_user*
     } else {
         status = false;
     }
-    free(t);
-    free(p);
+    np_free(t);
+    np_free(p);
     return status;
 }
 

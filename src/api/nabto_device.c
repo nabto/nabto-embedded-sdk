@@ -12,6 +12,7 @@
 #include <api/nabto_device_error.h>
 #include <api/nabto_device_logging.h>
 #include <platform/np_error_code.h>
+#include <platform/np_heap.h>
 
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
@@ -53,7 +54,7 @@ void nabto_device_new_resolve_failure(struct nabto_device_context* dev)
  */
 NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
-    struct nabto_device_context* dev = calloc(1, sizeof(struct nabto_device_context));
+    struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));
     np_error_code ec;
     if (dev == NULL) {
         return NULL;
@@ -156,10 +157,10 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
-    free(dev->publicKey);
-    free(dev->privateKey);
+    np_free(dev->publicKey);
+    np_free(dev->privateKey);
 
-    free(dev);
+    np_free(dev);
 }
 
 /**
@@ -228,7 +229,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    free(dev->privateKey);
+    np_free(dev->privateKey);
 
     dev->privateKey = strdup(str);
     if (dev->privateKey == NULL) {
@@ -237,7 +238,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         char* crt;
         ec = nm_dtls_create_crt_from_private_key(dev->privateKey, &crt);
         if (dev->publicKey != NULL) {
-            free(dev->publicKey);
+            np_free(dev->publicKey);
             dev->publicKey = NULL;
         }
         dev->publicKey = crt;
@@ -432,7 +433,7 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
 static char* toHex(uint8_t* data, size_t dataLength)
 {
     size_t outputLength = dataLength*2 + 1;
-    char* output = (char*)calloc(1, outputLength);
+    char* output = (char*)np_calloc(1, outputLength);
     if (output == NULL) {
         return output;
     }

@@ -5,6 +5,8 @@
 #include "nm_iam_to_json.h"
 #include "nm_iam_from_json.h"
 
+#include <platform/np_heap.h>
+
 #include <cjson/cJSON.h>
 
 static const char* LOGM = "nm_iam_serializer";
@@ -270,5 +272,5 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
 
 void nm_iam_serializer_string_free(char* string)
 {
-    free(string);
+    np_free(string);
 }

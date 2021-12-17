@@ -2,6 +2,7 @@
 
 #include <platform/np_logging_defines.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #include <cbor.h>
 #include "nc_cbor.h"
@@ -49,7 +50,7 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         size_t payloadLength;
         if(nabto_coap_client_response_get_payload(response, &payload, &payloadLength)) {
             if (payloadLength < 1024) {
-                error->message = calloc(1, payloadLength+1);
+                error->message = np_calloc(1, payloadLength+1);
                 memcpy(error->message, payload, payloadLength);
             }
         }
@@ -62,5 +63,5 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
 
 void nc_coap_rest_error_deinit(struct nc_coap_rest_error* error)
 {
-    free(error->message);
+    np_free(error->message);
 }

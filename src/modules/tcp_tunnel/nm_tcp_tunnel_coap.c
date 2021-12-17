@@ -4,6 +4,7 @@
 #include <core/nc_coap_server.h>
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #include <cbor.h>
 #include <stdlib.h>
@@ -138,7 +139,7 @@ void list_services_iam(bool allow, void* userData1, void* userData2, void* userD
     }
 
     size_t bufferSize = encode_services_list(tunnels, NULL, 0);
-    uint8_t* buffer = calloc(1, bufferSize);
+    uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
         nabto_coap_server_request_free(request);
@@ -156,7 +157,7 @@ void list_services_iam(bool allow, void* userData1, void* userData2, void* userD
         nabto_coap_server_response_ready(request);
     }
     nabto_coap_server_request_free(request);
-    free(buffer);
+    np_free(buffer);
 }
 
 void get_service(struct nabto_coap_server_request* request, void* data)
@@ -219,7 +220,7 @@ void get_service_iam(bool allow, void* userData1, void* userData2, void* userDat
     }
 
     size_t bufferSize = encode_service(service, NULL, 0);
-    uint8_t* buffer = calloc(1, bufferSize);
+    uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
         nabto_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
         nabto_coap_server_request_free(request);
@@ -237,5 +238,5 @@ void get_service_iam(bool allow, void* userData1, void* userData2, void* userDat
         nabto_coap_server_response_ready(request);
     }
     nabto_coap_server_request_free(request);
-    free(buffer);
+    np_free(buffer);
 }

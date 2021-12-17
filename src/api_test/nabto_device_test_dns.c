@@ -8,6 +8,7 @@
 #include <platform/np_ip_address.h>
 #include <platform/np_completion_event.h>
 #include <platform/np_logging.h>
+#include <platform/np_heap.h>
 
 #define LOG NABTO_LOG_MODULE_TEST
 
@@ -35,7 +36,7 @@ static void resolve_and_free_test(struct dns_test* t, np_error_code ec)
 {
     nabto_device_future_resolve(t->fut, nabto_device_error_core_to_api(ec));
     np_completion_event_deinit(&t->completionEvent);
-    free(t);
+    np_free(t);
 }
 
 static void start_ipv4_test(struct dns_test* t)
@@ -99,7 +100,7 @@ static void ipv4_resolved_callback(np_error_code ec, void* data)
 void NABTO_DEVICE_API
 nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future)
 {
-    struct dns_test* t = calloc(1, sizeof(struct dns_test));
+    struct dns_test* t = np_calloc(1, sizeof(struct dns_test));
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     t->fut = fut;

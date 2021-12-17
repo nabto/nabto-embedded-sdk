@@ -4,6 +4,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_heap.h>
 
 #include <errno.h>
 #include <string.h>
@@ -101,7 +102,7 @@ void resolve_one(struct nm_dns_resolve_event* event)
 {
     np_error_code ec = resolve_one_ec(event);
     np_completion_event_resolve(event->completionEvent, ec);
-    free(event);
+    np_free(event);
 }
 
 void* resolve_thread(void* data)
@@ -163,7 +164,7 @@ void stop_resolver(struct nm_unix_dns_resolver* resolver)
         nn_llist_erase(&first);
         struct nm_dns_resolve_event* event = nn_llist_get_item(&first);
         np_completion_event_resolve(event->completionEvent, NABTO_EC_STOPPED);
-        free(event);
+        np_free(event);
     }
 
     pthread_mutex_unlock(&resolver->mutex);
@@ -191,7 +192,7 @@ void async_resolve(struct nm_unix_dns_resolver* resolver, int family, const char
         np_completion_event_resolve(completionEvent, NABTO_EC_STOPPED);
         return;
     }
-    struct nm_dns_resolve_event* r = calloc(1,sizeof(struct nm_dns_resolve_event));
+    struct nm_dns_resolve_event* r = np_calloc(1,sizeof(struct nm_dns_resolve_event));
     r->host = host;
     r->ips = ips;
     r->ipsSize = ipsSize;

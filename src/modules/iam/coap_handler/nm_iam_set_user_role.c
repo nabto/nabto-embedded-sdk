@@ -5,6 +5,8 @@
 
 #include <stdlib.h>
 
+#include <platform/np_heap.h>
+
 #include <cbor.h>
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
@@ -44,7 +46,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserRole", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
-        free(roleId);
+        np_free(roleId);
         nn_string_map_deinit(&attributes);
         return;
     }
@@ -56,5 +58,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_response_set_code(request, 204);
     }
     nabto_device_coap_response_ready(request);
-    free(roleId);
+    np_free(roleId);
 }
