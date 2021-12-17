@@ -3,7 +3,7 @@
 #include "../nm_iam_internal.h"
 #include "../nm_iam.h"
 
-#include <stdlib.h>
+
 
 #include <platform/np_heap.h>
 

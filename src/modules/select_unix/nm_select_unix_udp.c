@@ -5,8 +5,8 @@
 #include <platform/np_completion_event.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-#include <stdlib.h>
+
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>

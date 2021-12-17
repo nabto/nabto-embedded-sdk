@@ -9,8 +9,6 @@
 #include <platform/np_timestamp_wrapper.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_TEST
 
 

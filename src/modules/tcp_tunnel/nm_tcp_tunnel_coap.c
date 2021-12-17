@@ -7,7 +7,7 @@
 #include <platform/np_heap.h>
 
 #include <cbor.h>
-#include <stdlib.h>
+
 
 #define LOG NABTO_LOG_MODULE_TUNNEL
 

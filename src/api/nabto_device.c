@@ -28,8 +28,6 @@
 
 //#include "nabto_device_event_queue.h"
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_API
 
 static const char* defaultServerUrlSuffix = ".devices.nabto.net";

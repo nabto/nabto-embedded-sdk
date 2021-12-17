@@ -5,7 +5,7 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 #include <cbor.h>
 

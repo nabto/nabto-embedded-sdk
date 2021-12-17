@@ -7,7 +7,7 @@
 #include <platform/np_completion_event.h>
 #include <platform/np_udp_wrapper.h>
 #include <platform/np_local_ip_wrapper.h>
-#include <stdlib.h>
+
 
 #include <platform/interfaces/np_mdns.h>
 #include <platform/np_platform.h>

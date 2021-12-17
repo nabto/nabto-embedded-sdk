@@ -11,8 +11,6 @@
 #include <platform/np_logging.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_API
 
 np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);

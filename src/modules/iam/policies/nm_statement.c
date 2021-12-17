@@ -7,7 +7,7 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 
 

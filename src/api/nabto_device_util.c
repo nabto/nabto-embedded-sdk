@@ -10,9 +10,6 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-
-
 void NABTO_DEVICE_API nabto_device_string_free(char* str)
 {
     np_free(str);

@@ -3,7 +3,7 @@
 #include <platform/np_heap.h>
 
 #include <pthread.h>
-#include <stdlib.h>
+
 #include <sys/time.h>
 
 #define LOG NABTO_LOG_MODULE_API

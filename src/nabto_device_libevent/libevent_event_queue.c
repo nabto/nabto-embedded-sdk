@@ -6,7 +6,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 #include <event.h>
 #include <event2/event.h>

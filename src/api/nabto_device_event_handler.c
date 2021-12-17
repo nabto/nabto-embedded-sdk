@@ -5,8 +5,6 @@
 #include <platform/np_logging.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_API
 
 void nabto_device_listener_resolve_error_state(struct nabto_device_listener* listener);

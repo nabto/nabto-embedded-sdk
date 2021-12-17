@@ -2,7 +2,7 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 #include <string.h>
 
 bool nm_iam_user_validate_username(const char* username)

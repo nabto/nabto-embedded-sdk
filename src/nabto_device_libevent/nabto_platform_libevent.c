@@ -19,7 +19,7 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 static void signal_event(evutil_socket_t s, short event, void* userData);
 static void* libevent_thread(void* data);

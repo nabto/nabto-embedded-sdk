@@ -4,7 +4,7 @@
 #include <platform/np_tcp_wrapper.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 /**
  * Forward data from a nabto stream to a tcp connection

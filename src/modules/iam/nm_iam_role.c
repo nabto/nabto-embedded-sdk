@@ -6,7 +6,7 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <stdlib.h>
+
 
 struct nm_iam_role* nm_iam_role_new(const char* idIn)
 {

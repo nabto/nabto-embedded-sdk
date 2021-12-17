@@ -6,7 +6,7 @@
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include <stdio.h>
-#include <stdlib.h>
+
 #include <string.h>
 
 struct np_test_system nts;

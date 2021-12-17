@@ -7,8 +7,6 @@
 #include <cbor.h>
 #include "nc_cbor.h"
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* response, struct nc_coap_rest_error* error)

@@ -3,8 +3,6 @@
 
 #include <core/nc_stream_manager.h>
 
-#include <stdlib.h>
-
 #include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
 #include <mbedtls/error.h>

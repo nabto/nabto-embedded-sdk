@@ -4,7 +4,7 @@
 
 #include <nn/string_map.h>
 
-#include <stdlib.h>
+
 #include <string.h>
 
 static enum nm_condition_result match(enum nm_iam_condition_operator op, const char* lhs, const char* rhs);

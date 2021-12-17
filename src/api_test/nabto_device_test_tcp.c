@@ -10,8 +10,6 @@
 #include <platform/np_logging.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_TEST
 
 

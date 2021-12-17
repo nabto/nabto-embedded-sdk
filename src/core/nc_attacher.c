@@ -9,7 +9,6 @@
 #include <platform/np_event_queue_wrapper.h>
 
 #include <string.h>
-#include <stdlib.h>
 
 #include <cbor.h>
 

@@ -4,7 +4,6 @@
 #include <platform/np_logging.h>
 #include <platform/np_heap.h>
 #include <string.h>
-#include <stdlib.h>
 #include <limits.h>
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION_DISPATCH

@@ -3,7 +3,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
 
-#include <stdlib.h>
+
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 

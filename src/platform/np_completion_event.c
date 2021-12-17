@@ -3,7 +3,7 @@
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_platform.h>
 
-#include <stdlib.h>
+
 #include <string.h>
 
 static void resolve_event_callback(void* userData);

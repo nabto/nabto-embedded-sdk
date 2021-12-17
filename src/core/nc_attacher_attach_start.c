@@ -4,7 +4,6 @@
 #include <core/nc_version.h>
 #include <platform/np_logging.h>
 #include <platform/np_heap.h>
-#include <stdlib.h>
 
 #include "nc_attacher.h"
 

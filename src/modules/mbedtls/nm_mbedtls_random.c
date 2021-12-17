@@ -7,7 +7,7 @@
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 
-#include <stdlib.h>
+
 
 static np_error_code make_random(struct np_platform* pl, void* buffer, size_t bufferSize);
 

@@ -10,8 +10,6 @@
 #include "nabto_device_defines.h"
 #include "nabto_device_event_handler.h"
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_API
 
 /**

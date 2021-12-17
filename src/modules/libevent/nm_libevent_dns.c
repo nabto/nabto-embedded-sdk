@@ -8,7 +8,7 @@
 #include <platform/np_error_code.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 #include <string.h>
 
 #ifdef HAVE_WINDOWS_H

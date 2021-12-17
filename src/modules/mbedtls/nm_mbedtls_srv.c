@@ -21,7 +21,7 @@
 #include <mbedtls/ssl_ciphersuites.h>
 
 #include <string.h>
-#include <stdlib.h>
+
 #include <stdio.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV

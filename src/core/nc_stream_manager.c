@@ -9,8 +9,6 @@
 
 #include <streaming/nabto_stream_log_helper.h>
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_STREAM_MANAGER
 
 //struct nc_stream_manager_context ctx;

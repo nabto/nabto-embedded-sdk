@@ -8,7 +8,7 @@
 
 #include <nn/log.h>
 
-#include <stdlib.h>
+
 #include <time.h>
 
 void nm_iam_lock(struct nm_iam* iam) {

@@ -5,7 +5,7 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 #include <string.h>
 
 struct nm_iam_policy* nm_policy_new(const char* idIn)

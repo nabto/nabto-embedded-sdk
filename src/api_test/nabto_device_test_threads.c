@@ -7,8 +7,6 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-
 struct threads_test {
     struct nabto_device_mutex* mutex;
     struct nabto_device_condition* condition;

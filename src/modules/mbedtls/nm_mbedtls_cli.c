@@ -19,7 +19,7 @@
 #include <mbedtls/ssl_ciphersuites.h>
 
 #include <string.h>
-#include <stdlib.h>
+
 #include <stdio.h>
 
 #include <nn/llist.h>

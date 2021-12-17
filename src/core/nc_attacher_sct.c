@@ -7,8 +7,6 @@
 
 #include <cbor.h>
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 const char* sctUploadPath[2] = {"device", "sct"};

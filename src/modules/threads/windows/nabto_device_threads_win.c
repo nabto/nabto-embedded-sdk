@@ -8,7 +8,7 @@
 #include <windows.h>
 #include <string.h>
 
-#include <stdlib.h>
+
 
 #define LOG NABTO_LOG_MODULE_API
 

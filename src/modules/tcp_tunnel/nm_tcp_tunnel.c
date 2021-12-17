@@ -10,7 +10,7 @@
 
 #include <nn/llist.h>
 
-#include <stdlib.h>
+
 
 #define LOG NABTO_LOG_MODULE_TUNNEL
 

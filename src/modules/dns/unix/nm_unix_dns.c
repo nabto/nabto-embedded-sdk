@@ -10,7 +10,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <pthread.h>
-#include <stdlib.h>
+
 
 #include <nn/llist.h>
 

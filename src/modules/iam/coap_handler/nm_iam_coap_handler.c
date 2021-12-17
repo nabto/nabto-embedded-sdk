@@ -6,7 +6,7 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 static void start_listen(struct nm_iam_coap_handler* handler);
 static void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);

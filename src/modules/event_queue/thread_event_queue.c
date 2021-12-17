@@ -5,7 +5,7 @@
 #include <platform/np_timestamp_wrapper.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 struct np_event {
     struct thread_event_queue* queue;

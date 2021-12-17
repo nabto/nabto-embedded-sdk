@@ -7,7 +7,7 @@
 
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
+
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 

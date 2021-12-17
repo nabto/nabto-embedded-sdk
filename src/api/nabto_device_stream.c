@@ -7,9 +7,6 @@
 #include <platform/np_logging.h>
 #include <platform/np_heap.h>
 
-#include <stdlib.h>
-
-
 #define LOG NABTO_LOG_MODULE_API
 
 struct nabto_device_stream_listener_context {
