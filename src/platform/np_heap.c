@@ -7,5 +7,5 @@ void* np_calloc(size_t n, size_t size) {
 }
 
 void np_free(void* ptr) {
-    np_free(ptr);
+    free(ptr);
 }
