@@ -7,10 +7,7 @@
 #include <nn/string_set.h>
 #include <nlohmann/json.hpp>
 
-static struct nn_allocator defaultAllocator = {
-    .calloc = calloc,
-    .free = free
-};
+#include <platform/np_allocator.h>
 
 namespace nabto {
 namespace test {
@@ -90,7 +87,7 @@ struct nm_iam_state* initState()
     nm_iam_state_user_set_fcm_token(usr, "fcm_token");
     nm_iam_state_user_set_fcm_project_id(usr, "fcm_project");
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     nm_iam_state_user_set_notification_categories(usr, &cats);
@@ -141,7 +138,7 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
 
     struct nm_iam_state* state = nabto::test::initState();
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
@@ -193,7 +190,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     nm_iam_init(&iam, d, NULL);
 
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     nn_string_set_insert(&cats, "cat42");
@@ -212,7 +209,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     BOOST_CHECK(nm_iam_set_user_display_name(&iam, "newuser", "New Display Name") == NM_IAM_ERROR_OK);
     BOOST_CHECK(nm_iam_set_user_fcm_token(&iam, "newuser", "fcm_token_42") == NM_IAM_ERROR_OK);
     BOOST_CHECK(nm_iam_set_user_fcm_project_id(&iam, "newuser", "fcm_project_42") == NM_IAM_ERROR_OK);
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat42");
     nn_string_set_insert(&cats, "cat43");
     BOOST_CHECK(nm_iam_set_user_notification_categories(&iam, "newuser", &cats) == NM_IAM_ERROR_OK);
@@ -258,7 +255,7 @@ BOOST_AUTO_TEST_CASE(empty_username_is_invalid, *boost::unit_test::timeout(180))
     nm_iam_init(&iam, d, NULL);
 
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
@@ -285,7 +282,7 @@ BOOST_AUTO_TEST_CASE(username_is_invalid, *boost::unit_test::timeout(180))
     nm_iam_init(&iam, d, NULL);
 
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
@@ -314,7 +311,7 @@ BOOST_AUTO_TEST_CASE(runtime_delete_user, *boost::unit_test::timeout(180))
     nm_iam_init(&iam, d, NULL);
 
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
@@ -347,7 +344,7 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
 
     struct nm_iam_state* state = nabto::test::initState();
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
@@ -400,7 +397,7 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     nm_iam_init(&iam, d, NULL);
 
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
@@ -444,7 +441,7 @@ BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
     nm_iam_init(&iam, d, NULL);
 
     struct nn_string_set cats;
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_REQUIRE(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);
@@ -533,7 +530,7 @@ BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
 
     state = nm_iam_state_new();
     usr = nm_iam_state_user_new("username");
-    nn_string_set_init(&cats, &defaultAllocator);
+    nn_string_set_init(&cats, np_allocator_get());
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     nm_iam_state_user_set_notification_categories(usr, &cats);

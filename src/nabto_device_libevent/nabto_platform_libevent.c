@@ -55,10 +55,6 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // functionality which can change between the nabto_device
     // implementations.
 
-    printf("sizeof(struct nm_libevent_context): %lu\n", sizeof(struct nm_libevent_context));
-    printf("sizeof(struct np_event_queue): %lu\n", sizeof(struct np_event_queue));
-    printf("sizeof(struct nm_mdns_server): %lu\n", sizeof(struct nm_mdns_server));
-
     struct libevent_platform* platform = np_calloc(1, sizeof(struct libevent_platform));
     if (platform == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;

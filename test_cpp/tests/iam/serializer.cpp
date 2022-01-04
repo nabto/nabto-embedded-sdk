@@ -7,10 +7,7 @@
 #include <nn/string_set.h>
 #include <nlohmann/json.hpp>
 
-static struct nn_allocator defaultAllocator = {
-  .calloc = calloc,
-  .free = free
-};
+#include <platform/np_allocator.h>
 
 namespace {
 
@@ -141,7 +138,7 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
     }
     {
         struct nn_string_set cats;
-        nn_string_set_init(&cats, &defaultAllocator);
+        nn_string_set_init(&cats, np_allocator_get());
         nn_string_set_insert(&cats, "cat1");
         nn_string_set_insert(&cats, "cat2");
         struct nm_iam_user* u = nm_iam_user_new("username");
