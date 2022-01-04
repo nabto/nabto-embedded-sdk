@@ -4,7 +4,7 @@
 #include <api/nabto_device_future.h>
 
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 

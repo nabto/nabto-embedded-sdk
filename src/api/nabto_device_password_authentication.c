@@ -7,7 +7,7 @@
 
 #include <core/nc_spake2.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 #include <nn/string.h>
 
 /**
@@ -66,7 +66,7 @@ nabto_device_connection_get_password_authentication_username(NabtoDevice* device
     } else if (connection->username[0] == 0) {
         ec = NABTO_DEVICE_EC_INVALID_STATE;
     } else {
-        *username = nn_strdup(connection->username, np_get_default_allocator());
+        *username = nn_strdup(connection->username, np_allocator_get());
         if (*username == NULL) {
             ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
         } else {

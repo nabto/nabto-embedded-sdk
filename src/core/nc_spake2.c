@@ -1,7 +1,7 @@
 #include "nc_spake2.h"
 #include "nc_client_connection.h"
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 #include <mbedtls/sha256.h>

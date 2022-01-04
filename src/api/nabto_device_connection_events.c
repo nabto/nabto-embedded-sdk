@@ -8,7 +8,7 @@
 #include <core/nc_client_connection.h>
 
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <nn/llist.h>
 

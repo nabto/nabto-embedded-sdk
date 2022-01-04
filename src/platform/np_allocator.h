@@ -13,8 +13,14 @@ void* np_calloc(size_t n, size_t size);
 // free memory allocated by np_calloc.
 void np_free(void* ptr);
 
-void np_set_default_allocator(struct nn_allocator* allocator);
+/**
+ * Set the allocator
+ */
+void np_allocator_set(struct nn_allocator* allocator);
 
-struct nn_allocator* np_get_default_allocator();
+/**
+ * Get the allocator
+ */
+struct nn_allocator* np_allocator_get();
 
 #endif

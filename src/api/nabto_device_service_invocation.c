@@ -6,7 +6,7 @@
 
 #include <core/nc_attacher.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 #include <nn/string.h>
 
 struct nabto_device_service_invoke {
@@ -51,7 +51,7 @@ nabto_device_service_invocation_set_service_id(NabtoDeviceServiceInvocation* ser
         np_free(s->serviceInvoke.serviceInvokeRequest.serviceId);
     }
 
-    s->serviceInvoke.serviceInvokeRequest.serviceId = nn_strdup(serviceId, np_get_default_allocator());
+    s->serviceInvoke.serviceInvokeRequest.serviceId = nn_strdup(serviceId, np_allocator_get());
     if (s->serviceInvoke.serviceInvokeRequest.serviceId == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {

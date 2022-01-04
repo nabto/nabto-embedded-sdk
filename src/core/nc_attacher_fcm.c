@@ -3,7 +3,7 @@
 #include "nc_cbor.h"
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 #include <coap/nabto_coap_client.h>
 
 

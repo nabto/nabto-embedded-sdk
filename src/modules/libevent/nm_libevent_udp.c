@@ -4,7 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <event2/util.h>
 #include <event2/event.h>

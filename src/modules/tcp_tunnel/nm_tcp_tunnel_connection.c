@@ -2,7 +2,7 @@
 #include <core/nc_stream.h>
 #include <platform/np_logging.h>
 #include <platform/np_tcp_wrapper.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 

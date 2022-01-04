@@ -7,7 +7,7 @@
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
 #include <platform/np_local_ip_wrapper.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 #include <core/nc_packet.h>
 
 #include <cbor.h>

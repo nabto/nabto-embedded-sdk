@@ -8,7 +8,7 @@
 
 #include <modules/mbedtls/nm_mbedtls_util.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 void NABTO_DEVICE_API nabto_device_string_free(char* str)
 {

@@ -4,7 +4,7 @@
 #include "policies/nm_condition.h"
 #include "policies/nm_statement.h"
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <nn/string.h>
 #include <string.h>
@@ -56,7 +56,7 @@ bool set_string(char** dst, const char* role)
         *dst = NULL;
         return true;
     }
-    char* tmp = nn_strdup(role, np_get_default_allocator());
+    char* tmp = nn_strdup(role, np_allocator_get());
     if (tmp != NULL) {
         np_free(*dst);
         *dst = tmp;

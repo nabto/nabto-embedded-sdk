@@ -1,6 +1,6 @@
 #include <api/nabto_device_threads.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <platform/np_logging.h>
 

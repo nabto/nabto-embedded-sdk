@@ -4,7 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>

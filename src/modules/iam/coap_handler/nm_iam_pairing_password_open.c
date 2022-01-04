@@ -5,7 +5,7 @@
 #include "../nm_iam_user.h"
 #include "../nm_iam_internal.h"
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 

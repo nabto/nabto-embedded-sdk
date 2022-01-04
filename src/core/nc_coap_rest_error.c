@@ -2,7 +2,7 @@
 
 #include <platform/np_logging_defines.h>
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <cbor.h>
 #include "nc_cbor.h"
@@ -56,7 +56,7 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         }
     }
     if (error->message == NULL) {
-        error->message = nn_strdup("", np_get_default_allocator()); // make the message well defined.
+        error->message = nn_strdup("", np_allocator_get()); // make the message well defined.
     }
     return true;
 }

@@ -4,7 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include "nabto_device_authorization.h"
 #include "nabto_device_defines.h"
@@ -188,8 +188,8 @@ np_error_code add_string_attribute(struct np_authorization_request* request, con
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    attribute->key = nn_strdup(key, np_get_default_allocator());
-    attribute->value = nn_strdup(value, np_get_default_allocator());
+    attribute->key = nn_strdup(key, np_allocator_get());
+    attribute->value = nn_strdup(value, np_allocator_get());
     if (attribute->key == NULL || attribute->value == NULL) {
         free_attribute(attribute);
         return NABTO_EC_OUT_OF_MEMORY;

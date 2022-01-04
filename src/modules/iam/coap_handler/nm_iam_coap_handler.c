@@ -4,7 +4,7 @@
 #include "../nm_iam_internal.h"
 #include <nn/string_set.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 

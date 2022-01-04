@@ -1,6 +1,6 @@
 #include "nc_cbor.h"
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 bool nc_cbor_copy_text_string(CborValue* s, char** out, size_t maxLength) {
     if (!cbor_value_is_text_string(s)) {

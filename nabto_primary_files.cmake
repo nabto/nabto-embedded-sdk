@@ -55,7 +55,7 @@ set(ne_platform_src
   ${root_dir}/src/platform/np_tcp_wrapper.c
   ${root_dir}/src/platform/np_local_ip_wrapper.c
   ${root_dir}/src/platform/np_mdns_wrapper.c
-  ${root_dir}/src/platform/np_heap.c
+  ${root_dir}/src/platform/np_allocator.c
 )
 
 set(ne_core_src

@@ -5,7 +5,7 @@
 #include "../nm_iam_internal.h"
 #include "../nm_iam_pairing.h"
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 

@@ -12,7 +12,7 @@
 #include <api/nabto_device_error.h>
 #include <api/nabto_device_logging.h>
 #include <platform/np_error_code.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
@@ -231,7 +231,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
     nabto_device_threads_mutex_lock(dev->eventMutex);
     np_free(dev->privateKey);
 
-    dev->privateKey = nn_strdup(str, np_get_default_allocator());
+    dev->privateKey = nn_strdup(str, np_allocator_get());
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
@@ -668,7 +668,7 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (ec == NABTO_EC_OK) {
-        *serverConnectToken = nn_strdup(output, np_get_default_allocator());
+        *serverConnectToken = nn_strdup(output, np_allocator_get());
         if (*serverConnectToken == NULL) {
             ec = NABTO_EC_OUT_OF_MEMORY;
         }

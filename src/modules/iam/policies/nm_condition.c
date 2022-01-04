@@ -1,6 +1,6 @@
 #include "nm_condition.h"
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <nn/string_map.h>
 #include <nn/string.h>
@@ -29,7 +29,7 @@ struct nm_iam_condition* nm_condition_new_with_key(enum nm_iam_condition_operato
     if (c == NULL) {
         return c;
     }
-    c->key = nn_strdup(key, np_get_default_allocator());
+    c->key = nn_strdup(key, np_allocator_get());
     return c;
 
 }
@@ -43,7 +43,7 @@ void nm_condition_free(struct nm_iam_condition* condition)
 void nm_condition_init(struct nm_iam_condition* condition)
 {
     nn_llist_node_init(&condition->listNode);
-    nn_string_set_init(&condition->values, np_get_default_allocator());
+    nn_string_set_init(&condition->values, np_allocator_get());
 }
 
 void nm_condition_deinit(struct nm_iam_condition* condition)

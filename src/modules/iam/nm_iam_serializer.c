@@ -5,7 +5,7 @@
 #include "nm_iam_to_json.h"
 #include "nm_iam_from_json.h"
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <cjson/cJSON.h>
 

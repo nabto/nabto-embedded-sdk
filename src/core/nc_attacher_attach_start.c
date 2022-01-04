@@ -3,7 +3,7 @@
 #include <core/nc_coap_rest_error.h>
 #include <core/nc_version.h>
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include "nc_attacher.h"
 

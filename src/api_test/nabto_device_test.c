@@ -13,7 +13,7 @@
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_TEST
 

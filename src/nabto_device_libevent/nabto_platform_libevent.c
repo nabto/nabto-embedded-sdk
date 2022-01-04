@@ -17,7 +17,7 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 

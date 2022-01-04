@@ -5,7 +5,7 @@
 #include <nabto/nabto_device_test.h>
 #include <api/nabto_device_threads.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 struct threads_test {
     struct nabto_device_mutex* mutex;

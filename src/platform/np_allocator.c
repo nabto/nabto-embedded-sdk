@@ -1,4 +1,4 @@
-#include "np_heap.h"
+#include "np_allocator.h"
 
 #include <nn/allocator.h>
 
@@ -18,10 +18,10 @@ void np_free(void* ptr) {
     allocator.free(ptr);
 }
 
-struct nn_allocator* np_get_default_allocator() {
+struct nn_allocator* np_allocator_get() {
     return &allocator;
 }
 
-void np_set_default_allocator(struct nn_allocator* a) {
+void np_allocator_set(struct nn_allocator* a) {
     allocator = *a;
 }

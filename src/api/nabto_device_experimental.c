@@ -3,7 +3,7 @@
 
 #include <core/nc_stream_manager.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
@@ -107,6 +107,6 @@ nabto_device_set_custom_allocator(nabto_device_allocator_calloc customCalloc, na
     struct nn_allocator a;
     a.calloc = customCalloc;
     a.free = customFree;
-    np_set_default_allocator(&a);
+    np_allocator_set(&a);
     return NABTO_DEVICE_EC_OK;
 }

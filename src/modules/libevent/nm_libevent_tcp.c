@@ -5,7 +5,7 @@
 #include <platform/np_error_code.h>
 #include <platform/interfaces/np_tcp.h>
 #include <platform/np_completion_event.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>

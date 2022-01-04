@@ -3,7 +3,7 @@
 #include "nabto_device_defines.h"
 
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_API
 

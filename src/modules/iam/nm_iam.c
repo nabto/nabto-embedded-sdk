@@ -8,7 +8,7 @@
 
 #include <nn/log.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 #include <time.h>
@@ -38,7 +38,7 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 
     iam->state = nm_iam_state_new();
     iam->conf = nm_iam_configuration_new();
-    nn_string_set_init(&iam->notificationCategories, np_get_default_allocator());
+    nn_string_set_init(&iam->notificationCategories, np_allocator_get());
 
     nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
     nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);

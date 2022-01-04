@@ -2,7 +2,7 @@
 #include "nc_udp_dispatch.h"
 
 #include <platform/np_logging.h>
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 #include <string.h>
 #include <limits.h>
 

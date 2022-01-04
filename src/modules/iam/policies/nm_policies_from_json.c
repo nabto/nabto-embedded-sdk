@@ -6,7 +6,7 @@
 #include <nn/string_set.h>
 #include <nn/string.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 #include <string.h>
 
@@ -51,7 +51,7 @@ bool nm_condition_from_json_parse(const cJSON* kv, struct nm_iam_condition* cond
         return false;
     }
 
-    condition->key = nn_strdup(kv->string, np_get_default_allocator());
+    condition->key = nn_strdup(kv->string, np_allocator_get());
 
     size_t valuesSize = cJSON_GetArraySize(kv);
     int i;

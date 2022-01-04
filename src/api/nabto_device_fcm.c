@@ -6,7 +6,7 @@
 
 #include <core/nc_attacher.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 #include <nn/string.h>
 
 struct nabto_device_fcm_notification {
@@ -51,7 +51,7 @@ nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notific
         np_free(n->fcmSend.fcmRequest.projectId);
     }
 
-    n->fcmSend.fcmRequest.projectId = nn_strdup(projectId, np_get_default_allocator());
+    n->fcmSend.fcmRequest.projectId = nn_strdup(projectId, np_allocator_get());
     if (n->fcmSend.fcmRequest.projectId == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {
@@ -73,7 +73,7 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
         np_free(n->fcmSend.fcmRequest.payload);
     }
 
-    n->fcmSend.fcmRequest.payload = nn_strdup(payload, np_get_default_allocator());
+    n->fcmSend.fcmRequest.payload = nn_strdup(payload, np_allocator_get());
     if (n->fcmSend.fcmRequest.payload == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {

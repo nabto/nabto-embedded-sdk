@@ -4,7 +4,7 @@
 #include <nn/llist.h>
 #include <nn/string.h>
 
-#include <platform/np_heap.h>
+#include <platform/np_allocator.h>
 
 
 #include <string.h>
@@ -14,7 +14,7 @@ struct nm_iam_policy* nm_policy_new(const char* idIn)
     struct nm_iam_policy* p = NULL;
     char* id = NULL;
 
-    id = nn_strdup(idIn, np_get_default_allocator());
+    id = nn_strdup(idIn, np_allocator_get());
     p = np_calloc(1, sizeof(struct nm_iam_policy));
     if (p == NULL || id == NULL) {
         np_free(id);
