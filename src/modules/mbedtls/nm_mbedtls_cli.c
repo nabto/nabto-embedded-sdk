@@ -17,6 +17,7 @@
 #include <mbedtls/certs.h>
 #include <mbedtls/timing.h>
 #include <mbedtls/ssl_ciphersuites.h>
+#include <mbedtls/pem.h>
 
 #include <string.h>
 
@@ -384,6 +385,9 @@ np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, con
 {
     int ret;
     ret = mbedtls_x509_crt_parse (&ctx->rootCerts, (const unsigned char *)rootCerts, strlen(rootCerts)+1);
+    if (ret == MBEDTLS_ERR_PEM_ALLOC_FAILED) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     if (ret != 0) {
         NABTO_LOG_ERROR(LOG,  "Failed to load root certs mbedtls_x509_crt_parse returned %d", ret );
         return NABTO_EC_UNKNOWN;

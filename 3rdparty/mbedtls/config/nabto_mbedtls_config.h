@@ -92,6 +92,9 @@
 #define MBEDTLS_ERROR_C
 #define MBEDTLS_SSL_DTLS_ANTI_REPLAY
 
+#define MBEDTLS_PLATFORM_C
+#define MBEDTLS_PLATFORM_MEMORY
+
 /* For test certificates */
 #define MBEDTLS_BASE64_C
 #define MBEDTLS_CERTS_C

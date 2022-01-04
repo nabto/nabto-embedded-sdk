@@ -1,4 +1,5 @@
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_experimental.h>
 #include <apps/common/string_file.h>
 
 #ifdef _WIN32
@@ -13,6 +14,10 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+
+#include <3rdparty/tinyalloc/tinyalloc/tinyalloc.h>
+
+#include <mbedtls/platform.h>
 
 const char* keyFile = "device.key";
 
@@ -33,10 +38,38 @@ void signal_handler(int s);
 
 NabtoDevice* device_;
 
+// for attach only
+//#define HEAP_SIZE 68000
+
+// for attach and a single connection
+#define HEAP_SIZE 82000
+
+static void custom_free(void* ptr) {
+    ta_free(ptr);
+}
+
+static uint8_t heap[HEAP_SIZE];
+static uint8_t* heapEnd = heap + HEAP_SIZE;
+
 int main(int argc, char* argv[]) {
+
+    if (!ta_init(heap, heapEnd, 512, 16, 8)) {
+        printf("Cannot initialize the memory allocator" NEWLINE);
+        return -1;
+    }
 
     if (argc != 3) {
         printf("The example takes exactly two arguments. %s <product-id> <device-id>" NEWLINE, argv[0]);
+        return -1;
+    }
+
+    if (nabto_device_set_custom_allocator(ta_calloc, custom_free) != NABTO_DEVICE_EC_OK) {
+        printf("Could not set the custom allocator" NEWLINE);
+        return -1;
+    }
+
+    if (mbedtls_platform_set_calloc_free( ta_calloc, custom_free) != 0) {
+        printf("Could not set mbedtls allocation functions" NEWLINE);
         return -1;
     }
 
@@ -44,6 +77,14 @@ int main(int argc, char* argv[]) {
     char* deviceId = argv[2];
 
     struct context ctx;
+
+    char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel) {
+        if (nabto_device_set_log_level(NULL, logLevel) != NABTO_DEVICE_EC_OK) {
+            printf("Could not set loglevel" NEWLINE);
+            return -1;
+        }
+    }
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 

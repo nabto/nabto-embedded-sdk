@@ -1,10 +1,11 @@
 set(src
-  simple_coap_device.c
+  custom_allocator_device.c
+  ../../3rdparty/tinyalloc/tinyalloc/tinyalloc.c
   )
 
-add_executable(simple_coap_device "${src}")
-target_link_libraries(simple_coap_device nabto_device_static apps_common)
+add_executable(custom_allocator_device "${src}")
+target_link_libraries(custom_allocator_device nabto_device_static apps_common)
 
-install(TARGETS simple_coap_device
+install(TARGETS custom_allocator_device
   RUNTIME DESTINATION bin
   )
