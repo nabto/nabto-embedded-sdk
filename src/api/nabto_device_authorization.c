@@ -10,6 +10,8 @@
 #include "nabto_device_defines.h"
 #include "nabto_device_event_handler.h"
 
+#include <nn/string.h>
+
 #define LOG NABTO_LOG_MODULE_API
 
 /**
@@ -186,8 +188,8 @@ np_error_code add_string_attribute(struct np_authorization_request* request, con
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    attribute->key = strdup(key);
-    attribute->value = strdup(value);
+    attribute->key = nn_strdup(key, np_get_default_allocator());
+    attribute->value = nn_strdup(value, np_get_default_allocator());
     if (attribute->key == NULL || attribute->value == NULL) {
         free_attribute(attribute);
         return NABTO_EC_OUT_OF_MEMORY;

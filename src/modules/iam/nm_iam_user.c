@@ -2,7 +2,7 @@
 
 #include <platform/np_heap.h>
 
-
+#include <nn/string.h>
 #include <string.h>
 
 bool nm_iam_user_validate_username(const char* username)
@@ -28,7 +28,7 @@ bool nm_iam_user_validate_username(const char* username)
 
 struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 {
-    char* username = strdup(usernameIn);
+    char* username = nn_strdup(usernameIn, np_get_default_allocator());
     struct nm_iam_user* user = np_calloc(1, sizeof(struct nm_iam_user));
     // TODO: new should not validate, ensure validate is called everywhere new is used, and remove from here
     if (username == NULL || user == NULL || !nm_iam_user_validate_username(username)) {
@@ -39,7 +39,7 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
 
     nn_llist_node_init(&user->listNode);
     user->username = username;
-    nn_string_set_init(&user->notificationCategories);
+    nn_string_set_init(&user->notificationCategories, np_get_default_allocator());
     return user;
 }
 
@@ -66,7 +66,7 @@ bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerpri
         user->fingerprint = NULL;
         return true;
     }
-    char* tmp = strdup(fingerprint);
+    char* tmp = nn_strdup(fingerprint, np_get_default_allocator());
     if (tmp != NULL) {
         np_free(user->fingerprint);
         user->fingerprint = tmp;
@@ -81,7 +81,7 @@ bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
         user->password = NULL;
         return true;
     }
-    char* tmp = strdup(password);
+    char* tmp = nn_strdup(password, np_get_default_allocator());
     if (tmp != NULL) {
         np_free(user->password);
         user->password = tmp;
@@ -96,7 +96,7 @@ bool nm_iam_user_set_fcm_token(struct nm_iam_user* user, const char* fcmToken)
         user->fcmToken = NULL;
         return true;
     }
-    char* tmp = strdup(fcmToken);
+    char* tmp = nn_strdup(fcmToken, np_get_default_allocator());
     if (tmp != NULL) {
         np_free(user->fcmToken);
         user->fcmToken = tmp;
@@ -111,7 +111,7 @@ bool nm_iam_user_set_fcm_project_id(struct nm_iam_user* user, const char* projec
         user->fcmProjectId = NULL;
         return true;
     }
-    char* tmp = strdup(projectId);
+    char* tmp = nn_strdup(projectId, np_get_default_allocator());
     if (tmp != NULL) {
         np_free(user->fcmProjectId);
         user->fcmProjectId = tmp;
@@ -136,7 +136,7 @@ bool nm_iam_user_set_sct(struct nm_iam_user* user, const char* sct)
         user->sct = NULL;
         return true;
     }
-    char* tmp = strdup(sct);
+    char* tmp = nn_strdup(sct, np_get_default_allocator());
     if (tmp != NULL) {
         np_free(user->sct);
         user->sct = tmp;
@@ -149,7 +149,7 @@ bool nm_iam_user_set_username(struct nm_iam_user* user, const char* username)
     if (username == NULL || !nm_iam_user_validate_username(username)) {
         return false; // A user must have a valid username
     }
-    char* tmp = strdup(username);
+    char* tmp = nn_strdup(username, np_get_default_allocator());
     if (tmp == NULL) {
         return false;
     }
@@ -165,7 +165,7 @@ bool nm_iam_user_set_display_name(struct nm_iam_user* user, const char* displayN
         user->displayName = NULL;
         return true;
     }
-    char* tmp = strdup(displayName);
+    char* tmp = nn_strdup(displayName, np_get_default_allocator());
     if (tmp == NULL) {
         return false;
     }
@@ -179,7 +179,7 @@ bool nm_iam_user_set_role(struct nm_iam_user* user, const char* roleId)
     if (roleId == NULL) {
         return false; // A user must have a role
     }
-    char* tmp = strdup(roleId);
+    char* tmp = nn_strdup(roleId, np_get_default_allocator());
     if (tmp == NULL) {
         return false;
     }
@@ -196,49 +196,49 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
     }
     bool failed = false;
     if (user->displayName != NULL) {
-        copy->displayName = strdup(user->displayName);
+        copy->displayName = nn_strdup(user->displayName, np_get_default_allocator());
         if (copy->displayName == NULL) {
             failed = true;
         }
     }
 
     if (user->fingerprint != NULL) {
-        copy->fingerprint = strdup(user->fingerprint);
+        copy->fingerprint = nn_strdup(user->fingerprint, np_get_default_allocator());
         if(copy->fingerprint == NULL) {
             failed = true;
         }
     }
 
     if (user->password != NULL) {
-        copy->password = strdup(user->password);
+        copy->password = nn_strdup(user->password, np_get_default_allocator());
         if(copy->password == NULL) {
             failed = true;
         }
     }
 
     if(user->role != NULL) {
-        copy->role = strdup(user->role);
+        copy->role = nn_strdup(user->role, np_get_default_allocator());
         if(copy->role == NULL) {
             failed = true;
         }
     }
 
     if(user->sct != NULL) {
-        copy->sct = strdup(user->sct);
+        copy->sct = nn_strdup(user->sct, np_get_default_allocator());
         if(copy->sct == NULL) {
             failed = true;
         }
     }
 
     if(user->fcmToken != NULL) {
-        copy->fcmToken = strdup(user->fcmToken);
+        copy->fcmToken = nn_strdup(user->fcmToken, np_get_default_allocator());
         if(copy->fcmToken == NULL) {
             failed = true;
         }
     }
 
     if(user->fcmProjectId != NULL) {
-        copy->fcmProjectId = strdup(user->fcmProjectId);
+        copy->fcmProjectId = nn_strdup(user->fcmProjectId, np_get_default_allocator());
         if(copy->fcmProjectId == NULL) {
             failed = true;
         }

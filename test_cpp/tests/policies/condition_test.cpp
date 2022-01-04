@@ -7,6 +7,11 @@
 #include <vector>
 #include <utility>
 
+static struct nn_allocator defaultAllocator = {
+    .calloc = calloc,
+    .free = free
+};
+
 BOOST_AUTO_TEST_SUITE(policies)
 
 BOOST_AUTO_TEST_CASE(parse_bool)
@@ -78,7 +83,7 @@ BOOST_AUTO_TEST_CASE(condition_match)
 
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
 
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
         nn_string_map_deinit(&attributes);
@@ -86,7 +91,7 @@ BOOST_AUTO_TEST_CASE(condition_match)
 
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
         nn_string_map_insert(&attributes, "foo", "baz");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
         nn_string_map_deinit(&attributes);
@@ -94,7 +99,7 @@ BOOST_AUTO_TEST_CASE(condition_match)
 
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
 
         nn_string_map_insert(&attributes, "foo", "bar");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);
@@ -109,7 +114,7 @@ BOOST_AUTO_TEST_CASE(condition_alloc_match)
     nm_condition_add_value(c, "bar");
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
 
         BOOST_TEST(nm_condition_matches(c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
         nn_string_map_deinit(&attributes);
@@ -117,7 +122,7 @@ BOOST_AUTO_TEST_CASE(condition_alloc_match)
 
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
         nn_string_map_insert(&attributes, "foo", "baz");
         BOOST_TEST(nm_condition_matches(c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
         nn_string_map_deinit(&attributes);
@@ -125,7 +130,7 @@ BOOST_AUTO_TEST_CASE(condition_alloc_match)
 
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
 
         nn_string_map_insert(&attributes, "foo", "bar");
         BOOST_TEST(nm_condition_matches(c, &attributes) == NM_CONDITION_RESULT_MATCH);
@@ -144,7 +149,7 @@ BOOST_AUTO_TEST_CASE(condition_variable)
 
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
 
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
         nn_string_map_deinit(&attributes);
@@ -152,14 +157,14 @@ BOOST_AUTO_TEST_CASE(condition_variable)
 
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
         nn_string_map_insert(&attributes, "IAM:UserId", "someuser");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
         nn_string_map_deinit(&attributes);
     }
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
         nn_string_map_insert(&attributes, "IAM:UserId", "someuser");
         nn_string_map_insert(&attributes, "Connection:UserId", "somebar");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_NO_MATCH);
@@ -167,7 +172,7 @@ BOOST_AUTO_TEST_CASE(condition_variable)
     }
     {
         struct nn_string_map attributes;
-        nn_string_map_init(&attributes);
+        nn_string_map_init(&attributes, &defaultAllocator);
         nn_string_map_insert(&attributes, "IAM:UserId", "someuser");
         nn_string_map_insert(&attributes, "Connection:UserId", "someuser");
         BOOST_TEST(nm_condition_matches(&c, &attributes) == NM_CONDITION_RESULT_MATCH);

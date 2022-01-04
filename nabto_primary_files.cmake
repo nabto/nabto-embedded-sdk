@@ -36,6 +36,12 @@ set(ne_coap_src
   ${root_dir}/nabto-common/components/coap/src/nabto_coap_server_impl.c
 )
 
+set(ne_mdns_src
+  ${root_dir}/nabto-common/components/mdns/src/mdns_server.c
+)
+
+set(ne_mdns_include_dir ${root_dir}/nabto-common/components/mdns/include)
+
 set(ne_platform_src
   ${root_dir}/src/platform/np_error_code.c
   ${root_dir}/src/platform/np_completion_event.c
@@ -129,6 +135,12 @@ set(ne_tinycbor_src
   ${root_dir}/3rdparty/tinycbor/extra/cbor_extra.c
   ${root_dir}/3rdparty/tinycbor/extra/cbor_encode_encoded_cbor.c
 )
+
+set(ne_cjson_dir ${CMAKE_CURRENT_LIST_DIR}/3rdparty/cjson)
+set(ne_cjson_src
+  ${ne_cjson_dir}/cjson/cJSON.c
+)
+set(ne_cjson_include_dir ${ne_cjson_dir})
 
 set(ne_mbedtls_src
   ${root_dir}/3rdparty/mbedtls/mbedtls/library/aes.c

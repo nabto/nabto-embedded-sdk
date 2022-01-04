@@ -20,7 +20,7 @@ struct nm_iam_statement* nm_statement_new(enum nm_iam_effect effect)
         return NULL;
     }
     statement->effect = effect;
-    nn_string_set_init(&statement->actions);
+    nn_string_set_init(&statement->actions, np_get_default_allocator());
     nn_llist_init(&statement->conditions);
     nn_llist_node_init(&statement->listNode);
     return statement;

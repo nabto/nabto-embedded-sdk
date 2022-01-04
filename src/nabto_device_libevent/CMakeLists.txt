@@ -15,6 +15,8 @@ else()
   message(error "missing thread library")
 endif()
 
+target_link_libraries(nabto_device_threads PUBLIC nn)
+
 add_library( nabto_device_static STATIC "${src}" "${ne_api_src}" "${ne_api_test_src}")
 target_compile_definitions(nabto_device_static PRIVATE NABTO_DEVICE_WIN32_API_STATIC)
 target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STATIC)

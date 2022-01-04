@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
         nabto_device_set_private_key(device, key) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_log_level(device, "trace") != NABTO_DEVICE_EC_OK ||
+        //nabto_device_set_log_level(device, "trace") != NABTO_DEVICE_EC_OK ||
         nabto_device_set_local_port(device, 5592) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK ||
         // mDNS specifics:

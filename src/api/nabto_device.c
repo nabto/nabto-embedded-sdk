@@ -26,6 +26,8 @@
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
+#include <nn/string.h>
+
 //#include "nabto_device_event_queue.h"
 
 #define LOG NABTO_LOG_MODULE_API
@@ -229,7 +231,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
     nabto_device_threads_mutex_lock(dev->eventMutex);
     np_free(dev->privateKey);
 
-    dev->privateKey = strdup(str);
+    dev->privateKey = nn_strdup(str, np_get_default_allocator());
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
@@ -666,7 +668,7 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (ec == NABTO_EC_OK) {
-        *serverConnectToken = strdup(output);
+        *serverConnectToken = nn_strdup(output, np_get_default_allocator());
         if (*serverConnectToken == NULL) {
             ec = NABTO_EC_OUT_OF_MEMORY;
         }

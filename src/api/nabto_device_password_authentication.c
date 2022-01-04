@@ -8,6 +8,7 @@
 #include <core/nc_spake2.h>
 
 #include <platform/np_heap.h>
+#include <nn/string.h>
 
 /**
  * Handler which is registered in the core to handle new password requests.
@@ -65,7 +66,7 @@ nabto_device_connection_get_password_authentication_username(NabtoDevice* device
     } else if (connection->username[0] == 0) {
         ec = NABTO_DEVICE_EC_INVALID_STATE;
     } else {
-        *username = strdup(connection->username);
+        *username = nn_strdup(connection->username, np_get_default_allocator());
         if (*username == NULL) {
             ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
         } else {

@@ -9,6 +9,7 @@
 #include <platform/np_heap.h>
 
 #include <nn/llist.h>
+#include <nn/string.h>
 
 
 
@@ -26,7 +27,7 @@ np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_devi
         return NABTO_EC_RESOURCE_EXISTS;
     }
     nn_llist_init(&tunnels->services);
-    nn_string_int_map_init(&tunnels->limitsByType);
+    nn_string_int_map_init(&tunnels->limitsByType, np_get_default_allocator());
     tunnels->device = device;
     tunnels->weakPtrCounter = (void*)(1);
 
@@ -107,8 +108,8 @@ void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service)
 np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port)
 {
     struct nm_tcp_tunnels* tunnels = service->tunnels;
-    service->id = strdup(id);
-    service->type = strdup(type);
+    service->id = nn_strdup(id, np_get_default_allocator());
+    service->type = nn_strdup(type, np_get_default_allocator());
     service->address = *address;
     service->port = port;
 

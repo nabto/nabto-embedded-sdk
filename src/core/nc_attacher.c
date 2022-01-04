@@ -7,6 +7,7 @@
 #include <core/nc_version.h>
 #include <core/nc_device.h>
 #include <platform/np_event_queue_wrapper.h>
+#include <platform/np_heap.h>
 
 #include <string.h>
 
@@ -871,7 +872,7 @@ void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, si
 void sct_init(struct nc_attach_context* ctx)
 {
     struct nc_attacher_sct_context* sctCtx = &ctx->sctContext;
-    nn_string_set_init(&sctCtx->scts);
+    nn_string_set_init(&sctCtx->scts, np_get_default_allocator());
     sctCtx->version = 0;
     sctCtx->synchronizedVersion = 0;
     sctCtx->uploadingVersion = 0;

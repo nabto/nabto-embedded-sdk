@@ -7,6 +7,11 @@
 
 #include <cjson/cJSON.h>
 
+static struct nn_allocator defaultAllocator = {
+  .calloc = calloc,
+  .free = free
+};
+
 std::string sAllow = R"(
 {
   "Effect": "Allow",
@@ -48,7 +53,7 @@ BOOST_AUTO_TEST_CASE(match_all_allow_raw)
 
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, &defaultAllocator);
 
     BOOST_TEST(nm_statement_eval(s, "action1", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 
@@ -74,7 +79,7 @@ BOOST_AUTO_TEST_CASE(match_all_allow_json)
     s = nm_statement_from_json(json, NULL);
     BOOST_REQUIRE(s);
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, &defaultAllocator);
 
     BOOST_TEST(nm_statement_eval(s, "action1", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 
@@ -101,7 +106,7 @@ BOOST_AUTO_TEST_CASE(match_all_deny)
     s = nm_statement_from_json(json, NULL);
     BOOST_REQUIRE(s);
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, &defaultAllocator);
 
     BOOST_TEST(nm_statement_eval(s, "action1", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 

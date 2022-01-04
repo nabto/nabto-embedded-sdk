@@ -4,6 +4,10 @@
 #include <modules/iam/nm_iam.h>
 #include <nn/string_set.h>
 
+static struct nn_allocator defaultAllocator = {
+    .calloc = calloc,
+    .free = free
+};
 
 BOOST_AUTO_TEST_SUITE(iam)
 
@@ -18,7 +22,7 @@ BOOST_AUTO_TEST_CASE(set_notification_categories, *boost::unit_test::timeout(180
     struct nm_iam iam;
     nm_iam_init(&iam, d, NULL);
     struct nn_string_set cats;
-    nn_string_set_init(&cats);
+    nn_string_set_init(&cats, &defaultAllocator);
     nn_string_set_insert(&cats, "cat1");
     nn_string_set_insert(&cats, "cat2");
     BOOST_TEST(nm_iam_set_notification_categories(&iam, &cats) == NM_IAM_ERROR_OK);

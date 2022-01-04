@@ -5,6 +5,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
 #include <platform/np_event_queue_wrapper.h>
+#include <platform/np_heap.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
 
@@ -41,7 +42,7 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
         return ec;
     }
 
-    nabto_coap_error err = nabto_coap_client_init(&ctx->client, &nc_coap_client_notify_event, ctx);
+    nabto_coap_error err = nabto_coap_client_init(&ctx->client, np_get_default_allocator(), &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);
         return nc_coap_error_to_core(err);

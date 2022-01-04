@@ -7,6 +7,11 @@
 
 #include <cjson/cJSON.h>
 
+static struct nn_allocator defaultAllocator = {
+  .calloc = calloc,
+  .free = free
+};
+
 namespace {
 std::string denyPolicy = R"(
 {
@@ -51,7 +56,7 @@ BOOST_AUTO_TEST_CASE(deny_ssh)
     BOOST_REQUIRE(policy);
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, &defaultAllocator);
 
     BOOST_TEST(nm_policy_eval_simple(policy, "TcpTunnel:Connect", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 

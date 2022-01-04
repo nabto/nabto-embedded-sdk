@@ -8,6 +8,7 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
+
 struct nabto_device_thread {
     pthread_t thread;
 };

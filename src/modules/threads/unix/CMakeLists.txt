@@ -8,5 +8,5 @@ if (UNIX)
 
   add_library(nm_threads_unix "${src}")
 
-  target_link_libraries( nm_threads_unix ${CMAKE_THREAD_LIBS_INIT} )
+  target_link_libraries( nm_threads_unix nn ${CMAKE_THREAD_LIBS_INIT} )
 endif()

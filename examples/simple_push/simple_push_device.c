@@ -21,6 +21,10 @@
 const char* keyFile = "device.key";
 const char* stateFile = "simple_push_state.json";
 
+static struct nn_allocator defaultAllocator = {
+  .calloc = calloc,
+  .free = free
+};
 
 enum nn_log_severity logLevel = NN_LOG_SEVERITY_TRACE;
 
@@ -269,7 +273,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
     nm_iam_init(iam, device, iamLogger_);
 
     struct nn_string_set cats;
-    nn_string_set_init(&cats);
+    nn_string_set_init(&cats, &defaultAllocator);
     nn_string_set_insert(&cats, "Info");
     nn_string_set_insert(&cats, "Warn");
     nn_string_set_insert(&cats, "Alert");

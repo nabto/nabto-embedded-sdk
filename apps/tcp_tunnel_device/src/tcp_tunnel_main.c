@@ -74,6 +74,11 @@ struct args {
     bool init;
 };
 
+static struct nn_allocator defaultAllocator = {
+  .calloc = calloc,
+  .free = free
+};
+
 NabtoDevice* device_;
 
 static void signal_handler(int s);
@@ -209,7 +214,7 @@ void args_deinit(struct args* args)
 void tcp_tunnel_init(struct tcp_tunnel* tunnel)
 {
     memset(tunnel, 0, sizeof(struct tcp_tunnel));
-    nn_vector_init(&tunnel->services, sizeof(void*));
+    nn_vector_init(&tunnel->services, sizeof(void*), &defaultAllocator);
 }
 
 void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)

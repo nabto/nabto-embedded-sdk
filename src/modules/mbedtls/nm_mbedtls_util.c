@@ -11,6 +11,10 @@
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
 #include "mbedtls/sha256.h"
+
+#include <platform/np_heap.h>
+
+#include <nn/string.h>
 #include <string.h>
 
 np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
@@ -120,7 +124,7 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
         if (ret != 0) {
             return NABTO_EC_UNKNOWN;
         }
-        *publicKey = strdup(buffer);
+        *publicKey = nn_strdup(buffer, np_get_default_allocator());
     }
     if (*publicKey == NULL) {
         return NABTO_EC_UNKNOWN;
@@ -184,7 +188,7 @@ np_error_code nm_dtls_util_create_private_key(char** privateKey)
     {
         ec = NABTO_EC_UNKNOWN;
     } else {
-        *privateKey = strdup((char*)output_buf);
+        *privateKey = nn_strdup((char*)output_buf, np_get_default_allocator());
     }
 
     mbedtls_pk_free( &key );

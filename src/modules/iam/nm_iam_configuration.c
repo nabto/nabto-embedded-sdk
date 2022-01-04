@@ -6,6 +6,7 @@
 
 #include <platform/np_heap.h>
 
+#include <nn/string.h>
 #include <string.h>
 
 struct nm_iam_configuration* nm_iam_configuration_new()
@@ -55,7 +56,7 @@ bool set_string(char** dst, const char* role)
         *dst = NULL;
         return true;
     }
-    char* tmp = strdup(role);
+    char* tmp = nn_strdup(role, np_get_default_allocator());
     if (tmp != NULL) {
         np_free(*dst);
         *dst = tmp;

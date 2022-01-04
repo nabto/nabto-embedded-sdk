@@ -7,6 +7,8 @@
 #include <cbor.h>
 #include "nc_cbor.h"
 
+#include <nn/string.h>
+
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* response, struct nc_coap_rest_error* error)
@@ -54,7 +56,7 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         }
     }
     if (error->message == NULL) {
-        error->message = strdup(""); // make the message well defined.
+        error->message = nn_strdup("", np_get_default_allocator()); // make the message well defined.
     }
     return true;
 }
