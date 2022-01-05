@@ -4,7 +4,7 @@
 #include <modules/iam/nm_iam.h>
 #include <nn/string_set.h>
 
-#include <platform/np_allocator.h>S
+#include <platform/np_allocator.h>
 
 BOOST_AUTO_TEST_SUITE(iam)
 
