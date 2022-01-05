@@ -30,8 +30,8 @@ static struct timestamp getTimestamp() {
     ts.seconds = currentTime.tm_sec;
     ts.minute = currentTime.tm_min;
     ts.hour = currentTime.tm_hour;
-    ts.year = currentTime.tm_year;
-    ts.month = currentTime.tm_mon;
+    ts.year = currentTime.tm_year + 1900;
+    ts.month = currentTime.tm_mon + 1;
     ts.day = currentTime.tm_mday;
     ts.milliseconds = tv.tv_usec/1000;
     return ts;
