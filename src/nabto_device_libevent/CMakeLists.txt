@@ -50,6 +50,7 @@ target_link_libraries( nabto_device
   nm_mbedtls_random
   nm_mdns
   nm_tcp_tunnel
+  nm_logging_api
   nabto_device_threads
   )
 
