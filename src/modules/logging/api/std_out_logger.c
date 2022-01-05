@@ -3,12 +3,16 @@
 
 #include <api/nabto_device_logging_std_out_callback.h>
 
+#if defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
+#elif defined(HAVE_WINDOWS_H)
+#include <windows.h>
+#endif
 #include "time.h"
 #include <stdio.h>
 
 
-struct timestamp {
+struct datetime {
     int year; // e.g. 2022
     int month; // 1-12
     int day; // 1-31
@@ -19,21 +23,37 @@ struct timestamp {
 };
 
 
-static struct timestamp getTimestamp() {
+static struct datetime getTimestamp() {
+    struct datetime ts;
+#if defined(HAVE_SYS_TIME_H)
     struct timeval tv;
     gettimeofday(&tv, NULL);
+    ts.milliseconds = tv.tv_usec/1000;
     time_t now = time(NULL);
     struct tm currentTime;
     localtime_r(&now, &currentTime);
 
-    struct timestamp ts;
     ts.seconds = currentTime.tm_sec;
     ts.minute = currentTime.tm_min;
     ts.hour = currentTime.tm_hour;
     ts.year = currentTime.tm_year + 1900;
     ts.month = currentTime.tm_mon + 1;
     ts.day = currentTime.tm_mday;
-    ts.milliseconds = tv.tv_usec/1000;
+
+#elif defined(HAVE_WINDOWS_H)
+    SYSTEMTIME st;
+    GetSystemTime(&st);
+
+    ts.seconds = st.wSecond;
+    ts.minute = st.wMinute;
+    ts.hour = st.wHour;
+    ts.year = st.wYear;
+    ts.month = st.wMonth;
+    ts.day = st.wDay;
+    ts.milliseconds = st.wMilliseconds;
+#else
+    #error cannot get the current datetime
+#endif
     return ts;
 }
 
@@ -44,7 +64,7 @@ static struct timestamp getTimestamp() {
 void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
 {
 
-    struct timestamp ts = getTimestamp();
+    struct datetime ts = getTimestamp();
 
     size_t fileLen = strlen(msg->file);
     char fileTmp[NM_API_LOGGING_FILE_LENGTH+4];
