@@ -1991,13 +1991,11 @@ nabto_device_set_log_level(NabtoDevice* device, const char* level);
 /**
  * Set log callback to write logging directly to std out. This configures the log callback to an
  * internally defined function handling the write to std out. As the log callback is stored
- * globally, this is configured for all Nabto Device instances running in the same process. The log
- * callback formats log lines to start with a timestamp, retrieved from the timestamp module of
- * Nabto Device platform. As the callback is stored globally, the Nabto Device platform must remain
- * alive until all Nabto Device instances has stopped using the callback.
+ * globally, this is configured for all Nabto Device instances running in the same process.
  *
  * @param device [in]  The device instance for which to retrieve call log callback invocations.
  * @return NABTO_DEVICE_EC_OK on success
+ *         NABTO_DEVICE_EC_NOT_IMPLEMENTED if unavailable on a given platform.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_std_out_callback(NabtoDevice* device);

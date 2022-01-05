@@ -4,6 +4,8 @@
     "files.insertFinalNewline": true,
     "files.associations": {
         "nabto_device_experimental.h": "c",
-        "nabto_device.h": "c"
+        "nabto_device.h": "c",
+        "time.h": "c",
+        "np_logging_defines.h": "c"
     }
 }

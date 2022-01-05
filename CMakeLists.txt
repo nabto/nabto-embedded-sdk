@@ -161,6 +161,7 @@ add_subdirectory(src/modules/iam)
 add_subdirectory(src/modules/libevent)
 add_subdirectory(src/modules/threads/unix)
 add_subdirectory(src/modules/threads/windows)
+add_subdirectory(src/modules/logging/api)
 add_subdirectory(apps/common)
 
 add_subdirectory(src/platform)

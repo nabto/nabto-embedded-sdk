@@ -28,6 +28,7 @@ target_link_libraries( nabto_device_select_unix
   nm_tcp_tunnel
   3rdparty_mbedtls
   nm_threads_unix
+  nm_logging_api
   )
 
 
