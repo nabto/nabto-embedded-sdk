@@ -6,6 +6,9 @@
 
 #include <core/nc_attacher.h>
 
+#include <platform/np_allocator.h>
+#include <nn/string.h>
+
 struct nabto_device_fcm_notification {
     struct nabto_device_context* dev;
     struct nc_attacher_fcm_send_context fcmSend;
@@ -15,7 +18,7 @@ struct nabto_device_fcm_notification {
 NabtoDeviceFcmNotification* NABTO_DEVICE_API
 nabto_device_fcm_notification_new(NabtoDevice* device)
 {
-    struct nabto_device_fcm_notification* n = calloc(1, sizeof(struct nabto_device_fcm_notification));
+    struct nabto_device_fcm_notification* n = np_calloc(1, sizeof(struct nabto_device_fcm_notification));
     if (n != NULL) {
         struct nabto_device_context* dev = (struct nabto_device_context*)device;
         n->dev = dev;
@@ -29,10 +32,10 @@ nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification)
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     struct nabto_device_context* dev = n->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    free(n->fcmSend.fcmRequest.payload);
-    free(n->fcmSend.fcmRequest.projectId);
-    free(n->fcmSend.fcmResponse.body);
-    free(n);
+    np_free(n->fcmSend.fcmRequest.payload);
+    np_free(n->fcmSend.fcmRequest.projectId);
+    np_free(n->fcmSend.fcmResponse.body);
+    np_free(n);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
@@ -45,10 +48,10 @@ nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notific
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (n->fcmSend.fcmRequest.projectId != NULL) {
-        free(n->fcmSend.fcmRequest.projectId);
+        np_free(n->fcmSend.fcmRequest.projectId);
     }
 
-    n->fcmSend.fcmRequest.projectId = strdup(projectId);
+    n->fcmSend.fcmRequest.projectId = nn_strdup(projectId, np_allocator_get());
     if (n->fcmSend.fcmRequest.projectId == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {
@@ -67,10 +70,10 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (n->fcmSend.fcmRequest.payload != NULL) {
-        free(n->fcmSend.fcmRequest.payload);
+        np_free(n->fcmSend.fcmRequest.payload);
     }
 
-    n->fcmSend.fcmRequest.payload = strdup(payload);
+    n->fcmSend.fcmRequest.payload = nn_strdup(payload, np_allocator_get());
     if (n->fcmSend.fcmRequest.payload == NULL) {
         ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
     } else {

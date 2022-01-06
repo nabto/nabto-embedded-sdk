@@ -5,8 +5,7 @@
 #include <api/nabto_device_defines.h>
 #include <api/nabto_device_error.h>
 #include <platform/np_logging.h>
-
-#include <stdlib.h>
+#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_API
 
@@ -27,21 +26,21 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_init_listener(NabtoDevice*
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    struct nabto_device_stream_listener_context* listenerContext = calloc(1, sizeof(struct nabto_device_stream_listener_context));
+    struct nabto_device_stream_listener_context* listenerContext = np_calloc(1, sizeof(struct nabto_device_stream_listener_context));
     if (listenerContext == NULL) {
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
     np_error_code ec  = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
     if (ec) {
-        free(listenerContext);
+        np_free(listenerContext);
         return nabto_device_error_core_to_api(ec);
     }
     listenerContext->device = dev;
     listenerContext->listener = listener;
     ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, type, &nabto_device_stream_core_callback, listenerContext);
     if (ec) {
-        free(listenerContext);
+        np_free(listenerContext);
         return nabto_device_error_core_to_api(ec);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -52,21 +51,21 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_init_listener_ephemeral(Na
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    struct nabto_device_stream_listener_context* listenerContext = calloc(1, sizeof(struct nabto_device_stream_listener_context));
+    struct nabto_device_stream_listener_context* listenerContext = np_calloc(1, sizeof(struct nabto_device_stream_listener_context));
     if (listenerContext == NULL) {
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
     np_error_code ec  = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
     if (ec) {
-        free(listenerContext);
+        np_free(listenerContext);
         return nabto_device_error_core_to_api(ec);
     }
     listenerContext->device = dev;
     listenerContext->listener = listener;
     ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, 0, &nabto_device_stream_core_callback, listenerContext);
     if (ec) {
-        free(listenerContext);
+        np_free(listenerContext);
         return nabto_device_error_core_to_api(ec);
     }
     *type = listenerContext->coreListener.type;
@@ -274,7 +273,7 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
 
 void nabto_device_stream_free_internal(struct nabto_device_stream* str) {
     nc_stream_destroy(str->stream);
-    free(str);
+    np_free(str);
 }
 
 /*******************************************
@@ -299,7 +298,7 @@ np_error_code nabto_device_stream_listener_callback(const np_error_code ec, stru
         // using the stream structure as event structure means it will be freed when user calls stream_free
     } else if (ec == NABTO_EC_ABORTED) {
         nc_stream_manager_remove_listener(&listenerContext->coreListener);
-        free(listenerContext);
+        np_free(listenerContext);
         retEc = ec;
     } else {
         // In error state streams on the listener queue will not reach the user, so they cant call stream_free
@@ -319,7 +318,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
     NABTO_LOG_INFO(LOG, "stream_listener_callback");
 
     if (ec == NABTO_EC_OK) {
-        struct nabto_device_stream* str = calloc(1, sizeof(struct nabto_device_stream));
+        struct nabto_device_stream* str = np_calloc(1, sizeof(struct nabto_device_stream));
         if (str == NULL) {
             nc_stream_destroy(stream);
             return;

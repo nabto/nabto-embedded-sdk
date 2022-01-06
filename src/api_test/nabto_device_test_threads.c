@@ -5,7 +5,7 @@
 #include <nabto/nabto_device_test.h>
 #include <api/nabto_device_threads.h>
 
-#include <stdlib.h>
+#include <platform/np_allocator.h>
 
 struct threads_test {
     struct nabto_device_mutex* mutex;
@@ -21,7 +21,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_test_threads()
     // is called on the thread and everything closes down in a
     // controlled manner
 
-    struct threads_test* t = calloc(1, sizeof(struct threads_test));
+    struct threads_test* t = np_calloc(1, sizeof(struct threads_test));
 
     t->mutex = nabto_device_threads_create_mutex();
     t->condition = nabto_device_threads_create_condition();
@@ -46,7 +46,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_test_threads()
     nabto_device_threads_free_mutex(t->mutex);
     nabto_device_threads_free_thread(t->thread);
 
-    free(t);
+    np_free(t);
     return NABTO_DEVICE_EC_OK;
 }
 

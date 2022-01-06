@@ -2,8 +2,9 @@
 #include <core/nc_stream.h>
 #include <platform/np_logging.h>
 #include <platform/np_tcp_wrapper.h>
+#include <platform/np_allocator.h>
 
-#include <stdlib.h>
+
 
 /**
  * Forward data from a nabto stream to a tcp connection
@@ -37,7 +38,7 @@ static void the_end(struct nm_tcp_tunnel_connection* connection);
  */
 struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new()
 {
-    struct nm_tcp_tunnel_connection* connection = calloc(1,sizeof(struct nm_tcp_tunnel_connection));
+    struct nm_tcp_tunnel_connection* connection = np_calloc(1,sizeof(struct nm_tcp_tunnel_connection));
     if (connection == NULL) {
         return NULL;
     }
@@ -57,7 +58,7 @@ void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
     if (connection->stream) {
         nc_stream_destroy(connection->stream);
     }
-    free(connection);
+    np_free(connection);
 }
 
 np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* service, struct nm_tcp_tunnel_connection* connection, struct nc_stream_context* stream)

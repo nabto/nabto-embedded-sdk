@@ -1,12 +1,14 @@
 #include <api/nabto_device_threads.h>
 
+#include <platform/np_allocator.h>
+
 #include <platform/np_logging.h>
 
 #include <winsock2.h>
 #include <windows.h>
 #include <string.h>
 
-#include <stdlib.h>
+
 
 #define LOG NABTO_LOG_MODULE_API
 
@@ -26,7 +28,7 @@ struct nabto_device_condition {
 
 struct nabto_device_thread* nabto_device_threads_create_thread()
 {
-    struct nabto_device_thread* thread = (struct nabto_device_thread*)malloc(sizeof(struct nabto_device_thread));
+    struct nabto_device_thread* thread = (struct nabto_device_thread*)np_calloc(1, sizeof(struct nabto_device_thread));
     if (thread == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate thread");
         return NULL;
@@ -37,7 +39,7 @@ struct nabto_device_thread* nabto_device_threads_create_thread()
 
 struct nabto_device_mutex* nabto_device_threads_create_mutex()
 {
-    struct nabto_device_mutex* mutex = (struct nabto_device_mutex*)malloc(sizeof(struct nabto_device_mutex));
+    struct nabto_device_mutex* mutex = (struct nabto_device_mutex*)np_calloc(1, sizeof(struct nabto_device_mutex));
     if (mutex == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate mutex");
         return NULL;
@@ -48,7 +50,7 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
 
 struct nabto_device_condition* nabto_device_threads_create_condition()
 {
-    struct nabto_device_condition* cond = (struct nabto_device_condition*)malloc(sizeof(struct nabto_device_condition));
+    struct nabto_device_condition* cond = (struct nabto_device_condition*)np_calloc(1, sizeof(struct nabto_device_condition));
     if (cond == NULL) {
         NABTO_LOG_ERROR(LOG, "Failed to allocate condition");
         return NULL;
@@ -61,17 +63,17 @@ void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
 {
     NABTO_LOG_TRACE(LOG, "freeing thread: %u", thread);
     CloseHandle(thread->thread);
-    free(thread);
+    np_free(thread);
 }
 
 void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutex)
 {
-    free(mutex);
+    np_free(mutex);
 }
 
 void nabto_device_threads_free_cond(struct nabto_device_condition* cond)
 {
-    free(cond);
+    np_free(cond);
 }
 
 void nabto_device_threads_join(struct nabto_device_thread* thread)

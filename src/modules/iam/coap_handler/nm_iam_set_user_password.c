@@ -3,7 +3,9 @@
 #include "../nm_iam.h"
 #include "../nm_iam_internal.h"
 
-#include <stdlib.h>
+
+
+#include <platform/np_allocator.h>
 
 #include <cbor.h>
 
@@ -28,18 +30,18 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* pass = NULL;
     if (!nm_iam_cbor_decode_string(&value, &pass) || pass == NULL || strlen(pass) > handler->iam->passwordMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
-        free(pass);
+        np_free(pass);
         return;
     }
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, np_allocator_get());
     nn_string_map_insert(&attributes, "IAM:Username", username);
 
     if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserPassword", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         nn_string_map_deinit(&attributes);
-        free(pass);
+        np_free(pass);
         return;
     }
     nn_string_map_deinit(&attributes);
@@ -47,16 +49,16 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, NULL);
-        free(pass);
+        np_free(pass);
         return;
     }
     if (!nm_iam_user_set_password(user, pass)) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
-        free(pass);
+        np_free(pass);
         return;
     }
     nm_iam_internal_state_has_changed(handler->iam);
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
-    free(pass);
+    np_free(pass);
 }

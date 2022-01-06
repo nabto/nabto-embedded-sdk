@@ -7,8 +7,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_timestamp_wrapper.h>
-
-#include <stdlib.h>
+#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_TEST
 
@@ -32,7 +31,7 @@ static void resolve_and_free_test(struct event_queue_test* t, np_error_code ec)
     nabto_device_future_resolve(t->fut, nabto_device_error_core_to_api(ec));
     np_event_queue_destroy_event(&t->eq, t->event);
     np_event_queue_destroy_event(&t->eq, t->timedEvent);
-    free(t);
+    np_free(t);
 }
 
 // this is called after the second/timed event resolves
@@ -70,7 +69,7 @@ nabto_device_test_event_queue(NabtoDevice* device, NabtoDeviceFuture* future)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    struct event_queue_test* t = calloc(1, sizeof(struct event_queue_test));
+    struct event_queue_test* t = np_calloc(1, sizeof(struct event_queue_test));
     t->fut = fut;
     struct np_event_queue* eq = &dev->pl.eq;
     t->eq = dev->pl.eq;

@@ -3,10 +3,9 @@
 
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
+#include <platform/np_allocator.h>
 
 #include <cbor.h>
-
-#include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
@@ -38,7 +37,7 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
         cbor_encoder_init(&encoder, NULL, 0, 0);
         bufferSize = encode_scts(&encoder, &sctCtx->scts);
     }
-    uint8_t* buffer = malloc(bufferSize);
+    uint8_t* buffer = np_calloc(1, bufferSize);
     if (!buffer) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -56,7 +55,7 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
                                         &sct_request_handler,
                                         &attacher->sctContext, attacher->dtls);
     if (req == NULL) {
-        free(buffer);
+        np_free(buffer);
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
@@ -72,7 +71,7 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
         sctCtx->uploadingVersion = sctCtx->version;
         nabto_coap_client_request_send(req);
     }
-    free(buffer);
+    np_free(buffer);
     return ec;
 }
 

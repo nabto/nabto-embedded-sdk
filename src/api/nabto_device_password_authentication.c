@@ -7,6 +7,9 @@
 
 #include <core/nc_spake2.h>
 
+#include <platform/np_allocator.h>
+#include <nn/string.h>
+
 /**
  * Handler which is registered in the core to handle new password requests.
  */
@@ -63,7 +66,7 @@ nabto_device_connection_get_password_authentication_username(NabtoDevice* device
     } else if (connection->username[0] == 0) {
         ec = NABTO_DEVICE_EC_INVALID_STATE;
     } else {
-        *username = strdup(connection->username);
+        *username = nn_strdup(connection->username, np_allocator_get());
         if (*username == NULL) {
             ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
         } else {
@@ -99,7 +102,7 @@ nabto_device_password_authentication_request_init_listener(NabtoDevice* device, 
 
 np_error_code password_request_handler(struct nc_spake2_password_request* req, void* data)
 {
-    struct nabto_device_password_authentication_request* r = calloc(1, sizeof(struct nabto_device_password_authentication_request));
+    struct nabto_device_password_authentication_request* r = np_calloc(1, sizeof(struct nabto_device_password_authentication_request));
     if (r == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -163,7 +166,7 @@ void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDev
         nc_spake2_password_ready(req->passwordRequest, NULL);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    free(req);
+    np_free(req);
 }
 
 

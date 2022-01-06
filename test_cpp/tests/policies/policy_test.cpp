@@ -4,8 +4,10 @@
 #include <modules/iam/policies/nm_policies_from_json.h>
 
 #include <nn/string_map.h>
+#include <platform/np_allocator.h>
 
 #include <cjson/cJSON.h>
+
 
 namespace {
 std::string denyPolicy = R"(
@@ -51,7 +53,7 @@ BOOST_AUTO_TEST_CASE(deny_ssh)
     BOOST_REQUIRE(policy);
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, np_allocator_get());
 
     BOOST_TEST(nm_policy_eval_simple(policy, "TcpTunnel:Connect", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 

@@ -8,10 +8,9 @@
 #include <core/nc_client_connection.h>
 
 #include <platform/np_logging.h>
+#include <platform/np_allocator.h>
 
 #include <nn/llist.h>
-
-#include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_API
 
@@ -54,13 +53,13 @@ np_error_code nabto_device_connection_events_listener_cb(const np_error_code ec,
             NABTO_LOG_ERROR(LOG, "Tried to resolve connection event but reference was invalid");
             retEc = NABTO_EC_UNKNOWN;
         }
-        free(ev);
+        np_free(ev);
     } else if (ec == NABTO_EC_ABORTED) {
         nc_device_remove_connection_events_listener(&ctx->dev->core, &ctx->coreListener);
-        free(ctx);
+        np_free(ctx);
         retEc = ec;
     } else {
-        free(eventData);
+        np_free(eventData);
         retEc = ec;
     }
     return retEc;
@@ -69,7 +68,7 @@ np_error_code nabto_device_connection_events_listener_cb(const np_error_code ec,
 void nabto_device_connection_events_core_cb(uint64_t connectionRef, enum nc_connection_event event, void* userData)
 {
     struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)userData;
-    struct nabto_device_listen_connection_event* ev = (struct nabto_device_listen_connection_event*)calloc(1, sizeof(struct nabto_device_listen_connection_event));
+    struct nabto_device_listen_connection_event* ev = (struct nabto_device_listen_connection_event*)np_calloc(1, sizeof(struct nabto_device_listen_connection_event));
     if (ev == NULL) {
         nabto_device_listener_set_error_code(ctx->listener, NABTO_EC_OUT_OF_MEMORY);
         return;
@@ -78,7 +77,7 @@ void nabto_device_connection_events_core_cb(uint64_t connectionRef, enum nc_conn
     ev->coreEvent = (int)event;
     np_error_code ec = nabto_device_listener_add_event(ctx->listener, &ev->eventListNode, ev);
     if (ec != NABTO_EC_OK) {
-        free(ev);
+        np_free(ev);
     }
 }
 
@@ -86,14 +85,14 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_connection_events_init_listener(N
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)calloc(1, sizeof(struct nabto_device_listen_connection_context));
+    struct nabto_device_listen_connection_context* ctx = (struct nabto_device_listen_connection_context*)np_calloc(1, sizeof(struct nabto_device_listen_connection_context));
     if (ctx == NULL) {
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
     nabto_device_threads_mutex_lock(dev->eventMutex);
     np_error_code ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_CONNECTION_EVENTS, &nabto_device_connection_events_listener_cb, ctx);
     if (ec) {
-        free(ctx);
+        np_free(ctx);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
         return nabto_device_error_core_to_api(ec);
     }

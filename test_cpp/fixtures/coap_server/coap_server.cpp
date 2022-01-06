@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <platform/np_allocator.h>
+
 namespace nabto {
 namespace coap {
 
@@ -44,7 +46,7 @@ std::shared_ptr<CoapServer> CoapServer::create(boost::asio::io_context& io)
 void CoapServer::init()
 {
     // init can only fail with oom, assuming this cannot happen in C++
-    nabto_coap_server_init(&server_);
+    nabto_coap_server_init(&server_, np_allocator_get());
     nabto_coap_server_requests_init(&requests_, &server_, &Callbacks::getStamp, &Callbacks::notifyEvent, this);
     setInfiniteStamp();
 }

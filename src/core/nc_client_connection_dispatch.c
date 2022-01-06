@@ -2,8 +2,8 @@
 #include "nc_udp_dispatch.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_allocator.h>
 #include <string.h>
-#include <stdlib.h>
 #include <limits.h>
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION_DISPATCH
@@ -85,7 +85,7 @@ struct nc_client_connection* nc_client_connection_dispatch_alloc_connection(stru
         return NULL;
     }
 
-    struct nc_client_connection* connection = (struct nc_client_connection*)calloc(1, sizeof(struct nc_client_connection));
+    struct nc_client_connection* connection = (struct nc_client_connection*)np_calloc(1, sizeof(struct nc_client_connection));
     if (connection == NULL) {
         NABTO_LOG_INFO(LOG, "Cannot create connection as system is out of memory.");
         return NULL;
@@ -96,7 +96,7 @@ struct nc_client_connection* nc_client_connection_dispatch_alloc_connection(stru
 
 void nc_client_connection_dispatch_free_connection(struct nc_client_connection_dispatch_context* ctx, struct nc_client_connection* connection)
 {
-    free(connection);
+    np_free(connection);
     ctx->currentConnections--;
 }
 

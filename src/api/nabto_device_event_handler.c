@@ -3,8 +3,7 @@
 #include <api/nabto_device_error.h>
 
 #include <platform/np_logging.h>
-
-#include <stdlib.h>
+#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_API
 
@@ -17,7 +16,7 @@ static np_error_code nabto_device_listener_stop_internal(struct nabto_device_lis
 NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    struct nabto_device_listener* listener = (struct nabto_device_listener*)calloc(1,sizeof(struct nabto_device_listener));
+    struct nabto_device_listener* listener = (struct nabto_device_listener*)np_calloc(1,sizeof(struct nabto_device_listener));
     listener->isInitialized = false;
     listener->type = NABTO_DEVICE_LISTENER_TYPE_NONE;
     listener->dev = dev;
@@ -72,7 +71,7 @@ void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceList
 
     nn_llist_erase_node(&listener->listenersItem);
 
-    free(listener);
+    np_free(listener);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 

@@ -12,6 +12,7 @@
 #include <api/nabto_device_error.h>
 #include <api/nabto_device_logging.h>
 #include <platform/np_error_code.h>
+#include <platform/np_allocator.h>
 
 #include <platform/np_logging.h>
 #include <platform/np_error_code.h>
@@ -25,11 +26,11 @@
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
+
+#include <nn/string.h>
 #include "nabto_device_config.h"
 
 //#include "nabto_device_event_queue.h"
-
-#include <stdlib.h>
 
 #define LOG NABTO_LOG_MODULE_API
 
@@ -55,7 +56,7 @@ void nabto_device_new_resolve_failure(struct nabto_device_context* dev)
  */
 NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
-    struct nabto_device_context* dev = calloc(1, sizeof(struct nabto_device_context));
+    struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));
     np_error_code ec;
     if (dev == NULL) {
         return NULL;
@@ -158,10 +159,10 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
-    free(dev->publicKey);
-    free(dev->privateKey);
+    np_free(dev->publicKey);
+    np_free(dev->privateKey);
 
-    free(dev);
+    np_free(dev);
 }
 
 /**
@@ -230,16 +231,16 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    free(dev->privateKey);
+    np_free(dev->privateKey);
 
-    dev->privateKey = strdup(str);
+    dev->privateKey = nn_strdup(str, np_allocator_get());
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
         char* crt;
         ec = nm_dtls_create_crt_from_private_key(dev->privateKey, &crt);
         if (dev->publicKey != NULL) {
-            free(dev->publicKey);
+            np_free(dev->publicKey);
             dev->publicKey = NULL;
         }
         dev->publicKey = crt;
@@ -434,11 +435,10 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
 static char* toHex(uint8_t* data, size_t dataLength)
 {
     size_t outputLength = dataLength*2 + 1;
-    char* output = (char*)malloc(outputLength);
+    char* output = (char*)np_calloc(1, outputLength);
     if (output == NULL) {
         return output;
     }
-    memset(output,0,outputLength);
     size_t i;
     for (i = 0; i < dataLength; i++) {
         size_t outputOffset = i*2;
@@ -637,7 +637,7 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (ec == NABTO_EC_OK) {
-        *serverConnectToken = strdup(output);
+        *serverConnectToken = nn_strdup(output, np_allocator_get());
         if (*serverConnectToken == NULL) {
             ec = NABTO_EC_OUT_OF_MEMORY;
         }

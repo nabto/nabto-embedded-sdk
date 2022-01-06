@@ -5,7 +5,7 @@
 #include "../nm_iam_internal.h"
 #include "../nm_iam_pairing.h"
 
-#include <stdlib.h>
+
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 

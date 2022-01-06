@@ -3,9 +3,10 @@
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_allocator.h>
 
-#include <stdlib.h>
-#include <stdlib.h>
+
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
@@ -68,7 +69,7 @@ struct np_udp nm_select_unix_udp_get_impl(struct nm_select_unix* ctx)
 
 np_error_code nm_select_unix_udp_create(struct np_udp* obj, struct np_udp_socket** sock)
 {
-    struct np_udp_socket* s = calloc(1, sizeof(struct np_udp_socket));
+    struct np_udp_socket* s = np_calloc(1, sizeof(struct np_udp_socket));
     if (!s) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -217,7 +218,7 @@ void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
     nm_select_unix_udp_abort(sock);
     shutdown(sock->sock, SHUT_RDWR);
     close(sock->sock);
-    free(sock);
+    np_free(sock);
 }
 
 void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)

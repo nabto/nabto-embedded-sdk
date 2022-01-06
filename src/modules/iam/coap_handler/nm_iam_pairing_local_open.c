@@ -5,7 +5,9 @@
 #include "../nm_iam_user.h"
 #include "../nm_iam_internal.h"
 
-#include <stdlib.h>
+#include <platform/np_allocator.h>
+
+
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
@@ -51,21 +53,21 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nm_iam_cbor_decode_kv_string(&value, "Username", &username);
     if (username == NULL || !nm_iam_user_validate_username(username) || strlen(username) > handler->iam->usernameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
-        free(username);
+        np_free(username);
         return;
     }
 
     if (nm_iam_internal_find_user(handler->iam, username) != NULL) {
         nabto_device_coap_error_response(request, 409, "Conflict");
-        free(fingerprint);
-        free(username);
+        np_free(fingerprint);
+        np_free(username);
         return;
     }
 
     if (!nm_iam_internal_pair_new_client(handler->iam, request, username)) {
         nabto_device_coap_error_response(request, 500, "Server error");
-        free(fingerprint);
-        free(username);
+        np_free(fingerprint);
+        np_free(username);
         return;
     }
 
@@ -73,6 +75,6 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     nabto_device_coap_response_set_code(request, 201);
     nabto_device_coap_response_ready(request);
 
-    free(fingerprint);
-    free(username);
+    np_free(fingerprint);
+    np_free(username);
 }

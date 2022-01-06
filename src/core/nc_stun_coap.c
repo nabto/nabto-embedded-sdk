@@ -7,10 +7,11 @@
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
 #include <platform/np_local_ip_wrapper.h>
+#include <platform/np_allocator.h>
 #include <core/nc_packet.h>
 
 #include <cbor.h>
-#include <stdlib.h>
+
 
 #define LOG NABTO_LOG_MODULE_COAP
 
@@ -116,14 +117,14 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         }
     }
     nabto_coap_server_request_free(request);
-    free(ctx);
+    np_free(ctx);
 }
 
 void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* request, void* data)
 {
     struct nc_stun_coap_context* stunCoap = (struct nc_stun_coap_context*)data;
 
-    struct nc_stun_coap_endpoints_request* ctx = calloc(1, sizeof(struct nc_stun_coap_endpoints_request));
+    struct nc_stun_coap_endpoints_request* ctx = np_calloc(1, sizeof(struct nc_stun_coap_endpoints_request));
     if (ctx == NULL)  {
         nabto_coap_server_send_error_response(request, NABTO_COAP_CODE_INTERNAL_SERVER_ERROR, "Out of memory");
         nabto_coap_server_request_free(request);

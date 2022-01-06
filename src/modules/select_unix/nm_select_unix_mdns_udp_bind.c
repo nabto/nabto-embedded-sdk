@@ -6,8 +6,8 @@
 
 #include <modules/mdns/nm_mdns_udp_bind.h>
 
-#include <stdlib.h>
-#include <stdlib.h>
+
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>

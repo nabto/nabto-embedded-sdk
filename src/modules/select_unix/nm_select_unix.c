@@ -5,7 +5,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
 
-#include <stdlib.h>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>

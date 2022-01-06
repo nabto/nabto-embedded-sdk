@@ -5,7 +5,10 @@
 #include <modules/iam/policies/nm_policies_from_json.h>
 #include <nn/string_map.h>
 
+#include <platform/np_allocator.h>
+
 #include <cjson/cJSON.h>
+
 
 std::string sAllow = R"(
 {
@@ -48,7 +51,7 @@ BOOST_AUTO_TEST_CASE(match_all_allow_raw)
 
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, np_allocator_get());
 
     BOOST_TEST(nm_statement_eval(s, "action1", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 
@@ -74,7 +77,7 @@ BOOST_AUTO_TEST_CASE(match_all_allow_json)
     s = nm_statement_from_json(json, NULL);
     BOOST_REQUIRE(s);
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, np_allocator_get());
 
     BOOST_TEST(nm_statement_eval(s, "action1", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 
@@ -101,7 +104,7 @@ BOOST_AUTO_TEST_CASE(match_all_deny)
     s = nm_statement_from_json(json, NULL);
     BOOST_REQUIRE(s);
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, np_allocator_get());
 
     BOOST_TEST(nm_statement_eval(s, "action1", &attributes) == NM_IAM_EFFECT_NO_MATCH);
 

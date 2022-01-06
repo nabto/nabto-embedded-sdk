@@ -5,7 +5,7 @@
 #include <platform/np_completion_event.h>
 #include <platform/np_udp_wrapper.h>
 #include <platform/np_local_ip_wrapper.h>
-#include <stdlib.h>
+
 
 #define LOG NABTO_LOG_MODULE_MDNS
 

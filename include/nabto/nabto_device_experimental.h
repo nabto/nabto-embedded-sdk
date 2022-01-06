@@ -68,6 +68,18 @@ nabto_device_disable_remote_access(NabtoDevice* device);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_crypto_speed_test(NabtoDevice* device);
 
+/**
+ * Set a custom allocator.
+ *
+ * This needs to be called before any allocations has happened. If this is not
+ * called the default platform calloc and free are used. This does not change
+ * the allocator used in mbedtls or libevent.
+ */
+typedef void* (*NabtoDeviceAllocatorCalloc)(size_t n, size_t size);
+typedef void (*NabtoDeviceAllocatorFree)(void* ptr);
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_custom_allocator(NabtoDeviceAllocatorCalloc customCalloc, NabtoDeviceAllocatorFree customFree);
 
 #ifdef __cplusplus
 } // extern c #endif

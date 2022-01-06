@@ -2,6 +2,7 @@
 #include <api/nabto_device_defines.h>
 
 #include <platform/np_mdns_wrapper.h>
+#include <platform/np_allocator.h>
 
 #include <nn/string_set.h>
 #include <nn/string_map.h>
@@ -15,8 +16,8 @@ nabto_device_test_mdns_publish_service(NabtoDevice* device)
     static struct nn_string_set subtypes;
     static struct nn_string_map txtItems;
 
-    nn_string_set_init(&subtypes);
-    nn_string_map_init(&txtItems);
+    nn_string_set_init(&subtypes, np_allocator_get());
+    nn_string_map_init(&txtItems, np_allocator_get());
 
     nn_string_set_insert(&subtypes, "pr-12345678-de-abcdefgh");
     nn_string_map_insert(&txtItems, "productid", "pr-12345678");

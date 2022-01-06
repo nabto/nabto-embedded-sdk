@@ -3,6 +3,8 @@
 #include "nm_iam.h"
 #include "nm_iam_internal.h"
 
+#include <platform/np_allocator.h>
+
 static void start_listen(struct nm_iam_auth_handler* handler);
 static void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 static void handle_request(struct nm_iam_auth_handler* handler, NabtoDeviceAuthorizationRequest* request);
@@ -56,7 +58,7 @@ void handle_request(struct nm_iam_auth_handler* handler, NabtoDeviceAuthorizatio
     const char* action = nabto_device_authorization_request_get_action(request);
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes);
+    nn_string_map_init(&attributes, np_allocator_get());
     size_t attributesSize = nabto_device_authorization_request_get_attributes_size(request);
     for (size_t i = 0; i < attributesSize; i++) {
         const char* key = nabto_device_authorization_request_get_attribute_name(request, i);

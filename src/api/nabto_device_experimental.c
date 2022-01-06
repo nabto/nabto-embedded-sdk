@@ -3,7 +3,7 @@
 
 #include <core/nc_stream_manager.h>
 
-#include <stdlib.h>
+#include <platform/np_allocator.h>
 
 #include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
@@ -98,5 +98,15 @@ nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit)
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_custom_allocator(NabtoDeviceAllocatorCalloc customCalloc, NabtoDeviceAllocatorFree customFree)
+{
+    struct nn_allocator a;
+    a.calloc = customCalloc;
+    a.free = customFree;
+    np_allocator_set(&a);
     return NABTO_DEVICE_EC_OK;
 }

@@ -4,6 +4,7 @@
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
+#include <platform/np_allocator.h>
 
 #include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>
@@ -16,9 +17,10 @@
 #include <mbedtls/certs.h>
 #include <mbedtls/timing.h>
 #include <mbedtls/ssl_ciphersuites.h>
+#include <mbedtls/pem.h>
 
 #include <string.h>
-#include <stdlib.h>
+
 #include <stdio.h>
 
 #include <nn/llist.h>
@@ -181,7 +183,7 @@ np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_c
                                  np_dtls_cli_event_handler eventHandler, void* data)
 {
     *client = NULL;
-    struct np_dtls_cli_context* ctx = calloc(1, sizeof(struct np_dtls_cli_context));
+    struct np_dtls_cli_context* ctx = np_calloc(1, sizeof(struct np_dtls_cli_context));
     if (ctx == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -328,7 +330,7 @@ void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx)
     mbedtls_ssl_config_free( &ctx->conf );
     mbedtls_ssl_free( &ctx->ssl );
 
-    free(ctx);
+    np_free(ctx);
 }
 
 void nm_mbedtls_cli_destroy(struct np_dtls_cli_context* ctx)
@@ -383,6 +385,9 @@ np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, con
 {
     int ret;
     ret = mbedtls_x509_crt_parse (&ctx->rootCerts, (const unsigned char *)rootCerts, strlen(rootCerts)+1);
+    if (ret == MBEDTLS_ERR_PEM_ALLOC_FAILED) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     if (ret != 0) {
         NABTO_LOG_ERROR(LOG,  "Failed to load root certs mbedtls_x509_crt_parse returned %d", ret );
         return NABTO_EC_UNKNOWN;

@@ -5,13 +5,14 @@
 #include <platform/np_error_code.h>
 #include <platform/interfaces/np_tcp.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_allocator.h>
 
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 #include <event2/event.h>
 
 #include <stddef.h>
-#include <stdlib.h>
+
 #include <string.h>
 
 
@@ -83,7 +84,7 @@ struct np_tcp nm_libevent_tcp_get_impl(struct nm_libevent_context* ctx)
 np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
 {
     NABTO_LOG_TRACE(LOG, "tcp_create");
-    struct np_tcp_socket* s = calloc(1, sizeof(struct np_tcp_socket));
+    struct np_tcp_socket* s = np_calloc(1, sizeof(struct np_tcp_socket));
     if (s == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -198,7 +199,7 @@ void tcp_destroy(struct np_tcp_socket* sock)
     tcp_abort(sock);
 
     bufferevent_free(sock->bev);
-    free(sock);
+    np_free(sock);
 }
 
 void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)

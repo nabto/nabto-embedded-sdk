@@ -6,7 +6,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
 #include <platform/np_event_queue_wrapper.h>
-#include <stdlib.h>
+#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
 
@@ -28,7 +28,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_
         return NABTO_EC_OUT_OF_MEMORY;
     }
     ctx->isSending = false;
-    nabto_coap_error err = nabto_coap_server_init(&ctx->server);
+    nabto_coap_error err = nabto_coap_server_init(&ctx->server, np_allocator_get());
     nabto_coap_server_requests_init(&ctx->requests, &ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         pl->buf.free(ctx->sendBuffer);

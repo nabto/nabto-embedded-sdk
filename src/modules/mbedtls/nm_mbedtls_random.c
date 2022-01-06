@@ -2,11 +2,12 @@
 
 #include <platform/np_error_code.h>
 #include <platform/np_platform.h>
+#include <platform/np_allocator.h>
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 
-#include <stdlib.h>
+
 
 static np_error_code make_random(struct np_platform* pl, void* buffer, size_t bufferSize);
 
@@ -18,12 +19,12 @@ struct random_ctx {
 static void free_random_ctx(struct random_ctx* ctx) {
     mbedtls_ctr_drbg_free(&ctx->ctr_drbg);
     mbedtls_entropy_free(&ctx->entropy);
-    free(ctx);
+    np_free(ctx);
 }
 
 bool nm_mbedtls_random_init(struct np_platform* pl)
 {
-    struct random_ctx* ctx = calloc(1, sizeof(struct random_ctx));
+    struct random_ctx* ctx = np_calloc(1, sizeof(struct random_ctx));
     if (ctx == NULL) {
         return false;
     }

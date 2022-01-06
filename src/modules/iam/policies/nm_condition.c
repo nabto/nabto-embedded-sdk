@@ -1,8 +1,11 @@
 #include "nm_condition.h"
 
-#include <nn/string_map.h>
+#include <platform/np_allocator.h>
 
-#include <stdlib.h>
+#include <nn/string_map.h>
+#include <nn/string.h>
+
+
 #include <string.h>
 
 static enum nm_condition_result match(enum nm_iam_condition_operator op, const char* lhs, const char* rhs);
@@ -10,7 +13,7 @@ static bool resolve_value(const struct nn_string_map* attributes, const char* va
 
 struct nm_iam_condition* nm_condition_new(enum nm_iam_condition_operator op)
 {
-    struct nm_iam_condition* c = calloc(1, sizeof(struct nm_iam_condition));
+    struct nm_iam_condition* c = np_calloc(1, sizeof(struct nm_iam_condition));
     if (c == NULL) {
         return NULL;
     }
@@ -26,7 +29,7 @@ struct nm_iam_condition* nm_condition_new_with_key(enum nm_iam_condition_operato
     if (c == NULL) {
         return c;
     }
-    c->key = strdup(key);
+    c->key = nn_strdup(key, np_allocator_get());
     return c;
 
 }
@@ -34,19 +37,19 @@ struct nm_iam_condition* nm_condition_new_with_key(enum nm_iam_condition_operato
 void nm_condition_free(struct nm_iam_condition* condition)
 {
     nm_condition_deinit(condition);
-    free(condition);
+    np_free(condition);
 }
 
 void nm_condition_init(struct nm_iam_condition* condition)
 {
     nn_llist_node_init(&condition->listNode);
-    nn_string_set_init(&condition->values);
+    nn_string_set_init(&condition->values, np_allocator_get());
 }
 
 void nm_condition_deinit(struct nm_iam_condition* condition)
 {
     nn_string_set_deinit(&condition->values);
-    free(condition->key);
+    np_free(condition->key);
     condition->key = NULL;
 }
 

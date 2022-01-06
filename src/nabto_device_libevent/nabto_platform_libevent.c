@@ -17,7 +17,9 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
-#include <stdlib.h>
+#include <platform/np_allocator.h>
+
+#define LOG NABTO_LOG_MODULE_PLATFORM
 
 #include <platform/np_logging.h>
 #include <platform/np_logging_defines.h>
@@ -44,6 +46,8 @@ struct libevent_platform {
     struct nm_mdns_server mdnsServer;
 };
 
+
+
 /**
  * This function is called from nabto_device_new.
  */
@@ -56,7 +60,11 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // Create a new platform object. The platform is providing all the
     // functionality which can change between the nabto_device
     // implementations.
-    struct libevent_platform* platform = calloc(1, sizeof(struct libevent_platform));
+
+    struct libevent_platform* platform = np_calloc(1, sizeof(struct libevent_platform));
+    if (platform == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
 
     platform->eventBase = event_base_new();
     platform->signalEvent = event_new(platform->eventBase, -1, 0, &signal_event, platform);
@@ -131,7 +139,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     event_base_free(platform->eventBase);
 
     nm_libevent_global_deinit();
-    free(platform);
+    np_free(platform);
 }
 
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device)

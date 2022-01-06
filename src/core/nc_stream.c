@@ -7,8 +7,6 @@
 #include <platform/np_timestamp_wrapper.h>
 #include <platform/np_event_queue_wrapper.h>
 
-#include <stdlib.h>
-
 #define LOG NABTO_LOG_MODULE_STREAM
 
 struct nabto_stream_module nc_stream_module;

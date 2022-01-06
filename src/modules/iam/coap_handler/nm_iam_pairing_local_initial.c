@@ -6,7 +6,7 @@
 #include "../nm_iam_internal.h"
 #include "../nm_iam_pairing.h"
 
-#include <stdlib.h>
+
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
@@ -45,7 +45,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
                 nabto_device_coap_response_set_code(request, 201);
                 nabto_device_coap_response_ready(request);
             } else {
-                nabto_device_coap_error_response(request, 500, "Server error"); 
+                nabto_device_coap_error_response(request, 500, "Server error");
             }
         }
     }

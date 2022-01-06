@@ -2,11 +2,12 @@
 
 #include <platform/np_logging_defines.h>
 #include <platform/np_logging.h>
+#include <platform/np_allocator.h>
 
 #include <cbor.h>
 #include "nc_cbor.h"
 
-#include <stdlib.h>
+#include <nn/string.h>
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
@@ -49,19 +50,18 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         size_t payloadLength;
         if(nabto_coap_client_response_get_payload(response, &payload, &payloadLength)) {
             if (payloadLength < 1024) {
-                error->message = malloc(payloadLength+1);
-                memset(error->message, 0, payloadLength+1);
+                error->message = np_calloc(1, payloadLength+1);
                 memcpy(error->message, payload, payloadLength);
             }
         }
     }
     if (error->message == NULL) {
-        error->message = strdup(""); // make the message well defined.
+        error->message = nn_strdup("", np_allocator_get()); // make the message well defined.
     }
     return true;
 }
 
 void nc_coap_rest_error_deinit(struct nc_coap_rest_error* error)
 {
-    free(error->message);
+    np_free(error->message);
 }

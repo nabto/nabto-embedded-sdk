@@ -3,8 +3,8 @@
 #include "nabto_device_defines.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_allocator.h>
 
-#include <stdlib.h>
 #define LOG NABTO_LOG_MODULE_API
 
 typedef uint32_t nabto_device_duration_t_;
@@ -12,24 +12,23 @@ typedef uint32_t nabto_device_duration_t_;
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_future_new(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    struct nabto_device_future* fut = malloc(sizeof(struct nabto_device_future));
+    struct nabto_device_future* fut = np_calloc(1, sizeof(struct nabto_device_future));
     if (fut == NULL) {
         return NULL;
     }
-    memset(fut, 0, sizeof(struct nabto_device_future));
     fut->ready = false;
     fut->dev = dev;
     fut->mutex = nabto_device_threads_create_mutex();
     if (fut->mutex == NULL) {
         NABTO_LOG_ERROR(LOG, "mutex init has failed");
-        free(fut);
+        np_free(fut);
         return NULL;
     }
     fut->cond = nabto_device_threads_create_condition();
     if (fut->cond == NULL) {
         NABTO_LOG_ERROR(LOG, "condition init has failed");
         nabto_device_threads_free_mutex(fut->mutex);
-        free(fut);
+        np_free(fut);
         return NULL;
     }
     return (NabtoDeviceFuture*)fut;
@@ -41,7 +40,7 @@ void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_threads_free_cond(fut->cond);
     nabto_device_threads_free_mutex(fut->mutex);
-    free(fut);
+    np_free(fut);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_future_ready(NabtoDeviceFuture* future)
