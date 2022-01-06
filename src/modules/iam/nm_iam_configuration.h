@@ -109,6 +109,15 @@ struct nm_iam_configuration {
 /*************************
  * Configuration Builder *
  *************************/
+
+/**
+ * @intro Configuration Builder
+ *
+ * Build a new IAM configuration consisting of policies and roles.
+ *
+ * Header: `src/modules/iam/nm_iam_configuration.h`
+ */
+
 /**
  * Create IAM configuration
  *

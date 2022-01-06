@@ -8,6 +8,14 @@ extern "C" {
 #endif
 
 /**
+ * @intro Serializer
+ *
+ * Read and write a full IAM configuration and state.
+ *
+ * Header: `src/modules/iam/nm_iam_serializer.h`
+ */
+
+/**
  * Dump the IAM configuration to a JSON string for persistent
  * storage. The resulting string must be freed with
  * nm_iam_serializer_string_free().

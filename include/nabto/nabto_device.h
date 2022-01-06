@@ -1159,10 +1159,10 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  ********************/
 
 /**
- * @intro FCM Notifications
+ * @intro FCM Notifications (Mobile Push)
  *
  * Integration with Firebase Cloud Messaging (FCM) notifications allows the
- * device to send push notifications to clients. The integration is transparent
+ * device to send push notifications to typically mobile clients. The integration is transparent
  * meaning the Nabto platform forwards the provided payload directly to FCM, and
  * so it must follow the format defined by FCM. Sending push notifications
  * requires a Firebase project, a detailed guide will be provided in Q4 2021.
@@ -1459,36 +1459,25 @@ nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
 /**
  * @intro Authorization
  *
- * The Authorization API allows the application to make authorization
- * decisions for the core. That is, the core asks the application to
- * decide if a given authorization request should be allowed or
- * denied. An Authorization request listener must be created to use
- * the TCP Tunnelling feature.
+ * The Authorization API allows the application to make authorization decisions
+ * for the core. That is, the core asks the application to decide if a given
+ * authorization request should be allowed or denied.
  *
- * The application has access to details from the authorization
- * request through attributes. The connection on which the
- * authorization request takes place is also available for the
- * application, making it possible to retrieve details about the
- * remote peer as input in the authorization decision process.
+ * The application has access to details from the authorization request through
+ * attributes. The connection on which the authorization request takes place is
+ * also available for the application, making it possible to retrieve details
+ * about the remote peer as input in the authorization decision process.
  *
- * An Authorization request is requesting access to one of the following
- * actions:
+ * While the full Authorization API is available to the application, it is
+ * recommend to use the simpler abstractions provided by the Nabto Edge IAM module (see
+ * https://docs.nabto.com/developer/api-reference/embedded-device-sdk/iam/intro.html). This
+ * enables the application to first define a simple configuration of privileges
+ * and roles - and then later to query if the current user is in a role with
+ * sufficient privileges to perform a given operation (with
+ * `nm_iam_check_access`).
  *
- * ```
- * Actions:
- *  TcpTunnel:ListServices  CoAP request to list services
- *  TcpTunnel:GetService    CoAP request to get information for a specific service
- *  TcpTunnel:Connect       CoAP request to test access permissions, or new stream opened on a tunnel
- * ```
- *
- * The Authorization requests `TcpTunnel:GetService` and `TcpTunnel:Connect` actions contains the following
- * attributes:
- *
- * ```
- * Attributes:
- *   TcpTunnel:ServiceId    The id of the service.
- *   TcpTunnel:ServiceType  The type of the service.
- * ```
+ * Note: An Authorization request listener must be created to use the TCP
+ * Tunnelling feature (this is done implicitly when using the IAM module).
  */
 
 /**
@@ -1611,11 +1600,19 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
 /**
  * @intro Password Authentication
  *
- * Password authenticate the client and the device. The password authentication is bidirectional and
- * based on PAKE, such that both the client and the device learns that the other end knows the
- * password, without revealing the password to the other end. Only one password authentication
- * listener can exist on the system. The Nabto IAM module can be used to handle password
- * authorization requests.
+ * This API allows password authentication of client and device. Note that
+ * instead of using this low-level API, it is recommended for applications to
+ * use the Nabto Edge IAM Module
+ * (https://docs.nabto.com/developer/api-reference/embedded-device-sdk/iam/intro.html). That
+ * module implements our recommended best practices where password based
+ * authentication is only used for bootstrapping (pairing), instead using public
+ * key authentication subsequently.
+ *
+ * Password authentication is bidirectional and based on PAKE, such that both
+ * the client and the device learns that the other end knows the password,
+ * without revealing the password to the other end. Only one password
+ * authentication listener can exist on the system. The Nabto IAM module can be
+ * used to handle password authorization requests.
  *
  * Internally, the Nabto device core supports PAKE through CoAP endpoints. Access to these endpoints
  * are throttled if a client provides an invalid username/password to prevent brute force password
@@ -2016,16 +2013,16 @@ nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity);
 /**
  * @intro mDNS
  *
- * The system discovers devices on the local network using mDNS. A
- * device application can either use the built in mDNS functionality
- * or use a third party mDNS implementation. These functions controls
- * the built in mDNS functionality.
+ * In Nabto Edge, local devices are discovered using mDNS. A device application
+ * can either use the built in mDNS functionality or use a third party mDNS
+ * implementation. This section describes the built-in mDNS implementation to
+ * allow clients to discover a device.
  */
 
 /**
  * Enable the optional mDNS server/responder. The server is started when the
- * device is started. mDNS has to be enabled before the device is
- * started. The responder is stopped when the device is closed.
+ * device is started. mDNS has to be enabled before the device is started. The
+ * responder is stopped when the device is closed.
  *
  * @param device [in]  The device instance
  * @return NABTO_DEVICE_EC_OK on success
@@ -2073,9 +2070,23 @@ nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char*
 /**
  * @intro Service Invocation
  *
- * Service invocation is allowing the device to invoke a service which is
+ * Service invocation allows the device to invoke a custom HTTP service
  * configured in the basestation. This makes it possible to integrate with
- * services without needing a client initiated connection to the device.
+ * external services without needing a client initiated connection to the
+ * device. And without needing an HTTPS client implementation on the device: The
+ * device uses the already secure connection between device and basestation, the
+ * basestation in turn invokes an HTTPS service with the data specified by the
+ * device.
+ *
+ * Note that the basestation needs to be considered trusted in this scenario as
+ * it handles cleartext data from the device (vs. the normal end-to-end
+ * encrypted communication between clients and devices). This can of course be
+ * remedied by custom encryption between the device and the external service.
+ */
+
+/**
+ * Opaque reference to a service invocation object used by all Service
+ * Invocation API functions, created with `nabto_device_service_invocation_new`.
  */
 typedef struct NabtoDeviceServiceInvocation_ NabtoDeviceServiceInvocation;
 
@@ -2096,8 +2107,8 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_service_invocation_free(NabtoDeviceServiceInvocation* serviceInvocation);
 
 /**
- * Stop a service invocation.
- * If a coap request is in progress this request will be stopped.
+ * Stop a service invocation. If a service invocation coap request towards the
+ * basestation is in progress this request will be stopped.
  *
  * @param serviceInvocation  The service invocation object.
  */

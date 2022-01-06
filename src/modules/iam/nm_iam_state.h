@@ -39,6 +39,16 @@ struct nm_iam_state {
  *****************/
 
 /**
+ * @intro State Builder
+ *
+ * Build a new IAM state to e.g. set the pairing mode. This API is not to be
+ * used after the device is started, i.e. it should only be used to build an
+ * initial default state.
+ *
+ * Header: `src/modules/iam/nm_iam_state.h`
+ */
+
+/**
  * Create IAM state
  *
  * @return NULL iff the state could not be created
@@ -117,7 +127,7 @@ void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b);
 bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* openPairingRole);
 
 /**
- * Set the username to pair as during local initial pairing. The username 
+ * Set the username to pair as during local initial pairing. The username
  * string is copied into the state.
  *
  * @param state [in]                   The IAM state

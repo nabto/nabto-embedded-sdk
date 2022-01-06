@@ -49,6 +49,8 @@ struct nm_iam_role;
  *
  * Granular manipulation of an existing state at runtime is possible using the Runtime State API to
  * e.g. enable pairing modes or add a user.
+ *
+ * Header: `src/modules/iam/nm_iam.h`
  */
 
 /**
@@ -186,6 +188,8 @@ void nm_iam_set_max_users(struct nm_iam* iam, size_t n);
  *
  * These functions manipulate the IAM state in a thread safe manner. Note that when state has been
  * manipulated the state changed callback is invoked.
+ *
+ * Header: `src/modules/iam/nm_iam.h`
  */
 
 /**
