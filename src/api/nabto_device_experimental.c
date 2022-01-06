@@ -102,7 +102,7 @@ nabto_device_limit_stream_segments(NabtoDevice* device, size_t limit)
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_set_custom_allocator(nabto_device_allocator_calloc customCalloc, nabto_device_allocator_free customFree)
+nabto_device_set_custom_allocator(NabtoDeviceAllocatorCalloc customCalloc, NabtoDeviceAllocatorFree customFree)
 {
     struct nn_allocator a;
     a.calloc = customCalloc;
