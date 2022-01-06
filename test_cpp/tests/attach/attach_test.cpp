@@ -29,6 +29,7 @@ class AttachTest {
 
     ~AttachTest()
     {
+        nc_coap_client_stop(&coapClient_);
         tp_.stop();
         nc_attacher_deinit(&attach_);
         nc_coap_client_deinit(&coapClient_);
