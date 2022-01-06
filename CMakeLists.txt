@@ -58,6 +58,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/inclu
 CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
 CHECK_INCLUDE_FILES("sys/select.h" HAVE_SYS_SELECT_H)
+CHECK_INCLUDE_FILES("sys/time.h" HAVE_SYS_TIME_H)
 CHECK_INCLUDE_FILES("netinet/in.h" HAVE_NETINET_IN_H)
 CHECK_INCLUDE_FILES("unistd.h" HAVE_UNISTD_H)
 CHECK_INCLUDE_FILES("winsock2.h" HAVE_WINSOCK2_H)
@@ -80,6 +81,11 @@ endif()
 if (HAVE_SYS_SELECT_H)
   add_definitions(-DHAVE_SYS_SELECT_H)
 endif()
+
+if (HAVE_SYS_TIME_H)
+  add_definitions(-DHAVE_SYS_TIME_H)
+endif()
+
 
 if (HAVE_NETINET_IN_H)
   add_definitions(-DHAVE_NETINET_IN_H)
@@ -161,6 +167,7 @@ add_subdirectory(src/modules/iam)
 add_subdirectory(src/modules/libevent)
 add_subdirectory(src/modules/threads/unix)
 add_subdirectory(src/modules/threads/windows)
+add_subdirectory(src/modules/logging/api)
 add_subdirectory(apps/common)
 
 add_subdirectory(src/platform)

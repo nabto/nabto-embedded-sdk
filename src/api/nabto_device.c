@@ -26,7 +26,9 @@
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
+
 #include <nn/string.h>
+#include "nabto_device_config.h"
 
 //#include "nabto_device_event_queue.h"
 
@@ -578,39 +580,6 @@ void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture*
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
-
-NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data)
-{
-    (void)device;
-    nabto_device_logging_set_callback(cb, data);
-    return NABTO_DEVICE_EC_OK;
-}
-
-NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_level(NabtoDevice* device, const char* level)
-{
-    (void)device;
-    uint32_t l = 0;
-    if (strcmp(level, "error") == 0) {
-        l = NABTO_LOG_SEVERITY_LEVEL_ERROR;
-    } else if (strcmp(level, "warn") == 0) {
-        l = NABTO_LOG_SEVERITY_LEVEL_WARN;
-    } else if (strcmp(level, "info") == 0) {
-        l = NABTO_LOG_SEVERITY_LEVEL_INFO;
-    } else if (strcmp(level, "trace") == 0) {
-        l = NABTO_LOG_SEVERITY_LEVEL_TRACE;
-    } else {
-        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
-    }
-    nabto_device_logging_set_level(l);
-    return NABTO_DEVICE_EC_OK;
-}
-
-NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_std_out_callback(NabtoDevice* device)
-{
-    struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    nabto_device_logging_set_callback(&nabto_device_logging_std_out_callback, &dev->pl);
-    return NABTO_DEVICE_EC_OK;
-}
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverConnectToken)

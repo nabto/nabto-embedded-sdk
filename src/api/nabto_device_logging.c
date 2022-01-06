@@ -1,4 +1,6 @@
 #include "nabto_device_logging.h"
+#include "nabto_device_config.h"
+#include "nabto_device_logging_std_out_callback.h"
 #include <stdio.h>
 
 #include <platform/np_platform.h>
@@ -78,50 +80,7 @@ void nabto_device_logging_set_callback(NabtoDeviceLogCallback cb, void* data)
     }
 }
 
-#define NM_API_LOGGING_FILE_LENGTH 24
-
-void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
-{
-
-    struct np_platform* pl = data;
-    uint32_t now = np_timestamp_now_ms(&pl->timestamp);
-
-    uint32_t milliseconds = now%1000;
-    uint32_t seconds = (now/1000)%1000;
-
-    size_t fileLen = strlen(msg->file);
-    char fileTmp[NM_API_LOGGING_FILE_LENGTH+4];
-    if(fileLen > NM_API_LOGGING_FILE_LENGTH) {
-        strcpy(fileTmp, "...");
-        strcpy(fileTmp + 3, msg->file + fileLen - NM_API_LOGGING_FILE_LENGTH);
-    } else {
-        strcpy(fileTmp, msg->file);
-    }
-    const char* level;
-    switch(msg->severity) {
-        case NABTO_DEVICE_LOG_ERROR:
-            level = "ERROR";
-            break;
-        case NABTO_DEVICE_LOG_WARN:
-            level = "_WARN";
-            break;
-        case NABTO_DEVICE_LOG_INFO:
-            level = "_INFO";
-            break;
-        case NABTO_DEVICE_LOG_TRACE:
-            level = "TRACE";
-            break;
-        default:
-            // should not happen as it would be caugth by the if
-            level = "_NONE";
-            break;
-    }
-
-    printf("%02u.%02u %s(%03u)[%s] %s\n",
-           seconds, milliseconds,
-           fileTmp, msg->line, level, msg->message);
-    fflush(stdout);
-}
+// implementation of nabto_device.h functions
 
 const char* NABTO_DEVICE_API
 nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity)
@@ -139,4 +98,42 @@ nabto_device_log_severity_as_string(NabtoDeviceLogLevel severity)
             // should not happen
             return "NONE";
     }
+}
+
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, void* data)
+{
+    (void)device;
+    nabto_device_logging_set_callback(cb, data);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_level(NabtoDevice* device, const char* level)
+{
+    (void)device;
+    uint32_t l = 0;
+    if (strcmp(level, "error") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_ERROR;
+    } else if (strcmp(level, "warn") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_WARN;
+    } else if (strcmp(level, "info") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_INFO;
+    } else if (strcmp(level, "trace") == 0) {
+        l = NABTO_LOG_SEVERITY_LEVEL_TRACE;
+    } else {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
+    nabto_device_logging_set_level(l);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_std_out_callback(NabtoDevice* device)
+{
+    (void)device;
+#if NABTO_DEVICE_LOG_STD_OUT_CALLBACK
+    nabto_device_logging_set_callback(nabto_device_logging_std_out_callback, NULL);
+    return NABTO_DEVICE_EC_OK;
+#else
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+#endif
 }

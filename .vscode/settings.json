@@ -7,6 +7,8 @@
         "nabto_device.h": "c",
         "np_mdns_wrapper.h": "c",
         "nm_iam_auth_handler.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "time.h": "c",
+        "np_logging_defines.h": "c"
     }
 }

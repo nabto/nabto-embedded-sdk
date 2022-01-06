@@ -21,6 +21,11 @@
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 
+#include <platform/np_logging.h>
+#include <platform/np_logging_defines.h>
+
+#define LOG NABTO_LOG_MODULE_PLATFORM
+
 static void signal_event(evutil_socket_t s, short event, void* userData);
 static void* libevent_thread(void* data);
 
@@ -48,6 +53,7 @@ struct libevent_platform {
  */
 np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex)
 {
+    NABTO_LOG_TRACE(LOG, "initializing platform");
     // Initialize the global libevent context.
     nm_libevent_global_init();
 
