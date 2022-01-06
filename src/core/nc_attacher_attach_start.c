@@ -261,7 +261,14 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
                             hostLength);
             return NC_ATTACHER_STATUS_ERROR;
         }
-
+        if (ctx->dns != NULL) {
+            np_free(ctx->dns);
+        }
+        ctx->dns = calloc(1,hostLength+1);
+        if (ctx->dns == NULL) {
+            NABTO_LOG_ERROR(LOG, "Out of memory when handling redirect.");
+            return NC_ATTACHER_STATUS_ERROR;
+        }
         cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL);
         ctx->currentPort = (uint16_t)p;
 

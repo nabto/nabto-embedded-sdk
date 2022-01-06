@@ -163,8 +163,7 @@ struct nc_attach_context {
     uint8_t bsEpsTried;
 
     uint16_t currentPort;
-    char dns[256];
-    uint8_t dnsLen;
+    char* dns;
 
     struct nc_dns_multi_resolver_context dnsMultiResolver;
     struct np_ip_address resolvedIps[NC_ATTACHER_MAX_IPS];

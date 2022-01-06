@@ -11,6 +11,8 @@
 
 #include <string.h>
 
+#include <nn/string.h>
+
 #include <cbor.h>
 
 
@@ -182,6 +184,10 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         np_completion_event_deinit(&ctx->resolveCompletionEvent);
 
         nc_dns_multi_resolver_deinit(&ctx->dnsMultiResolver);
+
+        if (ctx->dns != NULL) {
+            np_free(ctx->dns);
+        }
     }
 }
 
@@ -235,6 +241,17 @@ np_error_code nc_attacher_set_handshake_timeout(struct nc_attach_context* ctx,
     return NABTO_EC_OK;
 }
 
+static np_error_code update_dns(struct nc_attach_context* ctx , const char* hostname)
+{
+    if (ctx->dns != NULL) {
+        np_free(ctx->dns);
+    }
+    ctx->dns = nn_strdup(hostname, np_allocator_get());
+    if (ctx->dns == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
+}
 
 np_error_code nc_attacher_start(struct nc_attach_context* ctx, const char* hostname, uint16_t serverPort, struct nc_udp_dispatch_context* udp)
 {
@@ -248,7 +265,11 @@ np_error_code nc_attacher_start(struct nc_attach_context* ctx, const char* hostn
     ctx->defaultPort = serverPort;
     ctx->currentPort = serverPort;
 
-    memcpy(ctx->dns, ctx->hostname, strlen(ctx->hostname)+1);
+    np_error_code ec = update_dns(ctx,hostname);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     nc_udp_dispatch_set_attach_context(ctx->udp, ctx);
     handle_state_change(ctx);
     return NABTO_EC_OK;
@@ -466,7 +487,11 @@ void reattach(void* data)
     if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
         ctx->state = NC_ATTACHER_STATE_CLOSED;
     } else {
-        memcpy(ctx->dns, ctx->hostname, strlen(ctx->hostname)+1);
+        np_error_code ec = update_dns(ctx, ctx->hostname);
+        if (ec != NABTO_EC_OK) {
+            NABTO_LOG_ERROR(LOG, "Failed to update the dns address");
+        }
+
         ctx->currentPort = ctx->defaultPort;
         ctx->state = NC_ATTACHER_STATE_DNS;
         ctx->redirectAttempts = 0;

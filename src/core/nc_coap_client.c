@@ -67,8 +67,10 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
 
 void nc_coap_client_stop(struct nc_coap_client_context* ctx)
 {
+    struct np_event_queue* eq = &ctx->pl->eq;
     nabto_coap_client_stop(&ctx->client);
     nc_coap_client_event(ctx);
+    np_event_queue_cancel_event(eq, ctx->timer);
 }
 
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
