@@ -33,6 +33,8 @@ void signal_handler(int s);
 
 NabtoDevice* device_;
 
+static bool init_logging();
+
 int main(int argc, char* argv[]) {
 
     if (argc != 3) {
@@ -46,6 +48,11 @@ int main(int argc, char* argv[]) {
     struct context ctx;
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
+
+    if (!init_logging()) {
+        handle_device_error(NULL, NULL, "Failed to initialize logging");
+        return -1;
+    }
 
     if ((device_ = nabto_device_new()) == NULL) {
         handle_device_error(NULL, NULL, "Failed to allocate device");
@@ -86,6 +93,21 @@ int main(int argc, char* argv[]) {
     nabto_device_future_free(future);
 
     printf("Device cleaned up and closing\n");
+}
+
+bool init_logging() {
+    if (nabto_device_set_log_std_out_callback(NULL) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        if (nabto_device_set_log_level(NULL, logLevel) != NABTO_DEVICE_EC_OK) {
+            printf("Could not set loglevel to %s\n", logLevel);
+            return false;
+        }
+    }
+    return true;
 }
 
 void signal_handler(int s)
@@ -164,20 +186,10 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
 
     if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_log_std_out_callback(device) != NABTO_DEVICE_EC_OK)
+        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK)
     {
         return false;
     }
-
-    const char* logLevel = getenv("NABTO_LOG_LEVEL");
-    if (logLevel != NULL) {
-        if (nabto_device_set_log_level(device, logLevel) != NABTO_DEVICE_EC_OK) {
-            printf("Could not set loglevel to %s\n", logLevel);
-            return false;
-        }
-    }
-
 
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_start(device, fut);
