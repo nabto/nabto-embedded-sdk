@@ -77,32 +77,24 @@ void start_recv(struct nc_udp_dispatch_context* ctx)
 void async_recv_wait_complete(const np_error_code ec, void* userData)
 {
     struct nc_udp_dispatch_context* ctx = userData;
-    struct np_platform* pl = ctx->pl;
     if (ec) {
         return;
     }
 
     struct np_udp_endpoint ep;
-    struct np_communication_buffer* recvBuffer = pl->buf.allocate();
-    if (recvBuffer == NULL) {
-        NABTO_LOG_ERROR(LOG, "Cannot allocate a buffer for receiving data, dropping packet.");
-        // TODO this is not dropping the packet.
-        start_recv(ctx);
-    } else {
-        uint8_t* bufferStart = pl->buf.start(recvBuffer);
-        size_t bufferLength = pl->buf.size(recvBuffer);
-        size_t recvLength;
-        np_error_code recvEc = np_udp_recv_from(&ctx->pl->udp, ctx->sock, &ep, bufferStart, bufferLength, &recvLength);
-        if (recvEc == NABTO_EC_OK) {
-            nc_udp_dispatch_handle_packet(&ep, bufferStart, (uint16_t)recvLength, ctx);
-        }
-        pl->buf.free(recvBuffer);
-
-        if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
-            start_recv(ctx);
-        }
+    uint8_t recvBuffer[1500];
+    size_t bufferLength = sizeof(recvBuffer);
+    size_t recvLength;
+    np_error_code recvEc = np_udp_recv_from(
+        &ctx->pl->udp, ctx->sock, &ep, recvBuffer, bufferLength, &recvLength);
+    if (recvEc == NABTO_EC_OK) {
+        nc_udp_dispatch_handle_packet(&ep, recvBuffer, (uint16_t)recvLength,
+                                      ctx);
     }
 
+    if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
+        start_recv(ctx);
+    }
 }
 
 void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
