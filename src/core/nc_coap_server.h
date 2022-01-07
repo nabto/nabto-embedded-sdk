@@ -15,9 +15,9 @@ struct nc_coap_server_context {
     uint32_t currentExpiry;
     struct np_event* ev;
     struct np_event* timer;
+    // if sendBuffer is non null that means we are currently sending a packet.
     struct np_communication_buffer* sendBuffer;
     struct np_dtls_srv_send_context sendCtx;
-    bool isSending;
 };
 
 // translate nabto_coap_error to np_error_code, coap errors are common
