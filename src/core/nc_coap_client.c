@@ -24,13 +24,8 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
 
 np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
 {
-    ctx->sendBuffer = pl->buf.allocate();
-    if (!ctx->sendBuffer) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
+    ctx->sendBuffer = NULL;
     ctx->pl = pl;
-    ctx->isSending = false;
-    ctx->sendCtx.buffer = pl->buf.start(ctx->sendBuffer);
     np_error_code ec;
     ec = np_event_queue_create_event(&ctx->pl->eq, &nc_coap_client_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
@@ -44,12 +39,9 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
 
     nabto_coap_error err = nabto_coap_client_init(&ctx->client, np_allocator_get(), &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
-        pl->buf.free(ctx->sendBuffer);
         return nc_coap_error_to_core(err);
     }
     nc_coap_client_set_infinite_stamp(ctx);
-
-
 
     return NABTO_EC_OK;
 }
@@ -61,7 +53,6 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
         np_event_queue_destroy_event(eq, ctx->ev);
         np_event_queue_destroy_event(eq, ctx->timer);
         nabto_coap_client_destroy(&ctx->client);
-        ctx->pl->buf.free(ctx->sendBuffer);
     }
 }
 
@@ -92,11 +83,17 @@ void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
 void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
-    if (ctx->isSending) {
+    if (ctx->sendBuffer != NULL) {
         return;
     }
 
+    ctx->sendBuffer = pl->buf.allocate();
+    if (ctx->sendBuffer == NULL) {
+        return;
+    }
     struct np_dtls_cli_send_context* sendCtx = &ctx->sendCtx;
+    sendCtx->buffer = pl->buf.start(ctx->sendBuffer);
+
     uint8_t* end = sendCtx->buffer+pl->buf.size(ctx->sendBuffer);
 
     void* connection;
@@ -104,9 +101,10 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
     uint8_t* ptr = nabto_coap_client_create_packet(&ctx->client, ts, sendCtx->buffer, end, &connection);
     if (ptr == NULL || ptr < sendCtx->buffer || connection == NULL) {
         // should not happen.
+        pl->buf.free(ctx->sendBuffer);
+        ctx->sendBuffer = NULL;
     } else {
         size_t used = ptr - sendCtx->buffer;
-        ctx->isSending = true;
         sendCtx->cb = &nc_coap_client_send_to_callback;
         sendCtx->data = ctx;
         sendCtx->bufferSize = (uint16_t)used;
@@ -175,7 +173,8 @@ void nc_coap_client_send_to_callback(const np_error_code ec, void* data)
 {
     (void)ec;
     struct nc_coap_client_context* ctx = data;
-    ctx->isSending = false;
+    ctx->pl->buf.free(ctx->sendBuffer);
+    ctx->sendBuffer = NULL;
     nc_coap_client_event(ctx);
 }
 
