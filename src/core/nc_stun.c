@@ -4,8 +4,10 @@
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
 #include <platform/np_event_queue_wrapper.h>
+#include <platform/np_allocator.h>
 
 #include <string.h>
+#include <nn/string.h>
 
 #define LOG NABTO_LOG_MODULE_STUN
 
@@ -82,7 +84,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     }
 
     nn_llist_init(&ctx->cbs);
-
+    ctx->initialized = true;
     return NABTO_EC_OK;
 }
 
@@ -96,7 +98,7 @@ void nc_stun_stop(struct nc_stun_context* ctx)
 
 void nc_stun_deinit(struct nc_stun_context* ctx)
 {
-    if (ctx->pl != NULL) { // if init called
+    if (ctx->initialized) { // if init called
         ctx->state = NC_STUN_STATE_ABORTED;
         struct np_platform* pl = ctx->pl;
         pl->buf.free(ctx->sendBuf);
@@ -105,6 +107,10 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
         np_completion_event_deinit(&ctx->dnsCompletionEvent);
         np_completion_event_deinit(&ctx->sendCompletionEvent);
         nc_dns_multi_resolver_deinit(&ctx->dnsMultiResolver);
+        if (ctx->hostname != NULL) {
+            np_free((void*)ctx->hostname);
+        }
+        ctx->initialized = false;
     }
 }
 
@@ -115,8 +121,10 @@ void nc_stun_set_sockets(struct nc_stun_context* ctx, struct nc_udp_dispatch_con
 }
 void nc_stun_set_host(struct nc_stun_context* ctx, const char* hostname, uint16_t port)
 {
-    ctx->hostname = hostname;
-    ctx->priPort = port;
+    if (ctx->initialized) {
+        ctx->hostname = nn_strdup(hostname, np_allocator_get());
+        ctx->priPort = port;
+    }
 }
 
 void nc_stun_remove_sockets(struct nc_stun_context* ctx)

@@ -20,7 +20,6 @@ struct nc_coap_client_context {
     struct np_event* timer;
     struct np_dtls_cli_send_context sendCtx;
     struct np_communication_buffer* sendBuffer;
-    bool isSending;
 };
 
 np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx);

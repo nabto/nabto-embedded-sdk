@@ -501,12 +501,6 @@ void nc_device_events_listener_notify(enum nc_device_event event, void* data)
 {
     struct nc_device_context* dev = (struct nc_device_context*)data;
 
-    if (event == NC_DEVICE_EVENT_ATTACHED && dev->attacher.stunPort != 0) {
-        dev->stunHost = dev->attacher.stunHost;
-        dev->stunPort = dev->attacher.stunPort;
-        nc_stun_set_host(&dev->stun, dev->stunHost, dev->stunPort);
-    }
-
     struct nn_llist_iterator iterator = nn_llist_begin(&dev->deviceEvents);
     while (!nn_llist_is_end(&iterator))
     {

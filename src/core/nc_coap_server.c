@@ -23,16 +23,10 @@ static void nc_coap_server_notify_event_callback(void* userData);
 
 np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
 {
-    ctx->sendBuffer = pl->buf.allocate();
-    if (!ctx->sendBuffer) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-    ctx->isSending = false;
+    ctx->sendBuffer = NULL;
     nabto_coap_error err = nabto_coap_server_init(&ctx->server, np_allocator_get());
     nabto_coap_server_requests_init(&ctx->requests, &ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
-        pl->buf.free(ctx->sendBuffer);
-        ctx->sendBuffer = NULL;
         return nc_coap_error_to_core(err);
     }
     ctx->pl = pl;
@@ -56,7 +50,6 @@ void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
     if (ctx->pl != NULL) { // if init was called
         nabto_coap_server_requests_destroy(&ctx->requests);
         nabto_coap_server_destroy(&ctx->server);
-        ctx->pl->buf.free(ctx->sendBuffer);
 
         struct np_event_queue* eq = &ctx->pl->eq;
         np_event_queue_destroy_event(eq, ctx->ev);
@@ -92,7 +85,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
 
-    if (ctx->isSending) {
+    if (ctx->sendBuffer != NULL) {
         //NABTO_LOG_TRACE(LOG, "handle send, isSending: %i", ctx->isSending );
         return;
     }
@@ -105,6 +98,12 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
     struct nc_client_connection* clientConnection = (struct nc_client_connection*)connection;
     struct np_dtls_srv_connection* dtls = clientConnection->dtls;
 
+
+    ctx->sendBuffer = pl->buf.allocate();
+    if (ctx->sendBuffer == NULL) {
+        NABTO_LOG_ERROR(LOG, "canot allocate buffer for sending a packet from the coap server.");
+        return;
+    }
     uint8_t* sendBuffer = pl->buf.start(ctx->sendBuffer);
     size_t sendBufferSize = pl->buf.size(ctx->sendBuffer);
 
@@ -113,17 +112,17 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
     if (sendEnd == NULL || sendEnd < sendBuffer) {
         // this should not happen
         nc_coap_server_event(ctx);
+        pl->buf.free(ctx->sendBuffer);
+        ctx->sendBuffer = NULL;
         return;
     }
 
-//    sendCtx->dtls.buffer = ctx->pl->buf.start(ctx->sendBuffer);
     struct np_dtls_srv_send_context* sendCtx = &ctx->sendCtx;
     sendCtx->buffer = sendBuffer;
     sendCtx->bufferSize = (uint16_t)(sendEnd - sendBuffer);
     sendCtx->cb = &nc_coap_server_send_to_callback;
     sendCtx->data = ctx;
     sendCtx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    ctx->isSending = true;
     nc_coap_packet_print("coap server send packet", sendCtx->buffer, sendCtx->bufferSize);
     ctx->pl->dtlsS.async_send_data(ctx->pl, dtls, sendCtx);
 }
@@ -181,7 +180,9 @@ void nc_coap_server_send_to_callback(const np_error_code ec, void* data)
 {
     (void)ec;
     struct nc_coap_server_context* ctx = data;
-    ctx->isSending = false;
+    struct np_platform* pl = ctx->pl;
+    pl->buf.free(ctx->sendBuffer);
+    ctx->sendBuffer = NULL;
     nc_coap_server_event(ctx);
 }
 

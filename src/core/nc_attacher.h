@@ -163,8 +163,7 @@ struct nc_attach_context {
     uint8_t bsEpsTried;
 
     uint16_t currentPort;
-    char dns[256];
-    uint8_t dnsLen;
+    char* dns;
 
     struct nc_dns_multi_resolver_context dnsMultiResolver;
     struct np_ip_address resolvedIps[NC_ATTACHER_MAX_IPS];
@@ -183,9 +182,6 @@ struct nc_attach_context {
 
 
     struct nabto_coap_client_request* request;
-
-    char stunHost[256];
-    uint16_t stunPort;
 
     // Keep alive
     struct nc_keep_alive_context keepAlive;
