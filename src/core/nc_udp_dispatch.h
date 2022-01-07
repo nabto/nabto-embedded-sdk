@@ -18,8 +18,6 @@ struct nc_udp_dispatch_context {
     struct nc_stun_context* stun;
     struct nc_rendezvous_context* rendezvous;
 
-    struct np_communication_buffer* recvBuffer;
-
     struct np_completion_event recvCompletionEvent;
 };
 
