@@ -5,6 +5,7 @@
 #include <platform/np_completion_event.h>
 #include <platform/np_udp_wrapper.h>
 #include <platform/np_local_ip_wrapper.h>
+#include <platform/np_allocator.h>
 
 
 #define LOG NABTO_LOG_MODULE_MDNS
@@ -39,8 +40,7 @@ static np_error_code instance_init(struct nm_mdns_server_instance* instance, str
 {
     np_error_code ec;
 
-    instance->sending = false;
-
+    instance->sendBuffer = NULL;
     instance->server = server;
 
     ec = np_udp_create(&instance->server->udp, &instance->socket);
@@ -115,7 +115,8 @@ void nm_mdns_goodbye_sent(const np_error_code ec, void* userData)
 {
     (void)ec;
     struct nm_mdns_server_instance* instance = userData;
-    instance->sending = false;
+    np_free(instance->sendBuffer);
+    instance->sendBuffer = NULL;
     np_udp_abort(&instance->server->udp, instance->socket);
 }
 
@@ -130,13 +131,21 @@ void nm_mdns_send_goodbye(struct nm_mdns_server_instance* instance)
     np_completion_event_reinit(&instance->sendCompletionEvent, nm_mdns_goodbye_sent, instance);
 
     if (port > 0) {
+        instance->sendBuffer = np_calloc(1, NM_MDNS_SEND_BUFFER_SIZE);
+        if (instance->sendBuffer == NULL) {
+            NABTO_LOG_ERROR(LOG, "Cannot allocate buffer for sending mdns goodbye packet");
+            return;
+        }
+
         if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, 0, false, true, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
         {
-            instance->sending = true;
             np_udp_async_send_to(&instance->server->udp, instance->socket,
                                  ep, instance->sendBuffer, (uint16_t)written,
                                  &instance->sendCompletionEvent);
             return;
+        } else {
+            np_free(instance->sendBuffer);
+            instance->sendBuffer = NULL;
         }
     }
     np_udp_abort(&instance->server->udp, instance->socket);
@@ -145,10 +154,10 @@ void nm_mdns_send_goodbye(struct nm_mdns_server_instance* instance)
 void nm_mdns_server_stop(struct nm_mdns_server* server)
 {
     server->stopped = true;
-    if (!server->v4.sending) {
+    if (server->v4.sendBuffer == NULL) {
         nm_mdns_send_goodbye(&server->v4);
     }
-    if (!server->v6.sending) {
+    if (server->v6.sendBuffer == NULL) {
         nm_mdns_send_goodbye(&server->v6);
     }
 }
@@ -260,13 +269,19 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
     }
 
     if (port > 0) {
+        instance->sendBuffer = np_calloc(1, NM_MDNS_SEND_BUFFER_SIZE);
+        if (instance->sendBuffer == NULL) {
+            NABTO_LOG_ERROR(LOG, "Cannot allocate buffer for sending mdns packet");
+        }
         if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, id, unicastResponse, false, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
         {
-            instance->sending = true;
             np_udp_async_send_to(&instance->server->udp, instance->socket,
                                  ep, instance->sendBuffer, (uint16_t)written,
                                  &instance->sendCompletionEvent);
             return;
+        } else {
+            np_free(instance->sendBuffer);
+            instance->sendBuffer = NULL;
         }
     }
     nm_mdns_recv_packet(instance);
@@ -275,7 +290,8 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
 void nm_mdns_packet_sent(const np_error_code ec, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
-    instance->sending = false;
+    np_free(instance->sendBuffer);
+    instance->sendBuffer = NULL;
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(LOG, "v4 packet sent callback with error: (%u) %s", ec, np_error_code_to_string(ec));
         if (instance->server->stopped) {

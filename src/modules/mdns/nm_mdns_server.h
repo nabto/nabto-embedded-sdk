@@ -15,15 +15,15 @@
 #include <mdns/mdns_server.h>
 
 #define MDNS_MAX_LOCAL_IPS 2
+#define NM_MDNS_SEND_BUFFER_SIZE 1500
 
 // v4 or v6 server
 struct nm_mdns_server_instance {
     struct nm_mdns_server* server;
-    bool sending;
     struct np_udp_socket* socket;
     struct np_udp_endpoint sendEp;
     struct np_udp_endpoint recvEp;
-    uint8_t sendBuffer[1500];
+    uint8_t* sendBuffer; // if non null then we are sending a packet.
     struct np_completion_event openedCompletionEvent;
     struct np_completion_event recvWaitCompletionEvent;
     struct np_completion_event sendCompletionEvent;
