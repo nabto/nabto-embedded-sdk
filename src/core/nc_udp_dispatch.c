@@ -21,12 +21,16 @@ static void async_recv_wait_complete(const np_error_code ec, void* userData);
 np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
-    ctx->pl = pl;
     np_error_code ec = np_udp_create(&pl->udp, &ctx->sock);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    return np_completion_event_init(&pl->eq, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx);
+    ec = np_completion_event_init(&pl->eq, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ctx->pl = pl;
+    return NABTO_EC_OK;
 }
 
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx)

@@ -15,12 +15,22 @@ np_error_code np_completion_event_init(struct np_event_queue* eq, struct np_comp
     completionEvent->userData = userData;
     completionEvent->eq = *eq;
 
-    return np_event_queue_create_event(eq, &resolve_event_callback, completionEvent, &completionEvent->event);
+    np_error_code ec = np_event_queue_create_event(eq, &resolve_event_callback, completionEvent, &completionEvent->event);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    completionEvent->initialized = true;
+    return NABTO_EC_OK;
+
 }
 
 void np_completion_event_deinit(struct np_completion_event* completionEvent)
 {
-    np_event_queue_destroy_event(&completionEvent->eq, completionEvent->event);
+    if (completionEvent->initialized) {
+        np_event_queue_destroy_event(&completionEvent->eq, completionEvent->event);
+        completionEvent->initialized = false;
+    }
 }
 
 void np_completion_event_reinit(struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData)

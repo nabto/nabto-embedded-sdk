@@ -10,22 +10,22 @@
 
 static void nc_client_connection_dispatch_send_internal_error_cb(np_error_code ec, void* data);
 
-void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
+np_error_code nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
                                         struct np_platform* pl,
                                         struct nc_device_context* dev)
 {
     nn_llist_init(&ctx->connections);
     ctx->maxConcurrentConnections = SIZE_MAX;
     ctx->device = dev;
-    ctx->pl = pl;
     ctx->closing = false;
     ctx->sendingInternalError = false;
     np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, &nc_client_connection_dispatch_send_internal_error_cb, ctx);
     if (ec != NABTO_EC_OK) {
-        // todo
-        //return ec;
+        nn_llist_deinit(&ctx->connections);
+        return ec;
     }
-
+    ctx->pl = pl;
+    return NABTO_EC_OK;
 }
 
 void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_context* ctx)
@@ -42,8 +42,8 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
 
             nc_client_connection_destroy_connection(connection);
         }
+        np_completion_event_deinit(&ctx->sendCompletionEvent);
     }
-    np_completion_event_deinit(&ctx->sendCompletionEvent);
 }
 
 void nc_client_connection_dispatch_try_close(struct nc_client_connection_dispatch_context* ctx)

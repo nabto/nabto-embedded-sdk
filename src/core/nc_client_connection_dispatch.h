@@ -22,7 +22,7 @@ struct nc_client_connection_dispatch_context {
     struct np_completion_event sendCompletionEvent;
 };
 
-void nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
+np_error_code nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
                                         struct np_platform* pl,
                                         struct nc_device_context* device);
 
