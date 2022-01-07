@@ -95,7 +95,7 @@ void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* dat
     }
 
     printf("%04u-%02u-%02u %02u:%02u:%02u.%03u %s(%03u)[%s] %s\n",
-           ts.year, ts.month, ts.day, ts.hour, ts.day, ts.minute, ts.milliseconds,
+           ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.seconds, ts.milliseconds,
            fileTmp, msg->line, level, msg->message);
     fflush(stdout);
 }
