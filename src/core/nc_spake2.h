@@ -38,6 +38,7 @@ struct nc_spake2_password_request {
 typedef np_error_code (*nc_spake2_password_request_handler)(struct nc_spake2_password_request* req, void* data);
 
 struct nc_spake2_module {
+    bool initialized;
     // if this is not set return 404.
     nc_spake2_password_request_handler passwordRequestHandler;
     void* passwordRequestHandlerData;

@@ -11,25 +11,41 @@ np_error_code nabto_device_future_queue_init(struct nabto_device_future_queue* q
     queue->thread = nabto_device_threads_create_thread();
     queue->mutex = nabto_device_threads_create_mutex();
     queue->condition = nabto_device_threads_create_condition();
+
+    queue->initialized = true;
+
     if (queue->thread == NULL || queue->mutex == NULL || queue->condition == NULL) {
+        nabto_device_future_queue_deinit(queue);
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
     nn_llist_init(&queue->futureList);
 
-    return nabto_device_threads_run(queue->thread, execution_thread, queue);
+    np_error_code ec = nabto_device_threads_run(queue->thread, execution_thread, queue);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_future_queue_deinit(queue);
+        return ec;
+    }
+    return NABTO_EC_OK;
 }
 
 void nabto_device_future_queue_deinit(struct nabto_device_future_queue* queue)
 {
-    nabto_device_future_queue_stop(queue);
+    if (!queue->initialized) {
+        return;
+    }
+    //nabto_device_future_queue_stop(queue);
     nabto_device_threads_free_cond(queue->condition);
     nabto_device_threads_free_mutex(queue->mutex);
     nabto_device_threads_free_thread(queue->thread);
+    queue->initialized = false;
 }
 
 void nabto_device_future_queue_stop(struct nabto_device_future_queue* queue)
 {
+    if (!queue->initialized) {
+        return;
+    }
     nabto_device_threads_mutex_lock(queue->mutex);
     if (queue->stopped) {
         return;

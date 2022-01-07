@@ -26,6 +26,8 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 
     device->localPort = 5592;
     device->p2pPort = 5593;
+    device->serverPort = 443;
+
 
     device->appName = NULL;
     device->appVersion = NULL;
@@ -36,6 +38,15 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     device->enableAttach = true;
 
     nn_log_init(&device->moduleLogger, module_logger, device);
+
+    nn_llist_init(&device->eventsListeners);
+    nn_llist_init(&device->deviceEvents);
+
+    nn_string_set_init(&device->mdnsSubtypes, np_allocator_get());
+    nn_string_map_init(&device->mdnsTxtItems, np_allocator_get());
+
+    device->initialized = true; // This will be set to false again if we cleanup after a failed init.
+
 
     np_error_code ec;
     ec = nc_udp_dispatch_init(&device->udp, pl);
@@ -110,28 +121,30 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-    nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
+    ec = nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
+    if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
+        return ec;
+    }
+
     nc_stream_manager_init(&device->streamManager, pl, &device->moduleLogger);
 
-    nn_llist_init(&device->eventsListeners);
-    nn_llist_init(&device->deviceEvents);
-
-    nn_string_set_init(&device->mdnsSubtypes, np_allocator_get());
-    nn_string_map_init(&device->mdnsTxtItems, np_allocator_get());
-
-
-    device->serverPort = 443;
 
     ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, NULL, NULL);
     if (ec != NABTO_EC_OK) {
+        nc_device_deinit(device);
         return ec;
     }
+
+    device->initialized = true;
 
     return NABTO_EC_OK;
 }
 
-// nc_device_deinit must NEVER be called without successfull init
 void nc_device_deinit(struct nc_device_context* device) {
+    if (!device->initialized) {
+        return;
+    }
 
     struct np_platform* pl = device->pl;
 
@@ -170,6 +183,8 @@ void nc_device_deinit(struct nc_device_context* device) {
     np_free(device->appName);
     np_free(device->appVersion);
     np_free(device->hostname);
+
+    device->initialized = false;
 }
 
 void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec)

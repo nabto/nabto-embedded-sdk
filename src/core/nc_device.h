@@ -37,6 +37,7 @@ typedef void (*nc_device_close_callback)(const np_error_code ec, void* data);
 typedef void (*nc_device_start_callback)(const np_error_code ec, void* data);
 
 struct nc_device_context {
+    bool initialized;
     struct np_platform* pl;
     enum nc_device_state state;
     bool clientConnsClosed;

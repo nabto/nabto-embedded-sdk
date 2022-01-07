@@ -39,11 +39,14 @@ void nc_spake2_init(struct nc_spake2_module* module, struct np_platform* pl)
     module->tokens = NC_SPAKE2_MAX_TOKENS;
     module->pl = pl;
     np_event_queue_create_event(&pl->eq, &newTokenEvent, module, &module->tbEvent);
+    module->initialized = true;
 }
 
-void nc_spake2_deinit(struct nc_spake2_module* config)
+void nc_spake2_deinit(struct nc_spake2_module* module)
 {
-    np_event_queue_destroy_event(&config->pl->eq, config->tbEvent);
+    if (module->initialized) {
+        np_event_queue_destroy_event(&module->pl->eq, module->tbEvent);
+    }
 }
 
 void nc_spake2_clear_password_request_callback(struct nc_spake2_module* module)

@@ -19,6 +19,7 @@ extern "C" {
 struct nabto_device_context;
 
 struct nabto_device_future_queue {
+
     struct nn_llist futureList;
     // list mutex since the list will be manipulated from two
     // different threads.
@@ -29,6 +30,7 @@ struct nabto_device_future_queue {
 
 
     struct nabto_device_condition* condition;
+    bool initialized;
     bool stopped;
 };
 
