@@ -86,6 +86,7 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     struct np_communication_buffer* recvBuffer = pl->buf.allocate();
     if (recvBuffer == NULL) {
         NABTO_LOG_ERROR(LOG, "Cannot allocate a buffer for receiving data, dropping packet.");
+        // TODO this is not dropping the packet.
         start_recv(ctx);
     } else {
         uint8_t* bufferStart = pl->buf.start(recvBuffer);
