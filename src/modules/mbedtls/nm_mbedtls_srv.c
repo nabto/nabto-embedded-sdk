@@ -40,7 +40,6 @@ struct np_dtls_srv_connection {
     size_t recvBufferSize;
     struct np_communication_buffer* sslRecvBuf;
     struct np_communication_buffer* sslSendBuffer;
-    size_t sslSendBufferSize;
     struct nm_mbedtls_timer timer;
 
     np_dtls_close_callback closeCb;
@@ -56,7 +55,6 @@ struct np_dtls_srv_connection {
     np_dtls_srv_data_handler dataHandler;
     np_dtls_srv_event_handler eventHandler;
     void* senderData;
-    bool sending;
     uint8_t channelId;
 
     struct np_completion_event* closeCompletionEvent;
@@ -218,8 +216,7 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
         return NABTO_EC_OUT_OF_MEMORY;
     }
     ctx->sslRecvBuf = server->pl->buf.allocate();
-    ctx->sslSendBuffer = server->pl->buf.allocate();
-    if (!ctx->sslRecvBuf || !ctx->sslSendBuffer) {
+    if (!ctx->sslRecvBuf) {
         np_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -229,7 +226,6 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     ctx->eventHandler = eventHandler;
     ctx->senderData = data;
     ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    ctx->sending = false;
 
     nn_llist_init(&ctx->sendList);
 
@@ -302,7 +298,6 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
     struct np_event_queue* eq = &pl->eq;
     np_event_queue_destroy_event(eq, ctx->startSendEvent);
     pl->buf.free(connection->sslRecvBuf);
-    pl->buf.free(connection->sslSendBuffer);
     mbedtls_ssl_free(&connection->ssl);
     np_free(connection);
 }
@@ -391,7 +386,7 @@ void nm_mbedtls_srv_start_send(struct np_dtls_srv_connection* ctx)
 void nm_mbedtls_srv_start_send_deferred(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
-    if (ctx->sending) {
+    if (ctx->sslSendBuffer != NULL) {
         return;
     }
 
@@ -441,7 +436,7 @@ void nm_mbedtls_srv_is_closed(struct np_dtls_srv_connection* ctx)
     if (ctx->state != CLOSING) {
         return;
     }
-    if (ctx->sending) {
+    if (ctx->sslSendBuffer != NULL) {
         return;
     }
     if (!nn_llist_empty(&ctx->sendList)) {
@@ -570,15 +565,22 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     struct np_platform* pl = ctx->pl;
-    if (!ctx->sending) {
+    if (ctx->sslSendBuffer != NULL) {
+        ctx->sslSendBuffer = ctx->pl->buf.allocate();
+        if (ctx->sslSendBuffer == NULL) {
+            NABTO_LOG_ERROR(LOG, "Could not allocate buffer for sending data from the dtls server, dropping the packet.");
+            // if we return WANT_WRITE there is no mechanism which ensures a retransmission occurs.
+            return (int)bufferSize;
+        }
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, (uint16_t)bufferSize);
-        ctx->sslSendBufferSize = bufferSize;
-        ctx->sending = true;
+
         np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &nm_mbedtls_srv_connection_send_callback, ctx, ctx->senderData);
         if (ec != NABTO_EC_OK) {
-            ctx->sending = false;
-            ctx->sslSendBufferSize = 0;
-            return MBEDTLS_ERR_SSL_WANT_WRITE;
+            NABTO_LOG_ERROR(LOG, "Could not send the packet from the dtls server, dropping the packet.");
+            pl->buf.free(ctx->sslSendBuffer);
+            ctx->sslSendBuffer = NULL;
+            // if we return WANT_WRITE there is no mechanism which ensures a retransmission occurs.
+            return (int)bufferSize;
         }
         return (int)bufferSize;
     } else {
@@ -593,9 +595,8 @@ void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data)
     if (data == NULL) {
         return;
     }
-    ctx->sending = false;
-
-    ctx->sslSendBufferSize = 0;
+    ctx->pl->buf.free(ctx->sslSendBuffer);
+    ctx->sslSendBuffer = NULL;
 
     nm_mbedtls_srv_do_one(ctx);
     nm_mbedtls_srv_start_send(ctx);
