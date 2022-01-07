@@ -37,6 +37,7 @@ enum nc_stun_state {
 };
 
 struct nc_stun_context {
+    bool initialized;
     struct np_platform* pl;
     struct nc_udp_dispatch_context* priUdp;
     struct nc_udp_dispatch_context* secUdp;
@@ -73,6 +74,7 @@ np_error_code nc_stun_init(struct nc_stun_context *ctx,
 void nc_stun_stop(struct nc_stun_context* ctx);
 
 void nc_stun_set_sockets(struct nc_stun_context* ctx, struct nc_udp_dispatch_context* udp, struct nc_udp_dispatch_context* secondaryUdp);
+
 void nc_stun_set_host(struct nc_stun_context* ctx, const char* hostname, uint16_t port);
 
 void nc_stun_remove_sockets(struct nc_stun_context* ctx);

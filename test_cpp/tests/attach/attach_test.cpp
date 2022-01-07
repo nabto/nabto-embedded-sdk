@@ -25,6 +25,8 @@ class AttachTest {
     {
         struct np_platform* pl = tp_.getPlatform();
         np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
+        memset(&device_, 0, sizeof(device_));
+
     }
 
     ~AttachTest()

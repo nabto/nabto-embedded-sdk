@@ -72,8 +72,6 @@ struct nc_device_context {
     // unique connectionReference for each connection
     uint64_t connectionRef;
 
-    const char* stunHost;
-    uint16_t stunPort;
     char* productId;
     char* deviceId;
     char* hostname;

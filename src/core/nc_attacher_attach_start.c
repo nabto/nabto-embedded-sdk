@@ -2,6 +2,8 @@
 #include <core/nc_coap.h>
 #include <core/nc_coap_rest_error.h>
 #include <core/nc_version.h>
+#include <core/nc_stun.h>
+#include <core/nc_device.h>
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
@@ -212,16 +214,21 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
             size_t stringLength;
             if (cbor_value_calculate_string_length(&host, &stringLength) !=
                     CborNoError ||
-                stringLength > sizeof(ctx->stunHost) - 1) {
+                stringLength > 255) {
                 NABTO_LOG_ERROR(LOG,
                                 "Basestation reported invalid STUN host, STUN "
                                 "will be impossible");
             } else {
-                size_t len = sizeof(ctx->stunHost);
-                memset(ctx->stunHost, 0, sizeof(ctx->stunHost));
-                cbor_value_copy_text_string(&host, ctx->stunHost, &len, NULL);
-                cbor_value_get_uint64(&port, &p);
-                ctx->stunPort = (uint16_t)p;
+                size_t len = stringLength + 1;
+                char* stunHost = np_calloc(1,len);
+                if (stunHost == NULL) {
+                    NABTO_LOG_ERROR(LOG, "cannot allocate memory for the stun host, stun will be impossible.");
+                } else {
+                    cbor_value_copy_text_string(&host, stunHost, &len, NULL);
+                    cbor_value_get_uint64(&port, &p);
+                    nc_stun_set_host(&ctx->device->stun, stunHost, (uint16_t)p);
+                    np_free(stunHost);
+                }
             }
         } else {
             NABTO_LOG_ERROR(LOG,
