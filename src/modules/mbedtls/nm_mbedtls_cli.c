@@ -33,9 +33,12 @@ const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM
 struct np_dtls_cli_context {
     struct np_platform* pl;
     enum sslState state;
-    struct np_communication_buffer* sslRecvBuf;
+
+    // Ciphertext datagram recvBuffer temporary variable.
     uint8_t* recvBuffer;
     size_t recvBufferSize;
+
+    // Allocated when sending a packet with ciphertext through the UDP layer.
     struct np_communication_buffer* sslSendBuffer;
 
     struct nm_mbedtls_timer timer;
@@ -199,11 +202,6 @@ np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_c
     ctx->eventHandler = eventHandler;
     ctx->callbackData = data;
 
-    ctx->sslRecvBuf = pl->buf.allocate();
-    if (!ctx->sslRecvBuf) {
-        nm_mbedtls_cli_do_free(ctx);
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
     nn_llist_init(&ctx->sendList);
     ctx->destroyed = false;
 
@@ -303,7 +301,6 @@ np_error_code nm_mbedtls_cli_reset(struct np_dtls_cli_context* ctx)
 
 void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx)
 {
-    struct np_platform* pl = ctx->pl;
     // remove the first element until the list is empty
     while(!nn_llist_empty(&ctx->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
@@ -315,7 +312,6 @@ void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx)
     nm_mbedtls_timer_cancel(&ctx->timer);
     np_event_queue_destroy_event(&ctx->pl->eq, ctx->startSendEvent);
     nm_mbedtls_timer_deinit(&ctx->timer);
-    pl->buf.free(ctx->sslRecvBuf);
 
     mbedtls_x509_crt_free(&ctx->rootCerts);
     mbedtls_pk_free(&ctx->privateKey);
@@ -431,7 +427,6 @@ np_error_code nm_dtls_connect(struct np_dtls_cli_context* ctx)
 void nm_dtls_event_do_one(void* data)
 {
     struct np_dtls_cli_context* ctx = data;
-    struct np_platform* pl = ctx->pl;
     int ret;
     if(ctx->state == CONNECTING) {
         ret = mbedtls_ssl_handshake( &ctx->ssl );
@@ -469,7 +464,8 @@ void nm_dtls_event_do_one(void* data)
         }
         return;
     } else if(ctx->state == DATA) {
-        ret = mbedtls_ssl_read( &ctx->ssl, ctx->pl->buf.start(ctx->sslRecvBuf), ctx->pl->buf.size(ctx->sslRecvBuf) );
+        uint8_t recvBuffer[1500];
+        ret = mbedtls_ssl_read( &ctx->ssl, recvBuffer, sizeof(recvBuffer) );
         if (ret == 0) {
             // EOF
             ctx->state = CLOSING;
@@ -477,7 +473,7 @@ void nm_dtls_event_do_one(void* data)
         } else if (ret > 0) {
             ctx->recvCount++;
 
-            ctx->dataHandler(pl->buf.start(ctx->sslRecvBuf), (uint16_t)ret, ctx->callbackData);
+            ctx->dataHandler(recvBuffer, (uint16_t)ret, ctx->callbackData);
             return;
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
