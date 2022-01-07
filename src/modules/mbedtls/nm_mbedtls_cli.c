@@ -37,7 +37,6 @@ struct np_dtls_cli_context {
     uint8_t* recvBuffer;
     size_t recvBufferSize;
     struct np_communication_buffer* sslSendBuffer;
-    size_t sslSendBufferSize;
 
     struct nm_mbedtls_timer timer;
 
@@ -47,7 +46,6 @@ struct np_dtls_cli_context {
     struct nn_llist sendList;
     struct np_event* startSendEvent;
 
-    bool sending;
     bool receiving;
     bool destroyed;
 
@@ -202,8 +200,7 @@ np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_c
     ctx->callbackData = data;
 
     ctx->sslRecvBuf = pl->buf.allocate();
-    ctx->sslSendBuffer = pl->buf.allocate();
-    if (!ctx->sslRecvBuf || !ctx->sslSendBuffer) {
+    if (!ctx->sslRecvBuf) {
         nm_mbedtls_cli_do_free(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -298,7 +295,6 @@ np_error_code nm_mbedtls_cli_reset(struct np_dtls_cli_context* ctx)
         nn_llist_erase(&it);
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
-    ctx->sslSendBufferSize = 0;
     ctx->recvBufferSize = 0;
 
     nm_mbedtls_timer_cancel(&ctx->timer);
@@ -320,7 +316,6 @@ void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx)
     np_event_queue_destroy_event(&ctx->pl->eq, ctx->startSendEvent);
     nm_mbedtls_timer_deinit(&ctx->timer);
     pl->buf.free(ctx->sslRecvBuf);
-    pl->buf.free(ctx->sslSendBuffer);
 
     mbedtls_x509_crt_free(&ctx->rootCerts);
     mbedtls_pk_free(&ctx->privateKey);
@@ -338,7 +333,7 @@ void nm_mbedtls_cli_destroy(struct np_dtls_cli_context* ctx)
     ctx->state = CLOSING;
     ctx->destroyed = true;
 
-    if (!ctx->sending && !ctx->receiving) {
+    if (ctx->sslSendBuffer == NULL && !ctx->receiving) {
         nm_mbedtls_cli_do_free(ctx);
     }
 }
@@ -425,7 +420,6 @@ np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t mi
 np_error_code nm_dtls_connect(struct np_dtls_cli_context* ctx)
 {
     ctx->state = CONNECTING;
-    ctx->sending = false;
 
     nm_dtls_event_do_one(ctx);
     return NABTO_EC_OK;
@@ -519,7 +513,7 @@ void nm_mbedtls_cli_start_send_deferred(void* data)
     if (ctx->state == CLOSING) {
         return;
     }
-    if (ctx->sending) {
+    if (ctx->sslSendBuffer != NULL) {
         return;
     }
 
@@ -584,7 +578,7 @@ np_error_code dtls_cli_close(struct np_dtls_cli_context* ctx)
         NABTO_LOG_TRACE(LOG, "Closing DTLS cli from state: %u", ctx->state);
         ctx->state = CLOSING;
         mbedtls_ssl_close_notify(&ctx->ssl);
-        if (!ctx->sending) {
+        if (ctx->sslSendBuffer == NULL) {
             nm_dtls_do_close(ctx, /*unused*/ NABTO_EC_OK);
         }
     } else {
@@ -603,7 +597,7 @@ np_error_code handle_packet(struct np_dtls_cli_context* ctx,
     ctx->recvBuffer = NULL;
     ctx->recvBufferSize = 0;
     ctx->receiving = false;
-    if (ctx->destroyed && !ctx->sending) {
+    if (ctx->destroyed && ctx->sslSendBuffer == NULL) {
         nm_mbedtls_cli_do_free(ctx);
     }
     return NABTO_EC_OK;
@@ -616,11 +610,13 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     if (data == NULL) {
         return;
     }
+
+    ctx->pl->buf.free(ctx->sslSendBuffer);
+    ctx->sslSendBuffer = NULL;
+
     if (ctx->state == CLOSING) {
         NABTO_LOG_TRACE(LOG, "udp send cb after close");
     }
-    ctx->sending = false;
-    ctx->sslSendBufferSize = 0;
     if(ctx->state == CLOSING) {
         nm_dtls_do_close(ctx, /* ec unused */NABTO_EC_OK);
         if (ctx->destroyed) {
@@ -631,28 +627,41 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     nm_dtls_event_do_one(data);
 }
 
-int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferSize)
+int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer,
+                         size_t bufferSize)
 {
     struct np_dtls_cli_context* ctx = data;
     struct np_platform* pl = ctx->pl;
     if (ctx->state == CLOSING) {
         NABTO_LOG_TRACE(LOG, "mbedtls want send after close");
     }
-    if (ctx->sslSendBufferSize == 0) {
-        ctx->sending = true;
+    if (ctx->sslSendBuffer == NULL) {
+        ctx->sslSendBuffer = pl->buf.allocate();
+        if (ctx->sslSendBuffer == NULL) {
+            NABTO_LOG_ERROR(LOG,
+                            "Cannot allocate a buffer for sending a packet "
+                            "from the dtls client. Dropping the packet");
+            // dropping the packet as there is no way to trigger a
+            // retransmission of the packet once the system has available memory
+            // again.
+            return (int)bufferSize;
+        }
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
-        ctx->sslSendBufferSize = bufferSize;
-        np_error_code ec = ctx->sender(pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
+        np_error_code ec =
+            ctx->sender(pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize,
+                        &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
         if (ec != NABTO_EC_OK) {
-            ctx->sending = false;
-            ctx->sslSendBufferSize = 0;
-            if(ctx->state == CLOSING) {
-                nm_dtls_do_close(ctx, /* ec unused */NABTO_EC_OK);
+            pl->buf.free(ctx->sslSendBuffer);
+            ctx->sslSendBuffer = NULL;
+            if (ctx->state == CLOSING) {
+                nm_dtls_do_close(ctx, /* ec unused */ NABTO_EC_OK);
                 if (ctx->destroyed) {
                     nm_mbedtls_cli_do_free(ctx);
                 }
             }
-            return MBEDTLS_ERR_SSL_WANT_WRITE;
+            // dropping the packet as there is no way to trigger a
+            // retransmission of the data.
+            return (int)bufferSize;
         }
         return (int)bufferSize;
     } else {
