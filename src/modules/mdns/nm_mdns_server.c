@@ -220,8 +220,8 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
     struct nm_mdns_server_instance* instance = userData;
     if (ecIn == NABTO_EC_OK && !instance->server->stopped) {
         size_t recvSize;
-        uint8_t* recvBuffer = instance->recvBuffer;
-        size_t recvBufferSize = 1500;
+        uint8_t recvBuffer[1500];
+        size_t recvBufferSize = sizeof(recvBuffer);
         np_error_code ec = np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, recvBuffer, recvBufferSize, &recvSize);
         if (ec == NABTO_EC_OK) {
             uint16_t id;

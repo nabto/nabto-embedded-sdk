@@ -24,7 +24,6 @@ struct nm_mdns_server_instance {
     struct np_udp_endpoint sendEp;
     struct np_udp_endpoint recvEp;
     uint8_t sendBuffer[1500];
-    uint8_t recvBuffer[1500];
     struct np_completion_event openedCompletionEvent;
     struct np_completion_event recvWaitCompletionEvent;
     struct np_completion_event sendCompletionEvent;
