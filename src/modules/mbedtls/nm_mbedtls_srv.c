@@ -557,7 +557,7 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     struct np_platform* pl = ctx->pl;
-    if (ctx->sslSendBuffer != NULL) {
+    if (ctx->sslSendBuffer == NULL) {
         ctx->sslSendBuffer = ctx->pl->buf.allocate();
         if (ctx->sslSendBuffer == NULL) {
             NABTO_LOG_ERROR(LOG, "Could not allocate buffer for sending data from the dtls server, dropping the packet.");
