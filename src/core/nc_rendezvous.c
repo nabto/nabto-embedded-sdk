@@ -20,11 +20,7 @@ np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
                                  struct np_platform* pl)
 {
     memset(ctx, 0, sizeof(struct nc_rendezvous_context));
-    ctx->priBuf = pl->buf.allocate();
-    if (!ctx->priBuf) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-
+    ctx->sendBuffer = NULL;
     np_error_code ec;
     ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx);
     if (ec != NABTO_EC_OK) {
@@ -41,7 +37,7 @@ void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
         np_completion_event_deinit(&ctx->sendCompletionEvent);
-        ctx->pl->buf.free(ctx->priBuf);
+        ctx->pl->buf.free(ctx->sendBuffer);
     }
 }
 
@@ -59,22 +55,39 @@ void nc_rendezvous_packet_sent(const np_error_code ec, void* data)
 {
     (void)ec;
     struct nc_rendezvous_context* ctx = (struct nc_rendezvous_context*)data;
-    ctx->sendingDevReqs = false;
+    struct np_platform* pl = ctx->pl;
+    pl->buf.free(ctx->sendBuffer);
+    ctx->sendBuffer = NULL;
     nc_rendezvous_send_device_request(ctx);
 }
 
 void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 {
-    if (ctx->sendingDevReqs) {
+    if (ctx->sendBuffer != NULL) {
         return;
     }
-    uint8_t* start = ctx->pl->buf.start(ctx->priBuf);
-    uint8_t* ptr = start;
+
     if (ctx->packetIndex <= 0) {
+        // There's no outstanding packets
         return;
     }
+
+    struct np_platform* pl = ctx->pl;
+
+    ctx->sendBuffer = pl->buf.allocate();
+    if (ctx->sendBuffer == NULL) {
+        NABTO_LOG_ERROR(LOG, "Cannot allocate buffer for sending rendezvous request");
+        // since we cannot send packets just mark them all as "sent" and wait for a retransmission from somewhere else.
+        ctx->packetIndex = 0;
+        return;
+    }
+
     ctx->packetIndex -= 1;
     struct nc_rendezvous_send_packet* packet = &ctx->packetList[ctx->packetIndex];
+
+    uint8_t* start = ctx->pl->buf.start(ctx->sendBuffer);
+    uint8_t* ptr = start;
+
 
     *ptr = NABTO_PROTOCOL_PREFIX_RENDEZVOUS;
     ptr++;
@@ -86,7 +99,6 @@ void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
     *ptr = packet->type;
     ptr++;
 
-    ctx->sendingDevReqs = true;
     size_t used = ptr - start;
     nc_udp_dispatch_async_send_to(packet->udpDispatch, &packet->ep,
                                   start, (uint16_t)used, &ctx->sendCompletionEvent);
