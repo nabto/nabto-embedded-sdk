@@ -12,6 +12,7 @@
 #include <core/nc_connection_event.h>
 #include <core/nc_spake2.h>
 #include <core/nc_rendezvous.h>
+#include <core/nc_config.h>
 
 #include <platform/np_error_code.h>
 
@@ -62,6 +63,8 @@ struct nc_device_context {
     struct np_dtls_srv* dtlsServer;
 
     bool enableAttach;
+
+#if NC_MDNS_ENABLED
     bool enableMdns;
     bool mdnsPublished;
     struct np_mdns_context* mdns;
@@ -69,6 +72,7 @@ struct nc_device_context {
     struct nn_string_set mdnsSubtypes;
     struct nn_string_map mdnsTxtItems;
     char* mdnsInstanceName;
+#endif
 
     // unique connectionReference for each connection
     uint64_t connectionRef;
@@ -144,9 +148,12 @@ np_error_code nc_device_set_server_url(struct nc_device_context* ctx, const char
 
 np_error_code nc_device_disable_remote_access(struct nc_device_context* ctx);
 np_error_code nc_device_set_basestation_attach(struct nc_device_context* ctx, bool enable);
+
+#if NC_MDNS_ENABLED
 np_error_code nc_device_enable_mdns(struct nc_device_context* ctx);
 
 np_error_code nc_device_mdns_add_subtype(struct nc_device_context* ctx, const char* subtype);
 np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* ctx, const char* key, const char* value);
+#endif
 
 #endif // NC_DEVICE_H
