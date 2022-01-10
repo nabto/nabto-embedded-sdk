@@ -73,11 +73,15 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
         }
     }
 
-    // keyPair is an ecc keyPair, just write it to pem.
+    // keyPair is an ecc keyPair, write it to pem.
 
-    uint8_t buffer[2048];
+    // a pem encoded p256r1 key uses ~280 bytes including header and footer.
+    // -----BEGIN EC PRIVATE KEY-----
+    // base64 encoded asn1
+    // -----END EC PRIVATE KEY-----
+    uint8_t buffer[512];
 
-    status = mbedtls_pk_write_key_pem(&pk, buffer, 2048);
+    status = mbedtls_pk_write_key_pem(&pk, buffer, sizeof(buffer));
     if (status != 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
