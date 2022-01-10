@@ -1,4 +1,5 @@
 #include "nc_device.h"
+#include "nc_config.h"
 #include <platform/np_logging.h>
 #include <platform/np_mdns_wrapper.h>
 #include <platform/np_allocator.h>
@@ -14,6 +15,9 @@ static void nc_device_local_socket_bound_cb(const np_error_code ec, void* data);
 static void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data);
 static void nc_device_sockets_bound(struct nc_device_context* dev);
 static void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec);
+// return true iff the mdns capabilities are available.
+static bool nc_device_has_mdns_capability(struct nc_device_context* ctx);
+
 
 // log function for nn_log
 static void module_logger(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args);
@@ -275,7 +279,6 @@ void nc_device_p2p_socket_bound_cb(const np_error_code ec, void* data)
 }
 
 
-
 static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
 {
     // add txt records to mdns
@@ -314,7 +317,6 @@ static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
 
 void nc_device_sockets_bound(struct nc_device_context* dev)
 {
-    struct np_platform* pl = dev->pl;
     // start receive on p2p socket
     nc_udp_dispatch_set_client_connection_context(&dev->udp, &dev->clientConnect);
     nc_udp_dispatch_set_rendezvous_context(&dev->udp, &dev->rendezvous);
@@ -331,6 +333,7 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
     nc_udp_dispatch_set_rendezvous_context(&dev->localUdp, &dev->rendezvous);
     nc_udp_dispatch_start_recv(&dev->localUdp);
 
+    struct np_platform* pl = dev->pl;
     // start mdns
     if (dev->enableMdns) {
         uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
@@ -378,7 +381,7 @@ np_error_code nc_device_start(struct nc_device_context* dev,
         strcpy(ptr, defaultServerUrlSuffix);
     }
 
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_OK;
     ec = nc_device_populate_mdns(dev);
     if (ec != NABTO_EC_OK) {
         return ec;
@@ -599,7 +602,6 @@ np_error_code nc_device_set_server_url(struct nc_device_context* dev, const char
     return NABTO_EC_OK;
 }
 
-
 static void reload_mdns(struct nc_device_context* dev)
 {
     if (dev->mdnsPublished) {
@@ -642,6 +644,9 @@ np_error_code nc_device_set_basestation_attach(struct nc_device_context* dev, bo
 
 np_error_code nc_device_enable_mdns(struct nc_device_context* dev)
 {
+    if (!nc_device_has_mdns_capability(dev)) {
+        return NABTO_EC_NOT_IMPLEMENTED;
+    }
     if (dev->state != NC_DEVICE_STATE_SETUP) {
         return NABTO_EC_INVALID_STATE;
     }
@@ -651,6 +656,9 @@ np_error_code nc_device_enable_mdns(struct nc_device_context* dev)
 
 np_error_code nc_device_mdns_add_subtype(struct nc_device_context* dev, const char* subtype)
 {
+    if (!nc_device_has_mdns_capability(dev)) {
+        return NABTO_EC_NOT_IMPLEMENTED;
+    }
     if (!nn_string_set_insert(&dev->mdnsSubtypes, subtype)) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -661,6 +669,9 @@ np_error_code nc_device_mdns_add_subtype(struct nc_device_context* dev, const ch
 
 np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* dev, const char* key, const char* value)
 {
+    if (!nc_device_has_mdns_capability(dev)) {
+        return NABTO_EC_NOT_IMPLEMENTED;
+    }
     nn_string_map_erase(&dev->mdnsTxtItems, key);
     struct nn_string_map_iterator it = nn_string_map_insert(&dev->mdnsTxtItems, key, value);
     if (nn_string_map_is_end(&it)) {
@@ -685,4 +696,9 @@ void module_logger(void* userData, enum nn_log_severity severity, const char* mo
         np_log.log(NABTO_LOG_SEVERITY_ERROR, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
 
     }
+}
+
+bool nc_device_has_mdns_capability(struct nc_device_context* ctx)
+{
+    return ctx->pl->mdns.mptr != NULL;
 }
