@@ -84,6 +84,36 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
+    if (pl->udp.mptr == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize platform, missing UDP module");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
+    if (pl->timestamp.mptr == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize platform, missing timestamp module");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
+    if (pl->eq.mptr == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize platform, missing event queue module");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
+    if (pl->dns.mptr == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize platform, missing dns module");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
+    if (pl->localIp.mptr == NULL) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize platform, missing localIp module");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
     nabto_device_authorization_init_module(dev);
 
     ec = nc_device_init(&dev->core, &dev->pl);
