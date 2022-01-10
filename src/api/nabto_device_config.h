@@ -5,8 +5,4 @@
 #define NABTO_DEVICE_LOG_STD_OUT_CALLBACK 1
 #endif
 
-#ifndef NABTO_DEVICE_MDNS_ENABLED
-#define NABTO_DEVICE_MDNS_ENABLED 1
-#endif
-
 #endif

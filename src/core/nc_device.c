@@ -15,6 +15,9 @@ static void nc_device_local_socket_bound_cb(const np_error_code ec, void* data);
 static void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data);
 static void nc_device_sockets_bound(struct nc_device_context* dev);
 static void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec);
+// return true iff the mdns capabilities are available.
+static bool nc_device_has_mdns_capability(struct nc_device_context* ctx);
+
 
 // log function for nn_log
 static void module_logger(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args);
@@ -43,10 +46,8 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     nn_llist_init(&device->eventsListeners);
     nn_llist_init(&device->deviceEvents);
 
-#if NC_MDNS_ENABLED
     nn_string_set_init(&device->mdnsSubtypes, np_allocator_get());
     nn_string_map_init(&device->mdnsTxtItems, np_allocator_get());
-#endif
 
     device->initialized = true; // This will be set to false again if we cleanup after a failed init.
 
@@ -151,11 +152,9 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     struct np_platform* pl = device->pl;
 
-#if NC_MDNS_ENABLED
     if (device->mdnsPublished) {
         np_mdns_unpublish_service(&pl->mdns);
     }
-#endif
 
     nc_spake2_coap_deinit(&device->spake2);
     nc_spake2_deinit(&device->spake2);
@@ -174,11 +173,9 @@ void nc_device_deinit(struct nc_device_context* device) {
         pl->dtlsS.destroy(device->dtlsServer);
     }
 
-#if NC_MDNS_ENABLED
     nn_string_set_deinit(&device->mdnsSubtypes);
     nn_string_map_deinit(&device->mdnsTxtItems);
     np_free(device->mdnsInstanceName);
-#endif
 
     nc_udp_dispatch_deinit(&device->udp);
     nc_udp_dispatch_deinit(&device->localUdp);
@@ -282,7 +279,6 @@ void nc_device_p2p_socket_bound_cb(const np_error_code ec, void* data)
 }
 
 
-#if NC_MDNS_ENABLED
 static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
 {
     // add txt records to mdns
@@ -318,7 +314,6 @@ static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
 
     return NABTO_EC_OK;
 }
-#endif
 
 void nc_device_sockets_bound(struct nc_device_context* dev)
 {
@@ -338,7 +333,6 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
     nc_udp_dispatch_set_rendezvous_context(&dev->localUdp, &dev->rendezvous);
     nc_udp_dispatch_start_recv(&dev->localUdp);
 
-#if NC_MDNS_ENABLED
     struct np_platform* pl = dev->pl;
     // start mdns
     if (dev->enableMdns) {
@@ -347,7 +341,6 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
         np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
         dev->mdnsPublished = true;
     }
-#endif
 
     // start recv for the stun socket
     nc_stun_set_sockets(&dev->stun, &dev->udp, &dev->secondaryUdp);
@@ -388,13 +381,11 @@ np_error_code nc_device_start(struct nc_device_context* dev,
         strcpy(ptr, defaultServerUrlSuffix);
     }
 
-#if NC_MDNS_ENABLED
     np_error_code ec = NABTO_EC_OK;
     ec = nc_device_populate_mdns(dev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-#endif
 
     dev->state = NC_DEVICE_STATE_RUNNING;
     nc_attacher_set_app_info(&dev->attacher, dev->appName, dev->appVersion);
@@ -611,7 +602,6 @@ np_error_code nc_device_set_server_url(struct nc_device_context* dev, const char
     return NABTO_EC_OK;
 }
 
-#if NC_MDNS_ENABLED
 static void reload_mdns(struct nc_device_context* dev)
 {
     if (dev->mdnsPublished) {
@@ -621,7 +611,6 @@ static void reload_mdns(struct nc_device_context* dev)
         np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
     }
 }
-#endif
 
 np_error_code nc_device_disable_remote_access(struct nc_device_context* dev)
 {
@@ -653,32 +642,36 @@ np_error_code nc_device_set_basestation_attach(struct nc_device_context* dev, bo
     }
 }
 
-#if NC_MDNS_ENABLED
 np_error_code nc_device_enable_mdns(struct nc_device_context* dev)
 {
+    if (!nc_device_has_mdns_capability(dev)) {
+        return NABTO_EC_NOT_IMPLEMENTED;
+    }
     if (dev->state != NC_DEVICE_STATE_SETUP) {
         return NABTO_EC_INVALID_STATE;
     }
     dev->enableMdns = true;
     return NABTO_EC_OK;
 }
-#endif
 
-#if NC_MDNS_ENABLED
 np_error_code nc_device_mdns_add_subtype(struct nc_device_context* dev, const char* subtype)
 {
+    if (!nc_device_has_mdns_capability(dev)) {
+        return NABTO_EC_NOT_IMPLEMENTED;
+    }
     if (!nn_string_set_insert(&dev->mdnsSubtypes, subtype)) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
     reload_mdns(dev);
     return NABTO_EC_OK;
 }
-#endif
 
 
-#if NC_MDNS_ENABLED
 np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* dev, const char* key, const char* value)
 {
+    if (!nc_device_has_mdns_capability(dev)) {
+        return NABTO_EC_NOT_IMPLEMENTED;
+    }
     nn_string_map_erase(&dev->mdnsTxtItems, key);
     struct nn_string_map_iterator it = nn_string_map_insert(&dev->mdnsTxtItems, key, value);
     if (nn_string_map_is_end(&it)) {
@@ -687,7 +680,6 @@ np_error_code nc_device_mdns_add_txt_item(struct nc_device_context* dev, const c
     reload_mdns(dev);
     return NABTO_EC_OK;
 }
-#endif
 
 void module_logger(void* userData, enum nn_log_severity severity, const char* module, const char* file, int line, const char* fmt, va_list args)
 {
@@ -704,4 +696,9 @@ void module_logger(void* userData, enum nn_log_severity severity, const char* mo
         np_log.log(NABTO_LOG_SEVERITY_ERROR, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
 
     }
+}
+
+bool nc_device_has_mdns_capability(struct nc_device_context* ctx)
+{
+    return ctx->pl->mdns.mptr != NULL;
 }
