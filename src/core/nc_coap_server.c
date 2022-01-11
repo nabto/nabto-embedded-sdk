@@ -21,10 +21,10 @@ void nc_coap_server_handle_timeout(void* data);
 
 static void nc_coap_server_notify_event_callback(void* userData);
 
-np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_coap_server_context* ctx)
+np_error_code nc_coap_server_init(struct np_platform* pl, struct nn_log* logger, struct nc_coap_server_context* ctx)
 {
     ctx->sendBuffer = NULL;
-    nabto_coap_error err = nabto_coap_server_init(&ctx->server, np_allocator_get());
+    nabto_coap_error err = nabto_coap_server_init(&ctx->server, logger, np_allocator_get());
     nabto_coap_server_requests_init(&ctx->requests, &ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);
