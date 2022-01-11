@@ -310,6 +310,17 @@ np_error_code nm_mbedtls_srv_handle_packet(struct np_platform* pl, struct np_dtl
     return NABTO_EC_OK;
 }
 
+static uint64_t uint64_from_bigendian( uint8_t* bytes )
+{
+    return( ( (uint64_t) bytes[0] << 56 ) |
+            ( (uint64_t) bytes[1] << 48 ) |
+            ( (uint64_t) bytes[2] << 40 ) |
+            ( (uint64_t) bytes[3] << 32 ) |
+            ( (uint64_t) bytes[4] << 24 ) |
+            ( (uint64_t) bytes[5] << 16 ) |
+            ( (uint64_t) bytes[6] <<  8 ) |
+            ( (uint64_t) bytes[7]       ) );
+}
 
 void nm_mbedtls_srv_do_one(void* data)
 {
@@ -344,7 +355,9 @@ void nm_mbedtls_srv_do_one(void* data)
             event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
             NABTO_LOG_TRACE(LOG, "Received EOF");
         } else if (ret > 0) {
-            uint64_t seq = *((uint64_t*)ctx->ssl.in_ctr);
+            // we need the sequence number from the dtls packet.
+            // the sequence number consists of an epoch and a sequence number in that epoch. 8 bytes in total.
+            uint64_t seq = uint64_from_bigendian(ctx->ssl.in_ctr);
             ctx->recvCount++;
             ctx->dataHandler(ctx->currentChannelId, seq, recvBuffer, (uint16_t)ret, ctx->senderData);
             return;
