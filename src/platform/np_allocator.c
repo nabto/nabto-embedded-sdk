@@ -1,16 +1,16 @@
 #include "np_allocator.h"
+#include "np_config.h"
 
 #include <nn/allocator.h>
 
 #include <stdlib.h>
 
-
 static void* calloc_impl(size_t n , size_t size) {
-    return calloc(n, size);
+    return NP_ALLOCATOR_CALLOC(n, size);
 }
 
 static void free_impl(void* ptr) {
-    free(ptr);
+    NP_ALLOCATOR_FREE(ptr);
 }
 
 static struct nn_allocator allocator = {
