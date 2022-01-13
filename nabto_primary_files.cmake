@@ -11,6 +11,7 @@ set(ne_nn_src
   ${root_dir}/nabto-common/components/nn/src/nn/log.c
   ${root_dir}/nabto-common/components/nn/src/nn/string_map.c
   ${root_dir}/nabto-common/components/nn/src/nn/string_int_map.c
+  ${root_dir}/nabto-common/components/nn/src/nn/string.c
   )
 
 set(ne_utils_src
@@ -92,7 +93,6 @@ set(ne_core_src
 set(ne_api_src
   ${root_dir}/src/api/nabto_device_events.c
   ${root_dir}/src/api/nabto_device_stream.c
-  ${root_dir}/src/api/nabto_device_future_queue.c
   ${root_dir}/src/api/nabto_device.c
   ${root_dir}/src/api/nabto_device_authorization.c
   ${root_dir}/src/api/nabto_device_authorization_events.c
@@ -113,6 +113,11 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_crypto_speed_test.c
   ${root_dir}/src/api/nabto_device_mdns.c
   )
+
+set(ne_api_future_queue_src
+  ${root_dir}/src/api/nabto_device_future_queue.c
+)
+
 
 set(ne_api_test_src
   ${root_dir}/src/api_test/nabto_device_test.c
@@ -262,6 +267,7 @@ set(ne_required_src
   ${ne_platform_src}
   ${ne_core_src}
   ${ne_api_src}
+  ${ne_api_future_queue_src}
   ${ne_tinycbor_src}
   ${ne_nn_src}
   ${ne_mbedtls_src}
