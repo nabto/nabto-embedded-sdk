@@ -16,6 +16,7 @@
 #endif
 
 // util functions
+static void nc_stun_resolve_callbacks_error(struct nc_stun_context* ctx, const np_error_code ec);
 void nc_stun_resolve_callbacks(struct nc_stun_context* ctx);
 size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
                                struct nn_endpoint* eps, size_t epsSize,
@@ -208,16 +209,14 @@ void nc_stun_event(struct nc_stun_context* ctx)
         {
             if(!ctx->priUdp) {
                 NABTO_LOG_ERROR(LOG, "No primary socket available");
-                ctx->ec = NABTO_EC_UDP_SOCKET_ERROR;
-                nc_stun_resolve_callbacks(ctx);
+                nc_stun_resolve_callbacks_error(ctx, NABTO_EC_UDP_SOCKET_ERROR);
                 return;
             }
             struct nn_endpoint stunEp;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
                 NABTO_LOG_ERROR(LOG, "get endpoint failed");
-                ctx->ec = NABTO_EC_NO_VALID_ENDPOINTS;
-                nc_stun_resolve_callbacks(ctx);
+                nc_stun_resolve_callbacks_error(ctx, NABTO_EC_NO_VALID_ENDPOINTS);
                 return;
             }
             ctx->sendEp.port = stunEp.port;
@@ -236,16 +235,14 @@ void nc_stun_event(struct nc_stun_context* ctx)
         {
             if(!ctx->secUdp) {
                 NABTO_LOG_ERROR(LOG, "No secondary socket available");
-                ctx->ec = NABTO_EC_UDP_SOCKET_ERROR;
-                nc_stun_resolve_callbacks(ctx);
+                nc_stun_resolve_callbacks_error(ctx, NABTO_EC_UDP_SOCKET_ERROR);
                 return;
             }
             struct nn_endpoint stunEp;
             uint8_t* buffer = ctx->pl->buf.start(ctx->sendBuf);
             if(!nabto_stun_get_data_endpoint(&ctx->stun, &stunEp)) {
                 NABTO_LOG_ERROR(LOG, "get endpoint failed");
-                ctx->ec = NABTO_EC_NO_VALID_ENDPOINTS;
-                nc_stun_resolve_callbacks(ctx);
+                nc_stun_resolve_callbacks_error(ctx, NABTO_EC_NO_VALID_ENDPOINTS);
                 return;
             }
             ctx->sendEp.port = stunEp.port;
@@ -276,8 +273,7 @@ void nc_stun_event(struct nc_stun_context* ctx)
             nc_stun_resolve_callbacks(ctx);
             break;
         case STUN_ET_FAILED:
-            ctx->ec = NABTO_EC_UNKNOWN;
-            nc_stun_resolve_callbacks(ctx);
+            nc_stun_resolve_callbacks_error(ctx, NABTO_EC_UNKNOWN);
             break;
         default:
             NABTO_LOG_ERROR(LOG, "Found invalid event state %u", event);
@@ -295,9 +291,7 @@ void nc_stun_dns_cb(const np_error_code ec, void* data)
         return;
     }
     if (ec != NABTO_EC_OK) {
-        ctx->state = NC_STUN_STATE_DONE;
-        ctx->ec = ec;
-        nc_stun_resolve_callbacks(ctx);
+        nc_stun_resolve_callbacks_error(ctx, ec);
         return;
     }
     ctx->numEps = nc_stun_convert_ep_list(ctx->resolvedIps, ctx->resolvedIpsSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, ctx->priPort);
@@ -333,6 +327,14 @@ void nc_stun_analysed_cb(const np_error_code ec, const struct nabto_stun_result*
     }
     nc_stun_resolve_callbacks(ctx);
     return;
+}
+
+
+void nc_stun_resolve_callbacks_error(struct nc_stun_context* ctx, const np_error_code ec)
+{
+    ctx->state = NC_STUN_STATE_DONE;
+    ctx->ec = ec;
+    nc_stun_resolve_callbacks(ctx);
 }
 
 // util functions
