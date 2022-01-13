@@ -7,7 +7,7 @@ set(src
   select_unix_platform.c
   )
 
-add_library(nabto_device_select_unix SHARED ${src} ${ne_api_src} ${ne_api_test_src})
+add_library(nabto_device_select_unix SHARED ${src} ${ne_api_src} ${ne_api_future_queue_src} ${ne_api_test_src})
 
 target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_SHARED)

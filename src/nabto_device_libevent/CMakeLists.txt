@@ -17,7 +17,7 @@ endif()
 
 target_link_libraries(nabto_device_threads PUBLIC nn)
 
-add_library( nabto_device_static STATIC "${src}" "${ne_api_src}" "${ne_api_test_src}")
+add_library( nabto_device_static STATIC "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
 target_compile_definitions(nabto_device_static PRIVATE NABTO_DEVICE_WIN32_API_STATIC)
 target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
 
@@ -39,7 +39,7 @@ target_link_libraries( nabto_device_static ${CMAKE_THREAD_LIBS_INIT} )
 target_link_libraries(nabto_device_static nm_libevent event_core)
 
 
-add_library( nabto_device SHARED "${src}" "${ne_api_src}" "${ne_api_test_src}")
+add_library( nabto_device SHARED "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
 
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
