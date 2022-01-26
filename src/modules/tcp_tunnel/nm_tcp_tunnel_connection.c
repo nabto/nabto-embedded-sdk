@@ -143,7 +143,7 @@ void connect_callback(np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
     if (ec) {
-        NABTO_LOG_ERROR(LOG, "Could not connect to tcp endpoint");
+        NABTO_LOG_ERROR(LOG, "Could not connect to tcp endpoint: %s:%" PRIu16, nn_ip_address_to_string(&connection->address), connection->port);
         the_end(connection);
         return;
     }
