@@ -4,14 +4,14 @@
 #include "policies/nm_condition.h"
 #include "policies/nm_statement.h"
 
-#include <platform/np_allocator.h>
+#include "nm_iam_allocator.h"
 
 #include <nn/string.h>
 #include <string.h>
 
 struct nm_iam_configuration* nm_iam_configuration_new()
 {
-    struct nm_iam_configuration* c = np_calloc(1, sizeof(struct nm_iam_configuration));
+    struct nm_iam_configuration* c = nm_iam_calloc(1, sizeof(struct nm_iam_configuration));
     if (c == NULL) {
         return NULL;
     }
@@ -45,20 +45,20 @@ void nm_iam_configuration_free(struct nm_iam_configuration* conf)
 
     nn_llist_deinit(&conf->roles);
     nn_llist_deinit(&conf->policies);
-    np_free(conf->unpairedRole);
-    np_free(conf);
+    nm_iam_free(conf->unpairedRole);
+    nm_iam_free(conf);
 }
 
 bool set_string(char** dst, const char* role)
 {
     if (role == NULL) {
-        np_free(*dst);
+        nm_iam_free(*dst);
         *dst = NULL;
         return true;
     }
-    char* tmp = nn_strdup(role, np_allocator_get());
+    char* tmp = nn_strdup(role, nm_iam_allocator_get());
     if (tmp != NULL) {
-        np_free(*dst);
+        nm_iam_free(*dst);
         *dst = tmp;
     }
     return (tmp != 0);
@@ -95,7 +95,7 @@ struct nm_iam_statement* nm_iam_configuration_policy_create_statement(struct nm_
 {
     struct nm_iam_statement* stmt = nm_statement_new(effect);
     if(stmt == NULL || !nm_policy_add_statement(policy, stmt)) {
-        np_free(stmt);
+        nm_iam_free(stmt);
         return NULL;
     }
     return stmt;
@@ -110,7 +110,7 @@ struct nm_iam_condition* nm_iam_configuration_statement_create_condition(struct 
 {
     struct nm_iam_condition* c = nm_condition_new_with_key(op, key);
     if (c == NULL || !nm_statement_add_condition(statement, c)) {
-        np_free(c);
+        nm_iam_free(c);
         return NULL;
     }
     return c;

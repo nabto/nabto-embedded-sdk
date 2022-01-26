@@ -3,7 +3,7 @@
 #include "nm_iam_role.h"
 #include "nm_iam_user.h"
 
-#include <platform/np_allocator.h>
+#include "nm_iam_allocator.h"
 
 #include <string.h>
 
@@ -89,7 +89,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     if (cJSON_IsArray(notificationCategories)) {
         cJSON* element;
         struct nn_string_set cs;
-        nn_string_set_init(&cs, np_allocator_get());
+        nn_string_set_init(&cs, nm_iam_allocator_get());
         cJSON_ArrayForEach(element, notificationCategories) {
             if (cJSON_IsString(element)) {
                 nn_string_set_insert(&cs, element->valuestring);

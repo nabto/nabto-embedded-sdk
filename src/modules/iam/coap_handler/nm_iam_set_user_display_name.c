@@ -5,7 +5,7 @@
 
 
 
-#include <platform/np_allocator.h>
+#include "../nm_iam_allocator.h"
 
 #include <cbor.h>
 
@@ -30,17 +30,17 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* displayName = NULL;
     if (!nm_iam_cbor_decode_string(&value, &displayName) || displayName == NULL || strlen(displayName) > handler->iam->displayNameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
-        np_free(displayName);
+        nm_iam_free(displayName);
         return;
     }
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes, np_allocator_get());
+    nn_string_map_init(&attributes, nm_iam_allocator_get());
     nn_string_map_insert(&attributes, "IAM:Username", username);
 
     if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserDisplayName", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
-        np_free(displayName);
+        nm_iam_free(displayName);
         nn_string_map_deinit(&attributes);
         return;
     }
@@ -49,16 +49,16 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     struct nm_iam_user* user = nm_iam_internal_find_user(handler->iam, username);
     if (user == NULL) {
         nabto_device_coap_error_response(request, 404, NULL);
-        np_free(displayName);
+        nm_iam_free(displayName);
         return;
     }
     if (!nm_iam_user_set_display_name(user, displayName)) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
-        np_free(displayName);
+        nm_iam_free(displayName);
         return;
     }
     nm_iam_internal_state_has_changed(handler->iam);
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
-    np_free(displayName);
+    nm_iam_free(displayName);
 }
