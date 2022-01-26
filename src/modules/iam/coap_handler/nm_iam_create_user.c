@@ -3,7 +3,7 @@
 #include "../nm_iam_internal.h"
 #include "../nm_iam.h"
 
-#include <platform/np_allocator.h>
+#include "../nm_iam_allocator.h"
 
 
 
@@ -44,13 +44,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (username == NULL || !nm_iam_user_validate_username(username) || strlen(username) > handler->iam->usernameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Bad request");
-        np_free(username);
+        nm_iam_free(username);
         return;
     }
 
     if (nm_iam_internal_find_user(handler->iam, username) != NULL) {
         nabto_device_coap_error_response(request, 409, "Conflict");
-        np_free(username);
+        nm_iam_free(username);
         return;
     }
 
@@ -64,17 +64,17 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_error_response(request, 500, "Server error");
 
         nabto_device_string_free(sct);
-        np_free(username);
+        nm_iam_free(username);
         nm_iam_user_free(user);
         return;
     }
     nabto_device_string_free(sct);
-    np_free(username);
+    nm_iam_free(username);
 
     nm_iam_internal_add_user(handler->iam, user);
 
     size_t payloadSize = nm_iam_cbor_encode_user(user, NULL, 0);
-    uint8_t* payload = np_calloc(1, payloadSize);
+    uint8_t* payload = nm_iam_calloc(1, payloadSize);
     if (payload == NULL) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         return;
@@ -90,5 +90,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     } else {
         nabto_device_coap_response_ready(request);
     }
-    np_free(payload);
+    nm_iam_free(payload);
 }
