@@ -5,7 +5,7 @@
 #include <nn/string_map.h>
 #include <nn/llist.h>
 
-#include <platform/np_allocator.h>
+#include "../nm_iam_allocator.h"
 
 
 
@@ -15,12 +15,12 @@ static enum nm_condition_result match_conditions(const struct nm_iam_statement* 
 
 struct nm_iam_statement* nm_statement_new(enum nm_iam_effect effect)
 {
-    struct nm_iam_statement* statement = np_calloc(1, sizeof(struct nm_iam_statement));
+    struct nm_iam_statement* statement = nm_iam_calloc(1, sizeof(struct nm_iam_statement));
     if (statement == NULL) {
         return NULL;
     }
     statement->effect = effect;
-    nn_string_set_init(&statement->actions, np_allocator_get());
+    nn_string_set_init(&statement->actions, nm_iam_allocator_get());
     nn_llist_init(&statement->conditions);
     nn_llist_node_init(&statement->listNode);
     return statement;
@@ -40,7 +40,7 @@ void nm_statement_free(struct nm_iam_statement* statement)
     }
 
     nn_llist_deinit(&statement->conditions);
-    np_free(statement);
+    nm_iam_free(statement);
 }
 
 enum nm_iam_effect nm_statement_eval(const struct nm_iam_statement* statement, const char* action, const struct nn_string_map* attributes)

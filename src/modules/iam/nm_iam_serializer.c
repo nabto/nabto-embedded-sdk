@@ -5,7 +5,7 @@
 #include "nm_iam_to_json.h"
 #include "nm_iam_from_json.h"
 
-#include <platform/np_allocator.h>
+#include "nm_iam_allocator.h"
 
 #include <cjson/cJSON.h>
 
@@ -272,5 +272,5 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
 
 void nm_iam_serializer_string_free(char* string)
 {
-    np_free(string);
+    nm_iam_free(string);
 }

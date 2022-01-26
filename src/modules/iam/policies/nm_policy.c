@@ -4,7 +4,7 @@
 #include <nn/llist.h>
 #include <nn/string.h>
 
-#include <platform/np_allocator.h>
+#include "../nm_iam_allocator.h"
 
 
 #include <string.h>
@@ -14,11 +14,11 @@ struct nm_iam_policy* nm_policy_new(const char* idIn)
     struct nm_iam_policy* p = NULL;
     char* id = NULL;
 
-    id = nn_strdup(idIn, np_allocator_get());
-    p = np_calloc(1, sizeof(struct nm_iam_policy));
+    id = nn_strdup(idIn, nm_iam_allocator_get());
+    p = nm_iam_calloc(1, sizeof(struct nm_iam_policy));
     if (p == NULL || id == NULL) {
-        np_free(id);
-        np_free(p);
+        nm_iam_free(id);
+        nm_iam_free(p);
         return NULL;
     }
     nn_llist_init(&p->statements);
@@ -39,8 +39,8 @@ void nm_policy_free(struct nm_iam_policy* policy)
         it = nn_llist_begin(&policy->statements);
     }
     nn_llist_deinit(&policy->statements);
-    np_free(policy->id);
-    np_free(policy);
+    nm_iam_free(policy->id);
+    nm_iam_free(policy);
 }
 
 // Add statement to a policy, this takes ownership over the statement.

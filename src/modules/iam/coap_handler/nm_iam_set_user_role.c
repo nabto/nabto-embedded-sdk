@@ -5,7 +5,7 @@
 
 
 
-#include <platform/np_allocator.h>
+#include "../nm_iam_allocator.h"
 
 #include <cbor.h>
 
@@ -40,13 +40,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes, np_allocator_get());
+    nn_string_map_init(&attributes, nm_iam_allocator_get());
     nn_string_map_insert(&attributes, "IAM:Username", username);
     nn_string_map_insert(&attributes, "IAM:RoleId", roleId);
 
     if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserRole", &attributes)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
-        np_free(roleId);
+        nm_iam_free(roleId);
         nn_string_map_deinit(&attributes);
         return;
     }
@@ -58,5 +58,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_response_set_code(request, 204);
     }
     nabto_device_coap_response_ready(request);
-    np_free(roleId);
+    nm_iam_free(roleId);
 }

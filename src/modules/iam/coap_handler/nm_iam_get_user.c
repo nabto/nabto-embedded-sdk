@@ -3,7 +3,7 @@
 #include "../nm_iam.h"
 #include "../nm_iam_internal.h"
 
-#include <platform/np_allocator.h>
+#include "../nm_iam_allocator.h"
 
 
 
@@ -26,7 +26,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes, np_allocator_get());
+    nn_string_map_init(&attributes, nm_iam_allocator_get());
     nn_string_map_insert(&attributes, "IAM:Username", username);
 
     if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:GetUser", &attributes)) {
@@ -43,7 +43,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     size_t payloadSize = nm_iam_cbor_encode_user(user, NULL, 0);
-    uint8_t* payload = np_calloc(1, payloadSize);
+    uint8_t* payload = nm_iam_calloc(1, payloadSize);
     if (payload == NULL) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         return;
@@ -59,5 +59,5 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     } else {
         nabto_device_coap_response_ready(request);
     }
-    np_free(payload);
+    nm_iam_free(payload);
 }

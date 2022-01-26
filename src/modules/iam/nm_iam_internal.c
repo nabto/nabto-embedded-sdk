@@ -4,7 +4,7 @@
 #include <nn/string_map.h>
 #include <nn/llist.h>
 
-#include <platform/np_allocator.h>
+#include "nm_iam_allocator.h"
 
 static const char* LOGM = "iam";
 
@@ -18,7 +18,7 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
     }
 
     struct nn_string_map attributes;
-    nn_string_map_init(&attributes, np_allocator_get());
+    nn_string_map_init(&attributes, nm_iam_allocator_get());
 
     if (attributesIn) {
         struct nn_string_map_iterator it;

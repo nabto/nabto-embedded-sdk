@@ -12,6 +12,7 @@ set(src
   nm_iam_serializer.c
   nm_iam_pairing.c
   nm_iam_internal.c
+  nm_iam_allocator.c
   coap_handler/nm_iam_coap_handler.c
   coap_handler/nm_iam_pairing_get.c
   coap_handler/nm_iam_pairing_password_open.c

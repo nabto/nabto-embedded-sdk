@@ -1,13 +1,13 @@
 #include "nm_iam_state.h"
 #include "nm_iam_user.h"
 
-#include <platform/np_allocator.h>
+#include "nm_iam_allocator.h"
 #include <nn/string.h>
 #include <string.h>
 
 struct nm_iam_state* nm_iam_state_new()
 {
-    struct nm_iam_state* s = np_calloc(1, sizeof(struct nm_iam_state));
+    struct nm_iam_state* s = nm_iam_calloc(1, sizeof(struct nm_iam_state));
     if (s == NULL) {
         return NULL;
     }
@@ -31,23 +31,23 @@ void nm_iam_state_free(struct nm_iam_state* state)
     }
 
     nn_llist_deinit(&state->users);
-    np_free(state->passwordOpenPassword);
-    np_free(state->passwordOpenSct);
-    np_free(state->openPairingRole);
-    np_free(state->initialPairingUsername);
-    np_free(state);
+    nm_iam_free(state->passwordOpenPassword);
+    nm_iam_free(state->passwordOpenSct);
+    nm_iam_free(state->openPairingRole);
+    nm_iam_free(state->initialPairingUsername);
+    nm_iam_free(state);
 }
 
 bool nm_iam_state_set_password_open_password(struct nm_iam_state* state, const char* password)
 {
     if (password == NULL) {
-        np_free(state->passwordOpenPassword);
+        nm_iam_free(state->passwordOpenPassword);
         state->passwordOpenPassword = NULL;
         return true;
     }
-    char* tmp = nn_strdup(password, np_allocator_get());
+    char* tmp = nn_strdup(password, nm_iam_allocator_get());
     if (tmp != NULL) {
-        np_free(state->passwordOpenPassword);
+        nm_iam_free(state->passwordOpenPassword);
         state->passwordOpenPassword = tmp;
     }
     return (tmp != 0);
@@ -57,13 +57,13 @@ bool nm_iam_state_set_password_open_password(struct nm_iam_state* state, const c
 bool nm_iam_state_set_password_open_sct(struct nm_iam_state* state, const char* sct)
 {
     if (sct == NULL) {
-        np_free(state->passwordOpenSct);
+        nm_iam_free(state->passwordOpenSct);
         state->passwordOpenSct = NULL;
         return true;
     }
-    char* tmp = nn_strdup(sct, np_allocator_get());
+    char* tmp = nn_strdup(sct, nm_iam_allocator_get());
     if (tmp != NULL) {
-        np_free(state->passwordOpenSct);
+        nm_iam_free(state->passwordOpenSct);
         state->passwordOpenSct = tmp;
     }
     return (tmp != 0);
@@ -91,13 +91,13 @@ void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b)
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* username)
 {
     if (username == NULL) {
-        np_free(state->initialPairingUsername);
+        nm_iam_free(state->initialPairingUsername);
         state->initialPairingUsername = NULL;
         return true;
     }
-    char* tmp = nn_strdup(username, np_allocator_get());
+    char* tmp = nn_strdup(username, nm_iam_allocator_get());
     if (tmp != NULL) {
-        np_free(state->initialPairingUsername);
+        nm_iam_free(state->initialPairingUsername);
         state->initialPairingUsername = tmp;
     }
     return (tmp != 0);
@@ -105,13 +105,13 @@ bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const
 bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* role)
 {
     if (role == NULL) {
-        np_free(state->openPairingRole);
+        nm_iam_free(state->openPairingRole);
         state->openPairingRole = NULL;
         return true;
     }
-    char* tmp = nn_strdup(role, np_allocator_get());
+    char* tmp = nn_strdup(role, nm_iam_allocator_get());
     if (tmp != NULL) {
-        np_free(state->openPairingRole);
+        nm_iam_free(state->openPairingRole);
         state->openPairingRole = tmp;
     }
     return (tmp != 0);
@@ -183,14 +183,14 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
     bool failed = false;
 
     if (state->passwordOpenPassword != NULL) {
-        copy->passwordOpenPassword = nn_strdup(state->passwordOpenPassword, np_allocator_get());
+        copy->passwordOpenPassword = nn_strdup(state->passwordOpenPassword, nm_iam_allocator_get());
         if (copy->passwordOpenPassword == NULL) {
             failed = true;
         }
     }
 
     if (state->passwordOpenSct != NULL) {
-        copy->passwordOpenSct = nn_strdup(state->passwordOpenSct, np_allocator_get());
+        copy->passwordOpenSct = nn_strdup(state->passwordOpenSct, nm_iam_allocator_get());
         if (copy->passwordOpenSct == NULL) {
             failed = true;
         }
@@ -202,14 +202,14 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
     copy->localInitialPairing = state->localInitialPairing;
 
     if(state->openPairingRole != NULL) {
-        copy->openPairingRole = nn_strdup(state->openPairingRole, np_allocator_get());
+        copy->openPairingRole = nn_strdup(state->openPairingRole, nm_iam_allocator_get());
         if (copy->openPairingRole == NULL) {
             failed = true;
         }
     }
 
     if(state->initialPairingUsername != NULL) {
-        copy->initialPairingUsername = nn_strdup(state->initialPairingUsername, np_allocator_get());
+        copy->initialPairingUsername = nn_strdup(state->initialPairingUsername, nm_iam_allocator_get());
         if (copy->initialPairingUsername == NULL) {
             failed = true;
         }
