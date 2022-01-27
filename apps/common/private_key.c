@@ -7,7 +7,7 @@
 
 static const char* LOGM = "private_key";
 
-static bool create_private_key(NabtoDevice* device, const char* filename, struct nn_log* logger)
+bool create_private_key(NabtoDevice* device, const char* filename, struct nn_log* logger)
 {
     char* privateKey;
     NabtoDeviceError ec = nabto_device_create_private_key(device, &privateKey);

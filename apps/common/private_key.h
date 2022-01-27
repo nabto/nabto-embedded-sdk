@@ -11,6 +11,7 @@
 extern "C" {
 #endif
 
+bool create_private_key(NabtoDevice* device, const char* filename, struct nn_log* logger);
 bool load_or_create_private_key(NabtoDevice* device, const char* filename, struct nn_log* logger);
 
 #ifdef __cplusplus
