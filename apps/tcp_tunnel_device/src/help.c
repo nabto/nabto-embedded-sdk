@@ -15,6 +15,10 @@ void print_help() {
     printf("%s" NEWLINE, "                      is error, warn, info and trace.");
     printf("%s" NEWLINE, "      --random-ports  Bind the local and the p2p sockets to random UDP ports");
     printf("%s" NEWLINE, "                      instead of the default UDP ports 5592 and 5593.");
+    printf("%s" NEWLINE, "      --local-port    Bind the local socket to a specific UDP port");
+    printf("%s" NEWLINE, "                      instead of the default UDP port 5592.");
+    printf("%s" NEWLINE, "      --p2p-port      Bind the p2p socket to a specific UDP port");
+    printf("%s" NEWLINE, "                      instead of the default UDP port 5593.");
     printf("%s" NEWLINE, "      --init          Interactively create configuration files the the tcp tunnel.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "# Files");
