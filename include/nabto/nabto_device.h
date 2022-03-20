@@ -1331,7 +1331,7 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
  * Authorization API to determine if actions are allowed on a given
  * connection. An Authorization Request listener must therefore be
  * configured when using TCP tunnelling. It is recomended to use the
- * [Nabto IAM module](/developer/guides/iam/intro.html) to handle
+ * [Nabto IAM module](/developer/guides/concepts/iam/intro.html) to handle
  * Authorization Requests.
  *
  * A TCP tunnel client first makes a CoAP request: `GET
