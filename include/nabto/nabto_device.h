@@ -1159,7 +1159,7 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  ********************/
 
 /**
- * @intro FCM Notifications (Mobile Push)
+ * @intro FCM Notifications
  *
  * Integration with Firebase Cloud Messaging (FCM) notifications allows the
  * device to send push notifications to typically mobile clients. The integration is transparent
