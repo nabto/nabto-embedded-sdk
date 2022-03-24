@@ -67,6 +67,13 @@ int main(int argc, char** argv) {
         goto cleanup;
     }
 
+    const char* server = getenv("NABTO_SERVER");
+    if (server) {
+        if (nabto_device_set_server_url(device, server) != NABTO_DEVICE_EC_OK) {
+            goto cleanup;
+        }
+    }
+
     ec = nabto_device_set_app_name(device, appName);
     if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to set app name. %s" NEWLINE, nabto_device_error_get_message(ec));
