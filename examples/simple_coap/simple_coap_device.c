@@ -191,6 +191,13 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
+    const char* server = getenv("NABTO_SERVER");
+    if (server) {
+        if (nabto_device_set_server_url(device, server) != NABTO_DEVICE_EC_OK) {
+            return false;
+        }
+    }
+
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_start(device, fut);
 
