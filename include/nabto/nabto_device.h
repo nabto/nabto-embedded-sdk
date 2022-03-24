@@ -1161,11 +1161,14 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
 /**
  * @intro FCM Notifications
  *
- * Integration with Firebase Cloud Messaging (FCM) notifications allows the
- * device to send push notifications to typically mobile clients. The integration is transparent
- * meaning the Nabto platform forwards the provided payload directly to FCM, and
- * so it must follow the format defined by FCM. Sending push notifications
- * requires a Firebase project, a detailed guide will be provided in Q4 2021.
+ * Integration with Firebase Cloud Messaging (FCM) notifications allows the device to send push
+ * notifications to typically mobile clients. For a thorough introduction and a full example, see
+ * the [Nabto Edge Push guide](https://docs.nabto.com/developer/guides/concepts/push/overview.html).
+ *
+ * The integration is transparent meaning the Nabto platform forwards the provided payload directly
+ * to FCM, and so it must follow the format defined by FCM. Sending push notifications requires a
+ * Firebase project as outlined in the [Nabto Edge Push
+ * guide](https://docs.nabto.com/developer/guides/concepts/push/fcm-setup.html).
  *
  * Sending a notification from the device is initiated by the device creating a
  * NabtoDeviceFcmNotification object. Then the payload and project ID must be
