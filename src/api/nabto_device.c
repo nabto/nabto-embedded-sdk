@@ -413,7 +413,7 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-
+    NABTO_LOG_TRACE(LOG, "Nabto Embedded SDK Version: %s", nc_version());
 
     dev->startFut = fut;
 
