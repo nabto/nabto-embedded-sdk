@@ -195,6 +195,7 @@ if (DEVICE_BUILD_TESTS)
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
   add_subdirectory(test_cpp)
+  add_subdirectory(platform_integration_stub)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)
@@ -219,7 +220,6 @@ if (DEVICE_BUILD_EXAMPLES)
   add_subdirectory(examples/simple_speed_test)
   add_subdirectory(examples/custom_allocator)
 
-  add_subdirectory(platform_integration_stub)
 #  add_subdirectory(platform_integration_guide)
 endif()
 
