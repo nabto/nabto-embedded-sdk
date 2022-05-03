@@ -27,7 +27,14 @@ add_definitions(-DNODEFAULTLIB)
 add_definitions(-DBOOST_ALL_NO_LIB)
 
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
-option(DEVICE_BUILD_TESTS "build device tests" ON)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "")
+  message(AUTHOR_WARNING "No c++ compiler found. DEVICE_BUILD_TESTS will default to OFF.")
+  option(DEVICE_BUILD_TESTS "build device tests" OFF)
+else()
+  message("c++ compiler was LOADED. ${CMAKE_CXX_COMPILER_ID}")
+  option(DEVICE_BUILD_TESTS "build device tests" ON)
+endif()
+
 option(DEVICE_BUILD_APPS "build applications" ON)
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)

@@ -4,14 +4,25 @@ The Nabto Edge platform makes it possible to communicate _directly_ between two 
 
 ## Building and Testing
 
+The Embedded SDK unit tests uses Boost C++ unit tests. If the Embedded SDK is build on a target without a C++ compiler, Cmake will detect the missing compiler and disable building the unit tests. Building of tests can also be disabled manually with `cmake -DDEVICE_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX=../_install ..`.
+
+### Building
 ```
 mkdir _build
 cd _build
 cmake -DCMAKE_INSTALL_PREFIX=../_install ..
 cmake --build . --config Release --target install
+```
+
+### Testing
+
+If build passed, a C++ compiler was found, and `DEVICE_BUILD_TESTS` was not set to `Off` unit tests can be run.
+
+```
 ../_install/bin/embedded_unit_test -p
 ```
 
+If the build was successfull but unit tests was not build, an example application can be run to validate the Embedded SDK can run.
 
 ## Overview
 
