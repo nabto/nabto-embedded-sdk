@@ -35,7 +35,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     char* roleId = NULL;
     if (!nm_iam_cbor_decode_string(&value, &roleId) || roleId == NULL) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+        nabto_device_coap_error_response(request, 400, "Role missing");
         return;
     }
 

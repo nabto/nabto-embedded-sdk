@@ -42,8 +42,16 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     nm_iam_cbor_decode_kv_string(&value, "Username", &username);
 
-    if (username == NULL || !nm_iam_user_validate_username(username) || strlen(username) > handler->iam->usernameMaxLength) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+    if (username == NULL) {
+        nabto_device_coap_error_response(request, 400, "Username missing");
+        nm_iam_free(username);
+        return;
+    } else if (!nm_iam_user_validate_username(username)) {
+        nabto_device_coap_error_response(request, 400, "Invalid username");
+        nm_iam_free(username);
+        return;
+    } else if (strlen(username) > handler->iam->usernameMaxLength) {
+        nabto_device_coap_error_response(request, 400, "Username too long");
         nm_iam_free(username);
         return;
     }

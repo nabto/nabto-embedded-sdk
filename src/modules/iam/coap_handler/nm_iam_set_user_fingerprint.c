@@ -28,8 +28,12 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* fp = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &fp) || fp == NULL || strlen(fp) != 64) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+    if (!nm_iam_cbor_decode_string(&value, &fp) || fp == NULL) {
+        nabto_device_coap_error_response(request, 400, "Fingerprint missing");
+        return;
+    } else if (strlen(fp) != 64) {
+        nabto_device_coap_error_response(request, 400, "Invalid fingerprint length");
+        nm_iam_free(fp);
         return;
     }
 

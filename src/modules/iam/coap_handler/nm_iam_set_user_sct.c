@@ -29,7 +29,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     char* sct = NULL;
     if (!nm_iam_cbor_decode_string(&value, &sct) || sct == NULL || strlen(sct) > handler->iam->sctMaxLength) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+        nabto_device_coap_error_response(request, 400, "Invalid SCT");
         nm_iam_free(sct);
         return;
     }
