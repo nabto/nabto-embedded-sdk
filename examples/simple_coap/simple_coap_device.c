@@ -17,17 +17,22 @@
 const char* keyFile = "device.key";
 
 const char* coapPath[] = { "hello-world", NULL };
-const char* helloWorld = "Hello world";
+const char* defaultString = "Hello world";
+char helloWorld[128];
 
 struct context {
-    NabtoDeviceCoapRequest* request;
-    NabtoDeviceListener* listener;
+    NabtoDeviceCoapRequest* getRequest;
+    NabtoDeviceListener* getListener;
+    NabtoDeviceCoapRequest* postRequest;
+    NabtoDeviceListener* postListener;
 };
 
-void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
+void get_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
+void post_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 bool start_device(NabtoDevice* device, const char* productId, const char* deviceId);
-void handle_coap_request(NabtoDeviceCoapRequest* request);
-void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg);
+void handle_coap_get_request(NabtoDeviceCoapRequest* request);
+void handle_coap_post_request(NabtoDeviceCoapRequest* request);
+void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l1, NabtoDeviceListener* l2, char* msg);
 void wait_for_device_events(NabtoDevice* device);
 void signal_handler(int s);
 
@@ -45,52 +50,84 @@ int main(int argc, char* argv[]) {
     char* productId = argv[1];
     char* deviceId = argv[2];
 
+    memcpy(helloWorld, defaultString, strlen(defaultString));
+
     struct context ctx;
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
     if (!init_logging()) {
-        handle_device_error(NULL, NULL, "Failed to initialize logging");
+        handle_device_error(NULL, NULL, NULL, "Failed to initialize logging");
         return -1;
     }
 
     if ((device_ = nabto_device_new()) == NULL) {
-        handle_device_error(NULL, NULL, "Failed to allocate device");
+        handle_device_error(NULL, NULL, NULL, "Failed to allocate device");
         return -1;
     }
 
     if (!start_device(device_, productId, deviceId)) {
-        handle_device_error(device_, NULL, "Failed to start device");
+        handle_device_error(device_, NULL, NULL, "Failed to start device");
         return -1;
     }
 
-    if ((ctx.listener = nabto_device_listener_new(device_)) == NULL) {
-        handle_device_error(device_, NULL, "Failed to allocate listener");
+    // Get handler setup
+    if ((ctx.getListener = nabto_device_listener_new(device_)) == NULL) {
+        handle_device_error(device_, NULL, NULL, "Failed to allocate listener");
         return -1;
     }
 
-    if (nabto_device_coap_init_listener(device_, ctx.listener, NABTO_DEVICE_COAP_GET, coapPath) != NABTO_DEVICE_EC_OK) {
-        handle_device_error(device_, ctx.listener, "CoAP listener initialization failed");
+    if (nabto_device_coap_init_listener(device_, ctx.getListener, NABTO_DEVICE_COAP_GET, coapPath) != NABTO_DEVICE_EC_OK) {
+        handle_device_error(device_, ctx.getListener, NULL, "CoAP listener initialization failed");
         return -1;
     }
 
-    NabtoDeviceFuture* future = nabto_device_future_new(device_);
-    if (future == NULL) {
-        handle_device_error(device_, ctx.listener, "Failed to allocate future");
+    NabtoDeviceFuture* getFuture = nabto_device_future_new(device_);
+    if (getFuture == NULL) {
+        handle_device_error(device_, ctx.getListener, NULL, "Failed to allocate future");
         return -1;
     }
 
-    nabto_device_listener_new_coap_request(ctx.listener, future, &ctx.request);
-    nabto_device_future_set_callback(future, &request_callback, &ctx);
+    // Post handler setup
+    if ((ctx.postListener = nabto_device_listener_new(device_)) == NULL) {
+        nabto_device_future_free(getFuture);
+        handle_device_error(device_, ctx.getListener, NULL,
+                            "Failed to allocate post listener");
+        return -1;
+    }
+
+    // both post and get handler can exist on the same path. Different paths are also ok
+    if (nabto_device_coap_init_listener(device_, ctx.postListener, NABTO_DEVICE_COAP_POST, coapPath) != NABTO_DEVICE_EC_OK) {
+        nabto_device_future_free(getFuture);
+        handle_device_error(device_, ctx.getListener, ctx.postListener, "CoAP listener initialization failed");
+        return -1;
+    }
+
+    NabtoDeviceFuture* postFuture = nabto_device_future_new(device_);
+    if (getFuture == NULL) {
+        nabto_device_future_free(getFuture);
+        handle_device_error(device_, ctx.getListener, ctx.postListener, "Failed to allocate future");
+        return -1;
+    }
+
+    nabto_device_listener_new_coap_request(ctx.getListener, getFuture, &ctx.getRequest);
+    nabto_device_future_set_callback(getFuture, &get_request_callback, &ctx);
+
+    nabto_device_listener_new_coap_request(ctx.postListener, postFuture, &ctx.postRequest);
+    nabto_device_future_set_callback(postFuture, &post_request_callback, &ctx);
+
+
 
     signal(SIGINT, &signal_handler);
 
     wait_for_device_events(device_);
 
-    nabto_device_listener_free(ctx.listener);
+    nabto_device_listener_free(ctx.getListener);
+    nabto_device_listener_free(ctx.postListener);
     nabto_device_stop(device_);
     nabto_device_free(device_);
-    nabto_device_future_free(future);
+    nabto_device_future_free(getFuture);
+    nabto_device_future_free(postFuture);
 
     printf("Device cleaned up and closing\n");
 }
@@ -211,13 +248,13 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
 }
 
 
-void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
+void get_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
 {
     struct context* ctx = (struct context*)data;
     if (ec == NABTO_DEVICE_EC_OK) {
-        handle_coap_request(ctx->request);
-        nabto_device_listener_new_coap_request(ctx->listener, fut, &(ctx->request));
-        nabto_device_future_set_callback(fut, &request_callback, ctx);
+        handle_coap_get_request(ctx->getRequest);
+        nabto_device_listener_new_coap_request(ctx->getListener, fut, &(ctx->getRequest));
+        nabto_device_future_set_callback(fut, &get_request_callback, ctx);
     } else if (ec == NABTO_DEVICE_EC_STOPPED) {
         // stop invoked - cleanup triggered from main
     } else {
@@ -225,7 +262,7 @@ void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     }
 }
 
-void handle_coap_request(NabtoDeviceCoapRequest* request)
+void handle_coap_get_request(NabtoDeviceCoapRequest* request)
 {
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
@@ -237,7 +274,41 @@ void handle_coap_request(NabtoDeviceCoapRequest* request)
     nabto_device_coap_request_free(request);
 }
 
-void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg)
+void post_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
+{
+    struct context* ctx = (struct context*)data;
+    if (ec == NABTO_DEVICE_EC_OK) {
+        handle_coap_post_request(ctx->postRequest);
+        nabto_device_listener_new_coap_request(ctx->postListener, fut, &(ctx->postRequest));
+        nabto_device_future_set_callback(fut, &post_request_callback, ctx);
+    } else if (ec == NABTO_DEVICE_EC_STOPPED) {
+        // stop invoked - cleanup triggered from main
+    } else {
+        printf("An error occurred when handling CoAP POST request, ec=%d\n", ec);
+    }
+}
+
+void handle_coap_post_request(NabtoDeviceCoapRequest* request)
+{
+    char* payload;
+    size_t len;
+    if (nabto_device_coap_request_get_payload(request, (void**)&payload, &len) != NABTO_DEVICE_EC_OK) {
+        nabto_device_coap_error_response(request, 400, "Missing payload");
+        return;
+    }
+    if (len > 128) {
+        nabto_device_coap_error_response(request, 400, "Payload size limit exceeded");
+        return;
+    }
+    memcpy(helloWorld, payload, len);
+    helloWorld[len] = '\0';
+    nabto_device_coap_response_set_code(request, 204);
+    nabto_device_coap_response_ready(request);
+    printf("CoAP response changed to %s by CoAP Post request\n", payload);
+    nabto_device_coap_request_free(request);
+}
+
+void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l1, NabtoDeviceListener* l2, char* msg)
 {
     NabtoDeviceFuture* f = nabto_device_future_new(d);
     if (d) {
@@ -249,8 +320,11 @@ void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg)
     if (f) {
         nabto_device_future_free(f);
     }
-    if (l) {
-        nabto_device_listener_free(l);
+    if (l1) {
+        nabto_device_listener_free(l1);
+    }
+    if (l2) {
+        nabto_device_listener_free(l2);
     }
     printf("%s\n", msg);
 }
