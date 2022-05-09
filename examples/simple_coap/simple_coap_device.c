@@ -302,6 +302,10 @@ void handle_coap_post_request(NabtoDeviceCoapRequest* request)
     }
     memcpy(helloWorld, payload, len);
     helloWorld[len] = '\0';
+    if(helloWorld[payload] == '1')
+    {
+        printf("flip_mirror");
+    }
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
     printf("CoAP response changed to %s by CoAP Post request\n", payload);
