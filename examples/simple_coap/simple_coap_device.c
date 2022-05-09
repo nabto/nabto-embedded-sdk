@@ -17,7 +17,7 @@
 const char* keyFile = "device.key";
 
 const char* coapPath[] = { "hello-world", NULL };
-const char* defaultString = "Hello world";
+const char* defaultString = "Hello world hiii";
 char helloWorld[128];
 
 struct context {
