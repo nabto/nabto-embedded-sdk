@@ -300,12 +300,12 @@ void handle_coap_post_request(NabtoDeviceCoapRequest* request)
         nabto_device_coap_error_response(request, 400, "Payload size limit exceeded");
         return;
     }
-    if(msg == 1)
-    {
-        printf("flip the mirror");
-    }
     memcpy(helloWorld, payload, len);
     helloWorld[len] = '\0';
+    if(helloworld[len] == '1')
+    {
+        printf("flip mirror);
+    }
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
     printf("CoAP response changed to %s by CoAP Post request\n", payload);
@@ -329,10 +329,5 @@ void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l1, NabtoDeviceLis
     }
     if (l2) {
         nabto_device_listener_free(l2);
-    }
-    if(msg == 1)
-    {
-        printf("flip the mirror");
-    }
     printf("%s\n", msg);
 }
