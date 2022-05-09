@@ -302,7 +302,7 @@ void handle_coap_post_request(NabtoDeviceCoapRequest* request)
     }
     memcpy(helloWorld, payload, len);
     helloWorld[len] = '\0';
-    if(helloworld[] == '1')
+    if(helloworld[payload] == '1')
     {
         printf("flip mirror);
     }
