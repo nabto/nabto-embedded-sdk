@@ -2,27 +2,6 @@
 set(ne_dir ${CMAKE_CURRENT_LIST_DIR})
 
 
-# Nabto mbedtls wrapper
-set(ne_mbedtls_wrapper ${ne_dir}/src/modules/mbedtls)
-set(ne_dtls_common_src
-  ${ne_mbedtls_wrapper}/nm_mbedtls_timer.c
-  ${ne_mbedtls_wrapper}/nm_mbedtls_util.c
-)
-
-set(ne_dtls_cli_src
-  ${ne_dtls_common_src}
-  ${ne_mbedtls_wrapper}/nm_mbedtls_cli.c
-  )
-
-set(ne_dtls_srv_src
-  ${ne_dtls_common_src}
-  ${ne_mbedtls_wrapper}/nm_mbedtls_srv.c
-  )
-
-set(ne_mbedtls_random_src
-  ${ne_mbedtls_wrapper}/nm_mbedtls_random.c
-  )
-
 # Nabto event queue
 set(ne_eventqueue_dir ${ne_dir}/src/modules/event_queue)
 set(ne_event_queue_src
@@ -32,23 +11,6 @@ set(ne_event_queue_src
 set(ne_thread_event_queue_src
   ${ne_eventqueue_dir}/thread_event_queue.c
   )
-
-# Nabto communications buffer
-set(ne_communication_buffer_dir ${ne_dir}/src/modules/communication_buffer)
-set(ne_communication_buffer_src
-  ${ne_communication_buffer_dir}/nm_communication_buffer.c
-)
-
-# Nabto common components
-set(ne_nn_common_components ${ne_dir}/nabto-common/components/nn)
-set(ne_nn_util_src
-  ${ne_nn_common_components}/src/nn/vector.c
-  ${ne_nn_common_components}/src/nn/string_set.c
-  ${ne_nn_common_components}/src/nn/log.c
-  ${ne_nn_common_components}/src/nn/llist.c
-  ${ne_nn_common_components}/src/nn/string_map.c
-)
-set(ne_nn_common_components_include ${ne_nn_common_components}/include)
 
 # Nabto dns posix impl.
 set(ne_dns_dir ${ne_dir}/src/modules/dns)

@@ -5,14 +5,17 @@ message("Using embedded dir:" ${root_dir})
 
 
 set(ne_nn_src
+  ${root_dir}/nabto-common/components/nn/src/nn/endian.c
+  ${root_dir}/nabto-common/components/nn/src/nn/ip_address.c
   ${root_dir}/nabto-common/components/nn/src/nn/llist.c
-  ${root_dir}/nabto-common/components/nn/src/nn/vector.c
-  ${root_dir}/nabto-common/components/nn/src/nn/string_set.c
   ${root_dir}/nabto-common/components/nn/src/nn/log.c
-  ${root_dir}/nabto-common/components/nn/src/nn/string_map.c
+  ${root_dir}/nabto-common/components/nn/src/nn/set.c
   ${root_dir}/nabto-common/components/nn/src/nn/string_int_map.c
+  ${root_dir}/nabto-common/components/nn/src/nn/string_map.c
+  ${root_dir}/nabto-common/components/nn/src/nn/string_set.c
   ${root_dir}/nabto-common/components/nn/src/nn/string.c
-  )
+  ${root_dir}/nabto-common/components/nn/src/nn/vector.c
+)
 
 set(ne_utils_src
   ${root_dir}/nabto-common/components/stun/src/nabto_stun_client.c
