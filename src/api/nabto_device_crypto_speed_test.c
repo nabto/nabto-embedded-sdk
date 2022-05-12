@@ -70,7 +70,7 @@ void p256r1_multiplication_speed_test(struct nabto_device_context* dev) {
 
     status = mbedtls_ecp_group_load( &grp, MBEDTLS_ECP_DP_SECP256R1);
     if (status != 0) {
-        NABTO_LOG_ERROR(LOG, "cannot load the group P256R1")
+        NABTO_LOG_ERROR(LOG, "cannot load the group P256R1");
         return;
     }
 
