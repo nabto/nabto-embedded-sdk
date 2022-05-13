@@ -59,6 +59,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));
     np_error_code ec;
     if (dev == NULL) {
+        NABTO_LOG_ERROR(LOG, "Could not allocate %d bytes for the device context", sizeof(struct nabto_device_context));
         return NULL;
     }
 
@@ -118,6 +119,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 
     ec = nc_device_init(&dev->core, &dev->pl);
     if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Failed to initialize device core. %s",  np_error_code_to_string(ec));
         nabto_device_new_resolve_failure(dev);
         return NULL;
     }
