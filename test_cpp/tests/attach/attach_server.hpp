@@ -1,16 +1,15 @@
 #pragma once
 
-#include "certificates.hpp"
-
-#include <fixtures/dtls_server/dtls_server.hpp>
 #include <boost/asio/io_service.hpp>
+#include <fixtures/dtls_server/dtls_server.hpp>
+
+#include "certificates.hpp"
 //#include <util/test_future.hpp>
-#include <fixtures/dtls_server/mbedtls_util.hpp>
-
-#include <nlohmann/json.hpp>
-
 #include <cbor.h>
+
+#include <fixtures/dtls_server/mbedtls_util.hpp>
 #include <future>
+#include <nlohmann/json.hpp>
 
 namespace nabto {
 namespace test {
@@ -18,31 +17,49 @@ namespace test {
 static std::string serverHostname = "localhost-multi.nabto.net";
 
 enum class ServiceErrorCode {
-    NONE = 0, // never sent on the protocol.
+    NONE = 0,  // never sent on the protocol.
     INVALID_JWT_TOKEN = 1,
-    DEVICE_NOT_ATTACHED = 2, // used when the device is known by the basestation, but it is not attached.
-    UNKNOWN_PRODUCT_ID = 3, // used when the product id does not exists in the basestation.
-    UNKNOWN_DEVICE_ID = 4, // used when the device id does not exists in the basestation.
-    UNKNOWN_DEVICE_FINGERPRINT = 5, // used when the basestation does not know the public key which the device is using.
-    REJECTED_SERVER_CONNECT_TOKEN = 6, // used when the basestation rejects a client for not having a valid SCT.
-    WRONG_PRODUCT_ID = 7, // used when the product id does not match the id configured in the basestation.
-    WRONG_DEVICE_ID = 8, // used when the device id does not match the device id configured in the basestation.
-    AUTHORIZATION_TYPE_MISMATCH = 9, // used when the server key does not match the authorization type the client is using.
-    UNKNOWN_SERVER_KEY = 10 // used when the server key is not known to the basestation.
+    DEVICE_NOT_ATTACHED = 2,  // used when the device is known by the
+                              // basestation, but it is not attached.
+    UNKNOWN_PRODUCT_ID =
+        3,  // used when the product id does not exists in the basestation.
+    UNKNOWN_DEVICE_ID =
+        4,  // used when the device id does not exists in the basestation.
+    UNKNOWN_DEVICE_FINGERPRINT =
+        5,  // used when the basestation does not know the public key which the
+            // device is using.
+    REJECTED_SERVER_CONNECT_TOKEN = 6,  // used when the basestation rejects a
+                                        // client for not having a valid SCT.
+    WRONG_PRODUCT_ID = 7,  // used when the product id does not match the id
+                           // configured in the basestation.
+    WRONG_DEVICE_ID = 8,   // used when the device id does not match the device
+                           // id configured in the basestation.
+    AUTHORIZATION_TYPE_MISMATCH =
+        9,  // used when the server key does not match the authorization type
+            // the client is using.
+    UNKNOWN_SERVER_KEY =
+        10  // used when the server key is not known to the basestation.
+};
+
+enum class ServiceInvokeMessageFormat {
+    BINARY = 0,  // message from base64 string
+    NONE = 1,    // message is empty
+    TEXT = 2,    // message from content type text/<plain|html>
 };
 
 class CoapError {
  public:
-    CoapError(int coapErrorCode, ServiceErrorCode nabtoErrorCode, const std::string& message)
-        : coapErrorCode_(coapErrorCode), nabtoErrorCode_(nabtoErrorCode), message_(message)
+    CoapError(int coapErrorCode, ServiceErrorCode nabtoErrorCode,
+              const std::string& message)
+        : coapErrorCode_(coapErrorCode),
+          nabtoErrorCode_(nabtoErrorCode),
+          message_(message)
     {
-
     }
 
     CoapError(int coapErrorCode, const std::string& message)
         : coapErrorCode_(coapErrorCode), message_(message)
     {
-
     }
 
     void createCborError(std::shared_ptr<CoapServerResponse> response) const
@@ -55,7 +72,8 @@ class CoapError {
             root["Error"]["Code"] = static_cast<int>(*nabtoErrorCode_);
         }
         if (!root.empty()) {
-            response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+            response->setContentFormat(
+                NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
             std::vector<uint8_t> cbor = nlohmann::json::to_cbor(root);
             response->setPayload(cbor);
         }
@@ -70,10 +88,7 @@ class CoapError {
 
 class AttachCoapServer {
  public:
-    AttachCoapServer(boost::asio::io_context& io)
-        : io_(io), dtlsServer_(io)
-    {
-    }
+    AttachCoapServer(boost::asio::io_context& io) : io_(io), dtlsServer_(io) {}
 
     AttachCoapServer(boost::asio::io_context& io, std::string ip, uint16_t port)
         : io_(io), dtlsServer_(io, ip)
@@ -83,46 +98,42 @@ class AttachCoapServer {
 
     virtual ~AttachCoapServer() {}
 
-    void init() {
+    void init()
+    {
         lib::error_code ec;
         dtlsServer_.setPort(port_);
         dtlsServer_.setAlpnProtocols({"n5"});
-        dtlsServer_.setSniCallback([this](const std::string& sni){
-                (void)sni;
-                return DtlsServer::createCertificateContext(privateKey_, certificateChain_);
-            });
+        dtlsServer_.setSniCallback([this](const std::string& sni) {
+            (void)sni;
+            return DtlsServer::createCertificateContext(privateKey_,
+                                                        certificateChain_);
+        });
 
         ec = dtlsServer_.init();
         initCoapHandlers();
     }
 
-    void stop() {
+    void stop()
+    {
         if (stopped_) {
             return;
         }
         stopped_ = true;
         std::future<void> future = promise_.get_future();
-        io_.post([this](){
-                     dtlsServer_.stop();
-                     promise_.set_value();
-                 });
+        io_.post([this]() {
+            dtlsServer_.stop();
+            promise_.set_value();
+        });
         future.get();
     }
 
     virtual void initCoapHandlers() = 0;
 
-    uint16_t getPort()
-    {
-        return dtlsServer_.getPort();
-    }
+    uint16_t getPort() { return dtlsServer_.getPort(); }
 
-    std::string getHostname() {
-        return serverHostname;
-    }
+    std::string getHostname() { return serverHostname; }
 
-    std::string getRootCerts() {
-        return rootCert_;
-    }
+    std::string getRootCerts() { return rootCert_; }
 
     std::array<uint8_t, 16> getFingerprint()
     {
@@ -132,9 +143,11 @@ class AttachCoapServer {
         return ret;
     }
 
-    void setCertificateChain(const std::vector<std::string>& certificateChain) {
+    void setCertificateChain(const std::vector<std::string>& certificateChain)
+    {
         certificateChain_ = certificateChain;
     }
+
  protected:
     boost::asio::io_context& io_;
     DtlsServer dtlsServer_;
@@ -142,9 +155,9 @@ class AttachCoapServer {
     std::promise<void> promise_;
     bool stopped_ = false;
     std::string privateKey_ = privateKey;
-    std::vector<std::string> certificateChain_ = {localhostMultiNabtoNetCert, testIntermediateCert};
+    std::vector<std::string> certificateChain_ = {localhostMultiNabtoNetCert,
+                                                  testIntermediateCert};
     std::string rootCert_ = testRootCa;
-
 };
 
 static const std::string firebaseOkResponse = R"(
@@ -153,16 +166,13 @@ static const std::string firebaseOkResponse = R"(
 }
 )";
 
-class AttachServer : public AttachCoapServer, public std::enable_shared_from_this<AttachServer>
-{
+class AttachServer : public AttachCoapServer,
+                     public std::enable_shared_from_this<AttachServer> {
  public:
+    AttachServer(boost::asio::io_context& io) : AttachCoapServer(io) {}
 
-    AttachServer(boost::asio::io_context& io)
-        : AttachCoapServer(io)
-    {
-    }
-
-    AttachServer(boost::asio::io_context& io, const std::vector<std::string>& certificateChain)
+    AttachServer(boost::asio::io_context& io,
+                 const std::vector<std::string>& certificateChain)
         : AttachCoapServer(io)
     {
     }
@@ -179,7 +189,8 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         return ptr;
     }
 
-    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io, std::vector<std::string> certificateChain)
+    static std::shared_ptr<AttachServer> create(
+        boost::asio::io_context& io, std::vector<std::string> certificateChain)
     {
         auto ptr = std::make_shared<AttachServer>(io);
         ptr->setCertificateChain(certificateChain);
@@ -187,33 +198,51 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         return ptr;
     }
 
-    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io, std::string ip, uint16_t port)
+    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io,
+                                                std::string ip, uint16_t port)
     {
         auto ptr = std::make_shared<AttachServer>(io, ip, port);
         ptr->init();
         return ptr;
     }
 
-    void initCoapHandlers() {
+    void initCoapHandlers()
+    {
         auto self = shared_from_this();
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-start", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_POST, "/device/attach-start",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
                 if (self->attachCount_ == self->invalidAttach_) {
-                    self->handleDeviceAttachWrongResponse(connection, request, response);
+                    self->handleDeviceAttachWrongResponse(connection, request,
+                                                          response);
                     self->attachCount_ += 1;
                 } else {
                     self->handleDeviceAttach(connection, request, response);
                 }
             });
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-end", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
-                (void)connection; (void)request;
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_POST, "/device/attach-end",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
+                (void)connection;
+                (void)request;
                 response->setCode(201);
-                //self->attachCount_ += 1;
+                // self->attachCount_ += 1;
                 return;
             });
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/fcm/send", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
-                (void)connection; (void)request;
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_POST, "/device/fcm/send",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
+                (void)connection;
+                (void)request;
                 response->setCode(201);
-                response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+                response->setContentFormat(
+                    NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
                 nlohmann::json root;
                 root["StatusCode"] = 200;
                 root["Body"] = firebaseOkResponse;
@@ -221,46 +250,138 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
                 response->setPayload(b);
                 return;
             });
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/service/invoke", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
-                (void)connection; (void)request;
-                response->setCode(201);
-                response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-                nlohmann::json root;
-                root["StatusCode"] = 200;
-                std::string hw = "{\"hello\": \"world\"}";
-                root["Message"] = nlohmann::json::binary_t(std::vector<uint8_t>(reinterpret_cast<const uint8_t*>(hw.data()),reinterpret_cast<const uint8_t*>(hw.data()+ hw.size())));
-                std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
-                response->setPayload(b);
-                return;
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_POST, "/device/service/invoke",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
+                self->handleServiceInvoke(connection, request, response);
             });
     }
 
-    void handleDeviceAttach(DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response)
+    void handleServiceInvoke(DtlsConnectionPtr connection,
+                             std::shared_ptr<CoapServerRequest> request,
+                             std::shared_ptr<CoapServerResponse> response)
     {
-        (void)connection; (void)request;
+        (void)request;
+        if (request->getContentFormat() !=
+            NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
+            CoapError err = CoapError(400, "Bad content format");
+            err.createCborError(response);
+            return;
+        }
+        std::vector<uint8_t> payload = request->getPayload();
+        nlohmann::json decodedRequest;
+        try {
+            decodedRequest = nlohmann::json::from_cbor(payload);
+        } catch (std::exception& e) {
+            CoapError err = CoapError(400, "Invalid cbor");
+            err.createCborError(response);
+            return;
+        }
+        std::string serviceId;
+        std::vector<uint8_t> message;
+        try {
+            serviceId = decodedRequest["ServiceId"].get<std::string>();
+        } catch (std::exception& e) {
+            CoapError err = CoapError(400, "Missing or invalid ServiceId");
+            err.createCborError(response);
+            return;
+        }
+
+        try {
+            message = decodedRequest["Message"].get<nlohmann::json::binary_t>();
+        } catch (std::exception& e) {
+            CoapError err = CoapError(400, "Missing or invalid Message");
+            err.createCborError(response);
+            return;
+        }
+
+        std::string msg = std::string(
+            reinterpret_cast<const char*>(message.data()), message.size());
+
+        if (msg == "foo") {
+            response->setCode(201);
+            response->setContentFormat(
+                NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+            nlohmann::json root;
+            root["StatusCode"] = 200;
+            std::string body = "{\"hello\": \"world\"}";
+            root["MessageFormat"] = ServiceInvokeMessageFormat::BINARY;
+            root["Message"] = nlohmann::json::binary_t(std::vector<uint8_t>(
+                reinterpret_cast<const uint8_t*>(body.data()),
+                reinterpret_cast<const uint8_t*>(body.data() + body.size())));
+            std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+            response->setPayload(b);
+        } else if (msg == "text-format") {
+            response->setCode(201);
+            response->setContentFormat(
+                NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+            nlohmann::json root;
+            root["StatusCode"] = 200;
+            std::string body = "text string";
+            root["MessageFormat"] = ServiceInvokeMessageFormat::TEXT;
+            root["Message"] = nlohmann::json::binary_t(std::vector<uint8_t>(
+                reinterpret_cast<const uint8_t*>(body.data()),
+                reinterpret_cast<const uint8_t*>(body.data() + body.size())));
+            std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+            response->setPayload(b);
+        } else if (msg == "none-format") {
+            response->setCode(201);
+            response->setContentFormat(
+                NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+            nlohmann::json root;
+            root["StatusCode"] = 200;
+            root["MessageFormat"] = ServiceInvokeMessageFormat::NONE;
+            std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+            response->setPayload(b);
+        } else if (msg == "bad-response") {
+            CoapError err = CoapError(502, "content type header missing");
+            err.createCborError(response);
+        } else if (msg == "invalid-service") {
+            CoapError err = CoapError(404, "no such service ID");
+            err.createCborError(response);
+        }
+    }
+
+    void handleDeviceAttach(DtlsConnectionPtr connection,
+                            std::shared_ptr<CoapServerRequest> request,
+                            std::shared_ptr<CoapServerResponse> response)
+    {
+        (void)connection;
+        (void)request;
         nlohmann::json req = nlohmann::json::from_cbor(request->getPayload());
 
         if (deviceFp_) {
-            std::array<uint8_t, 32> fp = *(connection->getOtherPeerFingerprint());
+            std::array<uint8_t, 32> fp =
+                *(connection->getOtherPeerFingerprint());
             for (size_t i = 0; i < 32; i++) {
-                if (*(deviceFp_+i) != fp[i]) {
-                    CoapError err = CoapError(404, ServiceErrorCode::UNKNOWN_DEVICE_FINGERPRINT, "Unknown device fingerprint");
+                if (*(deviceFp_ + i) != fp[i]) {
+                    CoapError err = CoapError(
+                        404, ServiceErrorCode::UNKNOWN_DEVICE_FINGERPRINT,
+                        "Unknown device fingerprint");
                     err.createCborError(response);
                     return;
                 }
             }
         }
 
-        if (deviceId_ && req["DeviceId"].get<std::string>().compare(deviceId_) != 0) {
-            CoapError err = CoapError(400, ServiceErrorCode::WRONG_DEVICE_ID, "Wrong device ID");
+        if (deviceId_ &&
+            req["DeviceId"].get<std::string>().compare(deviceId_) != 0) {
+            CoapError err = CoapError(400, ServiceErrorCode::WRONG_DEVICE_ID,
+                                      "Wrong device ID");
             err.createCborError(response);
             return;
         }
 
-        if (productId_ && req["ProductId"].get<std::string>().compare(productId_) != 0) {
+        if (productId_ &&
+            req["ProductId"].get<std::string>().compare(productId_) != 0) {
             std::ostringstream oss;
-            oss << "Wrong product ID. Got: \"" << req["ProductId"].get<std::string>() << "\" expected: \"" << productId_ << "\"";
-            CoapError err = CoapError(400, ServiceErrorCode::WRONG_PRODUCT_ID, oss.str());
+            oss << "Wrong product ID. Got: \""
+                << req["ProductId"].get<std::string>() << "\" expected: \""
+                << productId_ << "\"";
+            CoapError err =
+                CoapError(400, ServiceErrorCode::WRONG_PRODUCT_ID, oss.str());
             err.createCborError(response);
             return;
         }
@@ -285,9 +406,13 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         attachCount_ += 1;
     }
 
-    void handleDeviceAttachWrongResponse(DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response)
+    void handleDeviceAttachWrongResponse(
+        DtlsConnectionPtr connection,
+        std::shared_ptr<CoapServerRequest> request,
+        std::shared_ptr<CoapServerResponse> response)
     {
-        (void)connection; (void)request;
+        (void)connection;
+        (void)request;
         nlohmann::json root;
         root["FOOBAR"] = "BAZ";
 
@@ -298,40 +423,37 @@ class AttachServer : public AttachCoapServer, public std::enable_shared_from_thi
         response->setCode(201);
     }
 
-    void setKeepAliveSettings(uint64_t interval, uint64_t retryInterval, uint64_t maxRetries)
+    void setKeepAliveSettings(uint64_t interval, uint64_t retryInterval,
+                              uint64_t maxRetries)
     {
         keepAliveInterval_ = interval;
         keepAliveRetryInterval_ = retryInterval;
         keepAliveMaxRetries_ = maxRetries;
     }
 
-    void niceClose() {
-        dtlsServer_.asyncNiceClose([](const lib::error_code& ec){
-                (void)ec;
-                // all current connections is closed nicely.
-            });
+    void niceClose()
+    {
+        dtlsServer_.asyncNiceClose([](const lib::error_code& ec) {
+            (void)ec;
+            // all current connections is closed nicely.
+        });
     }
 
     uint64_t keepAliveInterval_ = 30000;
     uint64_t keepAliveRetryInterval_ = 2000;
     uint64_t keepAliveMaxRetries_ = 15;
 
-    std::atomic<uint64_t> attachCount_ = { 0 };
+    std::atomic<uint64_t> attachCount_ = {0};
     uint64_t invalidAttach_ = 42;
     uint8_t* deviceFp_ = NULL;
     const char* deviceId_ = NULL;
     const char* productId_ = NULL;
 };
 
-
-class RedirectServer : public AttachCoapServer, public std::enable_shared_from_this<RedirectServer>
-{
+class RedirectServer : public AttachCoapServer,
+                       public std::enable_shared_from_this<RedirectServer> {
  public:
-
-    RedirectServer(boost::asio::io_context& io)
-        : AttachCoapServer(io)
-    {
-    }
+    RedirectServer(boost::asio::io_context& io) : AttachCoapServer(io) {}
 
     static std::shared_ptr<RedirectServer> create(boost::asio::io_context& io)
     {
@@ -340,12 +462,19 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
         return ptr;
     }
 
-    void initCoapHandlers() {
+    void initCoapHandlers()
+    {
         auto self = shared_from_this();
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-start", [self](DtlsConnectionPtr connection, std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
-                (void)connection; (void)request;
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_POST, "/device/attach-start",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
+                (void)connection;
+                (void)request;
                 if (self->invalidRedirect_ == self->redirectCount_) {
-                    self->handleDeviceRedirectInvalidResponse(connection, response);
+                    self->handleDeviceRedirectInvalidResponse(connection,
+                                                              response);
                 } else {
                     self->handleDeviceRedirect(connection, response);
                 }
@@ -353,14 +482,17 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
             });
     }
 
-    void handleDeviceRedirectInvalidResponse(DtlsConnectionPtr connection, std::shared_ptr<CoapServerResponse> response)
+    void handleDeviceRedirectInvalidResponse(
+        DtlsConnectionPtr connection,
+        std::shared_ptr<CoapServerResponse> response)
     {
         (void)connection;
         response->setContentFormat(NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
         response->setCode(201);
     }
 
-    void handleDeviceRedirect(DtlsConnectionPtr connection, std::shared_ptr<CoapServerResponse> response)
+    void handleDeviceRedirect(DtlsConnectionPtr connection,
+                              std::shared_ptr<CoapServerResponse> response)
     {
         (void)connection;
         uint8_t buffer[128];
@@ -394,51 +526,56 @@ class RedirectServer : public AttachCoapServer, public std::enable_shared_from_t
         response->setCode(201);
     }
 
-    void setRedirect(const std::string& host, uint16_t port, std::array<uint8_t, 16> fingerprint)
+    void setRedirect(const std::string& host, uint16_t port,
+                     std::array<uint8_t, 16> fingerprint)
     {
         host_ = host;
         port_ = port;
         fingerprint_ = fingerprint;
     }
 
-    std::atomic<uint64_t> redirectCount_ = { 0 };
+    std::atomic<uint64_t> redirectCount_ = {0};
 
     // if the count matches this number send an invalid redirect
     uint64_t invalidRedirect_ = 42;
+
  private:
     std::string host_;
     uint16_t port_;
     std::array<uint8_t, 16> fingerprint_;
-
-
 };
 
-class AccessDeniedServer : public AttachCoapServer, public std::enable_shared_from_this<AccessDeniedServer>
-{
+class AccessDeniedServer
+    : public AttachCoapServer,
+      public std::enable_shared_from_this<AccessDeniedServer> {
  public:
+    AccessDeniedServer(boost::asio::io_context& io) : AttachCoapServer(io) {}
 
-    AccessDeniedServer(boost::asio::io_context& io)
-        : AttachCoapServer(io)
-    {
-    }
-
-    static std::shared_ptr<AccessDeniedServer> create(boost::asio::io_context& io)
+    static std::shared_ptr<AccessDeniedServer> create(
+        boost::asio::io_context& io)
     {
         auto ptr = std::make_shared<AccessDeniedServer>(io);
         ptr->init();
         return ptr;
     }
 
-    void initCoapHandlers() {
+    void initCoapHandlers()
+    {
         auto self = shared_from_this();
-        dtlsServer_.addResourceHandler(NABTO_COAP_CODE_POST, "/device/attach-start", [self](DtlsConnectionPtr connection,  std::shared_ptr<CoapServerRequest> request, std::shared_ptr<CoapServerResponse> response) {
-                (void)response; (void)request;
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_POST, "/device/attach-start",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
+                (void)response;
+                (void)request;
                 connection->accessDenied();
                 self->coapRequestCount_++;
             });
     }
 
-    std::atomic<uint64_t> coapRequestCount_ = { 0 };
+    std::atomic<uint64_t> coapRequestCount_ = {0};
 };
 
-} }
+}  // namespace test
+}  // namespace nabto

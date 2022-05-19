@@ -92,7 +92,41 @@ BOOST_AUTO_TEST_CASE(notification_send_ok)
     BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_OK));
 
     BOOST_TEST(nabto_device_service_invocation_get_response_status_code(s) == 200);
+    BOOST_TEST(nabto_device_service_invocation_get_response_message_format(s) ==
+               NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY);
     std::string desiredResponse = R"({"hello": "world"})";
+    const uint8_t* responseData = nabto_device_service_invocation_get_response_message_data(s);
+    size_t responseDataLength = nabto_device_service_invocation_get_response_message_size(s);
+    BOOST_TEST(std::string(reinterpret_cast<const char*>(responseData), responseDataLength) == desiredResponse);
+
+    nabto_device_future_free(f);
+    nabto_device_service_invocation_free(s);
+}
+
+BOOST_AUTO_TEST_CASE(ok_text_format)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    const char* serviceId = "foobar";
+    const char* message = "text-format";
+
+    NabtoDeviceServiceInvocation* s = nabto_device_service_invocation_new(dev);
+    nabto_device_service_invocation_set_service_id(s, serviceId);
+    nabto_device_service_invocation_set_message(s, (uint8_t*)message, strlen(message));
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_service_invocation_execute(s, f);
+    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_OK));
+
+    BOOST_TEST(nabto_device_service_invocation_get_response_status_code(s) == 200);
+    BOOST_TEST(nabto_device_service_invocation_get_response_message_format(s) ==
+               NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT);
+
+    std::string desiredResponse = "text string";
     const uint8_t* responseData = nabto_device_service_invocation_get_response_message_data(s);
     size_t responseDataLength = nabto_device_service_invocation_get_response_message_size(s);
     BOOST_TEST(std::string(reinterpret_cast<const char*>(responseData), responseDataLength) == desiredResponse);
