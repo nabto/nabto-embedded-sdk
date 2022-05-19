@@ -93,8 +93,10 @@ nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future);
 /**
  * UDP test
  *
- * This test connects to the udp server in the arguments and echoes
- * some data.
+ * This test connects to the UDP server in the arguments and echoes some data.
+ *
+ * A simple UDP echo server can be created with `ncat -e /bin/cat -k -u -l
+ * 1235`. The UDP echo server can be tested with `nc -u 127.0.0.1 1235` etc.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
@@ -102,8 +104,11 @@ nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
 /**
  * TCP test
  *
- * This test connects to a TCP echo server, sends some data and
- * validates that the data is echoed back again.
+ * This test connects to a TCP echo server, sends some data and validates that
+ * the data is echoed back again.
+ *
+ * A simple TCP echo server can be created with `ncat -e /bin/cat -k -l 1235`.
+ * The TCP echo server can be tested with `nc 127.0.0.1 1235`.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future);
