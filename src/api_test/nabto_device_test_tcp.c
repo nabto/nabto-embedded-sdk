@@ -58,6 +58,7 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct tcp_test* t = np_calloc(1, sizeof(struct tcp_test));
+    nabto_device_future_reset(fut);
     if (t == NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
         return;

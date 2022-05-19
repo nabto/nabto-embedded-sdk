@@ -103,6 +103,7 @@ nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future)
     struct dns_test* t = np_calloc(1, sizeof(struct dns_test));
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_future_reset(fut);
     t->fut = fut;
     t->dns = dev->pl.dns;
     np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL);
