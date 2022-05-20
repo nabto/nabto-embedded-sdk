@@ -81,16 +81,34 @@ typedef void (*NabtoDeviceAllocatorFree)(void* ptr);
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_custom_allocator(NabtoDeviceAllocatorCalloc customCalloc, NabtoDeviceAllocatorFree customFree);
 
-
-
+/**
+ * Format of the message received by the basestation in a service invocation
+ * response
+ * ```
+ * NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
+ * NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_NONE;
+ * NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT;
+ * ```
+ */
 typedef int NabtoDeviceServiceInvokeMessageFormat;
+
+// The HTTP service returned a base64 encoded string of data
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
     NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
+// The HTTP service returned an empty body, message length is 0.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
     NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_NONE;
+// The HTTP service returned a text body.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
     NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT;
 
+
+/**
+ * Get the message format of a service invocation response. This can be used to determine how to decode the response message. The message format is undefined if the service invocation failed.
+ *
+ * @param serviceInvocation [in]  The service invocation object.
+ * @return The format of the response message.
+ */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceServiceInvokeMessageFormat NABTO_DEVICE_API
 nabto_device_service_invocation_get_response_message_format(NabtoDeviceServiceInvocation* serviceInvocation);
 
