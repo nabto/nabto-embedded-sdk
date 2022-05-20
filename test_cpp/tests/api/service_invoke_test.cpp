@@ -135,4 +135,57 @@ BOOST_AUTO_TEST_CASE(ok_text_format)
     nabto_device_service_invocation_free(s);
 }
 
+BOOST_AUTO_TEST_CASE(ok_none_format)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    const char* serviceId = "foobar";
+    const char* message = "none-format";
+
+    NabtoDeviceServiceInvocation* s = nabto_device_service_invocation_new(dev);
+    nabto_device_service_invocation_set_service_id(s, serviceId);
+    nabto_device_service_invocation_set_message(s, (uint8_t*)message, strlen(message));
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_service_invocation_execute(s, f);
+    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_OK));
+
+    BOOST_TEST(nabto_device_service_invocation_get_response_status_code(s) == 200);
+    BOOST_TEST(nabto_device_service_invocation_get_response_message_format(s) ==
+               NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_NONE);
+
+    size_t responseDataLength = nabto_device_service_invocation_get_response_message_size(s);
+    BOOST_TEST(responseDataLength == (size_t)0);
+
+    nabto_device_future_free(f);
+    nabto_device_service_invocation_free(s);
+}
+
+BOOST_AUTO_TEST_CASE(bad_response)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    const char* serviceId = "foobar";
+    const char* message = "bad-response";
+
+    NabtoDeviceServiceInvocation* s = nabto_device_service_invocation_new(dev);
+    nabto_device_service_invocation_set_service_id(s, serviceId);
+    nabto_device_service_invocation_set_message(s, (uint8_t*)message, strlen(message));
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_service_invocation_execute(s, f);
+    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_FAILED));
+
+    nabto_device_future_free(f);
+    nabto_device_service_invocation_free(s);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

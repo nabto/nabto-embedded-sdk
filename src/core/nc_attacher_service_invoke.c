@@ -141,10 +141,6 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     cbor_value_map_find_value(&map, "Message", &message);
     cbor_value_map_find_value(&map, "MessageFormat", &messageFormat);
 
-    if (!nc_cbor_copy_byte_string(&message, &response->message, &response->messageLength, 65536) ) {
-        return false;
-    }
-
     if (!cbor_value_is_integer(&statusCode)) {
         return false;
     }
@@ -161,5 +157,11 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         return false;
     }
     response->messageFormat = (enum nc_attacher_service_invoke_message_format)tmp;
+
+    if (response->messageFormat != NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE && !nc_cbor_copy_byte_string(&message, &response->message, &response->messageLength, 65536) ) {
+        return false;
+    }
+
+
     return true;
 }
