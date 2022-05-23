@@ -51,9 +51,16 @@ struct nc_attacher_service_invoke_request {
     size_t messageLength;
 };
 
+enum nc_attacher_service_invoke_message_format {
+    NC_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY = 0,
+    NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE = 1,
+    NC_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT = 2
+    };
+
 struct nc_attacher_service_invoke_response {
     uint8_t* message;
     size_t messageLength;
+    enum nc_attacher_service_invoke_message_format messageFormat;
     uint16_t statusCode;
 };
 

@@ -9,6 +9,13 @@
 #include <platform/np_allocator.h>
 #include <nn/string.h>
 
+const int NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY =
+    (int)NC_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
+const int NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_NONE =
+    (int)NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE;
+const int NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT =
+    (int)NC_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT;
+
 struct nabto_device_service_invoke {
     struct nabto_device_context* dev;
     struct nc_attacher_service_invoke_context serviceInvoke;
@@ -143,4 +150,11 @@ nabto_device_service_invocation_get_response_message_size(NabtoDeviceServiceInvo
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     return s->serviceInvoke.serviceInvokeResponse.messageLength;
+}
+
+NabtoDeviceServiceInvokeMessageFormat NABTO_DEVICE_API
+nabto_device_service_invocation_get_response_message_format(NabtoDeviceServiceInvocation* serviceInvoke)
+{
+    struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
+    return s->serviceInvoke.serviceInvokeResponse.messageFormat;
 }

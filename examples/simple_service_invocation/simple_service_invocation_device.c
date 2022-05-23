@@ -22,6 +22,9 @@
  */
 
 const char* keyFile = "device.key";
+const char* binaryFmt = "Binary";
+const char* noneFmt = "None";
+const char* textFmt = "Text";
 
 static bool start_device(NabtoDevice* device, const char* productId, const char* deviceId);
 static void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, char* msg);
@@ -91,7 +94,20 @@ void service_invocation(NabtoDevice* device)
         uint16_t statusCode = nabto_device_service_invocation_get_response_status_code(invocation);
         const uint8_t* message = nabto_device_service_invocation_get_response_message_data(invocation);
         size_t messageLength = nabto_device_service_invocation_get_response_message_size(invocation);
-        printf("Service invocation ok. StatusCode: %d, MessageLength: %d, Message %.*s\n", statusCode, (int)messageLength, (int)messageLength, (const char*)message);
+        NabtoDeviceServiceInvokeMessageFormat fmt =
+            nabto_device_service_invocation_get_response_message_format(
+                invocation);
+        const char* format =
+            (fmt == NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY
+                 ? binaryFmt
+                 : (fmt == NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_NONE
+                        ? noneFmt
+                        : textFmt));
+        printf(
+            "Service invocation ok. StatusCode: %d, MessageLength: %d, MessageFormat: %s, Message "
+            "%.*s\n",
+            statusCode, (int)messageLength, format, (int)messageLength,
+            (const char*)message);
     }
 }
 
