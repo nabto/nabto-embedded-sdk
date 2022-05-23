@@ -144,24 +144,30 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     if (!cbor_value_is_integer(&statusCode)) {
         return false;
     }
-    if (!cbor_value_is_integer(&messageFormat)) {
-        return false;
-    }
     int tmp;
     if (cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
         return false;
     }
     response->statusCode = (uint16_t)tmp;
 
-    if (cbor_value_get_int(&messageFormat, &tmp) != CborNoError) {
-        return false;
-    }
-    response->messageFormat = (enum nc_attacher_service_invoke_message_format)tmp;
+    // if messageFormat exists, use as intented. If not we assume the
+    // basestation uses old format, and set messageFormat to BINARY
+    if (cbor_value_is_integer(&messageFormat) &&
+        cbor_value_get_int(&messageFormat, &tmp) == CborNoError) {
+        response->messageFormat =
+            (enum nc_attacher_service_invoke_message_format)tmp;
 
-    if (response->messageFormat != NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE && !nc_cbor_copy_byte_string(&message, &response->message, &response->messageLength, 65536) ) {
+        if (response->messageFormat != NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE &&
+            !nc_cbor_copy_byte_string(&message, &response->message,
+                                      &response->messageLength, 65536)) {
+            return false;
+        }
+    } else if (!nc_cbor_copy_byte_string(&message, &response->message,
+                                         &response->messageLength, 65536)) {
         return false;
+    } else {
+        response->messageFormat = NC_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
     }
-
 
     return true;
 }

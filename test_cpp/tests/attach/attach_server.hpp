@@ -341,6 +341,18 @@ class AttachServer : public AttachCoapServer,
         } else if (msg == "invalid-service") {
             CoapError err = CoapError(404, "no such service ID");
             err.createCborError(response);
+        } else if (msg == "back-compat") {
+            response->setCode(201);
+            response->setContentFormat(
+                NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+            nlohmann::json root;
+            root["StatusCode"] = 200;
+            std::string body = "hello world";
+            root["Message"] = nlohmann::json::binary_t(std::vector<uint8_t>(
+                reinterpret_cast<const uint8_t*>(body.data()),
+                reinterpret_cast<const uint8_t*>(body.data() + body.size())));
+            std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+            response->setPayload(b);
         }
     }
 
