@@ -33,8 +33,9 @@ device.
 
 ## Features
 
-The heatpump example shows how a heatpump can be implemented including
-using our fingerprint based Identity and Access Management (IAM) module.
+The heatpump example shows how a heatpump can be implemented including using our fingerprint based
+Identity and Access Management (IAM) module. The IAM module supports SCTs, so clients can connect
+using server keys of any authentication type.
 
 ## Heatpump Features
 
