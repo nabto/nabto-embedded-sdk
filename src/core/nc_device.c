@@ -336,10 +336,16 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
     struct np_platform* pl = dev->pl;
     // start mdns
     if (dev->enableMdns) {
-        uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
-        NABTO_LOG_TRACE(LOG, "Local socket bound, starting mdns on %d", localPort);
-        np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName, &dev->mdnsSubtypes, &dev->mdnsTxtItems);
-        dev->mdnsPublished = true;
+        if (pl->mdns.mptr == NULL) {
+            NABTO_LOG_ERROR(LOG, "Missing mdns module, not publishing the mdns service");
+        } else {
+            uint16_t localPort = nc_udp_dispatch_get_local_port(&dev->localUdp);
+            NABTO_LOG_TRACE(LOG, "Local socket bound, starting mdns on %d",
+                            localPort);
+            np_mdns_publish_service(&pl->mdns, localPort, dev->mdnsInstanceName,
+                                    &dev->mdnsSubtypes, &dev->mdnsTxtItems);
+            dev->mdnsPublished = true;
+        }
     }
 
     // start recv for the stun socket

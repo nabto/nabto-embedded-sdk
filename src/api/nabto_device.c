@@ -74,6 +74,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nabto_device_logging_init();
 
     struct np_platform* pl = &dev->pl;
+
     nm_communication_buffer_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_srv_init(pl);
@@ -82,6 +83,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     ec = nabto_device_platform_init(dev, dev->eventMutex);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");
+        nabto_device_new_resolve_failure(dev);
         return NULL;
     }
 
@@ -109,12 +111,6 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
-    if (pl->localIp.mptr == NULL) {
-        NABTO_LOG_ERROR(LOG, "Failed to initialize platform, missing localIp module");
-        nabto_device_new_resolve_failure(dev);
-        return NULL;
-    }
-
     nabto_device_authorization_init_module(dev);
 
     ec = nc_device_init(&dev->core, &dev->pl);
@@ -124,11 +120,15 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
-    ec = nm_tcp_tunnels_init(&dev->tcpTunnels, &dev->core);
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Failed to start tcp tunnelling module");
-        nabto_device_new_resolve_failure(dev);
-        return NULL;
+    if (pl->tcp.mptr == NULL) {
+        NABTO_LOG_INFO(LOG, "No TCP module so not starting the tcp tunnelling functionality");
+    } else {
+        ec = nm_tcp_tunnels_init(&dev->tcpTunnels, &dev->core);
+        if (ec != NABTO_EC_OK) {
+            NABTO_LOG_ERROR(LOG, "Failed to start tcp tunnelling module");
+            nabto_device_new_resolve_failure(dev);
+            return NULL;
+        }
     }
 
     nn_llist_init(&dev->listeners);
@@ -158,7 +158,9 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    nm_tcp_tunnels_deinit(&dev->tcpTunnels);
+    if (dev->pl.tcp.mptr != NULL) {
+        nm_tcp_tunnels_deinit(&dev->tcpTunnels);
+    }
     nc_device_stop(&dev->core);
 
     dev->closing = true;
