@@ -141,7 +141,13 @@ nabto_device_test_local_ip(NabtoDevice* device);
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_test_mdns_publish_service(NabtoDevice* device);
 
-
+/**
+ * Test misc functionality
+ *
+ * @return NABTO_DEVICE_EC_OK iff tests passes if they fail, look in the log for clues.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_test_misc(NabtoDevice* device);
 
 #ifdef __cplusplus
 } // extern "C"
