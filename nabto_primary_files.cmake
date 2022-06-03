@@ -271,7 +271,6 @@ set(ne_required_src
   ${ne_platform_src}
   ${ne_core_src}
   ${ne_api_src}
-  ${ne_api_future_queue_src}
   ${ne_tinycbor_src}
   ${ne_nn_src}
   ${ne_mbedtls_src}
