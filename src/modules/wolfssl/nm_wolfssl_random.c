@@ -14,6 +14,7 @@ struct random_ctx {
 };
 
 static void free_random_ctx(struct random_ctx* ctx) {
+    wc_FreeRng(&ctx->rng);
     np_free(ctx);
 }
 
