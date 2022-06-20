@@ -151,8 +151,18 @@ set(test_runner_src
   )
 
 add_subdirectory(src/modules/communication_buffer)
-add_subdirectory(src/modules/mbedtls)
-add_subdirectory(src/modules/wolfssl)
+
+option(NABTO_USE_MBEDTLS "Use mbedtls as DTLS module" ON)
+option(NABTO_USE_WOLFSSL "Use wolfssl as DTLS module" OFF)
+
+if (NABTO_USE_MBEDTLS)
+  add_definitions(-DNABTO_USE_MBEDTLS)
+  add_subdirectory(src/modules/mbedtls)
+endif()
+if (NABTO_USE_WOLFSSL)
+  add_definitions(-DNABTO_USE_WOLFSSL)
+  add_subdirectory(src/modules/wolfssl)
+endif()
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)

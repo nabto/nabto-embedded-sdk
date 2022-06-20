@@ -22,7 +22,13 @@
 #include <modules/mbedtls/nm_mbedtls_util.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
+
+#ifdef NABTO_USE_MBEDTLS
+#include <modules/mbedtls/nm_mbedtls_random.h>
+#endif
+#ifdef NABTO_USE_WOLFSSL
 #include <modules/wolfssl/nm_wolfssl_random.h>
+#endif
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
@@ -78,7 +84,12 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nm_communication_buffer_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_srv_init(pl);
+#ifdef NABTO_USE_MBEDTLS
+    nm_mbedtls_random_init(pl);
+#endif
+#ifdef NABTO_USE_WOLFSSL
     nm_wolfssl_random_init(pl);
+#endif
 
     ec = nabto_device_platform_init(dev, dev->eventMutex);
     if (ec != NABTO_EC_OK) {
@@ -189,7 +200,13 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
 
     nabto_device_platform_deinit(dev);
+#ifdef NABTO_USE_MBEDTLS
+    nm_mbedtls_random_deinit(&dev->pl);
+#endif
+#ifdef NABTO_USE_WOLFSSL
     nm_wolfssl_random_deinit(&dev->pl);
+#endif
+
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
