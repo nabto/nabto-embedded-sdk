@@ -26,7 +26,6 @@ target_link_libraries(nabto_device_static
   np_platform
   nm_mbedtls_cli
   nm_mbedtls_srv
-  nm_mbedtls_random
   nm_mdns
   nm_tcp_tunnel
   nm_logging_api
@@ -38,7 +37,8 @@ if (NABTO_USE_MBEDTLS)
   target_link_libraries(nabto_device_static
     nm_mbedtls_random
   )
-elseif(NABTO_USE_WOLFSSL)
+endif()
+if(NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device_static
     nm_wolfssl_random
   )
@@ -59,7 +59,6 @@ target_link_libraries( nabto_device
   np_platform
   nm_mbedtls_cli
   nm_mbedtls_srv
-  nm_mbedtls_random
   nm_mdns
   nm_tcp_tunnel
   nm_logging_api
@@ -70,7 +69,8 @@ if (NABTO_USE_MBEDTLS)
   target_link_libraries(nabto_device
     nm_mbedtls_random
   )
-elseif(NABTO_USE_WOLFSSL)
+endif()
+if(NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device
     nm_wolfssl_random
   )

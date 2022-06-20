@@ -5,7 +5,6 @@
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/select_unix/nm_select_unix_mdns_udp_bind.h>
 #include <modules/event_queue/thread_event_queue.h>
-#include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mdns/nm_mdns_server.h>
@@ -13,6 +12,13 @@
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/unix/nm_unix_local_ip.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
+
+#ifdef NABTO_USE_MBEDTLS
+#include <modules/mbedtls/nm_mbedtls_random.h>
+#endif
+#ifdef NABTO_USE_WOLFSSL
+#include <modules/wolfssl/nm_wolfssl_random.h>
+#endif
 
 #include <stddef.h>
 #include <stdlib.h>

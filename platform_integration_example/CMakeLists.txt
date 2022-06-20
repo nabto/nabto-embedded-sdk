@@ -17,7 +17,6 @@ target_link_libraries( nabto_device_select_unix
   np_platform
   nm_mbedtls_cli
   nm_mbedtls_srv
-  nm_mbedtls_random
   nm_event_queue
   nm_select_unix
   nm_mdns
@@ -31,6 +30,16 @@ target_link_libraries( nabto_device_select_unix
   nm_logging_api
   )
 
+if (NABTO_USE_MBEDTLS)
+  target_link_libraries(nabto_device_select_unix
+    nm_mbedtls_random
+  )
+endif()
+if(NABTO_USE_WOLFSSL)
+  target_link_libraries(nabto_device_select_unix
+    nm_wolfssl_random
+  )
+endif()
 
 set(test_src
   select_unix_platform_test.c

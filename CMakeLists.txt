@@ -157,8 +157,10 @@ option(NABTO_USE_WOLFSSL "Use wolfssl as DTLS module" OFF)
 
 if (NABTO_USE_MBEDTLS)
   add_definitions(-DNABTO_USE_MBEDTLS)
-  add_subdirectory(src/modules/mbedtls)
 endif()
+# TODO: mbedtls is required for server and cli so we must add it
+add_subdirectory(src/modules/mbedtls)
+
 if (NABTO_USE_WOLFSSL)
   add_definitions(-DNABTO_USE_WOLFSSL)
   add_subdirectory(src/modules/wolfssl)
