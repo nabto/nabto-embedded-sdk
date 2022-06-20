@@ -27,6 +27,7 @@ target_link_libraries(nabto_device_static
   nm_mbedtls_cli
   nm_mbedtls_srv
   nm_mbedtls_random
+  nm_wolfssl_random
   nm_mdns
   nm_tcp_tunnel
   nm_logging_api
@@ -50,6 +51,7 @@ target_link_libraries( nabto_device
   nm_mbedtls_cli
   nm_mbedtls_srv
   nm_mbedtls_random
+  nm_wolfssl_random
   nm_mdns
   nm_tcp_tunnel
   nm_logging_api

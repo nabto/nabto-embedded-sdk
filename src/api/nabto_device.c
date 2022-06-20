@@ -22,7 +22,7 @@
 #include <modules/mbedtls/nm_mbedtls_util.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
-#include <modules/mbedtls/nm_mbedtls_random.h>
+#include <modules/wolfssl/nm_wolfssl_random.h>
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
@@ -78,7 +78,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nm_communication_buffer_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_srv_init(pl);
-    nm_mbedtls_random_init(pl);
+    nm_wolfssl_random_init(pl);
 
     ec = nabto_device_platform_init(dev, dev->eventMutex);
     if (ec != NABTO_EC_OK) {
@@ -189,7 +189,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
 
     nabto_device_platform_deinit(dev);
-    nm_mbedtls_random_deinit(&dev->pl);
+    nm_wolfssl_random_deinit(&dev->pl);
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
