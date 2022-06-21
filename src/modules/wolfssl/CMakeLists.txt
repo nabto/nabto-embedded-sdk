@@ -4,6 +4,9 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(wolfssl_random_src
   nm_wolfssl_random.c
+  nm_wolfssl_util.c
+  nm_wolfssl_cli.c
+  nm_wolfssl_srv.c
   )
 
 
