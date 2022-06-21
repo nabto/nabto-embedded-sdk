@@ -122,30 +122,22 @@ const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
     return NULL;
 }
 
-// TODO
-// #if defined(wolfssl_DEBUG_C)
-// // Printing function used by wolfssl for logging
-// static void my_debug( void *ctx, int level,
-//                       const char *file, int line,
-//                       const char *str )
-// {
-//     ((void) level); (void)ctx;
-//     uint32_t severity;
-//     switch (level) {
-//         case 1:
-//             severity = NABTO_LOG_SEVERITY_ERROR;
-//             break;
-//         case 2:
-//             severity = NABTO_LOG_SEVERITY_INFO;
-//             break;
-//         default:
-//             severity = NABTO_LOG_SEVERITY_TRACE;
-//             break;
-//     }
-
-//     NABTO_LOG_RAW(severity, LOG, line, file, str );
-// }
-// #endif
+static void logging_callback(const int logLevel, const char *const logMessage)
+{
+    uint32_t severity;
+    switch (logLevel) {
+        case 0:
+            severity = NABTO_LOG_SEVERITY_ERROR;
+            break;
+        case 1:
+            severity = NABTO_LOG_SEVERITY_INFO;
+            break;
+        default:
+            severity = NABTO_LOG_SEVERITY_TRACE;
+            break;
+    }
+    NABTO_LOG_RAW(severity, LOG, 0, "", logMessage)
+}
 
 /*
  * Initialize the np_platform to use this particular dtls cli module
@@ -184,6 +176,10 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
 
     WOLFSSL_METHOD *method = wolfTLSv1_2_client_method();
     ctx->ctx = wolfSSL_CTX_new(method);
+
+// TODO: maybe not always have logging on
+    wolfSSL_SetLoggingCb(logging_callback);
+    wolfSSL_Debugging_ON();
 
 
     // wolfssl_ssl_init( &ctx->ssl );
@@ -660,6 +656,7 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
             ctx->sender(pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize,
                         &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
         if (ec != NABTO_EC_OK) {
+            NABTO_LOG_ERROR(LOG,"DTLS sender failed with error: %d", ec);
             pl->buf.free(ctx->sslSendBuffer);
             ctx->sslSendBuffer = NULL;
             if (ctx->state == CLOSING) {
