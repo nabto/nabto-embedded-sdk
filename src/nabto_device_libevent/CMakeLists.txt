@@ -24,7 +24,6 @@ target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STA
 target_link_libraries(nabto_device_static
   nc_core
   np_platform
-  nm_mbedtls_cli
   nm_mbedtls_srv
   nm_mdns
   nm_tcp_tunnel
@@ -35,11 +34,13 @@ target_link_libraries(nabto_device_static
 
 if (NABTO_USE_MBEDTLS)
   target_link_libraries(nabto_device_static
+    nm_mbedtls_cli
     nm_mbedtls_random
   )
 endif()
 if(NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device_static
+    nm_wolfssl_cli
     nm_wolfssl_random
   )
 endif()
@@ -57,7 +58,6 @@ target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
 target_link_libraries( nabto_device
   nc_core
   np_platform
-  nm_mbedtls_cli
   nm_mbedtls_srv
   nm_mdns
   nm_tcp_tunnel
@@ -67,11 +67,13 @@ target_link_libraries( nabto_device
 
 if (NABTO_USE_MBEDTLS)
   target_link_libraries(nabto_device
+    nm_mbedtls_cli
     nm_mbedtls_random
   )
 endif()
 if(NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device
+    nm_wolfssl_cli
     nm_wolfssl_random
   )
 endif()

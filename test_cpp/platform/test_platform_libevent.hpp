@@ -3,7 +3,14 @@
 #include <platform/np_platform.h>
 #include <modules/libevent/nm_libevent.h>
 #include <modules/logging/test/nm_logging_test.h>
+
+#ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_cli.h>
+#endif
+#ifdef NABTO_USE_WOLFSSL
+#include <modules/wolfssl/nm_wolfssl_cli.h>
+#endif
+
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
 #include <modules/event_queue/thread_event_queue.h>
@@ -52,7 +59,12 @@ class TestPlatformLibevent : public TestPlatform {
         thread_event_queue_init(&eventQueue_, mutex_, &(pl_.timestamp));
         pl_.eq = thread_event_queue_get_impl(&eventQueue_);
 
+#ifdef NABTO_USE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
+#endif
+#ifdef NABTO_USE_WOLFSSL
+        nm_wolfssl_cli_init(&pl_);
+#endif
         nm_mbedtls_srv_init(&pl_);
 
         thread_event_queue_run(&eventQueue_);

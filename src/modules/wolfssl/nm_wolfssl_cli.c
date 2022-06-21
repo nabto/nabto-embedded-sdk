@@ -117,11 +117,8 @@ np_error_code nm_dtls_get_packet_count(struct np_dtls_cli_context* ctx, uint32_t
 }
 
 // Get the result of the application layer protocol negotiation
+// TODO: remove this function here, in platform, in mbedtls
 const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
-    // TODO
-    //const char* protocol_name;
-    //err = wolfSSL_ALPN_GetProtocol(ssl, &protocol_name, &protocol_nameSz);
-    //return wolfssl_ssl_get_alpn_protocol(&ctx->ssl);
     return NULL;
 }
 
@@ -219,6 +216,11 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
         return NABTO_EC_UNKNOWN;
     }
 
+    wolfSSL_CTX_SetIORecv(ctx->ctx, nm_dtls_wolfssl_recv);
+    wolfSSL_SetIOReadCtx(ctx->ssl, ctx);
+    wolfSSL_CTX_SetIOSend(ctx->ctx, nm_dtls_wolfssl_send);
+    wolfSSL_SetIOWriteCtx(ctx->ssl, ctx);
+
     if (wolfSSL_UseALPN(ctx->ssl, (char *)(alpnList), strlen(alpnList), WOLFSSL_ALPN_FAILED_ON_MISMATCH) != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "cannot set alpn list");
@@ -275,9 +277,6 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
 // #endif
 
 
-
-    wolfSSL_CTX_SetIORecv(ctx->ctx, nm_dtls_wolfssl_recv);
-    wolfSSL_CTX_SetIOSend(ctx->ctx, nm_dtls_wolfssl_send);
 
     // TODO handle timeouts
     // wolfssl_ssl_set_timer_cb( &ctx->ssl,
@@ -385,19 +384,11 @@ np_error_code nm_wolfssl_cli_disable_certificate_validation(struct np_dtls_cli_c
 np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
 {
     // Get client fingerprint
-    // TODO
-    WOLFSSL_X509 *peerCert = wolfSSL_get_peer_certificate(ctx->ssl);
-    (void)peerCert;
-    return NABTO_EC_NOT_IMPLEMENTED;
-    //if (peerCert == NULL)
-    //{
-    //    print_error("could not get peer cert");
-    // //}
-    // const WOLFSSL_X509* crt = wolfssl_ssl_get_peer_cert(&ctx->ssl);
-    // if (!crt) {
-    //     return NABTO_EC_UNKNOWN;
-    // }
-    // return nm_dtls_util_fp_from_crt(crt, fp);
+    WOLFSSL_X509 *crt = wolfSSL_get_peer_certificate(ctx->ssl);
+    if (!crt) {
+        return NABTO_EC_UNKNOWN;
+    }
+    return nm_dtls_util_fp_from_crt(crt, fp);
 }
 
 np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)
@@ -438,17 +429,18 @@ void nm_dtls_event_do_one(void* data)
             //Keep State CONNECTING
         }
         // TODO handle access denied
-        //else if (ret == wolfssl_ERR_SSL_FATAL_ALERT_MESSAGE &&
+        // else if (ret == wolfssl_ERR_SSL_FATAL_ALERT_MESSAGE &&
         //            ctx->ssl.in_msg[1] == wolfssl_SSL_ALERT_MSG_ACCESS_DENIED)
         // {
         //     ctx->state = CLOSING;
         //     nm_wolfssl_timer_cancel(&ctx->timer);
-        //     ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
-        //     return;
+        //     ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED,
+        //     ctx->callbackData); return;
         // }
         else {
-            if( ret != WOLFSSL_SUCCESS )
-            {
+            char* protocol_name;
+            word16 protocol_nameSz = 0;
+            if (ret != WOLFSSL_SUCCESS) {
                 enum np_dtls_cli_event event = NP_DTLS_CLI_EVENT_CLOSED;
                 // TODO detect certificate validation errors
                 // if (ret == wolfssl_ERR_X509_CERT_VERIFY_FAILED) {
@@ -458,11 +450,20 @@ void nm_dtls_event_do_one(void* data)
                 //     NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
                 //     event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 // } else {
-                    NABTO_LOG_INFO(LOG,  " failed  ! wolfssl_ssl_handshake returned %i", ret );
+                char buf[80];
+                int err = wolfSSL_get_error(ctx->ssl, ret);
+                wolfSSL_ERR_error_string(err, buf);
+                NABTO_LOG_INFO(
+                    LOG, " failed  ! wolfssl_ssl_handshake returned %d, %s", err, buf);
                 //}
                 ctx->state = CLOSING;
                 nm_wolfssl_timer_cancel(&ctx->timer);
                 ctx->eventHandler(event, ctx->callbackData);
+                return;
+            } else if (wolfSSL_ALPN_GetProtocol(ctx->ssl, &protocol_name, &protocol_nameSz) != SSL_SUCCESS) {
+                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
+                ctx->state = CLOSING;
+                nm_dtls_do_close(ctx, NABTO_EC_ALPN_FAILED);
                 return;
             }
             NABTO_LOG_TRACE(LOG, "State changed to DATA");

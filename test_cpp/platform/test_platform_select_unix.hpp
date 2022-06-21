@@ -4,7 +4,14 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
+
+#ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_cli.h>
+#endif
+#ifdef NABTO_USE_WOLFSSL
+#include <modules/wolfssl/nm_wolfssl_cli.h>
+#endif
+
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
@@ -53,7 +60,12 @@ class TestPlatformSelectUnix : public TestPlatform {
         pl_.dns = nm_unix_dns_resolver_get_impl(&dns_);
         pl_.eq = thread_event_queue_get_impl(&eventQueue_);
 
+#ifdef NABTO_USE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
+#endif
+#ifdef NABTO_USE_WOLFSSL
+        nm_wolfssl_cli_init(&pl_);
+#endif
         nm_mbedtls_srv_init(&pl_);
 
         nm_unix_dns_resolver_run(&dns_);

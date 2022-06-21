@@ -588,11 +588,6 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
 
 void handle_dtls_connected(struct nc_attach_context* ctx)
 {
-    if( ctx->pl->dtlsC.get_alpn_protocol(ctx->dtls) == NULL ) {
-        NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for Basestation connection");
-        ctx->pl->dtlsC.close(ctx->dtls);
-        return;
-    }
     send_attach_start_request(ctx);
 }
 
