@@ -1,4 +1,4 @@
-name: CMake
+name: Wolfssl Build
 
 on:
   push:
@@ -13,7 +13,8 @@ jobs:
     - name: prepare wolfssl
       run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && wget https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.1.1-stable.tar.gz && tar xf v5.1.1-stable.tar.gz
     - name: configure wolfssl
-      run:  cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
+      run:  cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert --enable-harden --enable-sni CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
+
     - name: build wolfssl
       run: cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && sudo make install
 
