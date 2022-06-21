@@ -55,28 +55,6 @@ pipeline {
                         stash name: "${releaseDir}", includes: "${releaseDir}/**"
                     }
                 }
-                stage('Build with wolfssl') {
-                    agent {
-                        dockerfile {
-                            filename 'Dockerfile'
-                            dir 'build-scripts/devenv'
-                        }
-                    }
-                    environment {
-                        releaseDir = "linux-wolfssl"
-                        srcDir = pwd()
-                    }
-
-                    steps {
-                        checkout scm
-                        dir('build-wolfssl') {
-                            sh "cmake -DCMAKE_INSTALL_PREFIX=${WORKSPACE}/${releaseDir} -DCMAKE_BUILD_TYPE=Release -DNABTO_USE_MBEDTLS=0 -DNABTO_USE_WOLFSSL=1 ${srcDir}"
-                            sh "cmake --build . --parallel"
-                            sh "cmake --build . --target install"
-                        }
-                        stash name: "${releaseDir}", includes: "${releaseDir}/**"
-                    }
-                }
                 stage('Build on mac') {
                     agent {
                         label "mac"
@@ -111,25 +89,6 @@ pipeline {
                         dir ('test-dir') {
                             unstash "linux-release"
                             sh "./linux-release/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_linux.xml"
-                        }
-                    }
-                    post {
-                        always {
-                            junit "test-dir/*.xml"
-                        }
-                    }
-                }
-                stage('Test wolfssl') {
-                    agent {
-                        dockerfile {
-                            filename 'Dockerfile'
-                            dir 'build-scripts/devenv'
-                        }
-                    }
-                    steps {
-                        dir ('test-dir') {
-                            unstash "linux-wolfssl"
-                            sh "./linux-wolfssl/bin/embedded_unit_test --log_format=JUNIT --log_sink=embedded_unit_test_wolfssl.xml"
                         }
                     }
                     post {
