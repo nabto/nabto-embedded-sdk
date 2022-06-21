@@ -11,14 +11,14 @@ jobs:
 
     steps:
     - name: prepare wolfssl
-      run: mkdir wolfssl-build && cd wolfssl-build && wget https://github.com/wolfSSL/wolfssl/archive/refs/tags/v3.19.6.tar.gz && tar xf v${WOLFSSL_VERSION}.tar.gz
+      run: mkdir wolfssl-build && cd wolfssl-build && wget https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.1.1-stable.tar.gz && tar xf v5.1.1-stable.tar.gz
     - name: configure wolfssl
-      run: cd wolfssl-3.19.6 && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
+      run: cd wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
     - name: build wolfssl
       run: make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && make install
     - name: cd to root
       run: cd ../../
-      
+
     - uses: actions/checkout@v2
       with:
         submodules: recursive
