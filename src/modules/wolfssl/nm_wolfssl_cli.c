@@ -66,7 +66,7 @@ static void nm_wolfssl_cli_destroy(struct np_dtls_cli_context* connection);
 
 static np_error_code nm_wolfssl_cli_set_sni(struct np_dtls_cli_context* ctx, const char* sniName);
 static np_error_code nm_wolfssl_cli_set_keys(struct np_dtls_cli_context* ctx,
-                                          const unsigned char* publicKeyL, size_t publicKeySize,
+                                          const unsigned char* certificate, size_t certificateSize,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
 
 static np_error_code nm_wolfssl_cli_set_root_certs(struct np_dtls_cli_context* ctx, const char* rootCerts);
@@ -345,14 +345,18 @@ np_error_code nm_wolfssl_cli_set_sni(struct np_dtls_cli_context* ctx, const char
 }
 
 np_error_code nm_wolfssl_cli_set_keys(struct np_dtls_cli_context* ctx,
-                                   const unsigned char* publicKeyL, size_t publicKeySize,
+                                   const unsigned char* certificate, size_t certificateSize,
                                    const unsigned char* privateKeyL, size_t privateKeySize)
 {
     if (wolfSSL_CTX_use_PrivateKey_buffer(ctx->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
-
+        NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_PrivateKey_buffer");
+        return NABTO_EC_UNKNOWN;
     }
 
-    // TODO is the publiv key a selfsigned certificate?
+    if (wolfSSL_CTX_use_certificate_buffer(ctx->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
+        NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer");
+        return NABTO_EC_UNKNOWN;
+    }
 
     return NABTO_EC_OK;
 }
