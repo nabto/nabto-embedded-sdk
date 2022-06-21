@@ -11,9 +11,9 @@ jobs:
 
     steps:
     - name: prepare wolfssl
-      run: mkdir wolfssl-build && cd wolfssl-build && wget https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.1.1-stable.tar.gz && tar xf v5.1.1-stable.tar.gz
+      run: mkdir wolfssl-build && cd wolfssl-build && wget https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.1.1-stable.tar.gz && tar xf v5.1.1-stable.tar.gz && cd wolfssl-5.1.1-stable
     - name: configure wolfssl
-      run: cd wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
+      run: ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
     - name: build wolfssl
       run: make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && make install
     - name: cd to root
