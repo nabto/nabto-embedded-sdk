@@ -73,7 +73,7 @@ static np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
                                              const unsigned char* privateKeyL, size_t privateKeySize);
 
 static np_error_code nm_wolfssl_srv_set_keys(struct np_dtls_srv* server,
-                                          const unsigned char* publicKeyL, size_t publicKeySize,
+                                          const unsigned char* certificate, size_t certificateSize,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
 
 static np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
@@ -186,10 +186,10 @@ void nm_wolfssl_srv_destroy(struct np_dtls_srv* server)
 }
 
 np_error_code nm_wolfssl_srv_set_keys(struct np_dtls_srv* server,
-                                   const unsigned char* publicKeyL, size_t publicKeySize,
+                                   const unsigned char* certificate, size_t certificateSize,
                                    const unsigned char* privateKeyL, size_t privateKeySize)
 {
-    return nm_wolfssl_srv_init_config(server, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+    return nm_wolfssl_srv_init_config(server, certificate, certificateSize, privateKeyL, privateKeySize);
 }
 
 np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server,
@@ -528,7 +528,7 @@ static void nm_wolfssl_srv_tls_logger( void *ctx, int level,
 
 
 np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
-                                      const unsigned char* publicKeyL, size_t publicKeySize,
+                                      const unsigned char* certificate, size_t certificateSize,
                                       const unsigned char* privateKeyL, size_t privateKeySize)
 {
     int ret;
@@ -553,12 +553,12 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
         return NABTO_EC_UNKNOWN;
     }
 
-    // TODO is public key the certificate?
-    // if( ( ret = wolfssl_ssl_conf_own_cert( &server->conf, &server->publicKey, &server->privateKey ) ) != 0 )
-    // {
-    //     NABTO_LOG_ERROR(LOG,"wolfssl_ssl_conf_own_cert returned %d", ret);
-    //     return NABTO_EC_UNKNOWN;
-    // }
+    ret = wolfSSL_CTX_use_certificate_buffer(server->ctx, certificate, certificateSize, WOLFSSL_FILETYPE_PEM);
+    if( ret != WOLFSSL_SUCCESS )
+    {
+        NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer %d ", ret);
+        return NABTO_EC_UNKNOWN;
+    }
 #if defined(wolfssl_SSL_DTLS_HELLO_VERIFY)
     wolfssl_ssl_conf_dtls_cookies(&server->conf, NULL, NULL, NULL);
 #endif

@@ -57,8 +57,9 @@ struct np_dtls_cli_module {
 
     np_error_code (*set_sni)(struct np_dtls_cli_context* ctx, const char* sni);
 
+    // The certificate is a pem encoded certificate matching the pem encoded private key.
     np_error_code (*set_keys)(struct np_dtls_cli_context* ctx,
-                              const unsigned char* publicKeyL, size_t publicKeySize,
+                              const unsigned char* certificate, size_t certificateSize,
                               const unsigned char* privateKeyL, size_t privateKeySize);
 
     np_error_code (*set_root_certs)(struct np_dtls_cli_context* ctx, const char* rootCerts);

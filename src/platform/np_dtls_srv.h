@@ -51,7 +51,7 @@ struct np_dtls_srv_module {
 
     np_error_code (*create)(struct np_platform* pl, struct np_dtls_srv** server);
     np_error_code (*set_keys)(struct np_dtls_srv* server,
-                              const unsigned char* publicKeyL, size_t publicKeySize,
+                              const unsigned char* certificate, size_t certificateSize,
                               const unsigned char* privateKeyL, size_t privateKeySize);
     void (*destroy)(struct np_dtls_srv* server);
 
