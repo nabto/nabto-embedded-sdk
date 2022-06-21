@@ -20,7 +20,7 @@
 #define DEBUG_LEVEL 0
 
 static const int MIN_TIMEOUT = 1000;
-static const int MAX_TIMEOUT = 1600;
+static const int MAX_TIMEOUT = 16000;
 
 const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_CCM";
 
