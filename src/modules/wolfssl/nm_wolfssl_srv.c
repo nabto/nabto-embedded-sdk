@@ -33,8 +33,13 @@ struct np_dtls_srv_connection {
     uint8_t currentChannelId;
     uint8_t* recvBuffer;
     size_t recvBufferSize;
+
+    // The sequence number in the last received dtls packet.
+    uint64_t lastRecvSequenceNumber;
+
     struct np_communication_buffer* sslSendBuffer;
-    struct nm_wolfssl_timer timer;
+
+    struct np_event* timerEvent;
 
     np_dtls_close_callback closeCb;
     void* closeCbData;
@@ -87,6 +92,9 @@ static np_error_code nm_wolfssl_srv_get_fingerprint(struct np_platform* pl, stru
                                                  uint8_t* fp);
 static np_error_code nm_wolfssl_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp);
 
+static void set_timeout(struct np_dtls_srv_connection* ctx);
+static void handle_timeout(void* data);
+
 //static void nm_wolfssl_srv_tls_logger( void *ctx, int level, const char *file, int line, const char *str );
 void nm_wolfssl_srv_connection_send_callback(const np_error_code ec, void* data);
 void nm_wolfssl_srv_do_one(void* data);
@@ -98,14 +106,11 @@ int nm_wolfssl_srv_wolfssl_send(void* ctx, const unsigned char* buffer, size_t b
 // Function called by wolfssl when it wants data from the network
 int nm_wolfssl_srv_wolfssl_recv(void* ctx, unsigned char* buffer, size_t bufferSize);
 
-static void nm_wolfssl_srv_timed_event_do_one(void* userData);
-
 void nm_wolfssl_srv_event_send_to(void* data);
 void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event);
 void nm_wolfssl_srv_do_event_callback(void* data);
 
 static void nm_wolfssl_srv_is_closed(struct np_dtls_srv_connection* ctx);
-
 
 // Get the packet counters for given dtls_cli_context
 np_error_code nm_wolfssl_srv_get_packet_count(struct np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount)
@@ -199,7 +204,6 @@ np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server,
                                             np_dtls_srv_data_handler dataHandler,
                                             np_dtls_srv_event_handler eventHandler, void* data)
 {
-    int ret;
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)np_calloc(1, sizeof(struct np_dtls_srv_connection));
     if(!ctx) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -221,7 +225,7 @@ np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server,
         return ec;
     }
 
-    ec = nm_wolfssl_timer_init(&ctx->timer, ctx->pl, &nm_wolfssl_srv_timed_event_do_one, ctx);
+    ec = np_event_queue_create_event(&pl->eq, handle_timeout, ctx, &ctx->timerEvent);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -247,10 +251,6 @@ np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server,
         NABTO_LOG_ERROR(LOG, "Cannot set max timeout for DTLS client connection");
         return NABTO_EC_FAILED;
     }
-
-    // TODO
-    // wolfssl_ssl_set_timer_cb(&ctx->ssl, &ctx->timer, &nm_wolfssl_timer_set_delay,
-    //                           &nm_wolfssl_timer_get_delay );
 
     // TODO set client id for cookie validation and maybe bio functions
     //if (wolfSSL_dtls_set_peer(ctx->ssl, conn, sizeof(np_connection)) != WOLFSSL_SUCCESS) {
@@ -291,9 +291,10 @@ static void nm_wolfssl_srv_destroy_connection(struct np_dtls_srv_connection* con
         nn_llist_erase(&it);
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
-    nm_wolfssl_timer_cancel(&ctx->timer);
-    nm_wolfssl_timer_deinit(&ctx->timer);
+
     struct np_event_queue* eq = &pl->eq;
+    np_event_queue_destroy_event(&ctx->pl->eq, ctx->timerEvent);
+
     np_event_queue_destroy_event(eq, ctx->startSendEvent);
     wolfSSL_free(connection->ssl);
     np_free(connection);
@@ -333,16 +334,12 @@ void nm_wolfssl_srv_do_one(void* data)
         int ret;
         ret = wolfSSL_connect(ctx->ssl);
 
-        if (ret == WOLFSSL_ERROR_WANT_READ ||
-            ret == WOLFSSL_ERROR_WANT_WRITE)
+        if (ret == WOLFSSL_ERROR_WANT_READ) {
+            set_timeout(ctx);
+        } else if (ret == WOLFSSL_ERROR_WANT_WRITE)
         {
             // keep state as CONNECTING
         }
-        // TODO handle timeout
-         //else if (ret == wolfssl_ERR_SSL_TIMEOUT) {
-         //   nm_wolfssl_timer_cancel(&ctx->timer);
-         //   event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
-        //}
         else if (ret == WOLFSSL_SUCCESS) {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
 
@@ -350,7 +347,7 @@ void nm_wolfssl_srv_do_one(void* data)
             event_callback(ctx, NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE);
         } else {
             NABTO_LOG_ERROR(LOG,  " failed  ! wolfssl_ssl_handshake returned -0x%04x", -ret );
-            nm_wolfssl_timer_cancel(&ctx->timer);
+            np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
             event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
             return;
         }
@@ -366,12 +363,11 @@ void nm_wolfssl_srv_do_one(void* data)
         else if (ret > 0) {
             // we need the sequence number from the dtls packet.
             // the sequence number consists of an epoch and a sequence number in that epoch. 8 bytes in total.
-            // TODO get sequence number from connection
-            uint64_t seq = 0; //uint64_from_bigendian(ctx->ssl.in_ctr);
+            uint64_t seq = ctx->lastRecvSequenceNumber; //uint64_from_bigendian(ctx->ssl.in_ctr);
             ctx->recvCount++;
             ctx->dataHandler(ctx->currentChannelId, seq, recvBuffer, (uint16_t)ret, ctx->senderData);
-            //return;
-        }else if (ret == WOLFSSL_ERROR_WANT_READ ||
+            return;
+        } else if (ret == WOLFSSL_ERROR_WANT_READ ||
                   ret == WOLFSSL_ERROR_WANT_WRITE)
         {
             // OK
@@ -388,12 +384,33 @@ void nm_wolfssl_srv_do_one(void* data)
     }
 }
 
+void set_timeout(struct np_dtls_srv_connection* ctx)
+{
+    int timeout = wolfSSL_dtls_get_current_timeout(ctx->ssl);
+    if (timeout >= 0) {
+        np_event_queue_post_timed_event(&ctx->pl->eq, ctx->timerEvent, (uint32_t)(timeout*1000));
+    }
+}
+
+void handle_timeout(void* data)
+{
+    struct np_dtls_srv_connection* ctx = data;
+    int ec = wolfSSL_dtls_got_timeout(ctx->ssl);
+    if (ec == WOLFSSL_SUCCESS) {
+        set_timeout(ctx);
+    } else if (ec == SSL_FATAL_ERROR) {
+        // too many retries, timeout.
+        event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+    } else {
+        // NOT_COMPILED_IN etc
+        NABTO_LOG_ERROR(LOG, "Unhandled wolfSSL_dtls_got_timeout error code.");
+    }
+
+}
+
 void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event)
 {
     ctx->eventHandler(event, ctx->senderData);
-    // struct np_platform* pl = ctx->pl;
-    // ctx->deferredEvent = event;
-    // np_event_queue_post(&pl->eq, ctx->deferredEventEvent);
 }
 
 void nm_wolfssl_srv_start_send(struct np_dtls_srv_connection* ctx)
@@ -486,7 +503,7 @@ np_error_code nm_wolfssl_srv_async_close(struct np_platform* pl, struct np_dtls_
     }
     ctx->closeCompletionEvent = completionEvent;
     ctx->state = CLOSING;
-    nm_wolfssl_timer_cancel(&ctx->timer);
+    np_event_queue_cancel_event(&pl->eq, ctx->timerEvent);
     wolfSSL_shutdown(ctx->ssl);
     nm_wolfssl_srv_is_closed(ctx);
     return NABTO_EC_OPERATION_STARTED;
@@ -520,7 +537,6 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
                                       const unsigned char* publicKeyL, size_t publicKeySize,
                                       const unsigned char* privateKeyL, size_t privateKeySize)
 {
-    const char *pers = "dtls_server";
     int ret;
 #if defined(wolfssl_DEBUG_C)
     wolfssl_debug_set_threshold( DEBUG_LEVEL );
@@ -608,13 +624,16 @@ int nm_wolfssl_srv_wolfssl_recv(void* data, unsigned char* buffer, size_t buffer
     if (ctx->recvBufferSize == 0) {
         return WOLFSSL_ERROR_WANT_READ;
     } else {
+        if (ctx->recvBufferSize >= 12) {
+            // the sequence number is byte 4-11
+            ctx->lastRecvSequenceNumber = uint64_from_bigendian(ctx->recvBuffer+4);
+        }
         size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
         memcpy(buffer, ctx->recvBuffer, maxCp);
         ctx->recvBufferSize = 0;
+
+
+
         return (int)maxCp;
     }
-}
-
-void nm_wolfssl_srv_timed_event_do_one(void* data) {
-    nm_wolfssl_srv_do_one(data);
 }
