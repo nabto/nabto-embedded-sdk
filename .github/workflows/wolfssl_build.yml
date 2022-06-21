@@ -15,7 +15,7 @@ jobs:
     - name: configure wolfssl
       run:  cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
     - name: build wolfssl
-      run: cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && make install
+      run: cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && sudo make install
 
     - uses: actions/checkout@v2
       with:
