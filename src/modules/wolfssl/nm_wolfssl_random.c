@@ -4,6 +4,8 @@
 #include <platform/np_platform.h>
 #include <platform/np_allocator.h>
 
+#include <wolfssl/options.h>
+#include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/wolfcrypt/random.h>
 
 

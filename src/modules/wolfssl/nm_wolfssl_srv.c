@@ -151,16 +151,11 @@ np_error_code nm_wolfssl_srv_init(struct np_platform* pl)
  */
 np_error_code nm_wolfssl_srv_get_fingerprint(struct np_platform* pl, struct np_dtls_srv_connection* ctx, uint8_t* fp)
 {
-    (void)pl;
-    // TODO
-    // const WOLFSSL_X509* crt = wolfssl_ssl_get_peer_cert(&ctx->ssl);
-    // if (crt == NULL) {
-    //     NABTO_LOG_ERROR(LOG, "Failed to get peer cert from wolfssl");
-    //     NABTO_LOG_ERROR(LOG, "Verification returned %u", wolfssl_ssl_get_verify_result(&ctx->ssl));
-    //     return NABTO_EC_UNKNOWN;
-    // }
-    // return nm_dtls_util_fp_from_crt(crt, fp);
-    return NABTO_EC_NOT_IMPLEMENTED;
+    WOLFSSL_X509 *crt = wolfSSL_get_peer_certificate(ctx->ssl);
+    if (!crt) {
+        return NABTO_EC_UNKNOWN;
+    }
+    return nm_dtls_util_fp_from_crt(crt, fp);
 }
 
 np_error_code nm_wolfssl_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp)
