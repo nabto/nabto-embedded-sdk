@@ -122,9 +122,8 @@ np_error_code nm_wolfssl_srv_get_packet_count(struct np_dtls_srv_connection* ctx
 
 // Get the result of the application layer protocol negotiation
 const char*  nm_wolfssl_srv_get_alpn_protocol(struct np_dtls_srv_connection* ctx) {
-    // TODO
-    //return wolfssl_ssl_get_alpn_protocol(&ctx->ssl);
-    return NULL;
+    // if the alpn negotiation failed the connect was blocked and we never get here.
+    return NABTO_PROTOCOL_VERSION;
 }
 
 np_error_code nm_wolfssl_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
