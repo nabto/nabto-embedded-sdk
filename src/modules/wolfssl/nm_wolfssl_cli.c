@@ -393,7 +393,7 @@ np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
-    return nm_dtls_util_fp_from_crt(crt, fp);
+    return nm_wolfssl_util_fp_from_crt(crt, fp);
 }
 
 np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)

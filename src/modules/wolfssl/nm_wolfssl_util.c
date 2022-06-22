@@ -16,7 +16,7 @@
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 
-np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
+np_error_code nm_wolfssl_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
 {
     int requiredSize = 0;
     if (wolfSSL_X509_get_pubkey_buffer((WOLFSSL_X509*)crt, NULL, &requiredSize) != WOLFSSL_SUCCESS) {
@@ -43,26 +43,8 @@ np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
     return NABTO_EC_OK;
 }
 
-// np_error_code nm_wolfssl_util_get_fp_from_cert(const char* cert, size_t certLen)
-// {
-
-//     wolfSSL_X509_d2i
-// }
-
-// struct crt_from_private_key {
-//     wolfssl_pk_context key;
-//     wolfssl_entropy_context entropy;
-//     wolfssl_ctr_drbg_context ctr_drbg;
-
-//     wolfssl_x509write_cert crt;
-//     wolfssl_mpi serial;
-// };
-
-// static np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey);
-
 np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey, char** certOut)
 {
-
     uint8_t derBuffer[256];
 
     int ret;
@@ -131,99 +113,40 @@ np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey, cha
 
 }
 
-// np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey)
-// {
-//     int ret;
-//     ret = wolfssl_ctr_drbg_seed(&ctx->ctr_drbg, wolfssl_entropy_func, &ctx->entropy, NULL, 0);
-//     if (ret != 0) {
-//         return NABTO_EC_UNKNOWN;
-//     }
+np_error_code nm_wolfssl_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
+{
+    uint8_t derBuffer[256];
 
-//     ret = wolfssl_pk_parse_key( &ctx->key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
-//     if (ret != 0) {
-//         return NABTO_EC_UNKNOWN;
-//     }
+    int ret;
+    ret = wc_KeyPemToDer((const unsigned char*)privateKey, strlen(privateKey), derBuffer, sizeof(derBuffer), NULL);
+    if (ret < 0) {
+        return NABTO_EC_FAILED;
+    }
 
-//     // initialize crt
-//     wolfssl_x509write_crt_set_subject_key( &ctx->crt, &ctx->key );
-//     wolfssl_x509write_crt_set_issuer_key( &ctx->crt, &ctx->key );
+    ecc_key eccKey;
+    word32 idx = 0;
+    ret = wc_EccPrivateKeyDecode(derBuffer, &idx, &eccKey, ret);
+    if (ret < 0) {
+        return NABTO_EC_FAILED;
+    }
 
-//     ret = wolfssl_mpi_read_string( &ctx->serial, 10, "1");
-//     if (ret != 0) {
-//         return NABTO_EC_UNKNOWN;
-//     }
+    uint8_t publicKeyDer[256];
 
-//     wolfssl_x509write_crt_set_serial( &ctx->crt, &ctx->serial );
-
-//     ret = wolfssl_x509write_crt_set_subject_name( &ctx->crt, "CN=nabto" );
-//     if (ret != 0) {
-//         return NABTO_EC_UNKNOWN;
-//     }
-
-//     ret = wolfssl_x509write_crt_set_issuer_name( &ctx->crt, "CN=nabto" );
-//     if (ret != 0) {
-//         return NABTO_EC_UNKNOWN;
-//     }
-
-//     wolfssl_x509write_crt_set_version( &ctx->crt, 2 );
-//     wolfssl_x509write_crt_set_md_alg( &ctx->crt, wolfssl_MD_SHA256 );
-
-//     ret = wolfssl_x509write_crt_set_validity( &ctx->crt, "20010101000000", "20491231235959" );
-//     if (ret != 0) {
-//         return NABTO_EC_UNKNOWN;
-//     }
-
-//     ret = wolfssl_x509write_crt_set_basic_constraints( &ctx->crt, 1, -1);
-//     if (ret != 0) {
-//         return NABTO_EC_UNKNOWN;
-//     }
-
-//     {
-//         // write crt
-//         char buffer[1024];
-//         memset(buffer, 0, 1024);
-//         ret = wolfssl_x509write_crt_pem( &ctx->crt, (unsigned char*)buffer, 1024,
-//                                          wolfssl_ctr_drbg_random, &ctx->ctr_drbg );
-
-//         if (ret != 0) {
-//             return NABTO_EC_UNKNOWN;
-//         }
-//         *publicKey = nn_strdup(buffer, np_allocator_get());
-//     }
-//     if (*publicKey == NULL) {
-//         return NABTO_EC_UNKNOWN;
-//     }
-//     return NABTO_EC_OK;
-// }
+    ret = wc_EccPublicKeyToDer(&eccKey, publicKeyDer, sizeof(publicKeyDer), 0);
+    if (ret < 0) {
+        return NABTO_EC_FAILED;
+    }
 
 
-// np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
-// {
-//     wolfssl_pk_context key;
-//     int ret;
+    Sha256 sha;
+    wc_InitSha256(&sha);
 
-//     np_error_code ec = NABTO_EC_OK;
-//     wolfssl_pk_init(&key);
-//     ret = wolfssl_pk_parse_key( &key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
-//     if (ret != 0) {
-//         ec = NABTO_EC_UNKNOWN;
-//     } else {
-//         // get fingerprint
-//         uint8_t buffer[256];
-//         // !!! The key is written to the end of the buffer
-//         int len = wolfssl_pk_write_pubkey_der( &key, buffer, sizeof(buffer));
-//         if (len <= 0) {
-//             ec = NABTO_EC_UNKNOWN;
-//         } else {
-//             ret = wolfssl_sha256_ret(buffer+256 - len,  len, hash, false);
-//             if (ret != 0) {
-//                 ec = NABTO_EC_UNKNOWN;
-//             }
-//         }
-//     }
-//     wolfssl_pk_free(&key);
-//     return ec;
-// }
+    wc_Sha256Update(&sha, publicKeyDer, ret);
+    wc_Sha256Final(&sha, hash);
+
+    return NABTO_EC_OK;
+    // TODO free resources
+}
 
 np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
 {

@@ -25,10 +25,12 @@
 #ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
+#include <modules/mbedtls/nm_mbedtls_util.h>
 #endif
 #ifdef NABTO_USE_WOLFSSL
 #include <modules/wolfssl/nm_wolfssl_random.h>
 #include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/wolfssl/nm_wolfssl_util.h>
 #endif
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
@@ -501,13 +503,18 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
 {
     *fingerprint = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_NOT_IMPLEMENTED;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_INVALID_STATE;
     }
     uint8_t hash[32];
+#if defined(NABTO_USE_MBEDTLS)
     ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, hash);
+#endif
+#if defined(NABTO_USE_WOLFSSL)
+    ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, hash);
+#endif
     if (ec == NABTO_EC_OK) {
         *fingerprint = toHex(hash, 16);
     }

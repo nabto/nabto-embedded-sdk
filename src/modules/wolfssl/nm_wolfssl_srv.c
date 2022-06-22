@@ -156,7 +156,7 @@ np_error_code nm_wolfssl_srv_get_fingerprint(struct np_platform* pl, struct np_d
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
-    return nm_dtls_util_fp_from_crt(crt, fp);
+    return nm_wolfssl_util_fp_from_crt(crt, fp);
 }
 
 np_error_code nm_wolfssl_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp)
