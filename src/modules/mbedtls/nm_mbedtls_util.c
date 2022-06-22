@@ -17,7 +17,7 @@
 #include <nn/string.h>
 #include <string.h>
 
-np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
+np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
 {
     uint8_t buffer[256];
 
@@ -41,7 +41,7 @@ struct crt_from_private_key {
 
 static np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey);
 
-np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
+np_error_code nm_mbedtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
 {
     // 1. load key from pem
     // 2. create crt
@@ -133,7 +133,7 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
 }
 
 
-np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
+np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
 {
     mbedtls_pk_context key;
     int ret;
@@ -161,7 +161,7 @@ np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, u
     return ec;
 }
 
-np_error_code nm_dtls_util_create_private_key(char** privateKey)
+np_error_code nm_mbedtls_util_create_private_key(char** privateKey)
 {
     *privateKey = NULL;
     unsigned char output_buf[1024];

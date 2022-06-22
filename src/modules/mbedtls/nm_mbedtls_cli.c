@@ -1,6 +1,7 @@
 #include "nm_mbedtls_cli.h"
 #include "nm_mbedtls_util.h"
 #include "nm_mbedtls_timer.h"
+#include "nm_mbedtls_common.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
@@ -401,7 +402,7 @@ np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
-    return nm_dtls_util_fp_from_crt(crt, fp);
+    return nm_mbedtls_util_fp_from_crt(crt, fp);
 }
 
 np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)

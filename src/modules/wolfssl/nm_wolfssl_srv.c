@@ -1,6 +1,7 @@
 #include "nm_wolfssl_srv.h"
 #include "nm_wolfssl_util.h"
 #include "nm_wolfssl_timer.h"
+#include "nm_wolfssl_common.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
@@ -264,7 +265,9 @@ np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server,
     // }
 
 // TODO set bio on WOLFSSL_CTX
-    // wolfssl_ssl_set_bio( &ctx->ssl, ctx,
+    //
+    // TODO is the publiv key a selfsigned certificate?
+    // TODO is the publiv key a selfsigned certificate?wolfssl_ssl_set_bio( &ctx->ssl, ctx,
     //                      &nm_wolfssl_srv_wolfssl_send, &nm_wolfssl_srv_wolfssl_recv, NULL );
 
     *dtls = ctx;

@@ -212,7 +212,7 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nabto_device_future_queue_deinit(&dev->futureQueue);
     nabto_device_free_threads(dev);
 
-    np_free(dev->publicKey);
+    np_free(dev->certificate);
     np_free(dev->privateKey);
 
     np_free(dev);
@@ -291,12 +291,18 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
         char* crt;
-        ec = nm_dtls_create_crt_from_private_key(dev->privateKey, &crt);
-        if (dev->publicKey != NULL) {
-            np_free(dev->publicKey);
-            dev->publicKey = NULL;
+#if defined(NABTO_USE_MBEDTLS)
+        ec = nm_mbedtls_create_crt_from_private_key(dev->privateKey, &crt);
+#elif defined(NABTO_USE_WOLFSSL)
+        // TODO
+#else
+#error Missing implementation to create a crt from a private key.
+#endif
+        if (dev->certificate != NULL) {
+            np_free(dev->certificate);
+            dev->certificate = NULL;
         }
-        dev->publicKey = crt;
+        dev->certificate = crt;
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -440,13 +446,13 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
 
     dev->startFut = fut;
 
-    if (dev->publicKey == NULL || dev->privateKey == NULL) {
+    if (dev->certificate == NULL || dev->privateKey == NULL) {
         NABTO_LOG_ERROR(LOG, "Encryption key pair not set");
         nabto_device_future_resolve(fut, NABTO_EC_INVALID_STATE);
     } else {
 
         // Init platform
-        nc_device_set_keys(&dev->core, (const unsigned char*)dev->publicKey, strlen(dev->publicKey), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
+        nc_device_set_keys(&dev->core, (const unsigned char*)dev->certificate, strlen(dev->certificate), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
 
         // start the core
         np_error_code ec = nc_device_start(&dev->core, defaultServerUrlSuffix, &nabto_device_start_cb, dev);
@@ -482,7 +488,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint(NabtoDevic
         ec = NABTO_EC_INVALID_STATE;
     }
     uint8_t hash[32];
-    ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, hash);
+    ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, hash);
     if (ec == NABTO_EC_OK) {
         *fingerprint = toHex(hash, 32);
     }
@@ -501,7 +507,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
         ec = NABTO_EC_INVALID_STATE;
     }
     uint8_t hash[32];
-    ec = nm_dtls_get_fingerprint_from_private_key(dev->privateKey, hash);
+    ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, hash);
     if (ec == NABTO_EC_OK) {
         *fingerprint = toHex(hash, 16);
     }

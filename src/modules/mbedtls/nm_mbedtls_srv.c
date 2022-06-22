@@ -1,6 +1,7 @@
 #include "nm_mbedtls_srv.h"
 #include "nm_mbedtls_util.h"
 #include "nm_mbedtls_timer.h"
+#include "nm_mbedtls_common.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
@@ -161,12 +162,12 @@ np_error_code nm_mbedtls_srv_get_fingerprint(struct np_platform* pl, struct np_d
         NABTO_LOG_ERROR(LOG, "Verification returned %u", mbedtls_ssl_get_verify_result(&ctx->ssl));
         return NABTO_EC_UNKNOWN;
     }
-    return nm_dtls_util_fp_from_crt(crt, fp);
+    return nm_mbedtls_util_fp_from_crt(crt, fp);
 }
 
 np_error_code nm_mbedtls_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp)
 {
-    return nm_dtls_util_fp_from_crt(&server->publicKey, fp);
+    return nm_mbedtls_util_fp_from_crt(&server->publicKey, fp);
 }
 
 np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server)

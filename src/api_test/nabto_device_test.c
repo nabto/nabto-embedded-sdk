@@ -99,7 +99,7 @@ void NABTO_DEVICE_API nabto_device_test_free(NabtoDevice* device)
 #endif
     nabto_device_future_queue_deinit(&dev->futureQueue);
 
-    np_free(dev->publicKey);
+    np_free(dev->certificate);
     np_free(dev->privateKey);
 
     if (dev->eventMutex) {

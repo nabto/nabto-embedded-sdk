@@ -1,6 +1,7 @@
 #include "nm_wolfssl_cli.h"
 #include "nm_wolfssl_util.h"
 #include "nm_wolfssl_timer.h"
+#include "nm_wolfssl_common.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>

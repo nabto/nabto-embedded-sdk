@@ -1,22 +1,20 @@
 #include "nm_wolfssl_util.h"
+
+#include <wolfssl/options.h>
+#include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/wolfcrypt/sha.h>
-// #include "wolfssl/error.h"
-// #include "wolfssl/pk.h"
-// #include "wolfssl/ecdsa.h"
-// #include "wolfssl/rsa.h"
-// #include "wolfssl/error.h"
-// #include "wolfssl/entropy.h"
-// #include "wolfssl/ctr_drbg.h"
-// #include "wolfssl/platform.h"
-// #include "wolfssl/x509_crt.h"
-// #include "wolfssl/x509_csr.h"
-// #include "wolfssl/sha256.h"
+#include <wolfssl/wolfcrypt/random.h>
+#include <wolfssl/wolfcrypt/ecc.h>
+#include <wolfssl/wolfcrypt/asn_public.h>
 
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <nn/string.h>
 #include <string.h>
+
+#define LOG NABTO_LOG_MODULE_PLATFORM
 
 np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
 {
@@ -34,7 +32,6 @@ np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
         return NABTO_EC_FAILED;
     }
 
-
     Sha256 sha;
     wc_InitSha256(&sha);
 
@@ -45,6 +42,12 @@ np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
 
     return NABTO_EC_OK;
 }
+
+// np_error_code nm_wolfssl_util_get_fp_from_cert(const char* cert, size_t certLen)
+// {
+
+//     wolfSSL_X509_d2i
+// }
 
 // struct crt_from_private_key {
 //     wolfssl_pk_context key;
@@ -177,39 +180,48 @@ np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
 //     return ec;
 // }
 
-// np_error_code nm_dtls_util_create_private_key(char** privateKey)
-// {
-//     *privateKey = NULL;
-//     unsigned char output_buf[1024];
-//     wolfssl_pk_context key;
-//     wolfssl_entropy_context entropy;
-//     wolfssl_ctr_drbg_context ctr_drbg;
-//     const char *pers = "gen_key";
-//     np_error_code ec = NABTO_EC_OK;
+np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
+{
+    ecc_key key;
+    int ret;
+    // TODO deini key
+    ret = wc_ecc_init(&key);
+    if (ret != 0) {
+        return NABTO_EC_FAILED;
+    }
+    WC_RNG rng;
+    // TODO deinit
+    ret = wc_InitRng(&rng);
+    if (ret != 0) {
+        return NABTO_EC_FAILED;
+    }
+    ret = wc_ecc_make_key(&rng, 32, &key); // initialize 32 byte ecc key
+    if (ret != 0) {
+        return NABTO_EC_FAILED;
+    }
 
-//     memset(output_buf, 0, 1024);
-//     wolfssl_pk_init( &key );
-//     wolfssl_ctr_drbg_init( &ctr_drbg );
+    uint8_t derBuffer[256];
+    ret = wc_EccKeyToDer(&key, derBuffer, sizeof(derBuffer));
+    if (ret < 0) {
+        NABTO_LOG_ERROR(LOG, "Could not convert ecc key to der");
+        return NABTO_EC_FAILED;
+    }
 
-//     wolfssl_entropy_init( &entropy );
+    uint8_t pemBuffer[256];
 
-//     if( (wolfssl_ctr_drbg_seed( &ctr_drbg, wolfssl_entropy_func, &entropy,
-//                                 (const unsigned char *) pers,
-//                                 strlen( pers ) ) != 0) ||
-//         (wolfssl_pk_setup( &key, wolfssl_pk_info_from_type( wolfssl_PK_ECKEY ) ) != 0 ) ||
-//         (wolfssl_ecp_gen_key( wolfssl_ECP_DP_SECP256R1,
-//                               wolfssl_pk_ec( key ),
-//                               wolfssl_ctr_drbg_random, &ctr_drbg ) != 0) ||
-//         (wolfssl_pk_write_key_pem( &key, output_buf, 1024 ) != 0 ))
-//     {
-//         ec = NABTO_EC_UNKNOWN;
-//     } else {
-//         *privateKey = nn_strdup((char*)output_buf, np_allocator_get());
-//     }
+    ret = wc_DerToPem(derBuffer, ret, pemBuffer, sizeof(pemBuffer), ECC_PRIVATEKEY_TYPE);
+    if (ret < 0) {
+        NABTO_LOG_ERROR(LOG, "Cannot convert der to pem");
+        return NABTO_EC_FAILED;
+    }
 
-//     wolfssl_pk_free( &key );
-//     wolfssl_ctr_drbg_free( &ctr_drbg );
-//     wolfssl_entropy_free( &entropy );
+    char* str = np_calloc(1, ret+1);
+    if (str == NULL)
+    {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    memcpy(str, pemBuffer, ret);
+    *privateKey = str;
 
-//     return ec;
-// }
+    return NABTO_EC_OK;
+}
