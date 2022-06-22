@@ -683,7 +683,7 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
         }
         return (int)bufferSize;
     } else {
-        return WOLFSSL_ERROR_WANT_WRITE;
+        return WOLFSSL_CBIO_ERR_WANT_WRITE;
     }
 }
 
