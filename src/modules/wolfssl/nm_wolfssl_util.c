@@ -60,31 +60,76 @@ np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* hash)
 
 // static np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey);
 
-// np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
-// {
-//     // 1. load key from pem
-//     // 2. create crt
-//     // 3. write to pem string.
-//     struct crt_from_private_key ctx;
+np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey, char** certOut)
+{
 
-//     *publicKey = NULL;
+    uint8_t derBuffer[256];
 
-//     wolfssl_pk_init(&ctx.key);
-//     wolfssl_ctr_drbg_init(&ctx.ctr_drbg);
-//     wolfssl_entropy_init(&ctx.entropy);
-//     wolfssl_x509write_crt_init(&ctx.crt);
-//     wolfssl_mpi_init(&ctx.serial);
+    int ret;
+    ret = wc_KeyPemToDer((const unsigned char*)privateKey, strlen(privateKey), derBuffer, sizeof(derBuffer), NULL);
+    if (ret < 0) {
+        return NABTO_EC_FAILED;
+    }
 
-//     np_error_code ec = nm_dtls_create_crt_from_private_key_inner(&ctx, privateKey, publicKey);
+    ecc_key eccKey;
+    word32 idx = 0;
+    ret = wc_EccPrivateKeyDecode(derBuffer, &idx, &eccKey, ret);
+    if (ret < 0) {
+        return NABTO_EC_FAILED;
+    }
 
-//     wolfssl_x509write_crt_free(&ctx.crt);
-//     wolfssl_mpi_free(&ctx.serial);
-//     wolfssl_ctr_drbg_free(&ctx.ctr_drbg);
-//     wolfssl_entropy_free(&ctx.entropy);
-//     wolfssl_pk_free(&ctx.key);
 
-//     return ec;
-// }
+    // Create a selfsigned certificate, this can be moved somewhere else. The
+    // end result is that the embedded dtls client uses a self signed certificate.
+    uint8_t derCert[512];
+
+    Cert cert;
+    wc_InitCert(&cert);
+
+    strncpy(cert.subject.commonName, "nabto", CTC_NAME_SIZE);
+    strncpy(cert.issuer.commonName, "nabto", CTC_NAME_SIZE);
+
+    cert.isCA = 0;
+    cert.selfSigned = 1;
+    cert.serial[0] = 0x01;
+    cert.serialSz = 1;
+    // we create new certs for each startup
+    cert.daysValid = 5000;
+
+    WC_RNG rng;
+    if (wc_InitRng(&rng) != 0)
+    {
+        return NABTO_EC_FAILED;
+    }
+
+    ret = wc_MakeCert(&cert, derCert, sizeof(derCert), NULL, &eccKey, &rng);
+    if (ret < 0)
+    {
+        return NABTO_EC_FAILED;
+    }
+
+    int certLen = wc_SignCert(cert.bodySz, cert.sigType,
+                              derCert, sizeof(derCert), NULL, &eccKey, &rng);
+    if (ret < 0) {
+        return NABTO_EC_FAILED;
+    }
+
+    uint8_t pemBuffer[512];
+
+    ret = wc_DerToPem(derCert, certLen, pemBuffer, sizeof(pemBuffer), CERT_TYPE);
+    if (ret < 0) {
+        return NABTO_EC_FAILED;
+    }
+
+    *certOut = np_calloc(1, ret+1);
+    if (*certOut == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    memcpy(*certOut, pemBuffer, ret);
+    return NABTO_EC_OK;
+
+}
 
 // np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey)
 // {

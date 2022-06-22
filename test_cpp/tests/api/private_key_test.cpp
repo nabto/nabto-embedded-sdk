@@ -71,4 +71,18 @@ BOOST_AUTO_TEST_CASE(create_private_key)
     nabto_device_free(device);
 }
 
+BOOST_AUTO_TEST_CASE(set_private_key)
+{
+    NabtoDevice* device = nabto_device_new();
+    char* key = NULL;
+    BOOST_TEST(nabto_device_create_private_key(device, &key) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(key != (char*)NULL);
+
+    BOOST_TEST(nabto_device_set_private_key(device, key) == NABTO_DEVICE_EC_OK);
+
+    nabto_device_string_free(key);
+    nabto_device_free(device);
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()

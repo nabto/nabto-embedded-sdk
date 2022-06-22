@@ -294,7 +294,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
 #if defined(NABTO_USE_MBEDTLS)
         ec = nm_mbedtls_create_crt_from_private_key(dev->privateKey, &crt);
 #elif defined(NABTO_USE_WOLFSSL)
-        // TODO
+        ec = nm_wolfssl_create_crt_from_private_key(dev->privateKey, &crt);
 #else
 #error Missing implementation to create a crt from a private key.
 #endif

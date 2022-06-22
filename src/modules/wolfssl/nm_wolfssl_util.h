@@ -17,7 +17,7 @@ typedef struct nm_dtls_util_connection_ctx nm_dtls_util_connection_ctx;
 
 np_error_code nm_dtls_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* fp);
 
-np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char** crt);
+np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey, char** crt);
 
 /**
  * take a 32 byte fingerprint buffer as input.
