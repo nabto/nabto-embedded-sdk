@@ -100,6 +100,7 @@ np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey,
         cert.serialSz = 1;
         // we create new certs for each startup
         cert.daysValid = 5000;
+        cert.sigType = CTC_SHA256wECDSA;
 
         ret = wc_MakeCert(&cert, derCert, sizeof(derCert), NULL, &eccKey, &rng);
         if (ret < 0) {
