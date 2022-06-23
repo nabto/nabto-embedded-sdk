@@ -148,28 +148,16 @@ np_error_code nm_wolfssl_get_fingerprint_from_private_key(const char* privateKey
     // TODO free resources
 }
 
-np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
+np_error_code nm_wolfssl_util_create_private_key_inner(char** privateKey, ecc_key* key, WC_RNG* rng)
 {
-    ecc_key key;
     int ret;
-    // TODO deini key
-    ret = wc_ecc_init(&key);
-    if (ret != 0) {
-        return NABTO_EC_FAILED;
-    }
-    WC_RNG rng;
-    // TODO deinit
-    ret = wc_InitRng(&rng);
-    if (ret != 0) {
-        return NABTO_EC_FAILED;
-    }
-    ret = wc_ecc_make_key(&rng, 32, &key); // initialize 32 byte ecc key
+    ret = wc_ecc_make_key(rng, 32, key); // initialize 32 byte ecc key
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
 
     uint8_t derBuffer[256];
-    ret = wc_EccKeyToDer(&key, derBuffer, sizeof(derBuffer));
+    ret = wc_EccKeyToDer(key, derBuffer, sizeof(derBuffer));
     if (ret < 0) {
         NABTO_LOG_ERROR(LOG, "Could not convert ecc key to der");
         return NABTO_EC_FAILED;
@@ -192,4 +180,26 @@ np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
     *privateKey = str;
 
     return NABTO_EC_OK;
+}
+
+
+np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
+{
+    ecc_key key;
+    int ret;
+    ret = wc_ecc_init(&key);
+    if (ret != 0) {
+        return NABTO_EC_FAILED;
+    }
+    WC_RNG rng;
+    ret = wc_InitRng(&rng);
+    if (ret != 0) {
+        return NABTO_EC_FAILED;
+    }
+
+    np_error_code ec = nm_wolfssl_util_create_private_key_inner(privateKey, &key, &rng);
+
+    wc_FreeRng(&rng);
+    wc_ecc_free(&key);
+    return ec;
 }
