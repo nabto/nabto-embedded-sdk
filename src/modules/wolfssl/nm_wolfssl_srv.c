@@ -103,15 +103,23 @@ void nm_wolfssl_srv_start_send(struct np_dtls_srv_connection* ctx);
 void nm_wolfssl_srv_start_send_deferred(void* data);
 
 // Function called by wolfssl when data should be sent to the network
-int nm_wolfssl_srv_wolfssl_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
+static int wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void* ctx);
 // Function called by wolfssl when it wants data from the network
-int nm_wolfssl_srv_wolfssl_recv(void* ctx, unsigned char* buffer, size_t bufferSize);
+static int wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* ctx);
 
 void nm_wolfssl_srv_event_send_to(void* data);
 void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event);
 void nm_wolfssl_srv_do_event_callback(void* data);
 
 static void nm_wolfssl_srv_is_closed(struct np_dtls_srv_connection* ctx);
+
+static int verify_callback(int foo, WOLFSSL_X509_STORE_CTX *chain)
+{
+    // TODO verify the self signed certificate.
+    (void)foo;
+    (void)chain;
+    return WOLFSSL_SUCCESS;
+}
 
 // Get the packet counters for given dtls_cli_context
 np_error_code nm_wolfssl_srv_get_packet_count(struct np_dtls_srv_connection* ctx, uint32_t* recvCount, uint32_t* sentCount)
@@ -161,8 +169,10 @@ np_error_code nm_wolfssl_srv_get_fingerprint(struct np_platform* pl, struct np_d
 
 np_error_code nm_wolfssl_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp)
 {
-    // TODO
-    //return nm_dtls_util_fp_from_crt(&server->publicKey, fp);
+    // TODO this is only used in password authentication. Consider not getting
+    //the fingerprint from the server but from the device context directly using
+    //nm_wolfssl_get_fingerprint_from_private_key return
+    //nm_dtls_util_fp_from_crt(&server->publicKey, fp);
     return NABTO_EC_NOT_IMPLEMENTED;
 }
 
@@ -237,7 +247,6 @@ np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server,
         return NABTO_EC_FAILED;
     }
 
-    // TODO set server timeouts
     if (wolfSSL_dtls_set_timeout_init(ctx->ssl, MIN_TIMEOUT) != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set min timeout for DTLS client connection");
         return NABTO_EC_FAILED;
@@ -247,28 +256,8 @@ np_error_code nm_wolfssl_srv_create_connection(struct np_dtls_srv* server,
         return NABTO_EC_FAILED;
     }
 
-    // TODO set client id for cookie validation and maybe bio functions
-    //if (wolfSSL_dtls_set_peer(ctx->ssl, conn, sizeof(np_connection)) != WOLFSSL_SUCCESS) {
-
-      //  NABTO_LOG_ERROR(LOG, "wolfSSL_dtls_set_peer failed");
-      //  return NABTO_EC_UNKNOWN;
-    //}
-
-    // TODO
-    //wolfssl_ssl_set_hs_authmode( &ctx->ssl, wolfssl_SSL_VERIFY_OPTIONAL );
-
-    // TODO set cert on WOLFSSL_CTX
-    // ret = wolfssl_ssl_set_hs_own_cert(&ctx->ssl, &server->publicKey, &server->privateKey);
-    // if (ret != 0) {
-    //     NABTO_LOG_ERROR(LOG, "failed ! wolfssl_ssl_set_hs_own_cert returned %d", ret);
-    //     return NABTO_EC_UNKNOWN;
-    // }
-
-// TODO set bio on WOLFSSL_CTX
-    //
-    // TODO is the publiv key a selfsigned certificate?
-    // TODO is the publiv key a selfsigned certificate?wolfssl_ssl_set_bio( &ctx->ssl, ctx,
-    //                      &nm_wolfssl_srv_wolfssl_send, &nm_wolfssl_srv_wolfssl_recv, NULL );
+    wolfSSL_SetIOReadCtx(ctx->ssl, ctx);
+    wolfSSL_SetIOWriteCtx(ctx->ssl, ctx);
 
     *dtls = ctx;
     return NABTO_EC_OK;
@@ -562,17 +551,22 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
         NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer %d ", ret);
         return NABTO_EC_UNKNOWN;
     }
+
+    wolfSSL_CTX_set_verify(server->ctx, SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_callback);
+
 #if defined(wolfssl_SSL_DTLS_HELLO_VERIFY)
     wolfssl_ssl_conf_dtls_cookies(&server->conf, NULL, NULL, NULL);
 #endif
 
+    wolfSSL_CTX_SetIORecv(server->ctx, wolfssl_recv);
+    wolfSSL_CTX_SetIOSend(server->ctx, wolfssl_send);
 
 
     return NABTO_EC_OK;
 }
 
 // Function called by wolfssl when data should be sent to the network
-int nm_wolfssl_srv_wolfssl_send(void* data, const unsigned char* buffer, size_t bufferSize)
+int wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     struct np_platform* pl = ctx->pl;
@@ -615,7 +609,7 @@ void nm_wolfssl_srv_connection_send_callback(const np_error_code ec, void* data)
 
 
 // Function called by wolfssl when it wants data from the network
-int nm_wolfssl_srv_wolfssl_recv(void* data, unsigned char* buffer, size_t bufferSize)
+int wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->recvBufferSize == 0) {
