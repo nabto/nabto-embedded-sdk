@@ -539,7 +539,7 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
 #endif
 
     ret = wolfSSL_CTX_use_PrivateKey_buffer(server->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM);
-    if( ret != 0 )
+    if( ret != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_PrivateKey_buffer %d ", ret);
         return NABTO_EC_UNKNOWN;

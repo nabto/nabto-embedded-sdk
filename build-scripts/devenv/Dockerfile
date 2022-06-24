@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 ARG CMAKE_VERSION=3.19.6
-ARG WOLFSSL_VERSION=5.1.1-stable
+ARG WOLFSSL_VERSION=5.3.0-stable
 
 RUN apt update && apt install -y git build-essential autoconf libtool pkg-config wget bash-completion vim gdb clang gcc curl ninja-build valgrind python3-pip sudo unzip
 

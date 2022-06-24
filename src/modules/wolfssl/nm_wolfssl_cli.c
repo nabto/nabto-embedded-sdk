@@ -37,8 +37,6 @@ struct np_dtls_cli_context {
     // Allocated when sending a packet with ciphertext through the UDP layer.
     struct np_communication_buffer* sslSendBuffer;
 
-    struct nm_wolfssl_timer timer;
-
     uint32_t recvCount;
     uint32_t sentCount;
 
@@ -82,35 +80,29 @@ static np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* f
 
 static np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout);
 
-static void nm_dtls_timed_event_do_one(void* data);
 static np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx);
 static np_error_code nm_wolfssl_cli_reset(struct np_dtls_cli_context* ctx);
 static np_error_code nm_dtls_connect(struct np_dtls_cli_context* ctx);
 
 // Function called by wolfssl when data should be sent to the network
-int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void* userData);
+static int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void* userData);
 // Function called by wolfssl when it wants data from the network
-int nm_dtls_wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* userData);
+static int nm_dtls_wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* userData);
 // Function used to handle events during the connection phase
-void nm_dtls_event_do_one(void* data);
-
-void nm_wolfssl_cli_remove_send_data(struct np_dtls_cli_send_context* elm);
+static void nm_dtls_event_do_one(void* data);
 
 // Handle packet from udp
 static np_error_code handle_packet(struct np_dtls_cli_context* ctx,
                                    uint8_t* buffer, uint16_t bufferSize);
 
-void nm_wolfssl_cli_start_send_deferred(void* data);
+static void nm_wolfssl_cli_start_send_deferred(void* data);
 
-void nm_dtls_do_close(void* data, np_error_code ec);
+static void nm_wolfssl_do_close(void* data, np_error_code ec);
 
-// setup function for the wolfssl context
-np_error_code nm_dtls_setup_dtls_ctx(struct np_dtls_cli_context* ctx);
-
-void nm_wolfssl_cli_do_free(struct np_dtls_cli_context* ctx);
+static void nm_wolfssl_cli_do_free(struct np_dtls_cli_context* ctx);
 
 // Get the packet counters for given dtls_cli_context
-np_error_code nm_dtls_get_packet_count(struct np_dtls_cli_context* ctx, uint32_t* recvCount, uint32_t* sentCount)
+static np_error_code nm_dtls_get_packet_count(struct np_dtls_cli_context* ctx, uint32_t* recvCount, uint32_t* sentCount)
 {
     *recvCount = ctx->recvCount;
     *sentCount = ctx->sentCount;
@@ -119,7 +111,7 @@ np_error_code nm_dtls_get_packet_count(struct np_dtls_cli_context* ctx, uint32_t
 
 // Get the result of the application layer protocol negotiation
 // TODO: remove this function here, in platform, in mbedtls
-const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
+static const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
     return NULL;
 }
 
@@ -180,16 +172,7 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
 
 // TODO: maybe not always have logging on
     wolfSSL_SetLoggingCb(logging_callback);
-    //wolfSSL_Debugging_ON();
-
-
-    // wolfssl_ssl_init( &ctx->ssl );
-    // wolfssl_ssl_config_init( &ctx->conf );
-    // wolfssl_ctr_drbg_init( &ctx->ctr_drbg );
-    // wolfssl_entropy_init( &ctx->entropy );
-    // WOLFSSL_X509_init( &ctx->publicKey );
-    // wolfssl_pk_init( &ctx->privateKey );
-    // WOLFSSL_X509_init(&ctx->rootCerts);
+    wolfSSL_Debugging_ON();
 
     ctx->sender = packetSender;
     ctx->dataHandler = dataHandler;
@@ -205,7 +188,6 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
         return ec;
     }
 
-
     ctx->ssl = wolfSSL_new(ctx->ctx);
     if (ctx->ssl == NULL) {
         NABTO_LOG_ERROR(LOG,  "Failed  to create wolfSSL object");
@@ -213,8 +195,6 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
         return NABTO_EC_UNKNOWN;
     }
 
-    // wolfSSL_SSLSetIORecv(ctx->ssl, nm_dtls_wolfssl_recv);
-    // wolfSSL_SSLSetIOSend(ctx->ssl, nm_dtls_wolfssl_send);
     wolfSSL_SetIOReadCtx(ctx->ssl, ctx);
     wolfSSL_SetIOWriteCtx(ctx->ssl, ctx);
 
@@ -236,31 +216,6 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
 
 np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
 {
-    np_error_code ec;
-    ec = nm_wolfssl_timer_init(&ctx->timer, ctx->pl, &nm_dtls_timed_event_do_one, ctx);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-
-    //int ret;
-    //const char *pers = "dtls_client";
-
-    // if( ( ret = wolfssl_ctr_drbg_seed( &ctx->ctr_drbg, wolfssl_entropy_func, &ctx->entropy,
-    //                            (const unsigned char *) pers,
-    //                            strlen( pers ) ) ) != 0 ) {
-    //     NABTO_LOG_INFO(LOG,  " failed  ! wolfssl_ctr_drbg_seed returned %d", ret );
-    //     return NABTO_EC_UNKNOWN;
-    // }
-
-    // if( ( ret = wolfssl_ssl_config_defaults( &ctx->conf,
-    //                wolfssl_SSL_IS_CLIENT,
-    //                wolfssl_SSL_TRANSPORT_DATAGRAM,
-    //                wolfssl_SSL_PRESET_DEFAULT ) ) != 0 )
-    // {
-    //     NABTO_LOG_INFO(LOG,  " failed  ! wolfssl_ssl_config_defaults returned %d", ret );
-    //     return NABTO_EC_UNKNOWN;
-    // }
-
     if (wolfSSL_CTX_set_cipher_list(ctx->ctx, allowedCipherSuitesList) != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "server can't set custom cipher list");
@@ -269,19 +224,11 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
 
     wolfSSL_CTX_set_verify(ctx->ctx, (WOLFSSL_VERIFY_PEER), NULL);
 
-// #if defined(wolfssl_DEBUG_C)
-//     wolfssl_ssl_conf_dbg( &ctx->conf, my_debug, NULL);
-// #endif
-
     wolfSSL_CTX_SetIORecv(ctx->ctx, nm_dtls_wolfssl_recv);
     wolfSSL_CTX_SetIOSend(ctx->ctx, nm_dtls_wolfssl_send);
 
 
     // TODO handle timeouts
-    // wolfssl_ssl_set_timer_cb( &ctx->ssl,
-    //                           &ctx->timer,
-    //                           &nm_wolfssl_timer_set_delay,
-    //                           &nm_wolfssl_timer_get_delay );
     return NABTO_EC_OK;
 }
 
@@ -298,7 +245,6 @@ np_error_code nm_wolfssl_cli_reset(struct np_dtls_cli_context* ctx)
     }
     ctx->recvBufferSize = 0;
 
-    nm_wolfssl_timer_cancel(&ctx->timer);
     return NABTO_EC_OK;
 }
 
@@ -312,15 +258,8 @@ void nm_wolfssl_cli_do_free(struct np_dtls_cli_context* ctx)
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
 
-    nm_wolfssl_timer_cancel(&ctx->timer);
     np_event_queue_destroy_event(&ctx->pl->eq, ctx->startSendEvent);
-    nm_wolfssl_timer_deinit(&ctx->timer);
 
-    //WOLFSSL_X509_free(&ctx->rootCerts);
-    //wolfssl_pk_free(&ctx->privateKey);
-    //WOLFSSL_X509_free(&ctx->publicKey );
-    //wolfssl_entropy_free( &ctx->entropy );
-    //wolfssl_ctr_drbg_free( &ctx->ctr_drbg );
     wolfSSL_free(ctx->ssl);
     wolfSSL_CTX_free(ctx->ctx);
 
@@ -461,27 +400,29 @@ void nm_dtls_event_do_one(void* data)
                     LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);
                 //}
                 ctx->state = CLOSING;
-                nm_wolfssl_timer_cancel(&ctx->timer);
                 ctx->eventHandler(event, ctx->callbackData);
                 return;
             }
-        } else {
+        } else if (ret == WOLFSSL_SUCCESS) {
             char* protocol_name;
             word16 protocol_nameSz = 0;
             if (wolfSSL_ALPN_GetProtocol(ctx->ssl, &protocol_name, &protocol_nameSz) != SSL_SUCCESS) {
                 NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
                 ctx->state = CLOSING;
-                nm_dtls_do_close(ctx, NABTO_EC_ALPN_FAILED);
+                nm_wolfssl_do_close(ctx, NABTO_EC_ALPN_FAILED);
                 return;
             }
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
             ctx->state = DATA;
             ctx->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, ctx->callbackData);
 
+        } else {
+            NABTO_LOG_ERROR(LOG, "unknown case %d", ret );
         }
     } else if(ctx->state == DATA) {
         uint8_t recvBuffer[1500];
         ret = wolfSSL_read( ctx->ssl, recvBuffer, (int)sizeof(recvBuffer) );
+
         if (ret == 0) {
             // EOF
             ctx->state = CLOSING;
@@ -491,10 +432,16 @@ void nm_dtls_event_do_one(void* data)
 
             ctx->dataHandler(recvBuffer, (uint16_t)ret, ctx->callbackData);
             return;
-        }else if (ret == WOLFSSL_ERROR_WANT_READ ||
-                  ret == WOLFSSL_ERROR_WANT_WRITE)
-        {
-            // OK
+        } else if (ret == WOLFSSL_FATAL_ERROR) {
+            int err = wolfSSL_get_error(ctx->ssl, ret);
+            if (err == WOLFSSL_ERROR_WANT_READ || err == WOLFSSL_ERROR_WANT_WRITE)
+            {
+                // ok
+            } else {
+                NABTO_LOG_TRACE(LOG, "Received unhandled wolfssl ERROR %d ", ret);
+                ctx->state = CLOSING;
+                nm_wolfssl_do_close(ctx, NABTO_EC_UNKNOWN);
+            }
         }
         // TODO handle access denied
         // } else if (ret == wolfssl_ERR_SSL_FATAL_ALERT_MESSAGE &&
@@ -504,15 +451,6 @@ void nm_dtls_event_do_one(void* data)
         //     ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
         //     return;
         // } else
-        else {
-#if defined(wolfssl_ERROR_C)
-            char buf[128];
-            wolfssl_strerror(ret, buf, 128);
-            NABTO_LOG_TRACE(LOG, "Received ERROR -0x%04x : %s ", -ret, buf);
-#endif
-            ctx->state = CLOSING;
-            nm_dtls_do_close(ctx, NABTO_EC_UNKNOWN);
-        }
         return;
     }
 }
@@ -578,11 +516,10 @@ np_error_code async_send_data(struct np_dtls_cli_context* ctx,
     return NABTO_EC_OK;
 }
 
-void nm_dtls_do_close(void* data, np_error_code ec){
+void nm_wolfssl_do_close(void* data, np_error_code ec){
     (void)ec;
     struct np_dtls_cli_context* ctx = data;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
-    nm_wolfssl_timer_cancel(&ctx->timer);
     ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
 }
 
@@ -596,7 +533,7 @@ np_error_code dtls_cli_close(struct np_dtls_cli_context* ctx)
         ctx->state = CLOSING;
         wolfSSL_shutdown(ctx->ssl);
         if (ctx->sslSendBuffer == NULL) {
-            nm_dtls_do_close(ctx, /*unused*/ NABTO_EC_OK);
+            nm_wolfssl_do_close(ctx, /*unused*/ NABTO_EC_OK);
         }
     } else {
         NABTO_LOG_TRACE(LOG, "Tried Closing DTLS cli but was already closed");
@@ -635,7 +572,7 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
         NABTO_LOG_TRACE(LOG, "udp send cb after close");
     }
     if(ctx->state == CLOSING) {
-        nm_dtls_do_close(ctx, /* ec unused */NABTO_EC_OK);
+        nm_wolfssl_do_close(ctx, /* ec unused */NABTO_EC_OK);
         if (ctx->destroyed) {
             nm_wolfssl_cli_do_free(ctx);
         }
@@ -672,7 +609,7 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
             pl->buf.free(ctx->sslSendBuffer);
             ctx->sslSendBuffer = NULL;
             if (ctx->state == CLOSING) {
-                nm_dtls_do_close(ctx, /* ec unused */ NABTO_EC_OK);
+                nm_wolfssl_do_close(ctx, /* ec unused */ NABTO_EC_OK);
                 if (ctx->destroyed) {
                     nm_wolfssl_cli_do_free(ctx);
                 }
@@ -698,12 +635,4 @@ int nm_dtls_wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
         ctx->recvBufferSize = 0;
         return (int)maxCp;
     }
-}
-
-void nm_dtls_timed_event_do_one(void* data) {
-    struct np_dtls_cli_context* ctx = data;
-    if (ctx->state == CLOSING) {
-        return;
-    }
-    nm_dtls_event_do_one(data);
 }
