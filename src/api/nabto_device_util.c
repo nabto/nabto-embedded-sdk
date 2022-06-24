@@ -6,8 +6,6 @@
 #include "nabto_device_defines.h"
 #include <api/nabto_device_error.h>
 
-#include <modules/mbedtls/nm_mbedtls_util.h>
-
 #include <platform/np_allocator.h>
 
 #ifdef NABTO_USE_MBEDTLS

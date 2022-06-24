@@ -1,6 +1,8 @@
 #ifndef _NC_SPAKE2_H_
 #define _NC_SPAKE2_H_
 
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+
 #include <mbedtls/bignum.h>
 #include <mbedtls/ecp.h>
 
@@ -69,12 +71,11 @@ struct nc_spake2_password_request* nc_spake2_password_request_new();
 
 void nc_spake2_spend_token(struct nc_spake2_module* module);
 
-
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
+#endif
 
 
 #endif

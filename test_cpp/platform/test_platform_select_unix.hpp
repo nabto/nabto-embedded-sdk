@@ -7,12 +7,14 @@
 
 #ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_cli.h>
-#endif
-#ifdef NABTO_USE_WOLFSSL
-#include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
 #endif
 
-#include <modules/mbedtls/nm_mbedtls_srv.h>
+#ifdef NABTO_USE_WOLFSSL
+#include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/wolfssl/nm_wolfssl_srv.h>
+#endif
+
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
@@ -62,11 +64,12 @@ class TestPlatformSelectUnix : public TestPlatform {
 
 #ifdef NABTO_USE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
+        nm_mbedtls_srv_init(&pl_);
 #endif
 #ifdef NABTO_USE_WOLFSSL
         nm_wolfssl_cli_init(&pl_);
+        nm_wolfssl_srv_init(&pl_);
 #endif
-        nm_mbedtls_srv_init(&pl_);
 
         nm_unix_dns_resolver_run(&dns_);
         thread_event_queue_run(&eventQueue_);

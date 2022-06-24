@@ -24,7 +24,7 @@
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0
 
-const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_CCM";
+static const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_CCM";
 
 struct np_dtls_cli_context {
     struct np_platform* pl;
@@ -180,7 +180,7 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
 
 // TODO: maybe not always have logging on
     wolfSSL_SetLoggingCb(logging_callback);
-    wolfSSL_Debugging_ON();
+    //wolfSSL_Debugging_ON();
 
 
     // wolfssl_ssl_init( &ctx->ssl );

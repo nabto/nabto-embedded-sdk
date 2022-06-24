@@ -6,12 +6,14 @@
 
 #ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_cli.h>
-#endif
-#ifdef NABTO_USE_WOLFSSL
-#include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
 #endif
 
-#include <modules/mbedtls/nm_mbedtls_srv.h>
+#ifdef NABTO_USE_WOLFSSL
+#include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/wolfssl/nm_wolfssl_srv.h>
+#endif
+
 #include <modules/communication_buffer/nm_communication_buffer.h>
 #include <modules/event_queue/thread_event_queue.h>
 #include <api/nabto_device_threads.h>
@@ -61,11 +63,13 @@ class TestPlatformLibevent : public TestPlatform {
 
 #ifdef NABTO_USE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
+        nm_mbedtls_srv_init(&pl_);
 #endif
+
 #ifdef NABTO_USE_WOLFSSL
         nm_wolfssl_cli_init(&pl_);
+        nm_wolfssl_srv_init(&pl_);
 #endif
-        nm_mbedtls_srv_init(&pl_);
 
         thread_event_queue_run(&eventQueue_);
 

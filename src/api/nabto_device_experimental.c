@@ -5,6 +5,8 @@
 
 #include <platform/np_allocator.h>
 
+#if defined(NABTO_USE_MBEDTLS)
+
 #include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
 #include <mbedtls/error.h>
@@ -90,6 +92,17 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
 
     return nabto_device_set_private_key(device, (const char*)buffer);
 }
+
+#else
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, size_t keyLength)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+
+#endif
 
 
 NabtoDeviceError NABTO_DEVICE_API

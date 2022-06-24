@@ -10,6 +10,8 @@
 #include <platform/np_allocator.h>
 #include <nn/string.h>
 
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+
 /**
  * Handler which is registered in the core to handle new password requests.
  */
@@ -203,3 +205,49 @@ nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* p
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
+
+#else
+
+bool NABTO_DEVICE_API
+nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDeviceConnectionRef ref)
+{
+    return false;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** username)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_password_authentication_request_init_listener(NabtoDevice* device, NabtoDeviceListener* passwordAuthenticationListener)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+const char* NABTO_DEVICE_API
+nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAuthenticationRequest* request)
+{
+    return NULL;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* password)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDevicePasswordAuthenticationRequest* request)
+{
+
+}
+
+void NABTO_DEVICE_API
+nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* passwordAuthenticationListener, NabtoDeviceFuture* future, NabtoDevicePasswordAuthenticationRequest** request)
+{
+
+}
+
+// TODO implement NOT IMPLEMENTED password auth functions
+#endif

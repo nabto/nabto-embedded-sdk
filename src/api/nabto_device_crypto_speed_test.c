@@ -7,6 +7,7 @@
 #include <platform/np_logging_defines.h>
 #include <platform/np_timestamp_wrapper.h>
 
+#if defined(NABTO_USE_MBEDTLS)
 #include <mbedtls/sha256.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
@@ -94,3 +95,12 @@ void p256r1_multiplication_speed_test(struct nabto_device_context* dev) {
     int32_t elapsed = np_timestamp_difference(end, start);
     NABTO_LOG_INFO(LOG, "p256r1 multiplication took %d ms", elapsed);
 }
+
+#else
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_crypto_speed_test(NabtoDevice* device)
+{
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+#endif

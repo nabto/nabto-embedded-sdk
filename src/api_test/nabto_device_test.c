@@ -6,14 +6,16 @@
 #include <api/nabto_device_future_queue.h>
 #include <api/nabto_device_logging.h>
 
-#include <modules/mbedtls/nm_mbedtls_util.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
 
 #ifdef NABTO_USE_MBEDTLS
+#include <modules/mbedtls/nm_mbedtls_util.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #endif
 #ifdef NABTO_USE_WOLFSSL
+#include <modules/wolfssl/nm_wolfssl_util.h>
+#include <modules/wolfssl/nm_wolfssl_srv.h>
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_random.h>
 #endif
@@ -45,12 +47,13 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_test_new()
 
     struct np_platform* pl = &dev->pl;
     nm_communication_buffer_init(pl);
-    nm_mbedtls_srv_init(pl);
 #ifdef NABTO_USE_MBEDTLS
+    nm_mbedtls_srv_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_random_init(pl);
 #endif
 #ifdef NABTO_USE_WOLFSSL
+    nm_wolfssl_srv_init(pl);
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);
 #endif

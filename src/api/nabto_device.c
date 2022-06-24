@@ -19,17 +19,16 @@
 #include <core/nc_version.h>
 #include <core/nc_client_connection.h>
 
-#include <modules/mbedtls/nm_mbedtls_util.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
-
 #ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_util.h>
 #endif
 #ifdef NABTO_USE_WOLFSSL
 #include <modules/wolfssl/nm_wolfssl_random.h>
 #include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/wolfssl/nm_wolfssl_srv.h>
 #include <modules/wolfssl/nm_wolfssl_util.h>
 #endif
 
@@ -85,12 +84,13 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     struct np_platform* pl = &dev->pl;
 
     nm_communication_buffer_init(pl);
-    nm_mbedtls_srv_init(pl);
 #ifdef NABTO_USE_MBEDTLS
+    nm_mbedtls_srv_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_random_init(pl);
 #endif
 #ifdef NABTO_USE_WOLFSSL
+    nm_wolfssl_srv_init(pl);
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);
 #endif
@@ -490,7 +490,13 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint(NabtoDevic
         ec = NABTO_EC_INVALID_STATE;
     }
     uint8_t hash[32];
+    ec = NABTO_EC_NOT_IMPLEMENTED;
+#if defined(NABTO_USE_MBEDTLS)
     ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, hash);
+#endif
+#if defined(NABTO_USE_WOLFSSL)
+    ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, hash);
+#endif
     if (ec == NABTO_EC_OK) {
         *fingerprint = toHex(hash, 32);
     }

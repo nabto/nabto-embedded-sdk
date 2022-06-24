@@ -23,7 +23,7 @@
 static const int MIN_TIMEOUT = 1000;
 static const int MAX_TIMEOUT = 16000;
 
-const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_CCM";
+static const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_CCM";
 
 const char* alpnList = NABTO_PROTOCOL_VERSION;
 
