@@ -197,7 +197,7 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
 
     wolfSSL_SetIOReadCtx(ctx->ssl, ctx);
     wolfSSL_SetIOWriteCtx(ctx->ssl, ctx);
-
+    wolfSSL_dtls_set_using_nonblock(ctx->ssl, 1);
     if (wolfSSL_UseALPN(ctx->ssl, (char *)(alpnList), strlen(alpnList), WOLFSSL_ALPN_FAILED_ON_MISMATCH) != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "cannot set alpn list");
@@ -298,7 +298,6 @@ np_error_code nm_wolfssl_cli_set_keys(struct np_dtls_cli_context* ctx,
     int r = wolfSSL_use_certificate_buffer(ctx->ssl, certificate, certificateSize, WOLFSSL_FILETYPE_PEM);
     if (r != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer, %d", r);
-        NABTO_LOG_ERROR(LOG, "%s", privateKeyL);
         return NABTO_EC_UNKNOWN;
     }
 
@@ -307,7 +306,6 @@ np_error_code nm_wolfssl_cli_set_keys(struct np_dtls_cli_context* ctx,
 
 np_error_code nm_wolfssl_cli_set_root_certs(struct np_dtls_cli_context* ctx, const char* rootCerts)
 {
-
     if (wolfSSL_CTX_load_verify_buffer(ctx->ctx, (const unsigned char*)rootCerts, strlen(rootCerts), WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "cannot load ca certificate");
@@ -318,7 +316,7 @@ np_error_code nm_wolfssl_cli_set_root_certs(struct np_dtls_cli_context* ctx, con
 
 np_error_code nm_wolfssl_cli_disable_certificate_validation(struct np_dtls_cli_context* ctx)
 {
-    wolfSSL_CTX_set_verify(ctx->ctx, (SSL_VERIFY_NONE), NULL);
+    wolfSSL_set_verify(ctx->ssl, (SSL_VERIFY_NONE), NULL);
     return NABTO_EC_OK;
 }
 
@@ -438,7 +436,7 @@ void nm_dtls_event_do_one(void* data)
             {
                 // ok
             } else {
-                NABTO_LOG_TRACE(LOG, "Received unhandled wolfssl ERROR %d ", ret);
+                NABTO_LOG_TRACE(LOG, "Received unhandled wolfssl ERROR %d ", err);
                 ctx->state = CLOSING;
                 nm_wolfssl_do_close(ctx, NABTO_EC_UNKNOWN);
             }
@@ -549,6 +547,9 @@ np_error_code handle_packet(struct np_dtls_cli_context* ctx,
     ctx->receiving = true;
     nm_dtls_event_do_one(ctx);
     ctx->recvBuffer = NULL;
+    if (ctx->recvBufferSize != 0) {
+        NABTO_LOG_TRACE(LOG, "Discarding received data");
+    }
     ctx->recvBufferSize = 0;
     ctx->receiving = false;
     if (ctx->destroyed && ctx->sslSendBuffer == NULL) {
