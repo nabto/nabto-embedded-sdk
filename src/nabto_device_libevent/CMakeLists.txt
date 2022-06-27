@@ -69,7 +69,7 @@ target_link_libraries( nabto_device
 
 if (NABTO_USE_MBEDTLS)
   target_link_libraries(nabto_device
-    nm_wolfssl_srv
+    nm_mbedtls_srv
     nm_mbedtls_cli
     nm_mbedtls_random
   )
