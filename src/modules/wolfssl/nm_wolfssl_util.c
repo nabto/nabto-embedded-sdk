@@ -144,6 +144,7 @@ np_error_code nm_wolfssl_get_fingerprint_from_private_key(
     const char* privateKey, uint8_t* hash)
 {
     uint8_t publicKeyDer[256];
+    int publicKeyDerSize;
 
     np_error_code ec = NABTO_EC_OK;
 
@@ -171,11 +172,11 @@ np_error_code nm_wolfssl_get_fingerprint_from_private_key(
             }
         }
 
-        uint8_t publicKeyDer[256];
+        //uint8_t publicKeyDer[256];
         if (ec == NABTO_EC_OK) {
-            ret = wc_EccPublicKeyToDer(&eccKey, publicKeyDer,
-                                       sizeof(publicKeyDer), 0);
-            if (ret < 0) {
+            publicKeyDerSize = wc_EccPublicKeyToDer(&eccKey, publicKeyDer,
+                                       sizeof(publicKeyDer), 1);
+            if (publicKeyDerSize < 0) {
                 ec = NABTO_EC_FAILED;
             }
         }
@@ -190,7 +191,7 @@ np_error_code nm_wolfssl_get_fingerprint_from_private_key(
             return NABTO_EC_FAILED;
         }
 
-        ret = wc_Sha256Update(&sha, publicKeyDer, ret);
+        ret = wc_Sha256Update(&sha, publicKeyDer, publicKeyDerSize);
         if (ret != 0) {
             ec = NABTO_EC_FAILED;
         }
