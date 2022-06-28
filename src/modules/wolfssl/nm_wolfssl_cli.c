@@ -14,6 +14,7 @@
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/ssl.h>
+#include <wolfssl/error-ssl.h>
 
 #include <string.h>
 
@@ -392,32 +393,24 @@ void nm_dtls_event_do_one(void* data)
             if (err == WOLFSSL_ERROR_WANT_READ ||
                 err == WOLFSSL_ERROR_WANT_WRITE){
                 // Wait for IO to happen
-                // TODO remove log
-                NABTO_LOG_ERROR(LOG, "WANT_READ/WRITE");
             } else {
                 enum np_dtls_cli_event event = NP_DTLS_CLI_EVENT_CLOSED;
-        // TODO handle access denied
-        // else if (ret == wolfssl_ERR_SSL_FATAL_ALERT_MESSAGE &&
-        //            ctx->ssl.in_msg[1] == wolfssl_SSL_ALERT_MSG_ACCESS_DENIED)
-        // {
-        //     ctx->state = CLOSING;
-        //     nm_wolfssl_timer_cancel(&ctx->timer);
-        //     ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED,
-        //     ctx->callbackData); return;
-        // }
-                // TODO detect certificate validation errors
-                // if (ret == wolfssl_ERR_X509_CERT_VERIFY_FAILED) {
-                //     char info[128];
-                //     uint32_t validationStatus = wolfssl_ssl_get_verify_result(&ctx->ssl);
-                //     WOLFSSL_X509_verify_info(info, 128, "", validationStatus);
-                //     NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
-                //     event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
-                // } else {
                 char buf[80];
                 wolfSSL_ERR_error_string(err, buf);
-                NABTO_LOG_INFO(
-                    LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);
-                //}
+                if (err > MIN_CODE_E) { // All wolfCrypt errors range ]0...MIN_CODE_E[
+                NABTO_LOG_ERROR(
+                    LOG, "Certificate verification failed: (%d) %s", err, buf);
+                    event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
+                } else if( err == FATAL_ERROR ) {
+                    WOLFSSL_ALERT_HISTORY h;
+                    wolfSSL_get_alert_history(ctx->ssl, &h);
+                    if (h.last_rx.code == access_denied) {
+                        event = NP_DTLS_CLI_EVENT_ACCESS_DENIED;
+                    NABTO_LOG_ERROR(
+                    LOG, "Server returned access denied: (%d) %s" , err, buf);
+                    }
+                }
+                NABTO_LOG_INFO( LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);
                 ctx->state = CLOSING;
                 ctx->eventHandler(event, ctx->callbackData);
                 return;
@@ -458,19 +451,23 @@ void nm_dtls_event_do_one(void* data)
             {
                 // ok
             } else {
-                NABTO_LOG_TRACE(LOG, "Received unhandled wolfssl ERROR %d ", err);
+                char buf[80];
+                wolfSSL_ERR_error_string(err, buf);
+                if (err == FATAL_ERROR) {
+                    WOLFSSL_ALERT_HISTORY h;
+                    wolfSSL_get_alert_history(ctx->ssl, &h);
+                    if (h.last_rx.code == access_denied) {
+                        NABTO_LOG_ERROR(LOG, "Server returned access denied: (%d) %s" , err, buf);
+                        ctx->state = CLOSING;
+                        ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
+                        return;
+                    }
+                }
+                NABTO_LOG_TRACE(LOG, "Received unhandled wolfssl ERROR (%d) %s ", err, buf);
                 ctx->state = CLOSING;
                 nm_wolfssl_do_close(ctx, NABTO_EC_UNKNOWN);
             }
         }
-        // TODO handle access denied
-        // } else if (ret == wolfssl_ERR_SSL_FATAL_ALERT_MESSAGE &&
-        //            ctx->ssl.in_msg[1] == wolfssl_SSL_ALERT_MSG_ACCESS_DENIED)
-        // {
-        //     nm_wolfssl_timer_cancel(&ctx->timer);
-        //     ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
-        //     return;
-        // } else
         return;
     }
 }
