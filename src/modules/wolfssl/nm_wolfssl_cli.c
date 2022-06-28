@@ -234,9 +234,24 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
 
 np_error_code nm_wolfssl_cli_reset(struct np_dtls_cli_context* ctx)
 {
-    //wolfssl_ssl_session_reset( &ctx->ssl );
-    // remove the first element until the list is empty
+    WOLFSSL* ssl = wolfSSL_new(ctx->ctx);
+    if (ssl == NULL) {
+         NABTO_LOG_ERROR(LOG,  "Failed  to create wolfSSL object");
+         return NABTO_EC_FAILED;
+    }
+    wolfSSL_SetIOReadCtx(ssl, ctx);
+    wolfSSL_SetIOWriteCtx(ssl, ctx);
+    wolfSSL_dtls_set_using_nonblock(ssl, 1);
+    if (wolfSSL_UseALPN(ssl, (char *)(alpnList), strlen(alpnList), WOLFSSL_ALPN_FAILED_ON_MISMATCH) != WOLFSSL_SUCCESS)
+    {
+        NABTO_LOG_ERROR(LOG, "cannot set alpn list");
+        return NABTO_EC_FAILED;
+    }
 
+    wolfSSL_free(ctx->ssl);
+    ctx->ssl = ssl;
+
+    //  remove the first element until the list is empty
     while(!nn_llist_empty(&ctx->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
         struct np_dtls_cli_send_context* first = nn_llist_get_item(&it);
@@ -278,7 +293,10 @@ void nm_wolfssl_cli_destroy(struct np_dtls_cli_context* ctx)
 
 np_error_code nm_wolfssl_cli_set_sni(struct np_dtls_cli_context* ctx, const char* sniName)
 {
-    if(wolfSSL_UseSNI(ctx->ssl, WOLFSSL_SNI_HOST_NAME, sniName, strlen(sniName) ) != WOLFSSL_SUCCESS )
+    // Since ssl is already created, we must set SNI on ssl obj.
+    // Since we may recreate the ssl obj, we also set it on ctx.
+    if(wolfSSL_UseSNI(ctx->ssl, WOLFSSL_SNI_HOST_NAME, sniName, strlen(sniName) ) != WOLFSSL_SUCCESS ||
+    wolfSSL_CTX_UseSNI(ctx->ctx, WOLFSSL_SNI_HOST_NAME, sniName, strlen(sniName) ) != WOLFSSL_SUCCESS )
     {
         NABTO_LOG_INFO(LOG,  "Failed to set SNI Hostname in the DTLS client");
         return NABTO_EC_UNKNOWN;
@@ -290,14 +308,17 @@ np_error_code nm_wolfssl_cli_set_keys(struct np_dtls_cli_context* ctx,
                                    const unsigned char* certificate, size_t certificateSize,
                                    const unsigned char* privateKeyL, size_t privateKeySize)
 {
-    if (wolfSSL_use_PrivateKey_buffer(ctx->ssl, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
+    // Since ssl is already created, we must set keys on ssl obj.
+    // Since we may recreate the ssl obj, we also set it on ctx.
+    if (wolfSSL_use_PrivateKey_buffer(ctx->ssl, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS ||
+    wolfSSL_CTX_use_PrivateKey_buffer(ctx->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_PrivateKey_buffer");
         return NABTO_EC_UNKNOWN;
     }
 
-    int r = wolfSSL_use_certificate_buffer(ctx->ssl, certificate, certificateSize, WOLFSSL_FILETYPE_PEM);
-    if (r != WOLFSSL_SUCCESS) {
-        NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer, %d", r);
+    if (wolfSSL_use_certificate_buffer(ctx->ssl, certificate, certificateSize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS ||
+    wolfSSL_CTX_use_certificate_buffer(ctx->ctx, certificate, certificateSize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
+        NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer");
         return NABTO_EC_UNKNOWN;
     }
 
