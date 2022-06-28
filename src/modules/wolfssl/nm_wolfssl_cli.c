@@ -21,6 +21,7 @@
 #include <stdio.h>
 
 #include <nn/llist.h>
+#include <nn/string.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 #define DEBUG_LEVEL 0
@@ -55,6 +56,7 @@ struct np_dtls_cli_context {
     WOLFSSL_CTX* ctx;
     WOLFSSL* ssl;
 
+    char* hostname;
 };
 
 static const char* alpnList = NABTO_PROTOCOL_VERSION;
@@ -249,6 +251,18 @@ np_error_code nm_wolfssl_cli_reset(struct np_dtls_cli_context* ctx)
         return NABTO_EC_FAILED;
     }
 
+    if(ctx->hostname != NULL &&
+        wolfSSL_UseSNI(ssl, WOLFSSL_SNI_HOST_NAME, ctx->hostname, strlen(ctx->hostname) ) != WOLFSSL_SUCCESS )
+    {
+        NABTO_LOG_INFO(LOG,  "Failed to set SNI Hostname in the DTLS client");
+        return NABTO_EC_UNKNOWN;
+    }
+
+    if (ctx->hostname != NULL && wolfSSL_check_domain_name(ssl, ctx->hostname) != WOLFSSL_SUCCESS ) {
+        NABTO_LOG_INFO(LOG,  "Failed to set check domain name in the DTLS client");
+        return NABTO_EC_UNKNOWN;
+    }
+
     wolfSSL_free(ctx->ssl);
     ctx->ssl = ssl;
 
@@ -279,6 +293,10 @@ void nm_wolfssl_cli_do_free(struct np_dtls_cli_context* ctx)
     wolfSSL_free(ctx->ssl);
     wolfSSL_CTX_free(ctx->ctx);
 
+    if (ctx->hostname) {
+        np_free(ctx->hostname);
+    }
+
     np_free(ctx);
 }
 
@@ -294,14 +312,20 @@ void nm_wolfssl_cli_destroy(struct np_dtls_cli_context* ctx)
 
 np_error_code nm_wolfssl_cli_set_sni(struct np_dtls_cli_context* ctx, const char* sniName)
 {
-    // Since ssl is already created, we must set SNI on ssl obj.
-    // Since we may recreate the ssl obj, we also set it on ctx.
-    if(wolfSSL_UseSNI(ctx->ssl, WOLFSSL_SNI_HOST_NAME, sniName, strlen(sniName) ) != WOLFSSL_SUCCESS ||
-    wolfSSL_CTX_UseSNI(ctx->ctx, WOLFSSL_SNI_HOST_NAME, sniName, strlen(sniName) ) != WOLFSSL_SUCCESS )
+    // check_domain_name does not have a _CTX_ version, so we store the hostname in case of reset
+    // since we make a copy anyway, we do not use the _CTX_ version of UseSNI either
+    ctx->hostname = nn_strdup(sniName, np_allocator_get());
+    if(wolfSSL_UseSNI(ctx->ssl, WOLFSSL_SNI_HOST_NAME, sniName, strlen(sniName) ) != WOLFSSL_SUCCESS )
     {
         NABTO_LOG_INFO(LOG,  "Failed to set SNI Hostname in the DTLS client");
         return NABTO_EC_UNKNOWN;
     }
+
+    if (wolfSSL_check_domain_name(ctx->ssl, sniName) != WOLFSSL_SUCCESS ) {
+        NABTO_LOG_INFO(LOG,  "Failed to set check domain name in the DTLS client");
+        return NABTO_EC_UNKNOWN;
+    }
+
     return NABTO_EC_OK;
 }
 
