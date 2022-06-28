@@ -39,6 +39,8 @@ struct np_dtls_cli_context {
     // Allocated when sending a packet with ciphertext through the UDP layer.
     struct np_communication_buffer* sslSendBuffer;
 
+    struct np_event* timerEvent;
+
     uint32_t recvCount;
     uint32_t sentCount;
 
@@ -80,6 +82,9 @@ static np_error_code async_send_data(struct np_dtls_cli_context* ctx,
 static np_error_code dtls_cli_close(struct np_dtls_cli_context* ctx);
 
 static np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp);
+
+static void set_timeout(struct np_dtls_cli_context* ctx);
+static void handle_timeout(void* data);
 
 static np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout);
 
@@ -191,6 +196,11 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
         return ec;
     }
 
+    ec = np_event_queue_create_event(&pl->eq, handle_timeout, ctx, &ctx->timerEvent);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     ctx->ssl = wolfSSL_new(ctx->ctx);
     if (ctx->ssl == NULL) {
         NABTO_LOG_ERROR(LOG,  "Failed  to create wolfSSL object");
@@ -288,6 +298,7 @@ void nm_wolfssl_cli_do_free(struct np_dtls_cli_context* ctx)
         first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
     }
 
+    np_event_queue_destroy_event(&ctx->pl->eq, ctx->timerEvent);
     np_event_queue_destroy_event(&ctx->pl->eq, ctx->startSendEvent);
 
     wolfSSL_free(ctx->ssl);
@@ -381,11 +392,14 @@ np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
 
 np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)
 {
-    if (wolfSSL_dtls_set_timeout_init(ctx->ssl, (int)minTimeout) != WOLFSSL_SUCCESS) {
+    int min = minTimeout / 1000;
+    int max = maxTimeout / 1000;
+    if (wolfSSL_dtls_set_timeout_init(ctx->ssl, min) !=
+        WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set min timeout for DTLS client connection");
         return NABTO_EC_FAILED;
     };
-    if (wolfSSL_dtls_set_timeout_max(ctx->ssl, (int)maxTimeout) != WOLFSSL_SUCCESS) {
+    if (wolfSSL_dtls_set_timeout_max(ctx->ssl, max) != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set max timeout for DTLS client connection");
         return NABTO_EC_FAILED;
     }
@@ -414,8 +428,11 @@ void nm_dtls_event_do_one(void* data)
         ret = wolfSSL_connect(ctx->ssl);
         if (ret != WOLFSSL_SUCCESS) {
             int err = wolfSSL_get_error(ctx->ssl, ret);
-            if (err == WOLFSSL_ERROR_WANT_READ ||
-                err == WOLFSSL_ERROR_WANT_WRITE){
+            if (err == WOLFSSL_ERROR_WANT_READ) {
+                NABTO_LOG_TRACE(LOG, "Want Read");
+                set_timeout(ctx);
+            } else if (err == WOLFSSL_ERROR_WANT_WRITE){
+                NABTO_LOG_TRACE(LOG, "Want Write");
                 // Wait for IO to happen
             } else {
                 enum np_dtls_cli_event event = NP_DTLS_CLI_EVENT_CLOSED;
@@ -436,6 +453,7 @@ void nm_dtls_event_do_one(void* data)
                 }
                 NABTO_LOG_INFO( LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);
                 ctx->state = CLOSING;
+                np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
                 ctx->eventHandler(event, ctx->callbackData);
                 return;
             }
@@ -482,6 +500,7 @@ void nm_dtls_event_do_one(void* data)
                     wolfSSL_get_alert_history(ctx->ssl, &h);
                     if (h.last_rx.code == access_denied) {
                         NABTO_LOG_ERROR(LOG, "Server returned access denied: (%d) %s" , err, buf);
+                        np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
                         ctx->state = CLOSING;
                         ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
                         return;
@@ -495,6 +514,31 @@ void nm_dtls_event_do_one(void* data)
         return;
     }
 }
+
+void set_timeout(struct np_dtls_cli_context* ctx)
+{
+    int timeout = wolfSSL_dtls_get_current_timeout(ctx->ssl);
+    if (timeout >= 0) {
+        np_event_queue_post_timed_event(&ctx->pl->eq, ctx->timerEvent, (uint32_t)(timeout*1000));
+    }
+}
+
+void handle_timeout(void* data)
+{
+    struct np_dtls_cli_context* ctx = data;
+    int ec = wolfSSL_dtls_got_timeout(ctx->ssl);
+    if (ec == WOLFSSL_SUCCESS) {
+        set_timeout(ctx);
+    } else if (ec == WOLFSSL_FATAL_ERROR) {
+        // too many retries, timeout.
+        ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
+    } else {
+        // NOT_COMPILED_IN etc
+        NABTO_LOG_ERROR(LOG, "Unhandled wolfSSL_dtls_got_timeout error code.");
+    }
+
+}
+
 
 void nm_wolfssl_cli_start_send(struct np_dtls_cli_context* ctx)
 {
@@ -561,6 +605,7 @@ void nm_wolfssl_do_close(void* data, np_error_code ec){
     (void)ec;
     struct np_dtls_cli_context* ctx = data;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
     ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
 }
 

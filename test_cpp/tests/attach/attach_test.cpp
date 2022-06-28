@@ -58,7 +58,7 @@ class AttachTest {
         nc_attacher_set_app_info(&attach_, appName_, appVersion_);
         nc_attacher_set_device_info(&attach_, productId_.c_str(), deviceId_.c_str());
         // set timeout to approximately one seconds for the dtls handshake
-        nc_attacher_set_handshake_timeout(&attach_, 50, 500);
+        nc_attacher_set_handshake_timeout(&attach_, 1000, 1000);
         attach_.retryWaitTime = 100;
         attach_.accessDeniedWaitTime = 1000;
 
