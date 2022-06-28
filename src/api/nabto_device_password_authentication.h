@@ -8,7 +8,7 @@
 
 //struct nc_spake2_password_request;
 
-#if defined(NABTO_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
 
 struct nabto_device_context;
 struct nc_spake2_password_request;

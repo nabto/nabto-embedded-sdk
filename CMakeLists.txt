@@ -157,7 +157,7 @@ option(NABTO_USE_WOLFSSL "Use wolfssl as DTLS module" OFF)
 
 if (NABTO_USE_MBEDTLS)
   add_definitions(-DNABTO_USE_MBEDTLS)
-  #add_definitions(-DNABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+  add_definitions(-DNABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
   add_subdirectory(src/modules/mbedtls)
 endif()
 
