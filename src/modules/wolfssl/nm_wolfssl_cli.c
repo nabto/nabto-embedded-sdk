@@ -446,6 +446,7 @@ void nm_dtls_event_do_one(void* data)
             // EOF
             ctx->state = CLOSING;
             NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
+            nm_wolfssl_do_close(ctx, NABTO_EC_FAILED);
         } else if (ret > 0) {
             ctx->recvCount++;
 
