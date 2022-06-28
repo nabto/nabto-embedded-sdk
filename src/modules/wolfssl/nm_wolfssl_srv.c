@@ -202,7 +202,7 @@ np_error_code nm_wolfssl_srv_create(struct np_platform* pl,
         return NABTO_EC_OUT_OF_MEMORY;
     }
     (*server)->pl = pl;
-    WOLFSSL_METHOD* method = wolfTLSv1_2_server_method();
+    WOLFSSL_METHOD* method = wolfDTLSv1_2_server_method();
     (*server)->ctx = wolfSSL_CTX_new(method);
 
     return NABTO_EC_OK;
@@ -385,18 +385,15 @@ void nm_wolfssl_srv_do_one(void* data)
             ctx->dataHandler(ctx->currentChannelId, seq, recvBuffer,
                              (uint16_t)ret, ctx->senderData);
             return;
-        } else if (ret == WOLFSSL_ERROR_WANT_READ ||
-                   ret == WOLFSSL_ERROR_WANT_WRITE) {
-            // OK
-        }
-        // TODO
-        //} else if (ret == WOLFSSL_ERROR_ wolfssl_ERR_SSL_PEER_CLOSE_NOTIFY) {
-        // expected to happen on a connection,
-        //    event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
-        //}
-        else {
-            NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
-            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+        } else if (ret == WOLFSSL_FATAL_ERROR) {
+            int err = wolfSSL_get_error(ctx->ssl, ret);
+            if (err == WOLFSSL_ERROR_WANT_READ ||
+                err == WOLFSSL_ERROR_WANT_WRITE) {
+                // ok
+            } else {
+                NABTO_LOG_ERROR(LOG, "Received ERROR: %i", err);
+                event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            }
         }
     }
 }
@@ -458,16 +455,10 @@ void nm_wolfssl_srv_start_send_deferred(void* data)
     ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     if (next->cb == NULL) {
         ctx->sentCount++;
-    }
-    // todo handle too large packets
-    // else if (ret == wolfssl_ERR_SSL_BAD_INPUT_DATA) {
-    // packet too large
-    //    NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i (Packet too large)",
-    //    ret); next->cb(NABTO_EC_MALFORMED_PACKET, next->data);
-    //}
-    else if (ret < 0) {
+    } else if (ret != WOLFSSL_SUCCESS) {
+        int err = wolfSSL_get_error(ctx->ssl, ret);
         // unknown error
-        NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
+        NABTO_LOG_ERROR(LOG, "wolfssl_write failed with: %i", err);
         next->cb(NABTO_EC_UNKNOWN, next->data);
     } else {
         ctx->sentCount++;
