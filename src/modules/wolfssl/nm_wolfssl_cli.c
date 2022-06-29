@@ -436,7 +436,7 @@ void nm_dtls_event_do_one(void* data)
                 char buf[80];
                 wolfSSL_ERR_error_string(err, buf);
                 if (err > MIN_CODE_E) { // All wolfCrypt errors range ]MIN_CODE_E...0[
-                    // This catches all wolfCrypt errors which may include errors other than verification errors.
+                    // This matches all wolfCrypt errors which may include errors other than verification errors.
                     NABTO_LOG_ERROR(LOG, "Certificate verification failed: (%d) %s", err, buf);
                     event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else if( err == FATAL_ERROR ) {
@@ -454,14 +454,6 @@ void nm_dtls_event_do_one(void* data)
                 return;
             }
         } else if (ret == WOLFSSL_SUCCESS) {
-            char* protocol_name;
-            word16 protocol_nameSz = 0;
-            if (wolfSSL_ALPN_GetProtocol(ctx->ssl, &protocol_name, &protocol_nameSz) != SSL_SUCCESS) {
-                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
-                ctx->state = CLOSING;
-                nm_wolfssl_do_close(ctx, NABTO_EC_ALPN_FAILED);
-                return;
-            }
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
             ctx->state = DATA;
             ctx->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, ctx->callbackData);

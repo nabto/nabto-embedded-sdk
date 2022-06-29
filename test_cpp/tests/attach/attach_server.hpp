@@ -206,6 +206,10 @@ class AttachServer : public AttachCoapServer,
         return ptr;
     }
 
+    void setAlpnProtocols(std::vector<std::string> alpns ) {
+        dtlsServer_.setAlpnProtocols(alpns);
+    }
+
     void initCoapHandlers()
     {
         auto self = shared_from_this();
