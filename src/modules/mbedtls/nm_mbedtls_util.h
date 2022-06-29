@@ -23,4 +23,6 @@ np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey
 
 np_error_code nm_mbedtls_util_create_private_key(char** privateKey);
 
+void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf);
+
 #endif //NM_MBEDTLS_UTIL_H

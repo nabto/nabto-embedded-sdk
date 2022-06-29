@@ -11,11 +11,15 @@
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
 #include "mbedtls/sha256.h"
+#include <mbedtls/debug.h>
 
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <nn/string.h>
 #include <string.h>
+
+#define LOG NABTO_LOG_MODULE_PLATFORM
 
 np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
 {
@@ -196,4 +200,38 @@ np_error_code nm_mbedtls_util_create_private_key(char** privateKey)
     mbedtls_entropy_free( &entropy );
 
     return ec;
+}
+
+#if defined(NABTO_ENABLE_DTLS_LOG)
+static void my_debug( void *ctx, int level,
+                      const char *file, int line,
+                      const char *str )
+{
+    ((void) level); (void)ctx;
+    uint32_t severity;
+    switch (level) {
+        case 1:
+            severity = NABTO_LOG_SEVERITY_ERROR;
+            break;
+        case 2:
+            severity = NABTO_LOG_SEVERITY_INFO;
+            break;
+        default:
+            severity = NABTO_LOG_SEVERITY_TRACE;
+            break;
+    }
+
+    NABTO_LOG_RAW(severity, LOG, line, file, str );
+}
+#endif
+
+void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf)
+{
+#if defined(NABTO_ENABLE_DTLS_LOG)
+    mbedtls_debug_set_threshold( 4 ); // Max debug threshold, NABTO_LOG_RAW will handle log levels
+    mbedtls_ssl_conf_dbg( conf, my_debug, NULL);
+
+    #else
+    NABTO_LOG_ERROR(LOG, "NO DTLS LOG DEFINED");
+#endif
 }

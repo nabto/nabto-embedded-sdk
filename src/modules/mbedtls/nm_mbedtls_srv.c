@@ -26,7 +26,6 @@
 #include <stdio.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
-#define DEBUG_LEVEL 0
 
 static const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
@@ -477,39 +476,12 @@ np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct np_dtls_
     return NABTO_EC_OPERATION_STARTED;
 }
 
-#if defined(MBEDTLS_DEBUG_C)
-static void nm_mbedtls_srv_tls_logger( void *ctx, int level,
-                                    const char *file, int line,
-                                    const char *str )
-{
-    ((void) level);
-    ((void) ctx);
-    uint32_t severity;
-    switch (level) {
-        case 1:
-            severity = NABTO_LOG_SEVERITY_ERROR;
-            break;
-        case 2:
-            severity = NABTO_LOG_SEVERITY_INFO;
-            break;
-        default:
-            severity = NABTO_LOG_SEVERITY_TRACE;
-            break;
-    }
-    NABTO_LOG_RAW(severity, LOG, line, file, str );
-}
-#endif
-
-
 np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
                                       const unsigned char* publicKeyL, size_t publicKeySize,
                                       const unsigned char* privateKeyL, size_t privateKeySize)
 {
     const char *pers = "dtls_server";
     int ret;
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_debug_set_threshold( DEBUG_LEVEL );
-#endif
 
     if( ( ret = mbedtls_ssl_config_defaults( &server->conf,
                                              MBEDTLS_SSL_IS_SERVER,
@@ -534,9 +506,7 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
     }
     mbedtls_ssl_conf_rng( &server->conf, mbedtls_ctr_drbg_random, &server->ctr_drbg );
 
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_ssl_conf_dbg( &server->conf, &nm_mbedtls_srv_tls_logger, NULL );
-#endif
+    nm_mbedtls_util_check_logging(&server->conf);
 
     ret = mbedtls_x509_crt_parse( &server->publicKey, (const unsigned char*)publicKeyL, publicKeySize+1);
     if( ret != 0 )

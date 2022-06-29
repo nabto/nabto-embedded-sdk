@@ -27,7 +27,6 @@
 #include <nn/llist.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
-#define DEBUG_LEVEL 0
 
 const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
@@ -132,30 +131,6 @@ const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
 }
 
-#if defined(MBEDTLS_DEBUG_C)
-// Printing function used by mbedtls for logging
-static void my_debug( void *ctx, int level,
-                      const char *file, int line,
-                      const char *str )
-{
-    ((void) level); (void)ctx;
-    uint32_t severity;
-    switch (level) {
-        case 1:
-            severity = NABTO_LOG_SEVERITY_ERROR;
-            break;
-        case 2:
-            severity = NABTO_LOG_SEVERITY_INFO;
-            break;
-        default:
-            severity = NABTO_LOG_SEVERITY_TRACE;
-            break;
-    }
-
-    NABTO_LOG_RAW(severity, LOG, line, file, str );
-}
-#endif
-
 /*
  * Initialize the np_platform to use this particular dtls cli module
  */
@@ -239,10 +214,6 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
     int ret;
     const char *pers = "dtls_client";
 
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_debug_set_threshold( DEBUG_LEVEL );
-#endif
-
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,
                                strlen( pers ) ) ) != 0 ) {
@@ -267,10 +238,7 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
 
     mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, NULL);
-#endif
-
+    nm_mbedtls_util_check_logging(&ctx->conf);
     mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->rootCerts, NULL);
 
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
