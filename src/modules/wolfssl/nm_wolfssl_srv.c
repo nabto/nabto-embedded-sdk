@@ -520,28 +520,6 @@ np_error_code nm_wolfssl_srv_async_close(
     return NABTO_EC_OPERATION_STARTED;
 }
 
-#if defined(wolfssl_DEBUG_C)
-static void nm_wolfssl_srv_tls_logger(void* ctx, int level, const char* file,
-                                      int line, const char* str)
-{
-    ((void)level);
-    ((void)ctx);
-    uint32_t severity;
-    switch (level) {
-        case 1:
-            severity = NABTO_LOG_SEVERITY_ERROR;
-            break;
-        case 2:
-            severity = NABTO_LOG_SEVERITY_INFO;
-            break;
-        default:
-            severity = NABTO_LOG_SEVERITY_TRACE;
-            break;
-    }
-    NABTO_LOG_RAW(severity, LOG, line, file, str);
-}
-#endif
-
 np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
                                          const unsigned char* certificate,
                                          size_t certificateSize,
@@ -549,19 +527,12 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
                                          size_t privateKeySize)
 {
     int ret;
-#if defined(wolfssl_DEBUG_C)
-    wolfssl_debug_set_threshold(DEBUG_LEVEL);
-#endif
 
     if (wolfSSL_CTX_set_cipher_list(server->ctx, allowedCipherSuitesList) !=
         WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "server can't set custom cipher list");
         return NABTO_EC_FAILED;
     }
-
-#if defined(wolfssl_DEBUG_C)
-    wolfssl_ssl_conf_dbg(&server->conf, &nm_wolfssl_srv_tls_logger, NULL);
-#endif
 
     ret = wolfSSL_CTX_use_PrivateKey_buffer(
         server->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM);
@@ -579,10 +550,6 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
 
     wolfSSL_CTX_set_verify(server->ctx, SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                            verify_callback);
-
-#if defined(wolfssl_SSL_DTLS_HELLO_VERIFY)
-    wolfssl_ssl_conf_dtls_cookies(&server->conf, NULL, NULL, NULL);
-#endif
 
     wolfSSL_CTX_SetIORecv(server->ctx, wolfssl_recv);
     wolfSSL_CTX_SetIOSend(server->ctx, wolfssl_send);

@@ -560,11 +560,6 @@ void nm_wolfssl_cli_start_send_deferred(void* data)
     if (next->cb == NULL) {
         ctx->sentCount++;
     }
-        // TODO handle bad input data
-    // } else if (ret == wolfssl_ERR_SSL_BAD_INPUT_DATA) {
-    //     // packet too large
-    //     NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i (Packet too large)", ret);
-    //     next->cb(NABTO_EC_MALFORMED_PACKET, next->data);
     else if (ret < 0) {
         // unknown error
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
