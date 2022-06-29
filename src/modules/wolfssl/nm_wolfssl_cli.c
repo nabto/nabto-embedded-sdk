@@ -447,9 +447,8 @@ void nm_dtls_event_do_one(void* data)
                         NABTO_LOG_ERROR(LOG, "Server returned access denied: (%d) %s" , err, buf);
                     } else {
                         NABTO_LOG_ERROR(
-                            LOG, "Server returned fatal error: (%d) %s",
-                            h.last_rx.code,
-                            wolfSSL_alert_type_string_long(h.last_rx.code));
+                            LOG, "Server returned fatal alert code: %d",
+                            h.last_rx.code);
                     }
                 }
                 NABTO_LOG_INFO( LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);
