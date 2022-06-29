@@ -445,6 +445,11 @@ void nm_dtls_event_do_one(void* data)
                     if (h.last_rx.code == access_denied) {
                         event = NP_DTLS_CLI_EVENT_ACCESS_DENIED;
                         NABTO_LOG_ERROR(LOG, "Server returned access denied: (%d) %s" , err, buf);
+                    } else {
+                        NABTO_LOG_ERROR(
+                            LOG, "Server returned fatal error: (%d) %s",
+                            h.last_rx.code,
+                            wolfSSL_alert_type_string_long(h.last_rx.code));
                     }
                 }
                 NABTO_LOG_INFO( LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);
