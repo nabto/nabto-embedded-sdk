@@ -3,7 +3,6 @@ find_library(WOLFSSL_LIBRARY wolfssl)
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(wolfssl_common_src
-  nm_wolfssl_timer.c
   nm_wolfssl_util.c
   )
 

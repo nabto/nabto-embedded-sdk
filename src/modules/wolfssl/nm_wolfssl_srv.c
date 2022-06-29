@@ -12,7 +12,6 @@
 #include <wolfssl/wolfcrypt/settings.h>
 
 #include "nm_wolfssl_common.h"
-#include "nm_wolfssl_timer.h"
 #include "nm_wolfssl_util.h"
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 #define DEBUG_LEVEL 0
