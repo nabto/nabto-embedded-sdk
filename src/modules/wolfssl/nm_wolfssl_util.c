@@ -261,3 +261,32 @@ np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
     wc_ecc_free(&key);
     return ec;
 }
+
+#if defined(NABTO_ENABLE_DTLS_LOG)
+static void logging_callback(const int logLevel, const char *const logMessage)
+{
+    uint32_t severity;
+    switch (logLevel) {
+        case 0:
+            severity = NABTO_LOG_SEVERITY_ERROR;
+            break;
+        case 1:
+            severity = NABTO_LOG_SEVERITY_INFO;
+            break;
+        default:
+            severity = NABTO_LOG_SEVERITY_TRACE;
+            break;
+    }
+    NABTO_LOG_RAW(severity, LOG, 0, "wolfssl", logMessage)
+}
+#endif
+
+void nm_wolfssl_util_check_logging()
+{
+#if defined(NABTO_ENABLE_DTLS_LOG)
+    wolfSSL_SetLoggingCb(logging_callback);
+    wolfSSL_Debugging_ON();
+    #else
+    NABTO_LOG_ERROR(LOG, "NO DTLS LOG DEFINED");
+#endif
+}

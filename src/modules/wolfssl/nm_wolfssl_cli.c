@@ -23,7 +23,6 @@
 #include <nn/string.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
-#define DEBUG_LEVEL 0
 
 static const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_CCM";
 
@@ -122,22 +121,6 @@ static const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
     return NULL;
 }
 
-static void logging_callback(const int logLevel, const char *const logMessage)
-{
-    uint32_t severity;
-    switch (logLevel) {
-        case 0:
-            severity = NABTO_LOG_SEVERITY_ERROR;
-            break;
-        case 1:
-            severity = NABTO_LOG_SEVERITY_INFO;
-            break;
-        default:
-            severity = NABTO_LOG_SEVERITY_TRACE;
-            break;
-    }
-    NABTO_LOG_RAW(severity, LOG, 0, "", logMessage)
-}
 
 /*
  * Initialize the np_platform to use this particular dtls cli module
@@ -177,9 +160,7 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
     WOLFSSL_METHOD *method = wolfDTLSv1_2_client_method();
     ctx->ctx = wolfSSL_CTX_new(method);
 
-// TODO: maybe not always have logging on
-    wolfSSL_SetLoggingCb(logging_callback);
-    wolfSSL_Debugging_ON();
+    nm_wolfssl_util_check_logging();
 
     ctx->sender = packetSender;
     ctx->dataHandler = dataHandler;

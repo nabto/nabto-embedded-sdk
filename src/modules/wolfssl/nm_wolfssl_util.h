@@ -22,4 +22,6 @@ np_error_code nm_wolfssl_get_fingerprint_from_private_key(const char* privateKey
 
 np_error_code nm_wolfssl_util_create_private_key(char** privateKey);
 
+void nm_wolfssl_util_check_logging();
+
 #endif //NM_wolfssl_UTIL_H

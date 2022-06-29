@@ -14,7 +14,6 @@
 #include "nm_wolfssl_common.h"
 #include "nm_wolfssl_util.h"
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
-#define DEBUG_LEVEL 0
 
 static const int MIN_TIMEOUT = 1;
 static const int MAX_TIMEOUT = 16;
@@ -201,6 +200,7 @@ np_error_code nm_wolfssl_srv_create(struct np_platform* pl,
         return NABTO_EC_OUT_OF_MEMORY;
     }
     (*server)->pl = pl;
+    nm_wolfssl_util_check_logging();
     WOLFSSL_METHOD* method = wolfDTLSv1_2_server_method();
     (*server)->ctx = wolfSSL_CTX_new(method);
 
