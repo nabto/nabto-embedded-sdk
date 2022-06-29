@@ -8,11 +8,12 @@
 
 #include <platform/np_allocator.h>
 
-#ifdef NABTO_USE_MBEDTLS
+#if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_util.h>
-#endif
-#ifdef NABTO_USE_WOLFSSL
+#elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_util.h>
+#else
+#error Missing DTLS implementation
 #endif
 
 

@@ -215,7 +215,7 @@ if (DEVICE_BUILD_TESTS)
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
   add_subdirectory(test_cpp)
-  #add_subdirectory(platform_integration_stub)
+  add_subdirectory(platform_integration_stub)
 endif()
 
 if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)
@@ -227,7 +227,7 @@ endif()
 if (DEVICE_BUILD_EXAMPLES)
   if (NOT WIN32)
 
-  #  add_subdirectory(platform_integration_example)
+  add_subdirectory(platform_integration_example)
   endif()
   add_subdirectory(examples/heat_pump)
   add_subdirectory(examples/simple_stream)

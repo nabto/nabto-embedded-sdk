@@ -1,6 +1,5 @@
 #include "nm_wolfssl_cli.h"
 #include "nm_wolfssl_util.h"
-#include "nm_wolfssl_timer.h"
 #include "nm_wolfssl_common.h"
 
 #include <platform/np_logging.h>
@@ -240,8 +239,6 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
     wolfSSL_CTX_SetIORecv(ctx->ctx, nm_dtls_wolfssl_recv);
     wolfSSL_CTX_SetIOSend(ctx->ctx, nm_dtls_wolfssl_send);
 
-
-    // TODO handle timeouts
     return NABTO_EC_OK;
 }
 
@@ -347,13 +344,13 @@ np_error_code nm_wolfssl_cli_set_keys(struct np_dtls_cli_context* ctx,
     // Since ssl is already created, we must set keys on ssl obj.
     // Since we may recreate the ssl obj, we also set it on ctx.
     if (wolfSSL_use_PrivateKey_buffer(ctx->ssl, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS ||
-    wolfSSL_CTX_use_PrivateKey_buffer(ctx->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
+        wolfSSL_CTX_use_PrivateKey_buffer(ctx->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_PrivateKey_buffer");
         return NABTO_EC_UNKNOWN;
     }
 
     if (wolfSSL_use_certificate_buffer(ctx->ssl, certificate, certificateSize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS ||
-    wolfSSL_CTX_use_certificate_buffer(ctx->ctx, certificate, certificateSize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
+        wolfSSL_CTX_use_certificate_buffer(ctx->ctx, certificate, certificateSize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer");
         return NABTO_EC_UNKNOWN;
     }
@@ -438,17 +435,16 @@ void nm_dtls_event_do_one(void* data)
                 enum np_dtls_cli_event event = NP_DTLS_CLI_EVENT_CLOSED;
                 char buf[80];
                 wolfSSL_ERR_error_string(err, buf);
-                if (err > MIN_CODE_E) { // All wolfCrypt errors range ]0...MIN_CODE_E[
-                NABTO_LOG_ERROR(
-                    LOG, "Certificate verification failed: (%d) %s", err, buf);
+                if (err > MIN_CODE_E) { // All wolfCrypt errors range ]MIN_CODE_E...0[
+                    // This catches all wolfCrypt errors which may include errors other than verification errors.
+                    NABTO_LOG_ERROR(LOG, "Certificate verification failed: (%d) %s", err, buf);
                     event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else if( err == FATAL_ERROR ) {
                     WOLFSSL_ALERT_HISTORY h;
                     wolfSSL_get_alert_history(ctx->ssl, &h);
                     if (h.last_rx.code == access_denied) {
                         event = NP_DTLS_CLI_EVENT_ACCESS_DENIED;
-                    NABTO_LOG_ERROR(
-                    LOG, "Server returned access denied: (%d) %s" , err, buf);
+                        NABTO_LOG_ERROR(LOG, "Server returned access denied: (%d) %s" , err, buf);
                     }
                 }
                 NABTO_LOG_INFO( LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);

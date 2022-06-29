@@ -458,7 +458,14 @@ void nm_dtls_event_do_one(void* data)
                 nm_mbedtls_timer_cancel(&ctx->timer);
                 ctx->eventHandler(event, ctx->callbackData);
                 return;
+            } else if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
+                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
+                ctx->state = CLOSING;
+                nm_mbedtls_timer_cancel(&ctx->timer);
+                ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
+                return;
             }
+
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
             ctx->state = DATA;
             ctx->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, ctx->callbackData);
