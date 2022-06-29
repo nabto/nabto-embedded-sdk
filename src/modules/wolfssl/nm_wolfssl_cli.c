@@ -389,8 +389,8 @@ np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
 
 np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)
 {
-    int min = minTimeout / 1000;
-    int max = maxTimeout / 1000;
+    int min = minTimeout < 1000 ? 1 : minTimeout / 1000;
+    int max = maxTimeout < 1000 ? 1 : maxTimeout / 1000;
     if (wolfSSL_dtls_set_timeout_init(ctx->ssl, min) !=
         WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set min timeout for DTLS client connection");

@@ -4,10 +4,6 @@
 #include <platform/np_platform.h>
 #include <platform/np_error_code.h>
 
-//#include <wolfssl/entropy.h>
-//#include <wolfssl/ctr_drbg.h>
-//#include <wolfssl/certs.h>
-//#include <wolfssl/x509_crt.h>
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/settings.h>
 

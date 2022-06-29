@@ -4,14 +4,14 @@
 #include <modules/libevent/nm_libevent.h>
 #include <modules/logging/test/nm_logging_test.h>
 
-#ifdef NABTO_USE_MBEDTLS
+#if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
-#endif
-
-#ifdef NABTO_USE_WOLFSSL
+#elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_srv.h>
+#else
+#error Missing DTLS implementation
 #endif
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
