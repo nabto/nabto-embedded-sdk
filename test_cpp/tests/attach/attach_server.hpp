@@ -113,6 +113,21 @@ class AttachCoapServer {
         initCoapHandlers();
     }
 
+    void init(std::vector<std::string> alpns)
+    {
+        lib::error_code ec;
+        dtlsServer_.setPort(port_);
+        dtlsServer_.setAlpnProtocols(alpns);
+        dtlsServer_.setSniCallback([this](const std::string& sni) {
+            (void)sni;
+            return DtlsServer::createCertificateContext(privateKey_,
+                                                        certificateChain_);
+        });
+
+        ec = dtlsServer_.init();
+        initCoapHandlers();
+    }
+
     void stop()
     {
         if (stopped_) {
@@ -206,8 +221,11 @@ class AttachServer : public AttachCoapServer,
         return ptr;
     }
 
-    void setAlpnProtocols(std::vector<std::string> alpns ) {
-        dtlsServer_.setAlpnProtocols(alpns);
+    static std::shared_ptr<AttachServer> create_alpn(boost::asio::io_context& io, std::vector<std::string> alpns)
+    {
+        auto ptr = std::make_shared<AttachServer>(io);
+        ptr->init(alpns);
+        return ptr;
     }
 
     void initCoapHandlers()

@@ -327,8 +327,7 @@ BOOST_AUTO_TEST_CASE(wrong_alp, * boost::unit_test::timeout(300))
 {
     // test that we cannot attach if the hostname does not match the certificate
     auto ioService = nabto::IoService::create("test");
-    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
-    attachServer->setAlpnProtocols({"foobar"});
+    auto attachServer = nabto::test::AttachServer::create_alpn(ioService->getIoService(), {"foobar"});
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
