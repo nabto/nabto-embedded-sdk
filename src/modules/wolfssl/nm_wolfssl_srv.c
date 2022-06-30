@@ -412,7 +412,7 @@ void handle_timeout(void* data)
     int ec = wolfSSL_dtls_got_timeout(ctx->ssl);
     if (ec == WOLFSSL_SUCCESS) {
         set_timeout(ctx);
-    } else if (ec == SSL_FATAL_ERROR) {
+    } else if (ec == WOLFSSL_FATAL_ERROR) {
         // too many retries, timeout.
         event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
     } else {
