@@ -351,7 +351,7 @@ np_error_code nm_wolfssl_cli_set_root_certs(struct np_dtls_cli_context* ctx, con
 
 np_error_code nm_wolfssl_cli_disable_certificate_validation(struct np_dtls_cli_context* ctx)
 {
-    wolfSSL_set_verify(ctx->ssl, (SSL_VERIFY_NONE), NULL);
+    wolfSSL_set_verify(ctx->ssl, (WOLFSSL_VERIFY_NONE), NULL);
     return NABTO_EC_OK;
 }
 

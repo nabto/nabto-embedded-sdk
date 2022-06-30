@@ -547,7 +547,7 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
         return NABTO_EC_UNKNOWN;
     }
 
-    wolfSSL_CTX_set_verify(server->ctx, SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+    wolfSSL_CTX_set_verify(server->ctx, WOLFSSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                            verify_callback);
 
     wolfSSL_CTX_SetIORecv(server->ctx, wolfssl_recv);
