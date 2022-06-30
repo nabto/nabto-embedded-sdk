@@ -17,6 +17,7 @@
 #include <platform/interfaces/np_mdns.h>
 #include <platform/np_authorization.h>
 #include <platform/np_random.h>
+#include <platform/np_spake2.h>
 #include <platform/interfaces/np_local_ip.h>
 
 #ifdef __cplusplus
@@ -72,6 +73,9 @@ struct np_platform {
     struct np_authorization authorization;
     void* authorizationData;
 
+    // spake2
+    struct np_spake2_module spake2;
+    void* spake2Data;
 };
 
 #ifdef __cplusplus

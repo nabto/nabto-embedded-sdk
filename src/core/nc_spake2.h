@@ -61,8 +61,6 @@ void nc_spake2_coap_deinit(struct nc_spake2_module* module);
 void nc_spake2_clear_password_request_callback(struct nc_spake2_module* module);
 np_error_code nc_spake2_set_password_request_callback(struct nc_spake2_module* module, nc_spake2_password_request_handler passwordRequestFunction, void* data);
 
-int nc_spake2_password_to_mpi(const char* password, size_t passwordLength, mbedtls_mpi* w);
-
 void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char* password);
 
 void nc_spake2_password_request_free(struct nc_spake2_password_request* passwordRequest);

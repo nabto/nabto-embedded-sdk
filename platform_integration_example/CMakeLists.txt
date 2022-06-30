@@ -32,6 +32,7 @@ if (NABTO_USE_MBEDTLS)
     nm_mbedtls_cli
     nm_mbedtls_random
     nm_mbedtls_srv
+    nm_mbedtls_spake2
     3rdparty_mbedtls
     )
 endif()
