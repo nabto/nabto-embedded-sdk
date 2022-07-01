@@ -11,13 +11,17 @@
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
 #include "mbedtls/sha256.h"
+#include <mbedtls/debug.h>
 
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <nn/string.h>
 #include <string.h>
 
-np_error_code nm_dtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
+#define LOG NABTO_LOG_MODULE_PLATFORM
+
+np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
 {
     uint8_t buffer[256];
 
@@ -41,7 +45,7 @@ struct crt_from_private_key {
 
 static np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey);
 
-np_error_code nm_dtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
+np_error_code nm_mbedtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
 {
     // 1. load key from pem
     // 2. create crt
@@ -133,7 +137,7 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
 }
 
 
-np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
+np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
 {
     mbedtls_pk_context key;
     int ret;
@@ -161,7 +165,7 @@ np_error_code nm_dtls_get_fingerprint_from_private_key(const char* privateKey, u
     return ec;
 }
 
-np_error_code nm_dtls_util_create_private_key(char** privateKey)
+np_error_code nm_mbedtls_util_create_private_key(char** privateKey)
 {
     *privateKey = NULL;
     unsigned char output_buf[1024];
@@ -196,4 +200,35 @@ np_error_code nm_dtls_util_create_private_key(char** privateKey)
     mbedtls_entropy_free( &entropy );
 
     return ec;
+}
+
+#if defined(NABTO_ENABLE_DTLS_LOG)
+static void my_debug( void *ctx, int level,
+                      const char *file, int line,
+                      const char *str )
+{
+    ((void) level); (void)ctx;
+    uint32_t severity;
+    switch (level) {
+        case 1:
+            severity = NABTO_LOG_SEVERITY_ERROR;
+            break;
+        case 2:
+            severity = NABTO_LOG_SEVERITY_INFO;
+            break;
+        default:
+            severity = NABTO_LOG_SEVERITY_TRACE;
+            break;
+    }
+
+    NABTO_LOG_RAW(severity, LOG, line, file, str );
+}
+#endif
+
+void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf)
+{
+#if defined(NABTO_ENABLE_DTLS_LOG)
+    mbedtls_debug_set_threshold( 4 ); // Max debug threshold, NABTO_LOG_RAW will handle log levels
+    mbedtls_ssl_conf_dbg( conf, my_debug, NULL);
+#endif
 }

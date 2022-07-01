@@ -4,8 +4,17 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
+
+#if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
+#elif defined(NABTO_USE_WOLFSSL)
+#include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/wolfssl/nm_wolfssl_srv.h>
+#else
+#error Missing DTLS implementation
+#endif
+
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
@@ -53,8 +62,15 @@ class TestPlatformSelectUnix : public TestPlatform {
         pl_.dns = nm_unix_dns_resolver_get_impl(&dns_);
         pl_.eq = thread_event_queue_get_impl(&eventQueue_);
 
+#if defined(NABTO_USE_MBEDTLS)
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
+#elif defined(NABTO_USE_WOLFSSL)
+        nm_wolfssl_cli_init(&pl_);
+        nm_wolfssl_srv_init(&pl_);
+#else
+#error Missing DTLS implementation
+#endif
 
         nm_unix_dns_resolver_run(&dns_);
         thread_event_queue_run(&eventQueue_);

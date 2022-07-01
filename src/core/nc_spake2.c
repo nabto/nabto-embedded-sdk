@@ -1,7 +1,10 @@
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+
 #include "nc_spake2.h"
 #include "nc_client_connection.h"
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+
 
 
 #include <mbedtls/sha256.h>
@@ -295,3 +298,5 @@ int hashMpi(mbedtls_md_context_t* mdCtx, mbedtls_mpi* n)
     status |= hashData(mdCtx, buffer, s);
     return status;
 }
+
+#endif

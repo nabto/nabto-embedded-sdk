@@ -5,9 +5,6 @@
 #include <modules/select_unix/nm_select_unix.h>
 #include <modules/select_unix/nm_select_unix_mdns_udp_bind.h>
 #include <modules/event_queue/thread_event_queue.h>
-#include <modules/mbedtls/nm_mbedtls_random.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
-#include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mdns/nm_mdns_server.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/dns/unix/nm_unix_dns.h>

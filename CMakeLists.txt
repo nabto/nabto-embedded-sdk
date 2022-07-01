@@ -151,7 +151,26 @@ set(test_runner_src
   )
 
 add_subdirectory(src/modules/communication_buffer)
-add_subdirectory(src/modules/mbedtls)
+
+option(NABTO_USE_MBEDTLS "Use mbedtls as DTLS module" ON)
+option(NABTO_USE_WOLFSSL "Use wolfssl as DTLS module" OFF)
+option(NABTO_ENABLE_DTLS_LOG "Enable logging for 3rd party DTLS module" OFF)
+
+if (NABTO_ENABLE_DTLS_LOG)
+  add_definitions(-DNABTO_ENABLE_DTLS_LOG)
+endif()
+
+if (NABTO_USE_MBEDTLS)
+  add_definitions(-DNABTO_USE_MBEDTLS)
+  add_definitions(-DNABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+  add_subdirectory(src/modules/mbedtls)
+endif()
+
+if (NABTO_USE_WOLFSSL)
+  add_definitions(-DNABTO_USE_WOLFSSL)
+  add_subdirectory(src/modules/wolfssl)
+endif()
+
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
@@ -214,7 +233,7 @@ endif()
 if (DEVICE_BUILD_EXAMPLES)
   if (NOT WIN32)
 
-    add_subdirectory(platform_integration_example)
+  add_subdirectory(platform_integration_example)
   endif()
   add_subdirectory(examples/heat_pump)
   add_subdirectory(examples/simple_stream)

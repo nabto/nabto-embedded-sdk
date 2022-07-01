@@ -3,8 +3,17 @@
 #include <platform/np_platform.h>
 #include <modules/libevent/nm_libevent.h>
 #include <modules/logging/test/nm_logging_test.h>
+
+#if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
+#elif defined(NABTO_USE_WOLFSSL)
+#include <modules/wolfssl/nm_wolfssl_cli.h>
+#include <modules/wolfssl/nm_wolfssl_srv.h>
+#else
+#error Missing DTLS implementation
+#endif
+
 #include <modules/communication_buffer/nm_communication_buffer.h>
 #include <modules/event_queue/thread_event_queue.h>
 #include <api/nabto_device_threads.h>
@@ -52,8 +61,15 @@ class TestPlatformLibevent : public TestPlatform {
         thread_event_queue_init(&eventQueue_, mutex_, &(pl_.timestamp));
         pl_.eq = thread_event_queue_get_impl(&eventQueue_);
 
+#ifdef NABTO_USE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
+#endif
+
+#ifdef NABTO_USE_WOLFSSL
+        nm_wolfssl_cli_init(&pl_);
+        nm_wolfssl_srv_init(&pl_);
+#endif
 
         thread_event_queue_run(&eventQueue_);
 

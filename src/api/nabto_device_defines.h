@@ -27,7 +27,7 @@ struct nabto_device_context {
 
     struct nabto_device_future* queueHead;
 
-    char* publicKey;
+    char* certificate;
     char* privateKey;
 
     struct nabto_device_future* closeFut;

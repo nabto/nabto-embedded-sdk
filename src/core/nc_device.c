@@ -117,6 +117,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nc_spake2_init(&device->spake2, pl);
 
     ec = nc_spake2_coap_init(&device->spake2, &device->coapServer);
@@ -124,6 +125,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         nc_device_deinit(device);
         return ec;
     }
+#endif
 
     ec = nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     if (ec != NABTO_EC_OK) {
@@ -156,8 +158,10 @@ void nc_device_deinit(struct nc_device_context* device) {
         np_mdns_unpublish_service(&pl->mdns);
     }
 
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nc_spake2_coap_deinit(&device->spake2);
     nc_spake2_deinit(&device->spake2);
+#endif
 
 
     nc_stream_manager_deinit(&device->streamManager);

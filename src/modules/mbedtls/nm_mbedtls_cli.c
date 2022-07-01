@@ -1,6 +1,7 @@
 #include "nm_mbedtls_cli.h"
 #include "nm_mbedtls_util.h"
 #include "nm_mbedtls_timer.h"
+#include "nm_mbedtls_common.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_event_queue_wrapper.h>
@@ -26,7 +27,6 @@
 #include <nn/llist.h>
 
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
-#define DEBUG_LEVEL 0
 
 const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
@@ -131,30 +131,6 @@ const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
 }
 
-#if defined(MBEDTLS_DEBUG_C)
-// Printing function used by mbedtls for logging
-static void my_debug( void *ctx, int level,
-                      const char *file, int line,
-                      const char *str )
-{
-    ((void) level); (void)ctx;
-    uint32_t severity;
-    switch (level) {
-        case 1:
-            severity = NABTO_LOG_SEVERITY_ERROR;
-            break;
-        case 2:
-            severity = NABTO_LOG_SEVERITY_INFO;
-            break;
-        default:
-            severity = NABTO_LOG_SEVERITY_TRACE;
-            break;
-    }
-
-    NABTO_LOG_RAW(severity, LOG, line, file, str );
-}
-#endif
-
 /*
  * Initialize the np_platform to use this particular dtls cli module
  */
@@ -238,10 +214,6 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
     int ret;
     const char *pers = "dtls_client";
 
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_debug_set_threshold( DEBUG_LEVEL );
-#endif
-
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
                                (const unsigned char *) pers,
                                strlen( pers ) ) ) != 0 ) {
@@ -266,10 +238,7 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
 
     mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
-#if defined(MBEDTLS_DEBUG_C)
-    mbedtls_ssl_conf_dbg( &ctx->conf, my_debug, NULL);
-#endif
-
+    nm_mbedtls_util_check_logging(&ctx->conf);
     mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->rootCerts, NULL);
 
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
@@ -401,7 +370,7 @@ np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
-    return nm_dtls_util_fp_from_crt(crt, fp);
+    return nm_mbedtls_util_fp_from_crt(crt, fp);
 }
 
 np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)
@@ -457,7 +426,14 @@ void nm_dtls_event_do_one(void* data)
                 nm_mbedtls_timer_cancel(&ctx->timer);
                 ctx->eventHandler(event, ctx->callbackData);
                 return;
+            } else if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
+                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
+                ctx->state = CLOSING;
+                nm_mbedtls_timer_cancel(&ctx->timer);
+                ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
+                return;
             }
+
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
             ctx->state = DATA;
             ctx->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, ctx->callbackData);

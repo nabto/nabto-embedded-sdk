@@ -42,23 +42,80 @@ BOOST_AUTO_TEST_CASE(check_fingerprint)
 
     {
         NabtoDevice* device = nabto_device_new();
-        BOOST_TEST(nabto_device_set_private_key_secp256r1(device, testKeyRawPrivateKey.data(), testKeyRawPrivateKey.size()) == NABTO_DEVICE_EC_OK);
-        char* fp;
-        nabto_device_get_device_fingerprint(device, &fp);
-        fp2 = std::string(fp);
-        nabto_device_string_free(fp);
+        NabtoDeviceError ec = nabto_device_set_private_key_secp256r1(device, testKeyRawPrivateKey.data(), testKeyRawPrivateKey.size());
+        if (ec == NABTO_DEVICE_EC_NOT_IMPLEMENTED) {
+            // OK
+        } else {
+            BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+            char* fp;
+            nabto_device_get_device_fingerprint(device, &fp);
+            fp2 = std::string(fp);
+            nabto_device_string_free(fp);
+            BOOST_TEST(fp1 == fp2);
+        }
         nabto_device_free(device);
     }
-
-    BOOST_TEST(fp1 == fp2);
-
 }
 
 BOOST_AUTO_TEST_CASE(invalid_raw_key)
 {
     NabtoDevice* device = nabto_device_new();
-    BOOST_TEST(nabto_device_set_private_key_secp256r1(device, invalidRawPrivateKey.data(), invalidRawPrivateKey.size()) == NABTO_DEVICE_EC_INVALID_ARGUMENT);
+    NabtoDeviceError ec = nabto_device_set_private_key_secp256r1(device, invalidRawPrivateKey.data(), invalidRawPrivateKey.size());
+    if (ec != NABTO_DEVICE_EC_NOT_IMPLEMENTED) {
+        BOOST_TEST(ec == NABTO_DEVICE_EC_INVALID_ARGUMENT);
+    }
     nabto_device_free(device);
 }
+
+BOOST_AUTO_TEST_CASE(create_private_key)
+{
+    NabtoDevice* device = nabto_device_new();
+    char* key = NULL;
+    BOOST_TEST(nabto_device_create_private_key(device, &key) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(key != (char*)NULL);
+    nabto_device_string_free(key);
+    nabto_device_free(device);
+}
+
+BOOST_AUTO_TEST_CASE(set_private_key)
+{
+    NabtoDevice* device = nabto_device_new();
+    char* key = NULL;
+    BOOST_TEST(nabto_device_create_private_key(device, &key) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(key != (char*)NULL);
+
+    BOOST_TEST(nabto_device_set_private_key(device, key) == NABTO_DEVICE_EC_OK);
+
+    nabto_device_string_free(key);
+    nabto_device_free(device);
+}
+
+
+
+BOOST_AUTO_TEST_CASE(get_fingerprint)
+{
+    std::string testKey = R"(
+-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIIyPSdBk6xTeZ8t94ZUB3K/qDOP574benqgfT3fTE1QKoAoGCCqGSM49
+AwEHoUQDQgAEqHTpqTZ6Ir0HFI1fLGITG9/9eJVHbgtSUCzELy/xGalicZGlBTKT
+9RZJfBGI03VjFL2isFJ1BPpabNBgZ/tnqw==
+-----END EC PRIVATE KEY-----
+)";
+    std::string testFp = "c55c915d8c2e3284dbfd576e283df8eb0253c6d6a8dbb25ede6969adf8bc3bd7";
+
+
+    NabtoDevice* device = nabto_device_new();
+
+    BOOST_TEST(nabto_device_set_private_key(device, testKey.c_str()) == NABTO_DEVICE_EC_OK);
+
+    char* fp;
+    BOOST_TEST(nabto_device_get_device_fingerprint(device, &fp) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(fp != (char*)NULL);
+    BOOST_TEST(std::string(fp) == testFp);
+
+    nabto_device_string_free(fp);
+    nabto_device_free(device);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

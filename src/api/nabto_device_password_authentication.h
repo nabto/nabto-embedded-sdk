@@ -8,6 +8,8 @@
 
 //struct nc_spake2_password_request;
 
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+
 struct nabto_device_context;
 struct nc_spake2_password_request;
 
@@ -22,5 +24,7 @@ struct nabto_device_password_authentication_request {
  * Init the module and add coap listeners.
  */
 void nabto_device_password_authentication_init(struct nabto_device_context* context);
+
+#endif
 
 #endif

@@ -10,6 +10,7 @@
 
 #include <nn/llist.h>
 #include <nn/string.h>
+#include <limits.h>
 
 
 

@@ -15,9 +15,6 @@ target_compile_definitions(nabto_device_select_unix PRIVATE NABTO_DEVICE_API_SHA
 target_link_libraries( nabto_device_select_unix
   nc_core
   np_platform
-  nm_mbedtls_cli
-  nm_mbedtls_srv
-  nm_mbedtls_random
   nm_event_queue
   nm_select_unix
   nm_mdns
@@ -26,11 +23,25 @@ target_link_libraries( nabto_device_select_unix
   nm_unix
   nm_communication_buffer
   nm_tcp_tunnel
-  3rdparty_mbedtls
   nm_threads_unix
   nm_logging_api
   )
 
+if (NABTO_USE_MBEDTLS)
+  target_link_libraries(nabto_device_select_unix
+    nm_mbedtls_cli
+    nm_mbedtls_random
+    nm_mbedtls_srv
+    3rdparty_mbedtls
+    )
+endif()
+if(NABTO_USE_WOLFSSL)
+  target_link_libraries(nabto_device_select_unix
+    nm_wolfssl_cli
+    nm_wolfssl_random
+    nm_wolfssl_srv
+  )
+endif()
 
 set(test_src
   select_unix_platform_test.c

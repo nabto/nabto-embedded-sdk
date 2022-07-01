@@ -323,6 +323,25 @@ BOOST_AUTO_TEST_CASE(wrong_hostname, * boost::unit_test::timeout(300))
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
 }
 
+BOOST_AUTO_TEST_CASE(wrong_alp, * boost::unit_test::timeout(300))
+{
+    // test that we cannot attach if the hostname does not match the certificate
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create_alpn(ioService->getIoService(), {"foobar"});
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){(void)at;},[](nabto::test::AttachTest& at){
+                     if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
+                         at.end();
+                     }
+                 });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+}
+
 BOOST_AUTO_TEST_CASE(attach_close_before_attach, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");

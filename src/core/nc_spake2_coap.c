@@ -1,3 +1,4 @@
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
 
 #include "nc_spake2.h"
 #include "nc_coap.h"
@@ -192,3 +193,5 @@ void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* da
     }
     nabto_coap_server_request_free(request);
 }
+
+#endif

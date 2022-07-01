@@ -1,0 +1,9 @@
+version: "3"
+name: nabto-embedded-sdk
+services:
+  device:
+    build: .
+    volumes:
+      - ../..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: /bin/sh -c "tail -f /dev/null"

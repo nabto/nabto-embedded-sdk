@@ -97,7 +97,9 @@ struct nc_device_context {
     struct nn_llist eventsListeners;
     struct nn_llist deviceEvents;
     struct np_completion_event socketBoundCompletionEvent;
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     struct nc_spake2_module spake2;
+#endif
     // logger which can be provided for some modules.
     struct nn_log moduleLogger;
 };
