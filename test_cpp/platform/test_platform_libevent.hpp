@@ -7,6 +7,7 @@
 #if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
+#include <modules/mbedtls/nm_mbedtls_spake2.h>
 #elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_srv.h>
@@ -30,6 +31,7 @@ namespace test {
 class TestPlatformLibevent : public TestPlatform {
  public:
     TestPlatformLibevent() {
+        memset(&pl_, 0, sizeof(pl_));
         mutex_ = nabto_device_threads_create_mutex();
         nm_libevent_global_init();
         eventBase_ = event_base_new();
@@ -64,6 +66,7 @@ class TestPlatformLibevent : public TestPlatform {
 #ifdef NABTO_USE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
         nm_mbedtls_srv_init(&pl_);
+        nm_mbedtls_spake2_init(&pl_);
 #endif
 
 #ifdef NABTO_USE_WOLFSSL

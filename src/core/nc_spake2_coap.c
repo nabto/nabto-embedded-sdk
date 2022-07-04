@@ -2,6 +2,7 @@
 
 #include "nc_spake2.h"
 #include "nc_coap.h"
+#include "nc_cbor.h"
 #include <coap/nabto_coap_server.h>
 #include <core/nc_coap_server.h>
 
@@ -40,43 +41,6 @@ void nc_spake2_coap_deinit(struct nc_spake2_module* module)
 }
 
 
-bool read_text_string(CborValue* value, char* out, size_t maxLength)
-{
-    if (!cbor_value_is_text_string(value)) {
-        return false;
-    }
-    size_t strLength;
-    cbor_value_calculate_string_length(value, &strLength);
-    if (strLength > maxLength) {
-        return false;
-    }
-
-    cbor_value_copy_text_string(value, out, &strLength, NULL);
-    return true;
-}
-
-static bool read_group_element(CborValue* value, mbedtls_ecp_group* grp, mbedtls_ecp_point* p)
-{
-    uint8_t buffer[256];
-    if (!cbor_value_is_byte_string(value)) {
-        return false;
-    }
-
-    size_t length;
-    cbor_value_calculate_string_length(value, &length);
-    if (length > sizeof(buffer)) {
-        return false;
-    }
-
-    cbor_value_copy_byte_string(value, buffer, &length, NULL);
-
-    int status = mbedtls_ecp_point_read_binary(grp, p, buffer, length);
-    if (status != 0) {
-        return false;
-    }
-    return true;
-}
-
 /*
 {
     "Username": "user id to distinguish users TBD",
@@ -96,14 +60,11 @@ static bool read_username_and_password(struct nc_spake2_password_request* passwo
     cbor_value_map_find_value(&map, "Username", &username);
     cbor_value_map_find_value(&map, "T", &T);
 
-    if (!read_group_element(&T, &passwordRequest->grp, &passwordRequest->T)) {
+    if (!nc_cbor_copy_text_string(&username, &passwordRequest->username,
+                                  NC_SPAKE2_USERNAME_MAX_LENGTH) ||
+        !nc_cbor_copy_byte_string(&T, &passwordRequest->T, &passwordRequest->Tlen, 256)) {
         return false;
     }
-
-    if (!read_text_string(&username, passwordRequest->username, NC_SPAKE2_USERNAME_MAX_LENGTH)) {
-        return false;
-    }
-
     return true;
 }
 
@@ -136,7 +97,9 @@ void nc_spake2_handle_coap_1(struct nabto_coap_server_request* request, void* da
             nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
         } else {
             passwordRequest->coapRequest = request;
-            if (!read_username_and_password(passwordRequest, payload, payloadLength)) {
+            passwordRequest->pl = spake2->pl;
+            if (!read_username_and_password(passwordRequest, payload,
+                                            payloadLength)) {
                 nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
             } else {
                 spake2->passwordRequestHandler(passwordRequest, spake2->passwordRequestHandlerData);
@@ -174,21 +137,33 @@ void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* da
         if (!connection->hasSpake2Key) {
             nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
         } else {
-            uint8_t hash1[32];
-            uint8_t hash2[32];
-            mbedtls_sha256_ret(connection->spake2Key, 32, hash1, 0);
-            mbedtls_sha256_ret(hash1, 32, hash2, 0);
-            if (memcmp(payload, hash2, 32) != 0) {
-                // Invalid password/username
+            uint8_t responseData[32];
+            if (spake2->pl->spake2.key_confirmation(NULL, payload, payloadLength, connection->spake2Key, 32, responseData, 32) != NABTO_EC_OK) {
                 nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,01), NULL);
                 nc_spake2_spend_token(spake2);
             } else {
                 connection->passwordAuthenticated = true;
                 nabto_coap_server_response_set_code_human(request, 201);
                 nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
-                nabto_coap_server_response_set_payload(request, hash1, 32);
+                nabto_coap_server_response_set_payload(request, responseData, 32);
                 nabto_coap_server_response_ready(request);
+
             }
+            // uint8_t hash1[32];
+            // uint8_t hash2[32];
+            // mbedtls_sha256_ret(connection->spake2Key, 32, hash1, 0);
+            // mbedtls_sha256_ret(hash1, 32, hash2, 0);
+            // if (memcmp(payload, hash2, 32) != 0) {
+            //     // Invalid password/username
+            //     nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,01), NULL);
+            //     nc_spake2_spend_token(spake2);
+            // } else {
+            //     connection->passwordAuthenticated = true;
+            //     nabto_coap_server_response_set_code_human(request, 201);
+            //     nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
+            //     nabto_coap_server_response_set_payload(request, hash1, 32);
+            //     nabto_coap_server_response_ready(request);
+            // }
         }
     }
     nabto_coap_server_request_free(request);
