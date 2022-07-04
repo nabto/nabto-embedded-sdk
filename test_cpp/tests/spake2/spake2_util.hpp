@@ -1,7 +1,7 @@
 #pragma once
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
 
-#if defined NABTO_USE_MBEDTLS
+//#if defined NABTO_USE_MBEDTLS
 
 #include <mbedtls/bignum.h>
 #include <mbedtls/ecp.h>
@@ -208,6 +208,6 @@ class Spake2Client {
 }  // namespace test
 }  // namespace nabto
 
-#endif
+//#endif
 
 #endif

@@ -3,9 +3,6 @@
 
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
 
-#include <mbedtls/bignum.h>
-#include <mbedtls/ecp.h>
-
 #include <platform/np_error_code.h>
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_spake2.h>

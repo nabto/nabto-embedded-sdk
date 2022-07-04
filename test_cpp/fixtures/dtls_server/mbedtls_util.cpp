@@ -12,6 +12,8 @@
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
 
+#include <platform/np_logging.h>
+
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -32,18 +34,36 @@ void mbedTlsLogger( void *ctx, int level,
                     const char *str )
 {
     (void)ctx;
-    size_t fileLen = strlen(file);
-    char fileTmp[32+4];
-    if(fileLen > 32) {
-        strcpy(fileTmp, "...");
-        strcpy(fileTmp + 3, file + fileLen - 32);
-    } else {
-        strcpy(fileTmp, file);
+
+    uint32_t severity;
+    switch (level) {
+        case 1:
+            severity = NABTO_LOG_SEVERITY_ERROR;
+            break;
+        case 2:
+            severity = NABTO_LOG_SEVERITY_INFO;
+            break;
+        default:
+            severity = NABTO_LOG_SEVERITY_TRACE;
+            break;
     }
+
     std::string dbgStr(str);
     removeNewline(dbgStr);
+    NABTO_LOG_RAW(severity, NABTO_LOG_MODULE_PLATFORM, line, file, dbgStr.c_str() );
 
-    std::cout << fileTmp << "(" << line << ")[" << level << "]" << dbgStr << std::endl;
+    // size_t fileLen = strlen(file);
+    // char fileTmp[32+4];
+    // if(fileLen > 32) {
+    //     strcpy(fileTmp, "...");
+    //     strcpy(fileTmp + 3, file + fileLen - 32);
+    // } else {
+    //     strcpy(fileTmp, file);
+    // }
+    // std::string dbgStr(str);
+    // removeNewline(dbgStr);
+
+    // std::cout << fileTmp << "(" << line << ")[" << level << "]" << dbgStr << std::endl;
 }
 
 std::string mbedTlsStrError(int ret)

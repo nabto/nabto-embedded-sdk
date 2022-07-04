@@ -168,6 +168,7 @@ endif()
 
 if (NABTO_USE_WOLFSSL)
   add_definitions(-DNABTO_USE_WOLFSSL)
+  add_definitions(-DNABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
   add_subdirectory(src/modules/wolfssl)
 endif()
 

@@ -6,8 +6,6 @@
 #include <coap/nabto_coap_server.h>
 #include <core/nc_coap_server.h>
 
-#include <mbedtls/sha256.h>
-
 #include <cbor.h>
 
 void nc_spake2_handle_coap_1(struct nabto_coap_server_request* request, void* data);
@@ -149,21 +147,6 @@ void nc_spake2_handle_coap_2(struct nabto_coap_server_request* request, void* da
                 nabto_coap_server_response_ready(request);
 
             }
-            // uint8_t hash1[32];
-            // uint8_t hash2[32];
-            // mbedtls_sha256_ret(connection->spake2Key, 32, hash1, 0);
-            // mbedtls_sha256_ret(hash1, 32, hash2, 0);
-            // if (memcmp(payload, hash2, 32) != 0) {
-            //     // Invalid password/username
-            //     nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,01), NULL);
-            //     nc_spake2_spend_token(spake2);
-            // } else {
-            //     connection->passwordAuthenticated = true;
-            //     nabto_coap_server_response_set_code_human(request, 201);
-            //     nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
-            //     nabto_coap_server_response_set_payload(request, hash1, 32);
-            //     nabto_coap_server_response_ready(request);
-            // }
         }
     }
     nabto_coap_server_request_free(request);

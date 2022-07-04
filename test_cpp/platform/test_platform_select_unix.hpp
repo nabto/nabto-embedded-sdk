@@ -12,6 +12,7 @@
 #elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_srv.h>
+#include <modules/wolfssl/nm_wolfssl_spake2.h>
 #else
 #error Missing DTLS implementation
 #endif
@@ -71,6 +72,7 @@ class TestPlatformSelectUnix : public TestPlatform {
 #elif defined(NABTO_USE_WOLFSSL)
         nm_wolfssl_cli_init(&pl_);
         nm_wolfssl_srv_init(&pl_);
+        nm_wolfssl_spake2_init(&pl_);
 #else
 #error Missing DTLS implementation
 #endif

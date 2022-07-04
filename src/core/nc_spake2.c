@@ -7,11 +7,6 @@
 
 
 
-#include <mbedtls/sha256.h>
-#include <mbedtls/md.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
-
 #include <string.h>
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION

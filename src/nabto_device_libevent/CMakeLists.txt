@@ -44,6 +44,7 @@ if(NABTO_USE_WOLFSSL)
     nm_wolfssl_srv
     nm_wolfssl_cli
     nm_wolfssl_random
+    nm_wolfssl_spake2
   )
 endif()
 
@@ -79,6 +80,7 @@ if(NABTO_USE_WOLFSSL)
     nm_wolfssl_srv
     nm_wolfssl_cli
     nm_wolfssl_random
+    nm_wolfssl_spake2
   )
 endif()
 

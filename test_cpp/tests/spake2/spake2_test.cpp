@@ -1,3 +1,5 @@
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+
 #include <boost/test/unit_test.hpp>
 
 #include "spake2_util.hpp"
@@ -8,7 +10,6 @@
 #include <core/nc_spake2.h>
 #include <platform/np_platform.h>
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
 
 BOOST_AUTO_TEST_SUITE(spake2)
 
