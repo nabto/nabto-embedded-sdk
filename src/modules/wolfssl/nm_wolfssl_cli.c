@@ -303,6 +303,9 @@ np_error_code nm_wolfssl_cli_set_sni(struct np_dtls_cli_context* ctx, const char
 {
     // check_domain_name does not have a _CTX_ version, so we store the hostname in case of reset
     // since we make a copy anyway, we do not use the _CTX_ version of UseSNI either
+    if (ctx->hostname){
+        np_free(ctx->hostname);
+    }
     ctx->hostname = nn_strdup(sniName, np_allocator_get());
     if(wolfSSL_UseSNI(ctx->ssl, WOLFSSL_SNI_HOST_NAME, sniName, strlen(sniName) ) != WOLFSSL_SUCCESS )
     {
