@@ -57,6 +57,8 @@ struct np_dtls_cli_context {
     WOLFSSL* ssl;
 
     char* hostname;
+    int timeoutMin;
+    int timeoutMax;
 };
 
 static const char* alpnList = NABTO_PROTOCOL_VERSION;
@@ -166,6 +168,8 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
     ctx->dataHandler = dataHandler;
     ctx->eventHandler = eventHandler;
     ctx->callbackData = data;
+    ctx->timeoutMin = 1;
+    ctx->timeoutMax = 16;
 
     nn_llist_init(&ctx->sendList);
     ctx->destroyed = false;
@@ -196,6 +200,13 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
         NABTO_LOG_ERROR(LOG, "cannot set alpn list");
         return NABTO_EC_FAILED;
     }
+
+    if (set_handshake_timeout(ctx, ctx->timeoutMin, ctx->timeoutMax) != NABTO_EC_OK) {
+        NABTO_LOG_INFO(LOG, "Failed to set handshake timeouts");
+        return NABTO_EC_UNKNOWN;
+    }
+
+
 
 
     ec = np_event_queue_create_event(&pl->eq, &nm_wolfssl_cli_start_send_deferred, ctx, &ctx->startSendEvent);
@@ -248,6 +259,11 @@ np_error_code nm_wolfssl_cli_reset(struct np_dtls_cli_context* ctx)
 
     if (ctx->hostname != NULL && wolfSSL_check_domain_name(ssl, ctx->hostname) != WOLFSSL_SUCCESS ) {
         NABTO_LOG_INFO(LOG,  "Failed to set check domain name in the DTLS client");
+        return NABTO_EC_UNKNOWN;
+    }
+
+    if (set_handshake_timeout(ctx, ctx->timeoutMin, ctx->timeoutMax) != NABTO_EC_OK) {
+        NABTO_LOG_INFO(LOG, "Failed to set handshake timeouts");
         return NABTO_EC_UNKNOWN;
     }
 
@@ -373,14 +389,14 @@ np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
 
 np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)
 {
-    int min = minTimeout < 1000 ? 1 : minTimeout / 1000;
-    int max = maxTimeout < 1000 ? 1 : maxTimeout / 1000;
-    if (wolfSSL_dtls_set_timeout_init(ctx->ssl, min) !=
+    ctx->timeoutMin = minTimeout < 1000 ? 1 : minTimeout / 1000;
+    ctx->timeoutMax = maxTimeout < 1000 ? 1 : maxTimeout / 1000;
+    if (wolfSSL_dtls_set_timeout_init(ctx->ssl, ctx->timeoutMin) !=
         WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set min timeout for DTLS client connection");
         return NABTO_EC_FAILED;
     };
-    if (wolfSSL_dtls_set_timeout_max(ctx->ssl, max) != WOLFSSL_SUCCESS) {
+    if (wolfSSL_dtls_set_timeout_max(ctx->ssl, ctx->timeoutMax) != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set max timeout for DTLS client connection");
         return NABTO_EC_FAILED;
     }
@@ -494,6 +510,7 @@ void nm_dtls_event_do_one(void* data)
 void set_timeout(struct np_dtls_cli_context* ctx)
 {
     int timeout = wolfSSL_dtls_get_current_timeout(ctx->ssl);
+    np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
     if (timeout >= 0) {
         np_event_queue_post_timed_event(&ctx->pl->eq, ctx->timerEvent, (uint32_t)(timeout*1000));
     }
@@ -504,8 +521,10 @@ void handle_timeout(void* data)
     struct np_dtls_cli_context* ctx = data;
     int ec = wolfSSL_dtls_got_timeout(ctx->ssl);
     if (ec == WOLFSSL_SUCCESS) {
+        NABTO_LOG_ERROR(LOG, "Got timeout returned success");
         set_timeout(ctx);
     } else if (ec == WOLFSSL_FATAL_ERROR) {
+        NABTO_LOG_ERROR(LOG, "Got timeout returned error");
         // too many retries, timeout.
         ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
     } else {
