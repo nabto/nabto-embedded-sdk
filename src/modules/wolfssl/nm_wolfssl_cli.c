@@ -463,8 +463,8 @@ void nm_dtls_event_do_one(void* data)
         } else if (ret == WOLFSSL_SUCCESS) {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
             ctx->state = DATA;
+            np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
             ctx->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, ctx->callbackData);
-
         } else {
             NABTO_LOG_ERROR(LOG, "unknown case %d", ret );
         }
@@ -524,7 +524,7 @@ void handle_timeout(void* data)
     struct np_dtls_cli_context* ctx = data;
     int ec = wolfSSL_dtls_got_timeout(ctx->ssl);
     if (ec == WOLFSSL_SUCCESS) {
-        NABTO_LOG_ERROR(LOG, "Got timeout returned success");
+        NABTO_LOG_TRACE(LOG, "Got timeout returned success");
         set_timeout(ctx);
     } else if (ec == WOLFSSL_FATAL_ERROR) {
         int err = wolfSSL_get_error(ctx->ssl, ec);
@@ -695,7 +695,7 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
             ctx->sender(pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize,
                         &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
         if (ec != NABTO_EC_OK) {
-            NABTO_LOG_ERROR(LOG,"DTLS sender failed with error: %d", ec);
+            NABTO_LOG_INFO(LOG,"DTLS sender failed with error: %d", ec);
             pl->buf.free(ctx->sslSendBuffer);
             ctx->sslSendBuffer = NULL;
             if (ctx->state == CLOSING) {
