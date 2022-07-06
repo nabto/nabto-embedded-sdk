@@ -430,7 +430,8 @@ void nm_dtls_event_do_one(void* data)
             if (err == WOLFSSL_ERROR_WANT_READ) {
                 NABTO_LOG_TRACE(LOG, "Want Read");
                 set_timeout(ctx);
-            } else if (err == WOLFSSL_ERROR_WANT_WRITE){
+            } else if (err == WOLFSSL_ERROR_WANT_WRITE || err == 0){
+// TODO: remove err == 0 when https://github.com/wolfSSL/wolfssl/issues/5325 is resolved
                 NABTO_LOG_TRACE(LOG, "Want Write");
                 // Wait for IO to happen
             } else {
