@@ -228,6 +228,20 @@ class AttachServer : public AttachCoapServer,
         return ptr;
     }
 
+    static std::shared_ptr<AttachServer> create(boost::asio::io_context& io, uint32_t min, uint32_t max)
+    {
+        auto ptr = std::make_shared<AttachServer>(io);
+        ptr->setHandshakeTimeout(min, max);
+        ptr->init();
+        return ptr;
+    }
+
+    void dropNthPacket(int n) { dtlsServer_.dropNthPacket(n); }
+
+    void setHandshakeTimeout(uint32_t min, uint32_t max) {
+        dtlsServer_.setHandshakeTimeout(min, max);
+    }
+
     void initCoapHandlers()
     {
         auto self = shared_from_this();

@@ -178,7 +178,9 @@ np_error_code nm_wolfssl_srv_get_fingerprint(struct np_platform* pl,
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
-    return nm_wolfssl_util_fp_from_crt(crt, fp);
+    np_error_code ec = nm_wolfssl_util_fp_from_crt(crt, fp);
+    wolfSSL_X509_free(crt);
+    return ec;
 }
 
 np_error_code nm_wolfssl_srv_get_server_fingerprint(struct np_dtls_srv* server,
@@ -362,7 +364,7 @@ void nm_wolfssl_srv_do_one(void* data)
             }
         } else {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
-
+            np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
             ctx->state = DATA;
             event_callback(ctx, NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE);
         }
@@ -454,10 +456,12 @@ void nm_wolfssl_srv_start_send_deferred(void* data)
     ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
     if (next->cb == NULL) {
         ctx->sentCount++;
-    } else if (ret != WOLFSSL_SUCCESS) {
+    } else if (ret <= 0) {
         int err = wolfSSL_get_error(ctx->ssl, ret);
+        char buf[80];
+        wolfSSL_ERR_error_string(err, buf);
         // unknown error
-        NABTO_LOG_ERROR(LOG, "wolfssl_write failed with: %i", err);
+        NABTO_LOG_ERROR(LOG, "wolfssl_write failed with: (%i) %s", err, buf);
         next->cb(NABTO_EC_UNKNOWN, next->data);
     } else {
         ctx->sentCount++;
