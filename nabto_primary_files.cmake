@@ -101,6 +101,8 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_authorization_events.c
   ${root_dir}/src/api/nabto_device_logging.c
   ${root_dir}/src/api/nabto_device_experimental.c
+  ${root_dir}/src/api/nabto_device_experimental_set_private_key_secp256r1_mbedtls.c
+  ${root_dir}/src/api/nabto_device_experimental_set_private_key_secp256r1_wolfssl.c
   ${root_dir}/src/api/nabto_device_fcm.c
   ${root_dir}/src/api/nabto_device_service_invocation.c
   ${root_dir}/src/api/nabto_device_util.c
