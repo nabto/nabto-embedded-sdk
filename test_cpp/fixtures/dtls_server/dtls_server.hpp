@@ -83,6 +83,11 @@ class DtlsServer {
      */
     void setHandshakeTimeout(uint32_t min, uint32_t max);
 
+    /**
+     * Drop the n-th packet from any dtls connection to test packet losses
+     */
+    void dropNthPacket(int n);
+
     static std::shared_ptr<CertificateContext> createCertificateContext(const std::string& privateKey, const std::string& publicKey);
     static std::shared_ptr<CertificateContext> createCertificateContext(const std::string& privateKey, const std::vector<std::string>& certificateChain);
 

@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(check_fingerprint)
         if (ec == NABTO_DEVICE_EC_NOT_IMPLEMENTED) {
             // OK
         } else {
-            BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+            BOOST_TEST(ec == NABTO_DEVICE_EC_OK, nabto_device_error_get_string(ec));
             char* fp;
             nabto_device_get_device_fingerprint(device, &fp);
             fp2 = std::string(fp);

@@ -376,6 +376,7 @@ void DtlsServerImpl::handlePacket(const boost::asio::ip::udp::endpoint& ep, lib:
         // match dtls handshake and client_hello record type
         DtlsConnectionImplPtr conn = DtlsConnectionImpl::create(ioContext_, shared_from_this(), ep);
         if (conn) {
+            conn->dropNthPacket(n_);
             connectionMapSslCtx_[&conn->ssl_] = conn;
             conn->dispatch(received);
             if (conn->state_ > DtlsConnectionImpl::COOKIE_VERIFY && conn->state_ < DtlsConnectionImpl::CLOSED) {
@@ -473,6 +474,10 @@ void DtlsConnectionImpl::handleTimeout()
 
 void DtlsConnectionImpl::handleHandshakePacket(lib::span<const uint8_t> packet) {
     int ret;
+    packetCounter_++;
+    if (packetCounter_ == n_) {
+        return;
+    }
     recvBuffer_ = packet;
     ret = mbedtls_ssl_handshake( &ssl_ );
     recvBuffer_ = lib::span<uint8_t>();

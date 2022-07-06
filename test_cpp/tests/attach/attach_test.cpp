@@ -379,6 +379,30 @@ BOOST_AUTO_TEST_CASE(attach, * boost::unit_test::timeout(300))
     BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
 }
 
+/**
+ * This test sets the server timeout greater than the client timeout, and sets
+ * the server to drop the 3rd packet it receives. This is here as wolfssl seems
+ * to have an issue here.
+ */
+BOOST_AUTO_TEST_CASE(attach_packet_loss, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService(), 2000, 16000);
+    attachServer->dropNthPacket(3);
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.start([](nabto::test::AttachTest& at){
+                 if (at.attachCount_ == (uint64_t)1) {
+                     at.end();
+                 }
+             },[](nabto::test::AttachTest& at){(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
+
 BOOST_AUTO_TEST_CASE(detach, * boost::unit_test::timeout(300))
 {
     auto ioService = nabto::IoService::create("test");

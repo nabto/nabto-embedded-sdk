@@ -25,6 +25,8 @@ class BasestationFixture {
     uint16_t getPort() {
         return attachServer_->getPort();
     }
+    void dropNthPacket(int n) { return attachServer_->dropNthPacket(n); }
+
  private:
     nabto::IoServicePtr ioService_;
     std::shared_ptr<nabto::test::AttachServer> attachServer_;

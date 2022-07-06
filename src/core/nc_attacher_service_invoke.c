@@ -80,6 +80,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
             struct nc_coap_rest_error error;
             nc_coap_rest_error_decode_response(res, &error);
             NABTO_LOG_ERROR(LOG, "Failed to invoke service. %s", error.message);
+            nc_coap_rest_error_deinit(&error);
             ec = NABTO_EC_FAILED;
         } else if (contentFormat != NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
             NABTO_LOG_ERROR(LOG, "Unexpected content format");

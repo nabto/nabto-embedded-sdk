@@ -68,6 +68,9 @@ class DtlsConnectionImpl : public DtlsConnection, public coap::CoapConnection, p
         SERROR
     };
 
+    int packetCounter_ = 0;
+    int n_ = -1;
+
     DtlsConnectionImpl(boost::asio::io_context& ioContext, DtlsServerImplPtr server, const boost::asio::ip::udp::endpoint& ep, const std::string& connectionName);
 
     virtual ~DtlsConnectionImpl();
@@ -77,6 +80,8 @@ class DtlsConnectionImpl : public DtlsConnection, public coap::CoapConnection, p
     void dispatch(lib::span<const uint8_t> buffer);
 
     uint16_t getMtu() { return 1024; }
+
+    void dropNthPacket(int n) { n_ = n; }
 
     void coapAsyncSend(lib::span<const uint8_t> packet, SendHandler handler)
     {
@@ -213,6 +218,8 @@ class DtlsServerImpl : public std::enable_shared_from_this<DtlsServerImpl> {
     void setKeepAliveSettings(KeepAliveSettings keepAliveSettings) { keepAliveSettings_ = keepAliveSettings; }
     void setHandshakeTimeout(uint32_t min, uint32_t max) { minHandshakeTimeout_ = min; maxHandshakeTimeout_ = max; }
 
+    void dropNthPacket(int n) { n_ = n; }
+
     void startReceive();
     void closeConnection(DtlsConnectionImplPtr connection);
 
@@ -336,7 +343,7 @@ class DtlsServerImpl : public std::enable_shared_from_this<DtlsServerImpl> {
     KeepAliveSettings keepAliveSettings_;
     uint32_t minHandshakeTimeout_ = 1000;
     uint32_t maxHandshakeTimeout_ = 60000;
-
+    int n_ = -1;
 };
 
 } // namespace

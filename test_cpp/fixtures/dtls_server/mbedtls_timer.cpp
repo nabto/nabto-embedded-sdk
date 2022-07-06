@@ -20,7 +20,7 @@ void MbedTlsTimer::mbedSetTimer(uint32_t intermediateMilliseconds, uint32_t fina
         finalTimer_.expires_at(*(finalTp_));
         finalTimer_.async_wait([this](const boost::system::error_code& ec){
                 if (ec) {
-                    
+
                 } else {
                     auto cb = timeoutCb_;
                     if (cb) {
