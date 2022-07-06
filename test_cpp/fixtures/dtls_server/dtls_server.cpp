@@ -51,6 +51,8 @@ void DtlsServer::setHandshakeTimeout(uint32_t min, uint32_t max)
     return impl_->setHandshakeTimeout(min, max);
 }
 
+void DtlsServer::dropNthPacket(int n) { return impl_->dropNthPacket(n); }
+
 lib::error_code DtlsServer::init()
 {
     return impl_->init();
