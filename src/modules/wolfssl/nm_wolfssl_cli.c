@@ -206,9 +206,6 @@ np_error_code nm_wolfssl_cli_create(struct np_platform* pl, struct np_dtls_cli_c
         return NABTO_EC_UNKNOWN;
     }
 
-
-
-
     ec = np_event_queue_create_event(&pl->eq, &nm_wolfssl_cli_start_send_deferred, ctx, &ctx->startSendEvent);
     if (ec != NABTO_EC_OK) {
         return ec;
