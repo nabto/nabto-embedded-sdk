@@ -16,7 +16,7 @@ jobs:
 
     - name: configure wolfssl
       run: cd ${{ github.workspace }}/wolfssl-build/wolfssl && ./autogen.sh && ./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni CFLAGS="-DKEEP_PEER_CERT"
-#      run:  cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert --enable-harden --enable-sni CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
+#      run:  cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 
     - name: build wolfssl
       run: cd ${{ github.workspace }}/wolfssl-build/wolfssl && make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && sudo make install
