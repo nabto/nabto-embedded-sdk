@@ -41,6 +41,7 @@ static void wolfssl_spake2_destroy(struct np_spake2_context* spake);
 static np_error_code wolfssl_spake2_calculate_key(
     struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key);
+
 static np_error_code wolfssl_spake2_key_confirmation(
     struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen,
     uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len);
@@ -112,133 +113,222 @@ static int password_to_mpi(const char* password, mp_int* w, WC_RNG* rng)
 // pwd [in] from auth req
 // S [out] returned to client
 // Key [out] used in key_confirmation
-static np_error_code wolfssl_spake2_calculate_key(
+
+static int wolfssl_spake2_calculate_key_ex(
     struct np_spake2_context* spake, struct nc_spake2_password_request* req,
-    const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
+    const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key,
+    ecc_point* T, ecc_point* M, ecc_point* N, ecc_point* K, ecc_point* S,
+    WC_RNG* rng, ecc_key* Y,
+    mp_int* w, mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime,
+    wc_Sha256* sha)
 {
     int ret;
-    WC_RNG rng;
-    ret = wc_InitRng(&rng);
+    ret = wc_ecc_make_key_ex(rng, 32, Y, ECC_SECP256R1);
     if (ret < 0) {
-        return NABTO_EC_FAILED;
+        return ret;
     }
-
-    ecc_key Y;
-    ret = wc_ecc_init(&Y);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
-    ret = wc_ecc_make_key_ex(&rng, 32, &Y, ECC_SECP256R1);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
-    ret = wc_ecc_make_pub(&Y, NULL);
+    ret = wc_ecc_make_pub(Y, NULL);
     if (ret < 0) {
         return NABTO_EC_FAILED;
     }
     int curveIdx = wc_ecc_get_curve_idx(ECC_SECP256R1);
+    if (curveIdx < 0) {
+        return curveIdx;
+    }
     const ecc_set_type* curveParams = wc_ecc_get_curve_params(curveIdx);
 
-    ecc_point* T = wc_ecc_new_point();
-    ecc_point* M = wc_ecc_new_point();
-    ecc_point* N = wc_ecc_new_point();
-    ecc_point* K = wc_ecc_new_point();
-    ecc_point* S = wc_ecc_new_point();
+    // read T from a buffer. The point is encoded as 0x04 and the X, y
+    // coordinate. 0x04 means the point is uncompressed.
+    ret = wc_ecc_import_point_der(req->T, req->Tlen, curveIdx, T);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = wc_ecc_import_point_der(Mdata, sizeof(Mdata), curveIdx, M);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = wc_ecc_import_point_der(Ndata, sizeof(Ndata), curveIdx, N);
+    if (ret < 0) {
+        return ret;
+    }
+
+
+    ret = password_to_mpi(password, w, rng);
+    if (ret < 0) {
+        return ret;
+    }
+
+
+    ret = mp_read_radix(groupA, curveParams->Af, MP_RADIX_HEX);
+    if (ret < 0) {
+        return ret;
+    }
+    ret = mp_read_radix(groupPrime, curveParams->prime, MP_RADIX_HEX);
+    if (ret < 0) {
+        return ret;
+    }
+    ret = mp_read_radix(groupOrder, curveParams->order, MP_RADIX_HEX);
+    if (ret < 0) {
+        return ret;
+    }
+
+    // S = N*w + Y*1
+    ret = calculate_S(groupA, groupPrime, N, w, &Y->pubkey, S);
+    if (ret < 0) {
+        return ret;
+    }
+
+    // K = 1*y*(T-w*M) = y*T - y*w*M
+    ret = calculate_K(groupA, groupOrder, groupPrime, &Y->k, T, w, M, K);
+    if (ret != 0) {
+        return ret;
+    }
+
+    // TT = encode(cliFp) || encode(devFp) ||
+    // encode(T) || encode(S) || encode(K) ||
+    ret = hashData(sha, req->clientFingerprint, 32);
+    if (ret != 0) {
+        return ret;
+    }
+    ret = hashData(sha, req->deviceFingerprint, 32);
+    if (ret != 0) {
+        return ret;
+    }
+    ret = hashPoint(sha, curveIdx, T);
+    if (ret != 0) {
+        return ret;
+    }
+    ret = hashPoint(sha, curveIdx, S);
+    if (ret != 0) {
+        return ret;
+    }
+    ret = hashPoint(sha, curveIdx, K);
+    if (ret != 0) {
+        return ret;
+    }
+
+    // encode(w)
+    ret = hashMpi(sha, w);
+    if (ret != 0) {
+        return ret;
+    }
+
+    // create Key = H(TT)
+    ret = wc_Sha256Final(sha, spake2Key);
+    if (ret != 0) {
+        return ret;
+    }
+
+    word32 len = *respLen;
+
+    ret = wc_ecc_export_point_der(curveIdx, S, resp, &len);
+    if (ret != 0) {
+        return ret;
+    }
+    *respLen = len;
+
+    return 0;
+}
+
+static int calculate_key_allocate(struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+    const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
+{
+    int ret;
+    ecc_point* T = NULL;
+    ecc_point* M = NULL;
+    ecc_point* N = NULL;
+    ecc_point* K = NULL;
+    ecc_point* S = NULL;
+    T = wc_ecc_new_point();
+    M = wc_ecc_new_point();
+    N = wc_ecc_new_point();
+    K = wc_ecc_new_point();
+    S = wc_ecc_new_point();
+
+    WC_RNG rng;
+    ecc_key Y;
 
     mp_int w;
     mp_int groupA;
     mp_int groupOrder;
     mp_int groupPrime;
 
-    if (T == NULL || M == NULL || N == NULL || K == NULL || S == NULL) {
-        return NABTO_EC_FAILED;
-    }
-
-    if (mp_init(&w) != 0 || mp_init(&groupA) != 0 || mp_init(&groupOrder) != 0 || mp_init(&groupPrime) != 0)
-    {
-        return NABTO_EC_FAILED;
-    }
-
-    // read T from a buffer. The point is encoded as 0x04 and the X, y
-    // coordinate. 0x04 means the point is uncompressed.
-    ret = wc_ecc_import_point_der(req->T, req->Tlen, curveIdx, T);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
-
-    ret = wc_ecc_import_point_der(Mdata, sizeof(Mdata), curveIdx, M);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
-
-    ret = wc_ecc_import_point_der(Ndata, sizeof(Ndata), curveIdx, N);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
-
-
-    ret = password_to_mpi(password, &w, &rng);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
-
-
-    if (mp_read_radix(&groupA, curveParams->Af, MP_RADIX_HEX) != 0 ||
-        mp_read_radix(&groupPrime, curveParams->prime, MP_RADIX_HEX) != 0 ||
-        mp_read_radix(&groupOrder, curveParams->order, MP_RADIX_HEX) != 0)
-    {
-        return NABTO_EC_FAILED;
-    }
-
-    // S = N*w + Y*1
-    ret = calculate_S(&groupA, &groupPrime, N, &w, &Y.pubkey, S);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
-
-    // K = 1*y*(T-w*M) = y*T - y*w*M
-    ret = calculate_K(&groupA, &groupOrder, &groupPrime, &Y.k, T, &w, M, K);
-    if (ret != 0) {
-        return NABTO_EC_FAILED;
-    }
-
     wc_Sha256 sha;
-    if (wc_InitSha256(&sha) != 0) {
-        return NABTO_EC_FAILED;
+
+    ret = wc_InitRng(&rng);
+    if (ret == 0) {
+        ret = wc_ecc_init(&Y);
+        if (ret == 0) {
+
+            ret = mp_init(&w);
+            if (ret == 0) {
+                ret = mp_init(&groupA);
+                if (ret == 0) {
+                    ret = mp_init(&groupOrder);
+                    if (ret == 0) {
+                        ret = mp_init(&groupPrime);
+                        if (ret == 0) {
+
+                            ret = wc_InitSha256(&sha);
+                            if (ret == 0) {
+                                ret = wolfssl_spake2_calculate_key_ex(
+                                    spake, req, password, resp, respLen,
+                                    spake2Key, T, M, N, K, S, &rng, &Y,
+                                    &w, &groupA, &groupOrder, &groupPrime,
+                                    &sha);
+                                {
+                                    wc_Sha256Free(&sha);
+                                }
+
+                                wc_Sha256Free(&sha);
+                            }
+                            mp_free(&groupPrime);
+                        }
+                        mp_free(&groupOrder);
+                    }
+                    mp_free(&groupA);
+                }
+                mp_free(&w);
+            }
+
+            wc_ecc_free(&Y);
+        }
+        wc_FreeRng(&rng);
     }
 
-    // TT = encode(cliFp) || encode(devFp) ||
-    // encode(T) || encode(S) || encode(K) ||
-    if (hashData(&sha, req->clientFingerprint, 32) != 0 ||
-        hashData(&sha, req->deviceFingerprint, 32) != 0 ||
-        hashPoint(&sha, curveIdx, T) != 0 ||
-        hashPoint(&sha, curveIdx, S) != 0 ||
-        hashPoint(&sha, curveIdx, K) != 0) {
-        return NABTO_EC_FAILED;
-    }
+    wc_ecc_del_point(S);
+    wc_ecc_del_point(K);
+    wc_ecc_del_point(N);
+    wc_ecc_del_point(M);
+    wc_ecc_del_point(T);
+    return ret;
+}
 
-    // encode(w)
-    if (hashMpi(&sha, &w) != 0) {
-        return NABTO_EC_FAILED;
-    }
+static np_error_code wolfssl_spake2_calculate_key(
+    struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+    const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
+{
+    int ret = calculate_key_allocate(spake, req, password, resp, respLen, spake2Key);
 
-    // create Key = H(TT)
-    if (wc_Sha256Final(&sha, spake2Key) != 0) {
-        return NABTO_EC_FAILED;
-    }
-
-    wc_Sha256Free(&sha);
-
-    word32 len = *respLen;
-
-    ret = wc_ecc_export_point_der(curveIdx, S, resp, &len);
     if (ret != 0) {
         return NABTO_EC_FAILED;
     }
-    *respLen = len;
-
     return NABTO_EC_OK;
 }
+
+int calculate_S_ex(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_point* Y, ecc_point* S, mp_int* one)
+{
+    int ret;
+    ret = mp_set(one, 1);
+    if (ret != 0) {
+        return ret;
+    }
+
+    return ecc_mul2add(N, w, Y, one, S, groupA, modulus, NULL);
+}
+
 
 int calculate_S(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_point* Y, ecc_point* S)
 {
@@ -249,13 +339,43 @@ int calculate_S(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_po
     if (ret != 0) {
         return ret;
     }
-    ret = mp_set(&one, 1);
+    ret = calculate_S_ex(groupA, modulus, N, w, Y, S, &one);
+    mp_free(&one);
+    return ret;
+}
+
+int calculate_K_ex(mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime, mp_int* y, ecc_point* T, mp_int* w, ecc_point* M, ecc_point* K,
+mp_int* zero, mp_int* one, mp_int* minusOne, mp_int* tmp)
+{
+    int ret;
+    ret = mp_set(zero, 0);
+    if (ret != 0) {
+        return ret;
+    }
+    ret = mp_set(one, 1);
     if (ret != 0) {
         return ret;
     }
 
-    ret = ecc_mul2add(N, w, Y, &one, S, groupA, modulus, NULL);
-    return ret;
+    // -1 = 0 - 1
+    ret = mp_sub(zero, one, minusOne);
+    if (ret != 0) {
+        return ret;
+    }
+
+    ret = mp_mulmod(minusOne, w, groupOrder, tmp);
+    //ret = mp_mul(&minusOne, w, &tmp);
+    if (ret != 0) {
+        return ret;
+    }
+
+    ret = mp_mulmod(tmp, y, groupOrder, tmp);
+    //ret = mp_mul(&tmp, y, &tmp);
+    if (ret != 0) {
+        return ret;
+    }
+
+    return ecc_mul2add(T, y, M, tmp, K, groupA, groupPrime, NULL);
 }
 
 int calculate_K(mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime, mp_int* y, ecc_point* T, mp_int* w, ecc_point* M, ecc_point* K)
@@ -270,55 +390,53 @@ int calculate_K(mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime, mp_int* 
     mp_int minusOne;
     mp_int tmp;
     ret = mp_init(&zero);
-    if (ret != 0) {
-        return ret;
-    }
-    ret = mp_init(&one);
-    if (ret != 0) {
-        return ret;
-    }
-
-    ret = mp_init(&minusOne);
-    if (ret != 0) {
-        return ret;
-    }
-
-    ret = mp_init(&tmp);
-    if (ret != 0) {
-        return ret;
-    }
-
-    ret = mp_set(&zero, 0);
-    if (ret != 0) {
-        return ret;
-    }
-    ret = mp_set(&one, 1);
-    if (ret != 0) {
-        return ret;
+    if (ret == 0) {
+        ret = mp_init(&one);
+        if (ret == 0) {
+            ret = mp_init(&minusOne);
+            if (ret == 0) {
+                ret = mp_init(&tmp);
+                if (ret == 0) {
+                    ret = calculate_K_ex(groupA, groupOrder, groupPrime, y, T, w, M, K, &zero, &one, &minusOne, &tmp);
+                    mp_free(&tmp);
+                }
+                mp_free(&minusOne);
+            }
+            mp_free(&one);
+        }
+        mp_free(&zero);
     }
 
-    ret = mp_sub(&zero, &one, &minusOne);
+    return ret;
+}
+
+static int sha256_hash_ex(uint8_t* buffer, size_t bufferSize, uint8_t* hash, wc_Sha256* sha)
+{
+    int ret;
+
+    ret = wc_Sha256Update(sha, buffer, bufferSize);
     if (ret != 0) {
         return ret;
     }
-
-    ret = mp_mulmod(&minusOne, w, groupOrder, &tmp);
-    //ret = mp_mul(&minusOne, w, &tmp);
-    if (ret != 0) {
-        return ret;
-    }
-
-    ret = mp_mulmod(&tmp, y, groupOrder, &tmp);
-    //ret = mp_mul(&tmp, y, &tmp);
-    if (ret != 0) {
-        return ret;
-    }
-
-    ret = ecc_mul2add(T, y, M, &tmp, K, groupA, groupPrime, NULL);
+    ret = wc_Sha256Final(sha, hash);
     if (ret != 0) {
         return ret;
     }
     return 0;
+}
+
+static int sha256_hash(uint8_t* buffer, size_t bufferSize, uint8_t* hash)
+{
+    int ret;
+    wc_Sha256 sha;
+    ret = wc_InitSha256(&sha);
+    if (ret != 0) {
+        return ret;
+    }
+    ret = sha256_hash_ex(buffer, bufferSize, hash, &sha);
+
+    wc_Sha256Free(&sha);
+    return ret;
 }
 
 static np_error_code wolfssl_spake2_key_confirmation(
@@ -329,19 +447,14 @@ static np_error_code wolfssl_spake2_key_confirmation(
         return NABTO_EC_INVALID_ARGUMENT;
     }
     uint8_t hash2[32];
-    {
-        wc_Sha256 sha;
-        wc_InitSha256(&sha);
-        wc_Sha256Update(&sha, key, keyLen);
-        wc_Sha256Final(&sha, hash1);
-        wc_Sha256Free(&sha);
+    int ret;
+    ret = sha256_hash(key, keyLen, hash1);
+    if (ret != 0) {
+        return NABTO_EC_FAILED;
     }
-    {
-        wc_Sha256 sha;
-        wc_InitSha256(&sha);
-        wc_Sha256Update(&sha, hash1, 32);
-        wc_Sha256Final(&sha, hash2);
-        wc_Sha256Free(&sha);
+    ret = sha256_hash(hash1, 32, hash2);
+    if (ret != 0) {
+        return NABTO_EC_FAILED;
     }
 
     if (memcmp(payload, hash2, 32) != 0) {
@@ -418,12 +531,7 @@ bool nm_wolfssl_spake2_test_hash_mpi()
     mp_init(&n);
     mp_set(&n, 0x42);
 
-    {
-        wc_Sha256 sha;
-        wc_InitSha256(&sha);
-        wc_Sha256Update(&sha, buffer, sizeof(buffer));
-        wc_Sha256Final(&sha, correctHash);
-    }
+    sha256_hash(buffer, sizeof(buffer), correctHash);
     {
         wc_Sha256 sha;
         wc_InitSha256(&sha);
@@ -476,6 +584,14 @@ bool test_calculate_S()
     if (memcmp(buffer, expectedS, 65) != 0) {
         return false;
     }
+
+    mp_free(&groupA);
+    mp_free(&groupPrime);
+    mp_free(&w);
+    wc_ecc_del_point(N);
+    wc_ecc_del_point(Y);
+    wc_ecc_del_point(S);
+
     return true;
 }
 
@@ -517,9 +633,6 @@ bool test_calculate_K()
     mp_read_unsigned_bin(&w, inputw, sizeof(inputw));
     mp_read_unsigned_bin(&y, inputy, sizeof(inputy));
 
-    ecc_point* Tprime = wc_ecc_new_point();
-    wc_ecc_mulmod(&groupOrder, T, Tprime, &groupA, &groupPrime, 0);
-
     ret = calculate_K(&groupA, &groupOrder, &groupPrime, &y, T, &w, M, K);
 
     uint8_t buffer[128];
@@ -529,6 +642,17 @@ bool test_calculate_K()
     if (memcmp(buffer, expectedK, 65) != 0) {
         return false;
     }
+
+    mp_free(&groupA);
+    mp_free(&groupPrime);
+    mp_free(&groupOrder);
+    mp_free(&w);
+    mp_free(&y);
+
+    wc_ecc_del_point(M);
+    wc_ecc_del_point(T);
+    wc_ecc_del_point(K);
+
     return true;
 
 }
@@ -560,6 +684,10 @@ bool password_hash_test()
     if (memcmp(buffer, expectedW, 32) != 0) {
         return false;
     }
+
+    wc_FreeRng(&rng);
+    mp_free(&w);
+
 
     return true;
 }
