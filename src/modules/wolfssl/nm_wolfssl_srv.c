@@ -178,7 +178,9 @@ np_error_code nm_wolfssl_srv_get_fingerprint(struct np_platform* pl,
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
-    return nm_wolfssl_util_fp_from_crt(crt, fp);
+    np_error_code ec = nm_wolfssl_util_fp_from_crt(crt, fp);
+    wolfSSL_X509_free(crt);
+    return ec;
 }
 
 np_error_code nm_wolfssl_srv_get_server_fingerprint(struct np_dtls_srv* server,
