@@ -53,9 +53,9 @@ BOOST_AUTO_TEST_CASE(calculate_key)
     memcpy(req->T, T.data(), T.size());
     req->Tlen = T.size();
 
-    uint8_t* S = (uint8_t*)calloc(1, 256);
-    size_t SLen;
-    uint8_t* key = (uint8_t*)calloc(1, 32);
+    uint8_t S[256];
+    size_t SLen = sizeof(S);
+    uint8_t key[32];
 
     BOOST_TEST(pl->spake2.calculate_key(NULL, req, password.c_str(), S, &SLen, key)== NABTO_EC_OK);
 
@@ -67,8 +67,6 @@ BOOST_AUTO_TEST_CASE(calculate_key)
     BOOST_TEST(memcmp(key, cli.key_.data(), cli.key_.size()) == 0);
 
     nc_spake2_password_request_free(req);
-    free(S);
-    free(key);
 }
 
 BOOST_AUTO_TEST_CASE(key_confirmation)

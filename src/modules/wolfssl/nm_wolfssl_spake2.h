@@ -11,6 +11,8 @@ np_error_code nm_wolfssl_spake2_init(struct np_platform* pl);
 
 void nm_wolfssl_spake2_deinit(struct np_platform* pl);
 
+bool nm_wolfssl_spake2_test();
+
 #ifdef __cplusplus
 } //extern "C"
 #endif
