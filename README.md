@@ -24,7 +24,7 @@ If build passed, a C++ compiler was found, and `DEVICE_BUILD_TESTS` was not set 
 
 If the build was successfull but unit tests was not build, an example application can be run to validate the Embedded SDK can run.
 
-### Changing DTLS module
+### WolfSSL
 
 By default, the Embedded SDK uses the MbedTLS library for DTLS operations. In addition, the Embedded SDK also comes with a module using the WolfSSL library. Controlling which module is used is done with the CMake options `NABTO_USE_MBEDTLS` and `NABTO_USE_WOLFSSL`:
 
