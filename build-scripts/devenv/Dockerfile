@@ -13,7 +13,9 @@ RUN tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz  -C /usr --strip-component
 
 WORKDIR /build/wolfssl
 RUN git clone https://github.com/wolfSSL/wolfssl
+# use a specific commit on master
 WORKDIR /build/wolfssl/wolfssl
+RUN git checkout 738d79c5d5c4160e8bfc863323b4bb6f075035a3
 RUN ./autogen.sh
 # Fastest base intel config ./configure --enable-intelasm --enable-aesni --enable-fpecc --enable-fasthugemath --enable-sp-asm --enable-sp
 # Test config modifications with ./wolfcrypt/benchmark/benchmark -ecc
@@ -27,7 +29,7 @@ RUN ./autogen.sh
 #ECDSA [      SECP256R1]   256 verify      46500 ops took 1.001 sec, avg 0.022 ms, 46475.512 ops/sec
 #Benchmark complete
 # in 4.7.0-stable there is a bug regarding --enable-fpecc in the benchmark on virtual machines so it has been disabled.
-RUN ./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni CFLAGS="-DKEEP_PEER_CERT"
+RUN ./configure --prefix=/usr/local --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 
 RUN make -j 8
 RUN ./wolfcrypt/benchmark/benchmark -ecc

@@ -12,15 +12,13 @@ jobs:
     steps:
     - name: prepare wolfssl
       run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && git clone https://github.com/wolfSSL/wolfssl
-#      run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && wget https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.1.1-stable.tar.gz && tar xf v5.1.1-stable.tar.gz
+      run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && wget -q -O wolfssl.zip https://github.com/wolfSSL/wolfssl/archive/738d79c5d5c4160e8bfc863323b4bb6f075035a3.tar.gz && tar -xzf - --strip-components=1
 
     - name: configure wolfssl
-      run: cd ${{ github.workspace }}/wolfssl-build/wolfssl && ./autogen.sh && ./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni CFLAGS="-DKEEP_PEER_CERT"
-#      run:  cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && ./autogen.sh && ./configure --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-make-cert --enable-harden --enable-sni CFLAGS="-DWOLFSSL_STATIC_RSA -DHAVE_DSA -DHAVE_ALL_CURVES -DHAVE_ECC -DKEEP_PEER_CERT"
+      run: cd ${{ github.workspace }}/wolfssl-build && ./autogen.sh && ./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 
     - name: build wolfssl
-      run: cd ${{ github.workspace }}/wolfssl-build/wolfssl && make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && sudo make install
-#      run: cd ${{ github.workspace }}/wolfssl-build/wolfssl-5.1.1-stable && make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && sudo make install
+      run: cd ${{ github.workspace }}/wolfssl-build && make -j 8 && ./wolfcrypt/benchmark/benchmark -ecc && sudo make install
 
     - uses: actions/checkout@v2
       with:

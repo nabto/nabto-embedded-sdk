@@ -208,6 +208,7 @@ set(ne_mbedtls_module_src
   ${root_dir}/src/modules/mbedtls/nm_mbedtls_cli.c
   ${root_dir}/src/modules/mbedtls/nm_mbedtls_srv.c
   ${root_dir}/src/modules/mbedtls/nm_mbedtls_random.c
+  ${root_dir}/src/modules/mbedtls/nm_mbedtls_spake2.c
   )
 
 set(ne_tcp_tunnels_src

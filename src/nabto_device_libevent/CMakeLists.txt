@@ -33,18 +33,18 @@ target_link_libraries(nabto_device_static
 if (NABTO_USE_MBEDTLS)
   target_link_libraries(nabto_device_static
     nm_mbedtls_srv
-
     nm_mbedtls_cli
     nm_mbedtls_random
+    nm_mbedtls_spake2
     3rdparty_mbedtls
   )
 endif()
 if(NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device_static
     nm_wolfssl_srv
-
     nm_wolfssl_cli
     nm_wolfssl_random
+    nm_wolfssl_spake2
   )
 endif()
 
@@ -72,6 +72,7 @@ if (NABTO_USE_MBEDTLS)
     nm_mbedtls_srv
     nm_mbedtls_cli
     nm_mbedtls_random
+    nm_mbedtls_spake2
   )
 endif()
 if(NABTO_USE_WOLFSSL)
@@ -79,6 +80,7 @@ if(NABTO_USE_WOLFSSL)
     nm_wolfssl_srv
     nm_wolfssl_cli
     nm_wolfssl_random
+    nm_wolfssl_spake2
   )
 endif()
 

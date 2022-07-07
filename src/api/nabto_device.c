@@ -21,11 +21,13 @@
 
 #if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_random.h>
+#include <modules/mbedtls/nm_mbedtls_spake2.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_util.h>
 #elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_random.h>
+#include <modules/wolfssl/nm_wolfssl_spake2.h>
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_srv.h>
 #include <modules/wolfssl/nm_wolfssl_util.h>
@@ -89,11 +91,13 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nm_mbedtls_srv_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_random_init(pl);
+    nm_mbedtls_spake2_init(pl);
 #endif
 #ifdef NABTO_USE_WOLFSSL
     nm_wolfssl_srv_init(pl);
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);
+    nm_wolfssl_spake2_init(pl);
 #endif
 
     ec = nabto_device_platform_init(dev, dev->eventMutex);
@@ -207,9 +211,11 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nabto_device_platform_deinit(dev);
 #ifdef NABTO_USE_MBEDTLS
     nm_mbedtls_random_deinit(&dev->pl);
+    nm_mbedtls_spake2_deinit(&dev->pl);
 #endif
 #ifdef NABTO_USE_WOLFSSL
     nm_wolfssl_random_deinit(&dev->pl);
+    nm_wolfssl_spake2_deinit(&dev->pl);
 #endif
 
     nabto_device_future_queue_deinit(&dev->futureQueue);

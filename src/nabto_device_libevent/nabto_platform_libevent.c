@@ -6,10 +6,7 @@
 #include <modules/libevent/nm_libevent.h>
 #include <modules/libevent/nm_libevent_mdns_udp_bind.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
-#include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mdns/nm_mdns_server.h>
-#include <modules/mbedtls/nm_mbedtls_cli.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
 #include <api/nabto_device_threads.h>
 
