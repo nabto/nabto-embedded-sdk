@@ -87,7 +87,7 @@ class TestPlatformLibevent : public TestPlatform {
             std::make_unique<std::thread>([this]() { libeventThread(); });
         np_event_queue_create_event(&pl_.eq, &eventCb, this, &ev_);
         np_event_queue_post_timed_event(&pl_.eq, ev_, 10);
-        nabto_device_threads_cond_wait(cond_, threadMutex_);
+        nabto_device_threads_cond_timed_wait(cond_, threadMutex_, 1000);
         np_event_queue_destroy_event(&pl_.eq, ev_);
     }
 
