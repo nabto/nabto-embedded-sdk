@@ -36,14 +36,14 @@ If not using CMake, compiler definitions of the same names can be used. If both 
 
 MbedTLS source files are included as a 3rdparty submodule on this repo. However, using the WolfSSL library requires the library to be installed on the system.
 
-Currently, the latest WolfSSL release includes bugs fatal to the Nabto use case. For this reason, WolfSSL must be installed from the Github master branch. Specifically, the Nabto module is developed and tested using this commit:
+Currently, the WolfSSL 5.3.0 release includes bugs fatal to the Nabto use case. For this reason, WolfSSL must be installed from the Github master branch. Specifically, the Nabto module is developed and tested using this commit:
 
 https://github.com/wolfSSL/wolfssl/archive/738d79c5d5c4160e8bfc863323b4bb6f075035a3.zip
 
-When installing WolfSSL, the following build options must be used:
+When installing WolfSSL, the following build options can be used:
 
 ```
---enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni CFLAGS="-DKEEP_PEER_CERT"
+./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 ```
 
 ## Overview
