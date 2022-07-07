@@ -1,6 +1,7 @@
 #pragma once
 
 #include <platform/np_platform.h>
+#include <platform/np_event_queue_wrapper.h>
 #include <modules/libevent/nm_libevent.h>
 #include <modules/logging/test/nm_logging_test.h>
 
@@ -34,6 +35,8 @@ class TestPlatformLibevent : public TestPlatform {
     TestPlatformLibevent() {
         memset(&pl_, 0, sizeof(pl_));
         mutex_ = nabto_device_threads_create_mutex();
+        threadMutex_ = nabto_device_threads_create_mutex();
+        cond_ = nabto_device_threads_create_condition();
         nm_libevent_global_init();
         eventBase_ = event_base_new();
         init();
@@ -47,6 +50,8 @@ class TestPlatformLibevent : public TestPlatform {
 
         nm_libevent_global_deinit();
         nabto_device_threads_free_mutex(mutex_);
+        nabto_device_threads_free_mutex(threadMutex_);
+        nabto_device_threads_free_cond(cond_);
     }
 
     virtual void init()
@@ -78,7 +83,23 @@ class TestPlatformLibevent : public TestPlatform {
 
         thread_event_queue_run(&eventQueue_);
 
-        libeventThread_ = std::make_unique<std::thread>([this](){ libeventThread(); });
+        libeventThread_ =
+            std::make_unique<std::thread>([this]() { libeventThread(); });
+        np_event_queue_create_event(&pl_.eq, &eventCb, this, &ev_);
+        np_event_queue_post_timed_event(&pl_.eq, ev_, 10);
+        nabto_device_threads_cond_wait(cond_, threadMutex_);
+        np_event_queue_destroy_event(&pl_.eq, ev_);
+    }
+
+    static void eventCb(void* data)
+    {
+        TestPlatformLibevent* t = (TestPlatformLibevent*)data;
+        t->handleEvCb();
+    }
+
+    void handleEvCb()
+    {
+        nabto_device_threads_cond_signal(cond_);
     }
 
     void deinit()
@@ -123,7 +144,11 @@ class TestPlatformLibevent : public TestPlatform {
     struct thread_event_queue eventQueue_;
     nabto_device_mutex* mutex_;
 
-    std::promise<void> stoppedPromise_;
+    struct np_event* ev_;
+
+    nabto_device_mutex* threadMutex_;
+    nabto_device_condition* cond_;
+
     std::unique_ptr<std::thread> libeventThread_;
 };
 
