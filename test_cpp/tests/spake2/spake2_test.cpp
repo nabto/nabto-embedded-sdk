@@ -13,9 +13,7 @@
 
 BOOST_AUTO_TEST_SUITE(spake2)
 
-BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
-
-BOOST_AUTO_TEST_CASE(check_platform_init)
+BOOST_AUTO_TEST_CASE(check_platform_init, * boost::unit_test::timeout(120))
 {
     auto tp = nabto::test::TestPlatform::create();
     np_platform* pl = tp->getPlatform();
@@ -25,7 +23,7 @@ BOOST_AUTO_TEST_CASE(check_platform_init)
     BOOST_TEST(pl->spake2.key_confirmation != (void*)NULL);
 }
 
-BOOST_AUTO_TEST_CASE(calculate_key)
+BOOST_AUTO_TEST_CASE(calculate_key, * boost::unit_test::timeout(120))
 {
     auto tp = nabto::test::TestPlatform::create();
     np_platform* pl = tp->getPlatform();
@@ -69,7 +67,7 @@ BOOST_AUTO_TEST_CASE(calculate_key)
     nc_spake2_password_request_free(req);
 }
 
-BOOST_AUTO_TEST_CASE(key_confirmation)
+BOOST_AUTO_TEST_CASE(key_confirmation, * boost::unit_test::timeout(120))
 {
     auto tp = nabto::test::TestPlatform::create();
     np_platform* pl = tp->getPlatform();

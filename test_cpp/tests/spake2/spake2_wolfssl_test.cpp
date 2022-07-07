@@ -14,9 +14,7 @@
 
 BOOST_AUTO_TEST_SUITE(spake2)
 
-BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
-
-BOOST_AUTO_TEST_CASE(wolfssl_spake2)
+BOOST_AUTO_TEST_CASE(wolfssl_spake2, * boost::unit_test::timeout(120))
 {
     BOOST_TEST(nm_wolfssl_spake2_test());
 }
