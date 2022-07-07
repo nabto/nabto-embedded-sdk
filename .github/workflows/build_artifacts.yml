@@ -31,7 +31,7 @@ jobs:
         name: Test run
         run: |
           netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\artifacts\bin\embedded_unit_test.exe" enable=yes
-          ${{ github.workspace }}/artifacts/bin/embedded_unit_test --log_format=JUNIT --log_sink=unit_test_${{matrix.os}}.xml --detect_memory_leaks=0
+          ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l all --detect_memory_leaks=0
 
       - if: matrix.os != 'windows-2019'
         name: Test run
