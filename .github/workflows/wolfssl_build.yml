@@ -11,7 +11,6 @@ jobs:
 
     steps:
     - name: prepare wolfssl
-      run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && git clone https://github.com/wolfSSL/wolfssl
       run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && wget -q -O wolfssl.zip https://github.com/wolfSSL/wolfssl/archive/738d79c5d5c4160e8bfc863323b4bb6f075035a3.tar.gz && tar -xzf - --strip-components=1
 
     - name: configure wolfssl
