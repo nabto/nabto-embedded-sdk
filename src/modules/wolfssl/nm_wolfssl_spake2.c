@@ -127,10 +127,10 @@ static int wolfssl_spake2_calculate_key_ex(
     if (ret < 0) {
         return ret;
     }
-    ret = wc_ecc_make_pub(Y, NULL);
-    if (ret < 0) {
-        return NABTO_EC_FAILED;
-    }
+    // ret = wc_ecc_make_pub(Y, NULL);
+    // if (ret < 0) {
+    //     return NABTO_EC_FAILED;
+    // }
     int curveIdx = wc_ecc_get_curve_idx(ECC_SECP256R1);
     if (curveIdx < 0) {
         return curveIdx;
@@ -278,9 +278,6 @@ static int calculate_key_allocate(struct np_spake2_context* spake, struct nc_spa
                                     spake2Key, T, M, N, K, S, &rng, &Y,
                                     &w, &groupA, &groupOrder, &groupPrime,
                                     &sha);
-                                {
-                                    wc_Sha256Free(&sha);
-                                }
 
                                 wc_Sha256Free(&sha);
                             }
@@ -357,8 +354,8 @@ mp_int* zero, mp_int* one, mp_int* minusOne, mp_int* tmp)
         return ret;
     }
 
-    // -1 = 0 - 1
-    ret = mp_sub(zero, one, minusOne);
+    // -1 = 0 - 1 = groupOrder - 1
+    ret = mp_submod(zero, one, groupOrder, minusOne);
     if (ret != 0) {
         return ret;
     }
