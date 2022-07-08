@@ -11,6 +11,8 @@
 
 BOOST_AUTO_TEST_SUITE(test_platform)
 
+BOOST_TEST_DECORATOR(*boost::unit_test::timeout(120))
+
 BOOST_DATA_TEST_CASE(start_stop, nabto::test::TestPlatformFactory::multi(),tpf)
 {
     auto tp = tpf->create();
