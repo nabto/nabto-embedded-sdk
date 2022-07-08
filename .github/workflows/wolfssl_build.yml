@@ -33,4 +33,4 @@ jobs:
       run: cmake --build build-dir --target install
 
     - name: Test run
-      run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test --l test_suite --detect_memory_leaks=0
+      run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
