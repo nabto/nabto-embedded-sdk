@@ -82,17 +82,6 @@ class TestPlatformLibevent : public TestPlatform {
             std::make_unique<std::thread>([this]() { libeventThread(); });
     }
 
-    static void eventCb(void* data)
-    {
-        TestPlatformLibevent* t = (TestPlatformLibevent*)data;
-        t->handleEvCb();
-    }
-
-    void handleEvCb()
-    {
-        nabto_device_threads_cond_signal(cond_);
-    }
-
     void deinit()
     {
         thread_event_queue_deinit(&eventQueue_);
