@@ -130,13 +130,6 @@ class TestPlatformLibevent : public TestPlatform {
     nabto_device_mutex* mutex_;
 
     std::promise<bool> prom_;
-
-
-    struct np_event* ev_;
-
-    nabto_device_mutex* threadMutex_;
-    nabto_device_condition* cond_;
-
     std::unique_ptr<std::thread> libeventThread_;
 };
 
