@@ -1,7 +1,6 @@
 #pragma once
 
 #include <platform/np_platform.h>
-#include <platform/np_event_queue_wrapper.h>
 #include <modules/libevent/nm_libevent.h>
 #include <modules/logging/test/nm_logging_test.h>
 
