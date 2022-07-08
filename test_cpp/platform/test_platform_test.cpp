@@ -16,8 +16,6 @@ BOOST_TEST_DECORATOR(*boost::unit_test::timeout(120))
 BOOST_DATA_TEST_CASE(start_stop, nabto::test::TestPlatformFactory::multi(),tpf)
 {
     auto tp = tpf->create();
-    // HERE BE DRAGONS, wait for the thread to start the loop such that stop breaks the loop
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     tp->stop();
 }
 
