@@ -35,8 +35,6 @@ class TestPlatformLibevent : public TestPlatform {
     TestPlatformLibevent() {
         memset(&pl_, 0, sizeof(pl_));
         mutex_ = nabto_device_threads_create_mutex();
-        threadMutex_ = nabto_device_threads_create_mutex();
-        cond_ = nabto_device_threads_create_condition();
         nm_libevent_global_init();
         eventBase_ = event_base_new();
         init();
@@ -50,8 +48,6 @@ class TestPlatformLibevent : public TestPlatform {
 
         nm_libevent_global_deinit();
         nabto_device_threads_free_mutex(mutex_);
-        nabto_device_threads_free_mutex(threadMutex_);
-        nabto_device_threads_free_cond(cond_);
     }
 
     virtual void init()
@@ -85,10 +81,6 @@ class TestPlatformLibevent : public TestPlatform {
 
         libeventThread_ =
             std::make_unique<std::thread>([this]() { libeventThread(); });
-        np_event_queue_create_event(&pl_.eq, &eventCb, this, &ev_);
-        np_event_queue_post_timed_event(&pl_.eq, ev_, 10);
-        nabto_device_threads_cond_timed_wait(cond_, threadMutex_, 1000);
-        np_event_queue_destroy_event(&pl_.eq, ev_);
     }
 
     static void eventCb(void* data)
@@ -115,6 +107,7 @@ class TestPlatformLibevent : public TestPlatform {
 
         // run last events after it has been stopped
         event_base_loop(eventBase_, EVLOOP_NONBLOCK);
+        prom_.set_value(true);
     }
 
     virtual void stop()
@@ -123,8 +116,12 @@ class TestPlatformLibevent : public TestPlatform {
             return;
         }
         stopped_ = true;
-        thread_event_queue_stop_blocking(&eventQueue_);
-        event_base_loopbreak(eventBase_);
+
+        auto fut = prom_.get_future();
+        while (fut.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout) {
+            thread_event_queue_stop_blocking(&eventQueue_);
+            event_base_loopbreak(eventBase_);
+        }
 
         if (libeventThread_) {
             libeventThread_->join();
@@ -143,6 +140,9 @@ class TestPlatformLibevent : public TestPlatform {
     struct nm_libevent_context libeventContext_;
     struct thread_event_queue eventQueue_;
     nabto_device_mutex* mutex_;
+
+    std::promise<bool> prom_;
+
 
     struct np_event* ev_;
 
