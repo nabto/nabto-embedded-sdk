@@ -78,7 +78,8 @@ class TestPlatformLibevent : public TestPlatform {
 
         thread_event_queue_run(&eventQueue_);
 
-        libeventThread_ = std::make_unique<std::thread>([this](){ libeventThread(); });
+        libeventThread_ =
+            std::make_unique<std::thread>([this]() { libeventThread(); });
     }
 
     void deinit()
@@ -94,6 +95,7 @@ class TestPlatformLibevent : public TestPlatform {
 
         // run last events after it has been stopped
         event_base_loop(eventBase_, EVLOOP_NONBLOCK);
+        prom_.set_value(true);
     }
 
     virtual void stop()
@@ -102,8 +104,12 @@ class TestPlatformLibevent : public TestPlatform {
             return;
         }
         stopped_ = true;
-        thread_event_queue_stop_blocking(&eventQueue_);
-        event_base_loopbreak(eventBase_);
+
+        auto fut = prom_.get_future();
+        while (fut.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout) {
+            thread_event_queue_stop_blocking(&eventQueue_);
+            event_base_loopbreak(eventBase_);
+        }
 
         if (libeventThread_) {
             libeventThread_->join();
@@ -123,7 +129,7 @@ class TestPlatformLibevent : public TestPlatform {
     struct thread_event_queue eventQueue_;
     nabto_device_mutex* mutex_;
 
-    std::promise<void> stoppedPromise_;
+    std::promise<bool> prom_;
     std::unique_ptr<std::thread> libeventThread_;
 };
 
