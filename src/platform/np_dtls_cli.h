@@ -38,7 +38,6 @@ typedef void (*np_dtls_cli_event_handler)(enum np_dtls_cli_event event,
 typedef void (*np_dtls_cli_data_handler)(uint8_t channelId, uint8_t* buffer,
                                          uint16_t bufferSize, void* data);
 
-struct np_dtls_cli_context;
 struct np_dtls_cli_connection;
 
 struct np_dtls_cli_send_context {
@@ -56,14 +55,8 @@ struct np_dtls_cli_send_context {
 struct np_dtls_cli_module {
 
     /**
-     * @brief Create/destroy the general DTLS client context
-     */
-    np_error_code (*create)(struct np_platform* pl, struct np_dtls_cli_context** client);
-    void (*destroy)(struct np_dtls_cli_context* client);
-
-    /**
      * @brief Create an attach connection. Attach connections use ALPN, SNI, root certs, and cert validation
-     * @param client       [in]  The context to create connection in
+     * @param pl           [in]  The platform to create connection in
      * @param conn         [out] The resulting connection object
      * @param packetSender [in]  Function called when the DTLS module wants to send a packet
      * @param dataHandler  [in]  Function called when decrypted data is available
@@ -71,18 +64,16 @@ struct np_dtls_cli_module {
      * @param data         [in]  data pointer passed to the 3 provided functions
      */
     np_error_code (*create_attach_connection)(
-        struct np_dtls_cli_context* client,
-        struct np_dtls_cli_connection** conn, np_dtls_cli_sender packetSender,
-        np_dtls_cli_data_handler dataHandler,
+        struct np_platform* pl, struct np_dtls_cli_connection** conn,
+        np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
         np_dtls_cli_event_handler eventHandler, void* data);
 
     /**
      * @brief Create an client connection. Client connections use ALPN, ChannelID
      */
     np_error_code (*create_client_connection)(
-        struct np_dtls_cli_context* client,
-        struct np_dtls_cli_connection** conn, np_dtls_cli_sender packetSender,
-        np_dtls_cli_data_handler dataHandler,
+        struct np_platform* pl, struct np_dtls_cli_connection** conn,
+        np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
         np_dtls_cli_event_handler eventHandler, void* data);
 
     void (*destroy_connection)(struct_dtls_cli_connection* conn);
@@ -91,21 +82,21 @@ struct np_dtls_cli_module {
      * @brief Set the certificate and private key used for all connections.
      * The certificate is a pem encoded certificate matching the pem encoded private key.
      */
-    np_error_code (*set_keys)(struct np_dtls_cli_context* ctx,
+    np_error_code (*set_keys)(struct np_platform* pl,
                               const unsigned char* certificate, size_t certificateSize,
                               const unsigned char* privateKeyL, size_t privateKeySize);
 
     // The retransmission in the dtls handshake uses exponential backoff,
     // If minTimeout is 1000ms and maxTimeout is 5000ms the dtls implementation will
     // retry at something like 1s, 2s, 4s,
-    np_error_code (*set_handshake_timeout)(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout);
+    np_error_code (*set_handshake_timeout)(struct np_platform* pl, uint32_t minTimeout, uint32_t maxTimeout);
 
     /**
      * @brief Set SNI, root certs, or disable cert validation only applies to attach connections.
      */
-    np_error_code (*set_sni)(struct np_dtls_cli_context* ctx, const char* sni);
-    np_error_code (*set_root_certs)(struct np_dtls_cli_context* ctx, const char* rootCerts);
-    np_error_code (*disable_certificate_validation)(struct np_dtls_cli_context* ctx);
+    np_error_code (*set_sni)(struct np_platform* pl, const char* sni);
+    np_error_code (*set_root_certs)(struct np_platform* pl, const char* rootCerts);
+    np_error_code (*disable_certificate_validation)(struct np_platform* pl);
 
 
 
