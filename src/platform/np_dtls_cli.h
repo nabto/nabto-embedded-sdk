@@ -65,6 +65,7 @@ struct np_dtls_cli_module {
      */
     np_error_code (*create_attach_connection)(
         struct np_platform* pl, struct np_dtls_cli_connection** conn,
+        const char* sni, bool disable_cert_validation,
         np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
         np_dtls_cli_event_handler eventHandler, void* data);
 
@@ -92,11 +93,9 @@ struct np_dtls_cli_module {
     np_error_code (*set_handshake_timeout)(struct np_platform* pl, uint32_t minTimeout, uint32_t maxTimeout);
 
     /**
-     * @brief Set SNI, root certs, or disable cert validation only applies to attach connections.
+     * @brief Set root certs. Cert validation is only used by attach connections.
      */
-    np_error_code (*set_sni)(struct np_platform* pl, const char* sni);
     np_error_code (*set_root_certs)(struct np_platform* pl, const char* rootCerts);
-    np_error_code (*disable_certificate_validation)(struct np_platform* pl);
 
 
 
