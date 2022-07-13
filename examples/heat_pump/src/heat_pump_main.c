@@ -82,7 +82,6 @@ bool parse_args(int argc, char** argv, struct args* args);
 static void signal_handler(int s);
 static bool make_directory(const char* directory);
 static double get_timestamp_seconds();
-static void sleepSeconds(double sec);
 
 static bool make_directories(const char* in);
 
@@ -249,14 +248,14 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
             nabto_device_device_events_init_listener(device, listener);
             NabtoDeviceEvent event;
 
-            int updatesPerSecond = 30;
-            double deltaTime = 1.0 / updatesPerSecond;
+            int maxUpdatesPerSecond = 30;
+            double deltaTime = 1.0 / maxUpdatesPerSecond;
             double currentTime = get_timestamp_seconds();
             double accumulator = 0.0;
 
             while(true) {
                 nabto_device_listener_device_event(listener, future, &event);
-                while (nabto_device_future_ready(future) == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
+                while (true) {
                     double newTime = get_timestamp_seconds();
                     double elapsed = newTime - currentTime;
                     currentTime = newTime;
@@ -267,9 +266,11 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
                         accumulator -= deltaTime;
                     }
 
-                    // sleep until next update is needed
-                    if (elapsed < deltaTime) {
-                        sleepSeconds(deltaTime - elapsed);
+                    // sleep until next update is needed or the future has been resolved
+                    double waitTime = deltaTime - elapsed;
+                    waitTime = waitTime > 0 ? waitTime : 0;
+                    if (nabto_device_future_timed_wait(future, waitTime) != NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
+                        break;
                     }
                 }
 
@@ -439,14 +440,6 @@ double get_timestamp_seconds() {
     struct timespec time;
     clock_gettime(CLOCK_MONOTONIC_RAW, &time);
     return (double)(time.tv_sec * 1e9 + time.tv_nsec) / 1e9;
-#endif
-}
-
-void sleepSeconds(double sec) {
-#if defined(_WIN32)
-    Sleep(sec * 1000);
-#else
-    usleep(sec * 1e6);
 #endif
 }
 
