@@ -50,9 +50,12 @@ struct np_dtls_cli_send_context {
 };
 
 struct np_dtls_cli_module {
-
     /**
-     * @brief Create an attach connection. Attach connections use ALPN, SNI, root certs, and cert validation
+     * @brief Create an attach connection. Attach connections use ALPN, SNI,
+     * root certs, and cert validation. Attach connections do not need channel
+     * IDs, however, since channel IDs are simply passed through the module
+     * opaquely, they kept in attach connections to simplify the interface.
+     *
      * @param pl           [in]  The platform to create connection in
      * @param conn         [out] The resulting connection object
      * @param packetSender [in]  Function called when the DTLS module wants to send a packet
@@ -73,7 +76,7 @@ struct np_dtls_cli_module {
         np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
         np_dtls_cli_event_handler eventHandler, void* data);
 
-    void (*destroy_connection)(struct_dtls_cli_connection* conn);
+    void (*destroy_connection)(struct dtls_cli_connection* conn);
 
     /**
      * @brief Set the certificate and private key used for all connections.
