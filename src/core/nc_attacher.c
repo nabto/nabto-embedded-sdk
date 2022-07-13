@@ -167,7 +167,9 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         if (ctx->udp) {
             nc_udp_dispatch_clear_attacher_context(ctx->udp);
         }
-        ctx->pl->dtlsC.destroy_connection(ctx->dtls);
+        if (ctx->dtls) {
+            ctx->pl->dtlsC.destroy_connection(ctx->dtls);
+        }
 
 
         if (ctx->request != NULL) {
@@ -540,7 +542,10 @@ void reset_dtls_connection(struct nc_attach_context* ctx)
 {
     nc_keep_alive_reset(&ctx->keepAlive);
     nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
-    ctx->pl->dtlsC.destroy_connection(ctx->dtls);
+    if (ctx->dtls) {
+        ctx->pl->dtlsC.destroy_connection(ctx->dtls);
+        ctx->dtls = NULL;
+    }
     if (ctx->request != NULL) {
         nabto_coap_client_request_free(ctx->request);
         ctx->request = NULL;
@@ -749,6 +754,9 @@ void coap_attach_failed(struct nc_attach_context* ctx)
 void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize)
 {
     struct np_platform* pl = ctx->pl;
+    if (!ctx->dtls) {
+        return;
+    }
     // handle_packet can currently not fail, so checking its return
     // value is futile. It will trigger responses to be sent, so we
     // must set hasActiveEp before calling. if handle_packet becomes
