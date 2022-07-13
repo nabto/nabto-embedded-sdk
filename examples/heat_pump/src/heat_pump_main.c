@@ -17,6 +17,18 @@
 #include <direct.h>
 #endif
 
+// Include windows.h for QPC on windows, time.h for clock_gettime on osx/linux
+#if defined(_WIN32)
+// clang will give a lot of warnings for windows.h so we disable warnings for it
+#pragma warning(push, 0)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#pragma warning(pop)
+#else
+#include <time.h>
+#endif
+
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
@@ -69,6 +81,8 @@ bool parse_args(int argc, char** argv, struct args* args);
 
 static void signal_handler(int s);
 static bool make_directory(const char* directory);
+static double get_timestamp_seconds();
+static void sleepSeconds(double sec);
 
 static bool make_directories(const char* in);
 
@@ -234,9 +248,32 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
             NabtoDeviceFuture* future = nabto_device_future_new(dev);
             nabto_device_device_events_init_listener(device, listener);
             NabtoDeviceEvent event;
+
+            int updatesPerSecond = 30;
+            double deltaTime = 1.0 / updatesPerSecond;
+            double currentTime = get_timestamp_seconds();
+            double accumulator = 0.0;
+
             while(true) {
                 nabto_device_listener_device_event(listener, future, &event);
-                ec = nabto_device_future_wait(future);
+                while (nabto_device_future_ready(future) == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
+                    double newTime = get_timestamp_seconds();
+                    double elapsed = newTime - currentTime;
+                    currentTime = newTime;
+
+                    accumulator += elapsed;
+                    while (accumulator >= deltaTime) {
+                        heat_pump_update(heatPump, deltaTime);
+                        accumulator -= deltaTime;
+                    }
+
+                    // sleep until next update is needed
+                    if (elapsed < deltaTime) {
+                        sleepSeconds(deltaTime - elapsed);
+                    }
+                }
+
+                ec = nabto_device_future_ready(future);
                 if (ec != NABTO_DEVICE_EC_OK) {
                     break;
                 }
@@ -252,7 +289,7 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
                     printf("The provided Product ID did not match the fingerprint" NEWLINE);
                 } else if (event == NABTO_DEVICE_EVENT_WRONG_DEVICE_ID) {
                     printf("The provided Device ID did not match the fingerprint" NEWLINE);
-    }
+                }
             }
             nabto_device_future_free(future);
             nabto_device_listener_free(listener);
@@ -385,6 +422,32 @@ bool make_directories(const char* in)
         make_directory(buffer);
     }
     return true;
+}
+
+double get_timestamp_seconds() {
+#if defined(_WIN32)
+    LARGE_INTEGER time;
+    LARGE_INTEGER frequency;
+
+    QueryPerformanceFrequency(&frequency); 
+    QueryPerformanceCounter(&time);
+
+    time.QuadPart *= 1e6;
+    time.QuadPart /= frequency.QuadPart;
+    return (double)(time.QuadPart) / 1e6;
+#else
+    struct timespec time;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &time);
+    return (double)(time.tv_sec * 1e9 + time.tv_nsec) / 1e9;
+#endif
+}
+
+void sleepSeconds(double sec) {
+#if defined(_WIN32)
+    Sleep(sec * 1000);
+#else
+    usleep(sec * 1e6);
+#endif
 }
 
 void print_missing_device_config_help(const char* filename)

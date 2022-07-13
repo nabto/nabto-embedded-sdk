@@ -35,6 +35,7 @@ void heat_pump_reinit_state(struct heat_pump* heatPump);
 
 void heat_pump_start(struct heat_pump* heatPump);
 void heat_pump_stop(struct heat_pump* heatPump);
+void heat_pump_update(struct heat_pump* heatPump, double deltaTime);
 
 void heat_pump_set_mode(struct heat_pump* heatPump, enum heat_pump_mode mode);
 void heat_pump_set_power(struct heat_pump* heatPump, bool power);

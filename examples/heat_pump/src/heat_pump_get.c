@@ -30,7 +30,7 @@ static size_t encode(struct heat_pump* heatPump, void* buffer, size_t bufferSize
     cbor_encode_boolean(&map, heatPump->state.power);
 
     cbor_encode_text_stringz(&map, "Temperature");
-    cbor_encode_double(&map, 22.3);
+    cbor_encode_double(&map, heatPump->state.temperature);
     
     cbor_encoder_close_container(&encoder, &map);
 

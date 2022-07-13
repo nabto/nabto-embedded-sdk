@@ -42,6 +42,7 @@ void save_heat_pump_state(const char* filename, const struct heat_pump_state* st
     cJSON_AddItemToObject(heatPump, "Mode", cJSON_CreateString(mode_as_string(state->mode)));
     cJSON_AddItemToObject(heatPump, "Power", cJSON_CreateBool(state->power));
     cJSON_AddItemToObject(heatPump, "Target", cJSON_CreateNumber(state->target));
+    cJSON_AddItemToObject(heatPump, "Temperature", cJSON_CreateNumber(state->temperature));
 
     cJSON_AddItemToObject(root, "HeatPump", heatPump);
 
@@ -73,6 +74,7 @@ bool load_heat_pump_state(const char* filename, struct heat_pump_state* state, s
         cJSON* mode = cJSON_GetObjectItem(heatPump, "Mode");
         cJSON* power = cJSON_GetObjectItem(heatPump, "Power");
         cJSON* target = cJSON_GetObjectItem(heatPump, "Target");
+        cJSON* temp = cJSON_GetObjectItem(heatPump, "Temperature");
 
         if (cJSON_IsString(mode)) {
             if (strcmp(mode->valuestring, "COOL") == 0) {
@@ -90,6 +92,10 @@ bool load_heat_pump_state(const char* filename, struct heat_pump_state* state, s
 
         if (cJSON_IsNumber(target)) {
             state->target = target->valuedouble;
+        }
+
+        if (cJSON_IsNumber(temp)) {
+            state->temperature = temp->valuedouble;
         }
 
         if (cJSON_IsBool(power)) {
@@ -128,7 +134,8 @@ void create_default_heat_pump_state(const char* filename)
 {
     struct heat_pump_state state;
     state.mode = HEAT_PUMP_MODE_HEAT;
-    state.target = 22.3;
+    state.temperature = 22.3;
+    state.target = state.temperature;
     state.power = false;
     save_heat_pump_state(filename, &state);
 }
