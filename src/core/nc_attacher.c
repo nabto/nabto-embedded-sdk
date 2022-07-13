@@ -51,8 +51,8 @@ static void reset_dtls_connection(struct nc_attach_context* ctx);
 static void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 static void handle_dtls_access_denied(struct nc_attach_context* ctx);
 static void handle_dtls_certificate_verification_failed(struct nc_attach_context* ctx);
-static np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize, np_dtls_cli_send_callback cb, void* data, void* senderData);
-static void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data);
+static np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSize, struct np_completion_event* cb, void* senderData);
+static void dtls_data_handler(uint8_t ch, uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
 
 static void dns_start_resolve(struct nc_attach_context* ctx);
@@ -60,7 +60,7 @@ static void dns_resolved_callback(const np_error_code ec, void* data);
 
 static void start_send_initial_packet(struct nc_attach_context* ctx,
                                       uint8_t* buffer, uint16_t bufferSize,
-                                      np_dtls_cli_send_callback cb, void* data);
+                                      struct np_completion_event* cb);
 static void send_initial_packet(struct nc_attach_context* ctx);
 static void initial_packet_sent(const np_error_code ec, void* userData);
 
@@ -111,6 +111,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
     ctx->listenerData = listenerData;
     ctx->retryWaitTime = RETRY_WAIT_TIME;
     ctx->accessDeniedWaitTime = ACCESS_DENIED_WAIT_TIME;
+    ctx->certValidationDisabled = false;
 
     struct np_event_queue* eq = &pl->eq;
 
@@ -125,12 +126,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 
     sct_init(ctx);
 
-    ec = pl->dtlsC.create(pl, &ctx->dtls, &dtls_packet_sender, &dtls_data_handler, &dtls_event_handler, ctx);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-
-    ec = ctx->pl->dtlsC.set_root_certs(ctx->dtls, defaultRoots);
+    ec = pl->dtlsC.set_root_certs(pl, defaultRoots);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -146,6 +142,10 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
     ec = np_completion_event_init(eq, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    ec = np_completion_event_init(eq, &ctx->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &ctx->keepAlive);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -167,7 +167,7 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         if (ctx->udp) {
             nc_udp_dispatch_clear_attacher_context(ctx->udp);
         }
-        ctx->pl->dtlsC.destroy(ctx->dtls);
+        ctx->pl->dtlsC.destroy_connection(ctx->dtls);
 
 
         if (ctx->request != NULL) {
@@ -182,6 +182,7 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
 
         np_completion_event_deinit(&ctx->senderCompletionEvent);
         np_completion_event_deinit(&ctx->resolveCompletionEvent);
+        np_completion_event_deinit(&ctx->keepAliveSendCtx.ev);
 
         nc_dns_multi_resolver_deinit(&ctx->dnsMultiResolver);
 
@@ -202,7 +203,7 @@ np_error_code nc_attacher_set_keys(struct nc_attach_context* ctx, const unsigned
     if (ctx->moduleState != NC_ATTACHER_MODULE_SETUP) {
         return NABTO_EC_INVALID_STATE;
     }
-    return ctx->pl->dtlsC.set_keys(ctx->dtls, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+    return ctx->pl->dtlsC.set_keys(ctx->pl, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
 np_error_code nc_attacher_set_root_certs(struct nc_attach_context* ctx, const char* roots)
@@ -210,7 +211,7 @@ np_error_code nc_attacher_set_root_certs(struct nc_attach_context* ctx, const ch
     if (ctx->moduleState != NC_ATTACHER_MODULE_SETUP) {
         return NABTO_EC_INVALID_STATE;
     }
-    return ctx->pl->dtlsC.set_root_certs(ctx->dtls, roots);
+    return ctx->pl->dtlsC.set_root_certs(ctx->pl, roots);
 }
 
 np_error_code nc_attacher_set_app_info(struct nc_attach_context* ctx, const char* appName, const char* appVersion)
@@ -237,7 +238,7 @@ np_error_code nc_attacher_set_handshake_timeout(struct nc_attach_context* ctx,
                                                 uint32_t minTimeoutMilliseconds, uint32_t maxTimeoutMilliseconds)
 {
     struct np_platform* pl = ctx->pl;
-    pl->dtlsC.set_handshake_timeout(ctx->dtls, minTimeoutMilliseconds, maxTimeoutMilliseconds);
+    pl->dtlsC.set_handshake_timeout(ctx->pl, minTimeoutMilliseconds, maxTimeoutMilliseconds);
     return NABTO_EC_OK;
 }
 
@@ -363,7 +364,7 @@ void do_close(struct nc_attach_context* ctx)
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
         case NC_ATTACHER_STATE_ATTACHED:
-            ctx->pl->dtlsC.close(ctx->dtls);
+            ctx->pl->dtlsC.async_close(ctx->dtls);
             break;
         case NC_ATTACHER_STATE_DNS:
             // dns resolvers can currently not be stopped, for now we just wait for it to finish.
@@ -426,7 +427,14 @@ void handle_state_change(struct nc_attach_context* ctx)
             np_event_queue_post_timed_event(&ctx->pl->eq, ctx->reattachTimer, ctx->accessDeniedWaitTime);
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
-            ctx->pl->dtlsC.set_sni(ctx->dtls, ctx->hostname);
+            np_error_code ec = ctx->pl->dtlsC.create_attach_connection(
+                ctx->pl, &ctx->dtls, ctx->hostname, ctx->certValidationDisabled, &dtls_packet_sender,
+                &dtls_data_handler, &dtls_event_handler, ctx);
+                if (ec != NABTO_EC_OK) {
+                    NABTO_LOG_ERROR(LOG, "Dtls connection creation failed");
+                    ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+                    return handle_state_change(ctx);
+                }
             ctx->pl->dtlsC.connect(ctx->dtls);
             break;
         case NC_ATTACHER_STATE_ATTACHED:
@@ -504,7 +512,7 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
         if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
-            ctx->pl->dtlsC.close(ctx->dtls);
+            ctx->pl->dtlsC.async_close(ctx->dtls);
         } else {
             reset_dtls_connection(ctx);
             ctx->state = NC_ATTACHER_STATE_CLOSED;
@@ -532,10 +540,7 @@ void reset_dtls_connection(struct nc_attach_context* ctx)
 {
     nc_keep_alive_reset(&ctx->keepAlive);
     nabto_coap_client_remove_connection(nc_coap_client_get_client(ctx->coapClient), ctx->dtls);
-    np_error_code ec = ctx->pl->dtlsC.reset(ctx->dtls);
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "tried to reset unclosed DTLS connection");
-    }
+    ctx->pl->dtlsC.destroy_connection(ctx->dtls);
     if (ctx->request != NULL) {
         nabto_coap_client_request_free(ctx->request);
         ctx->request = NULL;
@@ -636,7 +641,7 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
     } else if (status == NC_ATTACHER_STATUS_REDIRECT) {
         ctx->state = NC_ATTACHER_STATE_REDIRECT;
         ctx->redirectAttempts++;
-        ctx->pl->dtlsC.close(ctx->dtls);
+        ctx->pl->dtlsC.async_close(ctx->dtls);
         return;
     } else if (status == NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT && ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_UNKNOWN_FINGERPRINT, ctx->listenerData);
@@ -738,7 +743,7 @@ void coap_attach_end_handler(np_error_code ec, void* data)
 
 void coap_attach_failed(struct nc_attach_context* ctx)
 {
-    ctx->pl->dtlsC.close(ctx->dtls);
+    ctx->pl->dtlsC.async_close(ctx->dtls);
 }
 
 void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize)
@@ -754,34 +759,32 @@ void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp
         ctx->activeEp = *ep;
         ctx->hasActiveEp = true;
     }
-    pl->dtlsC.handle_packet(ctx->dtls, buffer, (uint16_t)bufferSize);
+    pl->dtlsC.handle_packet(ctx->dtls, 0, buffer, (uint16_t)bufferSize);
 }
 
-np_error_code dtls_packet_sender(uint8_t* buffer, uint16_t bufferSize,
-                                 np_dtls_cli_send_callback cb, void* data,
+np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSize,
+                                 struct np_completion_event* cb,
                                  void* senderData)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
     if (!ctx->hasActiveEp) {
         // We have yet to find suitable endpoint
-        start_send_initial_packet(ctx, buffer, bufferSize, cb, data);
+        start_send_initial_packet(ctx, buffer, bufferSize, cb);
         return NABTO_EC_OK;
     } else {
-        np_completion_event_reinit(&ctx->senderCompletionEvent, cb, data);
         nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp,
                                       buffer, bufferSize,
-                                      &ctx->senderCompletionEvent);
+                                      cb);
         return NABTO_EC_OK;
     }
 }
 
 void start_send_initial_packet(struct nc_attach_context* ctx,
                                uint8_t* buffer, uint16_t bufferSize,
-                               np_dtls_cli_send_callback cb, void* data)
+                               struct np_completion_event* cb)
 {
     // send the packet to all the endpoints
     ctx->initialPacket.cb = cb;
-    ctx->initialPacket.cbData = data;
     ctx->initialPacket.buffer = buffer;
     ctx->initialPacket.bufferSize = bufferSize;
     ctx->initialPacket.endpointsIndex = 0;
@@ -791,7 +794,7 @@ void start_send_initial_packet(struct nc_attach_context* ctx,
 void send_initial_packet(struct nc_attach_context* ctx)
 {
     if (ctx->initialPacket.endpointsIndex >= ctx->initialPacket.endpointsSize) {
-        ctx->initialPacket.cb(NABTO_EC_OK, ctx->initialPacket.cbData);
+        np_completion_event_resolve(ctx->initialPacket.cb, NABTO_EC_OK);
         return;
     }
     np_completion_event_reinit(&ctx->senderCompletionEvent, &initial_packet_sent, ctx);
@@ -809,7 +812,7 @@ void initial_packet_sent(const np_error_code ec, void* userData)
     send_initial_packet(ctx);
 }
 
-void dtls_data_handler(uint8_t* buffer, uint16_t bufferSize, void* data)
+void dtls_data_handler(uint8_t ch, uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
 
@@ -847,7 +850,7 @@ void keep_alive_event(void* data)
             nc_keep_alive_wait(&ctx->keepAlive);
             break;
         case KA_TIMEOUT:
-            ctx->pl->dtlsC.close(ctx->dtls);
+            ctx->pl->dtlsC.async_close(ctx->dtls);
             break;
     }
 }
@@ -872,8 +875,6 @@ void keep_alive_send_req(struct nc_attach_context* ctx)
     struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
 
     nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize);
-    sendCtx->cb = &nc_keep_alive_packet_sent;
-    sendCtx->data = &ctx->keepAlive;
 
     pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
 }
@@ -883,8 +884,6 @@ void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, si
     struct np_platform* pl = ctx->pl;
     struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
     if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
-        sendCtx->cb = &nc_keep_alive_packet_sent;
-        sendCtx->data = &ctx->keepAlive;
         pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
     }
 }
@@ -907,6 +906,5 @@ void sct_deinit(struct nc_attach_context* ctx)
 
 void nc_attacher_disable_certificate_validation(struct nc_attach_context* ctx)
 {
-    struct np_platform* pl = ctx->pl;
-    pl->dtlsC.disable_certificate_validation(ctx->dtls);
+    ctx->certValidationDisabled = true;
 }

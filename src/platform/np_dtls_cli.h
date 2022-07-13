@@ -2,6 +2,7 @@
 #define NP_DTLS_CLI_H
 
 #include <platform/np_error_code.h>
+#include <platform/np_completion_event.h>
 
 #include <nn/llist.h>
 
@@ -44,7 +45,7 @@ struct np_dtls_cli_send_context {
     // channel ID unused by DTLS, but passed to data_handler/sender as needed by nc_client_connection
     uint8_t channelId;
     // callback when sent
-    struct np_completion_event* ev;
+    struct np_completion_event ev;
     // node for message queue
     struct nn_llist_node sendListNode;
 };
@@ -77,7 +78,7 @@ struct np_dtls_cli_module {
         np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
         np_dtls_cli_event_handler eventHandler, void* data);
 
-    void (*destroy_connection)(struct dtls_cli_connection* conn);
+    void (*destroy_connection)(struct np_dtls_cli_connection* conn);
 
     /**
      * @brief Set the certificate and private key used for all connections.
@@ -109,16 +110,16 @@ struct np_dtls_cli_module {
     np_error_code (*handle_packet)(struct np_dtls_cli_connection* conn, uint8_t channelId,
                                    uint8_t* buffer, uint16_t bufferSize);
 
-   /**
-     * Async Close a dtls connection. The callback is called when the connection
-     * has been closed and no more data is sent. No more data can be sent after
-     * close has been called. The function is async such that the dtls
-     * connection has time to send the last dtls close notify packet.
-     * Outstanding async send operations will be resolved before close returns.
-     * Destroy connection can be invoked from the close callback.
+    /**
+     * Async Close a dtls connection. When the connection
+     * has been closed and no more data is sent the CLOSED event will be
+     * emitted. No more data can be sent after close has been called. The
+     * function is async such that the dtls connection has time to send the last
+     * dtls close notify packet. Outstanding async send operations will be
+     * resolved before close returns. Destroy connection can be invoked from the
+     * event handler.
      */
-    np_error_code (*async_close)(struct np_dtls_cli_connection* conn,
-                                 struct np_completion_event* completionEvent);
+    np_error_code (*async_close)(struct np_dtls_cli_connection* conn);
 
     np_error_code (*get_fingerprint)(struct np_dtls_cli_connection* conn, uint8_t* fp);
 

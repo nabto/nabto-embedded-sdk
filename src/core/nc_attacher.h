@@ -130,8 +130,7 @@ struct nc_attacher_initial_packet_send
 {
     uint8_t* buffer;
     size_t bufferSize;
-    np_dtls_cli_send_callback cb;
-    void* cbData;
+    struct np_completion_event* cb;
     size_t endpointsIndex;
     size_t endpointsSize;
 
@@ -154,7 +153,7 @@ struct nc_attach_context {
     void* listenerData;
     struct nc_coap_client_context* coapClient;
     struct nc_udp_dispatch_context* udp;
-    struct np_dtls_cli_context* dtls;
+    struct np_dtls_cli_connection* dtls;
 
     nc_attacher_state_listener stateListener;
     void* stateListenerData;
@@ -168,6 +167,8 @@ struct nc_attach_context {
     struct np_udp_endpoint activeEp;
     bool hasActiveEp;
     uint8_t bsEpsTried;
+
+    bool certValidationDisabled;
 
     uint16_t currentPort;
     char* dns;
@@ -198,8 +199,6 @@ struct nc_attach_context {
     nc_attacher_closed_callback closedCb;
     void* closedCbData;
 
-    np_dtls_cli_send_callback senderCb;
-    void* senderCbData;
     struct np_completion_event senderCompletionEvent;
 
     // configurable for testing purposes.

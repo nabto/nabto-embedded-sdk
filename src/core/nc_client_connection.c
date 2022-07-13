@@ -321,6 +321,8 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
         nc_udp_dispatch_async_send_to(conn->alternativeChannel.sock, &conn->alternativeChannel.ep,
                                       start, bufferSize,
                                       &conn->sendCompletionEvent);
+    } else {
+        NABTO_LOG_ERROR(LOG, "Trying to send on unknown channel ID %d", channel)
     }
     return NABTO_EC_OK;
 }

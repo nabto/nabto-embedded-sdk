@@ -37,6 +37,9 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
         return ec;
     }
 
+    ec = np_completion_event_init(&ctx->pl->eq, &ctx->sendCtx.ev,
+                                  &nc_coap_client_send_to_callback, ctx);
+
     nabto_coap_error err = nabto_coap_client_init(&ctx->client, np_allocator_get(), &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);
@@ -65,7 +68,7 @@ void nc_coap_client_stop(struct nc_coap_client_context* ctx)
 }
 
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
-                                  uint8_t* buffer, uint16_t bufferSize, struct np_dtls_cli_context* dtls)
+                                  uint8_t* buffer, uint16_t bufferSize, struct np_dtls_cli_connection* dtls)
 {
     uint32_t ts = np_timestamp_now_ms(&ctx->pl->timestamp);
     enum nabto_coap_client_status status = nabto_coap_client_handle_packet(&ctx->client,
@@ -105,11 +108,9 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         ctx->sendBuffer = NULL;
     } else {
         size_t used = ptr - sendCtx->buffer;
-        sendCtx->cb = &nc_coap_client_send_to_callback;
-        sendCtx->data = ctx;
         sendCtx->bufferSize = (uint16_t)used;
 
-        struct np_dtls_cli_context* dtls = connection;
+        struct np_dtls_cli_connection* dtls = connection;
         ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
     }
 }
