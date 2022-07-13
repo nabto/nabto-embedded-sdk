@@ -1,10 +1,7 @@
 #ifndef NP_DTLS_CLI_H
 #define NP_DTLS_CLI_H
 
-#include <core/nc_protocol_defines.h>
-
 #include <platform/np_error_code.h>
-#include <platform/np_dtls.h>
 
 #include <nn/llist.h>
 
