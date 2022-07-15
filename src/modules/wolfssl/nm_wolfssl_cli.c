@@ -65,6 +65,8 @@ struct np_dtls_cli_connection {
     np_dtls_cli_data_handler dataHandler;
     np_dtls_cli_event_handler eventHandler;
     void* callbackData;
+    uint8_t sendChannelId;
+    uint8_t recvChannelId;
 };
 
 // Module function definitions
@@ -227,6 +229,8 @@ static np_error_code create_client_connection(
     conn->dataHandler = dataHandler;
     conn->eventHandler = eventHandler;
     conn->callbackData = data;
+    conn->sendChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
+    conn->recvChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
 
     nn_llist_init(&conn->sendList);
     conn->destroyed = false;
@@ -467,8 +471,7 @@ void nm_dtls_event_do_one(void* data)
             nm_wolfssl_do_close(conn, NABTO_EC_FAILED);
         } else if (ret > 0) {
             conn->recvCount++;
-            // TODO: channel ID
-            conn->dataHandler(0, recvBuffer, (uint16_t)ret, conn->callbackData);
+            conn->dataHandler(conn->recvChannelId, recvBuffer, (uint16_t)ret, conn->callbackData);
             return;
         } else if (ret == WOLFSSL_FATAL_ERROR) {
             int err = wolfSSL_get_error(conn->ssl, ret);
@@ -558,8 +561,10 @@ void start_send_deferred(void* data)
     struct np_dtls_cli_send_context* next = nn_llist_get_item(&it);
     nn_llist_erase(&it);
 
-    int ret = wolfSSL_write( conn->ssl, (unsigned char *) next->buffer, next->bufferSize );
+    conn->sendChannelId = next->channelId;
 
+    int ret = wolfSSL_write( conn->ssl, (unsigned char *) next->buffer, next->bufferSize );
+    conn->sendChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
     conn->sentCount++;
 
     if (ret < 0) {
@@ -620,11 +625,12 @@ np_error_code async_close(struct np_dtls_cli_connection* conn)
 np_error_code handle_packet(struct np_dtls_cli_connection* conn, uint8_t channelId,
                             uint8_t* buffer, uint16_t bufferSize)
 {
-    // TODO: handle channel ID
     conn->recvBuffer = buffer;
     conn->recvBufferSize = bufferSize;
     conn->receiving = true;
+    conn->recvChannelId = channelId;
     nm_dtls_event_do_one(conn);
+    conn->recvChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
     conn->recvBuffer = NULL;
     if (conn->recvBufferSize != 0) {
         NABTO_LOG_TRACE(LOG, "Discarding received data");
@@ -681,9 +687,8 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
             return (int)bufferSize;
         }
         memcpy(pl->buf.start(conn->sslSendBuffer), buffer, bufferSize);
-        // TODO: channel ID
         np_error_code ec =
-            conn->sender(0, pl->buf.start(conn->sslSendBuffer), (uint16_t)bufferSize,
+            conn->sender(conn->sendChannelId, pl->buf.start(conn->sslSendBuffer), (uint16_t)bufferSize,
                         &conn->senderEvent, conn->callbackData);
         if (ec != NABTO_EC_OK) {
             NABTO_LOG_INFO(LOG,"DTLS sender failed with error: %d", ec);

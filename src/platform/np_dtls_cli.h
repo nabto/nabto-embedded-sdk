@@ -20,6 +20,8 @@ extern "C" {
 
 struct np_platform;
 
+#define NP_DTLS_CLI_DEFAULT_CHANNEL_ID 0xff
+
 enum np_dtls_cli_event {
     NP_DTLS_CLI_EVENT_CLOSED, // The connection is closed
     NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE,
