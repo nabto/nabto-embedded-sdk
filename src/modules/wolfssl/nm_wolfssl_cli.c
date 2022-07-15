@@ -67,6 +67,7 @@ struct np_dtls_cli_connection {
     void* callbackData;
     uint8_t sendChannelId;
     uint8_t recvChannelId;
+    uint64_t lastRecvSequenceNumber;
 };
 
 // Module function definitions
@@ -470,8 +471,9 @@ void nm_dtls_event_do_one(void* data)
             NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
             nm_wolfssl_do_close(conn, NABTO_EC_FAILED);
         } else if (ret > 0) {
+            uint64_t seq = conn->lastRecvSequenceNumber;
             conn->recvCount++;
-            conn->dataHandler(conn->recvChannelId, recvBuffer, (uint16_t)ret, conn->callbackData);
+            conn->dataHandler(conn->recvChannelId, seq, recvBuffer, (uint16_t)ret, conn->callbackData);
             return;
         } else if (ret == WOLFSSL_FATAL_ERROR) {
             int err = wolfSSL_get_error(conn->ssl, ret);
@@ -710,12 +712,24 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
     }
 }
 
+static uint64_t uint64_from_bigendian(uint8_t* bytes)
+{
+    return (((uint64_t)bytes[0] << 56) | ((uint64_t)bytes[1] << 48) |
+            ((uint64_t)bytes[2] << 40) | ((uint64_t)bytes[3] << 32) |
+            ((uint64_t)bytes[4] << 24) | ((uint64_t)bytes[5] << 16) |
+            ((uint64_t)bytes[6] << 8) | ((uint64_t)bytes[7]));
+}
+
 int nm_dtls_wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
 {
     struct np_dtls_cli_connection* conn = data;
     if (conn->recvBufferSize == 0) {
         return WOLFSSL_CBIO_ERR_WANT_READ;
     } else {
+        if (conn->recvBufferSize >= 12) {
+            conn->lastRecvSequenceNumber =
+                uint64_from_bigendian(conn->recvBuffer + 4);
+        }
         size_t maxCp = bufferSize > conn->recvBufferSize ? conn->recvBufferSize : bufferSize;
         memcpy(buffer, conn->recvBuffer, maxCp);
         conn->recvBufferSize = 0;

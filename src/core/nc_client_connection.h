@@ -40,7 +40,7 @@ enum nc_spake2_state {
 struct nc_client_connection {
     struct nn_llist_node connectionsNode;
     struct np_platform* pl;
-    struct np_dtls_srv_connection* dtls;
+    struct np_dtls_cli_connection* dtls;
     struct nc_client_connection_dispatch_context* dispatch;
     struct nc_stream_manager_context* streamManager;
     struct nc_stun_context* stun;
@@ -50,14 +50,13 @@ struct nc_client_connection {
     uint64_t currentMaxSequence;
     struct nc_device_context* device;
 
-    np_dtls_srv_send_callback sentCb;
-    void* sentData;
+    struct np_completion_event* sentCb;
     uint64_t connectionRef;
     struct np_completion_event sendCompletionEvent;
     struct np_completion_event closeCompletionEvent;
 
     struct nc_keep_alive_context keepAlive;
-    struct np_dtls_srv_send_context keepAliveSendCtx;
+    struct np_dtls_cli_send_context keepAliveSendCtx;
 
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     bool hasSpake2Key;  // true iff the key has been set
@@ -119,7 +118,7 @@ void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data);
  * Get underlying DTLS connection from connection reference. Used by
  * nc_stream_manager.
  */
-struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn);
+struct np_dtls_cli_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn);
 
 /**
  * Get client fingerprint from DTLS server. Used by API.

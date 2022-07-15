@@ -52,7 +52,7 @@ static void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffe
 static void handle_dtls_access_denied(struct nc_attach_context* ctx);
 static void handle_dtls_certificate_verification_failed(struct nc_attach_context* ctx);
 static np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSize, struct np_completion_event* cb, void* senderData);
-static void dtls_data_handler(uint8_t ch, uint8_t* buffer, uint16_t bufferSize, void* data);
+static void dtls_data_handler(uint8_t ch, uint64_t seq, uint8_t* buffer, uint16_t bufferSize, void* data);
 static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
 
 static void dns_start_resolve(struct nc_attach_context* ctx);
@@ -820,7 +820,7 @@ void initial_packet_sent(const np_error_code ec, void* userData)
     send_initial_packet(ctx);
 }
 
-void dtls_data_handler(uint8_t ch, uint8_t* buffer, uint16_t bufferSize, void* data)
+void dtls_data_handler(uint8_t ch, uint64_t seq, uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
 

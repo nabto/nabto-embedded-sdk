@@ -35,8 +35,9 @@ typedef np_error_code (*np_dtls_cli_sender)(uint8_t channelId, uint8_t* buffer,
                                             void* senderData);
 typedef void (*np_dtls_cli_event_handler)(enum np_dtls_cli_event event,
                                           void* data);
-typedef void (*np_dtls_cli_data_handler)(uint8_t channelId, uint8_t* buffer,
-                                         uint16_t bufferSize, void* data);
+typedef void (*np_dtls_cli_data_handler)(uint8_t channelId, uint64_t seq,
+                                         uint8_t* buffer, uint16_t bufferSize,
+                                         void* data);
 
 struct np_dtls_cli_connection;
 
