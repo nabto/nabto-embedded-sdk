@@ -68,6 +68,38 @@ void heat_pump_stop(struct heat_pump* heatPump)
     heat_pump_coap_handler_stop(&heatPump->coapSetTarget);
 }
 
+static double smoothstep(double start, double end, double x)
+{
+    if (x < start) {
+        return 0;
+    }
+
+    if (x >= end) {
+        return 1;   
+    }
+
+    x = (x - start) / (end - start);
+    return x * x * (3 - 2 * x);
+}
+
+void heat_pump_update(struct heat_pump* heatPump, double deltaTime) {
+    if (heatPump->state.power) {
+        // Move temperature smoothly towards target
+        // When temperature is within smoothingDistance units of target
+        // the temperature will start to move more slowly the closer it gets to target
+        double speed = 5 * deltaTime;
+        double smoothingDistance = 20.0;
+
+        double start = heatPump->state.temperature;
+        double end = heatPump->state.target;
+        double signedDistance = end - start;
+        double distance = (signedDistance > 0) ? signedDistance : -signedDistance;
+        double sign = signedDistance / distance;
+
+        heatPump->state.temperature += sign * speed * smoothstep(0, smoothingDistance, distance);
+    }
+}
+
 void heat_pump_state_changed(struct nm_iam* iam, void* userData)
 {
     (void)iam;

@@ -15,6 +15,7 @@ enum heat_pump_mode {
 struct heat_pump_state {
     bool power;
     double target;
+    double temperature;
     enum heat_pump_mode mode;
 };
 
