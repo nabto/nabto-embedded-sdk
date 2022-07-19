@@ -15,7 +15,7 @@ WORKDIR /build/wolfssl
 RUN git clone https://github.com/wolfSSL/wolfssl
 # use a specific commit on master
 WORKDIR /build/wolfssl/wolfssl
-RUN git checkout 738d79c5d5c4160e8bfc863323b4bb6f075035a3
+RUN git checkout v5.4.0-stable
 RUN ./autogen.sh
 # Fastest base intel config ./configure --enable-intelasm --enable-aesni --enable-fpecc --enable-fasthugemath --enable-sp-asm --enable-sp
 # Test config modifications with ./wolfcrypt/benchmark/benchmark -ecc
@@ -34,6 +34,7 @@ RUN ./configure --prefix=/usr/local --enable-ecc --enable-dsa --enable-dtls --en
 RUN make -j 8
 RUN ./wolfcrypt/benchmark/benchmark -ecc
 RUN make install
+RUN ldconfig
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
