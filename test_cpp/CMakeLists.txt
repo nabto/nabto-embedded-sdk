@@ -23,7 +23,7 @@ set(test_src
   tests/platform/timestamp_test.cpp
 #  tests/platform/event_queue_test.cpp
 #  tests/api/event_handler_test.cpp
-#  tests/api/future_test.cpp
+  tests/api/error_codes_test.cpp
   tests/api/device_api.cpp
   tests/api/authorization_test.cpp
   tests/api/new_free.cpp
