@@ -1,6 +1,7 @@
 
 #include <apps/common/string_file.h>
 #include <apps/common/json_config.h>
+#include <apps/common/random_string.h>
 
 
 #include "heat_pump_state.h"
@@ -126,7 +127,9 @@ void create_default_iam_state(NabtoDevice* device, const char* filename, struct 
     nm_iam_state_set_initial_pairing_username(state, "admin");
     nm_iam_state_set_local_initial_pairing(state, true);
     nm_iam_state_set_local_open_pairing(state, true);
-    nm_iam_state_set_open_pairing_role(state, "Guest");
+    nm_iam_state_set_open_pairing_role(state, "Standard");
+    nm_iam_state_set_password_open_password(state, random_password(12));
+    nm_iam_state_set_password_open_pairing(state, true);
     save_iam_state(filename, state, logger);
     nm_iam_state_free(state);
 }

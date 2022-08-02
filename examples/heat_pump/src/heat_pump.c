@@ -273,13 +273,6 @@ bool load_iam_policy(struct heat_pump* heatPump)
         nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
         nm_iam_configuration_add_role(conf, r);
     }
-    {
-        //TODO: guest should have access to LocalHeatpumpControl and LocalDeviceInfo
-        struct nm_iam_role* r = nm_iam_configuration_role_new("Guest");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_add_role(conf, r);
-    }
 
     // Connections which does not have a paired user in the system gets the Unpaired role.
     nm_iam_configuration_set_unpaired_role(conf, "Unpaired");
