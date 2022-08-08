@@ -2,6 +2,7 @@
 
 #include "nc_spake2.h"
 #include "nc_client_connection.h"
+#include "nc_device.h"
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
@@ -77,7 +78,7 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
         nabto_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
     } else {
         nc_client_connection_get_client_fingerprint(connection, req->clientFingerprint);
-        nc_client_connection_get_device_fingerprint(connection, req->deviceFingerprint);
+        req->pl->spake2.get_fingerprint_from_private_key(connection->device->privateKey, req->deviceFingerprint);
 
         size_t olen;
         uint8_t buffer[256];

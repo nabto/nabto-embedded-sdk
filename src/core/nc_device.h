@@ -102,6 +102,9 @@ struct nc_device_context {
 #endif
     // logger which can be provided for some modules.
     struct nn_log moduleLogger;
+
+    char* privateKey;
+    size_t privateKeyLen;
 };
 
 np_error_code nc_device_init(struct nc_device_context* dev, struct np_platform* pl);

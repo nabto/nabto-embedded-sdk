@@ -1,4 +1,5 @@
 #include "nm_wolfssl_spake2.h"
+#include "nm_wolfssl_util.h"
 
 #include <platform/np_allocator.h>
 #include <platform/np_spake2.h>
@@ -55,6 +56,7 @@ np_error_code nm_wolfssl_spake2_init(struct np_platform* pl)
     pl->spake2.destroy = &wolfssl_spake2_destroy;
     pl->spake2.calculate_key = &wolfssl_spake2_calculate_key;
     pl->spake2.key_confirmation = &wolfssl_spake2_key_confirmation;
+    pl->spake2.get_fingerprint_from_private_key = &nm_wolfssl_get_fingerprint_from_private_key;
     return NABTO_EC_OK;
 }
 

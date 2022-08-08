@@ -34,6 +34,7 @@ struct np_spake2_module {
                                       uint8_t* payload, size_t payloadLen,
                                       uint8_t* key, size_t keyLen,
                                       uint8_t* hash1, size_t hash1Len);
+    np_error_code (*get_fingerprint_from_private_key)(const char *privateKey, uint8_t *hash);
 };
 
 #ifdef __cplusplus
