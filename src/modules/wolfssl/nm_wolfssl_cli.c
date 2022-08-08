@@ -666,6 +666,9 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
         return;
     }
     conn->sslSendBuffer = NULL;
+    if (conn->state == DATA) {
+        nm_wolfssl_cli_start_send(conn);
+    }
     nm_dtls_event_do_one(data);
 }
 

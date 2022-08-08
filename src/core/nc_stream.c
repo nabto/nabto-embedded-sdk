@@ -25,6 +25,7 @@ struct nabto_stream_send_segment* nc_stream_alloc_send_segment(size_t bufferSize
 void nc_stream_free_send_segment(struct nabto_stream_send_segment* segment, void* userData);
 struct nabto_stream_recv_segment* nc_stream_alloc_recv_segment(size_t bufferSize, void* userData);
 void nc_stream_free_recv_segment(struct nabto_stream_recv_segment* segment, void* userData);
+void nc_stream_dtls_send_callback(const np_error_code ec, void *data);
 
 np_error_code nc_stream_status_to_ec(nabto_stream_status status)
 {
@@ -43,7 +44,7 @@ uint32_t nc_stream_get_stamp(void* userData)
     return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct np_dtls_srv_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger)
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct np_dtls_cli_connection* dtls, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger)
 {
     nc_stream_module.get_stamp = &nc_stream_get_stamp;
     nc_stream_module.logger = logger;
@@ -59,6 +60,11 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
         return ec;
     }
     ec = np_event_queue_create_event(&pl->eq, &nc_stream_handle_timeout, ctx, &ctx->timer);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_stream_dtls_send_callback, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -96,6 +102,7 @@ void nc_stream_free(struct nc_stream_context* ctx)
     struct np_event_queue* eq = &ctx->pl->eq;
     np_event_queue_destroy_event(eq, ctx->ev);
     np_event_queue_destroy_event(eq, ctx->timer);
+    np_completion_event_deinit(&ctx->sendCtx.ev);
 
     nc_stream_manager_free_stream(ctx);
 }
@@ -258,10 +265,8 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         return;
     }
     ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+packetSize);
-    ctx->sendCtx.cb = &nc_stream_dtls_send_callback;
-    ctx->sendCtx.data = ctx;
-    ctx->sendCtx.channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    np_error_code ec = ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, &ctx->sendCtx);
+    ctx->sendCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
+    np_error_code ec = ctx->pl->dtlsC.async_send_data(ctx->dtls, &ctx->sendCtx);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "dtls send returned ec: %u", ec);
         nabto_stream_event_handled(&ctx->stream, eventType);

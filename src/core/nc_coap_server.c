@@ -42,6 +42,11 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nn_log* logger,
         return ec;
     }
 
+    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_coap_server_send_to_callback, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     return NABTO_EC_OK;
 }
 
@@ -54,6 +59,7 @@ void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
         struct np_event_queue* eq = &ctx->pl->eq;
         np_event_queue_destroy_event(eq, ctx->ev);
         np_event_queue_destroy_event(eq, ctx->timer);
+        np_completion_event_deinit(&ctx->sendCtx.ev);
     }
 }
 
@@ -96,7 +102,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         return;
     }
     struct nc_client_connection* clientConnection = (struct nc_client_connection*)connection;
-    struct np_dtls_srv_connection* dtls = clientConnection->dtls;
+    struct np_dtls_cli_connection* dtls = clientConnection->dtls;
 
 
     ctx->sendBuffer = pl->buf.allocate();
@@ -117,14 +123,12 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         return;
     }
 
-    struct np_dtls_srv_send_context* sendCtx = &ctx->sendCtx;
+    struct np_dtls_cli_send_context* sendCtx = &ctx->sendCtx;
     sendCtx->buffer = sendBuffer;
     sendCtx->bufferSize = (uint16_t)(sendEnd - sendBuffer);
-    sendCtx->cb = &nc_coap_server_send_to_callback;
-    sendCtx->data = ctx;
-    sendCtx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
+    sendCtx->channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
     nc_coap_packet_print("coap server send packet", sendCtx->buffer, sendCtx->bufferSize);
-    ctx->pl->dtlsS.async_send_data(ctx->pl, dtls, sendCtx);
+    ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
 }
 
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)

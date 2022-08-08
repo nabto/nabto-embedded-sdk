@@ -30,6 +30,7 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
     ctx->nonceCounter = 0;
     nn_llist_init(&ctx->listeners);
     nn_llist_init(&ctx->streams);
+    np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_stream_manager_send_rst_callback, ctx);
 }
 
 void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)
@@ -45,6 +46,7 @@ void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
         {
             nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
         }
+        np_completion_event_deinit(&ctx->sendCtx.ev);
     }
 }
 
@@ -226,11 +228,11 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
 
 void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
 {
-    struct np_dtls_srv_connection* dtls = nc_client_connection_get_dtls_connection(conn);
+    struct np_dtls_cli_connection* dtls = nc_client_connection_get_dtls_connection(conn);
     nc_stream_manager_send_rst(ctx, dtls, streamId);
 }
 
-void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np_dtls_srv_connection* dtls, uint64_t streamId)
+void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np_dtls_cli_connection* dtls, uint64_t streamId)
 {
     uint8_t* start;
     uint8_t* ptr;
@@ -256,10 +258,8 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np
 
     ctx->sendCtx.buffer = start;
     ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+ret);
-    ctx->sendCtx.cb = &nc_stream_manager_send_rst_callback;
-    ctx->sendCtx.data = ctx;
-    ctx->sendCtx.channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    ctx->pl->dtlsS.async_send_data(ctx->pl, dtls, &ctx->sendCtx);
+    ctx->sendCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
+    ctx->pl->dtlsC.async_send_data(dtls, &ctx->sendCtx);
 }
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)

@@ -429,6 +429,7 @@ void handle_state_change(struct nc_attach_context* ctx)
             np_event_queue_post_timed_event(&ctx->pl->eq, ctx->reattachTimer, ctx->accessDeniedWaitTime);
             break;
         case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
+        {
             np_error_code ec = ctx->pl->dtlsC.create_attach_connection(
                 ctx->pl, &ctx->dtls, ctx->hostname, ctx->certValidationDisabled, &dtls_packet_sender,
                 &dtls_data_handler, &dtls_event_handler, ctx);
@@ -438,6 +439,7 @@ void handle_state_change(struct nc_attach_context* ctx)
                     return handle_state_change(ctx);
                 }
             ctx->pl->dtlsC.connect(ctx->dtls);
+        }
             break;
         case NC_ATTACHER_STATE_ATTACHED:
             // Nothing to do when attached
