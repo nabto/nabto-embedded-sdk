@@ -7,7 +7,6 @@
 
 #if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_cli.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
 #elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_cli.h>
@@ -66,7 +65,6 @@ class TestPlatformSelectUnix : public TestPlatform {
 
 #if defined(NABTO_USE_MBEDTLS)
         nm_mbedtls_cli_init(&pl_);
-        nm_mbedtls_srv_init(&pl_);
         nm_mbedtls_spake2_init(&pl_);
 #elif defined(NABTO_USE_WOLFSSL)
         nm_wolfssl_cli_init(&pl_);

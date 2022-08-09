@@ -9,7 +9,6 @@
 
 #ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_util.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
@@ -49,7 +48,6 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_test_new()
     struct np_platform* pl = &dev->pl;
     nm_communication_buffer_init(pl);
 #if defined(NABTO_USE_MBEDTLS)
-    nm_mbedtls_srv_init(pl);
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_random_init(pl);
     nm_mbedtls_spake2_init(pl);
