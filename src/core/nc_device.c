@@ -182,9 +182,6 @@ void nc_device_deinit(struct nc_device_context* device) {
     np_free(device->appName);
     np_free(device->appVersion);
     np_free(device->hostname);
-    if (device->privateKey != NULL) {
-        np_free(device->privateKey);
-    }
 
     device->initialized = false;
 }
@@ -209,15 +206,9 @@ void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_e
 
 }
 
-void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
+void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize, const uint8_t* fingerprint)
 {
-    struct np_platform* pl = device->pl;
-    if (device->privateKey != NULL) {
-        np_free(device->privateKey);
-    }
-    device->privateKey = np_calloc(1, privateKeySize);
-    memcpy(device->privateKey, privateKeyL, privateKeySize);
-    device->privateKeyLen = privateKeySize;
+    memcpy(device->fingerprint, fingerprint, 32);
     nc_attacher_set_keys(&device->attacher, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 

@@ -308,6 +308,14 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
             dev->certificate = NULL;
         }
         dev->certificate = crt;
+
+#if defined(NABTO_USE_MBEDTLS)
+        ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
+#elif defined(NABTO_USE_WOLFSSL)
+        ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
+#else
+#error Missing implementation to create a crt from a private key.
+#endif
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -457,7 +465,7 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
     } else {
 
         // Init platform
-        nc_device_set_keys(&dev->core, (const unsigned char*)dev->certificate, strlen(dev->certificate), (const unsigned char*)dev->privateKey, strlen(dev->privateKey));
+        nc_device_set_keys(&dev->core, (const unsigned char*)dev->certificate, strlen(dev->certificate), (const unsigned char*)dev->privateKey, strlen(dev->privateKey), dev->fingerprint);
 
         // start the core
         np_error_code ec = nc_device_start(&dev->core, defaultServerUrlSuffix, &nabto_device_start_cb, dev);
@@ -491,20 +499,10 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint(NabtoDevic
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_INVALID_STATE;
+    } else {
+        *fingerprint = toHex(dev->fingerprint, 32);
+        ec = NABTO_EC_OK;
     }
-    uint8_t hash[32];
-    ec = NABTO_EC_NOT_IMPLEMENTED;
-#if defined(NABTO_USE_MBEDTLS)
-    ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, hash);
-#elif defined(NABTO_USE_WOLFSSL)
-    ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, hash);
-#else
-#error Missing DTLS implementation
-#endif
-    if (ec == NABTO_EC_OK) {
-        *fingerprint = toHex(hash, 32);
-    }
-
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
 }
@@ -513,23 +511,14 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
 {
     *fingerprint = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec = NABTO_EC_NOT_IMPLEMENTED;
+    np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_INVALID_STATE;
+    } else {
+        *fingerprint = toHex(dev->fingerprint, 16);
+        ec = NABTO_EC_OK;
     }
-    uint8_t hash[32];
-#if defined(NABTO_USE_MBEDTLS)
-    ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, hash);
-#elif defined(NABTO_USE_WOLFSSL)
-    ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, hash);
-#else
-#error Missing DTLS implementation
-#endif
-    if (ec == NABTO_EC_OK) {
-        *fingerprint = toHex(hash, 16);
-    }
-
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);
 }
