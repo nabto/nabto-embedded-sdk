@@ -18,7 +18,7 @@ struct nc_coap_client_context {
     uint32_t currentExpiry;
     struct np_event* ev;
     struct np_event* timer;
-    struct np_dtls_cli_send_context sendCtx;
+    struct np_dtls_send_context sendCtx;
     struct np_communication_buffer* sendBuffer;
 };
 

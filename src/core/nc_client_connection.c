@@ -16,7 +16,7 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channelId,
                                                      struct np_completion_event* cb, void* listenerData);
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
-void nc_client_connection_handle_event(enum np_dtls_cli_event event, void* data);
+void nc_client_connection_handle_event(enum np_dtls_event event, void* data);
 void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
                                       uint8_t* buffer, uint16_t bufferSize, void* data);
 
@@ -140,12 +140,12 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
 }
 
-void nc_client_connection_handle_event(enum np_dtls_cli_event event, void* data)
+void nc_client_connection_handle_event(enum np_dtls_event event, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
-    if (event == NP_DTLS_CLI_EVENT_CLOSED) {
+    if (event == NP_DTLS_EVENT_CLOSED) {
         nc_client_connection_destroy_connection(conn);
-    } else if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
+    } else if (event == NP_DTLS_EVENT_HANDSHAKE_COMPLETE) {
         // test fingerprint
         // if ok try to assign user to connection.
         // if fail, reject the connection.
@@ -241,7 +241,7 @@ void nc_client_connection_keep_alive_event(void* data)
 void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx)
 {
     struct np_platform* pl = ctx->pl;
-    struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
 
     nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize);
     sendCtx->channelId = ctx->currentChannel.channelId;
@@ -251,7 +251,7 @@ void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx)
 void nc_client_connection_keep_alive_send_response(struct nc_client_connection* ctx, uint8_t channelId, uint8_t* buffer, size_t length)
 {
     struct np_platform* pl = ctx->pl;
-    struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
     if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
         sendCtx->channelId = channelId;
         pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
@@ -266,7 +266,7 @@ void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
 }
 
 np_error_code nc_client_connection_async_send_data(
-    struct nc_client_connection* conn, struct np_dtls_cli_send_context* sendCtx)
+    struct nc_client_connection* conn, struct np_dtls_send_context* sendCtx)
 {
     return conn->pl->dtlsC.async_send_data(conn->dtls, sendCtx);
 }

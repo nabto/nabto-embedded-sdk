@@ -193,7 +193,7 @@ struct nc_attach_context {
 
     // Keep alive
     struct nc_keep_alive_context keepAlive;
-    struct np_dtls_cli_send_context keepAliveSendCtx;
+    struct np_dtls_send_context keepAliveSendCtx;
 
     // external callbacks
     nc_attacher_closed_callback closedCb;

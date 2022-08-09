@@ -56,7 +56,7 @@ struct nc_client_connection {
     struct np_completion_event closeCompletionEvent;
 
     struct nc_keep_alive_context keepAlive;
-    struct np_dtls_cli_send_context keepAliveSendCtx;
+    struct np_dtls_send_context keepAliveSendCtx;
 
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     bool hasSpake2Key;  // true iff the key has been set
@@ -150,6 +150,6 @@ void nc_client_connection_event_listener_notify(struct nc_client_connection* con
  */
 np_error_code nc_client_connection_async_send_data(
     struct nc_client_connection* conn,
-    struct np_dtls_cli_send_context* sendCtx);
+    struct np_dtls_send_context* sendCtx);
 
 #endif //_NC_CLIENT_CONNECTION_H_

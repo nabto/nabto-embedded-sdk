@@ -42,6 +42,10 @@ if(NABTO_USE_WOLFSSL)
     nm_wolfssl_random
     nm_wolfssl_spake2
   )
+  if(NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
+    target_link_libraries(nabto_device_select_unix
+      nm_wolfssl_srv
+    )
 endif()
 
 set(test_src

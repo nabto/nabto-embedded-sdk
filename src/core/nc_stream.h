@@ -53,7 +53,7 @@ struct nc_stream_context {
     void* closeUserData;
 
     bool isSending;
-    struct np_dtls_cli_send_context sendCtx;
+    struct np_dtls_send_context sendCtx;
     uint8_t sendBuffer[NC_STREAM_SEND_BUFFER_SIZE];
     enum nabto_stream_next_event_type sendEventType;
     size_t refCount;

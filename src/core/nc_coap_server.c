@@ -121,7 +121,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         return;
     }
 
-    struct np_dtls_cli_send_context* sendCtx = &ctx->sendCtx;
+    struct np_dtls_send_context* sendCtx = &ctx->sendCtx;
     sendCtx->buffer = sendBuffer;
     sendCtx->bufferSize = (uint16_t)(sendEnd - sendBuffer);
     sendCtx->channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;

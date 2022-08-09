@@ -22,7 +22,7 @@ struct nc_stream_manager_context {
     struct nn_llist listeners;
     struct np_communication_buffer* rstBuf;
     struct nn_llist streams;
-    struct np_dtls_cli_send_context sendCtx;
+    struct np_dtls_send_context sendCtx;
     struct nn_log* logger;
     size_t maxSegments;
     size_t allocatedSegments;

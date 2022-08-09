@@ -1,10 +1,9 @@
 #ifndef NP_DTLS_CLI_H
 #define NP_DTLS_CLI_H
 
+#include <platform/np_dtls.h>
 #include <platform/np_error_code.h>
-#include <platform/np_completion_event.h>
 
-#include <nn/llist.h>
 
 /**
  * DTLS Client interface
@@ -22,36 +21,7 @@ struct np_platform;
 
 #define NP_DTLS_CLI_DEFAULT_CHANNEL_ID 0xff
 
-enum np_dtls_cli_event {
-    NP_DTLS_CLI_EVENT_CLOSED, // The connection is closed
-    NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE,
-    NP_DTLS_CLI_EVENT_ACCESS_DENIED, // The connection got an access denied alert. The connection is closed.
-    NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED // The certificate could not be validated. The connection is closed.
-};
-
-typedef np_error_code (*np_dtls_cli_sender)(uint8_t channelId, uint8_t* buffer,
-                                            uint16_t bufferSize,
-                                            struct np_completion_event* cb,
-                                            void* senderData);
-typedef void (*np_dtls_cli_event_handler)(enum np_dtls_cli_event event,
-                                          void* data);
-typedef void (*np_dtls_cli_data_handler)(uint8_t channelId, uint64_t seq,
-                                         uint8_t* buffer, uint16_t bufferSize,
-                                         void* data);
-
 struct np_dtls_cli_connection;
-
-struct np_dtls_cli_send_context {
-    // Data to send
-    uint8_t* buffer;
-    uint16_t bufferSize;
-    // channel ID unused by DTLS, but passed to data_handler/sender as needed by nc_client_connection
-    uint8_t channelId;
-    // callback when sent
-    struct np_completion_event ev;
-    // node for message queue
-    struct nn_llist_node sendListNode;
-};
 
 struct np_dtls_cli_module {
     /**
@@ -70,16 +40,16 @@ struct np_dtls_cli_module {
     np_error_code (*create_attach_connection)(
         struct np_platform* pl, struct np_dtls_cli_connection** conn,
         const char* sni, bool disable_cert_validation,
-        np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-        np_dtls_cli_event_handler eventHandler, void* data);
+        np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+        np_dtls_event_handler eventHandler, void* data);
 
     /**
      * @brief Create an client connection. Client connections use ALPN, ChannelID
      */
     np_error_code (*create_client_connection)(
         struct np_platform* pl, struct np_dtls_cli_connection** conn,
-        np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-        np_dtls_cli_event_handler eventHandler, void* data);
+        np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+        np_dtls_event_handler eventHandler, void* data);
 
     void (*destroy_connection)(struct np_dtls_cli_connection* conn);
 
@@ -105,7 +75,7 @@ struct np_dtls_cli_module {
 
     np_error_code (*connect)(struct np_dtls_cli_connection* conn);
     np_error_code (*async_send_data)(struct np_dtls_cli_connection* conn,
-                                     struct np_dtls_cli_send_context* sendCtx);
+                                     struct np_dtls_send_context* sendCtx);
 
     /**
      * @brief make the DTLS module handle an incoming packet. For data-phase packets, channelId is passed to the data_handler, but is otherwise unused.

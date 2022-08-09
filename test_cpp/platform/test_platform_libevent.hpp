@@ -6,10 +6,14 @@
 
 #if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_cli.h>
+#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
 #elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_spake2.h>
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+#include <modules/wolfssl/nm_wolfssl_srv.h>
+#endif
 #else
 #error Missing DTLS implementation
 #endif
@@ -64,12 +68,16 @@ class TestPlatformLibevent : public TestPlatform {
 
 #ifdef NABTO_USE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
+        nm_mbedtls_srv_init(&pl_);
         nm_mbedtls_spake2_init(&pl_);
 #endif
 
 #ifdef NABTO_USE_WOLFSSL
         nm_wolfssl_cli_init(&pl_);
         nm_wolfssl_spake2_init(&pl_);
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+        nm_wolfssl_srv_init(&pl_);
+#endif
 #endif
 
         thread_event_queue_run(&eventQueue_);

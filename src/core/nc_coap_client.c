@@ -94,7 +94,7 @@ void nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
     if (ctx->sendBuffer == NULL) {
         return;
     }
-    struct np_dtls_cli_send_context* sendCtx = &ctx->sendCtx;
+    struct np_dtls_send_context* sendCtx = &ctx->sendCtx;
     sendCtx->buffer = pl->buf.start(ctx->sendBuffer);
 
     uint8_t* end = sendCtx->buffer+pl->buf.size(ctx->sendBuffer);

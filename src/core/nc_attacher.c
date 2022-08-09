@@ -53,7 +53,7 @@ static void handle_dtls_access_denied(struct nc_attach_context* ctx);
 static void handle_dtls_certificate_verification_failed(struct nc_attach_context* ctx);
 static np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSize, struct np_completion_event* cb, void* senderData);
 static void dtls_data_handler(uint8_t ch, uint64_t seq, uint8_t* buffer, uint16_t bufferSize, void* data);
-static void dtls_event_handler(enum np_dtls_cli_event event, void* data);
+static void dtls_event_handler(enum np_dtls_event event, void* data);
 
 static void dns_start_resolve(struct nc_attach_context* ctx);
 static void dns_resolved_callback(const np_error_code ec, void* data);
@@ -511,11 +511,11 @@ void reattach(void* data)
     handle_state_change(ctx);
 }
 
-void dtls_event_handler(enum np_dtls_cli_event event, void* data)
+void dtls_event_handler(enum np_dtls_event event, void* data)
 {
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     if (ctx->moduleState == NC_ATTACHER_MODULE_CLOSED) {
-        if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
+        if (event == NP_DTLS_EVENT_HANDSHAKE_COMPLETE) {
             ctx->pl->dtlsC.async_close(ctx->dtls);
         } else {
             reset_dtls_connection(ctx);
@@ -525,13 +525,13 @@ void dtls_event_handler(enum np_dtls_cli_event event, void* data)
         return;
     }
 
-    if (event == NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE) {
+    if (event == NP_DTLS_EVENT_HANDSHAKE_COMPLETE) {
         handle_dtls_connected(ctx);
-    } else if (event == NP_DTLS_CLI_EVENT_CLOSED) {
+    } else if (event == NP_DTLS_EVENT_CLOSED) {
         handle_dtls_closed(ctx);
-    } else if (event == NP_DTLS_CLI_EVENT_ACCESS_DENIED) {
+    } else if (event == NP_DTLS_EVENT_ACCESS_DENIED) {
         handle_dtls_access_denied(ctx);
-    } else if (event == NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED) {
+    } else if (event == NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED) {
         handle_dtls_certificate_verification_failed(ctx);
     }
 }
@@ -882,7 +882,7 @@ void handle_keep_alive_data(struct nc_attach_context* ctx, uint8_t* buffer, uint
 void keep_alive_send_req(struct nc_attach_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
-    struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
 
     nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize);
 
@@ -892,7 +892,7 @@ void keep_alive_send_req(struct nc_attach_context* ctx)
 void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length)
 {
     struct np_platform* pl = ctx->pl;
-    struct np_dtls_cli_send_context* sendCtx = &ctx->keepAliveSendCtx;
+    struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
     if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
         pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
     }

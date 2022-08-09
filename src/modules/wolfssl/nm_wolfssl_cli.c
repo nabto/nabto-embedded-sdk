@@ -61,9 +61,9 @@ struct np_dtls_cli_connection {
     bool receiving;
     bool destroyed;
 
-    np_dtls_cli_sender sender;
-    np_dtls_cli_data_handler dataHandler;
-    np_dtls_cli_event_handler eventHandler;
+    np_dtls_sender sender;
+    np_dtls_data_handler dataHandler;
+    np_dtls_event_handler eventHandler;
     void* callbackData;
     uint8_t sendChannelId;
     uint8_t recvChannelId;
@@ -74,12 +74,12 @@ struct np_dtls_cli_connection {
 static np_error_code create_attach_connection(
     struct np_platform* pl, struct np_dtls_cli_connection** conn,
     const char* sni, bool disable_cert_validation,
-    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-    np_dtls_cli_event_handler eventHandler, void* data);
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data);
 static np_error_code create_client_connection(
     struct np_platform* pl, struct np_dtls_cli_connection** conn,
-    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-    np_dtls_cli_event_handler eventHandler, void* data);
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data);
 
 
 static void destroy_connection(struct np_dtls_cli_connection* conn);
@@ -97,7 +97,7 @@ static np_error_code set_root_certs(struct np_platform* pl, const char* rootCert
 
 static np_error_code nm_wolfssl_connect(struct np_dtls_cli_connection* conn);
 static np_error_code async_send_data(struct np_dtls_cli_connection* conn,
-                                     struct np_dtls_cli_send_context* sendCtx);
+                                     struct np_dtls_send_context* sendCtx);
 
 static np_error_code handle_packet(struct np_dtls_cli_connection* conn,
                                    uint8_t channelId, uint8_t* buffer,
@@ -212,8 +212,8 @@ np_error_code initialize_context(struct np_platform* pl)
 
 static np_error_code create_client_connection(
     struct np_platform* pl, struct np_dtls_cli_connection** connection,
-    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-    np_dtls_cli_event_handler eventHandler, void* data)
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data)
 {
     struct nm_wolfssl_cli_context* ctx = (struct nm_wolfssl_cli_context*)pl->dtlsCData;
     if (ctx == NULL) {
@@ -284,8 +284,8 @@ static np_error_code create_client_connection(
 static np_error_code create_attach_connection(
     struct np_platform* pl, struct np_dtls_cli_connection** connection,
     const char* sni, bool disable_cert_validation,
-    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-    np_dtls_cli_event_handler eventHandler, void* data)
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data)
 {
     np_error_code ec = create_client_connection(
         pl, connection, packetSender, dataHandler, eventHandler, data);
@@ -319,7 +319,7 @@ void do_destroy_connection(struct np_dtls_cli_connection* conn)
     // remove the first element until the list is empty
     while(!nn_llist_empty(&conn->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
-        struct np_dtls_cli_send_context* first = nn_llist_get_item(&it);
+        struct np_dtls_send_context* first = nn_llist_get_item(&it);
         nn_llist_erase(&it);
         np_completion_event_resolve(&first->ev, NABTO_EC_CONNECTION_CLOSING);
     }
@@ -428,18 +428,18 @@ void nm_dtls_event_do_one(void* data)
                 NABTO_LOG_TRACE(LOG, "Want Write");
                 // Wait for IO to happen
             } else {
-                enum np_dtls_cli_event event = NP_DTLS_CLI_EVENT_CLOSED;
+                enum np_dtls_event event = NP_DTLS_EVENT_CLOSED;
                 char buf[80];
                 wolfSSL_ERR_error_string(err, buf);
                 if (err > MIN_CODE_E) { // All wolfCrypt errors range ]MIN_CODE_E...0[
                     // This matches all wolfCrypt errors which may include errors other than verification errors.
                     NABTO_LOG_ERROR(LOG, "Certificate verification failed: (%d) %s", err, buf);
-                    event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
+                    event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else if( err == FATAL_ERROR ) {
                     WOLFSSL_ALERT_HISTORY h;
                     wolfSSL_get_alert_history(conn->ssl, &h);
                     if (h.last_rx.code == access_denied) {
-                        event = NP_DTLS_CLI_EVENT_ACCESS_DENIED;
+                        event = NP_DTLS_EVENT_ACCESS_DENIED;
                         NABTO_LOG_ERROR(LOG, "Server returned access denied: (%d) %s" , err, buf);
                     } else {
                         NABTO_LOG_ERROR(
@@ -457,7 +457,7 @@ void nm_dtls_event_do_one(void* data)
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
             conn->state = DATA;
             np_event_queue_cancel_event(&conn->pl->eq, conn->timerEvent);
-            conn->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, conn->callbackData);
+            conn->eventHandler(NP_DTLS_EVENT_HANDSHAKE_COMPLETE, conn->callbackData);
         } else {
             NABTO_LOG_ERROR(LOG, "unknown case %d", ret );
         }
@@ -490,7 +490,7 @@ void nm_dtls_event_do_one(void* data)
                         NABTO_LOG_ERROR(LOG, "Server returned access denied: (%d) %s" , err, buf);
                         np_event_queue_cancel_event(&conn->pl->eq, conn->timerEvent);
                         conn->state = CLOSING;
-                        conn->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, conn->callbackData);
+                        conn->eventHandler(NP_DTLS_EVENT_ACCESS_DENIED, conn->callbackData);
                         return;
                     }
                 }
@@ -529,7 +529,7 @@ void handle_timeout(void* data)
             wolfSSL_ERR_error_string(err, buf);
             NABTO_LOG_ERROR(LOG, "Got timeout returned error: %s", buf);
             // too many retries, timeout.
-            conn->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, conn->callbackData);
+            conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
         }
     } else {
         // NOT_COMPILED_IN etc
@@ -560,7 +560,7 @@ void start_send_deferred(void* data)
     }
 
     struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
-    struct np_dtls_cli_send_context* next = nn_llist_get_item(&it);
+    struct np_dtls_send_context* next = nn_llist_get_item(&it);
     nn_llist_erase(&it);
 
     conn->sendChannelId = next->channelId;
@@ -584,7 +584,7 @@ void start_send_deferred(void* data)
 
 
 np_error_code async_send_data(struct np_dtls_cli_connection* conn,
-                              struct np_dtls_cli_send_context* sendCtx)
+                              struct np_dtls_send_context* sendCtx)
 {
     if (conn->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
@@ -602,7 +602,7 @@ void nm_wolfssl_do_close(void* data, np_error_code ec){
     struct np_dtls_cli_connection* conn = data;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
     np_event_queue_cancel_event(&conn->pl->eq, conn->timerEvent);
-    conn->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, conn->callbackData);
+    conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
 }
 
 np_error_code async_close(struct np_dtls_cli_connection* conn)
