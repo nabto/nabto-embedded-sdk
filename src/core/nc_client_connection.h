@@ -145,4 +145,11 @@ bool nc_client_connection_is_password_authenticated(struct nc_client_connection*
  */
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event);
 
+/**
+ * Send data on the client connection
+ */
+np_error_code nc_client_connection_async_send_data(
+    struct nc_client_connection* conn,
+    struct np_dtls_cli_send_context* sendCtx);
+
 #endif //_NC_CLIENT_CONNECTION_H_

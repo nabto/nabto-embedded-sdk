@@ -265,6 +265,12 @@ void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
     nc_client_connection_destroy_connection(cc);
 }
 
+np_error_code nc_client_connection_async_send_data(
+    struct nc_client_connection* conn, struct np_dtls_cli_send_context* sendCtx)
+{
+    return conn->pl->dtlsC.async_send_data(conn->dtls, sendCtx);
+}
+
 struct np_dtls_cli_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn)
 {
     return conn->dtls;

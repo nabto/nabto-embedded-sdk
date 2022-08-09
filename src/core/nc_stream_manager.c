@@ -215,7 +215,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
 
         np_error_code ec;
-        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, nc_client_connection_get_dtls_connection(conn), conn, ctx, conn->connectionRef, ctx->logger);
+        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn, ctx, conn->connectionRef, ctx->logger);
         if (ec != NABTO_EC_OK) {
             nc_stream_manager_free_stream(stream);
             return NULL;
@@ -228,11 +228,10 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
 
 void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
 {
-    struct np_dtls_cli_connection* dtls = nc_client_connection_get_dtls_connection(conn);
-    nc_stream_manager_send_rst(ctx, dtls, streamId);
+    nc_stream_manager_send_rst(ctx, conn, streamId);
 }
 
-void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np_dtls_cli_connection* dtls, uint64_t streamId)
+void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
 {
     uint8_t* start;
     uint8_t* ptr;
@@ -259,7 +258,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np
     ctx->sendCtx.buffer = start;
     ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+ret);
     ctx->sendCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
-    ctx->pl->dtlsC.async_send_data(dtls, &ctx->sendCtx);
+    nc_client_connection_async_send_data(conn, &ctx->sendCtx);
 }
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)

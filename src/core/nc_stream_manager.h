@@ -67,6 +67,6 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
 
 void nc_stream_manager_set_max_segments(struct nc_stream_manager_context* ctx, size_t maxSegments);
 
-void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np_dtls_cli_connection* conn, uint64_t streamId);
+void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
 
 #endif

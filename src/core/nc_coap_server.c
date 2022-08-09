@@ -102,8 +102,6 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         return;
     }
     struct nc_client_connection* clientConnection = (struct nc_client_connection*)connection;
-    struct np_dtls_cli_connection* dtls = clientConnection->dtls;
-
 
     ctx->sendBuffer = pl->buf.allocate();
     if (ctx->sendBuffer == NULL) {
@@ -128,7 +126,7 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
     sendCtx->bufferSize = (uint16_t)(sendEnd - sendBuffer);
     sendCtx->channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
     nc_coap_packet_print("coap server send packet", sendCtx->buffer, sendCtx->bufferSize);
-    ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
+    nc_client_connection_async_send_data(clientConnection, sendCtx);
 }
 
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
