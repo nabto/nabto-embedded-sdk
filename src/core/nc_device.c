@@ -69,12 +69,6 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-    ec = pl->dtlsS.create(pl, &device->dtlsServer);
-    if (ec != NABTO_EC_OK) {
-        nc_device_deinit(device);
-        return ec;
-    }
-
     ec = nc_coap_server_init(pl, &device->moduleLogger, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
@@ -173,9 +167,6 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
-    if (device->dtlsServer != NULL) { // was created
-        pl->dtlsS.destroy(device->dtlsServer);
-    }
 
     nn_string_set_deinit(&device->mdnsSubtypes);
     nn_string_map_deinit(&device->mdnsTxtItems);
@@ -228,7 +219,6 @@ void nc_device_set_keys(struct nc_device_context* device, const unsigned char* p
     memcpy(device->privateKey, privateKeyL, privateKeySize);
     device->privateKeyLen = privateKeySize;
     nc_attacher_set_keys(&device->attacher, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
-    pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
 }
 
 void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data) {

@@ -12,7 +12,6 @@
 #include <platform/np_communication_buffer.h>
 #include <platform/interfaces/np_dns.h>
 #include <platform/np_dtls_cli.h>
-#include <platform/np_dtls_srv.h>
 #include <platform/interfaces/np_tcp.h>
 #include <platform/interfaces/np_mdns.h>
 #include <platform/np_authorization.h>
@@ -63,11 +62,6 @@ struct np_platform {
     // DTLS client module
     struct np_dtls_cli_module dtlsC;
     void* dtlsCData; // Custom data for the dtls client module.
-
-    // DTLS server module
-    struct np_dtls_srv_module dtlsS;
-    void* dtlsSData; // Custom data for the dtls server module.
-
 
     // Access control module
     struct np_authorization authorization;

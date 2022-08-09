@@ -41,7 +41,6 @@ if (NABTO_USE_MBEDTLS)
 endif()
 if(NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device_static
-    nm_wolfssl_srv
     nm_wolfssl_cli
     nm_wolfssl_random
     nm_wolfssl_spake2
@@ -77,7 +76,6 @@ if (NABTO_USE_MBEDTLS)
 endif()
 if(NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device
-    nm_wolfssl_srv
     nm_wolfssl_cli
     nm_wolfssl_random
     nm_wolfssl_spake2

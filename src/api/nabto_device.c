@@ -29,7 +29,6 @@
 #include <modules/wolfssl/nm_wolfssl_random.h>
 #include <modules/wolfssl/nm_wolfssl_spake2.h>
 #include <modules/wolfssl/nm_wolfssl_cli.h>
-#include <modules/wolfssl/nm_wolfssl_srv.h>
 #include <modules/wolfssl/nm_wolfssl_util.h>
 #else
 #error Missing DTLS implementation
@@ -94,7 +93,6 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nm_mbedtls_spake2_init(pl);
 #endif
 #ifdef NABTO_USE_WOLFSSL
-    nm_wolfssl_srv_init(pl);
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);
     nm_wolfssl_spake2_init(pl);
