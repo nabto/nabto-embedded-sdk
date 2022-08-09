@@ -26,11 +26,26 @@
 
 #include <nn/llist.h>
 
+/******** definitions and constants *******/
+
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 
 const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
-struct np_dtls_cli_context {
+struct nm_mbedtls_cli_context {
+    struct np_platform* pl;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    mbedtls_ssl_config conf;
+    mbedtls_x509_crt rootCerts;
+    mbedtls_x509_crt publicKey;
+    mbedtls_pk_context privateKey;
+
+    int timeoutMin;
+    int timeoutMax;
+}
+
+struct np_dtls_cli_connection {
     struct np_platform* pl;
     enum sslState state;
 
@@ -57,17 +72,189 @@ struct np_dtls_cli_context {
     np_dtls_cli_event_handler eventHandler;
     void* callbackData;
 
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
-    mbedtls_ssl_config conf;
-    mbedtls_x509_crt publicKey;
-    mbedtls_pk_context privateKey;
     mbedtls_ssl_context ssl;
-    mbedtls_x509_crt rootCerts;
 
 };
 
 const char* nm_mbedtls_cli_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
+
+/******** Internal function definitions *******/
+np_error_code initialize_context(struct np_platform* pl);
+
+/*
+ * Initialize the np_platform to use this particular dtls cli module
+ */
+np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
+{
+    pl->dtlsC.create_attach_connection = &create_attach_connection;
+    pl->dtlsC.create_client_connection = &create_client_connection;
+    pl->dtlsC.destroy_connection = &destroy_connection;
+    pl->dtlsC.set_keys = &set_keys;
+    pl->dtlsC.set_handshake_timeout = &set_handshake_timeout;
+    pl->dtlsC.set_root_certs = &set_root_certs;
+    pl->dtlsC.connect = &nm_wolfssl_connect;
+    pl->dtlsC.async_send_data = &async_send_data;
+    pl->dtlsC.handle_packet = &handle_packet;
+    pl->dtlsC.async_close = &async_close;
+    pl->dtlsC.get_fingerprint = &get_fingerprint;
+    pl->dtlsC.get_alpn_protocol = &get_alpn_protocol;
+    pl->dtlsC.get_packet_count = &get_packet_count;
+
+    return initialize_context(pl);
+}
+
+void nm_mbedtls_cli_deinit(struct np_platform* pl)
+{
+    struct nm_mbedtls_cli_context* ctx =
+        (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+    mbedtls_x509_crt_free(&ctx->rootCerts);
+    mbedtls_pk_free(&ctx->privateKey);
+    mbedtls_x509_crt_free(&ctx->publicKey );
+    mbedtls_entropy_free( &ctx->entropy );
+    mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
+    mbedtls_ssl_config_free( &ctx->conf );
+
+    np_free(ctx);
+}
+
+np_error_code initialize_context(struct np_platform* pl){
+    struct nm_mbedtls_cli_context* ctx =
+        np_calloc(1, sizeof(struct nm_mbedtls_cli_context));
+    if (ctx == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    pl->dtlsCData = ctx;
+    ctx->pl = pl;
+    mbedtls_ssl_config_init( &ctx->conf );
+    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
+    mbedtls_entropy_init( &ctx->entropy );
+    mbedtls_x509_crt_init( &ctx->publicKey );
+    mbedtls_pk_init( &ctx->privateKey );
+    mbedtls_x509_crt_init(&ctx->rootCerts);
+
+    int ret;
+    const char *pers = "dtls_client";
+
+    if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
+                               (const unsigned char *) pers,
+                               strlen( pers ) ) ) != 0 ) {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
+    if( ( ret = mbedtls_ssl_config_defaults( &ctx->conf,
+                   MBEDTLS_SSL_IS_CLIENT,
+                   MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+                   MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
+    mbedtls_ssl_conf_ciphersuites(&ctx->conf,
+                                  allowedCipherSuitesList);
+
+    mbedtls_ssl_conf_alpn_protocols(&ctx->conf, nm_mbedtls_cli_alpnList );
+    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_REQUIRED );
+
+    mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
+
+    nm_mbedtls_util_check_logging(&ctx->conf);
+    mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->rootCerts, NULL);
+
+    return NABTO_EC_OK;
+
+}
+
+
+static np_error_code create_client_connection(
+    struct np_platform* pl, struct np_dtls_cli_connection** connection,
+    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
+    np_dtls_cli_event_handler eventHandler, void* data)
+{
+    struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+    if (ctx == NULL) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    *connection = NULL;
+    struct np_dtls_cli_connection* conn = np_calloc(1, sizeof(struct np_dtls_cli_connection));
+    if (conn == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    conn->pl = pl;
+    mbedtls_ssl_init( &conn->ssl );
+    conn->sender = packetSender;
+    conn->dataHandler = dataHandler;
+    conn->eventHandler = eventHandler;
+    conn->callbackData = data;
+
+    nn_llist_init(&conn->sendList);
+    conn->destroyed = false;
+
+    np_error_code ec = nm_mbedtls_timer_init(&conn->timer, conn->pl, &nm_dtls_timed_event_do_one, conn);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    mbedtls_ssl_set_bio( &conn->ssl, conn,
+                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
+
+    mbedtls_ssl_set_timer_cb( &conn->ssl,
+                              &conn->timer,
+                              &nm_mbedtls_timer_set_delay,
+                              &nm_mbedtls_timer_get_delay );
+
+    int ret;
+    if( ( ret = mbedtls_ssl_setup( &conn->ssl, &conn->conf ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
+        nm_mbedtls_cli_do_free(conn);
+        return NABTO_EC_UNKNOWN;
+    }
+
+    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_cli_start_send_deferred, conn, &conn->startSendEvent);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    *connection = conn;
+    return NABTO_EC_OK;
+}
+
+
+static np_error_code create_attach_connection(
+    struct np_platform* pl, struct np_dtls_cli_connection** connection,
+    const char* sni, bool disable_cert_validation,
+    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
+    np_dtls_cli_event_handler eventHandler, void* data)
+{
+    np_error_code ec = create_client_connection(
+        pl, connection, packetSender, dataHandler, eventHandler, data);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+    int ret;
+    if( ( ret = mbedtls_ssl_set_hostname( &ctx->ssl, sniName ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+    if (disable_cert_validation) {
+        mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_NONE );
+
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 static np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_context** client,
                                         np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
@@ -131,30 +318,6 @@ const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
     return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
 }
 
-/*
- * Initialize the np_platform to use this particular dtls cli module
- */
-np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
-{
-    pl->dtlsC.create = &nm_mbedtls_cli_create;
-    pl->dtlsC.destroy = &nm_mbedtls_cli_destroy;
-    pl->dtlsC.set_sni = &nm_mbedtls_cli_set_sni;
-    pl->dtlsC.set_keys = &nm_mbedtls_cli_set_keys;
-    pl->dtlsC.set_root_certs = &nm_mbedtls_cli_set_root_certs;
-    pl->dtlsC.disable_certificate_validation = &nm_mbedtls_cli_disable_certificate_validation;
-    pl->dtlsC.connect = &nm_dtls_connect;
-    pl->dtlsC.reset = &nm_mbedtls_cli_reset;
-    pl->dtlsC.async_send_data = &async_send_data;
-    pl->dtlsC.close = &dtls_cli_close;
-    pl->dtlsC.get_fingerprint = &get_fingerprint;
-    pl->dtlsC.set_handshake_timeout = &set_handshake_timeout;
-    pl->dtlsC.get_alpn_protocol = &nm_dtls_get_alpn_protocol;
-    pl->dtlsC.get_packet_count = &nm_dtls_get_packet_count;
-    pl->dtlsC.handle_packet = &handle_packet;
-
-    return NABTO_EC_OK;
-}
-
 np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_context** client,
                                  np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
                                  np_dtls_cli_event_handler eventHandler, void* data)
@@ -166,13 +329,6 @@ np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_c
     }
     ctx->pl = pl;
     mbedtls_ssl_init( &ctx->ssl );
-    mbedtls_ssl_config_init( &ctx->conf );
-    mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
-    mbedtls_entropy_init( &ctx->entropy );
-    mbedtls_x509_crt_init( &ctx->publicKey );
-    mbedtls_pk_init( &ctx->privateKey );
-    mbedtls_x509_crt_init(&ctx->rootCerts);
-
     ctx->sender = packetSender;
     ctx->dataHandler = dataHandler;
     ctx->eventHandler = eventHandler;
@@ -210,36 +366,6 @@ np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-
-    int ret;
-    const char *pers = "dtls_client";
-
-    if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
-                               (const unsigned char *) pers,
-                               strlen( pers ) ) ) != 0 ) {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret );
-        return NABTO_EC_UNKNOWN;
-    }
-
-    if( ( ret = mbedtls_ssl_config_defaults( &ctx->conf,
-                   MBEDTLS_SSL_IS_CLIENT,
-                   MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-                   MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
-        return NABTO_EC_UNKNOWN;
-    }
-
-    mbedtls_ssl_conf_ciphersuites(&ctx->conf,
-                                  allowedCipherSuitesList);
-
-    mbedtls_ssl_conf_alpn_protocols(&ctx->conf, nm_mbedtls_cli_alpnList );
-    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_REQUIRED );
-
-    mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
-
-    nm_mbedtls_util_check_logging(&ctx->conf);
-    mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->rootCerts, NULL);
 
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
                          nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
