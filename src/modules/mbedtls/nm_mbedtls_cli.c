@@ -391,6 +391,7 @@ void do_free_connection(struct np_dtls_cli_connection* conn)
     nm_mbedtls_timer_cancel(&conn->timer);
     np_event_queue_destroy_event(&conn->pl->eq, conn->startSendEvent);
     nm_mbedtls_timer_deinit(&conn->timer);
+    np_completion_event_deinit(&conn->senderEvent);
 
     mbedtls_ssl_free( &conn->ssl );
 
@@ -686,14 +687,15 @@ void dtls_udp_send_callback(const np_error_code ec, void* data)
     if (conn->state == CLOSING) {
         NABTO_LOG_TRACE(LOG, "udp send cb after close");
     }
+    conn->pl->buf.free(conn->sslSendBuffer);
     if(conn->state == CLOSING) {
         nm_dtls_do_close(conn, /* ec unused */NABTO_EC_OK);
+        conn->sslSendBuffer = NULL;
         if (conn->destroyed) {
             do_free_connection(conn);
         }
         return;
     }
-    conn->pl->buf.free(conn->sslSendBuffer);
     conn->sslSendBuffer = NULL;
     if (conn->state == DATA) {
         start_send(conn);

@@ -55,6 +55,7 @@ void nc_coap_client_deinit(struct nc_coap_client_context* ctx)
         struct np_event_queue* eq = &ctx->pl->eq;
         np_event_queue_destroy_event(eq, ctx->ev);
         np_event_queue_destroy_event(eq, ctx->timer);
+        np_completion_event_deinit(&ctx->sendCtx.ev);
         nabto_coap_client_destroy(&ctx->client);
     }
 }

@@ -159,7 +159,7 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
 //    np_completion_event_deinit(&conn->closeCompletionEvent);
 #endif
     np_completion_event_deinit(&conn->sendCompletionEvent);
-
+    np_completion_event_deinit(&conn->keepAliveSendCtx.ev);
     // this frees the connection
     nc_client_connection_dispatch_close_connection(conn->dispatch, conn);
 }
