@@ -43,12 +43,14 @@ struct np_dtls_srv_connection {
     uint32_t recvCount;
     uint32_t sentCount;
 
+    struct np_completion_event senderEvent;
+
     struct nn_llist sendList;
     struct np_event* startSendEvent;
 
-    np_dtls_srv_sender sender;
-    np_dtls_srv_data_handler dataHandler;
-    np_dtls_srv_event_handler eventHandler;
+    np_dtls_sender sender;
+    np_dtls_data_handler dataHandler;
+    np_dtls_event_handler eventHandler;
     void* senderData;
     uint8_t channelId;
 
@@ -78,14 +80,14 @@ static np_error_code nm_wolfssl_srv_set_keys(struct np_dtls_srv* server,
 
 static np_error_code nm_wolfssl_srv_create_connection(
     struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
-    np_dtls_srv_sender sender, np_dtls_srv_data_handler dataHandler,
-    np_dtls_srv_event_handler eventHandler, void* data);
+    np_dtls_sender sender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data);
 static void nm_wolfssl_srv_destroy_connection(
     struct np_dtls_srv_connection* connection);
 
 static np_error_code nm_wolfssl_srv_async_send_data(
     struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-    struct np_dtls_srv_send_context* sendCtx);
+    struct np_dtls_send_context* sendCtx);
 
 static np_error_code nm_wolfssl_srv_async_close(
     struct np_platform* pl, struct np_dtls_srv_connection* ctx,
@@ -114,7 +116,7 @@ static int wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* ctx);
 
 void nm_wolfssl_srv_event_send_to(void* data);
 void event_callback(struct np_dtls_srv_connection* ctx,
-                    enum np_dtls_srv_event event);
+                    enum np_dtls_event event);
 void nm_wolfssl_srv_do_event_callback(void* data);
 
 static void nm_wolfssl_srv_is_closed(struct np_dtls_srv_connection* ctx);
@@ -227,8 +229,8 @@ np_error_code nm_wolfssl_srv_set_keys(struct np_dtls_srv* server,
 
 np_error_code nm_wolfssl_srv_create_connection(
     struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
-    np_dtls_srv_sender sender, np_dtls_srv_data_handler dataHandler,
-    np_dtls_srv_event_handler eventHandler, void* data)
+    np_dtls_sender sender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data)
 {
     struct np_dtls_srv_connection* ctx =
         (struct np_dtls_srv_connection*)np_calloc(
@@ -241,7 +243,7 @@ np_error_code nm_wolfssl_srv_create_connection(
     ctx->dataHandler = dataHandler;
     ctx->eventHandler = eventHandler;
     ctx->senderData = data;
-    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
+    ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
 
     nn_llist_init(&ctx->sendList);
 
@@ -257,6 +259,12 @@ np_error_code nm_wolfssl_srv_create_connection(
 
     ec = np_event_queue_create_event(&pl->eq, handle_timeout, ctx,
                                      &ctx->timerEvent);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(&pl->eq, &ctx->senderEvent,
+                                  &nm_wolfssl_srv_connection_send_callback, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -306,15 +314,16 @@ static void nm_wolfssl_srv_destroy_connection(
     }
     while (!nn_llist_empty(&ctx->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
-        struct np_dtls_srv_send_context* first = nn_llist_get_item(&it);
+        struct np_dtls_send_context* first = nn_llist_get_item(&it);
         nn_llist_erase(&it);
-        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
+        np_completion_event_resolve(&first->ev, NABTO_EC_CONNECTION_CLOSING);
     }
 
     struct np_event_queue* eq = &pl->eq;
     np_event_queue_destroy_event(&ctx->pl->eq, ctx->timerEvent);
 
     np_event_queue_destroy_event(eq, ctx->startSendEvent);
+    np_completion_event_deinit(&connection->senderEvent);
     wolfSSL_free(connection->ssl);
     np_free(connection);
 }
@@ -330,7 +339,7 @@ np_error_code nm_wolfssl_srv_handle_packet(struct np_platform* pl,
     ctx->recvBufferSize = bufferSize;
     ctx->channelId = channelId;
     nm_wolfssl_srv_do_one(ctx);
-    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
+    ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
     ctx->recvBuffer = NULL;
     ctx->recvBufferSize = 0;
     return NABTO_EC_OK;
@@ -359,14 +368,14 @@ void nm_wolfssl_srv_do_one(void* data)
             } else {
                 NABTO_LOG_ERROR(LOG, "wolfSSL_connect returned %d", err);
                 np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
-                event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+                event_callback(ctx, NP_DTLS_EVENT_CLOSED);
                 return;
             }
         } else {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
             np_event_queue_cancel_event(&ctx->pl->eq, ctx->timerEvent);
             ctx->state = DATA;
-            event_callback(ctx, NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE);
+            event_callback(ctx, NP_DTLS_EVENT_HANDSHAKE_COMPLETE);
         }
     } else if (ctx->state == DATA) {
         int ret;
@@ -374,7 +383,7 @@ void nm_wolfssl_srv_do_one(void* data)
         ret = wolfSSL_read(ctx->ssl, recvBuffer, sizeof(recvBuffer));
         if (ret == 0) {
             // EOF
-            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_EVENT_CLOSED);
             NABTO_LOG_TRACE(LOG, "Received EOF");
         } else if (ret > 0) {
             // we need the sequence number from the dtls packet.
@@ -393,7 +402,7 @@ void nm_wolfssl_srv_do_one(void* data)
                 // ok
             } else {
                 NABTO_LOG_ERROR(LOG, "Received ERROR: %i", err);
-                event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+                event_callback(ctx, NP_DTLS_EVENT_CLOSED);
             }
         }
     }
@@ -416,7 +425,7 @@ void handle_timeout(void* data)
         set_timeout(ctx);
     } else if (ec == WOLFSSL_FATAL_ERROR) {
         // too many retries, timeout.
-        event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+        event_callback(ctx, NP_DTLS_EVENT_CLOSED);
     } else {
         // NOT_COMPILED_IN etc
         NABTO_LOG_ERROR(LOG, "Unhandled wolfSSL_dtls_got_timeout error code.");
@@ -424,7 +433,7 @@ void handle_timeout(void* data)
 }
 
 void event_callback(struct np_dtls_srv_connection* ctx,
-                    enum np_dtls_srv_event event)
+                    enum np_dtls_event event)
 {
     ctx->eventHandler(event, ctx->senderData);
 }
@@ -448,30 +457,29 @@ void nm_wolfssl_srv_start_send_deferred(void* data)
     }
 
     struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
-    struct np_dtls_srv_send_context* next = nn_llist_get_item(&it);
+    struct np_dtls_send_context* next = nn_llist_get_item(&it);
     nn_llist_erase(&it);
 
     ctx->channelId = next->channelId;
     int ret = wolfSSL_write(ctx->ssl, next->buffer, (int)next->bufferSize);
-    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    if (next->cb == NULL) {
-        ctx->sentCount++;
-    } else if (ret <= 0) {
+    ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
+
+    if (ret <= 0) {
         int err = wolfSSL_get_error(ctx->ssl, ret);
         char buf[80];
         wolfSSL_ERR_error_string(err, buf);
         // unknown error
         NABTO_LOG_ERROR(LOG, "wolfssl_write failed with: (%i) %s", err, buf);
-        next->cb(NABTO_EC_UNKNOWN, next->data);
+        np_completion_event_resolve(&next->ev, NABTO_EC_UNKNOWN);
     } else {
         ctx->sentCount++;
-        next->cb(NABTO_EC_OK, next->data);
+        np_completion_event_resolve(&next->ev, NABTO_EC_OK);
     }
 }
 
 np_error_code nm_wolfssl_srv_async_send_data(
     struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-    struct np_dtls_srv_send_context* sendCtx)
+    struct np_dtls_send_context* sendCtx)
 {
     (void)pl;
     if (ctx->state == CLOSING) {
@@ -502,6 +510,8 @@ void nm_wolfssl_srv_is_closed(struct np_dtls_srv_connection* ctx)
         ctx->closeCompletionEvent = NULL;
         np_completion_event_resolve(completionEvent, NABTO_EC_OK);
     }
+    event_callback(ctx, NP_DTLS_EVENT_CLOSED);
+
 }
 
 np_error_code nm_wolfssl_srv_async_close(
@@ -580,7 +590,7 @@ int wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
 
         np_error_code ec = ctx->sender(
             ctx->channelId, pl->buf.start(ctx->sslSendBuffer),
-            (uint16_t)bufferSize, &nm_wolfssl_srv_connection_send_callback, ctx,
+            (uint16_t)bufferSize, &ctx->senderEvent,
             ctx->senderData);
         if (ec != NABTO_EC_OK) {
             NABTO_LOG_ERROR(LOG,

@@ -72,19 +72,30 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
         return ec;
     }
 
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     ec = pl->dtlsC.create_client_connection(pl, &conn->dtls,
                                             &nc_client_connection_async_send_to_udp,
                                             &nc_client_connection_handle_data,
                                             &nc_client_connection_handle_event, conn);
+#else
+    ec = pl->dtlsS.create_connection(device->dtlsServer, &conn->dtls,
+                                     &nc_client_connection_async_send_to_udp,
+                                     &nc_client_connection_handle_data,
+                                     &nc_client_connection_handle_event, conn);
+#endif
     if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Failed to create DTLS server connection");
+        NABTO_LOG_ERROR(LOG, "Failed to create DTLS connection");
         return ec;
     }
 
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
+    ec = pl->dtlsC.connect(conn->dtls);
+#else
     // Remove connection ID before passing packet to DTLS
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
-    ec = pl->dtlsC.connect(conn->dtls);
+    ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
+#endif
     NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " created.", conn->connectionRef);
     return ec;
 }
@@ -115,13 +126,21 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
     // Remove connection ID before passing packet to DTLS
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     ec = pl->dtlsC.handle_packet(conn->dtls, channelId, buffer, bufferSize);
+#else
+    ec = pl->dtlsS.handle_packet(conn->pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
+#endif
     return ec;
 }
 
 void nc_client_connection_close_connection(struct nc_client_connection* conn)
 {
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     conn->pl->dtlsC.async_close(conn->dtls);
+#else
+    conn->pl->dtlsS.async_close(conn->pl, conn->dtls, NULL);
+#endif
 }
 
 void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
@@ -133,7 +152,12 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);
     nc_stream_manager_remove_connection(conn->streamManager, conn);
 
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     pl->dtlsC.destroy_connection(conn->dtls);
+#else
+    pl->dtlsS.destroy_connection(conn->dtls);
+//    np_completion_event_deinit(&conn->closeCompletionEvent);
+#endif
     np_completion_event_deinit(&conn->sendCompletionEvent);
 
     // this frees the connection
@@ -221,7 +245,11 @@ void nc_client_connection_keep_alive_event(void* data)
     uint32_t recvCount;
     uint32_t sentCount;
 
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
+#else
+    pl->dtlsS.get_packet_count(ctx->dtls, &recvCount, &sentCount);
+#endif
     enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
     switch(action) {
         case DO_NOTHING:
@@ -245,7 +273,11 @@ void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx)
 
     nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize);
     sendCtx->channelId = ctx->currentChannel.channelId;
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
+#else
+    pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, sendCtx);
+#endif
 }
 
 void nc_client_connection_keep_alive_send_response(struct nc_client_connection* ctx, uint8_t channelId, uint8_t* buffer, size_t length)
@@ -254,7 +286,11 @@ void nc_client_connection_keep_alive_send_response(struct nc_client_connection* 
     struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
     if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
         sendCtx->channelId = channelId;
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
         pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
+#else
+        pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, sendCtx);
+#endif
     }
 }
 
@@ -268,10 +304,18 @@ void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data)
 np_error_code nc_client_connection_async_send_data(
     struct nc_client_connection* conn, struct np_dtls_send_context* sendCtx)
 {
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     return conn->pl->dtlsC.async_send_data(conn->dtls, sendCtx);
+#else
+    return conn->pl->dtlsS.async_send_data(conn->pl, conn->dtls, sendCtx);
+#endif
 }
 
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
 struct np_dtls_cli_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn)
+#else
+struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn)
+#endif
 {
     return conn->dtls;
 }
@@ -331,16 +375,12 @@ void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, v
 
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp)
 {
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     return conn->pl->dtlsC.get_fingerprint(conn->dtls, fp);
+#else
+    return conn->pl->dtlsS.get_fingerprint(conn->pl, conn->dtls, fp);
+#endif
 }
-
-np_error_code nc_client_connection_get_device_fingerprint(struct nc_client_connection* conn, uint8_t* fp)
-{
-    // TODO: should we port this function or fix the todo in nm_wolfssl_srv.c about removing it?
-    return NABTO_EC_NOT_IMPLEMENTED;//conn->pl->dtlsS.get_server_fingerprint(conn->device->dtlsServer, fp);
-}
-
-
 
 bool nc_client_connection_is_local(struct nc_client_connection* conn)
 {

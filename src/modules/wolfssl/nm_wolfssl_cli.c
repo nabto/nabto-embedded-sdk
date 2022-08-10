@@ -567,7 +567,6 @@ void start_send_deferred(void* data)
 
     int ret = wolfSSL_write( conn->ssl, (unsigned char *) next->buffer, next->bufferSize );
     conn->sendChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
-    conn->sentCount++;
 
     if (ret < 0) {
         // unknown error

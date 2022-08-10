@@ -19,7 +19,7 @@ extern "C" {
 
 struct np_platform;
 
-#define NP_DTLS_CLI_DEFAULT_CHANNEL_ID 0xff
+#define NP_DTLS_CLI_DEFAULT_CHANNEL_ID NP_DTLS_DEFAULT_CHANNEL_ID
 
 struct np_dtls_cli_connection;
 

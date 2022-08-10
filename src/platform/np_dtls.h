@@ -3,6 +3,9 @@
 #include <platform/np_completion_event.h>
 #include <nn/llist.h>
 
+#define NP_DTLS_DEFAULT_CHANNEL_ID 0xff
+
+
 enum np_dtls_event {
     NP_DTLS_EVENT_CLOSED, // The connection is closed
     NP_DTLS_EVENT_HANDSHAKE_COMPLETE,

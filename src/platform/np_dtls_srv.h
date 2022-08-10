@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#define NP_DTLS_SRV_DEFAULT_CHANNEL_ID 0xff
+#define NP_DTLS_SRV_DEFAULT_CHANNEL_ID  NP_DTLS_DEFAULT_CHANNEL_ID
 
 enum np_dtls_srv_event {
     NP_DTLS_SRV_EVENT_CLOSED,
@@ -22,13 +22,6 @@ enum np_dtls_srv_event {
 };
 
 typedef void (*np_dtls_srv_send_callback)(const np_error_code ec, void* data);
-typedef np_error_code (*np_dtls_srv_sender)(uint8_t channelId,
-                                            uint8_t* buffer, uint16_t bufferSize,
-                                            np_dtls_srv_send_callback cb, void* data,
-                                            void* senderData);
-typedef void (*np_dtls_srv_event_handler)(enum np_dtls_srv_event event, void* data);
-typedef void (*np_dtls_srv_data_handler)(uint8_t channelId, uint64_t sequence,
-                                         uint8_t* buffer, uint16_t bufferSize, void* data);
 
 struct np_dtls_srv_send_context {
     uint8_t* buffer;
@@ -59,8 +52,8 @@ struct np_dtls_srv_module {
 
 
     np_error_code (*create_connection)(struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
-                                       np_dtls_srv_sender packetSender, np_dtls_srv_data_handler dataHandler,
-                                       np_dtls_srv_event_handler eventHandler, void* data);
+                                       np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+                                       np_dtls_event_handler eventHandler, void* data);
 
     /**
      * Destroy a connection, a connection can be destroyed when no more
@@ -73,7 +66,7 @@ struct np_dtls_srv_module {
      * Send data.
      */
     np_error_code (*async_send_data)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                     struct np_dtls_srv_send_context* sendCtx);
+                                     struct np_dtls_send_context* sendCtx);
 
     np_error_code (*handle_packet)(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
                                    uint8_t channelId, uint8_t* buffer, uint16_t bufferSize);
