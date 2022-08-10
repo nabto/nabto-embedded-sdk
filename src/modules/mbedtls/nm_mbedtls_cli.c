@@ -695,7 +695,9 @@ void dtls_udp_send_callback(const np_error_code ec, void* data)
     }
     conn->pl->buf.free(conn->sslSendBuffer);
     conn->sslSendBuffer = NULL;
-
+    if (conn->state == DATA) {
+        start_send(conn);
+    }
     event_do_one(data);
 }
 
