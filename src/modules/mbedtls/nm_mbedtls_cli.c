@@ -195,8 +195,6 @@ np_error_code init_mbedtls_config(struct nm_mbedtls_cli_context* ctx, mbedtls_ss
                                   allowedCipherSuitesList);
 
     mbedtls_ssl_conf_alpn_protocols(conf, nm_mbedtls_cli_alpnList );
-    mbedtls_ssl_conf_authmode( conf, MBEDTLS_SSL_VERIFY_REQUIRED );
-
     mbedtls_ssl_conf_rng( conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
     nm_mbedtls_util_check_logging(conf);
@@ -236,10 +234,13 @@ np_error_code initialize_context(struct np_platform* pl)
     {
         return ec;
     }
+    mbedtls_ssl_conf_authmode( &ctx->clientsConf, MBEDTLS_SSL_VERIFY_OPTIONAL );
+
     if ((ec = init_mbedtls_config(ctx, &ctx->attachConf)) != NABTO_EC_OK)
     {
         return ec;
     }
+    mbedtls_ssl_conf_authmode( &ctx->attachConf, MBEDTLS_SSL_VERIFY_REQUIRED );
 
     return NABTO_EC_OK;
 
