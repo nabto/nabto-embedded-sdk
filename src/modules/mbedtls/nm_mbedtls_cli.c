@@ -36,14 +36,15 @@ struct nm_mbedtls_cli_context {
     struct np_platform* pl;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
-    mbedtls_ssl_config conf;
+    mbedtls_ssl_config clientsConf;
+    mbedtls_ssl_config attachConf;
     mbedtls_x509_crt rootCerts;
     mbedtls_x509_crt publicKey;
     mbedtls_pk_context privateKey;
 
     int timeoutMin;
     int timeoutMax;
-}
+};
 
 struct np_dtls_cli_connection {
     struct np_platform* pl;
@@ -52,6 +53,7 @@ struct np_dtls_cli_connection {
     // Ciphertext datagram recvBuffer temporary variable.
     uint8_t* recvBuffer;
     size_t recvBufferSize;
+    uint8_t recvChannelId;
 
     // Allocated when sending a packet with ciphertext through the UDP layer.
     struct np_communication_buffer* sslSendBuffer;
@@ -64,12 +66,15 @@ struct np_dtls_cli_connection {
     struct nn_llist sendList;
     struct np_event* startSendEvent;
 
+    struct np_completion_event senderEvent;
+    uint8_t sendChannelId;
+
     bool receiving;
     bool destroyed;
 
-    np_dtls_cli_sender sender;
-    np_dtls_cli_data_handler dataHandler;
-    np_dtls_cli_event_handler eventHandler;
+    np_dtls_sender sender;
+    np_dtls_data_handler dataHandler;
+    np_dtls_event_handler eventHandler;
     void* callbackData;
 
     mbedtls_ssl_context ssl;
@@ -78,8 +83,64 @@ struct np_dtls_cli_connection {
 
 const char* nm_mbedtls_cli_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
+/******** Module function definitions *******/
+static np_error_code create_attach_connection(
+    struct np_platform* pl, struct np_dtls_cli_connection** conn,
+    const char* sni, bool disable_cert_validation,
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data);
+static np_error_code create_client_connection(
+    struct np_platform* pl, struct np_dtls_cli_connection** conn,
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data);
+
+
+static void destroy_connection(struct np_dtls_cli_connection* conn);
+
+static np_error_code set_keys(struct np_platform* pl,
+                              const unsigned char* certificate,
+                              size_t certificateSize,
+                              const unsigned char* privateKeyL,
+                              size_t privateKeySize);
+static np_error_code set_handshake_timeout(struct np_platform* pl,
+                                           uint32_t minTimeout,
+                                           uint32_t maxTimeout);
+
+static np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts);
+
+static np_error_code dtls_connect(struct np_dtls_cli_connection* conn);
+static np_error_code async_send_data(struct np_dtls_cli_connection* conn,
+                                     struct np_dtls_send_context* sendCtx);
+
+static np_error_code handle_packet(struct np_dtls_cli_connection* conn,
+                                   uint8_t channelId, uint8_t* buffer,
+                                   uint16_t bufferSize);
+static np_error_code async_close(struct np_dtls_cli_connection* conn);
+
+static np_error_code get_fingerprint(struct np_dtls_cli_connection* conn,
+                                     uint8_t* fp);
+static const char* get_alpn_protocol(struct np_dtls_cli_connection* conn);
+static np_error_code get_packet_count(struct np_dtls_cli_connection* conn,
+                                      uint32_t* recvCount, uint32_t* sentCount);
+
+
+
 /******** Internal function definitions *******/
-np_error_code initialize_context(struct np_platform* pl);
+static np_error_code initialize_context(struct np_platform* pl);
+static np_error_code init_mbedtls_config(struct nm_mbedtls_cli_context *ctx, mbedtls_ssl_config *conf);
+static np_error_code create_connection(struct np_platform *pl, struct np_dtls_cli_connection **connection,
+                                       np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+                                       np_dtls_event_handler eventHandler, void *data);
+static void do_free_connection(struct np_dtls_cli_connection* conn);
+static void event_do_one(void *data);
+static void nm_dtls_do_close(void* data, np_error_code ec);
+static void start_send(struct np_dtls_cli_connection *conn);
+static void start_send_deferred(void *data);
+static void dtls_udp_send_callback(const np_error_code ec, void *data);
+static uint64_t uint64_from_bigendian(uint8_t *bytes);
+static int nm_dtls_mbedtls_send(void *data, const unsigned char *buffer, size_t bufferSize);
+static int nm_dtls_mbedtls_recv(void *data, unsigned char *buffer, size_t bufferSize);
+static void nm_dtls_timed_event_do_one(void *data);
 
 /*
  * Initialize the np_platform to use this particular dtls cli module
@@ -92,7 +153,7 @@ np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
     pl->dtlsC.set_keys = &set_keys;
     pl->dtlsC.set_handshake_timeout = &set_handshake_timeout;
     pl->dtlsC.set_root_certs = &set_root_certs;
-    pl->dtlsC.connect = &nm_wolfssl_connect;
+    pl->dtlsC.connect = &dtls_connect;
     pl->dtlsC.async_send_data = &async_send_data;
     pl->dtlsC.handle_packet = &handle_packet;
     pl->dtlsC.async_close = &async_close;
@@ -112,12 +173,39 @@ void nm_mbedtls_cli_deinit(struct np_platform* pl)
     mbedtls_x509_crt_free(&ctx->publicKey );
     mbedtls_entropy_free( &ctx->entropy );
     mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
-    mbedtls_ssl_config_free( &ctx->conf );
+    mbedtls_ssl_config_free( &ctx->clientsConf );
+    mbedtls_ssl_config_free( &ctx->attachConf );
 
     np_free(ctx);
 }
 
-np_error_code initialize_context(struct np_platform* pl){
+np_error_code init_mbedtls_config(struct nm_mbedtls_cli_context* ctx, mbedtls_ssl_config* conf)
+{
+    int ret;
+    if ((ret = mbedtls_ssl_config_defaults(conf,
+                                           MBEDTLS_SSL_IS_CLIENT,
+                                           MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+                                           MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
+    mbedtls_ssl_conf_ciphersuites(conf,
+                                  allowedCipherSuitesList);
+
+    mbedtls_ssl_conf_alpn_protocols(conf, nm_mbedtls_cli_alpnList );
+    mbedtls_ssl_conf_authmode( conf, MBEDTLS_SSL_VERIFY_REQUIRED );
+
+    mbedtls_ssl_conf_rng( conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
+
+    nm_mbedtls_util_check_logging(conf);
+    mbedtls_ssl_conf_ca_chain(conf, &ctx->rootCerts, NULL);
+    return NABTO_EC_OK;
+}
+
+np_error_code initialize_context(struct np_platform* pl)
+{
     struct nm_mbedtls_cli_context* ctx =
         np_calloc(1, sizeof(struct nm_mbedtls_cli_context));
     if (ctx == NULL) {
@@ -125,7 +213,8 @@ np_error_code initialize_context(struct np_platform* pl){
     }
     pl->dtlsCData = ctx;
     ctx->pl = pl;
-    mbedtls_ssl_config_init( &ctx->conf );
+    mbedtls_ssl_config_init( &ctx->clientsConf );
+    mbedtls_ssl_config_init( &ctx->attachConf );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
     mbedtls_entropy_init( &ctx->entropy );
     mbedtls_x509_crt_init( &ctx->publicKey );
@@ -142,35 +231,23 @@ np_error_code initialize_context(struct np_platform* pl){
         return NABTO_EC_UNKNOWN;
     }
 
-    if( ( ret = mbedtls_ssl_config_defaults( &ctx->conf,
-                   MBEDTLS_SSL_IS_CLIENT,
-                   MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-                   MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
+    np_error_code ec = NABTO_EC_OK;
+    if ((ec = init_mbedtls_config(ctx, &ctx->clientsConf)) != NABTO_EC_OK)
     {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
-        return NABTO_EC_UNKNOWN;
+        return ec;
     }
-
-    mbedtls_ssl_conf_ciphersuites(&ctx->conf,
-                                  allowedCipherSuitesList);
-
-    mbedtls_ssl_conf_alpn_protocols(&ctx->conf, nm_mbedtls_cli_alpnList );
-    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_REQUIRED );
-
-    mbedtls_ssl_conf_rng( &ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
-
-    nm_mbedtls_util_check_logging(&ctx->conf);
-    mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->rootCerts, NULL);
+    if ((ec = init_mbedtls_config(ctx, &ctx->attachConf)) != NABTO_EC_OK)
+    {
+        return ec;
+    }
 
     return NABTO_EC_OK;
 
 }
 
-
-static np_error_code create_client_connection(
-    struct np_platform* pl, struct np_dtls_cli_connection** connection,
-    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-    np_dtls_cli_event_handler eventHandler, void* data)
+np_error_code create_connection(struct np_platform* pl, struct np_dtls_cli_connection** connection,
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data)
 {
     struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
     if (ctx == NULL) {
@@ -188,6 +265,8 @@ static np_error_code create_client_connection(
     conn->dataHandler = dataHandler;
     conn->eventHandler = eventHandler;
     conn->callbackData = data;
+    conn->recvChannelId = NP_DTLS_DEFAULT_CHANNEL_ID;
+    conn->sendChannelId = NP_DTLS_DEFAULT_CHANNEL_ID;
 
     nn_llist_init(&conn->sendList);
     conn->destroyed = false;
@@ -197,6 +276,9 @@ static np_error_code create_client_connection(
         return ec;
     }
 
+    ec = np_completion_event_init(&pl->eq, &conn->senderEvent,
+                                  &dtls_udp_send_callback, conn);
+
     mbedtls_ssl_set_bio( &conn->ssl, conn,
                          nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
 
@@ -205,20 +287,35 @@ static np_error_code create_client_connection(
                               &nm_mbedtls_timer_set_delay,
                               &nm_mbedtls_timer_get_delay );
 
-    int ret;
-    if( ( ret = mbedtls_ssl_setup( &conn->ssl, &conn->conf ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
-        nm_mbedtls_cli_do_free(conn);
-        return NABTO_EC_UNKNOWN;
-    }
-
-    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_cli_start_send_deferred, conn, &conn->startSendEvent);
+    ec = np_event_queue_create_event(&pl->eq, &start_send_deferred, conn, &conn->startSendEvent);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-
     *connection = conn;
+
+    return NABTO_EC_OK;
+}
+
+static np_error_code create_client_connection(
+    struct np_platform* pl, struct np_dtls_cli_connection** connection,
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data)
+{
+    np_error_code ec = create_connection(
+        pl, connection, packetSender, dataHandler, eventHandler, data);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }    int ret;
+
+    struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+
+    if( ( ret = mbedtls_ssl_setup( &(*connection)->ssl, &ctx->clientsConf ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
+        do_free_connection(*connection);
+        return NABTO_EC_UNKNOWN;
+    }
+
     return NABTO_EC_OK;
 }
 
@@ -226,224 +323,87 @@ static np_error_code create_client_connection(
 static np_error_code create_attach_connection(
     struct np_platform* pl, struct np_dtls_cli_connection** connection,
     const char* sni, bool disable_cert_validation,
-    np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-    np_dtls_cli_event_handler eventHandler, void* data)
+    np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
+    np_dtls_event_handler eventHandler, void* data)
 {
-    np_error_code ec = create_client_connection(
+    np_error_code ec = create_connection(
         pl, connection, packetSender, dataHandler, eventHandler, data);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
+    struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+
+    if (disable_cert_validation) {
+        mbedtls_ssl_conf_authmode( &ctx->attachConf, MBEDTLS_SSL_VERIFY_NONE );
+
+    }
+
     int ret;
-    if( ( ret = mbedtls_ssl_set_hostname( &ctx->ssl, sniName ) ) != 0 )
+    if( ( ret = mbedtls_ssl_setup( &(*connection)->ssl, &ctx->attachConf ) ) != 0 )
+    {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
+        do_free_connection(*connection);
+        return NABTO_EC_UNKNOWN;
+    }
+
+    if( ( ret = mbedtls_ssl_set_hostname( &(*connection)->ssl, sni ) ) != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
-    if (disable_cert_validation) {
-        mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_NONE );
+    return NABTO_EC_OK;
+}
 
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-static np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_context** client,
-                                        np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-                                        np_dtls_cli_event_handler eventHandler, void* data);
-static void nm_mbedtls_cli_destroy(struct np_dtls_cli_context* connection);
-
-static np_error_code nm_mbedtls_cli_set_sni(struct np_dtls_cli_context* ctx, const char* sniName);
-static np_error_code nm_mbedtls_cli_set_keys(struct np_dtls_cli_context* ctx,
-                                          const unsigned char* publicKeyL, size_t publicKeySize,
-                                          const unsigned char* privateKeyL, size_t privateKeySize);
-
-static np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, const char* rootCerts);
-static np_error_code nm_mbedtls_cli_disable_certificate_validation(struct np_dtls_cli_context* ctx);
-
-static np_error_code async_send_data(struct np_dtls_cli_context* ctx,
-                                     struct np_dtls_cli_send_context* sendCtx);
-
-static np_error_code dtls_cli_close(struct np_dtls_cli_context* ctx);
-
-static np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp);
-
-static np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout);
-
-static void nm_dtls_timed_event_do_one(void* data);
-static np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx);
-static np_error_code nm_mbedtls_cli_reset(struct np_dtls_cli_context* ctx);
-static np_error_code nm_dtls_connect(struct np_dtls_cli_context* ctx);
-
-// Function called by mbedtls when data should be sent to the network
-int nm_dtls_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
-// Function called by mbedtls when it wants data from the network
-int nm_dtls_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferSize);
-// Function used to handle events during the connection phase
-void nm_dtls_event_do_one(void* data);
-
-void nm_mbedtls_cli_remove_send_data(struct np_dtls_cli_send_context* elm);
-
-// Handle packet from udp
-static np_error_code handle_packet(struct np_dtls_cli_context* ctx,
-                                   uint8_t* buffer, uint16_t bufferSize);
-
-void nm_mbedtls_cli_start_send_deferred(void* data);
-
-void nm_dtls_do_close(void* data, np_error_code ec);
-
-// setup function for the mbedtls context
-np_error_code nm_dtls_setup_dtls_ctx(struct np_dtls_cli_context* ctx);
-
-void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx);
-
-// Get the packet counters for given dtls_cli_context
-np_error_code nm_dtls_get_packet_count(struct np_dtls_cli_context* ctx, uint32_t* recvCount, uint32_t* sentCount)
+np_error_code get_packet_count(struct np_dtls_cli_connection* conn, uint32_t* recvCount, uint32_t* sentCount)
 {
-    *recvCount = ctx->recvCount;
-    *sentCount = ctx->sentCount;
+    *recvCount = conn->recvCount;
+    *sentCount = conn->sentCount;
     return NABTO_EC_OK;
 }
 
 // Get the result of the application layer protocol negotiation
-const char*  nm_dtls_get_alpn_protocol(struct np_dtls_cli_context* ctx) {
-    return mbedtls_ssl_get_alpn_protocol(&ctx->ssl);
+const char*  get_alpn_protocol(struct np_dtls_cli_connection* conn)
+{
+    return mbedtls_ssl_get_alpn_protocol(&conn->ssl);
 }
 
-np_error_code nm_mbedtls_cli_create(struct np_platform* pl, struct np_dtls_cli_context** client,
-                                 np_dtls_cli_sender packetSender, np_dtls_cli_data_handler dataHandler,
-                                 np_dtls_cli_event_handler eventHandler, void* data)
+
+void destroy_connection(struct np_dtls_cli_connection* conn)
 {
-    *client = NULL;
-    struct np_dtls_cli_context* ctx = np_calloc(1, sizeof(struct np_dtls_cli_context));
+    conn->state = CLOSING;
+    conn->destroyed = true;
+    if (conn->sslSendBuffer == NULL && !conn->receiving) {
+        do_free_connection(conn);
+    }
+}
+
+void do_free_connection(struct np_dtls_cli_connection* conn)
+{
+    // remove the first element until the list is empty
+    while(!nn_llist_empty(&conn->sendList)) {
+        struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
+        struct np_dtls_send_context* first = nn_llist_get_item(&it);
+        nn_llist_erase(&it);
+        np_completion_event_resolve(&first->ev, NABTO_EC_CONNECTION_CLOSING);
+    }
+
+    nm_mbedtls_timer_cancel(&conn->timer);
+    np_event_queue_destroy_event(&conn->pl->eq, conn->startSendEvent);
+    nm_mbedtls_timer_deinit(&conn->timer);
+
+    mbedtls_ssl_free( &conn->ssl );
+
+    np_free(conn);
+}
+
+np_error_code set_keys(struct np_platform *pl,
+                       const unsigned char *publicKeyL, size_t publicKeySize,
+                       const unsigned char *privateKeyL, size_t privateKeySize)
+{
+    struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
     if (ctx == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
+        return NABTO_EC_INVALID_STATE;
     }
-    ctx->pl = pl;
-    mbedtls_ssl_init( &ctx->ssl );
-    ctx->sender = packetSender;
-    ctx->dataHandler = dataHandler;
-    ctx->eventHandler = eventHandler;
-    ctx->callbackData = data;
-
-    nn_llist_init(&ctx->sendList);
-    ctx->destroyed = false;
-
-    np_error_code ec = dtls_cli_init_connection(ctx);
-    if (ec != NABTO_EC_OK) {
-        nm_mbedtls_cli_do_free(ctx);
-        return ec;
-    }
-    int ret;
-    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &ctx->conf ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
-        nm_mbedtls_cli_do_free(ctx);
-        return NABTO_EC_UNKNOWN;
-    }
-
-    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_cli_start_send_deferred, ctx, &ctx->startSendEvent);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-
-    *client = ctx;
-    return NABTO_EC_OK;
-}
-
-np_error_code dtls_cli_init_connection(struct np_dtls_cli_context* ctx)
-{
-    np_error_code ec;
-    ec = nm_mbedtls_timer_init(&ctx->timer, ctx->pl, &nm_dtls_timed_event_do_one, ctx);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-
-    mbedtls_ssl_set_bio( &ctx->ssl, ctx,
-                         nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
-
-    mbedtls_ssl_set_timer_cb( &ctx->ssl,
-                              &ctx->timer,
-                              &nm_mbedtls_timer_set_delay,
-                              &nm_mbedtls_timer_get_delay );
-    return NABTO_EC_OK;
-}
-
-np_error_code nm_mbedtls_cli_reset(struct np_dtls_cli_context* ctx)
-{
-    mbedtls_ssl_session_reset( &ctx->ssl );
-    // remove the first element until the list is empty
-
-    while(!nn_llist_empty(&ctx->sendList)) {
-        struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
-        struct np_dtls_cli_send_context* first = nn_llist_get_item(&it);
-        nn_llist_erase(&it);
-        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
-    }
-    ctx->recvBufferSize = 0;
-
-    nm_mbedtls_timer_cancel(&ctx->timer);
-    return NABTO_EC_OK;
-}
-
-void nm_mbedtls_cli_do_free(struct np_dtls_cli_context* ctx)
-{
-    // remove the first element until the list is empty
-    while(!nn_llist_empty(&ctx->sendList)) {
-        struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
-        struct np_dtls_cli_send_context* first = nn_llist_get_item(&it);
-        nn_llist_erase(&it);
-        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
-    }
-
-    nm_mbedtls_timer_cancel(&ctx->timer);
-    np_event_queue_destroy_event(&ctx->pl->eq, ctx->startSendEvent);
-    nm_mbedtls_timer_deinit(&ctx->timer);
-
-    mbedtls_x509_crt_free(&ctx->rootCerts);
-    mbedtls_pk_free(&ctx->privateKey);
-    mbedtls_x509_crt_free(&ctx->publicKey );
-    mbedtls_entropy_free( &ctx->entropy );
-    mbedtls_ctr_drbg_free( &ctx->ctr_drbg );
-    mbedtls_ssl_config_free( &ctx->conf );
-    mbedtls_ssl_free( &ctx->ssl );
-
-    np_free(ctx);
-}
-
-void nm_mbedtls_cli_destroy(struct np_dtls_cli_context* ctx)
-{
-    ctx->state = CLOSING;
-    ctx->destroyed = true;
-
-    if (ctx->sslSendBuffer == NULL && !ctx->receiving) {
-        nm_mbedtls_cli_do_free(ctx);
-    }
-}
-
-np_error_code nm_mbedtls_cli_set_sni(struct np_dtls_cli_context* ctx, const char* sniName)
-{
-    int ret;
-    if( ( ret = mbedtls_ssl_set_hostname( &ctx->ssl, sniName ) ) != 0 )
-    {
-        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
-        return NABTO_EC_UNKNOWN;
-    }
-    return NABTO_EC_OK;
-}
-
-np_error_code nm_mbedtls_cli_set_keys(struct np_dtls_cli_context* ctx,
-                                   const unsigned char* publicKeyL, size_t publicKeySize,
-                                   const unsigned char* privateKeyL, size_t privateKeySize)
-{
     int ret;
     mbedtls_x509_crt_init( &ctx->publicKey );
     mbedtls_pk_init( &ctx->privateKey );
@@ -458,7 +418,13 @@ np_error_code nm_mbedtls_cli_set_keys(struct np_dtls_cli_context* ctx,
         return NABTO_EC_UNKNOWN;
     }
 
-    ret = mbedtls_ssl_conf_own_cert(&ctx->conf, &ctx->publicKey, &ctx->privateKey);
+    ret = mbedtls_ssl_conf_own_cert(&ctx->clientsConf, &ctx->publicKey, &ctx->privateKey);
+    if (ret != 0) {
+        NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_conf_own_cert returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+
+    ret = mbedtls_ssl_conf_own_cert(&ctx->attachConf, &ctx->publicKey, &ctx->privateKey);
     if (ret != 0) {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_conf_own_cert returned %d", ret );
         return NABTO_EC_UNKNOWN;
@@ -467,8 +433,12 @@ np_error_code nm_mbedtls_cli_set_keys(struct np_dtls_cli_context* ctx,
     return NABTO_EC_OK;
 }
 
-np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, const char* rootCerts)
+np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
 {
+    struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+    if (ctx == NULL) {
+        return NABTO_EC_INVALID_STATE;
+    }
     int ret;
     ret = mbedtls_x509_crt_parse (&ctx->rootCerts, (const unsigned char *)rootCerts, strlen(rootCerts)+1);
     if (ret == MBEDTLS_ERR_PEM_ALLOC_FAILED) {
@@ -481,111 +451,111 @@ np_error_code nm_mbedtls_cli_set_root_certs(struct np_dtls_cli_context* ctx, con
     return NABTO_EC_OK;
 }
 
-np_error_code nm_mbedtls_cli_disable_certificate_validation(struct np_dtls_cli_context* ctx)
-{
-    mbedtls_ssl_conf_authmode( &ctx->conf, MBEDTLS_SSL_VERIFY_NONE );
-    return NABTO_EC_OK;
-}
-
 /**
  * get peers fingerprint for given DTLS client context
  */
-np_error_code get_fingerprint(struct np_dtls_cli_context* ctx, uint8_t* fp)
+np_error_code get_fingerprint(struct np_dtls_cli_connection* conn, uint8_t* fp)
 {
-    const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&ctx->ssl);
+    const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&conn->ssl);
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
     return nm_mbedtls_util_fp_from_crt(crt, fp);
 }
 
-np_error_code set_handshake_timeout(struct np_dtls_cli_context* ctx, uint32_t minTimeout, uint32_t maxTimeout)
+np_error_code set_handshake_timeout(struct np_platform* pl, uint32_t minTimeout, uint32_t maxTimeout)
 {
-    mbedtls_ssl_conf_handshake_timeout(&ctx->conf, minTimeout, maxTimeout);
+    struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+    if (ctx == NULL) {
+        return NABTO_EC_INVALID_STATE;
+    }
+    mbedtls_ssl_conf_handshake_timeout(&ctx->clientsConf, minTimeout, maxTimeout);
+    mbedtls_ssl_conf_handshake_timeout(&ctx->attachConf, minTimeout, maxTimeout);
     return NABTO_EC_OK;
 }
 
 /*
  * asyncroniously start a dtls connection
  */
-np_error_code nm_dtls_connect(struct np_dtls_cli_context* ctx)
+np_error_code dtls_connect(struct np_dtls_cli_connection* conn)
 {
-    ctx->state = CONNECTING;
+    conn->state = CONNECTING;
 
-    nm_dtls_event_do_one(ctx);
+    event_do_one(conn);
     return NABTO_EC_OK;
 }
 
 /*
  * Handle events for the connection phase
  */
-void nm_dtls_event_do_one(void* data)
+void event_do_one(void* data)
 {
-    struct np_dtls_cli_context* ctx = data;
+    struct np_dtls_cli_connection* conn = data;
     int ret;
-    if(ctx->state == CONNECTING) {
-        ret = mbedtls_ssl_handshake( &ctx->ssl );
+    if(conn->state == CONNECTING) {
+        ret = mbedtls_ssl_handshake( &conn->ssl );
         if( ret == MBEDTLS_ERR_SSL_WANT_READ ||
             ret == MBEDTLS_ERR_SSL_WANT_WRITE ) {
             //Keep State CONNECTING
         } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
-                   ctx->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
+                   conn->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
         {
-            ctx->state = CLOSING;
-            nm_mbedtls_timer_cancel(&ctx->timer);
-            ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
+            conn->state = CLOSING;
+            nm_mbedtls_timer_cancel(&conn->timer);
+            conn->eventHandler(NP_DTLS_EVENT_ACCESS_DENIED, conn->callbackData);
             return;
         } else {
             if( ret != 0 )
             {
-                enum np_dtls_cli_event event = NP_DTLS_CLI_EVENT_CLOSED;
+                enum np_dtls_event event = NP_DTLS_EVENT_CLOSED;
                 if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
                     char info[128];
-                    uint32_t validationStatus = mbedtls_ssl_get_verify_result(&ctx->ssl);
+                    uint32_t validationStatus = mbedtls_ssl_get_verify_result(&conn->ssl);
                     mbedtls_x509_crt_verify_info(info, 128, "", validationStatus);
                     NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
-                    event = NP_DTLS_CLI_EVENT_CERTIFICATE_VERIFICATION_FAILED;
+                    event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else {
                     NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %i", ret );
                 }
-                ctx->state = CLOSING;
-                nm_mbedtls_timer_cancel(&ctx->timer);
-                ctx->eventHandler(event, ctx->callbackData);
+                conn->state = CLOSING;
+                nm_mbedtls_timer_cancel(&conn->timer);
+                conn->eventHandler(event, conn->callbackData);
                 return;
-            } else if (mbedtls_ssl_get_alpn_protocol(&ctx->ssl) == NULL) {
+            } else if (mbedtls_ssl_get_alpn_protocol(&conn->ssl) == NULL) {
                 NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
-                ctx->state = CLOSING;
-                nm_mbedtls_timer_cancel(&ctx->timer);
-                ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
+                conn->state = CLOSING;
+                nm_mbedtls_timer_cancel(&conn->timer);
+                conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
                 return;
             }
 
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
-            ctx->state = DATA;
-            ctx->eventHandler(NP_DTLS_CLI_EVENT_HANDSHAKE_COMPLETE, ctx->callbackData);
+            conn->state = DATA;
+            conn->eventHandler(NP_DTLS_EVENT_HANDSHAKE_COMPLETE, conn->callbackData);
         }
         return;
-    } else if(ctx->state == DATA) {
+    } else if(conn->state == DATA) {
         uint8_t recvBuffer[1500];
-        ret = mbedtls_ssl_read( &ctx->ssl, recvBuffer, sizeof(recvBuffer) );
+        ret = mbedtls_ssl_read( &conn->ssl, recvBuffer, sizeof(recvBuffer) );
         if (ret == 0) {
             // EOF
-            ctx->state = CLOSING;
+            conn->state = CLOSING;
             NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
-            ctx->recvCount++;
-
-            ctx->dataHandler(recvBuffer, (uint16_t)ret, ctx->callbackData);
+            conn->recvCount++;
+            // TODO: sequence numbers
+            uint64_t seq = uint64_from_bigendian(conn->ssl.in_ctr);
+            conn->dataHandler(conn->recvChannelId, seq, recvBuffer, (uint16_t)ret, conn->callbackData);
             return;
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
             // OK
         } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
-                   ctx->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
+                   conn->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
         {
-            nm_mbedtls_timer_cancel(&ctx->timer);
-            ctx->eventHandler(NP_DTLS_CLI_EVENT_ACCESS_DENIED, ctx->callbackData);
+            nm_mbedtls_timer_cancel(&conn->timer);
+            conn->eventHandler(NP_DTLS_EVENT_ACCESS_DENIED, conn->callbackData);
             return;
         } else {
 #if defined(MBEDTLS_ERROR_C)
@@ -593,91 +563,92 @@ void nm_dtls_event_do_one(void* data)
             mbedtls_strerror(ret, buf, 128);
             NABTO_LOG_TRACE(LOG, "Received ERROR -0x%04x : %s ", -ret, buf);
 #endif
-            ctx->state = CLOSING;
-            nm_dtls_do_close(ctx, NABTO_EC_UNKNOWN);
+            conn->state = CLOSING;
+            nm_dtls_do_close(conn, NABTO_EC_UNKNOWN);
         }
         return;
     }
 }
 
-void nm_mbedtls_cli_start_send(struct np_dtls_cli_context* ctx)
-{
-    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->startSendEvent);
+void nm_dtls_do_close(void* data, np_error_code ec){
+    (void)ec;
+    struct np_dtls_cli_connection* conn = data;
+    NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
+    nm_mbedtls_timer_cancel(&conn->timer);
+    conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
 }
 
-void nm_mbedtls_cli_start_send_deferred(void* data)
+void start_send(struct np_dtls_cli_connection* conn)
 {
-    struct np_dtls_cli_context* ctx = data;
-    if (ctx->state == CLOSING) {
+    np_event_queue_post_maybe_double(&conn->pl->eq, conn->startSendEvent);
+}
+
+void start_send_deferred(void* data)
+{
+    struct np_dtls_cli_connection* conn = data;
+    if (conn->state == CLOSING) {
         return;
     }
-    if (ctx->sslSendBuffer != NULL) {
+    if (conn->sslSendBuffer != NULL) {
         return;
     }
 
-    if (nn_llist_empty(&ctx->sendList)) {
+    if (nn_llist_empty(&conn->sendList)) {
         // empty send queue
         return;
     }
 
-    struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
-    struct np_dtls_cli_send_context* next = nn_llist_get_item(&it);
+    struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
+    struct np_dtls_send_context* next = nn_llist_get_item(&it);
     nn_llist_erase(&it);
 
-    int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) next->buffer, next->bufferSize );
-    if (next->cb == NULL) {
-        ctx->sentCount++;
-    } else if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
+    conn->sendChannelId = next->channelId;
+
+    int ret = mbedtls_ssl_write( &conn->ssl, (unsigned char *) next->buffer, next->bufferSize );
+    conn->sendChannelId = NP_DTLS_DEFAULT_CHANNEL_ID;
+
+    if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // packet too large
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i (Packet too large)", ret);
-        next->cb(NABTO_EC_MALFORMED_PACKET, next->data);
+        np_completion_event_resolve(&next->ev, NABTO_EC_MALFORMED_PACKET);
     } else if (ret < 0) {
         // unknown error
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
-        next->cb(NABTO_EC_UNKNOWN, next->data);
+        np_completion_event_resolve(&next->ev, NABTO_EC_UNKNOWN);
     } else {
-        ctx->sentCount++;
-        next->cb(NABTO_EC_OK, next->data);
+        conn->sentCount++;
+        np_completion_event_resolve(&next->ev, NABTO_EC_OK);
     }
 
     // can we send more packets?
-    nm_mbedtls_cli_start_send(ctx);
+    start_send(conn);
 }
 
-
-np_error_code async_send_data(struct np_dtls_cli_context* ctx,
-                              struct np_dtls_cli_send_context* sendCtx)
+np_error_code async_send_data(struct np_dtls_cli_connection* conn,
+                              struct np_dtls_send_context* sendCtx)
 {
-    if (ctx->state == CLOSING) {
+    if (conn->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
-    if (ctx->state != DATA) {
+    if (conn->state != DATA) {
         return NABTO_EC_INVALID_STATE;
     }
-    nn_llist_append(&ctx->sendList, &sendCtx->sendListNode, sendCtx);
-    nm_mbedtls_cli_start_send(ctx);
+    nn_llist_append(&conn->sendList, &sendCtx->sendListNode, sendCtx);
+    start_send(conn);
     return NABTO_EC_OK;
 }
 
-void nm_dtls_do_close(void* data, np_error_code ec){
-    (void)ec;
-    struct np_dtls_cli_context* ctx = data;
-    NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
-    nm_mbedtls_timer_cancel(&ctx->timer);
-    ctx->eventHandler(NP_DTLS_CLI_EVENT_CLOSED, ctx->callbackData);
-}
-
-np_error_code dtls_cli_close(struct np_dtls_cli_context* ctx)
+np_error_code async_close(struct np_dtls_cli_connection* conn)
 {
-    if (!ctx ) {
+    if (!conn ) {
         return NABTO_EC_INVALID_ARGUMENT;
     }
-    if ( ctx->state != CLOSING) {
-        NABTO_LOG_TRACE(LOG, "Closing DTLS cli from state: %u", ctx->state);
-        ctx->state = CLOSING;
-        mbedtls_ssl_close_notify(&ctx->ssl);
-        if (ctx->sslSendBuffer == NULL) {
-            nm_dtls_do_close(ctx, /*unused*/ NABTO_EC_OK);
+    if ( conn->state != CLOSING) {
+        NABTO_LOG_TRACE(LOG, "Closing DTLS cli from state: %u", conn->state);
+        conn->state = CLOSING;
+        mbedtls_ssl_close_notify(&conn->ssl);
+        if (conn->sslSendBuffer == NULL) {
+            nm_dtls_do_close(conn, /*unused*/ NABTO_EC_OK);
         }
     } else {
         NABTO_LOG_TRACE(LOG, "Tried Closing DTLS cli but was already closed");
@@ -685,57 +656,71 @@ np_error_code dtls_cli_close(struct np_dtls_cli_context* ctx)
     return NABTO_EC_OK;
 }
 
-np_error_code handle_packet(struct np_dtls_cli_context* ctx,
+np_error_code handle_packet(struct np_dtls_cli_connection* conn, uint8_t ch,
                             uint8_t* buffer, uint16_t bufferSize)
 {
-    ctx->recvBuffer = buffer;
-    ctx->recvBufferSize = bufferSize;
-    ctx->receiving = true;
-    nm_dtls_event_do_one(ctx);
-    ctx->recvBuffer = NULL;
-    ctx->recvBufferSize = 0;
-    ctx->receiving = false;
-    if (ctx->destroyed && ctx->sslSendBuffer == NULL) {
-        nm_mbedtls_cli_do_free(ctx);
+    conn->recvBuffer = buffer;
+    conn->recvBufferSize = bufferSize;
+    conn->receiving = true;
+    conn->recvChannelId = ch;
+    event_do_one(conn);
+    conn->recvChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
+    conn->recvBuffer = NULL;
+    conn->recvBufferSize = 0;
+    conn->receiving = false;
+    if (conn->destroyed && conn->sslSendBuffer == NULL) {
+        do_free_connection(conn);
     }
     return NABTO_EC_OK;
 }
 
-void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
+void dtls_udp_send_callback(const np_error_code ec, void* data)
 {
     (void)ec;
-    struct np_dtls_cli_context* ctx = data;
+    struct np_dtls_cli_connection* conn = data;
     if (data == NULL) {
         return;
     }
 
-    ctx->pl->buf.free(ctx->sslSendBuffer);
-    ctx->sslSendBuffer = NULL;
-
-    if (ctx->state == CLOSING) {
+    if (conn->state == CLOSING) {
         NABTO_LOG_TRACE(LOG, "udp send cb after close");
     }
-    if(ctx->state == CLOSING) {
-        nm_dtls_do_close(ctx, /* ec unused */NABTO_EC_OK);
-        if (ctx->destroyed) {
-            nm_mbedtls_cli_do_free(ctx);
+    if(conn->state == CLOSING) {
+        nm_dtls_do_close(conn, /* ec unused */NABTO_EC_OK);
+        if (conn->destroyed) {
+            do_free_connection(conn);
         }
         return;
     }
-    nm_dtls_event_do_one(data);
+    conn->pl->buf.free(conn->sslSendBuffer);
+    conn->sslSendBuffer = NULL;
+
+    event_do_one(data);
+}
+
+uint64_t uint64_from_bigendian( uint8_t* bytes )
+{
+    return( ( (uint64_t) bytes[0] << 56 ) |
+            ( (uint64_t) bytes[1] << 48 ) |
+            ( (uint64_t) bytes[2] << 40 ) |
+            ( (uint64_t) bytes[3] << 32 ) |
+            ( (uint64_t) bytes[4] << 24 ) |
+            ( (uint64_t) bytes[5] << 16 ) |
+            ( (uint64_t) bytes[6] <<  8 ) |
+            ( (uint64_t) bytes[7]       ) );
 }
 
 int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer,
                          size_t bufferSize)
 {
-    struct np_dtls_cli_context* ctx = data;
-    struct np_platform* pl = ctx->pl;
-    if (ctx->state == CLOSING) {
+    struct np_dtls_cli_connection* conn = data;
+    struct np_platform* pl = conn->pl;
+    if (conn->state == CLOSING) {
         NABTO_LOG_TRACE(LOG, "mbedtls want send after close");
     }
-    if (ctx->sslSendBuffer == NULL) {
-        ctx->sslSendBuffer = pl->buf.allocate();
-        if (ctx->sslSendBuffer == NULL) {
+    if (conn->sslSendBuffer == NULL) {
+        conn->sslSendBuffer = pl->buf.allocate();
+        if (conn->sslSendBuffer == NULL) {
             NABTO_LOG_ERROR(LOG,
                             "Cannot allocate a buffer for sending a packet "
                             "from the dtls client. Dropping the packet");
@@ -744,17 +729,17 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer,
             // again.
             return (int)bufferSize;
         }
-        memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
+        memcpy(conn->pl->buf.start(conn->sslSendBuffer), buffer, bufferSize);
         np_error_code ec =
-            ctx->sender(pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize,
-                        &nm_dtls_udp_send_callback, ctx, ctx->callbackData);
+            conn->sender(conn->sendChannelId, pl->buf.start(conn->sslSendBuffer), (uint16_t)bufferSize,
+                        &conn->senderEvent, conn->callbackData);
         if (ec != NABTO_EC_OK) {
-            pl->buf.free(ctx->sslSendBuffer);
-            ctx->sslSendBuffer = NULL;
-            if (ctx->state == CLOSING) {
-                nm_dtls_do_close(ctx, /* ec unused */ NABTO_EC_OK);
-                if (ctx->destroyed) {
-                    nm_mbedtls_cli_do_free(ctx);
+            pl->buf.free(conn->sslSendBuffer);
+            conn->sslSendBuffer = NULL;
+            if (conn->state == CLOSING) {
+                nm_dtls_do_close(conn, /* ec unused */ NABTO_EC_OK);
+                if (conn->destroyed) {
+                    do_free_connection(conn);
                 }
             }
             // dropping the packet as there is no way to trigger a
@@ -769,21 +754,21 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer,
 
 int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
 {
-    struct np_dtls_cli_context* ctx = data;
-    if (ctx->recvBufferSize == 0) {
+    struct np_dtls_cli_connection* conn = data;
+    if (conn->recvBufferSize == 0) {
         return MBEDTLS_ERR_SSL_WANT_READ;
     } else {
-        size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
-        memcpy(buffer, ctx->recvBuffer, maxCp);
-        ctx->recvBufferSize = 0;
+        size_t maxCp = bufferSize > conn->recvBufferSize ? conn->recvBufferSize : bufferSize;
+        memcpy(buffer, conn->recvBuffer, maxCp);
+        conn->recvBufferSize = 0;
         return (int)maxCp;
     }
 }
 
 void nm_dtls_timed_event_do_one(void* data) {
-    struct np_dtls_cli_context* ctx = data;
-    if (ctx->state == CLOSING) {
+    struct np_dtls_cli_connection* conn = data;
+    if (conn->state == CLOSING) {
         return;
     }
-    nm_dtls_event_do_one(data);
+    event_do_one(data);
 }

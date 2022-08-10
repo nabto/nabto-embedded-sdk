@@ -47,12 +47,14 @@ struct np_dtls_srv_connection {
     uint32_t recvCount;
     uint32_t sentCount;
 
+    struct np_completion_event senderEvent;
+
     struct nn_llist sendList;
     struct np_event* startSendEvent;
 
-    np_dtls_srv_sender sender;
-    np_dtls_srv_data_handler dataHandler;
-    np_dtls_srv_event_handler eventHandler;
+    np_dtls_sender sender;
+    np_dtls_data_handler dataHandler;
+    np_dtls_event_handler eventHandler;
     void* senderData;
     uint8_t channelId;
 
@@ -81,13 +83,13 @@ static np_error_code nm_mbedtls_srv_set_keys(struct np_dtls_srv* server,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
 
 static np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
-                                                   np_dtls_srv_sender sender,
-                                                   np_dtls_srv_data_handler dataHandler,
-                                                   np_dtls_srv_event_handler eventHandler, void* data);
+                                                   np_dtls_sender sender,
+                                                   np_dtls_data_handler dataHandler,
+                                                   np_dtls_event_handler eventHandler, void* data);
 static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* connection);
 
 static np_error_code nm_mbedtls_srv_async_send_data(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                                 struct np_dtls_srv_send_context* sendCtx);
+                                                 struct np_dtls_send_context* sendCtx);
 
 static np_error_code nm_mbedtls_srv_async_close(struct np_platform *pl, struct np_dtls_srv_connection *ctx,
                                                 struct np_completion_event *completionEvent);
@@ -110,7 +112,7 @@ int nm_mbedtls_srv_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferS
 static void nm_mbedtls_srv_timed_event_do_one(void* userData);
 
 void nm_mbedtls_srv_event_send_to(void* data);
-void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event);
+void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_event event);
 void nm_mbedtls_srv_do_event_callback(void* data);
 
 static void nm_mbedtls_srv_is_closed(struct np_dtls_srv_connection* ctx);
@@ -205,9 +207,9 @@ np_error_code nm_mbedtls_srv_set_keys(struct np_dtls_srv* server,
 
 np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
                                             struct np_dtls_srv_connection** dtls,
-                                            np_dtls_srv_sender sender,
-                                            np_dtls_srv_data_handler dataHandler,
-                                            np_dtls_srv_event_handler eventHandler, void* data)
+                                            np_dtls_sender sender,
+                                            np_dtls_data_handler dataHandler,
+                                            np_dtls_event_handler eventHandler, void* data)
 {
     int ret;
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)np_calloc(1, sizeof(struct np_dtls_srv_connection));
@@ -219,7 +221,7 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     ctx->dataHandler = dataHandler;
     ctx->eventHandler = eventHandler;
     ctx->senderData = data;
-    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
+    ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
 
     nn_llist_init(&ctx->sendList);
 
@@ -232,6 +234,12 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     }
 
     ec = nm_mbedtls_timer_init(&ctx->timer, ctx->pl, &nm_mbedtls_srv_timed_event_do_one, ctx);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(&pl->eq, &ctx->senderEvent,
+                                  &nm_mbedtls_srv_connection_send_callback, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -283,14 +291,15 @@ static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* con
     }
     while(!nn_llist_empty(&ctx->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
-        struct np_dtls_srv_send_context* first = nn_llist_get_item(&it);
+        struct np_dtls_send_context* first = nn_llist_get_item(&it);
         nn_llist_erase(&it);
-        first->cb(NABTO_EC_CONNECTION_CLOSING, first->data);
+        np_completion_event_resolve(&first->ev, NABTO_EC_CONNECTION_CLOSING);
     }
     nm_mbedtls_timer_cancel(&ctx->timer);
     nm_mbedtls_timer_deinit(&ctx->timer);
     struct np_event_queue* eq = &pl->eq;
     np_event_queue_destroy_event(eq, ctx->startSendEvent);
+    np_completion_event_deinit(&ctx->senderEvent);
     mbedtls_ssl_free(&connection->ssl);
     np_free(connection);
 }
@@ -304,7 +313,7 @@ np_error_code nm_mbedtls_srv_handle_packet(struct np_platform* pl, struct np_dtl
     ctx->recvBufferSize = bufferSize;
     ctx->channelId = channelId;
     nm_mbedtls_srv_do_one(ctx);
-    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
+    ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
     ctx->recvBuffer = NULL;
     ctx->recvBufferSize = 0;
     return NABTO_EC_OK;
@@ -334,16 +343,16 @@ void nm_mbedtls_srv_do_one(void* data)
             // keep state as CONNECTING
         } else if (ret == MBEDTLS_ERR_SSL_TIMEOUT) {
             nm_mbedtls_timer_cancel(&ctx->timer);
-            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_EVENT_CLOSED);
         } else if (ret == 0) {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
 
             ctx->state = DATA;
-            event_callback(ctx, NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE);
+            event_callback(ctx, NP_DTLS_EVENT_HANDSHAKE_COMPLETE);
         } else {
             NABTO_LOG_ERROR(LOG,  " failed  ! mbedtls_ssl_handshake returned -0x%04x", -ret );
             nm_mbedtls_timer_cancel(&ctx->timer);
-            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_EVENT_CLOSED);
             return;
         }
     } else if (ctx->state == DATA) {
@@ -352,7 +361,7 @@ void nm_mbedtls_srv_do_one(void* data)
         ret = mbedtls_ssl_read(&ctx->ssl, recvBuffer, sizeof(recvBuffer) );
         if (ret == 0) {
             // EOF
-            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_EVENT_CLOSED);
             NABTO_LOG_TRACE(LOG, "Received EOF");
         } else if (ret > 0) {
             // we need the sequence number from the dtls packet.
@@ -367,15 +376,15 @@ void nm_mbedtls_srv_do_one(void* data)
             // OK
         } else if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
             // expected to happen on a connection,
-            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_EVENT_CLOSED);
         } else {
             NABTO_LOG_ERROR(LOG, "Received ERROR: %i", ret);
-            event_callback(ctx, NP_DTLS_SRV_EVENT_CLOSED);
+            event_callback(ctx, NP_DTLS_EVENT_CLOSED);
         }
     }
 }
 
-void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_srv_event event)
+void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_event event)
 {
     ctx->eventHandler(event, ctx->senderData);
     // struct np_platform* pl = ctx->pl;
@@ -402,30 +411,28 @@ void nm_mbedtls_srv_start_send_deferred(void* data)
     }
 
     struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
-    struct np_dtls_srv_send_context* next = nn_llist_get_item(&it);
+    struct np_dtls_send_context* next = nn_llist_get_item(&it);
     nn_llist_erase(&it);
 
     ctx->channelId = next->channelId;
     int ret = mbedtls_ssl_write( &ctx->ssl, (unsigned char *) next->buffer, next->bufferSize );
-    ctx->channelId = NP_DTLS_SRV_DEFAULT_CHANNEL_ID;
-    if (next->cb == NULL) {
-        ctx->sentCount++;
-    } else if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
+    ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
+    if (ret == MBEDTLS_ERR_SSL_BAD_INPUT_DATA) {
         // packet too large
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i (Packet too large)", ret);
-        next->cb(NABTO_EC_MALFORMED_PACKET, next->data);
+        np_completion_event_resolve(&next->ev, NABTO_EC_MALFORMED_PACKET);
     } else if (ret < 0) {
         // unknown error
         NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", ret);
-        next->cb(NABTO_EC_UNKNOWN, next->data);
+        np_completion_event_resolve(&next->ev, NABTO_EC_UNKNOWN);
     } else {
         ctx->sentCount++;
-        next->cb(NABTO_EC_OK, next->data);
+        np_completion_event_resolve(&next->ev, NABTO_EC_OK);
     }
 }
 
 np_error_code nm_mbedtls_srv_async_send_data(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
-                                          struct np_dtls_srv_send_context* sendCtx)
+                                          struct np_dtls_send_context* sendCtx)
 {
     (void)pl;
     if (ctx->state == CLOSING) {
@@ -456,6 +463,7 @@ void nm_mbedtls_srv_is_closed(struct np_dtls_srv_connection* ctx)
         ctx->closeCompletionEvent = NULL;
         np_completion_event_resolve(completionEvent, NABTO_EC_OK);
     }
+    event_callback(ctx, NP_DTLS_EVENT_CLOSED);
 }
 
 np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct np_dtls_srv_connection* ctx,
@@ -550,7 +558,7 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
         }
         memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, (uint16_t)bufferSize);
 
-        np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &nm_mbedtls_srv_connection_send_callback, ctx, ctx->senderData);
+        np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &ctx->senderEvent, ctx->senderData);
         if (ec != NABTO_EC_OK) {
             NABTO_LOG_ERROR(LOG, "Could not send the packet from the dtls server, dropping the packet.");
             pl->buf.free(ctx->sslSendBuffer);

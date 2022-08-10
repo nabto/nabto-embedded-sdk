@@ -124,7 +124,7 @@ static int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void
 // Function called by wolfssl when it wants data from the network
 static int nm_dtls_wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* userData);
 // Function used to handle events during the connection phase
-static void nm_dtls_event_do_one(void* data);
+static void event_do_one(void* data);
 
 static void start_send_deferred(void* data);
 
@@ -405,14 +405,14 @@ np_error_code nm_wolfssl_connect(struct np_dtls_cli_connection* conn)
 {
     conn->state = CONNECTING;
 
-    nm_dtls_event_do_one(conn);
+    event_do_one(conn);
     return NABTO_EC_OK;
 }
 
 /*
  * Handle events for the connection phase
  */
-void nm_dtls_event_do_one(void* data)
+void event_do_one(void* data)
 {
     struct np_dtls_cli_connection* conn = data;
     int ret;
@@ -630,7 +630,7 @@ np_error_code handle_packet(struct np_dtls_cli_connection* conn, uint8_t channel
     conn->recvBufferSize = bufferSize;
     conn->receiving = true;
     conn->recvChannelId = channelId;
-    nm_dtls_event_do_one(conn);
+    event_do_one(conn);
     conn->recvChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
     conn->recvBuffer = NULL;
     if (conn->recvBufferSize != 0) {
@@ -668,7 +668,7 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     if (conn->state == DATA) {
         nm_wolfssl_cli_start_send(conn);
     }
-    nm_dtls_event_do_one(data);
+    event_do_one(data);
 }
 
 int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
