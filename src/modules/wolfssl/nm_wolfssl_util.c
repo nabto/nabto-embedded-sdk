@@ -98,8 +98,15 @@ np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey,
         cert.selfSigned = 1;
         cert.serial[0] = 0x01;
         cert.serialSz = 1;
-        // we create new certs for each startup
-        cert.daysValid = 5000;
+
+        // Not before: 20 01 01 00 00 00 Z, 0x17 = UTC time, 0x0d = length, not after 2049 01 01 00 00 00 Z
+        const uint8_t notBefore[] = { 0x17, 0x0d, 0x32, 0x30, 0x30, 0x31, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x5a };
+        const uint8_t notAfter[] = { 0x17, 0xd, 0x34, 0x39, 0x30, 0x31, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x5a };
+        memcpy(cert.beforeDate, notBefore, sizeof(notBefore));
+        cert.beforeDateSz = sizeof(notBefore);
+        memcpy(cert.afterDate, notAfter, sizeof(notAfter));
+        cert.afterDateSz = sizeof(notAfter);
+
         cert.sigType = CTC_SHA256wECDSA;
 
         ret = wc_MakeCert(&cert, derCert, sizeof(derCert), NULL, &eccKey, &rng);
