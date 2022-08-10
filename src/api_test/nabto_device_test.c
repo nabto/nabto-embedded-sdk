@@ -10,9 +10,11 @@
 #ifdef NABTO_USE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_util.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+#include <modules/mbedtls/nm_mbedtls_srv.h>
+#endif
 #endif
 #ifdef NABTO_USE_WOLFSSL
 #include <modules/wolfssl/nm_wolfssl_util.h>
@@ -53,9 +55,11 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_test_new()
     nm_communication_buffer_init(pl);
 #if defined(NABTO_USE_MBEDTLS)
     nm_mbedtls_cli_init(pl);
-    nm_mbedtls_srv_init(pl);
     nm_mbedtls_random_init(pl);
     nm_mbedtls_spake2_init(pl);
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+    nm_mbedtls_srv_init(pl);
+#endif
 #elif defined(NABTO_USE_WOLFSSL)
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);

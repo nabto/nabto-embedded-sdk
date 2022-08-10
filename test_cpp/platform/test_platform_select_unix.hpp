@@ -7,8 +7,10 @@
 
 #if defined(NABTO_USE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_cli.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+#include <modules/mbedtls/nm_mbedtls_srv.h>
+#endif
 #elif defined(NABTO_USE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_spake2.h>
@@ -69,8 +71,10 @@ class TestPlatformSelectUnix : public TestPlatform {
 
 #if defined(NABTO_USE_MBEDTLS)
         nm_mbedtls_cli_init(&pl_);
-        nm_mbedtls_srv_init(&pl_);
         nm_mbedtls_spake2_init(&pl_);
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+        nm_mbedtls_srv_init(&pl_);
+#endif
 #elif defined(NABTO_USE_WOLFSSL)
         nm_wolfssl_cli_init(&pl_);
         nm_wolfssl_spake2_init(&pl_);
@@ -90,6 +94,12 @@ class TestPlatformSelectUnix : public TestPlatform {
     void deinit()
     {
         nm_unix_dns_resolver_deinit(&dns_);
+#ifdef NABTO_USE_MBEDTLS
+        nm_mbedtls_cli_deinit(&pl_);
+#endif
+#ifdef NABTO_USE_WOLFSSL
+        nm_wolfssl_cli_deinit(&pl_);
+#endif
         nm_select_unix_deinit(&selectCtx_);
         thread_event_queue_deinit(&eventQueue_);
     }
