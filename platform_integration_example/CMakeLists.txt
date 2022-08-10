@@ -36,7 +36,8 @@ if (NABTO_USE_MBEDTLS)
     3rdparty_mbedtls
     )
 endif()
-if(NABTO_USE_WOLFSSL)
+
+if (NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device_select_unix
     nm_wolfssl_cli
     nm_wolfssl_random
@@ -46,6 +47,7 @@ if(NABTO_USE_WOLFSSL)
     target_link_libraries(nabto_device_select_unix
       nm_wolfssl_srv
     )
+  endif()
 endif()
 
 set(test_src
