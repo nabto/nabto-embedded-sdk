@@ -131,10 +131,11 @@ np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey,
         *certOut = np_calloc(1, ret + 1);
         if (*certOut == NULL) {
             ec = NABTO_EC_OUT_OF_MEMORY;
+        } else {
+            memcpy(*certOut, pemBuffer, ret);
         }
     }
 
-    memcpy(*certOut, pemBuffer, ret);
     wc_FreeRng(&rng);
     wc_ecc_free(&eccKey);
     return ec;
