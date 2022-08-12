@@ -326,6 +326,7 @@ void do_destroy_connection(struct np_dtls_cli_connection* conn)
 
     np_event_queue_destroy_event(&conn->pl->eq, conn->timerEvent);
     np_event_queue_destroy_event(&conn->pl->eq, conn->startSendEvent);
+    np_completion_event_deinit(&conn->senderEvent);
 
     wolfSSL_free(conn->ssl);
     np_free(conn);
