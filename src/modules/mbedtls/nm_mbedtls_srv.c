@@ -52,6 +52,9 @@ struct np_dtls_srv_connection {
     struct nn_llist sendList;
     struct np_event* startSendEvent;
 
+    bool receiving;
+    bool destroyed;
+
     np_dtls_sender sender;
     np_dtls_data_handler dataHandler;
     np_dtls_event_handler eventHandler;
@@ -103,6 +106,7 @@ void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data)
 void nm_mbedtls_srv_do_one(void* data);
 void nm_mbedtls_srv_start_send(struct np_dtls_srv_connection* ctx);
 void nm_mbedtls_srv_start_send_deferred(void* data);
+static void nm_mbedtls_srv_do_free_connection(struct np_dtls_srv_connection *conn);
 
 // Function called by mbedtls when data should be sent to the network
 int nm_mbedtls_srv_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
@@ -223,6 +227,9 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     ctx->senderData = data;
     ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
 
+    ctx->destroyed = false;
+    ctx->receiving = false;
+
     nn_llist_init(&ctx->sendList);
 
     struct np_platform* pl = ctx->pl;
@@ -281,27 +288,34 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     return NABTO_EC_OK;
 }
 
-static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* connection)
+void nm_mbedtls_srv_do_free_connection(struct np_dtls_srv_connection* conn)
 {
-    struct np_platform* pl = connection->pl;
-    struct np_dtls_srv_connection* ctx = connection;
-    // remove the first element until the list is empty
-    if (!nn_llist_empty(&ctx->sendList)) {
+// remove the first element until the list is empty
+    if (!nn_llist_empty(&conn->sendList)) {
         NABTO_LOG_ERROR(LOG, "invalid state the sendlist must be empty when calling destroy.");
     }
-    while(!nn_llist_empty(&ctx->sendList)) {
-        struct nn_llist_iterator it = nn_llist_begin(&ctx->sendList);
+    while(!nn_llist_empty(&conn->sendList)) {
+        struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
         struct np_dtls_send_context* first = nn_llist_get_item(&it);
         nn_llist_erase(&it);
         np_completion_event_resolve(&first->ev, NABTO_EC_CONNECTION_CLOSING);
     }
-    nm_mbedtls_timer_cancel(&ctx->timer);
-    nm_mbedtls_timer_deinit(&ctx->timer);
-    struct np_event_queue* eq = &pl->eq;
-    np_event_queue_destroy_event(eq, ctx->startSendEvent);
-    np_completion_event_deinit(&ctx->senderEvent);
-    mbedtls_ssl_free(&connection->ssl);
-    np_free(connection);
+    nm_mbedtls_timer_cancel(&conn->timer);
+    nm_mbedtls_timer_deinit(&conn->timer);
+    struct np_event_queue* eq = &conn->pl->eq;
+    np_event_queue_destroy_event(eq, conn->startSendEvent);
+    np_completion_event_deinit(&conn->senderEvent);
+    mbedtls_ssl_free(&conn->ssl);
+    np_free(conn);
+
+}
+
+static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* conn)
+{
+    conn->destroyed = true;
+    if (conn->sslSendBuffer == NULL && !conn->receiving) {
+        nm_mbedtls_srv_do_free_connection(conn);
+    }
 }
 
 np_error_code nm_mbedtls_srv_handle_packet(struct np_platform* pl, struct np_dtls_srv_connection*ctx,
@@ -312,10 +326,15 @@ np_error_code nm_mbedtls_srv_handle_packet(struct np_platform* pl, struct np_dtl
     ctx->recvBuffer = buffer;
     ctx->recvBufferSize = bufferSize;
     ctx->channelId = channelId;
+    ctx->receiving = true;
     nm_mbedtls_srv_do_one(ctx);
     ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
     ctx->recvBuffer = NULL;
     ctx->recvBufferSize = 0;
+    ctx->receiving = false;
+    if (ctx->destroyed && ctx->sslSendBuffer == NULL) {
+        nm_mbedtls_srv_do_free_connection(ctx);
+    }
     return NABTO_EC_OK;
 }
 
@@ -581,6 +600,11 @@ void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data)
     }
     ctx->pl->buf.free(ctx->sslSendBuffer);
     ctx->sslSendBuffer = NULL;
+
+    if(ctx->state == CLOSING && ctx->destroyed) {
+        nm_mbedtls_srv_do_free_connection(ctx);
+        return;
+    }
 
     nm_mbedtls_srv_do_one(ctx);
     nm_mbedtls_srv_start_send(ctx);
