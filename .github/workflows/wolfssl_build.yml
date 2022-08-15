@@ -8,7 +8,7 @@ on:
 jobs:
   build-and-test:
     name: Build
-    runs-on: $${{matrix.os}}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         cli-only: [0, 1]
