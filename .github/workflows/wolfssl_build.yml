@@ -7,7 +7,11 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    name: Build
+    runs-on: $${{matrix.os}}
+    strategy:
+      matrix:
+        cli-only: [0, 1]
 
     steps:
     - name: prepare wolfssl
@@ -24,7 +28,7 @@ jobs:
         submodules: recursive
         fetch-depth: 0
     - name: Configure cmake
-      run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DNABTO_USE_MBEDTLS=0 -DNABTO_USE_WOLFSSL=1 ..
+      run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DNABTO_USE_MBEDTLS=0 -DNABTO_USE_WOLFSSL=1 -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
 
     - name: Build
       run: cmake --build build-dir --parallel
