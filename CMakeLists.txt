@@ -155,9 +155,14 @@ add_subdirectory(src/modules/communication_buffer)
 option(NABTO_USE_MBEDTLS "Use mbedtls as DTLS module" ON)
 option(NABTO_USE_WOLFSSL "Use wolfssl as DTLS module" OFF)
 option(NABTO_ENABLE_DTLS_LOG "Enable logging for 3rd party DTLS module" OFF)
+option(NABTO_DEVICE_DTLS_CLIENT_ONLY "Make device be dtls client for client connections" OFF)
 
 if (NABTO_ENABLE_DTLS_LOG)
   add_definitions(-DNABTO_ENABLE_DTLS_LOG)
+endif()
+
+if (NABTO_DEVICE_DTLS_CLIENT_ONLY)
+  add_definitions(-DNABTO_DEVICE_DTLS_CLIENT_ONLY)
 endif()
 
 if (NABTO_USE_MBEDTLS)

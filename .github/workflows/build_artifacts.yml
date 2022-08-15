@@ -11,6 +11,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
+        cli-only: [0, 1]
         os: [windows-2019, ubuntu-18.04, macos-10.15]
 
     steps:
@@ -19,7 +20,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
 
       - name: Build
         run: cmake --build build-dir --parallel

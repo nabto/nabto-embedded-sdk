@@ -3,7 +3,6 @@
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
-#include <modules/mbedtls/nm_mbedtls_srv.h>
 #include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/select_unix/nm_select_unix.h>
@@ -23,7 +22,6 @@ void test_platform_init(struct test_platform* tp)
     nm_unix_ts_init(pl);
     nm_unix_dns_init(pl);
     nm_mbedtls_cli_init(pl);
-    nm_mbedtls_srv_init(pl);
     nm_mdns_init(pl);
 
     tp->stopped = false;

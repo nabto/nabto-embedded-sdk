@@ -40,7 +40,11 @@ enum nc_spake2_state {
 struct nc_client_connection {
     struct nn_llist_node connectionsNode;
     struct np_platform* pl;
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
+    struct np_dtls_cli_connection* dtls;
+#else
     struct np_dtls_srv_connection* dtls;
+#endif
     struct nc_client_connection_dispatch_context* dispatch;
     struct nc_stream_manager_context* streamManager;
     struct nc_stun_context* stun;
@@ -50,14 +54,13 @@ struct nc_client_connection {
     uint64_t currentMaxSequence;
     struct nc_device_context* device;
 
-    np_dtls_srv_send_callback sentCb;
-    void* sentData;
+    struct np_completion_event* sentCb;
     uint64_t connectionRef;
     struct np_completion_event sendCompletionEvent;
     struct np_completion_event closeCompletionEvent;
 
     struct nc_keep_alive_context keepAlive;
-    struct np_dtls_srv_send_context keepAliveSendCtx;
+    struct np_dtls_send_context keepAliveSendCtx;
 
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     bool hasSpake2Key;  // true iff the key has been set
@@ -119,17 +122,15 @@ void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data);
  * Get underlying DTLS connection from connection reference. Used by
  * nc_stream_manager.
  */
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
+struct np_dtls_cli_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn);
+#else
 struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct nc_client_connection* conn);
-
+#endif
 /**
  * Get client fingerprint from DTLS server. Used by API.
  */
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
-
-/**
- * Get device fingerprint from DTLS server.
- */
-np_error_code nc_client_connection_get_device_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
 
 /**
  * Query if connection uses local socket or not. Used by API.
@@ -145,5 +146,12 @@ bool nc_client_connection_is_password_authenticated(struct nc_client_connection*
  * internal only called from self. Notifies nc_device of events.
  */
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event);
+
+/**
+ * Send data on the client connection
+ */
+np_error_code nc_client_connection_async_send_data(
+    struct nc_client_connection* conn,
+    struct np_dtls_send_context* sendCtx);
 
 #endif //_NC_CLIENT_CONNECTION_H_

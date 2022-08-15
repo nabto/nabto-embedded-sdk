@@ -68,13 +68,13 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         nc_device_deinit(device);
         return ec;
     }
-
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
     ec = pl->dtlsS.create(pl, &device->dtlsServer);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
-
+#endif
     ec = nc_coap_server_init(pl, &device->moduleLogger, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
@@ -173,9 +173,12 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_attacher_deinit(&device->attacher);
     nc_coap_client_deinit(&device->coapClient);
     nc_coap_server_deinit(&device->coapServer);
+
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
     if (device->dtlsServer != NULL) { // was created
         pl->dtlsS.destroy(device->dtlsServer);
     }
+#endif
 
     nn_string_set_deinit(&device->mdnsSubtypes);
     nn_string_map_deinit(&device->mdnsTxtItems);
@@ -215,11 +218,13 @@ void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_e
 
 }
 
-void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize)
+void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize, const uint8_t* fingerprint)
 {
-    struct np_platform* pl = device->pl;
+    memcpy(device->fingerprint, fingerprint, 32);
     nc_attacher_set_keys(&device->attacher, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
-    pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+    device->pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+#endif
 }
 
 void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data) {

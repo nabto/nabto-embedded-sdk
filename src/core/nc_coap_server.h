@@ -2,7 +2,7 @@
 #define NC_COAP_SERVER_H
 
 #include <platform/np_platform.h>
-#include <platform/np_dtls_srv.h>
+#include <platform/np_dtls_cli.h>
 
 #include <core/nc_client_connection.h>
 
@@ -17,7 +17,7 @@ struct nc_coap_server_context {
     struct np_event* timer;
     // if sendBuffer is non null that means we are currently sending a packet.
     struct np_communication_buffer* sendBuffer;
-    struct np_dtls_srv_send_context sendCtx;
+    struct np_dtls_send_context sendCtx;
 };
 
 // translate nabto_coap_error to np_error_code, coap errors are common

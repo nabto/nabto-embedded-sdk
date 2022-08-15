@@ -18,7 +18,7 @@ struct nc_coap_client_context {
     uint32_t currentExpiry;
     struct np_event* ev;
     struct np_event* timer;
-    struct np_dtls_cli_send_context sendCtx;
+    struct np_dtls_send_context sendCtx;
     struct np_communication_buffer* sendBuffer;
 };
 
@@ -26,7 +26,7 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx);
 void nc_coap_client_stop(struct nc_coap_client_context* ctx);
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,
-                                  uint8_t* buffer, uint16_t bufferSize, struct np_dtls_cli_context* dtls);
+                                  uint8_t* buffer, uint16_t bufferSize, struct np_dtls_cli_connection* dtls);
 
 struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_context* ctx);
 

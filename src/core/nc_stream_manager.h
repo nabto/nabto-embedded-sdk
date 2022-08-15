@@ -2,7 +2,7 @@
 #define NC_STREAM_MANAGER_H
 
 #include <platform/np_platform.h>
-#include <platform/np_dtls_srv.h>
+#include <platform/np_dtls_cli.h>
 #include <streaming/nabto_stream_window.h>
 #include <core/nc_stream.h>
 
@@ -22,7 +22,7 @@ struct nc_stream_manager_context {
     struct nn_llist listeners;
     struct np_communication_buffer* rstBuf;
     struct nn_llist streams;
-    struct np_dtls_srv_send_context sendCtx;
+    struct np_dtls_send_context sendCtx;
     struct nn_log* logger;
     size_t maxSegments;
     size_t allocatedSegments;
@@ -67,6 +67,6 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
 
 void nc_stream_manager_set_max_segments(struct nc_stream_manager_context* ctx, size_t maxSegments);
 
-void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct np_dtls_srv_connection* conn, uint64_t streamId);
+void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
 
 #endif

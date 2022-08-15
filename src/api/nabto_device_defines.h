@@ -29,6 +29,7 @@ struct nabto_device_context {
 
     char* certificate;
     char* privateKey;
+    uint8_t fingerprint[32];
 
     struct nabto_device_future* closeFut;
     struct nabto_device_future* startFut;

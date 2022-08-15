@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 np_error_code nm_wolfssl_cli_init(struct np_platform* pl);
+void nm_wolfssl_cli_deinit(struct np_platform* pl);
 
 #ifdef __cplusplus
 } //extern "C"
