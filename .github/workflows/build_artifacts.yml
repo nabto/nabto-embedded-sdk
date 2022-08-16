@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         cli-only: [0, 1]
-        os: [windows-2019, ubuntu-18.04, macos-10.15]
+        os: [windows-2022, ubuntu-22.04, macos-12]
 
     steps:
       - uses: actions/checkout@v2
@@ -28,13 +28,13 @@ jobs:
       - name: Install
         run: cmake --build build-dir --target install
 
-      - if: matrix.os == 'windows-2019'
+      - if: matrix.os == 'windows-2022'
         name: Test run
         run: |
           netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\artifacts\bin\embedded_unit_test.exe" enable=yes
           ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
 
-      - if: matrix.os != 'windows-2019'
+      - if: matrix.os != 'windows-2022'
         name: Test run
         run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
 
@@ -50,7 +50,7 @@ jobs:
   release-assets:
     name: Release Assets
     needs: build-and-test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         binary: [tcp_tunnel_device]
@@ -58,15 +58,15 @@ jobs:
     steps:
       - uses: actions/download-artifact@v2
         with:
-          name: artifacts_ubuntu-18.04
+          name: artifacts_ubuntu-22.04
           path: linux
       - uses: actions/download-artifact@v2
         with:
-          name: artifacts_windows-2019
+          name: artifacts_windows-2022
           path: windows
       - uses: actions/download-artifact@v2
         with:
-          name: artifacts_macos-10.15
+          name: artifacts_macos-12
           path: macos
       - name: List assets
         run: ls -R
