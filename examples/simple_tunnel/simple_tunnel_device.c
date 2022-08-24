@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 const char* appName = "simple_tunnel";
+const char* sct = "demosct";
 
 // TCP tunnel configuration.
 const char* serviceHost = "127.0.0.1";
@@ -83,6 +84,13 @@ int main(int argc, char** argv) {
     ec = nabto_device_set_log_level(device, "info");
     if (ec != NABTO_DEVICE_EC_OK) {
         printf("Could not set log level. %s" NEWLINE, nabto_device_error_get_message(ec));
+        goto cleanup;
+    }
+
+    ec = nabto_device_add_server_connect_token(device, sct);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Failed to add server connect token: %s" NEWLINE,
+               nabto_device_error_get_message(ec));
         goto cleanup;
     }
 
