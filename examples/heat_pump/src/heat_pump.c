@@ -75,7 +75,7 @@ static double smoothstep(double start, double end, double x)
     }
 
     if (x >= end) {
-        return 1;   
+        return 1;
     }
 
     x = (x - start) / (end - start);
@@ -237,7 +237,7 @@ bool load_iam_policy(struct heat_pump* heatPump)
             struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
             nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
             nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
-            nm_iam_configuration_statement_add_action(s, "IAM:SetDisplayName");
+            nm_iam_configuration_statement_add_action(s, "IAM:SetUserDisplayName");
 
             // Create a condition such that only connections where the
             // UserId matches the UserId of the operation is allowed. E.g. IAM:Username == ${Connection:Username}
@@ -261,6 +261,7 @@ bool load_iam_policy(struct heat_pump* heatPump)
     }
     {
         struct nm_iam_role* r = nm_iam_configuration_role_new("Administrator");
+        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
         nm_iam_configuration_role_add_policy(r, "ManageIam");
         nm_iam_configuration_role_add_policy(r, "Pairing");
         nm_iam_configuration_role_add_policy(r, "HeatPumpControl");
