@@ -25,6 +25,9 @@
 
 #include <stdio.h>
 
+#if !defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
+
+
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 
 static const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
@@ -628,3 +631,5 @@ int nm_mbedtls_srv_mbedtls_recv(void* data, unsigned char* buffer, size_t buffer
 void nm_mbedtls_srv_timed_event_do_one(void* data) {
     nm_mbedtls_srv_do_one(data);
 }
+
+#endif
