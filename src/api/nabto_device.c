@@ -94,7 +94,9 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 #ifdef NABTO_USE_MBEDTLS
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_random_init(pl);
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_mbedtls_spake2_init(pl);
+#endif
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
     nm_mbedtls_srv_init(pl);
 #endif
@@ -102,7 +104,9 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 #ifdef NABTO_USE_WOLFSSL
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_wolfssl_spake2_init(pl);
+#endif
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
     nm_wolfssl_srv_init(pl);
 #endif
@@ -219,12 +223,16 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nabto_device_platform_deinit(dev);
 #ifdef NABTO_USE_MBEDTLS
     nm_mbedtls_random_deinit(&dev->pl);
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_mbedtls_spake2_deinit(&dev->pl);
+#endif
     nm_mbedtls_cli_deinit(&dev->pl);
 #endif
 #ifdef NABTO_USE_WOLFSSL
     nm_wolfssl_random_deinit(&dev->pl);
+#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_wolfssl_spake2_deinit(&dev->pl);
+#endif
     nm_wolfssl_cli_deinit(&dev->pl);
 #endif
 
