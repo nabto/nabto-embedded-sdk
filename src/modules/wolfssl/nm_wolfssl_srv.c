@@ -13,6 +13,9 @@
 
 #include "nm_wolfssl_common.h"
 #include "nm_wolfssl_util.h"
+
+#if !defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
+
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 
 static const int MIN_TIMEOUT = 1;
@@ -664,3 +667,5 @@ int wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
         return (int)maxCp;
     }
 }
+
+#endif
