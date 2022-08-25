@@ -1,10 +1,22 @@
 # Changelog
 
-## [unreleased]
+## [5.10.0]
 
 ### Added
+ * limit functions from 5.6.0 moved out of experimental
+ * simple_speed_test example to benchmark crypto operations
+ * all dynamic memory allocation is done through a replacable memory allocator (src/platform/np_allocator.h)
+ * `nabot_device_service_invocation_get_response_message_format()` function to help decode service invocation responses after more lax requirements from the basestation to the format of service invocation responses.
+ * SDK can now be compiled with wolfssl instead of mbedtls with `NABTO_USE_MBEDTLS` and `NABTO_USE_WOLFSSL`. Wolfssl must be installed on the system to work. Mbedtls is provided as submodule.
+ * Password authentication can be disabled using `NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION`
+ * Device can now be compiled without a DTLS server using `NABTO_DEVICE_DTLS_CLIENT_ONLY`. In this mode, the Embedded SDK will respond with a DTLS clientHello request when a Nabto Client sends a clientHello request. When the Nabto Client receives a clientHello request, it will terminate its DTLS client connection, and start a DTLS server for the connection instead. This mode requires Nabto Client SDK v5.10.0 or later.
+ * Simple examples adds `demosct` as server connect token to simplify example guides. This is simpler as remote client connections no longer requires a server key if they use server connect tokens.
+
 
 ### Changed
+ * tcp_tunnel_device user experience updates
+ * memory allocation updates to significantly reduce memory usage
+ * fix some handling of device initialization failures
 
 
 #### Breaking Changes
