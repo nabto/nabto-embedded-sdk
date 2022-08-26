@@ -3,7 +3,7 @@
 
 #define LOG NABTO_LOG_MODULE_API
 
-#if defined(NABTO_USE_WOLFSSL)
+#if defined(NABTO_DEVICE_WOLFSSL)
 
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/settings.h>

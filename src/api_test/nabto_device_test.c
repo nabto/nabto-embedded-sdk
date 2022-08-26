@@ -8,7 +8,7 @@
 #include <api/nabto_device_logging.h>
 
 
-#ifdef NABTO_USE_MBEDTLS
+#ifdef NABTO_DEVICE_MBEDTLS
 #include <modules/mbedtls/nm_mbedtls_util.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
@@ -17,7 +17,7 @@
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #endif
 #endif
-#ifdef NABTO_USE_WOLFSSL
+#ifdef NABTO_DEVICE_WOLFSSL
 #include <modules/wolfssl/nm_wolfssl_util.h>
 #include <modules/wolfssl/nm_wolfssl_cli.h>
 #include <modules/wolfssl/nm_wolfssl_random.h>
@@ -54,7 +54,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_test_new()
 
     struct np_platform* pl = &dev->pl;
     nm_communication_buffer_init(pl);
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_random_init(pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
@@ -63,7 +63,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_test_new()
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
     nm_mbedtls_srv_init(pl);
 #endif
-#elif defined(NABTO_USE_WOLFSSL)
+#elif defined(NABTO_DEVICE_WOLFSSL)
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
@@ -112,13 +112,13 @@ void NABTO_DEVICE_API nabto_device_test_free(NabtoDevice* device)
     nabto_device_test_stop(device);
 
     nabto_device_platform_deinit(dev);
-#ifdef NABTO_USE_MBEDTLS
+#ifdef NABTO_DEVICE_MBEDTLS
     nm_mbedtls_random_deinit(&dev->pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_mbedtls_spake2_deinit(&dev->pl);
 #endif
 #endif
-#ifdef NABTO_USE_WOLFSSL
+#ifdef NABTO_DEVICE_WOLFSSL
     nm_wolfssl_random_deinit(&dev->pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_wolfssl_spake2_deinit(&dev->pl);

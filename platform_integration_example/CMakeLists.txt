@@ -27,7 +27,15 @@ target_link_libraries( nabto_device_select_unix
   nm_logging_api
   )
 
-if (NABTO_USE_MBEDTLS)
+
+if (NABTO_DEVICE_WOLFSSL)
+  target_link_libraries(nabto_device_select_unix
+    nm_wolfssl_cli
+    nm_wolfssl_srv
+    nm_wolfssl_random
+    nm_wolfssl_spake2
+  )
+else()
   target_link_libraries(nabto_device_select_unix
     nm_mbedtls_cli
     nm_mbedtls_srv
@@ -35,15 +43,6 @@ if (NABTO_USE_MBEDTLS)
     nm_mbedtls_spake2
     3rdparty_mbedtls
     )
-endif()
-
-if (NABTO_USE_WOLFSSL)
-  target_link_libraries(nabto_device_select_unix
-    nm_wolfssl_cli
-    nm_wolfssl_srv
-    nm_wolfssl_random
-    nm_wolfssl_spake2
-  )
 endif()
 
 set(test_src

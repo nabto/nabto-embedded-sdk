@@ -1,5 +1,5 @@
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
-#if defined(NABTO_USE_WOLFSSL)
+#if defined(NABTO_DEVICE_WOLFSSL)
 
 #include <boost/test/unit_test.hpp>
 

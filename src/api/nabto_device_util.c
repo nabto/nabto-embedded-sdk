@@ -1,4 +1,5 @@
 
+#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
@@ -8,9 +9,9 @@
 
 #include <platform/np_allocator.h>
 
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_util.h>
-#elif defined(NABTO_USE_WOLFSSL)
+#elif defined(NABTO_DEVICE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_util.h>
 #else
 #error Missing DTLS implementation
@@ -29,10 +30,10 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_create_private_key(NabtoDevice* d
     *privateKey = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     ec = NABTO_EC_NOT_IMPLEMENTED;
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
     ec = nm_mbedtls_util_create_private_key(privateKey);
 #endif
-#if defined(NABTO_USE_WOLFSSL)
+#if defined(NABTO_DEVICE_WOLFSSL)
     ec = nm_wolfssl_util_create_private_key(privateKey);
 #endif
     nabto_device_threads_mutex_unlock(dev->eventMutex);

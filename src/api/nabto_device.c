@@ -20,7 +20,7 @@
 #include <core/nc_version.h>
 #include <core/nc_client_connection.h>
 
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
@@ -28,7 +28,7 @@
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #endif
 #include <modules/mbedtls/nm_mbedtls_util.h>
-#elif defined(NABTO_USE_WOLFSSL)
+#elif defined(NABTO_DEVICE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_random.h>
 #include <modules/wolfssl/nm_wolfssl_spake2.h>
 #include <modules/wolfssl/nm_wolfssl_cli.h>
@@ -92,7 +92,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     struct np_platform* pl = &dev->pl;
 
     nm_communication_buffer_init(pl);
-#ifdef NABTO_USE_MBEDTLS
+#ifdef NABTO_DEVICE_MBEDTLS
     nm_mbedtls_cli_init(pl);
     nm_mbedtls_random_init(pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
@@ -102,7 +102,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
     nm_mbedtls_srv_init(pl);
 #endif
 #endif
-#ifdef NABTO_USE_WOLFSSL
+#ifdef NABTO_DEVICE_WOLFSSL
     nm_wolfssl_cli_init(pl);
     nm_wolfssl_random_init(pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
@@ -222,14 +222,14 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 
 
     nabto_device_platform_deinit(dev);
-#ifdef NABTO_USE_MBEDTLS
+#ifdef NABTO_DEVICE_MBEDTLS
     nm_mbedtls_random_deinit(&dev->pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_mbedtls_spake2_deinit(&dev->pl);
 #endif
     nm_mbedtls_cli_deinit(&dev->pl);
 #endif
-#ifdef NABTO_USE_WOLFSSL
+#ifdef NABTO_DEVICE_WOLFSSL
     nm_wolfssl_random_deinit(&dev->pl);
 #if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
     nm_wolfssl_spake2_deinit(&dev->pl);
@@ -319,9 +319,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
         char* crt;
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
         ec = nm_mbedtls_create_crt_from_private_key(dev->privateKey, &crt);
-#elif defined(NABTO_USE_WOLFSSL)
+#elif defined(NABTO_DEVICE_WOLFSSL)
         ec = nm_wolfssl_create_crt_from_private_key(dev->privateKey, &crt);
 #else
 #error Missing implementation to create a crt from a private key.
@@ -332,9 +332,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         }
         dev->certificate = crt;
 
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
         ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
-#elif defined(NABTO_USE_WOLFSSL)
+#elif defined(NABTO_DEVICE_WOLFSSL)
         ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
 #else
 #error Missing implementation to create a crt from a private key.
