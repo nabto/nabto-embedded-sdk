@@ -48,7 +48,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->pl = pl;
     conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     conn->hasSpake2Key = false;
     conn->passwordAuthenticated = false;
 #endif
@@ -388,7 +388,7 @@ bool nc_client_connection_is_local(struct nc_client_connection* conn)
     return (&conn->device->localUdp == conn->currentChannel.sock);
 }
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 bool nc_client_connection_is_password_authenticated(struct nc_client_connection* conn)
 {
     return conn->passwordAuthenticated;

@@ -1,7 +1,9 @@
 #ifndef _NC_SPAKE2_H_
 #define _NC_SPAKE2_H_
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#include <nabto/nabto_device_config.h>
+
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 
 #include <platform/np_error_code.h>
 #include <platform/np_event_queue_wrapper.h>

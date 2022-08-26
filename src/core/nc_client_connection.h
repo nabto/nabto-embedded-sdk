@@ -63,7 +63,7 @@ struct nc_client_connection {
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_send_context keepAliveSendCtx;
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     bool hasSpake2Key;  // true iff the key has been set
     uint8_t spake2Key[32];
     bool passwordAuthenticated; // true iff some password authentication request has succeeded on the connection.
