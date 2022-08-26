@@ -1,11 +1,18 @@
 #ifndef _NABTO_DEVICE_CONFIG_H_
 #define _NABTO_DEVICE_CONFIG_H_
 
-#ifdef NABTO_DEVICE_USER_SETTINGS
-#include "nabto_device_user_settings.h"
+/**
+ * If building using Cmake, configurations should NOT be made through header
+ * files. Instead run the cmake command with `-D<CONFIG>` argument (eg. `cmake
+ * -DNABTO_DEVICE_WOLFSSL ../`). If building with another build system, create
+ * the `nabto_device_user_configuration.h` file with the desired configuration
+ * and set the `NABTO_DEVICE_USER_CONFIGURATION` definition.
+ */
+#ifdef NABTO_DEVICE_USER_CONFIGURATION
+#include "nabto_device_user_configuration.h"
 #endif
 
-// Define to disable the std out log callback if using custom log callback
+// Define to disable the std out log callback on systems where it is not available
 //#define NABTO_DEVICE_NO_LOG_STD_OUT_CALLBACK
 
 // Define to enable log output from the DTLS module for debugging
@@ -21,7 +28,7 @@
 //#define NABTO_DEVICE_DTLS_CLIENT_ONLY
 
 
-// Check configuration section.
+// Internal configuration section.
 
 #ifndef NABTO_DEVICE_WOLFSSL
 #define NABTO_DEVICE_MBEDTLS
