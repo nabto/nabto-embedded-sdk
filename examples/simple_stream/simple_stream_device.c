@@ -19,6 +19,7 @@
 #endif
 
 const char* keyFile = "device.key";
+const char* sct = "demosct";
 
 #define READ_BUFFER_SIZE 1024
 
@@ -241,7 +242,8 @@ bool start_device(NabtoDevice* dev, const char* productId, const char* deviceId)
     if (nabto_device_set_product_id(dev, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(dev, deviceId) != NABTO_DEVICE_EC_OK ||
         nabto_device_enable_mdns(dev) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_log_std_out_callback(dev) != NABTO_DEVICE_EC_OK)
+        nabto_device_set_log_std_out_callback(dev) != NABTO_DEVICE_EC_OK ||
+        nabto_device_add_server_connect_token(device, sct) != NABTO_DEVICE_EC_OK)
     {
         return false;
     }

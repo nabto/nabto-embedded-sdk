@@ -18,6 +18,7 @@ const char* keyFile = "device.key";
 
 const char* coapPath[] = { "hello-world", NULL };
 const char* defaultString = "Hello world";
+const char* sct = "demosct";
 char helloWorld[128];
 
 struct context {
@@ -223,7 +224,8 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
 
     if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK)
+        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
+        nabto_device_add_server_connect_token(device, sct) != NABTO_DEVICE_EC_OK)
     {
         return false;
     }
