@@ -1,5 +1,5 @@
 #pragma once
-
+#include <nabto/nabto_device_config.h>
 #include <platform/np_platform.h>
 #include <modules/libevent/nm_libevent.h>
 #include <modules/logging/test/nm_logging_test.h>

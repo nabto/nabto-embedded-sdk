@@ -30,28 +30,20 @@ target_link_libraries( nabto_device_select_unix
 if (NABTO_USE_MBEDTLS)
   target_link_libraries(nabto_device_select_unix
     nm_mbedtls_cli
+    nm_mbedtls_srv
     nm_mbedtls_random
     nm_mbedtls_spake2
     3rdparty_mbedtls
     )
-    if(NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    target_link_libraries(nabto_device_select_unix
-      nm_mbedtls_srv
-    )
-  endif()
 endif()
 
 if (NABTO_USE_WOLFSSL)
   target_link_libraries(nabto_device_select_unix
     nm_wolfssl_cli
+    nm_wolfssl_srv
     nm_wolfssl_random
     nm_wolfssl_spake2
   )
-  if(NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    target_link_libraries(nabto_device_select_unix
-      nm_wolfssl_srv
-    )
-  endif()
 endif()
 
 set(test_src

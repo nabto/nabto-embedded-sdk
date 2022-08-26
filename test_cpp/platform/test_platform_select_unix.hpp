@@ -1,5 +1,6 @@
 #pragma once
 
+#include <nabto/nabto_device_config.h>
 #include "test_platform.hpp"
 
 #include <platform/np_platform.h>

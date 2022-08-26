@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_config.h>
 #include "nc_device.h"
 #include "nc_config.h"
 #include <platform/np_logging.h>

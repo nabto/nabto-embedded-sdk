@@ -1,3 +1,4 @@
+#include <nabto_device_config.h>
 #include "nm_mbedtls_util.h"
 #include <mbedtls/sha256.h>
 #include "mbedtls/error.h"
@@ -202,7 +203,7 @@ np_error_code nm_mbedtls_util_create_private_key(char** privateKey)
     return ec;
 }
 
-#if defined(NABTO_ENABLE_DTLS_LOG)
+#if defined(NABTO_DEVICE_DTLS_LOG)
 static void my_debug( void *ctx, int level,
                       const char *file, int line,
                       const char *str )
@@ -227,7 +228,7 @@ static void my_debug( void *ctx, int level,
 
 void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf)
 {
-#if defined(NABTO_ENABLE_DTLS_LOG)
+#if defined(NABTO_DEVICE_DTLS_LOG)
     mbedtls_debug_set_threshold( 4 ); // Max debug threshold, NABTO_LOG_RAW will handle log levels
     mbedtls_ssl_conf_dbg( conf, my_debug, NULL);
 #endif

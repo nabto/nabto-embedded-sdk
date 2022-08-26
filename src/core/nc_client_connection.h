@@ -1,6 +1,7 @@
 #ifndef NC_CLIENT_CONNECTION_H
 #define NC_CLIENT_CONNECTION_H
 
+#include <nabto/nabto_device_config.h>
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
 #include <core/nc_stream_manager.h>

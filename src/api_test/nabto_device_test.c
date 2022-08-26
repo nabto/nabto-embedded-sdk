@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device_test.h>
 
 #include <api/nabto_device_defines.h>

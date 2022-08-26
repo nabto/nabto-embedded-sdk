@@ -6,6 +6,7 @@
  * the core.
  */
 
+#include <nabto/nabto_device_config.h>
 #include <platform/interfaces/np_timestamp.h>
 #include <platform/interfaces/np_event_queue.h>
 #include <platform/interfaces/np_udp.h>
