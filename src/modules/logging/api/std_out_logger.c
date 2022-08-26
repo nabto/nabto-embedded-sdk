@@ -1,3 +1,6 @@
+#include <nabto/nabto_device_config.h>
+
+#ifndef NABTO_DEVICE_NO_LOG_STD_OUT_CALLBACK
 
 #include <nabto/nabto_device.h>
 
@@ -99,3 +102,4 @@ void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* dat
            fileTmp, msg->line, level, msg->message);
     fflush(stdout);
 }
+#endif

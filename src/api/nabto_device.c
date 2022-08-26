@@ -44,7 +44,6 @@
 
 
 #include <nn/string.h>
-#include "nabto_device_config.h"
 
 //#include "nabto_device_event_queue.h"
 

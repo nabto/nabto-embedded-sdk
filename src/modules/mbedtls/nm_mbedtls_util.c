@@ -1,4 +1,4 @@
-#include <nabto_device_config.h>
+#include <nabto/nabto_device_config.h>
 #include "nm_mbedtls_util.h"
 #include <mbedtls/sha256.h>
 #include "mbedtls/error.h"

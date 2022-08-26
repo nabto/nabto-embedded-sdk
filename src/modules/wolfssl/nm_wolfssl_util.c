@@ -1,4 +1,4 @@
-#include <nabto_device_config.h>
+#include <nabto/nabto_device_config.h>
 #include "nm_wolfssl_util.h"
 
 #include <platform/np_allocator.h>

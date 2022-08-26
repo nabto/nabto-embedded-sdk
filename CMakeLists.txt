@@ -59,8 +59,6 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/nabto)
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include)
 
