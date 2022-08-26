@@ -3,8 +3,8 @@
 
 /**
  * If building using Cmake, configurations should NOT be made through header
- * files. Instead run the cmake command with `-D<CONFIG>` argument (eg. `cmake
- * -DNABTO_DEVICE_WOLFSSL ../`). If building with another build system, create
+ * files. Instead run the cmake command with `-D<CONFIG>=ON` argument (eg. `cmake
+ * -DNABTO_DEVICE_WOLFSSL=ON ../`). If building with another build system, create
  * the `nabto_device_user_configuration.h` file with the desired configuration
  * and set the `NABTO_DEVICE_USER_CONFIGURATION` definition.
  */
