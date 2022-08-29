@@ -12,8 +12,8 @@ The example creates a library which implements the of the
 
 ## Overall architecture.
 
-An application e.g. a Heat Pump Device is using the API described in
-the header file `nabto/nabto_device.h`. The heatpump is linked against
+An application e.g. a Thermostat Device is using the API described in
+the header file `nabto/nabto_device.h`. The thermostat is linked against
 the library e.g. `libnabto_device.so` (`nabto_device` library).
 
 This platform integration example is all about creating the
@@ -52,7 +52,7 @@ Each struct consists of a list of function pointers that needs to be setup in th
 
 Each module in `np_platform.h` should be implemented or an implementation which
 is working on the desired platform should be choosen. This example works on UNIX systems so
-modules which works on such a system has been choosen. 
+modules which works on such a system has been choosen.
 
 
 

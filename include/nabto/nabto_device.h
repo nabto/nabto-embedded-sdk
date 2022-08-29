@@ -978,8 +978,8 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  *
  * The CoAP path segments of the resource. The array of segments is a
  * NULL terminated array of null terminated strings. The familiar
- * notation for rest resources "/heatpump/state" becomes the array
- * {"heatpump", "state", NULL }
+ * notation for rest resources "/thermostat/state" becomes the array
+ * {"thermostat", "state", NULL }
  *
  * Parameters can be defined by using the syntax {<parameter>} for a
  * parameter. E.g. {"iam","users","{id}",NULL}
@@ -2038,7 +2038,7 @@ nabto_device_enable_mdns(NabtoDevice* device);
  * Add an additional subtype to the mDNS responses.
  *
  * The subtype <product-id>-<device-id> is added automatically. Other
- * subtypes can be added, such as "heatpump" or "tcptunnel" can be
+ * subtypes can be added, such as "thermostat" or "tcptunnel" can be
  * added for easy filtering in the client applications. Subtypes needs
  * to be added before nabto_device_start() is called.
  *
