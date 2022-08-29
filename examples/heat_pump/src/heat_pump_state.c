@@ -4,14 +4,14 @@
 #include <apps/common/random_string.h>
 
 
-#include "heat_pump_state.h"
+#include "thermostat_state.h"
 
 
 #include <modules/iam/nm_iam_serializer.h>
 
 #include <cjson/cJSON.h>
 
-#define LOGM "heat_pump_state"
+#define LOGM "thermostat_state"
 
 void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_log* logger)
 {
@@ -23,39 +23,39 @@ void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_
     nm_iam_serializer_string_free(str);
 }
 
-const char* mode_as_string(enum heat_pump_mode mode) {
+const char* mode_as_string(enum thermostat_mode mode) {
     switch (mode) {
-        case HEAT_PUMP_MODE_COOL: return "COOL";
-        case HEAT_PUMP_MODE_HEAT: return "HEAT";
-        case HEAT_PUMP_MODE_DRY: return "DRY";
-        case HEAT_PUMP_MODE_FAN: return "FAN";
+        case THERMOSTAT_MODE_COOL: return "COOL";
+        case THERMOSTAT_MODE_HEAT: return "HEAT";
+        case THERMOSTAT_MODE_DRY: return "DRY";
+        case THERMOSTAT_MODE_FAN: return "FAN";
     }
     return "UNKNOWN";
 }
 
-void save_heat_pump_state(const char* filename, const struct heat_pump_state* state)
+void save_thermostat_state(const char* filename, const struct thermostat_state* state)
 {
     cJSON* root = cJSON_CreateObject();
 
     cJSON_AddNumberToObject(root, "Version", 3);
 
-    cJSON* heatPump = cJSON_CreateObject();
-    cJSON_AddItemToObject(heatPump, "Mode", cJSON_CreateString(mode_as_string(state->mode)));
-    cJSON_AddItemToObject(heatPump, "Power", cJSON_CreateBool(state->power));
-    cJSON_AddItemToObject(heatPump, "Target", cJSON_CreateNumber(state->target));
-    cJSON_AddItemToObject(heatPump, "Temperature", cJSON_CreateNumber(state->temperature));
+    cJSON* thermostat = cJSON_CreateObject();
+    cJSON_AddItemToObject(thermostat, "Mode", cJSON_CreateString(mode_as_string(state->mode)));
+    cJSON_AddItemToObject(thermostat, "Power", cJSON_CreateBool(state->power));
+    cJSON_AddItemToObject(thermostat, "Target", cJSON_CreateNumber(state->target));
+    cJSON_AddItemToObject(thermostat, "Temperature", cJSON_CreateNumber(state->temperature));
 
-    cJSON_AddItemToObject(root, "HeatPump", heatPump);
+    cJSON_AddItemToObject(root, "Thermostat", thermostat);
 
     json_config_save(filename, root);
 
     cJSON_Delete(root);
 }
 
-bool load_heat_pump_state(const char* filename, struct heat_pump_state* state, struct nn_log* logger)
+bool load_thermostat_state(const char* filename, struct thermostat_state* state, struct nn_log* logger)
 {
     if (!json_config_exists(filename)) {
-        create_default_heat_pump_state(filename);
+        create_default_thermostat_state(filename);
     }
     cJSON* json;
     if (!json_config_load(filename, &json, logger)) {
@@ -69,23 +69,23 @@ bool load_heat_pump_state(const char* filename, struct heat_pump_state* state, s
         return false;
     }
 
-    cJSON* heatPump = cJSON_GetObjectItem(json, "HeatPump");
+    cJSON* thermostat = cJSON_GetObjectItem(json, "Thermostat");
 
-    if (cJSON_IsObject(heatPump)) {
-        cJSON* mode = cJSON_GetObjectItem(heatPump, "Mode");
-        cJSON* power = cJSON_GetObjectItem(heatPump, "Power");
-        cJSON* target = cJSON_GetObjectItem(heatPump, "Target");
-        cJSON* temp = cJSON_GetObjectItem(heatPump, "Temperature");
+    if (cJSON_IsObject(thermostat)) {
+        cJSON* mode = cJSON_GetObjectItem(thermostat, "Mode");
+        cJSON* power = cJSON_GetObjectItem(thermostat, "Power");
+        cJSON* target = cJSON_GetObjectItem(thermostat, "Target");
+        cJSON* temp = cJSON_GetObjectItem(thermostat, "Temperature");
 
         if (cJSON_IsString(mode)) {
             if (strcmp(mode->valuestring, "COOL") == 0) {
-                state->mode = HEAT_PUMP_MODE_COOL;
+                state->mode = THERMOSTAT_MODE_COOL;
             } else  if (strcmp(mode->valuestring, "HEAT") == 0) {
-                state->mode = HEAT_PUMP_MODE_HEAT;
+                state->mode = THERMOSTAT_MODE_HEAT;
             } else  if (strcmp(mode->valuestring, "DRY") == 0) {
-                state->mode = HEAT_PUMP_MODE_DRY;
+                state->mode = THERMOSTAT_MODE_DRY;
             } else  if (strcmp(mode->valuestring, "FAN") == 0) {
-                state->mode = HEAT_PUMP_MODE_FAN;
+                state->mode = THERMOSTAT_MODE_FAN;
             } else {
                 return false;
             }
@@ -133,12 +133,12 @@ void create_default_iam_state(NabtoDevice* device, const char* filename, struct 
     save_iam_state(filename, state, logger);
     nm_iam_state_free(state);
 }
-void create_default_heat_pump_state(const char* filename)
+void create_default_thermostat_state(const char* filename)
 {
-    struct heat_pump_state state;
-    state.mode = HEAT_PUMP_MODE_HEAT;
+    struct thermostat_state state;
+    state.mode = THERMOSTAT_MODE_HEAT;
     state.temperature = 22.3;
     state.target = state.temperature;
     state.power = false;
-    save_heat_pump_state(filename, &state);
+    save_thermostat_state(filename, &state);
 }

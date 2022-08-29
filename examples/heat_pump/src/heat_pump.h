@@ -1,8 +1,8 @@
-#ifndef _HEAT_PUMP_H_
-#define _HEAT_PUMP_H_
+#ifndef _THERMOSTAT_H_
+#define _THERMOSTAT_H_
 
-#include "heat_pump_coap_handler.h"
-#include "heat_pump_state.h"
+#include "thermostat_coap_handler.h"
+#include "thermostat_state.h"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -13,33 +13,33 @@
 
 #include <nn/log.h>
 
-struct heat_pump {
+struct thermostat {
     NabtoDevice* device;
-    char* heatPumpStateFile; // contains the heat pump specific state
+    char* thermostatStateFile; // contains the thermostat specific state
     char* iamStateFile; // contains the iam state.
     char* deviceKeyFile;
     char* deviceConfigFile;
     struct nm_iam iam;
     struct nn_log* logger;
-    struct heat_pump_state state;
-    struct heat_pump_coap_handler coapGet;
-    struct heat_pump_coap_handler coapSetMode;
-    struct heat_pump_coap_handler coapSetPower;
-    struct heat_pump_coap_handler coapSetTarget;
+    struct thermostat_state state;
+    struct thermostat_coap_handler coapGet;
+    struct thermostat_coap_handler coapSetMode;
+    struct thermostat_coap_handler coapSetPower;
+    struct thermostat_coap_handler coapSetTarget;
 };
 
-void heat_pump_init(struct heat_pump* heatPump, NabtoDevice* device, struct nn_log* logger);
-void heat_pump_deinit(struct heat_pump* heatPump);
+void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct nn_log* logger);
+void thermostat_deinit(struct thermostat* thermostat);
 
-void heat_pump_reinit_state(struct heat_pump* heatPump);
+void thermostat_reinit_state(struct thermostat* thermostat);
 
-void heat_pump_start(struct heat_pump* heatPump);
-void heat_pump_stop(struct heat_pump* heatPump);
-void heat_pump_update(struct heat_pump* heatPump, double deltaTime);
+void thermostat_start(struct thermostat* thermostat);
+void thermostat_stop(struct thermostat* thermostat);
+void thermostat_update(struct thermostat* thermostat, double deltaTime);
 
-void heat_pump_set_mode(struct heat_pump* heatPump, enum heat_pump_mode mode);
-void heat_pump_set_power(struct heat_pump* heatPump, bool power);
-void heat_pump_set_target(struct heat_pump* heatPump, double target);
-bool heat_pump_check_access(struct heat_pump* heatPump, NabtoDeviceCoapRequest* request, const char* action);
+void thermostat_set_mode(struct thermostat* thermostat, enum thermostat_mode mode);
+void thermostat_set_power(struct thermostat* thermostat, bool power);
+void thermostat_set_target(struct thermostat* thermostat, double target);
+bool thermostat_check_access(struct thermostat* thermostat, NabtoDeviceCoapRequest* request, const char* action);
 
 #endif

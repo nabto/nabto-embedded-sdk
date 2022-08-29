@@ -1,28 +1,28 @@
-#include "heat_pump_coap_handler.h"
-#include "heat_pump_state.h"
-#include "heat_pump.h"
+#include "thermostat_coap_handler.h"
+#include "thermostat_state.h"
+#include "thermostat.h"
 
 #include <cbor.h>
 
-static void handle_request(struct heat_pump_coap_handler* handler, NabtoDeviceCoapRequest* request);
+static void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
-NabtoDeviceError heat_pump_set_mode_init(struct heat_pump_coap_handler* handler, NabtoDevice* device, struct heat_pump* heatPump)
+NabtoDeviceError thermostat_set_mode_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat)
 {
-    const char* paths[] = { "heat-pump", "mode", NULL };
-    return heat_pump_coap_handler_init(handler, device, heatPump, NABTO_DEVICE_COAP_POST, paths, &handle_request);
+    const char* paths[] = { "thermostat", "mode", NULL };
+    return thermostat_coap_handler_init(handler, device, thermostat, NABTO_DEVICE_COAP_POST, paths, &handle_request);
 }
 
-void handle_request(struct heat_pump_coap_handler* handler, NabtoDeviceCoapRequest* request)
+void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    struct heat_pump* heatPump = handler->heatPump;
-    if (!heat_pump_check_access(heatPump, request, "HeatPump:Set")) {
+    struct thermostat* thermostat = handler->thermostat;
+    if (!thermostat_check_access(thermostat, request, "Thermostat:Set")) {
         nabto_device_coap_error_response(request, 403, "Access denied");
         return;
     }
 
     CborParser parser;
     CborValue value;
-    if (!heat_pump_init_cbor_parser(request, &parser, &value)) {
+    if (!thermostat_init_cbor_parser(request, &parser, &value)) {
         return;
     }
 
@@ -38,13 +38,13 @@ void handle_request(struct heat_pump_coap_handler* handler, NabtoDeviceCoapReque
     bool match;
 
     if ((cbor_value_text_string_equals(&value, cool, &match) == CborNoError) && match) {
-        heat_pump_set_mode(heatPump, HEAT_PUMP_MODE_COOL);
+        thermostat_set_mode(thermostat, THERMOSTAT_MODE_COOL);
     } else if ((cbor_value_text_string_equals(&value, heat, &match) == CborNoError) && match) {
-        heat_pump_set_mode(heatPump, HEAT_PUMP_MODE_HEAT);
+        thermostat_set_mode(thermostat, THERMOSTAT_MODE_HEAT);
     } else if ((cbor_value_text_string_equals(&value, fan, &match) == CborNoError) && match) {
-        heat_pump_set_mode(heatPump, HEAT_PUMP_MODE_FAN);
+        thermostat_set_mode(thermostat, THERMOSTAT_MODE_FAN);
     } else if ((cbor_value_text_string_equals(&value, dry, &match) == CborNoError) && match) {
-        heat_pump_set_mode(heatPump, HEAT_PUMP_MODE_DRY);
+        thermostat_set_mode(thermostat, THERMOSTAT_MODE_DRY);
     } else {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;

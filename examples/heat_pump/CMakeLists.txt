@@ -2,22 +2,22 @@ find_package( Threads )
 
 set(src
   ${ne_iam_src}
-  src/heat_pump_main.c
-  src/heat_pump.c
-  src/heat_pump_state.c
-  src/heat_pump_coap_handler.c
-  src/heat_pump_get.c
-  src/heat_pump_set_mode.c
-  src/heat_pump_set_power.c
-  src/heat_pump_set_target.c
+  src/thermostat_main.c
+  src/thermostat.c
+  src/thermostat_state.c
+  src/thermostat_coap_handler.c
+  src/thermostat_get.c
+  src/thermostat_set_mode.c
+  src/thermostat_set_power.c
+  src/thermostat_set_target.c
   )
 
-add_executable(heat_pump_device ${src})
+add_executable(thermostat_device ${src})
 
-target_link_libraries(heat_pump_device nabto_device_static 3rdparty_tinycbor 3rdparty_gopt 3rdparty_cjson nn apps_common)
+target_link_libraries(thermostat_device nabto_device_static 3rdparty_tinycbor 3rdparty_gopt 3rdparty_cjson nn apps_common)
 
-#target_link_libraries( heat_pump_device ${CMAKE_THREAD_LIBS_INIT} )
+#target_link_libraries( thermostat_device ${CMAKE_THREAD_LIBS_INIT} )
 
-install(TARGETS heat_pump_device
+install(TARGETS thermostat_device
   RUNTIME DESTINATION bin
   )
