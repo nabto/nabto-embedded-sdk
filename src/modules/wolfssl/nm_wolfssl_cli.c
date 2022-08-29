@@ -22,9 +22,12 @@
 #include <nn/llist.h>
 #include <nn/string.h>
 
+#include "nabto_tsip_keys.h"
+#include "wolfssl_tsip_rsapss.h"
+
 #define LOG NABTO_LOG_MODULE_DTLS_CLI
 
-static const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_CCM";
+static const char* allowedCipherSuitesList = "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256";
 static const char* alpnList = NABTO_PROTOCOL_VERSION;
 
 
@@ -35,6 +38,9 @@ struct nm_wolfssl_cli_context {
 
     int timeoutMin;
     int timeoutMax;
+#if defined(WOLFSSL_RENESAS_TSIP_TLS)
+    tsip_ecc_private_key_index_t privateKey;
+#endif
 };
 
 struct np_dtls_cli_connection {
@@ -68,6 +74,7 @@ struct np_dtls_cli_connection {
     uint8_t sendChannelId;
     uint8_t recvChannelId;
     uint64_t lastRecvSequenceNumber;
+    TsipUserCtx tsipUserContext;
 };
 
 // Module function definitions
@@ -179,6 +186,60 @@ void nm_wolfssl_cli_deinit(struct np_platform* pl)
     pl->dtlsCData = NULL;
 }
 
+#ifdef WOLFSSL_RENESAS_TSIP_TLS
+int ecc_sign_callback(WOLFSSL* ssl, const unsigned
+        char* in, unsigned int inSz, unsigned char* out,
+        unsigned int* outSz, const unsigned char* keyDer,
+        unsigned int keySz, void* userData)
+{
+	tsip_ecdsa_byte_data_t message;
+	tsip_ecdsa_byte_data_t signature;
+
+	struct nm_wolfssl_cli_context* ctx = userData;
+
+	message.data_length = inSz;
+	message.pdata = (uint8_t*)in;
+	message.data_type = 1; // hashed
+
+	uint8_t signatureBuffer[64];
+	signature.pdata = signatureBuffer;
+	signature.data_length = sizeof(signatureBuffer);
+
+	e_tsip_err_t err = R_TSIP_EcdsaP256SignatureGenerate(&message, &signature, &ctx->privateKey);
+	if (err != TSIP_SUCCESS) {
+		NABTO_LOG_ERROR(LOG, "tsip failed to generate a signature %d", err);
+		return -1;
+	}
+
+	// encode r,s in two asn1 integers.
+	uint8_t* ptr = out;
+	*ptr = 0x30; ptr++;
+	uint8_t* totLen = ptr; ptr++;
+	*ptr = 0x02; ptr++;
+	if ((signatureBuffer[0] & 0x80) != 0) {
+		*ptr = 0x21; ptr++;
+		*ptr = 0; ptr++;
+	} else {
+		*ptr = 0x20; ptr++;
+	}
+	memcpy(ptr, signatureBuffer, 32); ptr += 32;
+
+	*ptr = 0x02; ptr++;
+	if ((signatureBuffer[32] & 0x80) != 0) {
+		*ptr = 0x21; ptr++;
+		*ptr = 0; ptr++;
+	} else {
+		*ptr = 0x20; ptr++;
+	}
+
+	memcpy(ptr, signatureBuffer+32, 32); ptr += 32;
+
+	size_t length = ptr - out;
+	*totLen = length - 2;
+	*outSz = length;
+	return 0;
+}
+#endif
 
 np_error_code initialize_context(struct np_platform* pl)
 {
@@ -191,6 +252,11 @@ np_error_code initialize_context(struct np_platform* pl)
     ctx->pl = pl;
     WOLFSSL_METHOD *method = wolfDTLSv1_2_client_method();
     ctx->ctx = wolfSSL_CTX_new(method);
+
+#ifdef WOLFSSL_RENESAS_TSIP_TLS
+    tsip_set_callbacks(ctx->ctx);
+    wolfSSL_CTX_SetEccSignCb(ctx->ctx, ecc_sign_callback);
+#endif
 
     nm_wolfssl_util_check_logging();
     ctx->timeoutMin = 1;
@@ -255,6 +321,11 @@ static np_error_code create_client_connection(
         do_destroy_connection(conn);
         return NABTO_EC_UNKNOWN;
     }
+
+#ifdef WOLFSSL_RENESAS_TSIP_TLS
+    tsip_set_callback_ctx(conn->ssl, &conn->tsipUserContext);
+    wolfSSL_SetEccSignCtx(conn->ssl, pl->dtlsCData);
+#endif
 
     wolfSSL_SetIOReadCtx(conn->ssl, conn);
     wolfSSL_SetIOWriteCtx(conn->ssl, conn);
@@ -346,6 +417,7 @@ np_error_code set_keys(struct np_platform* pl,
                                    const unsigned char* certificate, size_t certificateSize,
                                    const unsigned char* privateKeyL, size_t privateKeySize)
 {
+#if !defined(WOLFSSL_RENESAS_TSIP_TLS)
     struct nm_wolfssl_cli_context* ctx =
         (struct nm_wolfssl_cli_context*)pl->dtlsCData;
     if (wolfSSL_CTX_use_PrivateKey_buffer(ctx->ctx, privateKeyL, privateKeySize, WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
@@ -357,12 +429,63 @@ np_error_code set_keys(struct np_platform* pl,
         NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer");
         return NABTO_EC_UNKNOWN;
     }
+#else
+
+	struct nm_wolfssl_cli_context *ctx =
+			(struct nm_wolfssl_cli_context*) pl->dtlsCData;
+//	if (wolfSSL_CTX_use_PrivateKey_buffer(ctx->ctx, privateKeyL, privateKeySize,
+//			WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS) {
+//		NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_PrivateKey_buffer");
+//		return NABTO_EC_UNKNOWN;
+//	}
+	e_tsip_err_t err = R_TSIP_GenerateEccP256PrivateKeyIndex(device_private_key_data.wufpk , device_private_key_data.initial_vector,
+			device_private_key_data.encrypted_user_key,
+			&ctx->privateKey);
+	if (err != TSIP_SUCCESS) {
+		NABTO_LOG_ERROR(LOG, "Cannot load client private key into TSIP index.");
+		return NABTO_EC_UNKNOWN;
+	}
+
+	if (wolfSSL_CTX_use_certificate_buffer(ctx->ctx, device1_cert_der,
+			device1_cert_der_len, WOLFSSL_FILETYPE_ASN1) != WOLFSSL_SUCCESS) {
+		NABTO_LOG_ERROR(LOG, "wolfSSL_CTX_use_certificate_buffer");
+		return NABTO_EC_UNKNOWN;
+	}
+#endif
 
     return NABTO_EC_OK;
 }
 
+np_error_code load_tsip_root_cert(struct nm_wolfssl_cli_context* ctx, const uint8_t* certificate, size_t certificateLength)
+{
+
+
+	uint8_t signature[256];
+
+	int ret = wolfssl_tsip_rsapss_signature_generate(certificate, certificateLength, signature,
+			sizeof(signature));
+	if (ret != 0) {
+		printf("FAiled to generate signature\r\n");
+		return NABTO_EC_FAILED;
+	}
+
+	tsip_inform_cert_sign(signature);
+
+	//       if (wolfSSL_CTX_load_verify_buffer(ctx->ctx, (const unsigned char*) nabto_server_ca_1_crt_der, nabto_server_ca_1_crt_der_len, WOLFSSL_FILETYPE_ASN1) != WOLFSSL_SUCCESS)
+	ret =wolfSSL_CTX_load_verify_buffer(ctx->ctx,
+			(const unsigned char*) certificate, certificateLength,
+			WOLFSSL_FILETYPE_ASN1);
+	if (ret != WOLFSSL_SUCCESS)
+	{
+		NABTO_LOG_ERROR(LOG, "cannot load ca certificate %d", ret);
+		return NABTO_EC_FAILED;
+	}
+	return NABTO_EC_OK;
+}
+
 np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
 {
+#if !defined(WOLFSSL_RENESAS_TSIP_TLS)
     struct nm_wolfssl_cli_context* ctx =
         (struct nm_wolfssl_cli_context*)pl->dtlsCData;
 
@@ -372,6 +495,13 @@ np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
         return NABTO_EC_FAILED;
     }
     return NABTO_EC_OK;
+#else
+    struct nm_wolfssl_cli_context* ctx =
+           (struct nm_wolfssl_cli_context*)pl->dtlsCData;
+
+    return load_tsip_root_cert(ctx, nabto_root_ca1_der, nabto_root_ca1_der_size);
+#endif
+
 }
 
 /**
