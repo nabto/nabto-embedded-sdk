@@ -24,7 +24,7 @@
 // Define to use Wolfssl as DTLS module instead of Mbedtls
 //#define NABTO_DEVICE_WOLFSSL
 
-// Define to make device function as DTLS Client for Nabto Client connections. Enabling this requires Nabto Clients v5.10.0 or greater. This completely removes the need for a DTLS server module.
+// Define to make device function as DTLS Client for Nabto Client connections. Enabling this requires Nabto Clients v5.10.0 or greater. This completely removes the need for a DTLS server module in the device.
 //#define NABTO_DEVICE_DTLS_CLIENT_ONLY
 
 
