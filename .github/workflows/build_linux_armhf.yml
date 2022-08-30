@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Install compiler
-        run: apt update && apt install -y gcc-9-arm-linux-gnueabihf cmake g++-9-arm-linux-gnueabihf git ninja-build
+        run: sudo apt update && sudo apt install -y gcc-9-arm-linux-gnueabihf cmake g++-9-arm-linux-gnueabihf git ninja-build
 
       - uses: actions/checkout@v2
         with:
