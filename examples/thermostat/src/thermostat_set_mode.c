@@ -12,6 +12,13 @@ NabtoDeviceError thermostat_set_mode_init(struct thermostat_coap_handler* handle
     return thermostat_coap_handler_init(handler, device, thermostat, NABTO_DEVICE_COAP_POST, paths, &handle_request);
 }
 
+NabtoDeviceError thermostat_set_mode_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat)
+{
+    const char* paths[] = { "heat-pump", "mode", NULL };
+    return thermostat_coap_handler_init(handler, device, thermostat, NABTO_DEVICE_COAP_POST, paths, &handle_request);
+}
+
+
 void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     struct thermostat* thermostat = handler->thermostat;

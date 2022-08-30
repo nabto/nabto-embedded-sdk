@@ -36,6 +36,12 @@ NabtoDeviceError thermostat_set_mode_init(struct thermostat_coap_handler* handle
 NabtoDeviceError thermostat_set_power_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
 NabtoDeviceError thermostat_set_target_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
 
+NabtoDeviceError thermostat_get_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
+NabtoDeviceError thermostat_set_mode_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
+NabtoDeviceError thermostat_set_power_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
+NabtoDeviceError thermostat_set_target_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
+
+
 bool thermostat_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue);
 
 #endif

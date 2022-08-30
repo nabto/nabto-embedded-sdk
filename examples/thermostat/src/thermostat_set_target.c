@@ -13,6 +13,13 @@ NabtoDeviceError thermostat_set_target_init(struct thermostat_coap_handler* hand
     return thermostat_coap_handler_init(handler, device, thermostat, NABTO_DEVICE_COAP_POST, paths, &handle_request);
 }
 
+NabtoDeviceError thermostat_set_target_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat)
+{
+    const char* paths[] = { "heat-pump", "target", NULL };
+    return thermostat_coap_handler_init(handler, device, thermostat, NABTO_DEVICE_COAP_POST, paths, &handle_request);
+}
+
+
 void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     struct thermostat* thermostat = handler->thermostat;

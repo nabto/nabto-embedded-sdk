@@ -13,6 +13,13 @@ NabtoDeviceError thermostat_get_init(struct thermostat_coap_handler* handler, Na
     return thermostat_coap_handler_init(handler, device, thermostat, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
 
+NabtoDeviceError thermostat_get_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat)
+{
+    const char* paths[] = { "heat-pump", NULL };
+    return thermostat_coap_handler_init(handler, device, thermostat, NABTO_DEVICE_COAP_GET, paths, &handle_request);
+}
+
+
 static size_t encode(struct thermostat* thermostat, void* buffer, size_t bufferSize)
 {
     CborEncoder encoder;

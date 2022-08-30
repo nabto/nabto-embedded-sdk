@@ -26,6 +26,13 @@ struct thermostat {
     struct thermostat_coap_handler coapSetMode;
     struct thermostat_coap_handler coapSetPower;
     struct thermostat_coap_handler coapSetTarget;
+    // compabibility handlers such that apps which uses the heatpump api is
+    // still compatible with this example.
+    struct thermostat_coap_handler coapGetLegacy;
+    struct thermostat_coap_handler coapSetModeLegacy;
+    struct thermostat_coap_handler coapSetPowerLegacy;
+    struct thermostat_coap_handler coapSetTargetLegacy;
+
 };
 
 void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct nn_log* logger);

@@ -50,6 +50,12 @@ void thermostat_deinit(struct thermostat* thermostat)
     thermostat_coap_handler_deinit(&thermostat->coapSetMode);
     thermostat_coap_handler_deinit(&thermostat->coapSetPower);
     thermostat_coap_handler_deinit(&thermostat->coapSetTarget);
+
+    thermostat_coap_handler_deinit(&thermostat->coapGetLegacy);
+    thermostat_coap_handler_deinit(&thermostat->coapSetModeLegacy);
+    thermostat_coap_handler_deinit(&thermostat->coapSetPowerLegacy);
+    thermostat_coap_handler_deinit(&thermostat->coapSetTargetLegacy);
+
     nm_iam_deinit(&thermostat->iam);
 }
 
@@ -66,6 +72,11 @@ void thermostat_stop(struct thermostat* thermostat)
     thermostat_coap_handler_stop(&thermostat->coapSetMode);
     thermostat_coap_handler_stop(&thermostat->coapSetPower);
     thermostat_coap_handler_stop(&thermostat->coapSetTarget);
+
+    thermostat_coap_handler_stop(&thermostat->coapGetLegacy);
+    thermostat_coap_handler_stop(&thermostat->coapSetModeLegacy);
+    thermostat_coap_handler_stop(&thermostat->coapSetPowerLegacy);
+    thermostat_coap_handler_stop(&thermostat->coapSetTargetLegacy);
 }
 
 static double smoothstep(double start, double end, double x)
@@ -169,6 +180,24 @@ NabtoDeviceError thermostat_init_coap_handlers(struct thermostat* thermostat)
     if (ec != NABTO_DEVICE_EC_OK) {
         return ec;
     }
+
+    ec = thermostat_get_legacy_init(&thermostat->coapGetLegacy, thermostat->device, thermostat);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return ec;
+    }
+    ec = thermostat_set_mode_legacy_init(&thermostat->coapSetModeLegacy, thermostat->device, thermostat);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return ec;
+    }
+    ec = thermostat_set_power_legacy_init(&thermostat->coapSetPowerLegacy, thermostat->device, thermostat);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return ec;
+    }
+    ec = thermostat_set_target_legacy_init(&thermostat->coapSetTargetLegacy, thermostat->device, thermostat);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return ec;
+    }
+
     return NABTO_DEVICE_EC_OK;
 }
 
