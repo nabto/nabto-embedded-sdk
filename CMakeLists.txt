@@ -169,7 +169,6 @@ if (NABTO_DEVICE_WOLFSSL)
     add_subdirectory(src/modules/wolfssl)
 else()
     set(NABTO_DEVICE_MBEDTLS TRUE)
-    add_definitions(-DNABTO_DEVICE_MBEDTLS)
     add_subdirectory(src/modules/mbedtls)
 endif()
 

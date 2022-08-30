@@ -8,8 +8,8 @@
  * the `nabto_device_user_configuration.h` file with the desired configuration
  * and set the `NABTO_DEVICE_USER_CONFIGURATION` definition.
  */
-#ifdef NABTO_DEVICE_USER_CONFIGURATION
-#include "nabto_device_user_configuration.h"
+#ifdef NABTO_DEVICE_USER_CONFIG
+#include "nabto_device_user_config.h"
 #endif
 
 // Define to disable the std out log callback on systems where it is not available
