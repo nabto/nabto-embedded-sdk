@@ -27,13 +27,8 @@ add_definitions(-DNODEFAULTLIB)
 add_definitions(-DBOOST_ALL_NO_LIB)
 
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "")
-  message(AUTHOR_WARNING "No c++ compiler found. DEVICE_BUILD_TESTS will default to OFF.")
-  option(DEVICE_BUILD_TESTS "build device tests" OFF)
-else()
-  message("c++ compiler was LOADED. ${CMAKE_CXX_COMPILER_ID}")
-  option(DEVICE_BUILD_TESTS "build device tests" ON)
-endif()
+message("c++ compiler was LOADED. ${CMAKE_CXX_COMPILER_ID}")
+option(DEVICE_BUILD_TESTS "build device tests" OFF)
 
 option(DEVICE_BUILD_APPS "build applications" ON)
 
@@ -217,9 +212,6 @@ if (UNIX)
 endif()
 
 if (DEVICE_BUILD_TESTS)
-#  add_subdirectory(nabto-common-cpp/src/http_server)
-  #add_subdirectory(test)
-
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
   add_subdirectory(test_cpp)
   add_subdirectory(platform_integration_stub)

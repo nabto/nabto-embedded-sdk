@@ -28,7 +28,7 @@ jobs:
         submodules: recursive
         fetch-depth: 0
     - name: Configure cmake
-      run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DNABTO_DEVICE_WOLFSSL=1 -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
+      run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DNABTO_DEVICE_WOLFSSL=1 -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
 
     - name: Build
       run: cmake --build build-dir --parallel

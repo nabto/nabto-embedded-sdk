@@ -16,7 +16,7 @@ cmake --build . --config Release --target install
 
 ### Testing
 
-If build passed, a C++ compiler was found, and `DEVICE_BUILD_TESTS` was not set to `Off` unit tests can be run.
+If build passed, and `DEVICE_BUILD_TESTS` is set to `ON` unit tests can be run.
 
 ```
 ../_install/bin/embedded_unit_test -p
