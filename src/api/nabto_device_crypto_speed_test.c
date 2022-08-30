@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 #include "nabto_device_threads.h"
@@ -7,7 +8,7 @@
 #include <platform/np_logging_defines.h>
 #include <platform/np_timestamp_wrapper.h>
 
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
 #include <mbedtls/sha256.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>

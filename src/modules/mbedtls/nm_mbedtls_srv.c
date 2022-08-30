@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_config.h>
 #include "nm_mbedtls_srv.h"
 #include "nm_mbedtls_util.h"
 #include "nm_mbedtls_timer.h"

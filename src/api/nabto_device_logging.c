@@ -1,5 +1,5 @@
+#include <nabto/nabto_device_config.h>
 #include "nabto_device_logging.h"
-#include "nabto_device_config.h"
 #include "nabto_device_logging_std_out_callback.h"
 #include <stdio.h>
 
@@ -130,7 +130,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_level(NabtoDevice* device
 NabtoDeviceError NABTO_DEVICE_API nabto_device_set_log_std_out_callback(NabtoDevice* device)
 {
     (void)device;
-#if NABTO_DEVICE_LOG_STD_OUT_CALLBACK
+#ifndef NABTO_DEVICE_NO_LOG_STD_OUT_CALLBACK
     nabto_device_logging_set_callback(nabto_device_logging_std_out_callback, NULL);
     return NABTO_DEVICE_EC_OK;
 #else

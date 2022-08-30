@@ -30,30 +30,23 @@ target_link_libraries(nabto_device_static
   nabto_device_threads
   )
 
-if (NABTO_USE_MBEDTLS)
+if (NABTO_DEVICE_MBEDTLS)
   target_link_libraries(nabto_device_static
     nm_mbedtls_cli
+    nm_mbedtls_srv
     nm_mbedtls_random
     nm_mbedtls_spake2
     3rdparty_mbedtls
   )
-  if(NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    target_link_libraries(nabto_device_static
-      nm_mbedtls_srv
-    )
-  endif()
 endif()
-if(NABTO_USE_WOLFSSL)
+
+if(NABTO_DEVICE_WOLFSSL)
   target_link_libraries(nabto_device_static
     nm_wolfssl_cli
+    nm_wolfssl_srv
     nm_wolfssl_random
     nm_wolfssl_spake2
   )
-  if(NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    target_link_libraries(nabto_device_static
-      nm_wolfssl_srv
-  )
-  endif()
 endif()
 
 target_link_libraries( nabto_device_static ${CMAKE_THREAD_LIBS_INIT} )
@@ -75,29 +68,22 @@ target_link_libraries( nabto_device
   nabto_device_threads
   )
 
-if (NABTO_USE_MBEDTLS)
+if (NABTO_DEVICE_MBEDTLS)
   target_link_libraries(nabto_device
     nm_mbedtls_cli
+    nm_mbedtls_srv
     nm_mbedtls_random
     nm_mbedtls_spake2
   )
-  if(NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    target_link_libraries(nabto_device
-      nm_mbedtls_srv
-  )
-  endif()
 endif()
-if(NABTO_USE_WOLFSSL)
+
+if(NABTO_DEVICE_WOLFSSL)
   target_link_libraries(nabto_device
     nm_wolfssl_cli
+    nm_wolfssl_srv
     nm_wolfssl_random
     nm_wolfssl_spake2
   )
-  if(NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    target_link_libraries(nabto_device
-      nm_wolfssl_srv
-  )
-  endif()
 endif()
 
 target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )

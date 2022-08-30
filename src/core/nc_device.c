@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_config.h>
 #include "nc_device.h"
 #include "nc_config.h"
 #include <platform/np_logging.h>
@@ -117,7 +118,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     nc_spake2_init(&device->spake2, pl);
 
     ec = nc_spake2_coap_init(&device->spake2, &device->coapServer);
@@ -158,7 +159,7 @@ void nc_device_deinit(struct nc_device_context* device) {
         np_mdns_unpublish_service(&pl->mdns);
     }
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     nc_spake2_coap_deinit(&device->spake2);
     nc_spake2_deinit(&device->spake2);
 #endif

@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_config.h>
 #include "nm_wolfssl_util.h"
 
 #include <platform/np_allocator.h>
@@ -270,7 +271,7 @@ np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
     return ec;
 }
 
-#if defined(NABTO_ENABLE_DTLS_LOG)
+#if defined(NABTO_DEVICE_DTLS_LOG)
 static void logging_callback(const int logLevel, const char *const logMessage)
 {
     uint32_t severity;
@@ -291,7 +292,7 @@ static void logging_callback(const int logLevel, const char *const logMessage)
 
 void nm_wolfssl_util_check_logging()
 {
-#if defined(NABTO_ENABLE_DTLS_LOG)
+#if defined(NABTO_DEVICE_DTLS_LOG)
     wolfSSL_SetLoggingCb(logging_callback);
     wolfSSL_Debugging_ON();
     #else

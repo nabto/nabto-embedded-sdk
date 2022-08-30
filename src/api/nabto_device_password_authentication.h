@@ -1,6 +1,7 @@
 #ifndef _NABTO_DEVICE_PASSWORD_AUTHENTICATION_H_
 #define _NABTO_DEVICE_PASSWORD_AUTHENTICATION_H_
 
+#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
@@ -8,7 +9,7 @@
 
 //struct nc_spake2_password_request;
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 
 struct nabto_device_context;
 struct nc_spake2_password_request;
