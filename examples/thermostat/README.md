@@ -1,6 +1,6 @@
-## Heatpump example application
+## Thermostat example application
 
-This is an example application showing how a heat pump application can be made.
+This is an example application showing how a thermostat application can be made.
 
 ## Usage
 
@@ -21,7 +21,7 @@ named device.json the structure of that file is this:
 The configuration of the device. This config is static and never
 changes during the lifetime of a device.
 
-### `state/heat_pump_device_iam_state.json` and `state/heat_pump_device_state.json
+### `state/thermostat_device_iam_state.json` and `state/thermostat_device_state.json
 
 The dynamic runtime state which is updated when the device is running
 
@@ -33,24 +33,24 @@ device.
 
 ## Features
 
-The heatpump example shows how a heatpump can be implemented including using our fingerprint based
+The thermostat example shows how a thermostat can be implemented including using our fingerprint based
 Identity and Access Management (IAM) module. The IAM module supports SCTs, so clients can connect
 using server keys of any authentication type.
 
-## Heatpump Features
+## Thermostat Features
 
-This is a hypothetical heatpump. It has the following functionality.
+This is a hypothetical thermostat. It has the following functionality.
 
 Settings:
 
-The heatpump has four modes:
+The thermostat has four modes:
 
   * Cool
   * Heat
   * Circulate
   * Dehumidify
 
-The heatpump has two power modes:
+The thermostat has two power modes:
 
   * On
   * Off
@@ -66,8 +66,8 @@ Sensors:
 ### Iam identifiers
 
 Actions:
-  * HeatPump:Get get the heatpump state
-  * HeatPump:Set set the heatpump state
+  * Thermostat:Get get the thermostat state
+  * Thermostat:Set set the thermostat state
 
 ## Pairing
 

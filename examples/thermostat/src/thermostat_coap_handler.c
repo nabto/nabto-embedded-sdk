@@ -1,22 +1,22 @@
-#include "heat_pump_coap_handler.h"
+#include "thermostat_coap_handler.h"
 
 #include <cbor.h>
 
-static void start_listen(struct heat_pump_coap_handler* handler);
+static void start_listen(struct thermostat_coap_handler* handler);
 static void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 
 
-NabtoDeviceError heat_pump_coap_handler_init(
-    struct heat_pump_coap_handler* handler,
+NabtoDeviceError thermostat_coap_handler_init(
+    struct thermostat_coap_handler* handler,
     NabtoDevice* device,
-    struct heat_pump* heatPump,
+    struct thermostat* thermostat,
     NabtoDeviceCoapMethod method,
     const char** paths,
-    heat_pump_coap_request_handler requestHandler)
+    thermostat_coap_request_handler requestHandler)
 {
-    memset(handler, 0, sizeof(struct heat_pump_coap_handler));
+    memset(handler, 0, sizeof(struct thermostat_coap_handler));
     handler->device = device;
-    handler->heatPump = heatPump;
+    handler->thermostat = thermostat;
     handler->requestHandler = requestHandler;
 
     handler->future = nabto_device_future_new(device);
@@ -35,26 +35,26 @@ NabtoDeviceError heat_pump_coap_handler_init(
     return ec;
 }
 
-void heat_pump_coap_handler_stop(struct heat_pump_coap_handler* handler)
+void thermostat_coap_handler_stop(struct thermostat_coap_handler* handler)
 {
     if (handler->device != NULL) {
         nabto_device_listener_stop(handler->listener);
     }
 }
 
-void heat_pump_coap_handler_deinit(struct heat_pump_coap_handler* handler)
+void thermostat_coap_handler_deinit(struct thermostat_coap_handler* handler)
 {
     if (handler->device != NULL) {
         nabto_device_future_free(handler->future);
         nabto_device_listener_free(handler->listener);
         handler->device = NULL;
-        handler->heatPump = NULL;
+        handler->thermostat = NULL;
         handler->listener = NULL;
         handler->future = NULL;
     }
 }
 
-void start_listen(struct heat_pump_coap_handler* handler)
+void start_listen(struct thermostat_coap_handler* handler)
 {
     nabto_device_listener_new_coap_request(handler->listener, handler->future, &handler->request);
     nabto_device_future_set_callback(handler->future, request_callback, handler);
@@ -63,7 +63,7 @@ void start_listen(struct heat_pump_coap_handler* handler)
 void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
     (void)future;
-    struct heat_pump_coap_handler* handler = userData;
+    struct thermostat_coap_handler* handler = userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
     } else {
@@ -73,7 +73,7 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     }
 }
 
-bool heat_pump_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
+bool thermostat_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
 {
     uint16_t contentFormat;
     NabtoDeviceError ec;

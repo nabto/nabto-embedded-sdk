@@ -1,4 +1,4 @@
-#include "heat_pump.h"
+#include "thermostat.h"
 
 #include <apps/common/device_config.h>
 #include <apps/common/private_key.h>
@@ -47,9 +47,9 @@ const char* nabtoFolder = ".nabto";
 #endif
 
 /**
- * The first time the heatpump is started init is called and writes a
+ * The first time the thermostat is started init is called and writes a
  * configuration file. The configuration file is used in subsequent
- * runs of the heatpump.
+ * runs of the thermostat.
  */
 
 
@@ -85,13 +85,13 @@ static double get_timestamp_seconds();
 
 static bool make_directories(const char* in);
 
-static bool run_heat_pump(const struct args* args);
-static bool run_heat_pump_device(NabtoDevice* device, struct heat_pump* heatPump, const struct args* args);
+static bool run_thermostat(const struct args* args);
+static bool run_thermostat_device(NabtoDevice* device, struct thermostat* thermostat, const struct args* args);
 static void print_missing_device_config_help(const char* filename);
 static void print_help();
 static void print_version();
 
-const char* heatPumpVersion = "1.0.0";
+const char* thermostatVersion = "1.0.0";
 
 int main(int argc, char** argv) {
     bool status = true;
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
             print_version();
         } else {
             make_directories(args.homeDir);
-            status = run_heat_pump(&args);
+            status = run_thermostat(&args);
         }
     }
 
@@ -120,57 +120,57 @@ int main(int argc, char** argv) {
     }
 }
 
-bool run_heat_pump(const struct args* args)
+bool run_thermostat(const struct args* args)
 {
     device = nabto_device_new();
     struct nn_log logger;
     logging_init(device, &logger, args->logLevel);
 
-    struct heat_pump heatPump;
-    heat_pump_init(&heatPump, device, &logger);
+    struct thermostat thermostat;
+    thermostat_init(&thermostat, device, &logger);
 
-    bool status = run_heat_pump_device(device, &heatPump, args);
+    bool status = run_thermostat_device(device, &thermostat, args);
 
     nabto_device_stop(device);
-    heat_pump_deinit(&heatPump);
+    thermostat_deinit(&thermostat);
     nabto_device_free(device);
     return status;
 }
 
-bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const struct args* args)
+bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, const struct args* args)
 {
     char buffer[512];
     memset(buffer, 0, 512);
 
     if (args->homeDir != NULL) {
         snprintf(buffer, 511, "%s/config/device.json", args->homeDir);
-        heatPump->deviceConfigFile = strdup(buffer);
+        thermostat->deviceConfigFile = strdup(buffer);
         snprintf(buffer, 511, "%s/keys/device.key", args->homeDir);
-        heatPump->deviceKeyFile = strdup(buffer);
-        snprintf(buffer, 511, "%s/state/heat_pump_device_iam_state.json", args->homeDir);
-        heatPump->iamStateFile = strdup(buffer);
-        snprintf(buffer, 511, "%s/state/heat_pump_device_state.json", args->homeDir);
-        heatPump->heatPumpStateFile = strdup(buffer);
+        thermostat->deviceKeyFile = strdup(buffer);
+        snprintf(buffer, 511, "%s/state/thermostat_device_iam_state.json", args->homeDir);
+        thermostat->iamStateFile = strdup(buffer);
+        snprintf(buffer, 511, "%s/state/thermostat_device_state.json", args->homeDir);
+        thermostat->thermostatStateFile = strdup(buffer);
     } else {
         const char* tmp = getenv(homeDirEnvVariable);
         if (tmp == NULL) {
             printf("Cannot get the environment variable %s", homeDirEnvVariable);
         } else {
             snprintf(buffer, 511, "%s/%s/edge/config/device.json", tmp, nabtoFolder);
-            heatPump->deviceConfigFile = strdup(buffer);
+            thermostat->deviceConfigFile = strdup(buffer);
             snprintf(buffer, 511, "%s/%s/edge/keys/device.key", tmp, nabtoFolder);
-            heatPump->deviceKeyFile = strdup(buffer);
-            snprintf(buffer, 511, "%s/%s/edge/state/heat_pump_device_iam_state.json", tmp, nabtoFolder);
-            heatPump->iamStateFile = strdup(buffer);
-            snprintf(buffer, 511, "%s/%s/edge/state/heat_pump_device_state.json", tmp, nabtoFolder);
-            heatPump->heatPumpStateFile = strdup(buffer);
+            thermostat->deviceKeyFile = strdup(buffer);
+            snprintf(buffer, 511, "%s/%s/edge/state/thermostat_device_iam_state.json", tmp, nabtoFolder);
+            thermostat->iamStateFile = strdup(buffer);
+            snprintf(buffer, 511, "%s/%s/edge/state/thermostat_device_state.json", tmp, nabtoFolder);
+            thermostat->thermostatStateFile = strdup(buffer);
         }
     }
 
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
-    if (!load_device_config(heatPump->deviceConfigFile, &deviceConfig, heatPump->logger)) {
-        print_missing_device_config_help(heatPump->deviceConfigFile);
+    if (!load_device_config(thermostat->deviceConfigFile, &deviceConfig, thermostat->logger)) {
+        print_missing_device_config_help(thermostat->deviceConfigFile);
         return false;
     }
 
@@ -192,28 +192,29 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
         nabto_device_set_p2p_port(dev, 0);
     }
 
-    if (!load_or_create_private_key(dev, heatPump->deviceKeyFile, heatPump->logger)) {
+    if (!load_or_create_private_key(dev, thermostat->deviceKeyFile, thermostat->logger)) {
         printf("Could not load or create the private key" NEWLINE);
         return false;
     }
 
     if (args->init) {
         printf("Resetting IAM state" NEWLINE);
-        heat_pump_reinit_state(heatPump);
+        thermostat_reinit_state(thermostat);
         return true;
     }
 
-    nabto_device_set_app_name(dev, "HeatPump");
-    nabto_device_set_app_version(dev, heatPumpVersion);
+    nabto_device_set_app_name(dev, "Thermostat");
+    nabto_device_set_app_version(dev, thermostatVersion);
 
     nabto_device_enable_mdns(dev);
+    nabto_device_mdns_add_subtype(dev, "thermostat");
     nabto_device_mdns_add_subtype(dev, "heatpump");
-    nabto_device_mdns_add_txt_item(dev, "fn", "Heat Pump");
+    nabto_device_mdns_add_txt_item(dev, "fn", "Thermostat");
 
 
 
     // run application
-    heat_pump_start(heatPump);
+    thermostat_start(thermostat);
     NabtoDeviceFuture* fut = nabto_device_future_new(dev);
     nabto_device_start(dev, fut);
 
@@ -230,7 +231,7 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
     nabto_device_get_device_fingerprint(dev, &deviceFingerprint);
 
 
-    printf("######## Nabto heat pump device ########" NEWLINE);
+    printf("######## Nabto thermostat device ########" NEWLINE);
     printf("# Product ID:                  %s" NEWLINE, nabto_device_get_product_id(dev));
     printf("# Device ID:                   %s" NEWLINE, nabto_device_get_device_id(dev));
     printf("# Fingerprint:                 %s" NEWLINE, deviceFingerprint);
@@ -262,7 +263,7 @@ bool run_heat_pump_device(NabtoDevice* dev, struct heat_pump* heatPump, const st
 
                     accumulator += elapsed;
                     while (accumulator >= deltaTime) {
-                        heat_pump_update(heatPump, deltaTime);
+                        thermostat_update(thermostat, deltaTime);
                         accumulator -= deltaTime;
                     }
 
@@ -430,7 +431,7 @@ double get_timestamp_seconds() {
     LARGE_INTEGER time;
     LARGE_INTEGER frequency;
 
-    QueryPerformanceFrequency(&frequency); 
+    QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&time);
 
     time.QuadPart *= 1e6;
@@ -455,12 +456,12 @@ void print_missing_device_config_help(const char* filename)
 void print_help() {
     printf(" -h,--help print help" NEWLINE);
     printf(" --version Show version" NEWLINE);
-    printf(" -H,--home-dir Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %%APP_DATA%%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/heat_pump_device_iam_state.json, $homedir/state/heat_pump_device_state.json" NEWLINE);
+    printf(" -H,--home-dir Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %%APP_DATA%%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/thermostat_device_iam_state.json, $homedir/state/thermostat_device_state.json" NEWLINE);
     printf(" --log-level Log level to log (error|info|trace|debug)" NEWLINE);
     printf(" --random-ports Use random ports such that several devices can be running at the same time. The device can still be discovered locally." NEWLINE);
-    printf(" --init Reset pump state to factory defaults and remove all paired users." NEWLINE);
+    printf(" --init Reset state to factory defaults and remove all paired users." NEWLINE);
 }
 
 void print_version() {
-    printf("%s" NEWLINE, heatPumpVersion);
+    printf("%s" NEWLINE, thermostatVersion);
 }

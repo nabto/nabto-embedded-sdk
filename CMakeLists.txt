@@ -241,7 +241,7 @@ if (DEVICE_BUILD_EXAMPLES)
 
   add_subdirectory(platform_integration_example)
   endif()
-  add_subdirectory(examples/heat_pump)
+  add_subdirectory(examples/thermostat)
   add_subdirectory(examples/simple_stream)
   add_subdirectory(examples/futures)
   add_subdirectory(examples/simple_coap)
