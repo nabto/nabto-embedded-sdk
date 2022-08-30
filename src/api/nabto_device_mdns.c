@@ -3,7 +3,6 @@
 #include <api/nabto_device_error.h>
 
 #include <platform/np_error_code.h>
-#include "nabto_device_config.h"
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_enable_mdns(NabtoDevice* device)
 {

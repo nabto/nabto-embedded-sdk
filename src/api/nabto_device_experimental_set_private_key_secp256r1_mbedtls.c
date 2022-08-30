@@ -1,7 +1,8 @@
+#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device_experimental.h>
 #include <platform/np_logging.h>
 
-#if defined(NABTO_USE_MBEDTLS)
+#if defined(NABTO_DEVICE_MBEDTLS)
 
 
 #define LOG NABTO_LOG_MODULE_API

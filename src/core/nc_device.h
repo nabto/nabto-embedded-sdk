@@ -1,6 +1,7 @@
 #ifndef NC_DEVICE_H
 #define NC_DEVICE_H
 
+#include <nabto/nabto_device_config.h>
 #include <core/nc_device_defines.h>
 #include <core/nc_attacher.h>
 #include <core/nc_stream_manager.h>
@@ -97,7 +98,7 @@ struct nc_device_context {
     struct nn_llist eventsListeners;
     struct nn_llist deviceEvents;
     struct np_completion_event socketBoundCompletionEvent;
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     struct nc_spake2_module spake2;
 #endif
     // logger which can be provided for some modules.

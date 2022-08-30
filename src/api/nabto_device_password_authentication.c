@@ -1,3 +1,4 @@
+#include <nabto/nabto_device_config.h>
 #include "nabto_device_password_authentication.h"
 #include <nabto/nabto_device_experimental.h>
 #include <api/nabto_device_threads.h>
@@ -10,7 +11,7 @@
 #include <platform/np_allocator.h>
 #include <nn/string.h>
 
-#if defined(NABTO_DEVICE_ENABLE_PASSWORD_AUTHENTICATION)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 
 /**
  * Handler which is registered in the core to handle new password requests.

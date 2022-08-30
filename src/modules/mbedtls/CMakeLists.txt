@@ -19,15 +19,13 @@ set(mbedtls_random_src
   )
 
 
-if (NOT NABTO_DEVICE_DTLS_CLIENT_ONLY)
-  set(dtls_srv_src
-    ${dtls_common_src}
-    nm_mbedtls_srv.c
-  )
+set(dtls_srv_src
+  ${dtls_common_src}
+  nm_mbedtls_srv.c
+)
 
-  add_library( nm_mbedtls_srv STATIC ${dtls_srv_src})
-  target_link_libraries(nm_mbedtls_srv 3rdparty_mbedtls nn np_platform)
-endif()
+add_library( nm_mbedtls_srv STATIC ${dtls_srv_src})
+target_link_libraries(nm_mbedtls_srv 3rdparty_mbedtls nn np_platform)
 
 add_library( nm_mbedtls_cli STATIC ${dtls_cli_src})
 add_library( nm_mbedtls_random STATIC ${mbedtls_random_src})

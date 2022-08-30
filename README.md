@@ -26,13 +26,13 @@ If the build was successfull but unit tests was not build, an example applicatio
 
 ### WolfSSL
 
-By default, the Embedded SDK uses the MbedTLS library for DTLS operations. In addition, the Embedded SDK also comes with a module using the WolfSSL library. Controlling which module is used is done with the CMake options `NABTO_USE_MBEDTLS` and `NABTO_USE_WOLFSSL`:
+By default, the Embedded SDK uses the MbedTLS library for DTLS operations. In addition, the Embedded SDK also comes with a module using the WolfSSL library. Switching to the Wolfssl module is done with the CMake option `NABTO_DEVICE_WOLFSSL`:
 
 ```
-cmake -DNABTO_USE_MBEDTLS=0 -DNABTO_USE_WOLFSSL=1 -DCMAKE_INSTALL_PREFIX=../_install ..
+cmake -DNABTO_DEVICE_WOLFSSL=ON -DCMAKE_INSTALL_PREFIX=../_install ..
 ```
 
-If not using CMake, compiler definitions of the same names can be used. If both libraries are enabled, MbedTLS will be used.
+If not using CMake, compiler definitions of the same names can be used through `includes/nabto/nabto_device_config.h`.
 
 MbedTLS source files are included as a 3rdparty submodule on this repo. However, using the WolfSSL library requires the library to be installed on the system.
 

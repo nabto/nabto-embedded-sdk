@@ -667,5 +667,4 @@ int wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
         return (int)maxCp;
     }
 }
-
 #endif
