@@ -84,6 +84,7 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
 
         size_t olen;
         uint8_t buffer[256];
+        olen = sizeof(buffer);
         if (req->pl->spake2.calculate_key(NULL, req, password, buffer, &olen,
                                       connection->spake2Key) == NABTO_EC_OK) {
             connection->hasSpake2Key = true;
