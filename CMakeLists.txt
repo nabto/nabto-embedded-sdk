@@ -237,6 +237,7 @@ if (DEVICE_BUILD_EXAMPLES)
   add_subdirectory(examples/simple_push)
   add_subdirectory(examples/simple_service_invocation)
   add_subdirectory(examples/simple_speed_test)
+  add_subdirectory(examples/simple_password_authentication)
   add_subdirectory(examples/custom_allocator)
 
 #  add_subdirectory(platform_integration_guide)
