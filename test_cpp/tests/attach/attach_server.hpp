@@ -134,10 +134,11 @@ class AttachCoapServer {
             return;
         }
         stopped_ = true;
-        std::future<void> future = promise_.get_future();
-        io_.post([this]() {
+        std::promise<void> promise;
+        std::future<void> future = promise.get_future();
+        io_.post([this, &promise]() {
             dtlsServer_.stop();
-            promise_.set_value();
+            promise.set_value();
         });
         future.get();
     }
@@ -167,7 +168,6 @@ class AttachCoapServer {
     boost::asio::io_context& io_;
     DtlsServer dtlsServer_;
     uint16_t port_ = 0;
-    std::promise<void> promise_;
     bool stopped_ = false;
     std::string privateKey_ = privateKey;
     std::vector<std::string> certificateChain_ = {localhostMultiNabtoNetCert,
@@ -481,10 +481,16 @@ class AttachServer : public AttachCoapServer,
 
     void niceClose()
     {
-        dtlsServer_.asyncNiceClose([](const lib::error_code& ec) {
-            (void)ec;
-            // all current connections is closed nicely.
+        std::promise<void> promise;
+        std::future<void> future = promise.get_future();
+        io_.post([this, &promise]() {
+            dtlsServer_.asyncNiceClose([&promise](const lib::error_code& ec) {
+                promise.set_value();
+                (void)ec;
+                // all current connections is closed nicely.
+            });
         });
+        future.get();
     }
 
     uint64_t keepAliveInterval_ = 30000;
