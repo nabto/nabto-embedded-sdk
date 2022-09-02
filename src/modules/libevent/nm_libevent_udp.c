@@ -97,6 +97,7 @@ np_error_code udp_create(struct np_udp* obj, struct np_udp_socket** sock)
     struct nm_libevent_context* ctx = obj->data;
 
     s->impl = ctx;
+    s->sock = EVUTIL_INVALID_SOCKET;
 
     *sock = s;
 
@@ -143,14 +144,19 @@ void udp_destroy(struct np_udp_socket* sock)
         return;
     }
 
-    udp_abort(sock);
+    if (sock->sock != EVUTIL_INVALID_SOCKET) {
+        udp_abort(sock);
+    }
 
     if (sock->event) {
         event_del_block(sock->event);
         event_free(sock->event);
         sock->event = NULL;
     }
-    evutil_closesocket(sock->sock);
+    if (sock->sock != EVUTIL_INVALID_SOCKET) {
+        evutil_closesocket(sock->sock);
+        sock->sock = EVUTIL_INVALID_SOCKET;
+    }
     np_free(sock);
 }
 
@@ -172,6 +178,7 @@ np_error_code udp_async_bind_port_ec(struct np_udp_socket* sock, uint16_t port)
     ec = udp_bind_port(sock, port);
     if (ec != NABTO_EC_OK) {
         evutil_closesocket(sock->sock);
+        sock->sock = EVUTIL_INVALID_SOCKET;
         return ec;
     }
     nm_libevent_udp_add_to_libevent(sock);
@@ -405,7 +412,7 @@ np_error_code udp_create_socket_any(struct np_udp_socket* s)
     if (sock == NM_INVALID_SOCKET) {
         sock = nm_libevent_udp_create_nonblocking_socket(AF_INET, SOCK_DGRAM);
         type = NABTO_IPV4;
-        if (s->sock == NM_INVALID_SOCKET) {
+        if (sock == NM_INVALID_SOCKET) {
             int e = EVUTIL_SOCKET_ERROR();
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, evutil_socket_error_to_string(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
@@ -420,7 +427,7 @@ np_error_code udp_create_socket_any(struct np_udp_socket* s)
             int e = EVUTIL_SOCKET_ERROR();
             NABTO_LOG_ERROR(LOG,"Unable to set option: (%i) '%s'.", e, evutil_socket_error_to_string(e));
 
-            evutil_closesocket(s->sock);
+            evutil_closesocket(sock);
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         }
     }
