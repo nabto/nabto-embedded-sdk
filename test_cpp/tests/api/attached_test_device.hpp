@@ -5,6 +5,8 @@
 
 #include <future>
 
+#include "../util/helper.hpp"
+
 namespace nabto {
 namespace test {
 

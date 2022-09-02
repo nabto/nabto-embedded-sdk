@@ -10,6 +10,7 @@
 #include <boost/asio/steady_timer.hpp>
 
 #include <set>
+#include <map>
 
 namespace nabto {
 namespace coap {
