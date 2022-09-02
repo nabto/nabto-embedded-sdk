@@ -19,15 +19,6 @@
 
 namespace std {
 
-template <> struct hash<boost::asio::ip::address>
-{
-    size_t operator()(const boost::asio::ip::address & addr) const
-    {
-        std::string s = addr.to_string();
-        std::hash<std::string> hash_fn;
-        return hash_fn(s);
-    }
-};
 
 template <> struct hash<boost::asio::ip::udp::endpoint>
 {
