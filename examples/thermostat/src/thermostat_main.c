@@ -14,19 +14,7 @@
 #include <stdio.h>
 
 #if defined(_WIN32)
-#include <direct.h>
-#endif
-
-// Include windows.h for QPC on windows, time.h for clock_gettime on osx/linux
-#if defined(_WIN32)
-// clang will give a lot of warnings for windows.h so we disable warnings for it
-#pragma warning(push, 0)
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#pragma warning(pop)
-#else
-#include <time.h>
+#include <direct.h>´
 #endif
 
 #if defined(HAVE_UNISTD_H)
@@ -81,7 +69,6 @@ bool parse_args(int argc, char** argv, struct args* args);
 
 static void signal_handler(int s);
 static bool make_directory(const char* directory);
-static double get_timestamp_seconds();
 
 static bool make_directories(const char* in);
 
@@ -249,28 +236,14 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, cons
             nabto_device_device_events_init_listener(device, listener);
             NabtoDeviceEvent event;
 
-            int maxUpdatesPerSecond = 30;
-            double deltaTime = 1.0 / maxUpdatesPerSecond;
-            double currentTime = get_timestamp_seconds();
-            double accumulator = 0.0;
+            nabto_device_duration_t tickInterval = 30;
 
             while(true) {
                 nabto_device_listener_device_event(listener, future, &event);
-                while (true) {
-                    double newTime = get_timestamp_seconds();
-                    double elapsed = newTime - currentTime;
-                    currentTime = newTime;
+                while(true) {
+                    thermostat_update(thermostat, (double)(tickInterval) / 1000.0);
 
-                    accumulator += elapsed;
-                    while (accumulator >= deltaTime) {
-                        thermostat_update(thermostat, deltaTime);
-                        accumulator -= deltaTime;
-                    }
-
-                    // sleep until next update is needed or the future has been resolved
-                    double waitTime = deltaTime - elapsed;
-                    waitTime = waitTime > 0 ? waitTime : 0;
-                    if (nabto_device_future_timed_wait(future, waitTime) != NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
+                    if (nabto_device_future_timed_wait(future, tickInterval) != NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
                         break;
                     }
                 }
@@ -328,7 +301,7 @@ bool parse_args(int argc, char** argv, struct args* args)
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
         { OPTION_VERSION, GOPT_NOARG, x2s, x2l },
-        { OPTION_HOME_DIR, GOPT_ARG, x3s, x3l },
+        { OPTION_HOME_DIR,GOPT_ARG, x3s, x3l },
         { OPTION_LOG_LEVEL, GOPT_ARG, x4s, x4l },
         { OPTION_RANDOM_PORTS, GOPT_NOARG, x5s, x5l },
         { OPTION_INIT, GOPT_NOARG, x6s, x6l },
@@ -424,24 +397,6 @@ bool make_directories(const char* in)
         make_directory(buffer);
     }
     return true;
-}
-
-double get_timestamp_seconds() {
-#if defined(_WIN32)
-    LARGE_INTEGER time;
-    LARGE_INTEGER frequency;
-
-    QueryPerformanceFrequency(&frequency);
-    QueryPerformanceCounter(&time);
-
-    time.QuadPart *= 1e6;
-    time.QuadPart /= frequency.QuadPart;
-    return (double)(time.QuadPart) / 1e6;
-#else
-    struct timespec time;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &time);
-    return (double)(time.tv_sec * 1e9 + time.tv_nsec) / 1e9;
-#endif
 }
 
 void print_missing_device_config_help(const char* filename)
