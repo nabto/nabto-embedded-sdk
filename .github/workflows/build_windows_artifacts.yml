@@ -1,4 +1,4 @@
-name: Windows Artifacts
+name: Build Release Artifacts
 
 on:
   push:
@@ -7,15 +7,29 @@ on:
 
 jobs:
   build-and-test:
+    strategy:
+      matrix:
+        os: [windows-2022, ubuntu-20.04, macos-12]
+        include:
+          - os: windows-2022
+            exe_postfix: .exe
+            friendly_name: windows
+          - os: ubuntu-20.04
+            exe_postfix:
+            friendly_name: linux
+          - os: macos-12
+            exe_postfix:
+            friendly_name: macos
     name: Build
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
           fetch-depth: 0
       - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
 
       - name: Build
         run: cmake --build build-dir --parallel
@@ -23,7 +37,17 @@ jobs:
       - name: Install
         run: cmake --build build-dir --target install
 
-      - name: Upload tcp_tunnel_device artifacts
+      - name: Upload artifacts to github actions workspace artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifacts_${{matrix.os}}
+          path: |
+            ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }}
+            ${{ github.workspace }}/artifacts/bin/thermostat_device${{ matrix.exe_postfix }}
+          if-no-files-found: error
+
+      - name: Upload tcp_tunnel_device to github release artifacts
         if: ${{ github.event_name == 'release' }}
 
         uses: actions/upload-release-asset@v1
@@ -31,11 +55,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: artifacts/bin/tcp_tunnel_device.exe
-          asset_name: tcp_tunnel_device_windows.exe
+          asset_path: artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }}
+          asset_name: tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
           asset_content_type: application/octet-stream
 
-      - name: Upload thermostat_device artifacts
+      - name: Upload thermostat_device to github release artifacts
         if: ${{ github.event_name == 'release' }}
 
         uses: actions/upload-release-asset@v1
@@ -43,6 +67,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: artifacts/bin/thermostat_device.exe
-          asset_name: thermostat_device_windows.exe
+          asset_path: artifacts/bin/thermostat_device${{ matrix.exe_postfix }}
+          asset_name: thermostat_device_${{ matrix.friendly_name }}${{ matrix.exe_postfix }}
           asset_content_type: application/octet-stream

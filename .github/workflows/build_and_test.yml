@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    name: Build
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        cli-only: [0, 1]
+        os: [windows-2022, ubuntu-22.04, macos-12]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Configure cmake
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
+
+      - name: Build
+        run: cmake --build build-dir --parallel
+
+      - name: Install
+        run: cmake --build build-dir --target install
+
+      - if: matrix.os == 'windows-2022'
+        name: Test run
+        run: |
+          netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\artifacts\bin\embedded_unit_test.exe" enable=yes
+          ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
+
+      - if: matrix.os != 'windows-2022'
+        name: Test run
+        run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifacts_${{matrix.os}}_cli_only_${{ matrix.cli-only }}
+          path: ${{ github.workspace }}/artifacts
+          if-no-files-found: warn
