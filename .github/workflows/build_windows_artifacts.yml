@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    name: Build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Configure cmake
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
+
+      - name: Build
+        run: cmake --build build-dir --parallel
+
+      - name: Install
+        run: cmake --build build-dir --target install
+
+      - name: Upload tcp_tunnel_device artifacts
+        if: github.event_name == 'release' {{ success() }}
+
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: artifacts/bin/tcp_tunnel_device.exe
+          asset_name: tcp_tunnel_device_windows.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload thermostat_device artifacts
+        if: github.event_name == 'release' {{ success() }}
+
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: artifacts/bin/thermostat_device.exe
+          asset_name: thermostat_device_windows.exe
+          asset_content_type: application/octet-stream
