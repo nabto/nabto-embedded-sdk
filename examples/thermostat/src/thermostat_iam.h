@@ -13,6 +13,6 @@ void thermostat_iam_create_default_state(NabtoDevice* device, const char* filena
 
 bool thermostat_iam_load_state(struct thermostat* thermostat);
 
-const char* thermostat_iam_create_pairing_string(struct thermostat* thermostat, const char* productId, const char* deviceId);
+char* thermostat_iam_create_pairing_string(struct thermostat* thermostat, const char* productId, const char* deviceId);
 
 #endif

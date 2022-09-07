@@ -369,6 +369,8 @@ void do_close(struct nc_attach_context* ctx)
             ctx->pl->dtlsC.async_close(ctx->dtls);
             break;
         case NC_ATTACHER_STATE_DNS:
+            NABTO_LOG_INFO(LOG, "Resolving DNS must finish before close can complete. This can take a while");
+
             // dns resolvers can currently not be stopped, for now we just wait for it to finish.
         case NC_ATTACHER_STATE_REDIRECT:
             // When redirecting, we are waiting for DTLS to close before moving to DNS state.

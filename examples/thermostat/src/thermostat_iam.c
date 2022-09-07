@@ -182,7 +182,7 @@ bool load_iam_config(struct thermostat* thermostat)
 }
 
 
-const char* thermostat_iam_create_pairing_string(struct thermostat* thermostat, const char* productId, const char* deviceId)
+char* thermostat_iam_create_pairing_string(struct thermostat* thermostat, const char* productId, const char* deviceId)
 {
     struct nm_iam_state* state = nm_iam_dump_state(&thermostat->iam);
     if (state == NULL) {

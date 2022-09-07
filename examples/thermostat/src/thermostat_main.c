@@ -52,6 +52,7 @@ enum {
 
 
 
+static int signalCount = 0;
 NabtoDevice* device = NULL;
 
 struct args {
@@ -140,7 +141,9 @@ bool run_thermostat(const struct args* args)
 
     bool status = run_thermostat_device(device, &thermostat, args);
 
-    nabto_device_stop(device);
+    if (signalCount < 2) {
+       nabto_device_stop(device);
+    }
     thermostat_deinit(&thermostat);
     nabto_device_free(device);
     return status;
@@ -210,7 +213,7 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, cons
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint(dev, &deviceFingerprint);
 
-    const char* pairingString = thermostat_iam_create_pairing_string(
+    char* pairingString = thermostat_iam_create_pairing_string(
         thermostat, nabto_device_get_product_id(dev),
         nabto_device_get_device_id(dev));
     printf("######## Nabto thermostat device ########" NEWLINE);
@@ -225,6 +228,7 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, cons
     printf("# Nabto Version:               %s" NEWLINE, nabto_device_version());
     printf("######## " NEWLINE);
 
+    free(pairingString);
     nabto_device_string_free(deviceFingerprint);
     {
         // Wait for the user to press Ctrl-C
@@ -341,13 +345,27 @@ bool parse_args(int argc, char** argv, struct args* args)
     return true;
 }
 
+void close_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* data)
+{
+    nabto_device_future_free(future);
+}
+
 void signal_handler(int s) {
     // the \r is supposed to fix "^CCaught sig...." it will maybe not work on some platforms.
-    printf("\rCaught signal %d, stopping the device" NEWLINE,s);
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    nabto_device_close(device, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
+    printf("\rCaught signal %d" NEWLINE,s);
+    if (signalCount == 0) {
+        signalCount++;
+        printf("first signal. Closing the device" NEWLINE);
+        NabtoDeviceFuture* fut = nabto_device_future_new(device);
+        nabto_device_close(device, fut);
+        nabto_device_future_set_callback(fut, close_callback, NULL);
+    } else if (signalCount == 1) {
+        signalCount++;
+        printf("second signal. stopping the device" NEWLINE);
+        nabto_device_stop(device);
+    } else {
+        printf("Signal ignored. Operation in progress" NEWLINE);
+    }
 }
 
 bool make_directory(const char* directory)
