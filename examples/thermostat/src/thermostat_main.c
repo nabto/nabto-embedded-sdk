@@ -63,17 +63,25 @@ struct args {
     bool init;
 };
 
+// handling command line arguments
 static void args_init(struct args* args);
 static void args_deinit(struct args* args);
 bool parse_args(int argc, char** argv, struct args* args);
 
+// signal handler to close device cleanly on ^C
 static void signal_handler(int s);
-static bool make_directory(const char* directory);
 
+// creates directories for persistant state
+static bool make_directory(const char* directory);
 static bool make_directories(const char* in);
 
+// Starts the thermostat
 static bool run_thermostat(const struct args* args);
+
+// Runs the nabto device
 static bool run_thermostat_device(NabtoDevice* device, struct thermostat* thermostat, const struct args* args);
+
+// Functions to print info to stdout
 static void print_missing_device_config_help(const char* filename);
 static void print_help();
 static void print_version();
@@ -113,8 +121,22 @@ bool run_thermostat(const struct args* args)
     struct nn_log logger;
     logging_init(device, &logger, args->logLevel);
 
+    char homeBuffer[128];
+    memset(homeBuffer, 0, 128);
+
+    char* homeDir = args->homeDir;
+    if (homeDir == NULL) {
+        const char* tmp = getenv(homeDirEnvVariable);
+        if (tmp == NULL) {
+            printf("Cannot get the environment variable %s", homeDirEnvVariable);
+            return false;
+        }
+        snprintf(homeBuffer, 127, "%s/%s/edge", tmp, nabtoFolder);
+        homeDir = homeBuffer;
+    }
+
     struct thermostat thermostat;
-    thermostat_init(&thermostat, device, &logger);
+    thermostat_init(&thermostat, device, homeDir, &logger);
 
     bool status = run_thermostat_device(device, &thermostat, args);
 
@@ -126,34 +148,6 @@ bool run_thermostat(const struct args* args)
 
 bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, const struct args* args)
 {
-    char buffer[512];
-    memset(buffer, 0, 512);
-
-    if (args->homeDir != NULL) {
-        snprintf(buffer, 511, "%s/config/device.json", args->homeDir);
-        thermostat->deviceConfigFile = strdup(buffer);
-        snprintf(buffer, 511, "%s/keys/device.key", args->homeDir);
-        thermostat->deviceKeyFile = strdup(buffer);
-        snprintf(buffer, 511, "%s/state/thermostat_device_iam_state.json", args->homeDir);
-        thermostat->iamStateFile = strdup(buffer);
-        snprintf(buffer, 511, "%s/state/thermostat_device_state.json", args->homeDir);
-        thermostat->thermostatStateFile = strdup(buffer);
-    } else {
-        const char* tmp = getenv(homeDirEnvVariable);
-        if (tmp == NULL) {
-            printf("Cannot get the environment variable %s", homeDirEnvVariable);
-        } else {
-            snprintf(buffer, 511, "%s/%s/edge/config/device.json", tmp, nabtoFolder);
-            thermostat->deviceConfigFile = strdup(buffer);
-            snprintf(buffer, 511, "%s/%s/edge/keys/device.key", tmp, nabtoFolder);
-            thermostat->deviceKeyFile = strdup(buffer);
-            snprintf(buffer, 511, "%s/%s/edge/state/thermostat_device_iam_state.json", tmp, nabtoFolder);
-            thermostat->iamStateFile = strdup(buffer);
-            snprintf(buffer, 511, "%s/%s/edge/state/thermostat_device_state.json", tmp, nabtoFolder);
-            thermostat->thermostatStateFile = strdup(buffer);
-        }
-    }
-
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
     if (!load_device_config(thermostat->deviceConfigFile, &deviceConfig, thermostat->logger)) {
@@ -201,7 +195,6 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, cons
 
 
     // run application
-    thermostat_start(thermostat);
     NabtoDeviceFuture* fut = nabto_device_future_new(dev);
     nabto_device_start(dev, fut);
 
@@ -362,40 +355,32 @@ bool make_directory(const char* directory)
 
 bool make_directories(const char* in)
 {
-
     char buffer[512];
     memset(buffer, 0, 512);
-    if (in == NULL) {
-        char* homeEnv = getenv(homeDirEnvVariable);
-        if (homeEnv == NULL) {
+    char homeBuffer[128];
+    memset(homeBuffer, 0, 128);
+
+    const char* homeDir = in;
+    if (homeDir == NULL) {
+        const char* tmp = getenv(homeDirEnvVariable);
+        if (tmp == NULL) {
+            printf("Cannot get the environment variable %s", homeDirEnvVariable);
             return false;
         }
-        snprintf(buffer, 511, "%s/%s", homeEnv, nabtoFolder);
-        make_directory(buffer);
-
-        snprintf(buffer, 511, "%s/%s/edge", homeEnv, nabtoFolder);
-        make_directory(buffer);
-
-        snprintf(buffer, 511, "%s/%s/edge/config", homeEnv, nabtoFolder);
-        make_directory(buffer);
-
-        snprintf(buffer, 511, "%s/%s/edge/state", homeEnv, nabtoFolder);
-        make_directory(buffer);
-
-        snprintf(buffer, 511, "%s/%s/edge/keys", homeEnv, nabtoFolder);
-        make_directory(buffer);
-    } else {
-        make_directory(in);
-
-        snprintf(buffer, 511, "%s/config", in);
-        make_directory(buffer);
-
-        snprintf(buffer, 511, "%s/state", in);
-        make_directory(buffer);
-
-        snprintf(buffer, 511, "%s/keys", in);
-        make_directory(buffer);
+        snprintf(homeBuffer, 127, "%s/%s/edge", tmp, nabtoFolder);
+        homeDir = homeBuffer;
     }
+
+    make_directory(homeDir);
+
+    snprintf(buffer, 511, "%s/config", homeDir);
+    make_directory(buffer);
+
+    snprintf(buffer, 511, "%s/state", homeDir);
+    make_directory(buffer);
+
+    snprintf(buffer, 511, "%s/keys", homeDir);
+    make_directory(buffer);
     return true;
 }
 
