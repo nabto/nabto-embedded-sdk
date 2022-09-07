@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
+cmake_policy(SET CMP0091 NEW)
 project(nabto-embedded-sdk)
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
@@ -32,7 +33,12 @@ option(DEVICE_BUILD_TESTS "build device tests" OFF)
 
 option(DEVICE_BUILD_APPS "build applications" ON)
 
+option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
+
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
+if (DEVICE_STATIC_LINK_VCRUNTIME)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_definitions("-Wall")

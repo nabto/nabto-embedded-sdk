@@ -1,4 +1,4 @@
-name: CI
+name: Build Release Artifacts
 
 on:
   push:
@@ -7,12 +7,21 @@ on:
 
 jobs:
   build-and-test:
-    name: Build
-    runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        cli-only: [0, 1]
-        os: [windows-2022, ubuntu-22.04, macos-12]
+        os: [windows-2022, ubuntu-20.04, macos-12]
+        include:
+          - os: windows-2022
+            exe_postfix: .exe
+            friendly_name: windows
+          - os: ubuntu-20.04
+            exe_postfix:
+            friendly_name: linux
+          - os: macos-12
+            exe_postfix:
+            friendly_name: macos
+    name: Build
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v2
@@ -20,7 +29,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
 
       - name: Build
         run: cmake --build build-dir --parallel
@@ -28,72 +37,36 @@ jobs:
       - name: Install
         run: cmake --build build-dir --target install
 
-      - if: matrix.os == 'windows-2022'
-        name: Test run
-        run: |
-          netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\artifacts\bin\embedded_unit_test.exe" enable=yes
-          ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
-
-      - if: matrix.os != 'windows-2022'
-        name: Test run
-        run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
-
-      - name: Upload artifacts
+      - name: Upload artifacts to github actions workspace artifacts
         if: ${{ success() }}
         uses: actions/upload-artifact@v2
         with:
           name: artifacts_${{matrix.os}}
-          path: ${{ github.workspace }}/artifacts
-          if-no-files-found: warn
+          path: |
+            ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }}
+            ${{ github.workspace }}/artifacts/bin/thermostat_device${{ matrix.exe_postfix }}
+          if-no-files-found: error
 
+      - name: Upload tcp_tunnel_device to github release artifacts
+        if: ${{ github.event_name == 'release' }}
 
-  release-assets:
-    name: Release Assets
-    needs: build-and-test
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        binary: [tcp_tunnel_device]
-    if: github.event_name == 'release' && success()
-    steps:
-      - uses: actions/download-artifact@v2
-        with:
-          name: artifacts_ubuntu-22.04
-          path: linux
-      - uses: actions/download-artifact@v2
-        with:
-          name: artifacts_windows-2022
-          path: windows
-      - uses: actions/download-artifact@v2
-        with:
-          name: artifacts_macos-12
-          path: macos
-      - name: List assets
-        run: ls -R
-      - name: Upload linux asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: linux/bin/${{ matrix.binary}}
-          asset_name: ${{ matrix.binary}}_linux
+          asset_path: artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }}
+          asset_name: tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
           asset_content_type: application/octet-stream
-      - name: Upload windows asset
+
+      - name: Upload thermostat_device to github release artifacts
+        if: ${{ github.event_name == 'release' }}
+
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: windows/bin/${{ matrix.binary}}.exe
-          asset_name: ${{ matrix.binary}}_windows.exe
-          asset_content_type: application/octet-stream
-      - name: Upload mac asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: macos/bin/${{ matrix.binary}}
-          asset_name: ${{ matrix.binary}}_macos
+          asset_path: artifacts/bin/thermostat_device${{ matrix.exe_postfix }}
+          asset_name: thermostat_device_${{ matrix.friendly_name }}${{ matrix.exe_postfix }}
           asset_content_type: application/octet-stream
