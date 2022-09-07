@@ -1,5 +1,4 @@
 #include "thermostat_coap_handler.h"
-#include "thermostat_state.h"
 #include "thermostat.h"
 
 #include <cbor.h>

@@ -1,7 +1,7 @@
 #include "thermostat.h"
 
 #include "thermostat_coap_handler.h"
-#include "thermostat_state.h"
+#include "thermostat_iam.h"
 
 #include <apps/common/logging.h>
 #include <apps/common/json_config.h>
@@ -22,24 +22,28 @@
 
 static const char* LOGM = "thermostat";
 
-static bool load_iam_policy(struct thermostat* thermostat);
-static bool load_iam_state(struct thermostat* thermostat);
-
-static void thermostat_state_changed(struct nm_iam* iam, void* userData);
 static NabtoDeviceError thermostat_init_coap_handlers(struct thermostat* thermostat);
 
-void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct nn_log* logger)
+static void save_thermostat_state(const char* filename, const struct thermostat_state* state);
+
+static bool load_thermostat_state(const char* filename, struct thermostat_state* state, struct nn_log* logger);
+static void create_default_thermostat_state_file(const char* filename);
+static void initFilePaths(struct thermostat* thermostat, const char* homeDir);
+
+// Initialize the thermostat
+void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, const char* homeDir, struct nn_log* logger)
 {
     memset(thermostat, 0, sizeof(struct thermostat));
     thermostat->device = device;
     thermostat->logger = logger;
-
-    nm_iam_init(&thermostat->iam, thermostat->device, thermostat->logger);
-    load_iam_policy(thermostat);
-    nm_iam_set_state_changed_callback(&thermostat->iam, thermostat_state_changed, thermostat);
+    initFilePaths(thermostat, homeDir);
+    thermostat_iam_init(thermostat);
     thermostat_init_coap_handlers(thermostat);
+    load_thermostat_state(thermostat->thermostatStateFile, &thermostat->state, thermostat->logger);
+    thermostat_iam_load_state(thermostat);
 }
 
+// Deinitialize the thermostat
 void thermostat_deinit(struct thermostat* thermostat)
 {
     free(thermostat->thermostatStateFile);
@@ -55,16 +59,10 @@ void thermostat_deinit(struct thermostat* thermostat)
     thermostat_coap_handler_deinit(&thermostat->coapSetModeLegacy);
     thermostat_coap_handler_deinit(&thermostat->coapSetPowerLegacy);
     thermostat_coap_handler_deinit(&thermostat->coapSetTargetLegacy);
-
-    nm_iam_deinit(&thermostat->iam);
+    thermostat_iam_deinit(thermostat);
 }
 
-void thermostat_start(struct thermostat* thermostat) {
-    // these needs to be called after init since the filenames are not ready yet in init.
-    load_thermostat_state(thermostat->thermostatStateFile, &thermostat->state, thermostat->logger);
-    load_iam_state(thermostat);
-}
-
+// stop the thermostat
 void thermostat_stop(struct thermostat* thermostat)
 {
     nm_iam_stop(&thermostat->iam);
@@ -79,87 +77,6 @@ void thermostat_stop(struct thermostat* thermostat)
     thermostat_coap_handler_stop(&thermostat->coapSetTargetLegacy);
 }
 
-static double smoothstep(double start, double end, double x)
-{
-    if (x < start) {
-        return 0;
-    }
-
-    if (x >= end) {
-        return 1;
-    }
-
-    x = (x - start) / (end - start);
-    return x * x * (3 - 2 * x);
-}
-
-void thermostat_update(struct thermostat* thermostat, double deltaTime) {
-    if (thermostat->state.power) {
-        // Move temperature smoothly towards target
-        // When temperature is within smoothingDistance units of target
-        // the temperature will start to move more slowly the closer it gets to target
-        double speed = 5 * deltaTime;
-        double smoothingDistance = 20.0;
-
-        double start = thermostat->state.temperature;
-        double end = thermostat->state.target;
-        double signedDistance = end - start;
-        double distance = (signedDistance > 0) ? signedDistance : -signedDistance;
-        double sign = signedDistance / distance;
-
-        thermostat->state.temperature += sign * speed * smoothstep(0, smoothingDistance, distance);
-    }
-}
-
-void thermostat_state_changed(struct nm_iam* iam, void* userData)
-{
-    (void)iam;
-    struct thermostat* thermostat = userData;
-    struct nm_iam_state* state = nm_iam_dump_state(&thermostat->iam);
-    if (state == NULL) {
-        return;
-    } else {
-        char* str = NULL;
-        if (!nm_iam_serializer_state_dump_json(state, &str)) {
-        } else if (!string_file_save(thermostat->iamStateFile, str)) {
-        }
-        nm_iam_serializer_string_free(str);
-        nm_iam_state_free(state);
-    }
-}
-
-bool load_iam_state(struct thermostat* thermostat)
-{
-    if (!string_file_exists(thermostat->iamStateFile)) {
-        create_default_iam_state(thermostat->device, thermostat->iamStateFile, thermostat->logger);
-    }
-
-    bool status = true;
-    char* str = NULL;
-    if (!string_file_load(thermostat->iamStateFile, &str)) {
-        NN_LOG_INFO(thermostat->logger, LOGM, "IAM state file (%s) does not exist, creating new default state. ", thermostat->iamStateFile);
-        create_default_iam_state(thermostat->device, thermostat->iamStateFile, thermostat->logger);
-        if (!string_file_load(thermostat->iamStateFile, &str)) {
-            NN_LOG_ERROR(thermostat->logger, LOGM, "Load IAM state file (%s) failed. Ensure the file is available for read/write. ", thermostat->iamStateFile);
-            return false;
-        }
-    }
-    struct nm_iam_state* is = nm_iam_state_new();
-    nm_iam_serializer_state_load_json(is, str, thermostat->logger);
-    if (!nm_iam_load_state(&thermostat->iam, is)) {
-        NN_LOG_ERROR(thermostat->logger, LOGM, "Failed to load state into IAM module");
-        nm_iam_state_free(is);
-        is = NULL;
-        status = false;
-    }
-    free(str);
-    return status;
-}
-
-void thermostat_save_state(struct thermostat* thermostat)
-{
-    save_thermostat_state(thermostat->thermostatStateFile, &thermostat->state);
-}
 
 NabtoDeviceError thermostat_init_coap_handlers(struct thermostat* thermostat)
 {
@@ -201,21 +118,19 @@ NabtoDeviceError thermostat_init_coap_handlers(struct thermostat* thermostat)
     return NABTO_DEVICE_EC_OK;
 }
 
-void thermostat_set_mode(struct thermostat* thermostat, enum thermostat_mode mode)
+void initFilePaths(struct thermostat* thermostat, const char* homeDir)
 {
-    thermostat->state.mode = mode;
-    thermostat_save_state(thermostat);
-}
-void thermostat_set_target(struct thermostat* thermostat, double target)
-{
-    thermostat->state.target = target;
-    thermostat_save_state(thermostat);
-}
+    char buffer[512];
+    memset(buffer, 0, 512);
 
-void thermostat_set_power(struct thermostat* thermostat, bool power)
-{
-    thermostat->state.power = power;
-    thermostat_save_state(thermostat);
+    snprintf(buffer, 511, "%s/config/device.json", homeDir);
+    thermostat->deviceConfigFile = strdup(buffer);
+    snprintf(buffer, 511, "%s/keys/device.key", homeDir);
+    thermostat->deviceKeyFile = strdup(buffer);
+    snprintf(buffer, 511, "%s/state/thermostat_device_iam_state.json", homeDir);
+    thermostat->iamStateFile = strdup(buffer);
+    snprintf(buffer, 511, "%s/state/thermostat_device_state.json", homeDir);
+    thermostat->thermostatStateFile = strdup(buffer);
 }
 
 bool thermostat_check_access(struct thermostat* thermostat, NabtoDeviceCoapRequest* request, const char* action)
@@ -226,99 +141,159 @@ bool thermostat_check_access(struct thermostat* thermostat, NabtoDeviceCoapReque
     return true;
 }
 
-bool load_iam_policy(struct thermostat* thermostat)
-{
-    struct nm_iam_configuration* conf = nm_iam_configuration_new();
-    {
-        struct nm_iam_policy* p = nm_iam_configuration_policy_new("Pairing");
-        struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(s, "IAM:GetPairing");
-        nm_iam_configuration_statement_add_action(s, "IAM:PairingPasswordOpen");
-        nm_iam_configuration_statement_add_action(s, "IAM:PairingPasswordInvite");
-        nm_iam_configuration_statement_add_action(s, "IAM:PairingLocalInitial");
-        nm_iam_configuration_statement_add_action(s, "IAM:PairingLocalOpen");
-        nm_iam_configuration_add_policy(conf, p);
-    }
-    {
-        struct nm_iam_policy* p = nm_iam_configuration_policy_new("ThermostatControl");
-        struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(s, "Thermostat:Get");
-        nm_iam_configuration_statement_add_action(s, "Thermostat:Set");
-        nm_iam_configuration_add_policy(conf, p);
-    }
-    {
-        struct nm_iam_policy* p = nm_iam_configuration_policy_new("ManageIam");
-        struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-        nm_iam_configuration_statement_add_action(s, "IAM:ListUsers");
-        nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
-        nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
-        nm_iam_configuration_statement_add_action(s, "IAM:SetUserRole");
-        nm_iam_configuration_statement_add_action(s, "IAM:ListRoles");
-        nm_iam_configuration_statement_add_action(s, "IAM:SetSettings");
-        nm_iam_configuration_statement_add_action(s, "IAM:GetSettings");
-
-        nm_iam_configuration_add_policy(conf, p);
-    }
-
-    {
-        struct nm_iam_policy* p = nm_iam_configuration_policy_new("ManageOwnUser");
-        {
-            struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-            nm_iam_configuration_statement_add_action(s, "IAM:GetUser");
-            nm_iam_configuration_statement_add_action(s, "IAM:DeleteUser");
-            nm_iam_configuration_statement_add_action(s, "IAM:SetUserDisplayName");
-
-            // Create a condition such that only connections where the
-            // UserId matches the UserId of the operation is allowed. E.g. IAM:Username == ${Connection:Username}
-
-            struct nm_iam_condition* c = nm_iam_configuration_statement_create_condition(s, NM_IAM_CONDITION_OPERATOR_STRING_EQUALS, "IAM:Username");
-            nm_iam_configuration_condition_add_value(c, "${Connection:Username}");
-        }
-        {
-            struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
-            nm_iam_configuration_statement_add_action(s, "IAM:ListUsers");
-            nm_iam_configuration_statement_add_action(s, "IAM:ListRoles");
-        }
-
-        nm_iam_configuration_add_policy(conf, p);
-    }
-
-    {
-        struct nm_iam_role* r = nm_iam_configuration_role_new("Unpaired");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_add_role(conf,r);
-    }
-    {
-        struct nm_iam_role* r = nm_iam_configuration_role_new("Administrator");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_role_add_policy(r, "ManageIam");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_role_add_policy(r, "ThermostatControl");
-        nm_iam_configuration_add_role(conf, r);
-    }
-    {
-        struct nm_iam_role* r = nm_iam_configuration_role_new("Standard");
-        nm_iam_configuration_role_add_policy(r, "ThermostatControl");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_add_role(conf, r);
-    }
-    {
-        //TODO: guest should have access to LocalThermostatControl and LocalDeviceInfo
-        struct nm_iam_role* r = nm_iam_configuration_role_new("Guest");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_add_role(conf, r);
-    }
-
-    // Connections which does not have a paired user in the system gets the Unpaired role.
-    nm_iam_configuration_set_unpaired_role(conf, "Unpaired");
-
-    return nm_iam_load_configuration(&thermostat->iam, conf);
-}
-
 void thermostat_reinit_state(struct thermostat* thermostat)
 {
-    create_default_iam_state(thermostat->device, thermostat->iamStateFile, thermostat->logger);
-    create_default_thermostat_state(thermostat->thermostatStateFile);
+    thermostat_iam_create_default_state(thermostat->device, thermostat->iamStateFile, thermostat->logger);
+    create_default_thermostat_state_file(thermostat->thermostatStateFile);
+}
+
+// Functions for handling thermostat state: mode, power, target
+void thermostat_set_mode(struct thermostat* thermostat, enum thermostat_mode mode)
+{
+    thermostat->state.mode = mode;
+    save_thermostat_state(thermostat->thermostatStateFile, &thermostat->state);
+}
+void thermostat_set_target(struct thermostat* thermostat, double target)
+{
+    thermostat->state.target = target;
+    save_thermostat_state(thermostat->thermostatStateFile, &thermostat->state);
+}
+
+void thermostat_set_power(struct thermostat* thermostat, bool power)
+{
+    thermostat->state.power = power;
+    save_thermostat_state(thermostat->thermostatStateFile, &thermostat->state);
+}
+
+const char* mode_as_string(enum thermostat_mode mode)
+{
+    switch (mode) {
+        case THERMOSTAT_MODE_COOL: return "COOL";
+        case THERMOSTAT_MODE_HEAT: return "HEAT";
+        case THERMOSTAT_MODE_DRY: return "DRY";
+        case THERMOSTAT_MODE_FAN: return "FAN";
+    }
+    return "UNKNOWN";
+}
+
+void save_thermostat_state(const char* filename, const struct thermostat_state* state)
+{
+    cJSON* root = cJSON_CreateObject();
+
+    cJSON_AddNumberToObject(root, "Version", 3);
+
+    cJSON* thermostat = cJSON_CreateObject();
+    cJSON_AddItemToObject(thermostat, "Mode", cJSON_CreateString(mode_as_string(state->mode)));
+    cJSON_AddItemToObject(thermostat, "Power", cJSON_CreateBool(state->power));
+    cJSON_AddItemToObject(thermostat, "Target", cJSON_CreateNumber(state->target));
+    cJSON_AddItemToObject(thermostat, "Temperature", cJSON_CreateNumber(state->temperature));
+
+    cJSON_AddItemToObject(root, "Thermostat", thermostat);
+
+    json_config_save(filename, root);
+
+    cJSON_Delete(root);
+}
+
+bool load_thermostat_state(const char* filename, struct thermostat_state* state, struct nn_log* logger)
+{
+    if (!json_config_exists(filename)) {
+        create_default_thermostat_state_file(filename);
+    }
+    cJSON* json;
+    if (!json_config_load(filename, &json, logger)) {
+        NN_LOG_ERROR(logger, LOGM, "Cannot load state from file %s", filename);
+        return false;
+    }
+
+    cJSON* version = cJSON_GetObjectItem(json, "Version");
+    if (!cJSON_IsNumber(version) || version->valueint != 3) {
+        NN_LOG_ERROR(logger, LOGM, "The version of the state file %s is not correct, delete it and start over", filename);
+        return false;
+    }
+
+    cJSON* thermostat = cJSON_GetObjectItem(json, "Thermostat");
+
+    if (cJSON_IsObject(thermostat)) {
+        cJSON* mode = cJSON_GetObjectItem(thermostat, "Mode");
+        cJSON* power = cJSON_GetObjectItem(thermostat, "Power");
+        cJSON* target = cJSON_GetObjectItem(thermostat, "Target");
+        cJSON* temp = cJSON_GetObjectItem(thermostat, "Temperature");
+
+        if (cJSON_IsString(mode)) {
+            if (strcmp(mode->valuestring, "COOL") == 0) {
+                state->mode = THERMOSTAT_MODE_COOL;
+            } else  if (strcmp(mode->valuestring, "HEAT") == 0) {
+                state->mode = THERMOSTAT_MODE_HEAT;
+            } else  if (strcmp(mode->valuestring, "DRY") == 0) {
+                state->mode = THERMOSTAT_MODE_DRY;
+            } else  if (strcmp(mode->valuestring, "FAN") == 0) {
+                state->mode = THERMOSTAT_MODE_FAN;
+            } else {
+                return false;
+            }
+        }
+
+        if (cJSON_IsNumber(target)) {
+            state->target = target->valuedouble;
+        }
+
+        if (cJSON_IsNumber(temp)) {
+            state->temperature = temp->valuedouble;
+        }
+
+        if (cJSON_IsBool(power)) {
+            if (power->type == cJSON_False) {
+                state->power = false;
+            } else {
+                state->power = true;
+            }
+        }
+    }
+
+    cJSON_Delete(json);
+    return true;
+
+}
+
+void create_default_thermostat_state_file(const char* filename)
+{
+    struct thermostat_state state;
+    state.mode = THERMOSTAT_MODE_HEAT;
+    state.temperature = 22.3;
+    state.target = state.temperature;
+    state.power = false;
+    save_thermostat_state(filename, &state);
+}
+
+static double smoothstep(double start, double end, double x)
+{
+    if (x < start) {
+        return 0;
+    }
+
+    if (x >= end) {
+        return 1;
+    }
+
+    x = (x - start) / (end - start);
+    return x * x * (3 - 2 * x);
+}
+
+void thermostat_update(struct thermostat* thermostat, double deltaTime) {
+    if (thermostat->state.power) {
+        // Move temperature smoothly towards target
+        // When temperature is within smoothingDistance units of target
+        // the temperature will start to move more slowly the closer it gets to target
+        double speed = 5 * deltaTime;
+        double smoothingDistance = 20.0;
+
+        double start = thermostat->state.temperature;
+        double end = thermostat->state.target;
+        double signedDistance = end - start;
+        double distance = (signedDistance > 0) ? signedDistance : -signedDistance;
+        double sign = signedDistance / distance;
+
+        thermostat->state.temperature += sign * speed * smoothstep(0, smoothingDistance, distance);
+    }
 }

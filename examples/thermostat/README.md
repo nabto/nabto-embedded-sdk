@@ -16,7 +16,7 @@ named device.json the structure of that file is this:
 
 ## Configuration files
 
-### `config/device_config.json`
+### `config/device.json`
 
 The configuration of the device. This config is static and never
 changes during the lifetime of a device.

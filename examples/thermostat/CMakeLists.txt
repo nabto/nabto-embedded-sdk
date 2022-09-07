@@ -4,7 +4,7 @@ set(src
   ${ne_iam_src}
   src/thermostat_main.c
   src/thermostat.c
-  src/thermostat_state.c
+  src/thermostat_iam.c
   src/thermostat_coap_handler.c
   src/thermostat_get.c
   src/thermostat_set_mode.c
