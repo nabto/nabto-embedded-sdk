@@ -210,11 +210,18 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, cons
     char* deviceFingerprint;
     nabto_device_get_device_fingerprint(dev, &deviceFingerprint);
 
-
+    const char* pairingString = thermostat_iam_create_pairing_string(
+        thermostat, nabto_device_get_product_id(dev),
+        nabto_device_get_device_id(dev));
     printf("######## Nabto thermostat device ########" NEWLINE);
     printf("# Product ID:                  %s" NEWLINE, nabto_device_get_product_id(dev));
     printf("# Device ID:                   %s" NEWLINE, nabto_device_get_device_id(dev));
     printf("# Fingerprint:                 %s" NEWLINE, deviceFingerprint);
+    if (pairingString != NULL) {
+        printf("# Pairing String:              %s" NEWLINE, pairingString);
+    } else {
+        printf("# Pairing String:              Failed to generate string" NEWLINE);
+    }
     printf("# Nabto Version:               %s" NEWLINE, nabto_device_version());
     printf("######## " NEWLINE);
 

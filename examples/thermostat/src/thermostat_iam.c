@@ -12,15 +12,15 @@
 
 #define LOGM "thermostat_iam"
 
-static bool load_iam_policy(struct thermostat* thermostat);
 static void thermostat_iam_state_changed(struct nm_iam* iam, void* userData);
+static bool load_iam_config(struct thermostat* thermostat);
 static void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_log* logger);
 
 
 void thermostat_iam_init(struct thermostat* thermostat)
 {
     nm_iam_init(&thermostat->iam, thermostat->device, thermostat->logger);
-    load_iam_policy(thermostat);
+    load_iam_config(thermostat);
     nm_iam_set_state_changed_callback(&thermostat->iam, thermostat_iam_state_changed, thermostat);
 
 }
@@ -56,21 +56,15 @@ void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_
 void thermostat_iam_create_default_state(NabtoDevice* device, const char* filename, struct nn_log* logger)
 {
     struct nm_iam_state* state = nm_iam_state_new();
-    struct nm_iam_user* user = nm_iam_state_user_new("admin");
-    // TODO create sct
-    char* sct = NULL;
-    nabto_device_create_server_connect_token(device, &sct);
-    nm_iam_state_user_set_sct(user, sct);
-    nabto_device_string_free(sct);
-    nm_iam_state_user_set_role(user, "Administrator");
-    nm_iam_state_add_user(state, user);
-    nm_iam_state_set_initial_pairing_username(state, "admin");
     nm_iam_state_set_open_pairing_role(state, "Administrator");
     nm_iam_state_set_local_initial_pairing(state, false);
     nm_iam_state_set_local_open_pairing(state, true);
     nm_iam_state_set_password_open_password(state, random_password(12));
     nm_iam_state_set_password_open_pairing(state, true);
-    nm_iam_state_set_password_open_sct(state, "demosct");
+    char* sct = NULL;
+    nabto_device_create_server_connect_token(device, &sct);
+    nm_iam_state_set_password_open_sct(state, sct);
+    nabto_device_string_free(sct);
     save_iam_state(filename, state, logger);
     nm_iam_state_free(state);
 }
@@ -104,10 +98,11 @@ bool thermostat_iam_load_state(struct thermostat* thermostat)
 }
 
 
-bool load_iam_policy(struct thermostat* thermostat)
+bool load_iam_config(struct thermostat* thermostat)
 {
     struct nm_iam_configuration* conf = nm_iam_configuration_new();
     {
+        // Policy allowing pairing
         struct nm_iam_policy* p = nm_iam_configuration_policy_new("Pairing");
         struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(s, "IAM:GetPairing");
@@ -118,6 +113,7 @@ bool load_iam_policy(struct thermostat* thermostat)
         nm_iam_configuration_add_policy(conf, p);
     }
     {
+        // Policy allowing control of the thermostat
         struct nm_iam_policy* p = nm_iam_configuration_policy_new("ThermostatControl");
         struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(s, "Thermostat:Get");
@@ -125,6 +121,7 @@ bool load_iam_policy(struct thermostat* thermostat)
         nm_iam_configuration_add_policy(conf, p);
     }
     {
+        // Policy allowing management of IAM state
         struct nm_iam_policy* p = nm_iam_configuration_policy_new("ManageIam");
         struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(s, "IAM:ListUsers");
@@ -139,6 +136,7 @@ bool load_iam_policy(struct thermostat* thermostat)
     }
 
     {
+        // Policy allowing management of own IAM user
         struct nm_iam_policy* p = nm_iam_configuration_policy_new("ManageOwnUser");
         {
             struct nm_iam_statement* s = nm_iam_configuration_policy_create_statement(p, NM_IAM_EFFECT_ALLOW);
@@ -162,11 +160,13 @@ bool load_iam_policy(struct thermostat* thermostat)
     }
 
     {
+        // Role allowing unpaired connections to pair
         struct nm_iam_role* r = nm_iam_configuration_role_new("Unpaired");
         nm_iam_configuration_role_add_policy(r, "Pairing");
         nm_iam_configuration_add_role(conf,r);
     }
     {
+        // Role allowing everything assigned to administrators
         struct nm_iam_role* r = nm_iam_configuration_role_new("Administrator");
         nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
         nm_iam_configuration_role_add_policy(r, "ManageIam");
@@ -174,23 +174,30 @@ bool load_iam_policy(struct thermostat* thermostat)
         nm_iam_configuration_role_add_policy(r, "ThermostatControl");
         nm_iam_configuration_add_role(conf, r);
     }
-    {
-        struct nm_iam_role* r = nm_iam_configuration_role_new("Standard");
-        nm_iam_configuration_role_add_policy(r, "ThermostatControl");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_add_role(conf, r);
-    }
-    {
-        //TODO: guest should have access to LocalThermostatControl and LocalDeviceInfo
-        struct nm_iam_role* r = nm_iam_configuration_role_new("Guest");
-        nm_iam_configuration_role_add_policy(r, "ManageOwnUser");
-        nm_iam_configuration_role_add_policy(r, "Pairing");
-        nm_iam_configuration_add_role(conf, r);
-    }
 
     // Connections which does not have a paired user in the system gets the Unpaired role.
     nm_iam_configuration_set_unpaired_role(conf, "Unpaired");
 
     return nm_iam_load_configuration(&thermostat->iam, conf);
+}
+
+
+const char* thermostat_iam_create_pairing_string(struct thermostat* thermostat, const char* productId, const char* deviceId)
+{
+    struct nm_iam_state* state = nm_iam_dump_state(&thermostat->iam);
+    if (state == NULL) {
+        return NULL;
+    }
+
+    char* pairStr = (char*)calloc(1, 512);
+    if (pairStr == NULL) {
+        nm_iam_state_free(state);
+        return NULL;
+    }
+
+    snprintf(pairStr, 511, "p=%s,d=%s,pwd=%s,sct=%s", productId, deviceId,
+             state->passwordOpenPassword, state->passwordOpenSct);
+
+    nm_iam_state_free(state);
+    return pairStr;
 }
