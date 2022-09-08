@@ -36,7 +36,7 @@ set(src_crypto
   #  ${src_dir}/md2.c
   #  ${src_dir}/md4.c
   #  ${src_dir}/md5.c
-    ${src_dir}/md_wrap.c
+  #  ${src_dir}/md_wrap.c
   #  ${src_dir}/memory_buffer_alloc.c
     ${src_dir}/oid.c
   #  ${src_dir}/padlock.c
@@ -60,6 +60,7 @@ set(src_crypto
    # ${src_dir}/version.c
    # ${src_dir}/version_features.c
    # ${src_dir}/xtea.c
+    ${src_dir}/constant_time.c
     )
 
 set(src_x509
@@ -84,6 +85,7 @@ set(src_tls
     ${src_dir}/ssl_srv.c
     ${src_dir}/ssl_ticket.c
     ${src_dir}/ssl_tls.c
+    ${src_dir}/ssl_msg.c
 )
 
 set(config_file config/nabto_mbedtls_config.h)
