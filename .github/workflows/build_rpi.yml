@@ -36,8 +36,8 @@ jobs:
       run: file artifacts/bin/tcp_tunnel_device
 
     - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: artifacts
-          path: artifacts
-          if-no-files-found: warn
+      uses: actions/upload-artifact@v2
+      with:
+        name: artifacts
+        path: artifacts
+        if-no-files-found: warn
