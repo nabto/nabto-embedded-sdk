@@ -14,6 +14,37 @@ cmake -DCMAKE_INSTALL_PREFIX=../_install ..
 cmake --build . --config Release --target install
 ```
 
+### Building on Raspberry Pi
+
+Prerequisite:
+  * ssh access to a Raspberry Pi with Raspberry Pi OS read more here https://www.raspberrypi.com/software/
+
+Install tools on the Raspberry Pi
+
+```
+sudo apt-get install build-essential cmake git
+```
+
+Checkout the source
+
+```
+git clone --recursive https://github.com/nabto/nabto-embedded-sdk
+```
+
+Build the source
+```
+cd nabto-embedded-sdk
+mkdir build
+cd build
+cmake ..
+make
+```
+
+Run the Edge TCP tunnel device
+```
+./apps/tcp_tunnel_device/tcp_tunnel_device --help
+```
+
 ### Testing
 
 If build passed, and `DEVICE_BUILD_TESTS` is set to `ON` unit tests can be run.
