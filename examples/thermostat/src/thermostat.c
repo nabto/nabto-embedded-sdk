@@ -292,7 +292,7 @@ void thermostat_update(struct thermostat* thermostat, double deltaTime) {
         double end = thermostat->state.target;
         double signedDistance = end - start;
         double distance = (signedDistance > 0) ? signedDistance : -signedDistance;
-        double sign = signedDistance / distance;
+        double sign = (signedDistance >= 0) ? 1 : -1;
 
         thermostat->state.temperature += sign * speed * smoothstep(0, smoothingDistance, distance);
     }
