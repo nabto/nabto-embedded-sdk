@@ -30,8 +30,21 @@ static uint8_t Ndata[] = {
     0x33, 0x7f, 0x51, 0x68, 0xc6, 0x4d, 0x9b, 0xd3, 0x60, 0x34, 0x80,
     0x8c, 0xd5, 0x64, 0x49, 0x0b, 0x1e, 0x65, 0x6e, 0xdb, 0xe7};
 
+
 class Spake2Client {
  public:
+
+    static int sha256(const unsigned char *input,
+                    size_t ilen,
+                    unsigned char *output)
+    {
+#if MBEDTLS_VERSION_MAJOR >= 3
+        return mbedtls_sha256(input, ilen, output, 0);
+#else
+        return mbedtls_sha256_ret(input, ilen, output, 0);
+#endif
+    }
+
     Spake2Client(const std::string& password,
                  uint8_t* clientFp, uint8_t* deviceFp)
         : clientFp_(clientFp, clientFp+32), deviceFp_(deviceFp, deviceFp+32)
@@ -53,9 +66,9 @@ class Spake2Client {
             mbedtls_ecp_point_read_binary(&grp_, &N_, Ndata, sizeof(Ndata));
 
         uint8_t wHash[32];
-        status |= mbedtls_sha256_ret(
+        status |= sha256(
             reinterpret_cast<const uint8_t*>(password.data()), password.size(),
-            wHash, 0);
+            wHash);
 
         status |= mbedtls_mpi_read_binary(&w_, wHash, 32);
     }
@@ -146,7 +159,7 @@ class Spake2Client {
         encode(K, toHash);
         encode(w, toHash);
 
-        mbedtls_sha256_ret(toHash.data(), toHash.size(), key_.data(), 0);
+        sha256(toHash.data(), toHash.size(), key_.data());
         return true;
     }
 

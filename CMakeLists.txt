@@ -34,6 +34,7 @@ option(DEVICE_BUILD_TESTS "build device tests" OFF)
 option(DEVICE_BUILD_APPS "build applications" ON)
 
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
+option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)

@@ -128,7 +128,13 @@ lib::optional<std::string> publicKeyFromPrivateKey(const std::string& privateKey
         return lib::nullopt;
     }
 
-    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)privateKey.c_str(), privateKey.size()+1, NULL, 0 );
+    const unsigned char* p = reinterpret_cast<const unsigned char*>(privateKey.c_str());
+    size_t pLen = privateKey.size() + 1;
+#if MBEDTLS_VERSION_MAJOR >= 3
+    ret = mbedtls_pk_parse_key( &key, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+#else
+    ret = mbedtls_pk_parse_key( &key, p, pLen, NULL, 0);
+#endif
     if (ret != 0) {
         return lib::nullopt;
     }

@@ -12,7 +12,6 @@
 
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
-#include <mbedtls/certs.h>
 #include <mbedtls/x509.h>
 #include <mbedtls/ssl.h>
 //#include <mbedtls/ssl_cookie.h>
@@ -389,7 +388,7 @@ void nm_mbedtls_srv_do_one(void* data)
         } else if (ret > 0) {
             // we need the sequence number from the dtls packet.
             // the sequence number consists of an epoch and a sequence number in that epoch. 8 bytes in total.
-            uint64_t seq = uint64_from_bigendian(ctx->ssl.in_ctr);
+            uint64_t seq = uint64_from_bigendian(ctx->ssl.MBEDTLS_PRIVATE(in_ctr));
             ctx->recvCount++;
             ctx->dataHandler(ctx->currentChannelId, seq, recvBuffer, (uint16_t)ret, ctx->senderData);
             return;
@@ -546,7 +545,13 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
         return NABTO_EC_UNKNOWN;
     }
 
-    ret =  mbedtls_pk_parse_key( &server->privateKey, (const unsigned char*)privateKeyL, privateKeySize+1, NULL, 0 );
+    const unsigned char* p = privateKeyL;
+    size_t pLen = privateKeySize+1;
+#if MBEDTLS_VERSION_MAJOR >= 3
+    ret =  mbedtls_pk_parse_key( &server->privateKey, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &server->ctr_drbg);
+#else
+    ret =  mbedtls_pk_parse_key( &server->privateKey, p, pLen, NULL, 0);
+#endif
     if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG,"mbedtls_pk_parse_key returned %d", ret);

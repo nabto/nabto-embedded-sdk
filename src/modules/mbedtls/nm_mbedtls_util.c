@@ -31,7 +31,7 @@ np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* 
     if (len <= 0) {
         return NABTO_EC_UNKNOWN;
     }
-    mbedtls_sha256_ret(buffer+sizeof(buffer)-len, len, hash, 0);
+    nm_mbedtls_sha256(buffer+sizeof(buffer)-len, len, hash);
     return NABTO_EC_OK;
 }
 
@@ -80,7 +80,13 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
         return NABTO_EC_UNKNOWN;
     }
 
-    ret = mbedtls_pk_parse_key( &ctx->key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
+    const unsigned char* p =  (const unsigned char*)privateKey;
+    size_t pLen = strlen(privateKey) + 1;
+#if MBEDTLS_VERSION_MAJOR >= 3
+    ret = mbedtls_pk_parse_key( &ctx->key, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctx->ctr_drbg);
+#else
+    ret = mbedtls_pk_parse_key( &ctx->key, p, pLen, NULL, 0);
+#endif
     if (ret != 0) {
         return NABTO_EC_UNKNOWN;
     }
@@ -143,9 +149,28 @@ np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey
     mbedtls_pk_context key;
     int ret;
 
-    np_error_code ec = NABTO_EC_OK;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+    mbedtls_entropy_init( &entropy );
     mbedtls_pk_init(&key);
-    ret = mbedtls_pk_parse_key( &key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0 );
+
+    np_error_code ec = NABTO_EC_OK;
+
+    ret = mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (ret != 0) {
+        ec = NABTO_EC_UNKNOWN;
+    } else {
+        const unsigned char* p = (const unsigned char*)privateKey;
+        size_t pLen = strlen(privateKey)+1;
+#if MBEDTLS_VERSION_MAJOR >= 3
+        ret = mbedtls_pk_parse_key( &key, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+#else
+        ret = mbedtls_pk_parse_key( &key, p, pLen, NULL, 0);
+#endif
+    }
+
     if (ret != 0) {
         ec = NABTO_EC_UNKNOWN;
     } else {
@@ -156,12 +181,16 @@ np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey
         if (len <= 0) {
             ec = NABTO_EC_UNKNOWN;
         } else {
-            ret = mbedtls_sha256_ret(buffer+256 - len,  len, hash, false);
+            ret = nm_mbedtls_sha256(buffer+256 - len,  len, hash);
             if (ret != 0) {
                 ec = NABTO_EC_UNKNOWN;
             }
         }
     }
+
+    mbedtls_ctr_drbg_free( &ctr_drbg );
+    mbedtls_entropy_free( &entropy );
+
     mbedtls_pk_free(&key);
     return ec;
 }
@@ -231,5 +260,14 @@ void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf)
 #if defined(NABTO_DEVICE_DTLS_LOG)
     mbedtls_debug_set_threshold( 4 ); // Max debug threshold, NABTO_LOG_RAW will handle log levels
     mbedtls_ssl_conf_dbg( conf, my_debug, NULL);
+#endif
+}
+
+int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char output[32] )
+{
+#if MBEDTLS_VERSION_MAJOR >= 3
+    return mbedtls_sha256(input, ilen, output, 0);
+#else
+    return mbedtls_sha256_ret(input, ilen, output, 0);
 #endif
 }
