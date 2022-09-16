@@ -42,7 +42,7 @@ std::shared_ptr<CertificateContext> CertificateContext::create(const std::string
     size_t pLen = privateKeyPem.size() + 1;
 
 #if MBEDTLS_VERSION_MAJOR >= 3
-    ret =  mbedtls_pk_parse_key( &ctx->privateKey_, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctx->ctrDrbg);
+    ret =  mbedtls_pk_parse_key( &ctx->privateKey_, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctx->ctrDrbg_);
 #else
     ret =  mbedtls_pk_parse_key( &ctx->privateKey_, p, pLen, NULL, 0);
 #endif
