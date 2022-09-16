@@ -19,6 +19,10 @@ static uint8_t secp2566r1GroupOrder[32] = {
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 
+#ifndef MBEDTLS_PRIVATE
+#define MBEDTLS_PRIVATE(m) m
+#endif
+
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, size_t keyLength)
 {

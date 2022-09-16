@@ -1,4 +1,5 @@
 #include "nm_mbedtls_spake2.h"
+#include "nm_mbedtls_util.h"
 #include <mbedtls/sha256.h>
 #include <mbedtls/md.h>
 #include <mbedtls/ctr_drbg.h>
