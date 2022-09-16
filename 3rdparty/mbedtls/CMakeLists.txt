@@ -30,7 +30,7 @@ set(src_crypto
     ${src_dir}/entropy_poll.c
     ${src_dir}/error.c
   #  ${src_dir}/gcm.c
-    ${src_dir}/havege.c
+   # ${src_dir}/havege.c
     ${src_dir}/hmac_drbg.c
     ${src_dir}/md.c
   #  ${src_dir}/md2.c
@@ -64,7 +64,7 @@ set(src_crypto
     )
 
 set(src_x509
-    ${src_dir}/certs.c
+   # ${src_dir}/certs.c
     #${src_dir}/pkcs11.c
     ${src_dir}/x509.c
     ${src_dir}/x509_create.c
@@ -75,9 +75,9 @@ set(src_x509
     #${src_dir}/x509write_csr.c
 )
 
+if (DEVICE_MBEDTLS_2)
 set(src_tls
     ${src_dir}/debug.c
-   # ${src_dir}/net_sockets.c
     ${src_dir}/ssl_cache.c
     ${src_dir}/ssl_ciphersuites.c
     ${src_dir}/ssl_cli.c
@@ -87,6 +87,21 @@ set(src_tls
     ${src_dir}/ssl_tls.c
     ${src_dir}/ssl_msg.c
 )
+else()
+set(src_tls
+    ${src_dir}/debug.c
+    ${src_dir}/ssl_cache.c
+    ${src_dir}/ssl_ciphersuites.c
+    ${src_dir}/ssl_client.c
+    ${src_dir}/ssl_cookie.c
+    ${src_dir}/ssl_tls12_server.c
+    ${src_dir}/ssl_tls12_client.c
+    ${src_dir}/ssl_debug_helpers_generated.c
+    ${src_dir}/ssl_ticket.c
+    ${src_dir}/ssl_tls.c
+    ${src_dir}/ssl_msg.c
+)
+endif()
 
 set(config_file config/nabto_mbedtls_config.h)
 

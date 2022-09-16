@@ -132,7 +132,7 @@ static np_error_code mbedtls_spake2_calculate_key(
         if (password == NULL) {
             status |= mbedtls_ctr_drbg_random(&ctr_drbg, passwordHash, 32);
         } else {
-            status |= mbedtls_sha256_ret((const uint8_t*)password, strlen(password), passwordHash, 0);
+            status |= nm_mbedtls_sha256((const uint8_t*)password, strlen(password), passwordHash);
         }
         // create password hash from binary
         status |= mbedtls_mpi_read_binary(&w, passwordHash, sizeof(passwordHash));
@@ -214,8 +214,8 @@ static np_error_code mbedtls_spake2_key_confirmation(struct np_spake2_context* s
         return NABTO_EC_INVALID_ARGUMENT;
     }
     uint8_t hash2[32];
-    mbedtls_sha256_ret(key, 32, hash1, 0);
-    mbedtls_sha256_ret(hash1, 32, hash2, 0);
+    nm_mbedtls_sha256(key, 32, hash1);
+    nm_mbedtls_sha256(hash1, 32, hash2);
     if (memcmp(payload, hash2, 32) != 0) {
         return NABTO_EC_ACCESS_DENIED;
     } else {

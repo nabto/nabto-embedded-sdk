@@ -15,7 +15,6 @@
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/error.h>
-#include <mbedtls/certs.h>
 #include <mbedtls/timing.h>
 #include <mbedtls/ssl_ciphersuites.h>
 #include <mbedtls/pem.h>
@@ -414,7 +413,11 @@ np_error_code set_keys(struct np_platform *pl,
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_x509_crt_parse returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
-    ret =  mbedtls_pk_parse_key( &ctx->privateKey, privateKeyL, privateKeySize+1, NULL, 0 );
+    ret =  mbedtls_pk_parse_key( &ctx->privateKey, privateKeyL, privateKeySize+1, NULL, 0
+#if MBEDTLS_VERSION_MAJOR >= 3
+    , mbedtls_ctr_drbg_random, &ctx->ctr_drbg
+#endif
+    );
     if( ret != 0 ) {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_pk_parse_key returned %d", ret );
         return NABTO_EC_UNKNOWN;
@@ -500,7 +503,7 @@ void event_do_one(void* data)
             ret == MBEDTLS_ERR_SSL_WANT_WRITE ) {
             //Keep State CONNECTING
         } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
-                   conn->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
+                   conn->ssl.MBEDTLS_PRIVATE(in_msg)[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
         {
             conn->state = CLOSING;
             nm_mbedtls_timer_cancel(&conn->timer);
@@ -546,7 +549,7 @@ void event_do_one(void* data)
         } else if (ret > 0) {
             conn->recvCount++;
             // TODO: sequence numbers
-            uint64_t seq = uint64_from_bigendian(conn->ssl.in_ctr);
+            uint64_t seq = uint64_from_bigendian(conn->ssl.MBEDTLS_PRIVATE(in_ctr));
             conn->dataHandler(conn->recvChannelId, seq, recvBuffer, (uint16_t)ret, conn->callbackData);
             return;
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
@@ -554,7 +557,7 @@ void event_do_one(void* data)
         {
             // OK
         } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
-                   conn->ssl.in_msg[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
+                   conn->ssl.MBEDTLS_PRIVATE(in_msg)[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
         {
             nm_mbedtls_timer_cancel(&conn->timer);
             conn->eventHandler(NP_DTLS_EVENT_ACCESS_DENIED, conn->callbackData);

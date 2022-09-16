@@ -8,18 +8,29 @@ CertificateContext::CertificateContext()
 {
     mbedtls_x509_crt_init( &publicKey_ );
     mbedtls_pk_init( &privateKey_ );
+    mbedtls_entropy_init( &entropy_ );
+    mbedtls_ctr_drbg_init( &ctrDrbg_ );
 }
 
 CertificateContext::~CertificateContext()
 {
     mbedtls_pk_free(&privateKey_);
     mbedtls_x509_crt_free(&publicKey_);
+    mbedtls_ctr_drbg_free( &ctrDrbg_ );
+    mbedtls_entropy_free( &entropy_ );
 }
 
 std::shared_ptr<CertificateContext> CertificateContext::create(const std::string& privateKeyPem, const std::string& publicKeyPem)
 {
-    auto ctx = std::shared_ptr<CertificateContext>(new CertificateContext());
     int ret;
+    auto ctx = std::shared_ptr<CertificateContext>(new CertificateContext());
+    if (ctx == nullptr) {
+        return nullptr;
+    }
+    ret = mbedtls_ctr_drbg_seed( &ctx->ctrDrbg_, mbedtls_entropy_func, &ctx->entropy_, NULL, 0);
+    if ( ret != 0) {
+        return nullptr;
+    }
     ret = mbedtls_x509_crt_parse( &ctx->publicKey_, reinterpret_cast<const unsigned char*>(publicKeyPem.c_str()), publicKeyPem.size()+1);
     if( ret != 0 )
     {
@@ -27,7 +38,11 @@ std::shared_ptr<CertificateContext> CertificateContext::create(const std::string
         return nullptr;
     }
 
-    ret =  mbedtls_pk_parse_key( &ctx->privateKey_, reinterpret_cast<const unsigned char*>(privateKeyPem.c_str()), privateKeyPem.size()+1, NULL, 0 );
+    ret =  mbedtls_pk_parse_key( &ctx->privateKey_, reinterpret_cast<const unsigned char*>(privateKeyPem.c_str()), privateKeyPem.size()+1, NULL, 0
+#if MBEDTLS_VERSION_MAJOR >= 3
+        , mbedtls_ctr_drbg_random, &ctx->ctrDrbg_
+#endif
+     );
     if( ret != 0 )
     {
         //Log::get("dtls_server")->error("mbedtls_pk_parse_key returned {0:d} {1}", ret, mbedTlsStrError(ret));
