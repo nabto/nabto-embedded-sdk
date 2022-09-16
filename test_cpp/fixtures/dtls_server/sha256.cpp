@@ -8,9 +8,9 @@ std::array<uint8_t, 32> Sha256::sha256(lib::span<uint8_t> data)
 {
     std::array<uint8_t, 32> out;
 #if MBEDTLS_VERSION_MAJOR >= 3
-    mbedtls_sha256(data.data(), data.size(), out.data(), false);
+    mbedtls_sha256(data.data(), data.size(), out.data(), 0);
 #else
-    mbedtls_sha256_ret(data.data(), data.size(), out.data(), false);
+    mbedtls_sha256_ret(data.data(), data.size(), out.data(), 0);
 #endif
     return out;
 }

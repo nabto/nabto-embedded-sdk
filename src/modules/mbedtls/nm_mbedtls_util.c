@@ -80,11 +80,13 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
         return NABTO_EC_UNKNOWN;
     }
 
-    ret = mbedtls_pk_parse_key( &ctx->key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0
+    const unsigned char* p =  (const unsigned char*)privateKey;
+    size_t pLen = strlen(privateKey) + 1;
 #if MBEDTLS_VERSION_MAJOR >= 3
-    , mbedtls_ctr_drbg_random, &ctx->ctr_drbg
+    ret = mbedtls_pk_parse_key( &ctx->key, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctx->ctr_drbg);
+#else
+    ret = mbedtls_pk_parse_key( &ctx->key, p, pLen, NULL, 0);
 #endif
-    );
     if (ret != 0) {
         return NABTO_EC_UNKNOWN;
     }
@@ -160,11 +162,13 @@ np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey
     if (ret != 0) {
         ec = NABTO_EC_UNKNOWN;
     } else {
-        ret = mbedtls_pk_parse_key( &key, (const unsigned char*)privateKey, strlen(privateKey)+1, NULL, 0
+        const unsigned char* p = (const unsigned char*)privateKey;
+        size_t pLen = strlen(privateKey)+1;
 #if MBEDTLS_VERSION_MAJOR >= 3
-        , mbedtls_ctr_drbg_random, &ctr_drbg
+        ret = mbedtls_pk_parse_key( &key, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+#else
+        ret = mbedtls_pk_parse_key( &key, p, pLen, NULL, 0);
 #endif
-        );
     }
 
     if (ret != 0) {

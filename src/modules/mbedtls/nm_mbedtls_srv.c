@@ -545,11 +545,13 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
         return NABTO_EC_UNKNOWN;
     }
 
-    ret =  mbedtls_pk_parse_key( &server->privateKey, (const unsigned char*)privateKeyL, privateKeySize+1, NULL, 0
+    const unsigned char* p = privateKeyL;
+    size_t pLen = privateKeySize+1;
 #if MBEDTLS_VERSION_MAJOR >= 3
-    , mbedtls_ctr_drbg_random, &server->ctr_drbg
+    ret =  mbedtls_pk_parse_key( &server->privateKey, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &server->ctr_drbg);
+#else
+    ret =  mbedtls_pk_parse_key( &server->privateKey, p, pLen, NULL, 0);
 #endif
-    );
     if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG,"mbedtls_pk_parse_key returned %d", ret);

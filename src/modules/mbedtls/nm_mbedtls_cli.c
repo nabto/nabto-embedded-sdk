@@ -413,11 +413,13 @@ np_error_code set_keys(struct np_platform *pl,
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_x509_crt_parse returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
-    ret =  mbedtls_pk_parse_key( &ctx->privateKey, privateKeyL, privateKeySize+1, NULL, 0
+    const unsigned char* p = privateKeyL;
+    size_t pLen = privateKeySize + 1;
 #if MBEDTLS_VERSION_MAJOR >= 3
-    , mbedtls_ctr_drbg_random, &ctx->ctr_drbg
+    ret =  mbedtls_pk_parse_key( &ctx->privateKey, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctx->ctr_drbg);
+#else
+    ret =  mbedtls_pk_parse_key( &ctx->privateKey, p, pLen, NULL, 0);
 #endif
-    );
     if( ret != 0 ) {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_pk_parse_key returned %d", ret );
         return NABTO_EC_UNKNOWN;

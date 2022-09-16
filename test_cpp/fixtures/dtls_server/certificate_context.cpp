@@ -38,11 +38,14 @@ std::shared_ptr<CertificateContext> CertificateContext::create(const std::string
         return nullptr;
     }
 
-    ret =  mbedtls_pk_parse_key( &ctx->privateKey_, reinterpret_cast<const unsigned char*>(privateKeyPem.c_str()), privateKeyPem.size()+1, NULL, 0
+    const unsigned char* p = reinterpret_cast<const unsigned char*>(privateKeyPem.c_str());
+    size_t pLen = privateKeyPem.size() + 1;
+
 #if MBEDTLS_VERSION_MAJOR >= 3
-        , mbedtls_ctr_drbg_random, &ctx->ctrDrbg_
+    ret =  mbedtls_pk_parse_key( &ctx->privateKey_, p, pLen, NULL, 0, mbedtls_ctr_drbg_random, &ctx->ctrDrbg);
+#else
+    ret =  mbedtls_pk_parse_key( &ctx->privateKey_, p, pLen, NULL, 0);
 #endif
-     );
     if( ret != 0 )
     {
         //Log::get("dtls_server")->error("mbedtls_pk_parse_key returned {0:d} {1}", ret, mbedTlsStrError(ret));
