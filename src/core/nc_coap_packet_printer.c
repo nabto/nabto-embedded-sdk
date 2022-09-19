@@ -16,7 +16,7 @@ static const char* blockToString(uint32_t value)
     static char buffer[21];
     memset(buffer, 0, 21);
 
-    sprintf(buffer, "%d/%d/%d", num, (uint8_t)more, (uint16_t)blockSize);
+    sprintf(buffer, "%" PRIu32 "/%" PRIu8 "/%" PRIu16, num, (uint8_t)more, (uint16_t)blockSize);
     return buffer;
 }
 
@@ -61,10 +61,10 @@ static const char* coapCodeToString(nabto_coap_code code)
         }
     }
     if (codeClass > 1 && codeClass <= 5) {
-        sprintf(buffer, "%d%02d", (int)codeClass, (int)(realCode & 0x1f));
+        sprintf(buffer, "%" PRIu8 "%02" PRIu8, codeClass, (realCode & 0x1f));
         return buffer;
     }
-    sprintf(buffer, "UNKNOWN(%d)", (int)realCode);
+    sprintf(buffer, "UNKNOWN(%" PRIu8 ")", realCode);
     return buffer;
 }
 
@@ -91,7 +91,7 @@ const char* coapOptionToString(uint16_t option)
         case NABTO_COAP_OPTION_PROXY_SCHEME: return "PROXY_SCHEME";
         case NABTO_COAP_OPTION_SIZE1: return "OPTION_SIZE1";
     }
-    sprintf(buffer, "UNKNOWN(%d)", option);
+    sprintf(buffer, "UNKNOWN(%" PRIu16 ")", option);
     return buffer;
 }
 
@@ -149,7 +149,7 @@ void nc_coap_packet_print(const char* header, const uint8_t* packet, size_t pack
             } else if (iterator->option == NABTO_COAP_OPTION_URI_PORT &&
                        nabto_coap_parse_variable_int(iterator->optionDataBegin, iterator->optionDataEnd, 3, &value))
             {
-                ptr = safeWrite(ptr, end, ", Uri-Port: %d", value);
+                ptr = safeWrite(ptr, end, ", Uri-Port: %" PRIu32 , value);
             } else if (iterator->option == NABTO_COAP_OPTION_BLOCK1 &&
                        nabto_coap_parse_variable_int(iterator->optionDataBegin, iterator->optionDataEnd, 3, &value))
             {
@@ -159,7 +159,7 @@ void nc_coap_packet_print(const char* header, const uint8_t* packet, size_t pack
             {
                 ptr = safeWrite(ptr, end, ", Block2: %s", blockToString(value));
             } else {
-                ptr = safeWrite(ptr, end, ", %s: OptionDataLength: %d", coapOptionToString(iterator->option), optionDataLength);
+                ptr = safeWrite(ptr, end, ", %s: OptionDataLength: %u", coapOptionToString(iterator->option), (unsigned int)optionDataLength);
             }
             iterator = nabto_coap_get_next_option(iterator);
 
