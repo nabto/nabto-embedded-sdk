@@ -313,6 +313,10 @@ set(ne_priv_include_dirs_no_tls
   ${root_dir}/3rdparty/tinycbor/tinycbor/src
 )
 
+set(ne_nn_include_dirs
+  ${root_dir}/nabto-common/components/nn/include
+)
+
 set(ne_priv_include_dirs
 #  ${root_dir}/
   ${root_dir}/src
