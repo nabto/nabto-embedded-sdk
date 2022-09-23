@@ -18,21 +18,21 @@ typedef struct {
 } service_t;
 
 // TCP tunnel configuration.
-static const service_t ssh = {
+const service_t ssh = {
     .host = "127.0.0.1",
     .id   = "ssh",
     .type = "ssh",
     .port = 22
 };
 
-static const service_t rtsp = {
+const service_t rtsp = {
     .host = "127.0.0.1",
     .id   = "rtsp",
     .type = "rtsp",
     .port = 8554
 };
 
-static service_t services[] = {
+service_t services[] = {
     ssh,
     rtsp
 };
