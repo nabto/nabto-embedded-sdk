@@ -10,12 +10,34 @@
 const char* appName = "simple_tunnel";
 const char* sct = "demosct";
 
+typedef struct {
+    const char* host;
+    const char* id;
+    const char* type;
+    uint16_t port;
+} service_t;
+
 // TCP tunnel configuration.
-const char* serviceHost = "127.0.0.1";
-uint16_t    servicePort = 22;
-const char* serviceId   = "ssh";
-const char* serviceType = "ssh";
-int         serviceConcurrentConnectionsLimit = -1;
+static const service_t ssh = {
+    .host = "127.0.0.1",
+    .id   = "ssh",
+    .type = "ssh",
+    .port = 22
+};
+
+static const service_t rtsp = {
+    .host = "127.0.0.1",
+    .id   = "rtsp",
+    .type = "rtsp",
+    .port = 8554
+};
+
+static service_t services[] = {
+    ssh,
+    rtsp
+};
+
+int serviceConcurrentConnectionsLimit = -1;
 
 #define NEWLINE "\n"
 
@@ -101,18 +123,23 @@ int main(int argc, char** argv) {
     /**
      * This is the tunnel specific function all the other code is boiler plate code.
      */
-    ec = nabto_device_add_tcp_tunnel_service(device, serviceId, serviceType, serviceHost, servicePort);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        printf("Failed to add the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
-        goto cleanup;
-    } else {
-        printf("Added a TCP Tunnel service. Id: %s, type: %s, host: %s, port: %d" NEWLINE, serviceId, serviceType, serviceHost, servicePort);
-    }
+    int serviceCount = sizeof(services)/sizeof(services[0]);
+    for (int i = 0; i < serviceCount; i++) {
+        service_t* service = &services[i];
+        ec = nabto_device_add_tcp_tunnel_service(device, service->id, service->type, service->host, service->port);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Failed to add the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
+            goto cleanup;
+        } else {
+            printf("Added a TCP Tunnel service. Id: %s, type: %s, host: %s, port: %d" NEWLINE,
+                   service->id, service->type, service->host, service->port);
+        }
 
-    ec = nabto_device_limit_tcp_tunnel_connections(device, serviceType, serviceConcurrentConnectionsLimit);
-    if (ec != NABTO_DEVICE_EC_OK) {
-        printf("Failed to limit the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
-        goto cleanup;
+        ec = nabto_device_limit_tcp_tunnel_connections(device, service->type, serviceConcurrentConnectionsLimit);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Failed to limit the tunnel service. %s" NEWLINE, nabto_device_error_get_message(ec));
+            goto cleanup;
+        }
     }
 
     ec = nabto_device_get_device_fingerprint(device, &deviceFingerprint);
