@@ -29,7 +29,7 @@ const service_t rtsp = {
     .host = "127.0.0.1",
     .id   = "rtsp",
     .type = "rtsp",
-    .port = 8554
+    .port = 554
 };
 
 
