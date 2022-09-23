@@ -32,10 +32,6 @@ const service_t rtsp = {
     .port = 8554
 };
 
-service_t services[] = {
-    ssh,
-    rtsp
-};
 
 int serviceConcurrentConnectionsLimit = -1;
 
@@ -123,6 +119,10 @@ int main(int argc, char** argv) {
     /**
      * This is the tunnel specific function all the other code is boiler plate code.
      */
+    service_t services[] = {
+        ssh,
+        rtsp
+    };
     int serviceCount = sizeof(services)/sizeof(services[0]);
     for (int i = 0; i < serviceCount; i++) {
         service_t* service = &services[i];
