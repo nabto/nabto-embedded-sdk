@@ -5,6 +5,7 @@
 
 
 #include "thermostat_iam.h"
+#include "thermostat_file.h"
 
 #include <modules/iam/nm_iam_serializer.h>
 
@@ -17,28 +18,30 @@ static bool load_iam_config(struct thermostat* thermostat);
 static void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_log* logger);
 
 
-void thermostat_iam_init(struct thermostat* thermostat)
+void thermostat_iam_init(struct thermostat_iam* thermostatIam, struct thermostat* thermostat, struct thermostat_file* tf)
 {
+    thermostatIam->thermostat = thermostat;
+    thermostatIam->thermostatFile = tf;
     nm_iam_init(&thermostat->iam, thermostat->device, thermostat->logger);
     load_iam_config(thermostat);
-    nm_iam_set_state_changed_callback(&thermostat->iam, thermostat_iam_state_changed, thermostat);
+    nm_iam_set_state_changed_callback(&thermostat->iam, thermostat_iam_state_changed, thermostatIam);
 
 }
 
-void thermostat_iam_deinit(struct thermostat* thermostat)
+void thermostat_iam_deinit(struct thermostat_iam* thermostatIam)
 {
-    nm_iam_deinit(&thermostat->iam);
+    nm_iam_deinit(&thermostatIam->thermostat->iam);
 }
 
 void thermostat_iam_state_changed(struct nm_iam* iam, void* userData)
 {
     (void)iam;
-    struct thermostat* thermostat = userData;
-    struct nm_iam_state* state = nm_iam_dump_state(&thermostat->iam);
+    struct thermostat_iam* thermostatIam = userData;
+    struct nm_iam_state* state = nm_iam_dump_state(&thermostatIam->thermostat->iam);
     if (state == NULL) {
         return;
     } else {
-        save_iam_state(thermostat->iamStateFile, state, thermostat->logger);
+        save_iam_state(thermostatIam->thermostatFile->iamStateFile, state, thermostatIam->thermostat->logger);
         nm_iam_state_free(state);
     }
 }
@@ -69,19 +72,19 @@ void thermostat_iam_create_default_state(NabtoDevice* device, const char* filena
     nm_iam_state_free(state);
 }
 
-bool thermostat_iam_load_state(struct thermostat* thermostat)
+bool thermostat_iam_load_state(struct thermostat* thermostat, struct thermostat_file* tf)
 {
-    if (!string_file_exists(thermostat->iamStateFile)) {
-        thermostat_iam_create_default_state(thermostat->device, thermostat->iamStateFile, thermostat->logger);
+    if (!string_file_exists(tf->iamStateFile)) {
+        thermostat_iam_create_default_state(thermostat->device, tf->iamStateFile, thermostat->logger);
     }
 
     bool status = true;
     char* str = NULL;
-    if (!string_file_load(thermostat->iamStateFile, &str)) {
-        NN_LOG_INFO(thermostat->logger, LOGM, "IAM state file (%s) does not exist, creating new default state. ", thermostat->iamStateFile);
-        thermostat_iam_create_default_state(thermostat->device, thermostat->iamStateFile, thermostat->logger);
-        if (!string_file_load(thermostat->iamStateFile, &str)) {
-            NN_LOG_ERROR(thermostat->logger, LOGM, "Load IAM state file (%s) failed. Ensure the file is available for read/write. ", thermostat->iamStateFile);
+    if (!string_file_load(tf->iamStateFile, &str)) {
+        NN_LOG_INFO(thermostat->logger, LOGM, "IAM state file (%s) does not exist, creating new default state. ", tf->iamStateFile);
+        thermostat_iam_create_default_state(thermostat->device, tf->iamStateFile, thermostat->logger);
+        if (!string_file_load(tf->iamStateFile, &str)) {
+            NN_LOG_ERROR(thermostat->logger, LOGM, "Load IAM state file (%s) failed. Ensure the file is available for read/write. ", tf->iamStateFile);
             return false;
         }
     }

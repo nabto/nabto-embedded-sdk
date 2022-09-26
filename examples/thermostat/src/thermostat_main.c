@@ -24,6 +24,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "thermostat_file.h"
+#include "thermostat_state_file_backend.h"
+
 #ifdef WIN32
 const char* homeDirEnvVariable = "APPDATA";
 const char* nabtoFolder = "nabto";
@@ -80,12 +83,14 @@ static bool make_directories(const char* in);
 static bool run_thermostat(const struct args* args);
 
 // Runs the nabto device
-static bool run_thermostat_device(NabtoDevice* device, struct thermostat* thermostat, const struct args* args);
+static bool run_thermostat_device(NabtoDevice* device, struct thermostat* thermostat, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args);
 
 // Functions to print info to stdout
 static void print_missing_device_config_help(const char* filename);
 static void print_help();
 static void print_version();
+
+static void thermostat_reinit_state(struct thermostat* thermostat, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb);
 
 const char* thermostatVersion = "1.0.0";
 
@@ -137,24 +142,37 @@ bool run_thermostat(const struct args* args)
     }
 
     struct thermostat thermostat;
-    thermostat_init(&thermostat, device, homeDir, &logger);
+    struct thermostat_file thermostatFile;
+    struct thermostat_iam thermostatIam;
+    struct thermostat_state thermostatState;
+    struct thermostat_state_file_backend thermostatStateFileBackend;
+    thermostat_file_init(&thermostatFile, homeDir);
+    thermostat_state_file_backend_init(&thermostatStateFileBackend, &thermostatState, thermostatFile.thermostatStateFile);
+    thermostat_init(&thermostat, device, &thermostatState, &logger);
+    thermostat_iam_init(&thermostatIam, &thermostat, &thermostatFile);
+    thermostat_iam_load_state(&thermostat, &thermostatFile);
 
-    bool status = run_thermostat_device(device, &thermostat, args);
+//load_thermostat_state(thermostat->thermostatStateFile, &thermostat->state, thermostat->logger);
+
+    bool status = run_thermostat_device(device, &thermostat, &thermostatFile, &thermostatStateFileBackend, args);
 
     if (signalCount < 2) {
        nabto_device_stop(device);
     }
     thermostat_deinit(&thermostat);
+    thermostat_iam_deinit(&thermostatIam);
+    thermostat_state_file_backend_deinit(&thermostatStateFileBackend);
+    thermostat_file_deinit(&thermostatFile);
     nabto_device_free(device);
     return status;
 }
 
-bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, const struct args* args)
+bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args)
 {
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
-    if (!load_device_config(thermostat->deviceConfigFile, &deviceConfig, thermostat->logger)) {
-        print_missing_device_config_help(thermostat->deviceConfigFile);
+    if (!load_device_config(tf->deviceConfigFile, &deviceConfig, thermostat->logger)) {
+        print_missing_device_config_help(tf->deviceConfigFile);
         return false;
     }
 
@@ -176,14 +194,14 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, cons
         nabto_device_set_p2p_port(dev, 0);
     }
 
-    if (!load_or_create_private_key(dev, thermostat->deviceKeyFile, thermostat->logger)) {
+    if (!load_or_create_private_key(dev, tf->deviceKeyFile, thermostat->logger)) {
         printf("Could not load or create the private key" NEWLINE);
         return false;
     }
 
     if (args->init) {
         printf("Resetting IAM state" NEWLINE);
-        thermostat_reinit_state(thermostat);
+        thermostat_reinit_state(thermostat, tf, tsfb);
         return true;
     }
 
@@ -245,7 +263,7 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, cons
             while(true) {
                 nabto_device_listener_device_event(listener, future, &event);
                 while(true) {
-                    thermostat_update(thermostat, (double)(tickInterval) / 1000.0);
+                    thermostat_state_file_backend_update(tsfb, (double)(tickInterval) / 1000.0);
 
                     if (nabto_device_future_timed_wait(future, tickInterval) != NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
                         break;
@@ -429,4 +447,11 @@ void print_help() {
 
 void print_version() {
     printf("%s" NEWLINE, thermostatVersion);
+}
+
+
+void thermostat_reinit_state(struct thermostat* thermostat, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb)
+{
+    thermostat_iam_create_default_state(thermostat->device, thermostatFile->iamStateFile, thermostat->logger);
+    thermostat_state_file_backend_create_default_state_file(tsfb);
 }

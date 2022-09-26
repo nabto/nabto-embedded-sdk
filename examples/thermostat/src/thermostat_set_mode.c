@@ -21,6 +21,7 @@ NabtoDeviceError thermostat_set_mode_legacy_init(struct thermostat_coap_handler*
 void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     struct thermostat* thermostat = handler->thermostat;
+    struct thermostat_state* state = thermostat->state;
     if (!thermostat_check_access(thermostat, request, "Thermostat:Set")) {
         nabto_device_coap_error_response(request, 403, "Access denied");
         return;
@@ -44,13 +45,13 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
     bool match;
 
     if ((cbor_value_text_string_equals(&value, cool, &match) == CborNoError) && match) {
-        thermostat_set_mode(thermostat, THERMOSTAT_MODE_COOL);
+        thermostat_state_set_mode(state, THERMOSTAT_MODE_COOL);
     } else if ((cbor_value_text_string_equals(&value, heat, &match) == CborNoError) && match) {
-        thermostat_set_mode(thermostat, THERMOSTAT_MODE_HEAT);
+        thermostat_state_set_mode(state, THERMOSTAT_MODE_HEAT);
     } else if ((cbor_value_text_string_equals(&value, fan, &match) == CborNoError) && match) {
-        thermostat_set_mode(thermostat, THERMOSTAT_MODE_FAN);
+        thermostat_state_set_mode(state, THERMOSTAT_MODE_FAN);
     } else if ((cbor_value_text_string_equals(&value, dry, &match) == CborNoError) && match) {
-        thermostat_set_mode(thermostat, THERMOSTAT_MODE_DRY);
+        thermostat_state_set_mode(state, THERMOSTAT_MODE_DRY);
     } else {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;

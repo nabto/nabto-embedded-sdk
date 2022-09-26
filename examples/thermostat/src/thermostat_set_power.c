@@ -21,6 +21,7 @@ NabtoDeviceError thermostat_set_power_legacy_init(struct thermostat_coap_handler
 void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     struct thermostat* thermostat = handler->thermostat;
+    struct thermostat_state* state = thermostat->state;
     if (!thermostat_check_access(thermostat, request, "Thermostat:Set")) {
         nabto_device_coap_error_response(request, 403, "Access denied");
         return;
@@ -38,7 +39,7 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
         return;
     }
 
-    thermostat_set_power(thermostat, powerState);
+    thermostat_state_set_power(state, powerState);
     nabto_device_coap_response_set_code(request, 204);
     nabto_device_coap_response_ready(request);
 }
