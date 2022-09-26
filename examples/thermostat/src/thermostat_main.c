@@ -151,8 +151,7 @@ bool run_thermostat(const struct args* args)
     thermostat_init(&thermostat, device, &thermostatState, &logger);
     thermostat_iam_init(&thermostatIam, &thermostat, &thermostatFile);
     thermostat_iam_load_state(&thermostat, &thermostatFile);
-
-//load_thermostat_state(thermostat->thermostatStateFile, &thermostat->state, thermostat->logger);
+    thermostate_state_file_backend_load_data(&thermostatStateFileBackend, &logger);
 
     bool status = run_thermostat_device(device, &thermostat, &thermostatFile, &thermostatStateFileBackend, args);
 
