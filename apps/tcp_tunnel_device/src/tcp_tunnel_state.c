@@ -31,6 +31,13 @@ bool load_tcp_tunnel_state(struct nm_iam_state* state, const char* stateFile, st
         return false;
     }
     free(str);
+    if (state->friendlyName == NULL) {
+        NN_LOG_INFO(
+            logger, LOGM,
+            "No IAM friendly name in state. Adding default: Tcp Tunnel");
+        nm_iam_state_set_friendly_name(state, "Tcp Tunnel");
+        write_state_to_file(stateFile, state);
+    }
     return true;
 }
 

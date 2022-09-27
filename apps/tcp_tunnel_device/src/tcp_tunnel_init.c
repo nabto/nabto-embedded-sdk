@@ -203,9 +203,25 @@ bool create_state_interactive_custom(const char* file) {
     printf("[3]: Administrator - Standard actions and management of users and pairing modes" NEWLINE);
     pickedRole = get_int(3);
 
+    char fn[64];
+    printf("Enter a friendly name for your device (max 64 characters, empty string will default to \"Tcp Tunnel\"): ");
+    if (scanf("%64s", fn) != 1) {
+        char i=0;
+        while (i != '\n') { (void)scanf("%c", &i); }
+        printf("Friendly name creation failed." NEWLINE);
+        return false;
+    }
+
     struct nm_iam_state* state = nm_iam_state_new();
 
-    if (enableLocalInitialPairing || enablePasswordInvitePairing) { // admin user must be precreated
+    if (strlen(fn) == 0) {
+        nm_iam_state_set_friendly_name(state, "Tcp Tunnel");
+    } else {
+        nm_iam_state_set_friendly_name(state, fn);
+    }
+
+    if (enableLocalInitialPairing ||
+        enablePasswordInvitePairing) {  // admin user must be precreated
         const char* initialUsername = "admin";
 
         struct nm_iam_user* admin = nm_iam_state_user_new(initialUsername);
@@ -252,6 +268,7 @@ bool create_state_default(const char* file)
     nm_iam_state_set_initial_pairing_username(state, initialUsername);
     nm_iam_state_set_open_pairing_role(state, "Guest");
     nm_iam_state_set_password_invite_pairing(state, true);
+    nm_iam_state_set_friendly_name(state, "Tcp Tunnel");
 
     return save_tcp_tunnel_state(file, state);
 }
