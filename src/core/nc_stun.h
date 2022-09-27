@@ -9,6 +9,12 @@
 #include <core/nc_dns_multi_resolver.h>
 #include <nn/ip_address.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #ifndef NC_STUN_MAX_CALLBACKS
 #define NC_STUN_MAX_CALLBACKS 10
 #endif
@@ -92,5 +98,9 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
 uint16_t nc_stun_get_local_port(struct nc_stun_context* ctx);
 
 void nc_stun_convert_ep(const struct nn_endpoint* stunEp, struct np_udp_endpoint* npEp );
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif // NC_STUN_H
