@@ -57,6 +57,7 @@ void thermostat_iam_create_default_state(NabtoDevice* device, const char* filena
 {
     struct nm_iam_state* state = nm_iam_state_new();
     nm_iam_state_set_open_pairing_role(state, "Administrator");
+    nm_iam_state_set_friendly_name(state, "Thermostat");
     nm_iam_state_set_local_initial_pairing(state, false);
     nm_iam_state_set_local_open_pairing(state, true);
     nm_iam_state_set_password_open_password(state, random_password(12));
@@ -86,7 +87,20 @@ bool thermostat_iam_load_state(struct thermostat* thermostat)
         }
     }
     struct nm_iam_state* is = nm_iam_state_new();
-    nm_iam_serializer_state_load_json(is, str, thermostat->logger);
+    if (!nm_iam_serializer_state_load_json(is, str, thermostat->logger)) {
+         NN_LOG_ERROR(thermostat->logger, LOGM, "Loading state failed, try to delete %s to make a new default file", thermostat->iamStateFile);
+        free(str);
+        return false;
+    }
+
+    if (is->friendlyName == NULL) {
+        NN_LOG_INFO(
+            thermostat->logger, LOGM,
+            "No IAM friendly name in state. Adding default: Thermostat");
+        nm_iam_state_set_friendly_name(is, "Thermostat");
+        save_iam_state(thermostat->iamStateFile, is, thermostat->logger);
+    }
+
     if (!nm_iam_load_state(&thermostat->iam, is)) {
         NN_LOG_ERROR(thermostat->logger, LOGM, "Failed to load state into IAM module");
         nm_iam_state_free(is);
@@ -131,6 +145,7 @@ bool load_iam_config(struct thermostat* thermostat)
         nm_iam_configuration_statement_add_action(s, "IAM:ListRoles");
         nm_iam_configuration_statement_add_action(s, "IAM:SetSettings");
         nm_iam_configuration_statement_add_action(s, "IAM:GetSettings");
+        nm_iam_configuration_statement_add_action(s, "IAM:SetDeviceInfo");
 
         nm_iam_configuration_add_policy(conf, p);
     }
