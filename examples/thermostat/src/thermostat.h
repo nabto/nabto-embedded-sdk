@@ -16,7 +16,7 @@
 
 struct thermostat {
     NabtoDevice* device;
-    struct nm_iam iam;
+    struct nm_iam* iam;
     struct nn_log* logger;
     struct thermostat_state* state;
     struct thermostat_coap_handler coapGet;
@@ -32,7 +32,7 @@ struct thermostat {
 
 };
 
-void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct thermostat_state* state, struct nn_log* logger);
+void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct nm_iam* iam, struct thermostat_state* state, struct nn_log* logger);
 void thermostat_deinit(struct thermostat* thermostat);
 
 void thermostat_stop(struct thermostat* thermostat);

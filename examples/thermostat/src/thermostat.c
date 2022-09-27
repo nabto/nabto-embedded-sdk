@@ -26,10 +26,11 @@ static NabtoDeviceError thermostat_init_coap_handlers(struct thermostat* thermos
 
 
 // Initialize the thermostat
-void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct thermostat_state* state, struct nn_log* logger)
+void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct nm_iam* iam, struct thermostat_state* state, struct nn_log* logger)
 {
     memset(thermostat, 0, sizeof(struct thermostat));
     thermostat->device = device;
+    thermostat->iam = iam;
     thermostat->logger = logger;
     thermostat->state = state;
     thermostat_init_coap_handlers(thermostat);
@@ -53,7 +54,6 @@ void thermostat_deinit(struct thermostat* thermostat)
 // stop the thermostat
 void thermostat_stop(struct thermostat* thermostat)
 {
-    nm_iam_stop(&thermostat->iam);
     thermostat_coap_handler_stop(&thermostat->coapGet);
     thermostat_coap_handler_stop(&thermostat->coapSetMode);
     thermostat_coap_handler_stop(&thermostat->coapSetPower);
@@ -108,7 +108,7 @@ NabtoDeviceError thermostat_init_coap_handlers(struct thermostat* thermostat)
 
 bool thermostat_check_access(struct thermostat* thermostat, NabtoDeviceCoapRequest* request, const char* action)
 {
-    if (!nm_iam_check_access(&thermostat->iam, nabto_device_coap_request_get_connection_ref(request), action, NULL)) {
+    if (!nm_iam_check_access(thermostat->iam, nabto_device_coap_request_get_connection_ref(request), action, NULL)) {
         return false;
     }
     return true;
