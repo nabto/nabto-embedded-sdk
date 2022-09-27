@@ -438,7 +438,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
     nabto_device_enable_mdns(device);
     nabto_device_mdns_add_subtype(device, "tcptunnel");
-    nabto_device_mdns_add_txt_item(device, "fn", "Tcp Tunnel");
 
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);

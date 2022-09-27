@@ -16,6 +16,10 @@ For a quick proof-of-concept evaluation where it makes sense to disable access c
 
 The TCP tunnel uses several configuration files.
 
+### Notice on existing configurations
+
+**NOTE:** In version 5.12.0, a friendly name was added to the IAM module. This friendly name can be changed using CoAP, if the user has access to the `IAM:SetDeviceInfo` action. If using a preexisting `tcp_tunnel_device_iam_config.json` from before version 5.12.0, you must update your IAM configuration for users to have access to this feature.
+
 ### `tcp_tunnel_device_services.json`
 
 This file defines the services which the tunnel exposes.  A service

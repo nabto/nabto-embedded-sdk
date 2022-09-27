@@ -68,6 +68,7 @@ bool iam_config_create_default(const char* iamConfigFile)
         nm_iam_configuration_statement_add_action(stmt, "IAM:SetUserDisplayName");
         nm_iam_configuration_statement_add_action(stmt, "IAM:SetSettings");
         nm_iam_configuration_statement_add_action(stmt, "IAM:GetSettings");
+        nm_iam_configuration_statement_add_action(stmt, "IAM:SetDeviceInfo");
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 

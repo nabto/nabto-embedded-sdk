@@ -259,6 +259,7 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_notification_categories.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_get.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_set.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_device_info_set.c
   ${root_dir}/src/modules/iam/policies/nm_condition.c
   ${root_dir}/src/modules/iam/policies/nm_statement.c
   ${root_dir}/src/modules/iam/policies/nm_policy.c

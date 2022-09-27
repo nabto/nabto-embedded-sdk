@@ -32,6 +32,7 @@ struct nm_iam_state {
     bool localInitialPairing;
     char* openPairingRole;
     char* initialPairingUsername;
+    char* friendlyName;
 };
 
 /*****************
@@ -135,6 +136,16 @@ bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* 
  * @return true iff the username was set.
  */
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* initialPairingUsername);
+
+/**
+ * Set the friendly name of the device. This will be added as mdns txt item with
+ * the key `fn`. The friendly name string is copied into the state.
+ *
+ * @param state [in]         The IAM state
+ * @param friendlyName [in]  The friendly name
+ * @return true iff the friendly name was set.
+ */
+bool nm_iam_state_set_friendly_name(struct nm_iam_state* state, const char* friendlyName);
 
 /**
  * Add a user to the IAM state. The state takes ownership of the user
