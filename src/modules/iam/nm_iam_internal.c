@@ -301,14 +301,16 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     if (nn_llist_size(&state->users) > iam->maxUsers ||
         (state->passwordOpenPassword != NULL && strlen(state->passwordOpenPassword) > iam->passwordMaxLength) ||
         (state->passwordOpenSct != NULL && strlen(state->passwordOpenSct) > iam->sctMaxLength) ||
-        (state->initialPairingUsername != NULL && strlen(state->initialPairingUsername) > iam->usernameMaxLength)
+        (state->initialPairingUsername != NULL && strlen(state->initialPairingUsername) > iam->usernameMaxLength) ||
+        (state->friendlyName != NULL && strlen(state->friendlyName) > iam->friendlyNameMaxLength)
         ) {
         NN_LOG_ERROR(iam->logger, LOGM,
-                     "One of the following length checks failed. maxUsers: %d>%d, passwordOpenPassword: %d>%d, passwordOpenSct: %d>%d, initialPairingUsername: %d>%d",
+                     "One of the following length checks failed. maxUsers: %d>%d, passwordOpenPassword: %d>%d, passwordOpenSct: %d>%d, initialPairingUsername: %d>%d, friendlyName: %d>%d",
                      nn_llist_size(&state->users), iam->maxUsers,
                      strlen(state->passwordOpenPassword), iam->passwordMaxLength,
                      strlen(state->passwordOpenSct), iam->sctMaxLength,
-                     strlen(state->initialPairingUsername), iam->usernameMaxLength);
+                     strlen(state->initialPairingUsername), iam->usernameMaxLength,
+                     strlen(state->friendlyName), iam->friendlyNameMaxLength);
         return false;
     }
 
@@ -352,6 +354,12 @@ bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
 
     if (state->passwordOpenSct != NULL && nabto_device_add_server_connect_token(iam->device, state->passwordOpenSct) != NABTO_DEVICE_EC_OK) {
         NN_LOG_ERROR(iam->logger, LOGM, "Failed to add password open pairing SCT");
+        return false;
+    }
+
+    if (state->friendlyName != NULL &&
+            nabto_device_mdns_add_txt_item(iam->device, "fn", state->friendlyName) != NABTO_DEVICE_EC_OK) {
+        NN_LOG_ERROR(iam->logger, LOGM, "Failed to add friendly name");
         return false;
     }
 
@@ -400,6 +408,7 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
                                                  iam->device, iam);
     nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
     nm_iam_settings_set_init(&iam->coapIamSettingsSetHandler, iam->device, iam);
+    nm_iam_device_info_set_init(&iam->coapIamDeviceInfoSetHandler, iam->device, iam);
 }
 
 void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
@@ -430,6 +439,7 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNotificationCategoriesHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsSetHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamDeviceInfoSetHandler);
 }
 
 void nm_iam_internal_stop(struct nm_iam* iam)
@@ -461,6 +471,7 @@ void nm_iam_internal_stop(struct nm_iam* iam)
 
     nm_iam_coap_handler_stop(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_stop(&iam->coapIamSettingsSetHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamDeviceInfoSetHandler);
 
     nm_iam_auth_handler_stop(&iam->authHandler);
     nm_iam_pake_handler_stop(&iam->pakeHandler);

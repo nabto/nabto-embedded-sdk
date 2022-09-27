@@ -35,6 +35,7 @@ void nm_iam_state_free(struct nm_iam_state* state)
     nm_iam_free(state->passwordOpenSct);
     nm_iam_free(state->openPairingRole);
     nm_iam_free(state->initialPairingUsername);
+    nm_iam_free(state->friendlyName);
     nm_iam_free(state);
 }
 
@@ -88,6 +89,7 @@ void nm_iam_state_set_local_initial_pairing(struct nm_iam_state* state, bool b)
 {
     state->localInitialPairing = b;
 }
+
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* username)
 {
     if (username == NULL) {
@@ -102,6 +104,22 @@ bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const
     }
     return (tmp != 0);
 }
+
+bool nm_iam_state_set_friendly_name(struct nm_iam_state* state, const char* friendlyName)
+{
+    if (friendlyName == NULL) {
+        nm_iam_free(state->friendlyName);
+        state->friendlyName = NULL;
+        return true;
+    }
+    char* tmp = nn_strdup(friendlyName, nm_iam_allocator_get());
+    if (tmp != NULL) {
+        nm_iam_free(state->friendlyName);
+        state->friendlyName = tmp;
+    }
+    return (tmp != 0);
+}
+
 bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* role)
 {
     if (role == NULL) {
@@ -211,6 +229,13 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
     if(state->initialPairingUsername != NULL) {
         copy->initialPairingUsername = nn_strdup(state->initialPairingUsername, nm_iam_allocator_get());
         if (copy->initialPairingUsername == NULL) {
+            failed = true;
+        }
+    }
+
+    if(state->friendlyName != NULL) {
+        copy->friendlyName = nn_strdup(state->friendlyName, nm_iam_allocator_get());
+        if (copy->friendlyName == NULL) {
             failed = true;
         }
     }

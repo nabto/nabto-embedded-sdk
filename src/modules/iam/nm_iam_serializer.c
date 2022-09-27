@@ -164,6 +164,10 @@ bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out)
             cJSON_AddItemToObject(json, "InitialPairingUsername", cJSON_CreateString(state->initialPairingUsername));
         }
 
+        if (state->friendlyName) {
+            cJSON_AddItemToObject(json, "FriendlyName", cJSON_CreateString(state->friendlyName));
+        }
+
         cJSON* usersArray = cJSON_CreateArray();
 
         struct nm_iam_user* user;
@@ -214,6 +218,7 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
     cJSON* passwordInvitePairing = cJSON_GetObjectItem(root, "PasswordInvitePairing");
     cJSON* localInitialPairing = cJSON_GetObjectItem(root, "LocalInitialPairing");
     cJSON* initialPairingUsername = cJSON_GetObjectItem(root, "InitialPairingUsername");
+    cJSON* friendlyName = cJSON_GetObjectItem(root, "FriendlyName");
     cJSON* openPairingRole = cJSON_GetObjectItem(root, "OpenPairingRole");
 
     cJSON* users = cJSON_GetObjectItem(root, "Users");
@@ -251,6 +256,11 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
     if (initialPairingUsername != NULL && cJSON_IsString(initialPairingUsername)) {
         nm_iam_state_set_initial_pairing_username(state, initialPairingUsername->valuestring);
     }
+
+    if (friendlyName != NULL && cJSON_IsString(friendlyName)) {
+        nm_iam_state_set_friendly_name(state, friendlyName->valuestring);
+    }
+
     if (openPairingRole != NULL && cJSON_IsString(openPairingRole)) {
         nm_iam_state_set_open_pairing_role(state, openPairingRole->valuestring);
     }
