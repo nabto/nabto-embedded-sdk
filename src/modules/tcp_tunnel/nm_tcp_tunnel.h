@@ -9,6 +9,7 @@
 
 #include <nn/llist.h>
 #include <nn/string_int_map.h>
+#include <nn/string_map.h>
 
 struct nabto_stream;
 struct nc_device_context;
@@ -55,6 +56,8 @@ struct nm_tcp_tunnel_service {
     char* id;
     char* type;
 
+    struct nn_string_map metadata;
+
     void* weakPtr;
 };
 
@@ -84,5 +87,9 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr);
 
 size_t nm_tcp_tunnel_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type);
+
+np_error_code nm_tcp_tunnel_service_add_metadata(struct nm_tcp_tunnels* tunnels, const char* serviceId, const char* key, const char *value);
+
+np_error_code nm_tcp_tunnel_service_remove_metadata(struct nm_tcp_tunnels* tunnels, const char* serviceId, const char* key);
 
 #endif

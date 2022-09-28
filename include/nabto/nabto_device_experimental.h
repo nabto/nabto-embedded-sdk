@@ -55,6 +55,18 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
 
+/**
+ * TODO: Documentation
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key, const char* value);
+
+
+/**
+ * TODO: Documentation
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_remove_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key);
 
 /**
  * Crypto Speed test
