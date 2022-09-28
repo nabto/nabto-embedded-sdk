@@ -44,6 +44,7 @@ np_error_code nm_tcp_tunnel_coap_init(struct nm_tcp_tunnels* tunnels, struct nc_
         nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
     }
+
     return NABTO_EC_OK;
 }
 
@@ -104,23 +105,38 @@ static size_t encode_service(struct nm_tcp_tunnel_service* service, uint8_t* buf
 {
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-    CborEncoder map;
+    CborEncoder map, metadata_map;
+
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-    cbor_encode_text_stringz(&map, "Id");
-    cbor_encode_text_stringz(&map, service->id);
+    {
+        cbor_encode_text_stringz(&map, "Id");
+        cbor_encode_text_stringz(&map, service->id);
 
-    cbor_encode_text_stringz(&map, "Type");
-    cbor_encode_text_stringz(&map, service->type);
+        cbor_encode_text_stringz(&map, "Type");
+        cbor_encode_text_stringz(&map, service->type);
 
-    cbor_encode_text_stringz(&map, "Host");
-    cbor_encode_text_stringz(&map, np_ip_address_to_string(&service->address));
+        cbor_encode_text_stringz(&map, "Host");
+        cbor_encode_text_stringz(&map, np_ip_address_to_string(&service->address));
 
-    cbor_encode_text_stringz(&map, "Port");
-    cbor_encode_uint(&map, service->port);
+        cbor_encode_text_stringz(&map, "Port");
+        cbor_encode_uint(&map, service->port);
 
-    cbor_encode_text_stringz(&map, "StreamPort");
-    cbor_encode_uint(&map, service->streamPort);
+        cbor_encode_text_stringz(&map, "StreamPort");
+        cbor_encode_uint(&map, service->streamPort);
 
+        size_t metadata_size = nn_string_map_size(&service->metadata);
+        cbor_encode_text_stringz(&map, "Metadata");
+        cbor_encoder_create_map(&encoder, &metadata_map, metadata_size);
+        {
+            struct nn_string_map_iterator it;
+            NN_STRING_MAP_FOREACH(it, &service->metadata)
+            {
+                cbor_encode_text_stringz(&metadata_map, nn_string_map_key(&it));
+                cbor_encode_text_stringz(&metadata_map, nn_string_map_value(&it));
+            }
+        }
+        cbor_encoder_close_container(&encoder, &map);
+    }
     cbor_encoder_close_container(&encoder, &map);
     return cbor_encoder_get_extra_bytes_needed(&encoder);
 }
