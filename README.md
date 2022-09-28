@@ -67,9 +67,9 @@ If not using CMake, compiler definitions of the same names can be used through `
 
 MbedTLS source files are included as a 3rdparty submodule on this repo. However, using the WolfSSL library requires the library to be installed on the system.
 
-Nabto is currently tested with wolfssl 5.4.0
+Nabto is currently tested with wolfssl 5.5.1
 
-https://github.com/wolfSSL/wolfssl/releases/tag/v5.4.0-stable
+https://github.com/wolfSSL/wolfssl/releases/tag/v5.5.1-stable
 
 When installing WolfSSL, the following build options can be used:
 
