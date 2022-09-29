@@ -56,14 +56,27 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_disable_remote_access(NabtoDevice* device);
 
 /**
- * TODO: Documentation
+ * Add a key-value pair to the metadata of a TCP tunnel service.
+ *
+ * @param device [in]      The device instance.
+ * @param serviceId [in]   The unique id of a service on the device.
+ * @param key [in]         The key of the key-value pair.
+ * @param value [in]       The value of the key-value pair.
+ * @return NABTO_DEVICE_EC_OK if the key-value pair was added to the metadata of the service.
+ *         NABTO_DEVICE_EC_NOT_FOUND if no service with the given id was located on the device.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key, const char* value);
 
 
 /**
- * TODO: Documentation
+ * Remove a key-value pair from the metadata of a TCP tunnel service.
+ *
+ * @param device [in]      The device instance.
+ * @param serviceId [in]   The unique id of a service on the device.
+ * @param key [in]         The key of the key-value pair.
+ * @return NABTO_DEVICE_EC_OK if the key-value pair was added to the metadata of the service.
+ *         NABTO_DEVICE_EC_NOT_FOUND if no service with the given id was located on the device.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_remove_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key);
