@@ -100,7 +100,7 @@ struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger)
 
                     if (!cJSON_IsString(metadata_entry))
                     {
-                        NN_LOG_WARN(logger, LOGM, "Service %s has a non-string metadata value for key %s", service->id, key)
+                        NN_LOG_WARN(logger, LOGM, "Service %s has a non-string metadata value for key %s", service->id, key);
                         continue;
                     }
 
