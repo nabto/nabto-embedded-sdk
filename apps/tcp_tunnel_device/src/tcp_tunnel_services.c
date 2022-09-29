@@ -124,7 +124,16 @@ cJSON* tcp_tunnel_service_as_json(struct tcp_tunnel_service* service)
     cJSON_AddItemToObject(root, "Host", cJSON_CreateString(service->host));
     cJSON_AddItemToObject(root, "Port", cJSON_CreateNumber(service->port));
 
-    // @TODO: add metadata
+    cJSON* metadata = cJSON_CreateObject();
+    struct nn_string_map_iterator it;
+    NN_STRING_MAP_FOREACH(it, &service->metadata)
+    {
+        const char* key = nn_string_map_key(&it);
+        const char* value = nn_string_map_value(&it);
+        cJSON_AddItemToObject(metadata, key, cJSON_CreateString(value));
+    }
+
+    cJSON_AddItemToObject(root, "Metadata", metadata);
 
     return root;
 }
@@ -133,14 +142,14 @@ bool tcp_tunnel_create_default_services_file(const char* servicesFile)
 {
     cJSON* root = cJSON_CreateArray();
 
-    struct tcp_tunnel_service ssh = {0};
+    struct tcp_tunnel_service* ssh = tcp_tunnel_service_new();
 
-    ssh.id = "ssh";
-    ssh.type = "ssh";
-    ssh.host = "127.0.0.1";
-    ssh.port = 22;
+    ssh->id   = strdup("ssh");
+    ssh->type = strdup("ssh");
+    ssh->host = strdup("127.0.0.1");
+    ssh->port = 22;
 
-    cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(&ssh));
-
+    cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(ssh));
+    tcp_tunnel_service_free(ssh);
     return json_config_save(servicesFile, root);
 }
