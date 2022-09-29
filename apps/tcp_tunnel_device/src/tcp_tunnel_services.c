@@ -13,6 +13,7 @@ static const char* LOGM = "services";
 struct tcp_tunnel_service* tcp_tunnel_service_new()
 {
     struct tcp_tunnel_service* service = calloc(1, sizeof(struct tcp_tunnel_service));
+    nn_string_map_init(&service->metadata, get_default_allocator());
     return service;
 }
 
@@ -21,6 +22,7 @@ void tcp_tunnel_service_free(struct tcp_tunnel_service* service)
     free(service->id);
     free(service->type);
     free(service->host);
+    nn_string_map_deinit(&service->metadata);
     free(service);
 }
 
@@ -87,6 +89,25 @@ struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger)
             service->type = strdup(type->valuestring);
             service->host = strdup(host->valuestring);
             service->port = (uint16_t)port->valuedouble;
+
+            cJSON* metadata = cJSON_GetObjectItem(json, "Metadata");
+            if (cJSON_IsObject(metadata))
+            {
+                cJSON* metadata_entry = NULL;
+                cJSON_ArrayForEach(metadata_entry, metadata)
+                {
+                    if (!cJSON_IsString(metadata_entry))
+                    {
+                        // @TODO: Log an error here
+                        continue;
+                    }
+
+                    const char* key = metadata_entry->string;
+                    const char* value = metadata_entry->valuestring;
+                    nn_string_map_insert(&service->metadata, key, value);
+                }
+            }
+
             return service;
         }
     }
@@ -102,6 +123,9 @@ cJSON* tcp_tunnel_service_as_json(struct tcp_tunnel_service* service)
     cJSON_AddItemToObject(root, "Type", cJSON_CreateString(service->type));
     cJSON_AddItemToObject(root, "Host", cJSON_CreateString(service->host));
     cJSON_AddItemToObject(root, "Port", cJSON_CreateNumber(service->port));
+
+    // @TODO: add metadata
+
     return root;
 }
 
@@ -109,7 +133,7 @@ bool tcp_tunnel_create_default_services_file(const char* servicesFile)
 {
     cJSON* root = cJSON_CreateArray();
 
-    struct tcp_tunnel_service ssh;
+    struct tcp_tunnel_service ssh = {0};
 
     ssh.id = "ssh";
     ssh.type = "ssh";
