@@ -124,9 +124,8 @@ static size_t encode_service(struct nm_tcp_tunnel_service* service, uint8_t* buf
         cbor_encode_text_stringz(&map, "StreamPort");
         cbor_encode_uint(&map, service->streamPort);
 
-        size_t metadata_size = nn_string_map_size(&service->metadata);
         cbor_encode_text_stringz(&map, "Metadata");
-        cbor_encoder_create_map(&encoder, &metadata_map, metadata_size);
+        cbor_encoder_create_map(&map, &metadata_map, CborIndefiniteLength);
         {
             struct nn_string_map_iterator it;
             NN_STRING_MAP_FOREACH(it, &service->metadata)
@@ -135,7 +134,7 @@ static size_t encode_service(struct nm_tcp_tunnel_service* service, uint8_t* buf
                 cbor_encode_text_stringz(&metadata_map, nn_string_map_value(&it));
             }
         }
-        cbor_encoder_close_container(&encoder, &map);
+        cbor_encoder_close_container(&map, &metadata_map);
     }
     cbor_encoder_close_container(&encoder, &map);
     return cbor_encoder_get_extra_bytes_needed(&encoder);
