@@ -161,7 +161,7 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
  * allow.
  *
  * Default lengths are: username: 64, display name: 64, password: 64, fcm token: 1024, fcm project
- * id: 256, sct: 64.
+ * id: 256, sct: 64, friendly name: 64.
  *
  * @param iam [in]  IAM module to set length in
  * @param len [in]  Length to set
@@ -172,6 +172,7 @@ void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_friendly_name_max_length(struct nm_iam* iam, size_t len);
 
 /*
  * Set the max number of users allowed in the IAM module.
@@ -395,6 +396,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserSetNotificationCategoriesHandler;
     struct nm_iam_coap_handler coapIamSettingsSetHandler;
     struct nm_iam_coap_handler coapIamSettingsGetHandler;
+    struct nm_iam_coap_handler coapIamDeviceInfoSetHandler;
 
 
     struct nm_iam_auth_handler authHandler;
@@ -412,6 +414,7 @@ struct nm_iam {
     size_t fcmProjectIdMaxLength;
     size_t sctMaxLength;
     size_t maxUsers;
+    size_t friendlyNameMaxLength;
 
     // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
     bool stateHasChanged;
