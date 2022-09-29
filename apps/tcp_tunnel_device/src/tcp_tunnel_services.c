@@ -96,13 +96,14 @@ struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger)
                 cJSON* metadata_entry = NULL;
                 cJSON_ArrayForEach(metadata_entry, metadata)
                 {
+                    const char* key = metadata_entry->string;
+
                     if (!cJSON_IsString(metadata_entry))
                     {
-                        // @TODO: Log an error here
+                        NN_LOG_WARN(logger, LOGM, "Service %s has a non-string metadata value for key %s", service->id, key)
                         continue;
                     }
 
-                    const char* key = metadata_entry->string;
                     const char* value = metadata_entry->valuestring;
                     nn_string_map_insert(&service->metadata, key, value);
                 }
