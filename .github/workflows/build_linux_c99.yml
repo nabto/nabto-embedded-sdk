@@ -20,7 +20,8 @@ jobs:
           fetch-depth: 0
       - name: Configure cmake
         env:
-          CFLAGS: -std=c99
+        # if using c99 then certain linux stuff fails to be compiled properly
+          CFLAGS: -ansi -std=gnu99
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
 
       - name: Build
