@@ -57,6 +57,7 @@ nabto_device_disable_remote_access(NabtoDevice* device);
 
 /**
  * Add a key-value pair to the metadata of a TCP tunnel service.
+ * If the given key already exists in the metadata, then its corresponding value will be overwritten.
  *
  * @param device [in]      The device instance.
  * @param serviceId [in]   The unique id of a service on the device.
@@ -75,7 +76,7 @@ nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* se
  * @param device [in]      The device instance.
  * @param serviceId [in]   The unique id of a service on the device.
  * @param key [in]         The key of the key-value pair.
- * @return NABTO_DEVICE_EC_OK if the key-value pair was added to the metadata of the service.
+ * @return NABTO_DEVICE_EC_OK if the key-value pair was removed or if no key-value pair was found.
  *         NABTO_DEVICE_EC_NOT_FOUND if no service with the given id was located on the device.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
