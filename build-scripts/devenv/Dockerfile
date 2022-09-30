@@ -1,7 +1,6 @@
 FROM ubuntu:22.04
 
 ARG CMAKE_VERSION=3.19.6
-ARG WOLFSSL_VERSION=5.3.0-stable
 
 RUN apt update && apt install -y git build-essential autoconf libtool pkg-config wget bash-completion vim gdb clang gcc curl ninja-build valgrind python3-pip sudo unzip
 
@@ -15,7 +14,7 @@ WORKDIR /build/wolfssl
 RUN git clone https://github.com/wolfSSL/wolfssl
 # use a specific commit on master
 WORKDIR /build/wolfssl/wolfssl
-RUN git checkout v5.4.0-stable
+RUN git checkout v5.5.1-stable
 RUN ./autogen.sh
 # Fastest base intel config ./configure --enable-intelasm --enable-aesni --enable-fpecc --enable-fasthugemath --enable-sp-asm --enable-sp
 # Test config modifications with ./wolfcrypt/benchmark/benchmark -ecc
