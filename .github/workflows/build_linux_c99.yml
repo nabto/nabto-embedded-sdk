@@ -24,7 +24,7 @@ jobs:
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
 
       - name: Build
-        run: cmake --build build-dir --parallel
+        run: cd build-dir && make VERBOSE=1 -j 4
 
       - name: Install
         run: cmake --build build-dir --target install
