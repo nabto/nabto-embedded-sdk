@@ -1,4 +1,4 @@
-name: Linux Armhf
+name: Build C99 mode
 
 on:
   push:
