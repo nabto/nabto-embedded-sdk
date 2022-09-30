@@ -40,6 +40,33 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
     return nabto_device_error_core_to_api(ec);
 }
 
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key, const char* value)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec = NABTO_EC_OK;
+
+    // @TODO: Unsure if locking eventMutex is required here, needs more research.
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    ec = nm_tcp_tunnel_service_add_metadata(&dev->tcpTunnels, serviceId, key, value);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    return nabto_device_error_core_to_api(ec);
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_remove_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    np_error_code ec = NABTO_EC_OK;
+
+    // @TODO: Unsure if locking eventMutex is required here, same as above.
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    ec = nm_tcp_tunnel_service_remove_metadata(&dev->tcpTunnels, serviceId, key);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    return nabto_device_error_core_to_api(ec);
+}
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_tcp_tunnel_connections(NabtoDevice* device, const char* type, size_t limit)

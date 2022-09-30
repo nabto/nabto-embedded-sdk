@@ -69,6 +69,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels
     tunnels->weakPtrCounter++;
     service->weakPtr = tunnels->weakPtrCounter;
     nn_llist_init(&service->connections);
+    nn_string_map_init(&service->metadata, np_allocator_get());
     return service;
 }
 
@@ -134,6 +135,7 @@ void nm_tcp_tunnel_service_deinit(struct nm_tcp_tunnel_service* service)
 
         nm_tcp_tunnel_connection_stop_from_manager(connection);
     }
+    nn_string_map_deinit(&service->metadata);
     nc_stream_manager_remove_listener(&service->streamListener);
 }
 
@@ -220,6 +222,37 @@ void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWea
     } else {
         nm_tcp_tunnel_connection_free(c);
     }
+}
+
+np_error_code nm_tcp_tunnel_service_add_metadata(struct nm_tcp_tunnels* tunnels, const char* serviceId, const char* key, const char *value)
+{
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, serviceId);
+    if (service == NULL)
+    {
+        return NABTO_EC_NOT_FOUND;
+    }
+
+    struct nn_string_map* metadata = &service->metadata;
+    struct nn_string_map_iterator it = nn_string_map_get(metadata, key);
+    if (!nn_string_map_is_end(&it)) 
+    {
+        nn_string_map_erase_iterator(metadata, &it);
+    }
+
+    nn_string_map_insert(metadata, key, value);
+    return NABTO_EC_OK;
+}
+
+np_error_code nm_tcp_tunnel_service_remove_metadata(struct nm_tcp_tunnels* tunnels, const char* serviceId, const char* key)
+{
+    struct nm_tcp_tunnel_service* service = nm_tcp_tunnels_find_service(tunnels, serviceId);
+    if (service == NULL)
+    {
+        return NABTO_EC_NOT_FOUND;
+    }
+
+    nn_string_map_erase(&service->metadata, key);
+    return NABTO_EC_OK;
 }
 
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels* tunnels, const char* id)

@@ -19,6 +19,8 @@
 #define NEWLINE "\n"
 #endif
 
+#define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
+
 bool create_device_config_interactive(const char* file);
 bool create_state_interactive(const char* file);
 bool create_state_interactive_custom(const char* file);
@@ -302,14 +304,45 @@ bool createService(cJSON* root)
         return false;
     }
 
-    struct tcp_tunnel_service service;
+    struct tcp_tunnel_service* service = tcp_tunnel_service_new();
 
-    service.id = id;
-    service.type = id;
-    service.host = host;
-    service.port = port;
+    service->id = strdup(id);
+    service->type = strdup(id);
+    service->host = strdup(host);
+    service->port = port;
 
-    cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(&service));
+    printf("Service metadata is a map of strings to strings that a client can retrieve using COAP." NEWLINE);
+    printf("Do you want to add metadata to this service? ");
+    bool createMetadata = yes_no();
+    while (createMetadata)
+    {
+        char key[20] = {0};
+        char value[20] = {0};
+
+        printf("Metadata entry key: ");
+        if (scanf("%20s", key) != 1) {
+            char i=0;
+            while (i != '\n') { (void)scanf("%c", &i); }
+            printf("Service creation failed. Invalid metadata key entered." NEWLINE);
+            return false;
+        }
+
+        printf("Metadata entry value: ");
+        if (scanf("%20s", value) != 1) {
+            char i=0;
+            while (i != '\n') { (void)scanf("%c", &i); }
+            printf("Service creation failed. Invalid metadata value entered." NEWLINE);
+            return false;
+        }
+
+        nn_string_map_insert(&service->metadata, key, value);
+
+        printf("Do you want to add another key-value pair? ");
+        createMetadata = yes_no();
+    }
+
+    cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(service));
+    tcp_tunnel_service_free(service);
     return true;
 }
 
