@@ -1,0 +1,30 @@
+name: Linux Armhf
+
+on:
+  push:
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    name: Build
+    runs-on: "ubuntu-22.04"
+
+    steps:
+      - name: Install compiler
+        run: sudo apt update && sudo apt install -y build-essential cmake git ninja-build
+
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Configure cmake
+        env:
+          CFLAGS: -std=c99
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
+
+      - name: Build
+        run: cmake --build build-dir --parallel
+
+      - name: Install
+        run: cmake --build build-dir --target install
