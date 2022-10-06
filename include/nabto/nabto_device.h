@@ -1233,7 +1233,7 @@ nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification);
 
 /**
  * Set the FCM project id on a notification. The project ID must be
- * created and configured in FCM through the guide <Link TBD>. The
+ * created and configured in FCM as explained in https://docs.nabto.com/developer/guides/concepts/push/fcm-setup.html. The
  * project ID is copied into the notification.
  *
  * @param notification [in]  The notification to set project ID in
