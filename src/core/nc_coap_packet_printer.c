@@ -1,6 +1,7 @@
 #include "nc_coap_packet_printer.h"
 #include <coap/nabto_coap.h>
 #include <platform/np_logging.h>
+#include <platform/np_allocator.h>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -119,13 +120,17 @@ char* safeWrite(char* buffer, char* end, const char* format, ...)
     return buffer + written;
 }
 
-void nc_coap_packet_print(const char* header, const uint8_t* packet, size_t packetSize)
+np_error_code nc_coap_packet_print(const char* header, const uint8_t* packet, size_t packetSize)
 {
-    char buffer[1024];
-    memset(buffer, 0, 1024);
+    size_t bufferLength = 1024;
+    char* buffer = np_calloc(bufferLength, 1);
+    if (buffer == NULL)
+    {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
 
     char* ptr = buffer;
-    char* end = buffer+1024;
+    char* end = buffer+bufferLength;
     ptr = safeWrite(ptr, end, "%s", header);
     struct nabto_coap_incoming_message message;
     if (!nabto_coap_parse_message(packet, packetSize, &message)) {
@@ -172,4 +177,6 @@ void nc_coap_packet_print(const char* header, const uint8_t* packet, size_t pack
     } else {
         NABTO_LOG_TRACE(LOG, "Can not print coap packet");
     }
+    np_free(buffer);
+    return NABTO_EC_OK;
 }
