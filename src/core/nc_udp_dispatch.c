@@ -3,6 +3,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_udp_wrapper.h>
 #include <platform/np_dtls_cli.h>
+#include <platform/np_allocator.h>
 
 #include <core/nc_client_connection_dispatch.h>
 #include <core/nc_stun.h>
@@ -86,8 +87,17 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     }
 
     struct np_udp_endpoint ep;
-    uint8_t recvBuffer[1500];
-    size_t bufferLength = sizeof(recvBuffer);
+    size_t bufferLength = 1500;
+    uint8_t* recvBuffer = np_calloc(1, bufferLength);
+    if (recvBuffer == NULL) {
+        // cannot allocate a udp buffer for receiving data. Either try again or
+        // discard the packet. Retrying can lead to a loop where this keeps
+        // getting called until memory is available. The packet should probably
+        // be thrown away instead. Currently there's no way to ask the udp
+        // module to discard a packet.
+        start_recv(ctx);
+        return;
+    }
     size_t recvLength;
     np_error_code recvEc = np_udp_recv_from(
         &ctx->pl->udp, ctx->sock, &ep, recvBuffer, bufferLength, &recvLength);
@@ -95,6 +105,8 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
         nc_udp_dispatch_handle_packet(&ep, recvBuffer, (uint16_t)recvLength,
                                       ctx);
     }
+
+    np_free(recvBuffer);
 
     if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
         start_recv(ctx);
