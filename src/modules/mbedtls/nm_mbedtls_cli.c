@@ -542,8 +542,13 @@ void event_do_one(void* data)
         }
         return;
     } else if(conn->state == DATA) {
-        uint8_t recvBuffer[1500];
-        ret = mbedtls_ssl_read( &conn->ssl, recvBuffer, sizeof(recvBuffer) );
+        size_t recvBufferSize = 1500;
+        uint8_t* recvBuffer = np_calloc(1, recvBufferSize);
+        if (recvBuffer == NULL) {
+            // TODO
+            return;
+        }
+        ret = mbedtls_ssl_read( &conn->ssl, recvBuffer, recvBufferSize );
         if (ret == 0) {
             // EOF
             conn->state = CLOSING;
@@ -553,7 +558,6 @@ void event_do_one(void* data)
             // TODO: sequence numbers
             uint64_t seq = uint64_from_bigendian(conn->ssl.MBEDTLS_PRIVATE(in_ctr));
             conn->dataHandler(conn->recvChannelId, seq, recvBuffer, (uint16_t)ret, conn->callbackData);
-            return;
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
@@ -573,6 +577,7 @@ void event_do_one(void* data)
             conn->state = CLOSING;
             nm_dtls_do_close(conn, NABTO_EC_UNKNOWN);
         }
+        np_free(recvBuffer);
         return;
     }
 }
