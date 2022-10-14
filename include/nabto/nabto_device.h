@@ -975,14 +975,12 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * @param listener [in]    The listener to initialize as CoAP.
  * @param method [in]      The CoAP method for which to handle requests
  * @param pathSegments [in]
- *
  * The CoAP path segments of the resource. The array of segments is a
  * NULL terminated array of null terminated strings. The familiar
  * notation for rest resources "/thermostat/state" becomes the array
  * {"thermostat", "state", NULL }
- *
- * Parameters can be defined by using the syntax {<parameter>} for a
- * parameter. E.g. {"iam","users","{id}",NULL}
+ * Parameters can be defined by using the syntax {<parameter>}. E.g.
+ * {"iam","users","{id}",NULL}
  *
  * @return NABTO_DEVICE_EC_OK on success
  *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
