@@ -260,8 +260,8 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_get_device_id(NabtoDevice* device);
 
 /**
- * Set the server url. If not set it will default to <Product
- * ID>.devices.nabto.net. Cannot be called after nabto_device_start().
+ * Set the server url. If not set it will default to `<Product
+ * ID>.devices.nabto.net`. Cannot be called after nabto_device_start().
  *
  * @param device [in]    The device instance to perform action on
  * @param serverUrl [in] The url of the basestation attach node to set e.g. foo.bar.baz
@@ -977,10 +977,10 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * @param pathSegments [in]
  * The CoAP path segments of the resource. The array of segments is a
  * NULL terminated array of null terminated strings. The familiar
- * notation for rest resources "/thermostat/state" becomes the array
- * {"thermostat", "state", NULL }
- * Parameters can be defined by using the syntax {<parameter>}. E.g.
- * {"iam","users","{id}",NULL}
+ * notation for rest resources `/thermostat/state` becomes the array
+ * `{"thermostat", "state", NULL }`
+ * Parameters can be defined by using the syntax `{<parameter>}`. E.g.
+ * `{"iam","users","{id}",NULL}`
  *
  * @return NABTO_DEVICE_EC_OK on success
  *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
