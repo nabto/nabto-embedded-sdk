@@ -170,14 +170,15 @@ nabto_device_new();
  * configuration functions (such as nabto_device_set_device_id) must
  * be called prior to invoke this function.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
+ *             private key, server URL, device ID, or Product ID.
+ *  - NABTO_DEVICE_EC_IN_USE  if a resource cannot be allocated because it is already used.
+ *  - NABTO_DEVICE_EC_ADDRESS_IN_USE  if a socket cannot be bound to an address/port beacause it is already in use.
+ *
  * @param device [in]   The device instance to start
  * @param future [in]   The future which is resolved when started.
- * Future error codes:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
- *             private key, server URL, device ID, or Product ID.
- *   NABTO_DEVICE_EC_IN_USE  if a resource cannot be allocated because it is already used.
- *   NABTO_DEVICE_EC_ADDRESS_IN_USE  if a socket cannot be bound to an address/port beacause it is already in use.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future);
@@ -606,17 +607,17 @@ nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceLis
 /**
  * Start listening for next connection event.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if event new event is set
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in]  Listener to get connection events from
  * @param future [in]    Future which resolves when event is ready or on errors.
  * @param ref [out]      Where to put the connection reference when the future resolves.
  * @param event [out]    Where to put the connection event when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if event new event is set
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_connection_event(NabtoDeviceListener* listener,
@@ -684,16 +685,16 @@ nabto_device_device_events_init_listener(NabtoDevice* device, NabtoDeviceListene
 /**
  * Start listening for next device event.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if new event is set
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in]  Listener to get device events from
  * @param future [in]    Future which resolves when event is ready or on errors.
  * @param event [out]    Where to put the device event when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if new event is set
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_device_event(NabtoDeviceListener* listener,
@@ -754,16 +755,16 @@ nabto_device_stream_init_listener_ephemeral(NabtoDevice* device,
  * Start listening for new streams. The stream resource must be kept
  * alive untill the returned future is resolved.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in] Listener to get new streams from.
  * @param future [in]   Future which resolves when a new stream is ready, or an error occurs.
  * @param stream [out]  Where to put reference to a new stream. The new stream must be freed by user.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_stream(NabtoDeviceListener* listener,
@@ -789,13 +790,13 @@ nabto_device_stream_free(NabtoDeviceStream* stream);
  * it can just free it, else it has to call accept to finish the
  * handshake. The future returns the status of the handshake.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if opening went ok.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if other accept is in progress
+ *  - NABTO_DEVICE_EC_ABORTED if device is closed
+ *
  * @param stream [in]  the stream to accept
  * @param future [in]  future which resolved when the stream is accepted
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if opening went ok.
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if other accept is in progress
- *   NABTO_DEVICE_EC_ABORTED if device is closed
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_accept(NabtoDeviceStream* stream, NabtoDeviceFuture* future);
@@ -815,17 +816,17 @@ nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
  * if (readLength != bufferLength) the stream has reached a state
  * where no more bytes can be read.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK   if all data was read.
+ *  - NABTO_DEVICE_EC_EOF  if only some data was read and the stream is eof.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+ *
  * @param stream [in]         The stream to read bytes from.
  * @param future [in]         Future to resolve with the result of the operation.
  * @param buffer [out]        The output buffer to put data into.
  * @param bufferLength [in]   The length of the output buffer and number of bytes to read.
  * @param readLength [out]    The actual number of bytes read.
- *
- * Future status:
- *  NABTO_DEVICE_EC_OK   if all data was read.
- *  NABTO_DEVICE_EC_EOF  if only some data was read and the stream is eof.
- *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_read_all(NabtoDeviceStream* stream,
@@ -840,17 +841,17 @@ nabto_device_stream_read_all(NabtoDeviceStream* stream,
  * Read atleast 1 byte from the stream, unless an error occurs or the
  * stream is eof.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if some bytes was read.
+ *  - NABTO_DEVICE_EC_EOF if stream is eof.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+ *
  * @param stream [in]         The stream to read bytes from.
  * @param future [in]         Future to resolve with the result of the operation.
  * @param buffer [out]        The output buffer to put data into.
  * @param bufferLength [out]  The length of the output buffer and max bytes to read.
  * @param readLength [out]    The actual number of bytes read.
- *
- * Future status:
- *  NABTO_DEVICE_EC_OK if some bytes was read.
- *  NABTO_DEVICE_EC_EOF if stream is eof.
- *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_read_some(NabtoDeviceStream* stream,
@@ -870,16 +871,16 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream,
  * nabto_device_stream_close() is neccessary after last call to
  * nabto_device_stream_write().
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if write was ok.
+ *  - NABTO_DEVICE_EC_CLOSED if the stream is closed for writing.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being written to
+ *
  * @param stream [in]        The stream to write data to.
  * @param future [in]        Future to resolve with the result of the operation.
  * @param buffer [in]        The input buffer with data to write to the stream.
  * @param bufferLength [in]  Length of the input data.
- *
- * Future status:
- *  NABTO_DEVICE_EC_OK if write was ok.
- *  NABTO_DEVICE_EC_CLOSED if the stream is closed for writing.
- *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being written to
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_write(NabtoDeviceStream* stream,
@@ -895,13 +896,13 @@ nabto_device_stream_write(NabtoDeviceStream* stream,
  * When close resolves all written data has been acknowledged by the
  * other peer.
  *
+ * Future status:
+ *  - NABTO_DEVICE_OK if the stream is closed for writing.
+ *  - NABTO_DEVICE_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being closed.
+ *
  * @param stream [in]  The stream to close.
  * @param future [in]  Future to resolve when stream is closed or on error.
- *
- * Future status:
- *  NABTO_DEVICE_OK if the stream is closed for writing.
- *  NABTO_DEVICE_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being closed.
  */
 
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
@@ -995,17 +996,17 @@ nabto_device_coap_init_listener(NabtoDevice* device,
 /**
  * Listen for a new coap request on the given listener.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if request is ready
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the resource already has an active listener
+ *  - NABTO_DEVICE_EC_ABORTED if device is being freed
+ *  - NABTO_DEVICE_EC_STOPPED if the listener has been stopped
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if request was received but the
+ *                                structure could not be allocated.
+ *
  * @param listener [in]   Listener on which to listen
  * @param future [in]     Future which resolves when a new request is available or an error occurs
  * @param request [out]   Where to reference an incoming request
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if request is ready
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the resource already has an active listener
- *   NABTO_DEVICE_EC_ABORTED if device is being freed
- *   NABTO_DEVICE_EC_STOPPED if the listener has been stopped
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if request was received but the
- *                                structure could not be allocated.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_coap_request(NabtoDeviceListener* listener,
@@ -1267,15 +1268,14 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
  * or not. The response body can be used to get a detailed description
  * in the case an error occurs.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if the notification is delivered to FCM.
+ *  - NABTO_DEVICE_EC_STOPPED if the operation is stopped.
+ *  - NABTO_DEVICE_EC_NOT_ATTACHED  if the device is currently not attached to the basestation.
+ *  - NABTO_DEVICE_EC_INVALID_STATE  if vital data is missing e.g. the project id or the body of the notification.
+ *
  * @param notification [in]  The notification to send
  * @param future [in]        Future which resolves when sending has been concluded
- *
- * Future resolves with:
- *   NABTO_DEVICE_EC_OK if the notification is delivered to FCM.
- *   NABTO_DEVICE_EC_STOPPED if the operation is stopped.
- *   NABTO_DEVICE_EC_NOT_ATTACHED  if the device is currently not attached to the basestation.
- *   NABTO_DEVICE_EC_INVALID_STATE  if vital data is missing e.g. the project id or the body of the notification.
- *
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
@@ -1505,13 +1505,13 @@ nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDevic
 /**
  * Start listening for a new authorization request.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *
  * @param listener [in]   Listener to get new requests from
  * @param future [in]     Future which resolves when a new request is ready
  * @param request [out]   Where the new request is stored when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener,
@@ -1652,15 +1652,15 @@ nabto_device_password_authentication_request_init_listener(NabtoDevice* device, 
  * This follows the listener/future pattern of getting events
  * asynchronously.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in]  The listener to get request from
  * @param future [in]    The future which resolves when a request is ready
  * @param request [in]   The resulting request if the future completes with NABTO_DEVICE_EC_OK
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDevicePasswordAuthenticationRequest** request);
@@ -2146,7 +2146,7 @@ nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* servic
  * the invocation has succeeded the response message and status code can be read
  * from the object.
  *
- * The future status is
+ * Future status:
  *  - NABTO_DEVICE_EC_OK if the invocation succeeded
  *  - NABTO_DEVICE_EC_NOT_ATTACHED if the device is not attached
  *  - NABTO_DEVICE_EC_FAILED if the invocation failed, see the log for further
