@@ -29,8 +29,9 @@ bool nm_iam_serializer_configuration_dump_json(struct nm_iam_configuration* conf
 /**
  * Load the IAM configuration from a JSON string.
  *
- * @param conf [in]   IAM configuration to load into
- * @param in   [in]   JSON string to load
+ * @param conf   [in]   IAM configuration to load into
+ * @param in     [in]   JSON string to load
+ * @param logger [in]   Logger for debugging
  * @return true iff the configuration was successfully loaded
  */
 bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf, const char* in, struct nn_log* logger);
@@ -51,6 +52,7 @@ bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out);
  *
  * @param state [in]  State to load into
  * @param in [in]     JSON string to load
+ * @param logger [in]   Logger for debugging
  * @return true iff the state was successfully loaded
  */
 bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* in, struct nn_log* logger);

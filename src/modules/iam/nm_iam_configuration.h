@@ -246,7 +246,8 @@ void nm_iam_configuration_role_free(struct nm_iam_role* role);
 /**
  * Add a policy reference to a role.
  *
- * @param policy is the name of an `nm_iam_policy`. The string is copied into the role.
+ * @param role [in] The role to add policy to.
+ * @param policy [in] is the name of an `nm_iam_policy`. The string is copied into the role.
  * @return false iff the policy could not be added
  */
 bool nm_iam_configuration_role_add_policy(struct nm_iam_role* role, const char* policy);

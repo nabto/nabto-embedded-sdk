@@ -221,8 +221,8 @@ bool nm_iam_state_user_set_role(struct nm_iam_user* user, const char* roleId);
  *
  * @param user [in] the username of the user
  * @param password [in] the password to set for the user
- * @return NM_IAM_ERROR_OK if password was set successfully for the user.
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_OK if password was set successfully for the user.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
  */
 bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* password);
 bool nm_iam_state_user_set_fcm_token(struct nm_iam_user* user, const char* token);
@@ -239,6 +239,7 @@ bool nm_iam_state_user_set_fcm_project_id(struct nm_iam_user* user, const char* 
  *
  * @param user [in]       User to set notification categories in
  * @param categories [in] Set of categories to copy into the user
+ * @return true iff operation completed successfully
  */
 bool nm_iam_state_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories);
 
