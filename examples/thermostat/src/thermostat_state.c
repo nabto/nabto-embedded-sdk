@@ -43,3 +43,12 @@ const char* thermostat_state_mode_as_string(enum thermostat_mode mode)
     }
     return "UNKNOWN";
 }
+
+const char* thermostat_state_power_as_string(bool power)
+{
+    if (power) {
+        return "ON";
+    } else {
+        return "OFF";
+    }
+}

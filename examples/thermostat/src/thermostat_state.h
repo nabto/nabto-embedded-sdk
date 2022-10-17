@@ -25,6 +25,7 @@ struct thermostat_state {
 };
 
 const char* thermostat_state_mode_as_string(enum thermostat_mode mode);
+const char* thermostat_state_power_as_string(bool power);
 
 bool thermostat_state_get_power(struct thermostat_state* state);
 

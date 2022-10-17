@@ -95,11 +95,16 @@ enum thermostat_mode get_mode(void* impl)
 {
     struct thermostat_state_file_backend* fb = impl;
     return fb->stateData.mode;
+}
 
+void print_state(struct thermostat_state_data* stateData)
+{
+    printf("Thermostat state updated: Target temperature: %.02f, Mode: %s, Power %s\r\n", stateData->target, thermostat_state_mode_as_string(stateData->mode), thermostat_state_power_as_string(stateData->power));
 }
 
 void save_state(struct thermostat_state_file_backend* fb)
 {
+    print_state(&fb->stateData);
     cJSON* j = thermostat_state_data_encode_as_json(&fb->stateData);
     if (j != NULL) {
         json_config_save(fb->filename, j);
