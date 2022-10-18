@@ -129,7 +129,7 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
         // write crt
         size_t bufferSize = 1024;
         char* buffer = np_calloc(1,1024);
-        ret = mbedtls_x509write_crt_pem( &ctx->crt, (unsigned char*)buffer, buffersize,
+        ret = mbedtls_x509write_crt_pem( &ctx->crt, (unsigned char*)buffer, bufferSize,
                                          mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
         if (ret != 0) {
@@ -229,7 +229,7 @@ np_error_code nm_mbedtls_util_create_private_key(char** privateKey)
     } else {
         *privateKey = nn_strdup((char*)outputBuffer, np_allocator_get());
     }
-    mp_free(outputBuffer);
+    np_free(outputBuffer);
 
     mbedtls_pk_free( &key );
     mbedtls_ctr_drbg_free( &ctr_drbg );

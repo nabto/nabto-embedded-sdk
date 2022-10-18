@@ -132,14 +132,18 @@ struct np_udp_functions {
     /**
      * Recv an UDP packet from a socket.
      *
+     * If the provided buffer is smaller than the received packet, copy as much
+     * of the packet into the buffer and discard the rest.
+     *
      * @param sock  The socket resource
      * @param ep  The endpoint where the packet came from.
      * @param buffer  The destination buffer.
      * @param bufferSize  The destination buffer size.
      * @param recvSize    The actual amount of data received.
      * @return NABTO_EC_OK iff a packet was ready and put into the recv buffer.
-     *         NABTO_EC_AGAIN if the socket does not have ready data or the retrieval would have blocked.
-     *         NABTO_EC_EOF if no more data can be received from the socket.
+     *         NABTO_EC_AGAIN if the socket does not have ready data or the
+     *         retrieval would have blocked. NABTO_EC_EOF if no more data can be
+     *         received from the socket.
      */
     np_error_code (*recv_from)(struct np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* recvSize);
 

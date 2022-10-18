@@ -87,18 +87,22 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     }
 
     struct np_udp_endpoint ep;
+    uint8_t backupBuffer[1];
     size_t bufferLength = 1500;
     uint8_t* recvBuffer = np_calloc(1, bufferLength);
+    size_t recvLength;
     if (recvBuffer == NULL) {
-        // cannot allocate a udp buffer for receiving data. Either try again or
-        // discard the packet. Retrying can lead to a loop where this keeps
-        // getting called until memory is available. The packet should probably
-        // be thrown away instead. Currently there's no way to ask the udp
-        // module to discard a packet.
+        // We cannot allocate a sufficient large buffer for receiving the
+        // packet, we do not want to stack allocate the large buffer as it makes
+        // the system stack requirement large. We need to receive the packet but
+        // we do it with a small buffer such that it will be discarded.
+        uint8_t smallBuffer[1];
+        np_error_code recvEc = np_udp_recv_from(
+            &ctx->pl->udp, ctx->sock, &ep, smallBuffer, sizeof(smallBuffer), &recvLength);
+        NABTO_LOG_ERROR(LOG, "out of memory, discarding udp packet");
         start_recv(ctx);
         return;
     }
-    size_t recvLength;
     np_error_code recvEc = np_udp_recv_from(
         &ctx->pl->udp, ctx->sock, &ep, recvBuffer, bufferLength, &recvLength);
     if (recvEc == NABTO_EC_OK) {
