@@ -170,23 +170,27 @@ nabto_device_new();
  * configuration functions (such as nabto_device_set_device_id) must
  * be called prior to invoke this function.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
+ *             private key, server URL, device ID, or Product ID.
+ *  - NABTO_DEVICE_EC_IN_USE  if a resource cannot be allocated because it is already used.
+ *  - NABTO_DEVICE_EC_ADDRESS_IN_USE  if a socket cannot be bound to an address/port beacause it is already in use.
+ *
  * @param device [in]   The device instance to start
  * @param future [in]   The future which is resolved when started.
- * Future error codes:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_INVALID_STATE if device does not have public Key,
- *             private key, server URL, device ID, or Product ID.
- *   NABTO_DEVICE_EC_IN_USE  if a resource cannot be allocated because it is already used.
- *   NABTO_DEVICE_EC_ADDRESS_IN_USE  if a socket cannot be bound to an address/port beacause it is already in use.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future);
-
 
 /**
  * Close a context. This can be called after nabto_device_start() to
  * close all connections down nicely before calling
  * nabto_device_stop().
+ *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_INVALID_STATE if the device was closed or not started
  *
  * @param device [in]  The device instance to close.
  * @param future [in]  Future to resolve once the device is closed.
@@ -222,8 +226,8 @@ nabto_device_free(NabtoDevice* device);
  *
  * @param device [in]     The device instance to perform action on
  * @param productId [in]  The product ID to set e.g. pr-abcdefg
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_product_id(NabtoDevice* device, const char* productId);
@@ -243,8 +247,8 @@ nabto_device_get_product_id(NabtoDevice* device);
  *
  * @param device [in]   The device instance to perform action on
  * @param deviceId [in] The device ID to set e.g. de-abcdefg
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_device_id(NabtoDevice* device, const char* deviceId);
@@ -260,13 +264,13 @@ NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
 nabto_device_get_device_id(NabtoDevice* device);
 
 /**
- * Set the server url. If not set it will default to <Product
- * ID>.devices.nabto.net. Cannot be called after nabto_device_start().
+ * Set the server url. If not set it will default to `<Product
+ * ID>.devices.nabto.net`. Cannot be called after nabto_device_start().
  *
  * @param device [in]    The device instance to perform action on
  * @param serverUrl [in] The url of the basestation attach node to set e.g. foo.bar.baz
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
@@ -287,8 +291,8 @@ nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
  *
  * @param device [in]   The device instance to perform action on
  * @param privKey [in]  The private key to set
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
@@ -306,8 +310,8 @@ nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
  *
  * @param device [in]  The device
  * @param roots [in]  Root certs encoded as pem.
- * @return NABTO_DEVICE_EC_OK iff ok
- *         NABTO_DEVICE_INVALID_STATE if device is started
+ * @retval NABTO_DEVICE_EC_OK iff ok
+ * @retval NABTO_DEVICE_INVALID_STATE if device is started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_root_certs(NabtoDevice* device, const char* roots);
@@ -319,8 +323,8 @@ nabto_device_set_root_certs(NabtoDevice* device, const char* roots);
  *
  * @param device [in]   The device instance to perform action on
  * @param name [in]     The application name to set
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_STRING_TOO_LOG if string length > 32
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_STRING_TOO_LOG if string length > 32
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_name(NabtoDevice* device, const char* name);
@@ -342,8 +346,8 @@ nabto_device_get_app_name(NabtoDevice* device);
  *
  * @param device [in]   The device instance to perform action on
  * @param version [in]  The application version to set
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_STRING_TOO_LOG if string length > 32
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_STRING_TOO_LOG if string length > 32
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_version(NabtoDevice* device, const char* version);
@@ -407,8 +411,8 @@ nabto_device_set_p2p_port(NabtoDevice* device, uint16_t port);
  *
  * @param device [in]   The device instance to perform action on
  * @param port [out]    Reference port to set
- * @return  NABTO_DEVICE_EC_OK on success
- *          NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
+ * @retval  NABTO_DEVICE_EC_OK on success
+ * @retval  NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
@@ -421,8 +425,8 @@ nabto_device_get_local_port(NabtoDevice* device, uint16_t* port);
  *
  * @param device [in]   The device instance to perform action on
  * @param port [out]    Reference port to set
- * @return  NABTO_DEVICE_EC_OK on success
- *          NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
+ * @retval  NABTO_DEVICE_EC_OK on success
+ * @retval  NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_p2p_port(NabtoDevice* device, uint16_t* port);
@@ -447,9 +451,9 @@ nabto_device_create_private_key(NabtoDevice* device, char** key);
  *
  * @param device [in]        The device
  * @param fingerprint [out]  The fingerprint is stored as hex in the parameter.
- * @return NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
- *         NABTO_DEVICE_EC_INVALID_STATE if the device provided did not contain a valid private key.
- *         NABTO_DEVICE_EC_UNKNOWN on underlying DTLS module error
+ * @retval NABTO_DEVICE_EC_OK iff the fingerprint is available in the fingerprint output parameter.
+ * @retval NABTO_DEVICE_EC_INVALID_STATE if the device provided did not contain a valid private key.
+ * @retval NABTO_DEVICE_EC_UNKNOWN on underlying DTLS module error
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint(NabtoDevice* device, char** fingerprint);
@@ -477,8 +481,8 @@ nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerp
  *
  * @param device [in]  The device.
  * @param enable [in]  if True the device will attach to the basestation.
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_INVALID_STATE if device closed
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_INVALID_STATE if device closed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_basestation_attach(NabtoDevice* device, bool enable);
@@ -570,9 +574,9 @@ nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDevi
  * @param device [in]    The device.
  * @param ref    [in]    The connection reference for which to get username.
  * @param username [out] Where to put the username string.
- * @return NABTO_DEVICE_EC_INVALID_CONNECTION iff connection does not exist
- *         NABTO_DEVICE_EC_INVALID_STATE iff password authentication not performed
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY iff string could not be allocated
+ * @retval NABTO_DEVICE_EC_INVALID_CONNECTION iff connection does not exist
+ * @retval NABTO_DEVICE_EC_INVALID_STATE iff password authentication not performed
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY iff string could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_password_authentication_username(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** username);
@@ -597,8 +601,8 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceConnectionEvent NABTO_DEVICE_CO
  *
  * @param device [in]    Device
  * @param listener [in]  Listener to initialize for connection events
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
@@ -606,17 +610,17 @@ nabto_device_connection_events_init_listener(NabtoDevice* device, NabtoDeviceLis
 /**
  * Start listening for next connection event.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if event new event is set
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in]  Listener to get connection events from
  * @param future [in]    Future which resolves when event is ready or on errors.
  * @param ref [out]      Where to put the connection reference when the future resolves.
  * @param event [out]    Where to put the connection event when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if event new event is set
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_connection_event(NabtoDeviceListener* listener,
@@ -675,8 +679,8 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CERTIF
  *
  * @param device [in]   Device
  * @param listener [in] The listener to initialize for device events
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_device_events_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
@@ -684,16 +688,16 @@ nabto_device_device_events_init_listener(NabtoDevice* device, NabtoDeviceListene
 /**
  * Start listening for next device event.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if new event is set
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in]  Listener to get device events from
  * @param future [in]    Future which resolves when event is ready or on errors.
  * @param event [out]    Where to put the device event when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if new event is set
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_device_event(NabtoDeviceListener* listener,
@@ -726,9 +730,9 @@ nabto_device_listener_device_event(NabtoDeviceListener* listener,
  * @param listener [in]  Listener to initialize for streaming
  * @param port [in]      A number describing the id/port of the stream to listen for.
  *                       Think of it as a demultiplexing port number.
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
- *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the port number has an active listener
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the port number has an active listener
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_stream_init_listener(NabtoDevice* device,
@@ -741,9 +745,9 @@ nabto_device_stream_init_listener(NabtoDevice* device,
  * @param device [in]    device
  * @param listener [in]  Listener to initialize for streaming
  * @param port [out]     Where to put the chosen port number
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
- *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the port number has an active listener
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the port number has an active listener
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_stream_init_listener_ephemeral(NabtoDevice* device,
@@ -754,16 +758,16 @@ nabto_device_stream_init_listener_ephemeral(NabtoDevice* device,
  * Start listening for new streams. The stream resource must be kept
  * alive untill the returned future is resolved.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in] Listener to get new streams from.
  * @param future [in]   Future which resolves when a new stream is ready, or an error occurs.
  * @param stream [out]  Where to put reference to a new stream. The new stream must be freed by user.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if future or and underlying structure could not be allocated
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_stream(NabtoDeviceListener* listener,
@@ -789,13 +793,13 @@ nabto_device_stream_free(NabtoDeviceStream* stream);
  * it can just free it, else it has to call accept to finish the
  * handshake. The future returns the status of the handshake.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if opening went ok.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if other accept is in progress
+ *  - NABTO_DEVICE_EC_ABORTED if device is closed
+ *
  * @param stream [in]  the stream to accept
  * @param future [in]  future which resolved when the stream is accepted
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if opening went ok.
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if other accept is in progress
- *   NABTO_DEVICE_EC_ABORTED if device is closed
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_accept(NabtoDeviceStream* stream, NabtoDeviceFuture* future);
@@ -815,17 +819,17 @@ nabto_device_stream_get_connection_ref(NabtoDeviceStream* stream);
  * if (readLength != bufferLength) the stream has reached a state
  * where no more bytes can be read.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK   if all data was read.
+ *  - NABTO_DEVICE_EC_EOF  if only some data was read and the stream is eof.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+ *
  * @param stream [in]         The stream to read bytes from.
  * @param future [in]         Future to resolve with the result of the operation.
  * @param buffer [out]        The output buffer to put data into.
  * @param bufferLength [in]   The length of the output buffer and number of bytes to read.
  * @param readLength [out]    The actual number of bytes read.
- *
- * Future status:
- *  NABTO_DEVICE_EC_OK   if all data was read.
- *  NABTO_DEVICE_EC_EOF  if only some data was read and the stream is eof.
- *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_read_all(NabtoDeviceStream* stream,
@@ -840,17 +844,17 @@ nabto_device_stream_read_all(NabtoDeviceStream* stream,
  * Read atleast 1 byte from the stream, unless an error occurs or the
  * stream is eof.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if some bytes was read.
+ *  - NABTO_DEVICE_EC_EOF if stream is eof.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+ *
  * @param stream [in]         The stream to read bytes from.
  * @param future [in]         Future to resolve with the result of the operation.
  * @param buffer [out]        The output buffer to put data into.
  * @param bufferLength [out]  The length of the output buffer and max bytes to read.
  * @param readLength [out]    The actual number of bytes read.
- *
- * Future status:
- *  NABTO_DEVICE_EC_OK if some bytes was read.
- *  NABTO_DEVICE_EC_EOF if stream is eof.
- *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_read_some(NabtoDeviceStream* stream,
@@ -870,16 +874,16 @@ nabto_device_stream_read_some(NabtoDeviceStream* stream,
  * nabto_device_stream_close() is neccessary after last call to
  * nabto_device_stream_write().
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if write was ok.
+ *  - NABTO_DEVICE_EC_CLOSED if the stream is closed for writing.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being written to
+ *
  * @param stream [in]        The stream to write data to.
  * @param future [in]        Future to resolve with the result of the operation.
  * @param buffer [in]        The input buffer with data to write to the stream.
  * @param bufferLength [in]  Length of the input data.
- *
- * Future status:
- *  NABTO_DEVICE_EC_OK if write was ok.
- *  NABTO_DEVICE_EC_CLOSED if the stream is closed for writing.
- *  NABTO_DEVICE_EC_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being written to
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_stream_write(NabtoDeviceStream* stream,
@@ -895,13 +899,13 @@ nabto_device_stream_write(NabtoDeviceStream* stream,
  * When close resolves all written data has been acknowledged by the
  * other peer.
  *
+ * Future status:
+ *  - NABTO_DEVICE_OK if the stream is closed for writing.
+ *  - NABTO_DEVICE_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being closed.
+ *
  * @param stream [in]  The stream to close.
  * @param future [in]  Future to resolve when stream is closed or on error.
- *
- * Future status:
- *  NABTO_DEVICE_OK if the stream is closed for writing.
- *  NABTO_DEVICE_ABORTED if the stream is aborted.
- *  NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being closed.
  */
 
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
@@ -975,18 +979,16 @@ typedef void (*NabtoDeviceCoapResourceHandler)(NabtoDeviceCoapRequest* request, 
  * @param listener [in]    The listener to initialize as CoAP.
  * @param method [in]      The CoAP method for which to handle requests
  * @param pathSegments [in]
- *
  * The CoAP path segments of the resource. The array of segments is a
  * NULL terminated array of null terminated strings. The familiar
- * notation for rest resources "/thermostat/state" becomes the array
- * {"thermostat", "state", NULL }
+ * notation for rest resources `/thermostat/state` becomes the array
+ * `{"thermostat", "state", NULL }`
+ * Parameters can be defined by using the syntax `{<parameter>}`. E.g.
+ * `{"iam","users","{id}",NULL}`
  *
- * Parameters can be defined by using the syntax {<parameter>} for a
- * parameter. E.g. {"iam","users","{id}",NULL}
- *
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
- *         NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid pathSegment parameter
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid pathSegment parameter
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError  NABTO_DEVICE_API
 nabto_device_coap_init_listener(NabtoDevice* device,
@@ -997,17 +999,17 @@ nabto_device_coap_init_listener(NabtoDevice* device,
 /**
  * Listen for a new coap request on the given listener.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if request is ready
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the resource already has an active listener
+ *  - NABTO_DEVICE_EC_ABORTED if device is being freed
+ *  - NABTO_DEVICE_EC_STOPPED if the listener has been stopped
+ *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if request was received but the
+ *                                structure could not be allocated.
+ *
  * @param listener [in]   Listener on which to listen
  * @param future [in]     Future which resolves when a new request is available or an error occurs
  * @param request [out]   Where to reference an incoming request
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK if request is ready
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if the resource already has an active listener
- *   NABTO_DEVICE_EC_ABORTED if device is being freed
- *   NABTO_DEVICE_EC_STOPPED if the listener has been stopped
- *   NABTO_DEVICE_EC_OUT_OF_MEMORY if request was received but the
- *                                structure could not be allocated.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_coap_request(NabtoDeviceListener* listener,
@@ -1041,9 +1043,9 @@ nabto_device_coap_request_free(NabtoDeviceCoapRequest* request);
  *                      error is returned and no response is sent. If NULL
  *                      is provided as this argument, no memory allocations
  *                      are required.
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
- *         NABTO_DEVICE_EC_ABORTED if the underlying connection was closed
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
+ * @retval NABTO_DEVICE_EC_ABORTED if the underlying connection was closed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_error_response(NabtoDeviceCoapRequest* request,
@@ -1069,8 +1071,8 @@ nabto_device_coap_response_set_code(NabtoDeviceCoapRequest* request, uint16_t co
  * @param data [in]      The payload to set
  * @param dataSize [in]  The length of the payload in bytes
  *
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_set_payload(NabtoDeviceCoapRequest* request,
@@ -1098,8 +1100,8 @@ nabto_device_coap_response_set_content_format(NabtoDeviceCoapRequest* request, u
  *
  * @param request [in]  The request to respond to
  *
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_ABORTED if underlying connection was closed
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_ABORTED if underlying connection was closed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_response_ready(NabtoDeviceCoapRequest* request);
@@ -1110,8 +1112,8 @@ nabto_device_coap_response_ready(NabtoDeviceCoapRequest* request);
  * @param request [in]        The request for which to get the content format
  * @param contentFormat [out] A reference to where to put the content format
  *
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_NO_DATA if the content format is not available
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_NO_DATA if the content format is not available
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
@@ -1124,8 +1126,8 @@ nabto_device_coap_request_get_content_format(NabtoDeviceCoapRequest* request,
  * @param payload [out]        A reference to where to put the payload reference
  * @param payloadLength [out]  A reference to where to put the length of the payload
  *
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_NO_DATA if the request does not contain a payload.
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_NO_DATA if the request does not contain a payload.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
@@ -1233,13 +1235,13 @@ nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification);
 
 /**
  * Set the FCM project id on a notification. The project ID must be
- * created and configured in FCM through the guide <Link TBD>. The
+ * created and configured in FCM as explained in https://docs.nabto.com/developer/guides/concepts/push/fcm-setup.html. The
  * project ID is copied into the notification.
  *
  * @param notification [in]  The notification to set project ID in
  * @param projectId [in]     The project ID to set
- * @return NABTO_DEVICE_EC_OK iff the project ID was set
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if allocation failed
+ * @retval NABTO_DEVICE_EC_OK iff the project ID was set
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if allocation failed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notification, const char* projectId);
@@ -1250,8 +1252,8 @@ nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notific
  *
  * @param notification [in]  The notification to set payload in
  * @param payload [in]       The payload to set
- * @return NABTO_DEVICE_EC_OK iff the payload was set
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if allocation failed
+ * @retval NABTO_DEVICE_EC_OK iff the payload was set
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if allocation failed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notification, const char* payload);
@@ -1269,15 +1271,14 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
  * or not. The response body can be used to get a detailed description
  * in the case an error occurs.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if the notification is delivered to FCM.
+ *  - NABTO_DEVICE_EC_STOPPED if the operation is stopped.
+ *  - NABTO_DEVICE_EC_NOT_ATTACHED  if the device is currently not attached to the basestation.
+ *  - NABTO_DEVICE_EC_INVALID_STATE  if vital data is missing e.g. the project id or the body of the notification.
+ *
  * @param notification [in]  The notification to send
  * @param future [in]        Future which resolves when sending has been concluded
- *
- * Future resolves with:
- *   NABTO_DEVICE_EC_OK if the notification is delivered to FCM.
- *   NABTO_DEVICE_EC_STOPPED if the operation is stopped.
- *   NABTO_DEVICE_EC_NOT_ATTACHED  if the device is currently not attached to the basestation.
- *   NABTO_DEVICE_EC_INVALID_STATE  if vital data is missing e.g. the project id or the body of the notification.
- *
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_fcm_send(NabtoDeviceFcmNotification* notification, NabtoDeviceFuture* future);
@@ -1381,9 +1382,9 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
  * @param serviceType [in]   The type of the service, e.g. ssh, rtsp, http,...
  * @param host [in]          The IPv4 address of the host to connect to e.g. "127.0.0.1"
  * @param port [in]          Port number 22, 80, 554 etc
- * @return NABTO_DEVICE_EC_OK  iff the service was added.
- *         NABTO_DEVICE_EC_INVALID_ARGUMENT if the host could not be parsed as IPv4
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_OK  iff the service was added.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if the host could not be parsed as IPv4
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if the underlying structure could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
@@ -1397,8 +1398,8 @@ nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
  *
  * @param device [in]     The device instance
  * @param serviceId [in]  ID of service to remove
- * @return NABTO_DEVICE_EC_OK if the service was removed
- *         NABTO_DEVICE_EC_NOT_FOUND if the service ID was not found
+ * @retval NABTO_DEVICE_EC_OK if the service was removed
+ * @retval NABTO_DEVICE_EC_NOT_FOUND if the service ID was not found
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceId);
@@ -1425,8 +1426,8 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
  *
  * @param device [in]              The device instance
  * @param serverConnectToken [out] Where to put to Server Connect Token (SCT)
- * @return NABTO_DEVICE_EC_OK iff the token is created and a reference is put into serverConnectToken
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the serverConnectToken could not be allocated
+ * @retval NABTO_DEVICE_EC_OK iff the token is created and a reference is put into serverConnectToken
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if the serverConnectToken could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConnectToken);
@@ -1437,8 +1438,8 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
  *
  * @param device [in]             The device instance
  * @param serverConnectToken [in] The utf8 encoded token which is added to the basestation.
- * @return NABTO_DEVICE_EC_OK if the token is added.
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if the token cannot be stored in the device.
+ * @retval NABTO_DEVICE_EC_OK if the token is added.
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if the token cannot be stored in the device.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverConnectToken);
@@ -1450,8 +1451,8 @@ nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverCon
  * attached such that synchronization is not neccessary.
  *
  * @param device [in]   The device instance
- * @return NABTO_DEVICE_EC_OK if they are synced
- *         NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synced
+ * @retval NABTO_DEVICE_EC_OK if they are synced
+ * @retval NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if they are being synced
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device);
@@ -1497,9 +1498,9 @@ typedef struct NabtoDeviceAuthorizationRequest_ NabtoDeviceAuthorizationRequest;
  *
  * @param device [in]   The device instance
  * @param listener [in] The listener to initialize
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
- *         NABTO_DEVICE_EC_IN_USE if an authorization listener exists
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_IN_USE if an authorization listener exists
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
@@ -1507,13 +1508,13 @@ nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDevic
 /**
  * Start listening for a new authorization request.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *
  * @param listener [in]   Listener to get new requests from
  * @param future [in]     Future which resolves when a new request is ready
  * @param request [out]   Where the new request is stored when the future resolves.
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_authorization_request(NabtoDeviceListener* listener,
@@ -1642,8 +1643,8 @@ typedef struct NabtoDevicePasswordAuthenticationRequest_ NabtoDevicePasswordAuth
  *
  * @param device [in]    The device instance.
  * @param listener [in]  The listener to initialize.
- * @return NABTO_DEVICE_EC_OK  iff the listener is initialized
- *         NABTO_DEVICE_EC_IN_USE if a password authentucation listener is already set up.
+ * @retval NABTO_DEVICE_EC_OK  iff the listener is initialized
+ * @retval NABTO_DEVICE_EC_IN_USE if a password authentucation listener is already set up.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_password_authentication_request_init_listener(NabtoDevice* device, NabtoDeviceListener* listener);
@@ -1654,15 +1655,15 @@ nabto_device_password_authentication_request_init_listener(NabtoDevice* device, 
  * This follows the listener/future pattern of getting events
  * asynchronously.
  *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
+ *  - NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
+ *  - NABTO_DEVICE_EC_STOPPED if the listener was stopped
+ *
  * @param listener [in]  The listener to get request from
  * @param future [in]    The future which resolves when a request is ready
  * @param request [in]   The resulting request if the future completes with NABTO_DEVICE_EC_OK
- *
- * Future status:
- *   NABTO_DEVICE_EC_OK on success
- *   NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if listener already have a future
- *   NABTO_DEVICE_EC_ABORTED if underlying service stopped (eg. if device closed)
- *   NABTO_DEVICE_EC_STOPPED if the listener was stopped
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* listener, NabtoDeviceFuture* future, NabtoDevicePasswordAuthenticationRequest** request);
@@ -1688,8 +1689,8 @@ nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAut
  *
  * @param request [in]   The password authentication request
  * @param password [in]  NULL terminated password string
- * @return NABTO_DEVICE_EC_OK iff the password was set
- *         NABTO_DEVICE_EC_INVALID_STATE if the function is called multiple times on the same request
+ * @retval NABTO_DEVICE_EC_OK iff the password was set
+ * @retval NABTO_DEVICE_EC_INVALID_STATE if the function is called multiple times on the same request
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_password_authentication_request_set_password(NabtoDevicePasswordAuthenticationRequest* request, const char* password);
@@ -1983,8 +1984,8 @@ nabto_device_set_log_callback(NabtoDevice* device, NabtoDeviceLogCallback cb, vo
  * @param device [in]  The device instance to set level on
  * @param level [in]   The log level to set, available levels are:
  *                     error, warn, info, trace
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid level string
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT on invalid level string
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_level(NabtoDevice* device, const char* level);
@@ -1995,8 +1996,8 @@ nabto_device_set_log_level(NabtoDevice* device, const char* level);
  * globally, this is configured for all Nabto Device instances running in the same process.
  *
  * @param device [in]  The device instance for which to retrieve call log callback invocations.
- * @return NABTO_DEVICE_EC_OK on success
- *         NABTO_DEVICE_EC_NOT_IMPLEMENTED if unavailable on a given platform.
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_NOT_IMPLEMENTED if unavailable on a given platform.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_log_std_out_callback(NabtoDevice* device);
@@ -2125,8 +2126,8 @@ nabto_device_service_invocation_stop(NabtoDeviceServiceInvocation* serviceInvoca
  *
  * @param serviceInvocation [in]  The service invocation object
  * @param serviceId [in]  The service ID to invoke
- * @return NABTO_DEVICE_EC_OK  iff the serviceId is set
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY  if memory allocation failed
+ * @retval NABTO_DEVICE_EC_OK  iff the serviceId is set
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY  if memory allocation failed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_service_invocation_set_service_id(NabtoDeviceServiceInvocation* serviceInvocation, const char* serviceId);
@@ -2137,8 +2138,8 @@ nabto_device_service_invocation_set_service_id(NabtoDeviceServiceInvocation* ser
  * @param serviceInvocation [in]  The service invocation object
  * @param message [in]  The message to set
  * @param messageLength [in]  Length of the message
- * @return NABTO_DEVICE_EC_OK  iff the message is set
- *         NABTO_DEVICE_EC_OUT_OF_MEMORY  if memory allocation failed
+ * @retval NABTO_DEVICE_EC_OK  iff the message is set
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY  if memory allocation failed
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* serviceInvocation, const uint8_t* message, size_t messageLength);
@@ -2148,7 +2149,7 @@ nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* servic
  * the invocation has succeeded the response message and status code can be read
  * from the object.
  *
- * The future status is
+ * Future status:
  *  - NABTO_DEVICE_EC_OK if the invocation succeeded
  *  - NABTO_DEVICE_EC_NOT_ATTACHED if the device is not attached
  *  - NABTO_DEVICE_EC_FAILED if the invocation failed, see the log for further
@@ -2293,7 +2294,8 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
  * @param device [in]      The device instance
  * @param serviceType [in] Type of services to limit.
  * @param limit [in]       The new limit for TCP tunnel connections of the specific type.
- * @return NABTO_DEVICE_EC_OK if the limit is set NABTO_DEVICE_EC_OUT_OF_MEMORY
+ * @retval NABTO_DEVICE_EC_OK if the limit is set
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY
  *         if the limit could not be added to the internal data structure.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API

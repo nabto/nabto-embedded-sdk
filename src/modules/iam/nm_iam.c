@@ -35,6 +35,7 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     iam->fcmProjectIdMaxLength = 256;
     iam->sctMaxLength = 64;
     iam->maxUsers = SIZE_MAX;
+    iam->friendlyNameMaxLength = 64;
 
     iam->state = nm_iam_state_new();
     iam->conf = nm_iam_configuration_new();
@@ -165,6 +166,11 @@ void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len)
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len)
 {
     iam->sctMaxLength = len;
+}
+
+void nm_iam_set_friendly_name_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->friendlyNameMaxLength = len;
 }
 
 void nm_iam_set_max_users(struct nm_iam* iam, size_t n)

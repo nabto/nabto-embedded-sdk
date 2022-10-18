@@ -77,6 +77,7 @@ struct nm_iam_state* initState()
     nm_iam_state_set_local_initial_pairing(state, true);
     nm_iam_state_set_open_pairing_role(state, "role1");
     nm_iam_state_set_initial_pairing_username(state, "username");
+    nm_iam_state_set_friendly_name(state, "friendly name");
 
     struct nm_iam_user* usr = nm_iam_state_user_new("username");
     nm_iam_state_user_set_fingerprint(usr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
@@ -100,6 +101,7 @@ std::string s1 = R"(
 {
   "OpenPairingPassword":"password",
   "OpenPairingSct":"token",
+  "FriendlyName":"Friendly Name",
   "Users": [
     {
       "DisplayName":"Display Name",
@@ -156,6 +158,7 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
     BOOST_CHECK(state->localInitialPairing == dump->localInitialPairing);
     BOOST_CHECK(strcmp(state->openPairingRole, dump->openPairingRole) == 0);
     BOOST_CHECK(strcmp(state->initialPairingUsername, dump->initialPairingUsername) == 0);
+    BOOST_CHECK(strcmp(state->friendlyName, dump->friendlyName) == 0);
 
     BOOST_TEST(nn_llist_size(&dump->users) == (size_t)1);
     void* u;
@@ -378,6 +381,10 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(!nm_iam_load_state(&iam, state));
     nm_iam_set_max_users(&iam, 64);
 
+    nm_iam_set_friendly_name_max_length(&iam, 2);
+    BOOST_TEST(!nm_iam_load_state(&iam, state));
+    nm_iam_set_friendly_name_max_length(&iam, 64);
+
     BOOST_TEST(nm_iam_load_state(&iam, state));
 
     nabto_device_stop(d);
@@ -477,6 +484,10 @@ BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
 
     state = nm_iam_state_new();
     nm_iam_state_set_initial_pairing_username(state, "username");
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    nm_iam_state_set_friendly_name(state, "Friendly Name");
     BOOST_TEST(nm_iam_load_state(&iam, state));
 
     state = nm_iam_state_new();

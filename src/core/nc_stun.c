@@ -123,6 +123,10 @@ void nc_stun_set_sockets(struct nc_stun_context* ctx, struct nc_udp_dispatch_con
 void nc_stun_set_host(struct nc_stun_context* ctx, const char* hostname, uint16_t port)
 {
     if (ctx->initialized) {
+        if (ctx->hostname != NULL) {
+            np_free((void*)ctx->hostname);
+            ctx->hostname = NULL;
+        }
         ctx->hostname = nn_strdup(hostname, np_allocator_get());
         ctx->priPort = port;
     }

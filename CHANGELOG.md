@@ -1,5 +1,15 @@
 # Changelog
 
+## [unreleased]
+
+### Added
+ * Friendly name for the device added to the IAM state. This results in the following additions:
+ * * New IAM action: `IAM:SetDeviceInfo`. The Tcp Tunnel App also supports this, however, existing IAM configuration files must be recreated before users will have access to this action.
+ * * New CoAP endpoint: `PUT /iam/device-info/friendly-name`
+ * * A `FriendlyName` field is added to the CoAP response for `GET /iam/pairing`
+
+
+
 ## [5.11.0]
 
 ### Added

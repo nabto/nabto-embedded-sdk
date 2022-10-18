@@ -4,6 +4,7 @@
 
 #include <core/nc_attacher.h>
 #include <core/nc_device.h>
+#include <core/nc_stun.h>
 
 #include <util/io_service.hpp>
 #include <fixtures/dtls_server/test_certificates.hpp>
@@ -35,6 +36,7 @@ class AttachTest {
         tp_.stop();
         nc_attacher_deinit(&attach_);
         nc_coap_client_deinit(&coapClient_);
+        nc_stun_deinit(&device_.stun);
         nc_udp_dispatch_deinit(&udpDispatch_);
         np_completion_event_deinit(&boundCompletionEvent);
     }
@@ -48,6 +50,7 @@ class AttachTest {
     }
 
     void startAttach() {
+        nc_stun_init(&device_.stun, &device_, tp_.getPlatform());
         nc_coap_client_init(tp_.getPlatform(), &coapClient_);
         nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, &AttachTest::listener, this);
         nc_attacher_set_state_listener(&attach_, &AttachTest::stateListener, this);

@@ -161,7 +161,7 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
  * allow.
  *
  * Default lengths are: username: 64, display name: 64, password: 64, fcm token: 1024, fcm project
- * id: 256, sct: 64.
+ * id: 256, sct: 64, friendly name: 64.
  *
  * @param iam [in]  IAM module to set length in
  * @param len [in]  Length to set
@@ -172,6 +172,7 @@ void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_friendly_name_max_length(struct nm_iam* iam, size_t len);
 
 /*
  * Set the max number of users allowed in the IAM module.
@@ -264,10 +265,10 @@ void nm_iam_set_local_initial_pairing(struct nm_iam* iam, bool enabled);
  *
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the new user
- * @return NM_IAM_ERROR_USER_EXISTS if the specified user already exists.
-           NM_IAM_ERROR_OK if the user was created successfully.
-           NM_IAM_ERROR_INVALID_ARGUMENT if the username was too long or invalid.
-           NM_IAM_ERROR_INTERNAL if allocation failed
+ * @retval NM_IAM_ERROR_USER_EXISTS if the specified user already exists.
+ * @retval NM_IAM_ERROR_OK if the user was created successfully.
+ * @retval NM_IAM_ERROR_INVALID_ARGUMENT if the username was too long or invalid.
+ * @retval NM_IAM_ERROR_INTERNAL if allocation failed
  */
 enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
 
@@ -277,10 +278,10 @@ enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the user
  * @param fingerprint [in] hex encoded public key fingerprint
- * @return NM_IAM_ERROR_INVALID_FINGERPRINT if the specified fingerprint is invalid.
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
- *         NM_IAM_ERROR_INVALID_ARGUMENT if the fingerprint length was not 64.
- *         NM_IAM_ERROR_OK if the fingerprint was set successfully for the user.
+ * @retval NM_IAM_ERROR_INVALID_FINGERPRINT if the specified fingerprint is invalid.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_INVALID_ARGUMENT if the fingerprint length was not 64.
+ * @retval NM_IAM_ERROR_OK if the fingerprint was set successfully for the user.
  */
 enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint);
 
@@ -293,9 +294,9 @@ enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* us
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the user
  * @param sct [in] the sct to set for the user
- * @return NM_IAM_ERROR_OK if the SCT was set successfully for the user.
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
- *         NM_IAM_ERROR_INVALID_ARGUMENT if the sct was too long.
+ * @retval NM_IAM_ERROR_OK if the SCT was set successfully for the user.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_INVALID_ARGUMENT if the sct was too long.
  */
 enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, const char* sct);
 
@@ -305,9 +306,9 @@ enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, 
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the user
  * @param password [in] the password to set for the user
- * @return NM_IAM_ERROR_OK if password was set successfully for the user.
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
- *         NM_IAM_ERROR_INVALID_ARGUMENT if the password was too long.
+ * @retval NM_IAM_ERROR_OK if password was set successfully for the user.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_INVALID_ARGUMENT if the password was too long.
  */
 enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* username, const char* password);
 
@@ -317,9 +318,9 @@ enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* usern
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the user
  * @param role [in] the role id to set for the user
- * @return NM_IAM_ERROR_OK if role was set successfully for the user.
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
- *         NM_IAM_ERROR_NO_SUCH_ROLE if the role does not exist.
+ * @retval NM_IAM_ERROR_OK if role was set successfully for the user.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_NO_SUCH_ROLE if the role does not exist.
  */
 enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* role);
 
@@ -329,9 +330,9 @@ enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username,
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the user
  * @param displayName [in] the display name to set for the user
- * @return NM_IAM_ERROR_OK if display name was set successfully for the user.
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
- *         NM_IAM_ERROR_INVALID_ARGUMENT if the display name was too long.
+ * @retval NM_IAM_ERROR_OK if display name was set successfully for the user.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_INVALID_ARGUMENT if the display name was too long.
  */
 enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName);
 
@@ -344,8 +345,8 @@ enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, co
  *
  * @param iam [in] IAM module to manipulate
  * @param username [in] the username of the user to delete
- * @return NM_IAM_ERROR_OK if the user was successfully deleted
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_OK if the user was successfully deleted
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
  */
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username);
 
@@ -395,6 +396,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserSetNotificationCategoriesHandler;
     struct nm_iam_coap_handler coapIamSettingsSetHandler;
     struct nm_iam_coap_handler coapIamSettingsGetHandler;
+    struct nm_iam_coap_handler coapIamDeviceInfoSetHandler;
 
 
     struct nm_iam_auth_handler authHandler;
@@ -412,6 +414,7 @@ struct nm_iam {
     size_t fcmProjectIdMaxLength;
     size_t sctMaxLength;
     size_t maxUsers;
+    size_t friendlyNameMaxLength;
 
     // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
     bool stateHasChanged;

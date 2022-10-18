@@ -210,9 +210,6 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
     nabto_device_enable_mdns(dev);
     nabto_device_mdns_add_subtype(dev, "thermostat");
     nabto_device_mdns_add_subtype(dev, "heatpump");
-    nabto_device_mdns_add_txt_item(dev, "fn", "Thermostat");
-
-
 
     // run application
     NabtoDeviceFuture* fut = nabto_device_future_new(dev);

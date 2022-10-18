@@ -77,6 +77,12 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
         cbor_encode_text_stringz(&map, "DeviceId");
         cbor_encode_text_stringz(&map, deviceId);
     }
+
+    if (iam->state->friendlyName) {
+        cbor_encode_text_stringz(&map, "FriendlyName");
+        cbor_encode_text_stringz(&map, iam->state->friendlyName);
+    }
+
     cbor_encoder_close_container(&encoder, &map);
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);

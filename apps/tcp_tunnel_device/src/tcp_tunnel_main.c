@@ -91,7 +91,10 @@ static void print_iam_state(struct nm_iam_state* state);
 static void iam_user_changed(struct nm_iam* iam, void* userData);
 static bool make_directory(const char* directory);
 
-
+struct nn_allocator* get_default_allocator()
+{
+    return &defaultAllocator;
+}
 
 void print_version()
 {
@@ -438,7 +441,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
     nabto_device_enable_mdns(device);
     nabto_device_mdns_add_subtype(device, "tcptunnel");
-    nabto_device_mdns_add_txt_item(device, "fn", "Tcp Tunnel");
 
     struct nm_iam iam;
     nm_iam_init(&iam, device, &logger);
@@ -454,6 +456,14 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     NN_VECTOR_FOREACH(&service, &tunnel->services)
     {
         nabto_device_add_tcp_tunnel_service(device, service->id, service->type, service->host, service->port);
+
+        struct nn_string_map_iterator it;
+        NN_STRING_MAP_FOREACH(it, &service->metadata)
+        {
+            const char* key = nn_string_map_key(&it);
+            const char* val = nn_string_map_value(&it);
+            nabto_device_add_tcp_tunnel_service_metadata(device, service->id, key, val);
+        }
     }
 
     char* deviceFingerprint;

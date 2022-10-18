@@ -67,9 +67,9 @@ If not using CMake, compiler definitions of the same names can be used through `
 
 MbedTLS source files are included as a 3rdparty submodule on this repo. However, using the WolfSSL library requires the library to be installed on the system.
 
-Nabto is currently tested with wolfssl 5.4.0
+Nabto is currently tested with wolfssl 5.5.1
 
-https://github.com/wolfSSL/wolfssl/releases/tag/v5.4.0-stable
+https://github.com/wolfSSL/wolfssl/releases/tag/v5.5.1-stable
 
 When installing WolfSSL, the following build options can be used:
 
@@ -166,3 +166,12 @@ This folder contains an example of a custom implementation of the
 
 This folder has the public interface which the nabto_device api
 exposes.
+
+
+## Supported environments
+
+The code is meant to be runable in most relevant environments, it is tested and
+run on the most popular gcc, clang and msvc environments. If the code does not
+compile for a relevant embedded target which should be supported, contact our
+support. The code is not strictly C89 it uses several features from C99 which
+are broadly supported by many C compilers.

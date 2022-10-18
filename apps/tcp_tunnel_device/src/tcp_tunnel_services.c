@@ -13,6 +13,7 @@ static const char* LOGM = "services";
 struct tcp_tunnel_service* tcp_tunnel_service_new()
 {
     struct tcp_tunnel_service* service = calloc(1, sizeof(struct tcp_tunnel_service));
+    nn_string_map_init(&service->metadata, get_default_allocator());
     return service;
 }
 
@@ -21,6 +22,7 @@ void tcp_tunnel_service_free(struct tcp_tunnel_service* service)
     free(service->id);
     free(service->type);
     free(service->host);
+    nn_string_map_deinit(&service->metadata);
     free(service);
 }
 
@@ -87,6 +89,26 @@ struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger)
             service->type = strdup(type->valuestring);
             service->host = strdup(host->valuestring);
             service->port = (uint16_t)port->valuedouble;
+
+            cJSON* metadata = cJSON_GetObjectItem(json, "Metadata");
+            if (cJSON_IsObject(metadata))
+            {
+                cJSON* metadata_entry = NULL;
+                cJSON_ArrayForEach(metadata_entry, metadata)
+                {
+                    const char* key = metadata_entry->string;
+
+                    if (!cJSON_IsString(metadata_entry))
+                    {
+                        NN_LOG_WARN(logger, LOGM, "Service %s has a non-string metadata value for key %s", service->id, key);
+                        continue;
+                    }
+
+                    const char* value = metadata_entry->valuestring;
+                    nn_string_map_insert(&service->metadata, key, value);
+                }
+            }
+
             return service;
         }
     }
@@ -102,6 +124,18 @@ cJSON* tcp_tunnel_service_as_json(struct tcp_tunnel_service* service)
     cJSON_AddItemToObject(root, "Type", cJSON_CreateString(service->type));
     cJSON_AddItemToObject(root, "Host", cJSON_CreateString(service->host));
     cJSON_AddItemToObject(root, "Port", cJSON_CreateNumber(service->port));
+
+    cJSON* metadata = cJSON_CreateObject();
+    struct nn_string_map_iterator it;
+    NN_STRING_MAP_FOREACH(it, &service->metadata)
+    {
+        const char* key = nn_string_map_key(&it);
+        const char* value = nn_string_map_value(&it);
+        cJSON_AddItemToObject(metadata, key, cJSON_CreateString(value));
+    }
+
+    cJSON_AddItemToObject(root, "Metadata", metadata);
+
     return root;
 }
 
@@ -109,14 +143,14 @@ bool tcp_tunnel_create_default_services_file(const char* servicesFile)
 {
     cJSON* root = cJSON_CreateArray();
 
-    struct tcp_tunnel_service ssh;
+    struct tcp_tunnel_service* ssh = tcp_tunnel_service_new();
 
-    ssh.id = "ssh";
-    ssh.type = "ssh";
-    ssh.host = "127.0.0.1";
-    ssh.port = 22;
+    ssh->id   = strdup("ssh");
+    ssh->type = strdup("ssh");
+    ssh->host = strdup("127.0.0.1");
+    ssh->port = 22;
 
-    cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(&ssh));
-
+    cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(ssh));
+    tcp_tunnel_service_free(ssh);
     return json_config_save(servicesFile, root);
 }

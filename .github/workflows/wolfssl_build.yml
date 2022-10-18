@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: prepare wolfssl
-      run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && curl -sSL https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.4.0-stable.tar.gz | tar -xzf - --strip-components=1
+      run: mkdir ${{ github.workspace }}/wolfssl-build && cd ${{ github.workspace }}/wolfssl-build && curl -sSL https://github.com/wolfSSL/wolfssl/archive/refs/tags/v5.5.1-stable.tar.gz | tar -xzf - --strip-components=1
 
     - name: configure wolfssl
       run: cd ${{ github.workspace }}/wolfssl-build && ./autogen.sh && ./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"

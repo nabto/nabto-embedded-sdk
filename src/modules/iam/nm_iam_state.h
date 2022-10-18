@@ -32,6 +32,7 @@ struct nm_iam_state {
     bool localInitialPairing;
     char* openPairingRole;
     char* initialPairingUsername;
+    char* friendlyName;
 };
 
 /*****************
@@ -137,6 +138,16 @@ bool nm_iam_state_set_open_pairing_role(struct nm_iam_state* state, const char* 
 bool nm_iam_state_set_initial_pairing_username(struct nm_iam_state* state, const char* initialPairingUsername);
 
 /**
+ * Set the friendly name of the device. This will be added as mdns txt item with
+ * the key `fn`. The friendly name string is copied into the state.
+ *
+ * @param state [in]         The IAM state
+ * @param friendlyName [in]  The friendly name
+ * @return true iff the friendly name was set.
+ */
+bool nm_iam_state_set_friendly_name(struct nm_iam_state* state, const char* friendlyName);
+
+/**
  * Add a user to the IAM state. The state takes ownership of the user
  * pointer.
  *
@@ -210,8 +221,8 @@ bool nm_iam_state_user_set_role(struct nm_iam_user* user, const char* roleId);
  *
  * @param user [in] the username of the user
  * @param password [in] the password to set for the user
- * @return NM_IAM_ERROR_OK if password was set successfully for the user.
- *         NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_OK if password was set successfully for the user.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
  */
 bool nm_iam_state_user_set_password(struct nm_iam_user* user, const char* password);
 bool nm_iam_state_user_set_fcm_token(struct nm_iam_user* user, const char* token);
@@ -228,6 +239,7 @@ bool nm_iam_state_user_set_fcm_project_id(struct nm_iam_user* user, const char* 
  *
  * @param user [in]       User to set notification categories in
  * @param categories [in] Set of categories to copy into the user
+ * @return true iff operation completed successfully
  */
 bool nm_iam_state_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories);
 
