@@ -287,6 +287,37 @@ set(ne_include_dirs
   ${root_dir}/include
 )
 
+set(ne_required_src_no_tls
+  ${ne_utils_src}
+  ${ne_streaming_src}
+  ${ne_mdns_src}
+  ${ne_coap_src}
+  ${ne_platform_src}
+  ${ne_core_src}
+  ${ne_api_src}
+  ${ne_tinycbor_src}
+  ${ne_nn_src}
+  ${ne_tcp_tunnels_src}
+  ${ne_communication_buffer_src}
+)
+
+set(ne_priv_include_dirs_no_tls
+#  ${root_dir}/
+  ${root_dir}/src
+  ${root_dir}/include
+  ${root_dir}/nabto-common/components/coap/include
+  ${root_dir}/nabto-common/components/streaming/include
+  ${root_dir}/nabto-common/components/stun/include
+  ${root_dir}/nabto-common/components/nn/include
+  ${root_dir}/nabto-common/components/mdns/include
+  ${root_dir}/3rdparty/tinycbor/extra
+  ${root_dir}/3rdparty/tinycbor/tinycbor/src
+)
+
+set(ne_nn_include_dirs
+  ${root_dir}/nabto-common/components/nn/include
+)
+
 set(ne_priv_include_dirs
 #  ${root_dir}/
   ${root_dir}/src

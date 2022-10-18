@@ -3,6 +3,7 @@ find_package( Threads )
 set(src
   ${ne_iam_src}
   src/thermostat_main.c
+  src/thermostat_file.c
   src/thermostat.c
   src/thermostat_iam.c
   src/thermostat_coap_handler.c
@@ -10,6 +11,9 @@ set(src
   src/thermostat_set_mode.c
   src/thermostat_set_power.c
   src/thermostat_set_target.c
+  src/thermostat_state.c
+  src/thermostat_state_file_backend.c
+  src/thermostat_state_data.c
   )
 
 add_executable(thermostat_device ${src})
