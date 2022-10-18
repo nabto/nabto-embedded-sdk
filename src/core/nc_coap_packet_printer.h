@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdint.h>
 
-void nc_coap_packet_print(const char* header, const uint8_t* buffer, size_t bufferSize);
+#include <platform/np_error_code.h>
+
+np_error_code nc_coap_packet_print(const char* header, const uint8_t* buffer, size_t bufferSize);
 
 #endif

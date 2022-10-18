@@ -379,8 +379,8 @@ void nm_mbedtls_srv_do_one(void* data)
         }
     } else if (ctx->state == DATA) {
         int ret;
-        uint8_t recvBuffer[1500];
-        ret = mbedtls_ssl_read(&ctx->ssl, recvBuffer, sizeof(recvBuffer) );
+        uint8_t* recvBuffer;
+        ret = nm_mbedtls_recv_data(&ctx->ssl, &recvBuffer);
         if (ret == 0) {
             // EOF
             event_callback(ctx, NP_DTLS_EVENT_CLOSED);
@@ -391,7 +391,7 @@ void nm_mbedtls_srv_do_one(void* data)
             uint64_t seq = uint64_from_bigendian(ctx->ssl.MBEDTLS_PRIVATE(in_ctr));
             ctx->recvCount++;
             ctx->dataHandler(ctx->currentChannelId, seq, recvBuffer, (uint16_t)ret, ctx->senderData);
-            return;
+            np_free(recvBuffer);
         } else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                    ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {

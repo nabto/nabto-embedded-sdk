@@ -175,3 +175,9 @@ run on the most popular gcc, clang and msvc environments. If the code does not
 compile for a relevant embedded target which should be supported, contact our
 support. The code is not strictly C89 it uses several features from C99 which
 are broadly supported by many C compilers.
+
+## Stack usage
+
+The code has been made for embedded systems without huge stacks. An actual stack
+usage needs to be measured by the application. The actual stack usage depends on
+how the nabto embedded SDK is configured and which features are enabled and used.

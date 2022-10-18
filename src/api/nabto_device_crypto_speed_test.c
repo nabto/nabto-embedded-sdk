@@ -7,6 +7,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_logging_defines.h>
 #include <platform/np_timestamp_wrapper.h>
+#include <platform/np_allocator.h>
 
 #if defined(NABTO_DEVICE_MBEDTLS)
 #include <mbedtls/sha256.h>
@@ -33,7 +34,10 @@ nabto_device_crypto_speed_test(NabtoDevice* device) {
 
 void sha256_speed_test(struct nabto_device_context* dev) {
     NABTO_LOG_INFO(LOG, "Testing SHA256 performance");
-    uint8_t data[1024];
+    uint8_t* data = np_calloc(1, 1024);
+    if (data == NULL) {
+        return;
+    }
     uint8_t output[32];
 
     size_t iterations = 1000;
@@ -43,6 +47,8 @@ void sha256_speed_test(struct nabto_device_context* dev) {
     for (size_t i = 0; i < iterations; i++) {
         mbedtls_sha256(data, sizeof(data), output, 0);
     }
+
+    np_free(data);
 
     uint32_t end = np_timestamp_now_ms(&dev->pl.timestamp);
 

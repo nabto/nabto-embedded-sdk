@@ -229,8 +229,17 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
     struct nm_mdns_server_instance* instance = userData;
     if (ecIn == NABTO_EC_OK && !instance->server->stopped) {
         size_t recvSize;
-        uint8_t recvBuffer[1500];
-        size_t recvBufferSize = sizeof(recvBuffer);
+        size_t recvBufferSize = 1500;
+        uint8_t* recvBuffer = np_calloc(1, recvBufferSize);
+        if (recvBuffer == NULL) {
+            // Discard udp packet.
+            uint8_t dummyBuffer[1];
+            np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, dummyBuffer, sizeof(dummyBuffer), &recvSize);
+            nm_mdns_recv_packet(instance);
+            return;
+        }
+        bool doRecv = true; // set to false if the nm_mdns_send_packet initiates the next recv.
+
         np_error_code ec = np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, recvBuffer, recvBufferSize, &recvSize);
         if (ec == NABTO_EC_OK) {
             uint16_t id;
@@ -243,18 +252,15 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
                     unicastResponse = true;
                 }
                 nm_mdns_send_packet(instance, id, unicastResponse);
-                // next receive is started by send
-                return;
+                doRecv = false;
             }
         }
 
-        if (ec == NABTO_EC_OK /*|| ec == NABTO_EC_AGAIN*/) {
+        np_free(recvBuffer);
+        if (ec == NABTO_EC_OK && doRecv) {
             nm_mdns_recv_packet(instance);
-            return;
         }
     }
-
-    // an error occured
 }
 
 void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, bool unicastResponse)

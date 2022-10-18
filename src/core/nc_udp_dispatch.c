@@ -3,6 +3,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_udp_wrapper.h>
 #include <platform/np_dtls_cli.h>
+#include <platform/np_allocator.h>
 
 #include <core/nc_client_connection_dispatch.h>
 #include <core/nc_stun.h>
@@ -86,15 +87,30 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     }
 
     struct np_udp_endpoint ep;
-    uint8_t recvBuffer[1500];
-    size_t bufferLength = sizeof(recvBuffer);
+    uint8_t backupBuffer[1];
+    size_t bufferLength = 1500;
+    uint8_t* recvBuffer = np_calloc(1, bufferLength);
     size_t recvLength;
+    if (recvBuffer == NULL) {
+        // We cannot allocate a sufficient large buffer for receiving the
+        // packet, we do not want to stack allocate the large buffer as it makes
+        // the system stack requirement large. We need to receive the packet but
+        // we do it with a small buffer such that it will be discarded.
+        uint8_t smallBuffer[1];
+        np_error_code recvEc = np_udp_recv_from(
+            &ctx->pl->udp, ctx->sock, &ep, smallBuffer, sizeof(smallBuffer), &recvLength);
+        NABTO_LOG_ERROR(LOG, "out of memory, discarding udp packet");
+        start_recv(ctx);
+        return;
+    }
     np_error_code recvEc = np_udp_recv_from(
         &ctx->pl->udp, ctx->sock, &ep, recvBuffer, bufferLength, &recvLength);
     if (recvEc == NABTO_EC_OK) {
         nc_udp_dispatch_handle_packet(&ep, recvBuffer, (uint16_t)recvLength,
                                       ctx);
     }
+
+    np_free(recvBuffer);
 
     if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
         start_recv(ctx);

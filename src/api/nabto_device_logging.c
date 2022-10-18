@@ -37,13 +37,9 @@ void logging_log(uint32_t severity, uint32_t module,
     if (level_ & severity) {
         NabtoDeviceLogMessage msg;
         char log[256];
-        int ret;
+        vsnprintf(log, sizeof(log)-1, fmt, args);
 
-        ret = vsnprintf(log, 256, fmt, args);
-        if (ret >= 256) {
-            // TODO: handle too long log lines
-            // The log line was too large for the array
-        }
+        log[sizeof(log) - 1] = 0; // ensure the output is null terminated.
 
         switch(severity) {
             case NABTO_LOG_SEVERITY_ERROR:

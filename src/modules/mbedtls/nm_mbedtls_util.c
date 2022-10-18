@@ -127,15 +127,17 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
 
     {
         // write crt
-        char buffer[1024];
-        memset(buffer, 0, 1024);
-        ret = mbedtls_x509write_crt_pem( &ctx->crt, (unsigned char*)buffer, 1024,
+        size_t bufferSize = 1024;
+        char* buffer = np_calloc(1,1024);
+        ret = mbedtls_x509write_crt_pem( &ctx->crt, (unsigned char*)buffer, bufferSize,
                                          mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
         if (ret != 0) {
+            np_free(buffer);
             return NABTO_EC_UNKNOWN;
         }
         *publicKey = nn_strdup(buffer, np_allocator_get());
+        np_free(buffer);
     }
     if (*publicKey == NULL) {
         return NABTO_EC_UNKNOWN;
@@ -198,14 +200,17 @@ np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey
 np_error_code nm_mbedtls_util_create_private_key(char** privateKey)
 {
     *privateKey = NULL;
-    unsigned char output_buf[1024];
+    size_t outputBufferSize = 1024;
+    unsigned char* outputBuffer = np_calloc(1, outputBufferSize);
+    if (outputBuffer == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     mbedtls_pk_context key;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
     const char *pers = "gen_key";
     np_error_code ec = NABTO_EC_OK;
 
-    memset(output_buf, 0, 1024);
     mbedtls_pk_init( &key );
     mbedtls_ctr_drbg_init( &ctr_drbg );
 
@@ -218,12 +223,13 @@ np_error_code nm_mbedtls_util_create_private_key(char** privateKey)
         (mbedtls_ecp_gen_key( MBEDTLS_ECP_DP_SECP256R1,
                               mbedtls_pk_ec( key ),
                               mbedtls_ctr_drbg_random, &ctr_drbg ) != 0) ||
-        (mbedtls_pk_write_key_pem( &key, output_buf, 1024 ) != 0 ))
+        (mbedtls_pk_write_key_pem( &key, outputBuffer, outputBufferSize ) != 0 ))
     {
         ec = NABTO_EC_UNKNOWN;
     } else {
-        *privateKey = nn_strdup((char*)output_buf, np_allocator_get());
+        *privateKey = nn_strdup((char*)outputBuffer, np_allocator_get());
     }
+    np_free(outputBuffer);
 
     mbedtls_pk_free( &key );
     mbedtls_ctr_drbg_free( &ctr_drbg );
@@ -270,4 +276,44 @@ int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char ou
 #else
     return mbedtls_sha256_ret(input, ilen, output, 0);
 #endif
+}
+
+
+int nm_mbedtls_recv_data(mbedtls_ssl_context *ssl, uint8_t** data)
+{
+    int ret;
+    uint8_t smallRecvBuffer[16];
+    size_t smallRecvBufferSize = sizeof(smallRecvBuffer);
+    // first recv 1 byte and then retrieve the rest or discard the data if a packet large enough cannot be allocated.
+    ret = mbedtls_ssl_read( ssl, smallRecvBuffer, smallRecvBufferSize );
+    if (ret <= 0) {
+        return ret;
+    }
+
+    // we have received the first part of the data receive the last part of the
+    // data.
+    size_t smallRecvLength = ret;
+    size_t remaining = mbedtls_ssl_get_bytes_avail(ssl);
+    size_t totalRecvLength = smallRecvLength;
+
+    uint8_t* recvBuffer = np_calloc(1, smallRecvLength + remaining);
+    if (recvBuffer == NULL) {
+        // discard the data
+        while (ret > 0) {
+            ret = mbedtls_ssl_read(ssl, smallRecvBuffer, smallRecvBufferSize);
+        }
+        return ret;
+    }
+
+    memcpy(recvBuffer, smallRecvBuffer, smallRecvLength);
+    if (remaining > 0) {
+        ret = mbedtls_ssl_read(ssl, recvBuffer + smallRecvLength, remaining);
+        if (ret <= 0) {
+            np_free(recvBuffer);
+            return ret;
+        }
+        totalRecvLength += ret;
+    }
+    *data = recvBuffer;
+    return totalRecvLength;
 }
