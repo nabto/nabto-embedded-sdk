@@ -1559,7 +1559,7 @@ nabto_device_authorization_request_get_action(NabtoDeviceAuthorizationRequest* r
  * Get the connection reference this authorization request originates
  * from.
  *
- * @param   request [in]  The authorization request
+ * @param request [in]  The authorization request
  * @return  The connection reference, 0 if the connection is gone
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef NABTO_DEVICE_API
@@ -1568,7 +1568,7 @@ nabto_device_authorization_request_get_connection_ref(NabtoDeviceAuthorizationRe
 /**
  * Get the number of attributes this authorization request contains.
  *
- * @param   request [in]  The authorization request
+ * @param request [in]  The authorization request
  * @return  The number of attributes the request contains.
  */
 NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
@@ -2344,7 +2344,7 @@ nabto_device_error_get_string(NabtoDeviceError error);
 /**
  * Free a string allocated by the device.
  *
- * @param str  The string to free
+ * @param str [in]  The string to free
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_string_free(char* str);
