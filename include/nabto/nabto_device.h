@@ -409,8 +409,8 @@ nabto_device_set_p2p_port(NabtoDevice* device, uint16_t port);
  *
  * Get the port number used by the local socket.
  *
- * @param device [in]   The device instance to perform action on
- * @param port [out]    Reference port to set
+ * @param   device [in]   The device instance to perform action on
+ * @param   port [out]    Reference port to set
  * @retval  NABTO_DEVICE_EC_OK on success
  * @retval  NABTO_DEVICE_EC_INVALID_STATE if the socket did not have a port
  */
@@ -459,15 +459,25 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint(NabtoDevice* device, char** fingerprint);
 
 /**
- * Get a truncated fingerprint of the device public key.
  * @deprecated
+ * Get a truncated fingerprint of the device public key. Fingerprint must be
+ * freed using nabto_device_string_free().
+ *
+ * @param device [in] The device
+ * @param fingerprint [out] Where to put the fingerprint
+ * @return NABTO_DEVICE_EC_OK iff the fingerprint is available.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_hex(NabtoDevice* device, char** fingerprint);
 
 /**
- * Same as nabto_device_get_device_fingerprint.
  * @deprecated
+ * Same as nabto_device_get_device_fingerprint. Fingerprint must be
+ * freed using nabto_device_string_free().
+ *
+ * @param device [in] The device
+ * @param fingerprint [out] Where to put the fingerprint
+ * @return NABTO_DEVICE_EC_OK iff the fingerprint is available.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint_full_hex(NabtoDevice* device, char** fingerprint);
@@ -514,8 +524,14 @@ nabto_device_connection_get_client_fingerprint(NabtoDevice* device,
                                                char** fp);
 
 /**
- * Get the truncated fingerprint of a clients public key.
  * @deprecated
+ * Get the truncated fingerprint of a clients public key. Fingerprint must be
+ * freed using nabto_device_string_free().
+ *
+ * @param device [in] The device
+ * @param ref [in] The connection reference to get fingerprint from
+ * @param fingerprint [out] Where to put the fingerprint
+ * @return NABTO_DEVICE_EC_OK iff the fingerprint is available.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device,
@@ -523,8 +539,15 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device,
                                                    char** fp);
 
 /**
- * Same as nabto_device_connection_get_client_fingerprint
  * @deprecated
+ * Same as nabto_device_connection_get_client_fingerprint. Fingerprint must be
+ * freed using nabto_device_string_free(). Fingerprint must be
+ * freed using nabto_device_string_free().
+ *
+ * @param device [in] The device
+ * @param ref [in] The connection reference to get fingerprint from
+ * @param fingerprint [out] Where to put the fingerprint
+ * @return NABTO_DEVICE_EC_OK iff the fingerprint is available.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_connection_get_client_fingerprint_full_hex(NabtoDevice* device,
