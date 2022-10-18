@@ -95,24 +95,26 @@ bool thermostat_iam_load_state(struct thermostat_iam* thermostatIam, struct ther
     if (is == NULL) {
         status = false;
     }
-    if (status && !nm_iam_serializer_state_load_json(is, str, thermostat->logger)) {
-         NN_LOG_ERROR(thermostat->logger, LOGM, "Loading state failed, try to delete %s to make a new default file", thermostat->iamStateFile);
+    if (status && !nm_iam_serializer_state_load_json(is, str, &thermostatIam->logger)) {
+         NN_LOG_ERROR(&thermostatIam->logger, LOGM, "Loading state failed, try to delete %s to make a new default file", tf->iamStateFile);
         status = false;
     }
 
     if (status && is->friendlyName == NULL) {
         NN_LOG_INFO(
-            thermostat->logger, LOGM,
+            &thermostatIam->logger, LOGM,
             "No IAM friendly name in state. Adding default: Thermostat");
         nm_iam_state_set_friendly_name(is, "Thermostat");
-        save_iam_state(thermostat->iamStateFile, is, thermostat->logger);
+        save_iam_state(tf->iamStateFile, is, &thermostatIam->logger);
     }
 
-    if (status && !nm_iam_load_state(&thermostat->iam, is)) {
-        NN_LOG_ERROR(thermostat->logger, LOGM, "Failed to load state into IAM module");
+    if (status && !nm_iam_load_state(&thermostatIam->iam, is)) {
+        NN_LOG_ERROR(&thermostatIam->logger, LOGM, "Failed to load state into IAM module");
         status = false;
     }
-    nm_iam_state_free(is);
+    if (status == false) {
+        nm_iam_state_free(is);
+    }
     free(str);
     return status;
 }
