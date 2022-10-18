@@ -459,7 +459,8 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_get_device_fingerprint(NabtoDevice* device, char** fingerprint);
 
 /**
- * @deprecated
+ * @deprecated use nabto_device_get_device_fingerprint()
+ *
  * Get a truncated fingerprint of the device public key. Fingerprint must be
  * freed using nabto_device_string_free().
  *
