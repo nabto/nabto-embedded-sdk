@@ -277,3 +277,43 @@ int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char ou
     return mbedtls_sha256_ret(input, ilen, output, 0);
 #endif
 }
+
+
+int nm_mbedtls_recv_data(mbedtls_ssl_context *ssl, uint8_t** data)
+{
+    int ret;
+    uint8_t smallRecvBuffer[16];
+    size_t smallRecvBufferSize = sizeof(smallRecvBuffer);
+    // first recv 1 byte and then retrieve the rest or discard the data if a packet large enough cannot be allocated.
+    ret = mbedtls_ssl_read( ssl, smallRecvBuffer, smallRecvBufferSize );
+    if (ret <= 0) {
+        return ret;
+    }
+
+    // we have received the first part of the data receive the last part of the
+    // data.
+    size_t smallRecvLength = ret;
+    size_t remaining = mbedtls_ssl_get_bytes_avail(ssl);
+    size_t totalRecvLength = smallRecvLength;
+
+    uint8_t* recvBuffer = np_calloc(1, smallRecvLength + remaining);
+    if (recvBuffer == NULL) {
+        // discard the data
+        while (ret > 0) {
+            ret = mbedtls_ssl_read(ssl, smallRecvBuffer, smallRecvBufferSize);
+        }
+        return ret;
+    }
+
+    memcpy(recvBuffer, smallRecvBuffer, smallRecvLength);
+    if (remaining > 0) {
+        ret = mbedtls_ssl_read(ssl, recvBuffer + smallRecvLength, remaining);
+        if (ret <= 0) {
+            np_free(recvBuffer);
+            return ret;
+        }
+        totalRecvLength += ret;
+    }
+    *data = recvBuffer;
+    return totalRecvLength;
+}

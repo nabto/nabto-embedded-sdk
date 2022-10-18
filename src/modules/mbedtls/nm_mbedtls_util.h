@@ -30,4 +30,12 @@ void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf);
 
 int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char output[32] );
 
+/**
+ * Receive available udp application data from the ssl context. If the return
+ * value > 0 the data is returned and must be freed after use by the caller. The
+ * return value is otherwise identical to mbedtls_ssl_read. If a large enough
+ * buffer cannot be allocated for the data the data is discarded.
+ */
+int nm_mbedtls_recv_data(mbedtls_ssl_context *ssl, uint8_t** data);
+
 #endif //NM_MBEDTLS_UTIL_H
