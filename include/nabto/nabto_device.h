@@ -183,11 +183,14 @@ nabto_device_new();
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future);
 
-
 /**
  * Close a context. This can be called after nabto_device_start() to
  * close all connections down nicely before calling
  * nabto_device_stop().
+ *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK on success
+ *  - NABTO_DEVICE_EC_INVALID_STATE if the device was closed or not started
  *
  * @param device [in]  The device instance to close.
  * @param future [in]  Future to resolve once the device is closed.
