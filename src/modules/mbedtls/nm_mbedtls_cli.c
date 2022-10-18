@@ -492,6 +492,47 @@ np_error_code dtls_connect(struct np_dtls_cli_connection* conn)
     return NABTO_EC_OK;
 }
 
+// recv data return mbedtls error code or a buffer of the length of the return value.
+static int recv_data(struct np_dtls_cli_connection* conn, uint8_t** data)
+{
+    int ret;
+    uint8_t smallRecvBuffer[16];
+    size_t smallRecvBufferSize = sizeof(smallRecvBuffer);
+    // first recv 1 byte and then retrieve the rest or discard the data if a packet large enough cannot be allocated.
+    ret = mbedtls_ssl_read( &conn->ssl, smallRecvBuffer, smallRecvBufferSize );
+    if (ret <= 0) {
+        return ret;
+    }
+
+    // we have received the first part of the data receive the last part of the
+    // data.
+    size_t smallRecvLength = ret;
+    size_t remaining = mbedtls_ssl_get_bytes_avail(&conn->ssl);
+    size_t totalRecvLength = smallRecvLength;
+
+    uint8_t* recvBuffer = np_calloc(1, smallRecvLength + remaining);
+    if (recvBuffer == NULL) {
+        // discard the data
+        while (ret > 0) {
+            ret = mbedtls_ssl_read(&conn->ssl, smallRecvBuffer, smallRecvBufferSize);
+        }
+        return ret;
+    }
+
+    memcpy(recvBuffer, smallRecvBuffer, smallRecvLength);
+    if (remaining > 0) {
+        ret = mbedtls_ssl_read(
+            &conn->ssl, recvBuffer + smallRecvLength, remaining);
+        if (ret <= 0) {
+            np_free(recvBuffer);
+            return ret;
+        }
+        totalRecvLength += ret;
+    }
+    *data = recvBuffer;
+    return totalRecvLength;
+}
+
 /*
  * Handle events for the connection phase
  */
@@ -542,22 +583,17 @@ void event_do_one(void* data)
         }
         return;
     } else if(conn->state == DATA) {
-        size_t recvBufferSize = 1500;
-        uint8_t* recvBuffer = np_calloc(1, recvBufferSize);
-        if (recvBuffer == NULL) {
-            // TODO
-            return;
-        }
-        ret = mbedtls_ssl_read( &conn->ssl, recvBuffer, recvBufferSize );
+        uint8_t* recvBuffer;
+        ret = recv_data(conn, &recvBuffer);
         if (ret == 0) {
             // EOF
             conn->state = CLOSING;
             NABTO_LOG_TRACE(LOG, "Received EOF, state = CLOSING");
         } else if (ret > 0) {
             conn->recvCount++;
-            // TODO: sequence numbers
             uint64_t seq = uint64_from_bigendian(conn->ssl.MBEDTLS_PRIVATE(in_ctr));
             conn->dataHandler(conn->recvChannelId, seq, recvBuffer, (uint16_t)ret, conn->callbackData);
+            np_free(recvBuffer);
         }else if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
                   ret == MBEDTLS_ERR_SSL_WANT_WRITE)
         {
@@ -577,7 +613,6 @@ void event_do_one(void* data)
             conn->state = CLOSING;
             nm_dtls_do_close(conn, NABTO_EC_UNKNOWN);
         }
-        np_free(recvBuffer);
         return;
     }
 }
