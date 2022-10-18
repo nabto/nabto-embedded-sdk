@@ -232,7 +232,10 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
         size_t recvBufferSize = 1500;
         uint8_t* recvBuffer = np_calloc(1, recvBufferSize);
         if (recvBuffer == NULL) {
-            // TODO discard udp packet.
+            // Discard udp packet.
+            uint8_t dummyBuffer[1];
+            np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, dummyBuffer, sizeof(dummyBuffer), &recvSize);
+            nm_mdns_recv_packet(instance);
             return;
         }
         bool doRecv = true; // set to false if the nm_mdns_send_packet initiates the next recv.
