@@ -167,6 +167,10 @@ void nm_mbedtls_cli_deinit(struct np_platform* pl)
 {
     struct nm_mbedtls_cli_context* ctx =
         (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+    if (ctx == NULL) {
+        return;
+    }
+
     mbedtls_x509_crt_free(&ctx->rootCerts);
     mbedtls_pk_free(&ctx->privateKey);
     mbedtls_x509_crt_free(&ctx->publicKey );

@@ -124,7 +124,9 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 {
     struct libevent_platform* platform = nabto_device_integration_get_platform_data(device);
 
-
+    if (platform == NULL) {
+        return;
+    }
     nabto_device_threads_free_thread(platform->libeventThread);
 
     nm_mdns_server_deinit(&platform->mdnsServer);
@@ -142,6 +144,9 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
     struct libevent_platform* platform = nabto_device_integration_get_platform_data(device);
+    if (platform == NULL) {
+        return;
+    }
     if (platform->stopped) {
         return;
     }
