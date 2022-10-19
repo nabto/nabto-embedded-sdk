@@ -5,6 +5,7 @@ message("Using embedded dir:" ${root_dir})
 
 
 set(ne_nn_src
+  ${root_dir}/nabto-common/components/nn/src/nn/allocator.c
   ${root_dir}/nabto-common/components/nn/src/nn/endian.c
   ${root_dir}/nabto-common/components/nn/src/nn/ip_address.c
   ${root_dir}/nabto-common/components/nn/src/nn/llist.c

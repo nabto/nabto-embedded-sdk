@@ -104,10 +104,14 @@ np_error_code udp_create(struct np_udp* obj, struct np_udp_socket** sock)
     return NABTO_EC_OK;
 }
 
-void nm_libevent_udp_add_to_libevent(struct np_udp_socket* sock)
+np_error_code nm_libevent_udp_add_to_libevent(struct np_udp_socket* sock)
 {
     struct nm_libevent_context* context = sock->impl;
     sock->event = event_new(context->eventBase, sock->sock, EV_READ, udp_ready_callback, sock);
+    if (sock->event == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
 }
 
 void udp_abort(struct np_udp_socket* sock)
@@ -176,12 +180,17 @@ np_error_code udp_async_bind_port_ec(struct np_udp_socket* sock, uint16_t port)
     }
 
     ec = udp_bind_port(sock, port);
+
+    if (ec == NABTO_EC_OK) {
+        ec = nm_libevent_udp_add_to_libevent(sock);
+    }
+
     if (ec != NABTO_EC_OK) {
         evutil_closesocket(sock->sock);
         sock->sock = EVUTIL_INVALID_SOCKET;
         return ec;
     }
-    nm_libevent_udp_add_to_libevent(sock);
+
     return NABTO_EC_OK;
 }
 

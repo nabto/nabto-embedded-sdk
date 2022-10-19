@@ -80,6 +80,10 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     }
 
     struct nm_dns_request* dnsRequest = np_calloc(1, sizeof(struct nm_dns_request));
+    if (dnsRequest == NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
+        return;
+    }
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
@@ -126,6 +130,10 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     }
 
     struct nm_dns_request* dnsRequest = np_calloc(1, sizeof(struct nm_dns_request));
+    if (dnsRequest == NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
+        return;
+    }
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;

@@ -238,6 +238,9 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
     }
 
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
+    if (fut == NULL) {
+        return false;
+    }
     nabto_device_start(device, fut);
 
     ec = nabto_device_future_wait(fut);
@@ -313,6 +316,10 @@ void handle_coap_post_request(NabtoDeviceCoapRequest* request)
 void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l1, NabtoDeviceListener* l2, char* msg)
 {
     NabtoDeviceFuture* f = nabto_device_future_new(d);
+    if (f == NULL) {
+        printf("Cannot allocate future\n");
+        return;
+    }
     if (d) {
         nabto_device_close(d, f);
         nabto_device_future_wait(f);

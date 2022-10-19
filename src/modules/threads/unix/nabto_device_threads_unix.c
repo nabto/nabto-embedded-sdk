@@ -64,12 +64,18 @@ void nabto_device_threads_free_thread(struct nabto_device_thread* thread)
 
 void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutex)
 {
+    if (mutex == NULL) {
+        return;
+    }
     pthread_mutex_destroy(&mutex->mut);
     np_free(mutex);
 }
 
 void nabto_device_threads_free_cond(struct nabto_device_condition* cond)
 {
+    if (cond == NULL) {
+        return;
+    }
     pthread_cond_destroy(&cond->cond);
     np_free(cond);
 }

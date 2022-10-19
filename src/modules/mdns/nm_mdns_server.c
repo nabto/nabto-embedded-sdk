@@ -278,16 +278,17 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
         instance->sendBuffer = np_calloc(1, NM_MDNS_SEND_BUFFER_SIZE);
         if (instance->sendBuffer == NULL) {
             NABTO_LOG_ERROR(LOG, "Cannot allocate buffer for sending mdns packet");
-        }
-        if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, id, unicastResponse, false, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
-        {
-            np_udp_async_send_to(&instance->server->udp, instance->socket,
-                                 ep, instance->sendBuffer, (uint16_t)written,
-                                 &instance->sendCompletionEvent);
-            return;
         } else {
-            np_free(instance->sendBuffer);
-            instance->sendBuffer = NULL;
+            if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, id, unicastResponse, false, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
+            {
+                np_udp_async_send_to(&instance->server->udp, instance->socket,
+                                     ep, instance->sendBuffer, (uint16_t)written,
+                                     &instance->sendCompletionEvent);
+                return;
+            } else {
+                np_free(instance->sendBuffer);
+                instance->sendBuffer = NULL;
+            }
         }
     }
     nm_mdns_recv_packet(instance);
