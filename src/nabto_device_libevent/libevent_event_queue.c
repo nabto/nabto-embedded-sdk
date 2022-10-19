@@ -48,10 +48,18 @@ static struct np_event_queue_functions module = {
 
 struct np_event_queue libevent_event_queue_create(struct event_base* eventBase, struct nabto_device_mutex* mutex)
 {
+    struct np_event_queue obj = {
+        .mptr = NULL,
+        .data = NULL
+    };
+
     struct libevent_event_queue* eq = np_calloc(1, sizeof(struct libevent_event_queue));
+    if (eq == NULL) {
+        return obj;
+    }
     eq->eventBase = eventBase;
     eq->mutex = mutex;
-    struct np_event_queue obj;
+
     obj.mptr = &module;
     obj.data = eq;
     return obj;

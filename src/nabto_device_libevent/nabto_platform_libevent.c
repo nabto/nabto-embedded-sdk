@@ -64,7 +64,14 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     }
 
     platform->eventBase = event_base_new();
+    if (platform->eventBase == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
     platform->signalEvent = event_new(platform->eventBase, -1, 0, &signal_event, platform);
+    if (platform->signalEvent == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
 
     // The libevent module comes with UDP, TCP, local ip and timestamp
     // module implementations.
@@ -90,11 +97,18 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct nm_mdns_udp_bind mdnsUdpBind = nm_libevent_mdns_udp_bind_get_impl(&platform->libeventContext);
 
 
-    nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &mdnsUdpBind, &localIp);
+    np_error_code ec = nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &mdnsUdpBind, &localIp);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
     struct np_mdns mdnsImpl = nm_mdns_server_get_impl(&platform->mdnsServer);
 
     // Start the thread where the libevent main loop runs.
     platform->libeventThread = nabto_device_threads_create_thread();
+    if (platform->libeventThread == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
     if (nabto_device_threads_run(platform->libeventThread, libevent_thread, platform) != 0) {
         // TODO
     }
