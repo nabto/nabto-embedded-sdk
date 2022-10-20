@@ -48,6 +48,7 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->pl = pl;
     conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
+    nn_llist_node_init(&conn->connectionsNode);
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     conn->hasSpake2Key = false;
     conn->passwordAuthenticated = false;
