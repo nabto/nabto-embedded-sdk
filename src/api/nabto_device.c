@@ -485,14 +485,17 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
         NABTO_LOG_ERROR(LOG, "Encryption key pair not set");
         nabto_device_future_resolve(fut, NABTO_EC_INVALID_STATE);
     } else {
-
+        np_error_code ec;
         // Init platform
-        nc_device_set_keys(&dev->core, (const unsigned char*)dev->certificate, strlen(dev->certificate), (const unsigned char*)dev->privateKey, strlen(dev->privateKey), dev->fingerprint);
-
-        // start the core
-        np_error_code ec = nc_device_start(&dev->core, defaultServerUrlSuffix, &nabto_device_start_cb, dev);
+        ec = nc_device_set_keys(&dev->core, (const unsigned char*)dev->certificate, strlen(dev->certificate), (const unsigned char*)dev->privateKey, strlen(dev->privateKey), dev->fingerprint);
         if (ec != NABTO_EC_OK) {
             nabto_device_future_resolve(fut, ec);
+        } else {
+            // start the core
+            ec = nc_device_start(&dev->core, defaultServerUrlSuffix, &nabto_device_start_cb, dev);
+            if (ec != NABTO_EC_OK) {
+                nabto_device_future_resolve(fut, ec);
+            }
         }
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);

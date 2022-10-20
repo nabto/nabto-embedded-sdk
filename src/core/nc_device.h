@@ -110,7 +110,7 @@ struct nc_device_context {
 np_error_code nc_device_init(struct nc_device_context* dev, struct np_platform* pl);
 void nc_device_deinit(struct nc_device_context* dev);
 
-void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize, const uint8_t* fingerprint);
+np_error_code nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize, const uint8_t* fingerprint);
 
 np_error_code nc_device_start(struct nc_device_context* dev,
                               const char* hostname,

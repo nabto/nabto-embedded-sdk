@@ -219,13 +219,20 @@ void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_e
 
 }
 
-void nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize, const uint8_t* fingerprint)
+np_error_code nc_device_set_keys(struct nc_device_context* device, const unsigned char* publicKeyL, size_t publicKeySize, const unsigned char* privateKeyL, size_t privateKeySize, const uint8_t* fingerprint)
 {
     memcpy(device->fingerprint, fingerprint, 32);
-    nc_attacher_set_keys(&device->attacher, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+    np_error_code ec = nc_attacher_set_keys(&device->attacher, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
-    device->pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+    ec = device->pl->dtlsS.set_keys(device->dtlsServer, publicKeyL, publicKeySize, privateKeyL, privateKeySize);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 #endif
+    return NABTO_EC_OK;
 }
 
 void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data) {
