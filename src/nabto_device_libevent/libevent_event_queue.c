@@ -95,7 +95,11 @@ np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbD
     ev->data = cbData;
     ev->posted = false;
 
-    event_assign(&ev->event, eq->eventBase, -1, 0, &handle_event, ev);
+    int ec = event_assign(&ev->event, eq->eventBase, -1, 0, &handle_event, ev);
+    if (ec != 0) {
+        NABTO_LOG_ERROR(LOG, "cannot assign event %d", ec);
+        return NABTO_EC_UNKNOWN;
+    }
 
     *event = ev;
     return NABTO_EC_OK;
@@ -133,7 +137,10 @@ void post_timed(struct np_event* event, uint32_t milliseconds)
     struct timeval tv;
     tv.tv_sec = (milliseconds / 1000);
     tv.tv_usec = ((milliseconds % 1000) * 1000);
-    event_add (&event->event, &tv);
+    int ec = event_add (&event->event, &tv);
+    if (ec != 0) {
+        NABTO_LOG_ERROR(LOG, "Cannot add event %d", ec);
+    }
 }
 
 void cancel(struct np_event* event)
