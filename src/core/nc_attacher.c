@@ -504,11 +504,12 @@ void reattach(void* data)
         np_error_code ec = update_dns(ctx, ctx->hostname);
         if (ec != NABTO_EC_OK) {
             NABTO_LOG_ERROR(LOG, "Failed to update the dns address");
+            ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
+        } else {
+            ctx->currentPort = ctx->defaultPort;
+            ctx->state = NC_ATTACHER_STATE_DNS;
+            ctx->redirectAttempts = 0;
         }
-
-        ctx->currentPort = ctx->defaultPort;
-        ctx->state = NC_ATTACHER_STATE_DNS;
-        ctx->redirectAttempts = 0;
     }
     handle_state_change(ctx);
 }
