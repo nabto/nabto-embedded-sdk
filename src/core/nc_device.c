@@ -340,7 +340,11 @@ void nc_device_sockets_bound(struct nc_device_context* dev)
     nc_rendezvous_set_udp_dispatch(&dev->rendezvous, &dev->udp);
 
     if (dev->enableAttach) {
-        nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
+        np_error_code ec = nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
+        if (ec != NABTO_EC_OK) {
+            nc_device_resolve_start_close_callbacks(dev, ec);
+            return;
+        }
     }
 
     nc_udp_dispatch_start_recv(&dev->udp);
