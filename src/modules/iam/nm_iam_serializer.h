@@ -60,7 +60,7 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
 /**
  * Free string returned by dump functions
  *
- * @param string  String to free
+ * @param string [in] String to free
  */
 void nm_iam_serializer_string_free(char* string);
 
