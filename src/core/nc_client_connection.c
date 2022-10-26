@@ -31,7 +31,7 @@ void nc_client_connection_keep_alive_packet_sent(const np_error_code ec, void* d
 
 static void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data);
 
-np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
+np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client_connection* conn,
                                         struct nc_client_connection_dispatch_context* dispatch,
                                         struct nc_device_context* device,
                                         struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
@@ -89,14 +89,20 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS connection");
         return ec;
     }
+    return ec;
+}
 
+np_error_code nc_client_connection_start(struct nc_client_connection* connection, uint8_t* buffer, size_t bufferSize)
+{
+    np_error_code ec;
+    struct np_platform* pl = connection->pl;
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    ec = pl->dtlsC.connect(conn->dtls);
+    ec = pl->dtlsC.connect(connection->dtls);
 #else
     // Remove connection ID before passing packet to DTLS
     uint8_t* start = buffer + 16;
     bufferSize = bufferSize-16;
-    ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, start, bufferSize);
+    ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, bufferSize);
 #endif
     return ec;
 }

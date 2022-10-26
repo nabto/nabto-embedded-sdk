@@ -78,11 +78,13 @@ struct nc_client_connection {
  * Initializes client connection, creates a DTLS Server connection,
  * and forwards the hello packet to DTLS.
  */
-np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
+np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client_connection* conn,
                                      struct nc_client_connection_dispatch_context* dispatch,
                                      struct nc_device_context* device,
                                      struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                      uint8_t* buffer, uint16_t bufferSize);
+
+np_error_code nc_client_connection_start(struct nc_client_connection* conn, uint8_t* buffer, size_t bufferSize);
 
 /**
  * Handles packets coming from nc_client_connection_dispatch when a

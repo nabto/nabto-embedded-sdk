@@ -146,6 +146,9 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
                                                  struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                                  uint8_t* buffer, uint16_t bufferSize)
 {
+    if (bufferSize < 17) {
+        return; // this is not a valid packet with atleast a nabto connection id header and a dtls packet type
+    }
     uint8_t* id;
     id = buffer;
     struct nc_client_connection* connection;
@@ -172,10 +175,11 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
             return;
         }
         NABTO_LOG_TRACE(LOG, "Open new connection");
-        np_error_code ec = nc_client_connection_open(ctx->pl, connection, ctx, ctx->device, sock, ep, buffer, bufferSize);
+        np_error_code ec = nc_client_connection_init(ctx->pl, connection, ctx, ctx->device, sock, ep, buffer, bufferSize);
         if (ec == NABTO_EC_OK) {
             NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " created.", connection->connectionRef);
             nn_llist_append(&ctx->connections, &connection->connectionsNode, connection);
+            nc_client_connection_start(connection, buffer, bufferSize);
         } else {
             NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " initialization failed: %s.", connection->connectionRef, np_error_code_to_string(ec));
             nc_client_connection_dispatch_send_internal_error(ctx, sock, ep, buffer, bufferSize);
