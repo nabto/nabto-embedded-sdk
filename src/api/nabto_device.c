@@ -211,6 +211,9 @@ void nabto_device_do_stop(struct nabto_device_context* dev)
  */
 void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 {
+    if (device == NULL) {
+        return;
+    }
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
     nabto_device_stop(device);

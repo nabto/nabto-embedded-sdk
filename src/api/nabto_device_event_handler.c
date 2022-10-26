@@ -68,6 +68,9 @@ np_error_code nabto_device_listener_add_event(struct nabto_device_listener* list
 
 void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceListener)
 {
+    if (deviceListener == NULL) {
+        return;
+    }
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);

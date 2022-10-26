@@ -36,6 +36,9 @@ nabto_device_service_invocation_new(NabtoDevice* device)
 void NABTO_DEVICE_API
 nabto_device_service_invocation_free(NabtoDeviceServiceInvocation* serviceInvoke)
 {
+    if (serviceInvoke == NULL) {
+        return;
+    }
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
