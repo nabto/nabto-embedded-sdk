@@ -174,11 +174,12 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
         NABTO_LOG_TRACE(LOG, "Open new connection");
         np_error_code ec = nc_client_connection_open(ctx->pl, connection, ctx, ctx->device, sock, ep, buffer, bufferSize);
         if (ec == NABTO_EC_OK) {
+            NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " created.", connection->connectionRef);
             nn_llist_append(&ctx->connections, &connection->connectionsNode, connection);
         } else {
+            NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " initialization failed: %s.", connection->connectionRef, np_error_code_to_string(ec));
             nc_client_connection_dispatch_send_internal_error(ctx, sock, ep, buffer, bufferSize);
-            //nc_client_connection_destroy_connection(connection);
-            nc_client_connection_dispatch_free_connection(ctx, connection);
+            nc_client_connection_destroy_connection(connection);
         }
         return;
     }

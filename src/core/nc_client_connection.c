@@ -37,10 +37,6 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
                                         struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                         uint8_t* buffer, uint16_t bufferSize)
 {
-    if (bufferSize <  16) {
-        NABTO_LOG_ERROR(LOG, "Initial dtls buffer is too small");
-        return NABTO_EC_UNKNOWN;
-    }
     np_error_code ec;
     memset(conn, 0, sizeof(struct nc_client_connection));
     memcpy(conn->id.id, buffer, 16);
@@ -56,11 +52,12 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->hasSpake2Key = false;
     conn->passwordAuthenticated = false;
 #endif
+    conn->device = device;
+
     ec = nc_device_next_connection_ref(device, &conn->connectionRef);
     if (ec != NABTO_EC_OK) {
         return NABTO_EC_UNKNOWN;
     }
-    conn->device = device;
 
     ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
     if (ec != NABTO_EC_OK) {
@@ -101,7 +98,6 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     bufferSize = bufferSize-16;
     ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, start, bufferSize);
 #endif
-    NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " created.", conn->connectionRef);
     return ec;
 }
 
@@ -402,5 +398,4 @@ bool nc_client_connection_is_password_authenticated(struct nc_client_connection*
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event)
 {
     nc_device_connection_events_listener_notify(conn->device, conn->connectionRef, event);
-
 }

@@ -378,6 +378,9 @@ const char*  get_alpn_protocol(struct np_dtls_cli_connection* conn)
 
 void destroy_connection(struct np_dtls_cli_connection* conn)
 {
+    if (conn == NULL) {
+        return;
+    }
     conn->state = CLOSING;
     conn->destroyed = true;
     if (conn->sslSendBuffer == NULL && !conn->receiving) {
