@@ -496,6 +496,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     // Create a copy of the state and print information from it.
     struct nm_iam_state* state = nm_iam_dump_state(&iam);
+    printf("# Friendly Name:     \"%s\"" NEWLINE, state->friendlyName);
 
     if (state == NULL) {
         return false;

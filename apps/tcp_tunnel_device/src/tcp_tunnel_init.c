@@ -29,6 +29,10 @@ bool create_services_interactive(const char* file);
 
 bool yes_no();
 
+int is_printable(char c) {
+    return c >= 0x20 && c <= 0x7e;
+}
+
 bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
     bool createDeviceConfig = false;
     if (string_file_exists(tcpTunnel->deviceConfigFile)) {
@@ -205,21 +209,37 @@ bool create_state_interactive_custom(const char* file) {
     printf("[3]: Administrator - Standard actions and management of users and pairing modes" NEWLINE);
     pickedRole = get_int(3);
 
-    char fn[64];
-    printf("Enter a friendly name for your device (max 64 characters, empty string will default to \"Tcp Tunnel\"): ");
-    if (scanf("%64s", fn) != 1) {
-        char i=0;
-        while (i != '\n') { (void)scanf("%c", &i); }
-        printf("Friendly name creation failed." NEWLINE);
-        return false;
-    }
-
     struct nm_iam_state* state = nm_iam_state_new();
 
-    if (strlen(fn) == 0) {
-        nm_iam_state_set_friendly_name(state, "Tcp Tunnel");
-    } else {
-        nm_iam_state_set_friendly_name(state, fn);
+    // scanf cannot recognize empty string on its own, so we use getchar in a more manual fashion here.
+    // It's probably in our best interest to replace all usages of scanf eventually as it is not very robust.
+    {
+        // scanf will leave newline in the stdin stream, so we have to clear it first.
+        char c;
+        while ((c = getchar()) != '\n' && c != EOF);
+
+        char friendlyName[16] = {0};
+        int friendlyNameMax = sizeof(friendlyName);
+        const char* defaultFriendlyName = "Tcp Tunnel";
+        printf("Enter a friendly name for your device (max %i characters, empty string will default to \"%s\"): ", friendlyNameMax, defaultFriendlyName);
+
+        int i = 0;
+        while (c = getchar()) {
+            // checking for is_printable handles the case on windows where newlines are \r\n
+            if (c == '\n' || c == EOF) {
+                break;
+            }
+
+            if (i < (friendlyNameMax-1) && is_printable(c)) {
+                friendlyName[i++] = c;
+            }
+        }
+
+        if (friendlyName[0] == 0) {
+            nm_iam_state_set_friendly_name(state, defaultFriendlyName);
+        } else {
+            nm_iam_state_set_friendly_name(state, friendlyName);
+        }
     }
 
     if (enableLocalInitialPairing ||
