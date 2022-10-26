@@ -22,115 +22,108 @@ const char* sct = "demosct";
 char helloWorld[128];
 
 struct context {
-    NabtoDeviceCoapRequest* getRequest;
+    NabtoDevice* device;
+    NabtoDeviceFuture* startFuture;
+    NabtoDeviceFuture* getFuture;
+    NabtoDeviceFuture* postFuture;
+    NabtoDeviceFuture* closeFuture;
+    NabtoDeviceFuture* deviceEventFuture;
+
     NabtoDeviceListener* getListener;
-    NabtoDeviceCoapRequest* postRequest;
     NabtoDeviceListener* postListener;
+    NabtoDeviceListener* deviceEventListener;
+
+    NabtoDeviceCoapRequest* getRequest;
+
+    NabtoDeviceCoapRequest* postRequest;
 };
 
 void get_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 void post_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
-bool start_device(NabtoDevice* device, const char* productId, const char* deviceId);
+bool start_device(struct context* ctxc, const char* productId, const char* deviceId);
 void handle_coap_get_request(NabtoDeviceCoapRequest* request);
 void handle_coap_post_request(NabtoDeviceCoapRequest* request);
-void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l1, NabtoDeviceListener* l2, char* msg);
-void wait_for_device_events(NabtoDevice* device);
+void handle_device_error(struct context* ctx, char* msg);
+void wait_for_device_events(struct context* ctx);
 void signal_handler(int s);
+
+static bool allocate_context(struct context* c);
+static void free_context(struct context* c);
+static int main_with_ctx(int argc, char* argv[], struct context* ctx);
 
 NabtoDevice* device_;
 
 static bool init_logging();
 
-int main(int argc, char* argv[]) {
-
+int main(int argc, char* argv[])
+{
     if (argc != 3) {
         printf("The example takes exactly two arguments. %s <product-id> <device-id>" NEWLINE, argv[0]);
         return -1;
     }
 
+    printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
+
+    struct context ctx;
+    if (!allocate_context(&ctx)) {
+        printf("Cannot allocate required objects\n");
+        free_context(&ctx);
+        return -1;
+    }
+
+    int status = main_with_ctx(argc, argv, &ctx);
+
+    free_context(&ctx);
+    return status;
+}
+
+int main_with_ctx(int argc, char* argv[], struct context* ctx)
+{
     char* productId = argv[1];
     char* deviceId = argv[2];
 
     memcpy(helloWorld, defaultString, strlen(defaultString));
 
-    struct context ctx;
-
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
     if (!init_logging()) {
-        handle_device_error(NULL, NULL, NULL, "Failed to initialize logging");
+        handle_device_error(ctx, "Failed to initialize logging");
         return -1;
     }
 
-    if ((device_ = nabto_device_new()) == NULL) {
-        handle_device_error(NULL, NULL, NULL, "Failed to allocate device");
+    device_ = ctx->device;
+
+    if (!start_device(ctx, productId, deviceId)) {
+        handle_device_error(ctx, "Failed to start device");
         return -1;
     }
 
-    if (!start_device(device_, productId, deviceId)) {
-        handle_device_error(device_, NULL, NULL, "Failed to start device");
-        return -1;
-    }
-
-    // Get handler setup
-    if ((ctx.getListener = nabto_device_listener_new(device_)) == NULL) {
-        handle_device_error(device_, NULL, NULL, "Failed to allocate listener");
-        return -1;
-    }
-
-    if (nabto_device_coap_init_listener(device_, ctx.getListener, NABTO_DEVICE_COAP_GET, coapPath) != NABTO_DEVICE_EC_OK) {
-        handle_device_error(device_, ctx.getListener, NULL, "CoAP listener initialization failed");
-        return -1;
-    }
-
-    NabtoDeviceFuture* getFuture = nabto_device_future_new(device_);
-    if (getFuture == NULL) {
-        handle_device_error(device_, ctx.getListener, NULL, "Failed to allocate future");
-        return -1;
-    }
-
-    // Post handler setup
-    if ((ctx.postListener = nabto_device_listener_new(device_)) == NULL) {
-        nabto_device_future_free(getFuture);
-        handle_device_error(device_, ctx.getListener, NULL,
-                            "Failed to allocate post listener");
+    if (nabto_device_coap_init_listener(ctx->device, ctx->getListener, NABTO_DEVICE_COAP_GET, coapPath) != NABTO_DEVICE_EC_OK) {
+        handle_device_error(ctx, "CoAP listener initialization failed");
         return -1;
     }
 
     // both post and get handler can exist on the same path. Different paths are also ok
-    if (nabto_device_coap_init_listener(device_, ctx.postListener, NABTO_DEVICE_COAP_POST, coapPath) != NABTO_DEVICE_EC_OK) {
-        nabto_device_future_free(getFuture);
-        handle_device_error(device_, ctx.getListener, ctx.postListener, "CoAP listener initialization failed");
+    if (nabto_device_coap_init_listener(ctx->device, ctx->postListener, NABTO_DEVICE_COAP_POST, coapPath) != NABTO_DEVICE_EC_OK) {
+        handle_device_error(ctx, "CoAP listener initialization failed");
         return -1;
     }
 
-    NabtoDeviceFuture* postFuture = nabto_device_future_new(device_);
-    if (getFuture == NULL) {
-        nabto_device_future_free(getFuture);
-        handle_device_error(device_, ctx.getListener, ctx.postListener, "Failed to allocate future");
-        return -1;
-    }
+    nabto_device_listener_new_coap_request(ctx->getListener, ctx->getFuture, &ctx->getRequest);
+    nabto_device_future_set_callback(ctx->getFuture, &get_request_callback, ctx);
 
-    nabto_device_listener_new_coap_request(ctx.getListener, getFuture, &ctx.getRequest);
-    nabto_device_future_set_callback(getFuture, &get_request_callback, &ctx);
-
-    nabto_device_listener_new_coap_request(ctx.postListener, postFuture, &ctx.postRequest);
-    nabto_device_future_set_callback(postFuture, &post_request_callback, &ctx);
+    nabto_device_listener_new_coap_request(ctx->postListener, ctx->postFuture, &ctx->postRequest);
+    nabto_device_future_set_callback(ctx->postFuture, &post_request_callback, ctx);
 
 
 
     signal(SIGINT, &signal_handler);
 
-    wait_for_device_events(device_);
+    wait_for_device_events(ctx);
 
-    nabto_device_listener_free(ctx.getListener);
-    nabto_device_listener_free(ctx.postListener);
-    nabto_device_stop(device_);
-    nabto_device_free(device_);
-    nabto_device_future_free(getFuture);
-    nabto_device_future_free(postFuture);
+    nabto_device_stop(ctx->device);
 
-    printf("Device cleaned up and closing\n");
+    return 0;
 }
 
 bool init_logging() {
@@ -152,19 +145,21 @@ void signal_handler(int s)
 {
     (void)s;
     NabtoDeviceFuture* fut = nabto_device_future_new(device_);
+    if (fut == NULL) {
+        printf("cannot allocate future for nice shutdown\n");
+        exit(1);
+    }
     nabto_device_close(device_, fut); // triggers NABTO_DEVICE_EVENT_CLOSED in event listener
     nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
 }
 
-void wait_for_device_events(NabtoDevice* device) {
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    NabtoDeviceListener* listener = nabto_device_listener_new(device);
+void wait_for_device_events(struct context* ctx) {
     NabtoDeviceEvent event;
-    nabto_device_device_events_init_listener(device, listener);
+    nabto_device_device_events_init_listener(ctx->device, ctx->deviceEventListener);
     while(true) {
-        nabto_device_listener_device_event(listener, fut, &event);
-        if (nabto_device_future_wait(fut) != NABTO_DEVICE_EC_OK ||
+        nabto_device_listener_device_event(ctx->deviceEventListener, ctx->deviceEventFuture, &event);
+        if (nabto_device_future_wait(ctx->deviceEventFuture) != NABTO_DEVICE_EC_OK ||
             event == NABTO_DEVICE_EVENT_CLOSED) {
             break;
         } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
@@ -179,19 +174,17 @@ void wait_for_device_events(NabtoDevice* device) {
             printf("The provided Device ID did not match the fingerprint\n");
         }
     }
-    nabto_device_stop(device);
-    nabto_device_future_free(fut);
-    nabto_device_listener_free(listener);
+    nabto_device_stop(ctx->device);
 }
 
-bool start_device(NabtoDevice* device, const char* productId, const char* deviceId)
+bool start_device(struct context* ctx, const char* productId, const char* deviceId)
 {
     NabtoDeviceError ec;
     char* privateKey;
     char* fp;
 
     if (!string_file_exists(keyFile)) {
-        if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {
+        if ((ec = nabto_device_create_private_key(ctx->device, &privateKey)) != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
@@ -208,43 +201,38 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
-    if ((ec = nabto_device_set_private_key(device, privateKey)) != NABTO_DEVICE_EC_OK) {
+    if ((ec = nabto_device_set_private_key(ctx->device, privateKey)) != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }
 
     free(privateKey);
 
-    if (nabto_device_get_device_fingerprint(device, &fp) != NABTO_DEVICE_EC_OK) {
+    if (nabto_device_get_device_fingerprint(ctx->device, &fp) != NABTO_DEVICE_EC_OK) {
         return false;
     }
 
     printf("Device: %s.%s with fingerprint: [%s]\n", productId, deviceId, fp);
     nabto_device_string_free(fp);
 
-    if (nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_set_device_id(device, deviceId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_enable_mdns(device) != NABTO_DEVICE_EC_OK ||
-        nabto_device_add_server_connect_token(device, sct) != NABTO_DEVICE_EC_OK)
+    if (nabto_device_set_product_id(ctx->device, productId) != NABTO_DEVICE_EC_OK ||
+        nabto_device_set_device_id(ctx->device, deviceId) != NABTO_DEVICE_EC_OK ||
+        nabto_device_enable_mdns(ctx->device) != NABTO_DEVICE_EC_OK ||
+        nabto_device_add_server_connect_token(ctx->device, sct) != NABTO_DEVICE_EC_OK)
     {
         return false;
     }
 
     const char* server = getenv("NABTO_SERVER");
     if (server) {
-        if (nabto_device_set_server_url(device, server) != NABTO_DEVICE_EC_OK) {
+        if (nabto_device_set_server_url(ctx->device, server) != NABTO_DEVICE_EC_OK) {
             return false;
         }
     }
 
-    NabtoDeviceFuture* fut = nabto_device_future_new(device);
-    if (fut == NULL) {
-        return false;
-    }
-    nabto_device_start(device, fut);
+    nabto_device_start(ctx->device, ctx->startFuture);
 
-    ec = nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
+    ec = nabto_device_future_wait(ctx->startFuture);
     if (ec != NABTO_DEVICE_EC_OK) {
         return false;
     }
@@ -313,27 +301,56 @@ void handle_coap_post_request(NabtoDeviceCoapRequest* request)
     nabto_device_coap_request_free(request);
 }
 
-void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l1, NabtoDeviceListener* l2, char* msg)
+void handle_device_error(struct context* ctx, char* msg)
 {
-    NabtoDeviceFuture* f = nabto_device_future_new(d);
-    if (f == NULL) {
-        printf("Cannot allocate future\n");
-        return;
-    }
-    if (d) {
-        nabto_device_close(d, f);
-        nabto_device_future_wait(f);
-        nabto_device_stop(d);
-        nabto_device_free(d);
-    }
-    if (f) {
-        nabto_device_future_free(f);
-    }
-    if (l1) {
-        nabto_device_listener_free(l1);
-    }
-    if (l2) {
-        nabto_device_listener_free(l2);
-    }
+    nabto_device_close(ctx->device, ctx->closeFuture);
+    nabto_device_future_wait(ctx->closeFuture);
+    nabto_device_stop(ctx->device);
+
     printf("%s\n", msg);
+}
+
+bool allocate_context(struct context* c)
+{
+    memset(c, 0, sizeof(struct context));
+    c->device = nabto_device_new();
+    if (c->device == NULL) {
+        return false;
+    }
+
+    c->startFuture = nabto_device_future_new(c->device);
+    c->getFuture = nabto_device_future_new(c->device);
+    c->postFuture = nabto_device_future_new(c->device);
+    c->closeFuture = nabto_device_future_new(c->device);
+    c->deviceEventFuture = nabto_device_future_new(c->device);
+
+    c->getListener = nabto_device_listener_new(c->device);
+    c->postListener = nabto_device_listener_new(c->device);
+    c->deviceEventListener = nabto_device_listener_new(c->device);
+
+    if (c->startFuture == NULL ||
+        c->getFuture == NULL ||
+        c->postFuture == NULL ||
+        c->closeFuture == NULL ||
+        c->deviceEventFuture == NULL ||
+        c->getListener == NULL ||
+        c->postListener == NULL ||
+        c->deviceEventListener == NULL)
+    {
+        return false;
+    }
+    return true;
+}
+
+void free_context(struct context* ctx)
+{
+    nabto_device_listener_free(ctx->deviceEventListener);
+    nabto_device_listener_free(ctx->postListener);
+    nabto_device_listener_free(ctx->getListener);
+    nabto_device_future_free(ctx->deviceEventFuture);
+    nabto_device_future_free(ctx->closeFuture);
+    nabto_device_future_free(ctx->postFuture);
+    nabto_device_future_free(ctx->getFuture);
+    nabto_device_future_free(ctx->startFuture);
+    nabto_device_free(ctx->device);
 }
