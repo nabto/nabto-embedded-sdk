@@ -261,17 +261,18 @@ np_error_code nc_attacher_start(struct nc_attach_context* ctx, const char* hostn
     if (ctx->moduleState != NC_ATTACHER_MODULE_SETUP) {
         return NABTO_EC_INVALID_STATE;
     }
+
+    np_error_code ec = update_dns(ctx,hostname);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     ctx->udp = udp;
     ctx->state = NC_ATTACHER_STATE_DNS;
     ctx->moduleState = NC_ATTACHER_MODULE_RUNNING;
     ctx->hostname = hostname;
     ctx->defaultPort = serverPort;
     ctx->currentPort = serverPort;
-
-    np_error_code ec = update_dns(ctx,hostname);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
 
     nc_udp_dispatch_set_attach_context(ctx->udp, ctx);
     handle_state_change(ctx);
