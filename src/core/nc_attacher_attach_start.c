@@ -123,7 +123,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
                                 "Attach failed with coap code %d, error "
                                 "code %d, message: %s, ",
                                 error.coapResponseCode, error.nabtoErrorCode,
-                                error.message);
+                                error.message ? error.message : "");
                 ec = NC_ATTACHER_STATUS_ERROR;
 
         }

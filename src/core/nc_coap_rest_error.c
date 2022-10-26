@@ -59,7 +59,7 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         }
     }
     if (error->message == NULL) {
-        error->message = ""; // make the message well defined
+        error->message = nn_strdup("", np_allocator_get()); // make the message well defined.
     }
     return true;
 }
