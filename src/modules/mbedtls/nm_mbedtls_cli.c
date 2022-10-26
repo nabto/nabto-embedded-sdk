@@ -312,8 +312,11 @@ static np_error_code create_client_connection(
     np_error_code ec = create_connection(
         pl, connection, packetSender, dataHandler, eventHandler, data);
     if (ec != NABTO_EC_OK) {
+        do_free_connection(*connection);
+        *connection = NULL;
         return ec;
-    }    int ret;
+    }
+    int ret;
 
     struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
 
@@ -321,6 +324,7 @@ static np_error_code create_client_connection(
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
         do_free_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
 
@@ -337,6 +341,8 @@ static np_error_code create_attach_connection(
     np_error_code ec = create_connection(
         pl, connection, packetSender, dataHandler, eventHandler, data);
     if (ec != NABTO_EC_OK) {
+        do_free_connection(*connection);
+        *connection = NULL;
         return ec;
     }
     struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
@@ -351,12 +357,15 @@ static np_error_code create_attach_connection(
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
         do_free_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
 
     if( ( ret = mbedtls_ssl_set_hostname( &(*connection)->ssl, sni ) ) != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
+        do_free_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;
@@ -390,6 +399,9 @@ void destroy_connection(struct np_dtls_cli_connection* conn)
 
 void do_free_connection(struct np_dtls_cli_connection* conn)
 {
+    if (conn == NULL) {
+        return;
+    }
     // remove the first element until the list is empty
     while(!nn_llist_empty(&conn->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
