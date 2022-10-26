@@ -37,8 +37,11 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
                                         struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                         uint8_t* buffer, uint16_t bufferSize)
 {
+    if (bufferSize <  16) {
+        NABTO_LOG_ERROR(LOG, "Initial dtls buffer is too small");
+        return NABTO_EC_UNKNOWN;
+    }
     np_error_code ec;
-    uint8_t* start = buffer;
     memset(conn, 0, sizeof(struct nc_client_connection));
     memcpy(conn->id.id, buffer, 16);
     conn->currentChannel.sock = sock;
@@ -94,9 +97,9 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     ec = pl->dtlsC.connect(conn->dtls);
 #else
     // Remove connection ID before passing packet to DTLS
-    memmove(start, start+16, bufferSize-16);
+    uint8_t* start = buffer + 16;
     bufferSize = bufferSize-16;
-    ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
+    ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, start, bufferSize);
 #endif
     NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " created.", conn->connectionRef);
     return ec;

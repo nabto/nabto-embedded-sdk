@@ -87,7 +87,6 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     }
 
     struct np_udp_endpoint ep;
-    uint8_t backupBuffer[1];
     size_t bufferLength = 1500;
     uint8_t* recvBuffer = np_calloc(1, bufferLength);
     size_t recvLength;
@@ -97,7 +96,7 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
         // the system stack requirement large. We need to receive the packet but
         // we do it with a small buffer such that it will be discarded.
         uint8_t smallBuffer[1];
-        np_error_code recvEc = np_udp_recv_from(
+        np_udp_recv_from(
             &ctx->pl->udp, ctx->sock, &ep, smallBuffer, sizeof(smallBuffer), &recvLength);
         NABTO_LOG_ERROR(LOG, "out of memory, discarding udp packet");
         start_recv(ctx);

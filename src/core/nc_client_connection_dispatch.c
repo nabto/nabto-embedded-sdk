@@ -176,6 +176,8 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
         if (ec == NABTO_EC_OK) {
             nn_llist_append(&ctx->connections, &connection->connectionsNode, connection);
         } else {
+            nc_client_connection_dispatch_send_internal_error(ctx, sock, ep, buffer, bufferSize);
+            //nc_client_connection_destroy_connection(connection);
             nc_client_connection_dispatch_free_connection(ctx, connection);
         }
         return;
