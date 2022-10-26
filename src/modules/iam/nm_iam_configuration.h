@@ -50,15 +50,15 @@ enum nm_iam_effect {
  * To simplify the internal structure all values are stored as strings.
  *
  * JSON representations:
- * @param STRING_EQUALS               {"StringEquals": {"<key>": [ "value1", ...]}}
- * @param STRING_NOT_EQUALS           {"StringNotEquals": {"<key>": [ "value1", ...]}}
- * @param NUMERIC_EQUALS              {"NumericEquals": {"<key>": [ "42.3"]}}
- * @param NUMERIC_NOT_EQUALS          {"NumericNotEquals": {"<key>": [ "42.3"]}}
- * @param NUMERIC_LESS_THAN           {"NumericLessThan": {"<key>": [ "42.3"]}}
- * @param NUMERIC_LESS_THAN_EQUALS    {"NumericLessThanEquals": {"<key>": [ "42.3"]}}
- * @param NUMERIC_GREATER_THAN        {"NumericGreaterThan": {"<key>": [ "42.3"]}}
- * @param NUMERIC_GREATER_THAN_EQUALS {"NumericGreaterThanEquals": {"<key>": [ "42.3"]}}
- * @param BOOL                        {"Bool": {"<key>": [ "true" || "false"]}}
+ * @param STRING_EQUALS               `{"StringEquals": {"<key>": [ "value1", ...]}}`
+ * @param STRING_NOT_EQUALS           `{"StringNotEquals": {"<key>": [ "value1", ...]}}`
+ * @param NUMERIC_EQUALS              `{"NumericEquals": {"<key>": [ "42.3"]}}`
+ * @param NUMERIC_NOT_EQUALS          `{"NumericNotEquals": {"<key>": [ "42.3"]}}`
+ * @param NUMERIC_LESS_THAN           `{"NumericLessThan": {"<key>": [ "42.3"]}}`
+ * @param NUMERIC_LESS_THAN_EQUALS    `{"NumericLessThanEquals": {"<key>": [ "42.3"]}}`
+ * @param NUMERIC_GREATER_THAN        `{"NumericGreaterThan": {"<key>": [ "42.3"]}}`
+ * @param NUMERIC_GREATER_THAN_EQUALS `{"NumericGreaterThanEquals": {"<key>": [ "42.3"]}}`
+ * @param BOOL                        `{"Bool": {"<key>": [ "true" || "false"]}}`
  */
 enum nm_iam_condition_operator {
     NM_IAM_CONDITION_OPERATOR_STRING_EQUALS,
