@@ -51,12 +51,15 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         if(nabto_coap_client_response_get_payload(response, &payload, &payloadLength)) {
             if (payloadLength < 1024) {
                 error->message = np_calloc(1, payloadLength+1);
-                memcpy(error->message, payload, payloadLength);
+                if (error->message != NULL) {
+                    memcpy(error->message, payload, payloadLength);
+                }
+
             }
         }
     }
     if (error->message == NULL) {
-        error->message = nn_strdup("", np_allocator_get()); // make the message well defined.
+        error->message = ""; // make the message well defined
     }
     return true;
 }

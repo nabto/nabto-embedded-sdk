@@ -15,6 +15,9 @@ bool nc_cbor_copy_text_string(CborValue* s, char** out, size_t maxLength) {
     }
     length += 1; // room for null byte
     *out = np_calloc(1, length+1);
+    if (*out == NULL) {
+        return false;
+    }
     cbor_value_copy_text_string(s, *out, &length, NULL);
     return true;
 }
