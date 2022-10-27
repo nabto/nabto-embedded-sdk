@@ -12,6 +12,7 @@
 #include <cjson/cJSON.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #if defined(_WIN32)
 #define NEWLINE "\r\n"
@@ -27,19 +28,97 @@ bool create_state_interactive_custom(const char* file);
 bool create_state_default(const char* file);
 bool create_services_interactive(const char* file);
 
-bool yes_no();
+static void to_lowercase(char* buffer, size_t size)
+{
+    for (int i = 0; i < size && buffer[i] != 0; i++) {
+        buffer[i] = tolower(buffer[i]);
+    }
+}
+
+static bool str_is_numerical(char* buffer, size_t size)
+{
+    for (int i = 0; i < size && buffer[i] != 0; i++) {
+        char c = buffer[i];
+        if (c < '0' || c > '9') {
+            return false;
+        }
+    }
+    return true;
+}
 
 static inline bool is_printable(char c)
 {
     return c >= 0x20 && c <= 0x7e;
 }
 
+// returns true if user input is size <= (bufferSize-1)
+static bool prompt(const char* msg, char* buffer, size_t bufferSize, ...) 
+{
+    char c;
+    int i = 0;
+    int n = bufferSize-1;
+
+    va_list(msgArgs);
+    va_start(msgArgs, bufferSize);
+    vprintf(msg, msgArgs);
+    va_end(msgArgs);
+    printf(": ");
+
+    while ((c = getchar())) {
+        if (c == '\n' || c == EOF) {
+            int nullBytePosition = i < n ? i : n;
+            buffer[nullBytePosition] = 0;
+            return i <= n;
+        }
+
+        if (i < n && is_printable(c)) {
+            buffer[i++] = c;
+        }
+    }
+    return false;
+}
+
+// keeps prompting until a non-empty string is given
+static bool prompt_repeating(const char* msg, char* buffer, size_t bufferSize)
+{
+    while (true) {
+        bool ret = prompt(msg, buffer, bufferSize);
+        if (buffer[0] != 0) {
+            return ret;
+        }
+    }
+}
+
+static bool prompt_yes_no(const char* msg)
+{
+    if (msg == NULL) {
+        msg = "";
+    }
+
+    while (true) {
+        char buffer[4];
+        char n = ARRAY_SIZE(buffer);
+        if(!prompt("%s [y/n]", buffer, n, msg)) {
+            continue;
+        }
+        to_lowercase(buffer, n);
+
+        if (strncmp(buffer, "y", n) == 0 || strncmp(buffer, "yes", n) == 0) {
+            return true;
+        }
+
+        if (strncmp(buffer, "n", n) == 0 || strncmp(buffer, "no", n) == 0) {
+            return false;
+        }
+    }
+}
+
 static bool prompt_create_device_config(struct tcp_tunnel* tcpTunnel) 
 {
     bool createDeviceConfig = false;
     if (string_file_exists(tcpTunnel->deviceConfigFile)) {
-        printf("A device configuration already exists (%s)" NEWLINE "Do you want to recreate it? ", tcpTunnel->deviceConfigFile);
-        createDeviceConfig = yes_no();
+        printf("A device configuration already exists (%s)" NEWLINE, tcpTunnel->deviceConfigFile);
+        createDeviceConfig = prompt_yes_no("Do you want to recreate it?");
     } else {
         printf("No device configuration found. Creating configuration: %s." NEWLINE, tcpTunnel->deviceConfigFile);
         createDeviceConfig = true;
@@ -61,8 +140,8 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
 
     bool createIamConfig = false;
     if (string_file_exists(tcpTunnel->iamConfigFile)) {
-        printf("The IAM configuration already exists (%s)" NEWLINE "Do you want to recreate it? ", tcpTunnel->iamConfigFile);
-        createIamConfig = yes_no();
+        printf("The IAM configuration already exists (%s)" NEWLINE, tcpTunnel->iamConfigFile);
+        createIamConfig = prompt_yes_no("Do you want to recreate it?");
     } else {
         printf("No IAM configuration found. Creating configuration: %s" NEWLINE, tcpTunnel->iamConfigFile);
         createIamConfig = true;
@@ -79,8 +158,8 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
     bool createIamState = false;
 
     if (string_file_exists(tcpTunnel->stateFile)) {
-        printf("The IAM State already exists (%s)" NEWLINE "Do you want to recreate it? ", tcpTunnel->stateFile);
-        createIamState = yes_no();
+        printf("The IAM State already exists (%s)" NEWLINE, tcpTunnel->stateFile);
+        createIamState = prompt_yes_no("Do you want to recreate it?");
     } else {
         printf("No IAM state file found. Creating IAM state file: %s" NEWLINE, tcpTunnel->stateFile);
         createIamState = true;
@@ -96,8 +175,8 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
     bool createServices = false;
 
     if (string_file_exists(tcpTunnel->servicesFile)) {
-        printf("The Tunnel Services configuration already exists (%s)" NEWLINE "Do you want to recreate it? ", tcpTunnel->servicesFile);
-        createServices = yes_no();
+        printf("The Tunnel Services configuration already exists (%s)" NEWLINE, tcpTunnel->servicesFile);
+        createServices = prompt_yes_no("Do you want to recreate it?");
     } else {
         printf("No Tunnel Services configuration found. Creating configuration file: %s" NEWLINE, tcpTunnel->stateFile);
         createServices = true;
@@ -117,14 +196,8 @@ bool create_device_config_interactive(const char* file) {
     char productId[20];
     char deviceId[20];
     printf("The device configuration requires a Product ID and a Device ID, created in the Nabto Cloud Console." NEWLINE);
-    printf("Product Id: ");
-    if (scanf("%20s", productId) != 1) {
-        return false;
-    }
-    printf("Device Id: ");
-    if (scanf("%20s", deviceId) != 1) {
-        return false;
-    }
+    prompt_repeating("Product Id", productId, ARRAY_SIZE(productId));
+    prompt_repeating("Device Id", deviceId, ARRAY_SIZE(deviceId));
 
     struct device_config dc;
     memset(&dc, 0, sizeof(struct device_config));
@@ -133,30 +206,10 @@ bool create_device_config_interactive(const char* file) {
     return save_device_config(file, &dc);
 }
 
-bool yes_no() {
-    char yn = 0;
-    do {
-        if (yn == '\n') {
-
-        } else {
-            printf("[y/n]: ");
-        }
-
-        (void)scanf("%c", &yn);
-        if (yn == 'y' || yn == 'Y') {
-            return true;
-        }
-        if (yn == 'n' || yn == 'N') {
-            return false;
-        }
-    } while( true );
-}
-
 bool create_state_interactive(const char* file)
 {
     printf("The IAM State enables pairing modes, and determines what role to assign new users." NEWLINE);
-    printf("Do you want to create a custom IAM State? ");
-    bool createCustomIam = yes_no();
+    bool createCustomIam = prompt_yes_no("Do you want to create a custom IAM State?");
     if (createCustomIam) {
         printf("Creating custom iam configuration" NEWLINE);
         return create_state_interactive_custom(file);
@@ -166,19 +219,21 @@ bool create_state_interactive(const char* file)
     }
 }
 
-uint8_t get_int(uint8_t max ) {
-    char in = 0;
-    do {
-        if (in == '\n') {
-        } else {
-            printf("[0-%d]: ", max);
+static uint8_t prompt_int(uint8_t max) {
+    while (true) {
+        char buffer[4];
+        int n = ARRAY_SIZE(buffer);
+        if (!prompt("[0-%d]", buffer, n, max)) {
+            continue;
         }
-
-        (void)scanf("%c", &in);
-        if (in >= '0' && in <= '0'+max) {
-            return (uint8_t)(in - '0');
+        if (!str_is_numerical(buffer, n)) {
+            continue;
         }
-    } while (true);
+        long num = strtol(buffer, NULL, 10);
+        if (num <= max) {
+            return num;
+        }
+    }
 }
 
 bool create_state_interactive_custom(const char* file) {
@@ -189,21 +244,16 @@ bool create_state_interactive_custom(const char* file) {
     bool enablePasswordOpenPairing;
     uint8_t pickedRole = 1; // Default = Guest
 
-    printf("Enable Local Initial Pairing: ");
-    enableLocalInitialPairing = yes_no();
-    printf("Enable Local Open Pairing: ");
-    enableLocalOpenPairing = yes_no();
-    printf("Enable Password Invite Pairing: ");
-    enablePasswordInvitePairing = yes_no();
-    printf("Enable Password Open Pairing: ");
-    enablePasswordOpenPairing = yes_no();
+    enableLocalInitialPairing = prompt_yes_no("Enable Local Initial Pairing");
+    enableLocalOpenPairing = prompt_yes_no("Enable Local Open Pairing");
+    enablePasswordInvitePairing = prompt_yes_no("Enable Password Invite Pairing");
+    enablePasswordOpenPairing = prompt_yes_no("Enable Password Open Pairing");
 
     printf(NEWLINE);
     if (!enableLocalInitialPairing && !enablePasswordInvitePairing) {
         printf("Both Local Initial Pairing and Password Invite Pairing modes are disabled. This means it will not be possible to create an Administrator of this device." NEWLINE);
         printf("If IAM management is not needed, this is perfectly fine." NEWLINE);
-        printf("Continue with choices?: ");
-        if (!yes_no()) {
+        if (!prompt_yes_no("Continue with choices?")) {
             return create_state_interactive_custom(file);
         }
         printf(NEWLINE);
@@ -217,34 +267,16 @@ bool create_state_interactive_custom(const char* file) {
     printf("[1]: Guest         - allowed pairing and manage own user actions [Default]" NEWLINE);
     printf("[2]: Standard      - Guest actions and Tunnelling" NEWLINE);
     printf("[3]: Administrator - Standard actions and management of users and pairing modes" NEWLINE);
-    pickedRole = get_int(3);
+    pickedRole = prompt_int(3);
 
     struct nm_iam_state* state = nm_iam_state_new();
 
-    // scanf cannot recognize empty string on its own, so we use getchar in a more manual fashion here.
-    // It's probably in our best interest to replace all usages of scanf eventually as it is not very robust.
     {
-        // scanf will leave newline in the stdin stream, so we have to clear it first.
-        char c;
-        while ((c = getchar()) != '\n' && c != EOF);
-
-        char friendlyName[16] = {0};
-        int friendlyNameMax = sizeof(friendlyName);
+        char friendlyName[64];
+        int friendlyNameMax = ARRAY_SIZE(friendlyName);
         const char* defaultFriendlyName = "Tcp Tunnel";
-        printf("Enter a friendly name for your device (max %i characters, empty string will default to \"%s\"): ", friendlyNameMax, defaultFriendlyName);
-
-        int i = 0;
-        while (c = getchar()) {
-            // checking for is_printable handles the case on windows where newlines are \r\n
-            if (c == '\n' || c == EOF) {
-                break;
-            }
-
-            if (i < (friendlyNameMax-1) && is_printable(c)) {
-                friendlyName[i++] = c;
-            }
-        }
-
+        prompt("Enter a friendly name for your device (max %i characters, empty string will default to \"%s\")",
+               friendlyName, friendlyNameMax, friendlyNameMax, defaultFriendlyName);
         if (friendlyName[0] == 0) {
             nm_iam_state_set_friendly_name(state, defaultFriendlyName);
         } else {
@@ -307,31 +339,27 @@ bool create_state_default(const char* file)
 
 bool createService(cJSON* root)
 {
-    char id[20];
-    char host[20];
+    char id[20] = {0};
+    char host[20] = {0};
     uint16_t port;
-    printf("Service ID (max 20 characters): ");
-    if (scanf("%20s", id) != 1) {
-        char i=0;
-        while (i != '\n') { (void)scanf("%c", &i); }
-        printf("Service creation failed. Invalid service ID entered." NEWLINE);
-        return false;
-    }
-
-    printf("Service Host (max 20 characters) (e.g. 127.0.0.1): ");
-    if (scanf("%20s", host) != 1) {
-        char i=0;
-        while (i != '\n') { (void)scanf("%c", &i); }
-        printf("Service creation failed. Invalid service host entered." NEWLINE);
-        return false;
-    }
-
-    printf("Service Port: ");
-    if (scanf("%hu", &port) != 1) {
-        char i=0;
-        while (i != '\n') { (void)scanf("%c", &i); }
-        printf("Service creation failed. Invalid service port entered." NEWLINE);
-        return false;
+    
+    prompt_repeating("Service ID (max 20 characters)", id, ARRAY_SIZE(id));
+    prompt_repeating("Service Host (max 20 characters)", host, ARRAY_SIZE(host));
+    
+    while (true) {
+        char port_str[5] = {0};
+        prompt("Service Port", port_str, ARRAY_SIZE(port_str));
+        if (port_str[0] == 0) {
+            continue;
+        }
+        if (!str_is_numerical(port_str, ARRAY_SIZE(port_str))) {
+            continue;
+        }
+        long num = strtol(port_str, NULL, 10);
+        if (num <= 0xFFFF) {
+            port = num;
+            break;
+        }
     }
 
     struct tcp_tunnel_service* service = tcp_tunnel_service_new();
@@ -342,33 +370,18 @@ bool createService(cJSON* root)
     service->port = port;
 
     printf("Service metadata is a map of strings to strings that a client can retrieve using COAP." NEWLINE);
-    printf("Do you want to add metadata to this service? ");
-    bool createMetadata = yes_no();
+    bool createMetadata = prompt_yes_no("Do you want to add metadata to this service?");
     while (createMetadata)
     {
         char key[20] = {0};
         char value[20] = {0};
 
-        printf("Metadata entry key: ");
-        if (scanf("%20s", key) != 1) {
-            char i=0;
-            while (i != '\n') { (void)scanf("%c", &i); }
-            printf("Service creation failed. Invalid metadata key entered." NEWLINE);
-            return false;
-        }
-
-        printf("Metadata entry value: ");
-        if (scanf("%20s", value) != 1) {
-            char i=0;
-            while (i != '\n') { (void)scanf("%c", &i); }
-            printf("Service creation failed. Invalid metadata value entered." NEWLINE);
-            return false;
-        }
+        prompt_repeating("Metadata entry key", key, ARRAY_SIZE(key));
+        prompt_repeating("Metadata entry value", value, ARRAY_SIZE(value));
 
         nn_string_map_insert(&service->metadata, key, value);
 
-        printf("Do you want to add another key-value pair? ");
-        createMetadata = yes_no();
+        createMetadata = prompt_yes_no("Do you want to add another key-value pair?");
     }
 
     cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(service));
@@ -379,16 +392,14 @@ bool createService(cJSON* root)
 bool create_services_interactive(const char* file)
 {
     printf("The default service configuration enables SSH to 127.0.0.1:22" NEWLINE);
-    printf("Do you want to create a custom services configuration? ");
-    bool createCustom = yes_no();
+    bool createCustom = prompt_yes_no("Do you want to create a custom services configuration?");
     if (createCustom) {
         printf("Each TCP Tunnel Service requires a unique ID and the host and port the service should connect to" NEWLINE);
         cJSON* root = cJSON_CreateArray();
         bool makeService = true;
         do {
             createService(root);
-            printf("Do you want to add another service? ");
-            makeService = yes_no();
+            makeService = prompt_yes_no("Do you want to add another service?");
         } while (makeService);
         return json_config_save(file, root);
     } else {
