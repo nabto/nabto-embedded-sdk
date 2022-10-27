@@ -29,11 +29,13 @@ bool create_services_interactive(const char* file);
 
 bool yes_no();
 
-int is_printable(char c) {
+static inline bool is_printable(char c)
+{
     return c >= 0x20 && c <= 0x7e;
 }
 
-bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
+static bool prompt_create_device_config(struct tcp_tunnel* tcpTunnel) 
+{
     bool createDeviceConfig = false;
     if (string_file_exists(tcpTunnel->deviceConfigFile)) {
         printf("A device configuration already exists (%s)" NEWLINE "Do you want to recreate it? ", tcpTunnel->deviceConfigFile);
@@ -48,6 +50,14 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
         }
     }
     printf(NEWLINE);
+    return true;
+}
+
+bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
+    bool createDeviceConfigSuccess = prompt_create_device_config(tcpTunnel);
+    if (!createDeviceConfigSuccess) {
+        return false;
+    }
 
     bool createIamConfig = false;
     if (string_file_exists(tcpTunnel->iamConfigFile)) {
@@ -385,4 +395,13 @@ bool create_services_interactive(const char* file)
         printf("Use default services" NEWLINE);
         return tcp_tunnel_create_default_services_file(file);
     }
+}
+
+bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
+{
+    bool createDeviceConfigSuccess = prompt_create_device_config(tcpTunnel);
+    if (!createDeviceConfigSuccess) {
+        return false;
+    }
+    return true;
 }

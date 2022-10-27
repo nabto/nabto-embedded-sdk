@@ -63,7 +63,8 @@ enum {
     OPTION_RANDOM_PORTS,
     OPTION_SPECIFIC_LOCAL_PORT,
     OPTION_SPECIFIC_P2P_PORT,
-    OPTION_INIT
+    OPTION_INIT,
+    OPTION_DEMO_INIT
 };
 
 struct args {
@@ -76,6 +77,7 @@ struct args {
     uint16_t localPort;
     uint16_t p2pPort;
     bool init;
+    bool demo_init;
 };
 
 static struct nn_allocator defaultAllocator = {
@@ -149,15 +151,16 @@ bool check_log_level(const char* level)
 
 static bool parse_args(int argc, char** argv, struct args* args)
 {
-    const char x1s[] = "h";      const char* x1l[] = { "help", 0 };
-    const char x2s[] = "v";      const char* x2l[] = { "version", 0 };
-    const char x3s[] = "";       const char* x3l[] = { "log-level", 0 };
-    const char x4s[] = "";       const char* x4l[] = { "show-state", 0 };
-    const char x5s[] = "H";      const char* x5l[] = { "home-dir", 0 };
-    const char x6s[] = "";       const char* x6l[] = { "random-ports", 0 };
-    const char x7s[] = "";       const char* x7l[] = { "local-port", 0 };
-    const char x8s[] = "";       const char* x8l[] = { "p2p-port", 0 };
-    const char x9s[] = "";       const char* x9l[] = { "init", 0 };
+    const char x1s[]  = "h";      const char* x1l[]  = { "help", 0 };
+    const char x2s[]  = "v";      const char* x2l[]  = { "version", 0 };
+    const char x3s[]  = "";       const char* x3l[]  = { "log-level", 0 };
+    const char x4s[]  = "";       const char* x4l[]  = { "show-state", 0 };
+    const char x5s[]  = "H";      const char* x5l[]  = { "home-dir", 0 };
+    const char x6s[]  = "";       const char* x6l[]  = { "random-ports", 0 };
+    const char x7s[]  = "";       const char* x7l[]  = { "local-port", 0 };
+    const char x8s[]  = "";       const char* x8l[]  = { "p2p-port", 0 };
+    const char x9s[]  = "";       const char* x9l[]  = { "init", 0 };
+    const char x10s[] = "";       const char* x10l[] = { "demo-init", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -169,6 +172,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_SPECIFIC_LOCAL_PORT, GOPT_ARG, x7s, x7l },
         { OPTION_SPECIFIC_P2P_PORT, GOPT_ARG, x8s, x8l },
         { OPTION_INIT, GOPT_NOARG, x9s, x9l },
+        { OPTION_DEMO_INIT, GOPT_NOARG, x10s, x10l },
         {0,0,0,0}
     };
 
@@ -200,6 +204,11 @@ static bool parse_args(int argc, char** argv, struct args* args)
 
     if (gopt(options, OPTION_INIT)) {
         args->init = true;
+    }
+
+    if (gopt(options, OPTION_DEMO_INIT)) {
+        args->init = true;
+        args->demo_init = true;
     }
 
     if (gopt_arg(options, OPTION_LOG_LEVEL, &args->logLevel)) {
@@ -365,7 +374,15 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             print_private_key_file_load_failed(tunnel->privateKeyFile);
             return false;
         }
-        if (!tcp_tunnel_config_interactive(tunnel)) {
+        
+        bool success = false;
+        if (args->demo_init) {
+            success = tcp_tunnel_demo_config(tunnel);
+        } else {
+            success = tcp_tunnel_config_interactive(tunnel);
+        }
+
+        if (!success) {
             printf("Init of the configuration and state failed" NEWLINE);
             return false;
         } else {
