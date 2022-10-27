@@ -71,6 +71,10 @@ nabto_device_test_event_queue(NabtoDevice* device, NabtoDeviceFuture* future)
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct event_queue_test* t = np_calloc(1, sizeof(struct event_queue_test));
     nabto_device_future_reset(fut);
+    if (t == NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+        return;
+    }
     t->fut = fut;
     struct np_event_queue* eq = &dev->pl.eq;
     t->eq = dev->pl.eq;

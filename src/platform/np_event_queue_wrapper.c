@@ -11,6 +11,9 @@ np_error_code np_event_queue_create_event(struct np_event_queue* eq, np_event_ca
 
 void np_event_queue_destroy_event(struct np_event_queue* eq, struct np_event* event)
 {
+    if (event == NULL) {
+        return;
+    }
     eq->mptr->destroy(event);
 }
 

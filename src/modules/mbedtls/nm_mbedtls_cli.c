@@ -167,6 +167,10 @@ void nm_mbedtls_cli_deinit(struct np_platform* pl)
 {
     struct nm_mbedtls_cli_context* ctx =
         (struct nm_mbedtls_cli_context*)pl->dtlsCData;
+    if (ctx == NULL) {
+        return;
+    }
+
     mbedtls_x509_crt_free(&ctx->rootCerts);
     mbedtls_pk_free(&ctx->privateKey);
     mbedtls_x509_crt_free(&ctx->publicKey );
@@ -193,7 +197,11 @@ np_error_code init_mbedtls_config(struct nm_mbedtls_cli_context* ctx, mbedtls_ss
     mbedtls_ssl_conf_ciphersuites(conf,
                                   allowedCipherSuitesList);
 
-    mbedtls_ssl_conf_alpn_protocols(conf, nm_mbedtls_cli_alpnList );
+    ret = mbedtls_ssl_conf_alpn_protocols(conf, nm_mbedtls_cli_alpnList );
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "Cannot configure alpn protocols %d", ret);
+        return NABTO_EC_UNKNOWN;
+    }
     mbedtls_ssl_conf_rng( conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 
     nm_mbedtls_util_check_logging(conf);
@@ -304,8 +312,11 @@ static np_error_code create_client_connection(
     np_error_code ec = create_connection(
         pl, connection, packetSender, dataHandler, eventHandler, data);
     if (ec != NABTO_EC_OK) {
+        do_free_connection(*connection);
+        *connection = NULL;
         return ec;
-    }    int ret;
+    }
+    int ret;
 
     struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
 
@@ -313,6 +324,7 @@ static np_error_code create_client_connection(
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
         do_free_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
 
@@ -329,6 +341,8 @@ static np_error_code create_attach_connection(
     np_error_code ec = create_connection(
         pl, connection, packetSender, dataHandler, eventHandler, data);
     if (ec != NABTO_EC_OK) {
+        do_free_connection(*connection);
+        *connection = NULL;
         return ec;
     }
     struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
@@ -343,12 +357,15 @@ static np_error_code create_attach_connection(
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
         do_free_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
 
     if( ( ret = mbedtls_ssl_set_hostname( &(*connection)->ssl, sni ) ) != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
+        do_free_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;
@@ -370,6 +387,9 @@ const char*  get_alpn_protocol(struct np_dtls_cli_connection* conn)
 
 void destroy_connection(struct np_dtls_cli_connection* conn)
 {
+    if (conn == NULL) {
+        return;
+    }
     conn->state = CLOSING;
     conn->destroyed = true;
     if (conn->sslSendBuffer == NULL && !conn->receiving) {
@@ -379,6 +399,9 @@ void destroy_connection(struct np_dtls_cli_connection* conn)
 
 void do_free_connection(struct np_dtls_cli_connection* conn)
 {
+    if (conn == NULL) {
+        return;
+    }
     // remove the first element until the list is empty
     while(!nn_llist_empty(&conn->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
@@ -517,9 +540,12 @@ void event_do_one(void* data)
                 enum np_dtls_event event = NP_DTLS_EVENT_CLOSED;
                 if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
                     char info[128];
+                    info[sizeof(info)-1] = 0;
                     uint32_t validationStatus = mbedtls_ssl_get_verify_result(&conn->ssl);
-                    mbedtls_x509_crt_verify_info(info, 128, "", validationStatus);
-                    NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
+                    int s = mbedtls_x509_crt_verify_info(info, sizeof(info), "", validationStatus);
+                    if (s > 0) {
+                        NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
+                    }
                     event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else {
                     NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %i", ret );
@@ -652,7 +678,11 @@ np_error_code async_close(struct np_dtls_cli_connection* conn)
     if ( conn->state != CLOSING) {
         NABTO_LOG_TRACE(LOG, "Closing DTLS cli from state: %u", conn->state);
         conn->state = CLOSING;
-        mbedtls_ssl_close_notify(&conn->ssl);
+
+        int ec = mbedtls_ssl_close_notify(&conn->ssl);
+        if (ec != 0) {
+            NABTO_LOG_ERROR(LOG, "Cannot send close notify %d", ec);
+        }
         if (conn->sslSendBuffer == NULL) {
             nm_dtls_do_close(conn, /*unused*/ NABTO_EC_OK);
         }

@@ -129,6 +129,9 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
         // write crt
         size_t bufferSize = 1024;
         char* buffer = np_calloc(1,1024);
+        if (buffer == NULL) {
+            return NABTO_EC_OUT_OF_MEMORY;
+        }
         ret = mbedtls_x509write_crt_pem( &ctx->crt, (unsigned char*)buffer, bufferSize,
                                          mbedtls_ctr_drbg_random, &ctx->ctr_drbg );
 

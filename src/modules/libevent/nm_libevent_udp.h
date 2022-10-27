@@ -25,7 +25,7 @@ struct np_udp_socket {
     struct event* event;
 };
 
-void nm_libevent_udp_add_to_libevent(struct np_udp_socket* sock);
+np_error_code nm_libevent_udp_add_to_libevent(struct np_udp_socket* sock);
 
 evutil_socket_t nm_libevent_udp_create_nonblocking_socket(int domain, int type);
 

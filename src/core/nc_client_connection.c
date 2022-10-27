@@ -31,14 +31,13 @@ void nc_client_connection_keep_alive_packet_sent(const np_error_code ec, void* d
 
 static void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data);
 
-np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client_connection* conn,
+np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client_connection* conn,
                                         struct nc_client_connection_dispatch_context* dispatch,
                                         struct nc_device_context* device,
                                         struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                         uint8_t* buffer, uint16_t bufferSize)
 {
     np_error_code ec;
-    uint8_t* start = buffer;
     memset(conn, 0, sizeof(struct nc_client_connection));
     memcpy(conn->id.id, buffer, 16);
     conn->currentChannel.sock = sock;
@@ -48,15 +47,17 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
     conn->pl = pl;
     conn->streamManager = &device->streamManager;
     conn->dispatch = dispatch;
+    nn_llist_node_init(&conn->connectionsNode);
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     conn->hasSpake2Key = false;
     conn->passwordAuthenticated = false;
 #endif
+    conn->device = device;
+
     ec = nc_device_next_connection_ref(device, &conn->connectionRef);
     if (ec != NABTO_EC_OK) {
         return NABTO_EC_UNKNOWN;
     }
-    conn->device = device;
 
     ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
     if (ec != NABTO_EC_OK) {
@@ -88,16 +89,21 @@ np_error_code nc_client_connection_open(struct np_platform* pl, struct nc_client
         NABTO_LOG_ERROR(LOG, "Failed to create DTLS connection");
         return ec;
     }
+    return ec;
+}
 
+np_error_code nc_client_connection_start(struct nc_client_connection* connection, uint8_t* buffer, size_t bufferSize)
+{
+    np_error_code ec;
+    struct np_platform* pl = connection->pl;
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    ec = pl->dtlsC.connect(conn->dtls);
+    ec = pl->dtlsC.connect(connection->dtls);
 #else
     // Remove connection ID before passing packet to DTLS
-    memmove(start, start+16, bufferSize-16);
+    uint8_t* start = buffer + 16;
     bufferSize = bufferSize-16;
-    ec = pl->dtlsS.handle_packet(pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
+    ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, bufferSize);
 #endif
-    NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " created.", conn->connectionRef);
     return ec;
 }
 
@@ -398,5 +404,4 @@ bool nc_client_connection_is_password_authenticated(struct nc_client_connection*
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event)
 {
     nc_device_connection_events_listener_notify(conn->device, conn->connectionRef, event);
-
 }

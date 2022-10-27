@@ -48,10 +48,18 @@ static struct np_event_queue_functions module = {
 
 struct np_event_queue libevent_event_queue_create(struct event_base* eventBase, struct nabto_device_mutex* mutex)
 {
+    struct np_event_queue obj = {
+        .mptr = NULL,
+        .data = NULL
+    };
+
     struct libevent_event_queue* eq = np_calloc(1, sizeof(struct libevent_event_queue));
+    if (eq == NULL) {
+        return obj;
+    }
     eq->eventBase = eventBase;
     eq->mutex = mutex;
-    struct np_event_queue obj;
+
     obj.mptr = &module;
     obj.data = eq;
     return obj;
@@ -87,7 +95,11 @@ np_error_code create(struct np_event_queue* obj, np_event_callback cb, void* cbD
     ev->data = cbData;
     ev->posted = false;
 
-    event_assign(&ev->event, eq->eventBase, -1, 0, &handle_event, ev);
+    int ec = event_assign(&ev->event, eq->eventBase, -1, 0, &handle_event, ev);
+    if (ec != 0) {
+        NABTO_LOG_ERROR(LOG, "cannot assign event %d", ec);
+        return NABTO_EC_UNKNOWN;
+    }
 
     *event = ev;
     return NABTO_EC_OK;
@@ -125,7 +137,10 @@ void post_timed(struct np_event* event, uint32_t milliseconds)
     struct timeval tv;
     tv.tv_sec = (milliseconds / 1000);
     tv.tv_usec = ((milliseconds % 1000) * 1000);
-    event_add (&event->event, &tv);
+    int ec = event_add (&event->event, &tv);
+    if (ec != 0) {
+        NABTO_LOG_ERROR(LOG, "Cannot add event %d", ec);
+    }
 }
 
 void cancel(struct np_event* event)

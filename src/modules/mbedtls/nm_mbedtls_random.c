@@ -44,8 +44,10 @@ bool nm_mbedtls_random_init(struct np_platform* pl)
 
 void nm_mbedtls_random_deinit(struct np_platform* pl)
 {
-
     struct random_ctx* ctx = pl->randomData;
+    if (ctx == NULL) {
+        return;
+    }
     free_random_ctx(ctx);
 }
 

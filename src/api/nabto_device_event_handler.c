@@ -17,6 +17,9 @@ NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* dev
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)np_calloc(1,sizeof(struct nabto_device_listener));
+    if (listener == NULL) {
+        return NULL;
+    }
     listener->isInitialized = false;
     listener->type = NABTO_DEVICE_LISTENER_TYPE_NONE;
     listener->dev = dev;
@@ -65,6 +68,9 @@ np_error_code nabto_device_listener_add_event(struct nabto_device_listener* list
 
 void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceListener)
 {
+    if (deviceListener == NULL) {
+        return;
+    }
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);

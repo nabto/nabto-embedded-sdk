@@ -104,6 +104,11 @@ nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future)
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     nabto_device_future_reset(fut);
+    if (t == NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+        return;
+    }
+
     t->fut = fut;
     t->dns = dev->pl.dns;
     np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL);

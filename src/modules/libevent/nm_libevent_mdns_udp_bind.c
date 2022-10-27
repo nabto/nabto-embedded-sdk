@@ -87,7 +87,12 @@ np_error_code udp_async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
     }
 
     nm_libevent_mdns_update_ipv4_socket_registration(sock->sock);
-    nm_libevent_udp_add_to_libevent(sock);
+
+    ec = nm_libevent_udp_add_to_libevent(sock);
+    if (ec != NABTO_EC_OK) {
+        evutil_closesocket(sock->sock);
+        return ec;
+    }
     return NABTO_EC_OK;
 }
 
@@ -116,7 +121,11 @@ np_error_code udp_async_bind_mdns_ipv6_ec(struct np_udp_socket* sock)
 
     nm_libevent_mdns_update_ipv6_socket_registration(sock->sock);
 
-    nm_libevent_udp_add_to_libevent(sock);
+    ec = nm_libevent_udp_add_to_libevent(sock);
+    if (ec != NABTO_EC_OK) {
+        evutil_closesocket(sock->sock);
+        return ec;
+    }
     return NABTO_EC_OK;
 }
 

@@ -32,6 +32,9 @@ static void handle_verdict(void* userData);
 struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action)
 {
     struct nabto_device_authorization_request* request = np_calloc(1, sizeof(struct nabto_device_authorization_request));
+    if (request == NULL) {
+        return NULL;
+    }
     request->connectionReference = connectionRef;
     request->action = action;
     request->attributes = NULL;

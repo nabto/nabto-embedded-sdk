@@ -193,6 +193,10 @@ void async_resolve(struct nm_unix_dns_resolver* resolver, int family, const char
         return;
     }
     struct nm_dns_resolve_event* r = np_calloc(1,sizeof(struct nm_dns_resolve_event));
+    if (r == NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
+        return;
+    }
     r->host = host;
     r->ips = ips;
     r->ipsSize = ipsSize;

@@ -22,6 +22,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_test_threads()
     // controlled manner
 
     struct threads_test* t = np_calloc(1, sizeof(struct threads_test));
+    if (t == NULL) {
+        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
+    }
 
     t->mutex = nabto_device_threads_create_mutex();
     t->condition = nabto_device_threads_create_condition();

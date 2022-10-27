@@ -29,6 +29,9 @@ nabto_device_fcm_notification_new(NabtoDevice* device)
 void NABTO_DEVICE_API
 nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification)
 {
+    if (notification == NULL) {
+        return;
+    }
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     struct nabto_device_context* dev = n->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
