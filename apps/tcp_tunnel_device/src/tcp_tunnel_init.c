@@ -53,7 +53,7 @@ static inline bool is_printable(char c)
 }
 
 // returns true if user input is size <= (bufferSize-1)
-static bool prompt(const char* msg, char* buffer, size_t bufferSize, ...) 
+static bool prompt(const char* msg, char* buffer, size_t bufferSize, ...)
 {
     char c;
     int i = 0;
@@ -108,6 +108,39 @@ static bool prompt_yes_no(const char* msg)
         if(!valid) {
             continue;
         }
+        to_lowercase(buffer, n);
+
+        if (strncmp(buffer, "y", n) == 0 || strncmp(buffer, "yes", n) == 0) {
+            return true;
+        }
+
+        if (strncmp(buffer, "n", n) == 0 || strncmp(buffer, "no", n) == 0) {
+            return false;
+        }
+    }
+}
+
+static bool prompt_yes_no_default(const char* msg, bool def)
+{
+    while (true) {
+        char buffer[4];
+        char n = ARRAY_SIZE(buffer);
+
+        bool valid;
+        if (msg == NULL) {
+            valid = prompt("(default: %s) [y/n]", buffer, n, def ? "y" : "n");
+        } else {
+            valid = prompt("%s (default: %s) [y/n]", buffer, n, msg, def ? "y" : "n");
+        }
+
+        if(!valid) {
+            continue;
+        }
+
+        if (buffer[0] == 0) {
+            return def;
+        }
+
         to_lowercase(buffer, n);
 
         if (strncmp(buffer, "y", n) == 0 || strncmp(buffer, "yes", n) == 0) {
@@ -183,17 +216,13 @@ static uint16_t prompt_uint16_default(const char* msg, uint16_t max, uint16_t de
 }
 
 
-static bool prompt_create_device_config(struct tcp_tunnel* tcpTunnel) 
+static bool prompt_create_device_config(struct tcp_tunnel* tcpTunnel)
 {
-    bool createDeviceConfig = false;
     if (string_file_exists(tcpTunnel->deviceConfigFile)) {
-        printf("A device configuration already exists (%s)" NEWLINE, tcpTunnel->deviceConfigFile);
-        createDeviceConfig = prompt_yes_no("Do you want to recreate it?");
+
+        printf("Not creating a new Product ID and Device ID configuration since they have already been configured in (%s)." NEWLINE, tcpTunnel->deviceConfigFile);
     } else {
         printf("No device configuration found. Creating configuration: %s." NEWLINE, tcpTunnel->deviceConfigFile);
-        createDeviceConfig = true;
-    }
-    if (createDeviceConfig) {
         if (!create_device_config_interactive(tcpTunnel->deviceConfigFile)) {
             return false;
         }
@@ -394,7 +423,7 @@ bool createService(cJSON* root)
     char id[20] = {0};
     char host[20] = {0};
     uint16_t port;
-    
+
     prompt_repeating("Service ID (max 20 characters)", id, ARRAY_SIZE(id));
     prompt_repeating("Service Host (max 20 characters)", host, ARRAY_SIZE(host));
     port = prompt_uint16("Service Port", 0xffff);
@@ -452,36 +481,30 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
         return false;
     }
 
-    bool createIamConfig = false;
-    if (string_file_exists(tcpTunnel->iamConfigFile)) {
-        printf("The IAM configuration already exists (%s)" NEWLINE, tcpTunnel->iamConfigFile);
-        createIamConfig = prompt_yes_no("Do you want to recreate it?");
-    } else {
-        printf("No IAM configuration found. Creating configuration: %s" NEWLINE, tcpTunnel->iamConfigFile);
-        createIamConfig = true;
+    bool createConfig = true;
+    if (string_file_exists(tcpTunnel->iamConfigFile) ||
+        string_file_exists(tcpTunnel->stateFile) ||
+        string_file_exists(tcpTunnel->servicesFile))
+    {
+        createConfig = prompt_yes_no_default("Overwrite Existing TCP Tunnel State and Configuration?", true);
+    }
+    if (!createConfig) {
+        printf("Not creating a new configuration." NEWLINE);
+        exit(1);
     }
 
-    if (createIamConfig) {
-        if (!iam_config_create_default(tcpTunnel->iamConfigFile)) {
-            printf("The IAM configuration file %s could not be created." NEWLINE, tcpTunnel->iamConfigFile);
-            return false;
-        }
+
+    if (!iam_config_create_default(tcpTunnel->iamConfigFile)) {
+        printf("The IAM configuration file %s could not be created." NEWLINE,
+               tcpTunnel->iamConfigFile);
+        return false;
     }
     printf(NEWLINE);
 
-    bool createIamState = true;
-
-    if (string_file_exists(tcpTunnel->stateFile)) {
-        printf("The IAM State already exists (%s)" NEWLINE, tcpTunnel->stateFile);
-        createIamState = prompt_yes_no("Do you want to recreate it?");
-        printf(NEWLINE);
-    }
-
-    if (createIamState)
     {
         printf(
             "Demo initialization will make a simple IAM setup, be aware that this is not what you want in production." NEWLINE
-            "Local Open Pairing and Password Open Pairing are enabled. Newly paired users get the Administrator role." NEWLINE NEWLINE
+            "'Local Open Pairing' and 'Password Open Pairing' are enabled. Newly paired users get the 'Administrator' role." NEWLINE NEWLINE
         );
 
         struct nm_iam_state* state = nm_iam_state_new();
@@ -500,29 +523,29 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
         save_tcp_tunnel_state(tcpTunnel->stateFile, state);
     }
 
-    if (string_file_exists(tcpTunnel->servicesFile)) {
-        printf("The Tunnel Services configuration already exists (%s)" NEWLINE, tcpTunnel->servicesFile);
-        bool yn = prompt_yes_no("Do you want to recreate it?");
-        printf(NEWLINE);
-        if(!yn) {
-            return true;
-        }
-    }
-
-
     printf("Next step is to add TCP tunnel services." NEWLINE);
 
     cJSON* root = cJSON_CreateArray();
 
+    size_t numServices = 0;
+
     while (true) {
         printf(
             "What type of service do you want to add?" NEWLINE
+            "[0]: continue" NEWLINE
             "[1]: ssh" NEWLINE
             "[2]: http" NEWLINE
             "[3]: rtsp" NEWLINE
         );
-        uint8_t choice = prompt_uint16("Enter a valid number (0 to exit)", 3);
-        
+
+        const char* message = "Enter a valid number";
+        uint8_t choice;
+        if (numServices == 0) {
+            choice = prompt_uint16_default(message, 3, 1);
+        } else {
+            choice = prompt_uint16_default(message, 3, 0);
+        }
+
 
         enum {
             CHOICE_EXIT = 0,
@@ -578,10 +601,16 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
 
         cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(service));
         tcp_tunnel_service_free(service);
+        numServices++;
         printf(NEWLINE);
     }
 
     printf(NEWLINE);
     json_config_save(tcpTunnel->servicesFile, root);
+
+    if (numServices == 0) {
+        printf("WARNING: No TCP Tunnel services was added. You will not be able to Tunnel any TCP traffic." NEWLINE);
+    }
+
     return true;
 }
