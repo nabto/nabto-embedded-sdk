@@ -21,6 +21,7 @@
 #endif
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
+#define DEFAULT_FRIENDLY_NAME "Tcp Tunnel"
 
 bool create_device_config_interactive(const char* file);
 bool create_state_interactive(const char* file);
@@ -58,10 +59,11 @@ static bool prompt(const char* msg, char* buffer, size_t bufferSize, ...)
     int i = 0;
     int n = bufferSize-1;
 
-    va_list(msgArgs);
-    va_start(msgArgs, bufferSize);
-    vprintf(msg, msgArgs);
-    va_end(msgArgs);
+    va_list args;
+    va_start(args, bufferSize);
+    vprintf(msg, args);
+    va_end(args);
+
     printf(": ");
 
     while ((c = getchar())) {
@@ -72,8 +74,9 @@ static bool prompt(const char* msg, char* buffer, size_t bufferSize, ...)
         }
 
         if (i < n && is_printable(c)) {
-            buffer[i++] = c;
+            buffer[i] = c;
         }
+        i++;
     }
     return false;
 }
@@ -91,14 +94,18 @@ static bool prompt_repeating(const char* msg, char* buffer, size_t bufferSize)
 
 static bool prompt_yes_no(const char* msg)
 {
-    if (msg == NULL) {
-        msg = "";
-    }
-
     while (true) {
         char buffer[4];
         char n = ARRAY_SIZE(buffer);
-        if(!prompt("%s [y/n]", buffer, n, msg)) {
+
+        bool valid;
+        if (msg == NULL) {
+            valid = prompt("[y/n]", buffer, n);
+        } else {
+            valid = prompt("%s [y/n]", buffer, n, msg);
+        }
+
+        if(!valid) {
             continue;
         }
         to_lowercase(buffer, n);
@@ -112,6 +119,69 @@ static bool prompt_yes_no(const char* msg)
         }
     }
 }
+
+static uint16_t prompt_uint16(const char* msg, uint16_t max) {
+    while (true) {
+        char buffer[16] = {0};
+        int n = ARRAY_SIZE(buffer);
+
+        bool valid;
+        if (msg == NULL) {
+            valid = prompt("[0-%d]", buffer, n, max);
+        } else {
+            valid = prompt("%s [0-%d]", buffer, n, msg, max);
+        }
+
+        if(!valid) {
+            continue;
+        }
+
+        if (buffer[0] == 0) {
+            continue;
+        }
+
+        if (!str_is_numerical(buffer, n)) {
+            continue;
+        }
+
+        long num = strtol(buffer, NULL, 10);
+        if (num <= max) {
+            return num;
+        }
+    }
+}
+
+static uint16_t prompt_uint16_default(const char* msg, uint16_t max, uint16_t def) {
+    while (true) {
+        char buffer[16] = {0};
+        int n = ARRAY_SIZE(buffer);
+
+        bool valid;
+        if (msg == NULL) {
+            valid = prompt("(default %i) [0-%d]", buffer, n, def, max);
+        } else {
+            valid = prompt("%s (default %i) [0-%d]", buffer, n, msg, def, max);
+        }
+
+        if(!valid) {
+            continue;
+        }
+
+        if (buffer[0] == 0) {
+            return def;
+        }
+
+        if (!str_is_numerical(buffer, n)) {
+            continue;
+        }
+
+        long num = strtol(buffer, NULL, 10);
+        if (num <= max) {
+            return num;
+        }
+    }
+}
+
 
 static bool prompt_create_device_config(struct tcp_tunnel* tcpTunnel) 
 {
@@ -219,23 +289,6 @@ bool create_state_interactive(const char* file)
     }
 }
 
-static uint8_t prompt_int(uint8_t max) {
-    while (true) {
-        char buffer[4];
-        int n = ARRAY_SIZE(buffer);
-        if (!prompt("[0-%d]", buffer, n, max)) {
-            continue;
-        }
-        if (!str_is_numerical(buffer, n)) {
-            continue;
-        }
-        long num = strtol(buffer, NULL, 10);
-        if (num <= max) {
-            return num;
-        }
-    }
-}
-
 bool create_state_interactive_custom(const char* file) {
     const char* roles[] = {"Unpaired", "Guest", "Standard", "Administrator"};
     bool enableLocalInitialPairing;
@@ -267,18 +320,17 @@ bool create_state_interactive_custom(const char* file) {
     printf("[1]: Guest         - allowed pairing and manage own user actions [Default]" NEWLINE);
     printf("[2]: Standard      - Guest actions and Tunnelling" NEWLINE);
     printf("[3]: Administrator - Standard actions and management of users and pairing modes" NEWLINE);
-    pickedRole = prompt_int(3);
+    pickedRole = prompt_uint16(NULL, 3);
 
     struct nm_iam_state* state = nm_iam_state_new();
 
     {
         char friendlyName[64];
         int friendlyNameMax = ARRAY_SIZE(friendlyName);
-        const char* defaultFriendlyName = "Tcp Tunnel";
         prompt("Enter a friendly name for your device (max %i characters, empty string will default to \"%s\")",
-               friendlyName, friendlyNameMax, friendlyNameMax, defaultFriendlyName);
+               friendlyName, friendlyNameMax, friendlyNameMax, DEFAULT_FRIENDLY_NAME);
         if (friendlyName[0] == 0) {
-            nm_iam_state_set_friendly_name(state, defaultFriendlyName);
+            nm_iam_state_set_friendly_name(state, DEFAULT_FRIENDLY_NAME);
         } else {
             nm_iam_state_set_friendly_name(state, friendlyName);
         }
@@ -345,22 +397,7 @@ bool createService(cJSON* root)
     
     prompt_repeating("Service ID (max 20 characters)", id, ARRAY_SIZE(id));
     prompt_repeating("Service Host (max 20 characters)", host, ARRAY_SIZE(host));
-    
-    while (true) {
-        char port_str[5] = {0};
-        prompt("Service Port", port_str, ARRAY_SIZE(port_str));
-        if (port_str[0] == 0) {
-            continue;
-        }
-        if (!str_is_numerical(port_str, ARRAY_SIZE(port_str))) {
-            continue;
-        }
-        long num = strtol(port_str, NULL, 10);
-        if (num <= 0xFFFF) {
-            port = num;
-            break;
-        }
-    }
+    port = prompt_uint16("Service Port", 0xffff);
 
     struct tcp_tunnel_service* service = tcp_tunnel_service_new();
 
@@ -414,5 +451,106 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
     if (!createDeviceConfigSuccess) {
         return false;
     }
+
+    printf(
+        "Demo initialization will make a simple IAM setup, be aware that this is not what you want in production." NEWLINE
+        "Local Open Pairing and Password Open Pairing are enabled. Newly paired users get the Administrator role." NEWLINE NEWLINE
+    );
+
+    // default IAM state
+    {
+        struct nm_iam_state* state = nm_iam_state_new();
+        nm_iam_state_set_friendly_name(state, DEFAULT_FRIENDLY_NAME);
+
+        nm_iam_state_set_password_open_password(state, random_password(12));
+        nm_iam_state_set_password_open_sct(state, random_password(12));
+        nm_iam_state_set_open_pairing_role(state, "Administrator");
+
+        nm_iam_state_set_local_open_pairing(state, true);
+        nm_iam_state_set_password_open_pairing(state, true);
+
+        nm_iam_state_set_password_invite_pairing(state, false);
+        nm_iam_state_set_local_initial_pairing(state, false);
+
+        save_tcp_tunnel_state(tcpTunnel->stateFile, state);
+    }
+
+    if (string_file_exists(tcpTunnel->servicesFile)) {
+        printf("The Tunnel Services configuration already exists (%s)" NEWLINE, tcpTunnel->servicesFile);
+        bool yn = prompt_yes_no("Do you want to recreate it?");
+        printf(NEWLINE);
+        if(!yn) {
+            return true;
+        }
+    }
+
+
+    printf("Next step is to add TCP tunnel services.");
+
+    cJSON* root = cJSON_CreateArray();
+
+    while (true) {
+        printf(
+            NEWLINE
+            "What type of service do you want to add?" NEWLINE
+            "[1]: ssh" NEWLINE
+            "[2]: http" NEWLINE
+            "[3]: rtsp" NEWLINE
+        );
+        uint8_t choice = prompt_uint16("Enter a valid number (0 to exit)", 3);
+        
+
+        enum {
+            CHOICE_EXIT = 0,
+            CHOICE_SSH  = 1,
+            CHOICE_HTTP = 2,
+            CHOICE_RTSP = 3
+        };
+
+        if (choice == CHOICE_EXIT) {
+            break;
+        }
+
+        struct tcp_tunnel_service* service = tcp_tunnel_service_new();
+
+        service->host = strdup("127.0.0.1");
+
+        switch (choice) {
+            case CHOICE_SSH: {
+                service->id = strdup("ssh");
+                service->type = strdup("ssh");
+                service->port = prompt_uint16_default("Enter your SSH port", 0xffff, 22);
+                break;
+            }
+
+            case CHOICE_HTTP: {
+                service->id = strdup("http");
+                service->type = strdup("http");
+                service->port = prompt_uint16_default("Enter the port of your HTTP server", 0xffff, 80);
+                break;
+            }
+
+            case CHOICE_RTSP: {
+                service->id = strdup("rtsp");
+                service->type = strdup("rtsp");
+                service->port = prompt_uint16_default("Enter the port of your RTSP server", 0xffff, 8554);
+
+                const char* key = "rtsp-path";
+                char value[20] = {0};
+
+                prompt_repeating("Enter your RTSP endpoint (e.g. /cam)", value, ARRAY_SIZE(value));
+
+                nn_string_map_insert(&service->metadata, key, value);
+
+                break;
+            }
+        }
+
+        printf("Added service of type \"%s\" on localhost port %i" NEWLINE, service->type, service->port);
+        cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(service));
+        tcp_tunnel_service_free(service);
+    }
+
+    json_config_save(tcpTunnel->servicesFile, root);
     return true;
 }
