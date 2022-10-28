@@ -452,6 +452,23 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
         return false;
     }
 
+    bool createIamConfig = false;
+    if (string_file_exists(tcpTunnel->iamConfigFile)) {
+        printf("The IAM configuration already exists (%s)" NEWLINE, tcpTunnel->iamConfigFile);
+        createIamConfig = prompt_yes_no("Do you want to recreate it?");
+    } else {
+        printf("No IAM configuration found. Creating configuration: %s" NEWLINE, tcpTunnel->iamConfigFile);
+        createIamConfig = true;
+    }
+
+    if (createIamConfig) {
+        if (!iam_config_create_default(tcpTunnel->iamConfigFile)) {
+            printf("The IAM configuration file %s could not be created." NEWLINE, tcpTunnel->iamConfigFile);
+            return false;
+        }
+    }
+    printf(NEWLINE);
+
     printf(
         "Demo initialization will make a simple IAM setup, be aware that this is not what you want in production." NEWLINE
         "Local Open Pairing and Password Open Pairing are enabled. Newly paired users get the Administrator role." NEWLINE NEWLINE
@@ -538,7 +555,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
                 const char* key = "rtsp-path";
                 char value[20] = {0};
 
-                prompt_repeating("Enter your RTSP endpoint (e.g. /cam)", value, ARRAY_SIZE(value));
+                prompt_repeating("Enter your RTSP endpoint (e.g. /video)", value, ARRAY_SIZE(value));
 
                 nn_string_map_insert(&service->metadata, key, value);
 
