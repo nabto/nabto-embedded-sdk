@@ -158,9 +158,9 @@ static uint16_t prompt_uint16_default(const char* msg, uint16_t max, uint16_t de
 
         bool valid;
         if (msg == NULL) {
-            valid = prompt("(default %i) [0-%d]", buffer, n, def, max);
+            valid = prompt("(default: %i) [0-%d]", buffer, n, def, max);
         } else {
-            valid = prompt("%s (default %i) [0-%d]", buffer, n, msg, def, max);
+            valid = prompt("%s (default: %i) [0-%d]", buffer, n, msg, def, max);
         }
 
         if(!valid) {
@@ -469,13 +469,21 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
     }
     printf(NEWLINE);
 
-    printf(
-        "Demo initialization will make a simple IAM setup, be aware that this is not what you want in production." NEWLINE
-        "Local Open Pairing and Password Open Pairing are enabled. Newly paired users get the Administrator role." NEWLINE NEWLINE
-    );
+    bool createIamState = true;
 
-    // default IAM state
+    if (string_file_exists(tcpTunnel->stateFile)) {
+        printf("The IAM State already exists (%s)" NEWLINE, tcpTunnel->stateFile);
+        createIamState = prompt_yes_no("Do you want to recreate it?");
+        printf(NEWLINE);
+    }
+
+    if (createIamState)
     {
+        printf(
+            "Demo initialization will make a simple IAM setup, be aware that this is not what you want in production." NEWLINE
+            "Local Open Pairing and Password Open Pairing are enabled. Newly paired users get the Administrator role." NEWLINE NEWLINE
+        );
+
         struct nm_iam_state* state = nm_iam_state_new();
         nm_iam_state_set_friendly_name(state, DEFAULT_FRIENDLY_NAME);
 
@@ -502,13 +510,12 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
     }
 
 
-    printf("Next step is to add TCP tunnel services.");
+    printf("Next step is to add TCP tunnel services." NEWLINE);
 
     cJSON* root = cJSON_CreateArray();
 
     while (true) {
         printf(
-            NEWLINE
             "What type of service do you want to add?" NEWLINE
             "[1]: ssh" NEWLINE
             "[2]: http" NEWLINE
@@ -537,6 +544,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
                 service->id = strdup("ssh");
                 service->type = strdup("ssh");
                 service->port = prompt_uint16_default("Enter your SSH port", 0xffff, 22);
+                printf("Added ssh service on localhost port %i" NEWLINE, service->port);
                 break;
             }
 
@@ -544,6 +552,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
                 service->id = strdup("http");
                 service->type = strdup("http");
                 service->port = prompt_uint16_default("Enter the port of your HTTP server", 0xffff, 80);
+                printf("Added http service on localhost port %i" NEWLINE, service->port);
                 break;
             }
 
@@ -553,21 +562,26 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
                 service->port = prompt_uint16_default("Enter the port of your RTSP server", 0xffff, 8554);
 
                 const char* key = "rtsp-path";
-                char value[20] = {0};
+                char value[64] = {0};
 
-                prompt_repeating("Enter your RTSP endpoint (e.g. /video)", value, ARRAY_SIZE(value));
+                const char* endpoint = "/video";
+                prompt("Enter your RTSP endpoint (default: %s)", value, ARRAY_SIZE(value), endpoint);
+                if (value[0] != 0) {
+                    endpoint = value;
+                }
+                nn_string_map_insert(&service->metadata, key, endpoint);
 
-                nn_string_map_insert(&service->metadata, key, value);
-
+                printf("Added rtsp service on localhost port %i with metadata rtsp-path => %s" NEWLINE, service->port, endpoint);
                 break;
             }
         }
 
-        printf("Added service of type \"%s\" on localhost port %i" NEWLINE, service->type, service->port);
         cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(service));
         tcp_tunnel_service_free(service);
+        printf(NEWLINE);
     }
 
+    printf(NEWLINE);
     json_config_save(tcpTunnel->servicesFile, root);
     return true;
 }
