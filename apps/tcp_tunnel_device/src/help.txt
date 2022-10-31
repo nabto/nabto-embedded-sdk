@@ -6,20 +6,29 @@ TCP Tunnel Device Help.
   -H, --home-dir      Set alternative home dir, The default home dir is
                       $HOME/.nabto/edge on linux and mac, and %APPDATA%\nabto\edge
                       on windows
-      --log-level     Set the log level for the application; the possible levels
-                      are error, warn, info and trace.
+      --log-level     Set the log level for the application the possible levels
+                      is error, warn, info and trace.
       --random-ports  Bind the local and the p2p sockets to random UDP ports
                       instead of the default UDP ports 5592 and 5593.
+      --local-port    Bind the local socket to a specific UDP port instead of
+                      the default UDP port 5592.
+      --p2p-port      Bind the p2p socket to a specific UDP port instead of the
+                      default UDP port 5593
       --init          Interactively create configuration files the the tcp tunnel.
+      --demo-init     Interactively initialize the TCP tunnel for demo purposes.
+                      This option should be used if a quick proof of concept needs
+                      to be made for demo purposes. This should not be used in a
+                      production setup.
 
 # Files
 
 The application uses several files. They are located in subfolders of
 the homedir: config, state and keys.
 
-The files are by default located in the folder `$HOME/.nabto/edge` on Linux/macOS and
-`%APPDATA%\nabto\edge` on Windows. The location can be overriden by the home-dir option. In this
-case basefolder is `${home-dir}`.
+The files are by default located in this folder on unix:
+`$HOME/.nabto/edge` and this on Windows `%APPDATA%\nabto\edge`. The location can
+be overriden by the home-dir option. In this case basefolder is
+`${home-dir}`.
 
 ## `config/device.json`
 
@@ -36,7 +45,7 @@ The format of the json file is
 }
 ```
 
-The `ProductId` in the configuration is the product is which is
+The `ProductId` in the configuration is the product which is
 configured for the group of devices. The product id is found in the cloud
 console.
 

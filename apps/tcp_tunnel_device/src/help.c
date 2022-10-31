@@ -15,11 +15,15 @@ void print_help() {
     printf("%s" NEWLINE, "                      is error, warn, info and trace.");
     printf("%s" NEWLINE, "      --random-ports  Bind the local and the p2p sockets to random UDP ports");
     printf("%s" NEWLINE, "                      instead of the default UDP ports 5592 and 5593.");
-    printf("%s" NEWLINE, "      --local-port    Bind the local socket to a specific UDP port");
-    printf("%s" NEWLINE, "                      instead of the default UDP port 5592.");
-    printf("%s" NEWLINE, "      --p2p-port      Bind the p2p socket to a specific UDP port");
-    printf("%s" NEWLINE, "                      instead of the default UDP port 5593.");
+    printf("%s" NEWLINE, "      --local-port    Bind the local socket to a specific UDP port instead of");
+    printf("%s" NEWLINE, "                      the default UDP port 5592.");
+    printf("%s" NEWLINE, "      --p2p-port      Bind the p2p socket to a specific UDP port instead of the");
+    printf("%s" NEWLINE, "                      default UDP port 5593");
     printf("%s" NEWLINE, "      --init          Interactively create configuration files the the tcp tunnel.");
+    printf("%s" NEWLINE, "      --demo-init     Interactively initialize the TCP tunnel for demo purposes.");
+    printf("%s" NEWLINE, "                      This option should be used if a quick proof of concept needs");
+    printf("%s" NEWLINE, "                      to be made for demo purposes. This should not be used in a");
+    printf("%s" NEWLINE, "                      production setup.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "# Files");
     printf("%s" NEWLINE, "");
@@ -27,7 +31,7 @@ void print_help() {
     printf("%s" NEWLINE, "the homedir: config, state and keys.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "The files are by default located in this folder on unix:");
-    printf("%s" NEWLINE, "`$HOME/.nabto/edge` and this on windows `%APPDATA%\\nabto\\edge`. The location can");
+    printf("%s" NEWLINE, "`$HOME/.nabto/edge` and this on Windows `%APPDATA%\\nabto\\edge`. The location can");
     printf("%s" NEWLINE, "be overriden by the home-dir option. In this case basefolder is");
     printf("%s" NEWLINE, "`${home-dir}`.");
     printf("%s" NEWLINE, "");
@@ -47,7 +51,7 @@ void print_help() {
     printf("%s" NEWLINE, "```");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "The `ProductId` in the configuration is the product which is");
-    printf("%s" NEWLINE, "configured for the group of devices. The product id found in the cloud");
+    printf("%s" NEWLINE, "configured for the group of devices. The product id is found in the cloud");
     printf("%s" NEWLINE, "console.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "The `DeviceId` is the device id for this specific device. This device");
@@ -61,6 +65,7 @@ void print_help() {
     printf("%s" NEWLINE, "The `tcp_tunnel_iam.json` is an IAM policies file which contains the");
     printf("%s" NEWLINE, "policies and roles used by the system.");
     printf("%s" NEWLINE, "");
+    printf("%s" NEWLINE, "Read more about the IAM module on http://docs.nabto.com/developer/guides/iam/intro.html.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "## `state/tcp_tunnel_device_iam_state.json`");
     printf("%s" NEWLINE, "");
