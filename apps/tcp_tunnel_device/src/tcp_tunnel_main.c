@@ -374,7 +374,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             print_private_key_file_load_failed(tunnel->privateKeyFile);
             return false;
         }
-        
+
         bool success = false;
         if (args->demo_init) {
             success = tcp_tunnel_demo_config(tunnel);
@@ -396,17 +396,17 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     } else {
         // check that all files exists
         if (!string_file_exists(tunnel->deviceConfigFile)) {
-            printf("Missing device config %s, initialize it with --init" NEWLINE, tunnel->deviceConfigFile);
+            printf("Missing device config %s, initialize it with --init or --demo-init" NEWLINE, tunnel->deviceConfigFile);
             return false;
         }
 
         if(!string_file_exists(tunnel->iamConfigFile)) {
-            printf("Missing IAM configuration file %s, create it with --init" NEWLINE, tunnel->iamConfigFile);
+            printf("Missing IAM configuration file %s, create it with --init or --demo-init" NEWLINE, tunnel->iamConfigFile);
             return false;
         }
 
         if (!string_file_exists(tunnel->stateFile)) {
-            printf("Missing IAM state file %s, create it with --init" NEWLINE, tunnel->stateFile);
+            printf("Missing IAM state file %s, create it with --init or --demo-init" NEWLINE, tunnel->stateFile);
             return false;
         }
     }
