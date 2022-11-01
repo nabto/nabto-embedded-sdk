@@ -268,7 +268,10 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     mbedtls_ssl_set_timer_cb(&ctx->ssl, &ctx->timer, &nm_mbedtls_timer_set_delay,
                               &nm_mbedtls_timer_get_delay );
 
-    mbedtls_ssl_session_reset( &ctx->ssl );
+    if ( ( ret = mbedtls_ssl_session_reset( &ctx->ssl ) ) != 0) {
+        NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_session_reset returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
 
 //    ret = mbedtls_ssl_set_client_transport_id(&ctx->ssl, (const unsigned char*)conn, sizeof(np_connection));
 //    if (ret != 0) {
@@ -315,6 +318,9 @@ void nm_mbedtls_srv_do_free_connection(struct np_dtls_srv_connection* conn)
 
 static void nm_mbedtls_srv_destroy_connection(struct np_dtls_srv_connection* conn)
 {
+    if (conn == NULL) {
+        return;
+    }
     conn->destroyed = true;
     if (conn->sslSendBuffer == NULL && !conn->receiving) {
         nm_mbedtls_srv_do_free_connection(conn);
