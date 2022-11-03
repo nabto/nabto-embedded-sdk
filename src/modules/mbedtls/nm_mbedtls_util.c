@@ -295,7 +295,8 @@ np_error_code nm_mbedtls_util_secp256r1_from_pem(const char* key, size_t keyLen,
     }
 
     mbedtls_ecp_keypair* ecp = mbedtls_pk_ec(pk);
-    ret = mbedtls_mpi_write_binary(&ecp->d, rawKey, rawKeyLen);
+
+    ret = mbedtls_mpi_write_binary(&ecp->MBEDTLS_PRIVATE(d), rawKey, rawKeyLen);
 
     if (ret < 0) {
         return return_secp256r1_from_pem(NABTO_EC_UNKNOWN, &pk, &entropy,
