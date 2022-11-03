@@ -156,6 +156,15 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
     return NABTO_EC_OK;
 }
 
+np_error_code return_pem_from_secp256r1(np_error_code ec, mbedtls_pk_context* pk, mbedtls_mpi* n, mbedtls_entropy_context* entropy, mbedtls_ctr_drbg_context* ctrDrbg)
+{
+    mbedtls_ctr_drbg_free(ctrDrbg);
+    mbedtls_entropy_free(entropy);
+    mbedtls_mpi_free(n);
+    mbedtls_pk_free(pk);
+    return ec;
+}
+
 np_error_code nm_mbedtls_util_pem_from_secp256r1(const uint8_t* key,
                                                  size_t keyLen, char** pemKey)
 {
@@ -179,22 +188,22 @@ np_error_code nm_mbedtls_util_pem_from_secp256r1(const uint8_t* key,
 
     status =  mbedtls_pk_setup( &pk, pkInfo);
     if (status != 0) {
-        return NABTO_EC_INVALID_STATE;
+        return return_pem_from_secp256r1(NABTO_EC_INVALID_STATE, &pk, &n, &entropy, &ctrDrbg);
     }
 
     status = mbedtls_ctr_drbg_seed( &ctrDrbg, mbedtls_entropy_func, &entropy, NULL, 0);
     if (status != 0) {
-        return NABTO_EC_INVALID_STATE;
+        return return_pem_from_secp256r1(NABTO_EC_INVALID_STATE, &pk, &n, &entropy, &ctrDrbg);
     }
 
     mbedtls_ecp_keypair* keyPair = mbedtls_pk_ec(pk);
     if (keyPair == NULL) {
-        return NABTO_EC_INVALID_STATE;
+        return return_pem_from_secp256r1(NABTO_EC_INVALID_STATE, &pk, &n, &entropy, &ctrDrbg);
     }
 
     status = mbedtls_ecp_group_load( &keyPair->MBEDTLS_PRIVATE(grp), MBEDTLS_ECP_DP_SECP256R1);
     if (status != 0) {
-        return NABTO_EC_INVALID_STATE;
+        return return_pem_from_secp256r1(NABTO_EC_INVALID_STATE, &pk, &n, &entropy, &ctrDrbg);
     }
 
     mbedtls_mpi_read_binary(&keyPair->MBEDTLS_PRIVATE(d), key, keyLen);
@@ -205,12 +214,12 @@ np_error_code nm_mbedtls_util_pem_from_secp256r1(const uint8_t* key,
 
     // test that d is not 0
     if (mbedtls_mpi_cmp_int(&keyPair->MBEDTLS_PRIVATE(d), 0) == 0) {
-        return NABTO_EC_INVALID_ARGUMENT;
+        return return_pem_from_secp256r1(NABTO_EC_INVALID_ARGUMENT, &pk, &n, &entropy, &ctrDrbg);
     }
     // test that d < n
     // check that d lesser than n, in this case the cmp function returns -1
     if (mbedtls_mpi_cmp_mpi(&keyPair->MBEDTLS_PRIVATE(d), &n) != -1) {
-        return NABTO_EC_INVALID_ARGUMENT;
+        return return_pem_from_secp256r1(NABTO_EC_INVALID_ARGUMENT, &pk, &n, &entropy, &ctrDrbg);
     }
 
     // Q = dG
@@ -218,7 +227,7 @@ np_error_code nm_mbedtls_util_pem_from_secp256r1(const uint8_t* key,
     {
         status = mbedtls_ecp_mul(&keyPair->MBEDTLS_PRIVATE(grp), &keyPair->MBEDTLS_PRIVATE(Q), &keyPair->MBEDTLS_PRIVATE(d), &keyPair->MBEDTLS_PRIVATE(grp).G, mbedtls_ctr_drbg_random, &ctrDrbg);
         if (status != 0) {
-            return NABTO_EC_INVALID_STATE;
+            return return_pem_from_secp256r1(NABTO_EC_INVALID_STATE, &pk, &n, &entropy, &ctrDrbg);
         }
     }
 
@@ -230,24 +239,31 @@ np_error_code nm_mbedtls_util_pem_from_secp256r1(const uint8_t* key,
     // -----END EC PRIVATE KEY-----
     *pemKey = np_calloc(1, 512);
     if (*pemKey == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
+        return return_pem_from_secp256r1(NABTO_EC_OUT_OF_MEMORY, &pk, &n, &entropy, &ctrDrbg);
     }
 
     status = mbedtls_pk_write_key_pem(&pk, (unsigned char*)*pemKey, 512);
     if (status != 0) {
-        return NABTO_EC_INVALID_STATE;
+        return return_pem_from_secp256r1(NABTO_EC_INVALID_STATE, &pk, &n, &entropy, &ctrDrbg);
     }
 
-    mbedtls_ctr_drbg_free(&ctrDrbg);
-    mbedtls_entropy_free(&entropy);
+    return return_pem_from_secp256r1(NABTO_EC_OK, &pk, &n, &entropy, &ctrDrbg);
+}
 
-    mbedtls_pk_free(&pk);
-    mbedtls_mpi_free(&n);
-    return NABTO_EC_OK;
+np_error_code return_secp256r1_from_pem(np_error_code ec,
+                                        mbedtls_pk_context* pk,
+                                        mbedtls_entropy_context* entropy,
+                                        mbedtls_ctr_drbg_context* ctr_drbg)
+{
+    mbedtls_pk_free(pk);
+    mbedtls_entropy_free(entropy);
+    mbedtls_ctr_drbg_free(ctr_drbg);
+    return ec;
 }
 
 np_error_code nm_mbedtls_util_secp256r1_from_pem(const char* key, size_t keyLen,
-                                                 uint8_t* rawKey, size_t rawKeyLen)
+                                                 uint8_t* rawKey,
+                                                 size_t rawKeyLen)
 {
     // TODO: handle memory leaks
     if (rawKeyLen < 32) {
@@ -264,7 +280,8 @@ np_error_code nm_mbedtls_util_secp256r1_from_pem(const char* key, size_t keyLen,
 
     ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
     if (ret != 0) {
-        return NABTO_EC_UNKNOWN;
+        return return_secp256r1_from_pem(NABTO_EC_UNKNOWN, &pk, &entropy,
+                                         &ctr_drbg);
     }
 
 #if MBEDTLS_VERSION_MAJOR >= 3
@@ -273,16 +290,19 @@ np_error_code nm_mbedtls_util_secp256r1_from_pem(const char* key, size_t keyLen,
     ret = mbedtls_pk_parse_key(&pk, (uint8_t*)key, keyLen+1, NULL, 0);
 #endif
     if (ret != 0) {
-        return NABTO_EC_UNKNOWN;
+        return return_secp256r1_from_pem(NABTO_EC_UNKNOWN, &pk, &entropy,
+                                         &ctr_drbg);
     }
 
     mbedtls_ecp_keypair* ecp = mbedtls_pk_ec(pk);
     ret = mbedtls_mpi_write_binary(&ecp->d, rawKey, rawKeyLen);
 
     if (ret < 0) {
-        return NABTO_EC_UNKNOWN;
+        return return_secp256r1_from_pem(NABTO_EC_UNKNOWN, &pk, &entropy,
+                                         &ctr_drbg);
     }
-    return NABTO_EC_OK;
+    return return_secp256r1_from_pem(NABTO_EC_OK, &pk, &entropy,
+                                         &ctr_drbg);
 }
 
 np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)

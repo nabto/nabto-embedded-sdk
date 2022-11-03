@@ -5,6 +5,7 @@
 
 #include <gopt/gopt.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef WIN32
 #define NEWLINE "\r\n"
@@ -124,12 +125,13 @@ int main(int argc, char** argv)
 
     np_error_code ec;
     // Get private key in pem format from somewhere
-    char* inputKey;
+    char* inputKey = NULL;
     if (strcmp(args.inputFormat, "generate") == 0) {
         printf("Generating new key" NEWLINE);
         ec = nm_mbedtls_util_create_private_key(&inputKey);
         if (ec != NABTO_EC_OK) {
             printf("Failed to create key with: %s" NEWLINE, np_error_code_to_string(ec));
+            free(inputKey);
             return 1;
         }
 
@@ -161,19 +163,23 @@ int main(int argc, char** argv)
             if (strlen(inputStr) != 64) {
                 printf("Invalid input key length: %ld" NEWLINE,
                         strlen(inputStr));
+                free(inputStr);
                 return 1;
             }
             uint8_t rawKey[32];
             if (!np_hex_to_data(inputStr, rawKey, 32)) {
                 printf("FAILED could not convert hex to data" NEWLINE);
+                free(inputStr);
                 return 1;
             }
 
             ec = nm_mbedtls_util_pem_from_secp256r1(rawKey, 32, &inputKey);
             if (ec != NABTO_EC_OK) {
                 printf("Failed to convert raw key to pem with: %s" NEWLINE, np_error_code_to_string(ec));
+                free(inputStr);
                 return 1;
             }
+            free(inputStr);
         } else if (strcmp(args.inputFormat, "pem") == 0) {
             // File input already pem format, use as is
             inputKey = inputStr;
@@ -195,6 +201,7 @@ int main(int argc, char** argv)
                                                 rawOut, 32);
         if (ec != NABTO_EC_OK) {
             printf("Failed to convert to raw key with: %s" NEWLINE, np_error_code_to_string(ec));
+            free(inputKey);
             return 1;
         }
         np_data_to_hex(rawOut, 32, outputString);
@@ -208,6 +215,7 @@ int main(int argc, char** argv)
             nm_mbedtls_get_fingerprint_from_private_key(inputKey, fp);
         if (ec != NABTO_EC_OK) {
             printf("Failed get fingerprint from private key with: %s" NEWLINE, np_error_code_to_string(ec));
+            free(inputKey);
             return 1;
         }
         np_data_to_hex(fp, 32, outputString);
@@ -218,14 +226,18 @@ int main(int argc, char** argv)
             nm_mbedtls_create_crt_from_private_key(inputKey, &cert);
         if (ec != NABTO_EC_OK) {
             printf("Failed create cert from private key with: %s" NEWLINE, np_error_code_to_string(ec));
+            free(inputKey);
             return 1;
         }
         memcpy(outputString, cert, strlen(cert));
+        free(cert);
     } else {
         printf("Invalid output format '%s'" NEWLINE, args.outputFormat);
         print_help();
+        free(inputKey);
         return 1;
     }
+    free(inputKey);
 
     // Present the output string as specified
     if (args.output != NULL) {

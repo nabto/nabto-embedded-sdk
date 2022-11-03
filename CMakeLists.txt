@@ -252,5 +252,7 @@ endif()
 
 if (DEVICE_BUILD_APPS)
   add_subdirectory(apps/tcp_tunnel_device)
-  add_subdirectory(apps/key_tool)
+  if (NABTO_DEVICE_MBEDTLS)
+    add_subdirectory(apps/key_tool)
+  endif()
 endif()
