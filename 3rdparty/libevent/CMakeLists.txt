@@ -4,6 +4,8 @@ set(EVENT__DISABLE_BENCHMARK ON CACHE BOOL "disable libevent benchmarks")
 set(EVENT__DISABLE_TESTS ON CACHE BOOL "disable libevent tests")
 set(EVENT__DISABLE_REGRESS ON CACHE BOOL "disable libevent regression tests")
 set(EVENT__DISABLE_SAMPLES ON CACHE BOOL "disable libevent samples")
+set(EVENT__DISABLE_MBEDTLS ON CACHE BOOL "disable libevent mbedtls")
+set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
 set(EVENT__LIBRARY_TYPE STATIC CACHE STRING "libevent library type")
 
 include_directories(libevent/include)
