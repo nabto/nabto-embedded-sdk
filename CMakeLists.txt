@@ -252,4 +252,5 @@ endif()
 
 if (DEVICE_BUILD_APPS)
   add_subdirectory(apps/tcp_tunnel_device)
+  add_subdirectory(apps/key_tool)
 endif()

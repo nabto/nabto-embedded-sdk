@@ -13,6 +13,8 @@
 #include "mbedtls/x509_csr.h"
 #include "mbedtls/sha256.h"
 #include <mbedtls/debug.h>
+#include <mbedtls/ecp.h>
+#include <mbedtls/bignum.h>
 
 #include <platform/np_allocator.h>
 #include <platform/np_logging.h>
@@ -21,6 +23,12 @@
 #include <string.h>
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
+
+// secp256r1 group order in bigendian.
+static uint8_t secp2566r1GroupOrder[32] = {
+    0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xBC, 0xE6, 0xFA, 0xAD, 0xA7, 0x17, 0x9E, 0x84, 0xF3, 0xB9, 0xCA, 0xC2, 0xFC, 0x63, 0x25, 0x51
+};
+
 
 np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
 {
@@ -148,6 +156,134 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
     return NABTO_EC_OK;
 }
 
+np_error_code nm_mbedtls_util_pem_from_secp256r1(const uint8_t* key,
+                                                 size_t keyLen, char** pemKey)
+{
+    if (keyLen != 32) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
+
+    int status;
+    const mbedtls_pk_info_t * pkInfo = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
+
+
+    mbedtls_pk_context pk;
+    mbedtls_mpi n; // n is the order of the secp256r1 group
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctrDrbg;
+
+    mbedtls_pk_init(&pk);
+    mbedtls_mpi_init(&n);
+    mbedtls_ctr_drbg_init( &ctrDrbg );
+    mbedtls_entropy_init( &entropy );
+
+    status =  mbedtls_pk_setup( &pk, pkInfo);
+    if (status != 0) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    status = mbedtls_ctr_drbg_seed( &ctrDrbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (status != 0) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    mbedtls_ecp_keypair* keyPair = mbedtls_pk_ec(pk);
+    if (keyPair == NULL) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    status = mbedtls_ecp_group_load( &keyPair->MBEDTLS_PRIVATE(grp), MBEDTLS_ECP_DP_SECP256R1);
+    if (status != 0) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    mbedtls_mpi_read_binary(&keyPair->MBEDTLS_PRIVATE(d), key, keyLen);
+
+    mbedtls_mpi_read_binary(&n, secp2566r1GroupOrder, 32);
+
+    // valid private keys should be in the range [1,n-1], d != 0 && d < n;
+
+    // test that d is not 0
+    if (mbedtls_mpi_cmp_int(&keyPair->MBEDTLS_PRIVATE(d), 0) == 0) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
+    // test that d < n
+    // check that d lesser than n, in this case the cmp function returns -1
+    if (mbedtls_mpi_cmp_mpi(&keyPair->MBEDTLS_PRIVATE(d), &n) != -1) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
+
+    // Q = dG
+
+    {
+        status = mbedtls_ecp_mul(&keyPair->MBEDTLS_PRIVATE(grp), &keyPair->MBEDTLS_PRIVATE(Q), &keyPair->MBEDTLS_PRIVATE(d), &keyPair->MBEDTLS_PRIVATE(grp).G, mbedtls_ctr_drbg_random, &ctrDrbg);
+        if (status != 0) {
+            return NABTO_EC_INVALID_STATE;
+        }
+    }
+
+    // keyPair is an ecc keyPair, write it to pem.
+
+    // a pem encoded p256r1 key uses ~280 bytes including header and footer.
+    // -----BEGIN EC PRIVATE KEY-----
+    // base64 encoded asn1
+    // -----END EC PRIVATE KEY-----
+    *pemKey = np_calloc(1, 512);
+    if (*pemKey == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
+    status = mbedtls_pk_write_key_pem(&pk, (unsigned char*)*pemKey, 512);
+    if (status != 0) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    mbedtls_ctr_drbg_free(&ctrDrbg);
+    mbedtls_entropy_free(&entropy);
+
+    mbedtls_pk_free(&pk);
+    mbedtls_mpi_free(&n);
+    return NABTO_EC_OK;
+}
+
+np_error_code nm_mbedtls_util_secp256r1_from_pem(const char* key, size_t keyLen,
+                                                 uint8_t* rawKey, size_t rawKeyLen)
+{
+    // TODO: handle memory leaks
+    if (rawKeyLen < 32) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
+    int ret;
+    mbedtls_pk_context pk;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    mbedtls_pk_init(&pk);
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+
+    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (ret != 0) {
+        return NABTO_EC_UNKNOWN;
+    }
+
+#if MBEDTLS_VERSION_MAJOR >= 3
+    ret = mbedtls_pk_parse_key(&pk, (uint8_t*)key, keyLen+1, NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+#else
+    ret = mbedtls_pk_parse_key(&pk, (uint8_t*)key, keyLen+1, NULL, 0);
+#endif
+    if (ret != 0) {
+        return NABTO_EC_UNKNOWN;
+    }
+
+    mbedtls_ecp_keypair* ecp = mbedtls_pk_ec(pk);
+    ret = mbedtls_mpi_write_binary(&ecp->d, rawKey, rawKeyLen);
+
+    if (ret < 0) {
+        return NABTO_EC_UNKNOWN;
+    }
+    return NABTO_EC_OK;
+}
 
 np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
 {

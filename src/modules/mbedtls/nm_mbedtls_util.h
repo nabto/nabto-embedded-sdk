@@ -1,7 +1,7 @@
 #ifndef NM_MBEDTLS_UTIL_H
 #define NM_MBEDTLS_UTIL_H
 
-#include <platform/np_platform.h>
+//#include <platform/np_platform.h>
 #include <platform/np_error_code.h>
 
 #include <mbedtls/entropy.h>
@@ -29,6 +29,29 @@ np_error_code nm_mbedtls_util_create_private_key(char** privateKey);
 void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf);
 
 int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char output[32] );
+
+/**
+ * Take a 32 byte raw private key and convert it to the PEM format used for nabto_device_set_private_key(),
+ *
+ * @param key    32 byte input key
+ * @param keyLen 32
+ * @param pemKey resulting private key. must be freed when done.
+ * @return np_error_code ok on success
+ */
+np_error_code nm_mbedtls_util_pem_from_secp256r1(const uint8_t* key,
+                                                 size_t keyLen, char** pemKey);
+
+/**
+ * Take a PEM encoded key and convert it to a 32 byte raw key.
+ *
+ * @param key    PEM encoded key
+ * @param keyLen length of key
+ * @param rawKey Resulting raw key
+ * @param rawKeyLen length of rawKey buffer. Must be at least 32.
+ * @return np_error_code OK on success
+ */
+np_error_code nm_mbedtls_util_secp256r1_from_pem(const char* key, size_t keyLen,
+                                                 uint8_t* rawKey, size_t rawKeyLen);
 
 /**
  * Receive available udp application data from the ssl context. If the return
