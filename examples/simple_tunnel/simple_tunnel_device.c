@@ -32,6 +32,13 @@ const service_t rtsp = {
     .port = 554
 };
 
+const service_t http = {
+    .host = "127.0.0.1",
+    .id   = "http",
+    .type = "http",
+    .port = 80
+};
+
 
 int serviceConcurrentConnectionsLimit = -1;
 
@@ -121,7 +128,8 @@ int main(int argc, char** argv) {
      */
     service_t services[] = {
         ssh,
-        rtsp
+        rtsp,
+        http
     };
     int serviceCount = sizeof(services)/sizeof(services[0]);
     for (int i = 0; i < serviceCount; i++) {
