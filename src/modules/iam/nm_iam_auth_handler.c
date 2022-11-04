@@ -15,9 +15,14 @@ NabtoDeviceError nm_iam_auth_handler_init(struct nm_iam_auth_handler* handler, N
     handler->iam = iam;
     handler->listener = nabto_device_listener_new(device);
     handler->future = nabto_device_future_new(device);
-    nabto_device_authorization_request_init_listener(device, handler->listener);
-    start_listen(handler);
-    return NABTO_DEVICE_EC_OK;
+    if (handler->listener == NULL || handler->future == NULL) {
+        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
+    }
+    NabtoDeviceError ec = nabto_device_authorization_request_init_listener(device, handler->listener);
+    if (ec == NABTO_DEVICE_EC_OK) {
+        start_listen(handler);
+    }
+    return ec;
 }
 
 void nm_iam_auth_handler_stop(struct nm_iam_auth_handler* handler)

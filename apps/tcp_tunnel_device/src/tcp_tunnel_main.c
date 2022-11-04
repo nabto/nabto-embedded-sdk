@@ -337,8 +337,12 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     } else if (homeEnv != NULL) {
         args->homeDir = expand_file_name(homeEnv, HOMEDIR_EDGE_FOLDER);
         char* dotNabto = expand_file_name(homeEnv, HOMEDIR_NABTO_FOLDER);
+        if (dotNabto == NULL || args->homeDir == NULL) {
+            return false;
+        }
         make_directory(dotNabto);
         free(dotNabto);
+
 
         make_directory(args->homeDir);
     } else {
@@ -347,6 +351,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     }
 
     NabtoDevice* device = nabto_device_new();
+    if (device == NULL) {
+        return false;
+    }
     struct nn_log logger;
     logging_init(device, &logger, args->logLevel);
 
@@ -513,11 +520,11 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     // Create a copy of the state and print information from it.
     struct nm_iam_state* state = nm_iam_dump_state(&iam);
-    printf("# Friendly Name:     \"%s\"" NEWLINE, state->friendlyName);
-
     if (state == NULL) {
         return false;
     }
+
+    printf("# Friendly Name:     \"%s\"" NEWLINE, state->friendlyName);
 
     struct nm_iam_user* initialUser = nm_iam_state_find_user_by_username(state, state->initialPairingUsername);
 
@@ -599,6 +606,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         nm_iam_set_state_changed_callback(&iam, iam_user_changed, tunnel);
 
         NabtoDeviceFuture* fut = nabto_device_future_new(device);
+        if (fut == NULL) {
+            return false;
+        }
         nabto_device_start(device, fut);
         NabtoDeviceError ec = nabto_device_future_wait(fut);
         nabto_device_future_free(fut);
