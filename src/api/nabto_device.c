@@ -54,6 +54,8 @@ static const char* defaultServerUrlSuffix = ".devices.nabto.net";
 void nabto_device_free_threads(struct nabto_device_context* dev);
 void nabto_device_do_stop(struct nabto_device_context* dev);
 
+static void nabto_device_platform_closed_cb(const np_error_code ec, void* userData);
+
 const char* NABTO_DEVICE_API nabto_device_version()
 {
     return nc_version();
@@ -172,6 +174,12 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
         return NULL;
     }
 
+    ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+
     return (NabtoDevice*)dev;
 }
 
@@ -221,6 +229,8 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     //nabto_device_event_queue_stop(&dev->pl);
 
     nc_device_deinit(&dev->core);
+
+    np_completion_event_deinit(&dev->platformCloseEvent);
 
 
     nabto_device_platform_deinit(dev);
@@ -621,27 +631,49 @@ nabto_device_connection_is_local(NabtoDevice* device,
     return local;
 }
 
+void nabto_device_closed(struct nabto_device_context* dev, const np_error_code ec)
+{
+    nabto_device_future_resolve(dev->closeFut, nabto_device_error_core_to_api(ec));
+    nc_device_events_listener_notify(NC_DEVICE_EVENT_CLOSED, &dev->core);
+    dev->closeFut = NULL;
+}
+
+void nabto_device_platform_closed_cb(const np_error_code ec, void* userData)
+{
+    struct nabto_device_context* dev = userData;
+    nabto_device_closed(dev, ec);
+}
+
 /**
  * Closing the device
  */
-void nabto_device_close_cb(const np_error_code ec, void* data)
+void nabto_device_core_closed_cb(const np_error_code ec, void* data)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)data;
-    nabto_device_future_resolve(dev->closeFut, nabto_device_error_core_to_api(ec));
-    nc_device_events_listener_notify(NC_DEVICE_EVENT_CLOSED, &dev->core);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_closed(dev, ec);
+    } else {
+        nabto_device_platform_close(dev, &dev->platformCloseEvent);
+    }
 }
 
 void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    if (dev->closeFut != NULL) {
+        nabto_device_future_resolve(fut, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
     nabto_device_future_reset(fut);
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
+
     dev->closeFut = fut;
-    np_error_code ec = nc_device_close(&dev->core, &nabto_device_close_cb, dev);
+    np_error_code ec = nc_device_close(&dev->core, &nabto_device_core_closed_cb, dev);
     if (ec != NABTO_EC_OK) {
         nabto_device_future_resolve(fut, ec);
+        dev->closeFut = NULL;
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }

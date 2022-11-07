@@ -14,6 +14,8 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
+#include <modules/event_queue/thread_event_queue.h>
+
 #include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
@@ -23,7 +25,6 @@
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 
-static void signal_event(evutil_socket_t s, short event, void* userData);
 static void* libevent_thread(void* data);
 
 /**
@@ -31,10 +32,10 @@ static void* libevent_thread(void* data);
  */
 struct libevent_platform {
     struct event_base* eventBase;
-    struct event* signalEvent;
     struct nm_libevent_context libeventContext;
 
     struct nabto_device_thread* libeventThread;
+    struct thread_event_queue threadEventQueue;
     bool stopped;
 
     // Store a reference to the event queue as it needs special destruction.
@@ -68,11 +69,6 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    platform->signalEvent = event_new(platform->eventBase, -1, 0, &signal_event, platform);
-    if (platform->signalEvent == NULL) {
-        return NABTO_EC_OUT_OF_MEMORY;
-    }
-
     // The libevent module comes with UDP, TCP, local ip and timestamp
     // module implementations.
     if (!nm_libevent_init(&platform->libeventContext, platform->eventBase)) {
@@ -88,8 +84,9 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct np_dns dns = nm_libevent_dns_get_impl(&platform->libeventContext);
     struct np_local_ip localIp = nm_libevent_local_ip_get_impl(&platform->libeventContext);
 
+    thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
     // Create an event queue which is based on libevent.
-    platform->eq = libevent_event_queue_create(platform->eventBase, eventMutex);
+    platform->eq = thread_event_queue_get_impl(&platform->threadEventQueue);
 
 
     // Create a mdns server
@@ -131,7 +128,16 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     nabto_device_integration_set_local_ip_impl(device, &localIp);
     nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
 
+    thread_event_queue_run(&platform->threadEventQueue);
+
     return NABTO_EC_OK;
+}
+
+void nabto_device_platform_close(struct nabto_device_context* device, struct np_completion_event* event)
+{
+    struct libevent_platform* platform = nabto_device_integration_get_platform_data(device);
+
+    nm_mdns_server_close(&platform->mdnsServer, event);
 }
 
 void nabto_device_platform_deinit(struct nabto_device_context* device)
@@ -141,16 +147,20 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     if (platform == NULL) {
         return;
     }
-    nabto_device_threads_free_thread(platform->libeventThread);
-
     nm_mdns_server_deinit(&platform->mdnsServer);
+
+    //nabto_device_threads_free_thread(platform->libeventThread);
 
     nm_libevent_deinit(&platform->libeventContext);
 
-    event_free(platform->signalEvent);
-    libevent_event_queue_destroy(&platform->eq);
+    nabto_device_threads_join(platform->libeventThread);
+    nabto_device_threads_free_thread(platform->libeventThread);
     event_base_free(platform->eventBase);
+    //nabto_device_threads_join(platform->libeventThread);
 
+    thread_event_queue_deinit(&platform->threadEventQueue);
+
+    //nabto_device_threads_join(platform->libeventThread);
     nm_libevent_global_deinit();
     np_free(platform);
 }
@@ -166,8 +176,7 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
     }
     nm_mdns_server_stop(&platform->mdnsServer);
     platform->stopped = true;
-    event_active(platform->signalEvent, 0, 0);
-    nabto_device_threads_join(platform->libeventThread);
+    thread_event_queue_stop_blocking(&platform->threadEventQueue);
 }
 
 #include <signal.h>
@@ -198,13 +207,6 @@ void* libevent_thread(void* data)
     }
 #endif
 #endif
-    event_base_loop(platform->eventBase, EVLOOP_NO_EXIT_ON_EMPTY);
+    event_base_loop(platform->eventBase, 0);
     return NULL;
-}
-
-void signal_event(evutil_socket_t s, short event, void* userData)
-{
-    (void)s; (void)event;
-    struct libevent_platform* platform = userData;
-    event_base_loopbreak(platform->eventBase);
 }

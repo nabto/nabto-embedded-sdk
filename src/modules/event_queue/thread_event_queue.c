@@ -78,6 +78,9 @@ void thread_event_queue_deinit(struct thread_event_queue* queue)
 void thread_event_queue_stop_blocking(struct thread_event_queue* queue)
 {
     nabto_device_threads_mutex_lock(queue->queueMutex);
+    if (queue->stopped) {
+        return;
+    }
     queue->stopped = true;
     nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);

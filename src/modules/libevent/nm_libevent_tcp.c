@@ -93,6 +93,9 @@ np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
 
     s->aborted = false;
     s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+    if (s->bev == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
 
     *sock = s;
 
@@ -195,10 +198,17 @@ void tcp_error(void* userData)
 
 void tcp_destroy(struct np_tcp_socket* sock)
 {
-    bufferevent_disable(sock->bev, EV_READ);
+    if (sock == NULL) {
+        return;
+    }
+    if (sock->bev != NULL) {
+        bufferevent_disable(sock->bev, EV_READ);
+    }
     tcp_abort(sock);
 
-    bufferevent_free(sock->bev);
+    if (sock->bev != NULL) {
+        bufferevent_free(sock->bev);
+    }
     np_free(sock);
 }
 
@@ -209,22 +219,23 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
     bufferevent_setcb(sock->bev, &tcp_bufferevent_event_read, &tcp_bufferevent_event_write, &tcp_bufferevent_event, sock);
     sock->connect.completionEvent = completionEvent;
 
-    bufferevent_enable(sock->bev, EV_READ|EV_WRITE);
+    int ec = bufferevent_enable(sock->bev, EV_READ|EV_WRITE);
 
-    if (address->type == NABTO_IPV6) {
+
+    if (ec == 0 && address->type == NABTO_IPV6) {
         struct sockaddr_in6 in;
         in.sin6_family = AF_INET6;
         in.sin6_flowinfo = 0;
         in.sin6_scope_id = 0;
         in.sin6_port = htons(port);
         memcpy((void*)&in.sin6_addr,address->ip.v6, sizeof(in.sin6_addr));
-        bufferevent_socket_connect(sock->bev, (struct sockaddr*)&in, sizeof(struct sockaddr_in6));
-    } else { // IPV4
+        ec = bufferevent_socket_connect(sock->bev, (struct sockaddr*)&in, sizeof(struct sockaddr_in6));
+    } else if (ec == 0 && address->type == NABTO_IPV4) { // IPV4
         struct sockaddr_in in;
         in.sin_family = AF_INET;
         in.sin_port = htons(port);
         memcpy((void*)&in.sin_addr, address->ip.v4, sizeof(in.sin_addr));
-        bufferevent_socket_connect(sock->bev, (struct sockaddr*)&in, sizeof(struct sockaddr_in));
+        ec = bufferevent_socket_connect(sock->bev, (struct sockaddr*)&in, sizeof(struct sockaddr_in));
     }
 #ifdef SO_NOSIGPIPE
     evutil_socket_t fd = bufferevent_getfd(sock->bev);
@@ -235,6 +246,9 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
         NABTO_LOG_INFO(LOG, "Failed to get TCP filedescriptor, SIGPIPE can occur");
     }
 #endif
+    if (ec != 0) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
+    }
 
 }
 
@@ -245,8 +259,11 @@ void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLe
         return;
     }
     sock->write.completionEvent = completionEvent;
-    bufferevent_enable(sock->bev, EV_WRITE);
-    int status = bufferevent_write(sock->bev, data, dataLength);
+    int status;
+    status = bufferevent_enable(sock->bev, EV_WRITE);
+    if (status == 0) {
+        status = bufferevent_write(sock->bev, data, dataLength);
+    }
     if (status == 0) {
         return;
     } else {

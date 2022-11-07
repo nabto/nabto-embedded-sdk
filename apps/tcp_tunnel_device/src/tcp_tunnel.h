@@ -2,8 +2,16 @@
 #define _TCP_TUNNEL_H_
 
 #include <nn/vector.h>
+#include <nabto/nabto_device.h>
 
 struct tcp_tunnel {
+    NabtoDevice* device;
+    NabtoDeviceFuture* startFuture;
+    NabtoDeviceFuture* closeFuture;
+
+    struct nm_iam_configuration* iamConfig;
+    struct nm_iam_state* tcpTunnelState;
+
     char* deviceConfigFile;
     char* stateFile;
     char* iamConfigFile;
