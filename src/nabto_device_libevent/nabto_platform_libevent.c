@@ -26,6 +26,7 @@
 #define LOG NABTO_LOG_MODULE_PLATFORM
 
 static void* libevent_thread(void* data);
+static bool libevent_do_one(struct event_base* eventBase);
 
 /**
  * Structure containing all the platform adapter specific data.
@@ -84,7 +85,11 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct np_dns dns = nm_libevent_dns_get_impl(&platform->libeventContext);
     struct np_local_ip localIp = nm_libevent_local_ip_get_impl(&platform->libeventContext);
 
-    thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
+    np_error_code ec = thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     // Create an event queue which is based on libevent.
     platform->eq = thread_event_queue_get_impl(&platform->threadEventQueue);
 
@@ -94,7 +99,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct nm_mdns_udp_bind mdnsUdpBind = nm_libevent_mdns_udp_bind_get_impl(&platform->libeventContext);
 
 
-    np_error_code ec = nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &mdnsUdpBind, &localIp);
+    ec = nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &mdnsUdpBind, &localIp);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -128,9 +133,8 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     nabto_device_integration_set_local_ip_impl(device, &localIp);
     nabto_device_integration_set_mdns_impl(device, &mdnsImpl);
 
-    thread_event_queue_run(&platform->threadEventQueue);
-
-    return NABTO_EC_OK;
+    ec = thread_event_queue_run(&platform->threadEventQueue);
+    return ec;
 }
 
 void nabto_device_platform_close(struct nabto_device_context* device, struct np_completion_event* event)
@@ -151,19 +155,23 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 
     //nabto_device_threads_free_thread(platform->libeventThread);
 
-    nm_libevent_deinit(&platform->libeventContext);
+    //nm_libevent_deinit(&platform->libeventContext);
 
-    nabto_device_threads_join(platform->libeventThread);
-    nabto_device_threads_free_thread(platform->libeventThread);
-    event_base_free(platform->eventBase);
+    //nabto_device_threads_join(platform->libeventThread);
+    //nabto_device_threads_free_thread(platform->libeventThread);
+    //event_base_free(platform->eventBase);
     //nabto_device_threads_join(platform->libeventThread);
 
     thread_event_queue_deinit(&platform->threadEventQueue);
-
-    //nabto_device_threads_join(platform->libeventThread);
+    nabto_device_threads_join(platform->libeventThread);
+    nabto_device_threads_free_thread(platform->libeventThread);
+    nm_libevent_deinit(&platform->libeventContext);
+    event_base_free(platform->eventBase);
     nm_libevent_global_deinit();
     np_free(platform);
 }
+
+static size_t maxExtraEvents = 1000; // ensure that the stop loop does not block forever.
 
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
@@ -176,10 +184,34 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
     }
     nm_mdns_server_stop(&platform->mdnsServer);
     platform->stopped = true;
+    event_base_loopbreak(platform->eventBase);
+    nabto_device_threads_join(platform->libeventThread);
+    //nm_libevent_deinit(&platform->libeventContext);
+
+    //nabto_device_threads_join(platform->libeventThread);
     thread_event_queue_stop_blocking(&platform->threadEventQueue);
+
+    // run single libevent and thread_event_queue events until there's no more events.
+
+    for (int i = 0; i < maxExtraEvents; i++) {
+        bool more = thread_event_queue_do_one(&platform->threadEventQueue) || libevent_do_one(platform->eventBase);
+        if (!more) {
+            break;
+        }
+    }
 }
 
 #include <signal.h>
+
+bool libevent_do_one(struct event_base* eventBase)
+{
+    int ec = event_base_loop(eventBase, EVLOOP_ONCE | EVLOOP_NONBLOCK);
+    if (ec == 0) {
+        // if we handled atleast one event
+        return true;
+    }
+    return false;
+}
 
 /*
  * Thread running the network

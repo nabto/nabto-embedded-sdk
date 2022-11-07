@@ -39,16 +39,16 @@ struct thread_event_queue {
     bool stopped;
 };
 
-void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* coreMutex, struct np_timestamp* ts);
+np_error_code thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* coreMutex, struct np_timestamp* ts);
 
 void thread_event_queue_deinit(struct thread_event_queue* queue);
 
 // start the thread
-void thread_event_queue_run(struct thread_event_queue* queue);
+np_error_code thread_event_queue_run(struct thread_event_queue* queue);
 
 struct np_event_queue thread_event_queue_get_impl(struct thread_event_queue* queue);
 
-
+bool thread_event_queue_do_one(struct thread_event_queue* queue);
 
 void thread_event_queue_stop_blocking(struct thread_event_queue* queue);
 
