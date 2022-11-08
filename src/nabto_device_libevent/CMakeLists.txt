@@ -67,6 +67,7 @@ target_link_libraries( nabto_device
   nm_tcp_tunnel
   nm_logging_api
   nabto_device_threads
+  nm_event_queue
   )
 
 if (NABTO_DEVICE_MBEDTLS)
