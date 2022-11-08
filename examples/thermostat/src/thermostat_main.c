@@ -434,12 +434,15 @@ void print_missing_device_config_help(const char* filename)
 }
 
 void print_help() {
-    printf(" -h,--help print help" NEWLINE);
-    printf(" --version Show version" NEWLINE);
-    printf(" -H,--home-dir Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %%APP_DATA%%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/thermostat_device_iam_state.json, $homedir/state/thermostat_device_state.json" NEWLINE);
-    printf(" --log-level Log level to log (error|info|trace|debug)" NEWLINE);
+    printf(" -h,--help      print help" NEWLINE);
+    printf("    --version   Show version" NEWLINE);
+    printf("    --init      Initialize the Thermostat. Will reset state if run on existing homedir." NEWLINE);
+    printf(" -H,--home-dir  Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge." NEWLINE
+           "                On Windows the default home directory is %%APP_DATA%%/nabto/edge." NEWLINE
+           "                The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, " NEWLINE
+           "                $homedir/state/thermostat_device_iam_state.json, $homedir/state/thermostat_device_state.json" NEWLINE);
+    printf(" --log-level    Log level to log (error|info|trace|debug)" NEWLINE);
     printf(" --random-ports Use random ports such that several devices can be running at the same time. The device can still be discovered locally." NEWLINE);
-    printf(" --init Reset state to factory defaults and remove all paired users." NEWLINE);
 }
 
 void print_version() {
