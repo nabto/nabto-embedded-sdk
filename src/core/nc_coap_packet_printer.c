@@ -62,7 +62,7 @@ static const char* coapCodeToString(nabto_coap_code code)
         }
     }
     if (codeClass > 1 && codeClass <= 5) {
-        sprintf(buffer, "%" PRIu8 "%02" PRIu8, codeClass, (realCode & 0x1f));
+        sprintf(buffer, "%" PRIu8 "%02" PRIu8, codeClass, (uint8_t)(realCode & 0x1f));
         return buffer;
     }
     sprintf(buffer, "UNKNOWN(%" PRIu8 ")", realCode);
