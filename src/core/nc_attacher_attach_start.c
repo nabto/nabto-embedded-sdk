@@ -105,17 +105,22 @@ enum nc_attacher_status coap_attach_start_handle_response(
             case NABTO_PROTOCOL_WRONG_PRODUCT_ID:
                 NABTO_LOG_ERROR(
                     LOG,
-                    "The product id on the server for the key/fingerprint "
-                    "used by this device does not match the product id "
-                    "configured in this device");
+                    "Product ID / fingerprint mismatch: The Product ID %s is "
+                    "likely wrong; the fingerprint is configured in the "
+                    "basestation for a device in another Product than the one "
+                    "provided. Please check you provided the intended Product "
+                    "ID.",
+                    ctx->productId);
                 ec = NC_ATTACHER_STATUS_WRONG_PRODUCT_ID;
                 break;
             case NABTO_PROTOCOL_WRONG_DEVICE_ID:
                 NABTO_LOG_ERROR(
                     LOG,
-                    "The device id on the server for the key/fingerprint "
-                    "used by this device does not match the device id "
-                    "configured in this device");
+                    "Device ID / fingerprint mismatch: The Device ID %s is "
+                    "likely wrong; it is not the Device ID for which the "
+                    "provided fingerprint is configured in the basestation. "
+                    "Please check you provided the intended device ID.",
+                    ctx->deviceId);
                 ec = NC_ATTACHER_STATUS_WRONG_DEVICE_ID;
                 break;
             default:
