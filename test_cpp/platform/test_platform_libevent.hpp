@@ -2,6 +2,7 @@
 #include <nabto/nabto_device_config.h>
 #include <platform/np_platform.h>
 #include <modules/libevent/nm_libevent.h>
+#include <modules/libevent/nm_libevent_dns.h>
 #include <modules/logging/test/nm_logging_test.h>
 
 #if defined(NABTO_DEVICE_MBEDTLS)
@@ -47,6 +48,7 @@ class TestPlatformLibevent : public TestPlatform {
         stop();
         deinit();
 
+
         event_base_free(eventBase_);
 
         nm_libevent_global_deinit();
@@ -58,8 +60,9 @@ class TestPlatformLibevent : public TestPlatform {
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
         nm_libevent_init(&libeventContext_, eventBase_);
+        nm_libevent_dns_init(&libeventDns_, eventBase_);
 
-        pl_.dns = nm_libevent_dns_get_impl(&libeventContext_);
+        pl_.dns = nm_libevent_dns_get_impl(&libeventDns_);
         pl_.udp = nm_libevent_udp_get_impl(&libeventContext_);
         pl_.tcp = nm_libevent_tcp_get_impl(&libeventContext_);
         pl_.localIp = nm_libevent_local_ip_get_impl(&libeventContext_);
@@ -99,7 +102,7 @@ class TestPlatformLibevent : public TestPlatform {
 #ifdef NABTO_DEVICE_WOLFSSL
         nm_wolfssl_cli_deinit(&pl_);
 #endif
-
+        nm_libevent_dns_deinit(&libeventDns_);
         nm_libevent_deinit(&libeventContext_);
 
     }
@@ -119,6 +122,8 @@ class TestPlatformLibevent : public TestPlatform {
             return;
         }
         stopped_ = true;
+
+        nm_libevent_dns_stop(&libeventDns_);
 
         auto fut = prom_.get_future();
         while (fut.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout) {
@@ -141,6 +146,7 @@ class TestPlatformLibevent : public TestPlatform {
     struct np_platform pl_;
     struct event_base* eventBase_;
     struct nm_libevent_context libeventContext_;
+    struct nm_libevent_dns libeventDns_;
     struct thread_event_queue eventQueue_;
     nabto_device_mutex* mutex_;
 

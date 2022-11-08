@@ -4,7 +4,9 @@
 #include "libevent_event_queue.h"
 
 #include <modules/libevent/nm_libevent.h>
+#include <modules/libevent/nm_libevent_dns.h>
 #include <modules/libevent/nm_libevent_mdns_udp_bind.h>
+
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
 #include <modules/mdns/nm_mdns_server.h>
 #include <modules/communication_buffer/nm_communication_buffer.h>
@@ -34,6 +36,7 @@ static bool libevent_do_one(struct event_base* eventBase);
 struct libevent_platform {
     struct event_base* eventBase;
     struct nm_libevent_context libeventContext;
+    struct nm_libevent_dns libeventDns;
 
     struct nabto_device_thread* libeventThread;
     struct thread_event_queue threadEventQueue;
@@ -76,16 +79,22 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
         return NABTO_EC_FAILED;
     }
 
+    np_error_code ec = nm_libevent_dns_init(&platform->libeventDns, platform->eventBase);
+
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
 
     // Create libevent based implementations of udp, tcp, dns,
     // timestamp and local ip functionalities.
     struct np_udp udp = nm_libevent_udp_get_impl(&platform->libeventContext);
     struct np_tcp tcp = nm_libevent_tcp_get_impl(&platform->libeventContext);
     struct np_timestamp timestamp = nm_libevent_timestamp_get_impl(&platform->libeventContext);
-    struct np_dns dns = nm_libevent_dns_get_impl(&platform->libeventContext);
+    struct np_dns dns = nm_libevent_dns_get_impl(&platform->libeventDns);
     struct np_local_ip localIp = nm_libevent_local_ip_get_impl(&platform->libeventContext);
 
-    np_error_code ec = thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
+    ec = thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -165,7 +174,9 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     thread_event_queue_deinit(&platform->threadEventQueue);
     nabto_device_threads_join(platform->libeventThread);
     nabto_device_threads_free_thread(platform->libeventThread);
+    nm_libevent_dns_deinit(&platform->libeventDns);
     nm_libevent_deinit(&platform->libeventContext);
+
     event_base_free(platform->eventBase);
     nm_libevent_global_deinit();
     np_free(platform);
