@@ -1,6 +1,7 @@
 #include "thermostat.h"
 
 #include <apps/common/device_config.h>
+#include <apps/common/string_file.h>
 #include <apps/common/private_key.h>
 #include <apps/common/logging.h>
 
@@ -168,6 +169,12 @@ bool run_thermostat(const struct args* args)
 
 bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args)
 {
+    if (args->init) {
+        printf("Initializing Thermostat" NEWLINE);
+        thermostat_reinit_state(thermostat, tf, tsfb);
+        return true;
+    }
+
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
     if (!load_device_config(tf->deviceConfigFile, &deviceConfig, thermostat->logger)) {
@@ -196,12 +203,6 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
     if (!load_or_create_private_key(dev, tf->deviceKeyFile, thermostat->logger)) {
         printf("Could not load or create the private key" NEWLINE);
         return false;
-    }
-
-    if (args->init) {
-        printf("Resetting IAM state" NEWLINE);
-        thermostat_reinit_state(thermostat, tf, tsfb);
-        return true;
     }
 
     nabto_device_set_app_name(dev, "Thermostat");
@@ -425,20 +426,20 @@ bool make_directories(const char* in)
 
 void print_missing_device_config_help(const char* filename)
 {
-    printf("The device config is missing (%s). Provide a file with the following format" NEWLINE, filename);
-    printf("{" NEWLINE);
-    printf("   \"ProductId\": \"pr-12345678\"," NEWLINE);
-    printf("   \"DeviceId\": \"de-abcdefgh\"" NEWLINE);
-    printf("}" NEWLINE);
+    printf("The device configuration file is missing (%s). " NEWLINE, filename);
+    printf("Run the Thermostat with --init to create a device configuration" NEWLINE);
 }
 
 void print_help() {
-    printf(" -h,--help print help" NEWLINE);
-    printf(" --version Show version" NEWLINE);
-    printf(" -H,--home-dir Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge. On Windows the default home directory is %%APP_DATA%%/nabto/edge. The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, $homedir/state/thermostat_device_iam_state.json, $homedir/state/thermostat_device_state.json" NEWLINE);
-    printf(" --log-level Log level to log (error|info|trace|debug)" NEWLINE);
+    printf(" -h,--help      print help" NEWLINE);
+    printf("    --version   Show version" NEWLINE);
+    printf("    --init      Initialize the Thermostat. Will reset state if run on existing homedir." NEWLINE);
+    printf(" -H,--home-dir  Home directory for the device. The default Home dir on unix is $HOME/.nabto/edge." NEWLINE
+           "                On Windows the default home directory is %%APP_DATA%%/nabto/edge." NEWLINE
+           "                The aplication uses the following files $homedir/keys/device.key, $homedir/config/device.json, " NEWLINE
+           "                $homedir/state/thermostat_device_iam_state.json, $homedir/state/thermostat_device_state.json" NEWLINE);
+    printf(" --log-level    Log level to log (error|info|trace|debug)" NEWLINE);
     printf(" --random-ports Use random ports such that several devices can be running at the same time. The device can still be discovered locally." NEWLINE);
-    printf(" --init Reset state to factory defaults and remove all paired users." NEWLINE);
 }
 
 void print_version() {
@@ -448,6 +449,15 @@ void print_version() {
 
 void thermostat_reinit_state(struct thermostat* thermostat, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb)
 {
+    if (!string_file_exists(thermostatFile->deviceConfigFile)) {
+        printf("No device configuration found. Creating configuration: %s." NEWLINE, thermostatFile->deviceConfigFile);
+        if (!create_device_config_interactive(thermostatFile->deviceConfigFile)) {
+            printf("Failed to create device configuration!" NEWLINE);
+            printf(
+                "The device will not work until the file is created." NEWLINE);
+        }
+    }
+
     thermostat_iam_create_default_state(thermostat->device, thermostatFile->iamStateFile, thermostat->logger);
     thermostat_state_file_backend_create_default_state_file(tsfb);
 }

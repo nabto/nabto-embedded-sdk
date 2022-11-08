@@ -1,11 +1,19 @@
 #include "device_config.h"
 
 #include "json_config.h"
+#include "prompt_stdin.h"
 
 #include <cjson/cJSON.h>
 
 #include <string.h>
 #include <stdlib.h>
+
+#if defined(_WIN32)
+#define NEWLINE "\r\n"
+#else
+#define NEWLINE "\n"
+#endif
+
 
 static const char* LOGM = "device_config";
 
@@ -72,4 +80,19 @@ void device_config_deinit(struct device_config* config)
     free(config->productId);
     free(config->deviceId);
     free(config->server);
+}
+
+bool create_device_config_interactive(const char* file)
+{
+    char productId[20];
+    char deviceId[20];
+    printf("The device configuration requires a Product ID and a Device ID, created in the Nabto Cloud Console." NEWLINE);
+    prompt_repeating("Product Id", productId, ARRAY_SIZE(productId));
+    prompt_repeating("Device Id", deviceId, ARRAY_SIZE(deviceId));
+
+    struct device_config dc;
+    memset(&dc, 0, sizeof(struct device_config));
+    dc.productId = productId;
+    dc.deviceId = deviceId;
+    return save_device_config(file, &dc);
 }
