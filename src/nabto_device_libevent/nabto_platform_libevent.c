@@ -46,6 +46,7 @@ struct libevent_platform {
     struct np_event_queue eq;
 
     struct nm_mdns_server mdnsServer;
+    struct nabto_device_mutex* coreMutex;
 };
 
 
@@ -67,6 +68,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     if (platform == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
+    platform->coreMutex = eventMutex;
 
     platform->eventBase = event_base_new();
     if (platform->eventBase == NULL) {
@@ -79,7 +81,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
         return NABTO_EC_FAILED;
     }
 
-    np_error_code ec = nm_libevent_dns_init(&platform->libeventDns, platform->eventBase);
+    np_error_code ec = nm_libevent_dns_init(&platform->libeventDns, platform->eventBase, eventMutex);
 
     if (ec != NABTO_EC_OK) {
         return ec;
@@ -194,6 +196,7 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
         return;
     }
     nm_mdns_server_stop(&platform->mdnsServer);
+    nm_libevent_dns_stop(&platform->libeventDns);
     nm_libevent_stop(&platform->libeventContext);
     platform->stopped = true;
     event_base_loopbreak(platform->eventBase);

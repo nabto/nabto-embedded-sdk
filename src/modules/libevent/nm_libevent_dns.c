@@ -52,9 +52,10 @@ struct np_dns nm_libevent_dns_get_impl(struct nm_libevent_dns* ctx)
     return obj;
 }
 
-np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_base* eventBase)
+np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_base* eventBase, struct nabto_device_mutex* coreMutex)
 {
     ctx->stopped = false;
+    ctx->mutex = coreMutex;
     ctx->dnsBase = evdns_base_new(eventBase, 0);
     if (ctx->dnsBase == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -80,7 +81,9 @@ np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_bas
 
 void nm_libevent_dns_stop(struct nm_libevent_dns* ctx)
 {
+    nabto_device_threads_mutex_lock(ctx->mutex);
     if (ctx->stopped) {
+        nabto_device_threads_mutex_unlock(ctx->mutex);
         return;
     }
     ctx->stopped = true;
@@ -89,6 +92,7 @@ void nm_libevent_dns_stop(struct nm_libevent_dns* ctx)
     NN_LLIST_FOREACH(request, &ctx->requests) {
         evdns_getaddrinfo_cancel(request->req);
     }
+    nabto_device_threads_mutex_unlock(ctx->mutex);
 }
 
 void nm_libevent_dns_deinit(struct nm_libevent_dns* ctx)
@@ -211,7 +215,10 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
 void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
 {
     struct nm_dns_request* ctx = arg;
+    struct nm_libevent_dns* moduleContext = ctx->moduleContext;
+    nabto_device_threads_mutex_lock(moduleContext->mutex);
     nn_llist_erase_node(&ctx->requestsNode);
+    nabto_device_threads_mutex_unlock(moduleContext->mutex);
     np_error_code ec = NABTO_EC_OK;
     size_t resolved = 0;
     struct evutil_addrinfo* origRes = res;
@@ -219,7 +226,6 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     if (result == EVUTIL_EAI_FAIL) {
         // this error also comes if evdns_base_free has been called, in that case we should not use dnsBase anymore.
         // maybe the system has changed nameservers, reload them
-        struct nm_libevent_dns* moduleContext = ctx->moduleContext;
         if (!moduleContext->stopped) {
             struct evdns_base* base = moduleContext->dnsBase;
 #ifdef _WIN32

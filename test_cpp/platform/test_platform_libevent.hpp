@@ -60,7 +60,7 @@ class TestPlatformLibevent : public TestPlatform {
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
         nm_libevent_init(&libeventContext_, eventBase_);
-        nm_libevent_dns_init(&libeventDns_, eventBase_);
+        nm_libevent_dns_init(&libeventDns_, eventBase_, mutex_);
 
         pl_.dns = nm_libevent_dns_get_impl(&libeventDns_);
         pl_.udp = nm_libevent_udp_get_impl(&libeventContext_);
