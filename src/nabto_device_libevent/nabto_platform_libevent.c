@@ -174,7 +174,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     //nabto_device_threads_join(platform->libeventThread);
 
     thread_event_queue_deinit(&platform->threadEventQueue);
-    nabto_device_threads_join(platform->libeventThread);
+    //nabto_device_threads_join(platform->libeventThread);
     nabto_device_threads_free_thread(platform->libeventThread);
     nm_libevent_dns_deinit(&platform->libeventDns);
     nm_libevent_deinit(&platform->libeventContext);

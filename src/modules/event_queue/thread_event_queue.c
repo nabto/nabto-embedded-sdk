@@ -95,8 +95,9 @@ void thread_event_queue_stop_blocking(struct thread_event_queue* queue)
         return;
     }
     queue->stopped = true;
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
+
     if (queue->queueThread != NULL) {
         nabto_device_threads_join(queue->queueThread);
     }
@@ -129,8 +130,9 @@ void post_event(struct np_event* event)
     struct thread_event_queue* queue = event->queue;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     nm_event_queue_post_event(&queue->eventQueue, &event->event);
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
+
 }
 
 bool post_event_maybe_double(struct np_event* event)
@@ -139,8 +141,8 @@ bool post_event_maybe_double(struct np_event* event)
     bool status;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     status = nm_event_queue_post_event_maybe_double(&queue->eventQueue, &event->event);
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
     return status;
 }
 
@@ -160,8 +162,9 @@ void post_timed_event(struct np_event* event, uint32_t milliseconds)
     uint32_t timestamp = now + milliseconds;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     nm_event_queue_post_timed_event(&queue->eventQueue, &event->event, timestamp);
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
+
 }
 
 bool thread_event_queue_do_one(struct thread_event_queue* queue)
