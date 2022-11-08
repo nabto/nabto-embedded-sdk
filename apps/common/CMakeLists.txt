@@ -5,6 +5,7 @@ set(src
   string_file.c
   random_string.c
   logging.c
+  prompt_stdin.c
   )
 
 add_library(apps_common ${src})
