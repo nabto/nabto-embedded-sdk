@@ -1,6 +1,7 @@
 #include "thermostat.h"
 
 #include <apps/common/device_config.h>
+#include <apps/common/string_file.h>
 #include <apps/common/private_key.h>
 #include <apps/common/logging.h>
 
@@ -168,6 +169,12 @@ bool run_thermostat(const struct args* args)
 
 bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args)
 {
+    if (args->init) {
+        printf("Initializing Thermostat" NEWLINE);
+        thermostat_reinit_state(thermostat, tf, tsfb);
+        return true;
+    }
+
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
     if (!load_device_config(tf->deviceConfigFile, &deviceConfig, thermostat->logger)) {
@@ -196,12 +203,6 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
     if (!load_or_create_private_key(dev, tf->deviceKeyFile, thermostat->logger)) {
         printf("Could not load or create the private key" NEWLINE);
         return false;
-    }
-
-    if (args->init) {
-        printf("Resetting IAM state" NEWLINE);
-        thermostat_reinit_state(thermostat, tf, tsfb);
-        return true;
     }
 
     nabto_device_set_app_name(dev, "Thermostat");
@@ -448,6 +449,15 @@ void print_version() {
 
 void thermostat_reinit_state(struct thermostat* thermostat, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb)
 {
+    if (!string_file_exists(thermostatFile->deviceConfigFile)) {
+        printf("No device configuration found. Creating configuration: %s." NEWLINE, thermostatFile->deviceConfigFile);
+        if (!create_device_config_interactive(thermostatFile->deviceConfigFile)) {
+            printf("Failed to create device configuration!" NEWLINE);
+            printf(
+                "The device will not work until the file is created." NEWLINE);
+        }
+    }
+
     thermostat_iam_create_default_state(thermostat->device, thermostatFile->iamStateFile, thermostat->logger);
     thermostat_state_file_backend_create_default_state_file(tsfb);
 }
