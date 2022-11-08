@@ -65,7 +65,13 @@ bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventB
     return true;
 }
 
+void nm_libevent_stop(struct nm_libevent_context* ctx)
+{
+    ctx->stopped = true;
+    evdns_base_free(ctx->dnsBase, 1);
+}
+
 void nm_libevent_deinit(struct nm_libevent_context* ctx)
 {
-    evdns_base_free(ctx->dnsBase, 1);
+    //evdns_base_free(ctx->dnsBase, 1);
 }

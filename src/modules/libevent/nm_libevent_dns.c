@@ -24,13 +24,12 @@ struct nm_dns_request {
     struct evdns_getaddrinfo_request* req;
     struct np_completion_event* completionEvent;
     struct np_ip_address* ips;
-    struct evdns_base* dnsBase;
+    struct nm_libevent_context* libeventContext;
     size_t ipsSize;
     size_t* ipsResolved;
 };
 
 static void dns_cb(int result, struct evutil_addrinfo *res, void *arg);
-
 
 static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
@@ -55,6 +54,11 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+        return;
+    }
+
+    if (ctx->stopped) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_STOPPED);
         return;
     }
 
@@ -88,7 +92,7 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
-    dnsRequest->dnsBase = dnsBase;
+    dnsRequest->libeventContext = ctx;
     struct evutil_addrinfo hints;
     memset(&hints, 0, sizeof(struct evutil_addrinfo));
     hints.ai_family = AF_INET;
@@ -105,6 +109,11 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+        return;
+    }
+
+    if (ctx->stopped) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_STOPPED);
         return;
     }
 
@@ -138,7 +147,7 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
-    dnsRequest->dnsBase = dnsBase;
+    dnsRequest->libeventContext = ctx;
     struct evutil_addrinfo hints;
     memset(&hints, 0, sizeof(struct evutil_addrinfo));
     hints.ai_family = AF_INET6;
@@ -156,15 +165,19 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     struct evutil_addrinfo* origRes = res;
 
     if (result == EVUTIL_EAI_FAIL) {
+        // this error also comes if evdns_base_free has been called, in that case we should not use dnsBase anymore.
         // maybe the system has changed nameservers, reload them
-        struct evdns_base* base = ctx->dnsBase;
+        struct nm_libevent_context* libeventContext = ctx->libeventContext;
+        if (!libeventContext->stopped) {
+            struct evdns_base* base = libeventContext->dnsBase;
 #ifdef _WIN32
-        evdns_base_clear_host_addresses(base);
-        evdns_base_config_windows_nameservers(base);
+            evdns_base_clear_host_addresses(base);
+            evdns_base_config_windows_nameservers(base);
 #else
-        evdns_base_clear_host_addresses(base);
-        evdns_base_resolv_conf_parse(base, DNS_OPTION_NAMESERVERS, "/etc/resolv.conf");
+            evdns_base_clear_host_addresses(base);
+            evdns_base_resolv_conf_parse(base, DNS_OPTION_NAMESERVERS, "/etc/resolv.conf");
 #endif
+        }
     }
 
     if (result != 0) {

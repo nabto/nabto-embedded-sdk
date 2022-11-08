@@ -11,6 +11,7 @@ struct np_platform;
 struct event_base;
 
 struct nm_libevent_context {
+    bool stopped;
     struct event_base* eventBase;
     struct evdns_base* dnsBase;
 };
@@ -18,6 +19,7 @@ struct nm_libevent_context {
 void nm_libevent_global_init();
 void nm_libevent_global_deinit();
 bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase);
+void nm_libevent_stop(struct nm_libevent_context* ctx);
 void nm_libevent_deinit(struct nm_libevent_context* ctx);
 
 struct np_udp nm_libevent_udp_get_impl(struct nm_libevent_context* ctx);

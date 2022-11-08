@@ -183,6 +183,7 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
         return;
     }
     nm_mdns_server_stop(&platform->mdnsServer);
+    nm_libevent_stop(&platform->libeventContext);
     platform->stopped = true;
     event_base_loopbreak(platform->eventBase);
     nabto_device_threads_join(platform->libeventThread);
