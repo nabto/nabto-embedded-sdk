@@ -426,11 +426,8 @@ bool make_directories(const char* in)
 
 void print_missing_device_config_help(const char* filename)
 {
-    printf("The device config is missing (%s). Provide a file with the following format" NEWLINE, filename);
-    printf("{" NEWLINE);
-    printf("   \"ProductId\": \"pr-12345678\"," NEWLINE);
-    printf("   \"DeviceId\": \"de-abcdefgh\"" NEWLINE);
-    printf("}" NEWLINE);
+    printf("The device configuration file is missing (%s). " NEWLINE, filename);
+    printf("Run the Thermostat with --init to create a device configuration" NEWLINE);
 }
 
 void print_help() {
