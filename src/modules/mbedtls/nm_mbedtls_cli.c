@@ -545,6 +545,20 @@ void event_do_one(void* data)
                     int s = mbedtls_x509_crt_verify_info(info, sizeof(info), "", validationStatus);
                     if (s > 0) {
                         NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
+                    } else {
+                        NABTO_LOG_ERROR(LOG,
+                                        "Certificate verification failed with "
+                                        "error code: %u",
+                                        validationStatus);
+                    }
+                    if (validationStatus == MBEDTLS_X509_BADCERT_FUTURE ||
+                        validationStatus == MBEDTLS_X509_BADCERT_EXPIRED) {
+                        NABTO_LOG_ERROR(
+                            LOG,
+                            "Time may not be configured on this system. "
+                            "Certificates which are expired or starting in the "
+                            "future are often caused by mis-configured timezone or"
+                            " system time.");
                     }
                     event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else {
