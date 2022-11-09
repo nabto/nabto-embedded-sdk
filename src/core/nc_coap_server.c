@@ -11,8 +11,10 @@
 #define LOG NABTO_LOG_MODULE_COAP
 
 void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx);
+static void nc_coap_server_event_deferred(struct nc_coap_server_context* ctx);
 void nc_coap_server_event(struct nc_coap_server_context* ctx);
 uint32_t nc_coap_server_get_stamp(void* userData);
+
 void nc_coap_server_notify_event(void* userData);
 static np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx);
@@ -73,27 +75,24 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
 
 void nc_coap_server_event(struct nc_coap_server_context* ctx)
 {
-    while (true) {
-        enum nabto_coap_server_next_event nextEvent =
-            nabto_coap_server_next_event(&ctx->requests);
-        if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_SEND) {
-            np_error_code ec = nc_coap_server_handle_send(ctx);
-            if (ec == NABTO_EC_OPERATION_STARTED ||
-                ec == NABTO_EC_OPERATION_IN_PROGRESS) {
-                // we are waiting for an async operation before doing the next
-                // thing
-                return;
-            }
-            // handle next event we have probably reached an out of memory error
-            // etc.
-        } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_WAIT) {
-            nc_coap_server_handle_wait(ctx);
+    enum nabto_coap_server_next_event nextEvent =
+        nabto_coap_server_next_event(&ctx->requests);
+    if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_SEND) {
+        np_error_code ec = nc_coap_server_handle_send(ctx);
+        if (ec == NABTO_EC_OPERATION_STARTED ||
+            ec == NABTO_EC_OPERATION_IN_PROGRESS) {
+            // we are waiting for an async operation before doing the next
+            // thing
             return;
-        } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_NOTHING) {
-            return;
+        } else {
+            nc_coap_server_event_deferred(ctx);
         }
+    } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_WAIT) {
+        nc_coap_server_handle_wait(ctx);
+        return;
+    } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_NOTHING) {
+        return;
     }
-    // nc_coap_server_event(ctx);
 }
 
 np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
@@ -212,10 +211,15 @@ void nc_coap_server_notify_event_callback(void* userData)
     nc_coap_server_event(ctx);
 }
 
+void nc_coap_server_event_deferred(struct nc_coap_server_context* ctx)
+{
+    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
+}
+
 void nc_coap_server_notify_event(void* userData)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
+    nc_coap_server_event_deferred(ctx);
 }
 
 void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx)

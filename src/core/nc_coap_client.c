@@ -11,6 +11,7 @@
 
 void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx);
 void nc_coap_client_notify_event(void* userData);
+static void nc_coap_client_event_deferred(struct nc_coap_client_context* ctx);
 void nc_coap_client_event(struct nc_coap_client_context* ctx);
 void nc_coap_client_send_to_callback(const np_error_code ec, void* data);
 void nc_coap_client_handle_timeout(void* data);
@@ -159,27 +160,26 @@ void nc_coap_client_handle_callback(struct nc_coap_client_context* ctx)
 
 void nc_coap_client_event(struct nc_coap_client_context* ctx)
 {
-    while (true) {
-        // nc_coap_client_handle_send can return non ok if a packet cannot be send.
-        // if the packet cannot be send we need to handle the next event.
-        uint32_t now = np_timestamp_now_ms(&ctx->pl->timestamp);
-        enum nabto_coap_client_next_event nextEvent =
-            nabto_coap_client_get_next_event(&ctx->client, now);
-        if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_CALLBACK) {
-            nc_coap_client_handle_callback(ctx);
+    uint32_t now = np_timestamp_now_ms(&ctx->pl->timestamp);
+    enum nabto_coap_client_next_event nextEvent =
+        nabto_coap_client_get_next_event(&ctx->client, now);
+    if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_CALLBACK) {
+        nc_coap_client_handle_callback(ctx);
+        return;
+    } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_SEND) {
+        np_error_code ec = nc_coap_client_handle_send(ctx);
+        if (ec == NABTO_EC_OPERATION_IN_PROGRESS ||
+            ec == NABTO_EC_OPERATION_STARTED) {
             return;
-        } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_SEND) {
-            np_error_code ec = nc_coap_client_handle_send(ctx);
-            if (ec == NABTO_EC_OPERATION_IN_PROGRESS || ec == NABTO_EC_OPERATION_STARTED) {
-                return;
-            }
-            // continue handle next event.
-        } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_WAIT) {
-            nc_coap_client_handle_wait(ctx);
-            return;
-        } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_NOTHING) {
-            return;
+        } else {
+            // a packet was not sent,
+            nc_coap_client_event_deferred(ctx);
         }
+    } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_WAIT) {
+        nc_coap_client_handle_wait(ctx);
+        return;
+    } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_NOTHING) {
+        return;
     }
 }
 
@@ -200,10 +200,15 @@ void nc_coap_client_notify_event_callback(void* userData)
     nc_coap_client_event(ctx);
 }
 
+void nc_coap_client_event_deferred(struct nc_coap_client_context* ctx)
+{
+    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
+}
+
 void nc_coap_client_notify_event(void* userData)
 {
     struct nc_coap_client_context* ctx = (struct nc_coap_client_context*)userData;
-    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
+    nc_coap_client_event_deferred(ctx);
 }
 
 void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx)
