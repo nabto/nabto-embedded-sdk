@@ -557,8 +557,8 @@ void event_do_one(void* data)
                             LOG,
                             "Time may not be configured on this system. "
                             "Certificates which are expired or starting in the "
-                            "future are often caused by non-existing system "
-                            "time.");
+                            "future are often caused by mis-configured timezone or"
+                            " system time.");
                     }
                     event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else {
