@@ -84,8 +84,9 @@ enum nm_iam_error {
  * @param iam [in]    IAM module to initialize
  * @param device [in] Nabto device used with the IAM module
  * @param logger [in] Logging module to print log messages. Can be NULL.
+ * @return true iff initialization was ok.
  */
-void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger);
+bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger);
 
 /**
  * Stop the IAM module. This stops the NabtoDeviceListeners owned by

@@ -44,11 +44,14 @@ struct nm_mdns_server {
 
     struct nm_mdns_server_instance v4;
     struct nm_mdns_server_instance v6;
+    struct np_completion_event* closedCompletionEvent;
 };
 
 np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct nm_mdns_udp_bind* mdnsUdpBind, struct np_local_ip* localIp);
 
 void nm_mdns_server_deinit(struct nm_mdns_server* server);
+
+void nm_mdns_server_close(struct nm_mdns_server* server, struct np_completion_event* closedEvent);
 
 void nm_mdns_server_stop(struct nm_mdns_server* mdns);
 

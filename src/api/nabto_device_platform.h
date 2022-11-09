@@ -6,6 +6,7 @@
 struct nabto_device_mutex;
 struct np_platform;
 struct nabto_device_context;
+struct np_completion_event;
 
 /**
  * Init a platform
@@ -24,6 +25,12 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
  * @param pl  The platform.
  */
 void nabto_device_platform_deinit(struct nabto_device_context* device);
+
+/**
+ * Close the platform gracefully. This is called whenever nabto_device_close is
+ * called, it makes it possible to e.g. gracefully close an embedded mdns server.
+ */
+void nabto_device_platform_close(struct nabto_device_context* device, struct np_completion_event* closeEvent);
 
 /**
  * Blocking stop function of the platform. After this function returns

@@ -682,7 +682,10 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_ATTACH
 // The device is detached after it has been attached.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_DETACHED;
 
-// The device has been closed by a call to nabto_device_close()
+// The device has been closed by a call to nabto_device_close(). This event is
+// emitted even if the close failed for some reason. The reason for this
+// behavior is such that a program can listen for this event and use it to
+// decide when to call nabto_device_stop and nabto_device_free.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CLOSED;
 
 // The device attach attempt failed. The basestation did not recognize the fingerprint

@@ -181,3 +181,31 @@ are broadly supported by many C compilers.
 The code has been made for embedded systems without huge stacks. An actual stack
 usage needs to be measured by the application. The actual stack usage depends on
 how the nabto embedded SDK is configured and which features are enabled and used.
+
+# Validate the correctness of the code
+
+## Test that all allocated memory are freed and that memory access is sane.
+
+For this valgrind is a good tool. All the code which is meant to be run in
+production is free from memory leaks. Some of the test code can leak a bit. But
+it should not leak as it makes finding leaks in the production code harder.
+
+## Test how allocation errors are handled.
+
+We use the tool mallocfail `https://github.com/nabto/mallocfail` to test that
+all callstacks leading to a failing dynamic allocation is handled properly.
+
+```
+MALLOCFAIL_DEBUG=1 LD_PRELOAD=~/sandbox/mallocfail/mallocfail.so ./build/apps/tcp_tunnel_device/tcp_tunnel_device
+```
+
+MbedTLS uses a large number of allocation, thats why it is often a good idea to
+just ignore these by adding the environment variable
+`MALLOCFAIL_IGNORE=mbedtls`.
+
+## Test for race conditions and similar threading errors.
+
+For this the valgrind tool helgrind is good.
+```
+valgrind --tool=helgrind ./build/apps/tcp_tunnel_device/tcp_tunnel_device
+```

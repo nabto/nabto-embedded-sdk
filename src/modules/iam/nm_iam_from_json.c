@@ -19,6 +19,9 @@ struct nm_iam_role* nm_iam_role_from_json(const cJSON* json)
     }
 
     struct nm_iam_role* role = nm_iam_role_new(id->valuestring);
+    if (role == NULL) {
+        return role;
+    }
     size_t policiesSize = cJSON_GetArraySize(policies);
     for (size_t i = 0; i < policiesSize; i++) {
         cJSON* p = cJSON_GetArrayItem(policies, (int)i);

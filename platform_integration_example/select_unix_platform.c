@@ -129,6 +129,13 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     free(platform);
 }
 
+void nabto_device_platform_close(struct nabto_device_context* device, struct np_completion_event* event)
+{
+    struct select_unix_platform* platform = nabto_device_integration_get_platform_data(device);
+
+    nm_mdns_server_close(&platform->mdnsServer, event);
+}
+
 /**
  * This function is called from nabto_device_stop or nabto_device_free
  * if the device is freed without being stopped first.

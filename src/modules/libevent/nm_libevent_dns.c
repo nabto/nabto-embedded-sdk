@@ -1,4 +1,4 @@
-#include "nm_libevent.h"
+#include "nm_libevent_dns.h"
 #include <event2/dns.h>
 
 #include <platform/np_ip_address.h>
@@ -6,7 +6,10 @@
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
 #include <platform/np_error_code.h>
+
+
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 
 #include <string.h>
@@ -16,21 +19,32 @@
 #include <Ws2tcpip.h>
 #endif
 
+#define LOG NABTO_LOG_MODULE_PLATFORM
 
 #define DNS_RECORDS_SIZE 4
 
 struct nm_dns_request {
-    struct np_platform* pl;
     struct evdns_getaddrinfo_request* req;
+
+    // completion event to send the result back to the async_resolve_v4|6 caller.
     struct np_completion_event* completionEvent;
+
+    // sometims the dns_cb in libevent 2.1.12 is called synchroniously. This
+    // event makes sure that the callback is always deferred from the calls to
+    // async_resolve_v4|6
+    struct np_completion_event dnsCbDeZalgo;
+    int cbResult;
+    struct evutil_addrinfo* cbRes;
+
     struct np_ip_address* ips;
-    struct evdns_base* dnsBase;
+    struct nm_libevent_dns* moduleContext;
     size_t ipsSize;
     size_t* ipsResolved;
+    struct nn_llist_node requestsNode;
 };
 
 static void dns_cb(int result, struct evutil_addrinfo *res, void *arg);
-
+static void dns_cb_deferred(const np_error_code ec, void* userData);
 
 static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
@@ -40,7 +54,7 @@ static struct np_dns_functions module = {
     &async_resolve_v6
 };
 
-struct np_dns nm_libevent_dns_get_impl(struct nm_libevent_context* ctx)
+struct np_dns nm_libevent_dns_get_impl(struct nm_libevent_dns* ctx)
 {
     struct np_dns obj;
     obj.mptr = &module;
@@ -48,13 +62,67 @@ struct np_dns nm_libevent_dns_get_impl(struct nm_libevent_context* ctx)
     return obj;
 }
 
+np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_base* eventBase, struct nabto_device_mutex* coreMutex, struct np_event_queue* eq)
+{
+    ctx->stopped = false;
+    ctx->mutex = coreMutex;
+    ctx->dnsBase = evdns_base_new(eventBase, 0);
+    if (ctx->dnsBase == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    int r;
+#if _WIN32
+    r = evdns_base_config_windows_nameservers(ctx->dnsBase);
+#else
+    int opts = DNS_OPTION_NAMESERVERS | DNS_OPTION_HOSTSFILE;
+    r = evdns_base_resolv_conf_parse(ctx->dnsBase, opts, "/etc/resolv.conf");
+#endif
+    if (r != 0) {
+        NABTO_LOG_ERROR(LOG, "Could not configure name servers %d", r);
+        evdns_base_free(ctx->dnsBase, 1);
+        return NABTO_EC_UNKNOWN;
+    }
+
+
+    ctx->eventBase = eventBase;
+    ctx->eq = *eq;
+    nn_llist_init(&ctx->requests);
+    return NABTO_EC_OK;
+}
+
+void nm_libevent_dns_stop(struct nm_libevent_dns* ctx)
+{
+    nabto_device_threads_mutex_lock(ctx->mutex);
+    if (ctx->stopped) {
+        nabto_device_threads_mutex_unlock(ctx->mutex);
+        return;
+    }
+    ctx->stopped = true;
+
+    struct nm_dns_request* request;
+    NN_LLIST_FOREACH(request, &ctx->requests) {
+        evdns_getaddrinfo_cancel(request->req);
+    }
+    nabto_device_threads_mutex_unlock(ctx->mutex);
+}
+
+void nm_libevent_dns_deinit(struct nm_libevent_dns* ctx)
+{
+    evdns_base_free(ctx->dnsBase, 1);
+}
+
 static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct nm_libevent_context* ctx = obj->data;
+    struct nm_libevent_dns* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+        return;
+    }
+
+    if (ctx->stopped) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_STOPPED);
         return;
     }
 
@@ -84,27 +152,39 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest);
+    if (ec != NABTO_EC_OK) {
+        np_free(dnsRequest);
+        np_completion_event_resolve(completionEvent, ec);
+        return;
+    }
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
-    dnsRequest->dnsBase = dnsBase;
+    dnsRequest->moduleContext = ctx;
     struct evutil_addrinfo hints;
     memset(&hints, 0, sizeof(struct evutil_addrinfo));
     hints.ai_family = AF_INET;
     hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
     hints.ai_socktype = SOCK_DGRAM;
     const char* service = "443";
+    nn_llist_append(&ctx->requests, &dnsRequest->requestsNode, dnsRequest);
     dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
 }
 
 static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    struct nm_libevent_context* ctx = obj->data;
+    struct nm_libevent_dns* ctx = obj->data;
     struct evdns_base* dnsBase = ctx->dnsBase;
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
+        return;
+    }
+
+    if (ctx->stopped) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_STOPPED);
         return;
     }
 
@@ -134,37 +214,59 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest);
+    if (ec != NABTO_EC_OK) {
+        np_free(dnsRequest);
+        np_completion_event_resolve(completionEvent, ec);
+        return;
+    }
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
     dnsRequest->ipsResolved = ipsResolved;
-    dnsRequest->dnsBase = dnsBase;
+    dnsRequest->moduleContext = ctx;
     struct evutil_addrinfo hints;
     memset(&hints, 0, sizeof(struct evutil_addrinfo));
     hints.ai_family = AF_INET6;
     hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
     hints.ai_socktype = SOCK_DGRAM;
     const char* service = "443";
+    nn_llist_append(&ctx->requests, &dnsRequest->requestsNode, dnsRequest);
     dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
 }
 
 void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
 {
     struct nm_dns_request* ctx = arg;
+    ctx->cbResult = result;
+    ctx->cbRes = res;
+    np_completion_event_resolve(&ctx->dnsCbDeZalgo, NABTO_EC_OK);
+}
+
+void dns_cb_deferred(const np_error_code cbec, void* userData)
+{
+    struct nm_dns_request* ctx = userData;
+    struct nm_libevent_dns* moduleContext = ctx->moduleContext;
+    nn_llist_erase_node(&ctx->requestsNode);
     np_error_code ec = NABTO_EC_OK;
     size_t resolved = 0;
-    struct evutil_addrinfo* origRes = res;
+    struct evutil_addrinfo* origRes = ctx->cbRes;
+    struct evutil_addrinfo* res = ctx->cbRes;
+    int result = ctx->cbResult;
 
     if (result == EVUTIL_EAI_FAIL) {
+        // this error also comes if evdns_base_free has been called, in that case we should not use dnsBase anymore.
         // maybe the system has changed nameservers, reload them
-        struct evdns_base* base = ctx->dnsBase;
+        if (!moduleContext->stopped) {
+            struct evdns_base* base = moduleContext->dnsBase;
 #ifdef _WIN32
-        evdns_base_clear_host_addresses(base);
-        evdns_base_config_windows_nameservers(base);
+            evdns_base_clear_host_addresses(base);
+            evdns_base_config_windows_nameservers(base);
 #else
-        evdns_base_clear_host_addresses(base);
-        evdns_base_resolv_conf_parse(base, DNS_OPTION_NAMESERVERS, "/etc/resolv.conf");
+            evdns_base_clear_host_addresses(base);
+            evdns_base_resolv_conf_parse(base, DNS_OPTION_NAMESERVERS, "/etc/resolv.conf");
 #endif
+        }
     }
 
     if (result != 0) {
@@ -194,5 +296,6 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     if (origRes != NULL) {
         evutil_freeaddrinfo(origRes);
     }
+    np_completion_event_deinit(&ctx->dnsCbDeZalgo);
     np_free(ctx);
 }
