@@ -551,12 +551,14 @@ void event_do_one(void* data)
                                         "error code: %u",
                                         validationStatus);
                     }
-                    if (validationStatus == MBEDTLS_X509_BADCERT_FUTURE) {
+                    if (validationStatus == MBEDTLS_X509_BADCERT_FUTURE ||
+                        validationStatus == MBEDTLS_X509_BADCERT_EXPIRED) {
                         NABTO_LOG_ERROR(
                             LOG,
                             "Time may not be configured on this system. "
-                            "Certificates starting in the future errors are "
-                            "often caused by non-existing system time.");
+                            "Certificates which are expired or starting in the "
+                            "future are often caused by non-existing system "
+                            "time.");
                     }
                     event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
                 } else {
