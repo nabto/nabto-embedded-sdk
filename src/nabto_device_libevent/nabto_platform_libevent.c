@@ -56,6 +56,7 @@ struct libevent_platform {
  */
 np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex)
 {
+    np_error_code ec;
     NABTO_LOG_TRACE(LOG, "initializing platform");
     // Initialize the global libevent context.
     nm_libevent_global_init();
@@ -81,13 +82,6 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
         return NABTO_EC_FAILED;
     }
 
-    np_error_code ec = nm_libevent_dns_init(&platform->libeventDns, platform->eventBase, eventMutex);
-
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-
-
     // Create libevent based implementations of udp, tcp, dns,
     // timestamp and local ip functionalities.
     struct np_udp udp = nm_libevent_udp_get_impl(&platform->libeventContext);
@@ -103,6 +97,12 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     // Create an event queue which is based on libevent.
     platform->eq = thread_event_queue_get_impl(&platform->threadEventQueue);
+
+    ec = nm_libevent_dns_init(&platform->libeventDns, platform->eventBase, eventMutex, &platform->eq);
+
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
 
     // Create a mdns server
@@ -122,8 +122,9 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    if (nabto_device_threads_run(platform->libeventThread, libevent_thread, platform) != 0) {
-        // TODO
+    ec = nabto_device_threads_run(platform->libeventThread, libevent_thread, platform);
+    if (ec != NABTO_EC_OK) {
+        return ec;
     }
 
     /**
@@ -164,17 +165,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     }
     nm_mdns_server_deinit(&platform->mdnsServer);
 
-    //nabto_device_threads_free_thread(platform->libeventThread);
-
-    //nm_libevent_deinit(&platform->libeventContext);
-
-    //nabto_device_threads_join(platform->libeventThread);
-    //nabto_device_threads_free_thread(platform->libeventThread);
-    //event_base_free(platform->eventBase);
-    //nabto_device_threads_join(platform->libeventThread);
-
     thread_event_queue_deinit(&platform->threadEventQueue);
-    //nabto_device_threads_join(platform->libeventThread);
     nabto_device_threads_free_thread(platform->libeventThread);
     nm_libevent_dns_deinit(&platform->libeventDns);
     nm_libevent_deinit(&platform->libeventContext);
@@ -201,13 +192,9 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
     platform->stopped = true;
     event_base_loopbreak(platform->eventBase);
     nabto_device_threads_join(platform->libeventThread);
-    //nm_libevent_deinit(&platform->libeventContext);
-
-    //nabto_device_threads_join(platform->libeventThread);
     thread_event_queue_stop_blocking(&platform->threadEventQueue);
 
     // run single libevent and thread_event_queue events until there's no more events.
-
     for (int i = 0; i < maxExtraEvents; i++) {
         bool more = thread_event_queue_do_one(&platform->threadEventQueue) || libevent_do_one(platform->eventBase);
         if (!more) {

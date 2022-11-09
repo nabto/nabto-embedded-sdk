@@ -24,9 +24,18 @@
 #define DNS_RECORDS_SIZE 4
 
 struct nm_dns_request {
-    struct np_platform* pl;
     struct evdns_getaddrinfo_request* req;
+
+    // completion event to send the result back to the async_resolve_v4|6 caller.
     struct np_completion_event* completionEvent;
+
+    // sometims the dns_cb in libevent 2.1.12 is called synchroniously. This
+    // event makes sure that the callback is always deferred from the calls to
+    // async_resolve_v4|6
+    struct np_completion_event dnsCbDeZalgo;
+    int cbResult;
+    struct evutil_addrinfo* cbRes;
+
     struct np_ip_address* ips;
     struct nm_libevent_dns* moduleContext;
     size_t ipsSize;
@@ -35,6 +44,7 @@ struct nm_dns_request {
 };
 
 static void dns_cb(int result, struct evutil_addrinfo *res, void *arg);
+static void dns_cb_deferred(const np_error_code ec, void* userData);
 
 static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
@@ -52,7 +62,7 @@ struct np_dns nm_libevent_dns_get_impl(struct nm_libevent_dns* ctx)
     return obj;
 }
 
-np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_base* eventBase, struct nabto_device_mutex* coreMutex)
+np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_base* eventBase, struct nabto_device_mutex* coreMutex, struct np_event_queue* eq)
 {
     ctx->stopped = false;
     ctx->mutex = coreMutex;
@@ -75,6 +85,7 @@ np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_bas
 
 
     ctx->eventBase = eventBase;
+    ctx->eq = *eq;
     nn_llist_init(&ctx->requests);
     return NABTO_EC_OK;
 }
@@ -141,6 +152,12 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest);
+    if (ec != NABTO_EC_OK) {
+        np_free(dnsRequest);
+        np_completion_event_resolve(completionEvent, ec);
+        return;
+    }
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
@@ -197,6 +214,12 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest);
+    if (ec != NABTO_EC_OK) {
+        np_free(dnsRequest);
+        np_completion_event_resolve(completionEvent, ec);
+        return;
+    }
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
@@ -215,13 +238,21 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
 void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
 {
     struct nm_dns_request* ctx = arg;
+    ctx->cbResult = result;
+    ctx->cbRes = res;
+    np_completion_event_resolve(&ctx->dnsCbDeZalgo, NABTO_EC_OK);
+}
+
+void dns_cb_deferred(const np_error_code cbec, void* userData)
+{
+    struct nm_dns_request* ctx = userData;
     struct nm_libevent_dns* moduleContext = ctx->moduleContext;
-    nabto_device_threads_mutex_lock(moduleContext->mutex);
     nn_llist_erase_node(&ctx->requestsNode);
-    nabto_device_threads_mutex_unlock(moduleContext->mutex);
     np_error_code ec = NABTO_EC_OK;
     size_t resolved = 0;
-    struct evutil_addrinfo* origRes = res;
+    struct evutil_addrinfo* origRes = ctx->cbRes;
+    struct evutil_addrinfo* res = ctx->cbRes;
+    int result = ctx->cbResult;
 
     if (result == EVUTIL_EAI_FAIL) {
         // this error also comes if evdns_base_free has been called, in that case we should not use dnsBase anymore.
@@ -265,5 +296,6 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     if (origRes != NULL) {
         evutil_freeaddrinfo(origRes);
     }
+    np_completion_event_deinit(&ctx->dnsCbDeZalgo);
     np_free(ctx);
 }
