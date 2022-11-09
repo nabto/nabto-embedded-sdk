@@ -60,7 +60,6 @@ class TestPlatformLibevent : public TestPlatform {
         nm_logging_test_init();
         nm_communication_buffer_init(&pl_);
         nm_libevent_init(&libeventContext_, eventBase_);
-        nm_libevent_dns_init(&libeventDns_, eventBase_, mutex_, &pl_.eq);
 
         pl_.dns = nm_libevent_dns_get_impl(&libeventDns_);
         pl_.udp = nm_libevent_udp_get_impl(&libeventContext_);
@@ -70,6 +69,7 @@ class TestPlatformLibevent : public TestPlatform {
 
         thread_event_queue_init(&eventQueue_, mutex_, &(pl_.timestamp));
         pl_.eq = thread_event_queue_get_impl(&eventQueue_);
+        nm_libevent_dns_init(&libeventDns_, eventBase_, mutex_, &pl_.eq);
 
 #ifdef NABTO_DEVICE_MBEDTLS
         nm_mbedtls_cli_init(&pl_);
