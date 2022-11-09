@@ -1,0 +1,55 @@
+name: ARM Build
+
+on:
+  push:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        arch: [armv6, armv7]
+        include:
+          - arch: armv6
+            cflags: -marm
+          - arch: armv7
+            cflags:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Create directory
+      run: mkdir toolchain
+
+    - name: Get toolchain
+      working-directory: toolchain
+      run: curl -sSL https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz  | tar -Jxf - --strip-components=1
+
+    - name: Configure CMake
+      env:
+        CC: ${{github.workspace}}/toolchain/bin/arm-linux-gnueabihf-gcc
+        CXX: ${{github.workspace}}/toolchain/bin/arm-linux-gnueabihf-g++
+        CFLAGS: -march=${{ matrix.arch }} ${{ matrix.cflags }}
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -B ${{github.workspace}}/build
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --parallel
+
+    - name: Install
+      run: cmake --build ${{github.workspace}}/build --target install
+
+    - name: Print architecture
+      run: file ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device
+
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: artifacts_${{ matrix.arch }}
+        path: |
+          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device
+          ${{ github.workspace }}/artifacts/bin/thermostat_device
+        if-no-files-found: error
