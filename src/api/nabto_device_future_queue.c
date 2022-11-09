@@ -51,8 +51,9 @@ void nabto_device_future_queue_stop(struct nabto_device_future_queue* queue)
         return;
     }
     queue->stopped = true;
-    nabto_device_threads_mutex_unlock(queue->mutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->mutex);
+
     nabto_device_threads_join(queue->thread);
 }
 
@@ -60,8 +61,8 @@ void nabto_device_future_queue_post(struct nabto_device_future_queue* queue, str
 {
     nabto_device_threads_mutex_lock(queue->mutex);
     nn_llist_append(&queue->futureList, &fut->futureListNode, fut);
-    nabto_device_threads_mutex_unlock(queue->mutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->mutex);
 }
 
 void* execution_thread(void* userData)

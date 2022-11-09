@@ -51,7 +51,10 @@ struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new()
 void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
-    np_tcp_destroy(&pl->tcp, connection->socket);
+    if (connection->socket != NULL) {
+        np_tcp_destroy(&pl->tcp, connection->socket);
+        connection->socket = NULL;
+    }
     np_completion_event_deinit(&connection->connectCompletionEvent);
     np_completion_event_deinit(&connection->readCompletionEvent);
     np_completion_event_deinit(&connection->writeCompletionEvent);
@@ -70,15 +73,9 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
         NABTO_LOG_ERROR(LOG, "Cannot create tcp connection");
         return ec;
     }
-    connection->stream = stream;
 
     connection->address = service->address;
     connection->port = service->port;
-
-
-    // insert connection into back of connections list
-
-    nn_llist_append(&service->connections, &connection->connectionsListItem, connection);
 
     struct np_event_queue* eq = &pl->eq;
     ec = np_completion_event_init(eq, &connection->connectCompletionEvent, &connect_callback, connection);
@@ -100,6 +97,11 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     connection->streamRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
     connection->tcpReadEnded = false;
     connection->streamReadEnded = false;
+
+    connection->stream = stream;
+
+    // insert connection into back of connections list
+    nn_llist_append(&service->connections, &connection->connectionsListItem, connection);
 
     return NABTO_EC_OK;
 }

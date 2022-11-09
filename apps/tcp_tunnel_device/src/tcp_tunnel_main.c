@@ -85,13 +85,16 @@ static struct nn_allocator defaultAllocator = {
   .free = free
 };
 
-NabtoDevice* device_;
+static struct tcp_tunnel* tunnel_ = NULL;
 
 static void signal_handler(int s);
 
 static void print_iam_state(struct nm_iam_state* state);
 static void iam_user_changed(struct nm_iam* iam, void* userData);
 static bool make_directory(const char* directory);
+
+static struct tcp_tunnel* tcp_tunnel_new();
+static void tcp_tunnel_free(struct tcp_tunnel* tunnel);
 
 struct nn_allocator* get_default_allocator()
 {
@@ -241,14 +244,41 @@ void args_deinit(struct args* args)
     free(args->homeDir);
 }
 
-void tcp_tunnel_init(struct tcp_tunnel* tunnel)
+struct tcp_tunnel* tcp_tunnel_new()
 {
-    memset(tunnel, 0, sizeof(struct tcp_tunnel));
+    struct tcp_tunnel* tunnel = calloc(1, sizeof(struct tcp_tunnel));
+    if (tunnel == NULL) {
+        return NULL;
+    }
     nn_vector_init(&tunnel->services, sizeof(void*), &defaultAllocator);
+
+    tunnel->device = nabto_device_new();
+    if (tunnel->device == NULL) {
+        tcp_tunnel_free(tunnel);
+        return NULL;
+    }
+    tunnel->startFuture = nabto_device_future_new(tunnel->device);
+    tunnel->closeFuture = nabto_device_future_new(tunnel->device);
+
+    tunnel->iamConfig = nm_iam_configuration_new();
+    tunnel->tcpTunnelState = nm_iam_state_new();
+
+    if (tunnel->startFuture != NULL &&
+        tunnel->closeFuture != NULL &&
+        tunnel->iamConfig != NULL &&
+        tunnel->tcpTunnelState != NULL)
+    {
+        return tunnel;
+    }
+    tcp_tunnel_free(tunnel);
+    return NULL;
 }
 
-void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)
+void tcp_tunnel_free(struct tcp_tunnel* tunnel)
 {
+    if (tunnel == NULL) {
+        return;
+    }
     free(tunnel->deviceConfigFile);
     free(tunnel->stateFile);
     free(tunnel->iamConfigFile);
@@ -261,6 +291,15 @@ void tcp_tunnel_deinit(struct tcp_tunnel* tunnel)
         tcp_tunnel_service_free(service);
     }
     nn_vector_deinit(&tunnel->services);
+
+    nm_iam_state_free(tunnel->tcpTunnelState);
+    nm_iam_configuration_free(tunnel->iamConfig);
+
+    nabto_device_future_free(tunnel->closeFuture);
+    nabto_device_future_free(tunnel->startFuture);
+    nabto_device_free(tunnel->device);
+
+    free(tunnel);
 }
 
 char* expand_file_name(const char* homeDir, const char* fileName)
@@ -305,12 +344,12 @@ int main(int argc, char** argv)
 
 
 
-    struct tcp_tunnel tunnel;
-    tcp_tunnel_init(&tunnel);
-
-    bool status = handle_main(&args, &tunnel);
-
-    tcp_tunnel_deinit(&tunnel);
+    bool status = false;
+    struct tcp_tunnel* tunnel = tcp_tunnel_new();
+    if (tunnel != NULL) {
+        status = handle_main(&args, tunnel);
+    }
+    tcp_tunnel_free(tunnel);
     args_deinit(&args);
 
     if (status) {
@@ -337,8 +376,12 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     } else if (homeEnv != NULL) {
         args->homeDir = expand_file_name(homeEnv, HOMEDIR_EDGE_FOLDER);
         char* dotNabto = expand_file_name(homeEnv, HOMEDIR_NABTO_FOLDER);
+        if (dotNabto == NULL || args->homeDir == NULL) {
+            return false;
+        }
         make_directory(dotNabto);
         free(dotNabto);
+
 
         make_directory(args->homeDir);
     } else {
@@ -346,9 +389,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
-    NabtoDevice* device = nabto_device_new();
     struct nn_log logger;
-    logging_init(device, &logger, args->logLevel);
+    logging_init(tunnel->device, &logger, args->logLevel);
 
     // Create directories if missing
     char* stateDir = expand_file_name(args->homeDir, "state");
@@ -370,7 +412,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     tunnel->privateKeyFile = expand_file_name(args->homeDir, DEVICE_KEY_FILE);
 
     if (args->init) {
-        if (!load_or_create_private_key(device, tunnel->privateKeyFile, &logger)) {
+        if (!load_or_create_private_key(tunnel->device, tunnel->privateKeyFile, &logger)) {
             print_private_key_file_load_failed(tunnel->privateKeyFile);
             return false;
         }
@@ -387,7 +429,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             return false;
         } else {
             char* deviceFingerprint;
-            nabto_device_get_device_fingerprint(device, &deviceFingerprint);
+            nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
             printf("The configuration and state has been initialized" NEWLINE);
             printf("The Fingerprint must be configured for this device in the Nabto Cloud Console before it will be allowed to attach to the Basestation. If you want to reuse an already configured fingerprint, you can copy the corresponding private key to %s" NEWLINE, tunnel->privateKeyFile);
             printf("The device Fingerprint is: %s" NEWLINE, deviceFingerprint);
@@ -422,16 +464,13 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
-    struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
-
-    if (!iam_config_load(iamConfig, tunnel->iamConfigFile, &logger)) {
+    if (!iam_config_load(tunnel->iamConfig, tunnel->iamConfigFile, &logger)) {
         print_iam_config_load_failed(tunnel->iamConfigFile);
         return false;
     }
 
-    struct nm_iam_state* tcpTunnelState = nm_iam_state_new();
 
-    if (!load_tcp_tunnel_state(tcpTunnelState, tunnel->stateFile, &logger)) {
+    if (!load_tcp_tunnel_state(tunnel->tcpTunnelState, tunnel->stateFile, &logger)) {
         print_tcp_tunnel_state_load_failed(tunnel->stateFile);
         return false;
     }
@@ -442,59 +481,66 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
-    if (!load_or_create_private_key(device, tunnel->privateKeyFile, &logger)) {
+    if (!load_or_create_private_key(tunnel->device, tunnel->privateKeyFile, &logger)) {
         print_private_key_file_load_failed(tunnel->privateKeyFile);
         return false;
     }
 
-    nabto_device_set_product_id(device, dc.productId);
-    nabto_device_set_device_id(device, dc.deviceId);
-    nabto_device_set_app_name(device, "Tcp Tunnel");
+    nabto_device_set_product_id(tunnel->device, dc.productId);
+    nabto_device_set_device_id(tunnel->device, dc.deviceId);
+    nabto_device_set_app_name(tunnel->device, "Tcp Tunnel");
     if (dc.server != NULL) {
-        nabto_device_set_server_url(device, dc.server);
+        nabto_device_set_server_url(tunnel->device, dc.server);
     }
     if (dc.serverPort != 0) {
-        nabto_device_set_server_port(device, dc.serverPort);
+        nabto_device_set_server_port(tunnel->device, dc.serverPort);
     }
-    nabto_device_enable_mdns(device);
-    nabto_device_mdns_add_subtype(device, "tcptunnel");
+    nabto_device_enable_mdns(tunnel->device);
+    nabto_device_mdns_add_subtype(tunnel->device, "tcptunnel");
 
     struct nm_iam iam;
-    nm_iam_init(&iam, device, &logger);
+    if (!nm_iam_init(&iam, tunnel->device, &logger)) {
+        return false;
+    }
 
-    if(!nm_iam_load_configuration(&iam, iamConfig)) {
+    if(!nm_iam_load_configuration(&iam, tunnel->iamConfig)) {
         printf("Could not load iam configuration" NEWLINE);
         return false;
     }
-    nm_iam_load_state(&iam, tcpTunnelState);
+    tunnel->iamConfig = NULL; //transfer ownership to iam
+    if (!nm_iam_load_state(&iam, tunnel->tcpTunnelState)) {
+        printf("Could not load iam state" NEWLINE);
+        return false;
+    }
+    tunnel->tcpTunnelState = NULL; // transfer ownership to iam
 
 
     struct tcp_tunnel_service* service;
     NN_VECTOR_FOREACH(&service, &tunnel->services)
     {
-        nabto_device_add_tcp_tunnel_service(device, service->id, service->type, service->host, service->port);
+        nabto_device_add_tcp_tunnel_service(tunnel->device, service->id, service->type, service->host, service->port);
 
         struct nn_string_map_iterator it;
         NN_STRING_MAP_FOREACH(it, &service->metadata)
         {
             const char* key = nn_string_map_key(&it);
             const char* val = nn_string_map_value(&it);
-            nabto_device_add_tcp_tunnel_service_metadata(device, service->id, key, val);
+            nabto_device_add_tcp_tunnel_service_metadata(tunnel->device, service->id, key, val);
         }
     }
 
     char* deviceFingerprint;
-    nabto_device_get_device_fingerprint(device, &deviceFingerprint);
+    nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
 
     if (args->randomPorts) {
-        nabto_device_set_local_port(device, 0);
-        nabto_device_set_p2p_port(device, 0);
+        nabto_device_set_local_port(tunnel->device, 0);
+        nabto_device_set_p2p_port(tunnel->device, 0);
     } else {
         if (args->localPort) {
-            nabto_device_set_local_port(device, args->localPort);
+            nabto_device_set_local_port(tunnel->device, args->localPort);
         }
         if (args->p2pPort) {
-            nabto_device_set_p2p_port(device, args->p2pPort);
+            nabto_device_set_p2p_port(tunnel->device, args->p2pPort);
         }
     }
 
@@ -513,11 +559,11 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     // Create a copy of the state and print information from it.
     struct nm_iam_state* state = nm_iam_dump_state(&iam);
-    printf("# Friendly Name:     \"%s\"" NEWLINE, state->friendlyName);
-
     if (state == NULL) {
         return false;
     }
+
+    printf("# Friendly Name:     \"%s\"" NEWLINE, state->friendlyName);
 
     struct nm_iam_user* initialUser = nm_iam_state_find_user_by_username(state, state->initialPairingUsername);
 
@@ -590,18 +636,18 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     nm_iam_state_free(state);
 
     if (args->showState) {
-        print_iam_state(tcpTunnelState);
+        struct nm_iam_state* state = nm_iam_dump_state(&iam);
+        print_iam_state(state);
+        nm_iam_state_free(state);
     } else {
         struct device_event_handler eventHandler;
 
-        device_event_handler_init(&eventHandler, device);
+        device_event_handler_init(&eventHandler, tunnel->device);
 
         nm_iam_set_state_changed_callback(&iam, iam_user_changed, tunnel);
 
-        NabtoDeviceFuture* fut = nabto_device_future_new(device);
-        nabto_device_start(device, fut);
-        NabtoDeviceError ec = nabto_device_future_wait(fut);
-        nabto_device_future_free(fut);
+        nabto_device_start(tunnel->device, tunnel->startFuture);
+        NabtoDeviceError ec = nabto_device_future_wait(tunnel->startFuture);
         if (ec != NABTO_DEVICE_EC_OK) {
             if (ec == NABTO_DEVICE_EC_ADDRESS_IN_USE) {
                 printf("The device could not be started as one or more udp sockets" NEWLINE);
@@ -615,7 +661,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             return false;
         }
 
-        device_ = device;
+        tunnel_ = tunnel;
 
         fflush(stdout); // flush all printed messages during the startup
 
@@ -625,15 +671,13 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         // block until the NABTO_DEVICE_EVENT_CLOSED event is emitted.
         device_event_handler_blocking_listener(&eventHandler);
 
-        nabto_device_stop(device);
+        nabto_device_stop(tunnel->device);
 
         device_event_handler_deinit(&eventHandler);
     }
 
-    nabto_device_stop(device);
+    nabto_device_stop(tunnel->device);
     nm_iam_deinit(&iam);
-    nabto_device_free(device);
-
 
     device_config_deinit(&dc);
 
@@ -643,10 +687,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 void signal_handler(int s)
 {
     (void)s;
-    NabtoDeviceFuture* fut = nabto_device_future_new(device_);
-    nabto_device_close(device_, fut);
-    nabto_device_future_wait(fut);
-    nabto_device_future_free(fut);
+    nabto_device_close(tunnel_->device, tunnel_->closeFuture);
+    nabto_device_future_wait(tunnel_->closeFuture);
 }
 
 

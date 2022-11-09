@@ -13,6 +13,9 @@ static const char* LOGM = "services";
 struct tcp_tunnel_service* tcp_tunnel_service_new()
 {
     struct tcp_tunnel_service* service = calloc(1, sizeof(struct tcp_tunnel_service));
+    if (service == NULL) {
+        return service;
+    }
     nn_string_map_init(&service->metadata, get_default_allocator());
     return service;
 }
@@ -85,6 +88,9 @@ struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* logger)
             cJSON_IsNumber(port))
         {
             struct tcp_tunnel_service* service = tcp_tunnel_service_new();
+            if (service == NULL) {
+                return NULL;
+            }
             service->id = strdup(id->valuestring);
             service->type = strdup(type->valuestring);
             service->host = strdup(host->valuestring);
@@ -142,8 +148,14 @@ cJSON* tcp_tunnel_service_as_json(struct tcp_tunnel_service* service)
 bool tcp_tunnel_create_default_services_file(const char* servicesFile)
 {
     cJSON* root = cJSON_CreateArray();
+    if (root == NULL) {
+        return false;
+    }
 
     struct tcp_tunnel_service* ssh = tcp_tunnel_service_new();
+    if (ssh == NULL) {
+        return false;
+    }
 
     ssh->id   = strdup("ssh");
     ssh->type = strdup("ssh");

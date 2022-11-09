@@ -221,6 +221,7 @@ void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWea
         nm_tcp_tunnel_connection_start(c);
     } else {
         nm_tcp_tunnel_connection_free(c);
+        nc_stream_destroy(stream);
     }
 }
 
@@ -234,7 +235,7 @@ np_error_code nm_tcp_tunnel_service_add_metadata(struct nm_tcp_tunnels* tunnels,
 
     struct nn_string_map* metadata = &service->metadata;
     struct nn_string_map_iterator it = nn_string_map_get(metadata, key);
-    if (!nn_string_map_is_end(&it)) 
+    if (!nn_string_map_is_end(&it))
     {
         nn_string_map_erase_iterator(metadata, &it);
     }

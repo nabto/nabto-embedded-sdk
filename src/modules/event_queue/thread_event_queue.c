@@ -40,7 +40,7 @@ struct np_event_queue thread_event_queue_get_impl(struct thread_event_queue* que
     return eq;
 }
 
-void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* coreMutex, struct np_timestamp* ts)
+np_error_code thread_event_queue_init(struct thread_event_queue* queue, struct nabto_device_mutex* coreMutex, struct np_timestamp* ts)
 {
     nm_event_queue_init(&queue->eventQueue);
     queue->stopped = false;
@@ -48,17 +48,30 @@ void thread_event_queue_init(struct thread_event_queue* queue, struct nabto_devi
     queue->ts = *ts;
     queue->queueThread = NULL;
     queue->queueMutex = nabto_device_threads_create_mutex();
+    if (queue->queueMutex == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     queue->condition = nabto_device_threads_create_condition();
+    if (queue->condition == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    return NABTO_EC_OK;
 }
 
-void thread_event_queue_run(struct thread_event_queue* queue)
+np_error_code thread_event_queue_run(struct thread_event_queue* queue)
 {
     nabto_device_threads_mutex_lock(queue->queueMutex);
     queue->queueThread = nabto_device_threads_create_thread();
+    if (queue->queueThread == NULL) {
+        nabto_device_threads_mutex_unlock(queue->queueMutex);
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     if (nabto_device_threads_run(queue->queueThread, queue_thread, queue) != 0) {
-        // TODO
+        nabto_device_threads_mutex_unlock(queue->queueMutex);
+        return NABTO_EC_UNKNOWN;
     }
     nabto_device_threads_mutex_unlock(queue->queueMutex);
+    return NABTO_EC_OK;
 }
 
 void thread_event_queue_deinit(struct thread_event_queue* queue)
@@ -78,9 +91,13 @@ void thread_event_queue_deinit(struct thread_event_queue* queue)
 void thread_event_queue_stop_blocking(struct thread_event_queue* queue)
 {
     nabto_device_threads_mutex_lock(queue->queueMutex);
+    if (queue->stopped) {
+        return;
+    }
     queue->stopped = true;
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
+
     if (queue->queueThread != NULL) {
         nabto_device_threads_join(queue->queueThread);
     }
@@ -113,8 +130,9 @@ void post_event(struct np_event* event)
     struct thread_event_queue* queue = event->queue;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     nm_event_queue_post_event(&queue->eventQueue, &event->event);
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
+
 }
 
 bool post_event_maybe_double(struct np_event* event)
@@ -123,8 +141,8 @@ bool post_event_maybe_double(struct np_event* event)
     bool status;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     status = nm_event_queue_post_event_maybe_double(&queue->eventQueue, &event->event);
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
     return status;
 }
 
@@ -144,8 +162,40 @@ void post_timed_event(struct np_event* event, uint32_t milliseconds)
     uint32_t timestamp = now + milliseconds;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     nm_event_queue_post_timed_event(&queue->eventQueue, &event->event, timestamp);
-    nabto_device_threads_mutex_unlock(queue->queueMutex);
     nabto_device_threads_cond_signal(queue->condition);
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
+
+}
+
+bool thread_event_queue_do_one(struct thread_event_queue* queue)
+{
+    uint32_t nextEvent;
+    uint32_t now = np_timestamp_now_ms(&queue->ts);
+    struct nm_event_queue_event* event = NULL;
+
+    // handle one event or return false if no events exists.
+    nabto_device_threads_mutex_lock(queue->queueMutex);
+    if (nm_event_queue_take_event(&queue->eventQueue, &event)) {
+        // ok execute the event later.
+    } else if (nm_event_queue_take_timed_event(&queue->eventQueue, now,
+                                               &event)) {
+        // ok execute the event later.
+    } else if (nm_event_queue_next_timed_event(&queue->eventQueue,
+                                               &nextEvent)) {
+        int32_t diff = np_timestamp_difference(nextEvent, now);
+        // ok wait for event to become ready
+        nabto_device_threads_cond_timed_wait(queue->condition,
+                                             queue->queueMutex, diff);
+    }
+    nabto_device_threads_mutex_unlock(queue->queueMutex);
+
+    if (event != NULL) {
+        nabto_device_threads_mutex_lock(queue->coreMutex);
+        event->cb(event->data);
+        nabto_device_threads_mutex_unlock(queue->coreMutex);
+        return true;
+    }
+    return false;
 }
 
 void* queue_thread(void* data)

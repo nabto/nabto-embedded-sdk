@@ -487,7 +487,7 @@ BOOST_AUTO_TEST_CASE(reattach_after_close_from_server, * boost::unit_test::timeo
 
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
-    at.start([&ioService, &attachServer](nabto::test::AttachTest& at){
+    at.start([&attachServer](nabto::test::AttachTest& at){
             if (at.attachCount_ == 1 && at.detachCount_ == 0) {
                 attachServer->niceClose();
             }
@@ -516,7 +516,7 @@ BOOST_AUTO_TEST_CASE(retry_after_server_unavailable, * boost::unit_test::timeout
     auto tp = nabto::test::TestPlatform::create();
     nabto::test::AttachTest at(*tp, attachServer->getHostname(), 4242, attachServer->getRootCerts());
 
-    std::thread t([&ioService, &attachServer, &at](){
+    std::thread t([&attachServer, &at](){
             std::this_thread::sleep_for(std::chrono::seconds(1));
             at.setDtlsPort(attachServer->getPort());
         });

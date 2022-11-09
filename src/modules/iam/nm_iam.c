@@ -20,10 +20,13 @@ void nm_iam_unlock(struct nm_iam* iam) {
     nabto_device_threads_mutex_unlock(iam->mutex);
 }
 
-void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
+bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 {
     memset(iam, 0, sizeof(struct nm_iam));
     iam->mutex = nabto_device_threads_create_mutex();
+    if (iam->mutex == NULL) {
+        return false;
+    }
     srand((unsigned)time(0));
     iam->device = device;
     iam->logger = logger;
@@ -39,12 +42,21 @@ void nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 
     iam->state = nm_iam_state_new();
     iam->conf = nm_iam_configuration_new();
+    if (iam->state == NULL || iam->conf == NULL) {
+        return false;
+    }
     nn_string_set_init(&iam->notificationCategories, nm_iam_allocator_get());
 
-    nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam);
-    nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam);
+    if (nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+    if (nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
 
     nm_iam_internal_init_coap_handlers(iam);
+    return true;
 }
 
 void nm_iam_deinit(struct nm_iam* iam)

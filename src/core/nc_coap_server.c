@@ -11,10 +11,12 @@
 #define LOG NABTO_LOG_MODULE_COAP
 
 void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx);
+static void nc_coap_server_event_deferred(struct nc_coap_server_context* ctx);
 void nc_coap_server_event(struct nc_coap_server_context* ctx);
 uint32_t nc_coap_server_get_stamp(void* userData);
+
 void nc_coap_server_notify_event(void* userData);
-void nc_coap_server_handle_send(struct nc_coap_server_context* ctx);
+static np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx);
 void nc_coap_server_send_to_callback(const np_error_code ec, void* data);
 void nc_coap_server_handle_timeout(void* data);
@@ -73,40 +75,48 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
 
 void nc_coap_server_event(struct nc_coap_server_context* ctx)
 {
-    enum nabto_coap_server_next_event nextEvent = nabto_coap_server_next_event(&ctx->requests);
-    switch (nextEvent) {
-        case NABTO_COAP_SERVER_NEXT_EVENT_SEND:
-            nc_coap_server_handle_send(ctx);
+    enum nabto_coap_server_next_event nextEvent =
+        nabto_coap_server_next_event(&ctx->requests);
+    if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_SEND) {
+        np_error_code ec = nc_coap_server_handle_send(ctx);
+        if (ec == NABTO_EC_OPERATION_STARTED ||
+            ec == NABTO_EC_OPERATION_IN_PROGRESS) {
+            // we are waiting for an async operation before doing the next
+            // thing
             return;
-        case NABTO_COAP_SERVER_NEXT_EVENT_WAIT:
-            nc_coap_server_handle_wait(ctx);
-            return;
-        case NABTO_COAP_SERVER_NEXT_EVENT_NOTHING:
-            return;
+        } else {
+            nc_coap_server_event_deferred(ctx);
+        }
+    } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_WAIT) {
+        nc_coap_server_handle_wait(ctx);
+        return;
+    } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_NOTHING) {
+        return;
     }
-    //nc_coap_server_event(ctx);
 }
 
-void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
+np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 {
     struct np_platform* pl = ctx->pl;
 
     if (ctx->sendBuffer != NULL) {
         //NABTO_LOG_TRACE(LOG, "handle send, isSending: %i", ctx->isSending );
-        return;
+        return NABTO_EC_OPERATION_IN_PROGRESS;
     }
 
     void* connection = nabto_coap_server_get_connection_send(&ctx->requests);
     if (!connection) {
-        nc_coap_server_event(ctx);
-        return;
+        // this should not really happen.
+        return NABTO_EC_NO_OPERATION;
     }
     struct nc_client_connection* clientConnection = (struct nc_client_connection*)connection;
 
     ctx->sendBuffer = pl->buf.allocate();
     if (ctx->sendBuffer == NULL) {
         NABTO_LOG_ERROR(LOG, "canot allocate buffer for sending a packet from the coap server.");
-        return;
+        // discard the packet
+        nabto_coap_server_handle_send(&ctx->requests, NULL, NULL);
+        return NABTO_EC_OUT_OF_MEMORY;
     }
     uint8_t* sendBuffer = pl->buf.start(ctx->sendBuffer);
     size_t sendBufferSize = pl->buf.size(ctx->sendBuffer);
@@ -115,10 +125,10 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 
     if (sendEnd == NULL || sendEnd < sendBuffer) {
         // this should not happen
-        nc_coap_server_event(ctx);
+
         pl->buf.free(ctx->sendBuffer);
         ctx->sendBuffer = NULL;
-        return;
+        return NABTO_EC_UNKNOWN;
     }
 
     struct np_dtls_send_context* sendCtx = &ctx->sendCtx;
@@ -126,7 +136,9 @@ void nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
     sendCtx->bufferSize = (uint16_t)(sendEnd - sendBuffer);
     sendCtx->channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
     nc_coap_packet_print("coap server send packet", sendCtx->buffer, sendCtx->bufferSize);
+    // TODO handle send errors.
     nc_client_connection_async_send_data(clientConnection, sendCtx);
+    return NABTO_EC_OPERATION_STARTED;
 }
 
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
@@ -199,10 +211,15 @@ void nc_coap_server_notify_event_callback(void* userData)
     nc_coap_server_event(ctx);
 }
 
+void nc_coap_server_event_deferred(struct nc_coap_server_context* ctx)
+{
+    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
+}
+
 void nc_coap_server_notify_event(void* userData)
 {
     struct nc_coap_server_context* ctx = (struct nc_coap_server_context*)userData;
-    np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev);
+    nc_coap_server_event_deferred(ctx);
 }
 
 void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx)

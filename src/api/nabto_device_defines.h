@@ -32,6 +32,8 @@ struct nabto_device_context {
     uint8_t fingerprint[32];
 
     struct nabto_device_future* closeFut;
+    struct np_completion_event platformCloseEvent;
+
     struct nabto_device_future* startFut;
 
     struct nm_tcp_tunnels tcpTunnels;
