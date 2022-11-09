@@ -32,7 +32,7 @@ jobs:
     - name: Create directory
       run: mkdir toolchain
 
-    - name: Get 32-bit toolchain
+    - name: Get toolchain
       working-directory: toolchain
       run: curl -sSL ${{ matrix.toolchain }}  | tar -Jxf - --strip-components=1
 
