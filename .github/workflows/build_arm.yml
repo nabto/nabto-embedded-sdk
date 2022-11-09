@@ -7,12 +7,20 @@ jobs:
   build:
     strategy:
       matrix:
-        arch: [armv6, armv7]
+        arch: [armv6, armv7, arm64v8]
         include:
           - arch: armv6
-            cflags: -marm
+            cflags: -march=armv6 -marm
+            compiler: arm-linux-gnueabihf
+            toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
           - arch: armv7
-            cflags:
+            cflags: -march=armv7
+            compiler: arm-linux-gnueabihf
+            toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
+          - arch: arm64v8
+            cflags: -march=armv8-a
+            compiler: aarch64-linux-gnu
+            toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz
     runs-on: ubuntu-22.04
 
     steps:
@@ -24,15 +32,15 @@ jobs:
     - name: Create directory
       run: mkdir toolchain
 
-    - name: Get toolchain
+    - name: Get 32-bit toolchain
       working-directory: toolchain
-      run: curl -sSL https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz  | tar -Jxf - --strip-components=1
+      run: curl -sSL ${{ matrix.toolchain }}  | tar -Jxf - --strip-components=1
 
     - name: Configure CMake
       env:
-        CC: ${{github.workspace}}/toolchain/bin/arm-linux-gnueabihf-gcc
-        CXX: ${{github.workspace}}/toolchain/bin/arm-linux-gnueabihf-g++
-        CFLAGS: -march=${{ matrix.arch }} ${{ matrix.cflags }}
+        CC: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-gcc
+        CXX: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-g++
+        CFLAGS: ${{ matrix.cflags }}
       run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -B ${{github.workspace}}/build
 
     - name: Build
