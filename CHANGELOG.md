@@ -8,6 +8,9 @@
  * * New CoAP endpoint: `PUT /iam/device-info/friendly-name`
  * * A `FriendlyName` field is added to the CoAP response for `GET /iam/pairing`
 
+### Bug Fixes
+ * nabto_device_listener_stop returned another NabtoDeviceError than the documentation stated.
+
 
 
 ## [5.11.0]

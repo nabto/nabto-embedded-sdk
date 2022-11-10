@@ -163,9 +163,9 @@ np_error_code nabto_device_listener_stop_internal(struct nabto_device_listener* 
     }
     if (listener->ec == NABTO_EC_OK) {
         nabto_device_listener_set_error_code(listener, NABTO_EC_STOPPED);
-        return NABTO_EC_STOPPED;
     }
-    return listener->ec;
+
+    return NABTO_EC_OK;
 }
 
 
