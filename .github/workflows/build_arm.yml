@@ -10,15 +10,12 @@ jobs:
         arch: [armv6, armv7, arm64v8]
         include:
           - arch: armv6
-            cflags: -march=armv6 -marm
             compiler: arm-linux-gnueabihf
-            toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
+            toolchain: https://sourceforge.net/projects/raspberry-pi-cross-compilers/files/Raspberry%20Pi%20GCC%20Cross-Compiler%20Toolchains/Stretch/GCC%209.4.0/Raspberry%20Pi%201%2C%20Zero/cross-gcc-9.4.0-pi_0-1.tar.gz/download
           - arch: armv7
-            cflags: -march=armv7
             compiler: arm-linux-gnueabihf
             toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
           - arch: arm64v8
-            cflags: -march=armv8-a
             compiler: aarch64-linux-gnu
             toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz
     runs-on: ubuntu-22.04
@@ -29,18 +26,20 @@ jobs:
         submodules: recursive
         fetch-depth: 0
 
+    - name: Get required packages
+      run: sudo apt install libarchive-tools
+
     - name: Create directory
       run: mkdir toolchain
 
     - name: Get toolchain
       working-directory: toolchain
-      run: curl -sSL ${{ matrix.toolchain }}  | tar -Jxf - --strip-components=1
+      run: curl -sSL ${{ matrix.toolchain }}  | bsdtar -xf - --strip-components=1
 
     - name: Configure CMake
       env:
         CC: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-gcc
         CXX: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-g++
-        CFLAGS: ${{ matrix.cflags }}
       run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -B ${{github.workspace}}/build
 
     - name: Build
