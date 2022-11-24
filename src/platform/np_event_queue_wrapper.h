@@ -39,6 +39,8 @@ void np_event_queue_post_timed_event(struct np_event_queue* eq, struct np_event*
 
 void np_event_queue_cancel_event(struct np_event_queue* eq, struct np_event* ev);
 
+void np_event_queue_post_no_core_lock(struct np_event_queue* eq, struct np_event* ev);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

@@ -56,6 +56,8 @@ struct np_event_queue_functions {
      */
     void (*post)(struct np_event* event);
 
+
+
     /**
      * Post an event which has the chance of being double
      * posted. i.e. be added to the event queue before it has been
@@ -83,6 +85,16 @@ struct np_event_queue_functions {
      * @param milliseconds  The amount of milliseconds into the future until the event is executed.
      */
     void (*post_timed)(struct np_event* event, uint32_t milliseconds);
+
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+
+    /**
+     * Post an event which should be resolved without taking the core lock for
+     * the platform. This is used to resolve callbacks to external code. Eg.
+     * When nabto_device_future resolves and a callback is set.
+     */
+    void (*post_no_core_lock)(struct np_event* event);
+#endif
 
 };
 

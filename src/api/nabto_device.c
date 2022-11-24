@@ -167,12 +167,14 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 
     nn_llist_init(&dev->listeners);
 
+#if defined(NABTO_DEVICE_FUTURE_QUEUE)
     ec = nabto_device_future_queue_init(&dev->futureQueue);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to start future_queue");
         nabto_device_new_resolve_failure(dev);
         return NULL;
     }
+#endif
 
     ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev);
     if (ec != NABTO_EC_OK) {
@@ -211,7 +213,9 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
 void nabto_device_do_stop(struct nabto_device_context* dev)
 {
     nabto_device_platform_stop_blocking(dev);
+#if defined(NABTO_DEVICE_FUTURE_QUEUE)
     nabto_device_future_queue_stop(&dev->futureQueue);
+#endif
 }
 
 /**
@@ -249,7 +253,9 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
     nm_wolfssl_cli_deinit(&dev->pl);
 #endif
 
+#if defined(NABTO_DEVICE_FUTURE_QUEUE)
     nabto_device_future_queue_deinit(&dev->futureQueue);
+#endif
     nabto_device_free_threads(dev);
 
     np_free(dev->certificate);
