@@ -263,6 +263,9 @@ static bool parse_args(int argc, char** argv, struct args* args)
 void args_init(struct args* args)
 {
     memset(args, 0, sizeof(struct args));
+    args->maxConnections = -1;
+    args->maxStreams = -1;
+    args->maxStreamSegments = -1;
 }
 
 void args_deinit(struct args* args)
@@ -570,14 +573,14 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         }
     }
 
-    if (args->maxConnections != 0) {
-        nabto_device_limit_connections(tunnel->device, args->maxConnections);
+    if (args->maxConnections >= 0) {
+        nabto_device_limit_connections(tunnel->device, (size_t)args->maxConnections);
     }
-    if (args->maxStreams != 0) {
-        nabto_device_limit_streams(tunnel->device, args->maxStreams);
+    if (args->maxStreams >= 0) {
+        nabto_device_limit_streams(tunnel->device, (size_t)args->maxStreams);
     }
-    if (args->maxStreamSegments != 0) {
-        nabto_device_limit_stream_segments(tunnel->device, args->maxStreamSegments);
+    if (args->maxStreamSegments >= 0) {
+        nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
     }
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
