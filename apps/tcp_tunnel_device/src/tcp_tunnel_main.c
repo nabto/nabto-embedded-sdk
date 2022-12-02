@@ -64,7 +64,10 @@ enum {
     OPTION_SPECIFIC_LOCAL_PORT,
     OPTION_SPECIFIC_P2P_PORT,
     OPTION_INIT,
-    OPTION_DEMO_INIT
+    OPTION_DEMO_INIT,
+    OPTION_MAX_CONNECTIONS,
+    OPTION_MAX_STREAMS,
+    OPTION_MAX_STREAM_SEGMENTS
 };
 
 struct args {
@@ -78,6 +81,9 @@ struct args {
     uint16_t p2pPort;
     bool init;
     bool demo_init;
+    int maxConnections;
+    int maxStreams;
+    int maxStreamSegments;
 };
 
 static struct nn_allocator defaultAllocator = {
@@ -164,6 +170,9 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x8s[]  = "";       const char* x8l[]  = { "p2p-port", 0 };
     const char x9s[]  = "";       const char* x9l[]  = { "init", 0 };
     const char x10s[] = "";       const char* x10l[] = { "demo-init", 0 };
+    const char x11s[] = "";       const char* x11l[] = { "limit-connections", 0 };
+    const char x12s[] = "";       const char* x12l[] = { "limit-streams", 0 };
+    const char x13s[] = "";       const char* x13l[] = { "limit-stream-segments", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -176,6 +185,9 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_SPECIFIC_P2P_PORT, GOPT_ARG, x8s, x8l },
         { OPTION_INIT, GOPT_NOARG, x9s, x9l },
         { OPTION_DEMO_INIT, GOPT_NOARG, x10s, x10l },
+        { OPTION_MAX_CONNECTIONS, GOPT_ARG, x11s, x11l },
+        { OPTION_MAX_STREAMS, GOPT_ARG, x12s, x12l },
+        { OPTION_MAX_STREAM_SEGMENTS, GOPT_ARG, x13s, x13l },
         {0,0,0,0}
     };
 
@@ -229,6 +241,20 @@ static bool parse_args(int argc, char** argv, struct args* args)
         args->homeDir = strdup(hd);
     }
 
+    const char* maxConnectionsStr;
+    if (gopt_arg(options, OPTION_MAX_CONNECTIONS, &maxConnectionsStr)) {
+        args->maxConnections = atoi(maxConnectionsStr);
+    }
+
+    const char* maxStreamsStr;
+    if (gopt_arg(options, OPTION_MAX_STREAMS, &maxStreamsStr)) {
+        args->maxStreams = atoi(maxStreamsStr);
+    }
+
+    const char* maxStreamSegmentsStr;
+    if (gopt_arg(options, OPTION_MAX_STREAM_SEGMENTS, &maxStreamSegmentsStr)) {
+        args->maxStreamSegments = atoi(maxStreamSegmentsStr);
+    }
 
     gopt_free(options);
     return true;
@@ -542,6 +568,16 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         if (args->p2pPort) {
             nabto_device_set_p2p_port(tunnel->device, args->p2pPort);
         }
+    }
+
+    if (args->maxConnections != 0) {
+        nabto_device_limit_connections(tunnel->device, args->maxConnections);
+    }
+    if (args->maxStreams != 0) {
+        nabto_device_limit_streams(tunnel->device, args->maxStreams);
+    }
+    if (args->maxStreamSegments != 0) {
+        nabto_device_limit_stream_segments(tunnel->device, args->maxStreamSegments);
     }
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
