@@ -30,6 +30,7 @@ static void resolve_and_free_test(struct udp_test* t, np_error_code ec)
     nabto_device_future_resolve(t->fut, nabto_device_error_core_to_api(ec));
 
     np_completion_event_deinit(&t->completionEvent);
+    np_event_queue_cancel_event(&t->eq, t->timeoutEvent);
     np_event_queue_destroy_event(&t->eq, t->timeoutEvent);
     np_udp_destroy(&t->udp, t->sock);
     np_free(t);
