@@ -8,6 +8,8 @@ jobs:
     container:
       image: ubuntu:16.04
     steps:
+      - name: Install sw
+        run: apt-get update && apt-get install -y git cmake build-essential
       - uses: actions/checkout@v2
         with:
           submodules: recursive
