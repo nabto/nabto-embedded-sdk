@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
-cmake_policy(SET CMP0091 NEW)
+cmake_policy(VERSION 3.15)
+#cmake_policy(SET CMP0091 NEW)
 project(nabto-embedded-sdk)
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
