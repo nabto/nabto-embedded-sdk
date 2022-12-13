@@ -131,7 +131,7 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
     } else if (ctx->rendezvous != NULL && (start[0] == 241)) {
         nc_rendezvous_handle_packet(ctx->rendezvous, ctx, ctx->cliConn, ep, buffer, bufferSize);
     } else {
-        NABTO_LOG_ERROR(LOG, "Unable to dispatch packet with ID: %u", start[0]);
+        NABTO_LOG_TRACE(LOG, "Unable to dispatch packet with starting byte: %u, it is probably not an issue, since it is likely just a packet which has been sent to the socket for some reason.", start[0]);
     }
 }
 
