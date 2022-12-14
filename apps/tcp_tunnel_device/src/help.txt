@@ -8,6 +8,7 @@ TCP Tunnel Device Help.
                       on windows
       --log-level     Set the log level for the application the possible levels
                       is error, warn, info and trace.
+      --self-test     Test reachability of tcp services and exit if they are not reachable.
       --random-ports  Bind the local and the p2p sockets to random UDP ports
                       instead of the default UDP ports 5592 and 5593.
       --local-port    Bind the local socket to a specific UDP port instead of

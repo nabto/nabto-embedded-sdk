@@ -247,6 +247,7 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
     }
 #endif
     if (ec != 0) {
+        sock->connect.completionEvent = NULL;
         np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
     }
 

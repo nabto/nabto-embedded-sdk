@@ -138,6 +138,33 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceServiceInvokeMessageFormat NABTO_DEVICE_API
 nabto_device_service_invocation_get_response_message_format(NabtoDeviceServiceInvocation* serviceInvocation);
 
+
+typedef struct NabtoDeviceTcpProbe_ NabtoDeviceTcpProbe;
+
+/**
+ * A tcp probe is used to test reachability of a tcp service from the
+ * device. This can be used to debug network configurations where a tcp service
+ * is not reachable on the provided ip or port.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* device);
+
+/**
+ * Free a TCP probe.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_free(NabtoDeviceTcpProbe* probe);
+
+/**
+ * Stop a TCP probe. This is a nonblocking stop function.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_stop(NabtoDeviceTcpProbe* probe);
+
+/**
+ * Check reachability of a tcp service. This function makes a tcp connect
+ * to the defined service. If the connect is OK the future resolves with
+ * NABTO_DEVICE_EC_OK else an appropriate error is returned.
+ */
+void nabto_device_tcp_probe_check_reachability(NabtoDeviceTcpProbe* probe, const char* host, uint16_t port, NabtoDeviceFuture* future);
+
 #ifdef __cplusplus
 } // extern c #endif
 #endif
