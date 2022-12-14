@@ -151,6 +151,10 @@ typedef struct NabtoDeviceTcpProbe_ NabtoDeviceTcpProbe;
 
 /**
  * Create a TCP Probe instance.
+ *
+ * A TCP Probe instance can be used for a single reachability check. If it is
+ * reused for more than one check, the behavior is undefined.
+ *
  * @param device [in]  The device.
  * @return A new instance or NULL it the instance could not be allocated.
  */
