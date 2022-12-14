@@ -4,6 +4,7 @@
 #include <apps/common/string_file.h>
 #include <apps/common/private_key.h>
 #include <apps/common/logging.h>
+#include <apps/common/prompt_stdin.h>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -449,8 +450,17 @@ void print_version() {
 
 void thermostat_reinit_state(struct thermostat* thermostat, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb)
 {
-    if (!string_file_exists(thermostatFile->deviceConfigFile)) {
-        printf("No device configuration found. Creating configuration: %s." NEWLINE, thermostatFile->deviceConfigFile);
+    bool deviceConfigExists = string_file_exists(thermostatFile->deviceConfigFile);
+    bool createDeviceConfig = true;
+
+    if (deviceConfigExists) {
+        printf("Found device config %s" NEWLINE, thermostatFile->deviceConfigFile);
+        createDeviceConfig = prompt_yes_no("A device config already exists, do you want to recreate it?");
+
+    }
+
+    if (createDeviceConfig) {
+        printf("Creating configuration: %s." NEWLINE, thermostatFile->deviceConfigFile);
         if (!create_device_config_interactive(thermostatFile->deviceConfigFile)) {
             printf("Failed to create device configuration!" NEWLINE);
             printf(
