@@ -121,6 +121,11 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
 {
     uint8_t* start = buffer;
 
+    if (bufferSize < 1) {
+        NABTO_LOG_ERROR(LOG, "Received empty udp packet from: %s, port: %d", np_ip_address_to_string(&ep->ip), ep->port);
+        return;
+    }
+
     // ec == OK
     if(ctx->stun != NULL && ((start[0] == 0) || (start[0] == 1))) {
         nc_stun_handle_packet(ctx->stun, ep, buffer, bufferSize);
@@ -131,7 +136,7 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
     } else if (ctx->rendezvous != NULL && (start[0] == 241)) {
         nc_rendezvous_handle_packet(ctx->rendezvous, ctx, ctx->cliConn, ep, buffer, bufferSize);
     } else {
-        NABTO_LOG_ERROR(LOG, "Unable to dispatch packet with ID: %u", start[0]);
+        NABTO_LOG_TRACE(LOG, "Unable to dispatch packet with starting byte: %u, size: %d, from: %s, port: %d, it is probably not an issue, since it is likely just a packet which has been sent to the socket for some reason.", start[0], bufferSize, np_ip_address_to_string(&ep->ip), ep->port);
     }
 }
 
