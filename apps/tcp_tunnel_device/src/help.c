@@ -13,6 +13,7 @@ void print_help() {
     printf("%s" NEWLINE, "                      on windows");
     printf("%s" NEWLINE, "      --log-level     Set the log level for the application the possible levels");
     printf("%s" NEWLINE, "                      is error, warn, info and trace.");
+    printf("%s" NEWLINE, "      --self-test     Test reachability of tcp services and exit if they are not reachable.");
     printf("%s" NEWLINE, "      --random-ports  Bind the local and the p2p sockets to random UDP ports");
     printf("%s" NEWLINE, "                      instead of the default UDP ports 5592 and 5593.");
     printf("%s" NEWLINE, "      --local-port    Bind the local socket to a specific UDP port instead of");

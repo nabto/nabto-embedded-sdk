@@ -67,7 +67,8 @@ enum {
     OPTION_DEMO_INIT,
     OPTION_MAX_CONNECTIONS,
     OPTION_MAX_STREAMS,
-    OPTION_MAX_STREAM_SEGMENTS
+    OPTION_MAX_STREAM_SEGMENTS,
+    OPTION_SELF_TEST
 };
 
 struct args {
@@ -84,6 +85,7 @@ struct args {
     int maxConnections;
     int maxStreams;
     int maxStreamSegments;
+    bool selfTest;
 };
 
 static struct nn_allocator defaultAllocator = {
@@ -101,6 +103,8 @@ static bool make_directory(const char* directory);
 
 static struct tcp_tunnel* tcp_tunnel_new();
 static void tcp_tunnel_free(struct tcp_tunnel* tunnel);
+
+static void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool fatal);
 
 struct nn_allocator* get_default_allocator()
 {
@@ -173,6 +177,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x11s[] = "";       const char* x11l[] = { "limit-connections", 0 };
     const char x12s[] = "";       const char* x12l[] = { "limit-streams", 0 };
     const char x13s[] = "";       const char* x13l[] = { "limit-stream-segments", 0 };
+    const char x14s[] = "";       const char* x14l[] = { "self-test", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -188,6 +193,7 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_MAX_CONNECTIONS, GOPT_ARG, x11s, x11l },
         { OPTION_MAX_STREAMS, GOPT_ARG, x12s, x12l },
         { OPTION_MAX_STREAM_SEGMENTS, GOPT_ARG, x13s, x13l },
+        { OPTION_SELF_TEST, GOPT_NOARG, x14s, x14l },
         {0,0,0,0}
     };
 
@@ -254,6 +260,10 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char* maxStreamSegmentsStr;
     if (gopt_arg(options, OPTION_MAX_STREAM_SEGMENTS, &maxStreamSegmentsStr)) {
         args->maxStreamSegments = atoi(maxStreamSegmentsStr);
+    }
+
+    if (gopt(options, OPTION_SELF_TEST)) {
+        args->selfTest = true;
     }
 
     gopt_free(options);
@@ -659,16 +669,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, state->passwordOpenPassword, state->passwordOpenSct);
     }
 
-    printf("# " NEWLINE);
-    printf("######## Configured TCP Services ########" NEWLINE);
-    printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); printf("Port" NEWLINE);
-    struct tcp_tunnel_service* item;
-
-    NN_VECTOR_FOREACH(&item, &tunnel->services)
-    {
-        printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); printf("%d" NEWLINE, item->port);
-    }
-    printf("########" NEWLINE);
+    print_service_info_and_check_reachability(tunnel, args->selfTest);
 
     nabto_device_string_free(deviceFingerprint);
 
@@ -721,6 +722,44 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     device_config_deinit(&dc);
 
     return true;
+}
+
+void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool fatal)
+{
+    struct tcp_tunnel_service* item;
+    NabtoDeviceFuture* future = nabto_device_future_new(tunnel->device);
+
+    printf("# " NEWLINE);
+    printf("######## Configured TCP Services ########" NEWLINE);
+    printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); print_item("Port"); printf("Reachable" NEWLINE) ;
+
+    if (future != NULL) {
+        NN_VECTOR_FOREACH(&item, &tunnel->services)
+        {
+            NabtoDeviceTcpProbe* probe = nabto_device_tcp_probe_new(tunnel->device);
+            if (probe == NULL) {
+                printf("Cannot allocate tcp probe\n");
+                return;
+            }
+            nabto_device_tcp_probe_check_reachability(
+                probe, item->host, item->port, future);
+            NabtoDeviceError ec = nabto_device_future_wait(future);
+            char port[16];
+            memset(port, 0, sizeof(port));
+            sprintf(port, "%d", item->port);
+            printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); print_item(port); printf("%s" NEWLINE, (ec == NABTO_DEVICE_EC_OK) ? "yes" : "no");
+            if (fatal && ec != NABTO_DEVICE_EC_OK)
+            {
+                printf("Tcp Service at %s:%d is not reachable. Quitting since --self-test is enabled." NEWLINE, item->host, item->port);
+                exit(1);
+            }
+            nabto_device_tcp_probe_free(probe);
+        }
+    }
+
+    printf("########" NEWLINE);
+
+    nabto_device_future_free(future);
 }
 
 void signal_handler(int s)
