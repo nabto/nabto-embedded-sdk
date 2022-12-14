@@ -1,0 +1,32 @@
+name: build and test ubuntu 16.04
+on:
+  push:
+
+jobs:
+  container-test-job:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:16.04
+    steps:
+      - name: update git repo
+        run: apt-get update && apt-get install software-properties-common -y && add-apt-repository ppa:git-core/ppa
+      - name: Install sw
+        run: apt-get update && apt-get install -y git cmake build-essential
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Configure cmake
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON ..
+
+      - name: Make it possible to write version
+        run: git config --global --add safe.directory '*'
+
+      - name: Build
+        run: cd build-dir && make -j 4
+
+      - name: Install
+        run: cd build-dir && make install
+
+      - name: Test run
+        run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
