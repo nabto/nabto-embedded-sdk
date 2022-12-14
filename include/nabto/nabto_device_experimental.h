@@ -138,23 +138,33 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceServiceInvokeMessageFormat NABTO_DEVICE_API
 nabto_device_service_invocation_get_response_message_format(NabtoDeviceServiceInvocation* serviceInvocation);
 
-
+/**
+ * A TCP probe is used to probe for tcp reachability from the device
+ * perspective. The intention is that this feature can be used in conjunction
+ * with TCP Tunnels to test if the configured services are reachable. Often
+ * there are problems on embedded devices with TCP reachability, either the
+ * services are not running, people specify the wrong port numbers or the
+ * loopback interface is simply not enabled. This leads to confusion about why
+ * things are not working, so this is a tool to help debugging these issues.
+*/
 typedef struct NabtoDeviceTcpProbe_ NabtoDeviceTcpProbe;
 
 /**
- * A tcp probe is used to test reachability of a tcp service from the
- * device. This can be used to debug network configurations where a tcp service
- * is not reachable on the provided ip or port.
+ * Create a TCP Probe instance.
+ * @param device [in]  The device.
+ * @return A new instance or NULL it the instance could not be allocated.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* device);
 
 /**
- * Free a TCP probe.
+ * Free a TCP probe instance.
+ * @param probe [in]  The TCP probe to be freed.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_free(NabtoDeviceTcpProbe* probe);
 
 /**
  * Stop a TCP probe. This is a nonblocking stop function.
+ * @param probe [in]  The TCP probe to be freed.
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_stop(NabtoDeviceTcpProbe* probe);
 
@@ -162,8 +172,17 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_stop(Nabto
  * Check reachability of a tcp service. This function makes a tcp connect
  * to the defined service. If the connect is OK the future resolves with
  * NABTO_DEVICE_EC_OK else an appropriate error is returned.
+ *
+ * Future Status:
+ *   NABTO_DEVICE_EC_OK  if it was possible to make a TCP connection to the TCP service.
+ *   Something else if the reachability check failed.
+ *
+ * @param probe [in]  The TCP probe to be freed.
+ * @param host [in]   The IPV4 host of the TCP service
+ * @param port [in]   The port number of the TCP service
+ * @param future [in] The future to resolve when the result is ready.
  */
-void nabto_device_tcp_probe_check_reachability(NabtoDeviceTcpProbe* probe, const char* host, uint16_t port, NabtoDeviceFuture* future);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_check_reachability(NabtoDeviceTcpProbe* probe, const char* host, uint16_t port, NabtoDeviceFuture* future);
 
 #ifdef __cplusplus
 } // extern c #endif
