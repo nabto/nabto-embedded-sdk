@@ -173,11 +173,13 @@ int main(int argc, char** argv)
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     nabto_device_close(device, fut);
     nabto_device_future_wait(fut);
+    nabto_device_stop(device);
     nabto_device_future_free(fut);
 
     nabto_device_future_free(listenerFuture);
     nabto_device_listener_free(listener);
-    nabto_device_stop(device);
+    nabto_device_future_free(authorizationFuture);
+    nabto_device_listener_free(authorizationListener);
     nabto_device_free(device);
 
     printf("Device cleaned up and closed\n");
