@@ -743,7 +743,7 @@ void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool f
             }
             nabto_device_tcp_probe_check_reachability(
                 probe, item->host, item->port, future);
-            NabtoDeviceError ec = nabto_device_future_wait(future);
+            NabtoDeviceError ec = nabto_device_future_timed_wait(future, 5000);
             char port[16];
             memset(port, 0, sizeof(port));
             sprintf(port, "%d", item->port);
