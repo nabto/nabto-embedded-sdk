@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [5.12.0]
+## [5.12.0] 2022-12-16
 
 ### Added
  * Friendly name for the device added to the IAM state. This results in the following additions:
