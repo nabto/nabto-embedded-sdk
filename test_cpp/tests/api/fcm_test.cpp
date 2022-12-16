@@ -11,7 +11,7 @@
 #include <thread>
 #include <future>
 
-BOOST_AUTO_TEST_SUITE(fcm)
+BOOST_AUTO_TEST_SUITE(fcm, *boost::unit_test::timeout(10))
 
 BOOST_AUTO_TEST_CASE(create_destroy_notification)
 {
@@ -54,7 +54,7 @@ std::string testFcmPayload = R"(
 }
 )";
 
-BOOST_FIXTURE_TEST_SUITE(fcm, nabto::test::BasestationFixture)
+BOOST_FIXTURE_TEST_SUITE(fcm, nabto::test::BasestationFixture, *boost::unit_test::timeout(10))
 
 BOOST_AUTO_TEST_CASE(notification_set)
 {
