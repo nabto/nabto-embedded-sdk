@@ -184,9 +184,15 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future);
 
 /**
- * Close a context. This can be called after nabto_device_start() to
- * close all connections down nicely before calling
- * nabto_device_stop().
+ * Close a device context.
+ *
+ * This can be called after nabto_device_start() to close all connections nicely
+ * in the device context. The operation will involve waiting for packets on the
+ * network (hence the future to allow asynchronous operation).
+ *
+ * Close should be invoked before calling nabto_device_stop(); the latter will
+ * block until all resources in the device context are stopped, including
+ * forcibly closing connections.
  *
  * Future status:
  *  - NABTO_DEVICE_EC_OK on success
@@ -200,8 +206,11 @@ nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
 
 
 /**
- * Stop a device. This function blocks until all futures, events and timed
- * events has been handled, and the device core has been stopped.
+ * Stop a device context.
+ *
+ * This function blocks until all futures, events and timed events has been
+ * handled, and the device core has been stopped. Any pending connections not
+ * closed with nabto_device_close will be forcibly closed as part of this.
  *
  * After this function returns, only calls to free functions are allowed. This
  * means that to restart a device, it must be stopped, freed, allocated (with
@@ -214,7 +223,7 @@ nabto_device_stop(NabtoDevice* device);
 
 
 /**
- * Free a stopped device instance.
+ * Free a stopped device context instance.
  *
  * @param device [in]   The device instance to free
  */
