@@ -3,7 +3,6 @@
 
 #include <nn/vector.h>
 #include <nabto/nabto_device.h>
-#include "tcp_tunnel_reachability_check.h"
 
 struct tcp_tunnel {
     NabtoDevice* device;
@@ -20,7 +19,6 @@ struct tcp_tunnel {
     char* privateKeyFile;
 
     struct nn_vector services;
-    struct tcp_tunnel_reachability_check reachabilityCheck;
 };
 
 bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel);

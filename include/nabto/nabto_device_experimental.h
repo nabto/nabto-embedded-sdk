@@ -149,7 +149,6 @@ nabto_device_service_invocation_get_response_message_format(NabtoDeviceServiceIn
 */
 typedef struct NabtoDeviceTcpProbe_ NabtoDeviceTcpProbe;
 
-
 /**
  * Create a TCP Probe instance.
  *
@@ -180,7 +179,6 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_stop(Nabto
  *
  * Future Status:
  *   NABTO_DEVICE_EC_OK  if it was possible to make a TCP connection to the TCP service.
- *   NABTO_DEVICE_EC_ABORTED  if the reachability check could not connect to the host.
  *   Something else if the reachability check failed.
  *
  * @param probe [in]  The TCP probe to be freed.

@@ -7,7 +7,6 @@ set(csrc
   src/tcp_tunnel_init.c
   src/device_event_handler.c
   src/help.c
-  src/tcp_tunnel_reachability_check.c
   )
 
 add_executable(tcp_tunnel_device "${csrc}")
