@@ -302,10 +302,13 @@ struct tcp_tunnel* tcp_tunnel_new()
     tunnel->iamConfig = nm_iam_configuration_new();
     tunnel->tcpTunnelState = nm_iam_state_new();
 
+    bool reachabilityCheckStatus = tcp_tunnel_reachability_check_init(&tunnel->reachabilityCheck, tunnel->device);
+
     if (tunnel->startFuture != NULL &&
         tunnel->closeFuture != NULL &&
         tunnel->iamConfig != NULL &&
-        tunnel->tcpTunnelState != NULL)
+        tunnel->tcpTunnelState != NULL &&
+        reachabilityCheckStatus)
     {
         return tunnel;
     }
@@ -318,6 +321,9 @@ void tcp_tunnel_free(struct tcp_tunnel* tunnel)
     if (tunnel == NULL) {
         return;
     }
+
+    tcp_tunnel_reachability_check_deinit(&tunnel->reachabilityCheck);
+
     free(tunnel->deviceConfigFile);
     free(tunnel->stateFile);
     free(tunnel->iamConfigFile);
