@@ -372,6 +372,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel);
 
 int main(int argc, char** argv)
 {
+    // Disable buffering for stdout
+    setvbuf(stdout, NULL, _IONBF, 0);
+
     struct args args;
     args_init(&args);
     if (!parse_args(argc, argv, &args)) {

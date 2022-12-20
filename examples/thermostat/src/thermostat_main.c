@@ -97,6 +97,9 @@ static void thermostat_reinit_state(struct thermostat* thermostat, struct thermo
 const char* thermostatVersion = "1.0.0";
 
 int main(int argc, char** argv) {
+
+    // Disable buffering for stdout
+    setvbuf(stdout, NULL, _IONBF, 0);
     bool status = true;
     struct args args;
     args_init(&args);
