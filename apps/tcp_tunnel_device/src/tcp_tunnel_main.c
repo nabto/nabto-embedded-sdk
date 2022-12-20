@@ -104,7 +104,7 @@ static bool make_directory(const char* directory);
 static struct tcp_tunnel* tcp_tunnel_new();
 static void tcp_tunnel_free(struct tcp_tunnel* tunnel);
 
-static void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool fatal);
+static void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool selfTest);
 
 struct nn_allocator* get_default_allocator()
 {
@@ -724,36 +724,46 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     return true;
 }
 
-void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool fatal)
+void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool selfTest)
 {
     struct tcp_tunnel_service* item;
     NabtoDeviceFuture* future = nabto_device_future_new(tunnel->device);
 
     printf("# " NEWLINE);
     printf("######## Configured TCP Services ########" NEWLINE);
-    printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); print_item("Port"); printf("Reachable" NEWLINE) ;
+    printf("# "); print_item("Id"); print_item("Type"); print_item("Host"); print_item("Port");
+    if (selfTest) {
+        printf("Reachable");
+    }
+    printf(NEWLINE);
 
     if (future != NULL) {
         NN_VECTOR_FOREACH(&item, &tunnel->services)
         {
-            NabtoDeviceTcpProbe* probe = nabto_device_tcp_probe_new(tunnel->device);
-            if (probe == NULL) {
-                printf("Cannot allocate tcp probe\n");
-                return;
-            }
-            nabto_device_tcp_probe_check_reachability(
-                probe, item->host, item->port, future);
-            NabtoDeviceError ec = nabto_device_future_timed_wait(future, 5000);
             char port[16];
             memset(port, 0, sizeof(port));
             sprintf(port, "%d", item->port);
-            printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); print_item(port); printf("%s" NEWLINE, (ec == NABTO_DEVICE_EC_OK) ? "yes" : "no");
-            if (fatal && ec != NABTO_DEVICE_EC_OK)
-            {
-                printf("Tcp Service at %s:%d is not reachable. Quitting since --self-test is enabled." NEWLINE, item->host, item->port);
-                exit(1);
+            printf("# "); print_item(item->id); print_item(item->type); print_item(item->host); print_item(port);
+            if (selfTest) {
+                NabtoDeviceTcpProbe* probe =
+                    nabto_device_tcp_probe_new(tunnel->device);
+                if (probe == NULL) {
+                    printf("Cannot allocate tcp probe" NEWLINE);
+                    return;
+                }
+                nabto_device_tcp_probe_check_reachability(probe, item->host,
+                                                          item->port, future);
+                NabtoDeviceError ec =
+                    nabto_device_future_timed_wait(future, 5000);
+                printf("%s", (ec == NABTO_DEVICE_EC_OK) ? "yes" : "no");
+                nabto_device_tcp_probe_free(probe);
+                if (ec != NABTO_DEVICE_EC_OK)
+                {
+                    printf(NEWLINE "Tcp Service at %s:%d is not reachable. Quitting since --self-test is enabled." NEWLINE, item->host, item->port);
+                    exit(1);
+                }
             }
-            nabto_device_tcp_probe_free(probe);
+            printf(NEWLINE);
         }
     }
 
