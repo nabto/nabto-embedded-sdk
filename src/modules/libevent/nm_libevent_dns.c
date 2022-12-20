@@ -35,6 +35,7 @@ struct nm_dns_request {
     struct np_completion_event dnsCbDeZalgo;
     int cbResult;
     struct evutil_addrinfo* cbRes;
+    bool isResolved;
 
     struct np_ip_address* ips;
     struct nm_libevent_dns* moduleContext;
@@ -66,8 +67,13 @@ np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_bas
 {
     ctx->stopped = false;
     ctx->mutex = coreMutex;
+    ctx->cancelMutex = nabto_device_threads_create_mutex();
+    if (ctx->cancelMutex == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     ctx->dnsBase = evdns_base_new(eventBase, 0);
     if (ctx->dnsBase == NULL) {
+        nabto_device_threads_free_mutex(ctx->cancelMutex);
         return NABTO_EC_OUT_OF_MEMORY;
     }
     int r;
@@ -79,6 +85,7 @@ np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_bas
 #endif
     if (r != 0) {
         NABTO_LOG_ERROR(LOG, "Could not configure name servers %d", r);
+        nabto_device_threads_free_mutex(ctx->cancelMutex);
         evdns_base_free(ctx->dnsBase, 1);
         return NABTO_EC_UNKNOWN;
     }
@@ -99,15 +106,20 @@ void nm_libevent_dns_stop(struct nm_libevent_dns* ctx)
     }
     ctx->stopped = true;
 
+    nabto_device_threads_mutex_lock(ctx->cancelMutex);
     struct nm_dns_request* request;
     NN_LLIST_FOREACH(request, &ctx->requests) {
-        evdns_getaddrinfo_cancel(request->req);
+        if (!request->isResolved) {
+            evdns_getaddrinfo_cancel(request->req);
+        }
     }
+    nabto_device_threads_mutex_unlock(ctx->cancelMutex);
     nabto_device_threads_mutex_unlock(ctx->mutex);
 }
 
 void nm_libevent_dns_deinit(struct nm_libevent_dns* ctx)
 {
+    nabto_device_threads_free_mutex(ctx->cancelMutex);
     evdns_base_free(ctx->dnsBase, 1);
 }
 
@@ -220,6 +232,7 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, ec);
         return;
     }
+    dnsRequest->isResolved = false;
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
@@ -238,8 +251,12 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
 void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
 {
     struct nm_dns_request* ctx = arg;
+
+    nabto_device_threads_mutex_lock(ctx->moduleContext->cancelMutex);
+    ctx->isResolved = true;
     ctx->cbResult = result;
     ctx->cbRes = res;
+    nabto_device_threads_mutex_unlock(ctx->moduleContext->cancelMutex);
     np_completion_event_resolve(&ctx->dnsCbDeZalgo, NABTO_EC_OK);
 }
 
