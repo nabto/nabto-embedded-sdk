@@ -35,7 +35,6 @@ struct nm_dns_request {
     struct np_completion_event dnsCbDeZalgo;
     int cbResult;
     struct evutil_addrinfo* cbRes;
-    bool isResolved;
 
     struct np_ip_address* ips;
     struct nm_libevent_dns* moduleContext;
@@ -106,15 +105,14 @@ void nm_libevent_dns_stop(struct nm_libevent_dns* ctx)
     }
     ctx->stopped = true;
 
+    nabto_device_threads_mutex_unlock(ctx->mutex);
+
     nabto_device_threads_mutex_lock(ctx->cancelMutex);
     struct nm_dns_request* request;
     NN_LLIST_FOREACH(request, &ctx->requests) {
-        if (!request->isResolved) {
-            evdns_getaddrinfo_cancel(request->req);
-        }
+        evdns_getaddrinfo_cancel(request->req);
     }
     nabto_device_threads_mutex_unlock(ctx->cancelMutex);
-    nabto_device_threads_mutex_unlock(ctx->mutex);
 }
 
 void nm_libevent_dns_deinit(struct nm_libevent_dns* ctx)
@@ -232,7 +230,6 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, ec);
         return;
     }
-    dnsRequest->isResolved = false;
     dnsRequest->completionEvent = completionEvent;
     dnsRequest->ips = ips;
     dnsRequest->ipsSize = ipsSize;
@@ -253,7 +250,7 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
     struct nm_dns_request* ctx = arg;
 
     nabto_device_threads_mutex_lock(ctx->moduleContext->cancelMutex);
-    ctx->isResolved = true;
+    nn_llist_erase_node(&ctx->requestsNode);
     ctx->cbResult = result;
     ctx->cbRes = res;
     nabto_device_threads_mutex_unlock(ctx->moduleContext->cancelMutex);
@@ -264,7 +261,6 @@ void dns_cb_deferred(const np_error_code cbec, void* userData)
 {
     struct nm_dns_request* ctx = userData;
     struct nm_libevent_dns* moduleContext = ctx->moduleContext;
-    nn_llist_erase_node(&ctx->requestsNode);
     np_error_code ec = NABTO_EC_OK;
     size_t resolved = 0;
     struct evutil_addrinfo* origRes = ctx->cbRes;
