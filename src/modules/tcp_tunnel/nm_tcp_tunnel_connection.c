@@ -175,15 +175,18 @@ void tcp_readen(np_error_code ec, void* userData)
         close_stream(connection);
         return;
     }
-    if (ec != NABTO_EC_OK) {
-        NABTO_LOG_ERROR(LOG, "Tcp read error");
-        // something not EOF
-        abort_connection(connection);
-        connection->tcpReadEnded = true;
-        is_ended(connection);
+    if (ec == NABTO_EC_OK) {
+        start_stream_write(connection, connection->readLength);
         return;
+    } else if (ec == NABTO_EC_ABORTED) {
+        NABTO_LOG_TRACE(LOG, "TCP read aborted");
+    } else {
+        NABTO_LOG_ERROR(LOG, "Tcp read error");
     }
-    start_stream_write(connection, connection->readLength);
+    // something not EOF
+    abort_connection(connection);
+    connection->tcpReadEnded = true;
+    is_ended(connection);
 }
 
 void close_stream(struct nm_tcp_tunnel_connection* connection)
