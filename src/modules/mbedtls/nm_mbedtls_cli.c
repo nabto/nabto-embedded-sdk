@@ -159,8 +159,9 @@ np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
     pl->dtlsC.get_fingerprint = &get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &get_alpn_protocol;
     pl->dtlsC.get_packet_count = &get_packet_count;
+#if defined(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
     pl->dtlsC.get_certificate_expiration = &get_certificate_expiration;
-
+#endif
     return initialize_context(pl);
 }
 
