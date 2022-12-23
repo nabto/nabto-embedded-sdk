@@ -34,6 +34,7 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
+option(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION "Enable feature to get attach certificate expiration" OFF)
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
@@ -164,6 +165,10 @@ endif()
 
 if (NABTO_DEVICE_DTLS_CLIENT_ONLY)
   add_definitions(-DNABTO_DEVICE_DTLS_CLIENT_ONLY)
+endif()
+
+if (NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
+  add_definitions(-DNABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
 endif()
 
 if (NABTO_DEVICE_WOLFSSL)

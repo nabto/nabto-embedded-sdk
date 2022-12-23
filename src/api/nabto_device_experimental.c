@@ -1,5 +1,6 @@
 #include <nabto/nabto_device_experimental.h>
 #include "nabto_device_defines.h"
+#include "nabto_device_error.h"
 
 #include <core/nc_stream_manager.h>
 
@@ -31,3 +32,22 @@ nabto_device_set_custom_allocator(NabtoDeviceAllocatorCalloc customCalloc, Nabto
     np_allocator_set(&a);
     return NABTO_DEVICE_EC_OK;
 }
+
+#if defined(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_get_attach_certificate_expiration(NabtoDevice* device, uint64_t* expiration)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+
+    struct np_platform* pl = &dev->pl;
+
+    np_error_code ec = pl->dtlsC.get_certificate_expiration(dev->core.attacher.dtls, expiration);
+
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    return nabto_device_error_core_to_api(ec);
+}
+
+
+#endif

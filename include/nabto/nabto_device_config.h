@@ -27,6 +27,8 @@
 // Define to make device function as DTLS Client for Nabto Client connections. Enabling this requires Nabto Clients v5.10.0 or greater. This completely removes the need for a DTLS server module in the device.
 //#define NABTO_DEVICE_DTLS_CLIENT_ONLY
 
+// Enable attach certificate expiration
+// #define NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION
 
 // Internal configuration section.
 

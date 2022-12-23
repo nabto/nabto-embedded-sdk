@@ -188,6 +188,21 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_stop(Nabto
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_check_reachability(NabtoDeviceTcpProbe* probe, const char* host, uint16_t port, NabtoDeviceFuture* future);
 
+#if defined(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
+
+/**
+ * Get the certificate expiration as a unix timestamp from the certificate which was used when attaching to the basestation.
+ *
+ * @param device [in]  The device context
+ * @param expiry [out] The unix timestamp for when the certificate expires.
+ * @retval NABTO_DEVICE_EC_OK  if the device is attached and an expiry is available.
+ * @retval NABTO_DEVICE_EC_NOT_ATTACHED if the device is not attached *
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_get_attach_certificate_expiration(NabtoDevice* device, uint64_t* expiration);
+
+#endif
+
+
 #ifdef __cplusplus
 } // extern c #endif
 #endif
