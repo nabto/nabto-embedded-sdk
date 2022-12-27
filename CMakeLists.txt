@@ -12,6 +12,7 @@ set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER ON)
 set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER_USE_AFTER_RETURN ON)
 
 include(CheckIncludeFiles)
+include(CheckSymbolExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/nabto_primary_files.cmake)
 
 message("CMake Version: ${CMAKE_VERSION}")
@@ -34,7 +35,6 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
-option(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION "Enable feature to get attach certificate expiration" OFF)
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
@@ -80,6 +80,8 @@ CHECK_INCLUDE_FILES("net/if.h" HAVE_NET_IF_H)
 CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
 CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
 CHECK_INCLUDE_FILES("netinet/tcp.h" HAVE_NETINET_TCP_H)
+
+check_symbol_exists(timegm "time.h" HAVE_TIMEGM)
 
 set(HAVE_LIBEVENT_HEADERS 1)
 add_definitions(-DHAVE_LIBEVENT)
@@ -146,6 +148,10 @@ if (HAVE_NETINET_TCP_H)
   add_definitions(-DHAVE_NETINET_TCP_H)
 endif()
 
+if (HAVE_TIMEGM)
+  add_definitions(-DHAVE_TIMEGM)
+endif()
+
 include_directories(src)
 include_directories(include)
 
@@ -165,10 +171,6 @@ endif()
 
 if (NABTO_DEVICE_DTLS_CLIENT_ONLY)
   add_definitions(-DNABTO_DEVICE_DTLS_CLIENT_ONLY)
-endif()
-
-if (NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
-  add_definitions(-DNABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
 endif()
 
 if (NABTO_DEVICE_WOLFSSL)

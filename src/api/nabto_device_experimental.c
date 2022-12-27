@@ -33,8 +33,6 @@ nabto_device_set_custom_allocator(NabtoDeviceAllocatorCalloc customCalloc, Nabto
     return NABTO_DEVICE_EC_OK;
 }
 
-#if defined(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
-
 NabtoDeviceError NABTO_DEVICE_API nabto_device_get_attach_certificate_expiration(NabtoDevice* device, uint64_t* expiration)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -48,6 +46,3 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_attach_certificate_expiration
 
     return nabto_device_error_core_to_api(ec);
 }
-
-
-#endif

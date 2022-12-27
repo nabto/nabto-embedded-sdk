@@ -106,8 +106,6 @@ struct np_dtls_cli_module {
      */
     np_error_code (*get_packet_count)(struct np_dtls_cli_connection* conn, uint32_t* recvCount, uint32_t* sentCount);
 
-#if defined(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
-
     /**
      * @brief Get certificate expiration
      *
@@ -118,7 +116,6 @@ struct np_dtls_cli_module {
      * @retval NABTO_EC_UNKNOWN  See log for datailed description of what went wrong.
     */
     np_error_code (*get_certificate_expiration)(struct np_dtls_cli_connection* conn, uint64_t* expiration);
-#endif
 };
 
 #ifdef __cplusplus

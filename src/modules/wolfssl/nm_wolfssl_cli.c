@@ -132,6 +132,9 @@ static void nm_wolfssl_do_close(void* data, np_error_code ec);
 
 static void nm_dtls_udp_send_callback(const np_error_code ec, void* data);
 
+static np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration);
+
+
 // Get the packet counters for given dtls_cli_context
 np_error_code get_packet_count(struct np_dtls_cli_connection* ctx, uint32_t* recvCount, uint32_t* sentCount)
 {
@@ -165,6 +168,7 @@ np_error_code nm_wolfssl_cli_init(struct np_platform* pl)
     pl->dtlsC.get_fingerprint = &get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &get_alpn_protocol;
     pl->dtlsC.get_packet_count = &get_packet_count;
+    pl->dtlsC.get_certificate_expiration = &get_certificate_expiration;
 
     return initialize_context(pl);
 }
@@ -738,4 +742,10 @@ int nm_dtls_wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
         conn->recvBufferSize = 0;
         return (int)maxCp;
     }
+}
+
+
+static np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration)
+{
+    return NABTO_EC_NOT_IMPLEMENTED;
 }

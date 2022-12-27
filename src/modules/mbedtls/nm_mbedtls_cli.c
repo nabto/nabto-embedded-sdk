@@ -159,9 +159,7 @@ np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
     pl->dtlsC.get_fingerprint = &get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &get_alpn_protocol;
     pl->dtlsC.get_packet_count = &get_packet_count;
-#if defined(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
     pl->dtlsC.get_certificate_expiration = &get_certificate_expiration;
-#endif
     return initialize_context(pl);
 }
 
@@ -380,7 +378,7 @@ np_error_code get_packet_count(struct np_dtls_cli_connection* conn, uint32_t* re
     return NABTO_EC_OK;
 }
 
-#if defined(NABTO_DEVICE_GET_ATTACH_CERTIFICATE_EXPIRATION)
+#if defined(HAVE_TIMEGM)
 #include <time.h>
 np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration)
 {
@@ -412,6 +410,11 @@ np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, ui
     *expiration = (uint64_t)t;
 
     return NABTO_EC_OK;
+}
+#else
+np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration)
+{
+    return NABTO_EC_NOT_IMPLEMENTED;
 }
 #endif
 
