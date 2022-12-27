@@ -25,16 +25,16 @@ BOOST_AUTO_TEST_CASE(get_attach_certificate_expiration)
 
     NabtoDeviceError ec = nabto_device_get_attach_certificate_expiration(dev, &expiration);
 
-#if defined(HAVE_TIMEGM)
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    if (ec == NABTO_DEVICE_EC_OK) {
+        time_t n = time(NULL);
 
-    time_t n = time(NULL);
-
-    BOOST_TEST(expiration > (uint64_t)n);
-    uint64_t someTimeIn2035 = 2082701873;
-    BOOST_TEST(expiration < someTimeIn2035);
-#else
-    BOOST_TEST(ec == NABTO_DEVICE_EC_NOT_IMPLEMENTED);
-#endif
+        BOOST_TEST(expiration > (uint64_t)n);
+        uint64_t someTimeIn2035 = 2082701873;
+        BOOST_TEST(expiration < someTimeIn2035);
+    } else if (ec == NABTO_DEVICE_EC_NOT_IMPLEMENTED) {
+        BOOST_TEST(ec == NABTO_DEVICE_EC_NOT_IMPLEMENTED);
+    } else {
+        BOOST_TEST(ec);
+    }
 }
 BOOST_AUTO_TEST_SUITE_END()
