@@ -395,7 +395,7 @@ np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, ui
     struct tm tm;
     memset(&tm, 0, sizeof(tm));
     tm.tm_year = crt->valid_to.year - 1900;
-    tm.tm_mon = crt->valid_to.mon;
+    tm.tm_mon = crt->valid_to.mon - 1; /* indexed from 1 but struct tm expects month to be indexed from 0 */
     tm.tm_mday = crt->valid_to.day;
     tm.tm_hour = crt->valid_to.hour;
     tm.tm_min = crt->valid_to.min;
