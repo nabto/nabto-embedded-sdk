@@ -12,6 +12,7 @@ set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER ON)
 set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER_USE_AFTER_RETURN ON)
 
 include(CheckIncludeFiles)
+include(CheckSymbolExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/nabto_primary_files.cmake)
 
 message("CMake Version: ${CMAKE_VERSION}")
@@ -80,6 +81,8 @@ CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
 CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
 CHECK_INCLUDE_FILES("netinet/tcp.h" HAVE_NETINET_TCP_H)
 
+check_symbol_exists(timegm "time.h" HAVE_TIMEGM)
+
 set(HAVE_LIBEVENT_HEADERS 1)
 add_definitions(-DHAVE_LIBEVENT)
 
@@ -143,6 +146,10 @@ endif()
 
 if (HAVE_NETINET_TCP_H)
   add_definitions(-DHAVE_NETINET_TCP_H)
+endif()
+
+if (HAVE_TIMEGM)
+  add_definitions(-DHAVE_TIMEGM)
 endif()
 
 include_directories(src)
