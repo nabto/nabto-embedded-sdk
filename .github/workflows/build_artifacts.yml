@@ -46,7 +46,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          # omit name and upload to defaults artifacts archive called artifacts.
+          # omit name and upload to defaults artifacts archive called artifact.
           path: |
             ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
             ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
@@ -77,6 +77,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./artifacts/${{matrix.binary}}
+          asset_path: ./artifact/${{matrix.binary}}
           asset_name: ${{matrix.binary}}
           asset_content_type: application/octet-stream
