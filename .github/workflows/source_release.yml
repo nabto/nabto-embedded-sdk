@@ -29,6 +29,9 @@ jobs:
     name: Release Assets
     needs: build
     runs-on: ubuntu-22.04
+    permissions:
+      # give access to upload an artifacts to gh releases
+      contents: write
 
     if: github.event_name == 'release'
     steps:
