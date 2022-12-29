@@ -6,7 +6,7 @@ on:
     types: [published]
 
 jobs:
-  build-and-test:
+  build:
     strategy:
       matrix:
         os: [windows-2022, ubuntu-20.04, macos-12]
@@ -37,36 +37,46 @@ jobs:
       - name: Install
         run: cmake --build build-dir --target install
 
+      - name: Prepate assets
+        run: |
+          mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }} ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
+          mv ${{ github.workspace }}/artifacts/bin/thermostat_device${{ matrix.exe_postfix }} ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
+
       - name: Upload artifacts to github actions workspace artifacts
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: artifacts_${{matrix.os}}
+          # omit name and upload to defaults artifacts archive called artifacts.
           path: |
-            ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }}
-            ${{ github.workspace }}/artifacts/bin/thermostat_device${{ matrix.exe_postfix }}
+            ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
+            ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
           if-no-files-found: error
 
-      - name: Upload tcp_tunnel_device to github release artifacts
-        if: ${{ github.event_name == 'release' }}
+  upload-artifacts:
+    strategy:
+      matrix:
+        binary: [tcp_tunnel_device_linux, tcp_tunnel_device_macos, tcp_tunnel_device_windows.exe, thermostat_device_linux, thermostat_device_macos, thermostat_device_windows.exe]
+    name: Release Assets
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      # give access to upload an artifacts to gh releases
+      contents: write
 
+    if: github.event_name == 'release'
+    steps:
+      - name:  download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./
+      - name: list files
+        run: ls -R
+      - name: Upload Source Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }}
-          asset_name: tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
-          asset_content_type: application/octet-stream
-
-      - name: Upload thermostat_device to github release artifacts
-        if: ${{ github.event_name == 'release' }}
-
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: artifacts/bin/thermostat_device${{ matrix.exe_postfix }}
-          asset_name: thermostat_device_${{ matrix.friendly_name }}${{ matrix.exe_postfix }}
+          asset_path: ./artifacts/${{matrix.binary}}
+          asset_name: ${{matrix.binary}}
           asset_content_type: application/octet-stream
