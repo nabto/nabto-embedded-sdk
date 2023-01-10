@@ -13,6 +13,8 @@
 #include <mbedtls/sha256.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 
@@ -71,10 +73,22 @@ void p256r1_multiplication_speed_test(struct nabto_device_context* dev) {
     mbedtls_mpi d;
     mbedtls_ecp_group grp;
     mbedtls_ecp_point Q;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+
 
     mbedtls_mpi_init(&d);
     mbedtls_ecp_group_init(&grp);
     mbedtls_ecp_point_init(&Q);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+    mbedtls_entropy_init(&entropy);
+
+    status = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "cannot seed ctr_drbg");
+        return;
+    }
 
     status = mbedtls_ecp_group_load( &grp, MBEDTLS_ECP_DP_SECP256R1);
     if (status != 0) {
@@ -87,9 +101,9 @@ void p256r1_multiplication_speed_test(struct nabto_device_context* dev) {
     // Q = dG
     uint32_t start = np_timestamp_now_ms(&dev->pl.timestamp);
     {
-        status = mbedtls_ecp_mul(&grp, &Q, &d, &grp.G, NULL, NULL);
+        status = mbedtls_ecp_mul(&grp, &Q, &d, &grp.G, mbedtls_ctr_drbg_random, &ctr_drbg);
         if (status != 0) {
-            NABTO_LOG_ERROR(LOG, "failed to do multiplication");
+            NABTO_LOG_ERROR(LOG, "failed to do multiplication %d", status);
             return;
         }
     }
