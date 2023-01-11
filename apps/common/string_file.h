@@ -7,10 +7,12 @@
 extern "C" {
 #endif
 
+struct nm_file;
+
 // file with string content functions
-bool string_file_exists(const char* fileName);
-bool string_file_load(const char* fileName, char** content);
-bool string_file_save(const char* fileName, char* content);
+bool string_file_exists(struct nm_file* file, const char* fileName);
+bool string_file_load(struct nm_file* file, const char* fileName, char** content);
+bool string_file_save(struct nm_file* file, const char* fileName, char* content);
 
 #ifdef __cplusplus
 } // extern c
