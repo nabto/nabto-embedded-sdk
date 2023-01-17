@@ -22,7 +22,7 @@ The Nabto Edge Embedded SDK can be built using [CMake](https://cmake.org/). The 
 
 To build the SDK, a C99 compatible compiler is required (see [Supported environments](#supported-environments)).
 
-To build the SDK's unit tests, a C++ compiler is required. If the SDK is built for a target without a C++ compiler, CMake will detect the missing compiler and disable building the unit tests. Building of tests can also be disabled manually (see below).
+To build the SDK's unit tests, a C++ compiler is required.
 
 ### Building
 
@@ -41,14 +41,6 @@ To do a cross build, set the `CC` environment variable to point to the cross com
 export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 ```
 
-If no C++ compiler is available, CMake _should_ detect this and disable building the C++ based unit
-tests. If this detection fails and the unit test build fails, building the tests can be disabled manually by modifying the
-first `cmake` commandline (the configuration step) above as follows:
-
-```
-cmake -DDEVICE_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX=../_install ..
-```
-
 ### Testing
 
 If build passed, and `DEVICE_BUILD_TESTS` is set to `ON` unit tests can be run.
@@ -57,7 +49,7 @@ If build passed, and `DEVICE_BUILD_TESTS` is set to `ON` unit tests can be run.
 ../_install/bin/embedded_unit_test -p
 ```
 
-If the build was successful but unit tests was not build, an example application can be run to validate the Embedded SDK can run.
+If the build was successful but unit tests was not built, an example application can be run to validate the Embedded SDK can run.
 
 
 ### Building for Embedded Systems
@@ -95,7 +87,7 @@ library. The interface for that library is described in
 which implements the `nabto_device` library and apps/examples which
 are using the `nabto_device` library.
 
-For help on porting of the `nabto_device.h` interface to a new platform, see the Nabto Edge Embedded
+For help on porting to a new platform, see the Nabto Edge Embedded
 SDK [Integration guide](https://docs.nabto.com/developer/guides/integration/intro.html).
 
 For details on using the Nabto IAM module for user access control and
