@@ -641,7 +641,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         }
         if (state->passwordInvitePairing) {
             printf("# - Password Invite Pairing mode." NEWLINE);
-            printf("# -- Initial Pairing Usermame:  %s" NEWLINE,
+            printf("# -- Initial Pairing Username:  %s" NEWLINE,
                    initialUser->username);
             if (initialUser->password != NULL) {
                 printf("# -- Initial Pairing Password:  %s" NEWLINE,
