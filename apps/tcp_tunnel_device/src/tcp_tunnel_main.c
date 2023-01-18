@@ -621,7 +621,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     bool initialUserNeedPairing =
         initialUser && initialUser->fingerprint == NULL;
-    bool otherUsersExist = nn_llist_size(&state->users) > 1 && initialUser;
 
     if ((state->localInitialPairing || state->passwordInvitePairing) &&
         initialUserNeedPairing) {
@@ -629,6 +628,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         printf("# The initial user '%s' with role '%s' has not been paired yet." NEWLINE "# The initial user is a predefined user used to let the first user of the tunnel device be allowed special previleges. " NEWLINE,
             state->initialPairingUsername, initialUser->role);
 
+        bool otherUsersExist = nn_llist_size(&state->users) > 1 && initialUser;
         if (otherUsersExist) {
             printf("# " NEWLINE);
             printf("# Other users are already paired. These may not have the same privileges as the initial user. You can pair with the initial user from the client if needed." NEWLINE);
