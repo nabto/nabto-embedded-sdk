@@ -32,6 +32,8 @@ set(test_src
   tests/api/password_authorization_request_test.cpp
   tests/api/fcm_test.cpp
   tests/api/service_invoke_test.cpp
+  tests/api/shutdown.cpp
+  tests/api/get_attach_certificate_expiration.cpp
   tests/attach/attach_test.cpp
   tests/attach/basestation_fixture_test.cpp
   tests/iam/iam.cpp

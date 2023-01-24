@@ -17,6 +17,7 @@ struct nm_libevent_dns {
     struct evdns_base* dnsBase;
     struct nn_llist requests;
     struct nabto_device_mutex* mutex;
+    struct nabto_device_mutex* cancelMutex;
     struct np_event_queue eq;
 };
 

@@ -219,9 +219,15 @@ bool start_device(struct context* ctx, const char* productId, const char* device
     printf("Device: %s.%s with fingerprint: [%s]\n", productId, deviceId, fp);
     nabto_device_string_free(fp);
 
+    const char* disableMdns = getenv("NABTO_DISABLE_MDNS");
+    if (disableMdns == NULL) {
+        if (nabto_device_enable_mdns(ctx->device) != NABTO_DEVICE_EC_OK) {
+            return false;
+        }
+    }
+
     if (nabto_device_set_product_id(ctx->device, productId) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_device_id(ctx->device, deviceId) != NABTO_DEVICE_EC_OK ||
-        nabto_device_enable_mdns(ctx->device) != NABTO_DEVICE_EC_OK ||
         nabto_device_add_server_connect_token(ctx->device, sct) != NABTO_DEVICE_EC_OK)
     {
         return false;

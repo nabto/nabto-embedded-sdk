@@ -184,9 +184,15 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_start(NabtoDevice* device, NabtoDeviceFuture* future);
 
 /**
- * Close a context. This can be called after nabto_device_start() to
- * close all connections down nicely before calling
- * nabto_device_stop().
+ * Close a device context.
+ *
+ * This can be called after nabto_device_start() to close all connections nicely
+ * in the device context. The operation will involve waiting for packets on the
+ * network (hence the future to allow asynchronous operation).
+ *
+ * Close should be invoked before calling nabto_device_stop(); the latter will
+ * block until all resources in the device context are stopped, including
+ * forcibly closing connections.
  *
  * Future status:
  *  - NABTO_DEVICE_EC_OK on success
@@ -200,8 +206,11 @@ nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future);
 
 
 /**
- * Stop a device. This function blocks until all futures, events and timed
- * events has been handled, and the device core has been stopped.
+ * Stop a device context.
+ *
+ * This function blocks until all futures, events and timed events has been
+ * handled, and the device core has been stopped. Any pending connections not
+ * closed with nabto_device_close will be forcibly closed as part of this.
  *
  * After this function returns, only calls to free functions are allowed. This
  * means that to restart a device, it must be stopped, freed, allocated (with
@@ -214,7 +223,7 @@ nabto_device_stop(NabtoDevice* device);
 
 
 /**
- * Free a stopped device instance.
+ * Free a stopped device context instance.
  *
  * @param device [in]   The device instance to free
  */
@@ -1193,12 +1202,12 @@ nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const c
  *
  * Integration with Firebase Cloud Messaging (FCM) notifications allows the device to send push
  * notifications to typically mobile clients. For a thorough introduction and a full example, see
- * the [Nabto Edge Push guide](https://docs.nabto.com/developer/guides/concepts/push/overview.html).
+ * the [Nabto Edge Push guide](https://docs.nabto.com/developer/guides/push/overview.html).
  *
  * The integration is transparent meaning the Nabto platform forwards the provided payload directly
  * to FCM, and so it must follow the format defined by FCM. Sending push notifications requires a
  * Firebase project as outlined in the [Nabto Edge Push
- * guide](https://docs.nabto.com/developer/guides/concepts/push/fcm-setup.html).
+ * guide](https://docs.nabto.com/developer/guides/push/fcm-setup.html).
  *
  * Sending a notification from the device is initiated by the device creating a
  * NabtoDeviceFcmNotification object. Then the payload and project ID must be
@@ -1262,7 +1271,7 @@ nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification);
 
 /**
  * Set the FCM project id on a notification. The project ID must be
- * created and configured in FCM as explained in https://docs.nabto.com/developer/guides/concepts/push/fcm-setup.html. The
+ * created and configured in FCM as explained in https://docs.nabto.com/developer/guides/push/fcm-setup.html. The
  * project ID is copied into the notification.
  *
  * @param notification [in]  The notification to set project ID in
@@ -1363,7 +1372,7 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
  * Authorization API to determine if actions are allowed on a given
  * connection. An Authorization Request listener must therefore be
  * configured when using TCP tunnelling. It is recomended to use the
- * [Nabto IAM module](/developer/guides/concepts/iam/intro.html) to handle
+ * [Nabto IAM module](/developer/guides/iam/intro.html) to handle
  * Authorization Requests.
  *
  * A TCP tunnel client first makes a CoAP request: `GET
@@ -1744,7 +1753,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authenticat
  * Nabto Edge uses `Futures` to manage return values and completion of
  * asynchronous API-functions; a future resolves once such function
  * has completed. For more details about this topic, see the [Futures
- * Guide](/developer/guides/platforms/embedded/nabto_futures.html).
+ * Guide](/developer/platforms/embedded/nabto_futures.html).
  *
  * Futures are introduced to unify the way return values and
  * completion of asynchronous functions are handled and to minimize
@@ -1758,7 +1767,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_password_authenticat
  * In addition to futures, asynchronous functions that are expected to
  * be invoked recurringly introduces the concept of `listeners`, also
  * elaborated in the [Futures
- * Guide](/developer/guides/platforms/embedded/nabto_futures.html).
+ * Guide](/developer/platforms/embedded/nabto_futures.html).
  */
 
 /**
@@ -1879,7 +1888,7 @@ nabto_device_future_error_code(NabtoDeviceFuture* future);
  * Nabto Edge uses `Futures` to manage return values and completion of asynchronous API-functions; a
  * future resolves once such function has completed. Additionally, the Listener API supports
  * asynchronous functions that are expected to be invoked recurringly (see the [Futures
- * Guide](/developer/guides/platforms/embedded/nabto_futures.html) for details).
+ * Guide](/developer/platforms/embedded/nabto_futures.html) for details).
  *
  * Listeners are created and freed through this general API. Once created, a listener is initialized
  * for use with a specific purpose, e.g. to listen for [incoming coap

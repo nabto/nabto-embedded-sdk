@@ -9,7 +9,7 @@ jobs:
     name: Build
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
           path: nabto-embedded-sdk
@@ -20,7 +20,7 @@ jobs:
       - name: Create zip
         run: mkdir -p ${{ github.workspace }}/artifacts && zip -r ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip nabto-embedded-sdk -x '*.git*' '*artifacts*'
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: source
           path: ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip
@@ -29,10 +29,13 @@ jobs:
     name: Release Assets
     needs: build
     runs-on: ubuntu-22.04
+    permissions:
+      # give access to upload an artifacts to gh releases
+      contents: write
 
     if: github.event_name == 'release'
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           path: ./
       - name: list files

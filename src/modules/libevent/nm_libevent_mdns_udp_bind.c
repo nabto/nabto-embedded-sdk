@@ -197,7 +197,11 @@ bool nm_libevent_init_mdns_ipv6_socket(evutil_socket_t sock)
     int status = setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *)&group, sizeof(struct ipv6_mreq));
     if (status < 0) {
         int e = EVUTIL_SOCKET_ERROR();
-        NABTO_LOG_ERROR(LOG, "Cannot add ipv6 default membership (%d) %s", e, evutil_socket_error_to_string(e));
+        if (ERR_IS_EXPECTED(e)) {
+            NABTO_LOG_TRACE(LOG, "Cannot add ipv6 default membership (%d) %s", e, evutil_socket_error_to_string(e));
+        } else {
+            NABTO_LOG_ERROR(LOG, "Cannot add ipv6 default membership (%d) %s", e, evutil_socket_error_to_string(e));
+        }
     }
 
     return true;

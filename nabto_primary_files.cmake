@@ -111,6 +111,7 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_connection_events.c
   ${root_dir}/src/api/nabto_device_coap.c
   ${root_dir}/src/api/nabto_device_future.c
+  ${root_dir}/src/api/nabto_device_tcp_probe.c
   ${root_dir}/src/api/nabto_device_tcp_tunnelling.c
   ${root_dir}/src/api/nabto_device_error.c
   ${root_dir}/src/api/nabto_device_integration.c

@@ -33,7 +33,7 @@ typedef void buf_type;
 
 #else
 #define ERR_IS_EAGAIN(e) ((e) == EAGAIN || (e) == EWOULDBLOCK)
-#define ERR_IS_EXPECTED(e) ((e) == EADDRNOTAVAIL || (e) == ENETUNREACH || (e) == EAFNOSUPPORT)
+#define ERR_IS_EXPECTED(e) ((e) == EADDRNOTAVAIL || (e) == ENETUNREACH || (e) == EAFNOSUPPORT || (e) == EHOSTUNREACH)
 #define ERR_IS_EADDRINUSE(e) ((e) == EADDRINUSE)
 #define ERR_TO_STRING(e) strerror(e)
 #endif

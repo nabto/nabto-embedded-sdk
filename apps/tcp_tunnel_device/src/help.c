@@ -13,6 +13,7 @@ void print_help() {
     printf("%s" NEWLINE, "                      on windows");
     printf("%s" NEWLINE, "      --log-level     Set the log level for the application the possible levels");
     printf("%s" NEWLINE, "                      is error, warn, info and trace.");
+    printf("%s" NEWLINE, "      --self-test     Test reachability of tcp services and exit if they are not reachable.");
     printf("%s" NEWLINE, "      --random-ports  Bind the local and the p2p sockets to random UDP ports");
     printf("%s" NEWLINE, "                      instead of the default UDP ports 5592 and 5593.");
     printf("%s" NEWLINE, "      --local-port    Bind the local socket to a specific UDP port instead of");
@@ -24,6 +25,19 @@ void print_help() {
     printf("%s" NEWLINE, "                      This option should be used if a quick proof of concept needs");
     printf("%s" NEWLINE, "                      to be made for demo purposes. This should not be used in a");
     printf("%s" NEWLINE, "                      production setup.");
+    printf("%s" NEWLINE, "");
+    printf("%s" NEWLINE, "                      Below are several options which can be used to limit the memory");
+    printf("%s" NEWLINE, "                      usage of a device.");
+    printf("%s" NEWLINE, "      --limit-connections");
+    printf("%s" NEWLINE, "                      Limit the max number of concurrent nabto connections which a");
+    printf("%s" NEWLINE, "                      device accepts.");
+    printf("%s" NEWLINE, "      --limit-streams Limit the max number of concurrent nabto streams the Device");
+    printf("%s" NEWLINE, "                      can handle. Each tunnel connection e.g. tcp connection accounts");
+    printf("%s" NEWLINE, "                      for one stream.");
+    printf("%s" NEWLINE, "      --limit-stream-segments");
+    printf("%s" NEWLINE, "                      Limit the total number of segments used concurrently by the");
+    printf("%s" NEWLINE, "                      streaming layer. Each segment consumes roughly 256bytes ram.");
+    printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "# Files");
     printf("%s" NEWLINE, "");

@@ -1,13 +1,29 @@
 # Changelog
 
-## [unreleased]
+## [Unreleased]
+
+## [5.12.0] 2022-12-16
 
 ### Added
  * Friendly name for the device added to the IAM state. This results in the following additions:
  * * New IAM action: `IAM:SetDeviceInfo`. The Tcp Tunnel App also supports this, however, existing IAM configuration files must be recreated before users will have access to this action.
  * * New CoAP endpoint: `PUT /iam/device-info/friendly-name`
  * * A `FriendlyName` field is added to the CoAP response for `GET /iam/pairing`
+ * --demo-init option to tcp_tunnel_device
+ * Interactive initialization of thermostat_device
+ * Experimental TCP Probe
+ * Connections, stream segments and stream limits is exposed as tcp_tunnel_device options.
+ * TCP Tunnelling meta data feature.
+ * Support for MbedTLS 3.
 
+### Bug Fixes
+ * nabto_device_listener_stop returned another NabtoDeviceError than the documentation stated.
+ * Using mallocfail revealed some places where we did not handle allocation errors properly, fixed these.
+
+### Changed
+ * A situation could be created where the streaming congestion window would grow
+   huge, that could result in a large memory consumption. We have limited the
+   amount of unacked data on the stream to rougly the max observed flight size.
 
 
 ## [5.11.0]

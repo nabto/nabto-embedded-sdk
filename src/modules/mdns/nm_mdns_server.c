@@ -156,6 +156,10 @@ void nm_mdns_server_close(struct nm_mdns_server* server, struct np_completion_ev
         np_completion_event_resolve(closedEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
+    if (!server->running) {
+        np_completion_event_resolve(closedEvent, NABTO_EC_OK);
+        return;
+    }
     server->closedCompletionEvent = closedEvent;
     np_error_code ec = nm_mdns_server_close_instance(server, &server->v4, v4_closed);
     if (ec != NABTO_EC_OPERATION_STARTED) {
