@@ -16,7 +16,7 @@ jobs:
             friendly_name: windows
           - os: ubuntu-20.04
             exe_postfix:
-            friendly_name: linux
+            friendly_name: linux_x86_64
           - os: macos-12
             exe_postfix:
             friendly_name: macos
@@ -52,12 +52,77 @@ jobs:
             ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
           if-no-files-found: error
 
+  build-linux-arm:
+    strategy:
+      matrix:
+        arch: [armv6, armhf, aarch64]
+        include:
+          - arch: armv6
+            compiler: arm-linux-gnueabihf
+            toolchain: https://sourceforge.net/projects/raspberry-pi-cross-compilers/files/Raspberry%20Pi%20GCC%20Cross-Compiler%20Toolchains/Stretch/GCC%209.4.0/Raspberry%20Pi%201%2C%20Zero/cross-gcc-9.4.0-pi_0-1.tar.gz/download
+            friendly_name: linux-armv6
+          - arch: armhf
+            compiler: arm-linux-gnueabihf
+            toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
+          - arch: aarch64
+            compiler: aarch64-linux-gnu
+            toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Get required packages
+      run: sudo apt install libarchive-tools
+
+    - name: Create directory
+      run: mkdir toolchain
+
+    - name: Get toolchain
+      working-directory: toolchain
+      run: curl -sSL ${{ matrix.toolchain }}  | bsdtar -xf - --strip-components=1
+
+    - name: Configure CMake
+      env:
+        CC: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-gcc
+        CXX: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-g++
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -B ${{github.workspace}}/build
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --parallel
+
+    - name: Install
+      run: cmake --build ${{github.workspace}}/build --target install
+
+    - name: Print architecture
+      run: file ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device
+
+    - name: Prepate assets
+      run: |
+        mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
+        mv ${{ github.workspace }}/artifacts/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_linux_${{matrix.arch}}
+
+
+    - name: Upload artifacts
+      if: ${{ success() }}
+      uses: actions/upload-artifact@v2
+      with:
+        path: |
+          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
+          ${{ github.workspace }}/artifacts/bin/thermostat_device_linux_${{matrix.arch}}
+        if-no-files-found: error
+
+
   upload-artifacts:
     strategy:
       matrix:
-        binary: [tcp_tunnel_device_linux, tcp_tunnel_device_macos, tcp_tunnel_device_windows.exe, thermostat_device_linux, thermostat_device_macos, thermostat_device_windows.exe]
+        binary: [tcp_tunnel_device, thermostat_device]
+        suffix: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows.exe, macos]
     name: Release Assets
-    needs: build
+    needs: [ build, build-linux-arm ]
     runs-on: ubuntu-22.04
     permissions:
       # give access to upload an artifacts to gh releases
@@ -77,6 +142,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./artifact/${{matrix.binary}}
-          asset_name: ${{matrix.binary}}
+          asset_path: ./artifact/${{matrix.binary}}_${{matrix.suffix}}
+          asset_name: ${{matrix.binary}}_${{matrix.suffix}}
           asset_content_type: application/octet-stream
