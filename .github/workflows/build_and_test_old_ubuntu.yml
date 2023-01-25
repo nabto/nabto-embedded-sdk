@@ -4,6 +4,7 @@ on:
 
 jobs:
   container-test-job:
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     container:
       image: ubuntu:16.04
