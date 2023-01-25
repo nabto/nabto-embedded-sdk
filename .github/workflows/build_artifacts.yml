@@ -62,7 +62,6 @@ jobs:
           - arch: armv6
             compiler: arm-linux-gnueabihf
             toolchain: https://sourceforge.net/projects/raspberry-pi-cross-compilers/files/Raspberry%20Pi%20GCC%20Cross-Compiler%20Toolchains/Stretch/GCC%209.4.0/Raspberry%20Pi%201%2C%20Zero/cross-gcc-9.4.0-pi_0-1.tar.gz/download
-            friendly_name: linux-armv6
           - arch: armhf
             compiler: arm-linux-gnueabihf
             toolchain: https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
@@ -110,7 +109,7 @@ jobs:
 
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         path: |
           ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
