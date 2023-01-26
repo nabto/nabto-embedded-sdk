@@ -6,6 +6,7 @@ on:
 
 jobs:
   build:
+    timeout-minutes: 20
     name: Build
     runs-on: ubuntu-22.04
     steps:
@@ -26,6 +27,7 @@ jobs:
           path: ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip
 
   release-assets:
+    timeout-minutes: 20
     name: Release Assets
     needs: build
     runs-on: ubuntu-22.04

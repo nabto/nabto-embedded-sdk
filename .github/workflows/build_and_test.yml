@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-and-test:
+    timeout-minutes: 20
     name: Build
     runs-on: ${{matrix.os}}
     strategy:
