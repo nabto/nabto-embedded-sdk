@@ -3,7 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#endif
 
 #ifdef HAVE_IO_H
 // close on windows
