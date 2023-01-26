@@ -122,7 +122,7 @@ static const char* get_alpn_protocol(struct np_dtls_cli_connection* conn);
 static np_error_code get_packet_count(struct np_dtls_cli_connection* conn,
                                       uint32_t* recvCount, uint32_t* sentCount);
 
-
+static np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration);
 
 /******** Internal function definitions *******/
 static np_error_code initialize_context(struct np_platform* pl);
@@ -159,7 +159,7 @@ np_error_code nm_mbedtls_cli_init(struct np_platform* pl)
     pl->dtlsC.get_fingerprint = &get_fingerprint;
     pl->dtlsC.get_alpn_protocol = &get_alpn_protocol;
     pl->dtlsC.get_packet_count = &get_packet_count;
-
+    pl->dtlsC.get_certificate_expiration = &get_certificate_expiration;
     return initialize_context(pl);
 }
 
@@ -377,6 +377,46 @@ np_error_code get_packet_count(struct np_dtls_cli_connection* conn, uint32_t* re
     *sentCount = conn->sentCount;
     return NABTO_EC_OK;
 }
+
+#if defined(HAVE_TIMEGM)
+#include <time.h>
+np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration)
+{
+    if (conn->state != DATA) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
+    const mbedtls_x509_crt* crt = mbedtls_ssl_get_peer_cert(&conn->ssl);
+    if (!crt) {
+        NABTO_LOG_ERROR(LOG, "Connection has no certificate");
+        return NABTO_EC_UNKNOWN;
+    }
+
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_year = crt->valid_to.year - 1900;
+    tm.tm_mon = crt->valid_to.mon - 1; /* indexed from 1 but struct tm expects month to be indexed from 0 */
+    tm.tm_mday = crt->valid_to.day;
+    tm.tm_hour = crt->valid_to.hour;
+    tm.tm_min = crt->valid_to.min;
+    tm.tm_sec = crt->valid_to.sec;
+
+    time_t t = timegm(&tm);
+    if (t < 0) {
+        NABTO_LOG_ERROR(LOG, "timegm returned %ul", t);
+        return NABTO_EC_UNKNOWN;
+    }
+
+    *expiration = (uint64_t)t;
+
+    return NABTO_EC_OK;
+}
+#else
+np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration)
+{
+    return NABTO_EC_NOT_IMPLEMENTED;
+}
+#endif
 
 // Get the result of the application layer protocol negotiation
 const char*  get_alpn_protocol(struct np_dtls_cli_connection* conn)

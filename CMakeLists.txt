@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
-cmake_policy(SET CMP0091 NEW)
+cmake_minimum_required(VERSION 3.3)
 project(nabto-embedded-sdk)
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
@@ -13,6 +12,7 @@ set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER ON)
 set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER_USE_AFTER_RETURN ON)
 
 include(CheckIncludeFiles)
+include(CheckSymbolExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/nabto_primary_files.cmake)
 
 message("CMake Version: ${CMAKE_VERSION}")
@@ -38,6 +38,7 @@ option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
+  cmake_policy(SET CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
@@ -79,6 +80,8 @@ CHECK_INCLUDE_FILES("net/if.h" HAVE_NET_IF_H)
 CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
 CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
 CHECK_INCLUDE_FILES("netinet/tcp.h" HAVE_NETINET_TCP_H)
+
+check_symbol_exists(timegm "time.h" HAVE_TIMEGM)
 
 set(HAVE_LIBEVENT_HEADERS 1)
 add_definitions(-DHAVE_LIBEVENT)
@@ -143,6 +146,10 @@ endif()
 
 if (HAVE_NETINET_TCP_H)
   add_definitions(-DHAVE_NETINET_TCP_H)
+endif()
+
+if (HAVE_TIMEGM)
+  add_definitions(-DHAVE_TIMEGM)
 endif()
 
 include_directories(src)

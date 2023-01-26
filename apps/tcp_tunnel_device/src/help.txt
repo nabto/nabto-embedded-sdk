@@ -8,6 +8,7 @@ TCP Tunnel Device Help.
                       on windows
       --log-level     Set the log level for the application the possible levels
                       is error, warn, info and trace.
+      --self-test     Test reachability of tcp services and exit if they are not reachable.
       --random-ports  Bind the local and the p2p sockets to random UDP ports
                       instead of the default UDP ports 5592 and 5593.
       --local-port    Bind the local socket to a specific UDP port instead of
@@ -19,6 +20,19 @@ TCP Tunnel Device Help.
                       This option should be used if a quick proof of concept needs
                       to be made for demo purposes. This should not be used in a
                       production setup.
+
+                      Below are several options which can be used to limit the memory
+                      usage of a device.
+      --limit-connections
+                      Limit the max number of concurrent nabto connections which a
+                      device accepts.
+      --limit-streams Limit the max number of concurrent nabto streams the Device
+                      can handle. Each tunnel connection e.g. tcp connection accounts
+                      for one stream.
+      --limit-stream-segments
+                      Limit the total number of segments used concurrently by the
+                      streaming layer. Each segment consumes roughly 256bytes ram.
+
 
 # Files
 
