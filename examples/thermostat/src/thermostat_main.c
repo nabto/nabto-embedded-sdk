@@ -28,6 +28,8 @@
 #include "thermostat_file.h"
 #include "thermostat_state_file_backend.h"
 
+#include <modules/file/unix/nm_file_unix.h>
+
 #ifdef WIN32
 const char* homeDirEnvVariable = "APPDATA";
 const char* nabtoFolder = "nabto";
@@ -84,14 +86,14 @@ static bool make_directories(const char* in);
 static bool run_thermostat(const struct args* args);
 
 // Runs the nabto device
-static bool run_thermostat_device(NabtoDevice* device, struct thermostat* thermostat, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args);
+static bool run_thermostat_device(NabtoDevice* device, struct thermostat* thermostat, struct nm_file* fileImpl, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args);
 
 // Functions to print info to stdout
 static void print_missing_device_config_help(const char* filename);
 static void print_help();
 static void print_version();
 
-static void thermostat_reinit_state(struct thermostat* thermostat, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb);
+static void thermostat_reinit_state(struct thermostat* thermostat, struct nm_file* fileImpl, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb);
 
 const char* thermostatVersion = "1.0.0";
 
@@ -142,19 +144,22 @@ bool run_thermostat(const struct args* args)
         homeDir = homeBuffer;
     }
 
+    struct nm_file fileImpl = nm_file_unix_get_impl();
+
+
     struct thermostat thermostat;
     struct thermostat_file thermostatFile;
     struct thermostat_iam thermostatIam;
     struct thermostat_state thermostatState;
     struct thermostat_state_file_backend thermostatStateFileBackend;
     thermostat_file_init(&thermostatFile, homeDir);
-    thermostat_state_file_backend_init(&thermostatStateFileBackend, &thermostatState, thermostatFile.thermostatStateFile);
-    thermostat_iam_init(&thermostatIam, device, &thermostatFile, &logger);
-    thermostat_iam_load_state(&thermostatIam, &thermostatFile);
+    thermostat_state_file_backend_init(&thermostatStateFileBackend, &thermostatState, &fileImpl, thermostatFile.thermostatStateFile);
+    thermostat_iam_init(&thermostatIam, device, &fileImpl, thermostatFile.thermostatStateFile, &logger);
+    thermostat_iam_load_state(&thermostatIam);
     thermostat_init(&thermostat, device, &thermostatIam.iam, &thermostatState, &logger);
     thermostate_state_file_backend_load_data(&thermostatStateFileBackend, &logger);
 
-    bool status = run_thermostat_device(device, &thermostat, &thermostatFile, &thermostatStateFileBackend, args);
+    bool status = run_thermostat_device(device, &thermostat, &fileImpl, &thermostatFile, &thermostatStateFileBackend, args);
 
     if (signalCount < 2) {
        nabto_device_stop(device);
@@ -167,17 +172,17 @@ bool run_thermostat(const struct args* args)
     return status;
 }
 
-bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args)
+bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, struct nm_file* fileImpl, struct thermostat_file* tf, struct thermostat_state_file_backend* tsfb, const struct args* args)
 {
     if (args->init) {
         printf("Initializing Thermostat" NEWLINE);
-        thermostat_reinit_state(thermostat, tf, tsfb);
+        thermostat_reinit_state(thermostat, fileImpl, tf, tsfb);
         return true;
     }
 
     struct device_config deviceConfig;
     device_config_init(&deviceConfig);
-    if (!load_device_config(tf->deviceConfigFile, &deviceConfig, thermostat->logger)) {
+    if (!load_device_config(fileImpl, tf->deviceConfigFile, &deviceConfig, thermostat->logger)) {
         print_missing_device_config_help(tf->deviceConfigFile);
         return false;
     }
@@ -200,7 +205,7 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
         nabto_device_set_p2p_port(dev, 0);
     }
 
-    if (!load_or_create_private_key(dev, tf->deviceKeyFile, thermostat->logger)) {
+    if (!load_or_create_private_key(dev, fileImpl, tf->deviceKeyFile, thermostat->logger)) {
         printf("Could not load or create the private key" NEWLINE);
         return false;
     }
@@ -447,17 +452,17 @@ void print_version() {
 }
 
 
-void thermostat_reinit_state(struct thermostat* thermostat, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb)
+void thermostat_reinit_state(struct thermostat* thermostat, struct nm_file* fileImpl, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb)
 {
-    if (!string_file_exists(thermostatFile->deviceConfigFile)) {
+    if (!string_file_exists(fileImpl, thermostatFile->deviceConfigFile)) {
         printf("No device configuration found. Creating configuration: %s." NEWLINE, thermostatFile->deviceConfigFile);
-        if (!create_device_config_interactive(thermostatFile->deviceConfigFile)) {
+        if (!create_device_config_interactive(fileImpl, thermostatFile->deviceConfigFile)) {
             printf("Failed to create device configuration!" NEWLINE);
             printf(
                 "The device will not work until the file is created." NEWLINE);
         }
     }
 
-    thermostat_iam_create_default_state(thermostat->device, thermostatFile->iamStateFile, thermostat->logger);
+    thermostat_iam_create_default_state(thermostat->device, fileImpl, thermostatFile->iamStateFile, thermostat->logger);
     thermostat_state_file_backend_create_default_state_file(tsfb);
 }

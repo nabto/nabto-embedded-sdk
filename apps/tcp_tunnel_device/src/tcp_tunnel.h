@@ -4,10 +4,14 @@
 #include <nn/vector.h>
 #include <nabto/nabto_device.h>
 
+#include <modules/file/unix/nm_file_unix.h>
+
 struct tcp_tunnel {
     NabtoDevice* device;
     NabtoDeviceFuture* startFuture;
     NabtoDeviceFuture* closeFuture;
+
+    struct nm_file fileImpl;
 
     struct nm_iam_configuration* iamConfig;
     struct nm_iam_state* tcpTunnelState;

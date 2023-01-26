@@ -29,17 +29,17 @@ void tcp_tunnel_service_free(struct tcp_tunnel_service* service)
     free(service);
 }
 
-bool load_tcp_tunnel_services(struct nn_vector* services, const char* servicesFile, struct nn_log* logger)
+bool load_tcp_tunnel_services(struct nn_vector* services, struct nm_file* fileImpl, const char* servicesFile, struct nn_log* logger)
 {
-    if (!json_config_exists(servicesFile)) {
-        if (!tcp_tunnel_create_default_services_file(servicesFile)) {
+    if (!json_config_exists(fileImpl, servicesFile)) {
+        if (!tcp_tunnel_create_default_services_file(fileImpl, servicesFile)) {
             NN_LOG_ERROR(logger, LOGM, "Cannot create default services file");
             return false;
         }
     }
 
     cJSON* config;
-    if (!json_config_load(servicesFile, &config, logger)) {
+    if (!json_config_load(fileImpl, servicesFile, &config, logger)) {
         return false;
     }
 
@@ -145,7 +145,7 @@ cJSON* tcp_tunnel_service_as_json(struct tcp_tunnel_service* service)
     return root;
 }
 
-bool tcp_tunnel_create_default_services_file(const char* servicesFile)
+bool tcp_tunnel_create_default_services_file(struct nm_file* fileImpl, const char* servicesFile)
 {
     cJSON* root = cJSON_CreateArray();
     if (root == NULL) {
@@ -164,5 +164,5 @@ bool tcp_tunnel_create_default_services_file(const char* servicesFile)
 
     cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(ssh));
     tcp_tunnel_service_free(ssh);
-    return json_config_save(servicesFile, root);
+    return json_config_save(fileImpl, servicesFile, root);
 }

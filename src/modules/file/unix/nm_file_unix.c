@@ -10,6 +10,9 @@
 #include <io.h>
 #endif
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "errno.h"
 
 static enum nm_file_error create_directory(void* impl, const char* path);
@@ -27,6 +30,7 @@ struct nm_file nm_file_unix_get_impl()
     impl.size = size;
     impl.read_file = read_file;
     impl.write_file = write_file;
+    return impl;
 };
 
 static enum nm_file_error create_directory(void* impl, const char* path)
@@ -36,6 +40,7 @@ static enum nm_file_error create_directory(void* impl, const char* path)
 #else
     mkdir(path, 0777);
 #endif
+    return NM_FILE_OK;
 }
 
 static enum nm_file_error exists(void* impl, const char* path)
@@ -84,7 +89,7 @@ static enum nm_file_error read_file(void* impl, const char* path, void* buffer, 
         }
     }
 
-    enum nm_file_error status;
+    enum nm_file_error status = NM_FILE_OK;
 
     size_t read = fread(buffer, 1, bufferSize, f);
     if (read < 0) {
@@ -100,14 +105,13 @@ static enum nm_file_error read_file(void* impl, const char* path, void* buffer, 
 
 static enum nm_file_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize)
 {
-    enum nm_file_error status;
+    enum nm_file_error status = NM_FILE_OK;
 
     FILE* f = fopen(path, "wb");
     if (f == NULL) {
         return NM_FILE_UNKNOWN;
     }
 
-    size_t contentSize = strlen(content);
     size_t written = fwrite(content, 1, contentSize, f);
 
     if (written != contentSize) {

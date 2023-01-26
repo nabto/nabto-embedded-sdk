@@ -11,8 +11,11 @@
 extern "C" {
 #endif
 
-bool create_private_key(NabtoDevice* device, const char* filename, struct nn_log* logger);
-bool load_or_create_private_key(NabtoDevice* device, const char* filename, struct nn_log* logger);
+struct nm_file;
+
+
+bool create_private_key(NabtoDevice* device, struct nm_file* fileImpl, const char* filename, struct nn_log* logger);
+bool load_or_create_private_key(NabtoDevice* device, struct nm_file* fileImpl, const char* filename, struct nn_log* logger);
 
 #ifdef __cplusplus
 } // extern c

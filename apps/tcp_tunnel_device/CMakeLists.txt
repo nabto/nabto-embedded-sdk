@@ -10,7 +10,7 @@ set(csrc
   )
 
 add_executable(tcp_tunnel_device "${csrc}")
-target_link_libraries(tcp_tunnel_device nabto_device_static 3rdparty_gopt apps_common)
+target_link_libraries(tcp_tunnel_device nabto_device_static 3rdparty_gopt apps_common nm_file_unix)
 
 install(TARGETS tcp_tunnel_device
   RUNTIME DESTINATION bin

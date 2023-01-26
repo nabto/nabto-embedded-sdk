@@ -197,6 +197,7 @@ add_subdirectory(src/modules/libevent)
 add_subdirectory(src/modules/threads/unix)
 add_subdirectory(src/modules/threads/windows)
 add_subdirectory(src/modules/logging/api)
+add_subdirectory(src/modules/file/unix)
 add_subdirectory(apps/common)
 
 add_subdirectory(src/platform)

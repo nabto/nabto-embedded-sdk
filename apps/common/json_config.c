@@ -43,7 +43,7 @@ bool json_config_load(struct nm_file* fileImpl, const char* path, cJSON** config
         return false;
     }
 
-    *config = cJSON_Parse(buffer);
+    *config = cJSON_Parse((const char*)buffer);
     if (*config == NULL) {
         const char* error = cJSON_GetErrorPtr();
         if (error != NULL) {
@@ -64,7 +64,7 @@ bool json_config_save(struct nm_file* fileImpl, const char* fileName, cJSON* con
         status = false;
     } else {
         size_t jSize = strlen(j);
-        enum nm_file_error ec = fileImpl->write_file(fileImpl->impl, fileName, j, jSize);
+        enum nm_file_error ec = fileImpl->write_file(fileImpl->impl, fileName, (const uint8_t*)j, jSize);
         if (ec == NM_FILE_OK) {
             status = true;
         } else {

@@ -2,6 +2,7 @@
 #include <nabto/nabto_device_experimental.h>
 #include <modules/iam/nm_iam.h>
 #include <modules/iam/nm_iam_serializer.h>
+#include <modules/file/unix/nm_file_unix.h>
 #include <apps/common/string_file.h>
 
 #include <cjson/cJSON.h>
@@ -167,12 +168,14 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
     char* privateKey;
     char* fp;
 
-    if (!string_file_exists(keyFile)) {
+    struct nm_file fileImpl = nm_file_unix_get_impl();
+
+    if (!string_file_exists(&fileImpl, keyFile)) {
         if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
-        if (!string_file_save(keyFile, privateKey)) {
+        if (!string_file_save(&fileImpl, keyFile, privateKey)) {
             printf("Failed to persist private key to file: %s\n", keyFile);
             nabto_device_string_free(privateKey);
             return false;
@@ -180,7 +183,7 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         nabto_device_string_free(privateKey);
     }
 
-    if (!string_file_load(keyFile, &privateKey)) {
+    if (!string_file_load(&fileImpl, keyFile, &privateKey)) {
         printf("Failed to load private key from file: %s\n", keyFile);
         return false;
     }
@@ -259,8 +262,11 @@ void iam_user_changed(struct nm_iam* iam, void* userData)
     (void)userData;
     struct nm_iam_state* state = nm_iam_dump_state(iam);
     char* stateStr;
+
+    struct nm_file fileImpl = nm_file_unix_get_impl();
+
     nm_iam_serializer_state_dump_json(state, &stateStr);
-    if (!string_file_save(stateFile, stateStr)) {
+    if (!string_file_save(&fileImpl, stateFile, stateStr)) {
         printf("Failed to persist changed IAM state to file: %s\n", stateFile);
     }
     nm_iam_serializer_string_free(stateStr);
@@ -272,6 +278,9 @@ void iam_user_changed(struct nm_iam* iam, void* userData)
  */
 bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
 {
+
+    struct nm_file fileImpl = nm_file_unix_get_impl();
+
     iamLogger_ = (struct nn_log*)calloc(1, sizeof(struct nn_log));
     if (iamLogger_ == NULL) {
         return false;
@@ -353,14 +362,14 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
 
     /**** STATE CONF ****/
 
-    if (!string_file_exists(stateFile)) {
+    if (!string_file_exists(&fileImpl, stateFile)) {
         if (!generate_default_state(device)) {
             return false;
         }
     }
 
     char* stateStr;
-    if (!string_file_load(stateFile, &stateStr)) {
+    if (!string_file_load(&fileImpl, stateFile, &stateStr)) {
         printf("Failed to load IAM state from file: %s\n", stateFile);
         return false;
     }
@@ -450,6 +459,8 @@ void iam_logger(void* data, enum nn_log_severity severity, const char* module,
 
 bool generate_default_state(NabtoDevice* device)
 {
+    struct nm_file fileImpl = nm_file_unix_get_impl();
+
     struct nm_iam_state* state = nm_iam_state_new();
     if (state == NULL) { return false; }
 
@@ -486,7 +497,7 @@ bool generate_default_state(NabtoDevice* device)
     char* stateStr;
     nm_iam_serializer_state_dump_json(state, &stateStr);
     nm_iam_state_free(state);
-    if (!string_file_save(stateFile, stateStr)) {
+    if (!string_file_save(&fileImpl, stateFile, stateStr)) {
         printf("Failed to persist default IAM state to file: %s\n", stateFile);
         nm_iam_serializer_string_free(stateStr);
         return false;

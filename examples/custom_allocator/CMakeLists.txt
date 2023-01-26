@@ -4,7 +4,7 @@ set(src
   )
 
 add_executable(custom_allocator_device "${src}")
-target_link_libraries(custom_allocator_device nabto_device_static apps_common)
+target_link_libraries(custom_allocator_device nabto_device_static apps_common nm_file_unix)
 
 install(TARGETS custom_allocator_device
   RUNTIME DESTINATION bin
