@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-struct nm_file;
+struct nm_fs;
 
 struct device_config {
     char* productId;
@@ -22,10 +22,10 @@ struct device_config {
 void device_config_init(struct device_config* config);
 void device_config_deinit(struct device_config* config);
 
-bool load_device_config(struct nm_file *fileImpl, const char* fileName, struct device_config* dc, struct nn_log* logger);
-bool save_device_config(struct nm_file *fileImpl, const char* fileName, struct device_config* dc);
+bool load_device_config(struct nm_fs *fsImpl, const char* fileName, struct device_config* dc, struct nn_log* logger);
+bool save_device_config(struct nm_fs *fsImpl, const char* fileName, struct device_config* dc);
 
-bool create_device_config_interactive(struct nm_file *fileImpl, const char* file);
+bool create_device_config_interactive(struct nm_fs *fsImpl, const char* file);
 
 #ifdef __cplusplus
 } // extern c

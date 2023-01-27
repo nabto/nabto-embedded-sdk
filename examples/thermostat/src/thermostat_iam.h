@@ -11,13 +11,13 @@ struct thermostat_iam {
     struct nm_iam iam;
     NabtoDevice* device;
     char* iamStateFile;
-    struct nm_file* file;
+    struct nm_fs* file;
 };
 
-void thermostat_iam_init(struct thermostat_iam* thermostatIam, NabtoDevice* device, struct nm_file* file, const char* iamStateFile, struct nn_log* logger);
+void thermostat_iam_init(struct thermostat_iam* thermostatIam, NabtoDevice* device, struct nm_fs* file, const char* iamStateFile, struct nn_log* logger);
 void thermostat_iam_deinit(struct thermostat_iam* thermostatIam);
 
-void thermostat_iam_create_default_state(NabtoDevice* device, struct nm_file* file, const char* iamStateFile, struct nn_log* logger);
+void thermostat_iam_create_default_state(NabtoDevice* device, struct nm_fs* file, const char* iamStateFile, struct nn_log* logger);
 
 bool thermostat_iam_load_state(struct thermostat_iam* thermostatIam);
 

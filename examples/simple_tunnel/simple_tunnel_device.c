@@ -3,7 +3,7 @@
 
 #include <apps/common/string_file.h>
 
-#include <modules/file/unix/nm_file_unix.h>
+#include <modules/fs/unix/nm_fs_unix.h>
 
 #include <stdio.h>
 #include <signal.h>
@@ -210,19 +210,19 @@ NabtoDeviceError load_or_create_private_key()
 {
     NabtoDeviceError ec;
     const char* privateKeyFileName = "device.key";
-    struct nm_file fileImpl = nm_file_unix_get_impl();
-    if (!string_file_exists(&fileImpl, privateKeyFileName)) {
+    struct nm_fs fsImpl = nm_fs_unix_get_impl();
+    if (!string_file_exists(&fsImpl, privateKeyFileName)) {
         char* privateKey;
         ec = nabto_device_create_private_key(device, &privateKey);
         if (ec != NABTO_DEVICE_EC_OK) {
             return ec;
         }
-        string_file_save(&fileImpl, privateKeyFileName, privateKey);
+        string_file_save(&fsImpl, privateKeyFileName, privateKey);
         nabto_device_string_free(privateKey);
     }
 
     char* privateKey;
-    if (!string_file_load(&fileImpl, privateKeyFileName, &privateKey)) {
+    if (!string_file_load(&fsImpl, privateKeyFileName, &privateKey)) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
     ec = nabto_device_set_private_key(device, privateKey);

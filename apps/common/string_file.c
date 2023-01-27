@@ -1,19 +1,19 @@
 #include "string_file.h"
 
-#include <modules/file/nm_file.h>
+#include <modules/fs/nm_fs.h>
 
 #include <stdlib.h>
 
 
-bool string_file_exists(struct nm_file* file, const char* fileName)
+bool string_file_exists(struct nm_fs* fsImpl, const char* fileName)
 {
-    return (file->exists(file->impl, fileName) == NM_FILE_OK);
+    return (fsImpl->file_exists(fsImpl->impl, fileName) == NM_FILE_OK);
 }
 
-bool string_file_load(struct nm_file* file, const char* fileName, char** content)
+bool string_file_load(struct nm_fs* fsImpl, const char* fileName, char** content)
 {
     size_t fileSize;
-    enum nm_file_error ec = file->size(file->impl, fileName, &fileSize);
+    enum nm_fs_error ec = fsImpl->file_size(fsImpl->impl, fileName, &fileSize);
     if (ec != NM_FILE_OK) {
         return false;
     }
@@ -23,7 +23,7 @@ bool string_file_load(struct nm_file* file, const char* fileName, char** content
     }
 
     size_t readLength;
-    ec = file->read_file(file->impl, fileName, output, fileSize+1, &readLength);
+    ec = fsImpl->read_file(fsImpl->impl, fileName, output, fileSize+1, &readLength);
     if (ec != NM_FILE_OK) {
         free(output);
         return false;
@@ -32,10 +32,10 @@ bool string_file_load(struct nm_file* file, const char* fileName, char** content
     return true;
 }
 
-bool string_file_save(struct nm_file* file, const char* fileName, char* content)
+bool string_file_save(struct nm_fs* fsImpl, const char* fileName, char* content)
 {
     size_t l = strlen(content);
-    enum nm_file_error ec = file->write_file(file->impl, fileName, content, l);
+    enum nm_fs_error ec = fsImpl->write_file(fsImpl->impl, fileName, (const uint8_t*)content, l);
     if (ec != NM_FILE_OK) {
         return false;
     }

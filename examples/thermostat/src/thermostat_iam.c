@@ -15,10 +15,10 @@
 
 static void thermostat_iam_state_changed(struct nm_iam* iam, void* userData);
 static bool load_iam_config(struct thermostat_iam* thermostatIam);
-static void save_iam_state(struct nm_file* file, const char* filename, struct nm_iam_state* state, struct nn_log* logger);
+static void save_iam_state(struct nm_fs* file, const char* filename, struct nm_iam_state* state, struct nn_log* logger);
 
 
-void thermostat_iam_init(struct thermostat_iam* thermostatIam, NabtoDevice* device, struct nm_file* file, const char* iamStateFile, struct nn_log* logger)
+void thermostat_iam_init(struct thermostat_iam* thermostatIam, NabtoDevice* device, struct nm_fs* file, const char* iamStateFile, struct nn_log* logger)
 {
     memset(thermostatIam, 0, sizeof(struct thermostat_iam));
     thermostatIam->logger = logger;
@@ -50,13 +50,13 @@ void thermostat_iam_state_changed(struct nm_iam* iam, void* userData)
     }
 }
 
-void save_iam_state(struct nm_file* file, const char* filename, struct nm_iam_state* state, struct nn_log* logger)
+void save_iam_state(struct nm_fs* file, const char* filename, struct nm_iam_state* state, struct nn_log* logger)
 {
     (void)logger;
     char* str = NULL;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
     } else {
-        enum nm_file_error ec = file->write_file(file->impl, filename, str, strlen(str));
+        enum nm_fs_error ec = file->write_file(file->impl, filename, str, strlen(str));
         if (ec != NM_FILE_OK) {
             // print error
         }
@@ -64,7 +64,7 @@ void save_iam_state(struct nm_file* file, const char* filename, struct nm_iam_st
     nm_iam_serializer_string_free(str);
 }
 
-void thermostat_iam_create_default_state(NabtoDevice* device, struct nm_file* file, const char* filename, struct nn_log* logger)
+void thermostat_iam_create_default_state(NabtoDevice* device, struct nm_fs* file, const char* filename, struct nn_log* logger)
 {
     struct nm_iam_state* state = nm_iam_state_new();
     nm_iam_state_set_open_pairing_role(state, "Administrator");

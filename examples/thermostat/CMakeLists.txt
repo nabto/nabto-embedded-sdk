@@ -18,7 +18,7 @@ set(src
 
 add_executable(thermostat_device ${src})
 
-target_link_libraries(thermostat_device nabto_device_static 3rdparty_tinycbor 3rdparty_gopt 3rdparty_cjson nn apps_common nm_file_unix)
+target_link_libraries(thermostat_device nabto_device_static 3rdparty_tinycbor 3rdparty_gopt 3rdparty_cjson nn apps_common nm_fs_unix)
 
 #target_link_libraries( thermostat_device ${CMAKE_THREAD_LIBS_INIT} )
 

@@ -2,7 +2,7 @@
 #include <nabto/nabto_device_experimental.h>
 #include <apps/common/string_file.h>
 
-#include <modules/file/unix/nm_file_unix.h>
+#include <modules/fs/unix/nm_fs_unix.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -173,14 +173,14 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
     char* privateKey;
     char* fp;
 
-    struct nm_file fileImpl = nm_file_unix_get_impl();
+    struct nm_fs fsImpl = nm_fs_unix_get_impl();
 
-    if (!string_file_exists(&fileImpl, keyFile)) {
+    if (!string_file_exists(&fsImpl, keyFile)) {
         if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
-        if (!string_file_save(&fileImpl, keyFile, privateKey)) {
+        if (!string_file_save(&fsImpl, keyFile, privateKey)) {
             printf("Failed to persist private key to file: %s\n", keyFile);
             nabto_device_string_free(privateKey);
             return false;
@@ -188,7 +188,7 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         nabto_device_string_free(privateKey);
     }
 
-    if (!string_file_load(&fileImpl, keyFile, &privateKey)) {
+    if (!string_file_load(&fsImpl, keyFile, &privateKey)) {
         printf("Failed to load private key from file: %s\n", keyFile);
         return false;
     }

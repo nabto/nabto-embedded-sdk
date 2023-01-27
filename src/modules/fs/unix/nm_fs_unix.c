@@ -1,4 +1,4 @@
-#include "../nm_file.h"
+#include "../nm_fs.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -15,25 +15,25 @@
 
 #include "errno.h"
 
-static enum nm_file_error create_directory(void* impl, const char* path);
-static enum nm_file_error exists(void* impl, const char* path);
-static enum nm_file_error size(void* impl, const char* path, size_t* fileSize);
-static enum nm_file_error read_file(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength);
-static enum nm_file_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize);
+static enum nm_fs_error create_directory(void* impl, const char* path);
+static enum nm_fs_error exists(void* impl, const char* path);
+static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize);
+static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength);
+static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize);
 
-struct nm_file nm_file_unix_get_impl()
+struct nm_fs nm_fs_unix_get_impl()
 {
-    struct nm_file impl;
+    struct nm_fs impl;
     impl.impl = NULL;
     impl.create_directory = create_directory;
-    impl.exists = exists;
-    impl.size = size;
+    impl.file_exists = exists;
+    impl.file_size = size;
     impl.read_file = read_file;
     impl.write_file = write_file;
     return impl;
 };
 
-static enum nm_file_error create_directory(void* impl, const char* path)
+static enum nm_fs_error create_directory(void* impl, const char* path)
 {
 #if defined(_WIN32)
     _mkdir(path);
@@ -43,7 +43,7 @@ static enum nm_file_error create_directory(void* impl, const char* path)
     return NM_FILE_OK;
 }
 
-static enum nm_file_error exists(void* impl, const char* path)
+static enum nm_fs_error exists(void* impl, const char* path)
 {
 #if defined(HAVE_IO_H)
     return (_access( path, 0 ) != -1 );
@@ -52,10 +52,10 @@ static enum nm_file_error exists(void* impl, const char* path)
 #endif
 }
 
-static enum nm_file_error size(void* impl, const char* path, size_t* fileSize)
+static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
 {
     FILE* f = fopen(path, "rb");
-    enum nm_file_error status;
+    enum nm_fs_error status;
     if (f == NULL) {
         if (errno == ENOENT) {
             return NM_FILE_NO_ENTRY;
@@ -78,7 +78,7 @@ static enum nm_file_error size(void* impl, const char* path, size_t* fileSize)
     return status;
 }
 
-static enum nm_file_error read_file(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength)
+static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength)
 {
    FILE* f = fopen(path, "rb");
     if (f == NULL) {
@@ -89,7 +89,7 @@ static enum nm_file_error read_file(void* impl, const char* path, void* buffer, 
         }
     }
 
-    enum nm_file_error status = NM_FILE_OK;
+    enum nm_fs_error status = NM_FILE_OK;
 
     size_t read = fread(buffer, 1, bufferSize, f);
     if (read < 0) {
@@ -103,9 +103,9 @@ static enum nm_file_error read_file(void* impl, const char* path, void* buffer, 
     return status;
 }
 
-static enum nm_file_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize)
+static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize)
 {
-    enum nm_file_error status = NM_FILE_OK;
+    enum nm_fs_error status = NM_FILE_OK;
 
     FILE* f = fopen(path, "wb");
     if (f == NULL) {

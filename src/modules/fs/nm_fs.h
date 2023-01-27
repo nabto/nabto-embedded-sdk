@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 
-enum nm_file_error {
+enum nm_fs_error {
     NM_FILE_OK = 0,
     NM_FILE_EXISTS,
     NM_FILE_NO_ENTRY,
@@ -12,7 +12,7 @@ enum nm_file_error {
     NM_FILE_UNKNOWN
 };
 
-struct nm_file {
+struct nm_fs {
     void* impl;
 
     /**
@@ -20,21 +20,21 @@ struct nm_file {
      * @retval NM_FILE_OK iff ok
      * @retval NM_FILE_EXISTS if the folder already exists
      */
-    enum nm_file_error (*create_directory)(void* impl, const char* path);
+    enum nm_fs_error (*create_directory)(void* impl, const char* path);
 
     /**
      * Query if a file exists
      * @retval NM_FILE_OK
      * @retval NM_FILE_NO_ENTRY
      */
-    enum nm_file_error (*exists)(void* impl, const char* path);
+    enum nm_fs_error (*file_exists)(void* impl, const char* path);
 
     /**
      * Get the size of a file
      * @retval NM_FILE_OK iff ok
      * @retval NM_FILE_NO_ENTRY if the file does not exists
      */
-    enum nm_file_error (*size)(void* impl, const char* path, size_t* fileSize);
+    enum nm_fs_error (*file_size)(void* impl, const char* path, size_t* fileSize);
 
     /**
      * Read a file
@@ -47,7 +47,7 @@ struct nm_file {
      * @retval NM_FILE_OK iff ok
      * @retval NM_FILE_NO_ENTRY if file not found.
      */
-    enum nm_file_error (*read_file)(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength);
+    enum nm_fs_error (*read_file)(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength);
 
     /**
      * Write a file
@@ -59,7 +59,7 @@ struct nm_file {
      * @retval NM_FILE_OK iff ok
      * @retval NM_FILE_TRUNCATED if not all the content was written to the file
      */
-    enum nm_file_error (*write_file)(void* impl, const char* path, const uint8_t* content, size_t contentSize);
+    enum nm_fs_error (*write_file)(void* impl, const char* path, const uint8_t* content, size_t contentSize);
 };
 
 #endif
