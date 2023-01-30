@@ -528,17 +528,49 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
-    nabto_device_set_product_id(tunnel->device, dc.productId);
-    nabto_device_set_device_id(tunnel->device, dc.deviceId);
-    nabto_device_set_app_name(tunnel->device, "Tcp Tunnel");
+    NabtoDeviceError ec;
+    ec = nabto_device_set_product_id(tunnel->device, dc.productId);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot set product Id" NEWLINE);
+        return false;
+    }
+
+
+    ec = nabto_device_set_device_id(tunnel->device, dc.deviceId);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot set device Id" NEWLINE);
+        return false;
+    }
+
+    ec = nabto_device_set_app_name(tunnel->device, "Tcp Tunnel");
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot set app name" NEWLINE);
+        return false;
+    }
     if (dc.server != NULL) {
-        nabto_device_set_server_url(tunnel->device, dc.server);
+        ec = nabto_device_set_server_url(tunnel->device, dc.server);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot set server url" NEWLINE);
+            return false;
+        }
     }
     if (dc.serverPort != 0) {
-        nabto_device_set_server_port(tunnel->device, dc.serverPort);
+        ec = nabto_device_set_server_port(tunnel->device, dc.serverPort);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot set server port" NEWLINE);
+            return false;
+        }
     }
-    nabto_device_enable_mdns(tunnel->device);
-    nabto_device_mdns_add_subtype(tunnel->device, "tcptunnel");
+    ec = nabto_device_enable_mdns(tunnel->device);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot enable mdns" NEWLINE);
+        return false;
+    }
+    ec = nabto_device_mdns_add_subtype(tunnel->device, "tcptunnel");
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot add mdns subtype" NEWLINE);
+        return false;
+    }
 
     struct nm_iam iam;
     if (!nm_iam_init(&iam, tunnel->device, &logger)) {
@@ -560,14 +592,22 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct tcp_tunnel_service* service;
     NN_VECTOR_FOREACH(&service, &tunnel->services)
     {
-        nabto_device_add_tcp_tunnel_service(tunnel->device, service->id, service->type, service->host, service->port);
+        ec = nabto_device_add_tcp_tunnel_service(tunnel->device, service->id, service->type, service->host, service->port);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. One reason could be if '%s' is not an ipv4 address." NEWLINE, service->id, service->type, service->host, service->port, service->host);
+            return false;
+        }
 
         struct nn_string_map_iterator it;
         NN_STRING_MAP_FOREACH(it, &service->metadata)
         {
             const char* key = nn_string_map_key(&it);
             const char* val = nn_string_map_value(&it);
-            nabto_device_add_tcp_tunnel_service_metadata(tunnel->device, service->id, key, val);
+            ec = nabto_device_add_tcp_tunnel_service_metadata(tunnel->device, service->id, key, val);
+            if (ec != NABTO_DEVICE_EC_OK) {
+                printf("Cannot add tcp tunnel service meta data" NEWLINE);
+                return false;
+            }
         }
     }
 
@@ -575,25 +615,53 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
 
     if (args->randomPorts) {
-        nabto_device_set_local_port(tunnel->device, 0);
-        nabto_device_set_p2p_port(tunnel->device, 0);
+        ec = nabto_device_set_local_port(tunnel->device, 0);
+        if (ec != NABTO_DEVICE_EC_OK) {
+           printf("Cannot set local port" NEWLINE);
+           return false;
+        }
+        ec = nabto_device_set_p2p_port(tunnel->device, 0);
+        if (ec != NABTO_DEVICE_EC_OK) {
+           printf("Cannot set p2pport" NEWLINE);
+           return false;
+        }
     } else {
         if (args->localPort) {
-            nabto_device_set_local_port(tunnel->device, args->localPort);
+            ec = nabto_device_set_local_port(tunnel->device, args->localPort);
+            if (ec != NABTO_DEVICE_EC_OK) {
+               printf("Cannot set local port" NEWLINE);
+               return false;
+            }
         }
         if (args->p2pPort) {
-            nabto_device_set_p2p_port(tunnel->device, args->p2pPort);
+            ec = nabto_device_set_p2p_port(tunnel->device, args->p2pPort);
+            if (ec != NABTO_DEVICE_EC_OK) {
+               printf("Cannot set p2pport" NEWLINE);
+               return false;
+            }
         }
     }
 
     if (args->maxConnections >= 0) {
-        nabto_device_limit_connections(tunnel->device, (size_t)args->maxConnections);
+        ec = nabto_device_limit_connections(tunnel->device, (size_t)args->maxConnections);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit connections" NEWLINE);
+            return false;
+        }
     }
     if (args->maxStreams >= 0) {
-        nabto_device_limit_streams(tunnel->device, (size_t)args->maxStreams);
+        ec = nabto_device_limit_streams(tunnel->device, (size_t)args->maxStreams);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit streams" NEWLINE);
+            return false;
+        }
     }
     if (args->maxStreamSegments >= 0) {
-        nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
+        ec = nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit stream segments" NEWLINE);
+            return false;
+        }
     }
 
     printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
