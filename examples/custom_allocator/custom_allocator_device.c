@@ -2,7 +2,7 @@
 #include <nabto/nabto_device_experimental.h>
 #include <apps/common/string_file.h>
 
-#include <modules/fs/unix/nm_fs_unix.h>
+#include <modules/fs/posix/nm_fs_posix.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -173,7 +173,7 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
     char* privateKey;
     char* fp;
 
-    struct nm_fs fsImpl = nm_fs_unix_get_impl();
+    struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
     if (!string_file_exists(&fsImpl, keyFile)) {
         if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {

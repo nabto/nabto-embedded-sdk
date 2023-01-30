@@ -87,6 +87,9 @@ struct np_event_queue_functions {
     void (*post_timed)(struct np_event* event, uint32_t milliseconds);
 
     /**
+     * Optional Experimental feature. This is needed if
+     * NABTO_DEVICE_NO_FUTURE_QUEUE is set.
+     *
      * Post an event which should be resolved without taking the core lock for
      * the platform. This is used to resolve callbacks to external code. Eg.
      * When nabto_device_future resolves and a callback is set.

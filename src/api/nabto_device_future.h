@@ -6,10 +6,6 @@
 
 #include <nn/llist.h>
 
-#if defined(NABTO_DEVICE_ZEPHYR)
-#include <zephyr/kernel.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

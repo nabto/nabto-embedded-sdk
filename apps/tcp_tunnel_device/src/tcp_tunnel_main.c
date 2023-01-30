@@ -302,7 +302,7 @@ struct tcp_tunnel* tcp_tunnel_new()
     tunnel->iamConfig = nm_iam_configuration_new();
     tunnel->tcpTunnelState = nm_iam_state_new();
 
-    tunnel->fsImpl = nm_fs_unix_get_impl();
+    tunnel->fsImpl = nm_fs_posix_get_impl();
 
     if (tunnel->startFuture != NULL &&
         tunnel->closeFuture != NULL &&

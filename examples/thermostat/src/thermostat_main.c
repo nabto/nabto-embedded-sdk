@@ -29,7 +29,7 @@
 #include "thermostat_file.h"
 #include "thermostat_state_file_backend.h"
 
-#include <modules/fs/unix/nm_fs_unix.h>
+#include <modules/fs/posix/nm_fs_posix.h>
 
 #ifdef WIN32
 const char* homeDirEnvVariable = "APPDATA";
@@ -148,7 +148,7 @@ bool run_thermostat(const struct args* args)
         homeDir = homeBuffer;
     }
 
-    struct nm_fs fsImpl = nm_fs_unix_get_impl();
+    struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
 
     struct thermostat thermostat;

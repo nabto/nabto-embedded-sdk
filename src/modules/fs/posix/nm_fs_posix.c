@@ -23,7 +23,7 @@ static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize);
 static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength);
 static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize);
 
-struct nm_fs nm_fs_unix_get_impl()
+struct nm_fs nm_fs_posix_get_impl()
 {
     struct nm_fs impl;
     impl.impl = NULL;
@@ -42,7 +42,7 @@ static enum nm_fs_error create_directory(void* impl, const char* path)
 #else
     mkdir(path, 0777);
 #endif
-    return NM_FILE_OK;
+    return NM_FS_OK;
 }
 
 static enum nm_fs_error exists(void* impl, const char* path)
@@ -60,9 +60,9 @@ static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
     enum nm_fs_error status;
     if (f == NULL) {
         if (errno == ENOENT) {
-            return NM_FILE_NO_ENTRY;
+            return NM_FS_NO_ENTRY;
         } else {
-            return NM_FILE_UNKNOWN;
+            return NM_FS_UNKNOWN;
         }
     }
     fseek(f, 0, SEEK_END);
@@ -70,9 +70,9 @@ static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
     fseek(f, 0, SEEK_SET);
 
     if (fsize < 0) {
-        status = NM_FILE_UNKNOWN;
+        status = NM_FS_UNKNOWN;
     } else {
-        status = NM_FILE_OK;
+        status = NM_FS_OK;
         *fileSize = fsize;
     }
     fclose(f);
@@ -85,17 +85,17 @@ static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, si
    FILE* f = fopen(path, "rb");
     if (f == NULL) {
         if (errno == ENOENT) {
-            return NM_FILE_NO_ENTRY;
+            return NM_FS_NO_ENTRY;
         } else {
-            return NM_FILE_UNKNOWN;
+            return NM_FS_UNKNOWN;
         }
     }
 
-    enum nm_fs_error status = NM_FILE_OK;
+    enum nm_fs_error status = NM_FS_OK;
 
     size_t read = fread(buffer, 1, bufferSize, f);
     if (read < 0) {
-        status = NM_FILE_UNKNOWN;
+        status = NM_FS_UNKNOWN;
     } else {
         *readLength = read;
     }
@@ -107,19 +107,19 @@ static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, si
 
 static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize)
 {
-    enum nm_fs_error status = NM_FILE_OK;
+    enum nm_fs_error status = NM_FS_OK;
 
     FILE* f = fopen(path, "wb");
     if (f == NULL) {
-        return NM_FILE_UNKNOWN;
+        return NM_FS_UNKNOWN;
     }
 
     size_t written = fwrite(content, 1, contentSize, f);
 
     if (written != contentSize) {
-        status = NM_FILE_TRUNCATED;
+        status = NM_FS_TRUNCATED;
     } else {
-        status = NM_FILE_OK;
+        status = NM_FS_OK;
     }
     fclose(f);
     return status;

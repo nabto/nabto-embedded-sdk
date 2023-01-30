@@ -4,7 +4,7 @@
 #include <nn/vector.h>
 #include <nabto/nabto_device.h>
 
-#include <modules/fs/unix/nm_fs_unix.h>
+#include <modules/fs/posix/nm_fs_posix.h>
 
 struct tcp_tunnel {
     NabtoDevice* device;
