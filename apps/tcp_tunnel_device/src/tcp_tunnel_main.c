@@ -302,6 +302,8 @@ struct tcp_tunnel* tcp_tunnel_new()
     tunnel->iamConfig = nm_iam_configuration_new();
     tunnel->tcpTunnelState = nm_iam_state_new();
 
+    tunnel->fsImpl = nm_fs_posix_get_impl();
+
     if (tunnel->startFuture != NULL &&
         tunnel->closeFuture != NULL &&
         tunnel->iamConfig != NULL &&
@@ -454,7 +456,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     tunnel->privateKeyFile = expand_file_name(args->homeDir, DEVICE_KEY_FILE);
 
     if (args->init) {
-        if (!load_or_create_private_key(tunnel->device, tunnel->privateKeyFile, &logger)) {
+        if (!load_or_create_private_key(tunnel->device, &tunnel->fsImpl, tunnel->privateKeyFile, &logger)) {
             print_private_key_file_load_failed(tunnel->privateKeyFile);
             return false;
         }
@@ -479,17 +481,17 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         }
     } else {
         // check that all files exists
-        if (!string_file_exists(tunnel->deviceConfigFile)) {
+        if (!string_file_exists(&tunnel->fsImpl, tunnel->deviceConfigFile)) {
             printf("Missing device config %s, initialize it with --init or --demo-init" NEWLINE, tunnel->deviceConfigFile);
             return false;
         }
 
-        if(!string_file_exists(tunnel->iamConfigFile)) {
+        if(!string_file_exists(&tunnel->fsImpl, tunnel->iamConfigFile)) {
             printf("Missing IAM configuration file %s, create it with --init or --demo-init" NEWLINE, tunnel->iamConfigFile);
             return false;
         }
 
-        if (!string_file_exists(tunnel->stateFile)) {
+        if (!string_file_exists(&tunnel->fsImpl, tunnel->stateFile)) {
             printf("Missing IAM state file %s, create it with --init or --demo-init" NEWLINE, tunnel->stateFile);
             return false;
         }
@@ -501,29 +503,29 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct device_config dc;
     device_config_init(&dc);
 
-    if (!load_device_config(tunnel->deviceConfigFile, &dc, &logger)) {
+    if (!load_device_config(&tunnel->fsImpl, tunnel->deviceConfigFile, &dc, &logger)) {
         printf("Failed to start device because a valid `%s` configuration file is missing. see --help for information about this file." NEWLINE, tunnel->deviceConfigFile);
         return false;
     }
 
-    if (!iam_config_load(tunnel->iamConfig, tunnel->iamConfigFile, &logger)) {
+    if (!iam_config_load(tunnel->iamConfig, &tunnel->fsImpl, tunnel->iamConfigFile, &logger)) {
         print_iam_config_load_failed(tunnel->iamConfigFile);
         return false;
     }
 
 
-    if (!load_tcp_tunnel_state(tunnel->tcpTunnelState, tunnel->stateFile, &logger)) {
+    if (!load_tcp_tunnel_state(tunnel->tcpTunnelState, &tunnel->fsImpl, tunnel->stateFile, &logger)) {
         print_tcp_tunnel_state_load_failed(tunnel->stateFile);
         return false;
     }
 
-    if (!load_tcp_tunnel_services(&tunnel->services, tunnel->servicesFile, &logger))
+    if (!load_tcp_tunnel_services(&tunnel->services, &tunnel->fsImpl, tunnel->servicesFile, &logger))
     {
         printf("Failed to load TCP Services from (%s)" NEWLINE, tunnel->servicesFile);
         return false;
     }
 
-    if (!load_or_create_private_key(tunnel->device, tunnel->privateKeyFile, &logger)) {
+    if (!load_or_create_private_key(tunnel->device, &tunnel->fsImpl, tunnel->privateKeyFile, &logger)) {
         print_private_key_file_load_failed(tunnel->privateKeyFile);
         return false;
     }
@@ -867,7 +869,7 @@ void iam_user_changed(struct nm_iam* iam, void* userData)
     struct nm_iam_state* state = nm_iam_dump_state(iam);
     if(state == NULL) {
         printf("Error could not dump IAM state" NEWLINE);
-    } else if (!save_tcp_tunnel_state(tcpTunnel->stateFile, state)) {
+    } else if (!save_tcp_tunnel_state(&tcpTunnel->fsImpl, tcpTunnel->stateFile, state)) {
         printf("Could not save tcp_tunnel state to %s" NEWLINE, tcpTunnel->stateFile);
     }
     nm_iam_state_free(state);

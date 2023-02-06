@@ -15,14 +15,15 @@
 
 static void thermostat_iam_state_changed(struct nm_iam* iam, void* userData);
 static bool load_iam_config(struct thermostat_iam* thermostatIam);
-static void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_log* logger);
+static void save_iam_state(struct nm_fs* file, const char* filename, struct nm_iam_state* state, struct nn_log* logger);
 
 
-void thermostat_iam_init(struct thermostat_iam* thermostatIam, NabtoDevice* device, struct thermostat_file* tf, struct nn_log* logger)
+void thermostat_iam_init(struct thermostat_iam* thermostatIam, NabtoDevice* device, struct nm_fs* file, const char* iamStateFile, struct nn_log* logger)
 {
     memset(thermostatIam, 0, sizeof(struct thermostat_iam));
-    thermostatIam->logger = *logger;
-    thermostatIam->thermostatFile = tf;
+    thermostatIam->logger = logger;
+    thermostatIam->iamStateFile = strdup(iamStateFile);
+    thermostatIam->file = file;
     thermostatIam->device = device;
     nm_iam_init(&thermostatIam->iam, device, logger);
     load_iam_config(thermostatIam);
@@ -33,6 +34,7 @@ void thermostat_iam_init(struct thermostat_iam* thermostatIam, NabtoDevice* devi
 void thermostat_iam_deinit(struct thermostat_iam* thermostatIam)
 {
     nm_iam_deinit(&thermostatIam->iam);
+    free(thermostatIam->iamStateFile);
 }
 
 void thermostat_iam_state_changed(struct nm_iam* iam, void* userData)
@@ -40,25 +42,29 @@ void thermostat_iam_state_changed(struct nm_iam* iam, void* userData)
     (void)iam;
     struct thermostat_iam* thermostatIam = userData;
     struct nm_iam_state* state = nm_iam_dump_state(&thermostatIam->iam);
-    if (state == NULL) {
+    if (state == NULL || thermostatIam->iamStateFile == NULL) {
         return;
     } else {
-        save_iam_state(thermostatIam->thermostatFile->iamStateFile, state, &thermostatIam->logger);
+        save_iam_state(thermostatIam->file, thermostatIam->iamStateFile, state, thermostatIam->logger);
         nm_iam_state_free(state);
     }
 }
 
-void save_iam_state(const char* filename, struct nm_iam_state* state, struct nn_log* logger)
+void save_iam_state(struct nm_fs* file, const char* filename, struct nm_iam_state* state, struct nn_log* logger)
 {
     (void)logger;
     char* str = NULL;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
-    } else if (!string_file_save(filename, str)) {
+    } else {
+        enum nm_fs_error ec = file->write_file(file->impl, filename, str, strlen(str));
+        if (ec != NM_FS_OK) {
+            // print error
+        }
     }
     nm_iam_serializer_string_free(str);
 }
 
-void thermostat_iam_create_default_state(NabtoDevice* device, const char* filename, struct nn_log* logger)
+void thermostat_iam_create_default_state(NabtoDevice* device, struct nm_fs* file, const char* filename, struct nn_log* logger)
 {
     struct nm_iam_state* state = nm_iam_state_new();
     nm_iam_state_set_open_pairing_role(state, "Administrator");
@@ -71,23 +77,23 @@ void thermostat_iam_create_default_state(NabtoDevice* device, const char* filena
     nabto_device_create_server_connect_token(device, &sct);
     nm_iam_state_set_password_open_sct(state, sct);
     nabto_device_string_free(sct);
-    save_iam_state(filename, state, logger);
+    save_iam_state(file, filename, state, logger);
     nm_iam_state_free(state);
 }
 
-bool thermostat_iam_load_state(struct thermostat_iam* thermostatIam, struct thermostat_file* tf)
+bool thermostat_iam_load_state(struct thermostat_iam* thermostatIam)
 {
-    if (!string_file_exists(tf->iamStateFile)) {
-        thermostat_iam_create_default_state(thermostatIam->device, tf->iamStateFile, &thermostatIam->logger);
+    if (!json_config_exists(thermostatIam->file, thermostatIam->iamStateFile)) {
+        thermostat_iam_create_default_state(thermostatIam->device, thermostatIam->file, thermostatIam->iamStateFile, thermostatIam->logger);
     }
 
     bool status = true;
     char* str = NULL;
-    if (!string_file_load(tf->iamStateFile, &str)) {
-        NN_LOG_INFO(&thermostatIam->logger, LOGM, "IAM state file (%s) does not exist, creating new default state. ", tf->iamStateFile);
-        thermostat_iam_create_default_state(thermostatIam->device, tf->iamStateFile, &thermostatIam->logger);
-        if (!string_file_load(tf->iamStateFile, &str)) {
-            NN_LOG_ERROR(&thermostatIam->logger, LOGM, "Load IAM state file (%s) failed. Ensure the file is available for read/write. ", tf->iamStateFile);
+    if (!string_file_load(thermostatIam->file, thermostatIam->iamStateFile, &str)) {
+        NN_LOG_INFO(thermostatIam->logger, LOGM, "IAM state file (%s) does not exist, creating new default state. ", thermostatIam->iamStateFile);
+        thermostat_iam_create_default_state(thermostatIam->device, thermostatIam->file, thermostatIam->iamStateFile, thermostatIam->logger);
+        if (!string_file_load(thermostatIam->file, thermostatIam->iamStateFile, &str)) {
+            NN_LOG_ERROR(thermostatIam->logger, LOGM, "Load IAM state file (%s) failed. Ensure the file is available for read/write. ", thermostatIam->iamStateFile);
             return false;
         }
     }
@@ -95,21 +101,21 @@ bool thermostat_iam_load_state(struct thermostat_iam* thermostatIam, struct ther
     if (is == NULL) {
         status = false;
     }
-    if (status && !nm_iam_serializer_state_load_json(is, str, &thermostatIam->logger)) {
-         NN_LOG_ERROR(&thermostatIam->logger, LOGM, "Loading state failed, try to delete %s to make a new default file", tf->iamStateFile);
+    if (status && !nm_iam_serializer_state_load_json(is, str, thermostatIam->logger)) {
+         NN_LOG_ERROR(thermostatIam->logger, LOGM, "Loading state failed, try to delete %s to make a new default file", thermostatIam->iamStateFile);
         status = false;
     }
 
     if (status && is->friendlyName == NULL) {
         NN_LOG_INFO(
-            &thermostatIam->logger, LOGM,
+            thermostatIam->logger, LOGM,
             "No IAM friendly name in state. Adding default: Thermostat");
         nm_iam_state_set_friendly_name(is, "Thermostat");
-        save_iam_state(tf->iamStateFile, is, &thermostatIam->logger);
+        save_iam_state(thermostatIam->file, thermostatIam->iamStateFile, is, thermostatIam->logger);
     }
 
     if (status && !nm_iam_load_state(&thermostatIam->iam, is)) {
-        NN_LOG_ERROR(&thermostatIam->logger, LOGM, "Failed to load state into IAM module");
+        NN_LOG_ERROR(thermostatIam->logger, LOGM, "Failed to load state into IAM module");
         status = false;
     }
     if (status == false) {

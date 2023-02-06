@@ -11,9 +11,10 @@
 struct thermostat_state_file_backend {
     char* filename;
     struct thermostat_state_data stateData;
+    struct nm_fs* fsImpl;
 };
 
-void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fileBackend, struct thermostat_state* thermostatState, const char* filename);
+void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fileBackend, struct thermostat_state* thermostatState, struct nm_fs* fsImpl, const char* filename);
 bool thermostate_state_file_backend_load_data(struct thermostat_state_file_backend* fb, struct nn_log* logger);
 
 void thermostat_state_file_backend_deinit(struct thermostat_state_file_backend* fileBackend);

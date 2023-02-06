@@ -243,7 +243,7 @@ void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data
     }
     if (ec != NABTO_EC_OK) {
         dev->state = NC_DEVICE_STATE_STOPPED;
-        NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary stun UDP socket.");
+        NABTO_LOG_ERROR(LOG, "nc_device failed to create secondary stun UDP socket. %s", np_error_code_to_string(ec));
         nc_device_resolve_start_close_callbacks(dev, ec);
         return;
     }

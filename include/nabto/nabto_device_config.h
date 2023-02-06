@@ -37,4 +37,16 @@
 #define NABTO_DEVICE_PASSWORD_AUTHENTICATION
 #endif
 
+
+/**
+ * This is an experimental feature which allows the device to run without a
+ * dedicated future queue but instead use the default event queue for resolving
+ * futures. This is useful for devices running using a single event loop. Or for
+ * simpler integrations where one just needs to come with the event_queue.
+ */
+//#define NABTO_DEVICE_NO_FUTURE_QUEUE
+#ifndef NABTO_DEVICE_NO_FUTURE_QUEUE
+#define NABTO_DEVICE_FUTURE_QUEUE
+#endif
+
 #endif

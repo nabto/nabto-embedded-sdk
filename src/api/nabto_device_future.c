@@ -9,6 +9,10 @@
 
 typedef uint32_t nabto_device_duration_t_;
 
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+static void handle_resolved_future_event(void* userData);
+#endif
+
 NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_future_new(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
@@ -31,6 +35,15 @@ NabtoDeviceFuture* NABTO_DEVICE_API nabto_device_future_new(NabtoDevice* device)
         np_free(fut);
         return NULL;
     }
+
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+    np_error_code ec = np_event_queue_create_event(&dev->pl.eq, handle_resolved_future_event, fut, &fut->futureResolveEvent);
+    if (ec != NABTO_EC_OK) {
+        nabto_device_future_free((NabtoDeviceFuture*)fut);
+        return NULL;
+    }
+#endif
+
     return (NabtoDeviceFuture*)fut;
 }
 
@@ -41,6 +54,10 @@ void NABTO_DEVICE_API nabto_device_future_free(NabtoDeviceFuture* future)
         return;
     }
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+    struct nabto_device_context* dev = fut->dev;
+    np_event_queue_destroy_event(&dev->pl.eq, fut->futureResolveEvent);
+#endif
     nabto_device_threads_free_cond(fut->cond);
     nabto_device_threads_free_mutex(fut->mutex);
     np_free(fut);
@@ -56,12 +73,16 @@ void NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFuture* future
                                                        void* data)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    struct nabto_device_context* dev = fut->dev;
     nabto_device_threads_mutex_lock(fut->mutex);
     fut->cb = callback;
     fut->cbData = data;
     if (fut->ready) {
-        nabto_device_future_queue_post(&dev->futureQueue, fut);
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+        struct nabto_device_context* dev = fut->dev;
+        np_event_queue_post_no_core_lock(&dev->pl.eq, fut->futureResolveEvent);
+#else
+        nabto_device_future_queue_post(&fut->dev->futureQueue, fut);
+#endif
     }
     nabto_device_threads_mutex_unlock(fut->mutex);
 
@@ -149,9 +170,22 @@ void nabto_device_future_resolve(struct nabto_device_future* fut, NabtoDeviceErr
     fut->ec = ec;
     fut->ready = true;
     if (fut->cb != NULL) {
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+        struct nabto_device_context* dev = fut->dev;
+        np_event_queue_post_no_core_lock(&dev->pl.eq, fut->futureResolveEvent);
+#else
         nabto_device_future_queue_post(&fut->dev->futureQueue, fut);
+#endif
     } else {
         nabto_device_threads_cond_signal(fut->cond);
     }
     nabto_device_threads_mutex_unlock(fut->mutex);
 }
+
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+void handle_resolved_future_event(void* userData)
+{
+    struct nabto_device_future* fut = userData;
+    nabto_device_future_popped(fut);
+}
+#endif

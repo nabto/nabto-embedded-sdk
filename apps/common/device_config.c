@@ -17,10 +17,10 @@
 
 static const char* LOGM = "device_config";
 
-bool load_device_config(const char* fileName, struct device_config* dc, struct nn_log* logger)
+bool load_device_config(struct nm_fs *fsImpl, const char* fileName, struct device_config* dc, struct nn_log* logger)
 {
     cJSON* config;
-    if (!json_config_load(fileName, &config, logger)) {
+    if (!json_config_load(fsImpl, fileName, &config, logger)) {
         return false;
     }
 
@@ -50,7 +50,7 @@ bool load_device_config(const char* fileName, struct device_config* dc, struct n
     return true;
 }
 
-bool save_device_config(const char* fileName, struct device_config* dc)
+bool save_device_config(struct nm_fs* fsImpl, const char* fileName, struct device_config* dc)
 {
     cJSON* config = cJSON_CreateObject();
     if (dc->productId != NULL) {
@@ -65,7 +65,7 @@ bool save_device_config(const char* fileName, struct device_config* dc)
     if (dc->serverPort != 0) {
         cJSON_AddItemToObject(config, "ServerPort", cJSON_CreateNumber(dc->serverPort));
     }
-    bool status = json_config_save(fileName, config);
+    bool status = json_config_save(fsImpl, fileName, config);
     cJSON_Delete(config);
     return status;
 }
@@ -82,7 +82,7 @@ void device_config_deinit(struct device_config* config)
     free(config->server);
 }
 
-bool create_device_config_interactive(const char* file)
+bool create_device_config_interactive(struct nm_fs* fsImpl, const char* file)
 {
     char productId[20];
     char deviceId[20];
@@ -94,5 +94,5 @@ bool create_device_config_interactive(const char* file)
     memset(&dc, 0, sizeof(struct device_config));
     dc.productId = productId;
     dc.deviceId = deviceId;
-    return save_device_config(file, &dc);
+    return save_device_config(fsImpl, file, &dc);
 }

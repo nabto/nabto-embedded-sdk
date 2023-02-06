@@ -25,6 +25,10 @@ struct nabto_device_future {
 
 
     struct nn_llist_node futureListNode;
+
+#if defined(NABTO_DEVICE_NO_FUTURE_QUEUE)
+    struct np_event* futureResolveEvent;
+#endif
 };
 
 void nabto_device_future_reset(struct nabto_device_future* fut);

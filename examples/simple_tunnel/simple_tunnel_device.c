@@ -3,6 +3,8 @@
 
 #include <apps/common/string_file.h>
 
+#include <modules/fs/posix/nm_fs_posix.h>
+
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -208,18 +210,19 @@ NabtoDeviceError load_or_create_private_key()
 {
     NabtoDeviceError ec;
     const char* privateKeyFileName = "device.key";
-    if (!string_file_exists(privateKeyFileName)) {
+    struct nm_fs fsImpl = nm_fs_posix_get_impl();
+    if (!string_file_exists(&fsImpl, privateKeyFileName)) {
         char* privateKey;
         ec = nabto_device_create_private_key(device, &privateKey);
         if (ec != NABTO_DEVICE_EC_OK) {
             return ec;
         }
-        string_file_save(privateKeyFileName, privateKey);
+        string_file_save(&fsImpl, privateKeyFileName, privateKey);
         nabto_device_string_free(privateKey);
     }
 
     char* privateKey;
-    if (!string_file_load(privateKeyFileName, &privateKey)) {
+    if (!string_file_load(&fsImpl, privateKeyFileName, &privateKey)) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
     ec = nabto_device_set_private_key(device, privateKey);

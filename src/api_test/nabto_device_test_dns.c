@@ -57,7 +57,7 @@ static void ipv6_resolved_callback(np_error_code ec, void* data)
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "ipv6 dns resolution failed %s", np_error_code_to_string(ec));
     } else if (t->resolvedIps != 1) {
-        NABTO_LOG_ERROR(LOG, "The number of resolved ipv6 addresses should be 1");
+        NABTO_LOG_ERROR(LOG, "The number of resolved ipv6 addresses should be 1 but it was %d", t->resolvedIps);
         ec = NABTO_EC_INVALID_STATE;
     } else if (t->dnsResults[0].type != NABTO_IPV6) {
         NABTO_LOG_ERROR(LOG, "The type of the resolved ipv6 address is wrong");
@@ -80,7 +80,7 @@ static void ipv4_resolved_callback(np_error_code ec, void* data)
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "ipv4 dns resolution failed %s", np_error_code_to_string(ec));
     } else if (t->resolvedIps != 1) {
-        NABTO_LOG_ERROR(LOG, "The number of resolved ipv4 addresses should be 1");
+        NABTO_LOG_ERROR(LOG, "The number of resolved ipv4 addresses should be 1 but it was %d", t->resolvedIps);
         ec = NABTO_EC_INVALID_STATE;
     } else if (t->dnsResults[0].type != NABTO_IPV4) {
         NABTO_LOG_ERROR(LOG, "The type of the resolved ipv4 address is wrong");

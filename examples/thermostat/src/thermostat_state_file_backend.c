@@ -14,13 +14,15 @@ static enum thermostat_mode get_mode(void* impl);
 
 static void save_state(struct thermostat_state_file_backend* fb);
 
-void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fileBackend, struct thermostat_state* thermostatState, const char* filename)
+void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fileBackend, struct thermostat_state* thermostatState, struct nm_fs* fsImpl, const char* filename)
 {
     fileBackend->filename = strdup(filename);
     fileBackend->stateData.mode = THERMOSTAT_MODE_HEAT;
     fileBackend->stateData.temperature = 22.3;
     fileBackend->stateData.target = 22.3;
     fileBackend->stateData.power = false;
+
+    fileBackend->fsImpl = fsImpl;
 
     thermostatState->impl = fileBackend;
     thermostatState->get_power = get_power;
@@ -42,11 +44,11 @@ void thermostat_state_file_backend_deinit(struct thermostat_state_file_backend* 
  */
 bool thermostate_state_file_backend_load_data(struct thermostat_state_file_backend* fb, struct nn_log* logger)
 {
-    if (!json_config_exists(fb->filename)) {
+    if (!json_config_exists(fb->fsImpl, fb->filename)) {
         thermostat_state_file_backend_create_default_state_file(fb);
     }
     cJSON* json;
-    if (!json_config_load(fb->filename, &json, logger)) {
+    if (!json_config_load(fb->fsImpl, fb->filename, &json, logger)) {
         NN_LOG_ERROR(logger, LOGM, "Cannot load state from file %s", fb->filename);
         return false;
     }
@@ -107,7 +109,7 @@ void save_state(struct thermostat_state_file_backend* fb)
     print_state(&fb->stateData);
     cJSON* j = thermostat_state_data_encode_as_json(&fb->stateData);
     if (j != NULL) {
-        json_config_save(fb->filename, j);
+        json_config_save(fb->fsImpl, fb->filename, j);
 
         cJSON_Delete(j);
     }

@@ -9,14 +9,14 @@
 
 static const char* LOGM = "iam_config";
 
-bool iam_config_exists(const char* iamConfigFile) {
-    return string_file_exists(iamConfigFile);
+bool iam_config_exists(struct nm_fs* fsImpl, const char* iamConfigFile) {
+    return string_file_exists(fsImpl, iamConfigFile);
 }
 
-bool iam_config_load(struct nm_iam_configuration* iamConfig, const char* iamConfigFile, struct nn_log* logger)
+bool iam_config_load(struct nm_iam_configuration* iamConfig, struct nm_fs* fsImpl, const char* iamConfigFile, struct nn_log* logger)
 {
     char* str;
-    if (!string_file_load(iamConfigFile, &str)) {
+    if (!string_file_load(fsImpl, iamConfigFile, &str)) {
         return false;
     }
 
@@ -29,7 +29,7 @@ bool iam_config_load(struct nm_iam_configuration* iamConfig, const char* iamConf
     return true;
 }
 
-bool iam_config_create_default(const char* iamConfigFile)
+bool iam_config_create_default(struct nm_fs* fsImpl, const char* iamConfigFile)
 {
     struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
 
@@ -126,7 +126,7 @@ bool iam_config_create_default(const char* iamConfigFile)
     char* str = NULL;
     if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str)) {
         status = false;
-    } else if(!string_file_save(iamConfigFile, str)) {
+    } else if(!string_file_save(fsImpl, iamConfigFile, str)) {
         status = false;
     }
 
