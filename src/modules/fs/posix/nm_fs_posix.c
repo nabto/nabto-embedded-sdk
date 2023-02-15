@@ -47,11 +47,17 @@ static enum nm_fs_error create_directory(void* impl, const char* path)
 
 static enum nm_fs_error exists(void* impl, const char* path)
 {
+    int ec;
 #if defined(HAVE_IO_H)
-    return (_access( path, 0 ) != -1 );
+    ec = _access( path, 0 );
 #else
-    return (access( path, F_OK ) != -1 );
+    ec = access( path, F_OK );
 #endif
+    if (ec == 0) {
+        return NM_FS_OK;
+    } else {
+        return NM_FS_NO_ENTRY;
+    }
 }
 
 static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
