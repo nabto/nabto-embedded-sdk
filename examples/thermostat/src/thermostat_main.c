@@ -158,10 +158,12 @@ bool run_thermostat(const struct args* args)
     struct thermostat_state_file_backend thermostatStateFileBackend;
     thermostat_file_init(&thermostatFile, homeDir);
     thermostat_state_file_backend_init(&thermostatStateFileBackend, &thermostatState, &fsImpl, thermostatFile.thermostatStateFile);
-    thermostat_iam_init(&thermostatIam, device, &fsImpl, thermostatFile.thermostatStateFile, &logger);
+    thermostat_iam_init(&thermostatIam, device, &fsImpl, thermostatFile.iamStateFile, &logger);
     thermostat_iam_load_state(&thermostatIam);
     thermostat_init(&thermostat, device, &thermostatIam.iam, &thermostatState, &logger);
-    thermostate_state_file_backend_load_data(&thermostatStateFileBackend, &logger);
+    if (!thermostate_state_file_backend_load_data(&thermostatStateFileBackend, &logger)) {
+        return false;
+    }
 
     bool status = run_thermostat_device(device, &thermostat, &fsImpl, &thermostatFile, &thermostatStateFileBackend, args);
 
