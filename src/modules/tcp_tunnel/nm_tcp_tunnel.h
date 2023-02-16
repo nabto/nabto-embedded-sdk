@@ -11,6 +11,9 @@
 #include <nn/string_int_map.h>
 #include <nn/string_map.h>
 
+#include <unistd.h>
+#include <sys/types.h>
+
 struct nabto_stream;
 struct nc_device_context;
 
@@ -39,6 +42,10 @@ struct nm_tcp_tunnel_connection {
     struct np_completion_event readCompletionEvent;
     size_t readLength;
     struct np_completion_event writeCompletionEvent;
+
+    bool dumpToFiles;
+    FILE* dumpFileRx;
+    FILE* dumpFileTx;
 };
 
 struct nm_tcp_tunnel_service {

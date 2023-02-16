@@ -101,7 +101,12 @@ int main(int argc, char** argv) {
         goto cleanup;
     }
 
-    ec = nabto_device_set_log_level(device, "info");
+    const char* loglevel = getenv("NABTO_LOG_LEVEL");
+    if (loglevel) {
+        ec = nabto_device_set_log_level(device, loglevel);
+    } else {
+        ec = nabto_device_set_log_level(device, "info");
+    }
     if (ec != NABTO_DEVICE_EC_OK) {
         printf("Could not set log level. %s" NEWLINE, nabto_device_error_get_message(ec));
         goto cleanup;

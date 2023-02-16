@@ -5,7 +5,6 @@
 #include <platform/np_allocator.h>
 
 
-
 /**
  * Forward data from a nabto stream to a tcp connection
  */
@@ -43,6 +42,8 @@ struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new()
         return NULL;
     }
 
+    connection->dumpToFiles = false;
+
     connection->tcpRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
     connection->streamRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
     return connection;
@@ -54,6 +55,13 @@ void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
     if (connection->socket != NULL) {
         np_tcp_destroy(&pl->tcp, connection->socket);
         connection->socket = NULL;
+    }
+
+    if (connection->dumpFileRx) {
+        fclose(connection->dumpFileRx);
+    }
+    if (connection->dumpFileTx) {
+        fclose(connection->dumpFileTx);
     }
     np_completion_event_deinit(&connection->connectCompletionEvent);
     np_completion_event_deinit(&connection->readCompletionEvent);
@@ -72,6 +80,28 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Cannot create tcp connection");
         return ec;
+    }
+
+    char* dump = getenv("NABTO_TCP_DUMP");
+    if (dump) {
+        connection->dumpToFiles = true;
+        pid_t pid = getpid();
+        // tunnel-dump-<process-id>-<tunnel-handle-id>-tx.bin NULL
+        // tunnel-dump-<process-id>-<tunnel-handle-id>-rx.bin
+        size_t reqLen = 12 + 6 + 1 + 2 + 8; // assume 6 digit pid and 2 digit handle
+        char* dumpFileRx = np_calloc(1, reqLen);
+        char* dumpFileTx = np_calloc(1, reqLen);
+        if (dumpFileRx == NULL || dumpFileTx == NULL) {
+            connection->dumpToFiles = false;
+            NABTO_LOG_ERROR(LOG, "could not allocate dump file names. Dumping will NOT be enabled");
+        } else {
+            sprintf(dumpFileRx, "tunnel-dump-%d-%d-rx.bin", pid, 42);// todo get proper tunnel handle ID
+            sprintf(dumpFileTx, "tunnel-dump-%d-%d-tx.bin", pid, 42);// todo get proper tunnel handle ID
+            connection->dumpFileRx = fopen(dumpFileRx, "wa");
+            connection->dumpFileTx = fopen(dumpFileTx, "wa");
+            np_free(dumpFileRx);
+            np_free(dumpFileTx);
+        }
     }
 
     connection->address = service->address;
@@ -213,6 +243,9 @@ void stream_closed(np_error_code ec, void* userData)
 
 void start_stream_write(struct nm_tcp_tunnel_connection* connection, size_t transferred)
 {
+    if (connection->dumpToFiles) {
+        size_t written = fwrite(connection->tcpRecvBuffer, 1, transferred, connection->dumpFileTx);
+    }
     np_error_code ec = nc_stream_async_write(connection->stream, connection->tcpRecvBuffer, transferred, &stream_written, connection);
     if (ec) {
         abort_connection(connection);
@@ -263,6 +296,10 @@ void stream_readen(np_error_code ec, void* userData)
         connection->streamReadEnded = true;
         is_ended(connection);
         return;
+    }
+
+    if (connection->dumpToFiles) {
+        size_t written = fwrite(connection->streamRecvBuffer, 1, connection->streamReadSize, connection->dumpFileRx);
     }
 
     start_tcp_write(connection, connection->streamReadSize);
