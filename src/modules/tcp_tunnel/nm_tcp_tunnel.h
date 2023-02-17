@@ -11,9 +11,6 @@
 #include <nn/string_int_map.h>
 #include <nn/string_map.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-
 struct nabto_stream;
 struct nc_device_context;
 

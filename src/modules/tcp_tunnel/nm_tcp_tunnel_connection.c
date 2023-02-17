@@ -4,6 +4,22 @@
 #include <platform/np_tcp_wrapper.h>
 #include <platform/np_allocator.h>
 
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_IO_H
+// close on windows
+#include <io.h>
+#endif
+
+#if defined(_WIN32)
+#include <process.h>
+#endif
+
+#include <sys/types.h>
+
+
 
 /**
  * Forward data from a nabto stream to a tcp connection
@@ -86,7 +102,11 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     char* dump = getenv("NABTO_TCP_DUMP");
     if (dump) {
         connection->dumpToFiles = true;
+#if defined(_WIN32)
+        pid_t pid = _getpid();
+#else
         pid_t pid = getpid();
+#endif
         // tunnel-dump-<process-id>-<tunnel-handle-id>-tx.bin NULL
         // tunnel-dump-<process-id>-<tunnel-handle-id>-rx.bin
         size_t reqLen = 12 + 6 + 1 + 4 + 8; // assume 6 digit pid and max 4 digit handle
