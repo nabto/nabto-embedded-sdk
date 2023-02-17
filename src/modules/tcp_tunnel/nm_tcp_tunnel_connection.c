@@ -72,10 +72,11 @@ void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
     np_free(connection);
 }
 
-np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* service, struct nm_tcp_tunnel_connection* connection, struct nc_stream_context* stream)
+np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* service, struct nm_tcp_tunnel_connection* connection, struct nc_stream_context* stream, size_t seq)
 {
     connection->pl = service->tunnels->device->pl;
     struct np_platform* pl = connection->pl;
+    connection->seq = seq;
     np_error_code ec = np_tcp_create(&pl->tcp, &connection->socket);
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Cannot create tcp connection");
@@ -88,15 +89,15 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
         pid_t pid = getpid();
         // tunnel-dump-<process-id>-<tunnel-handle-id>-tx.bin NULL
         // tunnel-dump-<process-id>-<tunnel-handle-id>-rx.bin
-        size_t reqLen = 12 + 6 + 1 + 2 + 8; // assume 6 digit pid and 2 digit handle
+        size_t reqLen = 12 + 6 + 1 + 4 + 8; // assume 6 digit pid and max 4 digit handle
         char* dumpFileRx = np_calloc(1, reqLen);
         char* dumpFileTx = np_calloc(1, reqLen);
         if (dumpFileRx == NULL || dumpFileTx == NULL) {
             connection->dumpToFiles = false;
-            NABTO_LOG_ERROR(LOG, "could not allocate dump file names. Dumping will NOT be enabled");
+            NABTO_LOG_ERROR(LOG, "Could not allocate dump file names. Dumping will NOT be enabled");
         } else {
-            sprintf(dumpFileRx, "tunnel-dump-%d-%d-rx.bin", pid, 42);// todo get proper tunnel handle ID
-            sprintf(dumpFileTx, "tunnel-dump-%d-%d-tx.bin", pid, 42);// todo get proper tunnel handle ID
+            sprintf(dumpFileRx, "tunnel-dump-%d-%d-rx.bin", pid, connection->seq % 10000);// Guard against seq more than 4 digets
+            sprintf(dumpFileTx, "tunnel-dump-%d-%d-tx.bin", pid, connection->seq % 10000);// Guard against seq more than 4 digets
             connection->dumpFileRx = fopen(dumpFileRx, "wa");
             connection->dumpFileTx = fopen(dumpFileTx, "wa");
             np_free(dumpFileRx);

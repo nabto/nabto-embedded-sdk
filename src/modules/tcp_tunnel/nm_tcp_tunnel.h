@@ -44,6 +44,7 @@ struct nm_tcp_tunnel_connection {
     struct np_completion_event writeCompletionEvent;
 
     bool dumpToFiles;
+    size_t seq;
     FILE* dumpFileRx;
     FILE* dumpFileTx;
 };
@@ -73,6 +74,7 @@ struct nm_tcp_tunnels {
     struct nn_llist services;
     struct nn_string_int_map limitsByType;
     uint8_t* weakPtrCounter;
+    size_t nextSeq;
 
     struct nabto_coap_server_resource* coapListServices;
     struct nabto_coap_server_resource* coapGetService;

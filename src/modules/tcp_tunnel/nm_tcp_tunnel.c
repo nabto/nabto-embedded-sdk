@@ -31,6 +31,7 @@ np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_devi
     nn_string_int_map_init(&tunnels->limitsByType, np_allocator_get());
     tunnels->device = device;
     tunnels->weakPtrCounter = (void*)(1);
+    tunnels->nextSeq = 0;
 
     np_error_code ec = nm_tcp_tunnel_coap_init(tunnels, &device->coapServer);
     if (ec != NABTO_EC_OK) {
@@ -216,8 +217,9 @@ void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWea
         return;
     }
 
-    np_error_code ec = nm_tcp_tunnel_connection_init(service, c, stream);
+    np_error_code ec = nm_tcp_tunnel_connection_init(service, c, stream, tunnels->nextSeq);
     if(!ec) {
+        tunnels->nextSeq++;
         nm_tcp_tunnel_connection_start(c);
     } else {
         nm_tcp_tunnel_connection_free(c);
