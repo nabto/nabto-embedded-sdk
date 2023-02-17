@@ -210,3 +210,13 @@ For this the valgrind tool helgrind is good.
 ```
 valgrind --tool=helgrind ./build/apps/tcp_tunnel_device/tcp_tunnel_device
 ```
+
+## Check what traffic is passed through a TCP tunnel
+
+Run the device from a directory with write access, and set the environment variable `NABTO_TCP_DUMP=true` eg.:
+
+```
+NABTO_TCP_DUMP=true ./build/apps/tcp_tunnel_device/tcp_tunnel_device
+```
+
+When a TCP connection through the tunnel is opened, two files are created in the current directory: `tunnel-dump-<PID>-<Tunnel ID>-rx.bin` and `tunnel-dump-<PID>-<Tunnel ID>-tx.bin`. When ever the device transmits data to the client for the TCP connection, the data is also written to the `-tx` file. Similarly, when ever data is received from the client it is written to the `-rx` file. The tunnel keeps the files open for the duration of the TCP connection.
