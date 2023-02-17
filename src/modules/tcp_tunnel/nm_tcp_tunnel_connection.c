@@ -103,7 +103,7 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     if (dump) {
         connection->dumpToFiles = true;
 #if defined(_WIN32)
-        pid_t pid = _getpid();
+        int pid = _getpid();
 #else
         pid_t pid = getpid();
 #endif
@@ -116,8 +116,8 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
             connection->dumpToFiles = false;
             NABTO_LOG_ERROR(LOG, "Could not allocate dump file names. Dumping will NOT be enabled");
         } else {
-            sprintf(dumpFileRx, "tunnel-dump-%d-%d-rx.bin", pid, connection->seq % 10000);// Guard against seq more than 4 digets
-            sprintf(dumpFileTx, "tunnel-dump-%d-%d-tx.bin", pid, connection->seq % 10000);// Guard against seq more than 4 digets
+            sprintf(dumpFileRx, "tunnel-dump-%d-%zd-rx.bin", pid, connection->seq % 10000);// Guard against seq more than 4 digets
+            sprintf(dumpFileTx, "tunnel-dump-%d-%zd-tx.bin", pid, connection->seq % 10000);// Guard against seq more than 4 digets
             connection->dumpFileRx = fopen(dumpFileRx, "wa");
             connection->dumpFileTx = fopen(dumpFileTx, "wa");
             np_free(dumpFileRx);
