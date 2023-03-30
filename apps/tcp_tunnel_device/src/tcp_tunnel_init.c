@@ -131,7 +131,7 @@ bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file) {
     if (!enableLocalInitialPairing && !enablePasswordInvitePairing) {
         printf("Both Local Initial Pairing and Password Invite Pairing modes are disabled. This means it will not be possible to create an Administrator of this device." NEWLINE);
         printf("If IAM management is not needed, this is perfectly fine." NEWLINE);
-        if (!prompt_yes_no("Continue with choices?")) {
+        if (!prompt_yes_no("Is it ok not to be able to create an Administrator?")) {
             return create_state_interactive_custom(fsImpl, file);
         }
         printf(NEWLINE);
