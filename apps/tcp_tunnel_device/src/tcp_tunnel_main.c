@@ -689,35 +689,49 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     struct nm_iam_user* initialUser = nm_iam_state_find_user_by_username(state, state->initialPairingUsername);
 
-    bool initialUserNeedPairing = initialUser && initialUser->fingerprint == NULL;
+    bool initialUserNeedPairing =
+        initialUser && initialUser->fingerprint == NULL;
 
-    if (state->localInitialPairing && initialUserNeedPairing) {
+    if ((state->localInitialPairing || state->passwordInvitePairing) &&
+        initialUserNeedPairing) {
         printf("# " NEWLINE);
-        printf("# The device is not yet paired with the initial user. You can use Local Initial Pairing to get access." NEWLINE);
-    }
+        printf("# The initial user '%s' with role '%s' has not been paired yet." NEWLINE "# The initial user is a predefined user used to let the first user of the tunnel device be allowed special previleges. " NEWLINE,
+            state->initialPairingUsername, initialUser->role);
 
+        bool otherUsersExist = nn_llist_size(&state->users) > 1 && initialUser;
+        if (otherUsersExist) {
+            printf("# " NEWLINE);
+            printf("# Other users are already paired. These may not have the same privileges as the initial user. You can pair with the initial user from the client if needed." NEWLINE);
+        }
 
-    if (state->passwordInvitePairing && initialUserNeedPairing)
-    {
         printf("# " NEWLINE);
-        printf("# The initial user has not been paired yet. You can pair with the device using Password Invite Pairing." NEWLINE);
-        printf("# Initial Pairing Usermame:  %s" NEWLINE, initialUser->username);
-        if (initialUser->password != NULL) {
-            printf("# Initial Pairing Password:  %s" NEWLINE, initialUser->password);
+        printf("# The following pairing modes are available for pairing with the initial user:" NEWLINE);
+        if (state->localInitialPairing) {
+            printf("# - Local Initial Pairing mode" NEWLINE);
         }
-        if (initialUser->sct != NULL) {
-            printf("# Initial Pairing SCT:       %s" NEWLINE, initialUser->sct);
+        if (state->passwordInvitePairing) {
+            printf("# - Password Invite Pairing mode." NEWLINE);
+            printf("# -- Initial Pairing Username:  %s" NEWLINE,
+                   initialUser->username);
+            if (initialUser->password != NULL) {
+                printf("# -- Initial Pairing Password:  %s" NEWLINE,
+                       initialUser->password);
+            }
+            if (initialUser->sct != NULL) {
+                printf("# -- Initial Pairing SCT:       %s" NEWLINE,
+                       initialUser->sct);
+            }
+            // format the pairing string over the next couple of lines
+            printf("# -- Initial Pairing String:    p=%s,d=%s,u=%s",
+                   dc.productId, dc.deviceId, initialUser->username);
+            if (initialUser->password != NULL) {
+                printf(",pwd=%s", initialUser->password);
+            }
+            if (initialUser->sct != NULL) {
+                printf(",sct=%s", initialUser->sct);
+            }
+            printf(NEWLINE);
         }
-        // format the pairing string over the next couple of lines
-        printf("# Initial Pairing String:    p=%s,d=%s,u=%s", dc.productId, dc.deviceId, initialUser->username);
-        if (initialUser->password != NULL) {
-            printf(",pwd=%s",initialUser->password);
-        }
-        if (initialUser->sct != NULL) {
-            printf(",sct=%s", initialUser->sct);
-        }
-        printf(NEWLINE);
-
     }
 
     if (!initialUserNeedPairing) {
