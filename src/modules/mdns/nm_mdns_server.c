@@ -84,10 +84,10 @@ static np_error_code instance_init(struct nm_mdns_server_instance* instance, str
 
 static void instance_deinit(struct nm_mdns_server_instance* instance)
 {
+    np_udp_destroy(&instance->server->udp, instance->socket);
     np_completion_event_deinit(&instance->openedCompletionEvent);
     np_completion_event_deinit(&instance->recvWaitCompletionEvent);
     np_completion_event_deinit(&instance->sendCompletionEvent);
-    np_udp_destroy(&instance->server->udp, instance->socket);
 }
 
 // initialize the mdns server

@@ -41,7 +41,6 @@ static void resolve_and_free_test(struct tcp_test* t, np_error_code ec)
 
     np_completion_event_deinit(&t->completionEvent);
     np_event_queue_destroy_event(&t->eq, t->timeoutEvent);
-    np_tcp_destroy(&t->tcp, t->sock);
     np_free(t);
 }
 
@@ -130,6 +129,7 @@ static void create_destroy_test(struct tcp_test* t)
 
 void rst_test_done(struct tcp_test* t) {
     NABTO_LOG_INFO(LOG, "TCP RST test passed");
+    np_tcp_destroy(&t->tcp, t->sock);
     resolve_and_free_test(t, NABTO_EC_OK);
 }
 
@@ -217,7 +217,7 @@ static void echo_data_ready(np_error_code ec, void* data)
         resolve_and_free_test(t, NABTO_EC_INVALID_STATE);
         return;
     }
-
+    np_tcp_destroy(&t->tcp, t->sock);
     echo_test_done(t);
 }
 

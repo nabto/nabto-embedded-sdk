@@ -82,6 +82,7 @@ CHECK_INCLUDE_FILES("fcntl.h" HAVE_FCNTL_H)
 CHECK_INCLUDE_FILES("netinet/tcp.h" HAVE_NETINET_TCP_H)
 
 check_symbol_exists(timegm "time.h" HAVE_TIMEGM)
+check_symbol_exists(epoll_create "sys/epoll.h" HAVE_EPOLL_CREATE)
 
 set(HAVE_LIBEVENT_HEADERS 1)
 add_definitions(-DHAVE_LIBEVENT)
@@ -210,7 +211,14 @@ add_subdirectory(apps/common)
 add_subdirectory(src/platform)
 add_subdirectory(src/core)
 add_subdirectory(src/api)
-add_subdirectory(src/nabto_device_libevent)
+
+
+if (HAVE_EPOLL_CREATE)
+  add_subdirectory(src/modules/epoll)
+  add_subdirectory(src/nabto_device_epoll)
+else()
+  add_subdirectory(src/nabto_device_libevent)
+endif()
 
 if (HAVE_SYS_SELECT_H)
   add_subdirectory(src/modules/select_unix)
@@ -218,6 +226,8 @@ if (HAVE_SYS_SELECT_H)
   add_definitions(-DHAVE_SELECT_UNIX)
   set(HAVE_SELECT_UNIX 1)
 endif()
+
+
 
 if (UNIX)
   add_subdirectory(src/modules/dns/unix)

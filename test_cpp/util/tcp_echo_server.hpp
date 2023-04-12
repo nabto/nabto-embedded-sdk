@@ -6,7 +6,7 @@
 
 #include <set>
 
-#define LOG_MODULE "tcp_echo_server"
+static const char* LOG_MODULE = "tcp_echo_server";
 
 namespace nabto {
 namespace test {

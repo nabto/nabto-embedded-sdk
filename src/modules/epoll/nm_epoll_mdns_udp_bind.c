@@ -1,4 +1,4 @@
-#include "nm_select_unix_udp.h"
+#include "nm_epoll.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
@@ -35,7 +35,7 @@ static struct nm_mdns_udp_bind_functions module = {
     .async_bind_mdns_ipv6 = &async_bind_mdns_ipv6
 };
 
-struct nm_mdns_udp_bind nm_select_unix_mdns_udp_bind_get_impl(struct nm_select_unix* ctx)
+struct nm_mdns_udp_bind nm_epoll_mdns_udp_bind_get_impl(struct nm_epoll* ctx)
 {
     struct nm_mdns_udp_bind obj;
     obj.mptr = &module;
@@ -44,7 +44,7 @@ struct nm_mdns_udp_bind nm_select_unix_mdns_udp_bind_get_impl(struct nm_select_u
 }
 
 
-np_error_code async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
+static np_error_code async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
@@ -74,7 +74,7 @@ void async_bind_mdns_ipv4(struct np_udp_socket* sock, struct np_completion_event
     np_completion_event_resolve(completionEvent, ec);
 }
 
-np_error_code async_bind_mdns_ipv6_ec(struct np_udp_socket* sock)
+static np_error_code async_bind_mdns_ipv6_ec(struct np_udp_socket* sock)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "bind called on aborted socket");
@@ -112,7 +112,7 @@ void async_bind_mdns_ipv6(struct np_udp_socket* sock, struct np_completion_event
 
 np_error_code create_socket_ipv6(struct np_udp_socket* s)
 {
-    int sock = nm_select_unix_udp_nonblocking_socket(AF_INET6, SOCK_DGRAM);
+    int sock = nm_epoll_udp_create_nonblocking_socket(AF_INET6, SOCK_DGRAM);
     if (sock == -1) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
@@ -131,7 +131,7 @@ np_error_code create_socket_ipv6(struct np_udp_socket* s)
 
 np_error_code create_socket_ipv4(struct np_udp_socket* s)
 {
-    int sock = nm_select_unix_udp_nonblocking_socket(AF_INET, SOCK_DGRAM);
+    int sock = nm_epoll_udp_create_nonblocking_socket(AF_INET, SOCK_DGRAM);
     if (sock == -1) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }

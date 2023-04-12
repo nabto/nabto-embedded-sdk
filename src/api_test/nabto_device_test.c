@@ -144,7 +144,15 @@ void NABTO_DEVICE_API nabto_device_test_free(NabtoDevice* device)
 
     nabto_device_test_stop(device);
 
-    nabto_device_platform_deinit(dev);
+#ifdef NABTO_DEVICE_MBEDTLS
+    nm_mbedtls_cli_deinit(&dev->pl);
+#endif
+
+#ifdef NABTO_DEVICE_WOLFSSL
+    nm_wolfssl_cli_deinit(&dev->pl);
+#endif
+
+
 #ifdef NABTO_DEVICE_MBEDTLS
     nm_mbedtls_random_deinit(&dev->pl);
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
@@ -162,14 +170,17 @@ void NABTO_DEVICE_API nabto_device_test_free(NabtoDevice* device)
     nabto_device_future_queue_deinit(&dev->futureQueue);
 #endif
 
+
+
     np_free(dev->certificate);
     np_free(dev->privateKey);
 
+    nabto_device_platform_deinit(dev);
     if (dev->eventMutex) {
         nabto_device_threads_free_mutex(dev->eventMutex);
         dev->eventMutex = NULL;
     }
-
+    
     np_free(dev);
 
 
