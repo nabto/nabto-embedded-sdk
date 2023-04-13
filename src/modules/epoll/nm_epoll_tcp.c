@@ -61,11 +61,11 @@ void nm_epoll_tcp_free_socket(struct np_tcp_socket* sock)
     tcp_abort(sock);
     if (sock->fd != -1) {
         shutdown(sock->fd, SHUT_RDWR);
-        close(sock->fd);
         int status = epoll_ctl(sock->ctx->epollFd, EPOLL_CTL_DEL, sock->fd, &sock->epollEvent);
         if (status == -1) {
            NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
         }
+        close(sock->fd);
         sock->fd = -1;
     }
     np_free(sock);
