@@ -83,7 +83,17 @@ struct nm_epoll {
     int epollFd;
     bool running;
     struct nabto_device_mutex* coreMutex;
+
+    // Mutex protecting the queue, events can be queued from the core thread and all other threads
     struct nabto_device_mutex* queueMutex;
+
+    // Mutex protectint the handleEvents bit. When the handle events bit is set
+    // the system is handling events and is not blocked inside epoll_wait. If
+    // the system is not blocked inside epoll_Wait it is not nescessary to
+    // unblock the system with a message to the epoll notifyu pipe.
+    struct nabto_device_mutex* handleEventsMutex;
+    bool handleEvents;
+
     struct nm_event_queue eventQueue;
     struct np_timestamp ts;
 

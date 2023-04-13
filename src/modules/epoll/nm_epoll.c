@@ -33,6 +33,7 @@ np_error_code nm_epoll_init(struct nm_epoll* ctx, struct nabto_device_mutex* cor
     }
 
     ctx->queueMutex = nabto_device_threads_create_mutex();
+    ctx->handleEventsMutex = nabto_device_threads_create_mutex();
 
     nm_event_queue_init(&ctx->eventQueue);
     nm_epoll_notify_init(ctx);
@@ -43,6 +44,7 @@ np_error_code nm_epoll_init(struct nm_epoll* ctx, struct nabto_device_mutex* cor
 void nm_epoll_deinit(struct nm_epoll* ctx) 
 {
     nabto_device_threads_free_mutex(ctx->queueMutex);
+    nabto_device_threads_free_mutex(ctx->handleEventsMutex);
 }
 
 #define MAX_EVENTS 10
@@ -60,10 +62,25 @@ void nm_epoll_stop_blocking(struct nm_epoll* ctx)
     pthread_join(ctx->thread, &retval);
 }
 
+void set_handle_events(struct nm_epoll* ctx) 
+{
+    nabto_device_threads_mutex_lock(ctx->handleEventsMutex);
+    ctx->handleEvents = true;
+    nabto_device_threads_mutex_unlock(ctx->handleEventsMutex);
+}
+
+void reset_handle_events(struct nm_epoll* ctx) 
+{
+    nabto_device_threads_mutex_lock(ctx->handleEventsMutex);
+    ctx->handleEvents = false;
+    nabto_device_threads_mutex_unlock(ctx->handleEventsMutex);
+}
+
 void* epoll_loop(void* arg)
 {
     struct nm_epoll* ctx = arg;
     struct epoll_event events[MAX_EVENTS];
+    set_handle_events(ctx);
     while(ctx->running) {
 
         bool moreEvents = true;
@@ -78,7 +95,11 @@ void* epoll_loop(void* arg)
             }
         }
 
+        reset_handle_events(ctx);
+        
         int ready = epoll_wait(ctx->epollFd, events, MAX_EVENTS, millis);
+
+        set_handle_events(ctx);
         if (ready == -1) {
             NABTO_LOG_ERROR(LOG, "epoll wait error %s", strerror(errno));
         }
@@ -99,9 +120,9 @@ void* epoll_loop(void* arg)
                 nm_epoll_tcp_handle_event(s, events[i].events);
             }
         }
-
-        // free sockets
+        
     }
+    reset_handle_events(ctx);
     return NULL;
 }
 
@@ -137,5 +158,9 @@ void nm_epoll_notify_deinit(struct nm_epoll* epoll)
 void nm_epoll_notify(struct nm_epoll* epoll) 
 {
     uint8_t byte = 0x42;
-    send(epoll->notify.writeSocket, &byte, 1, MSG_DONTWAIT);
+    nabto_device_threads_mutex_lock(epoll->handleEventsMutex);
+    if (!epoll->handleEvents) {
+        send(epoll->notify.writeSocket, &byte, 1, MSG_DONTWAIT);
+    }
+    nabto_device_threads_mutex_unlock(epoll->handleEventsMutex);
 }
