@@ -78,10 +78,14 @@ void np_buffer_adapter(uint32_t severity, uint32_t module, uint32_t line, const 
 #endif
 
 #ifndef NABTO_LOG_TRACE
-#  ifdef HAS_NO_VARIADIC_MACROS
-#    define NABTO_LOG_TRACE np_trace_adapter
+#  ifdef NABTO_DEVICE_NO_TRACE_LOG
+#    define NABTO_LOG_TRACE(module, ...) (void)(module);
 #  else
-#    define NABTO_LOG_TRACE(module, ...) np_trace_adapter(NABTO_LOG_SEVERITY_TRACE, module, __LINE__, __FILE__, __VA_ARGS__);
+#    ifdef HAS_NO_VARIADIC_MACROS
+#      define NABTO_LOG_TRACE np_trace_adapter
+#    else
+#      define NABTO_LOG_TRACE(module, ...) np_trace_adapter(NABTO_LOG_SEVERITY_TRACE, module, __LINE__, __FILE__, __VA_ARGS__);
+#    endif
 #  endif
 #endif
 

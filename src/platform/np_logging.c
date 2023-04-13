@@ -66,6 +66,9 @@ void np_info_adapter(uint32_t severity, uint32_t module, uint32_t line, const ch
 }
 void np_trace_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file,  ...)
 {
+#ifdef NABTO_DEVICE_NO_TRACE_LOG
+    return;
+#endif
     (void)severity;
     va_list args;
     va_start(args, file);
@@ -75,6 +78,11 @@ void np_trace_adapter(uint32_t severity, uint32_t module, uint32_t line, const c
 }
 void np_raw_adapter(uint32_t severity, uint32_t module, uint32_t line, const char* file, ...)
 {
+#ifdef NABTO_DEVICE_NO_TRACE_LOG
+    if (severity == NABTO_LOG_SEVERITY_TRACE) {
+        return;
+    }
+#endif
     (void)severity;
     va_list args;
     va_start(args, file);

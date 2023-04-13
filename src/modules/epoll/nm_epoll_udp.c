@@ -96,7 +96,10 @@ void udp_abort(struct np_udp_socket* sock)
 }
 
 void update_epoll(struct np_udp_socket* sock) {
-    epoll_ctl(sock->sock, EPOLL_CTL_MOD, sock->sock, &sock->epollEvent);
+    int status = epoll_ctl(sock->impl->epollFd, EPOLL_CTL_MOD, sock->sock, &sock->epollEvent);
+    if (status == -1) {
+        NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+    }
 }
 
 void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec)
@@ -130,7 +133,10 @@ void udp_destroy(struct np_udp_socket* sock)
     // TODO handle ec
 
     if (sock->sock != -1) {
-        epoll_ctl(sock->impl->epollFd, EPOLL_CTL_DEL, sock->sock, NULL);
+        int status = epoll_ctl(sock->impl->epollFd, EPOLL_CTL_DEL, sock->sock, NULL);
+        if (status == -1) {
+           NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+        }
         close(sock->sock);
         sock->sock = -1;
     }
@@ -160,8 +166,10 @@ static np_error_code udp_async_bind_port_ec(struct np_udp_socket* sock, uint16_t
         return ec;
     }
 
-    epoll_ctl(sock->impl->epollFd, EPOLL_CTL_ADD, sock->sock, &sock->epollEvent);
-    // TODO handle ec
+    int status = epoll_ctl(sock->impl->epollFd, EPOLL_CTL_ADD, sock->sock, &sock->epollEvent);
+    if (status == -1) {
+        NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+    }
 
     return NABTO_EC_OK;
 }
@@ -214,7 +222,10 @@ void udp_async_recv_wait(struct np_udp_socket* sock,
     event.events = EPOLLIN;
     event.data.ptr = sock;
 
-    epoll_ctl(sock->impl->epollFd, EPOLL_CTL_MOD, sock->sock, &event);
+    int status = epoll_ctl(sock->impl->epollFd, EPOLL_CTL_MOD, sock->sock, &event);
+    if (status == -1) {
+        NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+    }
 
     return;
 }

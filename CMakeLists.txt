@@ -35,6 +35,7 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
+option(DEVICE_TRACE_LOG "Set this to off if trace log should be disabled" ON)
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
@@ -151,6 +152,10 @@ endif()
 
 if (HAVE_TIMEGM)
   add_definitions(-DHAVE_TIMEGM)
+endif()
+
+if (NOT DEVICE_TRACE_LOG)
+  add_definitions(-DNABTO_DEVICE_NO_TRACE_LOG)
 endif()
 
 include_directories(src)

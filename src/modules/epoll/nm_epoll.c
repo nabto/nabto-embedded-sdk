@@ -124,7 +124,7 @@ void nm_epoll_notify_init(struct nm_epoll* epoll)
 
     status = epoll_ctl(epoll->epollFd, EPOLL_CTL_ADD, epoll->notify.readSocket, &e);
     if (status == -1) {
-        // TODO
+        NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
     }
 }
 

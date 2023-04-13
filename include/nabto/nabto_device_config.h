@@ -49,4 +49,8 @@
 #define NABTO_DEVICE_FUTURE_QUEUE
 #endif
 
+#ifndef NABTO_DEVICE_NO_TRACE_LOG
+#define NABTO_DEVICE_TRACE_LOG
+#endif
+
 #endif

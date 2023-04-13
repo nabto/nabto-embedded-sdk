@@ -62,7 +62,10 @@ void nm_epoll_tcp_free_socket(struct np_tcp_socket* sock)
     if (sock->fd != -1) {
         shutdown(sock->fd, SHUT_RDWR);
         close(sock->fd);
-        epoll_ctl(sock->ctx->epollFd, EPOLL_CTL_DEL, sock->fd, &sock->epollEvent);
+        int status = epoll_ctl(sock->ctx->epollFd, EPOLL_CTL_DEL, sock->fd, &sock->epollEvent);
+        if (status == -1) {
+           NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+        }
         sock->fd = -1;
     }
     np_free(sock);
@@ -127,7 +130,10 @@ static np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_a
 
     sock->fd = s;
     sock->epollEvent.data.ptr = sock;
-    epoll_ctl(sock->ctx->epollFd, EPOLL_CTL_ADD, sock->fd, &sock->epollEvent);
+    int status = epoll_ctl(sock->ctx->epollFd, EPOLL_CTL_ADD, sock->fd, &sock->epollEvent);
+    if (status == -1) {
+        NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+    }
 
     int flags;
 #ifndef SOCK_NONBLOCK

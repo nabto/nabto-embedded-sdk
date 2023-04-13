@@ -64,6 +64,10 @@ static np_error_code async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
     }
 
     mdns_update_ipv4_socket_registration(sock->sock);
+    int status = epoll_ctl(sock->impl->epollFd, EPOLL_CTL_ADD, sock->sock, &sock->epollEvent);
+    if (status == -1) {
+        NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+    }
 
     return NABTO_EC_OK;
 }
@@ -99,6 +103,10 @@ static np_error_code async_bind_mdns_ipv6_ec(struct np_udp_socket* sock)
     }
 
     mdns_update_ipv6_socket_registration(sock->sock);
+    status = epoll_ctl(sock->impl->epollFd, EPOLL_CTL_ADD, sock->sock, &sock->epollEvent);
+    if (status == -1) {
+        NABTO_LOG_ERROR(LOG, "epoll_ctl error %s",strerror(errno));
+    }
 
     return NABTO_EC_OK;
 }

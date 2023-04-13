@@ -6,6 +6,8 @@
 #include <util/tcp_echo_server.hpp>
 #include <util/udp_echo_server.hpp>
 
+#include <iostream>
+
 static void test_create_free() 
 {
     for (int i = 0; i < 10; i++) {
@@ -126,6 +128,16 @@ void logging_test()
     nabto_device_test_free(device);
 }
 
+void mdns_test() {
+    NabtoDevice* device = nabto_device_test_new();
+    nabto_device_test_mdns_publish_service(device);
+    do 
+    {
+        std::cout << '\n' << "Press a key to continue...";
+    } while (std::cin.get() != '\n');
+    nabto_device_test_free(device);
+}
+
 void testLoop() {
     nabto::IoServicePtr ioService = nabto::IoService::create("test");
     nabto::test::TcpEchoServer tcpEchoServer(ioService->getIoService(), NULL);
@@ -141,6 +153,8 @@ void testLoop() {
         tcp_test("127.0.0.1", tcpEchoServer.getPort());
         local_ip_test();
     }
+
+    mdns_test();
 }
 
 int main() {

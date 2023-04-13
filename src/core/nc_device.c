@@ -714,7 +714,17 @@ void module_logger(void* userData, enum nn_log_severity severity, const char* mo
      if (severity == NN_LOG_SEVERITY_INFO) {
         np_log.log(NABTO_LOG_SEVERITY_INFO, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
     } else if (severity == NN_LOG_SEVERITY_TRACE) {
+#if NABTO_DEVICE_NO_TRACE_LOG
+        (void)userData;
+        (void)severity;
+        (void)module;
+        (void)(file);
+        (void)(line);
+        (void)fmt;
+        (void)args;
+#else
         np_log.log(NABTO_LOG_SEVERITY_TRACE, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
+#endif
 
     } else if (severity == NN_LOG_SEVERITY_WARN) {
         np_log.log(NABTO_LOG_SEVERITY_WARN, NABTO_LOG_MODULE_NONE, line, file, fmt, args);
