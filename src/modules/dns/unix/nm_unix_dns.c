@@ -151,19 +151,33 @@ void nm_unix_dns_resolver_run(struct nm_unix_dns_resolver* r)
     pthread_create(&r->thread, NULL, &resolve_thread, r);
 }
 
+void nm_unix_dns_resolver_stop(struct nm_unix_dns_resolver* r)
+{
+    stop_resolver(r);
+}
+
 void stop_resolver(struct nm_unix_dns_resolver* resolver)
 {
-    if (resolver->stopped) {
+    bool stopped;
+    pthread_mutex_lock(&resolver->mutex);
+    stopped = resolver->stopped;
+    pthread_mutex_unlock(&resolver->mutex);    
+
+
+    if (stopped) {
         return;
     }
+
     pthread_mutex_lock(&resolver->mutex);
     resolver->stopped = true;
 
     while (!nn_llist_empty(&resolver->events)) {
         struct nn_llist_iterator first = nn_llist_begin(&resolver->events);
-        nn_llist_erase(&first);
         struct nm_dns_resolve_event* event = nn_llist_get_item(&first);
+        
         np_completion_event_resolve(event->completionEvent, NABTO_EC_STOPPED);
+
+        nn_llist_erase(&first);
         np_free(event);
     }
 

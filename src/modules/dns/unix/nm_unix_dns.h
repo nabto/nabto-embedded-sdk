@@ -37,6 +37,12 @@ void nm_unix_dns_resolver_deinit(struct nm_unix_dns_resolver* resolver);
  */
 void nm_unix_dns_resolver_run(struct nm_unix_dns_resolver* resolver);
 
+/**
+ * Stops all outstanding dns resolutions and does not allow anymore to be
+ * started.
+ */
+void nm_unix_dns_resolver_stop(struct nm_unix_dns_resolver* resolver);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

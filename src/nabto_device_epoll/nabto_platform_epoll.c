@@ -136,6 +136,7 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
     nabto_device_threads_mutex_lock(platform->coreMutex);
     nm_mdns_server_deinit(&platform->mdnsServer);
     nabto_device_threads_mutex_unlock(platform->coreMutex);
+
     nm_unix_dns_resolver_deinit(&platform->dnsResolver);
     nm_epoll_deinit(&platform->epollContext);
     np_free(platform);
@@ -145,5 +146,6 @@ void nabto_device_platform_deinit(struct nabto_device_context* device)
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
     struct epoll_platform* platform = nabto_device_integration_get_platform_data(device);
+    nm_unix_dns_resolver_stop(&platform->dnsResolver);
     nm_epoll_stop_blocking(&platform->epollContext);
 }
