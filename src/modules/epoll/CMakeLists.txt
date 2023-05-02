@@ -6,6 +6,7 @@ set(src
   nm_epoll_tcp.c
   nm_epoll_mdns_udp_bind.c
   nm_epoll_event_queue.c
+  nm_epoll_timestamp.c
   )
 
 add_library( nm_epoll STATIC "${src}")

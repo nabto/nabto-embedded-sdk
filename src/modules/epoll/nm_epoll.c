@@ -18,12 +18,12 @@
 static void* epoll_loop(void* arg);
 
 
-np_error_code nm_epoll_init(struct nm_epoll* ctx, struct nabto_device_mutex* coreMutex, struct np_timestamp ts)
+np_error_code nm_epoll_init(struct nm_epoll* ctx, struct nabto_device_mutex* coreMutex)
 {
     memset(ctx, 0, sizeof(struct nm_epoll));
 
     ctx->coreMutex = coreMutex;
-    ctx->ts = ts;
+    ctx->ts = nm_epoll_ts_get_impl(ctx);
     ctx->running = true;
 
     ctx->epollFd = epoll_create(1);
@@ -34,6 +34,8 @@ np_error_code nm_epoll_init(struct nm_epoll* ctx, struct nabto_device_mutex* cor
 
     ctx->queueMutex = nabto_device_threads_create_mutex();
     ctx->handleEventsMutex = nabto_device_threads_create_mutex();
+
+    nm_epoll_ts_update(ctx);
 
     nm_event_queue_init(&ctx->eventQueue);
     nm_epoll_notify_init(ctx);
@@ -98,6 +100,7 @@ void* epoll_loop(void* arg)
         reset_handle_events(ctx);
         
         int ready = epoll_wait(ctx->epollFd, events, MAX_EVENTS, millis);
+        nm_epoll_ts_update(ctx);
 
         set_handle_events(ctx);
         if (ready == -1) {

@@ -1,6 +1,8 @@
 #include <boost/test/unit_test.hpp>
 #include <platform/np_logging.h>
 
+#include <nabto/nabto_device_config.h>
+
 namespace {
 struct print {
     uint32_t severity;
@@ -81,9 +83,11 @@ BOOST_AUTO_TEST_CASE(severity)
     NABTO_LOG_INFO (45, "%d:%c", 22, 'c');
     BOOST_TEST(check_pnt(NABTO_LOG_SEVERITY_INFO, 45, "%d:%c", 22 , 'c'));
     reset_pnt();
+#if defined(NABTO_DEVICE_LOG_TRACE)
     NABTO_LOG_TRACE(47, "%d:%c", 24, 'a');
     BOOST_TEST(check_pnt(NABTO_LOG_SEVERITY_TRACE, 47, "%d:%c", 24 , 'a'));
     reset_pnt();
+#endif
     np_log.log=&test_log_no_args;
     NABTO_LOG_INFO(48, "test with no variadic arguments");
     BOOST_TEST(pnt.severity == NABTO_LOG_SEVERITY_INFO);

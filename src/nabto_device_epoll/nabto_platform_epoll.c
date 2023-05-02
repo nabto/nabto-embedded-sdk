@@ -57,9 +57,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     }
     platform->coreMutex = eventMutex;
 
-    struct np_timestamp timestamp = nm_unix_ts_get_impl();
-    
-    ec = nm_epoll_init(&platform->epollContext, eventMutex, timestamp);
+    ec = nm_epoll_init(&platform->epollContext, eventMutex);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -70,6 +68,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct np_tcp tcp = nm_epoll_tcp_get_impl(&platform->epollContext);
     struct np_dns dns = nm_unix_dns_resolver_get_impl(&platform->dnsResolver);
     struct np_local_ip localIp = nm_unix_local_ip_get_impl(&platform->epollContext);
+    struct np_timestamp timestamp = nm_epoll_ts_get_impl(&platform->epollContext);
 
 
     // Create an event queue which is based on libevent.

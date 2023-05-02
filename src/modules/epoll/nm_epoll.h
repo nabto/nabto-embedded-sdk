@@ -99,10 +99,12 @@ struct nm_epoll {
 
     struct nm_epoll_notify notify;
 
+    uint32_t cachedTimestamp;
+
     pthread_t thread;
 };
 
-np_error_code nm_epoll_init(struct nm_epoll* ctx, struct nabto_device_mutex* coreMutex, struct np_timestamp ts);
+np_error_code nm_epoll_init(struct nm_epoll* ctx, struct nabto_device_mutex* coreMutex);
 
 np_error_code nm_epoll_run(struct nm_epoll* ctx);
 
@@ -129,6 +131,8 @@ struct np_event_queue nm_epoll_event_queue_get_impl(struct nm_epoll* ctx);
 
 struct nm_mdns_udp_bind nm_epoll_mdns_udp_bind_get_impl(struct nm_epoll* ctx);
 
+struct np_timestamp nm_epoll_ts_get_impl(struct nm_epoll* ctx);
+
 int nm_epoll_udp_create_nonblocking_socket(int domain, int type);
 
 void nm_epoll_udp_handle_event(struct np_udp_socket* socket, uint32_t events);
@@ -144,5 +148,9 @@ void nm_epoll_notify(struct nm_epoll* epoll);
 // event queue handling
 bool nm_epoll_event_queue_handle_event(struct nm_epoll* epoll);
 bool nm_epoll_event_queue_get_next_timed_event(struct nm_epoll* epoll, int32_t* ms);
+
+// Timestamp handling
+
+void nm_epoll_ts_update(struct nm_epoll* ctx);
 
 #endif
