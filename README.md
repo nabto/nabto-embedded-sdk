@@ -41,6 +41,16 @@ To do a cross build, set the `CC` environment variable to point to the cross com
 export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 ```
 
+### Building with external MbedTLS library
+
+It is possible to specify that an external MbedTLS library should be by using
+the variables NABTO_DEVICE_MBEDTLS_PROVIDER and MbedTLS_DIR cmake variables.
+
+Example:
+```
+cmake -DNABTO_DEVICE_MBEDTLS_PROVIDER=package -DMbedTLS_DIR=${MBEDTLS_INSTALL_DIR}/lib/cmake/MbedTLS ${SCRIPT_DIR}/../..
+```
+
 ### Testing
 
 If build passed, and `DEVICE_BUILD_TESTS` is set to `ON` unit tests can be run.

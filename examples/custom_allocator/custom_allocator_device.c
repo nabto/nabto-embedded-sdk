@@ -70,10 +70,14 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+#if defined(MBEDTLS_PLATFORM_MEMORY)
     if (mbedtls_platform_set_calloc_free( ta_calloc, custom_free) != 0) {
         printf("Could not set mbedtls allocation functions" NEWLINE);
         return -1;
     }
+#else
+    printf("MbedTLS library is missing MBEDTLS_PLATFORM_MEMORY");
+#endif
 
     char* productId = argv[1];
     char* deviceId = argv[2];

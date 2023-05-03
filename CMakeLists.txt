@@ -36,6 +36,10 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
+set(NABTO_DEVICE_MBEDTLS_PROVIDER "module" CACHE STRING "Provider of MbedTLS library")
+set_property(CACHE NABTO_DEVICE_MBEDTLS_PROVIDER PROPERTY STRINGS "module" "package")
+
+
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
   cmake_policy(SET CMP0091 NEW)
@@ -164,6 +168,7 @@ add_subdirectory(src/modules/communication_buffer)
 option(NABTO_DEVICE_WOLFSSL "Use wolfssl as DTLS module instead of Mbedtls" OFF)
 option(NABTO_DEVICE_DTLS_LOG "Enable logging for 3rd party DTLS module" OFF)
 option(NABTO_DEVICE_DTLS_CLIENT_ONLY "Make device be dtls client for client connections" OFF)
+
 
 if (NABTO_DEVICE_DTLS_LOG)
   add_definitions(-DNABTO_DEVICE_DTLS_LOG)
