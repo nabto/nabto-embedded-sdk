@@ -114,7 +114,7 @@ target_include_directories(3rdparty_mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/m
 target_compile_definitions(3rdparty_mbedtls PUBLIC -DMBEDTLS_CONFIG_FILE=<nabto_mbedtls_config.h>)
 
 else()
-  find_package(MbedTLS 3 REQUIRED)
+  find_package(MbedTLS REQUIRED)
   add_library(3rdparty_mbedtls INTERFACE)
   target_link_libraries(3rdparty_mbedtls INTERFACE MbedTLS::mbedtls)
 endif()
