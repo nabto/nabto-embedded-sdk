@@ -103,6 +103,8 @@ set(src_tls
 )
 endif()
 
+if (NABTO_DEVICE_MBEDTLS_PROVIDER MATCHES "module")
+
 set(config_file config/nabto_mbedtls_config.h)
 
 add_library(3rdparty_mbedtls "${src_tls}" "${src_x509}" "${src_crypto}" "${config_file}")
@@ -110,3 +112,9 @@ add_library(3rdparty_mbedtls "${src_tls}" "${src_x509}" "${src_crypto}" "${confi
 target_include_directories(3rdparty_mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories(3rdparty_mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include)
 target_compile_definitions(3rdparty_mbedtls PUBLIC -DMBEDTLS_CONFIG_FILE=<nabto_mbedtls_config.h>)
+
+else()
+  find_package(MbedTLS REQUIRED)
+  add_library(3rdparty_mbedtls INTERFACE)
+  target_link_libraries(3rdparty_mbedtls INTERFACE MbedTLS::mbedtls)
+endif()

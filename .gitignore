@@ -6,6 +6,7 @@
 *.gdb_history
 build
 build2
+tmp
 install
 _*
 callgrind*
