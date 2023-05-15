@@ -73,6 +73,23 @@ struct nc_attacher_service_invoke_context {
     void* cbData;
 };
 
+typedef void (*nc_attacher_get_turn_server_callback)(const np_error_code ec, void* userData);
+
+struct nc_attacher_turn_server {
+    char* username;
+    char* credential;
+    int32_t ttl;
+    char** urls;
+    size_t urlsLen;
+};
+
+struct nc_attacher_get_turn_server_context {
+    struct nabto_coap_client_request* coapRequest;
+    struct nn_vector turnServers;
+    nc_attacher_get_turn_server_callback cb;
+    void* cbData;
+};
+
 typedef void (*nc_attacher_closed_callback)(void* data);
 typedef void (*nc_attacher_event_listener)(enum nc_device_event event, void* data);
 
@@ -282,6 +299,17 @@ void nc_attacher_fcm_send_stop(struct nc_attacher_fcm_send_context* fcmSend);
 np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context* attacher, struct nc_attacher_service_invoke_context* serviceInvoke, nc_attacher_service_invoke_callback cb, void* userData);
 
 void nc_attacher_service_invoke_stop(struct nc_attacher_service_invoke_context* serviceInvoke);
+
+
+void nc_attacher_turn_ctx_init(struct nc_attacher_get_turn_server_context* ctx);
+
+void nc_attacher_turn_ctx_deinit(struct nc_attacher_get_turn_server_context* ctx);
+
+/*
+ * Get turn server credentials from the basestation.
+ * The caller is responsible for (de-)initializing the turnServers vector in the nc_attacher_get_turn_server_context
+ */
+np_error_code nc_attacher_get_turn_server(struct nc_attach_context* attacher, struct nc_attacher_get_turn_server_context* ctx, const char* identifier, nc_attacher_get_turn_server_callback cb, void* userData);
 
 void nc_attacher_disable_certificate_validation(struct nc_attach_context* attacher);
 

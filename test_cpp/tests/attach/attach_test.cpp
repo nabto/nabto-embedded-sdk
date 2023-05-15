@@ -27,7 +27,6 @@ class AttachTest {
         struct np_platform* pl = tp_.getPlatform();
         np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
         memset(&device_, 0, sizeof(device_));
-
     }
 
     ~AttachTest()
@@ -130,11 +129,28 @@ class AttachTest {
         fut.get();
     }
 
+    static void turnCb(const np_error_code ec, void* userData)
+    {
+        BOOST_TEST(ec == NABTO_EC_OK);
+        AttachTest* at = (AttachTest*)userData;
+        at->turnCb_(*at, ec, &at->turn_);
+        nc_attacher_turn_ctx_deinit(&at->turn_);
+    }
+
+    void getTurnServers(std::string identifier, std::function<void(nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_get_turn_server_context* ctx)> cb)
+    {
+        nc_attacher_turn_ctx_init(&turn_);
+        turnCb_ = cb;
+        nc_attacher_get_turn_server(&attach_, &turn_, identifier.c_str(), &AttachTest::turnCb, this);
+
+    }
+
     nabto::test::TestPlatform& tp_;
     struct nc_attach_context attach_;
     struct nc_device_context device_;
     struct nc_coap_client_context coapClient_;
     struct nc_udp_dispatch_context udpDispatch_;
+    struct nc_attacher_get_turn_server_context turn_;
 
     struct np_completion_event boundCompletionEvent;
 
@@ -153,6 +169,8 @@ class AttachTest {
     std::function<void (AttachTest& at)> event_;
     std::function<void (AttachTest& at)> state_;
     std::function<void (AttachTest& at)> closed_;
+    std::function<void(nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_get_turn_server_context* ctx)> turnCb_;
+
     bool ended_ = false;
     struct np_event* endEvent_;
     enum nc_device_event lastDevEvent_ = NC_DEVICE_EVENT_DETACHED;
@@ -777,6 +795,50 @@ BOOST_AUTO_TEST_CASE(attach_expired_certificate, *boost::unit_test::timeout(300)
 
     at.waitForTestEnd();
     attachServer->stop();
+}
+
+BOOST_AUTO_TEST_CASE(get_turn, *boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    std::string identifier = "foobar";
+
+    at.start([identifier](nabto::test::AttachTest& at) {
+        at.getTurnServers(identifier, [identifier](nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_get_turn_server_context* ctx){
+            void* elm;
+            NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->turnServers) {
+                struct nc_attacher_turn_server* ts = (struct nc_attacher_turn_server*)elm;
+                std::string un(ts->username);
+                BOOST_TEST(un == at.productId_ + ":" + at.deviceId_ + ":" + identifier);
+                std::string cred(ts->credential);
+                bool is1 = false;
+                bool is2 = false;
+                BOOST_TEST(((is1 = cred == "verySecretAccessKey") || (is2 = cred == "anotherVerySecretAccessKey")));
+                BOOST_TEST(is1 != is2);
+                if (is1) {
+                    BOOST_TEST(ts->urlsLen == (size_t)2);
+                    std::string url1(ts->urls[0]);
+                    BOOST_TEST(url1 == "turn:turn.nabto.net:9991?transport=udp");
+                    std::string url2(ts->urls[1]);
+                    BOOST_TEST(url2 == "turn:turn.nabto.net:9991?transport=tcp");
+                }
+                if (is2) {
+                    BOOST_TEST(ts->urlsLen == (size_t)1);
+                    std::string url1(ts->urls[0]);
+                    BOOST_TEST(url1 == "turns:turn.nabto.net:443?transport=tcp");
+
+                }
+            }
+            at.end();
+        });
+        }, [](nabto::test::AttachTest& at) {(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

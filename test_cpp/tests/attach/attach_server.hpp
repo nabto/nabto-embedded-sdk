@@ -289,10 +289,67 @@ class AttachServer : public AttachCoapServer,
         dtlsServer_.addResourceHandler(
             NABTO_COAP_CODE_POST, "/device/service/invoke",
             [self](DtlsConnectionPtr connection,
-                   std::shared_ptr<CoapServerRequest> request,
-                   std::shared_ptr<CoapServerResponse> response) {
-                self->handleServiceInvoke(connection, request, response);
+                std::shared_ptr<CoapServerRequest> request,
+                std::shared_ptr<CoapServerResponse> response) {
+                    self->handleServiceInvoke(connection, request, response);
             });
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_POST, "/device/turn",
+            [self](DtlsConnectionPtr connection,
+                std::shared_ptr<CoapServerRequest> request,
+                std::shared_ptr<CoapServerResponse> response) {
+                    self->handleTurn(connection, request, response);
+            });
+    }
+
+    void handleTurn(DtlsConnectionPtr connection,
+        std::shared_ptr<CoapServerRequest> request,
+        std::shared_ptr<CoapServerResponse> response)
+    {
+        (void)request;
+        if (request->getContentFormat() !=
+            NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
+            CoapError err = CoapError(415, "Bad content format");
+            err.createCborError(response);
+            return;
+        }
+        std::vector<uint8_t> payload = request->getPayload();
+        nlohmann::json decodedRequest;
+        try {
+            decodedRequest = nlohmann::json::from_cbor(payload);
+        }
+        catch (std::exception& e) {
+            CoapError err = CoapError(400, "Invalid cbor");
+            err.createCborError(response);
+            return;
+        }
+        std::string identifier;
+        try {
+            identifier = decodedRequest["Identifier"].get<std::string>();
+        } catch (std::exception& e) {
+            CoapError err = CoapError(400, "Missing or invalid Identifier");
+            err.createCborError(response);
+            return;
+        }
+
+        response->setCode(201);
+        response->setContentFormat(
+            NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+        nlohmann::json s1;
+        s1["Username"] = "test:devTest:" + identifier;
+        s1["Credential"] = "verySecretAccessKey";
+        s1["Ttl"] = 86400;
+        s1["Urls"] = nlohmann::json::array({ "turn:turn.nabto.net:9991?transport=udp", "turn:turn.nabto.net:9991?transport=tcp" });
+        nlohmann::json s2;
+        s2["Username"] = "test:devTest:" + identifier;
+        s2["Credential"] = "anotherVerySecretAccessKey";
+        s2["Ttl"] = 86400;
+        s2["Urls"] = nlohmann::json::array({ "turns:turn.nabto.net:443?transport=tcp" });
+
+        nlohmann::json root = nlohmann::json::array({s1, s2});
+
+        std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
+        response->setPayload(b);
     }
 
     void handleServiceInvoke(DtlsConnectionPtr connection,
