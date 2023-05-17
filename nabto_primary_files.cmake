@@ -74,7 +74,7 @@ set(ne_core_src
   ${root_dir}/src/core/nc_attacher_sct.c
   ${root_dir}/src/core/nc_attacher_fcm.c
   ${root_dir}/src/core/nc_attacher_service_invoke.c
-  ${root_dir}/src/core/nc_attacher_get_turn_server.c
+  ${root_dir}/src/core/nc_attacher_ice_servers.c
   ${root_dir}/src/core/nc_coap_rest_error.c
   ${root_dir}/src/core/nc_rendezvous.c
   ${root_dir}/src/core/nc_stun.c
