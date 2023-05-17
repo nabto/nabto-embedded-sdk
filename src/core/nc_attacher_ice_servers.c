@@ -14,19 +14,19 @@
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data);
 size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize);
-bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_get_turn_server_context* ctx);
+bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx);
 
 
 const char* coapPath[] = { "device", "turn" };
 
-void nc_attacher_turn_ctx_init(struct nc_attacher_get_turn_server_context* ctx) {
-    nn_vector_init(&ctx->turnServers, sizeof(struct nc_attacher_turn_server), np_allocator_get());
+void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx) {
+    nn_vector_init(&ctx->iceServers, sizeof(struct nc_attacher_ice_server), np_allocator_get());
 }
 
-void nc_attacher_turn_ctx_deinit(struct nc_attacher_get_turn_server_context* ctx) {
+void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_context* ctx) {
     void* elm;
-    NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->turnServers) {
-        struct nc_attacher_turn_server* ts = (struct nc_attacher_turn_server*)elm;
+    NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->iceServers) {
+        struct nc_attacher_ice_server* ts = (struct nc_attacher_ice_server*)elm;
         void* url;
         NN_VECTOR_FOREACH(&url, &ts->urls) {
             np_free(url);
@@ -35,11 +35,11 @@ void nc_attacher_turn_ctx_deinit(struct nc_attacher_get_turn_server_context* ctx
         np_free(ts->username);
         np_free(ts->credential);
     }
-    nn_vector_deinit(&ctx->turnServers);
+    nn_vector_deinit(&ctx->iceServers);
 }
 
 
-np_error_code nc_attacher_get_turn_server(struct nc_attach_context* attacher, struct nc_attacher_get_turn_server_context* ctx, const char* identifier, nc_attacher_get_turn_server_callback cb, void* userData)
+np_error_code nc_attacher_request_ice_servers(struct nc_attach_context* attacher, struct nc_attacher_request_ice_servers_context* ctx, const char* identifier, nc_attacher_request_ice_servers_callback cb, void* userData)
 {
     if (attacher->state != NC_ATTACHER_STATE_ATTACHED) {
         return NABTO_EC_NOT_ATTACHED;
@@ -89,7 +89,7 @@ size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data)
 {
-    struct nc_attacher_get_turn_server_context* ctx = data;
+    struct nc_attacher_request_ice_servers_context* ctx = data;
     enum nabto_coap_client_status status =
         nabto_coap_client_request_get_status(request);
     np_error_code ec = NABTO_EC_OK;
@@ -145,7 +145,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
     ctx->cb(ec, ctx->cbData);
 }
 
-bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_get_turn_server_context* ctx) {
+bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx) {
     CborParser parser;
     CborValue root;
     CborValue it;
@@ -171,8 +171,8 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         cbor_value_map_find_value(&it, "Credential", &credential);
         cbor_value_map_find_value(&it, "Urls", &urls);
 
-        struct nc_attacher_turn_server server;
-        memset(&server, 0, sizeof(struct nc_attacher_turn_server));
+        struct nc_attacher_ice_server server;
+        memset(&server, 0, sizeof(struct nc_attacher_ice_server));
 
         CborValue urlsIt;
         if (!nc_cbor_copy_text_string(&username, &server.username, 4096) ||
@@ -216,7 +216,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
             np_free(&server.urls);
             return false;
         }
-        nn_vector_push_back(&ctx->turnServers, &server);
+        nn_vector_push_back(&ctx->iceServers, &server);
     }
 
     if (cbor_value_leave_container(&root, &it) != CborNoError) {

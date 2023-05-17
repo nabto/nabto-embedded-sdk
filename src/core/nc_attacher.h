@@ -73,18 +73,18 @@ struct nc_attacher_service_invoke_context {
     void* cbData;
 };
 
-typedef void (*nc_attacher_get_turn_server_callback)(const np_error_code ec, void* userData);
+typedef void (*nc_attacher_request_ice_servers_callback)(const np_error_code ec, void* userData);
 
-struct nc_attacher_turn_server {
+struct nc_attacher_ice_server {
     char* username;
     char* credential;
     struct nn_vector urls;
 };
 
-struct nc_attacher_get_turn_server_context {
+struct nc_attacher_request_ice_servers_context {
     struct nabto_coap_client_request* coapRequest;
-    struct nn_vector turnServers;
-    nc_attacher_get_turn_server_callback cb;
+    struct nn_vector iceServers;
+    nc_attacher_request_ice_servers_callback cb;
     void* cbData;
 };
 
@@ -299,15 +299,11 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context* attac
 void nc_attacher_service_invoke_stop(struct nc_attacher_service_invoke_context* serviceInvoke);
 
 
-void nc_attacher_turn_ctx_init(struct nc_attacher_get_turn_server_context* ctx);
+void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx);
 
-void nc_attacher_turn_ctx_deinit(struct nc_attacher_get_turn_server_context* ctx);
+void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_context* ctx);
 
-/*
- * Get turn server credentials from the basestation.
- * The caller is responsible for (de-)initializing the turnServers vector in the nc_attacher_get_turn_server_context
- */
-np_error_code nc_attacher_get_turn_server(struct nc_attach_context* attacher, struct nc_attacher_get_turn_server_context* ctx, const char* identifier, nc_attacher_get_turn_server_callback cb, void* userData);
+np_error_code nc_attacher_request_ice_servers(struct nc_attach_context* attacher, struct nc_attacher_request_ice_servers_context* ctx, const char* identifier, nc_attacher_request_ice_servers_callback cb, void* userData);
 
 void nc_attacher_disable_certificate_validation(struct nc_attach_context* attacher);
 

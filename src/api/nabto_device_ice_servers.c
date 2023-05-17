@@ -11,7 +11,7 @@
 
 struct nabto_device_ice_server_request {
     struct nabto_device_context* dev;
-    struct nc_attacher_get_turn_server_context turnCtx;
+    struct nc_attacher_request_ice_servers_context turnCtx;
     struct nabto_device_future* future;
 };
 
@@ -22,7 +22,7 @@ nabto_device_ice_servers_request_new(NabtoDevice* device)
     if (req != NULL) {
         struct nabto_device_context* dev = (struct nabto_device_context*)device;
         req->dev = dev;
-        nc_attacher_turn_ctx_init(&req->turnCtx);
+        nc_attacher_ice_servers_ctx_init(&req->turnCtx);
     }
     return (NabtoDeviceIceServersRequest*)req;
 }
@@ -34,7 +34,7 @@ nabto_device_ice_servers_request_free(NabtoDeviceIceServersRequest* request)
     struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
     struct nabto_device_context* dev = req->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_attacher_turn_ctx_deinit(&req->turnCtx);
+    nc_attacher_ice_servers_ctx_deinit(&req->turnCtx);
     np_free(req);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
@@ -59,7 +59,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_ice_servers_request_send(const ch
     } else {
         req->future = f;
 
-        np_error_code ec = nc_attacher_get_turn_server(&dev->core.attacher, &req->turnCtx, identifier, turn_req_send_callback, req);
+        np_error_code ec = nc_attacher_request_ice_servers(&dev->core.attacher, &req->turnCtx, identifier, turn_req_send_callback, req);
 
         if (ec != NABTO_EC_OK) {
             nabto_device_future_resolve(f, ec);
@@ -74,14 +74,14 @@ size_t NABTO_DEVICE_API
 nabto_device_ice_servers_request_get_server_count(NabtoDeviceIceServersRequest* request)
 {
     struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
-    return nn_vector_size(&req->turnCtx.turnServers);
+    return nn_vector_size(&req->turnCtx.iceServers);
 }
 
 const char* NABTO_DEVICE_API
 nabto_device_ice_servers_request_get_username(NabtoDeviceIceServersRequest* request, size_t index)
 {
     struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
-    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, index);
+    struct nc_attacher_ice_server* server = nn_vector_reference(&req->turnCtx.iceServers, index);
     if (server != NULL) {
         return server->username;
     } else {
@@ -93,7 +93,7 @@ const char* NABTO_DEVICE_API
 nabto_device_ice_servers_request_get_credential(NabtoDeviceIceServersRequest* request, size_t index)
 {
     struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
-    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, index);
+    struct nc_attacher_ice_server* server = nn_vector_reference(&req->turnCtx.iceServers, index);
     if (server != NULL) {
         return server->credential;
     } else {
@@ -105,7 +105,7 @@ size_t NABTO_DEVICE_API
 nabto_device_ice_servers_request_get_urls_count(NabtoDeviceIceServersRequest* request, size_t index)
 {
     struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
-    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, index);
+    struct nc_attacher_ice_server* server = nn_vector_reference(&req->turnCtx.iceServers, index);
     if (server != NULL) {
         return nn_vector_size(&server->urls);
     } else {
@@ -118,7 +118,7 @@ const char* NABTO_DEVICE_API
 nabto_device_ice_servers_request_get_url(NabtoDeviceIceServersRequest* request, size_t serverIndex, size_t urlIndex)
 {
     struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
-    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, serverIndex);
+    struct nc_attacher_ice_server* server = nn_vector_reference(&req->turnCtx.iceServers, serverIndex);
     if (server != NULL) {
         char* url = NULL;
         nn_vector_get(&server->urls, urlIndex, &url);

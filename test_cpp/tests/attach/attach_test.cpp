@@ -134,14 +134,14 @@ class AttachTest {
         BOOST_TEST(ec == NABTO_EC_OK);
         AttachTest* at = (AttachTest*)userData;
         at->turnCb_(*at, ec, &at->turn_);
-        nc_attacher_turn_ctx_deinit(&at->turn_);
+        nc_attacher_ice_servers_ctx_deinit(&at->turn_);
     }
 
-    void getTurnServers(std::string identifier, std::function<void(nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_get_turn_server_context* ctx)> cb)
+    void getTurnServers(std::string identifier, std::function<void(nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_request_ice_servers_context* ctx)> cb)
     {
-        nc_attacher_turn_ctx_init(&turn_);
+        nc_attacher_ice_servers_ctx_init(&turn_);
         turnCb_ = cb;
-        nc_attacher_get_turn_server(&attach_, &turn_, identifier.c_str(), &AttachTest::turnCb, this);
+        nc_attacher_request_ice_servers(&attach_, &turn_, identifier.c_str(), &AttachTest::turnCb, this);
 
     }
 
@@ -150,7 +150,7 @@ class AttachTest {
     struct nc_device_context device_;
     struct nc_coap_client_context coapClient_;
     struct nc_udp_dispatch_context udpDispatch_;
-    struct nc_attacher_get_turn_server_context turn_;
+    struct nc_attacher_request_ice_servers_context turn_;
 
     struct np_completion_event boundCompletionEvent;
 
@@ -169,7 +169,7 @@ class AttachTest {
     std::function<void (AttachTest& at)> event_;
     std::function<void (AttachTest& at)> state_;
     std::function<void (AttachTest& at)> closed_;
-    std::function<void(nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_get_turn_server_context* ctx)> turnCb_;
+    std::function<void(nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_request_ice_servers_context* ctx)> turnCb_;
 
     bool ended_ = false;
     struct np_event* endEvent_;
@@ -807,10 +807,10 @@ BOOST_AUTO_TEST_CASE(get_turn, *boost::unit_test::timeout(300))
     std::string identifier = "foobar";
 
     at.start([identifier](nabto::test::AttachTest& at) {
-        at.getTurnServers(identifier, [identifier](nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_get_turn_server_context* ctx){
+        at.getTurnServers(identifier, [identifier](nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_request_ice_servers_context* ctx){
             void* elm;
-            NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->turnServers) {
-                struct nc_attacher_turn_server* ts = (struct nc_attacher_turn_server*)elm;
+            NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->iceServers) {
+                struct nc_attacher_ice_server* ts = (struct nc_attacher_ice_server*)elm;
                 std::string un(ts->username);
                 BOOST_TEST(un == at.productId_ + ":" + at.deviceId_ + ":" + identifier);
                 std::string cred(ts->credential);
