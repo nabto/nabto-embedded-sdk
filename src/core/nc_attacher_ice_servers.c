@@ -19,6 +19,17 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
 
 const char* coapPath[] = { "device", "turn" };
 
+static void ice_server_clean(struct nc_attacher_ice_server* server) {
+        void* url;
+        NN_VECTOR_FOREACH(&url, &server->urls) {
+            np_free(url);
+        }
+        nn_vector_deinit(&server->urls);
+        np_free(server->username);
+        np_free(server->credential);
+
+}
+
 void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx, struct nc_attach_context* attacher) {
     ctx->attacher = attacher;
     ctx->coapRequest = nabto_coap_client_request_new(nc_coap_client_get_client(attacher->coapClient),
@@ -32,14 +43,7 @@ void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_con
 void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_context* ctx) {
     void* elm;
     NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->iceServers) {
-        struct nc_attacher_ice_server* ts = (struct nc_attacher_ice_server*)elm;
-        void* url;
-        NN_VECTOR_FOREACH(&url, &ts->urls) {
-            np_free(url);
-        }
-        nn_vector_deinit(&ts->urls);
-        np_free(ts->username);
-        np_free(ts->credential);
+        ice_server_clean((struct nc_attacher_ice_server*)elm);
     }
     nn_vector_deinit(&ctx->iceServers);
     nabto_coap_client_request_free(ctx->coapRequest);
@@ -180,9 +184,9 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         if (!nc_cbor_copy_text_string(&username, &server.username, 4096) ||
             !nc_cbor_copy_text_string(&credential, &server.credential, 4096) ||
             !cbor_value_is_array(&urls) ||
-            cbor_value_enter_container(&urls, &urlsIt) != CborNoError) {
-            np_free(&server.username);
-            np_free(&server.credential);
+            cbor_value_enter_container(&urls, &urlsIt) != CborNoError)
+        {
+            ice_server_clean(&server);
             NABTO_LOG_INFO(LOG, "Failed to get username, credential, or urls");
             return false;
         }
@@ -192,30 +196,18 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
             char * url = NULL;
             if (!nc_cbor_copy_text_string(&urlsIt, &url, 4096) ||
                 !nn_vector_push_back(&server.urls, &url) ||
-                cbor_value_advance(&urlsIt) != CborNoError) {
-
-                np_free(&server.username);
-                np_free(&server.credential);
-
-                NN_VECTOR_FOREACH(&url, &server.urls) {
-                    np_free(url);
-                }
-                nn_vector_deinit(&server.urls);
+                cbor_value_advance(&urlsIt) != CborNoError)
+            {
+                ice_server_clean(&server);
                 NABTO_LOG_INFO(LOG, "Failed to copy url or advance iterator");
                 return false;
             }
         }
         if (cbor_value_leave_container(&urls, &urlsIt) != CborNoError ||
-            cbor_value_advance(&it) != CborNoError) {
+            cbor_value_advance(&it) != CborNoError)
+        {
             NABTO_LOG_INFO(LOG, "Failed to leave containers or advance iterator");
-            np_free(&server.username);
-            np_free(&server.credential);
-            char* url;
-            NN_VECTOR_FOREACH(&url, &server.urls) {
-                np_free(url);
-            }
-            nn_vector_deinit(&server.urls);
-            np_free(&server.urls);
+            ice_server_clean(&server);
             return false;
         }
         nn_vector_push_back(&ctx->iceServers, &server);
