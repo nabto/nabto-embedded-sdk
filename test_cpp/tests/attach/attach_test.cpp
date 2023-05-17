@@ -139,9 +139,9 @@ class AttachTest {
 
     void getTurnServers(std::string identifier, std::function<void(nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_request_ice_servers_context* ctx)> cb)
     {
-        nc_attacher_ice_servers_ctx_init(&turn_);
+        nc_attacher_ice_servers_ctx_init(&turn_, &attach_);
         turnCb_ = cb;
-        nc_attacher_request_ice_servers(&attach_, &turn_, identifier.c_str(), &AttachTest::turnCb, this);
+        nc_attacher_request_ice_servers(&turn_, identifier.c_str(), &AttachTest::turnCb, this);
 
     }
 

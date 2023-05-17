@@ -22,7 +22,7 @@ nabto_device_ice_servers_request_new(NabtoDevice* device)
     if (req != NULL) {
         struct nabto_device_context* dev = (struct nabto_device_context*)device;
         req->dev = dev;
-        nc_attacher_ice_servers_ctx_init(&req->turnCtx);
+        nc_attacher_ice_servers_ctx_init(&req->turnCtx, &dev->core.attacher);
     }
     return (NabtoDeviceIceServersRequest*)req;
 }
@@ -59,7 +59,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_ice_servers_request_send(const ch
     } else {
         req->future = f;
 
-        np_error_code ec = nc_attacher_request_ice_servers(&dev->core.attacher, &req->turnCtx, identifier, turn_req_send_callback, req);
+        np_error_code ec = nc_attacher_request_ice_servers(&req->turnCtx, identifier, turn_req_send_callback, req);
 
         if (ec != NABTO_EC_OK) {
             nabto_device_future_resolve(f, ec);

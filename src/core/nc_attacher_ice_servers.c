@@ -19,7 +19,13 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
 
 const char* coapPath[] = { "device", "turn" };
 
-void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx) {
+void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx, struct nc_attach_context* attacher) {
+    ctx->attacher = attacher;
+    ctx->coapRequest = nabto_coap_client_request_new(nc_coap_client_get_client(attacher->coapClient),
+        NABTO_COAP_METHOD_POST,
+        2, coapPath,
+        &coap_handler,
+        ctx, attacher->dtls);
     nn_vector_init(&ctx->iceServers, sizeof(struct nc_attacher_ice_server), np_allocator_get());
 }
 
@@ -36,20 +42,17 @@ void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_c
         np_free(ts->credential);
     }
     nn_vector_deinit(&ctx->iceServers);
+    nabto_coap_client_request_free(ctx->coapRequest);
+
 }
 
 
-np_error_code nc_attacher_request_ice_servers(struct nc_attach_context* attacher, struct nc_attacher_request_ice_servers_context* ctx, const char* identifier, nc_attacher_request_ice_servers_callback cb, void* userData)
+np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_servers_context* ctx, const char* identifier, nc_attacher_request_ice_servers_callback cb, void* userData)
 {
-    if (attacher->state != NC_ATTACHER_STATE_ATTACHED) {
+    if (ctx->attacher->state != NC_ATTACHER_STATE_ATTACHED) {
         return NABTO_EC_NOT_ATTACHED;
     }
 
-    ctx->coapRequest = nabto_coap_client_request_new(nc_coap_client_get_client(attacher->coapClient),
-        NABTO_COAP_METHOD_POST,
-        2, coapPath,
-        &coap_handler,
-        ctx, attacher->dtls);
     nabto_coap_client_request_set_content_format(ctx->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
     size_t bufferSize = encode_request(identifier, NULL, 0);
@@ -140,7 +143,6 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
             }
         }
     }
-    nabto_coap_client_request_free(request);
 
     ctx->cb(ec, ctx->cbData);
 }

@@ -83,6 +83,7 @@ struct nc_attacher_ice_server {
 
 struct nc_attacher_request_ice_servers_context {
     struct nabto_coap_client_request* coapRequest;
+    struct nc_attach_context* attacher;
     struct nn_vector iceServers;
     nc_attacher_request_ice_servers_callback cb;
     void* cbData;
@@ -299,11 +300,11 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context* attac
 void nc_attacher_service_invoke_stop(struct nc_attacher_service_invoke_context* serviceInvoke);
 
 
-void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx);
+void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx, struct nc_attach_context* attacher);
 
 void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_context* ctx);
 
-np_error_code nc_attacher_request_ice_servers(struct nc_attach_context* attacher, struct nc_attacher_request_ice_servers_context* ctx, const char* identifier, nc_attacher_request_ice_servers_callback cb, void* userData);
+np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_servers_context* ctx, const char* identifier, nc_attacher_request_ice_servers_callback cb, void* userData);
 
 void nc_attacher_disable_certificate_validation(struct nc_attach_context* attacher);
 
