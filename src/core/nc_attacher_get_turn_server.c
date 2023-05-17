@@ -27,15 +27,15 @@ void nc_attacher_turn_ctx_deinit(struct nc_attacher_get_turn_server_context* ctx
     void* elm;
     NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->turnServers) {
         struct nc_attacher_turn_server* ts = (struct nc_attacher_turn_server*)elm;
-        for (size_t i = 0; i < ts->urlsLen; i++) {
-            np_free(ts->urls[i]);
+        void* url;
+        NN_VECTOR_FOREACH(&url, &ts->urls) {
+            np_free(url);
         }
+        nn_vector_deinit(&ts->urls);
         np_free(ts->username);
         np_free(ts->credential);
-        np_free(ts->urls);
     }
     nn_vector_deinit(&ctx->turnServers);
-
 }
 
 
@@ -160,7 +160,6 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     while (!cbor_value_at_end(&it)) {
         CborValue username;
         CborValue credential;
-        CborValue ttl;
         CborValue urls;
 
 
@@ -170,7 +169,6 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
 
         cbor_value_map_find_value(&it, "Username", &username);
         cbor_value_map_find_value(&it, "Credential", &credential);
-        cbor_value_map_find_value(&it, "Ttl", &ttl);
         cbor_value_map_find_value(&it, "Urls", &urls);
 
         struct nc_attacher_turn_server server;
@@ -179,49 +177,42 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         CborValue urlsIt;
         if (!nc_cbor_copy_text_string(&username, &server.username, 4096) ||
             !nc_cbor_copy_text_string(&credential, &server.credential, 4096) ||
-            cbor_value_get_int(&ttl, &server.ttl) != CborNoError ||
             !cbor_value_is_array(&urls) ||
-            cbor_value_enter_container(&urls, &urlsIt) != CborNoError ||
-            cbor_value_get_array_length(&urls, &server.urlsLen) != CborNoError) {
+            cbor_value_enter_container(&urls, &urlsIt) != CborNoError) {
             np_free(&server.username);
             np_free(&server.credential);
-            NABTO_LOG_INFO(LOG, "Failed to get username, credential, ttl, or urls");
+            NABTO_LOG_INFO(LOG, "Failed to get username, credential, or urls");
             return false;
         }
 
-        server.urls = np_calloc(server.urlsLen, sizeof(char*));
-        if (server.urls == NULL) {
-            np_free(&server.username);
-            np_free(&server.credential);
-            np_free(&server.urls);
-            NABTO_LOG_INFO(LOG, "Could not allocate urls array");
-            return false;
-        }
-        size_t n = 0;
+        nn_vector_init(&server.urls, sizeof(char*), np_allocator_get());
         while (!cbor_value_at_end(&urlsIt)) {
-
-            if (!nc_cbor_copy_text_string(&urlsIt, &server.urls[n], 4096) ||
+            char * url = NULL;
+            if (!nc_cbor_copy_text_string(&urlsIt, &url, 4096) ||
+                !nn_vector_push_back(&server.urls, &url) ||
                 cbor_value_advance(&urlsIt) != CborNoError) {
 
                 np_free(&server.username);
                 np_free(&server.credential);
-                for (size_t i = 0; i < n; i++) {
-                    np_free(server.urls[i]);
+
+                NN_VECTOR_FOREACH(&url, &server.urls) {
+                    np_free(url);
                 }
-                np_free(&server.urls);
+                nn_vector_deinit(&server.urls);
                 NABTO_LOG_INFO(LOG, "Failed to copy url or advance iterator");
                 return false;
             }
-            n++;
         }
         if (cbor_value_leave_container(&urls, &urlsIt) != CborNoError ||
             cbor_value_advance(&it) != CborNoError) {
             NABTO_LOG_INFO(LOG, "Failed to leave containers or advance iterator");
             np_free(&server.username);
             np_free(&server.credential);
-            for (size_t i = 0; i < n; i++) {
-                np_free(server.urls[i]);
+            char* url;
+            NN_VECTOR_FOREACH(&url, &server.urls) {
+                np_free(url);
             }
+            nn_vector_deinit(&server.urls);
             np_free(&server.urls);
             return false;
         }

@@ -17,8 +17,8 @@ BOOST_AUTO_TEST_CASE(create_destroy_request)
 {
     NabtoDevice* dev = nabto_device_new();
 
-    NabtoDeviceTurnCredentialRequest* req = nabto_device_turn_credential_request_new(dev);
-    nabto_device_turn_credential_request_free(req);
+    NabtoDeviceIceServersRequest* req = nabto_device_ice_servers_request_new(dev);
+    nabto_device_ice_servers_request_free(req);
     nabto_device_stop(dev);
     nabto_device_free(dev);
 }
@@ -36,66 +36,45 @@ BOOST_AUTO_TEST_CASE(get_turn_creds)
 
     NabtoDevice* dev = attachedTestDevice.device();
 
-    NabtoDeviceTurnCredentialRequest* req = nabto_device_turn_credential_request_new(dev);
+    NabtoDeviceIceServersRequest* req = nabto_device_ice_servers_request_new(dev);
     NabtoDeviceFuture* f = nabto_device_future_new(dev);
 
     const char* id = "foobar";
 
-    BOOST_TEST(EC(nabto_device_turn_credential_request_send(id, req, f)) == EC(NABTO_DEVICE_EC_OK));
+    BOOST_TEST(EC(nabto_device_ice_servers_request_send(id, req, f)) == EC(NABTO_DEVICE_EC_OK));
 
     BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_OK));
 
-    size_t count = 0;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_results_count(req, &count)) == EC(NABTO_DEVICE_EC_OK));
+    size_t count = nabto_device_ice_servers_request_get_server_count(req);
     BOOST_TEST(count == (size_t)2);
 
-    NabtoDeviceTurnCredentialResult* result = NULL;
-
-    BOOST_TEST(EC(nabto_device_turn_credential_get_result(req, 0, &result)) == EC(NABTO_DEVICE_EC_OK));
-
-    char* username = NULL;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_username(result, &username)) == EC(NABTO_DEVICE_EC_OK));
+    const char* username = nabto_device_ice_servers_request_get_username(req, 0);
     BOOST_TEST(std::string(username) == "test:devTest:foobar");
 
-    char* credential = NULL;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_credential(result, &credential)) == EC(NABTO_DEVICE_EC_OK));
+    const char* credential = nabto_device_ice_servers_request_get_credential(req, 0);
     BOOST_TEST(std::string(credential) == "verySecretAccessKey");
 
-    uint32_t ttl = 0;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_ttl(result, &ttl)) == EC(NABTO_DEVICE_EC_OK));
-    BOOST_TEST(ttl == (size_t)86400);
-
-    char** urls = NULL;
-    size_t urlsLen = 0;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_urls(result, &urls, &urlsLen)) == EC(NABTO_DEVICE_EC_OK));
-
+    size_t urlsLen = nabto_device_ice_servers_request_get_urls_count(req, 0);
     BOOST_TEST(urlsLen == (size_t)2);
-    BOOST_TEST(std::string(urls[0]) == "turn:turn.nabto.net:9991?transport=udp");
-    BOOST_TEST(std::string(urls[1]) == "turn:turn.nabto.net:9991?transport=tcp");
+    const char* url = nabto_device_ice_servers_request_get_url(req, 0, 0);
+    BOOST_TEST(std::string(url) == "turn:turn.nabto.net:9991?transport=udp");
+    url = nabto_device_ice_servers_request_get_url(req, 0, 1);
+    BOOST_TEST(std::string(url) == "turn:turn.nabto.net:9991?transport=tcp");
 
 
-    BOOST_TEST(EC(nabto_device_turn_credential_get_result(req, 1, &result)) == EC(NABTO_DEVICE_EC_OK));
-
-    username = NULL;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_username(result, &username)) == EC(NABTO_DEVICE_EC_OK));
+    username = nabto_device_ice_servers_request_get_username(req, 1);
     BOOST_TEST(std::string(username) == "test:devTest:foobar");
 
-    credential = NULL;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_credential(result, &credential)) == EC(NABTO_DEVICE_EC_OK));
+    credential = nabto_device_ice_servers_request_get_credential(req, 1);
     BOOST_TEST(std::string(credential) == "anotherVerySecretAccessKey");
 
-    ttl = 0;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_ttl(result, &ttl)) == EC(NABTO_DEVICE_EC_OK));
-    BOOST_TEST(ttl == (size_t)86400);
-
-    urls = NULL;
-    urlsLen = 0;
-    BOOST_TEST(EC(nabto_device_turn_credential_get_urls(result, &urls, &urlsLen)) == EC(NABTO_DEVICE_EC_OK));
-
+    urlsLen = nabto_device_ice_servers_request_get_urls_count(req, 1);
     BOOST_TEST(urlsLen == (size_t)1);
-    BOOST_TEST(std::string(urls[0]) == "turns:turn.nabto.net:443?transport=tcp");
+    url = nabto_device_ice_servers_request_get_url(req, 1, 0);
+    BOOST_TEST(std::string(url) == "turns:turn.nabto.net:443?transport=tcp");
 
-    nabto_device_turn_credential_request_free(req);
+
+    nabto_device_ice_servers_request_free(req);
     nabto_device_future_free(f);
 }
 

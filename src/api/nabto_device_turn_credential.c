@@ -9,29 +9,29 @@
 #include <platform/np_allocator.h>
 #include <nn/string.h>
 
-struct nabto_device_turn_credential_request {
+struct nabto_device_ice_server_request {
     struct nabto_device_context* dev;
     struct nc_attacher_get_turn_server_context turnCtx;
     struct nabto_device_future* future;
 };
 
-NabtoDeviceTurnCredentialRequest* NABTO_DEVICE_API
-nabto_device_turn_credential_request_new(NabtoDevice* device)
+NabtoDeviceIceServersRequest* NABTO_DEVICE_API
+nabto_device_ice_servers_request_new(NabtoDevice* device)
 {
-    struct nabto_device_turn_credential_request* req = np_calloc(1, sizeof(struct nabto_device_turn_credential_request));
+    struct nabto_device_ice_server_request* req = np_calloc(1, sizeof(struct nabto_device_ice_server_request));
     if (req != NULL) {
         struct nabto_device_context* dev = (struct nabto_device_context*)device;
         req->dev = dev;
         nc_attacher_turn_ctx_init(&req->turnCtx);
     }
-    return (NabtoDeviceTurnCredentialRequest*)req;
+    return (NabtoDeviceIceServersRequest*)req;
 }
 
 
 void NABTO_DEVICE_API
-nabto_device_turn_credential_request_free(NabtoDeviceTurnCredentialRequest* turn)
+nabto_device_ice_servers_request_free(NabtoDeviceIceServersRequest* request)
 {
-    struct nabto_device_turn_credential_request* req = (struct nabto_device_turn_credential_request*)turn;
+    struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
     struct nabto_device_context* dev = req->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     nc_attacher_turn_ctx_deinit(&req->turnCtx);
@@ -41,14 +41,14 @@ nabto_device_turn_credential_request_free(NabtoDeviceTurnCredentialRequest* turn
 
 static void turn_req_send_callback(np_error_code ec, void* userData)
 {
-    struct nabto_device_turn_credential_request* req = userData;
+    struct nabto_device_ice_server_request* req = userData;
     nabto_device_future_resolve(req->future, ec);
 }
 
-NabtoDeviceError NABTO_DEVICE_API nabto_device_turn_credential_request_send(const char* identifier, NabtoDeviceTurnCredentialRequest* turn, NabtoDeviceFuture* future)
+NabtoDeviceError NABTO_DEVICE_API nabto_device_ice_servers_request_send(const char* identifier, NabtoDeviceIceServersRequest* request, NabtoDeviceFuture* future)
 {
     struct nabto_device_future* f = (struct nabto_device_future*)future;
-    struct nabto_device_turn_credential_request* req = (struct nabto_device_turn_credential_request*)turn;
+    struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
     struct nabto_device_context* dev = req->dev;
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
@@ -70,62 +70,61 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_turn_credential_request_send(cons
     return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_turn_credential_get_results_count(NabtoDeviceTurnCredentialRequest* turn, size_t* count)
+size_t NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_server_count(NabtoDeviceIceServersRequest* request)
 {
-    struct nabto_device_turn_credential_request* req = (struct nabto_device_turn_credential_request*)turn;
-    if (req->turnCtx.turnServers.used == 0) {
-        return NABTO_DEVICE_EC_INVALID_STATE;
+    struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
+    return nn_vector_size(&req->turnCtx.turnServers);
+}
+
+const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_username(NabtoDeviceIceServersRequest* request, size_t index)
+{
+    struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
+    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, index);
+    if (server != NULL) {
+        return server->username;
+    } else {
+        return NULL;
     }
-    *count = req->turnCtx.turnServers.used;
-    return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_turn_credential_get_result(NabtoDeviceTurnCredentialRequest* turn, size_t index, NabtoDeviceTurnCredentialResult** result)
+const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_credential(NabtoDeviceIceServersRequest* request, size_t index)
 {
-    struct nabto_device_turn_credential_request* req = (struct nabto_device_turn_credential_request*)turn;
-    if (req->turnCtx.turnServers.used == 0) {
-        return NABTO_DEVICE_EC_INVALID_STATE;
+    struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
+    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, index);
+    if (server != NULL) {
+        return server->credential;
+    } else {
+        return NULL;
     }
-    if (req->turnCtx.turnServers.used <= index) {
-        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+}
+
+size_t NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_urls_count(NabtoDeviceIceServersRequest* request, size_t index)
+{
+    struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
+    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, index);
+    if (server != NULL) {
+        return nn_vector_size(&server->urls);
+    } else {
+        return 0;
     }
-    // nn_vector_get(&req->turnCtx.turnServers, index, (void*)result);
-    *result = nn_vector_reference(&req->turnCtx.turnServers, index);
-    return NABTO_DEVICE_EC_OK;
 }
 
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_turn_credential_get_username(NabtoDeviceTurnCredentialResult* result, char** username)
-{
-    struct nc_attacher_turn_server* server = (struct nc_attacher_turn_server*)result;
-    *username = server->username;
-    return NABTO_DEVICE_EC_OK;
-}
 
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_turn_credential_get_credential(NabtoDeviceTurnCredentialResult* result, char** credential)
+const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_url(NabtoDeviceIceServersRequest* request, size_t serverIndex, size_t urlIndex)
 {
-    struct nc_attacher_turn_server* server = (struct nc_attacher_turn_server*)result;
-    *credential = server->credential;
-    return NABTO_DEVICE_EC_OK;
-}
+    struct nabto_device_ice_server_request* req = (struct nabto_device_ice_server_request*)request;
+    struct nc_attacher_turn_server* server = nn_vector_reference(&req->turnCtx.turnServers, serverIndex);
+    if (server != NULL) {
+        char* url = NULL;
+        nn_vector_get(&server->urls, urlIndex, &url);
+        return url;
+    } else {
+        return NULL;
+    }
 
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_turn_credential_get_ttl(NabtoDeviceTurnCredentialResult* result, uint32_t* ttl)
-{
-    struct nc_attacher_turn_server* server = (struct nc_attacher_turn_server*)result;
-    *ttl = server->ttl;
-    return NABTO_DEVICE_EC_OK;
-
-}
-
-NabtoDeviceError NABTO_DEVICE_API
-nabto_device_turn_credential_get_urls(NabtoDeviceTurnCredentialResult* result, char*** urls, size_t* urlsLen)
-{
-    struct nc_attacher_turn_server* server = (struct nc_attacher_turn_server*)result;
-    *urls = server->urls;
-    *urlsLen = server->urlsLen;
-    return NABTO_DEVICE_EC_OK;
 }

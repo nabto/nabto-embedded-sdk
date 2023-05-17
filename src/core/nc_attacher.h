@@ -78,9 +78,7 @@ typedef void (*nc_attacher_get_turn_server_callback)(const np_error_code ec, voi
 struct nc_attacher_turn_server {
     char* username;
     char* credential;
-    int32_t ttl;
-    char** urls;
-    size_t urlsLen;
+    struct nn_vector urls;
 };
 
 struct nc_attacher_get_turn_server_context {

@@ -819,16 +819,22 @@ BOOST_AUTO_TEST_CASE(get_turn, *boost::unit_test::timeout(300))
                 BOOST_TEST(((is1 = cred == "verySecretAccessKey") || (is2 = cred == "anotherVerySecretAccessKey")));
                 BOOST_TEST(is1 != is2);
                 if (is1) {
-                    BOOST_TEST(ts->urlsLen == (size_t)2);
-                    std::string url1(ts->urls[0]);
-                    BOOST_TEST(url1 == "turn:turn.nabto.net:9991?transport=udp");
-                    std::string url2(ts->urls[1]);
-                    BOOST_TEST(url2 == "turn:turn.nabto.net:9991?transport=tcp");
+                    char* url = NULL;
+                    BOOST_TEST(nn_vector_size(&ts->urls) == (size_t)2);
+                    nn_vector_get(&ts->urls, 0, &url);
+                    BOOST_TEST((url != NULL));
+                    BOOST_TEST(std::string(url) == "turn:turn.nabto.net:9991?transport=udp");
+
+                    url = NULL;
+                    nn_vector_get(&ts->urls, 1, &url);
+                    BOOST_TEST((url != NULL));
+                    BOOST_TEST(std::string(url) == "turn:turn.nabto.net:9991?transport=tcp");
                 }
                 if (is2) {
-                    BOOST_TEST(ts->urlsLen == (size_t)1);
-                    std::string url1(ts->urls[0]);
-                    BOOST_TEST(url1 == "turns:turn.nabto.net:443?transport=tcp");
+                    char* url;
+                    BOOST_TEST(nn_vector_size(&ts->urls) == (size_t)1);
+                    nn_vector_get(&ts->urls, 0, &url);
+                    BOOST_TEST(std::string(url) == "turns:turn.nabto.net:443?transport=tcp");
 
                 }
             }

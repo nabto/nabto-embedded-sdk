@@ -338,12 +338,10 @@ class AttachServer : public AttachCoapServer,
         nlohmann::json s1;
         s1["Username"] = "test:devTest:" + identifier;
         s1["Credential"] = "verySecretAccessKey";
-        s1["Ttl"] = 86400;
         s1["Urls"] = nlohmann::json::array({ "turn:turn.nabto.net:9991?transport=udp", "turn:turn.nabto.net:9991?transport=tcp" });
         nlohmann::json s2;
         s2["Username"] = "test:devTest:" + identifier;
         s2["Credential"] = "anotherVerySecretAccessKey";
-        s2["Ttl"] = 86400;
         s2["Urls"] = nlohmann::json::array({ "turns:turn.nabto.net:443?transport=tcp" });
 
         nlohmann::json root = nlohmann::json::array({s1, s2});
