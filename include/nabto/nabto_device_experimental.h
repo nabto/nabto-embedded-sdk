@@ -199,6 +199,101 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_check_reac
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_get_attach_certificate_expiration(NabtoDevice* device, uint64_t* expiration);
 
 
+
+/// TURN SERVER CREDENTIALS ////
+
+typedef struct NabtoDeviceIceServersRequest_ NabtoDeviceIceServersRequest;
+
+/**
+ * Allocate new ICE servers request.
+ *
+ * @param device [in] The device context
+ * @return The created ICE servers request or NULL on failure
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceIceServersRequest* NABTO_DEVICE_API
+nabto_device_ice_servers_request_new(NabtoDevice* device);
+
+/**
+ * Free a previously allocated ICE servers request.
+ * @param request [in] The request to free.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_ice_servers_request_free(NabtoDeviceIceServersRequest* request);
+
+/**
+ * Request ICE Servers from the Basestation.
+ *
+ * The request takes an `identifier` which, combined with the product ID and device ID, will be used to generate the username for TURN servers. This can be used to differentiate credentials created for the device or for the client.
+ *
+ * @param identifier [in] Identifier used in the username. Only characters [a-zA-Z0-9-_] are allowed.
+ * @param request [in] Request to send
+ * @param future [in] Future to resolve when the result is ready.
+ * @retval NABTO_DEVICE_EC_OK iff the request was sent.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if the identifier was invalid.
+ * @retval NABTO_DEVICE_EC_NOT_ATTACHED if the device is not attached.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_ice_servers_request_send(const char* identifier, NabtoDeviceIceServersRequest* request, NabtoDeviceFuture* future);
+
+/**
+ * Get the number of ICE servers returned from a successfully resolved ICE server request. This count is used to generate indices as [0, count-1] for the get functions below.
+ *
+ * @param request [in] Request to get count from
+ * @return The number of ICE servers returned by the basestation.
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_server_count(NabtoDeviceIceServersRequest* request);
+
+/**
+ * Get the username of an ICE server from its index.
+ *
+ * If the ICE server at the index is a STUN server, the username is NULL. The username is freed with the request.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param index [in] Index of the ICE server to get the username of.
+ * @return The username for a TURN server, or NULL for a STUN server.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_username(NabtoDeviceIceServersRequest* request, size_t index);
+
+/**
+ * Get the credential of an ICE server from its index.
+ *
+ * If the ICE server at the index is a STUN server, the credential is NULL. The credential is freed with the request.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param index [in] Index of the ICE server to get the credential of.
+ * @return The credential for a TURN server, or NULL for a STUN server.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_credential(NabtoDeviceIceServersRequest* request, size_t index);
+
+/**
+ * Get the number of URLs for an ICE server from its index.
+ *
+ * This count is used to generate URL indices as [0, count-1] for `nabto_device_ice_servers_request_get_url()`.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param index [in] Index of the ICE server to get the URL count of.
+ * @return The number of URLs for the ICE server
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_urls_count(NabtoDeviceIceServersRequest* request, size_t index);
+
+/**
+ * Get an URL of an ICE server from its index.
+ *
+ * The URL is freed with the request.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param serverIndex [in] Index of the ICE server to get the URL from.
+ * @param urlIndex [in] Index of the URL to get.
+ * @return An URL for the ICE server.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_url(NabtoDeviceIceServersRequest* request, size_t serverIndex, size_t urlIndex);
+
+
+
 #ifdef __cplusplus
 } // extern c #endif
 #endif

@@ -31,6 +31,7 @@ set(test_src
   tests/api/private_key_test.cpp
   tests/api/password_authorization_request_test.cpp
   tests/api/fcm_test.cpp
+  tests/api/ice_servers_test.cpp
   tests/api/service_invoke_test.cpp
   tests/api/shutdown.cpp
   tests/api/get_attach_certificate_expiration.cpp
