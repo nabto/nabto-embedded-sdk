@@ -1,5 +1,6 @@
 FROM ubuntu:18.04
 
+ENV DEBIAN_FRONTEND="noninteractive" TZ="Europe/London"
 RUN apt update && apt install -y gcc-8-aarch64-linux-gnu g++-8-aarch64-linux-gnu wget apt-transport-https gnupg software-properties-common git
 
 # add a current cmake
