@@ -336,61 +336,92 @@ NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
 nabto_device_connection_is_virtual(NabtoDevice* device, NabtoDeviceConnectionRef ref);
 
 
-typedef struct NabtoDeviceVirtualCoapResponse_ NabtoDeviceVirtualCoapResponse;
-
+typedef struct NabtoDeviceVirtualCoapRequest_ NabtoDeviceVirtualCoapRequest;
 
 /**
- * Invoke a CoAP enpoint on a virtual connection.
+ * Create a virtual CoAP request.
  *
- * @param connection [in] The connection
- * @param future [in] The future resolved when a response is ready
- * @param method [in] The CoAP method designator string
- * @param path [in] The URI path element of the resource being requested
- * @param contentFormat [in] The content format of the payload or 0 on no payload.
- * @param payload [in] The payload of the request or NULL for no payload
- * @param payloadLenth [in] The length of the payload.
- * @param response [out] The resulting response if the future resolves with OK.
- * @return NABTO_DEVICE_EC_OK iff successful
+ * @param connection [in]  The virtual connection to make the CoAP request on, the connection needs
+ * to be kept alive until the request has been freed.
+ * @return  NULL if the request could not be created, non NULL otherwise.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_virtual_connection_coap_invoke(NabtoDeviceVirtualConnection* connection, NabtoDeviceFuture* future, const char* method, const char* path, uint16_t contentFormat, const void* payload, size_t payloadLength, NabtoDeviceVirtualCoapResponse* response);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceVirtualCoapRequest* NABTO_DEVICE_API
+nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, const char* method, const char* path);
 
 /**
- * Free a virtual CoAP response when done handling it.
+ * Free a virtual CoAP request when done handling it.
  *
- * @param response [in]  Response to be freed
+ * @param request [in]  Request to be freed
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-nabto_device_virtual_coap_response_free(NabtoDeviceVirtualCoapResponse* response);
+nabto_device_virtual_coap_request_free(NabtoDeviceVirtualCoapRequest* request);
+
+
+/**
+ * Set the payload of a given virtual CoAP request.
+ *
+ * @param request [in]   The request on which to set the payload
+ * @param data [in]      The payload to set
+ * @param dataSize [in]  The length of the payload in bytes
+ *
+ * @retval NABTO_DEVICE_EC_OK on success
+ * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if payload could not be allocated
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_coap_request_set_payload(NabtoDeviceVirtualCoapRequest* request,
+                                       const void* data,
+                                       size_t dataSize);
+
+/**
+ * Set the content format of a given virtual CoAP request. This should follow the
+ * content format definitions defined by IANA (same as HTTP).
+ *
+ * @param request [in]   The request to set content format on
+ * @param format [in]    The format to set
+ * @return NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_coap_request_set_content_format(NabtoDeviceVirtualCoapRequest* request, uint16_t format);
+
+
+/**
+ * Execute a virtual CoAP request.
+ *
+ * @param request [in] The request to execute
+ * @param future [in] The future resolved when a response is ready
+ * @return NABTO_DEVICE_EC_OK iff successful
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_virtual_connection_coap_execute(NabtoDeviceVirtualCoapRequest* request, NabtoDeviceFuture* future);
 
 /**
  * Get response status. encoded as e.g. 404, 200, 203, 500.
  *
- * @param coap [in] the coap response object.
+ * @param coap [in] the coap request object.
  * @param statusCode [out]  the statusCode for the request
  * @retval NABTO_DEVICE_EC_OK if the status code exists.
  * @retval NABTO_DEVICE_EC_INVALID_STATE if there's no response yet.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_status_code(NabtoDeviceVirtualCoapResponse* coap, uint16_t* statusCode);
+nabto_device_virtual_coap_get_response_status_code(NabtoDeviceVirtualCoapRequest* coap, uint16_t* statusCode);
 
 /**
  * Get content type of the payload if one exists.
  *
- * @param coap [in] The coap response object.
+ * @param coap [in] The coap request object.
  * @param contentType [out] The content type if it exists.
  * @retval NABTO_DEVICE_EC_OK iff response has a contentFormat
  * @retval NABTO_DEVICE_EC_NO_DATA if the response does not have a content format
  * @retval NABTO_DEVICE_EC_INVALID_STATE if no response is ready
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_content_format(NabtoDeviceVirtualCoapResponse* coap, uint16_t* contentType);
+nabto_device_virtual_coap_get_response_content_format(NabtoDeviceVirtualCoapRequest* coap, uint16_t* contentType);
 
 /**
  * Get the coap response data.
  *
  * The payload is available until nabto_device_coap_free is called.
  *
- * @param coap [in] the coap response object.
+ * @param coap [in] the coap request object.
  * @param payload [out] start of the payload.
  * @param payloadLength [out] length of the payload
  * @retval NABTO_DEVICE_EC_OK if a payload exists and payload and payloadLength is set appropriately.
@@ -398,7 +429,7 @@ nabto_device_virtual_coap_get_response_content_format(NabtoDeviceVirtualCoapResp
  * @retval NABTO_DEVICE_EC_INVALID_STATE if no response is ready yet.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_payload(NabtoDeviceVirtualCoapResponse* coap, void** payload, size_t* payloadLength);
+nabto_device_virtual_coap_get_response_payload(NabtoDeviceVirtualCoapRequest* coap, void** payload, size_t* payloadLength);
 
 
 
