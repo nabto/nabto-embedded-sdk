@@ -294,6 +294,164 @@ nabto_device_ice_servers_request_get_url(NabtoDeviceIceServersRequest* request, 
 
 
 
+
+
+/// VIRTUAL CLIENT CONNECTIONS ////
+typedef struct NabtoDeviceVirtualConnection_ NabtoDeviceVirtualConnection;
+
+/**
+ * Allocate new Virtual Connection.
+ *
+ * @param device [in] The device context
+ * @return The created virtual connection or NULL on failure
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceVirtualConnection* NABTO_DEVICE_API
+nabto_device_virtual_connection_new(NabtoDevice* device);
+
+/**
+ * Free a previously allocated virtual connection.
+ * @param connection [in] The connection to free.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_virtual_connection_free(NabtoDeviceVirtualConnection* connection);
+
+
+/**
+ * Close a virtual connection.
+ * @param connection [in] The connection to close.
+ * @param future [in] Future resolved when the connection is closed
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_virtual_connection_close(NabtoDeviceVirtualConnection* connection, NabtoDeviceFuture* future);
+
+
+/**
+ * Invoke a CoAP enpoint on a virtual connection.
+ *
+ * @param connection [in] The connection
+ * @param future [in] The future resolved when a response is ready
+ * @param method [in] The CoAP method designator string
+ * @param path [in] The URI path element of the resource being requested
+ * @param contentFormat [in] The content format of the payload or 0 on no payload.
+ * @param payload [in] The payload of the request or NULL for no payload
+ * @param payloadLenth [in] The length of the payload.
+ * @return NABTO_DEVICE_EC_OK iff successful
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_virtual_connection_coap_invoke(NabtoDeviceVirtualConnection* connection, NabtoDeviceFuture* future, const char* method, const char* path, uint16_t contentFormat, const void* payload, size_t payloadLength);
+
+
+
+typedef struct NabtoDeviceVirtualStream_ NabtoDeviceVirtualStream;
+
+
+/**
+ * Create a virtual stream.
+ *
+ * @param connection [in]  The virtual connection to make the stream on, the connection needs
+ * to be kept alive until the stream has been freed.
+ * @return  NULL if the stream could not be created, non NULL otherwise.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceVirtualStream* NABTO_DEVICE_API
+nabto_device_virtual_stream_new(NabtoDeviceVirtualConnection* connection);
+
+/**
+ * Free a virtual stream. If a stream has unresolved futures when freed, they
+ * may not be resolved. For streams with outstanding futures, call
+ * nabto_device_virtual_stream_abort(), and free the stream when all futures
+ * are resolved.
+ *
+ * @param stream [in]  The virtual stream to free
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_virtual_stream_free(NabtoDeviceVirtualStream* stream);
+
+/**
+ * Read exactly bufferLength bytes from a virtual stream.
+ *
+ * if (readLength != bufferLength) the stream has reached a state
+ * where no more bytes can be read.
+ *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK   if all data was read.
+ *  - NABTO_DEVICE_EC_EOF  if only some data was read and the stream is eof.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+ *
+ * @param stream [in]         The virtual stream to read bytes from.
+ * @param future [in]         Future to resolve with the result of the operation.
+ * @param buffer [out]        The output buffer to put data into.
+ * @param bufferLength [in]   The length of the output buffer and number of bytes to read.
+ * @param readLength [out]    The actual number of bytes read.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_virtual_stream_read_all(NabtoDeviceVirtualStream* stream,
+                             NabtoDeviceFuture* future,
+                             void* buffer,
+                             size_t bufferLength,
+                             size_t* readLength);
+
+/**
+ * Read some bytes from a virtual stream.
+ *
+ * Read atleast 1 byte from the stream, unless an error occurs or the
+ * stream is eof.
+ *
+ * Future status:
+ *  - NABTO_DEVICE_EC_OK if some bytes was read.
+ *  - NABTO_DEVICE_EC_EOF if stream is eof.
+ *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
+ *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+ *
+ * @param stream [in]         The virtual stream to read bytes from.
+ * @param future [in]         Future to resolve with the result of the operation.
+ * @param buffer [out]        The output buffer to put data into.
+ * @param bufferLength [out]  The length of the output buffer and max bytes to read.
+ * @param readLength [out]    The actual number of bytes read.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_virtual_stream_read_some(NabtoDeviceVirtualStream* stream,
+                              NabtoDeviceFuture* future,
+                              void* buffer,
+                              size_t bufferLength,
+                              size_t* readLength);
+
+/**
+ * Write bytes to a virtual stream.
+ *
+ * @param stream [in]        The stream to write data to.
+ * @param buffer [in]        The input buffer with data to write to the stream.
+ * @param bufferLength [in]  Length of the input data.
+ * @retval NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
+                          const void* buffer,
+                          size_t bufferLength);
+
+/**
+ * Close a stream. When a stream has been closed no further data can
+ * be written to the stream. Data can however still be read from the
+ * stream until the other peer closes the stream.
+ *
+ * @param stream [in]  The stream to close.
+ * @retval NABTO_DEVICE_EC_OK on success.
+ */
+
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream);
+
+/**
+ * Abort a stream. When a stream is aborted, all unresolved futures
+ * will be resolved. Once all futures are resolved
+ * nabto_device_virtual_stream_free() can be called.
+ *
+ * @param stream [in]   The stream to abort.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_virtual_stream_abort(NabtoDeviceVirtualStream* stream);
+
+
+
 #ifdef __cplusplus
 } // extern c #endif
 #endif
