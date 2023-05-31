@@ -303,6 +303,15 @@ void* nc_coap_server_request_get_connection(struct nc_coap_server_request* reque
     return nabto_coap_server_request_get_connection(request->request);
 }
 
+uint64_t nc_coap_server_request_get_connection_ref(struct nc_coap_server_request* request)
+{
+    struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
+    if (conn != NULL) {
+        return conn->connectionRef;
+    }
+    return 0;
+}
+
 const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* request, const char* parameter)
 {
     return nabto_coap_server_request_get_parameter(request->request, parameter);

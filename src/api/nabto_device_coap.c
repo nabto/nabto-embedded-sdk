@@ -249,12 +249,7 @@ void nabto_device_coap_resource_handler(struct nc_coap_server_request* request, 
     } else {
         req->dev = dev;
         req->req = request;
-        struct nc_client_connection* connection = (struct nc_client_connection*)nc_coap_server_request_get_connection(request);
-        if (connection != NULL) {
-            req->connectionRef= connection->connectionRef;
-        } else {
-            req->connectionRef = 0;
-        }
+        req->connectionRef = nc_coap_server_request_get_connection_ref(request);
 
         np_error_code ec = nabto_device_listener_add_event(resource->listener, &req->eventListNode, req);
         if (ec != NABTO_EC_OK) {

@@ -30,14 +30,6 @@ struct nc_connection_id {
     uint8_t id[16];
 };
 
-enum nc_spake2_state {
-    NC_SPAKE2_STATE_INIT,
-    NC_SPAKE2_STATE_WAIT_PASSWORD,
-    NC_SPAKE2_STATE_WAIT_CONFIRMATION,
-    NC_SPAKE2_STATE_AUTHENTICATED,
-    NC_SPAKE2_STATE_ERROR
-};
-
 struct nc_client_connection {
     struct nn_llist_node connectionsNode;
     struct np_platform* pl;

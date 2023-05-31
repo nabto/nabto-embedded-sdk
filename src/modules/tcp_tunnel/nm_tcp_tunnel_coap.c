@@ -70,9 +70,8 @@ void list_services(struct nc_coap_server_request* request, void* data)
     struct nm_tcp_tunnels* tunnels = data;
 
     struct np_platform* pl = tunnels->device->pl;
-    struct nc_client_connection* connection = nc_coap_server_request_get_connection(request);
 
-    struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, "TcpTunnel:ListServices");
+    struct np_authorization_request* authReq = pl->authorization.create_request(pl, nc_coap_server_request_get_connection_ref(request), "TcpTunnel:ListServices");
     if (authReq != NULL) {
         pl->authorization.check_access(authReq, list_services_iam, tunnels, request, NULL);
         return;
@@ -197,10 +196,8 @@ void get_service_action(struct nc_coap_server_request* request, struct nm_tcp_tu
         return;
     }
 
-    struct nc_client_connection* connection = nc_coap_server_request_get_connection(request);
-
     struct np_platform* pl = tunnels->device->pl;
-    struct np_authorization_request* authReq = pl->authorization.create_request(pl, connection->connectionRef, action);
+    struct np_authorization_request* authReq = pl->authorization.create_request(pl, nc_coap_server_request_get_connection_ref(request), action);
     if (authReq &&
         pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
         pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)

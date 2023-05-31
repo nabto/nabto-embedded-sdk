@@ -43,6 +43,9 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
                                   uint8_t* buffer, uint16_t bufferSize);
 
 
+// Get connection ID of a client connection.
+// Returns true if connectionId was set.
+// Returns false if the connection is a virtual connection.
 bool nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId);
 
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection);
@@ -76,6 +79,7 @@ int32_t nc_coap_server_request_get_content_format(struct nc_coap_server_request*
 bool nc_coap_server_request_get_payload(struct nc_coap_server_request* request, void** payload, size_t* payloadLength);
 
 void* nc_coap_server_request_get_connection(struct nc_coap_server_request* request);
+uint64_t nc_coap_server_request_get_connection_ref(struct nc_coap_server_request* request);
 
 const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* request, const char* parameter);
 
