@@ -15,15 +15,15 @@ np_error_code nc_connections_init(struct nc_connections_context* ctx)
 
 void nc_connections_deinit(struct nc_connections_context* ctx)
 {
-    // TODO: use nc_connection*
-    struct nc_client_connection* connection;
+    struct nc_connection* connection;
     struct nn_llist_iterator it = nn_llist_begin(&ctx->connections);
     while(!nn_llist_is_end(&it)) {
         connection = nn_llist_get_item(&it);
         nn_llist_next(&it);
 
         //destroy connection calls close connection which alters the list
-        nc_client_connection_destroy_connection(connection);
+        // TODO: if (!connection->isVirtual) {
+        nc_client_connection_destroy_connection(connection->connectionImplCtx);
     }
 }
 
@@ -148,5 +148,51 @@ np_error_code nc_connection_init(struct nc_connection* conn, struct nc_device_co
 #endif
     ec = nc_device_next_connection_ref(device, &conn->connectionRef);
     return ec;
+}
+
+
+bool nc_connection_get_client_fingerprint(struct nc_connection* connection, uint8_t* fp)
+{
+    if (connection->isVirtual) {
+        // TODO
+        return false;
+    } else {
+        return nc_client_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
+    }
+}
+
+bool nc_connection_get_device_fingerprint(struct nc_connection* connection, uint8_t* fp)
+{
+    if (connection->isVirtual) {
+        // TODO
+        return false;
+    } else {
+        memcpy(fp, connection->device->fingerprint, 32);
+        return true;
+    }
+
+}
+
+bool nc_connection_is_local(struct nc_connection* connection)
+{
+    if (connection->isVirtual) {
+        // TODO:
+        return false;
+    } else {
+        struct nc_client_connection* conn = connection->connectionImplCtx;
+        return (&conn->device->localUdp == conn->currentChannel.sock);
+    }
+}
+
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
+bool nc_connection_is_password_authenticated(struct nc_connection* connection)
+{
+    return connection->passwordAuthenticated;
+}
+#endif
+
+bool nc_connection_is_virtual(struct nc_connection* connection)
+{
+    return connection->isVirtual;
 }
 

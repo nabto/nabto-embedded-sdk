@@ -389,18 +389,6 @@ np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_conne
 #endif
 }
 
-bool nc_client_connection_is_local(struct nc_client_connection* conn)
-{
-    return (&conn->device->localUdp == conn->currentChannel.sock);
-}
-
-#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
-bool nc_client_connection_is_password_authenticated(struct nc_client_connection* conn)
-{
-    return conn->passwordAuthenticated;
-}
-#endif
-
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event)
 {
     nc_device_connection_events_listener_notify(conn->device, conn->connectionRef, event);

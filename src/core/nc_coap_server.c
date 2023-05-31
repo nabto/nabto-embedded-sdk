@@ -68,6 +68,7 @@ void nc_coap_server_deinit(struct nc_coap_server_context* ctx)
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
                                   uint8_t* buffer, uint16_t bufferSize)
 {
+    // TODO: maybe use nc_connection instead of client_connection
     nc_coap_packet_print("coap server handle packet", buffer, bufferSize);
     nabto_coap_server_handle_packet(&ctx->requests,(void*) conn, buffer, bufferSize);
     nc_coap_server_event(ctx);
@@ -175,6 +176,7 @@ bool nc_coap_server_context_request_get_connection_id(struct nc_coap_server_cont
 
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection)
 {
+    NABTO_LOG_TRACE(LOG, "Removing connection from coap server.");
     nabto_coap_server_remove_connection(&ctx->requests, (void*) connection);
 }
 

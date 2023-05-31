@@ -79,6 +79,7 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
     if (connection == NULL) {
         nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
     } else {
+        // TODO: if coap requests starts using nc_connection as ref, change this as well
         nc_client_connection_get_client_fingerprint(connection, req->clientFingerprint);
         memcpy(req->deviceFingerprint, connection->device->fingerprint, 32);
 

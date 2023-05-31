@@ -48,9 +48,9 @@ nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDevi
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     bool passwordAuthenticated = false;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
+    struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
     if (connection != NULL) {
-        passwordAuthenticated = nc_client_connection_is_password_authenticated(connection);
+        passwordAuthenticated = nc_connection_is_password_authenticated(connection);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return passwordAuthenticated;
@@ -63,7 +63,7 @@ nabto_device_connection_get_password_authentication_username(NabtoDevice* device
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     *username = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
+    struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
     if (connection == NULL) {
         ec = NABTO_DEVICE_EC_INVALID_CONNECTION;
     } else if (connection->username[0] == 0) {

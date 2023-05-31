@@ -106,10 +106,6 @@ void nc_client_connection_close_connection(struct nc_client_connection* conn);
  */
 void nc_client_connection_destroy_connection(struct nc_client_connection* conn);
 
-// TODO: seems unused
-void nc_client_connection_dtls_recv_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                                          uint8_t* buffer, uint16_t bufferSize, void* data);
-
 // Internal only called from self
 void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data);
 
@@ -126,16 +122,6 @@ struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct n
  * Get client fingerprint from DTLS server. Used by API.
  */
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
-
-/**
- * Query if connection uses local socket or not. Used by API.
- */
-bool nc_client_connection_is_local(struct nc_client_connection* conn);
-
-/**
- * Query if the connection is password authenticated or not. Used by API.
- */
-bool nc_client_connection_is_password_authenticated(struct nc_client_connection* conn);
 
 /**
  * internal only called from self. Notifies nc_device of events.

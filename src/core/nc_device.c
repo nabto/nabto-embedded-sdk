@@ -503,11 +503,10 @@ uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev,
 }
 
 
-struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
+struct nc_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
 {
-    // TODO: change to nc_connection*
     struct nc_connection* conn = nc_connections_connection_from_ref(&dev->connections, ref);
-    return conn->connectionImplCtx;
+    return conn;
 }
 
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData)

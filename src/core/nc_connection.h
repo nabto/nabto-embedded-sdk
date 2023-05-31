@@ -81,20 +81,21 @@ bool nc_connection_get_device_fingerprint(struct nc_connection* connection, uint
 /**
  * Query if connection uses local socket or not. Used by API.
  */
-bool nc_connection_is_local(struct nc_client_connection* conn);
+bool nc_connection_is_local(struct nc_connection* conn);
 
 /**
  * Query if the connection is password authenticated or not. Used by API.
  */
-bool nc_connection_is_password_authenticated(struct nc_client_connection* conn);
+bool nc_connection_is_password_authenticated(struct nc_connection* conn);
 
 /**
  * Query if connection is virtual or not. Used by API.
  */
-bool nc_connection_is_virtual(struct nc_client_connection* conn);
+bool nc_connection_is_virtual(struct nc_connection* conn);
 
 /**
  * internal only called from self. Notifies nc_device of events.
+ * TODO: implement this to get virtual connection events
  */
 void nc_connection_event_listener_notify(struct nc_connection* conn, enum nc_connection_event event);
 

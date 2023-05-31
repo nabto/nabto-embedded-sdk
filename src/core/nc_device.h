@@ -126,7 +126,7 @@ np_error_code nc_device_next_connection_ref(struct nc_device_context* dev, uint6
 
 uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream);
 
-struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
+struct nc_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
 
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData);
 void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener);

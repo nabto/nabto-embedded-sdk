@@ -582,9 +582,9 @@ nabto_device_connection_get_client_fingerprint(NabtoDevice* device, NabtoDeviceC
 
     uint8_t clientFingerprint[32];
 
-    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
+    struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
 
-    if (connection == NULL || nc_client_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
+    if (connection == NULL || nc_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
         ec = NABTO_EC_INVALID_CONNECTION;
     } else {
         *fp = toHex(clientFingerprint, 32);
@@ -604,9 +604,9 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
 
     uint8_t clientFingerprint[32];
 
-    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
+    struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
 
-    if (connection == NULL || nc_client_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
+    if (connection == NULL || nc_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
         ec = NABTO_EC_INVALID_CONNECTION;
     } else {
         *fp = toHex(clientFingerprint, 16);
@@ -629,9 +629,9 @@ nabto_device_connection_is_local(NabtoDevice* device,
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     bool local = false;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    struct nc_client_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
+    struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
     if (connection != NULL) {
-        local = nc_client_connection_is_local(connection);
+        local = nc_connection_is_local(connection);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return local;
