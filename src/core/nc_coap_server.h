@@ -10,6 +10,7 @@
 
 struct nc_coap_server_context {
     struct np_platform* pl;
+    struct nc_device_context* device;
     struct nabto_coap_server server;
     struct nabto_coap_server_requests requests;
     uint32_t currentExpiry;
@@ -22,6 +23,7 @@ struct nc_coap_server_context {
 
 struct nc_coap_server_request {
     struct nabto_coap_server_request* request;
+    struct nc_device_context* device;
 };
 
 typedef void (*nc_coap_server_resource_handler)(struct nc_coap_server_request *request, void *userData);
@@ -29,6 +31,7 @@ typedef void (*nc_coap_server_resource_handler)(struct nc_coap_server_request *r
 
 struct nc_coap_server_resource {
     struct nabto_coap_server_resource* resource;
+    struct nc_device_context* device;
     nc_coap_server_resource_handler handler;
     void* userData;
 };
@@ -37,7 +40,7 @@ struct nc_coap_server_resource {
 // for server and client, nc_coap_server_ prefix refers to the fact
 // the function happens to be defined in nc_coap_server.c
 np_error_code nc_coap_server_error_module_to_core(nabto_coap_error ec);
-np_error_code nc_coap_server_init(struct np_platform* pl, struct nn_log* logger, struct nc_coap_server_context* ctx);
+np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_context* device, struct nn_log* logger, struct nc_coap_server_context* ctx);
 void nc_coap_server_deinit(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
                                   uint8_t* buffer, uint16_t bufferSize);

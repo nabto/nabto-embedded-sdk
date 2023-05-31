@@ -4,6 +4,7 @@
 
 #include "nc_spake2.h"
 #include "nc_client_connection.h"
+#include "nc_connection.h"
 #include "nc_device.h"
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
@@ -74,14 +75,13 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
 {
 
     struct nc_coap_server_request* coap = req->coapRequest;
-    struct nc_client_connection* connection = (struct nc_client_connection*)nc_coap_server_request_get_connection(coap);
+    struct nc_connection* connection = nc_coap_server_request_get_connection(coap);
 
     if (connection == NULL) {
         nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
     } else {
-        // TODO: if coap requests starts using nc_connection as ref, change this as well
-        nc_client_connection_get_client_fingerprint(connection, req->clientFingerprint);
-        memcpy(req->deviceFingerprint, connection->device->fingerprint, 32);
+        nc_connection_get_client_fingerprint(connection, req->clientFingerprint);
+        nc_connection_get_device_fingerprint(connection, req->deviceFingerprint);
 
         size_t olen;
         uint8_t buffer[256];

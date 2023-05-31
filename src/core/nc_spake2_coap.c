@@ -6,6 +6,7 @@
 #include "nc_coap.h"
 #include "nc_cbor.h"
 #include <core/nc_coap_server.h>
+#include "nc_connection.h"
 
 #include <cbor.h>
 
@@ -116,7 +117,7 @@ void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
 {
     uint8_t* payload;
     size_t payloadLength;
-    struct nc_client_connection* connection = nc_coap_server_request_get_connection(request);
+    struct nc_connection* connection = nc_coap_server_request_get_connection(request);
 
     struct nc_spake2_module* spake2 = data;
 

@@ -1,7 +1,9 @@
 #include "nc_coap_server.h"
 #include "nc_coap.h"
 #include "nc_client_connection.h"
+#include "nc_connection.h"
 #include "nc_coap_packet_printer.h"
+#include "nc_device.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
@@ -23,7 +25,7 @@ void nc_coap_server_handle_timeout(void* data);
 
 static void nc_coap_server_notify_event_callback(void* userData);
 
-np_error_code nc_coap_server_init(struct np_platform* pl, struct nn_log* logger, struct nc_coap_server_context* ctx)
+np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_context* device, struct nn_log* logger, struct nc_coap_server_context* ctx)
 {
     ctx->sendBuffer = NULL;
     nabto_coap_error err = nabto_coap_server_init(&ctx->server, logger, np_allocator_get());
@@ -32,6 +34,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nn_log* logger,
         return nc_coap_error_to_core(err);
     }
     ctx->pl = pl;
+    ctx->device = device;
     nc_coap_server_set_infinite_stamp(ctx);
     np_error_code ec;
     ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
@@ -230,6 +233,7 @@ void resource_callback(struct nabto_coap_server_request* request, void* userData
     struct nc_coap_server_resource* res = (struct nc_coap_server_resource*)userData;
     struct nc_coap_server_request* req = np_calloc(1, sizeof(struct nc_coap_server_request));
     req->request = request;
+    req->device = res->device;
     res->handler(req, res->userData);
 }
 
@@ -242,6 +246,7 @@ nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* serv
     }
     (*resource)->handler = handler;
     (*resource)->userData = userData;
+    (*resource)->device = server->device;
     return nabto_coap_server_add_resource(&server->server, method, segments, &resource_callback, *resource, &(*resource)->resource);
 }
 
@@ -302,14 +307,16 @@ bool nc_coap_server_request_get_payload(struct nc_coap_server_request* request, 
 
 void* nc_coap_server_request_get_connection(struct nc_coap_server_request* request)
 {
-    return nabto_coap_server_request_get_connection(request->request);
+    struct nc_client_connection* cliConn = nabto_coap_server_request_get_connection(request->request);
+    return nc_connections_connection_from_client_connection(&request->device->connections, cliConn);
 }
 
 uint64_t nc_coap_server_request_get_connection_ref(struct nc_coap_server_request* request)
 {
-    struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
-    if (conn != NULL) {
-        return conn->connectionRef;
+    struct nc_client_connection* cliConn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
+    struct nc_connection* connection = nc_connections_connection_from_client_connection(&request->device->connections, cliConn);
+    if (connection != NULL) {
+        return connection->connectionRef;
     }
     return 0;
 }

@@ -76,7 +76,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 #endif
-    ec = nc_coap_server_init(pl, &device->moduleLogger, &device->coapServer);
+    ec = nc_coap_server_init(pl, device, &device->moduleLogger, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
