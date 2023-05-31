@@ -303,11 +303,10 @@ typedef struct NabtoDeviceVirtualConnection_ NabtoDeviceVirtualConnection;
  * Allocate new Virtual Connection.
  *
  * @param device [in] The device context
- * @param vfp [in] A virtual fingerprint to assign to the connection
  * @return The created virtual connection or NULL on failure
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceVirtualConnection* NABTO_DEVICE_API
-nabto_device_virtual_connection_new(NabtoDevice* device, const char* vfp);
+nabto_device_virtual_connection_new(NabtoDevice* device);
 
 /**
  * Free a previously allocated virtual connection.
@@ -319,11 +318,36 @@ nabto_device_virtual_connection_free(NabtoDeviceVirtualConnection* connection);
 
 /**
  * Close a virtual connection.
+ *
  * @param connection [in] The connection to close.
  * @param future [in] Future resolved when the connection is closed
  */
 NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
 nabto_device_virtual_connection_close(NabtoDeviceVirtualConnection* connection, NabtoDeviceFuture* future);
+
+/**
+ * Set a device fingerprint on a virtual connection.
+ *
+ * The fingerprint is copied into the virtual connection.
+ *
+ * @param connection [in] The connection to close.
+ * @param fp [in] Fingerprint to set.
+ * @retval NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_connection_set_device_fingerprint(NabtoDeviceVirtualConnection* connection, const char* fp);
+
+/**
+ * Set a client fingerprint on a virtual connection.
+ *
+ * The fingerprint is copied into the virtual connection.
+ *
+ * @param connection [in] The connection to close.
+ * @param fp [in] Fingerprint to set.
+ * @retval NABTO_DEVICE_EC_OK on success
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_connection_set_client_fingerprint(NabtoDeviceVirtualConnection* connection, const char* fp);
 
 /**
  * Test if the connection is virtual.
@@ -346,7 +370,7 @@ typedef struct NabtoDeviceVirtualCoapRequest_ NabtoDeviceVirtualCoapRequest;
  * @return  NULL if the request could not be created, non NULL otherwise.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceVirtualCoapRequest* NABTO_DEVICE_API
-nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, const char* method, const char* path);
+nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, NabtoDeviceCoapMethod method, const char** segments);
 
 /**
  * Free a virtual CoAP request when done handling it.
@@ -511,12 +535,14 @@ nabto_device_virtual_stream_read_some(NabtoDeviceVirtualStream* stream,
  * Write bytes to a virtual stream.
  *
  * @param stream [in]        The stream to write data to.
+ * @param future [in]        Future to resolve with the result of the operation.
  * @param buffer [in]        The input buffer with data to write to the stream.
  * @param bufferLength [in]  Length of the input data.
  * @retval NABTO_DEVICE_EC_OK on success
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
+                          NabtoDeviceFuture* future,
                           const void* buffer,
                           size_t bufferLength);
 
