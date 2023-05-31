@@ -42,6 +42,12 @@ BOOST_AUTO_TEST_SUITE(device_api)
 BOOST_AUTO_TEST_CASE(has_default_server_url)
 {
     NabtoDeviceError ec;
+    char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        ec = nabto_device_set_log_std_out_callback(NULL);
+        ec = nabto_device_set_log_level(NULL, logLevel);
+    }
+
     NabtoDevice* dev = nabto_device_new();
     BOOST_TEST(dev);
     char* key;

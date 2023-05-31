@@ -777,7 +777,7 @@ nabto_device_limit_connections(NabtoDevice* device, size_t limit)
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    dev->core.clientConnect.maxConcurrentConnections = limit;
+    dev->core.connections.maxConcurrentConnections = limit;
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return nabto_device_error_core_to_api(NABTO_EC_OK);

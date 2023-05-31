@@ -2,6 +2,7 @@
 #define NC_CLIENT_CONNECTION_DISPATCH_H
 
 #include <core/nc_client_connection.h>
+#include <core/nc_connection.h>
 
 #include <nn/llist.h>
 
@@ -16,10 +17,8 @@ typedef void (*nc_client_connection_dispatch_close_callback)(void* data);
 struct nc_client_connection_dispatch_context {
     struct np_platform* pl;
     struct nc_device_context* device;
-    struct nn_llist connections;
+    struct nc_connections_context* connections;
     nc_client_connection_dispatch_close_callback closeCb;
-    size_t maxConcurrentConnections;
-    size_t currentConnections;
     void* closeData;
     bool closing;
     bool sendingInternalError;
@@ -45,7 +44,6 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
 np_error_code nc_client_connection_dispatch_close_connection(struct nc_client_connection_dispatch_context* ctx,
                                                           struct nc_client_connection* conn);
 
-struct nc_client_connection* nc_client_connection_dispatch_connection_from_ref(struct nc_client_connection_dispatch_context* ctx, uint64_t ref);
 
 bool nc_client_connection_dispatch_validate_connection_id(struct nc_client_connection_dispatch_context* ctx, const uint8_t* connectionId);
 

@@ -64,6 +64,7 @@ set(ne_platform_src
 )
 
 set(ne_core_src
+  ${root_dir}/src/core/nc_connection.c
   ${root_dir}/src/core/nc_client_connection.c
   ${root_dir}/src/core/nc_coap_packet_printer.c
   ${root_dir}/src/core/nc_attacher_attach_start.c

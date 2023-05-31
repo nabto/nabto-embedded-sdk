@@ -127,9 +127,16 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 #endif
+    ec = nc_connections_init(&device->connections);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "nc_device failed init connections. %s", np_error_code_to_string(ec));
+        nc_device_deinit(device);
+        return ec;
+    }
 
     ec = nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "nc_device failed init client connection dispatch. %s", np_error_code_to_string(ec));
         nc_device_deinit(device);
         return ec;
     }
@@ -167,6 +174,7 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     nc_stream_manager_deinit(&device->streamManager);
     nc_client_connection_dispatch_deinit(&device->clientConnect);
+    nc_connections_deinit(&device->connections);
     nc_stun_coap_deinit(&device->stunCoap);
     nc_stun_deinit(&device->stun);
     nc_rendezvous_coap_deinit(&device->rendezvousCoap);
@@ -497,7 +505,9 @@ uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev,
 
 struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
 {
-    return nc_client_connection_dispatch_connection_from_ref(&dev->clientConnect, ref);
+    // TODO: change to nc_connection*
+    struct nc_connection* conn = nc_connections_connection_from_ref(&dev->connections, ref);
+    return conn->connectionImplCtx;
 }
 
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData)

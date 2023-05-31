@@ -6,6 +6,7 @@
 #include <core/nc_attacher.h>
 #include <core/nc_stream_manager.h>
 #include <core/nc_client_connection_dispatch.h>
+#include <core/nc_connection.h>
 #include <core/nc_stun.h>
 #include <core/nc_coap_server.h>
 #include <core/nc_stun_coap.h>
@@ -55,6 +56,7 @@ struct nc_device_context {
     struct nc_attach_context attacher;
     struct nc_stream_manager_context streamManager;
     struct nc_client_connection_dispatch_context clientConnect;
+    struct nc_connections_context connections;
     struct nc_stun_context stun;
     struct nc_coap_server_context coapServer;
     struct nc_coap_client_context coapClient;
