@@ -14,11 +14,11 @@ struct nabto_device_coap_resource {
     void* userData;
     struct nabto_device_coap_resource* next;
     struct nabto_device_coap_request** futureRequest;
-    struct nabto_coap_server_resource* resource;
+    struct nc_coap_server_resource* resource;
 };
 
 struct nabto_device_coap_request {
-    struct nabto_coap_server_request* req;
+    struct nc_coap_server_request* req;
     struct nabto_device_context* dev;
     uint64_t connectionRef;
 
@@ -26,6 +26,6 @@ struct nabto_device_coap_request {
 };
 
 nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method);
-void nabto_device_coap_resource_handler(struct nabto_coap_server_request* request, void* userData);
+void nabto_device_coap_resource_handler(struct nc_coap_server_request* request, void* userData);
 
 #endif //NABTO_DEVICE_COAP_H

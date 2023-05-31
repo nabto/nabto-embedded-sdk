@@ -15,14 +15,14 @@
 
 #define LOG NABTO_LOG_MODULE_COAP
 
-void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* request, void* data);
+void nc_rendezvous_handle_coap_p2p_endpoints(struct nc_coap_server_request* request, void* data);
 
 np_error_code nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_platform* platform, struct nc_coap_server_context* coap, struct nc_stun_context* stun)
 {
     context->stun = stun;
     context->coap = coap;
     context->pl = platform;
-    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_GET,
+    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_CODE_GET,
                                                           (const char*[]){"p2p", "endpoints", NULL},
                                                           &nc_rendezvous_handle_coap_p2p_endpoints, context,
                                                           &context->resource);
@@ -36,7 +36,7 @@ np_error_code nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_
 void nc_stun_coap_deinit(struct nc_stun_coap_context* context)
 {
     if (context->resource) {
-        nabto_coap_server_remove_resource(context->resource);
+        nc_coap_server_remove_resource(context->resource);
         context->resource = NULL;
     }
 }
@@ -99,35 +99,35 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
 
     cbor_encoder_close_container(&encoder, &array);
 
-    struct nabto_coap_server_request* request = ctx->request;
+    struct nc_coap_server_request* request = ctx->request;
     if (cbor_encoder_get_extra_bytes_needed(&encoder) != 0) {
         // buffer was too small, this should not happen.
-        nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
+        nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
     } else {
         size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
-        nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
-        nabto_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-        nabto_coap_error err = nabto_coap_server_response_set_payload(request, buffer, used);
+        nc_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
+        nc_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+        nabto_coap_error err = nc_coap_server_response_set_payload(request, buffer, used);
         if (err != NABTO_COAP_ERROR_OK) {
             // Dont try to add a payload on OOM it would propably fail
-            nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
+            nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
         } else {
             // On errors we should still cleanup the request
-            nabto_coap_server_response_ready(request);
+            nc_coap_server_response_ready(request);
         }
     }
-    nabto_coap_server_request_free(request);
+    nc_coap_server_request_free(request);
     np_free(ctx);
 }
 
-void nc_rendezvous_handle_coap_p2p_endpoints(struct nabto_coap_server_request* request, void* data)
+void nc_rendezvous_handle_coap_p2p_endpoints(struct nc_coap_server_request* request, void* data)
 {
     struct nc_stun_coap_context* stunCoap = (struct nc_stun_coap_context*)data;
 
     struct nc_stun_coap_endpoints_request* ctx = np_calloc(1, sizeof(struct nc_stun_coap_endpoints_request));
     if (ctx == NULL)  {
-        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE_INTERNAL_SERVER_ERROR, "Out of memory");
-        nabto_coap_server_request_free(request);
+        nc_coap_server_send_error_response(request, NABTO_COAP_CODE_INTERNAL_SERVER_ERROR, "Out of memory");
+        nc_coap_server_request_free(request);
     } else {
         ctx->request = request;
         ctx->stunCoap = stunCoap;

@@ -67,8 +67,8 @@ struct nm_tcp_tunnels {
     struct nn_string_int_map limitsByType;
     uint8_t* weakPtrCounter;
 
-    struct nabto_coap_server_resource* coapListServices;
-    struct nabto_coap_server_resource* coapGetService;
+    struct nc_coap_server_resource* coapListServices;
+    struct nc_coap_server_resource* coapGetService;
 };
 
 np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device);

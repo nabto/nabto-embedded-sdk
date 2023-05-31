@@ -18,7 +18,7 @@ struct nc_spake2_password_request {
     size_t Tlen;
     uint8_t clientFingerprint[32];
     uint8_t deviceFingerprint[32];
-    struct nabto_coap_server_request* coapRequest;
+    struct nc_coap_server_request* coapRequest;
     struct np_platform* pl;
 };
 

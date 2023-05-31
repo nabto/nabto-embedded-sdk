@@ -170,18 +170,18 @@ struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_contex
     return &ctx->server;
 }
 
-void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request, uint8_t* connectionId)
+void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId)
 {
     (void)ctx;
-    struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request);
+    struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
     memcpy(connectionId, conn->id.id+1, 14);
 
 }
 
-struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server_context* ctx, struct nabto_coap_server_request* request)
+struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request)
 {
     (void)ctx;
-    return (struct nc_client_connection*)nabto_coap_server_request_get_connection(request);
+    return (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
 }
 
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection)
@@ -231,4 +231,90 @@ void nc_coap_server_set_infinite_stamp(struct nc_coap_server_context* ctx)
 void nc_coap_server_limit_requests(struct nc_coap_server_context* ctx, size_t limit)
 {
     nabto_coap_server_limit_requests(&ctx->requests, limit);
+}
+
+
+void resource_callback(struct nabto_coap_server_request* request, void* userData)
+{
+    struct nc_coap_server_resource* res = (struct nc_coap_server_resource*)userData;
+    struct nc_coap_server_request* req = np_calloc(1, sizeof(struct nc_coap_server_request));
+    req->request = request;
+    res->handler(req, res->userData);
+}
+
+
+nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* server, nabto_coap_code method, const char** segments, nc_coap_server_resource_handler handler, void* userData, struct nc_coap_server_resource** resource)
+{
+    *resource = np_calloc(1, sizeof(struct nc_coap_server_resource));
+    if (*resource == NULL) {
+        return NABTO_COAP_ERROR_OUT_OF_MEMORY;
+    }
+    (*resource)->handler = handler;
+    (*resource)->userData = userData;
+    return nabto_coap_server_add_resource(&server->server, method, segments, &resource_callback, *resource, &(*resource)->resource);
+}
+
+void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource)
+{
+    nabto_coap_server_remove_resource(resource->resource);
+    np_free(resource);
+}
+
+nabto_coap_error nc_coap_server_send_error_response(struct nc_coap_server_request* request, nabto_coap_code status, const char* description)
+{
+    return nabto_coap_server_send_error_response(request->request, status, description);
+}
+
+void nc_coap_server_response_set_code(struct nc_coap_server_request* request, nabto_coap_code code)
+{
+    return nabto_coap_server_response_set_code(request->request, code);
+}
+void nc_coap_server_response_set_code_human(struct nc_coap_server_request* request, uint16_t humanCode)
+{
+    return nabto_coap_server_response_set_code_human(request->request, humanCode);
+}
+
+nabto_coap_error nc_coap_server_response_set_payload(struct nc_coap_server_request* request, const void* data, size_t dataSize)
+{
+    return nabto_coap_server_response_set_payload(request->request, data, dataSize);
+}
+
+void nc_coap_server_response_set_content_format(struct nc_coap_server_request* request, uint16_t format)
+{
+    return nabto_coap_server_response_set_content_format(request->request, format);
+}
+
+nabto_coap_error nc_coap_server_response_ready(struct nc_coap_server_request* request)
+{
+    return nabto_coap_server_response_ready(request->request);
+}
+
+void nc_coap_server_request_free(struct nc_coap_server_request* request)
+{
+    nabto_coap_server_request_free(request->request);
+    np_free(request);
+}
+
+/**
+ * Get content format, if no content format is present return -1 else
+ * a contentFormat between 0 and 2^16-1 is returned.
+ */
+int32_t nc_coap_server_request_get_content_format(struct nc_coap_server_request* request)
+{
+    return nabto_coap_server_request_get_content_format(request->request);
+}
+
+bool nc_coap_server_request_get_payload(struct nc_coap_server_request* request, void** payload, size_t* payloadLength)
+{
+    return nabto_coap_server_request_get_payload(request->request,payload, payloadLength);
+}
+
+void* nc_coap_server_request_get_connection(struct nc_coap_server_request* request)
+{
+    return nabto_coap_server_request_get_connection(request->request);
+}
+
+const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* request, const char* parameter)
+{
+    return nabto_coap_server_request_get_parameter(request->request, parameter);
 }
