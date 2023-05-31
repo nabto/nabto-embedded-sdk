@@ -39,6 +39,7 @@ struct nc_connections_context {
     size_t currentConnections;
     nc_connections_close_callback closeCb;
     void* closeData;
+    bool closing;
 
 };
 

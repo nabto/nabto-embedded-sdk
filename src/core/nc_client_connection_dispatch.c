@@ -35,36 +35,6 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
     }
 }
 
-void nc_client_connection_dispatch_try_close(struct nc_client_connection_dispatch_context* ctx)
-{
-    if (nc_connections_count_connections(ctx->connections) != 0) {
-        return;
-    }
-    nc_client_connection_dispatch_close_callback cb = ctx->closeCb;
-    ctx->closeCb = NULL;
-    if (cb) {
-        cb(ctx->closeData);
-    }
-}
-
-void connetions_closed_callback(void* data)
-{
-    struct nc_client_connection_dispatch_context* ctx = (struct nc_client_connection_dispatch_context*)data;
-    nc_client_connection_dispatch_try_close(ctx);
-}
-
-np_error_code nc_client_connection_dispatch_async_close(struct nc_client_connection_dispatch_context* ctx, nc_client_connection_dispatch_close_callback cb, void* data)
-{
-    ctx->closing = true;
-
-    np_error_code ec = nc_connections_async_close(ctx->connections, &connetions_closed_callback, ctx);
-    if (ec == NABTO_EC_OK) {
-        ctx->closeCb = cb;
-        ctx->closeData = data;
-    }
-    return ec;
-}
-
 static void nc_client_connection_dispatch_send_internal_error_cb(np_error_code ec, void* data)
 {
     (void)ec;
@@ -155,10 +125,6 @@ np_error_code nc_client_connection_dispatch_close_connection(struct nc_client_co
                                                              struct nc_client_connection* conn)
 {
     nc_connections_free_connection(ctx->connections, nc_connections_connection_from_client_connection(ctx->connections, conn));
-
-    if (ctx->closing) {
-        nc_client_connection_dispatch_try_close(ctx);
-    }
 
     return NABTO_EC_OK;
 }

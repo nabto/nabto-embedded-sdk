@@ -9,6 +9,7 @@ np_error_code nc_connections_init(struct nc_connections_context* ctx)
 {
     nn_llist_init(&ctx->connections);
     ctx->maxConcurrentConnections = SIZE_MAX;
+    ctx->closing = false;
     return NABTO_EC_OK;
 }
 
@@ -29,10 +30,13 @@ void nc_connections_deinit(struct nc_connections_context* ctx)
 np_error_code nc_connections_async_close(struct nc_connections_context* ctx, nc_connections_close_callback cb, void* data)
 {
     bool hasActive = false;
-    struct nc_client_connection* connection;
+    ctx->closing = true;
+    struct nc_connection* connection;
     NN_LLIST_FOREACH(connection, &ctx->connections) {
-        nc_client_connection_close_connection(connection);
-        hasActive = true;
+        if (!connection->isVirtual) {
+            nc_client_connection_close_connection(connection->connectionImplCtx);
+            hasActive = true;
+        }
     }
 
     if (!hasActive) {
@@ -71,6 +75,13 @@ void nc_connections_free_connection(struct nc_connections_context* ctx, struct n
     np_free(connection->connectionImplCtx);
     np_free(connection);
     ctx->currentConnections--;
+    if (ctx->closing && ctx->currentConnections <= 0) {
+        nc_connections_close_callback cb = ctx->closeCb;
+        ctx->closeCb = NULL;
+        if (cb) {
+            cb(ctx->closeData);
+        }
+    }
 }
 
 struct nc_connection* nc_connections_alloc_virtual_connection(struct nc_connections_context* ctx)

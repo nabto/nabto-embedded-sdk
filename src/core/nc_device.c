@@ -478,7 +478,7 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
 
     //nc_device_stop(dev);
 
-    np_error_code ec = nc_client_connection_dispatch_async_close(&dev->clientConnect, &nc_device_client_connections_closed_cb, dev);
+    np_error_code ec = nc_connections_async_close(&dev->connections, &nc_device_client_connections_closed_cb, dev);
     if (ec == NABTO_EC_STOPPED) {
         nc_device_client_connections_closed_cb(dev);
     }
