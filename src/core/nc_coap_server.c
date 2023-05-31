@@ -165,23 +165,12 @@ void nc_coap_server_handle_timeout(void* data)
     nc_coap_server_event(ctx);
 }
 
-struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_context* ctx)
-{
-    return &ctx->server;
-}
-
-void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId)
+bool nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId)
 {
     (void)ctx;
     struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
     memcpy(connectionId, conn->id.id+1, 14);
-
-}
-
-struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request)
-{
-    (void)ctx;
-    return (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
+    return true;
 }
 
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection)

@@ -40,7 +40,9 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
 {
     struct nc_rendezvous_send_packet packet;
     packet.type = CT_RENDEZVOUS_DEVICE_REQUEST;
-    nc_coap_server_context_request_get_connection_id(ctx->coap, request, packet.connectionId);
+    if (!nc_coap_server_context_request_get_connection_id(ctx->coap, request, packet.connectionId)) {
+        return false;
+    };
 
     packet.channelId = 0;
     // send the packet on the non local only socket.

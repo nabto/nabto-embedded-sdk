@@ -42,11 +42,8 @@ void nc_coap_server_deinit(struct nc_coap_server_context* ctx);
 void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_client_connection* conn,
                                   uint8_t* buffer, uint16_t bufferSize);
 
-struct nabto_coap_server* nc_coap_server_get_server(struct nc_coap_server_context* ctx);
 
-void nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId);
-
-struct nc_client_connection* nc_coap_server_get_connection(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request);
+bool nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId);
 
 void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_client_connection* connection);
 
