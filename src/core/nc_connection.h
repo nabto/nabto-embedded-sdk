@@ -97,7 +97,7 @@ bool nc_connection_is_virtual(struct nc_connection* conn);
  * internal only called from self. Notifies nc_device of events.
  * TODO: implement this to get virtual connection events
  */
-void nc_connection_event_listener_notify(struct nc_connection* conn, enum nc_connection_event event);
+void nc_connection_events_listener_notify(struct nc_connection* conn, enum nc_connection_event event);
 
 #ifdef __cplusplus
 } // extern c

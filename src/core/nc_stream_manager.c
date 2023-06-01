@@ -3,6 +3,7 @@
 
 #include <core/nc_packet.h>
 #include <core/nc_client_connection.h>
+#include <core/nc_connection.h>
 
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
@@ -215,7 +216,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
 
         np_error_code ec;
-        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn, ctx, conn->connectionRef, ctx->logger);
+        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn, ctx, conn->parent->connectionRef, ctx->logger);
         if (ec != NABTO_EC_OK) {
             nc_stream_manager_free_stream(stream);
             return NULL;
@@ -357,7 +358,7 @@ uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* 
             if (connection == NULL) {
                 return 0;
             } else {
-                return connection->connectionRef;
+                return connection->parent->connectionRef;
             }
         }
     }

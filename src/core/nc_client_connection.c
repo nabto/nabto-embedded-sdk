@@ -49,11 +49,7 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
     conn->dispatch = dispatch;
     nn_llist_node_init(&conn->connectionsNode);
     conn->device = device;
-
-    ec = nc_device_next_connection_ref(device, &conn->connectionRef);
-    if (ec != NABTO_EC_OK) {
-        return NABTO_EC_UNKNOWN;
-    }
+    conn->parent = nc_connections_connection_from_client_connection(&device->connections, conn);
 
     ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
     if (ec != NABTO_EC_OK) {
@@ -149,7 +145,7 @@ void nc_client_connection_close_connection(struct nc_client_connection* conn)
 void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
 {
     struct np_platform* pl = conn->pl;
-    NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " closed.", conn->connectionRef);
+    NABTO_LOG_INFO(LOG, "Client <-> Device connection: %" NABTO_LOG_PRIu64 " closed.", conn->parent->connectionRef);
     nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_CLOSED);
     nc_keep_alive_deinit(&conn->keepAlive);
     nc_coap_server_remove_connection(&conn->device->coapServer, conn);
@@ -387,5 +383,5 @@ np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_conne
 
 void nc_client_connection_event_listener_notify(struct nc_client_connection* conn, enum nc_connection_event event)
 {
-    nc_device_connection_events_listener_notify(conn->device, conn->connectionRef, event);
+    nc_connection_events_listener_notify(conn->parent, event);
 }

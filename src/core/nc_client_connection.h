@@ -46,9 +46,9 @@ struct nc_client_connection {
     struct nc_connection_channel alternativeChannel;
     uint64_t currentMaxSequence;
     struct nc_device_context* device;
+    struct nc_connection* parent;
 
     struct np_completion_event* sentCb;
-    uint64_t connectionRef;
     struct np_completion_event sendCompletionEvent;
     struct np_completion_event closeCompletionEvent;
 

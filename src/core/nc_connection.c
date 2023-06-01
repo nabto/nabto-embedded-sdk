@@ -196,3 +196,8 @@ bool nc_connection_is_virtual(struct nc_connection* connection)
     return connection->isVirtual;
 }
 
+
+void nc_connection_events_listener_notify(struct nc_connection* conn, enum nc_connection_event event)
+{
+    nc_device_connection_events_listener_notify(conn->device, conn->connectionRef, event);
+}
