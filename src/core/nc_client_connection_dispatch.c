@@ -124,7 +124,7 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
 np_error_code nc_client_connection_dispatch_close_connection(struct nc_client_connection_dispatch_context* ctx,
                                                              struct nc_client_connection* conn)
 {
-    nc_connections_free_connection(ctx->connections, nc_connections_connection_from_client_connection(ctx->connections, conn));
+    nc_connections_free_connection(ctx->connections, conn->parent);
 
     return NABTO_EC_OK;
 }

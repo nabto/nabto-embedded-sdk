@@ -1,15 +1,17 @@
 #include "nc_connection.h"
+#include "nc_virtual_connection.h"
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 #include "nc_device.h"
 
 #define LOG NABTO_LOG_MODULE_CONNECTION
 
-np_error_code nc_connections_init(struct nc_connections_context* ctx)
+np_error_code nc_connections_init(struct nc_connections_context* ctx, struct nc_device_context* device)
 {
     nn_llist_init(&ctx->connections);
     ctx->maxConcurrentConnections = SIZE_MAX;
     ctx->closing = false;
+    ctx->device = device;
     return NABTO_EC_OK;
 }
 
@@ -22,8 +24,11 @@ void nc_connections_deinit(struct nc_connections_context* ctx)
         nn_llist_next(&it);
 
         //destroy connection calls close connection which alters the list
-        // TODO: if (!connection->isVirtual) {
-        nc_client_connection_destroy_connection(connection->connectionImplCtx);
+        if (!connection->isVirtual) {
+            nc_client_connection_destroy_connection(connection->connectionImplCtx);
+        } else {
+            nc_virtual_connection_destroy(connection->connectionImplCtx);
+        }
     }
 }
 
@@ -36,6 +41,8 @@ np_error_code nc_connections_async_close(struct nc_connections_context* ctx, nc_
         if (!connection->isVirtual) {
             nc_client_connection_close_connection(connection->connectionImplCtx);
             hasActive = true;
+        } else {
+            nc_virtual_connection_close(connection->connectionImplCtx);
         }
     }
 
@@ -63,7 +70,27 @@ struct nc_connection* nc_connections_alloc_client_connection(struct nc_connectio
         np_free(cliConn);
         return NULL;
     }
-    connection->connectionImplCtx = cliConn;
+    nc_connection_init(connection, ctx->device, false, cliConn);
+    ctx->currentConnections++;
+    nn_llist_append(&ctx->connections, &connection->connectionsNode, connection);
+    return connection;
+}
+
+struct nc_connection* nc_connections_alloc_virtual_connection(struct nc_connections_context* ctx)
+{
+    if (ctx->currentConnections >= ctx->maxConcurrentConnections) {
+        NABTO_LOG_INFO(LOG, "Cannot allocate more client connections, the limit has been reached");
+        return NULL;
+    }
+    struct nc_connection* connection = (struct nc_connection*)np_calloc(1, sizeof(struct nc_connection));
+    struct nc_virtual_connection* virConn = (struct nc_virtual_connection*)np_calloc(1, sizeof(struct nc_virtual_connection));
+    if (connection == NULL || virConn == NULL) {
+        NABTO_LOG_INFO(LOG, "Cannot create virtual connection as system is out of memory.");
+        np_free(connection);
+        np_free(virConn);
+        return NULL;
+    }
+    nc_connection_init(connection, ctx->device, true, virConn);
     ctx->currentConnections++;
     nn_llist_append(&ctx->connections, &connection->connectionsNode, connection);
     return connection;
@@ -82,11 +109,6 @@ void nc_connections_free_connection(struct nc_connections_context* ctx, struct n
             cb(ctx->closeData);
         }
     }
-}
-
-struct nc_connection* nc_connections_alloc_virtual_connection(struct nc_connections_context* ctx)
-{
-    return NULL;
 }
 
 struct nc_connection* nc_connections_connection_from_ref(struct nc_connections_context* ctx, uint64_t ref)
@@ -154,8 +176,7 @@ np_error_code nc_connection_init(struct nc_connection* conn, struct nc_device_co
 bool nc_connection_get_client_fingerprint(struct nc_connection* connection, uint8_t* fp)
 {
     if (connection->isVirtual) {
-        // TODO
-        return false;
+        return nc_virtual_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
     } else {
         return nc_client_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
     }
@@ -164,8 +185,7 @@ bool nc_connection_get_client_fingerprint(struct nc_connection* connection, uint
 bool nc_connection_get_device_fingerprint(struct nc_connection* connection, uint8_t* fp)
 {
     if (connection->isVirtual) {
-        // TODO
-        return false;
+        return nc_virtual_connection_get_device_fingerprint(connection->connectionImplCtx, fp);
     } else {
         memcpy(fp, connection->device->fingerprint, 32);
         return true;
@@ -176,7 +196,7 @@ bool nc_connection_get_device_fingerprint(struct nc_connection* connection, uint
 bool nc_connection_is_local(struct nc_connection* connection)
 {
     if (connection->isVirtual) {
-        // TODO:
+        // TODO: can a virtual connection be local?
         return false;
     } else {
         struct nc_client_connection* conn = connection->connectionImplCtx;

@@ -22,7 +22,7 @@ struct nabto_device_coap_request {
     struct nabto_device_context* dev;
     uint64_t connectionRef;
 
-    struct nn_llist_node eventListNode;
+    struct nn_llist_node eventListNode; // Node to add to the listener event queue to be resolved when a future is available
 };
 
 nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method);

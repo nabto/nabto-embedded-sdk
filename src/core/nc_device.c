@@ -127,7 +127,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 #endif
-    ec = nc_connections_init(&device->connections);
+    ec = nc_connections_init(&device->connections, device);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "nc_device failed init connections. %s", np_error_code_to_string(ec));
         nc_device_deinit(device);

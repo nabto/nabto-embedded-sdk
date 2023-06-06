@@ -40,11 +40,12 @@ struct nc_connections_context {
     nc_connections_close_callback closeCb;
     void* closeData;
     bool closing;
+    struct nc_device_context* device;
 
 };
 
 
-np_error_code nc_connections_init(struct nc_connections_context* ctx);
+np_error_code nc_connections_init(struct nc_connections_context* ctx, struct nc_device_context* device);
 void nc_connections_deinit(struct nc_connections_context* ctx);
 np_error_code nc_connections_async_close(struct nc_connections_context* ctx, nc_connections_close_callback cb, void* data);
 struct nc_connection* nc_connections_alloc_client_connection(struct nc_connections_context* ctx);

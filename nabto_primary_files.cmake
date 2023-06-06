@@ -66,6 +66,7 @@ set(ne_platform_src
 set(ne_core_src
   ${root_dir}/src/core/nc_connection.c
   ${root_dir}/src/core/nc_client_connection.c
+  ${root_dir}/src/core/nc_virtual_connection.c
   ${root_dir}/src/core/nc_coap_packet_printer.c
   ${root_dir}/src/core/nc_attacher_attach_start.c
   ${root_dir}/src/core/nc_client_connection_dispatch.c
@@ -112,6 +113,7 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_util.c
   ${root_dir}/src/api/nabto_device_event_handler.c
   ${root_dir}/src/api/nabto_device_connection_events.c
+  ${root_dir}/src/api/nabto_device_virtual_connection.c
   ${root_dir}/src/api/nabto_device_coap.c
   ${root_dir}/src/api/nabto_device_future.c
   ${root_dir}/src/api/nabto_device_tcp_probe.c

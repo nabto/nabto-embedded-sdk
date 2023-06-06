@@ -415,7 +415,7 @@ nabto_device_virtual_coap_request_set_content_format(NabtoDeviceVirtualCoapReque
  * @param future [in] The future resolved when a response is ready
  * @return NABTO_DEVICE_EC_OK iff successful
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_virtual_connection_coap_execute(NabtoDeviceVirtualCoapRequest* request, NabtoDeviceFuture* future);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_virtual_connection_coap_execute(NabtoDeviceVirtualCoapRequest* request, NabtoDeviceFuture* future);
 
 /**
  * Get response status. encoded as e.g. 404, 200, 203, 500.
