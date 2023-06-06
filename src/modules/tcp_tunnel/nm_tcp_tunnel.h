@@ -69,6 +69,7 @@ struct nm_tcp_tunnels {
 
     struct nc_coap_server_resource* coapListServices;
     struct nc_coap_server_resource* coapGetService;
+    struct nc_coap_server_resource* coapGetConnect;
 };
 
 np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device);

@@ -37,10 +37,9 @@ np_error_code nm_tcp_tunnel_coap_init(struct nm_tcp_tunnels* tunnels, struct nc_
         nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
     }
-    // TODO: reusing the coapGetService causes memory leak in nc_coap_server
     err = nc_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
                                          (const char*[]){"tcp-tunnels", "connect", "{id}", NULL},
-                                         get_connect, tunnels, &tunnels->coapGetService);
+                                         get_connect, tunnels, &tunnels->coapGetConnect);
     if (err != NABTO_COAP_ERROR_OK) {
         nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
@@ -58,6 +57,10 @@ void nm_tcp_tunnel_coap_deinit(struct nm_tcp_tunnels* tunnels)
     if (tunnels->coapGetService) {
         nc_coap_server_remove_resource(tunnels->coapGetService);
         tunnels->coapGetService = NULL;
+    }
+    if (tunnels->coapGetConnect) {
+        nc_coap_server_remove_resource(tunnels->coapGetConnect);
+        tunnels->coapGetConnect = NULL;
     }
 }
 
