@@ -114,12 +114,37 @@ nabto_device_virtual_connection_set_client_fingerprint(NabtoDeviceVirtualConnect
     uint8_t* fpBin;
     size_t len = fromHex(fp, &fpBin);
     if (len < 32) {
+        np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     if (!nc_virtual_connection_set_client_fingerprint(conn->connection->connectionImplCtx, fpBin)) {
+        np_free(fpBin);
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     };
+    np_free(fpBin);
     return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceConnectionRef  NABTO_DEVICE_API
+nabto_device_connection_get_connection_ref(NabtoDeviceVirtualConnection* connection)
+{
+    struct nabto_device_virtual_connection* conn = (struct nabto_device_virtual_connection*)connection;
+    return conn->connection->connectionRef;
+}
+
+
+bool NABTO_DEVICE_API
+nabto_device_connection_is_virtual(NabtoDevice* device, NabtoDeviceConnectionRef ref)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    bool virtual = false;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
+    if (connection != NULL) {
+        virtual = nc_connection_is_virtual(connection);
+    }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return virtual;
 }
 
 NabtoDeviceVirtualCoapRequest* NABTO_DEVICE_API
@@ -146,12 +171,14 @@ void NABTO_DEVICE_API
 nabto_device_virtual_coap_request_free(NabtoDeviceVirtualCoapRequest* request)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
-    struct nabto_device_context* dev = req->connection->dev;
-    nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_coap_server_request_free(req->apiReq.req);
+    if (req->apiReq.req != NULL) {
+        struct nabto_device_context* dev = req->connection->dev;
+        nabto_device_threads_mutex_lock(dev->eventMutex);
+        nc_coap_server_virtual_request_free(req->apiReq.req);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+    }
     np_free(req->payload);
     np_free(req);
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
 
 }
 

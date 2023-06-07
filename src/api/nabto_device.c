@@ -584,7 +584,7 @@ nabto_device_connection_get_client_fingerprint(NabtoDevice* device, NabtoDeviceC
 
     struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
 
-    if (connection == NULL || nc_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
+    if (connection == NULL || !nc_connection_get_client_fingerprint(connection, clientFingerprint)) {
         ec = NABTO_EC_INVALID_CONNECTION;
     } else {
         *fp = toHex(clientFingerprint, 32);
@@ -606,7 +606,7 @@ nabto_device_connection_get_client_fingerprint_hex(NabtoDevice* device, NabtoDev
 
     struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, connectionRef);
 
-    if (connection == NULL || nc_connection_get_client_fingerprint(connection, clientFingerprint) != NABTO_EC_OK) {
+    if (connection == NULL || !nc_connection_get_client_fingerprint(connection, clientFingerprint)) {
         ec = NABTO_EC_INVALID_CONNECTION;
     } else {
         *fp = toHex(clientFingerprint, 16);

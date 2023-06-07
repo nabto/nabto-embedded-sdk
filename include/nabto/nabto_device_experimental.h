@@ -350,6 +350,16 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_virtual_connection_set_client_fingerprint(NabtoDeviceVirtualConnection* connection, const char* fp);
 
 /**
+ * Get the connection reference of a virtual connection.
+ *
+ * @param connection [in]  The virtual connection to get reference for
+ * @return The connection reference of the provided virtual connection.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceConnectionRef  NABTO_DEVICE_API
+nabto_device_connection_get_connection_ref(NabtoDeviceVirtualConnection* connection);
+
+
+/**
  * Test if the connection is virtual.
  *
  * @param device [in]  The device

@@ -108,6 +108,7 @@ void nc_coap_server_response_set_content_format(struct nc_coap_server_request* r
 nabto_coap_error nc_coap_server_response_ready(struct nc_coap_server_request* request);
 
 void nc_coap_server_request_free(struct nc_coap_server_request* request);
+void nc_coap_server_virtual_request_free(struct nc_coap_server_request* request);
 
 /**
  * Get content format, if no content format is present return -1 else

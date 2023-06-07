@@ -27,7 +27,7 @@ void nc_coap_server_handle_timeout(void* data);
 
 static void nc_coap_server_notify_event_callback(void* userData);
 
-void nc_coap_server_resolve_virtual(struct nc_coap_server_request* request);
+void nc_coap_server_resolve_virtual(np_error_code ec, struct nc_coap_server_request* request);
 
 np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_context* device, struct nn_log* logger, struct nc_coap_server_context* ctx)
 {
@@ -268,7 +268,7 @@ void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource)
         req = nn_llist_get_item(&it);
         nn_llist_next(&it);
         // TODO: set response
-        nc_coap_server_resolve_virtual(req);
+        nc_coap_server_resolve_virtual(NABTO_EC_STOPPED, req);
     }
     np_free(resource);
 }
@@ -280,7 +280,7 @@ nabto_coap_error nc_coap_server_send_error_response(struct nc_coap_server_reques
         request->virRequest->respPayload = nn_strdup(description, np_allocator_get());
         request->virRequest->respPayloadSize = strlen(description);
         request->virRequest->responseReady = true;
-        nc_coap_server_resolve_virtual(request);
+        nc_coap_server_resolve_virtual(NABTO_EC_OK, request);
         return NABTO_COAP_ERROR_OK;
     }
     return nabto_coap_server_send_error_response(request->request, status, description);
@@ -332,7 +332,7 @@ nabto_coap_error nc_coap_server_response_ready(struct nc_coap_server_request* re
 {
     if (request->isVirtual) {
         request->virRequest->responseReady = true;
-        nc_coap_server_resolve_virtual(request);
+        nc_coap_server_resolve_virtual(NABTO_EC_OK, request);
         return NABTO_COAP_ERROR_OK;
     }
 
@@ -346,8 +346,19 @@ void nc_coap_server_request_free(struct nc_coap_server_request* request)
 
     } else {
         nabto_coap_server_request_free(request->request);
+        np_free(request);
     }
-    np_free(request);
+}
+
+void nc_coap_server_virtual_request_free(struct nc_coap_server_request* request)
+{
+    // TODO: ensure this works
+    if (request->isVirtual) {
+        np_free(request->virRequest->respPayload);
+        np_free(request->virRequest);
+        np_free(request);
+    } else {
+    }
 }
 
 /**
@@ -485,8 +496,9 @@ uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* r
     }
 }
 
-void nc_coap_server_resolve_virtual(struct nc_coap_server_request* request)
+void nc_coap_server_resolve_virtual(np_error_code ec, struct nc_coap_server_request* request)
 {
     // TODO:
-    NABTO_LOG_ERROR(LOG, "Should resolve request here");
+
+    request->virRequest->handler(ec, request, request->virRequest->handlerData);
 }
