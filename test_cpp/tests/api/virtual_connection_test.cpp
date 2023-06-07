@@ -17,6 +17,8 @@ class TestDevice {
     public:
     TestDevice()
     {
+        reqListener_ = NULL;
+        reqFut_ = NULL;
         NabtoDeviceError ec;
         device_ = nabto_device_new();
         BOOST_TEST(device_);
@@ -47,10 +49,10 @@ class TestDevice {
             nabto_device_virtual_connection_free(connection_);
         }
         nabto_device_stop(device_);
-        if (reqListener_) {
+        if (reqListener_ != NULL) {
             nabto_device_listener_free(reqListener_);
         }
-        if (reqFut_) {
+        if (reqFut_ != NULL) {
             nabto_device_future_free(reqFut_);
         }
         nabto_device_free(device_);
