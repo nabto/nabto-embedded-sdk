@@ -352,12 +352,11 @@ void nc_coap_server_request_free(struct nc_coap_server_request* request)
 
 void nc_coap_server_virtual_request_free(struct nc_coap_server_request* request)
 {
-    // TODO: ensure this works
     if (request->isVirtual) {
+        nn_string_map_deinit(&request->virRequest->parameters);
         np_free(request->virRequest->respPayload);
         np_free(request->virRequest);
         np_free(request);
-    } else {
     }
 }
 
@@ -411,7 +410,16 @@ uint64_t nc_coap_server_request_get_connection_ref(struct nc_coap_server_request
 const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* request, const char* parameter)
 {
     // TODO: virtual
-    return nabto_coap_server_request_get_parameter(request->request, parameter);
+    if (request->isVirtual) {
+        struct nn_string_map_iterator it = nn_string_map_get(&request->virRequest->parameters, parameter);
+        if (nn_string_map_is_end(&it)) {
+            return NULL;
+        } else {
+            return nn_string_map_value(&it);
+        }
+    } else {
+        return nabto_coap_server_request_get_parameter(request->request, parameter);
+    }
 }
 
 

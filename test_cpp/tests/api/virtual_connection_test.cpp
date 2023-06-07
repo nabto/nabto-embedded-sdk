@@ -11,7 +11,7 @@
 namespace nabto {
 namespace test {
 
-const char* coapPath[] = { "hello", "world", NULL };
+const char* coapPath[] = { "hello", "{name}", NULL };
 
 class TestDevice {
     public:
@@ -158,6 +158,7 @@ BOOST_AUTO_TEST_CASE(new_free_coap)
 BOOST_AUTO_TEST_CASE(execute_coap)
 {
     const char* data = "FOOBAR";
+    const char* coapPath[] = { "hello", "world", NULL };
     size_t dataLen = strlen(data);
 
     nabto::test::TestDevice td;
@@ -177,6 +178,11 @@ BOOST_AUTO_TEST_CASE(execute_coap)
             BOOST_TEST(nabto_device_coap_request_get_content_format(req, &cf) == NABTO_DEVICE_EC_OK);
             BOOST_TEST(cf == NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
 
+            const char* key = nabto_device_coap_request_get_parameter(req, "name");
+
+            BOOST_TEST(strcmp(key, coapPath[1]) == 0);
+
+
             nabto_device_coap_response_set_code(req, 205);
             nabto_device_coap_response_set_content_format(req, cf);
             nabto_device_coap_response_set_payload(req, data, dataLen);
@@ -190,7 +196,7 @@ BOOST_AUTO_TEST_CASE(execute_coap)
     });
     NabtoDeviceVirtualConnection* conn = td.makeConnection();
 
-    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, nabto::test::coapPath);
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, coapPath);
 
     BOOST_TEST((req != NULL));
 
