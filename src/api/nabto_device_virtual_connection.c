@@ -99,11 +99,14 @@ nabto_device_virtual_connection_set_device_fingerprint(NabtoDeviceVirtualConnect
     uint8_t* fpBin;
     size_t len = fromHex(fp, &fpBin);
     if (len < 32) {
+        np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     if (!nc_virtual_connection_set_device_fingerprint(conn->connection->connectionImplCtx, fpBin)) {
+        np_free(fpBin);
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     };
+    np_free(fpBin);
     return NABTO_DEVICE_EC_OK;
 }
 
