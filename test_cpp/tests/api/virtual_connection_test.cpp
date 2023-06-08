@@ -17,7 +17,7 @@ namespace test {
 const char* coapPath[] = { "hello", "{name}", NULL };
 
 class TestDevice {
-    public:
+public:
     TestDevice()
     {
         reqListener_ = NULL;
@@ -94,7 +94,7 @@ class TestDevice {
         }
     }
 
-    void setupCoapEndpoint(std::function<void (NabtoDeviceError ec, NabtoDeviceCoapRequest* req)> onRequest)
+    void setupCoapEndpoint(std::function<void(NabtoDeviceError ec, NabtoDeviceCoapRequest* req)> onRequest)
     {
         onRequest_ = onRequest;
         reqListener_ = nabto_device_listener_new(device_);
@@ -379,6 +379,55 @@ BOOST_AUTO_TEST_CASE(coap_404)
     nabto_device_virtual_coap_request_free(req);
 }
 
+BOOST_AUTO_TEST_CASE(execute_multiple_coap)
+{
+    const char* data = "FOOBAR";
+    const char* coapPath[] = { "hello", "world", NULL };
+    size_t dataLen = strlen(data);
+
+    nabto::test::TestDevice td;
+    td.setupCoapEndpoint([&](NabtoDeviceError ec, NabtoDeviceCoapRequest* req) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+
+            nabto_device_coap_response_set_code(req, 205);
+            nabto_device_coap_response_ready(req);
+            nabto_device_coap_request_free(req);
+        }
+    });
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, coapPath);
+    NabtoDeviceVirtualCoapRequest* req2 = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, coapPath);
+
+    BOOST_TEST((req != NULL));
+    BOOST_TEST((req2 != NULL));
+
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, data, dataLen) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) == NABTO_DEVICE_EC_OK);
+
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req2, data, dataLen) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req2, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    NabtoDeviceFuture* fut2 = nabto_device_future_new(td.device_);
+
+    nabto_device_virtual_coap_request_execute(req, fut);
+    nabto_device_virtual_coap_request_execute(req2, fut2);
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    ec = nabto_device_future_wait(fut2);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    nabto_device_future_free(fut);
+    nabto_device_future_free(fut2);
+
+
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_virtual_coap_request_free(req2);
+}
+
+
 BOOST_AUTO_TEST_CASE(coap_get_tunnels)
 {
     const char* coapPath[] = { "tcp-tunnels", "services", NULL };
@@ -429,14 +478,14 @@ BOOST_AUTO_TEST_CASE(coap_pwd_auth)
     nabto::test::TestDevice td;
     NabtoDeviceVirtualConnection* conn = td.makeConnection(deviceFp, clientFp);
 
-    td.setupPassAuth([&](NabtoDeviceError ec, NabtoDevicePasswordAuthenticationRequest * req) {
+    td.setupPassAuth([&](NabtoDeviceError ec, NabtoDevicePasswordAuthenticationRequest* req) {
         if (ec == NABTO_DEVICE_EC_OK) {
             const char* uname = nabto_device_password_authentication_request_get_username(req);
             BOOST_TEST(std::string(uname) == username);
             BOOST_TEST(nabto_device_password_authentication_request_set_password(req, password.c_str()) == NABTO_DEVICE_EC_OK);
             nabto_device_password_authentication_request_free(req);
         }
-    });
+        });
 
     // AUTH REQ 1
     NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
