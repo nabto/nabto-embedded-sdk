@@ -79,7 +79,7 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
 
 // Creates a virtual CoAP requests and resolves the appropriate nc_coap_server_resource_handler.
 // The request is also returned for future reference.
-struct nc_coap_server_request* nc_coap_server_create_virtual_request(struct nc_coap_server_context* ctx,
+struct nc_coap_server_request* nc_coap_server_create_virtual_request(struct nc_coap_server_context* ctx, struct nc_connection* conn,
 nabto_coap_code method, const char** segments, void* payload, size_t payloadSize, uint16_t contentFormat, nc_coap_server_virtual_response_handler handler, void* userData);
 
 // Get connection ID of a client connection.

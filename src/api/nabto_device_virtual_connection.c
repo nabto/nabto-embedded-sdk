@@ -215,7 +215,7 @@ void NABTO_DEVICE_API nabto_device_virtual_coap_request_execute(NabtoDeviceVirtu
     nabto_device_future_reset(fut);
 
     req->future = fut;
-    req->apiReq.req = nc_coap_server_create_virtual_request(&dev->core.coapServer, nabto_device_coap_method_to_code(req->method), req->segments, req->payload, req->payloadSize, req->contentFormat, &response_handler, req);
+    req->apiReq.req = nc_coap_server_create_virtual_request(&dev->core.coapServer, req->connection->connection, nabto_device_coap_method_to_code(req->method), req->segments, req->payload, req->payloadSize, req->contentFormat, &response_handler, req);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (req->apiReq.req == NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
@@ -269,7 +269,7 @@ nabto_device_virtual_coap_request_get_response_payload(NabtoDeviceVirtualCoapReq
     }
     struct nabto_device_context* dev = req->connection->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_coap_server_request_get_payload(req->apiReq.req, payload, payloadLength);
+    nc_coap_server_response_get_payload(req->apiReq.req, payload, payloadLength);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if(*payload == NULL) {
         return NABTO_DEVICE_EC_UNKNOWN;

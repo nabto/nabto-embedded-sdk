@@ -279,8 +279,10 @@ nabto_coap_error nc_coap_server_send_error_response(struct nc_coap_server_reques
 {
     if (request->isVirtual) {
         request->virRequest->respStatusCode = status;
-        request->virRequest->respPayload = nn_strdup(description, np_allocator_get());
-        request->virRequest->respPayloadSize = strlen(description);
+        if (description != NULL) {
+            request->virRequest->respPayload = nn_strdup(description, np_allocator_get());
+            request->virRequest->respPayloadSize = strlen(description);
+        }
         request->virRequest->responseReady = true;
         nc_coap_server_resolve_virtual(NABTO_EC_OK, request);
         return NABTO_COAP_ERROR_OK;
@@ -421,7 +423,7 @@ const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* 
 }
 
 
-struct nc_coap_server_request* nc_coap_server_create_virtual_request(struct nc_coap_server_context* ctx,
+struct nc_coap_server_request* nc_coap_server_create_virtual_request(struct nc_coap_server_context* ctx, struct nc_connection* conn,
 nabto_coap_code method, const char** segments, void* payload, size_t payloadSize, uint16_t contentFormat, nc_coap_server_virtual_response_handler handler, void* userData)
 {
     struct nc_coap_server_request* req = np_calloc(1, sizeof(struct nc_coap_server_request));
@@ -442,6 +444,7 @@ nabto_coap_code method, const char** segments, void* payload, size_t payloadSize
     virReq->handler = handler;
     virReq->handlerData = userData;
     virReq->responseReady = false;
+    virReq->connection = conn;
     nn_string_map_init(&virReq->parameters, np_allocator_get());
 
     struct nc_coap_server_resource* resource =  nabto_coap_server_find_resource_data(&ctx->server, method, segments, &virReq->parameters);
