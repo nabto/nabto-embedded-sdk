@@ -205,13 +205,54 @@ BOOST_AUTO_TEST_CASE(execute_coap)
 
     NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
 
-    nabto_device_virtual_connection_coap_execute(req, fut);
+    nabto_device_virtual_coap_request_execute(req, fut);
 
     NabtoDeviceError ec = nabto_device_future_wait(fut);
+
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 205);
+
+    uint16_t cf;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_content_format(req, &cf) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(cf == NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
+
+    char* payload;
+    size_t len;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(req, (void**)&payload, &len) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(memcmp(payload, data, strlen(data)) == 0);
+
 
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
     nabto_device_future_free(fut);
 
+
+    nabto_device_virtual_coap_request_free(req);
+}
+
+BOOST_AUTO_TEST_CASE(coap_404)
+{
+    const char* coapPath[] = { "not", "found", NULL };
+
+    nabto::test::TestDevice td;
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, coapPath);
+
+    BOOST_TEST((req != NULL));
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    nabto_device_future_free(fut);
+
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 404);
 
     nabto_device_virtual_coap_request_free(req);
 }

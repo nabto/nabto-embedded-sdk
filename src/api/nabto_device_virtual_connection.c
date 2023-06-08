@@ -205,7 +205,7 @@ nabto_device_virtual_coap_request_set_content_format(NabtoDeviceVirtualCoapReque
     return NABTO_DEVICE_EC_OK;
 }
 
-void NABTO_DEVICE_API nabto_device_virtual_connection_coap_execute(NabtoDeviceVirtualCoapRequest* request, NabtoDeviceFuture* future)
+void NABTO_DEVICE_API nabto_device_virtual_coap_request_execute(NabtoDeviceVirtualCoapRequest* request, NabtoDeviceFuture* future)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
     struct nabto_device_context* dev = req->connection->dev;
@@ -214,18 +214,16 @@ void NABTO_DEVICE_API nabto_device_virtual_connection_coap_execute(NabtoDeviceVi
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
 
-    req->apiReq.req = nc_coap_server_create_virtual_request(&dev->core.coapServer, nabto_device_coap_method_to_code(req->method), req->segments, req->payload, req->payloadSize, req->contentFormat, &response_handler, req);
-    if (req->apiReq.req == NULL) {
-        nabto_device_threads_mutex_unlock(dev->eventMutex);
-        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
-        return;
-    }
     req->future = fut;
+    req->apiReq.req = nc_coap_server_create_virtual_request(&dev->core.coapServer, nabto_device_coap_method_to_code(req->method), req->segments, req->payload, req->payloadSize, req->contentFormat, &response_handler, req);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
+    if (req->apiReq.req == NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+    }
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_status_code(NabtoDeviceVirtualCoapRequest* request, uint16_t* statusCode)
+nabto_device_virtual_coap_request_get_response_status_code(NabtoDeviceVirtualCoapRequest* request, uint16_t* statusCode)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
 
@@ -241,7 +239,7 @@ nabto_device_virtual_coap_get_response_status_code(NabtoDeviceVirtualCoapRequest
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_content_format(NabtoDeviceVirtualCoapRequest* request, uint16_t* contentFormat)
+nabto_device_virtual_coap_request_get_response_content_format(NabtoDeviceVirtualCoapRequest* request, uint16_t* contentFormat)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
 
@@ -262,7 +260,7 @@ nabto_device_virtual_coap_get_response_content_format(NabtoDeviceVirtualCoapRequ
 }
 
 NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_payload(NabtoDeviceVirtualCoapRequest* request, void** payload, size_t* payloadLength)
+nabto_device_virtual_coap_request_get_response_payload(NabtoDeviceVirtualCoapRequest* request, void** payload, size_t* payloadLength)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
 

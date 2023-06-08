@@ -425,7 +425,8 @@ nabto_device_virtual_coap_request_set_content_format(NabtoDeviceVirtualCoapReque
  * @param future [in] The future resolved when a response is ready
  * @return NABTO_DEVICE_EC_OK iff successful
  */
-NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_virtual_connection_coap_execute(NabtoDeviceVirtualCoapRequest* request, NabtoDeviceFuture* future);
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_virtual_coap_request_execute(NabtoDeviceVirtualCoapRequest* request, NabtoDeviceFuture* future);
 
 /**
  * Get response status. encoded as e.g. 404, 200, 203, 500.
@@ -436,7 +437,7 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_virtual_connection_c
  * @retval NABTO_DEVICE_EC_INVALID_STATE if there's no response yet.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_status_code(NabtoDeviceVirtualCoapRequest* coap, uint16_t* statusCode);
+nabto_device_virtual_coap_request_get_response_status_code(NabtoDeviceVirtualCoapRequest* coap, uint16_t* statusCode);
 
 /**
  * Get content type of the payload if one exists.
@@ -448,7 +449,7 @@ nabto_device_virtual_coap_get_response_status_code(NabtoDeviceVirtualCoapRequest
  * @retval NABTO_DEVICE_EC_INVALID_STATE if no response is ready
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_content_format(NabtoDeviceVirtualCoapRequest* coap, uint16_t* contentType);
+nabto_device_virtual_coap_request_get_response_content_format(NabtoDeviceVirtualCoapRequest* coap, uint16_t* contentType);
 
 /**
  * Get the coap response data.
@@ -463,7 +464,7 @@ nabto_device_virtual_coap_get_response_content_format(NabtoDeviceVirtualCoapRequ
  * @retval NABTO_DEVICE_EC_INVALID_STATE if no response is ready yet.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-nabto_device_virtual_coap_get_response_payload(NabtoDeviceVirtualCoapRequest* coap, void** payload, size_t* payloadLength);
+nabto_device_virtual_coap_request_get_response_payload(NabtoDeviceVirtualCoapRequest* coap, void** payload, size_t* payloadLength);
 
 
 

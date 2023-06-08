@@ -175,8 +175,10 @@ void nc_coap_server_handle_timeout(void* data)
 
 bool nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId)
 {
-    // TODO: virtual id?
     (void)ctx;
+    if (request->isVirtual) {
+        return false;
+    }
     struct nc_client_connection* conn = (struct nc_client_connection*)nabto_coap_server_request_get_connection(request->request);
     memcpy(connectionId, conn->id.id+1, 14);
     return true;
@@ -341,10 +343,7 @@ nabto_coap_error nc_coap_server_response_ready(struct nc_coap_server_request* re
 
 void nc_coap_server_request_free(struct nc_coap_server_request* request)
 {
-    // TODO: this comes from the coap server when it has handled the request and is done with it. For virtual requests this may not mean the client is done with the response.
-    if (request->isVirtual) {
-
-    } else {
+    if (!request->isVirtual) {
         nabto_coap_server_request_free(request->request);
         np_free(request);
     }
@@ -409,7 +408,6 @@ uint64_t nc_coap_server_request_get_connection_ref(struct nc_coap_server_request
 
 const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* request, const char* parameter)
 {
-    // TODO: virtual
     if (request->isVirtual) {
         struct nn_string_map_iterator it = nn_string_map_get(&request->virRequest->parameters, parameter);
         if (nn_string_map_is_end(&it)) {
@@ -448,10 +446,12 @@ nabto_coap_code method, const char** segments, void* payload, size_t payloadSize
 
     struct nc_coap_server_resource* resource =  nabto_coap_server_find_resource_data(&ctx->server, method, segments, &virReq->parameters);
     if (resource == NULL) {
+        nc_coap_server_send_error_response(req, NABTO_COAP_CODE_NOT_FOUND, "Resource not found");
         // TODO: return 404
+    } else {
+        virReq->resource = resource;
+        resource->handler(req, resource->userData);
     }
-    virReq->resource = resource;
-    resource->handler(req, resource->userData);
     return req;
 }
 
