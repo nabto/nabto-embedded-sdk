@@ -28,6 +28,9 @@ typedef void (*nc_coap_server_virtual_response_handler)(np_error_code ec, struct
 
 struct nc_coap_server_virtual_request {
     struct nc_connection* connection;
+    bool connectionClosed;
+    bool clientFreed;
+    bool serverFreed;
 
     struct nn_llist_node listElm;
     nabto_coap_method method;
@@ -87,7 +90,7 @@ nabto_coap_code method, const char** segments, void* payload, size_t payloadSize
 // Returns false if the connection is a virtual connection.
 bool nc_coap_server_context_request_get_connection_id(struct nc_coap_server_context* ctx, struct nc_coap_server_request* request, uint8_t* connectionId);
 
-void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, void* connection);
+void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct nc_connection* connection);
 
 void nc_coap_server_limit_requests(struct nc_coap_server_context* ctx, size_t limit);
 

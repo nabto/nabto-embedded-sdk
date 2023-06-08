@@ -12,6 +12,7 @@ struct nc_connection* nc_virtual_connection_new(struct nc_device_context* device
     if (conn != NULL) {
         struct nc_virtual_connection* virConn = conn->connectionImplCtx;
         virConn->parent = conn;
+        nn_llist_init(&virConn->coapRequests);
         nc_connection_events_listener_notify(conn, NC_CONNECTION_EVENT_OPENED);
     }
     return conn;
@@ -20,11 +21,26 @@ struct nc_connection* nc_virtual_connection_new(struct nc_device_context* device
 void nc_virtual_connection_destroy(struct nc_virtual_connection* conn)
 {
     nc_connection_events_listener_notify(conn->parent, NC_CONNECTION_EVENT_CLOSED);
-    nc_coap_server_remove_connection(&conn->parent->device->coapServer, conn);
+    nc_coap_server_remove_connection(&conn->parent->device->coapServer, conn->parent);
+
+    nn_llist_deinit(&conn->coapRequests);
     np_free(conn->clientFingerprint);
     np_free(conn->deviceFingerprint);
     nc_connections_free_connection(&conn->parent->device->connections, conn->parent);
 }
+
+bool nc_virtual_connection_add_coap_request(struct nc_virtual_connection* conn, struct nc_coap_server_request* request)
+{
+    nn_llist_append(&conn->coapRequests, &request->virRequest->listElm, request);
+    return true;
+}
+
+bool nc_virtual_connection_remove_coap_request(struct nc_virtual_connection* conn, struct nc_coap_server_request* request)
+{
+    nn_llist_erase_node(&request->virRequest->listElm);
+    return true;
+}
+
 
 void nc_virtual_connection_close(struct nc_virtual_connection* conn)
 {

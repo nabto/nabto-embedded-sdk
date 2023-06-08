@@ -175,7 +175,7 @@ nabto_device_virtual_coap_request_free(NabtoDeviceVirtualCoapRequest* request)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
     if (req->apiReq.req != NULL) {
-        struct nabto_device_context* dev = req->connection->dev;
+        struct nabto_device_context* dev = req->apiReq.dev;
         nabto_device_threads_mutex_lock(dev->eventMutex);
         nc_coap_server_virtual_request_free(req->apiReq.req);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
