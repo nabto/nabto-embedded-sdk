@@ -101,6 +101,13 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nc_coap_server_request* req
 {
     struct nc_rendezvous_coap_context* ctx = (struct nc_rendezvous_coap_context*)data;
 
+    if (request->isVirtual) {
+        NABTO_LOG_INFO(LOG, "Dropping rendezvous CoAP request received on virtual connection.")
+        nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), "Rendezvous not possible on virtual connection");
+        nc_coap_server_request_free(request);
+        return;
+    }
+
     uint8_t* payload;
     size_t payloadLength;
     nc_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);

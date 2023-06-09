@@ -581,6 +581,66 @@ BOOST_AUTO_TEST_CASE(coap_pwd_auth)
     nabto_device_virtual_coap_request_free(req);
 }
 
+BOOST_AUTO_TEST_CASE(coap_get_endpoints)
+{
+    const char* coapPath[] = { "p2p", "endpoints", NULL };
+
+    nabto::test::TestDevice td;
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_start(td.device_, fut);
+    nabto_device_future_wait(fut);
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, coapPath);
+
+    BOOST_TEST((req != NULL));
+
+
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    nabto_device_future_free(fut);
+
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 205);
+
+    nabto_device_virtual_coap_request_free(req);
+}
+
+BOOST_AUTO_TEST_CASE(coap_post_rendezvous)
+{
+    const char* coapPath[] = { "p2p", "rendezvous", NULL };
+
+    nabto::test::TestDevice td;
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_start(td.device_, fut);
+    nabto_device_future_wait(fut);
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, coapPath);
+
+    BOOST_TEST((req != NULL));
+
+
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    nabto_device_future_free(fut);
+
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 400); // Rendezvous not available on virtual connection
+
+    nabto_device_virtual_coap_request_free(req);
+}
+
 
 
 BOOST_AUTO_TEST_SUITE_END()
