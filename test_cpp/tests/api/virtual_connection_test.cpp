@@ -617,8 +617,6 @@ BOOST_AUTO_TEST_CASE(coap_post_rendezvous)
 
     nabto::test::TestDevice td;
     NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
-    nabto_device_start(td.device_, fut);
-    nabto_device_future_wait(fut);
 
     NabtoDeviceVirtualConnection* conn = td.makeConnection();
 
