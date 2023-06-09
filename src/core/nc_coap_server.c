@@ -544,7 +544,5 @@ uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* r
 
 void nc_coap_server_resolve_virtual(np_error_code ec, struct nc_coap_server_request* request)
 {
-    // TODO:
-
     request->virRequest->handler(ec, request, request->virRequest->handlerData);
 }
