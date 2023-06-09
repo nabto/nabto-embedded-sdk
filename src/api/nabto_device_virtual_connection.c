@@ -60,11 +60,21 @@ NabtoDeviceVirtualConnection* NABTO_DEVICE_API
 nabto_device_virtual_connection_new(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nc_connection* coreConn = nc_virtual_connection_new(&dev->core);
+
+    if (coreConn == NULL) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NULL;
+    }
     struct nabto_device_virtual_connection* conn = np_calloc(1, sizeof(struct nabto_device_virtual_connection));
     if (conn != NULL) {
         conn->dev = dev;
-        conn->connection = nc_virtual_connection_new(&dev->core);
+        conn->connection = coreConn;
+    } else {
+        nc_virtual_connection_destroy(coreConn->connectionImplCtx);
     }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceVirtualConnection*)conn;
 
 }

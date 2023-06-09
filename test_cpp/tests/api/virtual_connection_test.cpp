@@ -194,6 +194,23 @@ BOOST_AUTO_TEST_CASE(new_free_connection)
     nabto_device_listener_free(l);
 }
 
+BOOST_AUTO_TEST_CASE(virtual_connections_limit)
+{
+    nabto::test::TestDevice td;
+    NabtoDevice* dev = td.device_;
+
+    BOOST_TEST(nabto_device_limit_connections(dev, 1) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceVirtualConnection* conn = NULL;
+    conn = td.makeConnection();
+    NabtoDeviceVirtualConnection* conn2 = NULL;
+    conn2 = nabto_device_virtual_connection_new(dev);
+
+    BOOST_TEST((conn != NULL));
+    BOOST_TEST((conn2 == NULL));
+
+}
+
 BOOST_AUTO_TEST_CASE(new_free_coap)
 {
     const char* data = "FOOBAR";
