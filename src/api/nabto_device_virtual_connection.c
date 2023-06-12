@@ -1,5 +1,5 @@
 #include <nabto/nabto_device.h>
-#include <nabto/nabto_device_experimental.h>
+#include <nabto/nabto_device_virtual.h>
 
 
 #include "nabto_device_coap.h"
@@ -160,6 +160,9 @@ nabto_device_connection_is_virtual(NabtoDevice* device, NabtoDeviceConnectionRef
     return virtual;
 }
 
+
+/**** VIRTUAL COAP REQUESTS ******/
+
 NabtoDeviceVirtualCoapRequest* NABTO_DEVICE_API
 nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, NabtoDeviceCoapMethod method, const char** segments)
 {
@@ -291,8 +294,6 @@ nabto_device_virtual_coap_request_get_response_payload(NabtoDeviceVirtualCoapReq
     }
 }
 
-
-
 void response_handler(np_error_code ec, struct nc_coap_server_request* request, void* userData)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)userData;
@@ -302,3 +303,8 @@ void response_handler(np_error_code ec, struct nc_coap_server_request* request, 
     nabto_device_future_resolve(req->future, ec);
 
 }
+
+
+/**** VIRTUAL STREAMING ******/
+
+
