@@ -208,6 +208,23 @@ extern "C" {
     NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
         nabto_device_virtual_stream_free(NabtoDeviceVirtualStream* stream);
 
+
+    /**
+     * Open a virtual stream. This function causes the real stream listener to create a new stream. The future resolves when the application has either accepted or freed the created real stream
+     *
+     * Future status:
+     *  - NABTO_DEVICE_EC_OK if opening went ok.
+     *  - NABTO_DEVICE_EC_STOPPED if the stream could not be opened, e.g. not accepted or the connection was closed.
+     *
+     * @param stream [in]  The stream to connect.
+     * @param future [in]  The future.
+     * @param port [in]    The listening id/port to use for the stream. This is used to distinguish
+     *                     streams in the other end, like a port number.
+     *
+     */
+    NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+        nabto_device_virtual_stream_open(NabtoDeviceStream* stream, NabtoDeviceFuture* future, uint32_t port);
+
     /**
      * Read exactly bufferLength bytes from a virtual stream.
      *

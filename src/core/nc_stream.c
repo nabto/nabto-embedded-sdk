@@ -1,6 +1,7 @@
 #include "nc_stream.h"
 #include <core/nc_stream_manager.h>
 #include <core/nc_packet.h>
+#include <core/nc_connection.h>
 #include <core/nc_client_connection.h>
 
 #include <platform/np_logging.h>
@@ -45,7 +46,7 @@ uint32_t nc_stream_get_stamp(void* userData)
     return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger)
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger)
 {
     nc_stream_module.get_stamp = &nc_stream_get_stamp;
     nc_stream_module.logger = logger;
@@ -72,7 +73,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
 
     ctx->refCount = 0;
     ctx->stopped = false;
-    ctx->clientConn = clientConn;
+    ctx->conn = conn;
     ctx->streamId = streamId;
     ctx->streamManager = streamManager;
     ctx->pl = pl;
@@ -207,7 +208,7 @@ void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
     if (ctx->stopped) {
         return;
     }
-    ctx->clientConn = NULL;
+    ctx->conn = NULL;
 
     nc_stream_stop(ctx);
 
@@ -234,7 +235,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     if (ctx->stopped) {
         return;
     }
-    if (ctx->clientConn == NULL) {
+    if (ctx->conn == NULL) {
         nabto_stream_event_handled(&ctx->stream, eventType);
         nc_stream_event(ctx);
         return;
@@ -266,8 +267,9 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     }
     ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+packetSize);
     ctx->sendCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
+    // TODO: ensure connectionImplCtx is not virtual
     np_error_code ec =
-        nc_client_connection_async_send_data(ctx->clientConn, &ctx->sendCtx);
+        nc_client_connection_async_send_data(ctx->conn->connectionImplCtx, &ctx->sendCtx);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "dtls send returned ec: %u", ec);
         nabto_stream_event_handled(&ctx->stream, eventType);
@@ -589,9 +591,10 @@ void nc_stream_stop(struct nc_stream_context* stream)
     }
 
     stream->stopped = true;
-    if (nabto_stream_stop_should_send_rst(&stream->stream) && stream->clientConn) {
+    // TODO: check isVirtual
+    if (nabto_stream_stop_should_send_rst(&stream->stream) && stream->conn) {
         NABTO_LOG_TRACE(LOG, "Sending RST");
-        nc_stream_manager_send_rst(stream->streamManager, stream->clientConn, stream->streamId);
+        nc_stream_manager_send_rst(stream->streamManager, stream->conn->connectionImplCtx, stream->streamId);
     }
 
     struct np_platform* pl = stream->pl;
@@ -628,7 +631,7 @@ void nc_stream_stop(struct nc_stream_context* stream)
         closeCb(NABTO_EC_ABORTED, stream->closeUserData);
     }
 
-    stream->clientConn = NULL;
+    stream->conn = NULL;
     stream->streamId = 0;
 }
 

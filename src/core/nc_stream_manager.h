@@ -59,7 +59,7 @@ struct nabto_stream_recv_segment* nc_stream_manager_alloc_recv_segment(struct nc
 
 void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, struct nabto_stream_recv_segment* segment);
 
-void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* connection);
+void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_connection* connection);
 
 uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* stream);
 

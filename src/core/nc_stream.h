@@ -25,11 +25,12 @@ struct nc_stream_context {
     struct nn_llist_node streamsNode;
     struct nabto_stream stream;
     uint64_t streamId;
-    struct nc_client_connection* clientConn;
+    struct nc_connection* conn;
     struct nc_stream_manager_context* streamManager;
     struct np_event* ev;
     bool stopped;
     uint64_t connectionRef;
+    bool isVirtual;
 
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
@@ -63,8 +64,9 @@ struct nc_stream_context {
 void nc_stream_ref_count_inc(struct nc_stream_context* stream);
 void nc_stream_ref_count_dec(struct nc_stream_context* stream);
 
+// Initialize a new stream. Called by stream_manager.
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger);
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger);
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
 

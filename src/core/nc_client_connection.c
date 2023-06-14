@@ -149,7 +149,7 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
     nc_client_connection_event_listener_notify(conn, NC_CONNECTION_EVENT_CLOSED);
     nc_keep_alive_deinit(&conn->keepAlive);
     nc_coap_server_remove_connection(&conn->device->coapServer, conn->parent);
-    nc_stream_manager_remove_connection(conn->streamManager, conn);
+    nc_stream_manager_remove_connection(conn->streamManager, conn->parent);
 
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     pl->dtlsC.destroy_connection(conn->dtls);

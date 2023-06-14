@@ -41,7 +41,7 @@ static void response_handler(np_error_code ec, struct nc_coap_server_request* re
 
 static size_t fromHex(const char* str, uint8_t** data)
 {
-    size_t dataLength = strlen(str)/2;
+    size_t dataLength = strlen(str) / 2;
     uint8_t* output = (uint8_t*)np_calloc(1, dataLength);
     if (output == NULL) {
         return 0;
@@ -71,7 +71,8 @@ nabto_device_virtual_connection_new(NabtoDevice* device)
     if (conn != NULL) {
         conn->dev = dev;
         conn->connection = coreConn;
-    } else {
+    }
+    else {
         nc_virtual_connection_destroy(coreConn->connectionImplCtx);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -200,8 +201,8 @@ nabto_device_virtual_coap_request_free(NabtoDeviceVirtualCoapRequest* request)
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_virtual_coap_request_set_payload(NabtoDeviceVirtualCoapRequest* request,
-                                       const void* data,
-                                       size_t dataSize)
+    const void* data,
+    size_t dataSize)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
     req->payload = np_calloc(1, dataSize);
@@ -270,7 +271,8 @@ nabto_device_virtual_coap_request_get_response_content_format(NabtoDeviceVirtual
     if (cf >= 0) {
         *contentFormat = (uint16_t)cf;
         return NABTO_DEVICE_EC_OK;
-    } else {
+    }
+    else {
         return NABTO_DEVICE_EC_UNKNOWN;
     }
 }
@@ -287,9 +289,10 @@ nabto_device_virtual_coap_request_get_response_payload(NabtoDeviceVirtualCoapReq
     nabto_device_threads_mutex_lock(dev->eventMutex);
     nc_coap_server_response_get_payload(req->apiReq.req, payload, payloadLength);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    if(*payload == NULL) {
+    if (*payload == NULL) {
         return NABTO_DEVICE_EC_UNKNOWN;
-    } else {
+    }
+    else {
         return NABTO_DEVICE_EC_OK;
     }
 }

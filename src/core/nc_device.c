@@ -497,12 +497,6 @@ np_error_code nc_device_next_connection_ref(struct nc_device_context* dev, uint6
     return NABTO_EC_OK;
 }
 
-uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream)
-{
-    return nc_stream_manager_get_connection_ref(&dev->streamManager, stream);
-}
-
-
 struct nc_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
 {
     struct nc_connection* conn = nc_connections_connection_from_ref(&dev->connections, ref);
