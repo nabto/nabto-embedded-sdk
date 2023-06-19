@@ -85,6 +85,7 @@ set(ne_core_src
   ${root_dir}/src/core/nc_attacher.c
   ${root_dir}/src/core/nc_version.c
   ${root_dir}/src/core/nc_stream.c
+  ${root_dir}/src/core/nc_virtual_stream.c
   ${root_dir}/src/core/nc_rendezvous_coap.c
   ${root_dir}/src/core/nc_stun_coap.c
   ${root_dir}/src/core/nc_stream_manager.c

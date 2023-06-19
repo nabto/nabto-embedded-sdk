@@ -20,6 +20,12 @@ typedef void (*nc_stream_callback)(const np_error_code ec, void* userData);
 
 #define NC_STREAM_SEND_BUFFER_SIZE 1150
 
+struct nc_virtual_stream_context {
+    uint32_t port;
+    nc_stream_callback openedCb;
+    void* openedData;
+};
+
 struct nc_stream_context {
     struct np_platform* pl;
     struct nn_llist_node streamsNode;
@@ -31,6 +37,7 @@ struct nc_stream_context {
     bool stopped;
     uint64_t connectionRef;
     bool isVirtual;
+    struct nc_virtual_stream_context virt;
 
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
@@ -69,6 +76,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
 
 
 void nc_stream_handle_packet(struct nc_stream_context* ctx, uint8_t* buffer, uint16_t bufferSize);
+void nc_stream_handle_virtual_data(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);
 
 void nc_stream_handle_connection_closed(struct nc_stream_context* ctx);
 

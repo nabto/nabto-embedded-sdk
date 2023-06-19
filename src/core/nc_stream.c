@@ -1,5 +1,6 @@
 #include "nc_stream.h"
 #include <core/nc_stream_manager.h>
+#include <core/nc_virtual_stream.h>
 #include <core/nc_packet.h>
 #include <core/nc_connection.h>
 #include <core/nc_client_connection.h>
@@ -81,6 +82,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     ctx->isSending = false;
     ctx->connectionRef = connectionRef;
     ctx->accepted = false;
+    ctx->isVirtual = false;
 
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
@@ -102,9 +104,11 @@ void nc_stream_free(struct nc_stream_context* ctx)
 {
     struct np_event_queue* eq = &ctx->pl->eq;
     np_event_queue_destroy_event(eq, ctx->ev);
-    np_event_queue_destroy_event(eq, ctx->timer);
-    np_completion_event_deinit(&ctx->sendCtx.ev);
 
+    if (!ctx->isVirtual) {
+        np_event_queue_destroy_event(eq, ctx->timer);
+        np_completion_event_deinit(&ctx->sendCtx.ev);
+    }
     nc_stream_manager_free_stream(ctx);
 }
 
@@ -341,8 +345,14 @@ static np_error_code nc_stream_handle_close(struct nc_stream_context* stream);
 
 void nc_stream_accept(struct nc_stream_context* stream)
 {
-    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
-    nabto_stream_accept(&stream->stream);
+    if (stream->isVirtual) {
+        nc_virtual_stream_server_accepted(stream);
+        // When server accepts, we should resolve its callback without Zalgo
+        np_event_queue_post(&stream->pl->eq, stream->ev);
+    } else {
+        nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
+        nabto_stream_accept(&stream->stream);
+    }
 }
 
 np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
@@ -356,8 +366,12 @@ np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream
     }
     stream->acceptCb = callback;
     stream->acceptUserData = userData;
-    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
-    nabto_stream_accept(&stream->stream);
+    if (stream->isVirtual) {
+        nc_virtual_stream_server_accepted(stream);
+    } else {
+        nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
+        nabto_stream_accept(&stream->stream);
+    }
     return NABTO_EC_OK;
 }
 
@@ -591,15 +605,15 @@ void nc_stream_stop(struct nc_stream_context* stream)
     }
 
     stream->stopped = true;
-    // TODO: check isVirtual
-    if (nabto_stream_stop_should_send_rst(&stream->stream) && stream->conn) {
-        NABTO_LOG_TRACE(LOG, "Sending RST");
-        nc_stream_manager_send_rst(stream->streamManager, stream->conn->connectionImplCtx, stream->streamId);
+    if(!stream->isVirtual) {
+        if (nabto_stream_stop_should_send_rst(&stream->stream) && stream->conn) {
+            NABTO_LOG_TRACE(LOG, "Sending RST");
+            nc_stream_manager_send_rst(stream->streamManager, stream->conn->connectionImplCtx, stream->streamId);
+        }
+
+        struct np_platform* pl = stream->pl;
+        np_event_queue_cancel_event(&pl->eq, stream->timer);
     }
-
-    struct np_platform* pl = stream->pl;
-    np_event_queue_cancel_event(&pl->eq, stream->timer);
-
     nc_stream_callback acceptCb = stream->acceptCb;
     stream->acceptCb = NULL;
 
@@ -643,9 +657,12 @@ void nc_stream_ref_count_inc(struct nc_stream_context* stream)
 
 void nc_stream_ref_count_dec(struct nc_stream_context* stream)
 {
+    // TODO: ref count in virtual stream
     stream->refCount--;
     if (stream->refCount == 0) {
-        nabto_stream_destroy(&stream->stream);
+        if (!stream->isVirtual) {
+            nabto_stream_destroy(&stream->stream);
+        }
         nc_stream_free(stream);
     }
 }

@@ -1,6 +1,7 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_virtual.h>
 
+#include <api/nabto_device_error.h>
 
 #include "nabto_device_coap.h"
 #include "nabto_device_defines.h"
@@ -8,9 +9,23 @@
 
 #include <core/nc_connection.h>
 #include <core/nc_virtual_connection.h>
+#include <core/nc_virtual_stream.h>
 #include <platform/np_allocator.h>
 
 struct nabto_device_virtual_connection;
+
+struct nabto_device_virtual_stream {
+    struct nc_stream_context* stream;
+    struct nabto_device_context* device;
+    struct nabto_device_virtual_connection* connection;
+
+    struct nabto_device_future* openFuture; // resolves open when server has accepted/freed the stream
+    struct nabto_device_future* readFuture; // Resolves a virtual stream read when real stream writes data
+    struct nabto_device_future* writeFuture; // Resolves a virtual stream write when real stream has read data
+
+
+
+};
 
 struct nabto_device_virtual_coap_response {
     void* payload;
@@ -38,6 +53,8 @@ struct nabto_device_virtual_connection {
 };
 
 static void response_handler(np_error_code ec, struct nc_coap_server_request* request, void* userData);
+
+static void stream_opened(np_error_code ec, void* userdata);
 
 static size_t fromHex(const char* str, uint8_t** data)
 {
@@ -309,5 +326,130 @@ void response_handler(np_error_code ec, struct nc_coap_server_request* request, 
 
 
 /**** VIRTUAL STREAMING ******/
+
+
+NabtoDeviceVirtualStream* NABTO_DEVICE_API
+nabto_device_virtual_stream_new(NabtoDeviceVirtualConnection* connection)
+{
+    struct nabto_device_virtual_connection* conn = (struct nabto_device_virtual_connection*)connection;
+
+    struct nabto_device_virtual_stream* virStream = np_calloc(1, sizeof(struct nabto_device_virtual_stream));
+
+    if (virStream == NULL) {
+        return NULL;
+    }
+    virStream->connection = conn;
+    virStream->device = conn->dev;
+    return (NabtoDeviceVirtualStream*)virStream;
+}
+
+
+
+void NABTO_DEVICE_API
+nabto_device_virtual_stream_free(NabtoDeviceVirtualStream* stream)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
+    struct nabto_device_context* dev = str->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    // TODO: free in core
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    np_free(str);
+}
+
+
+void NABTO_DEVICE_API
+nabto_device_virtual_stream_open(NabtoDeviceVirtualStream* stream, NabtoDeviceFuture* future, uint32_t port)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
+    struct nabto_device_context* dev = str->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    nabto_device_future_reset(fut);
+    str->openFuture = fut;
+
+    str->stream = nc_stream_manager_accept_virtual_stream(&dev->core.streamManager, str->connection->connection, port, &stream_opened, str);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    if (str->stream == NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
+    }
+}
+
+
+void NABTO_DEVICE_API
+nabto_device_virtual_stream_read_all(NabtoDeviceVirtualStream* stream,
+    NabtoDeviceFuture* future,
+    void* buffer,
+    size_t bufferLength,
+    size_t* readLength)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
+    struct nabto_device_context* dev = str->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    // TODO:
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+}
+
+
+void NABTO_DEVICE_API
+nabto_device_virtual_stream_read_some(NabtoDeviceVirtualStream* stream,
+    NabtoDeviceFuture* future,
+    void* buffer,
+    size_t bufferLength,
+    size_t* readLength)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
+    struct nabto_device_context* dev = str->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    // TODO:
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+}
+
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
+    NabtoDeviceFuture* future,
+    const void* buffer,
+    size_t bufferLength)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
+    struct nabto_device_context* dev = str->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    // TODO:
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
+    struct nabto_device_context* dev = str->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    // TODO:
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+    return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+}
+
+
+void NABTO_DEVICE_API
+nabto_device_virtual_stream_abort(NabtoDeviceVirtualStream* stream)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
+    struct nabto_device_context* dev = str->device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    nc_virtual_stream_client_stop(str->stream);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+}
+
+
+
+void stream_opened(np_error_code ec, void* userdata)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)userdata;
+    nabto_device_future_resolve(str->openFuture, nabto_device_error_core_to_api(ec));
+}
 
 

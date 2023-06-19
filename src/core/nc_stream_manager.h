@@ -42,6 +42,8 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
 struct nc_stream_context* nc_stream_manager_alloc_stream(struct nc_stream_manager_context* streamManager);
 void nc_stream_manager_free_stream(struct nc_stream_context* stream);
 
+struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stream_manager_context* streamManager, struct nc_connection* connection, uint32_t port, nc_stream_callback cb, void* userdata);
+
 /**
  * Remove an initialized stream
  *

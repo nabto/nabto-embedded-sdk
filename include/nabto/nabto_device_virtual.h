@@ -223,7 +223,7 @@ extern "C" {
      *
      */
     NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
-        nabto_device_virtual_stream_open(NabtoDeviceStream* stream, NabtoDeviceFuture* future, uint32_t port);
+        nabto_device_virtual_stream_open(NabtoDeviceVirtualStream* stream, NabtoDeviceFuture* future, uint32_t port);
 
     /**
      * Read exactly bufferLength bytes from a virtual stream.

@@ -26,6 +26,7 @@ set(test_src
   tests/api/error_codes_test.cpp
   tests/api/device_api.cpp
   tests/api/virtual_connection_test.cpp
+  tests/api/virtual_stream_test.cpp
   tests/api/authorization_test.cpp
   tests/api/new_free.cpp
   tests/api/create_sct.cpp

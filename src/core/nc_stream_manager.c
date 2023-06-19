@@ -4,6 +4,7 @@
 #include <core/nc_packet.h>
 #include <core/nc_client_connection.h>
 #include <core/nc_connection.h>
+#include <core/nc_virtual_stream.h>
 
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
@@ -147,8 +148,13 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
                              // application or this function to call
                              // nc_stream_destroy
 
-    uint32_t type = nabto_stream_get_content_type(&stream->stream);
-
+    uint32_t type;
+    if (stream->isVirtual) {
+        type = stream->virt.port;
+    } else {
+        type = nabto_stream_get_content_type(&stream->stream);
+    }
+    NABTO_LOG_INFO(LOG, "New stream ready for accept. Looking for listener");
     struct nc_stream_listener* listener;
     NN_LLIST_FOREACH(listener, &ctx->listeners) {
         if (listener->type == type) {
@@ -226,6 +232,23 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         return stream;
     }
 }
+
+struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stream_manager_context* streamManager, struct nc_connection* connection, uint32_t port, nc_stream_callback cb, void* userdata)
+{
+    struct nc_stream_context* stream = nc_stream_manager_alloc_stream(streamManager);
+    if (stream == NULL) {
+        return NULL;
+    }
+    nn_llist_append(&streamManager->streams, &stream->streamsNode, stream);
+    nc_stream_ref_count_inc(stream);
+    np_error_code ec = nc_virtual_stream_init(streamManager->pl, stream, connection, streamManager, port, cb, userdata);
+    if (ec != NABTO_EC_OK) {
+        nc_stream_manager_free_stream(stream);
+        return NULL;
+    }
+    return stream;
+}
+
 
 void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
 {
