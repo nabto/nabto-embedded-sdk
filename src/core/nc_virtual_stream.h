@@ -2,10 +2,11 @@
 #define NC_VIRTUAL_STREAM_H
 
 #include <platform/np_platform.h>
+#include <platform/np_completion_event.h>
 #include <core/nc_stream.h>
 
 // Initialize a new virtual stream. Called by virtual API.
-np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint32_t port, nc_stream_callback cb, void* userdata);
+np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint32_t port, struct np_completion_event* openedEv);
 
 // Server accepted the stream causing the virtual open future to resolve
 // virtual has no async version as callbacks are handled in parent

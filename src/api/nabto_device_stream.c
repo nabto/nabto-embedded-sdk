@@ -129,6 +129,7 @@ void nabto_device_stream_accept_callback(const np_error_code ec, void* userData)
 {
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
+    np_completion_event_deinit(&str->acceptEv);
     nabto_device_future_resolve(str->acceptFut, nabto_device_error_core_to_api(ec));
 }
 
@@ -143,10 +144,8 @@ void NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream, Nabt
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->acceptFut = fut;
-        np_error_code ec = nc_stream_async_accept(str->stream, nabto_device_stream_accept_callback, str);
-        if (ec != NABTO_EC_OK) {
-            nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
-        }
+        np_completion_event_init(&str->dev->pl.eq, &str->acceptEv, nabto_device_stream_accept_callback, str);
+        nc_stream_async_accept(str->stream, &str->acceptEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }

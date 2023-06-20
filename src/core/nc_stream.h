@@ -24,8 +24,7 @@ struct nc_virtual_stream_context {
     uint32_t port;
     bool stopped;
 
-    nc_stream_callback openedCb;
-    void* openedData;
+    struct np_completion_event* openedEv;
 
     nc_stream_callback readAllCb;
     nc_stream_callback readSomeCb;
@@ -62,8 +61,7 @@ struct nc_stream_context {
     struct np_event* timer;
 
     // user facing stream data
-    nc_stream_callback acceptCb;
-    void* acceptUserData;
+    struct np_completion_event* acceptEv;
     nc_stream_callback readAllCb;
     nc_stream_callback readSomeCb;
     void* readUserData;
@@ -102,7 +100,7 @@ np_error_code nc_stream_status_to_ec(nabto_stream_status status);
 
 
 void nc_stream_accept(struct nc_stream_context* stream);
-np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
+void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completion_event* acceptEv);
 np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);

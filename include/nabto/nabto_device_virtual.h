@@ -284,7 +284,7 @@ extern "C" {
      * @param bufferLength [in]  Length of the input data.
      * @retval NABTO_DEVICE_EC_OK on success
      */
-    NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+    NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
         nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
             NabtoDeviceFuture* future,
             const void* buffer,

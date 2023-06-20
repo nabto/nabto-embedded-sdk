@@ -353,25 +353,23 @@ void nc_stream_accept(struct nc_stream_context* stream)
     }
 }
 
-np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
+void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completion_event* acceptEv)
 {
     if (stream->stopped || stream->virt.stopped) {
-        return NABTO_EC_STOPPED;
+        return np_completion_event_resolve(acceptEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->acceptCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->acceptEv != NULL) {
+        return np_completion_event_resolve(acceptEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->acceptCb = callback;
-    stream->acceptUserData = userData;
+    stream->acceptEv = acceptEv;
     if (stream->isVirtual) {
-        // When server accepts, we should resolve its callback without Zalgo
-        np_event_queue_post(&stream->pl->eq, stream->ev);
+        nc_virtual_stream_server_accepted(stream);
     } else {
         nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
         nabto_stream_accept(&stream->stream);
     }
-    return NABTO_EC_OK;
+    return;
 }
 
 np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
@@ -553,10 +551,9 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
     struct nc_stream_context* stream = data;
     switch(eventType) {
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_OPENED:
-            if (stream->acceptCb) {
-                nc_stream_callback cb = stream->acceptCb;
-                stream->acceptCb = NULL;
-                cb(NABTO_EC_OK, stream->acceptUserData);
+            if (stream->acceptEv) {
+                np_completion_event_resolve(stream->acceptEv, NABTO_EC_OK);
+                stream->acceptEv = NULL;
             }
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY:
@@ -581,10 +578,9 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
             if (stream->writeCb) {
                 nc_stream_do_write_all(stream);
             }
-            if (stream->acceptCb) {
-                nc_stream_callback cb = stream->acceptCb;
-                stream->acceptCb = NULL;
-                cb(NABTO_EC_ABORTED, stream->acceptUserData);
+            if (stream->acceptEv) {
+                np_completion_event_resolve(stream->acceptEv, NABTO_EC_ABORTED);
+                stream->acceptEv = NULL;
             }
             nc_stream_do_read(stream);
             np_error_code ec = nc_stream_handle_close(stream);
@@ -615,8 +611,10 @@ void nc_stream_stop(struct nc_stream_context* stream)
         struct np_platform* pl = stream->pl;
         np_event_queue_cancel_event(&pl->eq, stream->timer);
     }
-    nc_stream_callback acceptCb = stream->acceptCb;
-    stream->acceptCb = NULL;
+    if (stream->acceptEv) {
+        np_completion_event_resolve(stream->acceptEv, NABTO_EC_ABORTED);
+        stream->acceptEv = NULL;
+    }
 
     nc_stream_callback readAllCb = stream->readAllCb;
     stream->readAllCb = NULL;
@@ -630,9 +628,6 @@ void nc_stream_stop(struct nc_stream_context* stream)
     nc_stream_callback closeCb = stream->closeCb;
     stream->closeCb = NULL;
 
-    if (acceptCb) {
-        acceptCb(NABTO_EC_ABORTED, stream->acceptUserData);
-    }
     if (readAllCb) {
         readAllCb(NABTO_EC_ABORTED, stream->readUserData);
     }

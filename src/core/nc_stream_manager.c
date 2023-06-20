@@ -233,14 +233,14 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
     }
 }
 
-struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stream_manager_context* streamManager, struct nc_connection* connection, uint32_t port, nc_stream_callback cb, void* userdata)
+struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stream_manager_context* streamManager, struct nc_connection* connection, uint32_t port, struct np_completion_event* openedEv)
 {
     struct nc_stream_context* stream = nc_stream_manager_alloc_stream(streamManager);
     if (stream == NULL) {
         return NULL;
     }
     nn_llist_append(&streamManager->streams, &stream->streamsNode, stream);
-    np_error_code ec = nc_virtual_stream_init(streamManager->pl, stream, connection, streamManager, port, cb, userdata);
+    np_error_code ec = nc_virtual_stream_init(streamManager->pl, stream, connection, streamManager, port, openedEv);
     nc_stream_ref_count_inc(stream);
     if (ec != NABTO_EC_OK) {
         nc_stream_manager_free_stream(stream);

@@ -39,6 +39,10 @@ public:
         nabto_device_set_device_id(device_, "test");
         nabto_device_set_local_port(device_, 0);
         nabto_device_set_p2p_port(device_, 0);
+        auto fut = nabto_device_future_new(device_);
+        nabto_device_start(device_, fut);
+        nabto_device_future_wait(fut);
+        nabto_device_future_free(fut);
     }
 
     ~TestStreamDevice()
@@ -187,18 +191,13 @@ BOOST_AUTO_TEST_SUITE(virtual_stream)
 BOOST_AUTO_TEST_CASE(open_stream)
 {
     nabto::test::TestStreamDevice td;
-    auto fut2 = nabto_device_future_new(td.device_);
-    nabto_device_start(td.device_, fut2);
-    nabto_device_future_wait(fut2);
-    nabto_device_future_free(fut2);
-
     nabto::test::TestStream ts(&td);
 
-    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream){
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
         if (ec == NABTO_DEVICE_EC_OK) {
             ts.acceptStream(stream);
         }
-    });
+        });
 
 
     NabtoDeviceVirtualConnection* conn = td.makeConnection();
