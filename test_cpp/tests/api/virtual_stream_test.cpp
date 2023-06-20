@@ -209,6 +209,7 @@ BOOST_AUTO_TEST_CASE(open_stream)
 
     NabtoDeviceError ec = nabto_device_future_wait(fut);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
 
     nabto_device_virtual_stream_abort(virStream);
     nabto_device_virtual_stream_free(virStream);

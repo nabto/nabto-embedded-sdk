@@ -347,8 +347,6 @@ void nc_stream_accept(struct nc_stream_context* stream)
 {
     if (stream->isVirtual) {
         nc_virtual_stream_server_accepted(stream);
-        // When server accepts, we should resolve its callback without Zalgo
-        np_event_queue_post(&stream->pl->eq, stream->ev);
     } else {
         nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
         nabto_stream_accept(&stream->stream);
@@ -357,7 +355,7 @@ void nc_stream_accept(struct nc_stream_context* stream)
 
 np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
 {
-    if (stream->stopped) {
+    if (stream->stopped || stream->virt.stopped) {
         return NABTO_EC_STOPPED;
     }
 
@@ -367,7 +365,8 @@ np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream
     stream->acceptCb = callback;
     stream->acceptUserData = userData;
     if (stream->isVirtual) {
-        nc_virtual_stream_server_accepted(stream);
+        // When server accepts, we should resolve its callback without Zalgo
+        np_event_queue_post(&stream->pl->eq, stream->ev);
     } else {
         nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
         nabto_stream_accept(&stream->stream);
@@ -377,7 +376,7 @@ np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream
 
 np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
 {
-    if (stream->stopped) {
+    if (stream->stopped || stream->virt.stopped) {
         return NABTO_EC_STOPPED;
     }
 
@@ -397,7 +396,7 @@ np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* b
 
 np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
 {
-    if (stream->stopped) {
+    if (stream->stopped || stream->virt.stopped) {
         return NABTO_EC_STOPPED;
     }
 
@@ -417,7 +416,7 @@ np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* 
 
 np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData)
 {
-    if (stream->stopped) {
+    if (stream->stopped || stream->virt.stopped) {
         return NABTO_EC_STOPPED;
     }
 
@@ -436,7 +435,7 @@ np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void
 
 np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
 {
-    if (stream->stopped) {
+    if (stream->stopped || stream->virt.stopped) {
         return NABTO_EC_STOPPED;
     }
 
@@ -478,7 +477,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
     if (!stream->readAllCb && !stream->readSomeCb) {
         // data available but no one wants it
         NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
-    } else {
+    } else if (!stream->isVirtual) {
         size_t readen;
         nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, (uint8_t*)stream->readBuffer, stream->readBufferLength, &readen);
         if (status == NABTO_STREAM_STATUS_OK) {
@@ -505,6 +504,8 @@ void nc_stream_do_read(struct nc_stream_context* stream)
         } else {
             nc_stream_resolve_read(stream, nc_stream_status_to_ec(status));
         }
+    } else {
+        nc_virtual_stream_server_read(stream);
     }
 }
 void nc_stream_do_write_all(struct nc_stream_context* stream)

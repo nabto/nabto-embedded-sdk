@@ -240,8 +240,8 @@ struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stre
         return NULL;
     }
     nn_llist_append(&streamManager->streams, &stream->streamsNode, stream);
-    nc_stream_ref_count_inc(stream);
     np_error_code ec = nc_virtual_stream_init(streamManager->pl, stream, connection, streamManager, port, cb, userdata);
+    nc_stream_ref_count_inc(stream);
     if (ec != NABTO_EC_OK) {
         nc_stream_manager_free_stream(stream);
         return NULL;

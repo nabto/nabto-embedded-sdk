@@ -22,8 +22,26 @@ typedef void (*nc_stream_callback)(const np_error_code ec, void* userData);
 
 struct nc_virtual_stream_context {
     uint32_t port;
+    bool stopped;
+
     nc_stream_callback openedCb;
     void* openedData;
+
+    nc_stream_callback readAllCb;
+    nc_stream_callback readSomeCb;
+    void* readUserData;
+    size_t* readLength;
+    void* readBuffer;
+    size_t readBufferLength;
+
+    nc_stream_callback writeCb;
+    void* writeUserData;
+    const void* writeBuffer;
+    size_t writeBufferLength;
+    nc_stream_callback closeCb;
+    void* closeUserData;
+
+
 };
 
 struct nc_stream_context {
@@ -89,6 +107,9 @@ np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* b
 np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
+
+void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec);
+
 
 /**
  * Release ownership of a streaming resource. The resource is then
