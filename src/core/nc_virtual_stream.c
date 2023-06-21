@@ -96,8 +96,8 @@ void nc_virtual_stream_server_read(struct nc_stream_context* stream)
 
 }
 
-np_error_code nc_virtual_stream_client_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData)
+void nc_virtual_stream_client_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv)
 {
-    return NABTO_EC_NOT_IMPLEMENTED;
+    return;
 }
 

@@ -372,44 +372,42 @@ void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completi
     return;
 }
 
-np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
+void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readAllEv)
 {
     if (stream->stopped || stream->virt.stopped) {
-        return NABTO_EC_STOPPED;
+        return np_completion_event_resolve(readAllEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
+        return np_completion_event_resolve(readAllEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->readAllCb = callback;
-    stream->readUserData = userData;
+    stream->readAllEv = readAllEv;
 
     stream->readBuffer = buffer;
     stream->readBufferLength = bufferLength;
     stream->readLength = readLength;
     *stream->readLength = 0;
     nc_stream_do_read(stream);
-    return NABTO_EC_OK;
+    return;
 }
 
-np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
+void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readSomeEv)
 {
     if (stream->stopped || stream->virt.stopped) {
-        return NABTO_EC_STOPPED;
+        return np_completion_event_resolve(readSomeEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
+        return np_completion_event_resolve(readSomeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->readSomeCb = callback;
-    stream->readUserData = userData;
+    stream->readSomeEv = readSomeEv;
 
     stream->readBuffer = buffer;
     stream->readBufferLength = bufferLength;
     stream->readLength = readLength;
     *stream->readLength = 0;
     nc_stream_do_read(stream);
-    return NABTO_EC_OK;
+    return;
 }
 
 np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData)
@@ -457,14 +455,12 @@ void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
     stream->readBuffer = NULL;
     stream->readBufferLength = 0;
 
-    if (stream->readAllCb) {
-        nc_stream_callback cb = stream->readAllCb;
-        stream->readAllCb = NULL;
-        cb(ec, stream->readUserData);
-    } else if (stream->readSomeCb) {
-        nc_stream_callback cb = stream->readSomeCb;
-        stream->readSomeCb = NULL;
-        cb(ec, stream->readUserData);
+    if (stream->readAllEv) {
+        np_completion_event_resolve(stream->readAllEv, ec);
+        stream->readAllEv = NULL;
+    } else if (stream->readSomeEv) {
+        np_completion_event_resolve(stream->readSomeEv, ec);
+        stream->readSomeEv = NULL;
     } else {
         NABTO_LOG_ERROR(LOG, "Tried to resolve read futures which does not exist");
     }
@@ -472,7 +468,7 @@ void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
 
 void nc_stream_do_read(struct nc_stream_context* stream)
 {
-    if (!stream->readAllCb && !stream->readSomeCb) {
+    if (!stream->readAllEv && !stream->readSomeEv) {
         // data available but no one wants it
         NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
     } else if (!stream->isVirtual) {
@@ -485,14 +481,14 @@ void nc_stream_do_read(struct nc_stream_context* stream)
                 *stream->readLength += readen;
                 stream->readBuffer = ((uint8_t*)stream->readBuffer) + readen;
                 stream->readBufferLength -= readen;
-                if (stream->readAllCb) {
+                if (stream->readAllEv) {
                     if (stream->readBufferLength == 0) {
                         nc_stream_resolve_read(stream, NABTO_EC_OK);
                     } else {
                         // read more until 0 or error
                         nc_stream_do_read(stream);
                     }
-                } else if (stream->readSomeCb) {
+                } else if (stream->readSomeEv) {
                     nc_stream_resolve_read(stream, NABTO_EC_OK);
                 } else {
                     // Still no future? we just checked this!
@@ -616,11 +612,15 @@ void nc_stream_stop(struct nc_stream_context* stream)
         stream->acceptEv = NULL;
     }
 
-    nc_stream_callback readAllCb = stream->readAllCb;
-    stream->readAllCb = NULL;
+    if (stream->readAllEv != NULL) {
+        np_completion_event_resolve(stream->readAllEv, NABTO_EC_ABORTED);
+        stream->readAllEv = NULL;
+    }
 
-    nc_stream_callback readSomeCb = stream->readSomeCb;
-    stream->readSomeCb = NULL;
+    if (stream->readSomeEv != NULL) {
+        np_completion_event_resolve(stream->readSomeEv, NABTO_EC_ABORTED);
+        stream->readSomeEv = NULL;
+    }
 
     nc_stream_callback writeCb = stream->writeCb;
     stream->writeCb = NULL;
@@ -628,12 +628,6 @@ void nc_stream_stop(struct nc_stream_context* stream)
     nc_stream_callback closeCb = stream->closeCb;
     stream->closeCb = NULL;
 
-    if (readAllCb) {
-        readAllCb(NABTO_EC_ABORTED, stream->readUserData);
-    }
-    if (readSomeCb) {
-        readSomeCb(NABTO_EC_ABORTED, stream->readUserData);
-    }
     if (writeCb) {
         writeCb(NABTO_EC_ABORTED, stream->writeUserData);
     }

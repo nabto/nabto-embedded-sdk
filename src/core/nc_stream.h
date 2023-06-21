@@ -62,9 +62,9 @@ struct nc_stream_context {
 
     // user facing stream data
     struct np_completion_event* acceptEv;
-    nc_stream_callback readAllCb;
-    nc_stream_callback readSomeCb;
-    void* readUserData;
+
+    struct np_completion_event* readSomeEv;
+    struct np_completion_event* readAllEv;
     size_t* readLength;
     void* readBuffer;
     size_t readBufferLength;
@@ -101,8 +101,8 @@ np_error_code nc_stream_status_to_ec(nabto_stream_status status);
 
 void nc_stream_accept(struct nc_stream_context* stream);
 void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completion_event* acceptEv);
-np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
-np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
+void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readAllEv);
+void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readSomeEv);
 np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);
 np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
 

@@ -31,6 +31,7 @@ struct nm_tcp_tunnel_connection {
     uint8_t streamRecvBuffer[NM_TCP_TUNNEL_BUFFER_SIZE];
     size_t streamRecvBufferSize;
     size_t streamReadSize;
+    struct np_completion_event streamReadCompletionEvent;
 
     bool tcpReadEnded;
     bool streamReadEnded;

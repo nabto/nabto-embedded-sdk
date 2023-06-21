@@ -167,6 +167,7 @@ void nabto_device_stream_read_callback(const np_error_code ec, void* userData)
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
 
+    np_completion_event_deinit(&str->readEv);
     nabto_device_future_resolve(str->readFut, nabto_device_error_core_to_api(ec));
     str->readFut = NULL;
 }
@@ -185,11 +186,9 @@ void NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_error_code ec = nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
-        if (ec) {
-            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
-            str->readFut = NULL;
-        }
+        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str);
+
+        nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }
@@ -208,10 +207,9 @@ void NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_error_code ec = nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &nabto_device_stream_read_callback, str);
-        if (ec) {
-            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
-        }
+        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str);
+
+        nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }

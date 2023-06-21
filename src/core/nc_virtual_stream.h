@@ -17,7 +17,7 @@ void nc_virtual_stream_handle_connection_closed(struct nc_stream_context* stream
 
 np_error_code nc_virtual_stream_client_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
 np_error_code nc_virtual_stream_client_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData);
-np_error_code nc_virtual_stream_client_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);
+void nc_virtual_stream_client_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv);
 np_error_code nc_virtual_stream_client_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
 
 void nc_virtual_stream_handle_server_data(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);
