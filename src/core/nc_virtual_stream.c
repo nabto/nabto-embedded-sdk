@@ -42,29 +42,24 @@ void nc_virtual_stream_client_stop(struct nc_stream_context* stream)
         stream->virt.openedEv = NULL;
     }
 
-    nc_stream_callback readAllCb = stream->virt.readAllCb;
-    stream->virt.readAllCb = NULL;
-
-    nc_stream_callback readSomeCb = stream->virt.readSomeCb;
-    stream->virt.readSomeCb = NULL;
-
-    nc_stream_callback writeCb = stream->virt.writeCb;
-    stream->virt.writeCb = NULL;
-
-    nc_stream_callback closeCb = stream->virt.closeCb;
-    stream->virt.closeCb = NULL;
-
-    if (readAllCb) {
-        readAllCb(NABTO_EC_ABORTED, stream->virt.readUserData);
+    if (stream->virt.readAllEv) {
+        np_completion_event_resolve(stream->virt.readAllEv, NABTO_EC_ABORTED);
+        stream->virt.readAllEv = NULL;
     }
-    if (readSomeCb) {
-        readSomeCb(NABTO_EC_ABORTED, stream->virt.readUserData);
+
+    if (stream->virt.readSomeEv) {
+        np_completion_event_resolve(stream->virt.readSomeEv, NABTO_EC_ABORTED);
+        stream->virt.readSomeEv = NULL;
     }
-    if (writeCb) {
-        writeCb(NABTO_EC_ABORTED, stream->virt.writeUserData);
+
+    if (stream->virt.writeEv) {
+        np_completion_event_resolve(stream->virt.writeEv, NABTO_EC_ABORTED);
+        stream->virt.writeEv = NULL;
     }
-    if (closeCb) {
-        closeCb(NABTO_EC_ABORTED, stream->virt.closeUserData);
+
+    if (stream->virt.closeEv) {
+        np_completion_event_resolve(stream->virt.closeEv, NABTO_EC_ABORTED);
+        stream->virt.closeEv = NULL;
     }
 
     nc_stream_resolve_read(stream, NABTO_EC_ABORTED);
@@ -90,14 +85,57 @@ void nc_virtual_stream_destroy(struct nc_stream_context* stream)
 }
 
 
+void nc_virtual_stream_do_write(struct nc_stream_context* stream)
+{
+    if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
+        // Server read is ready, copy data
+        size_t readen = stream->virt.writeBufferLength > stream->readBufferLength ? stream->readBufferLength : stream->virt.writeBufferLength;
+        memcpy(stream->readBuffer, stream->virt.writeBuffer, readen);
+        *stream->readLength += readen;
+
+        if (stream->virt.writeBufferLength > stream->readBufferLength) {
+            // store writeEv and resolve read
+            stream->virt.writeBuffer = ((uint8_t*)stream->virt.writeBuffer) + readen;
+            stream->virt.writeBufferLength -= readen;
+            nc_stream_resolve_read(stream, NABTO_EC_OK);
+        }
+        else if (stream->virt.writeBufferLength < stream->readBufferLength &&
+            stream->readAllEv != NULL) {
+            // update readBuffer and resolve write
+
+            stream->readBuffer = ((uint8_t*)stream->readBuffer) + readen;
+            stream->readBufferLength -= readen;
+            np_completion_event_resolve(stream->virt.writeEv, NABTO_EC_OK);
+            stream->virt.writeBuffer = NULL;
+            stream->virt.writeBufferLength = 0;
+            stream->virt.writeEv = NULL;
+        }
+        else {
+            // bufferLength == readBufferLength ||
+            // bufferLength < readBufferLength && readSomeEv != NULL
+            // resolve both
+            np_completion_event_resolve(stream->virt.writeEv, NABTO_EC_OK);
+            stream->virt.writeBuffer = NULL;
+            stream->virt.writeBufferLength = 0;
+            stream->virt.writeEv = NULL;
+            nc_stream_resolve_read(stream, NABTO_EC_OK);
+        }
+    }
+}
+
 
 void nc_virtual_stream_server_read(struct nc_stream_context* stream)
 {
-
+    if (stream->virt.writeEv != NULL){
+        nc_virtual_stream_do_write(stream);
+    }
 }
 
 void nc_virtual_stream_client_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv)
 {
-    return;
+    stream->virt.writeEv = writeEv;
+    stream->virt.writeBuffer = buffer;
+    stream->virt.writeBufferLength = bufferLength;
+    nc_virtual_stream_do_write(stream);
 }
 

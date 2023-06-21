@@ -215,5 +215,35 @@ BOOST_AUTO_TEST_CASE(open_stream)
 }
 
 
+BOOST_AUTO_TEST_CASE(write_stream)
+{
+    const char* writeBuffer = "Hello world";
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_open(virStream, fut, td.streamPort_);
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    nabto_device_virtual_stream_write(virStream, fut, writeBuffer, strlen(writeBuffer));
+    ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    nabto_device_future_free(fut);
+    nabto_device_virtual_stream_abort(virStream);
+    nabto_device_virtual_stream_free(virStream);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

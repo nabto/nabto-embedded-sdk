@@ -26,21 +26,17 @@ struct nc_virtual_stream_context {
 
     struct np_completion_event* openedEv;
 
-    nc_stream_callback readAllCb;
-    nc_stream_callback readSomeCb;
-    void* readUserData;
+    struct np_completion_event* readAllEv;
+    struct np_completion_event* readSomeEv;
     size_t* readLength;
     void* readBuffer;
     size_t readBufferLength;
 
-    nc_stream_callback writeCb;
-    void* writeUserData;
+    struct np_completion_event* writeEv;
     const void* writeBuffer;
     size_t writeBufferLength;
-    nc_stream_callback closeCb;
-    void* closeUserData;
 
-
+    struct np_completion_event* closeEv;
 };
 
 struct nc_stream_context {
