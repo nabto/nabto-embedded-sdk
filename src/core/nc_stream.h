@@ -37,6 +37,7 @@ struct nc_virtual_stream_context {
     size_t writeBufferLength;
 
     struct np_completion_event* closeEv;
+    bool closed;
 };
 
 struct nc_stream_context {

@@ -295,12 +295,14 @@ extern "C" {
      * be written to the stream. Data can however still be read from the
      * stream until the other peer closes the stream.
      *
+     * When the future resolves, all data written has been read by the other peer.
+     *
      * @param stream [in]  The stream to close.
+     * @param future [in]  Future to resolve when closed.
      * @retval NABTO_DEVICE_EC_OK on success.
      */
-
-    NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
-        nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream);
+    NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+        nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream, NabtoDeviceFuture* future);
 
     /**
      * Abort a stream. When a stream is aborted, all unresolved futures

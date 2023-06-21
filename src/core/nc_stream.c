@@ -383,6 +383,10 @@ void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, si
     if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
         return np_completion_event_resolve(readAllEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
+
+    if (stream->isVirtual && stream->virt.closed) {
+        return np_completion_event_resolve(readAllEv, NABTO_EC_EOF);
+    }
     stream->readAllEv = readAllEv;
 
     stream->readBuffer = buffer;
@@ -403,6 +407,11 @@ void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, s
     if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
         return np_completion_event_resolve(readSomeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
+
+    if (stream->isVirtual && stream->virt.closed) {
+        return np_completion_event_resolve(readSomeEv, NABTO_EC_EOF);
+    }
+
     stream->readSomeEv = readSomeEv;
 
     stream->readBuffer = buffer;
@@ -470,6 +479,7 @@ void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
     } else {
         NABTO_LOG_ERROR(LOG, "Tried to resolve read futures which does not exist");
     }
+
 }
 
 void nc_stream_do_read(struct nc_stream_context* stream)
