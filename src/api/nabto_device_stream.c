@@ -219,6 +219,7 @@ void nabto_device_stream_write_callback(const np_error_code ec, void* userData)
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
 
+    np_completion_event_deinit(&str->writeEv);
     nabto_device_future_resolve(str->writeFut, nabto_device_error_core_to_api(ec));
     str->writeFut = NULL;
 }
@@ -236,10 +237,9 @@ void NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->writeFut = fut;
-        np_error_code ec = nc_stream_async_write(str->stream, buffer, bufferLength, &nabto_device_stream_write_callback, str);
-        if (ec) {
-            nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
-        }
+        np_completion_event_init(&str->dev->pl.eq, &str->writeEv, nabto_device_stream_write_callback, str);
+
+        nc_stream_async_write(str->stream, buffer, bufferLength, &str->writeEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }

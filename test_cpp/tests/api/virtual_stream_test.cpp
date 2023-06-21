@@ -246,4 +246,50 @@ BOOST_AUTO_TEST_CASE(write_stream)
     nabto_device_virtual_stream_free(virStream);
 }
 
+BOOST_AUTO_TEST_CASE(write_read_stream)
+{
+    const char* writeBuffer = "Hello world";
+    char readBuffer[256];
+    memset(readBuffer, 0, 256);
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        std::cout << "Got stream listen callback with ec: " << nabto_device_error_get_string(ec) << std::endl;
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+        });
+
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_open(virStream, fut, td.streamPort_);
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    std::cout << "open future resolved" << std::endl;
+
+    nabto_device_virtual_stream_write(virStream, fut, writeBuffer, strlen(writeBuffer));
+    ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    std::cout << "stream write future resolved" << std::endl;
+
+    size_t readen = 0;
+    nabto_device_virtual_stream_read_all(virStream, fut, readBuffer, strlen(writeBuffer), &readen);
+    ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    std::cout << "stream read all future resolved" << std::endl;
+
+    BOOST_TEST(strcmp(readBuffer, writeBuffer) == 0);
+
+    nabto_device_future_free(fut);
+    nabto_device_virtual_stream_abort(virStream);
+    nabto_device_virtual_stream_free(virStream);
+}
+
+
+
 BOOST_AUTO_TEST_SUITE_END()

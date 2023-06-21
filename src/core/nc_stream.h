@@ -65,8 +65,7 @@ struct nc_stream_context {
     void* readBuffer;
     size_t readBufferLength;
 
-    nc_stream_callback writeCb;
-    void* writeUserData;
+    struct np_completion_event* writeEv;
     const void* writeBuffer;
     size_t writeBufferLength;
     nc_stream_callback closeCb;
@@ -99,7 +98,7 @@ void nc_stream_accept(struct nc_stream_context* stream);
 void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completion_event* acceptEv);
 void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readAllEv);
 void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readSomeEv);
-np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData);
+void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv);
 np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
 
 void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec);

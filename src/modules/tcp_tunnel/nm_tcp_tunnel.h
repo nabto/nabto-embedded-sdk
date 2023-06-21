@@ -32,6 +32,7 @@ struct nm_tcp_tunnel_connection {
     size_t streamRecvBufferSize;
     size_t streamReadSize;
     struct np_completion_event streamReadCompletionEvent;
+    struct np_completion_event streamWriteCompletionEvent;
 
     bool tcpReadEnded;
     bool streamReadEnded;

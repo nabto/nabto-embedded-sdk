@@ -62,6 +62,7 @@ static void response_handler(np_error_code ec, struct nc_coap_server_request* re
 
 static void stream_opened(np_error_code ec, void* userdata);
 void write_completed(np_error_code ec, void* userdata);
+void read_completed(np_error_code ec, void* userdata);
 
 static size_t fromHex(const char* str, uint8_t** data)
 {
@@ -393,12 +394,17 @@ nabto_device_virtual_stream_read_all(NabtoDeviceVirtualStream* stream,
     struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
     struct nabto_device_context* dev = str->device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    // TODO:
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
-    // TODO:
+    if (str->readFuture != NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
+    str->readFuture = fut;
+    np_completion_event_init(&str->device->pl.eq, &str->readEv, &read_completed, str);
+    nc_virtual_stream_client_async_read_all(str->stream, buffer, bufferLength, readLength, &str->readEv);
+
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    nabto_device_future_resolve(fut, NABTO_DEVICE_EC_NOT_IMPLEMENTED);
 
 }
 
@@ -413,12 +419,17 @@ nabto_device_virtual_stream_read_some(NabtoDeviceVirtualStream* stream,
     struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
     struct nabto_device_context* dev = str->device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    // TODO:
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
-    // TODO:
+    if (str->readFuture != NULL) {
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
+    str->readFuture = fut;
+    np_completion_event_init(&str->device->pl.eq, &str->readEv, &read_completed, str);
+    nc_virtual_stream_client_async_read_some(str->stream, buffer, bufferLength, readLength, &str->readEv);
+
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    nabto_device_future_resolve(fut, NABTO_DEVICE_EC_NOT_IMPLEMENTED);
 
 }
 
@@ -476,6 +487,7 @@ void stream_opened(np_error_code ec, void* userdata)
     struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)userdata;
     np_completion_event_deinit(&str->openEv);
     nabto_device_future_resolve(str->openFuture, nabto_device_error_core_to_api(ec));
+    str->openFuture = NULL;
 }
 
 
@@ -484,6 +496,14 @@ void write_completed(np_error_code ec, void* userdata)
     struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)userdata;
     np_completion_event_deinit(&str->writeEv);
     nabto_device_future_resolve(str->writeFuture, nabto_device_error_core_to_api(ec));
+    str->writeFuture = NULL;
 }
 
+void read_completed(np_error_code ec, void* userdata)
+{
+    struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)userdata;
+    np_completion_event_deinit(&str->readEv);
+    nabto_device_future_resolve(str->readFuture, nabto_device_error_core_to_api(ec));
+    str->readFuture = NULL;
+}
 
