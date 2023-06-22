@@ -607,8 +607,8 @@ BOOST_AUTO_TEST_CASE(close_from_server_stream)
 BOOST_AUTO_TEST_CASE(multiple_read_all_with_one_write)
 {
     const char* writeBuffer = "Hello world";
-    char readBuffer[6];
-    memset(readBuffer, 0, 6);
+    char readBuffer[256];
+    memset(readBuffer, 0, 256);
     nabto::test::TestStreamDevice td;
     nabto::test::TestStream ts(&td);
 
@@ -639,8 +639,8 @@ BOOST_AUTO_TEST_CASE(multiple_read_all_with_one_write)
 BOOST_AUTO_TEST_CASE(multiple_read_some_with_one_write)
 {
     const char* writeBuffer = "Hello world";
-    char readBuffer[6];
-    memset(readBuffer, 0, 6);
+    char readBuffer[256];
+    memset(readBuffer, 0, 256);
     nabto::test::TestStreamDevice td;
     nabto::test::TestStream ts(&td);
 
