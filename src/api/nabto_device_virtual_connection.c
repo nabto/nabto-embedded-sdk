@@ -473,6 +473,7 @@ nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream, NabtoDeviceF
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         return;
     }
+    str->closeFuture = fut;
     np_completion_event_init(&str->device->pl.eq, &str->closeEv, &close_completed, str);
 
     nc_virtual_stream_client_async_close(str->stream, &str->closeEv);

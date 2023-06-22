@@ -408,7 +408,9 @@ void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, s
         return np_completion_event_resolve(readSomeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
 
-    if (stream->isVirtual && stream->virt.closed) {
+    if (stream->isVirtual && stream->virt.writeEv == NULL && stream->virt.closed) {
+        // If virtual, and we are not currently in virtual write, and virtual was closed: send EOF.
+        // If we are in virtual write, it should resolve before we send EOF.
         return np_completion_event_resolve(readSomeEv, NABTO_EC_EOF);
     }
 

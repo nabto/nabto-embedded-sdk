@@ -271,6 +271,6 @@ void nc_virtual_stream_client_async_close(struct nc_stream_context* stream, stru
     } else if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
         nc_stream_resolve_read(stream, NABTO_EC_EOF);
     }
-    np_completion_event_resolve(stream->virt.closeEv, NABTO_EC_OK);
+    np_completion_event_resolve(closeEv, NABTO_EC_OK);
 }
 
