@@ -19,6 +19,8 @@ struct nabto_device_stream {
     struct np_completion_event writeEv;
 
     struct nabto_device_future* closeFut;
+    struct np_completion_event closeEv;
+
     struct nabto_device_context* dev;
 
     struct nn_llist_node eventListNode;

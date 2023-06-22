@@ -221,6 +221,12 @@ void nc_virtual_stream_do_read(struct nc_stream_context* stream)
             stream->writeEv = NULL;
             nc_virtual_stream_resolve_read(stream, NABTO_EC_OK);
         }
+
+        if (stream->writeEv == NULL && stream->closed && stream->closeEv != NULL ) {
+            // stream->writeEv was just resolved, and server closed and its closeEv has not been resolved
+            np_completion_event_resolve(stream->closeEv, NABTO_EC_OK);
+            stream->closeEv = NULL;
+        }
     }
 }
 
@@ -237,6 +243,9 @@ void nc_virtual_stream_client_async_read_all(struct nc_stream_context* stream, v
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
         return np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
+    if (stream->closed) {
+        return np_completion_event_resolve(readEv, NABTO_EC_EOF);
+    }
     stream->virt.readAllEv = readEv;
     stream->virt.readBuffer = buffer;
     stream->virt.readBufferLength = bufferLength;
@@ -251,6 +260,9 @@ void nc_virtual_stream_client_async_read_some(struct nc_stream_context* stream, 
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_read_some");
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
         return np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
+    }
+    if (stream->closed) {
+        return np_completion_event_resolve(readEv, NABTO_EC_EOF);
     }
     stream->virt.readSomeEv = readEv;
     stream->virt.readBuffer = buffer;
@@ -274,3 +286,17 @@ void nc_virtual_stream_client_async_close(struct nc_stream_context* stream, stru
     np_completion_event_resolve(closeEv, NABTO_EC_OK);
 }
 
+
+void nc_virtual_stream_server_close(struct nc_stream_context* stream)
+{
+    stream->closed = true;
+    if (stream->writeEv != NULL) {
+        // Wait for outstanding write to finish before closing
+        return;
+    } else if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
+        nc_virtual_stream_resolve_read(stream, NABTO_EC_OK);
+    }
+    np_completion_event_resolve(stream->closeEv, NABTO_EC_OK);
+    stream->closeEv = NULL;
+
+}

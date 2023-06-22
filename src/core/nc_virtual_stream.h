@@ -22,6 +22,7 @@ void nc_virtual_stream_client_async_close(struct nc_stream_context* stream, stru
 
 void nc_virtual_stream_server_write(struct nc_stream_context* stream);
 void nc_virtual_stream_server_read(struct nc_stream_context* stream);
+void nc_virtual_stream_server_close(struct nc_stream_context* stream);
 /**
  * Release ownership of a streaming resource. The resource is then
  * cleaned up by the stream manager module.

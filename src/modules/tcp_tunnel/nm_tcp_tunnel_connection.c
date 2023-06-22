@@ -60,6 +60,7 @@ void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
     np_completion_event_deinit(&connection->writeCompletionEvent);
     np_completion_event_deinit(&connection->streamReadCompletionEvent);
     np_completion_event_deinit(&connection->streamWriteCompletionEvent);
+    np_completion_event_deinit(&connection->streamCloseCompletionEvent);
     if (connection->stream) {
         nc_stream_destroy(connection->stream);
     }
@@ -101,6 +102,11 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     }
 
     ec = np_completion_event_init(eq, &connection->streamWriteCompletionEvent, &stream_written, connection);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(eq, &connection->streamCloseCompletionEvent, &stream_closed, connection);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -205,11 +211,7 @@ void tcp_readen(np_error_code ec, void* userData)
 void close_stream(struct nm_tcp_tunnel_connection* connection)
 {
     if (connection->stream) {
-        np_error_code ec = nc_stream_async_close(connection->stream, &stream_closed, connection);
-        if (ec != NABTO_EC_OK) {
-            // if failed, we wont get callback. We do not have any async requirements, so we can invoke the callback without releasing Zalgo
-            stream_closed(NABTO_EC_OK /*unused*/, connection);
-        }
+        nc_stream_async_close(connection->stream, &connection->streamCloseCompletionEvent);
     } else {
         connection->tcpReadEnded = true;
         is_ended(connection);

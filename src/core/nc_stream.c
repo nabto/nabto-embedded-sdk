@@ -83,6 +83,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     ctx->connectionRef = connectionRef;
     ctx->accepted = false;
     ctx->isVirtual = false;
+    ctx->closed = false;
 
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
@@ -434,6 +435,10 @@ void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer,
     if (stream->writeEv != NULL) {
         return np_completion_event_resolve(writeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
+
+    if (stream->closed) {
+        return np_completion_event_resolve(writeEv, NABTO_EC_CLOSED);
+    }
     stream->writeEv = writeEv;
 
     stream->writeBuffer = buffer;
@@ -446,24 +451,27 @@ void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer,
     }
 }
 
-np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
+void nc_stream_async_close(struct nc_stream_context* stream, struct np_completion_event* closeEv)
 {
     if (stream->stopped || stream->virt.stopped) {
-        return NABTO_EC_STOPPED;
+        return np_completion_event_resolve(closeEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->closeCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->closeEv != NULL) {
+        return np_completion_event_resolve(closeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->closeCb = callback;
-    stream->closeUserData = userData;
-    np_error_code ec = nc_stream_handle_close(stream);
-    if (ec != NABTO_EC_OK) {
-        // If close failed, throw away the callback
-        stream->closeCb = NULL;
-        stream->closeUserData = NULL;
+    stream->closeEv = closeEv;
+    stream->closed = true;
+    if (stream->isVirtual) {
+        nc_virtual_stream_server_close(stream);
+    } else {
+        np_error_code ec = nc_stream_handle_close(stream);
+        if (ec != NABTO_EC_OK) {
+            stream->closeEv = NULL;
+            np_completion_event_resolve(closeEv, ec);
+        }
     }
-    return ec;
+    return;
 }
 
 void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
@@ -545,7 +553,7 @@ void nc_stream_do_write_all(struct nc_stream_context* stream)
 
 np_error_code nc_stream_handle_close(struct nc_stream_context* stream)
 {
-    if (!stream->closeCb) {
+    if (!stream->closeEv) {
         return NABTO_EC_OK;
     }
     nabto_stream_status status = nabto_stream_close(&stream->stream);
@@ -580,10 +588,9 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
             nc_stream_do_read(stream);
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_WRITE_CLOSED:
-            if (stream->closeCb) {
-                nc_stream_callback cb = stream->closeCb;
-                stream->closeCb = NULL;
-                cb(NABTO_EC_OK, stream->closeUserData);
+            if (stream->closeEv) {
+                np_completion_event_resolve(stream->closeEv, NABTO_EC_OK);
+                stream->closeEv = NULL;
             }
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_CLOSED:
@@ -596,10 +603,9 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
             }
             nc_stream_do_read(stream);
             np_error_code ec = nc_stream_handle_close(stream);
-            if (ec != NABTO_EC_OK && stream->closeCb) {
-                nc_stream_callback cb = stream->closeCb;
-                stream->closeCb = NULL;
-                cb(ec, stream->closeUserData);
+            if (ec != NABTO_EC_OK && stream->closeEv) {
+                np_completion_event_resolve(stream->closeEv, ec);
+                stream->closeEv = NULL;
             }
             break;
         default:
@@ -642,11 +648,10 @@ void nc_stream_stop(struct nc_stream_context* stream)
         np_completion_event_resolve(stream->writeEv, NABTO_EC_ABORTED);
         stream->writeEv = NULL;
     }
-    nc_stream_callback closeCb = stream->closeCb;
-    stream->closeCb = NULL;
 
-    if (closeCb) {
-        closeCb(NABTO_EC_ABORTED, stream->closeUserData);
+    if (stream->closeEv) {
+        np_completion_event_resolve(stream->closeEv, NABTO_EC_ABORTED);
+        stream->closeEv = NULL;
     }
 
     stream->conn = NULL;

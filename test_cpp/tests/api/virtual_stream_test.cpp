@@ -162,14 +162,25 @@ public:
     enum EventType {
         ACCEPT_CALLBACK,
         READ_CALLBACK,
-        WRITE_CALLBACK
+        WRITE_CALLBACK,
+        CLOSE_CALLBACK
     };
 
     TestStream(TestStreamDevice* device)
     {
         device_ = device;
         future_ = nabto_device_future_new(device_->device_);
+        buffer_ = (uint8_t*)calloc(1, 256);
+        bufferLen_ = 256;
 
+    }
+
+    TestStream(TestStreamDevice* device, size_t readBufferSize)
+    {
+        device_ = device;
+        future_ = nabto_device_future_new(device_->device_);
+        buffer_ = (uint8_t*)calloc(1, readBufferSize);
+        bufferLen_ = readBufferSize;
     }
 
     ~TestStream()
@@ -177,6 +188,7 @@ public:
         if (stream_ != NULL) {
             nabto_device_stream_abort(stream_);
         }
+        free(buffer_);
     }
 
     static void accepted_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
@@ -220,13 +232,11 @@ public:
             nabto_device_stream_free(s);
             nabto_device_future_free(self->future_);
         }
-
-
     }
 
     void doRead()
     {
-        nabto_device_stream_read_some(stream_, future_, buffer_, 256, &readLen_);
+        nabto_device_stream_read_some(stream_, future_, buffer_, bufferLen_, &readLen_);
         nabto_device_future_set_callback(future_, &read_callback, this);
     }
 
@@ -258,10 +268,30 @@ public:
         evCb_ = cb;
     }
 
+    static void closed_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
+    {
+        TestStream* self = (TestStream*)data;
+        if (self->evCb_) {
+            self->evCb_(CLOSE_CALLBACK, ec);
+        }
+        nabto_device_future_free(fut);
+    }
+
+
+    void close()
+    {
+        auto fut = nabto_device_future_new(device_->device_);
+
+        nabto_device_stream_close(stream_, fut);
+        nabto_device_future_set_callback(fut, &closed_callback, this);
+    }
+
     TestStreamDevice* device_;
     NabtoDeviceStream* stream_ = NULL;
     NabtoDeviceFuture* future_;
-    uint8_t buffer_[256];
+    uint8_t* buffer_;
+    size_t bufferLen_;
+
     size_t readLen_;
     std::function<void(enum EventType ev, NabtoDeviceError ec)> evCb_;
     bool noRead_ = false;
@@ -488,6 +518,107 @@ BOOST_AUTO_TEST_CASE(close_while_write_stream)
 
 }
 
+// BOOST_AUTO_TEST_CASE(write_with_multiple_read_all)
+// {
 
+// }
+
+BOOST_AUTO_TEST_CASE(write_with_multiple_read_some)
+{
+    const char* writeBuffer = "Hello world";
+    char readBuffer[256];
+    memset(readBuffer, 0, 256);
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td, 6);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
+
+    // Write to virtual stream
+    // read first part of echo
+    // wait for write future
+    // read second part of echo
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_write(td.virtStream_, fut, writeBuffer, strlen(writeBuffer));
+
+    size_t readen = td.virtualStreamReadSome(readBuffer, 256);
+    BOOST_TEST((readen == 6));
+    char* ptr = readBuffer + readen;
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    readen = td.virtualStreamReadSome(ptr, 256);
+    BOOST_TEST(readen == strlen(writeBuffer) - 6);
+
+    nabto_device_future_free(fut);
+
+    BOOST_TEST(strcmp(readBuffer, writeBuffer) == 0);
+
+    nabto_device_virtual_stream_abort(virtStream);
+}
+
+BOOST_AUTO_TEST_CASE(close_from_server_stream)
+{
+    const char* writeBuffer = "Hello world";
+    char readBuffer[256];
+    memset(readBuffer, 0, 256);
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+    ts.setEventCallback([&](nabto::test::TestStream::EventType ev, NabtoDeviceError ec) {
+        if (ev == nabto::test::TestStream::READ_CALLBACK) {
+            ts.close();
+        }
+    });
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
+
+    td.virtualStreamWrite(writeBuffer, strlen(writeBuffer));
+
+    size_t readen = 0;
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_read_all(virtStream, fut, readBuffer, strlen(writeBuffer), &readen);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_EOF);
+    nabto_device_future_free(fut);
+
+    nabto_device_virtual_stream_abort(virtStream);
+}
+
+// BOOST_AUTO_TEST_CASE(multiple_read_all_with_one_write)
+// {
+
+// }
+
+// BOOST_AUTO_TEST_CASE(multiple_read_some_with_one_write)
+// {
+
+// }
+
+// BOOST_AUTO_TEST_CASE(abort_while_writing)
+// {
+
+// }
+
+// BOOST_AUTO_TEST_CASE(abort_while_reading)
+// {
+
+// }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -52,6 +52,7 @@ struct nc_stream_context {
     uint64_t connectionRef;
     bool isVirtual;
     struct nc_virtual_stream_context virt;
+    bool closed;
 
     nabto_stream_stamp currentExpiry;
     uint32_t negativeCount;
@@ -69,8 +70,7 @@ struct nc_stream_context {
     struct np_completion_event* writeEv;
     const void* writeBuffer;
     size_t writeBufferLength;
-    nc_stream_callback closeCb;
-    void* closeUserData;
+    struct np_completion_event* closeEv;
 
     bool isSending;
     struct np_dtls_send_context sendCtx;
@@ -100,7 +100,7 @@ void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completi
 void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readAllEv);
 void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readSomeEv);
 void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv);
-np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData);
+void nc_stream_async_close(struct nc_stream_context* stream, struct np_completion_event* closeEv);
 
 void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec);
 
