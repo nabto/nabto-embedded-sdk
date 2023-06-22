@@ -225,7 +225,9 @@ public:
             self->evCb_(READ_CALLBACK, ec);
         }
         if (ec == NABTO_DEVICE_EC_OK) {
-            self->doWrite();
+            if (!self->closed_) {
+                self->doWrite();
+            }
         } else {
             auto s = self->stream_;
             self->stream_ = NULL;
@@ -275,11 +277,16 @@ public:
             self->evCb_(CLOSE_CALLBACK, ec);
         }
         nabto_device_future_free(fut);
+        auto s = self->stream_;
+        self->stream_ = NULL;
+        nabto_device_stream_free(s);
+        nabto_device_future_free(self->future_);
     }
 
 
     void close()
     {
+        closed_ = true;
         auto fut = nabto_device_future_new(device_->device_);
 
         nabto_device_stream_close(stream_, fut);
@@ -295,6 +302,7 @@ public:
     size_t readLen_;
     std::function<void(enum EventType ev, NabtoDeviceError ec)> evCb_;
     bool noRead_ = false;
+    bool closed_ = false;
 
 };
 
@@ -447,6 +455,7 @@ BOOST_AUTO_TEST_CASE(close_stream)
     td.makeConnection();
     NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
 
+    sleep(1);
     auto fut = nabto_device_future_new(td.device_);
     nabto_device_virtual_stream_close(virtStream, fut);
     NabtoDeviceError ec = nabto_device_future_wait(fut);
@@ -477,7 +486,6 @@ BOOST_AUTO_TEST_CASE(close_while_write_stream)
         readCount++;
         if (readCount == 1) {
             BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-            std::cout << "Read ec: " << nabto_device_error_get_message(ec) << std::endl;
         }
         if (readCount == 2) {
             BOOST_TEST(ec == NABTO_DEVICE_EC_EOF);
@@ -501,27 +509,17 @@ BOOST_AUTO_TEST_CASE(close_while_write_stream)
     BOOST_TEST(ec == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED);
 
     ts.doRead();
-    std::cout << "Start wait for write" << std::endl;
 
     ec = nabto_device_future_wait(fut);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
 
-    std::cout << "Start wait for close" << std::endl;
     ec = nabto_device_future_wait(fut2);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-
-    std::cout << "Done waiting" << std::endl;
-
 
     nabto_device_future_free(fut);
     nabto_device_future_free(fut2);
 
 }
-
-// BOOST_AUTO_TEST_CASE(write_with_multiple_read_all)
-// {
-
-// }
 
 BOOST_AUTO_TEST_CASE(write_with_multiple_read_some)
 {
@@ -589,36 +587,140 @@ BOOST_AUTO_TEST_CASE(close_from_server_stream)
     td.makeConnection();
     NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
 
-    td.virtualStreamWrite(writeBuffer, strlen(writeBuffer));
-
     size_t readen = 0;
     NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
-    nabto_device_virtual_stream_read_all(virtStream, fut, readBuffer, strlen(writeBuffer), &readen);
+    NabtoDeviceFuture* fut2 = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_write(virtStream, fut, writeBuffer, strlen(writeBuffer));
+
+    nabto_device_virtual_stream_read_all(virtStream, fut2, readBuffer, strlen(writeBuffer), &readen);
     NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    ec = nabto_device_future_wait(fut2);
+    BOOST_TEST((readen == 0));
     BOOST_TEST(ec == NABTO_DEVICE_EC_EOF);
     nabto_device_future_free(fut);
+    nabto_device_future_free(fut2);
 
     nabto_device_virtual_stream_abort(virtStream);
 }
 
-// BOOST_AUTO_TEST_CASE(multiple_read_all_with_one_write)
-// {
+BOOST_AUTO_TEST_CASE(multiple_read_all_with_one_write)
+{
+    const char* writeBuffer = "Hello world";
+    char readBuffer[6];
+    memset(readBuffer, 0, 6);
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
 
-// }
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+        });
 
-// BOOST_AUTO_TEST_CASE(multiple_read_some_with_one_write)
-// {
 
-// }
+    td.makeConnection();
 
-// BOOST_AUTO_TEST_CASE(abort_while_writing)
-// {
+    NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
 
-// }
+    td.virtualStreamWrite(writeBuffer, strlen(writeBuffer));
 
-// BOOST_AUTO_TEST_CASE(abort_while_reading)
-// {
+    size_t readen = td.virtualStreamReadAll(readBuffer, 6);
+    BOOST_TEST((readen == 6));
 
-// }
+    readen = td.virtualStreamReadAll(readBuffer+6, strlen(writeBuffer)-6);
+    BOOST_TEST(readen == strlen(writeBuffer)-6);
+
+    BOOST_TEST(strcmp(readBuffer, writeBuffer) == 0);
+
+    nabto_device_virtual_stream_abort(virtStream);
+}
+
+BOOST_AUTO_TEST_CASE(multiple_read_some_with_one_write)
+{
+    const char* writeBuffer = "Hello world";
+    char readBuffer[6];
+    memset(readBuffer, 0, 6);
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+        });
+
+
+    td.makeConnection();
+
+    NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
+
+    td.virtualStreamWrite(writeBuffer, strlen(writeBuffer));
+
+    size_t readen = td.virtualStreamReadSome(readBuffer, 6);
+    BOOST_TEST((readen == 6));
+
+    readen = td.virtualStreamReadSome(readBuffer + 6, strlen(writeBuffer) - 6);
+    BOOST_TEST(readen == strlen(writeBuffer) - 6);
+
+    BOOST_TEST(strcmp(readBuffer, writeBuffer) == 0);
+
+    nabto_device_virtual_stream_abort(virtStream);
+
+}
+
+BOOST_AUTO_TEST_CASE(abort_while_writing)
+{
+    const char* writeBuffer = "Hello world";
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+        });
+
+
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_write(td.virtStream_, fut, writeBuffer, strlen(writeBuffer));
+    nabto_device_virtual_stream_abort(virtStream);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST((ec == NABTO_DEVICE_EC_ABORTED || ec == NABTO_DEVICE_EC_OK));
+    nabto_device_future_free(fut);
+}
+
+BOOST_AUTO_TEST_CASE(abort_while_reading)
+{
+    const char* writeBuffer = "Hello world";
+    char readBuffer[256];
+    memset(readBuffer, 0, 256);
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+        });
+
+
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
+
+    td.virtualStreamWrite(writeBuffer, strlen(writeBuffer));
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    size_t readen = 0;
+    nabto_device_virtual_stream_read_all(td.virtStream_, fut, readBuffer, strlen(writeBuffer), &readen);
+    nabto_device_virtual_stream_abort(virtStream);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST((ec == NABTO_DEVICE_EC_ABORTED || ec == NABTO_DEVICE_EC_OK));
+    nabto_device_future_free(fut);
+
+}
 
 BOOST_AUTO_TEST_SUITE_END()

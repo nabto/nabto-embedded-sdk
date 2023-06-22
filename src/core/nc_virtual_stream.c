@@ -294,7 +294,7 @@ void nc_virtual_stream_server_close(struct nc_stream_context* stream)
         // Wait for outstanding write to finish before closing
         return;
     } else if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
-        nc_virtual_stream_resolve_read(stream, NABTO_EC_OK);
+        nc_virtual_stream_resolve_read(stream, NABTO_EC_EOF);
     }
     np_completion_event_resolve(stream->closeEv, NABTO_EC_OK);
     stream->closeEv = NULL;
