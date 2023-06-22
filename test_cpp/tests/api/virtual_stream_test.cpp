@@ -487,7 +487,6 @@ BOOST_AUTO_TEST_CASE(close_while_write_stream)
     nabto_device_future_free(fut2);
 
 }
-}
 
 
 
