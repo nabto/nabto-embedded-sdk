@@ -178,7 +178,12 @@ bool nc_connection_get_client_fingerprint(struct nc_connection* connection, uint
     if (connection->isVirtual) {
         return nc_virtual_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
     } else {
-        return nc_client_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
+        np_error_code ec = nc_client_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
+        if (ec != NABTO_EC_OK) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 
