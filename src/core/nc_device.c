@@ -464,6 +464,7 @@ void nc_device_stop(struct nc_device_context* dev)
     nc_stun_remove_sockets(&dev->stun);
     nc_attacher_stop(&dev->attacher);
     nc_coap_client_stop(&dev->coapClient);
+    nc_connections_async_close(&dev->connections, NULL, NULL);
 }
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)
