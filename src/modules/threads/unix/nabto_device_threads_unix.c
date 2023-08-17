@@ -1,6 +1,7 @@
 #include <api/nabto_device_threads.h>
 
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <pthread.h>
 
@@ -97,7 +98,10 @@ void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 
 np_error_code nabto_device_threads_run(struct nabto_device_thread* thread, void *(*run_routine) (void *), void* data)
 {
-    if (pthread_create(&thread->thread, NULL, run_routine, data) != 0) {
+    int ret = pthread_create(&thread->thread, NULL, run_routine, data);
+    if (ret != 0)
+    {
+        NABTO_LOG_TRACE(LOG, "pthread_create failed %d", ret);
         return NABTO_EC_UNKNOWN;
     }
     return NABTO_EC_OK;

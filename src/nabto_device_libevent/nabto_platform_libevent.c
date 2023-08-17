@@ -67,18 +67,21 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     struct libevent_platform* platform = np_calloc(1, sizeof(struct libevent_platform));
     if (platform == NULL) {
+        NABTO_LOG_TRACE(LOG, "Cannot allocate memory libevent_platform");
         return NABTO_EC_OUT_OF_MEMORY;
     }
     platform->coreMutex = eventMutex;
 
     platform->eventBase = event_base_new();
     if (platform->eventBase == NULL) {
+        NABTO_LOG_TRACE(LOG, "Cannot allocate memory for event_base_new");
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
     // The libevent module comes with UDP, TCP, local ip and timestamp
     // module implementations.
     if (!nm_libevent_init(&platform->libeventContext, platform->eventBase)) {
+        NABTO_LOG_TRACE(LOG, "nm_libevent_init failed");
         return NABTO_EC_FAILED;
     }
 
@@ -92,6 +95,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     ec = thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
     if (ec != NABTO_EC_OK) {
+        NABTO_LOG_TRACE(LOG, "thread_event_queue_init failed");
         return ec;
     }
 
@@ -101,6 +105,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     ec = nm_libevent_dns_init(&platform->libeventDns, platform->eventBase, eventMutex, &platform->eq);
 
     if (ec != NABTO_EC_OK) {
+        NABTO_LOG_TRACE(LOG, "nm_libevent_dns_init failed");
         return ec;
     }
 
@@ -112,6 +117,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
 
     ec = nm_mdns_server_init(&platform->mdnsServer, &platform->eq, &udp, &mdnsUdpBind, &localIp);
     if (ec != NABTO_EC_OK) {
+        NABTO_LOG_TRACE(LOG, "nm_mdns_server_init failed");
         return ec;
     }
     struct np_mdns mdnsImpl = nm_mdns_server_get_impl(&platform->mdnsServer);
@@ -119,11 +125,13 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     // Start the thread where the libevent main loop runs.
     platform->libeventThread = nabto_device_threads_create_thread();
     if (platform->libeventThread == NULL) {
+        NABTO_LOG_TRACE(LOG, "no memory for libevent thread failed");
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
     ec = nabto_device_threads_run(platform->libeventThread, libevent_thread, platform);
     if (ec != NABTO_EC_OK) {
+        NABTO_LOG_TRACE(LOG, "cannot run libevent thread");
         return ec;
     }
 
