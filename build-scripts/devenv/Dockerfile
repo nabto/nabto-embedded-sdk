@@ -4,11 +4,11 @@ ARG CMAKE_VERSION=3.19.6
 
 RUN apt update && apt install -y git build-essential autoconf libtool pkg-config wget bash-completion vim gdb clang gcc curl ninja-build valgrind python3-pip sudo unzip
 
-RUN pip3 install cmakelang
-
 WORKDIR /tmp
-RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
-RUN tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz  -C /usr --strip-components=1
+RUN wget https://github.com/Kitware/CMake/archive/refs/tags/v${CMAKE_VERSION}.tar.gz
+RUN tar xvfz v${CMAKE_VERSION}.tar.gz
+WORKDIR /tmp/CMake-${CMAKE_VERSION}
+RUN ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF && make && sudo make install
 
 WORKDIR /build/wolfssl
 RUN git clone https://github.com/wolfSSL/wolfssl
