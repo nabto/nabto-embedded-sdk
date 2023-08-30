@@ -11,6 +11,7 @@
 #include <core/nc_virtual_connection.h>
 #include <core/nc_virtual_stream.h>
 #include <platform/np_allocator.h>
+#include <platform/np_util.h>
 #include <platform/np_completion_event.h>
 
 #include <nn/string.h>
@@ -71,23 +72,6 @@ void write_completed(np_error_code ec, void* userdata);
 void read_completed(np_error_code ec, void* userdata);
 void close_completed(np_error_code ec, void* userdata);
 
-static size_t fromHex(const char* str, uint8_t** data)
-{
-    size_t dataLength = strlen(str) / 2;
-    uint8_t* output = (uint8_t*)np_calloc(1, dataLength);
-    if (output == NULL) {
-        return 0;
-    }
-    size_t i;
-    int value;
-    for (i = 0; i < dataLength && sscanf(str + i * 2, "%2x", &value) == 1; i++) {
-        output[i] = value;
-    }
-    *data = output;
-    return dataLength;
-}
-
-
 NabtoDeviceVirtualConnection* NABTO_DEVICE_API
 nabto_device_virtual_connection_new(NabtoDevice* device)
 {
@@ -139,9 +123,12 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_virtual_connection_set_device_fingerprint(NabtoDeviceVirtualConnection* connection, const char* fp)
 {
     struct nabto_device_virtual_connection* conn = (struct nabto_device_virtual_connection*)connection;
-    uint8_t* fpBin;
-    size_t len = fromHex(fp, &fpBin);
-    if (len < 32) {
+    if (strlen(fp) != 64) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
+    uint8_t* fpBin = (uint8_t*)np_calloc(1, 32);
+
+    if (!np_hex_to_data(fp, fpBin, 32)) {
         np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
@@ -157,9 +144,9 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_virtual_connection_set_client_fingerprint(NabtoDeviceVirtualConnection* connection, const char* fp)
 {
     struct nabto_device_virtual_connection* conn = (struct nabto_device_virtual_connection*)connection;
-    uint8_t* fpBin;
-    size_t len = fromHex(fp, &fpBin);
-    if (len < 32) {
+    uint8_t* fpBin = (uint8_t*)np_calloc(1, 32);
+
+    if (!np_hex_to_data(fp, fpBin, 32)) {
         np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }

@@ -113,7 +113,7 @@ extern "C" {
      * Set the payload of a given virtual CoAP request.
      *
      * @param request [in]   The request on which to set the payload
-     * @param data [in]      The payload to set
+     * @param data [in]      The payload to set. The payload is copied into the request.
      * @param dataSize [in]  The length of the payload in bytes
      *
      * @retval NABTO_DEVICE_EC_OK on success
