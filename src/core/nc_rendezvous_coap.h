@@ -12,7 +12,7 @@ struct nc_rendezvous_coap_context {
     struct nc_coap_server_context* coap;
     struct nc_rendezvous_context* rendezvous;
 
-    struct nabto_coap_server_resource* resource;
+    struct nc_coap_server_resource* resource;
 };
 
 

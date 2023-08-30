@@ -10,14 +10,14 @@
 
 #define LOG NABTO_LOG_MODULE_COAP
 
-void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* request, void* data);
+void nc_rendezvous_handle_coap_p2p_rendezvous(struct nc_coap_server_request* request, void* data);
 
 np_error_code nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context, struct nc_coap_server_context* coap, struct nc_rendezvous_context* rendezvous)
 {
     memset(context, 0, sizeof(struct nc_rendezvous_coap_context));
     context->coap = coap;
     context->rendezvous = rendezvous;
-    nabto_coap_error err = nabto_coap_server_add_resource(nc_coap_server_get_server(coap), NABTO_COAP_CODE_POST,
+    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_CODE_POST,
                                                           (const char*[]){"p2p", "rendezvous", NULL},
                                                           &nc_rendezvous_handle_coap_p2p_rendezvous, context,
                                                           &context->resource);
@@ -31,16 +31,18 @@ np_error_code nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context
 void nc_rendezvous_coap_deinit(struct nc_rendezvous_coap_context* context)
 {
     if (context->resource) {
-        nabto_coap_server_remove_resource(context->resource);
+        nc_coap_server_remove_resource(context->resource);
         context->resource = NULL;
     }
 }
 
-static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nabto_coap_server_request* request, uint8_t* payload, size_t payloadLength)
+static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nc_coap_server_request* request, uint8_t* payload, size_t payloadLength)
 {
     struct nc_rendezvous_send_packet packet;
     packet.type = CT_RENDEZVOUS_DEVICE_REQUEST;
-    nc_coap_server_context_request_get_connection_id(ctx->coap, request, packet.connectionId);
+    if (!nc_coap_server_context_request_get_connection_id(ctx->coap, request, packet.connectionId)) {
+        return false;
+    };
 
     packet.channelId = 0;
     // send the packet on the non local only socket.
@@ -95,22 +97,29 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
     return true;
 }
 
-void nc_rendezvous_handle_coap_p2p_rendezvous(struct nabto_coap_server_request* request, void* data)
+void nc_rendezvous_handle_coap_p2p_rendezvous(struct nc_coap_server_request* request, void* data)
 {
     struct nc_rendezvous_coap_context* ctx = (struct nc_rendezvous_coap_context*)data;
 
+    if (request->isVirtual) {
+        NABTO_LOG_INFO(LOG, "Dropping rendezvous CoAP request received on virtual connection.")
+        nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), "Rendezvous not possible on virtual connection");
+        nc_coap_server_request_free(request);
+        return;
+    }
+
     uint8_t* payload;
     size_t payloadLength;
-    nabto_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
+    nc_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
     if (payload == NULL) {
-        nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
+        nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
     } else {
         if (handle_rendezvous_payload(ctx, request, payload, payloadLength)) {
-            nabto_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,04));
-            nabto_coap_server_response_ready(request);
+            nc_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,04));
+            nc_coap_server_response_ready(request);
         } else {
-            nabto_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
+            nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
         }
     }
-    nabto_coap_server_request_free(request);
+    nc_coap_server_request_free(request);
 }

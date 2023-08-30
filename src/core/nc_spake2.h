@@ -15,8 +15,8 @@
 extern "C" {
 #endif
 
-struct nabto_coap_server_request;
-struct nabto_coap_server_resource;
+struct nc_coap_server_request;
+struct nc_coap_server_resource;
 struct nc_coap_server_context;
 
 #define NC_SPAKE2_USERNAME_MAX_LENGTH 32
@@ -30,8 +30,8 @@ struct nc_spake2_module {
     nc_spake2_password_request_handler passwordRequestHandler;
     void* passwordRequestHandlerData;
 
-    struct nabto_coap_server_resource* spake21;
-    struct nabto_coap_server_resource* spake22;
+    struct nc_coap_server_resource* spake21;
+    struct nc_coap_server_resource* spake22;
     size_t tokens;
     struct np_event* tbEvent;
     struct np_platform* pl;

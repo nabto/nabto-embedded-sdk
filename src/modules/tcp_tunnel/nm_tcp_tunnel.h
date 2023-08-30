@@ -31,6 +31,9 @@ struct nm_tcp_tunnel_connection {
     uint8_t streamRecvBuffer[NM_TCP_TUNNEL_BUFFER_SIZE];
     size_t streamRecvBufferSize;
     size_t streamReadSize;
+    struct np_completion_event streamReadCompletionEvent;
+    struct np_completion_event streamWriteCompletionEvent;
+    struct np_completion_event streamCloseCompletionEvent;
 
     bool tcpReadEnded;
     bool streamReadEnded;
@@ -67,8 +70,9 @@ struct nm_tcp_tunnels {
     struct nn_string_int_map limitsByType;
     uint8_t* weakPtrCounter;
 
-    struct nabto_coap_server_resource* coapListServices;
-    struct nabto_coap_server_resource* coapGetService;
+    struct nc_coap_server_resource* coapListServices;
+    struct nc_coap_server_resource* coapGetService;
+    struct nc_coap_server_resource* coapGetConnect;
 };
 
 np_error_code nm_tcp_tunnels_init(struct nm_tcp_tunnels* tunnels, struct nc_device_context* device);

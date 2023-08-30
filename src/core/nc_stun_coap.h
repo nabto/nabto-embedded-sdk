@@ -8,7 +8,7 @@
 struct nc_stun_contex;
 struct nc_coap_server_context;
 struct np_platform;
-struct nabto_coap_server_request;
+struct nc_coap_server_request;
 
 struct nc_stun_coap_context {
     bool deinitialized;
@@ -16,14 +16,14 @@ struct nc_stun_coap_context {
     struct nc_coap_server_context* coap;
     struct nc_device_context* device;
     struct np_platform* pl;
-    struct nabto_coap_server_resource* resource;
+    struct nc_coap_server_resource* resource;
 };
 
 // When a new coap request is received create this context and give it as callback to the async analyze function.
 // when the analyze callback is resolved get the state from stunCoap and create a coap response.
 struct nc_stun_coap_endpoints_request {
     struct nc_stun_coap_context* stunCoap;
-    struct nabto_coap_server_request* request;
+    struct nc_coap_server_request* request;
     struct nc_stun_callback callback;
 };
 

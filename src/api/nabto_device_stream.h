@@ -10,11 +10,17 @@ struct nabto_device_context;
 struct nabto_device_stream {
     struct nc_stream_context* stream;
     struct nabto_device_future* acceptFut;
+    struct np_completion_event acceptEv;
+
     struct nabto_device_future* readFut;
+    struct np_completion_event readEv;
 
     struct nabto_device_future* writeFut;
+    struct np_completion_event writeEv;
 
     struct nabto_device_future* closeFut;
+    struct np_completion_event closeEv;
+
     struct nabto_device_context* dev;
 
     struct nn_llist_node eventListNode;

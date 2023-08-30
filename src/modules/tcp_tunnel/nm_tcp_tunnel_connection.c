@@ -58,6 +58,9 @@ void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
     np_completion_event_deinit(&connection->connectCompletionEvent);
     np_completion_event_deinit(&connection->readCompletionEvent);
     np_completion_event_deinit(&connection->writeCompletionEvent);
+    np_completion_event_deinit(&connection->streamReadCompletionEvent);
+    np_completion_event_deinit(&connection->streamWriteCompletionEvent);
+    np_completion_event_deinit(&connection->streamCloseCompletionEvent);
     if (connection->stream) {
         nc_stream_destroy(connection->stream);
     }
@@ -92,6 +95,22 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     if (ec != NABTO_EC_OK) {
         return ec;
     }
+
+    ec = np_completion_event_init(eq, &connection->streamReadCompletionEvent, &stream_readen, connection);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(eq, &connection->streamWriteCompletionEvent, &stream_written, connection);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
+    ec = np_completion_event_init(eq, &connection->streamCloseCompletionEvent, &stream_closed, connection);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
 
     connection->tcpRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
     connection->streamRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
@@ -192,11 +211,7 @@ void tcp_readen(np_error_code ec, void* userData)
 void close_stream(struct nm_tcp_tunnel_connection* connection)
 {
     if (connection->stream) {
-        np_error_code ec = nc_stream_async_close(connection->stream, &stream_closed, connection);
-        if (ec != NABTO_EC_OK) {
-            // if failed, we wont get callback. We do not have any async requirements, so we can invoke the callback without releasing Zalgo
-            stream_closed(NABTO_EC_OK /*unused*/, connection);
-        }
+        nc_stream_async_close(connection->stream, &connection->streamCloseCompletionEvent);
     } else {
         connection->tcpReadEnded = true;
         is_ended(connection);
@@ -213,13 +228,7 @@ void stream_closed(np_error_code ec, void* userData)
 
 void start_stream_write(struct nm_tcp_tunnel_connection* connection, size_t transferred)
 {
-    np_error_code ec = nc_stream_async_write(connection->stream, connection->tcpRecvBuffer, transferred, &stream_written, connection);
-    if (ec) {
-        abort_connection(connection);
-        connection->tcpReadEnded = true;
-        is_ended(connection);
-        return;
-    }
+    nc_stream_async_write(connection->stream, connection->tcpRecvBuffer, transferred, &connection->streamWriteCompletionEvent);
 }
 
 void stream_written(np_error_code ec, void* userData)
@@ -240,13 +249,7 @@ void stream_written(np_error_code ec, void* userData)
 
 void start_stream_read(struct nm_tcp_tunnel_connection* connection)
 {
-    np_error_code ec = nc_stream_async_read_some(connection->stream, connection->streamRecvBuffer, connection->streamRecvBufferSize, &connection->streamReadSize, &stream_readen, connection);
-    if (ec) {
-        abort_connection(connection);
-        connection->streamReadEnded = true;
-        is_ended(connection);
-        return;
-    }
+    nc_stream_async_read_some(connection->stream, connection->streamRecvBuffer, connection->streamRecvBufferSize, &connection->streamReadSize, &connection->streamReadCompletionEvent);
 }
 
 void stream_readen(np_error_code ec, void* userData)

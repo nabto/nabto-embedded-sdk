@@ -6,6 +6,7 @@
 #include <core/nc_attacher.h>
 #include <core/nc_stream_manager.h>
 #include <core/nc_client_connection_dispatch.h>
+#include <core/nc_connection.h>
 #include <core/nc_stun.h>
 #include <core/nc_coap_server.h>
 #include <core/nc_stun_coap.h>
@@ -55,6 +56,7 @@ struct nc_device_context {
     struct nc_attach_context attacher;
     struct nc_stream_manager_context streamManager;
     struct nc_client_connection_dispatch_context clientConnect;
+    struct nc_connections_context connections;
     struct nc_stun_context stun;
     struct nc_coap_server_context coapServer;
     struct nc_coap_client_context coapClient;
@@ -124,7 +126,7 @@ np_error_code nc_device_next_connection_ref(struct nc_device_context* dev, uint6
 
 uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream);
 
-struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
+struct nc_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref);
 
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData);
 void nc_device_remove_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener);

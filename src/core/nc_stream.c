@@ -1,6 +1,8 @@
 #include "nc_stream.h"
 #include <core/nc_stream_manager.h>
+#include <core/nc_virtual_stream.h>
 #include <core/nc_packet.h>
+#include <core/nc_connection.h>
 #include <core/nc_client_connection.h>
 
 #include <platform/np_logging.h>
@@ -45,7 +47,7 @@ uint32_t nc_stream_get_stamp(void* userData)
     return np_timestamp_now_ms(&ctx->pl->timestamp);
 }
 
-np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct nc_client_connection* clientConn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger)
+np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger)
 {
     nc_stream_module.get_stamp = &nc_stream_get_stamp;
     nc_stream_module.logger = logger;
@@ -72,7 +74,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
 
     ctx->refCount = 0;
     ctx->stopped = false;
-    ctx->clientConn = clientConn;
+    ctx->conn = conn;
     ctx->streamId = streamId;
     ctx->streamManager = streamManager;
     ctx->pl = pl;
@@ -80,6 +82,8 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     ctx->isSending = false;
     ctx->connectionRef = connectionRef;
     ctx->accepted = false;
+    ctx->isVirtual = false;
+    ctx->closed = false;
 
 
     nabto_stream_init(&ctx->stream, &nc_stream_module, ctx);
@@ -101,9 +105,11 @@ void nc_stream_free(struct nc_stream_context* ctx)
 {
     struct np_event_queue* eq = &ctx->pl->eq;
     np_event_queue_destroy_event(eq, ctx->ev);
-    np_event_queue_destroy_event(eq, ctx->timer);
-    np_completion_event_deinit(&ctx->sendCtx.ev);
 
+    if (!ctx->isVirtual) {
+        np_event_queue_destroy_event(eq, ctx->timer);
+        np_completion_event_deinit(&ctx->sendCtx.ev);
+    }
     nc_stream_manager_free_stream(ctx);
 }
 
@@ -207,7 +213,7 @@ void nc_stream_handle_connection_closed(struct nc_stream_context* ctx)
     if (ctx->stopped) {
         return;
     }
-    ctx->clientConn = NULL;
+    ctx->conn = NULL;
 
     nc_stream_stop(ctx);
 
@@ -234,7 +240,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     if (ctx->stopped) {
         return;
     }
-    if (ctx->clientConn == NULL) {
+    if (ctx->conn == NULL) {
         nabto_stream_event_handled(&ctx->stream, eventType);
         nc_stream_event(ctx);
         return;
@@ -266,8 +272,9 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     }
     ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+packetSize);
     ctx->sendCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
+    // TODO: ensure connectionImplCtx is not virtual
     np_error_code ec =
-        nc_client_connection_async_send_data(ctx->clientConn, &ctx->sendCtx);
+        nc_client_connection_async_send_data(ctx->conn->connectionImplCtx, &ctx->sendCtx);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "dtls send returned ec: %u", ec);
         nabto_stream_event_handled(&ctx->stream, eventType);
@@ -339,103 +346,132 @@ static np_error_code nc_stream_handle_close(struct nc_stream_context* stream);
 
 void nc_stream_accept(struct nc_stream_context* stream)
 {
-    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
-    nabto_stream_accept(&stream->stream);
+    if (stream->isVirtual) {
+        nc_virtual_stream_server_accepted(stream);
+    } else {
+        nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
+        nabto_stream_accept(&stream->stream);
+    }
 }
 
-np_error_code nc_stream_async_accept(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
+void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completion_event* acceptEv)
 {
-    if (stream->stopped) {
-        return NABTO_EC_STOPPED;
+    NABTO_LOG_TRACE(LOG, "nc_stream_async_accept");
+    if (stream->stopped || stream->virt.stopped) {
+        return np_completion_event_resolve(acceptEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->acceptCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->acceptEv != NULL) {
+        return np_completion_event_resolve(acceptEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->acceptCb = callback;
-    stream->acceptUserData = userData;
-    nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
-    nabto_stream_accept(&stream->stream);
-    return NABTO_EC_OK;
+    stream->acceptEv = acceptEv;
+    if (stream->isVirtual) {
+        nc_virtual_stream_server_accepted(stream);
+    } else {
+        nabto_stream_set_application_event_callback(&stream->stream, &nc_stream_application_event_callback, stream);
+        nabto_stream_accept(&stream->stream);
+    }
+    return;
 }
 
-np_error_code nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
+void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readAllEv)
 {
-    if (stream->stopped) {
-        return NABTO_EC_STOPPED;
+    NABTO_LOG_TRACE(LOG, "nc_stream_async_read_all");
+    if (stream->stopped || stream->virt.stopped) {
+        return np_completion_event_resolve(readAllEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
+        return np_completion_event_resolve(readAllEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->readAllCb = callback;
-    stream->readUserData = userData;
+
+    if (stream->isVirtual && stream->virt.closed) {
+        return np_completion_event_resolve(readAllEv, NABTO_EC_EOF);
+    }
+    stream->readAllEv = readAllEv;
 
     stream->readBuffer = buffer;
     stream->readBufferLength = bufferLength;
     stream->readLength = readLength;
     *stream->readLength = 0;
     nc_stream_do_read(stream);
-    return NABTO_EC_OK;
+    return;
 }
 
-np_error_code nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, nc_stream_callback callback, void* userData)
+void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readSomeEv)
 {
-    if (stream->stopped) {
-        return NABTO_EC_STOPPED;
+    NABTO_LOG_TRACE(LOG, "nc_stream_async_read_some");
+    if (stream->stopped || stream->virt.stopped) {
+        return np_completion_event_resolve(readSomeEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->readAllCb != NULL || stream->readSomeCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
+        return np_completion_event_resolve(readSomeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->readSomeCb = callback;
-    stream->readUserData = userData;
+
+    if (stream->isVirtual && stream->virt.writeEv == NULL && stream->virt.closed) {
+        // If virtual, and we are not currently in virtual write, and virtual was closed: send EOF.
+        // If we are in virtual write, it should resolve before we send EOF.
+        return np_completion_event_resolve(readSomeEv, NABTO_EC_EOF);
+    }
+
+    stream->readSomeEv = readSomeEv;
 
     stream->readBuffer = buffer;
     stream->readBufferLength = bufferLength;
     stream->readLength = readLength;
     *stream->readLength = 0;
     nc_stream_do_read(stream);
-    return NABTO_EC_OK;
+    return;
 }
 
-np_error_code nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, nc_stream_callback callback, void* userData)
+void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv)
 {
-    if (stream->stopped) {
-        return NABTO_EC_STOPPED;
+    NABTO_LOG_TRACE(LOG, "nc_stream_async_write");
+    if (stream->stopped || stream->virt.stopped) {
+        return np_completion_event_resolve(writeEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->writeCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->writeEv != NULL) {
+        return np_completion_event_resolve(writeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->writeCb = callback;
-    stream->writeUserData = userData;
+
+    if (stream->closed) {
+        return np_completion_event_resolve(writeEv, NABTO_EC_CLOSED);
+    }
+    stream->writeEv = writeEv;
 
     stream->writeBuffer = buffer;
     stream->writeBufferLength = bufferLength;
 
-    nc_stream_do_write_all(stream);
-    return NABTO_EC_OK;
+    if (stream->isVirtual) {
+        nc_virtual_stream_server_write(stream);
+    } else {
+        nc_stream_do_write_all(stream);
+    }
 }
 
-np_error_code nc_stream_async_close(struct nc_stream_context* stream, nc_stream_callback callback, void* userData)
+void nc_stream_async_close(struct nc_stream_context* stream, struct np_completion_event* closeEv)
 {
-    if (stream->stopped) {
-        return NABTO_EC_STOPPED;
+    if (stream->stopped || stream->virt.stopped) {
+        return np_completion_event_resolve(closeEv, NABTO_EC_STOPPED);
     }
 
-    if (stream->closeCb != NULL) {
-        return NABTO_EC_OPERATION_IN_PROGRESS;
+    if (stream->closeEv != NULL) {
+        return np_completion_event_resolve(closeEv, NABTO_EC_OPERATION_IN_PROGRESS);
     }
-    stream->closeCb = callback;
-    stream->closeUserData = userData;
-    np_error_code ec = nc_stream_handle_close(stream);
-    if (ec != NABTO_EC_OK) {
-        // If close failed, throw away the callback
-        stream->closeCb = NULL;
-        stream->closeUserData = NULL;
+    stream->closeEv = closeEv;
+    stream->closed = true;
+    if (stream->isVirtual) {
+        nc_virtual_stream_server_close(stream);
+    } else {
+        np_error_code ec = nc_stream_handle_close(stream);
+        if (ec != NABTO_EC_OK) {
+            stream->closeEv = NULL;
+            np_completion_event_resolve(closeEv, ec);
+        }
     }
-    return ec;
+    return;
 }
 
 void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
@@ -444,25 +480,24 @@ void nc_stream_resolve_read(struct nc_stream_context* stream, np_error_code ec)
     stream->readBuffer = NULL;
     stream->readBufferLength = 0;
 
-    if (stream->readAllCb) {
-        nc_stream_callback cb = stream->readAllCb;
-        stream->readAllCb = NULL;
-        cb(ec, stream->readUserData);
-    } else if (stream->readSomeCb) {
-        nc_stream_callback cb = stream->readSomeCb;
-        stream->readSomeCb = NULL;
-        cb(ec, stream->readUserData);
+    if (stream->readAllEv) {
+        np_completion_event_resolve(stream->readAllEv, ec);
+        stream->readAllEv = NULL;
+    } else if (stream->readSomeEv) {
+        np_completion_event_resolve(stream->readSomeEv, ec);
+        stream->readSomeEv = NULL;
     } else {
         NABTO_LOG_ERROR(LOG, "Tried to resolve read futures which does not exist");
     }
+
 }
 
 void nc_stream_do_read(struct nc_stream_context* stream)
 {
-    if (!stream->readAllCb && !stream->readSomeCb) {
+    if (!stream->readAllEv && !stream->readSomeEv) {
         // data available but no one wants it
         NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
-    } else {
+    } else if (!stream->isVirtual) {
         size_t readen;
         nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, (uint8_t*)stream->readBuffer, stream->readBufferLength, &readen);
         if (status == NABTO_STREAM_STATUS_OK) {
@@ -472,14 +507,14 @@ void nc_stream_do_read(struct nc_stream_context* stream)
                 *stream->readLength += readen;
                 stream->readBuffer = ((uint8_t*)stream->readBuffer) + readen;
                 stream->readBufferLength -= readen;
-                if (stream->readAllCb) {
+                if (stream->readAllEv) {
                     if (stream->readBufferLength == 0) {
                         nc_stream_resolve_read(stream, NABTO_EC_OK);
                     } else {
                         // read more until 0 or error
                         nc_stream_do_read(stream);
                     }
-                } else if (stream->readSomeCb) {
+                } else if (stream->readSomeEv) {
                     nc_stream_resolve_read(stream, NABTO_EC_OK);
                 } else {
                     // Still no future? we just checked this!
@@ -489,6 +524,8 @@ void nc_stream_do_read(struct nc_stream_context* stream)
         } else {
             nc_stream_resolve_read(stream, nc_stream_status_to_ec(status));
         }
+    } else {
+        nc_virtual_stream_server_read(stream);
     }
 }
 void nc_stream_do_write_all(struct nc_stream_context* stream)
@@ -500,25 +537,23 @@ void nc_stream_do_write_all(struct nc_stream_context* stream)
             // would block
             return;
         } else if (written == stream->writeBufferLength) {
-            nc_stream_callback cb = stream->writeCb;
-            stream->writeCb = NULL;
-            cb(NABTO_EC_OK, stream->writeUserData);
+            np_completion_event_resolve(stream->writeEv, NABTO_EC_OK);
+            stream->writeEv = NULL;
         } else {
             stream->writeBuffer = ((uint8_t*)stream->writeBuffer) + written;
             stream->writeBufferLength -= written;
             nc_stream_do_write_all(stream);
         }
     } else {
-        nc_stream_callback cb = stream->writeCb;
-        stream->writeCb = NULL;
-        cb(nc_stream_status_to_ec(status), stream->writeUserData);
+        np_completion_event_resolve(stream->writeEv, nc_stream_status_to_ec(status));
+        stream->writeEv = NULL;
     }
 
 }
 
 np_error_code nc_stream_handle_close(struct nc_stream_context* stream)
 {
-    if (!stream->closeCb) {
+    if (!stream->closeEv) {
         return NABTO_EC_OK;
     }
     nabto_stream_status status = nabto_stream_close(&stream->stream);
@@ -536,17 +571,16 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
     struct nc_stream_context* stream = data;
     switch(eventType) {
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_OPENED:
-            if (stream->acceptCb) {
-                nc_stream_callback cb = stream->acceptCb;
-                stream->acceptCb = NULL;
-                cb(NABTO_EC_OK, stream->acceptUserData);
+            if (stream->acceptEv) {
+                np_completion_event_resolve(stream->acceptEv, NABTO_EC_OK);
+                stream->acceptEv = NULL;
             }
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_READY:
             nc_stream_do_read(stream);
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_DATA_WRITE:
-            if (stream->writeCb) {
+            if (stream->writeEv) {
                 nc_stream_do_write_all(stream);
             }
             break;
@@ -554,27 +588,24 @@ void nc_stream_application_event_callback(nabto_stream_application_event_type ev
             nc_stream_do_read(stream);
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_WRITE_CLOSED:
-            if (stream->closeCb) {
-                nc_stream_callback cb = stream->closeCb;
-                stream->closeCb = NULL;
-                cb(NABTO_EC_OK, stream->closeUserData);
+            if (stream->closeEv) {
+                np_completion_event_resolve(stream->closeEv, NABTO_EC_OK);
+                stream->closeEv = NULL;
             }
             break;
         case NABTO_STREAM_APPLICATION_EVENT_TYPE_CLOSED:
-            if (stream->writeCb) {
+            if (stream->writeEv) {
                 nc_stream_do_write_all(stream);
             }
-            if (stream->acceptCb) {
-                nc_stream_callback cb = stream->acceptCb;
-                stream->acceptCb = NULL;
-                cb(NABTO_EC_ABORTED, stream->acceptUserData);
+            if (stream->acceptEv) {
+                np_completion_event_resolve(stream->acceptEv, NABTO_EC_ABORTED);
+                stream->acceptEv = NULL;
             }
             nc_stream_do_read(stream);
             np_error_code ec = nc_stream_handle_close(stream);
-            if (ec != NABTO_EC_OK && stream->closeCb) {
-                nc_stream_callback cb = stream->closeCb;
-                stream->closeCb = NULL;
-                cb(ec, stream->closeUserData);
+            if (ec != NABTO_EC_OK && stream->closeEv) {
+                np_completion_event_resolve(stream->closeEv, ec);
+                stream->closeEv = NULL;
             }
             break;
         default:
@@ -589,46 +620,41 @@ void nc_stream_stop(struct nc_stream_context* stream)
     }
 
     stream->stopped = true;
-    if (nabto_stream_stop_should_send_rst(&stream->stream) && stream->clientConn) {
-        NABTO_LOG_TRACE(LOG, "Sending RST");
-        nc_stream_manager_send_rst(stream->streamManager, stream->clientConn, stream->streamId);
+    if(!stream->isVirtual) {
+        if (nabto_stream_stop_should_send_rst(&stream->stream) && stream->conn) {
+            NABTO_LOG_TRACE(LOG, "Sending RST");
+            nc_stream_manager_send_rst(stream->streamManager, stream->conn->connectionImplCtx, stream->streamId);
+        }
+
+        struct np_platform* pl = stream->pl;
+        np_event_queue_cancel_event(&pl->eq, stream->timer);
+    }
+    if (stream->acceptEv) {
+        np_completion_event_resolve(stream->acceptEv, NABTO_EC_ABORTED);
+        stream->acceptEv = NULL;
     }
 
-    struct np_platform* pl = stream->pl;
-    np_event_queue_cancel_event(&pl->eq, stream->timer);
-
-    nc_stream_callback acceptCb = stream->acceptCb;
-    stream->acceptCb = NULL;
-
-    nc_stream_callback readAllCb = stream->readAllCb;
-    stream->readAllCb = NULL;
-
-    nc_stream_callback readSomeCb = stream->readSomeCb;
-    stream->readSomeCb = NULL;
-
-    nc_stream_callback writeCb = stream->writeCb;
-    stream->writeCb = NULL;
-
-    nc_stream_callback closeCb = stream->closeCb;
-    stream->closeCb = NULL;
-
-    if (acceptCb) {
-        acceptCb(NABTO_EC_ABORTED, stream->acceptUserData);
-    }
-    if (readAllCb) {
-        readAllCb(NABTO_EC_ABORTED, stream->readUserData);
-    }
-    if (readSomeCb) {
-        readSomeCb(NABTO_EC_ABORTED, stream->readUserData);
-    }
-    if (writeCb) {
-        writeCb(NABTO_EC_ABORTED, stream->writeUserData);
-    }
-    if (closeCb) {
-        closeCb(NABTO_EC_ABORTED, stream->closeUserData);
+    if (stream->readAllEv != NULL) {
+        np_completion_event_resolve(stream->readAllEv, NABTO_EC_ABORTED);
+        stream->readAllEv = NULL;
     }
 
-    stream->clientConn = NULL;
+    if (stream->readSomeEv != NULL) {
+        np_completion_event_resolve(stream->readSomeEv, NABTO_EC_ABORTED);
+        stream->readSomeEv = NULL;
+    }
+
+    if (stream->writeEv) {
+        np_completion_event_resolve(stream->writeEv, NABTO_EC_ABORTED);
+        stream->writeEv = NULL;
+    }
+
+    if (stream->closeEv) {
+        np_completion_event_resolve(stream->closeEv, NABTO_EC_ABORTED);
+        stream->closeEv = NULL;
+    }
+
+    stream->conn = NULL;
     stream->streamId = 0;
 }
 
@@ -640,9 +666,12 @@ void nc_stream_ref_count_inc(struct nc_stream_context* stream)
 
 void nc_stream_ref_count_dec(struct nc_stream_context* stream)
 {
+    // TODO: ref count in virtual stream
     stream->refCount--;
     if (stream->refCount == 0) {
-        nabto_stream_destroy(&stream->stream);
+        if (!stream->isVirtual) {
+            nabto_stream_destroy(&stream->stream);
+        }
         nc_stream_free(stream);
     }
 }

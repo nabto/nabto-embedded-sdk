@@ -54,7 +54,7 @@ std::string testFcmPayload = R"(
 }
 )";
 
-BOOST_FIXTURE_TEST_SUITE(fcm, nabto::test::BasestationFixture, *boost::unit_test::timeout(10))
+BOOST_FIXTURE_TEST_SUITE(fcm, nabto::test::BasestationFixture, *boost::unit_test::timeout(30))
 
 BOOST_AUTO_TEST_CASE(notification_set)
 {

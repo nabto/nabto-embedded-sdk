@@ -30,14 +30,6 @@ struct nc_connection_id {
     uint8_t id[16];
 };
 
-enum nc_spake2_state {
-    NC_SPAKE2_STATE_INIT,
-    NC_SPAKE2_STATE_WAIT_PASSWORD,
-    NC_SPAKE2_STATE_WAIT_CONFIRMATION,
-    NC_SPAKE2_STATE_AUTHENTICATED,
-    NC_SPAKE2_STATE_ERROR
-};
-
 struct nc_client_connection {
     struct nn_llist_node connectionsNode;
     struct np_platform* pl;
@@ -54,21 +46,15 @@ struct nc_client_connection {
     struct nc_connection_channel alternativeChannel;
     uint64_t currentMaxSequence;
     struct nc_device_context* device;
+    struct nc_connection* parent;
 
     struct np_completion_event* sentCb;
-    uint64_t connectionRef;
     struct np_completion_event sendCompletionEvent;
     struct np_completion_event closeCompletionEvent;
 
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_send_context keepAliveSendCtx;
 
-#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
-    bool hasSpake2Key;  // true iff the key has been set
-    uint8_t spake2Key[32];
-    bool passwordAuthenticated; // true iff some password authentication request has succeeded on the connection.
-    char username[NC_SPAKE2_USERNAME_MAX_LENGTH+1]; // username used for password authentication if passwordAuthentication was attempted
-#endif
 };
 
 /**
@@ -114,10 +100,6 @@ void nc_client_connection_close_connection(struct nc_client_connection* conn);
  */
 void nc_client_connection_destroy_connection(struct nc_client_connection* conn);
 
-// TODO: seems unused
-void nc_client_connection_dtls_recv_callback(const np_error_code ec, uint8_t channelId, uint64_t sequence,
-                                          uint8_t* buffer, uint16_t bufferSize, void* data);
-
 // Internal only called from self
 void nc_client_connection_dtls_closed_cb(const np_error_code ec, void* data);
 
@@ -134,16 +116,6 @@ struct np_dtls_srv_connection* nc_client_connection_get_dtls_connection(struct n
  * Get client fingerprint from DTLS server. Used by API.
  */
 np_error_code nc_client_connection_get_client_fingerprint(struct nc_client_connection* conn, uint8_t* fp);
-
-/**
- * Query if connection uses local socket or not. Used by API.
- */
-bool nc_client_connection_is_local(struct nc_client_connection* conn);
-
-/**
- * Query if the connection is password authenticated or not. Used by API.
- */
-bool nc_client_connection_is_password_authenticated(struct nc_client_connection* conn);
 
 /**
  * internal only called from self. Notifies nc_device of events.

@@ -3,6 +3,8 @@
 
 #include <core/nc_packet.h>
 #include <core/nc_client_connection.h>
+#include <core/nc_connection.h>
+#include <core/nc_virtual_stream.h>
 
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
@@ -13,7 +15,7 @@
 
 //struct nc_stream_manager_context ctx;
 
-struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_client_connection* conn);
+struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_connection* conn);
 struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
 
 static void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
@@ -111,7 +113,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     ptr += streamIdLen; // skip stream ID
     flags = *ptr;
 
-    stream = nc_stream_manager_find_stream(ctx, streamId, conn);
+    stream = nc_stream_manager_find_stream(ctx, streamId, conn->parent);
 
     if (stream == NULL && flags == NABTO_STREAM_FLAG_SYN) {
         stream = nc_stream_manager_accept_stream(ctx, conn, streamId);
@@ -146,8 +148,13 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
                              // application or this function to call
                              // nc_stream_destroy
 
-    uint32_t type = nabto_stream_get_content_type(&stream->stream);
-
+    uint32_t type;
+    if (stream->isVirtual) {
+        type = stream->virt.port;
+    } else {
+        type = nabto_stream_get_content_type(&stream->stream);
+    }
+    NABTO_LOG_INFO(LOG, "New stream ready for accept. Looking for listener");
     struct nc_stream_listener* listener;
     NN_LLIST_FOREACH(listener, &ctx->listeners) {
         if (listener->type == type) {
@@ -160,11 +167,11 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
     return;
 }
 
-struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_client_connection* conn)
+struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_connection* conn)
 {
     struct nc_stream_context* stream;
     NN_LLIST_FOREACH(stream, &ctx->streams) {
-        if (stream->streamId == streamId && stream->clientConn == conn) {
+        if (stream->streamId == streamId && stream->conn == conn) {
             return stream;
         }
     }
@@ -215,7 +222,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
 
         np_error_code ec;
-        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn, ctx, conn->connectionRef, ctx->logger);
+        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn->parent, ctx, conn->parent->connectionRef, ctx->logger);
         if (ec != NABTO_EC_OK) {
             nc_stream_manager_free_stream(stream);
             return NULL;
@@ -225,6 +232,23 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
         return stream;
     }
 }
+
+struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stream_manager_context* streamManager, struct nc_connection* connection, uint32_t port, struct np_completion_event* openedEv)
+{
+    struct nc_stream_context* stream = nc_stream_manager_alloc_stream(streamManager);
+    if (stream == NULL) {
+        return NULL;
+    }
+    nn_llist_append(&streamManager->streams, &stream->streamsNode, stream);
+    np_error_code ec = nc_virtual_stream_init(streamManager->pl, stream, connection, streamManager, port, openedEv);
+    nc_stream_ref_count_inc(stream);
+    if (ec != NABTO_EC_OK) {
+        nc_stream_manager_free_stream(stream);
+        return NULL;
+    }
+    return stream;
+}
+
 
 void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
 {
@@ -331,7 +355,7 @@ void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, 
     np_free(segment);
 }
 
-void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_client_connection* connection)
+void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_connection* connection)
 {
     struct nc_stream_context* stream;
     struct nn_llist_iterator it = nn_llist_begin(&ctx->streams);
@@ -339,8 +363,8 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
         stream = nn_llist_get_item(&it);
         nn_llist_next(&it);
 
-        if (stream->clientConn == connection) {
-            stream->clientConn = NULL;
+        if (stream->conn == connection) {
+            stream->conn = NULL;
             nc_stream_ref_count_inc(stream);
             nc_stream_handle_connection_closed(stream);
             nc_stream_ref_count_dec(stream);
@@ -353,7 +377,7 @@ uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* 
     struct nc_stream_context* stream;
     NN_LLIST_FOREACH(stream, &ctx->streams) {
         if (&stream->stream == nabtoStream) {
-            struct nc_client_connection* connection = stream->clientConn;
+            struct nc_connection* connection = stream->conn;
             if (connection == NULL) {
                 return 0;
             } else {

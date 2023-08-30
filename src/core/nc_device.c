@@ -76,7 +76,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 #endif
-    ec = nc_coap_server_init(pl, &device->moduleLogger, &device->coapServer);
+    ec = nc_coap_server_init(pl, device, &device->moduleLogger, &device->coapServer);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -127,9 +127,16 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 #endif
+    ec = nc_connections_init(&device->connections, device);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "nc_device failed init connections. %s", np_error_code_to_string(ec));
+        nc_device_deinit(device);
+        return ec;
+    }
 
     ec = nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
     if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "nc_device failed init client connection dispatch. %s", np_error_code_to_string(ec));
         nc_device_deinit(device);
         return ec;
     }
@@ -167,6 +174,7 @@ void nc_device_deinit(struct nc_device_context* device) {
 
     nc_stream_manager_deinit(&device->streamManager);
     nc_client_connection_dispatch_deinit(&device->clientConnect);
+    nc_connections_deinit(&device->connections);
     nc_stun_coap_deinit(&device->stunCoap);
     nc_stun_deinit(&device->stun);
     nc_rendezvous_coap_deinit(&device->rendezvousCoap);
@@ -456,6 +464,7 @@ void nc_device_stop(struct nc_device_context* dev)
     nc_stun_remove_sockets(&dev->stun);
     nc_attacher_stop(&dev->attacher);
     nc_coap_client_stop(&dev->coapClient);
+    nc_connections_async_close(&dev->connections, NULL, NULL);
 }
 
 np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_callback cb, void* data)
@@ -470,7 +479,7 @@ np_error_code nc_device_close(struct nc_device_context* dev, nc_device_close_cal
 
     //nc_device_stop(dev);
 
-    np_error_code ec = nc_client_connection_dispatch_async_close(&dev->clientConnect, &nc_device_client_connections_closed_cb, dev);
+    np_error_code ec = nc_connections_async_close(&dev->connections, &nc_device_client_connections_closed_cb, dev);
     if (ec == NABTO_EC_STOPPED) {
         nc_device_client_connections_closed_cb(dev);
     }
@@ -489,15 +498,10 @@ np_error_code nc_device_next_connection_ref(struct nc_device_context* dev, uint6
     return NABTO_EC_OK;
 }
 
-uint64_t nc_device_get_connection_ref_from_stream(struct nc_device_context* dev, struct nabto_stream* stream)
+struct nc_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
 {
-    return nc_stream_manager_get_connection_ref(&dev->streamManager, stream);
-}
-
-
-struct nc_client_connection* nc_device_connection_from_ref(struct nc_device_context* dev, uint64_t ref)
-{
-    return nc_client_connection_dispatch_connection_from_ref(&dev->clientConnect, ref);
+    struct nc_connection* conn = nc_connections_connection_from_ref(&dev->connections, ref);
+    return conn;
 }
 
 void nc_device_add_connection_events_listener(struct nc_device_context* dev, struct nc_connection_events_listener* listener, nc_connection_event_callback cb, void* userData)
