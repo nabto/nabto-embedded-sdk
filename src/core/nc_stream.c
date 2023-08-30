@@ -662,14 +662,12 @@ void nc_stream_stop(struct nc_stream_context* stream)
 void nc_stream_ref_count_inc(struct nc_stream_context* stream)
 {
     stream->refCount++;
-    NABTO_LOG_INFO(LOG, "RefCount increased to: %u", stream->refCount);
 }
 
 void nc_stream_ref_count_dec(struct nc_stream_context* stream)
 {
     // TODO: ref count in virtual stream
     stream->refCount--;
-    NABTO_LOG_INFO(LOG, "RefCount decreased to: %u", stream->refCount);
     if (stream->refCount == 0) {
         if (!stream->isVirtual) {
             nabto_stream_destroy(&stream->stream);

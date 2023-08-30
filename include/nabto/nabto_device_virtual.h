@@ -93,10 +93,12 @@ extern "C" {
      *
      * @param connection [in]  The virtual connection to make the CoAP request on, the connection needs
      * to be kept alive until the request has been freed.
+     * @param method [in] The method of the CoAP request
+     * @param path [in] The URI path element of the resource being requested. It has to start with a '/' character. The string "/" is the root path. The string is copied into the CoAP request.
      * @return  NULL if the request could not be created, non NULL otherwise.
      */
     NABTO_DEVICE_DECL_PREFIX NabtoDeviceVirtualCoapRequest* NABTO_DEVICE_API
-        nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, NabtoDeviceCoapMethod method, const char** segments);
+        nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, NabtoDeviceCoapMethod method, const char* path);
 
     /**
      * Free a virtual CoAP request when done handling it.

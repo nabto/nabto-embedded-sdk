@@ -13,6 +13,8 @@
 #include <platform/np_allocator.h>
 #include <platform/np_completion_event.h>
 
+#include <nn/string.h>
+
 struct nabto_device_virtual_connection;
 
 struct nabto_device_virtual_stream {
@@ -48,6 +50,7 @@ struct nabto_device_virtual_coap_request {
     struct nabto_device_future* future;
     struct nabto_device_coap_request apiReq;
     nabto_coap_method method;
+    char* path;
     const char** segments;
     void* payload;
     size_t payloadSize;
@@ -194,7 +197,7 @@ nabto_device_connection_is_virtual(NabtoDevice* device, NabtoDeviceConnectionRef
 /**** VIRTUAL COAP REQUESTS ******/
 
 NabtoDeviceVirtualCoapRequest* NABTO_DEVICE_API
-nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, NabtoDeviceCoapMethod method, const char** segments)
+nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, NabtoDeviceCoapMethod method, const char* path)
 {
     struct nabto_device_virtual_connection* conn = (struct nabto_device_virtual_connection*)connection;
 
@@ -204,12 +207,35 @@ nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, 
         np_free(virReq);
         return NULL;
     }
+
     virReq->connection = conn;
     virReq->responseReady = false;
     virReq->method = method;
-    virReq->segments = segments;
+    virReq->path = nn_strdup(path, np_allocator_get());
     virReq->apiReq.dev = conn->dev;
     virReq->apiReq.connectionRef = conn->connection->connectionRef;
+    size_t pathLen = strlen(virReq->path);
+    if (virReq->path[pathLen-1] == '/') {
+        // URL has trailing '/'
+        virReq->path[pathLen-1] = 0;
+        pathLen--;
+    }
+    size_t segmentCount = 0;
+    for (size_t i = 0; i < pathLen; i++) {
+        if (virReq->path[i] == '/') {
+            segmentCount++;
+        }
+    }
+    virReq->segments = np_calloc(segmentCount+1, sizeof(char*)); // count +1 for NULL termination
+    size_t index = 0;
+    for (size_t i = 0; i < pathLen; i++) {
+        if (virReq->path[i] == '/') {
+            virReq->segments[index] = &(virReq->path[i+1]);
+            virReq->path[i] = 0;
+            index++;
+        }
+    }
+
     return (NabtoDeviceVirtualCoapRequest*)virReq;
 }
 
@@ -223,6 +249,8 @@ nabto_device_virtual_coap_request_free(NabtoDeviceVirtualCoapRequest* request)
         nc_coap_server_virtual_request_free(req->apiReq.req);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
     }
+    np_free(req->path);
+    np_free(req->segments);
     np_free(req->payload);
     np_free(req);
 
