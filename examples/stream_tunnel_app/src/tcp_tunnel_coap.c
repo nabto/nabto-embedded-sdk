@@ -129,3 +129,8 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
         start_listen(handler);
     }
 }
+
+// bool run_coap_server(NabtoDevice* device, struct tunnel_coap_server* coap_server) { 
+//     tunnel_coap_init(coap_server, device, NULL, NULL, NULL);
+//     return false; 
+// }
