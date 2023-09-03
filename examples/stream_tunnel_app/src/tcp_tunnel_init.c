@@ -21,19 +21,19 @@
 
 #define DEFAULT_FRIENDLY_NAME "Tcp Tunnel"
 
-bool create_state_interactive(const char* file);
-bool create_state_interactive_custom(const char* file);
-bool create_state_default(const char* file);
-bool create_services_interactive(const char* file);
+bool create_state_interactive(struct nm_fs* fsImpl, const char* file);
+bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file);
+bool create_state_default(struct nm_fs* fsImpl, const char* file);
+bool create_services_interactive(struct nm_fs* fsImpl, const char* file);
 
 static bool prompt_create_device_config(struct tcp_tunnel* tcpTunnel)
 {
-    if (string_file_exists(tcpTunnel->deviceConfigFile)) {
+    if (string_file_exists(&tcpTunnel->fsImpl, tcpTunnel->deviceConfigFile)) {
 
         printf("Not creating a new Product ID and Device ID configuration since they have already been configured in (%s)." NEWLINE, tcpTunnel->deviceConfigFile);
     } else {
         printf("No device configuration found. Creating configuration: %s." NEWLINE, tcpTunnel->deviceConfigFile);
-        if (!create_device_config_interactive(tcpTunnel->deviceConfigFile)) {
+        if (!create_device_config_interactive(&tcpTunnel->fsImpl, tcpTunnel->deviceConfigFile)) {
             return false;
         }
     }
@@ -48,7 +48,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
     }
 
     bool createIamConfig = false;
-    if (string_file_exists(tcpTunnel->iamConfigFile)) {
+    if (string_file_exists(&tcpTunnel->fsImpl, tcpTunnel->iamConfigFile)) {
         printf("The IAM configuration already exists (%s)" NEWLINE, tcpTunnel->iamConfigFile);
         createIamConfig = prompt_yes_no("Do you want to recreate it?");
     } else {
@@ -57,7 +57,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
     }
 
     if (createIamConfig) {
-        if (!iam_config_create_default(tcpTunnel->iamConfigFile)) {
+        if (!iam_config_create_default(&tcpTunnel->fsImpl, tcpTunnel->iamConfigFile)) {
             printf("The IAM configuration file %s could not be created." NEWLINE, tcpTunnel->iamConfigFile);
             return false;
         }
@@ -66,7 +66,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
 
     bool createIamState = false;
 
-    if (string_file_exists(tcpTunnel->stateFile)) {
+    if (string_file_exists(&tcpTunnel->fsImpl, tcpTunnel->stateFile)) {
         printf("The IAM State already exists (%s)" NEWLINE, tcpTunnel->stateFile);
         createIamState = prompt_yes_no("Do you want to recreate it?");
     } else {
@@ -74,7 +74,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
         createIamState = true;
     }
     if (createIamState) {
-        if (!create_state_interactive(tcpTunnel->stateFile)) {
+        if (!create_state_interactive(&tcpTunnel->fsImpl, tcpTunnel->stateFile)) {
             printf("Could not create the IAM state %s" NEWLINE, tcpTunnel->stateFile);
             return false;
         }
@@ -83,7 +83,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
 
     bool createServices = false;
 
-    if (string_file_exists(tcpTunnel->servicesFile)) {
+    if (string_file_exists(&tcpTunnel->fsImpl, tcpTunnel->servicesFile)) {
         printf("The Tunnel Services configuration already exists (%s)" NEWLINE, tcpTunnel->servicesFile);
         createServices = prompt_yes_no("Do you want to recreate it?");
     } else {
@@ -91,7 +91,7 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
         createServices = true;
     }
     if (createServices) {
-        if (!create_services_interactive(tcpTunnel->servicesFile)) {
+        if (!create_services_interactive(&tcpTunnel->fsImpl, tcpTunnel->servicesFile)) {
             printf("Could not create the service configuration %s" NEWLINE, tcpTunnel->servicesFile);
             return false;
         }
@@ -101,20 +101,20 @@ bool tcp_tunnel_config_interactive(struct tcp_tunnel* tcpTunnel) {
     return true;
 }
 
-bool create_state_interactive(const char* file)
+bool create_state_interactive(struct nm_fs* fsImpl, const char* file)
 {
     printf("The IAM State enables pairing modes, and determines what role to assign new users." NEWLINE);
     bool createCustomIam = prompt_yes_no("Do you want to create a custom IAM State?");
     if (createCustomIam) {
         printf("Creating custom iam configuration" NEWLINE);
-        return create_state_interactive_custom(file);
+        return create_state_interactive_custom(fsImpl, file);
     } else {
         printf("Use default iam" NEWLINE);
-        return create_state_default(file);
+        return create_state_default(fsImpl, file);
     }
 }
 
-bool create_state_interactive_custom(const char* file) {
+bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file) {
     const char* roles[] = {"Unpaired", "Guest", "Standard", "Administrator"};
     bool enableLocalInitialPairing;
     bool enableLocalOpenPairing;
@@ -131,8 +131,8 @@ bool create_state_interactive_custom(const char* file) {
     if (!enableLocalInitialPairing && !enablePasswordInvitePairing) {
         printf("Both Local Initial Pairing and Password Invite Pairing modes are disabled. This means it will not be possible to create an Administrator of this device." NEWLINE);
         printf("If IAM management is not needed, this is perfectly fine." NEWLINE);
-        if (!prompt_yes_no("Continue with choices?")) {
-            return create_state_interactive_custom(file);
+        if (!prompt_yes_no("Is it ok not to be able to create an Administrator?")) {
+            return create_state_interactive_custom(fsImpl, file);
         }
         printf(NEWLINE);
     }
@@ -185,11 +185,11 @@ bool create_state_interactive_custom(const char* file) {
     nm_iam_state_set_local_initial_pairing(state, enableLocalInitialPairing);
     nm_iam_state_set_local_open_pairing(state, enableLocalOpenPairing);
 
-    return save_tcp_tunnel_state(file, state);
+    return save_tcp_tunnel_state(fsImpl, file, state);
 
 }
 
-bool create_state_default(const char* file)
+bool create_state_default(struct nm_fs* fsImpl, const char* file)
 {
     struct nm_iam_state* state = nm_iam_state_new();
 
@@ -211,7 +211,7 @@ bool create_state_default(const char* file)
     nm_iam_state_set_password_invite_pairing(state, true);
     nm_iam_state_set_friendly_name(state, "Tcp Tunnel");
 
-    return save_tcp_tunnel_state(file, state);
+    return save_tcp_tunnel_state(fsImpl, file, state);
 }
 
 bool createService(cJSON* root)
@@ -251,7 +251,7 @@ bool createService(cJSON* root)
     return true;
 }
 
-bool create_services_interactive(const char* file)
+bool create_services_interactive(struct nm_fs* fsImpl, const char* file)
 {
     printf("The default service configuration enables SSH to 127.0.0.1:22" NEWLINE);
     bool createCustom = prompt_yes_no("Do you want to create a custom services configuration?");
@@ -263,10 +263,10 @@ bool create_services_interactive(const char* file)
             createService(root);
             makeService = prompt_yes_no("Do you want to add another service?");
         } while (makeService);
-        return json_config_save(file, root);
+        return json_config_save(fsImpl, file, root);
     } else {
         printf("Use default services" NEWLINE);
-        return tcp_tunnel_create_default_services_file(file);
+        return tcp_tunnel_create_default_services_file(fsImpl, file);
     }
 }
 
@@ -278,9 +278,9 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
     }
 
     bool createConfig = true;
-    if (string_file_exists(tcpTunnel->iamConfigFile) ||
-        string_file_exists(tcpTunnel->stateFile) ||
-        string_file_exists(tcpTunnel->servicesFile))
+    if (string_file_exists(&tcpTunnel->fsImpl, tcpTunnel->iamConfigFile) ||
+        string_file_exists(&tcpTunnel->fsImpl, tcpTunnel->stateFile) ||
+        string_file_exists(&tcpTunnel->fsImpl, tcpTunnel->servicesFile))
     {
         createConfig = prompt_yes_no_default("Overwrite Existing TCP Tunnel State and Configuration?", true);
     }
@@ -290,7 +290,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
     }
 
 
-    if (!iam_config_create_default(tcpTunnel->iamConfigFile)) {
+    if (!iam_config_create_default(&tcpTunnel->fsImpl, tcpTunnel->iamConfigFile)) {
         printf("The IAM configuration file %s could not be created." NEWLINE,
                tcpTunnel->iamConfigFile);
         return false;
@@ -316,7 +316,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
         nm_iam_state_set_password_invite_pairing(state, false);
         nm_iam_state_set_local_initial_pairing(state, false);
 
-        save_tcp_tunnel_state(tcpTunnel->stateFile, state);
+        save_tcp_tunnel_state(&tcpTunnel->fsImpl, tcpTunnel->stateFile, state);
     }
 
     printf("Next step is to add TCP tunnel services." NEWLINE);
@@ -402,7 +402,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
     }
 
     printf(NEWLINE);
-    json_config_save(tcpTunnel->servicesFile, root);
+    json_config_save(&tcpTunnel->fsImpl, tcpTunnel->servicesFile, root);
 
     if (numServices == 0) {
         printf("WARNING: No TCP Tunnel services was added. You will not be able to Tunnel any TCP traffic." NEWLINE);

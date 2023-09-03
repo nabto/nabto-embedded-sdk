@@ -16,12 +16,12 @@
 static const char* LOGM = "tcp_tunnel_state";
 
 
-static bool write_state_to_file(const char* stateFile, struct nm_iam_state* state);
+static bool write_state_to_file(struct nm_fs* fsImpl, const char* stateFile, struct nm_iam_state* state);
 
-bool load_tcp_tunnel_state(struct nm_iam_state* state, const char* stateFile, struct nn_log* logger)
+bool load_tcp_tunnel_state(struct nm_iam_state* state, struct nm_fs* fsImpl, const char* stateFile, struct nn_log* logger)
 {
     char* str;
-    if (!string_file_load(stateFile, &str)) {
+    if (!string_file_load(fsImpl, stateFile, &str)) {
         return false;
     }
 
@@ -36,12 +36,12 @@ bool load_tcp_tunnel_state(struct nm_iam_state* state, const char* stateFile, st
             logger, LOGM,
             "No IAM friendly name in state. Adding default: Tcp Tunnel");
         nm_iam_state_set_friendly_name(state, "Tcp Tunnel");
-        write_state_to_file(stateFile, state);
+        write_state_to_file(fsImpl, stateFile, state);
     }
     return true;
 }
 
-bool write_state_to_file(const char* stateFile, struct nm_iam_state* state)
+bool write_state_to_file(struct nm_fs* fsImpl, const char* stateFile, struct nm_iam_state* state)
 {
     char* str;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
@@ -49,7 +49,7 @@ bool write_state_to_file(const char* stateFile, struct nm_iam_state* state)
         return false;
     }
 
-    if(!string_file_save(stateFile, str)) {
+    if(!string_file_save(fsImpl, stateFile, str)) {
         nm_iam_serializer_string_free(str);
         //nm_iam_state_free(state);
         return false;
@@ -60,7 +60,7 @@ bool write_state_to_file(const char* stateFile, struct nm_iam_state* state)
     return true;
 }
 
-bool save_tcp_tunnel_state(const char* stateFile, struct nm_iam_state* state)
+bool save_tcp_tunnel_state(struct nm_fs* fsImpl, const char* stateFile, struct nm_iam_state* state)
 {
-    return write_state_to_file(stateFile, state);
+    return write_state_to_file(fsImpl, stateFile, state);
 }
