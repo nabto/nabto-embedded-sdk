@@ -7,6 +7,8 @@ set(csrc
   src/tcp_tunnel_init.c
   src/tcp_tunnel_coap.c
   src/tcp_tunnel_coap_ptz_get_state.c
+  src/tcp_tunnel_coap_factory_reset.c
+  src/tcp_tunnel_ptz_state.c
   src/device_event_handler.c
   src/help.c
   src/echo_stream.c

@@ -4,6 +4,7 @@
 #include "tcp_tunnel_state.h"
 #include "tcp_tunnel_services.h"
 #include "tcp_tunnel_coap.h"
+#include "tcp_tunnel_ptz_state.h"
 #include "device_event_handler.h"
 #include "echo_stream.h"
 
@@ -713,7 +714,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         run_echo_stream(tunnel->device);
 
         struct tunnel_coap_server tunnel_coap_server;
-        tunnel_coap_init(&tunnel_coap_server, tunnel->device, NULL, NULL, NULL);
+        struct ptz_state ptz_state;
+        ptz_state_init(&ptz_state);
+        tunnel_coap_init(&tunnel_coap_server, tunnel->device, NULL, &ptz_state, NULL);
 
 //        run_coap_server(tunnel->device, &tunnel_coap_server);
 

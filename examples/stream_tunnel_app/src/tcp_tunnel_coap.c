@@ -33,16 +33,22 @@ NabtoDeviceError tunnel_coap_init(struct tunnel_coap_server* coap_server, NabtoD
 }
 
 NabtoDeviceError tunnel_coap_init_handlers(struct tunnel_coap_server* coap_server) {
-// NabtoDeviceError tunnel_ptz_get_state_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 // NabtoDeviceError tunnel_ptz_move_absolute_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 // NabtoDeviceError tunnel_ptz_move_continuous_start_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 // NabtoDeviceError tunnel_ptz_move_continuous_stop_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 // NabtoDeviceError tunnel_ptz_set_tilt_position_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
     NabtoDeviceError ec;
+
     ec = tunnel_ptz_get_state_init(&coap_server->coapPtzGetState, coap_server->device, coap_server);
     if (ec != NABTO_DEVICE_EC_OK) {
         return ec;
     }
+
+    ec = tunnel_factory_reset_init(&coap_server->coapFactoryReset, coap_server->device, coap_server);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return ec;
+    }
+
     return NABTO_DEVICE_EC_OK;
     // ec = tunnel_ptz_move_absolute_init(&coap_server->coapPtzMoveAbsolute, coap_server->device, coap_server);
     // if (ec != NABTO_DEVICE_EC_OK) {
@@ -130,7 +136,10 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     }
 }
 
-// bool run_coap_server(NabtoDevice* device, struct tunnel_coap_server* coap_server) { 
-//     tunnel_coap_init(coap_server, device, NULL, NULL, NULL);
-//     return false; 
-// }
+bool thermostat_check_access(struct tunnel_coap_server* tunnel_coap_server, NabtoDeviceCoapRequest* request, const char* action)
+{
+    if (!nm_iam_check_access(tunnel_coap_server->iam, nabto_device_coap_request_get_connection_ref(request), action, NULL)) {
+        return false;
+    }
+    return true;
+}

@@ -17,14 +17,6 @@ struct tunnel_coap_handler {
     tunnel_coap_request_handler requestHandler;
 };
 
-
-struct ptz_state {
-    double pan;
-    double tilt;
-    double zoom;
-    bool moving;
-};
-
 struct tunnel_coap_server {
     NabtoDevice* device;
     struct nm_iam* iam;
@@ -34,6 +26,7 @@ struct tunnel_coap_server {
     struct tunnel_coap_handler coapPtzMoveAbsolute;
     struct tunnel_coap_handler coapPtzMoveContinuousStart;
     struct tunnel_coap_handler coapPtzMoveContinuousStop;
+    struct tunnel_coap_handler coapFactoryReset;
 };
 
 NabtoDeviceError tunnel_coap_handler_init(
@@ -46,6 +39,7 @@ NabtoDeviceError tunnel_coap_handler_init(
 void tunnel_coap_handler_stop(struct tunnel_coap_handler* handler);
 void tunnel_coap_handler_deinit(struct tunnel_coap_handler* handler);
 
+NabtoDeviceError tunnel_factory_reset_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 NabtoDeviceError tunnel_ptz_get_state_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 NabtoDeviceError tunnel_ptz_move_absolute_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 NabtoDeviceError tunnel_ptz_move_continuous_start_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
