@@ -42,9 +42,6 @@ void tunnel_coap_handler_deinit(struct tunnel_coap_handler* handler);
 NabtoDeviceError tunnel_factory_reset_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 NabtoDeviceError tunnel_ptz_get_state_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 NabtoDeviceError tunnel_ptz_move_absolute_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
-NabtoDeviceError tunnel_ptz_move_continuous_start_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
-NabtoDeviceError tunnel_ptz_move_continuous_stop_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
-NabtoDeviceError tunnel_ptz_set_tilt_position_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
 
 //bool run_coap_server(NabtoDevice* device, struct tunnel_coap_server* coap_server);
 NabtoDeviceError tunnel_coap_init(struct tunnel_coap_server* coap_server, NabtoDevice* device, struct nm_iam* iam, struct ptz_state* state, struct nn_log* logger);

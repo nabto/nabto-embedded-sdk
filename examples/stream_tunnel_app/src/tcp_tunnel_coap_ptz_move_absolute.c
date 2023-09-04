@@ -10,7 +10,12 @@ static const char* LOGM = "tunnel_coap";
 
 static void handle_request(struct tunnel_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
-NabtoDeviceError tunnel_ptz_move_absolute_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server) 
+//////////////////////////////////////////////////////////////////////////////////////
+/// [COAP_ENDPOINT_TEMPLATE]: Endpoint definition
+///
+/// Add CoAP endpoint definition here and reference it from tunnel_coap_init_handlers()
+/// in tcp_tunnel_coap.c. Note the path to the endpoint and the method.
+NabtoDeviceError tunnel_ptz_move_absolute_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server)
 {
     const char* paths[] = { "ptz", "absolute", NULL };
     return tunnel_coap_handler_init(handler, device, tunnel_coap_server, NABTO_DEVICE_COAP_POST, paths, &handle_request);
@@ -28,10 +33,14 @@ bool get_number(double* result, cJSON* json, const char* key)
     return true;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+/// [COAP_ENDPOINT_TEMPLATE]: Implementation
+///
+/// Add CoAP endpoint implementation here.
 void handle_request(struct tunnel_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-   uint16_t contentFormat;
-   NabtoDeviceError ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
+    uint16_t contentFormat;
+    NabtoDeviceError ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_JSON) {
         nabto_device_coap_error_response(request, 400, "Invalid Content Format");
         return;

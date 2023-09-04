@@ -32,11 +32,13 @@ NabtoDeviceError tunnel_coap_init(struct tunnel_coap_server* coap_server, NabtoD
     return tunnel_coap_init_handlers(coap_server);
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+/// [COAP_ENDPOINT_TEMPLATE]: Invocation of endpoint initializers
+///
+/// Add initialization of CoAP endpoints here. The implementation of the endpoint is
+/// defined in individual .c files (for instance, in tcp_tunnel_coap_factory_reset.c)
 NabtoDeviceError tunnel_coap_init_handlers(struct tunnel_coap_server* coap_server) {
-// NabtoDeviceError tunnel_ptz_move_absolute_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
-// NabtoDeviceError tunnel_ptz_move_continuous_start_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
-// NabtoDeviceError tunnel_ptz_move_continuous_stop_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
-// NabtoDeviceError tunnel_ptz_set_tilt_position_init(struct tunnel_coap_handler* handler, NabtoDevice* device, struct tunnel_coap_server* tunnel_coap_server);
     NabtoDeviceError ec;
 
     ec = tunnel_ptz_get_state_init(&coap_server->coapPtzGetState, coap_server->device, coap_server);
@@ -48,33 +50,24 @@ NabtoDeviceError tunnel_coap_init_handlers(struct tunnel_coap_server* coap_serve
     if (ec != NABTO_DEVICE_EC_OK) {
         return ec;
     }
-    // ec = tunnel_ptz_move_continuous_start_init(&coap_server->coapPtzMoveContinuousStart, coap_server->device, coap_server);
-    // if (ec != NABTO_DEVICE_EC_OK) {
-    //     return ec;
-    // }
-    // ec = tunnel_ptz_move_continuous_start_init(&coap_server->coapPtzMoveContinuousStop, coap_server->device, coap_server);
-    // if (ec != NABTO_DEVICE_EC_OK) {
-    //     return ec;
-    // }
-    // ec = tunnel_ptz_move_continuous_start_init(&coap_server->coap, coap_server->device, coap_server);
-    // if (ec != NABTO_DEVICE_EC_OK) {
-    //     return ec;
-    // }
 
-    // ec = tunnel_factory_reset_init(&coap_server->coapFactoryReset, coap_server->device, coap_server);
-    // if (ec != NABTO_DEVICE_EC_OK) {
-    //     return ec;
-    // }
+    ec = tunnel_factory_reset_init(&coap_server->coapFactoryReset, coap_server->device, coap_server);
+    if (ec != NABTO_DEVICE_EC_OK) {
+        return ec;
+    }
 
     return NABTO_DEVICE_EC_OK;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+/// [COAP_ENDPOINT_TEMPLATE]: Invocation of endpoint de-initializers
+///
+/// Add de-initialization of CoAP endpoints here.
 void tunnel_coap_deinit(struct tunnel_coap_server* coap_server)
 {
     tunnel_coap_handler_deinit(&coap_server->coapPtzGetState);
     tunnel_coap_handler_deinit(&coap_server->coapPtzMoveAbsolute);
-    tunnel_coap_handler_deinit(&coap_server->coapPtzMoveContinuousStart);
-    tunnel_coap_handler_deinit(&coap_server->coapPtzMoveContinuousStop);
+    tunnel_coap_handler_deinit(&coap_server->coapFactoryReset);
 }
 
 void tunnel_coap_handler_deinit(struct tunnel_coap_handler* handler)
