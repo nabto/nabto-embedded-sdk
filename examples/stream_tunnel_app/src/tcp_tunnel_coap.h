@@ -24,8 +24,6 @@ struct tunnel_coap_server {
     struct ptz_state* state;
     struct tunnel_coap_handler coapPtzGetState;
     struct tunnel_coap_handler coapPtzMoveAbsolute;
-    struct tunnel_coap_handler coapPtzMoveContinuousStart;
-    struct tunnel_coap_handler coapPtzMoveContinuousStop;
     struct tunnel_coap_handler coapFactoryReset;
 };
 
