@@ -44,16 +44,10 @@ NabtoDeviceError tunnel_coap_init_handlers(struct tunnel_coap_server* coap_serve
         return ec;
     }
 
-    ec = tunnel_factory_reset_init(&coap_server->coapFactoryReset, coap_server->device, coap_server);
+    ec = tunnel_ptz_move_absolute_init(&coap_server->coapPtzMoveAbsolute, coap_server->device, coap_server);
     if (ec != NABTO_DEVICE_EC_OK) {
         return ec;
     }
-
-    return NABTO_DEVICE_EC_OK;
-    // ec = tunnel_ptz_move_absolute_init(&coap_server->coapPtzMoveAbsolute, coap_server->device, coap_server);
-    // if (ec != NABTO_DEVICE_EC_OK) {
-    //     return ec;
-    // }
     // ec = tunnel_ptz_move_continuous_start_init(&coap_server->coapPtzMoveContinuousStart, coap_server->device, coap_server);
     // if (ec != NABTO_DEVICE_EC_OK) {
     //     return ec;
@@ -66,6 +60,13 @@ NabtoDeviceError tunnel_coap_init_handlers(struct tunnel_coap_server* coap_serve
     // if (ec != NABTO_DEVICE_EC_OK) {
     //     return ec;
     // }
+
+    // ec = tunnel_factory_reset_init(&coap_server->coapFactoryReset, coap_server->device, coap_server);
+    // if (ec != NABTO_DEVICE_EC_OK) {
+    //     return ec;
+    // }
+
+    return NABTO_DEVICE_EC_OK;
 }
 
 void tunnel_coap_deinit(struct tunnel_coap_server* coap_server)

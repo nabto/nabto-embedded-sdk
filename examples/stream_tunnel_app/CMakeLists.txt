@@ -7,6 +7,7 @@ set(csrc
   src/tcp_tunnel_init.c
   src/tcp_tunnel_coap.c
   src/tcp_tunnel_coap_ptz_get_state.c
+  src/tcp_tunnel_coap_ptz_move_absolute.c
   src/tcp_tunnel_coap_factory_reset.c
   src/tcp_tunnel_ptz_state.c
   src/device_event_handler.c
@@ -15,7 +16,7 @@ set(csrc
   )
 
 add_executable(stream_tunnel_app_device "${csrc}")
-target_link_libraries(stream_tunnel_app_device nabto_device_static 3rdparty_gopt apps_common nm_fs_posix)
+target_link_libraries(stream_tunnel_app_device nabto_device_static 3rdparty_gopt apps_common nn nm_fs_posix)
 
 install(TARGETS stream_tunnel_app_device
   RUNTIME DESTINATION bin

@@ -15,6 +15,7 @@ NabtoDeviceError tunnel_factory_reset_init(struct tunnel_coap_handler* handler, 
 
 void handle_request(struct tunnel_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
+    // TODO: add iam check
     ptz_state_init(handler->tunnel_coap_server->state);
     printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
     printf("FACTORY RESET COMPLETE\n");
