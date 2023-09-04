@@ -8,7 +8,6 @@
  * functions to enable pairing modes and manage users in the IAM state.
  */
 
-#include <api/nabto_device_threads.h>
 
 #include "nm_iam_configuration.h"
 #include "nm_iam_state.h"
@@ -37,6 +36,7 @@ struct nm_iam;
 struct nm_iam_policy;
 struct nn_string_set;
 struct nm_iam_role;
+struct nabto_device_mutex;
 
 /**
  * @intro Life Cycle and Types

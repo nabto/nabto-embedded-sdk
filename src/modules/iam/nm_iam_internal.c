@@ -33,17 +33,40 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
         nn_string_map_insert(&attributes, "Connection:IsLocal", "false");
     }
 
+    bool isPwd = nabto_device_connection_is_password_authenticated(iam->device, ref);
+    if (isPwd) {
+        nn_string_map_insert(&attributes, "Connection:IsPasswordAuth", "true");
+    } else {
+        nn_string_map_insert(&attributes, "Connection:IsPasswordAuth", "false");
+    }
+
     struct nm_iam_user* user = nm_iam_internal_find_user_by_fingerprint(iam, fingerprint);
     nabto_device_string_free(fingerprint);
 
     enum nm_iam_effect effect = NM_IAM_EFFECT_DENY;
 
-    const char* roleStr = iam->conf->unpairedRole; // default if no user is found.
+    if (user) {
+        nn_string_map_insert(&attributes, "Connection:AuthMode", "fingerprint");
+    } else if (isPwd) {
+        char* username = NULL;
+        ec = nabto_device_connection_get_password_authentication_username(iam->device, ref, &username);
+        if (ec == NABTO_DEVICE_EC_OK &&
+        (user = nm_iam_internal_find_user_by_username(iam, username)) != NULL) {
+            nn_string_map_insert(&attributes, "Connection:AuthMode", "password");
+        }
+        nabto_device_string_free(username);
+    }
 
+    const char* roleStr = iam->conf->unpairedRole; // default if no user is found.
+    const char* username;
     if (user) {
         nn_string_map_insert(&attributes, "Connection:Username", user->username);
         roleStr = user->role;
+        username = user->username;
+    } else {
+        username = "Not Paired";
     }
+
     struct nm_iam_role* role = nm_iam_internal_find_role(iam, roleStr);
     if (role == NULL) {
         effect = NM_IAM_EFFECT_ERROR;
@@ -57,13 +80,6 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
     bool verdict = false;
     if (effect == NM_IAM_EFFECT_ALLOW) {
         verdict = true;
-    }
-
-    const char* username;
-    if (user) {
-        username = user->username;
-    } else {
-        username = "Not Paired";
     }
 
     NN_LOG_TRACE(iam->logger, LOGM, "IAM access from the user: %s, request action: %s, verdict: %s", username, action, verdict?"ALLOW":"DENY");
