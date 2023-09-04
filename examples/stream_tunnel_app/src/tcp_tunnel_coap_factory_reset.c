@@ -1,9 +1,10 @@
 #include "tcp_tunnel_coap.h"
+#include "tcp_tunnel_ptz_state.h"
 
 #include <cbor.h>
 #include <stdlib.h>
+#include <modules/iam/nm_iam.h>
 
-#include "tcp_tunnel_ptz_state.h"
 
 static void handle_request(struct tunnel_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
@@ -24,7 +25,10 @@ NabtoDeviceError tunnel_factory_reset_init(struct tunnel_coap_handler* handler, 
 /// Add CoAP endpoint implementation here.
 void handle_request(struct tunnel_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    // TODO: add iam check
+    // if (!nm_iam_check_access(handler->tunnel_coap_server->iam, nabto_device_coap_request_get_connection_ref(request), "CoAP:FactoryReset", NULL)) {
+    //     nabto_device_coap_error_response(request, 403, "Access denied");
+    //     return;
+    // }
     ptz_state_init(handler->tunnel_coap_server->state);
     printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
     printf("FACTORY RESET COMPLETE\n");

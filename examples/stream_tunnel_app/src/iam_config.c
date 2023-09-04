@@ -56,6 +56,14 @@ bool iam_config_create_default(struct nm_fs* fsImpl, const char* iamConfigFile)
     }
 
     {
+        policy = nm_iam_configuration_policy_new("Control");
+        stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
+        nm_iam_configuration_statement_add_action(stmt, "CoAP:FactoryReset");
+        nm_iam_configuration_statement_add_action(stmt, "CoAP:WritePtz");
+        nm_iam_configuration_add_policy(iamConfig, policy);
+    }
+
+    {
         policy = nm_iam_configuration_policy_new("ManageIAM");
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
         nm_iam_configuration_statement_add_action(stmt, "IAM:ListUsers");
@@ -102,6 +110,7 @@ bool iam_config_create_default(struct nm_fs* fsImpl, const char* iamConfigFile)
         nm_iam_configuration_role_add_policy(r, "ManageIAM");
         nm_iam_configuration_role_add_policy(r, "Tunnelling");
         nm_iam_configuration_role_add_policy(r, "Pairing");
+        nm_iam_configuration_role_add_policy(r, "Control");
         nm_iam_configuration_add_role(iamConfig, r);
     }
 

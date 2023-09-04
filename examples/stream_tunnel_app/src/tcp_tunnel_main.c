@@ -716,7 +716,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         struct tunnel_coap_server tunnel_coap_server;
         struct ptz_state ptz_state;
         ptz_state_init(&ptz_state);
-        tunnel_coap_init(&tunnel_coap_server, tunnel->device, NULL, &ptz_state, NULL);
+        tunnel_coap_init(&tunnel_coap_server, tunnel->device, &iam, &ptz_state, &logger);
 
 //        run_coap_server(tunnel->device, &tunnel_coap_server);
 
