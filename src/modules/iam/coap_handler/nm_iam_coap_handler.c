@@ -3,6 +3,7 @@
 #include "../nm_iam.h"
 #include "../nm_iam_internal.h"
 #include <nn/string_set.h>
+#include <api/nabto_device_threads.h>
 
 #include "../nm_iam_allocator.h"
 

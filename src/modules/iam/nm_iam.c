@@ -5,6 +5,7 @@
 #include "policies/nm_policy.h"
 
 #include <nabto/nabto_device_experimental.h>
+#include <api/nabto_device_threads.h>
 
 #include <nn/log.h>
 
