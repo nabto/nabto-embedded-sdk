@@ -33,26 +33,16 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
         nn_string_map_insert(&attributes, "Connection:IsLocal", "false");
     }
 
-    bool isPwd = nabto_device_connection_is_password_authenticated(iam->device, ref);
-    if (isPwd) {
-        nn_string_map_insert(&attributes, "Connection:IsPasswordAuth", "true");
-    } else {
-        nn_string_map_insert(&attributes, "Connection:IsPasswordAuth", "false");
-    }
-
     struct nm_iam_user* user = nm_iam_internal_find_user_by_fingerprint(iam, fingerprint);
     nabto_device_string_free(fingerprint);
 
     enum nm_iam_effect effect = NM_IAM_EFFECT_DENY;
 
-    if (user) {
-        nn_string_map_insert(&attributes, "Connection:AuthMode", "fingerprint");
-    } else if (isPwd) {
+    if (!user && nabto_device_connection_is_password_authenticated(iam->device, ref)) {
         char* username = NULL;
         ec = nabto_device_connection_get_password_authentication_username(iam->device, ref, &username);
-        if (ec == NABTO_DEVICE_EC_OK &&
-        (user = nm_iam_internal_find_user_by_username(iam, username)) != NULL) {
-            nn_string_map_insert(&attributes, "Connection:AuthMode", "password");
+        if (ec == NABTO_DEVICE_EC_OK) {
+            user = nm_iam_internal_find_user_by_username(iam, username);
         }
         nabto_device_string_free(username);
     }
