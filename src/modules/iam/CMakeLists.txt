@@ -7,6 +7,7 @@ set(src
   nm_iam_from_json.c
   nm_iam_auth_handler.c
   nm_iam_pake_handler.c
+  nm_iam_connection_events.c
   nm_iam_configuration.c
   nm_iam_state.c
   nm_iam_serializer.c

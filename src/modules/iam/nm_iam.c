@@ -59,7 +59,9 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
         return false;
     }
 
-    // TODO: setup connection events listener to clean up autorizedConnections
+    if (nm_iam_connection_events_init(&iam->connEvents, iam->device, iam) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
 
     nm_iam_internal_init_coap_handlers(iam);
     return true;
@@ -72,6 +74,7 @@ void nm_iam_deinit(struct nm_iam* iam)
 
     nm_iam_auth_handler_deinit(&iam->authHandler);
     nm_iam_pake_handler_deinit(&iam->pakeHandler);
+    nm_iam_connection_events_deinit(&iam->connEvents);
 
     nm_iam_state_free(iam->state);
     nm_iam_configuration_free(iam->conf);

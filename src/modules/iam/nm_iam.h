@@ -15,6 +15,7 @@
 #include "coap_handler/nm_iam_coap_handler.h"
 #include "nm_iam_auth_handler.h"
 #include "nm_iam_pake_handler.h"
+#include "nm_iam_connection_events.h"
 
 #include <nn/log.h>
 
@@ -423,6 +424,7 @@ struct nm_iam {
 
     struct nm_iam_auth_handler authHandler;
     struct nm_iam_pake_handler pakeHandler;
+    struct nm_iam_connection_events_ctx connEvents;
 
     struct nm_iam_change_callback changeCallback;
     struct nm_iam_configuration* conf;

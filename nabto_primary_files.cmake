@@ -237,6 +237,7 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/nm_iam_from_json.c
   ${root_dir}/src/modules/iam/nm_iam_auth_handler.c
   ${root_dir}/src/modules/iam/nm_iam_pake_handler.c
+  ${root_dir}/src/modules/iam/nm_iam_connection_events.c
   ${root_dir}/src/modules/iam/nm_iam_configuration.c
   ${root_dir}/src/modules/iam/nm_iam_state.c
   ${root_dir}/src/modules/iam/nm_iam_serializer.c

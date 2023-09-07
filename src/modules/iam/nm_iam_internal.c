@@ -4,6 +4,8 @@
 #include <nn/string_map.h>
 #include <nn/llist.h>
 
+#include <nabto/nabto_device_virtual.h>
+
 #include "nm_iam_allocator.h"
 
 static const char* LOGM = "iam";
@@ -13,7 +15,7 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
     NabtoDeviceError ec;
     char* fingerprint = NULL;
     ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
-    if (ec) {
+    if (ec && !nabto_device_connection_is_virtual(iam->device, ref)) {
         return false;
     }
 
@@ -33,8 +35,12 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
         nn_string_map_insert(&attributes, "Connection:IsLocal", "false");
     }
 
-    struct nm_iam_user* user = nm_iam_internal_find_user_by_fingerprint(iam, fingerprint);
-    nabto_device_string_free(fingerprint);
+    struct nm_iam_user* user = NULL;
+
+    if (fingerprint) {
+        user = nm_iam_internal_find_user_by_fingerprint(iam, fingerprint);
+        nabto_device_string_free(fingerprint);
+    }
 
     enum nm_iam_effect effect = NM_IAM_EFFECT_DENY;
 
@@ -497,6 +503,7 @@ void nm_iam_internal_stop(struct nm_iam* iam)
 
     nm_iam_auth_handler_stop(&iam->authHandler);
     nm_iam_pake_handler_stop(&iam->pakeHandler);
+    nm_iam_connection_events_stop(&iam->connEvents);
 }
 
 enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* username)
