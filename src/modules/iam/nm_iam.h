@@ -172,6 +172,7 @@ void nm_iam_set_display_name_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_oauth_subject_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_friendly_name_max_length(struct nm_iam* iam, size_t len);
 
@@ -340,6 +341,7 @@ enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* u
 enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token);
 enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id);
 enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories);
+enum nm_iam_error nm_iam_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject);
 
 /**
  * Set display name for the specified user.
@@ -395,6 +397,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserSetPasswordHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetFcmTokenHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetNotificationCategoriesHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetOauthSubjectHandler;
     struct nm_iam_coap_handler coapIamSettingsSetHandler;
     struct nm_iam_coap_handler coapIamSettingsGetHandler;
     struct nm_iam_coap_handler coapIamDeviceInfoSetHandler;
@@ -413,6 +416,7 @@ struct nm_iam {
     size_t passwordMaxLength;
     size_t fcmTokenMaxLength;
     size_t fcmProjectIdMaxLength;
+    size_t oauthSubjectMaxLength;
     size_t sctMaxLength;
     size_t maxUsers;
     size_t friendlyNameMaxLength;

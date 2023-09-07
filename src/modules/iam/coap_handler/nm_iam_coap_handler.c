@@ -244,6 +244,11 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
         cbor_encoder_close_container(&map, &array);
     }
 
+    if (user->oauthSubject != NULL) {
+        cbor_encode_text_stringz(&map, "OauthSubject");
+        cbor_encode_text_stringz(&map, user->oauthSubject);
+    }
+
     cbor_encoder_close_container(&encoder, &map);
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);

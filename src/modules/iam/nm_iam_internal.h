@@ -57,6 +57,7 @@ enum nm_iam_error nm_iam_internal_set_user_display_name(struct nm_iam* iam, cons
 enum nm_iam_error nm_iam_internal_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token);
 enum nm_iam_error nm_iam_internal_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id);
 enum nm_iam_error nm_iam_internal_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories);
+enum nm_iam_error nm_iam_internal_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject);
 
 enum nm_iam_error nm_iam_internal_delete_user(struct nm_iam* iam, const char* username);
 #endif

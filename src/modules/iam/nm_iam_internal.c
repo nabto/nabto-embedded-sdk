@@ -328,17 +328,19 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
             (user->fingerprint != NULL && strlen(user->fingerprint) != 64) ||
             (user->sct != NULL && strlen(user->sct) > iam->sctMaxLength) ||
             (user->fcmToken != NULL && strlen(user->fcmToken) > iam->fcmTokenMaxLength) ||
-            (user->fcmProjectId != NULL && strlen(user->fcmProjectId) > iam->fcmProjectIdMaxLength)
+            (user->fcmProjectId != NULL && strlen(user->fcmProjectId) > iam->fcmProjectIdMaxLength) ||
+            (user->oauthSubject != NULL && strlen(user->oauthSubject) > iam->oauthSubjectMaxLength)
             ) {
             NN_LOG_ERROR(iam->logger, LOGM,
-                         "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d, fingerprint: %d!=%d, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d",
+                         "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d, fingerprint: %d!=%d, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d, oauthSubject: %d>%d",
                          (user->username == NULL) ? 0 : strlen(user->username), iam->usernameMaxLength,
                          (user->displayName == NULL) ? 0 : strlen(user->displayName), iam->displayNameMaxLength,
                          (user->password == NULL) ? 0 : strlen(user->password), iam->passwordMaxLength,
                          (user->fingerprint == NULL) ? 0 : strlen(user->fingerprint), 64,
                          (user->sct == NULL) ? 0 : strlen(user->sct), iam->usernameMaxLength,
                          (user->fcmToken == NULL) ? 0 : strlen(user->fcmToken), iam->fcmTokenMaxLength,
-                         (user->fcmProjectId == NULL) ? 0 : strlen(user->fcmProjectId), iam->fcmProjectIdMaxLength);
+                         (user->fcmProjectId == NULL) ? 0 : strlen(user->fcmProjectId), iam->fcmProjectIdMaxLength,
+                         (user->oauthSubject == NULL) ? 0 : strlen(user->oauthSubject), iam->oauthSubjectMaxLength);
             return false;
         }
         const char* s;
@@ -412,6 +414,7 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
     nm_iam_set_user_fcm_token_init(&iam->coapIamUsersUserSetFcmTokenHandler, iam->device, iam);
     nm_iam_set_user_notification_categories_init(&iam->coapIamUsersUserSetNotificationCategoriesHandler,
                                                  iam->device, iam);
+    nm_iam_set_user_oauth_subject_init(&iam->coapIamUsersUserSetOauthSubjectHandler, iam->device, iam);
     nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
     nm_iam_settings_set_init(&iam->coapIamSettingsSetHandler, iam->device, iam);
     nm_iam_device_info_set_init(&iam->coapIamDeviceInfoSetHandler, iam->device, iam);
@@ -443,6 +446,7 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFcmTokenHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetNotificationCategoriesHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetOauthSubjectHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsGetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamSettingsSetHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamDeviceInfoSetHandler);
@@ -473,6 +477,7 @@ void nm_iam_internal_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFcmTokenHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetOauthSubjectHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetNotificationCategoriesHandler);
 
     nm_iam_coap_handler_stop(&iam->coapIamSettingsGetHandler);
@@ -661,6 +666,24 @@ enum nm_iam_error nm_iam_internal_set_user_notification_categories(struct nm_iam
 
     enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     if (nm_iam_user_set_notification_categories(user, categories)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject)
+{
+    if (strlen(subject) > iam->oauthSubjectMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    if (nm_iam_user_set_oauth_subject(user, subject)) {
         ec = NM_IAM_ERROR_OK;
     }
     nm_iam_internal_state_has_changed(iam);

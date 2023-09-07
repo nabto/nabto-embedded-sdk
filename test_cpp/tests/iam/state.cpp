@@ -93,6 +93,7 @@ struct nm_iam_state* initState()
     nn_string_set_insert(&cats, "cat2");
     nm_iam_state_user_set_notification_categories(usr, &cats);
     nn_string_set_deinit(&cats);
+    nm_iam_state_user_set_oauth_subject(usr, "oauth_sub");
     nm_iam_state_add_user(state, usr);
     return state;
 }
@@ -114,7 +115,8 @@ std::string s1 = R"(
         "Token":"fcm_token",
         "ProjectId":"fcm_project"
       },
-      "NotificationCategories": ["cat1","cat2"]
+      "NotificationCategories": ["cat1","cat2"],
+      "OauthSubject":"oauth_subject"
     }
   ],
   "Version":1
@@ -174,6 +176,7 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
         BOOST_CHECK(strcmp(user->fcmProjectId, "fcm_project") == 0);
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat1"));
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat2"));
+        BOOST_CHECK(strcmp(user->oauthSubject, "oauth_sub") == 0);
     }
     nm_iam_state_free(dump);
     nabto_device_stop(d);
@@ -217,6 +220,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     nn_string_set_insert(&cats, "cat43");
     BOOST_CHECK(nm_iam_set_user_notification_categories(&iam, "newuser", &cats) == NM_IAM_ERROR_OK);
     nn_string_set_deinit(&cats);
+    BOOST_CHECK(nm_iam_set_user_oauth_subject(&iam, "newuser", "oauth_subject_42") == NM_IAM_ERROR_OK);
 
     struct nm_iam_state* dump = nm_iam_dump_state(&iam);
 
@@ -237,6 +241,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
             BOOST_CHECK(strcmp(user->fcmProjectId, "fcm_project_42") == 0);
             BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat42"));
             BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat43"));
+            BOOST_CHECK(strcmp(user->oauthSubject, "oauth_subject_42") == 0);
         }
     }
     BOOST_CHECK(found);
@@ -385,6 +390,10 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(!nm_iam_load_state(&iam, state));
     nm_iam_set_friendly_name_max_length(&iam, 64);
 
+    nm_iam_set_oauth_subject_max_length(&iam, 2);
+    BOOST_TEST(!nm_iam_load_state(&iam, state));
+    nm_iam_set_oauth_subject_max_length(&iam, 256);
+
     BOOST_TEST(nm_iam_load_state(&iam, state));
 
     nabto_device_stop(d);
@@ -395,13 +404,15 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
 BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
 {
     NabtoDevice* d = nabto_device_new();
+    struct nn_log iamLogger;
+    iamLogger.logPrint = &nabto::test::iam_logger;
     const char* logLevel = getenv("NABTO_LOG_LEVEL");
     if (logLevel != NULL) {
         nabto_device_set_log_level(d, logLevel);
         nabto_device_set_log_std_out_callback(d);
     }
     struct nm_iam iam;
-    nm_iam_init(&iam, d, NULL);
+    nm_iam_init(&iam, d, &iamLogger);
 
     struct nn_string_set cats;
     nn_string_set_init(&cats, np_allocator_get());
@@ -415,6 +426,7 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     nm_iam_set_password_max_length(&iam, 12);
     nm_iam_set_fcm_token_max_length(&iam, 12);
     nm_iam_set_fcm_project_id_max_length(&iam, 12);
+    nm_iam_set_oauth_subject_max_length(&iam, 12);
     nm_iam_set_sct_max_length(&iam, 12);
     nm_iam_set_max_users(&iam, 1);
 
@@ -424,6 +436,7 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(nm_iam_create_user(&iam, "abcde") == NM_IAM_ERROR_INTERNAL); // user limit
     BOOST_TEST(nm_iam_create_user(&iam, "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT); // username limit
     BOOST_TEST(nm_iam_set_user_fingerprint(&iam, "username", "foobar") == NM_IAM_ERROR_INVALID_ARGUMENT);
+    BOOST_TEST(nm_iam_set_user_oauth_subject(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_sct(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_password(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_display_name(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
@@ -546,6 +559,12 @@ BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
     nn_string_set_insert(&cats, "cat2");
     nm_iam_state_user_set_notification_categories(usr, &cats);
     nn_string_set_deinit(&cats);
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_oauth_subject(usr, "oauth_subject");
     nm_iam_state_add_user(state, usr);
     BOOST_TEST(nm_iam_load_state(&iam, state));
 

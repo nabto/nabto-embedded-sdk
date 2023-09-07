@@ -37,6 +37,7 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     iam->passwordMaxLength = 64;
     iam->fcmTokenMaxLength = 1024;
     iam->fcmProjectIdMaxLength = 256;
+    iam->oauthSubjectMaxLength = 64;
     iam->sctMaxLength = 64;
     iam->maxUsers = SIZE_MAX;
     iam->friendlyNameMaxLength = 64;
@@ -175,6 +176,10 @@ void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len)
     iam->fcmProjectIdMaxLength = len;
 }
 
+void nm_iam_set_oauth_subject_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->oauthSubjectMaxLength = len;
+}
 
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len)
 {
@@ -310,6 +315,15 @@ enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, co
     enum nm_iam_error ec;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_notification_categories(iam, username, categories);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_oauth_subject(iam, username, subject);
     nm_iam_unlock(iam);
     return ec;
 }

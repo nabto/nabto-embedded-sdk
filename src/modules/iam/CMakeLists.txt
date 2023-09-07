@@ -35,6 +35,7 @@ set(src
   coap_handler/nm_iam_set_user_password.c
   coap_handler/nm_iam_set_user_fcm.c
   coap_handler/nm_iam_set_user_notification_categories.c
+  coap_handler/nm_iam_set_user_oauth_subject.c
   coap_handler/nm_iam_settings_get.c
   coap_handler/nm_iam_settings_set.c
   coap_handler/nm_iam_device_info_set.c

@@ -18,6 +18,7 @@ struct nm_iam_user {
     char* fcmToken;
     char* fcmProjectId;
     struct nn_string_set notificationCategories;
+    char* oauthSubject;
 
     struct nn_llist_node listNode;
 };
@@ -242,6 +243,15 @@ bool nm_iam_state_user_set_fcm_project_id(struct nm_iam_user* user, const char* 
  * @return true iff operation completed successfully
  */
 bool nm_iam_state_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories);
+
+/**
+ * Set role for the specified user.
+ *
+ * @param user [in] the username of the user
+ * @param subject [in] the Oauth subject to set for the user
+ * @return true iff operation completed successfully
+ */
+bool nm_iam_state_user_set_oauth_subject(struct nm_iam_user* user, const char* subject);
 
 /**
  * Find a user with a given username in a state structure.
