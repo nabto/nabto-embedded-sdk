@@ -140,15 +140,31 @@ BOOST_AUTO_TEST_CASE(expire_auth_on_close, *boost::unit_test::timeout(180))
 
     NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
 
+    nm_iam_lock(&iam);
+    BOOST_TEST((nn_vector_size(&iam.authorizedConnections) == 0));
+    nm_iam_unlock(&iam);
+
     BOOST_TEST(!nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
 
     BOOST_TEST(nm_iam_authorize_connection(&iam, ref, "testuser") == NM_IAM_ERROR_OK);
 
+    nm_iam_lock(&iam);
+    BOOST_TEST((nn_vector_size(&iam.authorizedConnections) == 1));
+    nm_iam_unlock(&iam);
+
     BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
 
     nabto_device_virtual_connection_free(connection);
 
+    // This IAM check fails because the reference is invalid, not because it was cleaned up
     BOOST_TEST(!nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+
+    // This test fails most of the time because we do not have a good way of making the test wait for the connection event to reach the IAM module, and for the module to handle the event.
+    // nm_iam_lock(&iam);
+    // BOOST_TEST((nn_vector_size(&iam.authorizedConnections) == 0));
+    // nm_iam_unlock(&iam);
 
     nabto_device_stop(d);
     nm_iam_deinit(&iam);

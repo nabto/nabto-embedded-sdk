@@ -5,6 +5,8 @@
 
 #include "nm_iam_allocator.h"
 
+static const char* LOGM = "iam";
+
 static void start_listen(struct nm_iam_connection_events_ctx* ctx);
 static void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 
@@ -19,7 +21,10 @@ NabtoDeviceError nm_iam_connection_events_init(struct nm_iam_connection_events_c
     }
     NabtoDeviceError ec = nabto_device_connection_events_init_listener(device, ctx->listener);
     if (ec == NABTO_DEVICE_EC_OK) {
+        NN_LOG_TRACE(iam->logger, LOGM, "IAM module connection events listener starting");
         start_listen(ctx);
+    } else {
+        NN_LOG_ERROR(iam->logger, LOGM, "Failed to start IAM connection events listener: %s", nabto_device_error_get_message(ec));
     }
     return ec;
 }
@@ -45,16 +50,18 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
 {
     (void)future;
     struct nm_iam_connection_events_ctx* ctx = userData;
+    struct nm_iam* iam = ctx->iam;
     if (ec != NABTO_DEVICE_EC_OK) {
+        NN_LOG_TRACE(iam->logger, LOGM, "IAM connection events listener returned with error: %s", nabto_device_error_get_string(ec));
         return;
     } else if (ctx->ev == NABTO_DEVICE_CONNECTION_EVENT_CLOSED){
-        struct nm_iam* iam = ctx->iam;
+        NN_LOG_TRACE(iam->logger, LOGM, "IAM received connection closed event for ref: %d", ctx->ref);
         nm_iam_lock(iam);
 
 
         for (size_t i = 0; i < nn_vector_size(&iam->authorizedConnections); i++) {
-
             struct nm_iam_authorized_connection* conn = nn_vector_reference(&iam->authorizedConnections, i);
+            NN_LOG_TRACE(iam->logger, LOGM, "  Checking index: %d %d == %d ?", i, conn->ref, ctx->ref);
             if (conn->ref == ctx->ref) {
                 nn_vector_erase(&iam->authorizedConnections, i);
                 break;
@@ -63,7 +70,10 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
         }
 
         nm_iam_unlock(iam);
-        start_listen(ctx);
+    } else {
+        NN_LOG_TRACE(iam->logger, LOGM, "IAM received connection event %s for ref: %d", (ctx->ev == NABTO_DEVICE_CONNECTION_EVENT_OPENED ? "opened" : "channel changed"), ctx->ref);
+
     }
+    start_listen(ctx);
 }
 
