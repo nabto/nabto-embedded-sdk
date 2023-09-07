@@ -48,11 +48,11 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
     }
 
     if (!user) {
-        struct nm_iam_authorized_connection* conn;
+        struct nm_iam_authorized_connection conn;
         NN_VECTOR_FOREACH(&conn, &iam->authorizedConnections)
         {
-            if (conn->ref == ref) {
-                user = conn->user;
+            if (conn.ref == ref) {
+                user = conn.user;
                 break;
             }
         }
