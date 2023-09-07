@@ -263,6 +263,15 @@ bool nm_iam_state_user_set_oauth_subject(struct nm_iam_user* user, const char* s
 struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* state, const char* username);
 
 /**
+ * Find a user with a given Oauth Subject in a state structure.
+ *
+ * @param state [in]     The state to look for the user in
+ * @param subject [in]  The subject to look for
+ * @return NULL iff the user could not be found
+ */
+struct nm_iam_user* nm_iam_state_find_user_by_oauth_subject(struct nm_iam_state* state, const char* subject);
+
+/**
  * Copy a state object. The received copy must be freed with
  * nm_iam_state_free() or the ownership must be transferred to an IAM
  * module instance.

@@ -353,6 +353,19 @@ enum nm_iam_error nm_iam_set_user_oauth_subject(struct nm_iam* iam, const char* 
  */
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username);
 
+/**
+ * Authorize a NabtoDeviceConnectionRef as a specified user.
+ *
+ * This can be used if the application has authorized a connection eg. using Oauth.
+ *
+ * @param iam [in] IAM module to manipulate
+ * @param ref [in] Connection ref to authorize
+ * @param username [in] The username to authorize the connection as
+ * @retval NM_IAM_ERROR_OK if the connection was authorized
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ */
+enum nm_iam_error nm_iam_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username);
+
 
 /************************************************************
  * Module internal definitions, do not use from applications
@@ -365,6 +378,11 @@ struct nm_iam_change_callback {
     // called if a user is inserted, updated or removed.
     nm_iam_state_changed stateChanged;
     void* stateChangedData;
+};
+
+struct nm_iam_authorized_connection {
+    NabtoDeviceConnectionRef ref;
+    struct nm_iam_user* user;
 };
 
 struct nm_iam {
@@ -420,6 +438,8 @@ struct nm_iam {
     size_t sctMaxLength;
     size_t maxUsers;
     size_t friendlyNameMaxLength;
+
+    struct nn_vector authorizedConnections;
 
     // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
     bool stateHasChanged;

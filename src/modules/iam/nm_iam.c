@@ -49,6 +49,8 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     }
     nn_string_set_init(&iam->notificationCategories, nm_iam_allocator_get());
 
+    nn_vector_init(&iam->authorizedConnections, sizeof(struct nm_iam_authorized_connection), nm_iam_allocator_get());
+
     if (nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam) != NABTO_DEVICE_EC_OK) {
         return false;
     }
@@ -56,6 +58,8 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     if (nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam) != NABTO_DEVICE_EC_OK) {
         return false;
     }
+
+    // TODO: setup connection events listener to clean up autorizedConnections
 
     nm_iam_internal_init_coap_handlers(iam);
     return true;
@@ -72,6 +76,7 @@ void nm_iam_deinit(struct nm_iam* iam)
     nm_iam_state_free(iam->state);
     nm_iam_configuration_free(iam->conf);
     nn_string_set_deinit(&iam->notificationCategories);
+    nn_vector_deinit(&iam->authorizedConnections);
     nm_iam_unlock(iam);
 
     nabto_device_threads_free_mutex(iam->mutex);
@@ -338,3 +343,14 @@ enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username)
     nm_iam_unlock(iam);
     return ec;
 }
+
+enum nm_iam_error nm_iam_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_authorize_connection(iam, ref, username);
+    nm_iam_unlock(iam);
+    return ec;
+
+}
+

@@ -276,3 +276,17 @@ struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* stat
     }
     return NULL;
 }
+
+struct nm_iam_user* nm_iam_state_find_user_by_oauth_subject(struct nm_iam_state* state, const char* subject)
+{
+    if (subject == NULL) {
+        return NULL;
+    }
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &state->users) {
+        if (user->oauthSubject != NULL && strcmp(user->oauthSubject, subject) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}

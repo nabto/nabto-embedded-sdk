@@ -47,6 +47,17 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
         nabto_device_string_free(username);
     }
 
+    if (!user) {
+        struct nm_iam_authorized_connection* conn;
+        NN_VECTOR_FOREACH(&conn, &iam->authorizedConnections)
+        {
+            if (conn->ref == ref) {
+                user = conn->user;
+                break;
+            }
+        }
+    }
+
     const char* roleStr = iam->conf->unpairedRole; // default if no user is found.
     const char* username;
     if (user) {
@@ -701,5 +712,17 @@ enum nm_iam_error nm_iam_internal_delete_user(struct nm_iam* iam, const char* us
     nm_iam_user_free(user);
 
     nm_iam_internal_state_has_changed(iam);
+    return NM_IAM_ERROR_OK;
+}
+
+enum nm_iam_error nm_iam_internal_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+    struct nm_iam_authorized_connection conn = { ref, user };
+    nn_vector_push_back(&iam->authorizedConnections, &conn);
+
     return NM_IAM_ERROR_OK;
 }

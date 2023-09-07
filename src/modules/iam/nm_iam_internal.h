@@ -60,4 +60,6 @@ enum nm_iam_error nm_iam_internal_set_user_notification_categories(struct nm_iam
 enum nm_iam_error nm_iam_internal_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject);
 
 enum nm_iam_error nm_iam_internal_delete_user(struct nm_iam* iam, const char* username);
+
+enum nm_iam_error nm_iam_internal_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username);
 #endif
