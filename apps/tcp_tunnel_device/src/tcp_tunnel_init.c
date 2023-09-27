@@ -328,7 +328,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
     while (true) {
         printf(
             "What type of service do you want to add?" NEWLINE
-            "[0]: continue" NEWLINE
+            "[0]: continue (when you are done adding services)" NEWLINE
             "[1]: ssh" NEWLINE
             "[2]: http" NEWLINE
             "[3]: rtsp" NEWLINE
