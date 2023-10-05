@@ -181,6 +181,34 @@ nabto_device_connection_is_virtual(NabtoDevice* device, NabtoDeviceConnectionRef
 }
 
 
+NabtoDeviceError NABTO_DEVICE_API
+nabto_device_connection_get_device_fingerprint(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fingerprint)
+{
+    if (nabto_device_connection_is_virtual(device, ref)) {
+        *fingerprint = NULL;
+        struct nabto_device_context* dev = (struct nabto_device_context*)device;
+        NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
+        nabto_device_threads_mutex_lock(dev->eventMutex);
+
+        uint8_t deviceFingerprint[32];
+
+        struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
+
+        if (connection == NULL || !nc_connection_get_device_fingerprint(connection, deviceFingerprint)) {
+            ec = NABTO_EC_INVALID_CONNECTION;
+        } else {
+            *fingerprint = np_calloc(1,64);
+            np_data_to_hex(deviceFingerprint, 32, *fingerprint);
+        }
+
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return ec;
+    } else {
+        return nabto_device_get_device_fingerprint(device, fingerprint);
+    }
+}
+
+
 /**** VIRTUAL COAP REQUESTS ******/
 
 NabtoDeviceVirtualCoapRequest* NABTO_DEVICE_API
