@@ -28,11 +28,11 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* pass = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &pass) || pass == NULL){
+    if (!nm_iam_cbor_decode_string(&value, &pass)){
         nabto_device_coap_error_response(request, 400, "Password missing");
         return;
-    } else if (strlen(pass) > handler->iam->passwordMaxLength) {
-        nabto_device_coap_error_response(request, 400, "Password length exceeded");
+    } else if ( pass != NULL && (strlen(pass) > handler->iam->passwordMaxLength || strlen(pass) < handler->iam->passwordMinLength)) {
+        nabto_device_coap_error_response(request, 400, "Invalid Password length");
         nm_iam_free(pass);
         return;
     }

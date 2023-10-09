@@ -170,6 +170,7 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
  */
 void nm_iam_set_username_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_display_name_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_password_min_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len);
@@ -433,6 +434,7 @@ struct nm_iam {
 
     size_t usernameMaxLength;
     size_t displayNameMaxLength;
+    size_t passwordMinLength;
     size_t passwordMaxLength;
     size_t fcmTokenMaxLength;
     size_t fcmProjectIdMaxLength;

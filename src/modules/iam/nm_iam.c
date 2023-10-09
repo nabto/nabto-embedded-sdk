@@ -34,6 +34,7 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 
     iam->usernameMaxLength = 64;
     iam->displayNameMaxLength = 64;
+    iam->passwordMinLength = 4;
     iam->passwordMaxLength = 64;
     iam->fcmTokenMaxLength = 1024;
     iam->fcmProjectIdMaxLength = 256;
@@ -166,6 +167,10 @@ void nm_iam_set_display_name_max_length(struct nm_iam* iam, size_t len)
     iam->displayNameMaxLength = len;
 }
 
+void nm_iam_set_password_min_length(struct nm_iam* iam, size_t len)
+{
+    iam->passwordMinLength = len;
+}
 
 void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len)
 {

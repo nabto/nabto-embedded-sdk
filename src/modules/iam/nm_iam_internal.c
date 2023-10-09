@@ -322,14 +322,14 @@ bool nm_iam_internal_load_configuration(struct nm_iam* iam, struct nm_iam_config
 
 bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     if (nn_llist_size(&state->users) > iam->maxUsers ||
-        (state->passwordOpenPassword != NULL && strlen(state->passwordOpenPassword) > iam->passwordMaxLength) ||
+        (state->passwordOpenPassword != NULL && (strlen(state->passwordOpenPassword) > iam->passwordMaxLength || strlen(state->passwordOpenPassword) < iam->passwordMinLength)) ||
         (state->passwordOpenSct != NULL && strlen(state->passwordOpenSct) > iam->sctMaxLength) ||
         (state->initialPairingUsername != NULL && strlen(state->initialPairingUsername) > iam->usernameMaxLength) ||
         (state->friendlyName != NULL && strlen(state->friendlyName) > iam->friendlyNameMaxLength)
         ) {
         NN_LOG_ERROR(iam->logger, LOGM,
-                     "One of the following length checks failed. maxUsers: %d>%d, passwordOpenPassword: %d>%d, passwordOpenSct: %d>%d, initialPairingUsername: %d>%d, friendlyName: %d>%d",
-                     nn_llist_size(&state->users), iam->maxUsers,
+                     "One of the following length checks failed. maxUsers: %d>%d, passwordOpenPassword: %d>%d>%d, passwordOpenSct: %d>%d, initialPairingUsername: %d>%d, friendlyName: %d>%d",
+                     nn_llist_size(&state->users), iam->maxUsers, iam->passwordMinLength,
                      strlen(state->passwordOpenPassword), iam->passwordMaxLength,
                      strlen(state->passwordOpenSct), iam->sctMaxLength,
                      strlen(state->initialPairingUsername), iam->usernameMaxLength,
@@ -341,7 +341,7 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     NN_LLIST_FOREACH(user, &state->users) {
         if (strlen(user->username) > iam->usernameMaxLength ||
             (user->displayName != NULL && strlen(user->displayName) > iam->displayNameMaxLength) ||
-            (user->password != NULL && strlen(user->password) > iam->passwordMaxLength) ||
+            (user->password != NULL && (strlen(user->password) > iam->passwordMaxLength || strlen(user->password) < iam->passwordMinLength)) ||
             (user->fingerprint != NULL && strlen(user->fingerprint) != 64) ||
             (user->sct != NULL && strlen(user->sct) > iam->sctMaxLength) ||
             (user->fcmToken != NULL && strlen(user->fcmToken) > iam->fcmTokenMaxLength) ||
@@ -349,9 +349,10 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
             (user->oauthSubject != NULL && strlen(user->oauthSubject) > iam->oauthSubjectMaxLength)
             ) {
             NN_LOG_ERROR(iam->logger, LOGM,
-                         "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d, fingerprint: %d!=%d, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d, oauthSubject: %d>%d",
+                         "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d>%d, fingerprint: %d!=%d, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d, oauthSubject: %d>%d",
                          (user->username == NULL) ? 0 : strlen(user->username), iam->usernameMaxLength,
                          (user->displayName == NULL) ? 0 : strlen(user->displayName), iam->displayNameMaxLength,
+                         iam->passwordMinLength,
                          (user->password == NULL) ? 0 : strlen(user->password), iam->passwordMaxLength,
                          (user->fingerprint == NULL) ? 0 : strlen(user->fingerprint), 64,
                          (user->sct == NULL) ? 0 : strlen(user->sct), iam->usernameMaxLength,
@@ -578,7 +579,7 @@ enum nm_iam_error nm_iam_internal_set_user_sct(struct nm_iam* iam, const char* u
 
 enum nm_iam_error nm_iam_internal_set_user_password(struct nm_iam* iam, const char* username, const char* password)
 {
-    if (strlen(password) > iam->passwordMaxLength) {
+    if (strlen(password) > iam->passwordMaxLength || strlen(password) < iam->passwordMinLength) {
         return NM_IAM_ERROR_INVALID_ARGUMENT;
     }
     struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);

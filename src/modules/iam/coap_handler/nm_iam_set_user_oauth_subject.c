@@ -28,8 +28,12 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* subject = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &subject) || subject == NULL || strlen(subject) > handler->iam->oauthSubjectMaxLength) {
+    if (!nm_iam_cbor_decode_string(&value, &subject)) {
         nabto_device_coap_error_response(request, 400, "Invalid Oauth Subject");
+        nm_iam_free(subject);
+        return;
+    } else if ( subject != NULL && strlen(subject) > handler->iam->oauthSubjectMaxLength) {
+        nabto_device_coap_error_response(request, 400, "Invalid Oauth Subject length");
         nm_iam_free(subject);
         return;
     }

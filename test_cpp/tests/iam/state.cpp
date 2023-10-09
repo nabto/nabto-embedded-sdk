@@ -314,6 +314,10 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(!nm_iam_load_state(&iam, state));
     nm_iam_set_display_name_max_length(&iam, 64);
 
+    nm_iam_set_password_min_length(&iam, 64);
+    BOOST_TEST(!nm_iam_load_state(&iam, state));
+    nm_iam_set_password_min_length(&iam, 4);
+
     nm_iam_set_password_max_length(&iam, 2);
     BOOST_TEST(!nm_iam_load_state(&iam, state));
     nm_iam_set_password_max_length(&iam, 64);
@@ -372,6 +376,7 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     nm_iam_set_username_max_length(&iam, 12);
     nm_iam_set_display_name_max_length(&iam, 12);
     nm_iam_set_password_max_length(&iam, 12);
+    nm_iam_set_password_min_length(&iam, 2);
     nm_iam_set_fcm_token_max_length(&iam, 12);
     nm_iam_set_fcm_project_id_max_length(&iam, 12);
     nm_iam_set_oauth_subject_max_length(&iam, 12);
@@ -386,6 +391,7 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(nm_iam_set_user_fingerprint(&iam, "username", "foobar") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_oauth_subject(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_sct(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
+    BOOST_TEST(nm_iam_set_user_password(&iam, "username", "a") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_password(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_display_name(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_fcm_token(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
