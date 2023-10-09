@@ -10,6 +10,9 @@
 
 #include <platform/np_allocator.h>
 
+#include <nlohmann/json.hpp>
+#include <iomanip>
+
 namespace nabto {
 namespace test {
 
@@ -62,6 +65,27 @@ std::string c2 = R"(
           "Effect":"Allow"
         }
       ]
+    },
+    {
+      "Id":"IamUsers",
+      "Statements": [
+        {
+          "Actions":[
+            "IAM:ListUsers",
+            "IAM:GetUser",
+            "IAM:DeleteUser",
+            "IAM:SetUserRole",
+            "IAM:ListRoles",
+            "IAM:CreateUser",
+            "IAM:SetUserPassword",
+            "IAM:SetUserDisplayName",
+            "IAM:SetUserOauthSubject",
+            "IAM:SetSettings",
+            "IAM:GetSettings"
+          ],
+          "Effect":"Allow"
+        }
+      ]
     }
   ],
   "Roles":[
@@ -75,7 +99,8 @@ std::string c2 = R"(
       "Id":"Admin",
       "Policies":[
         "TestPolicy",
-        "AdminPolicy"
+        "AdminPolicy",
+        "IamUsers"
       ]
     }
 
@@ -84,7 +109,8 @@ std::string c2 = R"(
 }
 )";
 
-}} // namespaces
+}
+} // namespaces
 
 BOOST_AUTO_TEST_SUITE(iam)
 
@@ -165,6 +191,63 @@ BOOST_AUTO_TEST_CASE(expire_auth_on_close, *boost::unit_test::timeout(180))
     // nm_iam_lock(&iam);
     // BOOST_TEST((nn_vector_size(&iam.authorizedConnections) == 0));
     // nm_iam_unlock(&iam);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+BOOST_AUTO_TEST_CASE(can_remove_displayname, *boost::unit_test::timeout(180))
+{
+    struct nm_iam iam;
+    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+
+    {
+        nm_iam_state* s = nm_iam_dump_state(&iam);
+        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        BOOST_TEST((usr != NULL));
+        BOOST_TEST(strcmp(usr->displayName, "Display Name") == 0);
+        nm_iam_state_free(s);
+    }
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+
+    BOOST_TEST(nm_iam_authorize_connection(&iam, ref, "testuser") == NM_IAM_ERROR_OK);
+
+
+    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/display-name");
+
+    BOOST_TEST((req != NULL));
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+    // auto payload = nlohmann::json::to_cbor(NULL);
+    // std::cout << "sending payload: ";
+    // for (auto i: payload) {
+    //     std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)i;
+    // }
+    uint8_t payload[1];
+    payload[0] = 0xF6;
+
+    std::cout << std::endl;
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload, 1) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(d);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 204);
+
+    {
+        nm_iam_state* s = nm_iam_dump_state(&iam);
+        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        BOOST_TEST((usr != NULL));
+        BOOST_TEST((usr->displayName == NULL));
+        nm_iam_state_free(s);
+    }
+
+    nabto_device_virtual_connection_free(connection);
 
     nabto_device_stop(d);
     nm_iam_deinit(&iam);

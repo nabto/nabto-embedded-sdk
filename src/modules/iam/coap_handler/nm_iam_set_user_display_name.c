@@ -28,8 +28,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* displayName = NULL;
-    if (!nm_iam_cbor_decode_string(&value, &displayName) || displayName == NULL || strlen(displayName) > handler->iam->displayNameMaxLength) {
+    if (!nm_iam_cbor_decode_string(&value, &displayName)) {
         nabto_device_coap_error_response(request, 400, "Invalid Display Name");
+        nm_iam_free(displayName);
+        return;
+    }
+
+    if ( displayName != NULL && strlen(displayName) > handler->iam->displayNameMaxLength) {
+        nabto_device_coap_error_response(request, 400, "Invalid Display Name length");
         nm_iam_free(displayName);
         return;
     }

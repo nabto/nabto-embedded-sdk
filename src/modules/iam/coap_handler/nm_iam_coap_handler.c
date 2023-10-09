@@ -142,6 +142,9 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
                 return true;
             }
         }
+    } else if (cbor_value_is_null(value)) {
+        *str = NULL;
+        return true;
     }
     return false;
 }
