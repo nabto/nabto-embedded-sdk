@@ -222,11 +222,9 @@ BOOST_AUTO_TEST_CASE(can_remove_displayname, *boost::unit_test::timeout(180))
     BOOST_TEST((req != NULL));
     BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
 
-    uint8_t payload[1];
-    payload[0] = 0xF6;
-
-    std::cout << std::endl;
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload, 1) == NABTO_DEVICE_EC_OK);
+    nlohmann::json root;
+    auto payload = nlohmann::json::to_cbor(root);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
 
     NabtoDeviceFuture* fut = nabto_device_future_new(d);
     nabto_device_virtual_coap_request_execute(req, fut);
@@ -275,11 +273,9 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
     BOOST_TEST((req != NULL));
     BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
 
-    uint8_t payload[1];
-    payload[0] = 0xF6;
-
-    std::cout << std::endl;
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload, 1) == NABTO_DEVICE_EC_OK);
+    nlohmann::json root;
+    auto payload = nlohmann::json::to_cbor(root);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
 
     NabtoDeviceFuture* fut = nabto_device_future_new(d);
     nabto_device_virtual_coap_request_execute(req, fut);
@@ -328,11 +324,9 @@ BOOST_AUTO_TEST_CASE(can_remove_oauth_sub, *boost::unit_test::timeout(180))
     BOOST_TEST((req != NULL));
     BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
 
-    uint8_t payload[1];
-    payload[0] = 0xF6;
-
-    std::cout << std::endl;
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload, 1) == NABTO_DEVICE_EC_OK);
+    nlohmann::json root;
+    auto payload = nlohmann::json::to_cbor(root);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
 
     NabtoDeviceFuture* fut = nabto_device_future_new(d);
     nabto_device_virtual_coap_request_execute(req, fut);
@@ -381,11 +375,9 @@ BOOST_AUTO_TEST_CASE(can_remove_password, *boost::unit_test::timeout(180))
     BOOST_TEST((req != NULL));
     BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
 
-    uint8_t payload[1];
-    payload[0] = 0xF6;
-
-    std::cout << std::endl;
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload, 1) == NABTO_DEVICE_EC_OK);
+    nlohmann::json root;
+    auto payload = nlohmann::json::to_cbor(root);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
 
     NabtoDeviceFuture* fut = nabto_device_future_new(d);
     nabto_device_virtual_coap_request_execute(req, fut);
