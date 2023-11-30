@@ -1367,12 +1367,16 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
 /**
  * @intro TCP Tunnelling
  *
- * TCP tunnelling allows clients to tunnel TCP traffic over a Nabto
- * connection to the device. The TCP Tunnel module uses the
- * Authorization API to determine if actions are allowed on a given
- * connection. An Authorization Request listener must therefore be
- * configured when using TCP tunnelling. It is recomended to use the
- * [Nabto IAM module](/developer/guides/iam/intro.html) to handle
+ * TCP tunneling through Nabto enables clients to tunnel TCP traffic through a
+ * Nabto connection to and from the embedded device. This approach leverages the
+ * inherent peer-to-peer (P2P) security and efficiency of the Nabto connection,
+ * allowing for low-latency and firewall-bypassing data streaming, particularly
+ * beneficial for smart devices like video cameras.
+ *
+ * The TCP Tunnel module uses the Authorization API to determine if actions are
+ * allowed on a given connection. An Authorization Request listener must
+ * therefore be configured when using TCP tunnelling. It is recomended to use
+ * the [Nabto IAM module](/developer/guides/iam/intro.html) to handle
  * Authorization Requests.
  *
  * A TCP tunnel client first makes a CoAP request: `GET
@@ -1381,11 +1385,10 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
  * Service and return the `StreamPort` the client needs to use for
  * that connection.
  *
- * Later, when a TCP connection is made through the client, a new
- * stream is created to the `StreamPort` obtained in the previous
- * step. When this happens, the device makes another authorization
- * request which again checks that the given connection is allowed to
- * connect to the specific TCP Service.
+ * Later, when a TCP connection is made through the client, a new stream is
+ * created to the `StreamPort` obtained in the previous step. When this happens,
+ * the device makes another authorization request which again checks that the
+ * given connection is allowed to connect to the specific TCP Service.
  *
  * The TCP tunnelling module has the following authorization actions:
  *
@@ -1396,10 +1399,10 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
  *  TcpTunnel:Connect       See note below
  * ```
  *
- * Note on the `TcpTunnel:Connect` action: When used in CoAP context,
- * it is used to test permissions for establishing a stream connection
- * and to get information about the connection. When used in Streaming
- * context, it is used to authorize an actual stream connection.
+ * Note on the `TcpTunnel:Connect` action: When used in the context of CoAP, it
+ * is used to test permissions for establishing a stream connection and to get
+ * information about the connection. When used in the context of Streaming, it
+ * is used to authorize an actual stream connection.
  *
  * The TCP Tunnelling module has the following authorization attributes:
  *
