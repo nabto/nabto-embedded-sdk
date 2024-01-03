@@ -17,7 +17,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Change MbedTLS version
-        run: cd 3rdparty/mbedtls/mbedtls && git fetch && git checkout v3.2.1
+        run: cd 3rdparty/mbedtls/mbedtls && git fetch && git checkout v3.5.1
 
       - name: Configure cmake
         run: mkdir build-dir && cd build-dir && cmake -DDEVICE_BUILD_TESTS=ON -DDEVICE_MBEDTLS_2=OFF -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
