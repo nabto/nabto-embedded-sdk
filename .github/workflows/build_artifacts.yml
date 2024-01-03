@@ -22,7 +22,7 @@ jobs:
             friendly_name: macos
     name: Build
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v3
@@ -54,7 +54,7 @@ jobs:
           if-no-files-found: error
 
   build-linux-arm:
-    timeout-minutes: 20
+    timeout-minutes: 40
     strategy:
       matrix:
         arch: [armv6, armhf, aarch64]
@@ -118,7 +118,7 @@ jobs:
 
 
   upload-artifacts:
-    timeout-minutes: 20
+    timeout-minutes: 40
     strategy:
       matrix:
         binary: [tcp_tunnel_device, thermostat_device]
