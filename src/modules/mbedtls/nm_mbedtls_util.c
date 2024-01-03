@@ -95,12 +95,17 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
     mbedtls_x509write_crt_set_subject_key( &ctx->crt, &ctx->key );
     mbedtls_x509write_crt_set_issuer_key( &ctx->crt, &ctx->key );
 
+#if MBEDTLS_VERSION_MAJOR >= 3
+    unsigned char serial[1] = { 0x01 };
+    ret = mbedtls_x509write_crt_set_serial_raw(&ctx->crt, serial, 1);
+#else
     ret = mbedtls_mpi_read_string( &ctx->serial, 10, "1");
     if (ret != 0) {
         return NABTO_EC_UNKNOWN;
     }
 
     mbedtls_x509write_crt_set_serial( &ctx->crt, &ctx->serial );
+#endif
 
     ret = mbedtls_x509write_crt_set_subject_name( &ctx->crt, "CN=nabto" );
     if (ret != 0) {
