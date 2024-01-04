@@ -18,6 +18,8 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: cmake version
+        run: cmake --version
       - name: Configure cmake
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON ..
 
