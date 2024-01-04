@@ -7,75 +7,45 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/library)
 set(src_crypto
     ${src_dir}/aes.c
     ${src_dir}/aesni.c
-  #  ${src_dir}/arc4.c
     ${src_dir}/asn1parse.c
     ${src_dir}/asn1write.c
     ${src_dir}/base64.c
     ${src_dir}/bignum.c
-  #  ${src_dir}/blowfish.c
-  #  ${src_dir}/camellia.c
     ${src_dir}/ccm.c
     ${src_dir}/cipher.c
     ${src_dir}/cipher_wrap.c
-  #  ${src_dir}/cmac.c
     ${src_dir}/ctr_drbg.c
-  #  ${src_dir}/des.c
-  #  ${src_dir}/dhm.c
     ${src_dir}/ecdh.c
     ${src_dir}/ecdsa.c
-  #  ${src_dir}/ecjpake.c
     ${src_dir}/ecp.c
     ${src_dir}/ecp_curves.c
     ${src_dir}/entropy.c
     ${src_dir}/entropy_poll.c
     ${src_dir}/error.c
-  #  ${src_dir}/gcm.c
-   # ${src_dir}/havege.c
     ${src_dir}/hmac_drbg.c
     ${src_dir}/md.c
-  #  ${src_dir}/md2.c
-  #  ${src_dir}/md4.c
-  #  ${src_dir}/md5.c
-  #  ${src_dir}/md_wrap.c
-  #  ${src_dir}/memory_buffer_alloc.c
     ${src_dir}/oid.c
-  #  ${src_dir}/padlock.c
     ${src_dir}/pem.c
     ${src_dir}/pk.c
     ${src_dir}/pk_wrap.c
-  #  ${src_dir}/pkcs12.c
-  #  ${src_dir}/pkcs5.c
     ${src_dir}/pkparse.c
     ${src_dir}/pkwrite.c
     ${src_dir}/platform.c
     ${src_dir}/platform_util.c
-  #  ${src_dir}/ripemd160.c
-  #  ${src_dir}/rsa.c
-  #  ${src_dir}/rsa_internal.c
-   # ${src_dir}/sha1.c
     ${src_dir}/sha256.c
-   # ${src_dir}/sha512.c
-   # ${src_dir}/threading.c
-   # ${src_dir}/timing.c
-   # ${src_dir}/version.c
-   # ${src_dir}/version_features.c
-   # ${src_dir}/xtea.c
     ${src_dir}/constant_time.c
     )
 
-set(src_x509
-   # ${src_dir}/certs.c
-    #${src_dir}/pkcs11.c
-    ${src_dir}/x509.c
-    ${src_dir}/x509_create.c
-    #${src_dir}/x509_crl.c
-    ${src_dir}/x509_crt.c
-    #${src_dir}/x509_csr.c
-    ${src_dir}/x509write_crt.c
-    #${src_dir}/x509write_csr.c
-)
 
 if (DEVICE_MBEDTLS_2)
+set(src_x509
+    ${src_dir}/x509.c
+    ${src_dir}/x509_create.c
+    ${src_dir}/x509_crt.c
+    ${src_dir}/x509write_crt.c
+)
+
+
 set(src_tls
     ${src_dir}/debug.c
     ${src_dir}/ssl_cache.c
@@ -87,7 +57,47 @@ set(src_tls
     ${src_dir}/ssl_tls.c
     ${src_dir}/ssl_msg.c
 )
+set(src_crypto
+    ${src_dir}/aes.c
+    ${src_dir}/aesni.c
+    ${src_dir}/asn1parse.c
+    ${src_dir}/asn1write.c
+    ${src_dir}/base64.c
+    ${src_dir}/bignum.c
+    ${src_dir}/ccm.c
+    ${src_dir}/cipher.c
+    ${src_dir}/cipher_wrap.c
+    ${src_dir}/ctr_drbg.c
+    ${src_dir}/ecdh.c
+    ${src_dir}/ecdsa.c
+    ${src_dir}/ecp.c
+    ${src_dir}/ecp_curves.c
+    ${src_dir}/entropy.c
+    ${src_dir}/entropy_poll.c
+    ${src_dir}/error.c
+    ${src_dir}/hmac_drbg.c
+    ${src_dir}/md.c
+    ${src_dir}/oid.c
+    ${src_dir}/pem.c
+    ${src_dir}/pk.c
+    ${src_dir}/pk_wrap.c
+    ${src_dir}/pkparse.c
+    ${src_dir}/pkwrite.c
+    ${src_dir}/platform.c
+    ${src_dir}/platform_util.c
+    ${src_dir}/sha256.c
+    ${src_dir}/constant_time.c
+    )
+
 else()
+set(src_x509
+    ${src_dir}/x509.c
+    ${src_dir}/x509_create.c
+    ${src_dir}/x509_crt.c
+    ${src_dir}/x509write.c
+    ${src_dir}/x509write_crt.c
+)
+
 set(src_tls
     ${src_dir}/debug.c
     ${src_dir}/ssl_cache.c
@@ -101,6 +111,40 @@ set(src_tls
     ${src_dir}/ssl_tls.c
     ${src_dir}/ssl_msg.c
 )
+set(src_crypto
+    ${src_dir}/aes.c
+    ${src_dir}/aesni.c
+    ${src_dir}/asn1parse.c
+    ${src_dir}/asn1write.c
+    ${src_dir}/base64.c
+    ${src_dir}/bignum.c
+    ${src_dir}/bignum_core.c
+    ${src_dir}/ccm.c
+    ${src_dir}/cipher.c
+    ${src_dir}/cipher_wrap.c
+    ${src_dir}/ctr_drbg.c
+    ${src_dir}/ecdh.c
+    ${src_dir}/ecdsa.c
+    ${src_dir}/ecp.c
+    ${src_dir}/ecp_curves.c
+    ${src_dir}/entropy.c
+    ${src_dir}/entropy_poll.c
+    ${src_dir}/error.c
+    ${src_dir}/hmac_drbg.c
+    ${src_dir}/md.c
+    ${src_dir}/oid.c
+    ${src_dir}/pem.c
+    ${src_dir}/pk.c
+    ${src_dir}/pk_wrap.c
+    ${src_dir}/pkparse.c
+    ${src_dir}/pkwrite.c
+    ${src_dir}/platform.c
+    ${src_dir}/platform_util.c
+    ${src_dir}/sha256.c
+    ${src_dir}/constant_time.c
+    )
+
+
 endif()
 
 if (NABTO_DEVICE_MBEDTLS_PROVIDER MATCHES "module")
@@ -111,7 +155,11 @@ add_library(3rdparty_mbedtls "${src_tls}" "${src_x509}" "${src_crypto}" "${confi
 
 target_include_directories(3rdparty_mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/config)
 target_include_directories(3rdparty_mbedtls PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include)
-target_compile_definitions(3rdparty_mbedtls PUBLIC -DMBEDTLS_CONFIG_FILE=<nabto_mbedtls_config.h>)
+if (DEVICE_MBEDTLS_2)
+  target_compile_definitions(3rdparty_mbedtls PUBLIC -DMBEDTLS_CONFIG_FILE=<nabto_mbedtls_config.h>)
+else()
+  target_compile_definitions(3rdparty_mbedtls PUBLIC -DMBEDTLS_CONFIG_FILE=<nabto_mbedtls_config_v3.h>)
+endif()
 
 else()
   find_package(MbedTLS REQUIRED)

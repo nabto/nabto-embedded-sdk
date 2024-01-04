@@ -33,7 +33,7 @@ jobs:
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
 
       - name: Build
-        run: cmake --build build-dir --parallel
+        run: cmake --build build-dir --parallel 8
 
       - name: Install
         run: cmake --build build-dir --target install
