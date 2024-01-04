@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, macos-13]
+        os: [windows-2022, ubuntu-20.04, macos-12]
         include:
           - os: windows-2022
             exe_postfix: .exe
@@ -17,12 +17,12 @@ jobs:
           - os: ubuntu-20.04
             exe_postfix:
             friendly_name: linux_x86_64
-          - os: macos-13
+          - os: macos-12
             exe_postfix:
             friendly_name: macos
     name: Build
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v3
@@ -54,7 +54,7 @@ jobs:
           if-no-files-found: error
 
   build-linux-arm:
-    timeout-minutes: 40
+    timeout-minutes: 20
     strategy:
       matrix:
         arch: [armv6, armhf, aarch64]
@@ -118,7 +118,7 @@ jobs:
 
 
   upload-artifacts:
-    timeout-minutes: 40
+    timeout-minutes: 20
     strategy:
       matrix:
         binary: [tcp_tunnel_device, thermostat_device]
