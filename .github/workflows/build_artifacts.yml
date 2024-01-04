@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, macos-12]
+        os: [windows-2022, ubuntu-20.04, macos-13]
         include:
           - os: windows-2022
             exe_postfix: .exe
@@ -17,7 +17,7 @@ jobs:
           - os: ubuntu-20.04
             exe_postfix:
             friendly_name: linux_x86_64
-          - os: macos-12
+          - os: macos-13
             exe_postfix:
             friendly_name: macos
     name: Build

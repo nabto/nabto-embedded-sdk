@@ -7,13 +7,13 @@ on:
 
 jobs:
   build-and-test:
-    timeout-minutes: 40
+    timeout-minutes: 20
     name: Build
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
         cli-only: [0, 1]
-        os: [windows-2022, ubuntu-22.04, macos-12]
+        os: [windows-2022, ubuntu-22.04, macos-13]
 
     steps:
       - uses: actions/checkout@v3
