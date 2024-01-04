@@ -22,10 +22,10 @@ jobs:
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON ..
 
       - name: Build
-        run: make -j 1
+        run: cd build-dir && make -j 1
 
       - name: Install
-        run: make install
+        run: cd build-dir && make install
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
