@@ -1,0 +1,35 @@
+name: Build And Test Mac
+
+# Try to see if we can get mac build to pass
+
+on:
+  push:
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    timeout-minutes: 20
+    name: Build
+    runs-on: macos-12
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Configure cmake
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON ..
+
+      - name: Build
+        run: make -j 1
+
+      - name: Install
+        run: make install
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts_${{matrix.os}}_cli_only_${{ matrix.cli-only }}
+          path: ${{ github.workspace }}/artifacts
+          if-no-files-found: warn
