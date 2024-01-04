@@ -85,6 +85,21 @@ extern "C" {
     NABTO_DEVICE_DECL_PREFIX bool NABTO_DEVICE_API
         nabto_device_connection_is_virtual(NabtoDevice* device, NabtoDeviceConnectionRef ref);
 
+    /**
+     * Get the device fingerprint used for a particular connection.
+     *
+     * If a connection is virtual, this gives the value set by `nabto_device_virtual_connection_set_client_fingerprint()`.
+     * Otherwise, it gives the same value as `nabto_device_get_device_fingerprint()`.
+     * The returned fingerprint must be freed with `nabto_device_string_free()`
+     *
+     * @param device [in]       The device
+     * @param ref [in]          The connection to get fingerprint from
+     * @param fingerprint [out] Where to put the fingerprint
+     * @retval NABTO_DEVICE_EC_OK on success
+     */
+    NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+        nabto_device_connection_get_device_fingerprint(NabtoDevice* device, NabtoDeviceConnectionRef ref, char** fingerprint);
+
 
     typedef struct NabtoDeviceVirtualCoapRequest_ NabtoDeviceVirtualCoapRequest;
 

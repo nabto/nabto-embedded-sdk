@@ -5,8 +5,6 @@
 
 #include "../nm_iam_allocator.h"
 
-
-
 #include <cbor.h>
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
@@ -20,6 +18,31 @@ NabtoDeviceError nm_iam_get_me_init(struct nm_iam_coap_handler* handler, NabtoDe
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     struct nm_iam_user* user = nm_iam_internal_find_user_by_coap_request(handler->iam, request);
+
+    NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
+
+
+    if (!user && nabto_device_connection_is_password_authenticated(handler->iam->device, ref)) {
+        char* username = NULL;
+        NabtoDeviceError ec = nabto_device_connection_get_password_authentication_username(handler->iam->device, ref, &username);
+        if (ec == NABTO_DEVICE_EC_OK) {
+            user = nm_iam_internal_find_user_by_username(handler->iam, username);
+        }
+        nabto_device_string_free(username);
+    }
+
+    if (!user) {
+        struct nm_iam_authorized_connection conn;
+        NN_VECTOR_FOREACH(&conn, &handler->iam->authorizedConnections)
+        {
+            if (conn.ref == ref) {
+                user = conn.user;
+                break;
+            }
+        }
+    }
+
+
     if (!user) {
         nabto_device_coap_error_response(request, 404, "Not paired");
     } else {

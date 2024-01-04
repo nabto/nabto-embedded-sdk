@@ -142,6 +142,9 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
                 return true;
             }
         }
+    } else if (cbor_value_is_null(value)) {
+        *str = NULL;
+        return true;
     }
     return false;
 }
@@ -242,6 +245,11 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
             cbor_encode_text_stringz(&array, c);
         }
         cbor_encoder_close_container(&map, &array);
+    }
+
+    if (user->oauthSubject != NULL) {
+        cbor_encode_text_stringz(&map, "OauthSubject");
+        cbor_encode_text_stringz(&map, user->oauthSubject);
     }
 
     cbor_encoder_close_container(&encoder, &map);

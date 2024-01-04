@@ -27,7 +27,8 @@ std::string s1 = R"(
         "Token":"fcm_token",
         "ProjectId":"fcm_project"
       },
-      "NotificationCategories": ["cat1","cat2"]
+      "NotificationCategories": ["cat1","cat2"],
+      "OauthSubject":"oauth_subject"
     }
   ],
   "Version":1
@@ -150,6 +151,7 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
         BOOST_TEST(nm_iam_user_set_fcm_token(u, "fcm_token") == true);
         BOOST_TEST(nm_iam_user_set_fcm_project_id(u, "fcm_project") == true);
         BOOST_TEST(nm_iam_user_set_notification_categories(u, &cats) == true);
+        BOOST_TEST(nm_iam_user_set_oauth_subject(u, "oauth_subject") == true);
         BOOST_TEST(nm_iam_state_add_user(state, u) == true);
         nn_string_set_deinit(&cats);
     }
@@ -187,6 +189,8 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
     BOOST_TEST(j["Users"][0]["NotificationCategories"][0].get<std::string>().compare("cat1") == 0);
     BOOST_TEST(j["Users"][0]["NotificationCategories"][1].is_string());
     BOOST_TEST(j["Users"][0]["NotificationCategories"][1].get<std::string>().compare("cat2") == 0);
+    BOOST_TEST(j["Users"][0]["OauthSubject"].is_string());
+    BOOST_TEST(j["Users"][0]["OauthSubject"].get<std::string>().compare("oauth_subject") == 0);
     nm_iam_state_free(state);
     nm_iam_serializer_string_free(jStr);
 }
@@ -254,6 +258,8 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
         }
         BOOST_TEST(cat1);
         BOOST_TEST(cat2);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->oauthSubject, "oauth_subject") == 0);
+
     }
     nm_iam_state_free(state);
 }

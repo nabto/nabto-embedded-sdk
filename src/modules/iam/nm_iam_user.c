@@ -55,6 +55,7 @@ void nm_iam_user_free(struct nm_iam_user* user)
         nm_iam_free(user->fcmToken);
         nm_iam_free(user->fcmProjectId);
         nn_string_set_deinit(&user->notificationCategories);
+        nm_iam_free(user->oauthSubject);
         nm_iam_free(user);
     }
 }
@@ -127,6 +128,21 @@ bool nm_iam_user_set_notification_categories(struct nm_iam_user* user, struct nn
         nn_string_set_insert(&user->notificationCategories, s);
     }
     return true;
+}
+
+bool nm_iam_user_set_oauth_subject(struct nm_iam_user* user, const char* subject)
+{
+    if (subject == NULL) {
+        nm_iam_free(user->oauthSubject);
+        user->oauthSubject = NULL;
+        return true;
+    }
+    char* tmp = nn_strdup(subject, nm_iam_allocator_get());
+    if (tmp != NULL) {
+        nm_iam_free(user->oauthSubject);
+        user->oauthSubject = tmp;
+    }
+    return (tmp != NULL);
 }
 
 bool nm_iam_user_set_sct(struct nm_iam_user* user, const char* sct)
@@ -247,6 +263,13 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
     const char* p;
     NN_STRING_SET_FOREACH(p, &user->notificationCategories) {
         if (!nn_string_set_insert(&copy->notificationCategories, p)) {
+            failed = true;
+        }
+    }
+
+    if(user->oauthSubject != NULL) {
+        copy->oauthSubject = nn_strdup(user->oauthSubject, nm_iam_allocator_get());
+        if(copy->oauthSubject == NULL) {
             failed = true;
         }
     }

@@ -34,9 +34,11 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
 
     iam->usernameMaxLength = 64;
     iam->displayNameMaxLength = 64;
+    iam->passwordMinLength = 4;
     iam->passwordMaxLength = 64;
     iam->fcmTokenMaxLength = 1024;
     iam->fcmProjectIdMaxLength = 256;
+    iam->oauthSubjectMaxLength = 64;
     iam->sctMaxLength = 64;
     iam->maxUsers = SIZE_MAX;
     iam->friendlyNameMaxLength = 64;
@@ -48,11 +50,17 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
     }
     nn_string_set_init(&iam->notificationCategories, nm_iam_allocator_get());
 
+    nn_vector_init(&iam->authorizedConnections, sizeof(struct nm_iam_authorized_connection), nm_iam_allocator_get());
+
     if (nm_iam_auth_handler_init(&iam->authHandler, iam->device, iam) != NABTO_DEVICE_EC_OK) {
         return false;
     }
 
     if (nm_iam_pake_handler_init(&iam->pakeHandler, iam->device, iam) != NABTO_DEVICE_EC_OK) {
+        return false;
+    }
+
+    if (nm_iam_connection_events_init(&iam->connEvents, iam->device, iam) != NABTO_DEVICE_EC_OK) {
         return false;
     }
 
@@ -67,10 +75,12 @@ void nm_iam_deinit(struct nm_iam* iam)
 
     nm_iam_auth_handler_deinit(&iam->authHandler);
     nm_iam_pake_handler_deinit(&iam->pakeHandler);
+    nm_iam_connection_events_deinit(&iam->connEvents);
 
     nm_iam_state_free(iam->state);
     nm_iam_configuration_free(iam->conf);
     nn_string_set_deinit(&iam->notificationCategories);
+    nn_vector_deinit(&iam->authorizedConnections);
     nm_iam_unlock(iam);
 
     nabto_device_threads_free_mutex(iam->mutex);
@@ -157,6 +167,10 @@ void nm_iam_set_display_name_max_length(struct nm_iam* iam, size_t len)
     iam->displayNameMaxLength = len;
 }
 
+void nm_iam_set_password_min_length(struct nm_iam* iam, size_t len)
+{
+    iam->passwordMinLength = len;
+}
 
 void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len)
 {
@@ -175,6 +189,10 @@ void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len)
     iam->fcmProjectIdMaxLength = len;
 }
 
+void nm_iam_set_oauth_subject_max_length(struct nm_iam* iam, size_t len)
+{
+    iam->oauthSubjectMaxLength = len;
+}
 
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len)
 {
@@ -314,6 +332,15 @@ enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, co
     return ec;
 }
 
+enum nm_iam_error nm_iam_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_set_user_oauth_subject(iam, username, subject);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
 
 
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username)
@@ -324,3 +351,14 @@ enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username)
     nm_iam_unlock(iam);
     return ec;
 }
+
+enum nm_iam_error nm_iam_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_authorize_connection(iam, ref, username);
+    nm_iam_unlock(iam);
+    return ec;
+
+}
+

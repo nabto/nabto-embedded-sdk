@@ -1,5 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
+#include "iam_util.hpp"
+
 #include <nabto/nabto_device.h>
 #include <modules/iam/nm_iam_user.h>
 #include <modules/iam/nm_iam_serializer.h>
@@ -11,60 +13,6 @@
 
 namespace nabto {
 namespace test {
-
-void iam_logger(void* data, enum nn_log_severity severity, const char* module,
-                const char* file, int line,
-                const char* fmt, va_list args)
-{
-    (void)data; (void)module;
-    const char* logLevelCStr = getenv("NABTO_LOG_LEVEL");
-    if(logLevelCStr == NULL) { return; }
-    std::string logLevelStr(logLevelCStr);
-    if ((logLevelStr.compare("error") == 0 && severity <= NN_LOG_SEVERITY_ERROR) ||
-        (logLevelStr.compare("warn") == 0 && severity <= NN_LOG_SEVERITY_WARN) ||
-        (logLevelStr.compare("info") == 0 && severity <= NN_LOG_SEVERITY_INFO) ||
-        (logLevelStr.compare("trace") == 0 && severity <= NN_LOG_SEVERITY_TRACE)
-        ) {
-        char log[256];
-        int ret;
-
-        ret = vsnprintf(log, 256, fmt, args);
-        if (ret >= 256) {
-            // The log line was too large for the array
-        }
-        size_t fileLen = strlen(file);
-        char fileTmp[16+4];
-        if(fileLen > 16) {
-            strcpy(fileTmp, "...");
-            strcpy(fileTmp + 3, file + fileLen - 16);
-        } else {
-            strcpy(fileTmp, file);
-        }
-        const char* level;
-        switch(severity) {
-            case NN_LOG_SEVERITY_ERROR:
-                level = "ERROR";
-                break;
-            case NN_LOG_SEVERITY_WARN:
-                level = "_WARN";
-                break;
-            case NN_LOG_SEVERITY_INFO:
-                level = "_INFO";
-                break;
-            case NN_LOG_SEVERITY_TRACE:
-                level = "TRACE";
-                break;
-            default:
-                // should not happen as it would be caugth by the if
-                level = "_NONE";
-                break;
-        }
-
-        printf("%s(%03u)[%s] %s\n",
-               fileTmp, line, level, log);
-
-    }
-}
 
 struct nm_iam_state* initState()
 {
@@ -93,6 +41,7 @@ struct nm_iam_state* initState()
     nn_string_set_insert(&cats, "cat2");
     nm_iam_state_user_set_notification_categories(usr, &cats);
     nn_string_set_deinit(&cats);
+    nm_iam_state_user_set_oauth_subject(usr, "oauth_sub");
     nm_iam_state_add_user(state, usr);
     return state;
 }
@@ -114,7 +63,8 @@ std::string s1 = R"(
         "Token":"fcm_token",
         "ProjectId":"fcm_project"
       },
-      "NotificationCategories": ["cat1","cat2"]
+      "NotificationCategories": ["cat1","cat2"],
+      "OauthSubject":"oauth_subject"
     }
   ],
   "Version":1
@@ -174,6 +124,7 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
         BOOST_CHECK(strcmp(user->fcmProjectId, "fcm_project") == 0);
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat1"));
         BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat2"));
+        BOOST_CHECK(strcmp(user->oauthSubject, "oauth_sub") == 0);
     }
     nm_iam_state_free(dump);
     nabto_device_stop(d);
@@ -217,6 +168,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     nn_string_set_insert(&cats, "cat43");
     BOOST_CHECK(nm_iam_set_user_notification_categories(&iam, "newuser", &cats) == NM_IAM_ERROR_OK);
     nn_string_set_deinit(&cats);
+    BOOST_CHECK(nm_iam_set_user_oauth_subject(&iam, "newuser", "oauth_subject_42") == NM_IAM_ERROR_OK);
 
     struct nm_iam_state* dump = nm_iam_dump_state(&iam);
 
@@ -237,6 +189,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
             BOOST_CHECK(strcmp(user->fcmProjectId, "fcm_project_42") == 0);
             BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat42"));
             BOOST_CHECK(nn_string_set_contains(&user->notificationCategories, "cat43"));
+            BOOST_CHECK(strcmp(user->oauthSubject, "oauth_subject_42") == 0);
         }
     }
     BOOST_CHECK(found);
@@ -361,6 +314,10 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(!nm_iam_load_state(&iam, state));
     nm_iam_set_display_name_max_length(&iam, 64);
 
+    nm_iam_set_password_min_length(&iam, 64);
+    BOOST_TEST(!nm_iam_load_state(&iam, state));
+    nm_iam_set_password_min_length(&iam, 4);
+
     nm_iam_set_password_max_length(&iam, 2);
     BOOST_TEST(!nm_iam_load_state(&iam, state));
     nm_iam_set_password_max_length(&iam, 64);
@@ -385,6 +342,10 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(!nm_iam_load_state(&iam, state));
     nm_iam_set_friendly_name_max_length(&iam, 64);
 
+    nm_iam_set_oauth_subject_max_length(&iam, 2);
+    BOOST_TEST(!nm_iam_load_state(&iam, state));
+    nm_iam_set_oauth_subject_max_length(&iam, 256);
+
     BOOST_TEST(nm_iam_load_state(&iam, state));
 
     nabto_device_stop(d);
@@ -395,13 +356,15 @@ BOOST_AUTO_TEST_CASE(load_with_limits, *boost::unit_test::timeout(180))
 BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
 {
     NabtoDevice* d = nabto_device_new();
+    struct nn_log iamLogger;
+    iamLogger.logPrint = &nabto::test::iam_logger;
     const char* logLevel = getenv("NABTO_LOG_LEVEL");
     if (logLevel != NULL) {
         nabto_device_set_log_level(d, logLevel);
         nabto_device_set_log_std_out_callback(d);
     }
     struct nm_iam iam;
-    nm_iam_init(&iam, d, NULL);
+    nm_iam_init(&iam, d, &iamLogger);
 
     struct nn_string_set cats;
     nn_string_set_init(&cats, np_allocator_get());
@@ -413,8 +376,10 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     nm_iam_set_username_max_length(&iam, 12);
     nm_iam_set_display_name_max_length(&iam, 12);
     nm_iam_set_password_max_length(&iam, 12);
+    nm_iam_set_password_min_length(&iam, 2);
     nm_iam_set_fcm_token_max_length(&iam, 12);
     nm_iam_set_fcm_project_id_max_length(&iam, 12);
+    nm_iam_set_oauth_subject_max_length(&iam, 12);
     nm_iam_set_sct_max_length(&iam, 12);
     nm_iam_set_max_users(&iam, 1);
 
@@ -424,7 +389,9 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(nm_iam_create_user(&iam, "abcde") == NM_IAM_ERROR_INTERNAL); // user limit
     BOOST_TEST(nm_iam_create_user(&iam, "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT); // username limit
     BOOST_TEST(nm_iam_set_user_fingerprint(&iam, "username", "foobar") == NM_IAM_ERROR_INVALID_ARGUMENT);
+    BOOST_TEST(nm_iam_set_user_oauth_subject(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_sct(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
+    BOOST_TEST(nm_iam_set_user_password(&iam, "username", "a") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_password(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_display_name(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_fcm_token(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
@@ -546,6 +513,12 @@ BOOST_AUTO_TEST_CASE(load_partial_state, *boost::unit_test::timeout(180))
     nn_string_set_insert(&cats, "cat2");
     nm_iam_state_user_set_notification_categories(usr, &cats);
     nn_string_set_deinit(&cats);
+    nm_iam_state_add_user(state, usr);
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    state = nm_iam_state_new();
+    usr = nm_iam_state_user_new("username");
+    nm_iam_state_user_set_oauth_subject(usr, "oauth_subject");
     nm_iam_state_add_user(state, usr);
     BOOST_TEST(nm_iam_load_state(&iam, state));
 

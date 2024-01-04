@@ -40,6 +40,7 @@ set(test_src
   tests/attach/attach_test.cpp
   tests/attach/basestation_fixture_test.cpp
   tests/iam/iam.cpp
+  tests/iam/iam_util.cpp
   tests/iam/state.cpp
   tests/iam/serializer.cpp
   tests/policies/condition_test.cpp

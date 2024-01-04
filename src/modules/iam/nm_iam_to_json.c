@@ -63,5 +63,10 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
         cJSON_AddItemToObject(root, "NotificationCategories", notificationCategories);
     }
 
+    if (user->oauthSubject != NULL) {
+        cJSON_AddItemToObject(root, "OauthSubject", cJSON_CreateString(user->oauthSubject));
+    }
+
+
     return root;
 }

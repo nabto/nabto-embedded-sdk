@@ -237,6 +237,7 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/nm_iam_from_json.c
   ${root_dir}/src/modules/iam/nm_iam_auth_handler.c
   ${root_dir}/src/modules/iam/nm_iam_pake_handler.c
+  ${root_dir}/src/modules/iam/nm_iam_connection_events.c
   ${root_dir}/src/modules/iam/nm_iam_configuration.c
   ${root_dir}/src/modules/iam/nm_iam_state.c
   ${root_dir}/src/modules/iam/nm_iam_serializer.c
@@ -265,6 +266,7 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_password.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fcm.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_notification_categories.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_oauth_subject.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_get.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_settings_set.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_device_info_set.c

@@ -15,6 +15,7 @@
 #include "coap_handler/nm_iam_coap_handler.h"
 #include "nm_iam_auth_handler.h"
 #include "nm_iam_pake_handler.h"
+#include "nm_iam_connection_events.h"
 
 #include <nn/log.h>
 
@@ -169,9 +170,11 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
  */
 void nm_iam_set_username_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_display_name_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_password_min_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_password_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_token_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_fcm_project_id_max_length(struct nm_iam* iam, size_t len);
+void nm_iam_set_oauth_subject_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_sct_max_length(struct nm_iam* iam, size_t len);
 void nm_iam_set_friendly_name_max_length(struct nm_iam* iam, size_t len);
 
@@ -340,6 +343,7 @@ enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* u
 enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token);
 enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id);
 enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories);
+enum nm_iam_error nm_iam_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject);
 
 /**
  * Set display name for the specified user.
@@ -350,6 +354,19 @@ enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, co
  * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
  */
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username);
+
+/**
+ * Authorize a NabtoDeviceConnectionRef as a specified user.
+ *
+ * This can be used if the application has authorized a connection eg. using Oauth.
+ *
+ * @param iam [in] IAM module to manipulate
+ * @param ref [in] Connection ref to authorize
+ * @param username [in] The username to authorize the connection as
+ * @retval NM_IAM_ERROR_OK if the connection was authorized
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ */
+enum nm_iam_error nm_iam_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username);
 
 
 /************************************************************
@@ -363,6 +380,11 @@ struct nm_iam_change_callback {
     // called if a user is inserted, updated or removed.
     nm_iam_state_changed stateChanged;
     void* stateChangedData;
+};
+
+struct nm_iam_authorized_connection {
+    NabtoDeviceConnectionRef ref;
+    struct nm_iam_user* user;
 };
 
 struct nm_iam {
@@ -395,6 +417,7 @@ struct nm_iam {
     struct nm_iam_coap_handler coapIamUsersUserSetPasswordHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetFcmTokenHandler;
     struct nm_iam_coap_handler coapIamUsersUserSetNotificationCategoriesHandler;
+    struct nm_iam_coap_handler coapIamUsersUserSetOauthSubjectHandler;
     struct nm_iam_coap_handler coapIamSettingsSetHandler;
     struct nm_iam_coap_handler coapIamSettingsGetHandler;
     struct nm_iam_coap_handler coapIamDeviceInfoSetHandler;
@@ -402,6 +425,7 @@ struct nm_iam {
 
     struct nm_iam_auth_handler authHandler;
     struct nm_iam_pake_handler pakeHandler;
+    struct nm_iam_connection_events_ctx connEvents;
 
     struct nm_iam_change_callback changeCallback;
     struct nm_iam_configuration* conf;
@@ -410,12 +434,16 @@ struct nm_iam {
 
     size_t usernameMaxLength;
     size_t displayNameMaxLength;
+    size_t passwordMinLength;
     size_t passwordMaxLength;
     size_t fcmTokenMaxLength;
     size_t fcmProjectIdMaxLength;
+    size_t oauthSubjectMaxLength;
     size_t sctMaxLength;
     size_t maxUsers;
     size_t friendlyNameMaxLength;
+
+    struct nn_vector authorizedConnections;
 
     // if set to true the state has changed and the state has changed callback has to be invoked outside of the mutex.
     bool stateHasChanged;

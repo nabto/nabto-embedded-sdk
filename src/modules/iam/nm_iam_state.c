@@ -191,6 +191,11 @@ bool nm_iam_state_user_set_notification_categories(struct nm_iam_user* user, str
     return nm_iam_user_set_notification_categories(user, categories);
 }
 
+bool nm_iam_state_user_set_oauth_subject(struct nm_iam_user* user, const char* subject)
+{
+    return nm_iam_user_set_oauth_subject(user, subject);
+}
+
 struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
 {
     struct nm_iam_state* copy = nm_iam_state_new();
@@ -266,6 +271,20 @@ struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* stat
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &state->users) {
         if (user->username != NULL && strcmp(user->username, username) == 0) {
+            return user;
+        }
+    }
+    return NULL;
+}
+
+struct nm_iam_user* nm_iam_state_find_user_by_oauth_subject(struct nm_iam_state* state, const char* subject)
+{
+    if (subject == NULL) {
+        return NULL;
+    }
+    struct nm_iam_user* user;
+    NN_LLIST_FOREACH(user, &state->users) {
+        if (user->oauthSubject != NULL && strcmp(user->oauthSubject, subject) == 0) {
             return user;
         }
     }

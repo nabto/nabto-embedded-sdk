@@ -92,5 +92,8 @@ bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, Nabt
 
 bool nm_iam_pairing_is_user_paired(struct nm_iam_user* user)
 {
-    return (user->fingerprint != NULL);
+    return (
+        (user->fingerprint != NULL) ||
+        (user->oauthSubject != NULL)
+    );
 }

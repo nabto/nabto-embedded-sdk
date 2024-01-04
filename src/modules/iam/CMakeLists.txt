@@ -7,6 +7,7 @@ set(src
   nm_iam_from_json.c
   nm_iam_auth_handler.c
   nm_iam_pake_handler.c
+  nm_iam_connection_events.c
   nm_iam_configuration.c
   nm_iam_state.c
   nm_iam_serializer.c
@@ -35,6 +36,7 @@ set(src
   coap_handler/nm_iam_set_user_password.c
   coap_handler/nm_iam_set_user_fcm.c
   coap_handler/nm_iam_set_user_notification_categories.c
+  coap_handler/nm_iam_set_user_oauth_subject.c
   coap_handler/nm_iam_settings_get.c
   coap_handler/nm_iam_settings_set.c
   coap_handler/nm_iam_device_info_set.c

@@ -43,6 +43,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     cJSON* role = cJSON_GetObjectItem(json, "Role");
     cJSON* fcm = cJSON_GetObjectItem(json, "Fcm");
     cJSON* notificationCategories = cJSON_GetObjectItem(json, "NotificationCategories");
+    cJSON* oauthSubject = cJSON_GetObjectItem(json, "OauthSubject");
     cJSON* fcmToken = NULL;
     cJSON* fcmProjectId = NULL;
 
@@ -101,5 +102,10 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
         nm_iam_user_set_notification_categories(user, &cs);
         nn_string_set_deinit(&cs);
     }
+
+    if (cJSON_IsString(oauthSubject)) {
+        nm_iam_user_set_oauth_subject(user, oauthSubject->valuestring);
+    }
+
     return user;
 }

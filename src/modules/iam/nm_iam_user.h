@@ -24,6 +24,7 @@ bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password);
 bool nm_iam_user_set_fcm_token(struct nm_iam_user* user, const char* fcmToken);
 bool nm_iam_user_set_fcm_project_id(struct nm_iam_user* user, const char* fcmProjectId);
 bool nm_iam_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories);
+bool nm_iam_user_set_oauth_subject(struct nm_iam_user* user, const char* subject);
 
 struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user);
 
