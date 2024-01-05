@@ -24,7 +24,7 @@ jobs:
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON ..
 
       - name: Build
-        run: cd build-dir && make -j 8
+        run: cd build-dir && make -j 1
 
       - name: Install
         run: cd build-dir && make install

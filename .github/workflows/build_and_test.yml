@@ -20,7 +20,8 @@ jobs:
           - os: ubuntu-22.04
             build_command: cmake --build build-dir --parallel --target install
           - os: macos-12
-            build_command: cd build-dir && make -j 8 install
+            # in cmake 3.28 there is a problem with building with cmake --build ... on macos
+            build_command: cd build-dir && make -j 1 install
 
     steps:
       - uses: actions/checkout@v3

@@ -22,7 +22,8 @@ jobs:
           - os: macos-12
             exe_postfix:
             friendly_name: macos
-            build_command: cd build-dir && make -j 8 install
+            # in cmake 3.28 there is a problem with building with cmake --build ... on macos
+            build_command: cd build-dir && make -j 1 install
     name: Build
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
