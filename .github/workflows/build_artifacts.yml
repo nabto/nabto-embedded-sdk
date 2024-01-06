@@ -14,12 +14,16 @@ jobs:
           - os: windows-2022
             exe_postfix: .exe
             friendly_name: windows
+            build_command: cmake --build build-dir --parallel --target install
           - os: ubuntu-20.04
             exe_postfix:
             friendly_name: linux_x86_64
+            build_command: cmake --build build-dir --parallel --target install
           - os: macos-12
             exe_postfix:
             friendly_name: macos
+            # 2024-01-05: Sometimes mac fails on github actions when doing builds so we use make without parallellism directly, since we hope that fixes the unknown problem.
+            build_command: cd build-dir && make -j 1 install
     name: Build
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -33,10 +37,7 @@ jobs:
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
 
       - name: Build
-        run: cmake --build build-dir --parallel 8
-
-      - name: Install
-        run: cmake --build build-dir --target install
+        run: ${{matrix.build_command}}
 
       - name: Prepate assets
         run: |

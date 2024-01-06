@@ -14,6 +14,14 @@ jobs:
       matrix:
         cli-only: [0, 1]
         os: [windows-2022, ubuntu-22.04, macos-12]
+        include:
+          - os: windows-2022
+            build_command: cmake --build build-dir --parallel --target install
+          - os: ubuntu-22.04
+            build_command: cmake --build build-dir --parallel --target install
+          - os: macos-12
+            # 2024-01-05: Sometimes mac fails on github actions when doing builds so we use make without parallellism directly, since we hope that fixes the unknown problem.
+            build_command: cd build-dir && make -j 1 install
 
     steps:
       - uses: actions/checkout@v3
@@ -24,10 +32,7 @@ jobs:
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
 
       - name: Build
-        run: cmake --build build-dir --parallel
-
-      - name: Install
-        run: cmake --build build-dir --target install
+        run: ${{matrix.build_command}}
 
       - if: matrix.os == 'windows-2022'
         name: Test run
