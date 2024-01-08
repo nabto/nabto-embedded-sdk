@@ -10,6 +10,9 @@ jobs:
     timeout-minutes: 20
     name: Build
     runs-on: "ubuntu-22.04"
+    strategy:
+      matrix:
+        mbedtls_version: [v3.5.1, v3.3.0]
 
     steps:
       - uses: actions/checkout@v3
@@ -17,7 +20,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Change MbedTLS version
-        run: cd 3rdparty/mbedtls/mbedtls && git fetch && git checkout v3.5.1
+        run: cd 3rdparty/mbedtls/mbedtls && git fetch && git checkout ${{ matrix.mbedtls_version }}
 
       - name: Configure cmake
         run: mkdir build-dir && cd build-dir && cmake -DDEVICE_BUILD_TESTS=ON -DDEVICE_MBEDTLS_2=OFF -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
