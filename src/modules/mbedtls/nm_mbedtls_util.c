@@ -95,7 +95,8 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
     mbedtls_x509write_crt_set_subject_key( &ctx->crt, &ctx->key );
     mbedtls_x509write_crt_set_issuer_key( &ctx->crt, &ctx->key );
 
-#if MBEDTLS_VERSION_MAJOR >= 3
+#if ( MBEDTLS_VERSION_MAJOR == 3 && MBEDTLS_VERSION_MINOR >= 4) || MBEDTLS_VERSION_MAJOR > 3
+    // mbedtls_x509write_crt_set_serial is deprecated from mbedtls 3.4 and onwards.
     unsigned char serial[1] = { 0x01 };
     ret = mbedtls_x509write_crt_set_serial_raw(&ctx->crt, serial, 1);
 #else
