@@ -10,6 +10,9 @@
 #include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>
 
+#if !defined(DEVICE_MBEDTLS_2)
+#include <mbedtls/build_info.h>
+#endif
 #include <mbedtls/debug.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/entropy.h>

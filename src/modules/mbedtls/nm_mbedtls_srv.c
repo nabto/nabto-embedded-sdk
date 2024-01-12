@@ -10,6 +10,9 @@
 #include <platform/np_allocator.h>
 #include <core/nc_version.h>
 
+#if !defined(DEVICE_MBEDTLS_2)
+#include <mbedtls/build_info.h>
+#endif
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/x509.h>

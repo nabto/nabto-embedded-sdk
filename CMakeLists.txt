@@ -156,6 +156,10 @@ if (HAVE_TIMEGM)
   add_definitions(-DHAVE_TIMEGM)
 endif()
 
+if (DEVICE_MBEDTLS_2)
+  add_definitions(-DDEVICE_MBEDTLS_2)
+endif()
+
 include_directories(src)
 include_directories(include)
 

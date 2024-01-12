@@ -1,5 +1,8 @@
 #include <nabto/nabto_device_config.h>
 #include "nm_mbedtls_util.h"
+#if !defined(DEVICE_MBEDTLS_2)
+#include <mbedtls/build_info.h>
+#endif
 #include <mbedtls/sha256.h>
 #include "mbedtls/error.h"
 #include "mbedtls/pk.h"

@@ -1,5 +1,9 @@
 #include "nm_mbedtls_spake2.h"
 #include "nm_mbedtls_util.h"
+
+#if !defined(DEVICE_MBEDTLS_2)
+#include <mbedtls/build_info.h>
+#endif
 #include <mbedtls/sha256.h>
 #include <mbedtls/md.h>
 #include <mbedtls/ctr_drbg.h>
