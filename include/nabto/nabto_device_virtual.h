@@ -9,7 +9,11 @@
 extern "C" {
 #endif
 
-
+    /**
+    * @intro Virtual Connections
+    *
+    * Virtual connections can be used to create a client connection through the Nabto Device API instead. This is used by the WebRTC library to make it possible to use standard Nabto features like CoAP through WebRTC data channels. Virtual Connections can also be useful for test purposes as it becomes possible to test CoAP/streaming implementations without a Nabto CLient SDK implementation.
+    */
 
 
     /// VIRTUAL CLIENT CONNECTIONS ////
