@@ -31,6 +31,7 @@ struct nc_coap_server_virtual_request {
     bool connectionClosed;
     bool clientFreed;
     bool serverFreed;
+    bool resolved;
 
     struct nn_llist_node listElm;
     nabto_coap_method method;
