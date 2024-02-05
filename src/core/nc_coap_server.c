@@ -478,6 +478,7 @@ nabto_coap_code method, const char** segments, void* payload, size_t payloadSize
     virReq->connectionClosed = false;
     virReq->clientFreed = false;
     virReq->serverFreed = false;
+    virReq->resolved = false;
     memcpy(virReq->reqPayload, payload, payloadSize);
     nn_string_map_init(&virReq->parameters, np_allocator_get());
     nc_virtual_connection_add_coap_request(conn->connectionImplCtx, req);
@@ -544,5 +545,8 @@ uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* r
 
 void nc_coap_server_resolve_virtual(np_error_code ec, struct nc_coap_server_request* request)
 {
-    request->virRequest->handler(ec, request, request->virRequest->handlerData);
+    if (!request->virRequest->resolved) {
+        request->virRequest->resolved = true;
+        request->virRequest->handler(ec, request, request->virRequest->handlerData);
+    }
 }
