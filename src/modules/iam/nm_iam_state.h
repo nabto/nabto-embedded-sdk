@@ -19,7 +19,6 @@ struct nm_iam_user {
     char* displayName;
     char* role;
     char* password;
-    char* fingerprint; // Reference to first fp in list for Legacy
     char* sct;
     char* fcmToken;
     char* fcmProjectId;
