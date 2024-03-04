@@ -186,6 +186,14 @@ void nm_iam_set_friendly_name_max_length(struct nm_iam* iam, size_t len);
  */
 void nm_iam_set_max_users(struct nm_iam* iam, size_t n);
 
+/*
+ * Set the max number of fingerprints allowed on a single user in the IAM module.
+ *
+ * @param iam [in]  IAM module to set length in
+ * @param n [in]    Max number of fingerprints to set. Default: SIZE_MAX
+ */
+void nm_iam_set_max_user_fingerprints(struct nm_iam* iam, size_t n);
+
 /**
  * @intro Runtime State
  *
@@ -277,6 +285,7 @@ void nm_iam_set_local_initial_pairing(struct nm_iam* iam, bool enabled);
 enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
 
 /**
+ * @deprecated use nm_iam_add_user_fingerprint()
  * Set the public key fingerprint for an existing user while the system is running.
  *
  * @param iam [in] IAM module to manipulate
@@ -288,6 +297,35 @@ enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username);
  * @retval NM_IAM_ERROR_OK if the fingerprint was set successfully for the user.
  */
 enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint);
+
+/**
+ * Add a public key fingerprint to an existing user while the system is running.
+ *
+ * The fingerprint can be assigned a name to help identify which client device it belongs to. The name can be NULL.
+ *
+ * @param iam [in] IAM module to manipulate
+ * @param username [in] the username of the user
+ * @param fingerprint [in] hex encoded public key fingerprint
+ * @param name [in] name to assign to the fingerprint
+ * @retval NM_IAM_ERROR_INVALID_FINGERPRINT if the specified fingerprint is invalid.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_INVALID_ARGUMENT if the fingerprint length was not 64.
+ * @retval NM_IAM_ERROR_OK if the fingerprint was set successfully for the user.
+ */
+enum nm_iam_error nm_iam_add_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint, const char* name);
+
+/**
+ * Remove a public key fingerprint from an existing user while the system is running.
+ *
+ * @param iam [in] IAM module to manipulate
+ * @param username [in] the username of the user
+ * @param fingerprint [in] hex encoded public key fingerprint
+ * @retval NM_IAM_ERROR_INVALID_FINGERPRINT if the specified fingerprint is invalid.
+ * @retval NM_IAM_ERROR_NO_SUCH_USER if the specified user does not exist.
+ * @retval NM_IAM_ERROR_INVALID_ARGUMENT if the fingerprint length was not 64.
+ * @retval NM_IAM_ERROR_OK if the fingerprint was set successfully for the user.
+ */
+enum nm_iam_error nm_iam_remove_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint);
 
 /**
  * Set an SCT for the specified user while the system is running.
@@ -442,6 +480,7 @@ struct nm_iam {
     size_t sctMaxLength;
     size_t maxUsers;
     size_t friendlyNameMaxLength;
+    size_t maxUserFingerprints;
 
     struct nn_vector authorizedConnections;
 
