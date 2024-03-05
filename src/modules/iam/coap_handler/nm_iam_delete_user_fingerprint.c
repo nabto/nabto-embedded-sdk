@@ -19,11 +19,9 @@ NabtoDeviceError nm_iam_delete_user_fingerprint_init(struct nm_iam_coap_handler*
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    CborParser parser;
-    CborValue value;
     const char* username = nabto_device_coap_request_get_parameter(request, "user");
     const char* fp = nabto_device_coap_request_get_parameter(request, "fingerprint");
-    if (username == NULL || fp == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
+    if (username == NULL || fp == NULL) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
