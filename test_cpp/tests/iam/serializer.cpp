@@ -18,7 +18,12 @@ std::string s1 = R"(
   "Users": [
     {
       "DisplayName":"Display Name",
-      "Fingerprint":"fingerprint",
+      "Fingerprints":[
+        {
+          "Fingerprint": "fingerprint",
+          "Name": "myphone"
+        }
+      ],
       "Role":"role1",
       "ServerConnectToken":"token2",
       "Password":"password2",
@@ -31,7 +36,7 @@ std::string s1 = R"(
       "OauthSubject":"oauth_subject"
     }
   ],
-  "Version":1
+  "Version":2
 }
 )";
 
@@ -143,7 +148,7 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
         nn_string_set_insert(&cats, "cat1");
         nn_string_set_insert(&cats, "cat2");
         struct nm_iam_user* u = nm_iam_user_new("username");
-        BOOST_TEST(nm_iam_user_set_fingerprint(u, "fingerprint") == true);
+        BOOST_TEST(nm_iam_user_add_fingerprint(u, "fingerprint", "myphone") == true);
         BOOST_TEST(nm_iam_user_set_sct(u, "token2") == true);
         BOOST_TEST(nm_iam_user_set_display_name(u, "Display Name") == true);
         BOOST_TEST(nm_iam_user_set_role(u, "role1") == true);
@@ -170,8 +175,12 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
     BOOST_TEST(j["Users"].size() == (size_t)1);
     BOOST_TEST(j["Users"][0]["Username"].is_string());
     BOOST_TEST(j["Users"][0]["Username"].get<std::string>().compare("username") == 0);
-    BOOST_TEST(j["Users"][0]["Fingerprint"].is_string());
-    BOOST_TEST(j["Users"][0]["Fingerprint"].get<std::string>().compare("fingerprint") == 0);
+    BOOST_TEST(j["Users"][0]["Fingerprints"].is_array());
+    BOOST_TEST(j["Users"][0]["Fingerprints"].size() == (size_t)1);
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Fingerprint"].is_string());
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Fingerprint"].get<std::string>().compare("fingerprint") == 0);
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Name"].is_string());
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Name"].get<std::string>().compare("myphone") == 0);
     BOOST_TEST(j["Users"][0]["ServerConnectToken"].is_string());
     BOOST_TEST(j["Users"][0]["ServerConnectToken"].get<std::string>().compare("token2") == 0);
     BOOST_TEST(j["Users"][0]["DisplayName"].is_string());
@@ -235,10 +244,17 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
     BOOST_TEST(strcmp(state->passwordOpenPassword, "password") == 0);
     BOOST_TEST(strcmp(state->passwordOpenSct, "token") == 0);
 
-    void* user;
-    NN_LLIST_FOREACH(user, &state->users) {
-        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->username, "username") == 0);
-        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fingerprint, "fingerprint") == 0);
+    void* u;
+    NN_LLIST_FOREACH(u, &state->users) {
+      struct nm_iam_user* user = (struct nm_iam_user*)u;
+        BOOST_TEST(strcmp(user->username, "username") == 0);
+        void* f;
+        NN_LLIST_FOREACH(f, &user->fingerprints) {
+          struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+          BOOST_CHECK(strcmp(fp->fingerprint, "fingerprint") == 0);
+          BOOST_CHECK(strcmp(fp->name, "myphone") == 0);
+        }
+
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->sct, "token2") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->displayName, "Display Name") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->role, "role1") == 0);

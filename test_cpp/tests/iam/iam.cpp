@@ -25,14 +25,18 @@ std::string s2 = R"(
   "Users": [
     {
       "DisplayName":"Display Name",
-      "Fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "Fingerprints": [
+        {
+          "Fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
       "Role":"Admin",
       "Password":"password2",
       "Username":"testuser",
       "OauthSubject":"oauth_subject"
     }
   ],
-  "Version":1
+  "Version":2
 }
 )";
 
@@ -258,7 +262,12 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
         nm_iam_state* s = nm_iam_dump_state(&iam);
         struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
         BOOST_TEST((usr != NULL));
-        BOOST_TEST(strcmp(usr->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+          struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+          BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+          BOOST_CHECK(fp->name == NULL);
+        }
         nm_iam_state_free(s);
     }
     NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
@@ -289,7 +298,12 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
         nm_iam_state* s = nm_iam_dump_state(&iam);
         struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
         BOOST_TEST((usr != NULL));
-        BOOST_TEST((usr->fingerprint == NULL));
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+          struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+          BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+          BOOST_CHECK(strcmp(fp->name, "myphone") == 0);
+        }
         nm_iam_state_free(s);
     }
 

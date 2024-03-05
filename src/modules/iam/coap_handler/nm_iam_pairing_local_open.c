@@ -72,7 +72,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    if (!nm_iam_internal_pair_new_client(handler->iam, request, username)) {
+    // TODO: get fpName from request
+    if (!nm_iam_internal_pair_new_client(handler->iam, request, username, NULL)) {
         nabto_device_coap_error_response(request, 500, "Server error");
         nm_iam_free(fingerprint);
         nm_iam_free(username);

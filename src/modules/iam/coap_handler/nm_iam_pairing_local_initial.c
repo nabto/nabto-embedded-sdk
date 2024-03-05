@@ -40,7 +40,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
             // the initial user is already paired.
             nabto_device_coap_error_response(request, 409, "Already paired");
         } else {
-            if (nm_iam_pairing_pair_user(iam, initialUser, ref)) {
+            // TODO: get fpName from request
+            if (nm_iam_pairing_pair_user(iam, initialUser, ref, NULL)) {
                 nm_iam_internal_state_has_changed(iam);
                 nabto_device_coap_response_set_code(request, 201);
                 nabto_device_coap_response_ready(request);

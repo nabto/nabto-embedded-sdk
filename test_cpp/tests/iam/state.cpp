@@ -28,7 +28,7 @@ struct nm_iam_state* initState()
     nm_iam_state_set_friendly_name(state, "friendly name");
 
     struct nm_iam_user* usr = nm_iam_state_user_new("username");
-    nm_iam_state_user_set_fingerprint(usr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    nm_iam_state_user_add_fingerprint(usr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
     nm_iam_state_user_set_sct(usr, "token2");
     nm_iam_state_user_set_display_name(usr, "Display Name");
     nm_iam_state_user_set_role(usr, "role1");
@@ -54,7 +54,12 @@ std::string s1 = R"(
   "Users": [
     {
       "DisplayName":"Display Name",
-      "Fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "Fingerprints": [
+        {
+            "Fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "FingerprintName": "myphone",
+        }
+      ],
       "Role":"role1",
       "ServerConnectToken":"token2",
       "Password":"password2",
@@ -118,7 +123,15 @@ BOOST_AUTO_TEST_CASE(load_dump_state, *boost::unit_test::timeout(180))
         BOOST_CHECK(strcmp(user->displayName, "Display Name") == 0);
         BOOST_CHECK(strcmp(user->role, "role1") == 0);
         BOOST_CHECK(strcmp(user->password, "password2") == 0);
-        BOOST_CHECK(strcmp(user->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+        void* f;
+        NN_LLIST_FOREACH(f, &user->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*) f;
+            BOOST_CHECK(fp->fingerprint != NULL);
+            BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+            BOOST_CHECK(fp->name != NULL);
+            BOOST_CHECK(strcmp(fp->name, "myphone") == 0);
+
+        }
         BOOST_CHECK(strcmp(user->sct, "token2") == 0);
         BOOST_CHECK(strcmp(user->fcmToken, "fcm_token") == 0);
         BOOST_CHECK(strcmp(user->fcmProjectId, "fcm_project") == 0);
@@ -156,7 +169,7 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
     BOOST_REQUIRE(nm_iam_load_state(&iam, state));
 
     BOOST_CHECK(nm_iam_create_user(&iam, "newuser") == NM_IAM_ERROR_OK);
-    BOOST_TEST(nm_iam_set_user_fingerprint(&iam, "newuser", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == NM_IAM_ERROR_OK);
+    BOOST_TEST(nm_iam_add_user_fingerprint(&iam, "newuser", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "myotherphone") == NM_IAM_ERROR_OK);
     BOOST_CHECK(nm_iam_set_user_sct(&iam, "newuser", "token42") == NM_IAM_ERROR_OK);
     BOOST_CHECK(nm_iam_set_user_password(&iam, "newuser", "password42") == NM_IAM_ERROR_OK);
     BOOST_CHECK(nm_iam_set_user_role(&iam, "newuser", "role42") == NM_IAM_ERROR_NO_SUCH_ROLE);
@@ -183,7 +196,13 @@ BOOST_AUTO_TEST_CASE(runtime_create_user, *boost::unit_test::timeout(180))
             BOOST_CHECK(strcmp(user->displayName, "New Display Name") == 0);
             BOOST_CHECK(user->role == NULL);
             BOOST_CHECK(strcmp(user->password, "password42") == 0);
-            BOOST_CHECK(strcmp(user->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+            void* f;
+            NN_LLIST_FOREACH(f, &user->fingerprints) {
+                struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+                BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+                BOOST_CHECK(strcmp(fp->name, "myotherphone") == 0);
+
+            }
             BOOST_CHECK(strcmp(user->sct, "token42") == 0);
             BOOST_CHECK(strcmp(user->fcmToken, "fcm_token_42") == 0);
             BOOST_CHECK(strcmp(user->fcmProjectId, "fcm_project_42") == 0);
@@ -389,6 +408,7 @@ BOOST_AUTO_TEST_CASE(runtime_limits, *boost::unit_test::timeout(180))
     BOOST_TEST(nm_iam_create_user(&iam, "abcde") == NM_IAM_ERROR_INTERNAL); // user limit
     BOOST_TEST(nm_iam_create_user(&iam, "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT); // username limit
     BOOST_TEST(nm_iam_set_user_fingerprint(&iam, "username", "foobar") == NM_IAM_ERROR_INVALID_ARGUMENT);
+    BOOST_TEST(nm_iam_add_user_fingerprint(&iam, "username", "foobar", "name") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_oauth_subject(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_sct(&iam, "username", "abcdefghijklmn") == NM_IAM_ERROR_INVALID_ARGUMENT);
     BOOST_TEST(nm_iam_set_user_password(&iam, "username", "a") == NM_IAM_ERROR_INVALID_ARGUMENT);

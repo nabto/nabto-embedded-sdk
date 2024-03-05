@@ -210,9 +210,21 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
         cbor_encode_text_stringz(&map, user->role);
     }
 
-    if (user->fingerprint != NULL) {
-        cbor_encode_text_stringz(&map, "Fingerprint");
-        cbor_encode_text_stringz(&map, user->fingerprint);
+    {
+        cbor_encode_text_stringz(&map, "Fingerprints");
+        CborEncoder array;
+        cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
+        struct nm_iam_user_fingerprint* fp;
+        NN_LLIST_FOREACH(fp, &user->fingerprints) {
+            CborEncoder fpMap;
+            cbor_encoder_create_map(&array, &fpMap, CborIndefiniteLength);
+            cbor_encode_text_stringz(&fpMap, "Fingerprint");
+            cbor_encode_text_stringz(&fpMap, fp->fingerprint);
+            cbor_encode_text_stringz(&fpMap, "Name");
+            cbor_encode_text_stringz(&fpMap, fp->name);
+            cbor_encoder_close_container(&array, &fpMap);
+        }
+        cbor_encoder_close_container(&map, &array);
     }
 
     if (user->sct != NULL) {

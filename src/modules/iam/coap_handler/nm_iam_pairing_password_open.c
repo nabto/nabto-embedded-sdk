@@ -84,8 +84,9 @@ void handle_request(struct nm_iam_coap_handler* handler,
         } else if (nm_iam_internal_find_user(handler->iam, username) != NULL) {
             nabto_device_coap_error_response(request, 409, "Conflict");
         } else {
+            // TODO: get fpName from request
             if (!nm_iam_internal_pair_new_client(handler->iam, request,
-                                                 username)) {
+                                                 username, NULL)) {
                 nabto_device_coap_error_response(request, 500, "Server error");
             } else {
                 // OK response

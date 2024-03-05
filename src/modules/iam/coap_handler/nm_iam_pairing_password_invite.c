@@ -50,7 +50,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
             if (nabto_device_connection_get_client_fingerprint(iam->device, ref, &fp) != NABTO_DEVICE_EC_OK) {
                 nabto_device_coap_error_response(request, 500, "Server error");
             } else {
-                if (!nm_iam_user_set_fingerprint(user, fp)) {
+                // TODO: get fingerprint name from request
+                if (!nm_iam_user_add_fingerprint(user, fp, NULL)) {
                     nabto_device_coap_error_response(request, 500, "Insufficient resources");
                 } else {
                     nm_iam_user_set_password(user, NULL);

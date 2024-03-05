@@ -156,6 +156,16 @@ bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fin
     return nm_iam_user_set_fingerprint(user, fingerprint);
 }
 
+bool nm_iam_state_user_add_fingerprint(struct nm_iam_user* user, const char* fingerprint, const char* fingerprintName)
+{
+    return nm_iam_user_add_fingerprint(user, fingerprint, fingerprintName);
+}
+
+bool nm_iam_state_user_remove_fingerprint(struct nm_iam_user* user, const char* fingerprint)
+{
+    return nm_iam_user_remove_fingerprint(user, fingerprint);
+}
+
 bool nm_iam_state_user_set_sct(struct nm_iam_user* user, const char* sct)
 {
     return nm_iam_user_set_sct(user, sct);

@@ -139,7 +139,7 @@ bool nm_iam_serializer_configuration_load_json(struct nm_iam_configuration* conf
 bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out)
 {
     cJSON* json = cJSON_CreateObject();
-    cJSON_AddNumberToObject(json, "Version", 1);
+    cJSON_AddNumberToObject(json, "Version", 2);
     if (state == NULL) {
         cJSON* usersArray = cJSON_CreateArray();
         cJSON_AddItemToObject(json, "Users", usersArray);
@@ -226,6 +226,9 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
     if (!cJSON_IsNumber(version)) {
         NN_LOG_ERROR(logger, LOGM, "missing version in iam state");
         cJSON_Delete(root);
+        return false;
+    } else if (version->valueint != 2) {
+        NN_LOG_ERROR(logger, LOGM, "Unsupported IAM state version: %d", version->valueint);
         return false;
     }
 

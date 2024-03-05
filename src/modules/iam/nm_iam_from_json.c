@@ -38,7 +38,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
     cJSON* username = cJSON_GetObjectItem(json, "Username");
     cJSON* displayName = cJSON_GetObjectItem(json, "DisplayName");
     cJSON* sct = cJSON_GetObjectItem(json, "ServerConnectToken");
-    cJSON* fingerprint = cJSON_GetObjectItem(json, "Fingerprint");
+    cJSON* fingerprints = cJSON_GetObjectItem(json, "Fingerprints");
     cJSON* password = cJSON_GetObjectItem(json, "Password");
     cJSON* role = cJSON_GetObjectItem(json, "Role");
     cJSON* fcm = cJSON_GetObjectItem(json, "Fcm");
@@ -66,8 +66,22 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json)
         nm_iam_user_set_display_name(user, displayName->valuestring);
     }
 
-    if (cJSON_IsString(fingerprint)) {
-        nm_iam_user_set_fingerprint(user, fingerprint->valuestring);
+    if (cJSON_IsArray(fingerprints)) {
+        size_t fpsSize = cJSON_GetArraySize(fingerprints);
+        for (size_t i = 0; i < fpsSize; i++) {
+            cJSON* item = cJSON_GetArrayItem(fingerprints, (int)i);
+            cJSON* fp = cJSON_GetObjectItem(item, "Fingerprint");
+            cJSON* fpName = cJSON_GetObjectItem(item, "Name");
+            char* fpNameStr = NULL;
+            if (cJSON_IsString(fpName)) {
+                fpNameStr = fpName->valuestring;
+            }
+
+            if (cJSON_IsString(fp)) {
+                char* fpStr = fp->valuestring;
+                nm_iam_user_add_fingerprint(user, fpStr, fpNameStr);
+            }
+        }
     }
 
     if (cJSON_IsString(password)) {

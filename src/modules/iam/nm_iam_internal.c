@@ -122,8 +122,11 @@ struct nm_iam_user* nm_iam_internal_find_user_by_fingerprint(struct nm_iam* iam,
     }
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &iam->state->users) {
-        if (user->fingerprint != NULL && strcmp(user->fingerprint, fingerprint) == 0) {
-            return user;
+        struct nm_iam_user_fingerprint* fp;
+        NN_LLIST_FOREACH(fp, &user->fingerprints) {
+            if (fp->fingerprint != NULL && strcmp(fp->fingerprint, fingerprint) == 0) {
+                return user;
+            }
         }
     }
     return NULL;
@@ -164,7 +167,7 @@ struct nm_iam_policy* nm_iam_internal_find_policy(struct nm_iam* iam, const char
     return NULL;
 }
 
-struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* username)
+struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* username, const char* fpName)
 {
     {
         struct nm_iam_user* user = nm_iam_internal_find_user_by_coap_request(iam, request);
@@ -193,7 +196,7 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
     }
 
     if (!nm_iam_user_set_role(user, role) ||
-        !nm_iam_user_set_fingerprint(user, fingerprint) ||
+        !nm_iam_user_add_fingerprint(user, fingerprint, fpName) ||
         !nm_iam_user_set_sct(user, sct) ||
         !nm_iam_internal_add_user(iam, user) )
     {
@@ -320,6 +323,16 @@ bool nm_iam_internal_load_configuration(struct nm_iam* iam, struct nm_iam_config
     return true;
 }
 
+bool validate_user_fingerprints(struct nm_iam_user* user) {
+    struct nm_iam_user_fingerprint* fp = NULL;
+    NN_LLIST_FOREACH(fp, &user->fingerprints) {
+        if (fp != NULL && strlen(fp->fingerprint) != 64) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     if (nn_llist_size(&state->users) > iam->maxUsers ||
         (state->passwordOpenPassword != NULL && (strlen(state->passwordOpenPassword) > iam->passwordMaxLength || strlen(state->passwordOpenPassword) < iam->passwordMinLength)) ||
@@ -342,19 +355,19 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
         if (strlen(user->username) > iam->usernameMaxLength ||
             (user->displayName != NULL && strlen(user->displayName) > iam->displayNameMaxLength) ||
             (user->password != NULL && (strlen(user->password) > iam->passwordMaxLength || strlen(user->password) < iam->passwordMinLength)) ||
-            (user->fingerprint != NULL && strlen(user->fingerprint) != 64) ||
+            (!validate_user_fingerprints(user)) ||
             (user->sct != NULL && strlen(user->sct) > iam->sctMaxLength) ||
             (user->fcmToken != NULL && strlen(user->fcmToken) > iam->fcmTokenMaxLength) ||
             (user->fcmProjectId != NULL && strlen(user->fcmProjectId) > iam->fcmProjectIdMaxLength) ||
             (user->oauthSubject != NULL && strlen(user->oauthSubject) > iam->oauthSubjectMaxLength)
             ) {
             NN_LOG_ERROR(iam->logger, LOGM,
-                         "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d>%d, fingerprint: %d!=%d, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d, oauthSubject: %d>%d",
+                         "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d>%d, fingerprint: %s, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d, oauthSubject: %d>%d",
                          (user->username == NULL) ? 0 : strlen(user->username), iam->usernameMaxLength,
                          (user->displayName == NULL) ? 0 : strlen(user->displayName), iam->displayNameMaxLength,
                          iam->passwordMinLength,
                          (user->password == NULL) ? 0 : strlen(user->password), iam->passwordMaxLength,
-                         (user->fingerprint == NULL) ? 0 : strlen(user->fingerprint), 64,
+                         (validate_user_fingerprints(user)) ? "valid" : "invalid",
                          (user->sct == NULL) ? 0 : strlen(user->sct), iam->usernameMaxLength,
                          (user->fcmToken == NULL) ? 0 : strlen(user->fcmToken), iam->fcmTokenMaxLength,
                          (user->fcmProjectId == NULL) ? 0 : strlen(user->fcmProjectId), iam->fcmProjectIdMaxLength,
@@ -553,6 +566,42 @@ enum nm_iam_error nm_iam_internal_set_user_fingerprint(struct nm_iam* iam, const
     enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     // todo handle invalid fingerprint format.
     if (nm_iam_user_set_fingerprint(user, fingerprint)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_add_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint, const char* fingerprintName)
+{
+    if (strlen(fingerprint) != 64 || strlen(fingerprintName) > iam->displayNameMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
+
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    // todo handle invalid fingerprint format.
+    if (nm_iam_user_add_fingerprint(user, fingerprint, fingerprintName)) {
+        ec = NM_IAM_ERROR_OK;
+    }
+    nm_iam_internal_state_has_changed(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_internal_remove_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint)
+{
+    struct nm_iam_user* user = nm_iam_internal_find_user_by_username(iam, username);
+    if (user == NULL) {
+        return NM_IAM_ERROR_NO_SUCH_USER;
+    }
+
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
+    // todo handle invalid fingerprint format.
+    if (nm_iam_user_remove_fingerprint(user, fingerprint)) {
         ec = NM_IAM_ERROR_OK;
     }
     nm_iam_internal_state_has_changed(iam);
