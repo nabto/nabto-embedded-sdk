@@ -440,6 +440,8 @@ void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
     nm_iam_set_user_username_init(&iam->coapIamUsersUserSetUsernameHandler, iam->device, iam);
     nm_iam_set_user_display_name_init(&iam->coapIamUsersUserSetDisplayNameHandler, iam->device, iam);
     nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
+    nm_iam_add_user_fingerprint_init(&iam->coapIamUsersUserAddFingerprintHandler, iam->device, iam);
+    nm_iam_delete_user_fingerprint_init(&iam->coapIamUsersUserDeleteFingerprintHandler, iam->device, iam);
     nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
     nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
     nm_iam_set_user_fcm_token_init(&iam->coapIamUsersUserSetFcmTokenHandler, iam->device, iam);
@@ -473,6 +475,8 @@ void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetUsernameHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetDisplayNameHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFingerprintHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserAddFingerprintHandler);
+    nm_iam_coap_handler_deinit(&iam->coapIamUsersUserDeleteFingerprintHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetPasswordHandler);
     nm_iam_coap_handler_deinit(&iam->coapIamUsersUserSetFcmTokenHandler);
@@ -505,6 +509,8 @@ void nm_iam_internal_stop(struct nm_iam* iam)
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetUsernameHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetDisplayNameHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFingerprintHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserAddFingerprintHandler);
+    nm_iam_coap_handler_stop(&iam->coapIamUsersUserDeleteFingerprintHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetSctHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetPasswordHandler);
     nm_iam_coap_handler_stop(&iam->coapIamUsersUserSetFcmTokenHandler);

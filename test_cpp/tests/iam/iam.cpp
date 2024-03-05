@@ -27,7 +27,12 @@ std::string s2 = R"(
       "DisplayName":"Display Name",
       "Fingerprints": [
         {
-          "Fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          "Fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "Name": "myphone"
+        },
+        {
+          "Fingerprint":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "Name": "yourphone"
         }
       ],
       "Role":"Admin",
@@ -202,6 +207,50 @@ BOOST_AUTO_TEST_CASE(expire_auth_on_close, *boost::unit_test::timeout(180))
     nabto_device_free(d);
 }
 
+BOOST_AUTO_TEST_CASE(user_multi_fingerprint, *boost::unit_test::timeout(180))
+{
+    NabtoDevice* d = nabto_device_new();
+    struct nn_log iamLogger;
+    iamLogger.logPrint = &nabto::test::iam_logger;
+
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        nabto_device_set_log_level(d, logLevel);
+        nabto_device_set_log_std_out_callback(d);
+    }
+    struct nm_iam iam;
+    nm_iam_init(&iam, d, &iamLogger);
+
+    struct nm_iam_configuration* conf = nm_iam_configuration_new();
+    BOOST_TEST(nm_iam_serializer_configuration_load_json(conf, nabto::test::c2.c_str(), NULL) == true);
+
+    struct nm_iam_state* state = nm_iam_state_new();
+    BOOST_TEST(nm_iam_serializer_state_load_json(state, nabto::test::s2.c_str(), NULL) == true);
+
+    BOOST_TEST(nm_iam_load_configuration(&iam, conf));
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+
+    BOOST_TEST(!nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_set_client_fingerprint(connection, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+
+    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
 BOOST_AUTO_TEST_CASE(can_remove_displayname, *boost::unit_test::timeout(180))
 {
     struct nm_iam iam;
@@ -265,8 +314,15 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
           struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
-          BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
-          BOOST_CHECK(fp->name == NULL);
+          BOOST_CHECK(fp->name != NULL);
+          BOOST_CHECK(fp->fingerprint != NULL);
+          if (strcmp(fp->name, "myphone") == 0) {
+              BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+          } else {
+              BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+              BOOST_CHECK(strcmp(fp->name, "yourphone") == 0);
+          }
+
         }
         nm_iam_state_free(s);
     }
@@ -301,8 +357,15 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
           struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
-          BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
-          BOOST_CHECK(strcmp(fp->name, "myphone") == 0);
+          BOOST_CHECK(fp->name != NULL);
+          BOOST_CHECK(fp->fingerprint != NULL);
+          if (strcmp(fp->name, "myphone") == 0) {
+              BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+          }
+          else {
+              BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+              BOOST_CHECK(strcmp(fp->name, "yourphone") == 0);
+          }
         }
         nm_iam_state_free(s);
     }
