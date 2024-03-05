@@ -227,7 +227,7 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
         NN_LOG_ERROR(logger, LOGM, "missing version in iam state");
         cJSON_Delete(root);
         return false;
-    } else if (version->valueint != 2) {
+    } else if (version->valueint > 2) {
         NN_LOG_ERROR(logger, LOGM, "Unsupported IAM state version: %d", version->valueint);
         return false;
     }
@@ -273,7 +273,7 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
         size_t usersSize = cJSON_GetArraySize(users);
         for (size_t i = 0; i < usersSize; i++) {
             cJSON* item = cJSON_GetArrayItem(users, (int)i);
-            struct nm_iam_user* user = nm_iam_user_from_json(item);
+            struct nm_iam_user* user = nm_iam_user_from_json(item, version->valueint);
             if (user != NULL) {
                 nm_iam_state_add_user(state, user);
             }
