@@ -897,6 +897,59 @@ BOOST_AUTO_TEST_CASE(pwd_open_pairing_no_fpname, *boost::unit_test::timeout(180)
     nm_iam_deinit(&iam);
     nabto_device_free(d);
 }
+
+BOOST_AUTO_TEST_CASE(pwd_open_pairing_known_fp, *boost::unit_test::timeout(180))
+{
+    struct nm_iam iam;
+    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+
+    const std::string username = "";
+    const std::string clientFp = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    std::string pwd(iam.state->passwordOpenPassword);
+
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
+
+
+    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
+
+    BOOST_TEST((req != NULL));
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+
+    nlohmann::json root;
+    root["Username"] = "newuser";
+    root["FingerprintName"] = "newphone";
+    auto payload = nlohmann::json::to_cbor(root);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(d);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 409);
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_future_free(fut);
+
+
+    {
+        nm_iam_state* s = nm_iam_dump_state(&iam);
+        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "newuser");
+        BOOST_TEST((usr == NULL));
+        nm_iam_state_free(s);
+    }
+
+    nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+
+
 BOOST_AUTO_TEST_CASE(pwd_session_auth, *boost::unit_test::timeout(180))
 {
     struct nm_iam iam;
