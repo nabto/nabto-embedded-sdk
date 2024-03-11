@@ -49,6 +49,18 @@ void nm_iam_user_free(struct nm_iam_user* user)
     if (user != NULL) {
         nm_iam_free(user->username);
         nm_iam_free(user->displayName);
+
+        struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
+        while(!nn_llist_is_end(&it))
+        {
+            struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
+            nn_llist_erase_node(&fp->listNode);
+            nm_iam_free(fp->name);
+            nm_iam_free(fp->fingerprint);
+            nm_iam_free(fp);
+            it = nn_llist_begin(&user->fingerprints);
+        }
+
         nn_llist_deinit(&user->fingerprints);
         nm_iam_free(user->sct);
         nm_iam_free(user->role);

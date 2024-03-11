@@ -226,7 +226,8 @@ void doPwdAuth(NabtoDevice* d, struct nm_iam* iam, NabtoDeviceVirtualConnection*
     BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(req, (void**)&resp2Payload, &len2) == NABTO_DEVICE_EC_OK);
 
     BOOST_TEST(memcmp(resp2Payload, req2Key.data(), req2Key.size()) == 0);
-
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_future_free(fut);
 }
 
 }
@@ -815,6 +816,9 @@ BOOST_AUTO_TEST_CASE(pwd_open_pairing, *boost::unit_test::timeout(180))
     uint16_t status;
     BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(status == 201);
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_future_free(fut);
+
 
     {
         nm_iam_state* s = nm_iam_dump_state(&iam);
@@ -869,6 +873,9 @@ BOOST_AUTO_TEST_CASE(pwd_open_pairing_no_fpname, *boost::unit_test::timeout(180)
     uint16_t status;
     BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(status == 201);
+
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_future_free(fut);
 
     {
         nm_iam_state* s = nm_iam_dump_state(&iam);
@@ -948,6 +955,9 @@ BOOST_AUTO_TEST_CASE(pwd_invite_pairing, *boost::unit_test::timeout(180))
     BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(status == 201);
 
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_future_free(fut);
+
     {
         nm_iam_state* s = nm_iam_dump_state(&iam);
         struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
@@ -1009,6 +1019,9 @@ BOOST_AUTO_TEST_CASE(pwd_invite_pairing_no_fpname, *boost::unit_test::timeout(18
     uint16_t status;
     BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(status == 201);
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_future_free(fut);
+
 
     {
         nm_iam_state* s = nm_iam_dump_state(&iam);
