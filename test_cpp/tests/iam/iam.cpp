@@ -1,6 +1,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include "iam_util.hpp"
+#include "../spake2/spake2_util.hpp"
+#include "../../util/helper.hpp"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_virtual.h>
@@ -23,6 +25,12 @@ std::string s2 = R"(
   "OpenPairingPassword":"password",
   "OpenPairingSct":"token",
   "FriendlyName":"Friendly Name",
+  "OpenPairingRole": "Admin",
+  "InitialPairingUsername": "testuser",
+  "LocalOpenPairing": true,
+  "PasswordOpenPairing": true,
+  "PasswordInvitePairing": true,
+  "LocalInitialPairing": true,
   "Users": [
     {
       "DisplayName":"Display Name",
@@ -57,7 +65,7 @@ std::string c2 = R"(
       "Statements": [
         {
           "Actions":[
-            "Test:foo",
+            "IAM:PairingPasswordOpen",
             "Test:bar"
           ],
           "Effect":"Allow"
@@ -119,6 +127,106 @@ std::string c2 = R"(
   "Version":1
 }
 )";
+
+void doPwdAuth(NabtoDevice* d, struct nm_iam* iam, NabtoDeviceVirtualConnection* conn, const std::string username, const std::string clientFp, const std::string pwd) {
+
+    nabto_device_virtual_connection_set_client_fingerprint(conn, clientFp.c_str());
+
+    char* devFp = NULL;
+    nabto_device_get_device_fingerprint(d, &devFp);
+    BOOST_TEST((devFp != NULL));
+
+    nabto_device_virtual_connection_set_device_fingerprint(conn, devFp);
+
+    const std::string deviceFp(devFp);
+    nabto_device_string_free(devFp);
+
+    const char* auth1Path = "/p2p/pwd-auth/1";
+    const char* auth2Path = "/p2p/pwd-auth/2";
+
+    uint8_t clientFpBin[32];
+    uint8_t deviceFpBin[32];
+
+    nabto::test::fromHex(clientFp, clientFpBin);
+    nabto::test::fromHex(deviceFp, deviceFpBin);
+    // SETUP
+    nabto::test::Spake2Client cli(pwd, clientFpBin, deviceFpBin);
+    std::vector<uint8_t> T;
+    BOOST_TEST(cli.calculateT(T) == 0);
+
+    // AUTH REQ 1
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
+
+    BOOST_TEST((req != NULL));
+
+    nlohmann::json root;
+    root["Username"] = username;
+    root["T"] = nlohmann::json::binary(T);
+
+    auto payload = nlohmann::json::to_cbor(root);
+
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(d);
+
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    // AUTH RESP 1
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 201);
+
+    uint16_t cf;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_content_format(req, &cf) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(cf == NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
+
+    uint8_t* respPayload;
+    size_t len;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(req, (void**)&respPayload, &len) == NABTO_DEVICE_EC_OK);
+
+
+    BOOST_TEST(cli.calculateK(respPayload, len) == 0);
+    BOOST_TEST(cli.calculateKey());
+    std::array<uint8_t, 32> req2Key;
+    BOOST_TEST(nabto::test::Spake2Client::sha256(cli.key_.data(), cli.key_.size(), req2Key.data()) == 0);
+
+    std::array<uint8_t, 32> req2KeyHash;
+    BOOST_TEST(nabto::test::Spake2Client::sha256(req2Key.data(), req2Key.size(), req2KeyHash.data()) == 0);
+
+    nabto_device_virtual_coap_request_free(req);
+
+
+    // AUTH REQ 2
+    req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth2Path);
+
+    BOOST_TEST((req != NULL));
+
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, req2KeyHash.data(), req2KeyHash.size()) == NABTO_DEVICE_EC_OK);
+
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    // AUTH RESP 2
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 201);
+
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_content_format(req, &cf) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(cf == NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
+
+    uint8_t* resp2Payload;
+    size_t len2;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(req, (void**)&resp2Payload, &len2) == NABTO_DEVICE_EC_OK);
+
+    BOOST_TEST(memcmp(resp2Payload, req2Key.data(), req2Key.size()) == 0);
+
+}
 
 }
 } // namespaces
@@ -672,6 +780,89 @@ BOOST_AUTO_TEST_CASE(pair_new_user, *boost::unit_test::timeout(180))
     nm_iam_deinit(&iam);
     nabto_device_free(d);
 }
+
+
+BOOST_AUTO_TEST_CASE(pwd_pairing, *boost::unit_test::timeout(180))
+{
+    struct nm_iam iam;
+    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+
+    const std::string username = "";
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    std::string pwd(iam.state->passwordOpenPassword);
+
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
+
+
+    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
+
+    BOOST_TEST((req != NULL));
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+
+    nlohmann::json root;
+    root["Username"] = "newuser";
+    root["FingerprintName"] = "newphone";
+    auto payload = nlohmann::json::to_cbor(root);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(d);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 201);
+
+    {
+        nm_iam_state* s = nm_iam_dump_state(&iam);
+        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "newuser");
+        BOOST_TEST((usr != NULL));
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->name != NULL);
+            BOOST_CHECK(fp->fingerprint != NULL);
+            BOOST_TEST(strcmp(fp->name, "newphone") == 0);
+            BOOST_TEST(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+        }
+        nm_iam_state_free(s);
+    }
+
+    nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+BOOST_AUTO_TEST_CASE(pwd_session_auth, *boost::unit_test::timeout(180))
+{
+    struct nm_iam iam;
+    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+
+    const std::string username = "testuser";
+    const std::string clientFp = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    std::string pwd = "password2";
+
+    iam.state->passwordInvitePairing = false;
+
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
+
+    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+
+    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
 
 
 BOOST_AUTO_TEST_SUITE_END()

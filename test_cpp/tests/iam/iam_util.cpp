@@ -71,6 +71,13 @@ NabtoDevice* buildIamTestDevice(std::string& confStr, std::string& stateStr, str
     NabtoDevice* d = nabto_device_new();
     iamLogger.logPrint = &nabto::test::iam_logger;
 
+    char* key = NULL;
+    nabto_device_create_private_key(d, &key);
+
+    nabto_device_set_private_key(d, key);
+
+    nabto_device_string_free(key);
+
     const char* logLevel = getenv("NABTO_LOG_LEVEL");
     if (logLevel != NULL) {
         nabto_device_set_log_level(d, logLevel);
