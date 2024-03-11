@@ -30,7 +30,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     char* fpName = NULL;
     // fpName is optional, so ignore return value
-    nm_iam_cbor_decode_string(&value, &fpName);
+    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
 
 
     struct nn_string_map attributes;
