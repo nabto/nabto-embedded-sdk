@@ -23,7 +23,7 @@ struct nm_iam_user* nm_iam_internal_find_user(struct nm_iam* iam, const char* us
 void nm_iam_internal_do_callbacks(struct nm_iam* iam);
 
 
-struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* username, const char* fpName);
+enum nm_iam_error nm_iam_internal_pair_new_client(struct nm_iam* iam, const char* username, const char* fingerprint, const char* fpName);
 
 /**
  * Find a user by the user id.

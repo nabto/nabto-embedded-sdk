@@ -28,8 +28,7 @@ void handle_request(struct nm_iam_coap_handler* handler,
     }
     NabtoDeviceConnectionRef ref =
         nabto_device_coap_request_get_connection_ref(request);
-    if (!nm_iam_internal_check_access(handler->iam, ref,
-                                      "IAM:PairingPasswordOpen", NULL)) {
+    if (!nm_iam_pairing_is_password_open_possible(handler->iam, ref)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
@@ -71,27 +70,22 @@ void handle_request(struct nm_iam_coap_handler* handler,
 
         if (username == NULL) {
             nabto_device_coap_error_response(request, 400, "Username missing");
-            nm_iam_free(username);
-            return;
-        } else if (!nm_iam_user_validate_username(username)) {
-            nabto_device_coap_error_response(request, 400, "Invalid username");
-            nm_iam_free(username);
-            return;
-        } else if (strlen(username) > handler->iam->usernameMaxLength) {
-            nabto_device_coap_error_response(request, 400, "Username too long");
-            nm_iam_free(username);
-            return;
-        } else if (nm_iam_internal_find_user(handler->iam, username) != NULL) {
-            nabto_device_coap_error_response(request, 409, "Conflict");
         } else {
-            // TODO: get fpName from request
-            if (!nm_iam_internal_pair_new_client(handler->iam, request,
-                                                 username, NULL)) {
-                nabto_device_coap_error_response(request, 500, "Server error");
-            } else {
+            enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, NULL);
+            switch (e) {
+            case NM_IAM_ERROR_OK:
                 // OK response
                 nabto_device_coap_response_set_code(request, 201);
                 nabto_device_coap_response_ready(request);
+                break;
+            case NM_IAM_ERROR_INVALID_ARGUMENT:
+                nabto_device_coap_error_response(request, 400, "Invalid username");
+                break;
+            case NM_IAM_ERROR_USER_EXISTS:
+                nabto_device_coap_error_response(request, 409, "Conflict");
+                break;
+            default:
+                nabto_device_coap_error_response(request, 500, "Server error");
             }
         }
     }

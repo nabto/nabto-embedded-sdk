@@ -17,3 +17,11 @@ class EC {
     NabtoDeviceError ec_;
     friend std::ostream& operator<<(std::ostream& os, const EC& dt);
 };
+
+namespace nabto {
+namespace test {
+
+size_t fromHex(const std::string str, uint8_t* data);
+
+}
+}
