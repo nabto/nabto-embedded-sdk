@@ -25,14 +25,23 @@ std::string s2 = R"(
   "Users": [
     {
       "DisplayName":"Display Name",
-      "Fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "Fingerprints": [
+        {
+          "Fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "Name": "myphone"
+        },
+        {
+          "Fingerprint":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "Name": "yourphone"
+        }
+      ],
       "Role":"Admin",
       "Password":"password2",
       "Username":"testuser",
       "OauthSubject":"oauth_subject"
     }
   ],
-  "Version":1
+  "Version":2
 }
 )";
 
@@ -198,6 +207,50 @@ BOOST_AUTO_TEST_CASE(expire_auth_on_close, *boost::unit_test::timeout(180))
     nabto_device_free(d);
 }
 
+BOOST_AUTO_TEST_CASE(user_multi_fingerprint, *boost::unit_test::timeout(180))
+{
+    NabtoDevice* d = nabto_device_new();
+    struct nn_log iamLogger;
+    iamLogger.logPrint = &nabto::test::iam_logger;
+
+    const char* logLevel = getenv("NABTO_LOG_LEVEL");
+    if (logLevel != NULL) {
+        nabto_device_set_log_level(d, logLevel);
+        nabto_device_set_log_std_out_callback(d);
+    }
+    struct nm_iam iam;
+    nm_iam_init(&iam, d, &iamLogger);
+
+    struct nm_iam_configuration* conf = nm_iam_configuration_new();
+    BOOST_TEST(nm_iam_serializer_configuration_load_json(conf, nabto::test::c2.c_str(), NULL) == true);
+
+    struct nm_iam_state* state = nm_iam_state_new();
+    BOOST_TEST(nm_iam_serializer_state_load_json(state, nabto::test::s2.c_str(), NULL) == true);
+
+    BOOST_TEST(nm_iam_load_configuration(&iam, conf));
+    BOOST_TEST(nm_iam_load_state(&iam, state));
+
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+
+    BOOST_TEST(!nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_set_client_fingerprint(connection, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+
+    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
 BOOST_AUTO_TEST_CASE(can_remove_displayname, *boost::unit_test::timeout(180))
 {
     struct nm_iam iam;
@@ -258,7 +311,20 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
         nm_iam_state* s = nm_iam_dump_state(&iam);
         struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
         BOOST_TEST((usr != NULL));
-        BOOST_TEST(strcmp(usr->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->name != NULL);
+            BOOST_CHECK(fp->fingerprint != NULL);
+            if (strcmp(fp->name, "myphone") == 0) {
+                BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+            }
+            else {
+                BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+                BOOST_CHECK(strcmp(fp->name, "yourphone") == 0);
+            }
+
+        }
         nm_iam_state_free(s);
     }
     NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
@@ -289,9 +355,127 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
         nm_iam_state* s = nm_iam_dump_state(&iam);
         struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
         BOOST_TEST((usr != NULL));
-        BOOST_TEST((usr->fingerprint == NULL));
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->name != NULL);
+            BOOST_CHECK(fp->fingerprint != NULL);
+            if (strcmp(fp->name, "myphone") == 0) {
+                BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+            }
+            else {
+                BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+                BOOST_CHECK(strcmp(fp->name, "yourphone") == 0);
+            }
+        }
         nm_iam_state_free(s);
     }
+
+    nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+BOOST_AUTO_TEST_CASE(coap_add_fingerprint, *boost::unit_test::timeout(180))
+{
+    struct nm_iam iam;
+    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+
+    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/fingerprints/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
+
+    BOOST_TEST((req != NULL));
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+
+    nlohmann::json root = "mynewphone";
+    auto payload = nlohmann::json::to_cbor(root);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(d);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 204);
+
+    {
+        nm_iam_state* s = nm_iam_dump_state(&iam);
+        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        BOOST_TEST((usr != NULL));
+        bool found = false;
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->name != NULL);
+            if (strcmp(fp->name, "mynewphone") == 0) {
+                found = true;
+                BOOST_CHECK(strcmp(fp->fingerprint, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc") == 0);
+            }
+        }
+        BOOST_CHECK(found);
+        nm_iam_state_free(s);
+    }
+
+    nabto_device_virtual_connection_set_client_fingerprint(connection, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
+
+    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+BOOST_AUTO_TEST_CASE(coap_delete_fingerprint, *boost::unit_test::timeout(180))
+{
+    struct nm_iam iam;
+    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+
+    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+
+    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+
+    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
+
+    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_DELETE, "/iam/users/testuser/fingerprints/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    BOOST_TEST((req != NULL));
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(d);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    NabtoDeviceError ec = nabto_device_future_wait(fut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 204);
+
+    {
+        nm_iam_state* s = nm_iam_dump_state(&iam);
+        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        BOOST_TEST((usr != NULL));
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->name != NULL);
+            if (strcmp(fp->name, "myphone") == 0 || strcmp(fp->fingerprint, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc") == 0) {
+                BOOST_CHECK(false);
+            }
+        }
+        nm_iam_state_free(s);
+    }
+
+    BOOST_TEST(!nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
 
     nabto_device_virtual_connection_free(connection);
 

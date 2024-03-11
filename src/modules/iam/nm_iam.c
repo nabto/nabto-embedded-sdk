@@ -269,6 +269,24 @@ enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* us
     return ec;
 }
 
+enum nm_iam_error nm_iam_add_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint, const char* fingerprintName)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_add_user_fingerprint(iam, username, fingerprint, fingerprintName);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
+enum nm_iam_error nm_iam_remove_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint)
+{
+    enum nm_iam_error ec;
+    nm_iam_lock(iam);
+    ec = nm_iam_internal_remove_user_fingerprint(iam, username, fingerprint);
+    nm_iam_unlock(iam);
+    return ec;
+}
+
 enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, const char* sct)
 {
     enum nm_iam_error ec;

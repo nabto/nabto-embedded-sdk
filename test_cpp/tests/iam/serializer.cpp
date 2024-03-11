@@ -18,7 +18,36 @@ std::string s1 = R"(
   "Users": [
     {
       "DisplayName":"Display Name",
-      "Fingerprint":"fingerprint",
+      "Fingerprints":[
+        {
+          "Fingerprint": "fingerprint",
+          "Name": "myphone"
+        }
+      ],
+      "Role":"role1",
+      "ServerConnectToken":"token2",
+      "Password":"password2",
+      "Username":"username",
+      "Fcm": {
+        "Token":"fcm_token",
+        "ProjectId":"fcm_project"
+      },
+      "NotificationCategories": ["cat1","cat2"],
+      "OauthSubject":"oauth_subject"
+    }
+  ],
+  "Version":2
+}
+)";
+
+std::string s2 = R"(
+{
+  "OpenPairingPassword":"password",
+  "OpenPairingSct":"token",
+  "Users": [
+    {
+      "DisplayName":"Display Name",
+      "Fingerprint": "fingerprint",
       "Role":"role1",
       "ServerConnectToken":"token2",
       "Password":"password2",
@@ -143,7 +172,7 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
         nn_string_set_insert(&cats, "cat1");
         nn_string_set_insert(&cats, "cat2");
         struct nm_iam_user* u = nm_iam_user_new("username");
-        BOOST_TEST(nm_iam_user_set_fingerprint(u, "fingerprint") == true);
+        BOOST_TEST(nm_iam_user_add_fingerprint(u, "fingerprint", "myphone") == true);
         BOOST_TEST(nm_iam_user_set_sct(u, "token2") == true);
         BOOST_TEST(nm_iam_user_set_display_name(u, "Display Name") == true);
         BOOST_TEST(nm_iam_user_set_role(u, "role1") == true);
@@ -170,8 +199,12 @@ BOOST_AUTO_TEST_CASE(serialize_state_to_json, *boost::unit_test::timeout(180))
     BOOST_TEST(j["Users"].size() == (size_t)1);
     BOOST_TEST(j["Users"][0]["Username"].is_string());
     BOOST_TEST(j["Users"][0]["Username"].get<std::string>().compare("username") == 0);
-    BOOST_TEST(j["Users"][0]["Fingerprint"].is_string());
-    BOOST_TEST(j["Users"][0]["Fingerprint"].get<std::string>().compare("fingerprint") == 0);
+    BOOST_TEST(j["Users"][0]["Fingerprints"].is_array());
+    BOOST_TEST(j["Users"][0]["Fingerprints"].size() == (size_t)1);
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Fingerprint"].is_string());
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Fingerprint"].get<std::string>().compare("fingerprint") == 0);
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Name"].is_string());
+    BOOST_TEST(j["Users"][0]["Fingerprints"][0]["Name"].get<std::string>().compare("myphone") == 0);
     BOOST_TEST(j["Users"][0]["ServerConnectToken"].is_string());
     BOOST_TEST(j["Users"][0]["ServerConnectToken"].get<std::string>().compare("token2") == 0);
     BOOST_TEST(j["Users"][0]["DisplayName"].is_string());
@@ -235,10 +268,17 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
     BOOST_TEST(strcmp(state->passwordOpenPassword, "password") == 0);
     BOOST_TEST(strcmp(state->passwordOpenSct, "token") == 0);
 
-    void* user;
-    NN_LLIST_FOREACH(user, &state->users) {
-        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->username, "username") == 0);
-        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fingerprint, "fingerprint") == 0);
+    void* u;
+    NN_LLIST_FOREACH(u, &state->users) {
+        struct nm_iam_user* user = (struct nm_iam_user*)u;
+        BOOST_TEST(strcmp(user->username, "username") == 0);
+        void* f;
+        NN_LLIST_FOREACH(f, &user->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(strcmp(fp->fingerprint, "fingerprint") == 0);
+            BOOST_CHECK(strcmp(fp->name, "myphone") == 0);
+        }
+
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->sct, "token2") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->displayName, "Display Name") == 0);
         BOOST_TEST(strcmp(((struct nm_iam_user*)user)->role, "role1") == 0);
@@ -250,9 +290,58 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
         NN_STRING_SET_FOREACH(p, &((struct nm_iam_user*)user)->notificationCategories) {
             if (strcmp(p, "cat1") == 0) {
                 cat1 = true;
-            } else if (strcmp(p, "cat2") == 0) {
+            }
+            else if (strcmp(p, "cat2") == 0) {
                 cat2 = true;
-            } else {
+            }
+            else {
+                BOOST_CHECK_MESSAGE(false, "Unexpected notification category: " << p << " found");
+            }
+        }
+        BOOST_TEST(cat1);
+        BOOST_TEST(cat2);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->oauthSubject, "oauth_subject") == 0);
+
+    }
+    nm_iam_state_free(state);
+}
+
+BOOST_AUTO_TEST_CASE(deserialize_v1_state_from_json, *boost::unit_test::timeout(180))
+{
+    struct nm_iam_state* state = nm_iam_state_new();
+    BOOST_TEST(nm_iam_serializer_state_load_json(state, s2.c_str(), NULL) == true);
+
+    BOOST_TEST(strcmp(state->passwordOpenPassword, "password") == 0);
+    BOOST_TEST(strcmp(state->passwordOpenSct, "token") == 0);
+
+    void* u;
+    NN_LLIST_FOREACH(u, &state->users) {
+        struct nm_iam_user* user = (struct nm_iam_user*)u;
+        BOOST_TEST(strcmp(user->username, "username") == 0);
+        void* f;
+        NN_LLIST_FOREACH(f, &user->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->fingerprint != NULL);
+            BOOST_CHECK(fp->name == NULL);
+            BOOST_CHECK(strcmp(fp->fingerprint, "fingerprint") == 0);
+        }
+
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->sct, "token2") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->displayName, "Display Name") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->role, "role1") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->password, "password2") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fcmToken, "fcm_token") == 0);
+        BOOST_TEST(strcmp(((struct nm_iam_user*)user)->fcmProjectId, "fcm_project") == 0);
+        const char* p;
+        bool cat1 = false; bool cat2 = false;
+        NN_STRING_SET_FOREACH(p, &((struct nm_iam_user*)user)->notificationCategories) {
+            if (strcmp(p, "cat1") == 0) {
+                cat1 = true;
+            }
+            else if (strcmp(p, "cat2") == 0) {
+                cat2 = true;
+            }
+            else {
                 BOOST_CHECK_MESSAGE(false, "Unexpected notification category: " << p << " found");
             }
         }

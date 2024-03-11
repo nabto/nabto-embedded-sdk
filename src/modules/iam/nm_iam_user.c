@@ -40,6 +40,7 @@ struct nm_iam_user* nm_iam_user_new(const char* usernameIn)
     nn_llist_node_init(&user->listNode);
     user->username = username;
     nn_string_set_init(&user->notificationCategories, nm_iam_allocator_get());
+    nn_llist_init(&user->fingerprints);
     return user;
 }
 
@@ -48,7 +49,7 @@ void nm_iam_user_free(struct nm_iam_user* user)
     if (user != NULL) {
         nm_iam_free(user->username);
         nm_iam_free(user->displayName);
-        nm_iam_free(user->fingerprint);
+        nn_llist_deinit(&user->fingerprints);
         nm_iam_free(user->sct);
         nm_iam_free(user->role);
         nm_iam_free(user->password);
@@ -62,18 +63,74 @@ void nm_iam_user_free(struct nm_iam_user* user)
 
 bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint)
 {
-    if (fingerprint == NULL) {
-        nm_iam_free(user->fingerprint);
-        user->fingerprint = NULL;
+    if (fingerprint == NULL && !nn_llist_empty(&user->fingerprints)) {
+        struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
+        struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
+        nn_llist_erase_node(&fp->listNode);
+        nm_iam_free(fp->fingerprint);
+        nm_iam_free(fp->name);
         return true;
     }
-    char* tmp = nn_strdup(fingerprint, nm_iam_allocator_get());
-    if (tmp != NULL) {
-        nm_iam_free(user->fingerprint);
-        user->fingerprint = tmp;
+    if (nn_llist_empty(&user->fingerprints)) {
+        return nm_iam_user_add_fingerprint(user, fingerprint, NULL);
+    } else {
+        struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
+        struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
+        char* tmp = nn_strdup(fingerprint, nm_iam_allocator_get());
+        if (tmp != NULL) {
+            nm_iam_free(fp->fingerprint);
+            fp->fingerprint = tmp;
+        }
+        return (tmp != NULL);
     }
-    return (tmp != NULL);
 }
+
+bool nm_iam_user_add_fingerprint(struct nm_iam_user* user, const char* fingerprint, const char* fpName)
+{
+    if (fingerprint == NULL) {
+        return false;
+    }
+    struct nm_iam_user_fingerprint* fp = nm_iam_calloc(1, sizeof(struct nm_iam_user_fingerprint));
+    if (fp == NULL) {
+        return false;
+    }
+
+    if (fpName != NULL) {
+        fp->name = nn_strdup(fpName, nm_iam_allocator_get());
+    }
+
+    fp->fingerprint = nn_strdup(fingerprint, nm_iam_allocator_get());
+
+    if (fp->fingerprint == NULL || (fpName != NULL && fp->name == NULL)) {
+        nm_iam_free(fp->fingerprint);
+        nm_iam_free(fp->name);
+        nm_iam_free(fp);
+        return false;
+    }
+    nn_llist_append(&user->fingerprints, &fp->listNode, fp);
+    return true;
+}
+
+bool nm_iam_user_remove_fingerprint(struct nm_iam_user* user, const char* fingerprint)
+{
+    if (user == NULL || fingerprint == NULL) {
+        return false;
+    }
+    struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
+    while(!nn_llist_is_end(&it))
+    {
+        struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
+        if (strcmp(fp->fingerprint, fingerprint) == 0) {
+            nn_llist_erase_node(&fp->listNode);
+            nm_iam_free(fp->fingerprint);
+            nm_iam_free(fp->name);
+            return true;
+        }
+        nn_llist_next(&it);
+    }
+    return false;
+}
+
 
 bool nm_iam_user_set_password(struct nm_iam_user* user, const char* password)
 {
@@ -218,9 +275,9 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
         }
     }
 
-    if (user->fingerprint != NULL) {
-        copy->fingerprint = nn_strdup(user->fingerprint, nm_iam_allocator_get());
-        if(copy->fingerprint == NULL) {
+    struct nm_iam_user_fingerprint* fp = NULL;
+    NN_LLIST_FOREACH(fp, &user->fingerprints) {
+        if (!nm_iam_user_add_fingerprint(copy, fp->fingerprint, fp->name)) {
             failed = true;
         }
     }

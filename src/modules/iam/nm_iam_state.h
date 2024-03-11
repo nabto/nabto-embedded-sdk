@@ -8,17 +8,23 @@
 extern "C" {
 #endif
 
+struct nm_iam_user_fingerprint {
+    char* fingerprint;
+    char* name;
+    struct nn_llist_node listNode;
+};
+
 struct nm_iam_user {
     char* username;
     char* displayName;
     char* role;
     char* password;
-    char* fingerprint;
     char* sct;
     char* fcmToken;
     char* fcmProjectId;
     struct nn_string_set notificationCategories;
     char* oauthSubject;
+    struct nn_llist fingerprints;
 
     struct nn_llist_node listNode;
 };
@@ -182,6 +188,7 @@ struct nm_iam_user* nm_iam_state_user_new(const char* username);
 void nm_iam_state_user_free(struct nm_iam_user* user);
 
 /**
+ * @deprecated use nm_iam_state_user_add_fingerprint()
  * Set the public key fingerprint for user.
  *
  * @param user [in] the user to set fingerprint on
@@ -189,6 +196,20 @@ void nm_iam_state_user_free(struct nm_iam_user* user);
  * @return true iff operation completed successfully
  */
 bool nm_iam_state_user_set_fingerprint(struct nm_iam_user* user, const char* fingerprint);
+
+/**
+ * Add the public key fingerprint for user.
+ *
+ * The fingerprint can be assigned a name to help identify which client device it belongs to. The name can be NULL. The name length limit reuses the display name max length set by `nm_iam_set_display_name_max_length()`.
+ *
+ * Since this is a user builder API, there is no corresponding remove function.
+ *
+ * @param user [in] the user to set fingerprint on
+ * @param fingerprint [in] hex encoded public key fingerprint
+ * @param name [in] Name for the fingerprint
+ * @return true iff operation completed successfully
+ */
+bool nm_iam_state_user_add_fingerprint(struct nm_iam_user* user, const char* fingerprint, const char* name);
 
 /**
  * Set an SCT for the specified user while the system is running.

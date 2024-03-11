@@ -262,6 +262,8 @@ set(ne_iam_src
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_name.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_display_name.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fingerprint.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_add_user_fingerprint.c
+  ${root_dir}/src/modules/iam/coap_handler/nm_iam_delete_user_fingerprint.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_sct.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_password.c
   ${root_dir}/src/modules/iam/coap_handler/nm_iam_set_user_fcm.c

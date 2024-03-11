@@ -7,5 +7,6 @@
         "nabto_device_experimental.h": "c",
         "nabto_device.h": "c",
         "np_logging_defines.h": "c"
-    }
+    },
+    "dotnet.defaultSolution": "disable"
 }

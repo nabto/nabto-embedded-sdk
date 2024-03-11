@@ -76,7 +76,7 @@ bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceCon
     return true;
 }
 
-bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, NabtoDeviceConnectionRef ref)
+bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, NabtoDeviceConnectionRef ref, const char* fpName)
 {
     NabtoDeviceError ec;
     char* fingerprint;
@@ -85,7 +85,7 @@ bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, Nabt
         return false;
     }
 
-    bool status = nm_iam_user_set_fingerprint(user, fingerprint);
+    bool status = nm_iam_user_add_fingerprint(user, fingerprint, fpName);
     nabto_device_string_free(fingerprint);
     return status;
 }
@@ -93,7 +93,7 @@ bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, Nabt
 bool nm_iam_pairing_is_user_paired(struct nm_iam_user* user)
 {
     return (
-        (user->fingerprint != NULL) ||
+        (!nn_llist_empty(&user->fingerprints)) ||
         (user->oauthSubject != NULL)
     );
 }

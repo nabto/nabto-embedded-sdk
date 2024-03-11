@@ -26,9 +26,19 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
     cJSON* root = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "Username", cJSON_CreateString(user->username));
 
-    if (user->fingerprint != NULL) {
-        cJSON_AddItemToObject(root, "Fingerprint", cJSON_CreateString(user->fingerprint));
+    cJSON* fingerprints = cJSON_AddArrayToObject(root, "Fingerprints");
+    struct nm_iam_user_fingerprint* fp = NULL;
+    NN_LLIST_FOREACH(fp, &user->fingerprints) {
+        cJSON* fpObj = cJSON_CreateObject();
+        if (fp->fingerprint != NULL) {
+            cJSON_AddItemToObject(fpObj, "Fingerprint", cJSON_CreateString(fp->fingerprint));
+        }
+        if (fp->name != NULL) {
+            cJSON_AddItemToObject(fpObj, "Name", cJSON_CreateString(fp->name));
+        }
+        cJSON_AddItemToArray(fingerprints, fpObj);
     }
+
     if (user->displayName != NULL) {
         cJSON_AddItemToObject(root, "DisplayName", cJSON_CreateString(user->displayName));
     }

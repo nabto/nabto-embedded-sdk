@@ -690,7 +690,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     struct nm_iam_user* initialUser = nm_iam_state_find_user_by_username(state, state->initialPairingUsername);
 
     bool initialUserNeedPairing =
-        initialUser && initialUser->fingerprint == NULL;
+        initialUser && nn_llist_empty(&initialUser->fingerprints);
 
     if ((state->localInitialPairing || state->passwordInvitePairing) &&
         initialUserNeedPairing) {
@@ -872,7 +872,13 @@ void print_iam_state(struct nm_iam_state* state)
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &state->users)
     {
-        printf("User: %s, fingerprint: %s" NEWLINE, user->username, user->fingerprint);
+        printf("User: %s, fingerprints: [", user->username);
+        struct nm_iam_user_fingerprint* fp;
+        NN_LLIST_FOREACH(fp, &user->fingerprints) {
+            printf("%s, ", fp->fingerprint);
+        }
+        printf("]" NEWLINE);
+
     }
 }
 
