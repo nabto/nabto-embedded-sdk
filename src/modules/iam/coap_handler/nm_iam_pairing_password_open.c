@@ -3,6 +3,7 @@
 #include "../nm_iam.h"
 #include "../nm_iam_allocator.h"
 #include "../nm_iam_internal.h"
+#include "../nm_iam_pairing.h"
 #include "../nm_iam_user.h"
 #include "nm_iam_coap_handler.h"
 
@@ -28,13 +29,13 @@ void handle_request(struct nm_iam_coap_handler* handler,
     }
     NabtoDeviceConnectionRef ref =
         nabto_device_coap_request_get_connection_ref(request);
+
     if (!nm_iam_pairing_is_password_open_possible(handler->iam, ref)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
     }
 
-    if (!nabto_device_connection_is_password_authenticated(handler->device,
-                                                           ref)) {
+    if (!nabto_device_connection_is_password_authenticated(handler->device, ref)) {
         nabto_device_coap_error_response(request, 401, "Access Denied");
         return;
     }
@@ -59,6 +60,7 @@ void handle_request(struct nm_iam_coap_handler* handler,
 
     char* username = NULL;
     char* password = NULL;
+    char* fpName = NULL;
 
     if (nm_iam_cbor_decode_kv_string(&value, "Password", &password)) {
         // If the user provides a password in the request the user
@@ -67,11 +69,12 @@ void handle_request(struct nm_iam_coap_handler* handler,
             request, 400, "5.1 clients are not supported for password pairing");
     } else {
         nm_iam_cbor_decode_kv_string(&value, "Username", &username);
+        nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
 
         if (username == NULL) {
             nabto_device_coap_error_response(request, 400, "Username missing");
         } else {
-            enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, NULL);
+            enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, fpName);
             switch (e) {
             case NM_IAM_ERROR_OK:
                 // OK response
@@ -91,6 +94,7 @@ void handle_request(struct nm_iam_coap_handler* handler,
     }
 
     nm_iam_free(fingerprint);
+    nm_iam_free(fpName);
     nm_iam_free(username);
     nm_iam_free(password);
 }

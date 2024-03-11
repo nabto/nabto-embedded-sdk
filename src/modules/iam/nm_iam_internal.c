@@ -176,7 +176,8 @@ enum nm_iam_error nm_iam_internal_pair_new_client(struct nm_iam* iam, const char
         return NM_IAM_ERROR_INVALID_ARGUMENT;
     }
 
-    if (nm_iam_internal_find_user(iam, username) != NULL) {
+    if (nm_iam_internal_find_user(iam, username) != NULL ||
+        nm_iam_internal_find_user_by_fingerprint(iam, fingerprint) != NULL) {
         return NM_IAM_ERROR_USER_EXISTS;
     }
 

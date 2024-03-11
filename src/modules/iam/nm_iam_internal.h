@@ -3,6 +3,9 @@
 
 #include "nm_iam.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn);
 
@@ -64,4 +67,9 @@ enum nm_iam_error nm_iam_internal_set_user_oauth_subject(struct nm_iam* iam, con
 enum nm_iam_error nm_iam_internal_delete_user(struct nm_iam* iam, const char* username);
 
 enum nm_iam_error nm_iam_internal_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
+
 #endif

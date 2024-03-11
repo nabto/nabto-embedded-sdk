@@ -49,14 +49,17 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     char* username = NULL;
+    char* fpName = NULL;
 
     nm_iam_cbor_decode_kv_string(&value, "Username", &username);
+    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
+
     if (username == NULL) {
         nabto_device_coap_error_response(request, 400, "Username missing");
         nm_iam_free(username);
         return;
     } else {
-            enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, NULL);
+            enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, fpName);
             switch (e) {
             case NM_IAM_ERROR_OK:
                 // OK response
@@ -76,5 +79,6 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     nm_iam_free(fingerprint);
+    nm_iam_free(fpName);
     nm_iam_free(username);
 }

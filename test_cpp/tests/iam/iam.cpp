@@ -6,6 +6,7 @@
 #include <nabto/nabto_device_virtual.h>
 #include <modules/iam/nm_iam.h>
 #include <modules/iam/nm_iam_serializer.h>
+#include <modules/iam/nm_iam_internal.h>
 #include <nn/string_set.h>
 
 #include <platform/np_allocator.h>
@@ -632,6 +633,40 @@ BOOST_AUTO_TEST_CASE(enforce_min_password_len, *boost::unit_test::timeout(180))
     }
 
     nabto_device_virtual_connection_free(connection);
+
+    nabto_device_stop(d);
+    nm_iam_deinit(&iam);
+    nabto_device_free(d);
+}
+
+
+BOOST_AUTO_TEST_CASE(pair_new_user, *boost::unit_test::timeout(180))
+{
+    struct nm_iam iam;
+    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+    iam.usernameMaxLength = 10;
+
+    enum nm_iam_error e = nm_iam_internal_pair_new_client(&iam, "_((;;.::)", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
+
+    e = nm_iam_internal_pair_new_client(&iam, "abcdefghijkl", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
+
+    e = nm_iam_internal_pair_new_client(&iam, NULL, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
+
+    e = nm_iam_internal_pair_new_client(&iam, "myname", NULL, "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
+
+    e = nm_iam_internal_pair_new_client(&iam, "testuser", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_USER_EXISTS);
+
+    e = nm_iam_internal_pair_new_client(&iam, "newuser", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_USER_EXISTS);
+
+    nm_iam_state_set_open_pairing_role(iam.state, NULL);
+    e = nm_iam_internal_pair_new_client(&iam, "newname", "1111111111111111111111111111111111111111111111111111111111111111", "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_INTERNAL);
 
     nabto_device_stop(d);
     nm_iam_deinit(&iam);
