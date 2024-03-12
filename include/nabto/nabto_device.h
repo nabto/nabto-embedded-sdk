@@ -298,6 +298,18 @@ nabto_device_set_server_port(NabtoDevice* device, uint16_t port);
  * Set the private key from the device. Required before calling
  * nabto_device_start().
  *
+ * The format of the Key is a PEM encoded private key for the NIST curve
+ * EC-P256. An example key can be generated with the openssl command `openssl
+ * ecparam -name prime256v1 -genkey -noout -out key.pem`
+ *
+ * An example key looks something like:
+ *
+ * -----BEGIN EC PRIVATE KEY-----
+ * <base64 asn1 data>
+ * -----END EC PRIVATE KEY-----
+ *
+ * Be aware of preserving required newlines in the string.
+ *
  * @param device [in]   The device instance to perform action on
  * @param privKey [in]  The private key to set
  * @retval NABTO_DEVICE_EC_OK on success
