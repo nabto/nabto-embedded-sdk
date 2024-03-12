@@ -81,6 +81,7 @@ bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerpri
         nn_llist_erase_node(&fp->listNode);
         nm_iam_free(fp->fingerprint);
         nm_iam_free(fp->name);
+        nm_iam_free(fp);
         return true;
     }
     if (nn_llist_empty(&user->fingerprints)) {
@@ -136,6 +137,7 @@ bool nm_iam_user_remove_fingerprint(struct nm_iam_user* user, const char* finger
             nn_llist_erase_node(&fp->listNode);
             nm_iam_free(fp->fingerprint);
             nm_iam_free(fp->name);
+            nm_iam_free(fp);
             return true;
         }
         nn_llist_next(&it);

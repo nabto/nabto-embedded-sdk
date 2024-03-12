@@ -7,6 +7,7 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_virtual.h>
 #include <modules/iam/nm_iam.h>
+#include <modules/iam/nm_iam_user.h>
 #include <modules/iam/nm_iam_serializer.h>
 #include <modules/iam/nm_iam_internal.h>
 #include <nn/string_set.h>
@@ -128,6 +129,11 @@ std::string c2 = R"(
   "Version":1
 }
 )";
+
+const std::string aFp = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const std::string bFp = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const std::string cFp = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
 
 void doPwdAuth(NabtoDevice* d, struct nm_iam* iam, NabtoDeviceVirtualConnection* conn, const std::string username, const std::string clientFp, const std::string pwd) {
 
@@ -320,107 +326,52 @@ BOOST_AUTO_TEST_CASE(expire_auth_on_close, *boost::unit_test::timeout(180))
 
 BOOST_AUTO_TEST_CASE(user_multi_fingerprint, *boost::unit_test::timeout(180))
 {
-    NabtoDevice* d = nabto_device_new();
-    struct nn_log iamLogger;
-    iamLogger.logPrint = &nabto::test::iam_logger;
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
 
-    const char* logLevel = getenv("NABTO_LOG_LEVEL");
-    if (logLevel != NULL) {
-        nabto_device_set_log_level(d, logLevel);
-        nabto_device_set_log_std_out_callback(d);
-    }
-    struct nm_iam iam;
-    nm_iam_init(&iam, d, &iamLogger);
+    BOOST_TEST(!nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 
-    struct nm_iam_configuration* conf = nm_iam_configuration_new();
-    BOOST_TEST(nm_iam_serializer_configuration_load_json(conf, nabto::test::c2.c_str(), NULL) == true);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::aFp.c_str());
 
-    struct nm_iam_state* state = nm_iam_state_new();
-    BOOST_TEST(nm_iam_serializer_state_load_json(state, nabto::test::s2.c_str(), NULL) == true);
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 
-    BOOST_TEST(nm_iam_load_configuration(&iam, conf));
-    BOOST_TEST(nm_iam_load_state(&iam, state));
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::bFp.c_str());
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
-
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
-
-    BOOST_TEST(!nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    nabto_device_virtual_connection_set_client_fingerprint(connection, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
-
-    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 }
 
 BOOST_AUTO_TEST_CASE(can_remove_displayname, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         BOOST_TEST(strcmp(usr->displayName, "Display Name") == 0);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
 
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
 
-    BOOST_TEST(nm_iam_authorize_connection(&iam, ref, "testuser") == NM_IAM_ERROR_OK);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/display-name");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/display-name");
     nlohmann::json root;
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 204);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(204);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
-        BOOST_TEST((usr->displayName == NULL));
-        nm_iam_state_free(s);
+        BOOST_CHECK(usr->displayName == NULL);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
@@ -428,99 +379,56 @@ BOOST_AUTO_TEST_CASE(can_remove_fingerprint, *boost::unit_test::timeout(180))
             BOOST_CHECK(fp->name != NULL);
             BOOST_CHECK(fp->fingerprint != NULL);
             if (strcmp(fp->name, "myphone") == 0) {
-                BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+                BOOST_CHECK(strcmp(fp->fingerprint, nabto::test::aFp.c_str()) == 0);
             }
             else {
-                BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+                BOOST_CHECK(strcmp(fp->fingerprint, nabto::test::bFp.c_str()) == 0);
                 BOOST_CHECK(strcmp(fp->name, "yourphone") == 0);
             }
-
         }
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
 
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
-
-    BOOST_TEST(nm_iam_authorize_connection(&iam, ref, "testuser") == NM_IAM_ERROR_OK);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/fingerprint");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/fingerprint");
     nlohmann::json root;
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 204);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(204);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
             struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
             BOOST_CHECK(fp->name != NULL);
             BOOST_CHECK(fp->fingerprint != NULL);
-            if (strcmp(fp->name, "myphone") == 0) {
-                BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+            if (strcmp(fp->name, "myphone") == 0 || strcmp(fp->fingerprint, nabto::test::aFp.c_str()) == 0) {
+                BOOST_TEST(false);
             }
             else {
-                BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+                BOOST_CHECK(strcmp(fp->fingerprint, nabto::test::bFp.c_str()) == 0);
                 BOOST_CHECK(strcmp(fp->name, "yourphone") == 0);
             }
         }
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(coap_add_fingerprint, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::aFp.c_str());
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
-
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
-
-    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/fingerprints/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    std::string path = "/iam/users/testuser/fingerprints/" + nabto::test::cFp;
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, path);
     nlohmann::json root;
     root["FingerprintName"] = "mynewphone";
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 204);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(204);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         bool found = false;
         void* f;
@@ -529,282 +437,149 @@ BOOST_AUTO_TEST_CASE(coap_add_fingerprint, *boost::unit_test::timeout(180))
             BOOST_CHECK(fp->name != NULL);
             if (strcmp(fp->name, "mynewphone") == 0) {
                 found = true;
-                BOOST_CHECK(strcmp(fp->fingerprint, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc") == 0);
+                BOOST_CHECK(strcmp(fp->fingerprint, nabto::test::cFp.c_str()) == 0);
             }
         }
         BOOST_CHECK(found);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
 
-    nabto_device_virtual_connection_set_client_fingerprint(connection, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
-
-    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::cFp.c_str());
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 }
 
 BOOST_AUTO_TEST_CASE(coap_add_fingerprint_noname, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::aFp.c_str());
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
-
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
-
-    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/fingerprints/cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    std::string path = "/iam/users/testuser/fingerprints/" + nabto::test::cFp;
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, path);
     nlohmann::json root;
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 204);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(204);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         bool found = false;
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
             struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
             BOOST_CHECK(fp->fingerprint != NULL);
-            if (strcmp(fp->fingerprint, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc") == 0) {
+            if (strcmp(fp->fingerprint, nabto::test::cFp.c_str()) == 0) {
                 found = true;
                 BOOST_CHECK(fp->name == NULL);
             }
         }
         BOOST_CHECK(found);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
 
-    nabto_device_virtual_connection_set_client_fingerprint(connection, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
-
-    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::cFp.c_str());
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 }
 
 BOOST_AUTO_TEST_CASE(coap_delete_fingerprint, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::aFp.c_str());
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    std::string path = "/iam/users/testuser/fingerprints/" + nabto::test::aFp;
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_DELETE, path);
+    ctx.executeCoap(204);
 
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
-
-    nabto_device_virtual_connection_set_client_fingerprint(connection, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_DELETE, "/iam/users/testuser/fingerprints/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-    BOOST_TEST((req != NULL));
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 204);
+    BOOST_TEST(!nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
             struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
             BOOST_CHECK(fp->name != NULL);
-            if (strcmp(fp->name, "myphone") == 0 || strcmp(fp->fingerprint, "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc") == 0) {
-                BOOST_CHECK(false);
-            }
+            BOOST_CHECK(fp->fingerprint != NULL);
+            BOOST_TEST(strcmp(fp->fingerprint, nabto::test::aFp.c_str()) != 0);
         }
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
 
-    BOOST_TEST(!nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(can_remove_oauth_sub, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
-
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         BOOST_TEST(strcmp(usr->oauthSubject, "oauth_subject") == 0);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
 
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
 
-    BOOST_TEST(nm_iam_authorize_connection(&iam, ref, "testuser") == NM_IAM_ERROR_OK);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/oauth-subject");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/oauth-subject");
     nlohmann::json root;
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 204);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(204);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         BOOST_TEST((usr->oauthSubject == NULL));
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(can_remove_password, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         BOOST_TEST(strcmp(usr->password, "password2") == 0);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
 
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
 
-    BOOST_TEST(nm_iam_authorize_connection(&iam, ref, "testuser") == NM_IAM_ERROR_OK);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/password");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/password");
     nlohmann::json root;
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 204);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(204);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
-        BOOST_TEST((usr->password == NULL));
-        nm_iam_state_free(s);
+        BOOST_CHECK(usr->password == NULL);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(enforce_min_password_len, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
-
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         BOOST_TEST(strcmp(usr->password, "password2") == 0);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
 
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
-
-    BOOST_TEST(nm_iam_authorize_connection(&iam, ref, "testuser") == NM_IAM_ERROR_OK);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/password");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/password");
     nlohmann::json root = "123";
-    auto payload = nlohmann::json::to_cbor(root);
-
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 400);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(400);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
         BOOST_TEST(strcmp(usr->password, "password2") == 0);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 
@@ -814,22 +589,22 @@ BOOST_AUTO_TEST_CASE(pair_new_user, *boost::unit_test::timeout(180))
     NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
     iam.usernameMaxLength = 10;
 
-    enum nm_iam_error e = nm_iam_internal_pair_new_client(&iam, "_((;;.::)", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    enum nm_iam_error e = nm_iam_internal_pair_new_client(&iam, "_((;;.::)", nabto::test::aFp.c_str(), "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
 
-    e = nm_iam_internal_pair_new_client(&iam, "abcdefghijkl", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    e = nm_iam_internal_pair_new_client(&iam, "abcdefghijkl", nabto::test::aFp.c_str(), "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
 
-    e = nm_iam_internal_pair_new_client(&iam, NULL, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    e = nm_iam_internal_pair_new_client(&iam, NULL, nabto::test::aFp.c_str(), "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
 
     e = nm_iam_internal_pair_new_client(&iam, "myname", NULL, "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
 
-    e = nm_iam_internal_pair_new_client(&iam, "testuser", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    e = nm_iam_internal_pair_new_client(&iam, "testuser", nabto::test::aFp.c_str(), "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_USER_EXISTS);
 
-    e = nm_iam_internal_pair_new_client(&iam, "newuser", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "myphone");
+    e = nm_iam_internal_pair_new_client(&iam, "newuser", nabto::test::aFp.c_str(), "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_USER_EXISTS);
 
     nm_iam_state_set_open_pairing_role(iam.state, NULL);
@@ -844,235 +619,126 @@ BOOST_AUTO_TEST_CASE(pair_new_user, *boost::unit_test::timeout(180))
 
 BOOST_AUTO_TEST_CASE(pwd_open_pairing, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
-
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
     const std::string username = "";
     const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
-    std::string pwd(iam.state->passwordOpenPassword);
+    std::string pwd(ctx.iam_.state->passwordOpenPassword);
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    ctx.doPwdAuth(username, clientFp, pwd);
 
-    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
     nlohmann::json root;
     root["Username"] = "newuser";
     root["FingerprintName"] = "newphone";
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 201);
-    nabto_device_virtual_coap_request_free(req);
-    nabto_device_future_free(fut);
-
+    ctx.setCborPayload(root);
+    ctx.executeCoap(201);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "newuser");
+        auto usr = ctx.findStateUser("newuser");
         BOOST_TEST((usr != NULL));
+        bool found = false;
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
             struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
             BOOST_CHECK(fp->name != NULL);
-            BOOST_CHECK(fp->fingerprint != NULL);
             BOOST_TEST(strcmp(fp->name, "newphone") == 0);
-            BOOST_TEST(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+            BOOST_CHECK(fp->fingerprint != NULL);
+            BOOST_CHECK(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+            found = true;
         }
-        nm_iam_state_free(s);
+        BOOST_CHECK(found);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(pwd_open_pairing_no_fpname, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
-
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
     const std::string username = "";
     const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
-    std::string pwd(iam.state->passwordOpenPassword);
+    std::string pwd(ctx.iam_.state->passwordOpenPassword);
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    ctx.doPwdAuth(username, clientFp, pwd);
 
-    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
     nlohmann::json root;
     root["Username"] = "newuser";
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 201);
-
-    nabto_device_virtual_coap_request_free(req);
-    nabto_device_future_free(fut);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(201);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "newuser");
+        auto usr = ctx.findStateUser("newuser");
         BOOST_TEST((usr != NULL));
+        bool found = false;
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
             struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
             BOOST_CHECK(fp->name == NULL);
             BOOST_CHECK(fp->fingerprint != NULL);
-            BOOST_TEST(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+            BOOST_CHECK(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+            found = true;
         }
-        nm_iam_state_free(s);
+        BOOST_CHECK(found);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(pwd_open_pairing_known_fp, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
-
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
     const std::string username = "";
-    const std::string clientFp = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    std::string pwd(iam.state->passwordOpenPassword);
+    std::string pwd(ctx.iam_.state->passwordOpenPassword);
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    ctx.doPwdAuth(username, nabto::test::bFp, pwd);
 
-    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
     nlohmann::json root;
     root["Username"] = "newuser";
     root["FingerprintName"] = "newphone";
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 409);
-    nabto_device_virtual_coap_request_free(req);
-    nabto_device_future_free(fut);
-
+    ctx.setCborPayload(root);
+    ctx.executeCoap(409);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "newuser");
+        auto usr = ctx.findStateUser("newuser");
         BOOST_TEST((usr == NULL));
-        nm_iam_state_free(s);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 
 
 BOOST_AUTO_TEST_CASE(pwd_session_auth, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
 
     const std::string username = "testuser";
-    const std::string clientFp = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     std::string pwd = "password2";
 
-    iam.state->passwordInvitePairing = false;
+    ctx.iam_.state->passwordInvitePairing = false;
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    ctx.doPwdAuth(username, nabto::test::aFp, pwd);
 
-    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
-
-    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(connection);
-
-    BOOST_TEST(nm_iam_check_access(&iam, ref, "Admin:foo", NULL));
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 }
 
 BOOST_AUTO_TEST_CASE(pwd_invite_pairing, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
-
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
     const std::string username = "testuser";
     const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
     std::string pwd = "password2";
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    ctx.doPwdAuth(username, clientFp, pwd);
 
-    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_POST, "/iam/pairing/password-invite");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-invite");
     nlohmann::json root;
     root["FingerprintName"] = "newphone";
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 201);
-
-    nabto_device_virtual_coap_request_free(req);
-    nabto_device_future_free(fut);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(201);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
+        bool found = false;
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
             struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
@@ -1087,82 +753,55 @@ BOOST_AUTO_TEST_CASE(pwd_invite_pairing, *boost::unit_test::timeout(180))
             else {
                 BOOST_TEST(strcmp(fp->name, "newphone") == 0);
                 BOOST_TEST(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+                found = true;
             }
         }
+        BOOST_CHECK(found);
         BOOST_CHECK(usr->password == NULL);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 BOOST_AUTO_TEST_CASE(pwd_invite_pairing_no_fpname, *boost::unit_test::timeout(180))
 {
-    struct nm_iam iam;
-    NabtoDevice* d = nabto::test::buildIamTestDevice(nabto::test::c2, nabto::test::s2, &iam);
-
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
     const std::string username = "testuser";
     const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
     std::string pwd = "password2";
 
-    NabtoDeviceVirtualConnection* connection = nabto_device_virtual_connection_new(d);
+    ctx.doPwdAuth(username, clientFp, pwd);
 
-    nabto::test::doPwdAuth(d, &iam, connection, username, clientFp, pwd);
-
-
-    auto req = nabto_device_virtual_coap_request_new(connection, NABTO_DEVICE_COAP_POST, "/iam/pairing/password-invite");
-
-    BOOST_TEST((req != NULL));
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
-
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-invite");
     nlohmann::json root;
-    auto payload = nlohmann::json::to_cbor(root);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
-
-    NabtoDeviceFuture* fut = nabto_device_future_new(d);
-    nabto_device_virtual_coap_request_execute(req, fut);
-    NabtoDeviceError ec = nabto_device_future_wait(fut);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(status == 201);
-    nabto_device_virtual_coap_request_free(req);
-    nabto_device_future_free(fut);
-
+    ctx.setCborPayload(root);
+    ctx.executeCoap(201);
 
     {
-        nm_iam_state* s = nm_iam_dump_state(&iam);
-        struct nm_iam_user* usr = nm_iam_state_find_user_by_username(s, "testuser");
+        auto usr = ctx.findStateUser("testuser");
         BOOST_TEST((usr != NULL));
+        bool found = false;
         void* f;
         NN_LLIST_FOREACH(f, &usr->fingerprints) {
             struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
-            if (fp->name == NULL) {
+            BOOST_CHECK(fp->fingerprint != NULL);
+            if (strcmp(fp->fingerprint, nabto::test::aFp.c_str()) == 0) {
+                BOOST_CHECK(fp->name != NULL);
+                BOOST_CHECK(strcmp(fp->name, "myphone") == 0);
+            }
+            else if (strcmp(fp->fingerprint, nabto::test::bFp.c_str()) == 0) {
+                BOOST_CHECK(fp->name != NULL);
+                BOOST_CHECK(strcmp(fp->name, "yourphone") == 0);
+            }
+            else {
+                BOOST_CHECK(fp->name == NULL);
                 BOOST_TEST(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
-            } else {
-                BOOST_CHECK(fp->fingerprint != NULL);
-                if (strcmp(fp->name, "myphone") == 0) {
-                    BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
-                } else {
-                    BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
-                    BOOST_TEST(strcmp(fp->name, "yourphone") == 0);
-                }
-
+                found = true;
             }
         }
+        BOOST_CHECK(found);
         BOOST_CHECK(usr->password == NULL);
-        nm_iam_state_free(s);
+        nm_iam_user_free(usr);
     }
-
-    nabto_device_virtual_connection_free(connection);
-
-    nabto_device_stop(d);
-    nm_iam_deinit(&iam);
-    nabto_device_free(d);
 }
 
 
