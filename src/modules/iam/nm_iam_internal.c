@@ -167,32 +167,31 @@ struct nm_iam_policy* nm_iam_internal_find_policy(struct nm_iam* iam, const char
     return NULL;
 }
 
-struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDeviceCoapRequest* request, const char* username, const char* fpName)
+enum nm_iam_error nm_iam_internal_pair_new_client(struct nm_iam* iam, const char* username, const char* fingerprint, const char* fpName)
 {
-    {
-        struct nm_iam_user* user = nm_iam_internal_find_user_by_coap_request(iam, request);
-        if (user != NULL) {
-            // user is already paired.
-            return user;
-        }
+    if (username == NULL ||
+        fingerprint == NULL ||
+        !nm_iam_user_validate_username(username) ||
+        strlen(username) > iam->usernameMaxLength) {
+        return NM_IAM_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (nm_iam_internal_find_user(iam, username) != NULL ||
+        nm_iam_internal_find_user_by_fingerprint(iam, fingerprint) != NULL) {
+        return NM_IAM_ERROR_USER_EXISTS;
     }
 
     const char* role = iam->state->openPairingRole;
-    if (username == NULL || role == NULL) {
-        return NULL;
-    }
 
-    char* fingerprint = nm_iam_internal_get_fingerprint_from_coap_request(iam, request);
     char* sct = NULL;
     struct nm_iam_user* user = NULL;
-    if (fingerprint == NULL ||
+    if (role == NULL ||
         nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
         strlen(sct) > iam->sctMaxLength ||
         (user = nm_iam_user_new(username)) == NULL)
     {
-        nabto_device_string_free(fingerprint);
         nabto_device_string_free(sct);
-        return NULL;
+        return NM_IAM_ERROR_INTERNAL;
     }
 
     if (!nm_iam_user_set_role(user, role) ||
@@ -200,17 +199,12 @@ struct nm_iam_user* nm_iam_internal_pair_new_client(struct nm_iam* iam, NabtoDev
         !nm_iam_user_set_sct(user, sct) ||
         !nm_iam_internal_add_user(iam, user) )
     {
-        nabto_device_string_free(fingerprint);
         nabto_device_string_free(sct);
         nm_iam_user_free(user);
-        return NULL;
+        return NM_IAM_ERROR_INTERNAL;
     }
-
-
-    nabto_device_string_free(fingerprint);
     nabto_device_string_free(sct);
-
-    return user;
+    return NM_IAM_ERROR_OK;
 }
 
 bool nm_iam_internal_add_user(struct nm_iam* iam, struct nm_iam_user* user)

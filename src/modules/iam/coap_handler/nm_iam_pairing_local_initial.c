@@ -5,6 +5,7 @@
 #include "../nm_iam_user.h"
 #include "../nm_iam_internal.h"
 #include "../nm_iam_pairing.h"
+#include "../nm_iam_allocator.h"
 
 
 
@@ -40,14 +41,23 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
             // the initial user is already paired.
             nabto_device_coap_error_response(request, 409, "Already paired");
         } else {
-            // TODO: get fpName from request
-            if (nm_iam_pairing_pair_user(iam, initialUser, ref, NULL)) {
+            CborParser parser;
+            CborValue value;
+
+            char* fpName = NULL;
+            if (nm_iam_cbor_init_parser(request, &parser, &value)) {
+                nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
+
+            }
+
+            if (nm_iam_pairing_pair_user(iam, initialUser, ref, fpName)) {
                 nm_iam_internal_state_has_changed(iam);
                 nabto_device_coap_response_set_code(request, 201);
                 nabto_device_coap_response_ready(request);
             } else {
                 nabto_device_coap_error_response(request, 500, "Server error");
             }
+            nm_iam_free(fpName);
         }
     }
 }

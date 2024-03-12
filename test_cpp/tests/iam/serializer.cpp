@@ -15,6 +15,7 @@ std::string s1 = R"(
 {
   "OpenPairingPassword":"password",
   "OpenPairingSct":"token",
+  "FriendlyName":"nice device",
   "Users": [
     {
       "DisplayName":"Display Name",
@@ -267,6 +268,7 @@ BOOST_AUTO_TEST_CASE(deserialize_state_from_json, *boost::unit_test::timeout(180
 
     BOOST_TEST(strcmp(state->passwordOpenPassword, "password") == 0);
     BOOST_TEST(strcmp(state->passwordOpenSct, "token") == 0);
+    BOOST_TEST(strcmp(state->friendlyName, "nice device") == 0);
 
     void* u;
     NN_LLIST_FOREACH(u, &state->users) {
