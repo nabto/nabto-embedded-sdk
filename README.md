@@ -203,16 +203,7 @@ it should not leak as it makes finding leaks in the production code harder.
 
 ## Test how allocation errors are handled.
 
-We use the tool mallocfail `https://github.com/nabto/mallocfail` to test that
-all callstacks leading to a failing dynamic allocation is handled properly.
-
-```
-MALLOCFAIL_DEBUG=1 LD_PRELOAD=~/sandbox/mallocfail/mallocfail.so ./build/apps/tcp_tunnel_device/tcp_tunnel_device
-```
-
-MbedTLS uses a large number of allocation, thats why it is often a good idea to
-just ignore these by adding the environment variable
-`MALLOCFAIL_IGNORE=mbedtls`.
+We use the tool *mallocfail* to test that all callstacks leading to a failing dynamic allocation is handled properly. For details see [this](build-scripts/mallocfail/README.md).
 
 ## Test for race conditions and similar threading errors.
 

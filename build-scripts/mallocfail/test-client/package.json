@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@types/node": "^20.11.27",
+    "axios": "^1.6.7"
+  },
+  "dependencies": {
+    "edge-client-node": "github:nabto/edge-client-node"
+  }
+}
