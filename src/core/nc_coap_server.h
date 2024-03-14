@@ -84,7 +84,7 @@ void nc_coap_server_handle_packet(struct nc_coap_server_context* ctx, struct nc_
 // Creates a virtual CoAP requests and resolves the appropriate nc_coap_server_resource_handler.
 // The request is also returned for future reference.
 struct nc_coap_server_request* nc_coap_server_create_virtual_request(struct nc_coap_server_context* ctx, struct nc_connection* conn,
-nabto_coap_code method, const char** segments, void* payload, size_t payloadSize, uint16_t contentFormat, nc_coap_server_virtual_response_handler handler, void* userData);
+nabto_coap_method method, const char** segments, void* payload, size_t payloadSize, uint16_t contentFormat, nc_coap_server_virtual_response_handler handler, void* userData);
 
 // Get connection ID of a client connection.
 // Returns true if connectionId was set.
@@ -96,7 +96,7 @@ void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct
 void nc_coap_server_limit_requests(struct nc_coap_server_context* ctx, size_t limit);
 
 
-nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* server, nabto_coap_code method, const char** segments, nc_coap_server_resource_handler handler, void* userData, struct nc_coap_server_resource** resource);
+nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* server, nabto_coap_method method, const char** segments, nc_coap_server_resource_handler handler, void* userData, struct nc_coap_server_resource** resource);
 
 void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource);
 

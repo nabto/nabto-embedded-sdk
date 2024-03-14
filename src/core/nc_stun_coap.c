@@ -22,7 +22,7 @@ np_error_code nc_stun_coap_init(struct nc_stun_coap_context* context, struct np_
     context->stun = stun;
     context->coap = coap;
     context->pl = platform;
-    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_CODE_GET,
+    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_METHOD_GET,
                                                           (const char*[]){"p2p", "endpoints", NULL},
                                                           &nc_rendezvous_handle_coap_p2p_endpoints, context,
                                                           &context->resource);
