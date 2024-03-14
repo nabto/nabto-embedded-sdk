@@ -273,7 +273,9 @@ nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* serv
 
 void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource)
 {
-    nabto_coap_server_remove_resource(resource->resource);
+    if (resource->resource != NULL) {
+        nabto_coap_server_remove_resource(resource->resource);
+    }
     struct nc_coap_server_request* req;
     struct nn_llist_iterator it = nn_llist_begin(&resource->virtualRequests);
     while(!nn_llist_is_end(&it)) {

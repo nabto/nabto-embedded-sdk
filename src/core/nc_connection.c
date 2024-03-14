@@ -17,17 +17,19 @@ np_error_code nc_connections_init(struct nc_connections_context* ctx, struct nc_
 
 void nc_connections_deinit(struct nc_connections_context* ctx)
 {
-    struct nc_connection* connection;
-    struct nn_llist_iterator it = nn_llist_begin(&ctx->connections);
-    while(!nn_llist_is_end(&it)) {
-        connection = nn_llist_get_item(&it);
-        nn_llist_next(&it);
+    if (ctx->device != NULL) { // if init was called
+        struct nc_connection* connection;
+        struct nn_llist_iterator it = nn_llist_begin(&ctx->connections);
+        while(!nn_llist_is_end(&it)) {
+            connection = nn_llist_get_item(&it);
+            nn_llist_next(&it);
 
-        //destroy connection calls close connection which alters the list
-        if (!connection->isVirtual) {
-            nc_client_connection_destroy_connection(connection->connectionImplCtx);
-        } else {
-            nc_virtual_connection_destroy(connection->connectionImplCtx);
+            //destroy connection calls close connection which alters the list
+            if (!connection->isVirtual) {
+                nc_client_connection_destroy_connection(connection->connectionImplCtx);
+            } else {
+                nc_virtual_connection_destroy(connection->connectionImplCtx);
+            }
         }
     }
 }
